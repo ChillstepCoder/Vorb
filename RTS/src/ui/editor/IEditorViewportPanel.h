@@ -11,14 +11,18 @@ enum class EditorViewportDrawMode {
     Lit = 0,
     Unlit = 1,
     Normals = 2,
-    UVs = 3, // This and back uses lighting
-    BlendTest = 4,
-    EdgeTest = 5,
-    PBRTest = 6,
-    Wireframe = 7, // Always last
+    Tangents = 3,
+    AO = 4,
+    Metallic = 5,
+    Roughness = 6,
+    UVs = 7, // This and back uses lighting
+    BlendTest = 8,
+    EdgeTest = 9,
+    PBRTest = 10,
+    Wireframe = 11, // Always last
     COUNT
 };
-static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Copy to data/shaders/editor/editor_util.glsl");
+static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Copy to data/shaders/editor/editor_util.glsl");
 
 class IEditorViewportPanel
 {
@@ -66,6 +70,8 @@ protected:
     bool mShowSkyboxPrecomputedMap = false;
     int mPrecomputedLOD = 1;
     bool mRenderGrid = true;
+    f32 mYaw = 0.0f;
+    bool mRotate90 = true;
 
     // Blend test
     int mBlendTestPasses = 1;

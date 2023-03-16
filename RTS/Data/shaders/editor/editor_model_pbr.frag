@@ -1,6 +1,7 @@
 #include "MaterialData.glsl"
 #include "GlobalUbo.glsl"
 #include "editor/editor_pbr.glsl"
+#include "util/gamma.glsl"
 #include "util/tonemapping.glsl"
 
 // Lighting uniforms (MaterialUtils::uploadTonemapUniforms)
@@ -16,6 +17,7 @@ uniform float unRoughness;
 uniform vec3 unLightDir;
 uniform vec3 unCameraPos;
 uniform bool unOverrideMR;
+uniform float unHeightScale = 1.0;
 
 uniform mat4 unVP;
 
@@ -25,18 +27,31 @@ in vec2 fScreenPos;
 flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
+in vec3 fViewTangent;
+in vec3 fFragPosTangent;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
 
 void main() {
+    const int preset = int(step(unLightingSplit, fScreenPos.x));
 
     vec3 normal;
     vec4 color;
     float ao;
     float metallic;
     float roughness;
-    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, ao, metallic, roughness, fTint);
+    
+    MaterialData mtl = inMaterials[fMaterialIndex];
+    vec2 uv = fUV;
+    if (mtl.displacementMap > 0) {
+        vec3 tangentViewDir = normalize(fViewTangent - fFragPosTangent);
+        uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, unHeightScale);
+    }
+    
+    getMaterialPixelInfo(fMaterialIndex, uv, color, normal, ao, metallic, roughness, fTint);
+    color.rgb = gammaDecode(color.rgb, unGamma[preset]);
+    //normal.rgb = gammaDecode((normal.rgb + 1.0) * 0.5, unGamma[preset]) * 2.0 - 1.0;
     
     if (unOverrideMR) {
         metallic = unMetallic;
@@ -52,13 +67,13 @@ void main() {
     oColor.rgb = PBR(fWorldPos, color.rgb, normal, metallic, roughness, ao, sunColor, unLightDir, unCameraPos);
     
     // Tonemapping
-    const int preset = int(step(unLightingSplit, fScreenPos.x));
     oColor.rgb = computeTonemapping(oColor.rgb, unExposure[preset], unTonemapOperator[preset]);
    
     // Gamma correction
-    oColor.rgb = pow(oColor.rgb, vec3(1.0 / unGamma[preset]));
+    oColor.rgb = gammaCorrection(oColor.rgb, unGamma[preset]);
     
     oColor.a = 1.0;
-    //oColor = getEditorOutputPixelColor(color.rgb, normal, fWorldPos, fScreenPos);
     oNormal = (normal + 1.0) * 0.5;
+    
+    //oColor.rgb = 0.0001 * oColor.rgb + fViewTangent.rgb; //fViewTangent fFragPosTangent
 }

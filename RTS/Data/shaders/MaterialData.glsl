@@ -74,3 +74,38 @@ void getMaterialPixelInfo(uint materialIndex, vec2 uv, inout vec4 color, inout v
 void tryDiscardTransparentPixel(float alpha) {
     runAlphaTest(alpha, 0.01);
 }
+
+vec2 dispMapping(vec2 uvs, sampler2D disp, vec3 viewDirection, float heightScale) {
+    // Variables that control parallax occlusion mapping quality
+	const float minLayers = 4.0;
+    const float maxLayers = 16.0; // 16.0
+    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDirection)));
+    numLayers = clamp(numLayers, minLayers, maxLayers);
+	float layerDepth = 1.0 / numLayers;
+	float currentLayerDepth = 0.0;
+	
+	// Remove the z division if you want less aberated results
+	vec2 S = viewDirection.xy / viewDirection.z * heightScale; 
+    vec2 deltaUVs = S / numLayers;
+    
+	
+	vec2 UVs = uvs;
+	float currentDepthMapValue = 1.0 - texture(disp, UVs).r;
+	
+	// Loop till the point on the heightmap is "hit"
+	while(currentLayerDepth < currentDepthMapValue)
+    {
+        UVs -= deltaUVs;
+        currentDepthMapValue = 1.0 - texture(disp, UVs).r;
+        currentLayerDepth += layerDepth;
+    }
+
+	// Apply Occlusion (interpolation with prev value)
+	vec2 prevTexCoords = UVs + deltaUVs;
+	float afterDepth  = currentDepthMapValue - currentLayerDepth;
+	float beforeDepth = 1.0 - texture(disp, prevTexCoords).r - currentLayerDepth + layerDepth;
+	float weight = afterDepth / (afterDepth - beforeDepth);
+	UVs = prevTexCoords * weight + UVs * (1.0 - weight);
+    
+    return UVs;
+}

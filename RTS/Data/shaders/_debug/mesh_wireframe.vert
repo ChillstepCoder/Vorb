@@ -2,6 +2,7 @@
 #include "../GlobalUbo.glsl"
 
 uniform mat4 unVP;
+uniform mat4 unM;
 
 uniform vec4 unPosOffset = vec4(0.0);
 
@@ -12,7 +13,7 @@ layout (location=1) out vec3 wpos;
 
 void main()
 {
-	gl_Position = unVP * (vPosition + unPosOffset);
+	gl_Position = unVP * unM * (vPosition + unPosOffset);
 
 	wpos = vPosition.xyz;
 	uv = vec2(0.5, 0.5);

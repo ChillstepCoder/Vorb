@@ -110,6 +110,10 @@ const MaterialShader* ModelEditorPanel::getShader() {
         case EditorViewportDrawMode::Lit:
         case EditorViewportDrawMode::Unlit:
         case EditorViewportDrawMode::Normals:
+        case EditorViewportDrawMode::Tangents:
+        case EditorViewportDrawMode::AO:
+        case EditorViewportDrawMode::Metallic:
+        case EditorViewportDrawMode::Roughness:
         case EditorViewportDrawMode::UVs:
             return resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
         case EditorViewportDrawMode::Wireframe:
@@ -118,7 +122,7 @@ const MaterialShader* ModelEditorPanel::getShader() {
             assert(false);
             break;
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12);
     return nullptr;
 }
 

@@ -10,6 +10,7 @@ in vec2 fScreenPos;
 flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
+in vec3 fTangent;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
@@ -29,6 +30,6 @@ void main() {
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    oColor = getEditorOutputPixelColor(oColor.rgb, normal, fWorldPos, fScreenPos);
+    oColor = getEditorOutputPixelColor(oColor.rgb, normal, fTangent, ao, metallic, roughness, fWorldPos, fScreenPos);
     oNormal = (normal + 1.0) * 0.5;
 }

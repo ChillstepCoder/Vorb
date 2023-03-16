@@ -112,6 +112,10 @@ const MaterialShader* MaterialEditorPanel::getShader()
         case EditorViewportDrawMode::Unlit:
         case EditorViewportDrawMode::Lit:
         case EditorViewportDrawMode::Normals:
+        case EditorViewportDrawMode::Tangents:
+        case EditorViewportDrawMode::AO:
+        case EditorViewportDrawMode::Metallic:
+        case EditorViewportDrawMode::Roughness:
         case EditorViewportDrawMode::UVs:
         case EditorViewportDrawMode::BlendTest:
         case EditorViewportDrawMode::EdgeTest:
@@ -121,7 +125,7 @@ const MaterialShader* MaterialEditorPanel::getShader()
         default:
             assert(false);
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12);
     return nullptr;
 }
 

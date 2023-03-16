@@ -102,8 +102,14 @@ namespace fbx2raw {
 
         // Checks tangents availability.
         const FbxGeometryElementTangent* element_tangents = nullptr;
+        /*  if (fbxMesh->GetElementTangentCount() > 0) {
+              LOG_WARN("{} HAS TANGENTS", fbxMesh->GetName());
+          }
+          else {
+              LOG_CRITICAL("{} NO TANGENTS", fbxMesh->GetName());
+          }*/
         if (element_uvs) {  // UVs are needed to generate tangents.
-          // Regenerate tangents if they're not available.
+            // Regenerate tangents if they're not available.
             if (!fbxMesh->GenerateTangentsData(0, false)) {
                 return false;
             }
@@ -149,6 +155,7 @@ namespace fbx2raw {
         // Resize triangle indices, as their size is known.
         subMesh.mIndices.resize(vertexCount);
 
+
         // Iterate all polygons and stores ctrl point to polygon mappings.
         int vertexId = 0;
         for (int p = 0; p < polygonCount; ++p) {
@@ -165,6 +172,14 @@ namespace fbx2raw {
 
                 // Get vertex position.
                 const ozz::math::Float3 position = _converter->ConvertPoint(fbxMesh->GetControlPoints()[controlPoint]);
+                // BEN TMP TEST
+                //const ozz::math::Float4x4 AXIS_CONVERT = ozz::math::Float4x4::FromAxisAngle(ozz::math::simd_float4::Load(1.0f, 0.0f, 0.0f, 0.0f), ozz::math::simd_float4::Load(M_PI_2, 0.0f, 0.0f, 0.0f));
+                //const ozz::math::SimdFloat4 p_in = ozz::math::simd_float4::Load(
+                //    static_cast<float>(position.x), static_cast<float>(position.y),
+                //    static_cast<float>(position.z), 1.f);
+                //// AXIS CONVERT
+                //const ozz::math::SimdFloat4 p_out = AXIS_CONVERT * p_in;
+                //ozz::math::Store3PtrU(p_out, &position.x);
 
                 // Get vertex normal.
                 FbxVector4 src_normal(0.f, 1.f, 0.f, 0.f);

@@ -21,6 +21,7 @@
 #include "rendering/Skybox.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/material/BrdfLUT.h"
+#include "rendering/model/ModelUtil.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -125,7 +126,7 @@ VGTexture IEditorViewportPanel::getFinalOutputTexture() {
     else {
         return mGBuffers[0]->getAlbedoTexture();
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Make sure you don't need to set a custom output texture");
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Make sure you don't need to set a custom output texture");
 }
 
 void IEditorViewportPanel::updateAndRenderSharedControls() {
@@ -134,13 +135,17 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
         "Lit",
         "Unlit",
         "Normals",
+        "Tangents",
+        "AO",
+        "Metallic",
+        "Roughness",
         "UVs",
         "Blend Test",
         "Edge Test",
         "PBR Test",
         "Wireframe", // Always last
     };
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12);
     if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
         for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;
@@ -199,6 +204,10 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
 
     // Grid
     ImGui::Checkbox("Show Grid", &mRenderGrid);
+
+    // Transform
+    ImGui::SliderFloat("Yaw", &mYaw, 0.0f, M_2_PIF);
+    ImGui::Checkbox("Rotate 90", &mRotate90);
 }
 
 void IEditorViewportPanel::updateAndRenderTweakers() {
@@ -244,7 +253,7 @@ void IEditorViewportPanel::updateAndRenderTweakers() {
             ImGui::Checkbox("Preview Follow Axis", &mFollowAxis);
         }
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Make sure you don't need any property editors");
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Make sure you don't need any property editors");
 }
 
 void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
@@ -302,6 +311,15 @@ void IEditorViewportPanel::renderGrid() {
 
 void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
     assert(availableTextureUnit == 0);
+
+    if (mRotate90) {
+        const f32m4 modelMatrix = ModelUtil::computeTransformMatrixForModel(f32v3(0.0f), mYaw);
+        glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &(modelMatrix[0][0]));
+    }
+    else {
+        const f32m4 modelMatrix(1.0f);
+        glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &(modelMatrix[0][0]));
+    }
     glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &(camera->getViewProjectionMatrix()[0][0]));
 
     if (mDrawMode == EditorViewportDrawMode::PBRTest) {
@@ -341,7 +359,7 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
     if (const VGUniform* unRenderMode = shader->tryGetUniform("unRenderMode")) {
         glUniform1i(*unRenderMode, (int)mDrawMode);
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Make sure you don't need to set any uniforms");
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Make sure you don't need to set any uniforms");
 
     uploadCustomShaderUniforms(shader, 3);
 }

@@ -3,7 +3,10 @@
 namespace ModelUtil {
     inline f32m4 computeTransformMatrixForModel(const f32v3& position, f32 yaw) {
         // TODO: We can construct the matrix manually to optimize out a lot of work
-        return glm::rotate(glm::translate(glm::mat4(1.0f), position), yaw, f32v3(0.0f, 0.0f, 1.0f));
+        f32m4 transform = glm::translate(glm::mat4(1.0f), position);
+        transform = glm::rotate(transform, yaw, f32v3(0.0f, 0.0f, 1.0f));
+        // TODO: Two rotations is bad mkay
+        return glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
     }
 
     inline f32m4 computeTransformMatrixForModel(const f32v3& position, const f32v3& normal, f32 yaw) {
@@ -18,7 +21,13 @@ namespace ModelUtil {
             0.0f, 0.0f, 0.0f, 1.0f
         );
 
+        f32m4 transform = glm::translate(glm::mat4(1.0f), position);
+        // Yaw transform
+        transform = glm::rotate(transform * normRotation, yaw, f32v3(0.0f, 0.0f, 1.0f));
+        // ROTATE TO BE Z UP
+        transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+
         // TODO: We can construct the matrix manually (maybe) to optimize out a lot of work
-        return glm::rotate(glm::translate(glm::mat4(1.0f), position) * normRotation, yaw, f32v3(0.0f, 0.0f, 1.0f));
+        return transform;
     }
 }

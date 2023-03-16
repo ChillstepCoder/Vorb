@@ -10,6 +10,7 @@ in vec3 fWorldPos;
 in vec2 fScreenPos;
 in vec4 fTint;
 in mat3 fTBN;
+in vec3 fTangent;
 
 #include "editor/editor_util.glsl"
 
@@ -29,5 +30,5 @@ void main() {
     // Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    oColor = getEditorOutputPixelColor(color.rgb, normal, fWorldPos, fScreenPos);
+    oColor = getEditorOutputPixelColor(color.rgb, normal, fTangent, ao, metallic, roughness, fWorldPos, fScreenPos);
 }
