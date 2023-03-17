@@ -167,7 +167,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         bool hasTexture = false;
         // AO
         if (mIoManager.fileExists(ambientOcclusionTexturePath)) {
-            textureRepository.loadRawTextureData(ambientOcclusionTexturePath, aoData, true /*flipV*/);
+            textureRepository.loadRawTextureData(ambientOcclusionTexturePath, aoData, fileData.flipV);
             if (!aoData.bytesUI8) {
                 LOG_CRITICAL("Failed to load AO texture {} for material {}", fileData.ambientOcclusionTexture, filePath.getString());
                 return false;
@@ -181,7 +181,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
         // Roughness
         if (mIoManager.fileExists(roughnessTexturePath)) {
-            textureRepository.loadRawTextureData(roughnessTexturePath, roughnessData, true /*flipV*/);
+            textureRepository.loadRawTextureData(roughnessTexturePath, roughnessData, fileData.flipV);
             if (!roughnessData.bytesUI8) {
                 LOG_CRITICAL("Failed to load roughness texture {} for material {}", fileData.roughnessTexture, filePath.getString());
                 return false;
@@ -195,7 +195,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
         // Metallic
         if (mIoManager.fileExists(metalTexturePath)) {
-            textureRepository.loadRawTextureData(metalTexturePath, metalData, true /*flipV*/);
+            textureRepository.loadRawTextureData(metalTexturePath, metalData, fileData.flipV);
             if (!metalData.bytesUI8) {
                 LOG_CRITICAL("Failed to load Metallic texture {} for material {}", fileData.metalTexture, filePath.getString());
                 return false;
