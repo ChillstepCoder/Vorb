@@ -175,7 +175,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     if (navBlockerType != prevNavBlockerType) {
         if (prevNavBlockerType != NavBlockerType::NONE) {
             // Remove old blockage
-            assert(false);
+            removeBlockerFromAdjTiles(i, prevNavBlockerType);
         }
         if (navBlockerType != NavBlockerType::NONE) {
             if (!tryBlockAdjTiles(i, navBlockerType)) {
@@ -291,7 +291,7 @@ void TileContainer::clearTileFlags(TileIndex i) {
         eventData.prevFlags = tile.tileFlags;
         {
             std::lock_guard lock(mSharedMutex);
-            tile.clearTileFlags();
+            tile.zeroTileFlags();
         }
         eventData.newFlags = tile.tileFlags;
         eventData.tileIndex = i;
@@ -552,7 +552,7 @@ bool TileContainer::tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType)
     {
         const TileFlags blockerFlag = (navBlockerType == NavBlockerType::MEDIUM) ? TileFlags::MEDIUM_BLOCKER : TileFlags::LARGE_BLOCKER;
         static_assert(e_cast(NavBlockerType::COUNT) == 3);
-        if (blockerFlag == TileFlags::BLOCKED_BY_LARGE) {
+        if (blockerFlag == TileFlags::LARGE_BLOCKER) {
             std::lock_guard lock(mSharedMutex);
             mTiles[tileIndices[0]].setTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // SW
             mTiles[tileIndices[1]].setTileFlag(TileFlags(e_cast(TileFlags::HAS_NORTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE))); // S
@@ -631,6 +631,124 @@ bool TileContainer::tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType n
     static_assert(e_cast(TileFlags::NAV_BLOCKED_MASK_TERM) == BIT(8), "Update");
     static_assert(e_cast(NavBlockerType::COUNT) == 3);
     return true;
+}
+
+void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNavBlockerType) {
+    assert(canPlaceAdjNavBlockerTile(i));
+
+    // Remove blockage
+    constexpr int EDIT_COUNT = 9;
+    TileContainerEvent flagsEvent;
+    TileContainerEditFlagsEventData eventData[EDIT_COUNT];
+    flagsEvent.container = this;
+    flagsEvent.edit.editCount = EDIT_COUNT;
+    flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
+    flagsEvent.edit.changeFlagsArray = eventData;
+    const TileIndex tileIndices[EDIT_COUNT] = {
+        i - mDims.x - 1 /*SW*/,
+        i - mDims.x     /*S*/,
+        i - mDims.x + 1 /*SE*/,
+        i - 1           /*W*/,
+        i               /*C*/,
+        i + 1           /*E*/,
+        i + mDims.x - 1 /*NW*/,
+        i + mDims.x     /*N*/,
+        i + mDims.x + 1 /*NE*/,
+    };
+    for (int n = 0; n < EDIT_COUNT; ++n) {
+        const TileIndex nindex = tileIndices[n];
+        eventData[n].prevFlags = mTiles[nindex].tileFlags;
+        eventData[n].tileIndex = nindex;
+        eventData[n].worldPosition = getTileCenterWorldPosition(nindex);
+    }
+    {
+        const TileFlags blockerFlag = (prevNavBlockerType == NavBlockerType::MEDIUM) ? TileFlags::MEDIUM_BLOCKER : TileFlags::LARGE_BLOCKER;
+        assert(mTiles[i].hasFlag(blockerFlag));
+        static_assert(e_cast(NavBlockerType::COUNT) == 3);
+        if (blockerFlag == TileFlags::LARGE_BLOCKER) {
+            std::lock_guard lock(mSharedMutex);
+            mTiles[tileIndices[0]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // SW
+            mTiles[tileIndices[1]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_NORTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE))); // S
+            mTiles[tileIndices[2]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // SE
+            mTiles[tileIndices[3]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_EAST_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE))); // W
+            mTiles[tileIndices[4]].clearTileFlag(blockerFlag); // C
+            mTiles[tileIndices[5]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_WEST_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE))); // E
+            mTiles[tileIndices[6]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // NW
+            mTiles[tileIndices[7]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_SOUTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE))); // N
+            mTiles[tileIndices[8]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // NE
+        }
+        else {
+            std::lock_guard lock(mSharedMutex);
+            mTiles[tileIndices[0]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // SW
+            mTiles[tileIndices[1]].clearTileFlag(TileFlags::HAS_NORTH_BLOCKER); // S
+            mTiles[tileIndices[2]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // SE
+            mTiles[tileIndices[3]].clearTileFlag(TileFlags::HAS_EAST_BLOCKER); // W
+            mTiles[tileIndices[4]].clearTileFlag(blockerFlag); // C
+            mTiles[tileIndices[5]].clearTileFlag(TileFlags::HAS_WEST_BLOCKER); // E
+            mTiles[tileIndices[6]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // NW
+            mTiles[tileIndices[7]].clearTileFlag(TileFlags::HAS_SOUTH_BLOCKER); // N
+            mTiles[tileIndices[8]].clearTileFlag(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // NE
+        }
+
+        // Now update if the 4 corner neighbors actually still have a diagonal blocker
+        updateTileDiagonalBlocked(tileIndices[0]); // SW
+        updateTileDiagonalBlocked(tileIndices[2]); // SE
+        updateTileDiagonalBlocked(tileIndices[6]); // NW
+        updateTileDiagonalBlocked(tileIndices[8]); // NE
+    }
+    static_assert(e_cast(TileFlags::NAV_BLOCKED_MASK_TERM) == BIT(8), "Update");
+    for (int n = 0; n < EDIT_COUNT; ++n) {
+        const TileIndex nindex = tileIndices[n];
+        eventData[n].newFlags = mTiles[nindex].tileFlags;
+    }
+    TileContainerRepository::dispatchEditTiles(flagsEvent);
+}
+
+// Checks 4 diagonal corners for any blockers and adds TILE_DIAGONAL_BLOCKERS_MASK if needed
+void TileContainer::updateTileDiagonalBlocked(TileIndex index) {
+    const i32v3 offset = getTileXYZOffset(index);
+    if (offset.y > 0) {
+        // SW
+        if (offset.x > 0) {
+            const TileIndex SW = index - 1 - mDims.x;
+            if (isTileOwned(SW) && mTiles[SW].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
+                std::lock_guard lock(mSharedMutex);
+                mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
+                return;
+            }
+        }
+        // SE
+        if (offset.x < mDims.x - 1) {
+            const TileIndex SE = index + 1 - mDims.x;
+            if (isTileOwned(SE) && mTiles[SE].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
+                std::lock_guard lock(mSharedMutex);
+                mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
+                return;
+            }
+        }
+    }
+
+
+    if (offset.y < mDims.y - 1) {
+        // NW
+        if (offset.x > 0) {
+            const TileIndex NW = index - 1 + mDims.x;
+            if (isTileOwned(NW) && mTiles[NW].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
+                std::lock_guard lock(mSharedMutex);
+                mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
+                return;
+            }
+        }
+        // NE
+        if (offset.x < mDims.x - 1) {
+            const TileIndex NE = index + 1 + mDims.x;
+            if (isTileOwned(NE) && mTiles[NE].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
+                std::lock_guard lock(mSharedMutex);
+                mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
+                return;
+            }
+        }
+    }
 }
 
 bool TileContainer::canPlaceAdjNavBlockerTile(TileIndex i) {

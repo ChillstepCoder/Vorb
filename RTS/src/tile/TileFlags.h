@@ -35,6 +35,10 @@ static_assert(e_cast(TileFlags::TERM) <= 0x8000); // Must fit into a short
 constexpr TileFlagType TILE_BLOCKED_TILE_FLAGS_MASK = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) | BIT(6) | BIT(7) | BIT(8);
 static_assert(e_cast(TileFlags::NAV_BLOCKED_MASK_TERM) == BIT(8));
 static_assert(TileFlags::NAV_BLOCKED_MASK_TERM == TileFlags::IS_BLOCKED_BY_STRUCTURE);
+
+// These flags indicate that they will block diagonal tiles via HAS_DIAGONAL_BLOCKER
+constexpr TileFlagType TILE_DIAGONAL_BLOCKERS_MASK = e_cast(TileFlags::MEDIUM_BLOCKER) | e_cast(TileFlags::LARGE_BLOCKER);
+
 constexpr bool IsTileNavBlocked(TileFlagType flags) {
 
     // We want these to be first 4 bits for table lookup without bitshift

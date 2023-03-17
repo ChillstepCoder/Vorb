@@ -64,7 +64,7 @@ void Tile::clearTileFlag(TileFlags flag) {
     tileFlags.clearBit(flag);
 }
 
-void Tile::clearTileFlags() {
+void Tile::zeroTileFlags() {
     assert(IS_GAME_THREAD());
     tileFlags = 0;
 }

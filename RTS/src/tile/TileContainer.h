@@ -279,6 +279,8 @@ public:
 private:
     bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
     bool tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType);
+    void removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNavBlockerType);
+    void updateTileDiagonalBlocked(TileIndex index);
 
     bool canPlaceAdjNavBlockerTile(TileIndex i);
 

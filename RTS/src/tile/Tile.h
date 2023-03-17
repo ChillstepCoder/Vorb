@@ -181,7 +181,7 @@ private:
     void overwriteTileFlags(TileFlags flags);
     void setOrientation(Cartesian dir, TileLayer layer);
     void clearTileFlag(TileFlags flag);
-    void clearTileFlags();
+    void zeroTileFlags();
     void setGroundZOffset(f32 groundZPosition);
 
     // ================================= Data =================================
