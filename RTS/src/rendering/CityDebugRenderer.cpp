@@ -38,8 +38,8 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, int lifetime
     { // Tiles needing items
         std::set<TileIndex> tileNeedingItems;
         for (auto&& it : bp.tilesNeedingItems) {
-            for (BlueprintTileHandle& it2 : it.second) {
-                tileNeedingItems.insert(it2.mTileIndex);
+            for (TileIndex& tileIndex : it.second) {
+                tileNeedingItems.insert(tileIndex);
             }
         }
 
@@ -47,7 +47,7 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, int lifetime
         for (TileIndex i : tileNeedingItems) {
             const f32v3 worldPos = bp.getTileWorldPos(i);
             // Tiles
-            switch (bp.tiles[i].type) {
+            switch (bp.tiles[i]) {
                 case BlueprintTileType::FLOOR:
                     DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COLOR_GRAY_ALPHA(ALPHA), lifetime);
                     break;
@@ -66,8 +66,8 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, int lifetime
                 case BlueprintTileType::NONE:
                 case BlueprintTileType::AIR:
                 case BlueprintTileType::TYPES:
-                    break;
                 default:
+                    assert(false);
                     break;
 
             }
@@ -88,10 +88,13 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, int lifetime
         }
     }
 
+    // TODO: NOT THREAD SAFE
     if (bp.tilesReadyToBuild.size()) { // Tiles ready to build
-        DebugRenderer::reserveFilledQuads(bp.tilesReadyToBuild.size(), lifetime);
-        for (BlueprintTileHandle handle : bp.tilesReadyToBuild) {
-            DebugRenderer::drawFilledQuad(bp.getTileWorldPos(handle.mTileIndex), f32v2(1.0f), COLOR_GREEN_ALPHA(ALPHA), lifetime);
+        std::vector<TileIndex> queueCopy = bp.tilesReadyToBuild;
+        DebugRenderer::reserveFilledQuads(queueCopy.size(), lifetime);
+        for (size_t i = 0; i < queueCopy.size(); ++i) {
+            TileIndex tileIndex = queueCopy[i];
+            DebugRenderer::drawFilledQuad(bp.getTileWorldPos(tileIndex), f32v2(1.0f), COLOR_GREEN_ALPHA(ALPHA), lifetime);
         }
     }
 }

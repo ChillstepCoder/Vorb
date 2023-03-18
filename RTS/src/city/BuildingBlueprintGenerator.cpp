@@ -700,7 +700,7 @@ void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room) {
         //    // TODO: Can we optimize this so we don't run it every time?
         //}
         bp.ownerArray[index] = room.id;
-        bp.tiles[index].type = BlueprintTileType::FLOOR;
+        bp.tiles[index] = BlueprintTileType::FLOOR;
         // Step
         iterPos += iterateOffset;
     }
@@ -752,7 +752,7 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room
         if (ownerId == INVALID_ROOM_ID) {
             ++tilesAdded;
             bp.ownerArray[index] = room.id;
-            bp.tiles[index].type = BlueprintTileType::FLOOR;
+            bp.tiles[index] = BlueprintTileType::FLOOR;
             // Visual log
             if (visLog) {
                 visLog->addWireQuad(f32v3(iterPos.x, iterPos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
@@ -922,9 +922,12 @@ void BuildingBlueprintGenerator::placeWalls(BuildingBlueprint& bp, VisualLog* vi
 
 void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* visLog) {
     if (visLog) visLog->nextStep("Expand rooms");
-    bp.tiles.resize((size_t)bp.floorCount * bp.aabb.dims.x * bp.aabb.dims.y, BlueprintTile{ BlueprintTileType::NONE, false });
+    bp.tiles.resize((size_t)bp.floorCount * bp.aabb.dims.x * bp.aabb.dims.y, BlueprintTileType::NONE);
     bp.walls.resize(bp.tiles.size());
     bp.ownerArray.resize(bp.tiles.size(), INVALID_ROOM_ID);
+    // Construction data
+    bp.tileItemDataHandles.resize(bp.tiles.size());
+    bp.tileBuildData.resize(bp.tiles.size());
 
     // Init rooms
     for (size_t i = 0; i < bp.rooms.size(); ++i) {
@@ -952,7 +955,7 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* v
                             TileIndex parentIndex = myIndex - bp.aabb.dims.x * bp.aabb.dims.y;
                             if (bp.ownerArray[parentIndex] == parent.id) {
                                 bp.ownerArray[myIndex] = room.id;
-                                bp.tiles[myIndex].type = bp.tiles[parentIndex].type;
+                                bp.tiles[myIndex] = bp.tiles[parentIndex];
                                 room.size = parent.size;
                             }
                         }
@@ -1191,7 +1194,7 @@ void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& 
     const i32 index = getIndexAtPos(i32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
     // Init root node
     room.size = 1;
-    bp.tiles[index].type = BlueprintTileType::FLOOR;
+    bp.tiles[index] = BlueprintTileType::FLOOR;
     bp.ownerArray[index] = room.id;
     assert(room.id != INVALID_ROOM_ID);
 
@@ -1218,7 +1221,7 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
             bfs[bfsBackIndex++].index = nextTileIndex;
             if (bfsBackIndex >= bfs.size()) bfsBackIndex = 0;
         }
-        else if (bp.tiles[tileIndex].type == BlueprintTileType::FLOOR) {
+        else if (bp.tiles[tileIndex] == BlueprintTileType::FLOOR) {
 
             if (nextOwner == INVALID_ROOM_ID) {
                 // Exterior doors
@@ -1241,7 +1244,7 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 RoomNode& adjacent = bp.rooms[nextOwner];
                 if (adjacent.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
 
-                    if (bp.tiles[nextTileIndex].type == BlueprintTileType::FLOOR) {
+                    if (bp.tiles[nextTileIndex] == BlueprintTileType::FLOOR) {
 
                         TileWalls& walls = bp.walls[tileIndex];
                         TileWall& wall = walls.walls[e_cast(dir)];
@@ -1350,7 +1353,7 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
         TileIndex tileIndex = room.floorIndex * floorDims.x * floorDims.y;
         for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
             for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
-                bits.setBitTo(y * floorDims.x + x, bp.ownerArray[tileIndex] == room.id && bp.tiles[tileIndex].type == BlueprintTileType::FLOOR);
+                bits.setBitTo(y * floorDims.x + x, bp.ownerArray[tileIndex] == room.id && bp.tiles[tileIndex] == BlueprintTileType::FLOOR);
                 ++tileIndex;
             }
         }
@@ -1429,9 +1432,9 @@ bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
 
 bool canPlaceStairsHere(TileIndex index, BuildingBlueprint& bp, RoomNode& child) {
     const TileIndex aboveIndex = index + bp.aabb.dims.x * bp.aabb.dims.y;
-    if (bp.tiles[index].type == BlueprintTileType::FLOOR &&
+    if (bp.tiles[index] == BlueprintTileType::FLOOR &&
         bp.ownerArray[aboveIndex] == child.id &&
-        bp.tiles[aboveIndex].type == BlueprintTileType::FLOOR &&
+        bp.tiles[aboveIndex] == BlueprintTileType::FLOOR &&
         !tileBlocksDoor(index, bp) && !tileBlocksDoor(aboveIndex, bp)) {
         return true;
     }
@@ -1463,7 +1466,7 @@ bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprint& bp, Cartesian di
     const i32 floorIndex = index / (bp.aabb.dims.x * bp.aabb.dims.y);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
     pos += CARTESIAN_NORMALS[e_cast(dir)];
-    return bp.tiles[getIndexAtPos(pos, bp.aabb.dims, floorIndex + 1)].type != BlueprintTileType::FLOOR;
+    return bp.tiles[getIndexAtPos(pos, bp.aabb.dims, floorIndex + 1)] != BlueprintTileType::FLOOR;
 }
 
 bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* visLog) {
@@ -1651,9 +1654,9 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         Cartesian prevDir = Cartesian::NONE;
         for (i32 j = 0; j < bestRunLength; ++j) {
             const TileIndex tileIndex = runs[bestRunStart + j];
-            bp.tiles[tileIndex].type = BlueprintTileType::STAIRS;
+            bp.tiles[tileIndex] = BlueprintTileType::STAIRS;
             if (j > 0) {
-                bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y].type = BlueprintTileType::AIR;
+                bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y] = BlueprintTileType::AIR;
             }
             StairPiece& stairPiece = stairs.emplace_back(StairPiece{});
             stairPiece.dir = dirs[bestRunStart + j];
@@ -1719,20 +1722,21 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
             }
         }
         // Tile postprocess
-        switch (bp.tiles[tileIndex].type) {
+        switch (bp.tiles[tileIndex]) {
             case BlueprintTileType::NONE:
             case BlueprintTileType::AIR:
-                bp.tiles[tileIndex].isBuilt = true;
+                bp.tileBuildData[tileIndex].mProgress = 1.0f;
                 break;
             case BlueprintTileType::STAIRS:
             case BlueprintTileType::STAIRS_FLAT:
             case BlueprintTileType::WALL:
             case BlueprintTileType::FLOOR:
             case BlueprintTileType::DOOR: {
-                const Recipe& recipe = *bp.tileRecipes[e_cast(bp.tiles[tileIndex].type)];
+                const Recipe& recipe = *bp.tileRecipes[e_cast(bp.tiles[tileIndex])];
                 const ui32 offset = bp.tileItemData.size();
-                const ui32 itemCount = recipe.mItemCount;
+                const ui16 itemCount = recipe.mItemCount;
                 bp.tileItemData.reserve(bp.tileItemData.size() + itemCount);
+                bp.tileItemDataHandles[tileIndex] = BlueprintTileItemDataHandle{ offset, itemCount };
                 for (ui32 r = 0; r < recipe.mItemCount; ++r) {
                     const ItemStack stack = recipe.mItems[r];
                     auto&& it = requiredItems.find(stack.id);
@@ -1743,7 +1747,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
                         it->second += stack.quantity;
                     }
                     bp.tileItemData.emplace_back(BlueprintTileItemData{stack.id, stack.quantity, 0});
-                    bp.tilesNeedingItems[stack.id].emplace_back(BlueprintTileHandle{ tileIndex, offset, itemCount });
+                    bp.tilesNeedingItems[stack.id].emplace_back(tileIndex);
                 }
                 ++bp.totalTilesToBuild;
                 break;

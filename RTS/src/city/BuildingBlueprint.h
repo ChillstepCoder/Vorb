@@ -14,13 +14,6 @@ enum class BlueprintTileType : ui8 {
 };
 static_assert(int(BlueprintTileType::TYPES) < 1 << 6);
 
-struct BlueprintTile {
-    BlueprintTileType type : 6;
-    bool isBuilt : 1;
-    bool isReserved : 1;
-};
-static_assert(sizeof(BlueprintTile) == 1, "Keep it small");
-
 // TODO: Cellular automata rule iteration for room fixup
 typedef ui32 BuildingBlueprintId;
 #define INVALID_BLUEPRINT_ID UINT32_MAX
@@ -35,34 +28,47 @@ struct BlueprintTileItemData {
     ui16 mCurrentQuantity = 0;
     ui16 mPromisedQuantity = 0;
 };
-struct BlueprintTileHandle {
-    TileIndex mTileIndex = INVALID_TILE_INDEX;
-    ui32 mItemDataOffset;
-    ui32 mItemDataCount;
+struct BlueprintTileItemDataHandle {
+    ui32 mItemDataOffset = 0;
+    ui16 mItemDataCountRequired = 0;
+    ui16 mItemDataCountFinished = 0;
+};
+struct BlueprintTileBuildData {
+    float mProgress = 0.0f; // 0-1
+    entt::entity mReservedBy = INVALID_ENTITY;
 };
 
+// TODO: Pool allocate
 class PlaceTileBlueprintItemsHandle {
 public:
     PlaceTileBlueprintItemsHandle() = default;
-    ~PlaceTileBlueprintItemsHandle() {
-        if (mBlueprint) {
-            --mBlueprint->refCount;
-            if (mPromisedItemCount) {
-                mBlueprint->cancelReserveTileToPlaceItems(*this);
-            }
-        }
-        
-    }
+    ~PlaceTileBlueprintItemsHandle();
 
     bool isValid() const { return mBlueprint != nullptr; }
     void fulfillFromItemStack(ItemStack& stack);
 
     BuildingBlueprint* mBlueprint = nullptr;
-    BlueprintTileHandle mTileHandle;
+    TileIndex mTileIndex;
     ItemID mItemId;
     ui16 mPromisedItemCount = 0;
 };
 typedef std::unique_ptr<PlaceTileBlueprintItemsHandle> PlaceTileBlueprintItemsHandlePtr;
+
+// TODO: Pool allocate
+class BuildTileBlueprintHandle {
+public:
+    BuildTileBlueprintHandle() = default;
+    ~BuildTileBlueprintHandle();
+
+    // Return true when done
+    bool tick(f32 buildProgressIncrease);
+
+    bool isValid() const { return mBlueprint != nullptr; }
+
+    BuildingBlueprint* mBlueprint = nullptr;
+    TileIndex mTileIndex;
+};
+typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
@@ -74,20 +80,22 @@ struct BuildingBlueprint {
 
     f32v3 getTileWorldPos(TileIndex i) const {
         const i32 layerSize = aabb.dims.x * aabb.dims.y;
-        f32v3 worldRoot(aabb.pos.x, aabb.pos.y, zPos);
+        const f32v3 worldRoot(aabb.pos.x, aabb.pos.y, zPos);
         return f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
     }
 
+    // For construction
     PlaceTileBlueprintItemsHandlePtr reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount);
     void cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHandle& handle);
+    BuildTileBlueprintHandlePtr reserveTileToBuild(entt::entity builderEntity, const f32v3& entityPosition);
+    void endTileToBuild(BuildTileBlueprintHandle& handle);
 
-    // For construction
-    std::map<ItemID, std::vector<BlueprintTileHandle>> tilesNeedingItems;
-    xxx; // BUILD PROGRESS???
-    std::vector<BlueprintTileHandle> tilesReadyToBuild;
-    std::vector<BlueprintTileHandle> tilesReservedForBuild;
+    std::map<ItemID, std::vector<TileIndex>> tilesNeedingItems;
+    std::vector<TileIndex> tilesReadyToBuild;
     std::vector<BlueprintTileItemData> tileItemData;
     std::vector<ItemStackUnbounded> requiredItemsToBuild;
+    std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
+    std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
     // End construction
 
     Building* building = nullptr;
@@ -100,7 +108,7 @@ struct BuildingBlueprint {
 
     std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
-    std::vector<BlueprintTile> tiles;
+    std::vector<BlueprintTileType> tiles;
     std::vector<TileWalls> walls;
     std::vector<std::vector<StairPiece>> stairs;
     std::map<TileIndex, RoomNodeID> exteriorDoors;

@@ -28,7 +28,7 @@ BitArray computeOwnedTilesOnFirstFloor(const BuildingBlueprint& bp) {
     for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
         for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
             const ui32 tileIndex = y * bp.aabb.dims.x + x;
-            const BlueprintTileType type = bp.tiles[tileIndex].type;
+            const BlueprintTileType type = bp.tiles[tileIndex];
             if (type != BlueprintTileType::NONE) {
 
                 const TileID tileId = bp.tileIDs[e_cast(type)];
@@ -116,7 +116,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
         for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
             for (i32 x = 0; x < bp.aabb.dims.x; ++x, ++tileIndex) {
                 // TODO: Bitindex
-                const BlueprintTileType type = bp.tiles[tileIndex].type;
+                const BlueprintTileType type = bp.tiles[tileIndex];
                 if (type != BlueprintTileType::NONE) {
                     // Flatten heightmap
                     if (z == 0) {

@@ -29,7 +29,6 @@ JobRequiredItems::~JobRequiredItems() {
 
 ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity) : mBlueprint(blueprint), IBusinessJob(businessEntity) {
     assert(!mBlueprint.isGenerating);
-    const std::vector<BlueprintTile>& tiles = mBlueprint.tiles;
     // Track required items internally
     mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
     for (size_t i = 0; i < mRequiredItems.size(); ++i) {
@@ -40,7 +39,6 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::e
     }
     assert(mBlueprint.totalTilesToBuild);
 }
-static_assert(e_cast(BlueprintTileType::TYPES) == 7, "Update build logic");
 
 ConstructBuildingJob::~ConstructBuildingJob() {
 
@@ -57,14 +55,14 @@ bool ConstructBuildingJob::tick(entt::registry& registry, entt::entity business)
     OwnershipComponent& ownershipCmp = registry.get<OwnershipComponent>(business);
 
     // Search for items if we need them
-    if (tickCounter % TICK_RATE_RESERVE_ITEMS == 0) {
-        for (auto&& item : mRequiredItems) {
-            if (item.quantityReserved < item.quantityRequired) {
-                // TODO: Re-enable
-    //            tryReserveItems(item, ownershipCmp);
-            }
-        }
-    }
+    //if (tickCounter % TICK_RATE_RESERVE_ITEMS == 0) {
+    //    for (auto&& item : mRequiredItems) {
+    //        if (item.quantityReserved < item.quantityRequired) {
+    //            // TODO: Re-enable
+    ////            tryReserveItems(item, ownershipCmp);
+    //        }
+    //    }
+    //}
 
     ++tickCounter;
     return false;

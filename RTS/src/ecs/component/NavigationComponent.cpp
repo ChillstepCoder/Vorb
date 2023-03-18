@@ -215,15 +215,23 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
 void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success) {
 	// Target reached
 	motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
-	navCmp.mFinePath = nullptr;
-    navCmp.mCoarsePath = nullptr;
     if (success) {
+		if (!navCmp.mTargetHandle.isValid()) {
+			if (navCmp.mFinePath) {
+				navCmp.mTargetHandle = navCmp.mFinePath->getTargetHandle();
+			}
+			else if (navCmp.mCoarsePath) {
+                navCmp.mTargetHandle = navCmp.mCoarsePath->getTargetHandle();
+			}
+		}
 		assert(navCmp.mTargetHandle.isValid());
 		navCmp.mStatus = NavigationStatus::SUCCESS;
 	}
     else {
 		navCmp.mStatus = NavigationStatus::FAIL;
-	}
+    }
+    navCmp.mFinePath = nullptr;
+    navCmp.mCoarsePath = nullptr;
 	if (navCmp.mFinishedCallback) {
 		navCmp.mFinishedCallback(success);
 		navCmp.mFinishedCallback = nullptr;

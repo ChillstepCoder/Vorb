@@ -34,13 +34,14 @@ PlaceTileBlueprintItemsHandlePtr BuildingBlueprint::reserveTileToPlaceItems(Item
         return nullptr;
     }
 
-    for (auto&& h : it->second) {
-        for (ui32 i = 0; i < h.mItemDataCount; ++i) {
-            BlueprintTileItemData& itemData = tileItemData[h.mItemDataOffset + i];
+    for (auto&& tileIndex : it->second) {
+        const BlueprintTileItemDataHandle& itemDataHandle = tileItemDataHandles[tileIndex];
+        for (ui32 i = 0; i < itemDataHandle.mItemDataCountRequired; ++i) {
+            BlueprintTileItemData& itemData = tileItemData[itemDataHandle.mItemDataOffset + i];
             if (itemData.mItemId == itemId) {
                 if (itemData.mPromisedQuantity < itemData.mMissingQuantity) {
                     PlaceTileBlueprintItemsHandlePtr handle = std::make_unique<PlaceTileBlueprintItemsHandle>();
-                    handle->mTileHandle = h;
+                    handle->mTileIndex = tileIndex;
                     handle->mItemId = itemId;
                     handle->mPromisedItemCount = std::min(maxItemCount, (ui16)(itemData.mMissingQuantity - itemData.mPromisedQuantity));
                     handle->mBlueprint = this;
@@ -57,6 +58,7 @@ PlaceTileBlueprintItemsHandlePtr BuildingBlueprint::reserveTileToPlaceItems(Item
 void BuildingBlueprint::cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHandle& handle) {
     assert(handle.mBlueprint == this);
     handle.mBlueprint = nullptr;
+    --refCount;
 
     if (handle.mPromisedItemCount == 0) {
         return;
@@ -65,9 +67,9 @@ void BuildingBlueprint::cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHan
     auto&& it = tilesNeedingItems.find(handle.mItemId);
     assert(it != tilesNeedingItems.end());
 
-    const BlueprintTileHandle& tileHandle = handle.mTileHandle;
-    for (ui32 i = 0; i < tileHandle.mItemDataCount; ++i) {
-        BlueprintTileItemData& itemData = tileItemData[tileHandle.mItemDataOffset + i];
+    const BlueprintTileItemDataHandle& itemDataHandle = tileItemDataHandles[handle.mTileIndex];
+    for (ui32 i = 0; i < itemDataHandle.mItemDataCountRequired; ++i) {
+        BlueprintTileItemData& itemData = tileItemData[itemDataHandle.mItemDataOffset + i];
         if (itemData.mItemId == handle.mItemId) {
             itemData.mPromisedQuantity -= handle.mPromisedItemCount;
             handle.mPromisedItemCount = 0;
@@ -77,11 +79,68 @@ void BuildingBlueprint::cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHan
     assert(false); // NOT FOUND
 }
 
+BuildTileBlueprintHandlePtr BuildingBlueprint::reserveTileToBuild(entt::entity builderEntity, const f32v3& entityPosition) {
+    if (tilesReadyToBuild.empty()) {
+        return nullptr;
+    }
+
+    // Get closest via linear check
+    size_t closest = UINT32_MAX;
+    f32 closestDistanceSq = FLT_MAX;
+    const i32 layerSize = aabb.dims.x * aabb.dims.y;
+    const f32v3 worldRoot(aabb.pos.x, aabb.pos.y, zPos);
+    for (size_t i = 0; i < tilesReadyToBuild.size(); ++i) {
+        const f32v3 tilePosition = f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
+        f32 distSq = glm::length2(entityPosition - tilePosition);
+        if (distSq < closestDistanceSq) {
+            closest = i;
+        }
+    }
+    const TileIndex buildTileIndex = tilesReadyToBuild[closest];
+    tilesReadyToBuild[closest] = tilesReadyToBuild.back();
+    tilesReadyToBuild.pop_back();
+
+    assert(tileBuildData[buildTileIndex].mReservedBy == INVALID_ENTITY);
+    tileBuildData[buildTileIndex].mReservedBy = builderEntity;
+
+    BuildTileBlueprintHandlePtr buildHandle = std::make_unique<BuildTileBlueprintHandle>();
+    buildHandle->mBlueprint = this;
+    buildHandle->mTileIndex = buildTileIndex;
+    return std::move(buildHandle);
+}
+
+void BuildingBlueprint::endTileToBuild(BuildTileBlueprintHandle& handle) {
+    assert(handle.mBlueprint == this);
+    handle.mBlueprint = nullptr;
+    --refCount;
+
+    BlueprintTileBuildData& buildData = tileBuildData[handle.mTileIndex];
+    buildData.mReservedBy = INVALID_ENTITY;
+    if (buildData.mProgress >= 1.0f) {
+        ++tilesBuilt;
+    }
+    else {
+        tilesReadyToBuild.emplace_back(handle.mTileIndex);
+    }
+}
+
+PlaceTileBlueprintItemsHandle::~PlaceTileBlueprintItemsHandle() {
+    if (mBlueprint) {
+        if (mPromisedItemCount) {
+            mBlueprint->cancelReserveTileToPlaceItems(*this);
+        }
+        else {
+            --mBlueprint->refCount;
+        }
+    }
+}
+
 void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
     assert(mBlueprint);
 
-    for (ui32 i = 0; i < mTileHandle.mItemDataCount; ++i) {
-        BlueprintTileItemData& itemData = mBlueprint->tileItemData[mTileHandle.mItemDataOffset + i];
+    BlueprintTileItemDataHandle& itemDataHandle = mBlueprint->tileItemDataHandles[mTileIndex];
+    for (ui32 i = 0; i < itemDataHandle.mItemDataCountRequired; ++i) {
+        BlueprintTileItemData& itemData = mBlueprint->tileItemData[itemDataHandle.mItemDataOffset + i];
         if (itemData.mItemId == mItemId) {
             const ui16 quantityToAdd = std::min(stack.quantity, itemData.mMissingQuantity);
             if (quantityToAdd == 0) {
@@ -99,12 +158,19 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
             stack.quantity -= quantityToAdd;
             // Check if we no longer require this item for this tile
             if (itemData.mMissingQuantity == 0) {
+                ++itemDataHandle.mItemDataCountFinished;
+
+                if (itemDataHandle.mItemDataCountFinished == itemDataHandle.mItemDataCountRequired) {
+                    // Ready to build
+                    mBlueprint->tilesReadyToBuild.emplace_back(mTileIndex);
+                }
+
                 auto&& it = mBlueprint->tilesNeedingItems.find(stack.id);
                 assert(it != mBlueprint->tilesNeedingItems.end());
                 // Remove tracking
                 for (size_t j = 0; j < it->second.size(); ++j) {
-                    BlueprintTileHandle& handle = it->second[j];
-                    if (handle.mTileIndex == mTileHandle.mTileIndex) {
+                    TileIndex& tileIndex = it->second[j];
+                    if (tileIndex == mTileIndex) {
                         it->second[j] = it->second.back();
                         it->second.pop_back();
                         if (it->second.empty()) {
@@ -117,4 +183,21 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
             return;
         }
     }
+}
+
+BuildTileBlueprintHandle::~BuildTileBlueprintHandle() {
+    if (mBlueprint) {
+        mBlueprint->endTileToBuild(*this);
+    }
+}
+
+bool BuildTileBlueprintHandle::tick(f32 buildProgressIncrease) {
+    assert(mBlueprint);
+    BlueprintTileBuildData& buildData = mBlueprint->tileBuildData[mTileIndex];
+    buildData.mProgress += buildProgressIncrease;
+    if (buildData.mProgress >= 1.0f) {
+        mBlueprint->endTileToBuild(*this);
+        return true;
+    }
+    return false;
 }

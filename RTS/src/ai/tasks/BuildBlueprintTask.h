@@ -34,6 +34,7 @@ protected:
     TileIndex mTargetTileIndex;
     TaskState mState = TaskState::SELECT_TILE_TO_FILL;
     PlaceTileBlueprintItemsHandlePtr mPlaceTilesTarget;
+    BuildTileBlueprintHandlePtr mBuildTilesTarget;
     int mErrorCount = 0;
 };
 

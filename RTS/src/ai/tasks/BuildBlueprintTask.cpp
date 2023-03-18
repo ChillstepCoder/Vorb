@@ -213,6 +213,7 @@ BuildBlueprintTask::~BuildBlueprintTask() {
 }
 
 TaskTickResult BuildBlueprintTask::tick(entt::registry& registry, entt::entity agent) {
+    constexpr f32 BUILD_PER_TICK = 1.0f / 100.0f;
     switch (mState) {
         case TaskState::SELECT_TILE_TO_FILL:
             if (!selectTileToFill(registry, agent)) {
@@ -230,8 +231,14 @@ TaskTickResult BuildBlueprintTask::tick(entt::registry& registry, entt::entity a
         case TaskState::PLACE_ITEMS:
             placeItemsOnTile(registry, agent);
             break;
-        case TaskState::BUILD_TILE:
+        case TaskState::BUILD_TILE: {
+            assert(mBuildTilesTarget);
+            if (mBuildTilesTarget->tick(BUILD_PER_TICK)) {
+                mBuildTilesTarget.reset();
+                mState = TaskState::SELECT_TILE_TO_BUILD;
+            }
             break;
+        }
         case TaskState::FAIL:
             return TaskTickResult::FAIL;
         default:
@@ -260,7 +267,7 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
 
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileHandle.mTileIndex);
+    const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileIndex);
     cmp.requestCoarsePath(physCmp.getPosition(), targetWorldPos, [this](bool success) {
         if (success) {
             mState = TaskState::PLACE_ITEMS;
@@ -285,14 +292,37 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
 }
 
 bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entity agent) {
+
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    const f32v3 position = physCmp.getPosition();
+    mBuildTilesTarget = mBlueprint.reserveTileToBuild(agent, position);
+    if (!mBuildTilesTarget) {
+        return false;
+    }
+
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileHandle.mTileIndex);
-    cmp.requestCoarsePath(physCmp.getPosition(), targetWorldPos, [this](bool success) {
+    const f32v3 targetWorldPos = mBuildTilesTarget->mBlueprint->getTileWorldPos(mBuildTilesTarget->mTileIndex);
+    cmp.requestCoarsePath(position, targetWorldPos, [this](bool success) {
         if (success) {
-            mState = TaskState::PLACE_ITEMS;
+            mState = TaskState::BUILD_TILE;
+        }
+        else {
+            // Path failed, lets try again
+            ++mErrorCount;
+            if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
+                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT FAILURE");
+                mState = TaskState::FAIL;
+            }
+            else {
+                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT RETRY");
+                mState = TaskState::SELECT_TILE_TO_BUILD;
+                mPlaceTilesTarget.reset();
+            }
         }
     });
+    mState = TaskState::PATH_TO_TILE;
+
+    return true;
 }
 
 void BuildBlueprintTask::placeItemsOnTile(entt::registry& registry, entt::entity agent) {
@@ -312,6 +342,7 @@ void BuildBlueprintTask::placeItemsOnTile(entt::registry& registry, entt::entity
     assert(selectedStackIndex != UINT32_MAX);
     ItemStack& sourceStack = workingStorage[selectedStackIndex];
     mPlaceTilesTarget->fulfillFromItemStack(sourceStack);
+    mPlaceTilesTarget.reset();
     if (sourceStack.quantity == 0) {
         workingStorage[selectedStackIndex] = workingStorage.back();
         workingStorage.pop_back();
