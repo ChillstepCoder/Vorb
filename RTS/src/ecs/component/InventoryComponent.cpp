@@ -47,7 +47,7 @@ ItemStack InventoryComponent::removeItemStackFromPersonalStorage(ItemStack itemS
     return ItemStack();
 }
 
-bool InventoryComponent::addItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID) {
+bool InventoryComponent::addItemStackToWorkingStorage(ItemStack itemStack, WorkStorageID workingStorageID) {
 
     auto&& workingStorage = mWorkingStorage[workingStorageID];
     for (size_t i = 0; i < workingStorage.size(); ++i) {
@@ -61,11 +61,11 @@ bool InventoryComponent::addItemStackToWorkingStorage(ItemStack itemStack, int w
     return true;
 }
 
-std::vector<ItemStack>& InventoryComponent::getMutableWorkingStorage(int workingStorageID) {
+std::vector<ItemStack>& InventoryComponent::getMutableWorkingStorage(WorkStorageID workingStorageID) {
     return mWorkingStorage[workingStorageID];
 }
 
-void InventoryComponent::eraseWorkingStorage(int workingStorageID) {
+void InventoryComponent::eraseWorkingStorage(WorkStorageID workingStorageID) {
     // TODO: Memory pool
     mWorkingStorage.erase(workingStorageID);
 }

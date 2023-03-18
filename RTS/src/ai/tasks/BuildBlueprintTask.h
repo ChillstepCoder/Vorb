@@ -1,8 +1,7 @@
 #pragma once
 
 #include "IAgentTask.h"
-
-struct BuildingBlueprint;
+#include "city/BuildingBlueprint.h"
 
 struct BuildBlueprintTask : public IAgentTask {
 public:
@@ -18,17 +17,24 @@ public:
     const char* getTaskName() const override { return "BuildTilesFromPromise"; }
 
 protected:
+    bool selectTileToFill(entt::registry& registry, entt::entity agent);
     bool selectTileToBuild(entt::registry& registry, entt::entity agent);
+    void placeItemsOnTile(entt::registry& registry, entt::entity agent);
 
     enum class TaskState : ui8 {
-        SELECT_TILE,
+        SELECT_TILE_TO_FILL,
+        SELECT_TILE_TO_BUILD,
         PATH_TO_TILE,
-        BUILD_TILE
+        PLACE_ITEMS,
+        BUILD_TILE,
+        FAIL
     };
 
     BuildingBlueprint& mBlueprint;
     TileIndex mTargetTileIndex;
-    TaskState mTaskState = TaskState::SELECT_TILE;
+    TaskState mState = TaskState::SELECT_TILE_TO_FILL;
+    PlaceTileBlueprintItemsHandlePtr mPlaceTilesTarget;
+    int mErrorCount = 0;
 };
 
 typedef std::unique_ptr<BuildBlueprintTask> BuildBlueprintTaskPtr;

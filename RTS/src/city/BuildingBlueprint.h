@@ -41,19 +41,26 @@ struct BlueprintTileHandle {
     ui32 mItemDataCount;
 };
 
-struct PlaceTileBlueprintItemsHandle {
+class PlaceTileBlueprintItemsHandle {
+public:
     PlaceTileBlueprintItemsHandle() = default;
     ~PlaceTileBlueprintItemsHandle() {
-        if (mItemCount) {
-            mBlueprint->cancelReserveTileToPlaceItems(*this);
+        if (mBlueprint) {
+            --mBlueprint->refCount;
+            if (mPromisedItemCount) {
+                mBlueprint->cancelReserveTileToPlaceItems(*this);
+            }
         }
+        
     }
+
+    bool isValid() const { return mBlueprint != nullptr; }
+    void fulfillFromItemStack(ItemStack& stack);
+
+    BuildingBlueprint* mBlueprint = nullptr;
     BlueprintTileHandle mTileHandle;
     ItemID mItemId;
-    ui16 mItemCount = 0;
-    BuildingBlueprint* mBlueprint = nullptr;
-
-    bool isValid() const { return mTileHandle.mTileIndex != INVALID_TILE_INDEX; }
+    ui16 mPromisedItemCount = 0;
 };
 typedef std::unique_ptr<PlaceTileBlueprintItemsHandle> PlaceTileBlueprintItemsHandlePtr;
 
@@ -76,7 +83,9 @@ struct BuildingBlueprint {
 
     // For construction
     std::map<ItemID, std::vector<BlueprintTileHandle>> tilesNeedingItems;
+    xxx; // BUILD PROGRESS???
     std::vector<BlueprintTileHandle> tilesReadyToBuild;
+    std::vector<BlueprintTileHandle> tilesReservedForBuild;
     std::vector<BlueprintTileItemData> tileItemData;
     std::vector<ItemStackUnbounded> requiredItemsToBuild;
     // End construction
@@ -107,4 +116,5 @@ struct BuildingBlueprint {
     BitFlags<BuildingBlueprintFlags> flags;
     f32 zPos = 0.0f;
     ui32 floorHeight = 3;
+    ui32 refCount = 0;
 };

@@ -2,22 +2,22 @@
 
 #include "item/ItemStack.h"
 
-enum class WorkStorageID {
+enum class WorkStorageID : ui8 {
     HAULING,
 };
 
 enum class GearSlotType {
-    BUNDLE,
-    MAIN_HAND,
-    OFF_HAND,
-    INNER_CHEST,
-    OUTER_CHEST,
-    INNER_LEGS,
-    OUTER_LEGS,
+    BUNDLE, // Transient gear that overwrites hand slot?
+    RIGHT_HAND,
+    LEFT_HAND,
     FEET,
+    LEGS,
+    CHEST,
+    BACK,
     HEAD,
     FACE,
-    FINGER,
+    RIGHT_FINGER,
+    LEFT_FINGER,
     NECK,
     COUNT,
 };
@@ -36,15 +36,18 @@ public:
 
     bool addOrDropItemStackToPersonalStorage(ItemStack itemStack);
     ItemStack removeItemStackFromPersonalStorage(ItemStack itemStack);
-    bool addItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID);
-    std::vector<ItemStack>& getMutableWorkingStorage(int workingStorageID);
-    void eraseWorkingStorage(int workingStorageID);
+    bool addItemStackToWorkingStorage(ItemStack itemStack, WorkStorageID workingStorageID);
+    std::vector<ItemStack>& getMutableWorkingStorage(WorkStorageID workingStorageID);
+    void eraseWorkingStorage(WorkStorageID workingStorageID);
 
 private:
     ItemID mGear[GEAR_SLOT_COUNT];
     // TODO: More memory efficient data structures?
     std::vector<ItemStack> mPersonalStorage; // Pockets, backpack, ect
-    std::map<int, std::vector<ItemStack>> mWorkingStorage; // Maps inventory to work tasks and such
+    // TODO: Flatmap?
+    std::map<WorkStorageID, std::vector<ItemStack>> mWorkingStorage; // Maps inventory to work tasks and such
     f32 mMaxCarryWeight = 0.0f;
     f32 mTotalCarryWeight = 0.0f;
 };
+// 88 bytes, a bit large
+//SIZER(InventoryComponent)
