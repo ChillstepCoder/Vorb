@@ -31,15 +31,31 @@ enum class BuildingBlueprintFlags : ui8 {
 
 struct BlueprintTileItemData {
     ItemID mItemId;
-    ui16 mRequiredQuanity;
+    ui16 mMissingQuantity;
     ui16 mCurrentQuantity = 0;
     ui16 mPromisedQuantity = 0;
 };
 struct BlueprintTileHandle {
-    TileIndex mTileIndex;
+    TileIndex mTileIndex = INVALID_TILE_INDEX;
     ui32 mItemDataOffset;
     ui32 mItemDataCount;
 };
+
+struct PlaceTileBlueprintItemsHandle {
+    PlaceTileBlueprintItemsHandle() = default;
+    ~PlaceTileBlueprintItemsHandle() {
+        if (mItemCount) {
+            mBlueprint->cancelReserveTileToPlaceItems(*this);
+        }
+    }
+    BlueprintTileHandle mTileHandle;
+    ItemID mItemId;
+    ui16 mItemCount = 0;
+    BuildingBlueprint* mBlueprint = nullptr;
+
+    bool isValid() const { return mTileHandle.mTileIndex != INVALID_TILE_INDEX; }
+};
+typedef std::unique_ptr<PlaceTileBlueprintItemsHandle> PlaceTileBlueprintItemsHandlePtr;
 
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
@@ -55,9 +71,8 @@ struct BuildingBlueprint {
         return f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
     }
 
-    TileIndex reserveTileToPlaceItems(ItemID item, ui16 maxItemCount) {
-        //xxx;
-    }
+    PlaceTileBlueprintItemsHandlePtr reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount);
+    void cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHandle& handle);
 
     // For construction
     std::map<ItemID, std::vector<BlueprintTileHandle>> tilesNeedingItems;

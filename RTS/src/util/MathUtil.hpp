@@ -8,11 +8,13 @@ constexpr f32 MATH_EPSILON = 0.00001f;
 
 #include "LinearMath/btVector3.h"
 
-inline f32 fastFloorf(f32 x) {
-    return FastConversion<f32, f32>::floor(x);
+inline int intFloor(double x) {
+    int i = (int)x;
+    return i - (i > x);
 }
-inline f32 fastCeilf(f32 x) {
-    return FastConversion<f32, f32>::ceiling(x);
+inline int intFloor(float x) {
+    int i = (int)x;
+    return i - (i > x);
 }
 
 namespace {
