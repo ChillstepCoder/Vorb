@@ -9,9 +9,6 @@
 #include "resources/ModelRepository.h"
 #include "physics/CollisionShapeRepository.h"
 
-std::unordered_map<StrToken, TileID> TileRepository::sTileIdMapping;
-std::vector<TileData> TileRepository::sTileData;
-
 KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("mat", keg::Value::basic(offsetof(TileFileData, materialName), keg::BasicType::STRING));
     kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
@@ -59,11 +56,14 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         }
 
         // Recipes
-        tileData.recipe.resize(fileData.recipe.size());
-        for (size_t i = 0; i < tileData.recipe.size(); ++i) {
-            tileData.recipe[i].quantity = fileData.recipe[i].count;
-            tileData.recipe[i].id = itemRepository.getItem(fileData.recipe[i].itemName).getID();
+        Recipe recipe;
+        recipe.mItemCount = fileData.recipe.size();
+        recipe.mItems = std::unique_ptr<ItemStack[]>(new ItemStack[recipe.mItemCount]);
+        for (ui32 i = 0; i < recipe.mItemCount; ++i) {
+            recipe.mItems[i].quantity = fileData.recipe[i].count;
+            recipe.mItems[i].id = itemRepository.getItem(fileData.recipe[i].itemName).getID();
         }
+        sTileRecipes.emplace_back(std::move(recipe));
 
         TileID nextId = (TileID)sTileData.size();
         tileData.id = nextId;

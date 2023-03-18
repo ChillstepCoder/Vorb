@@ -33,6 +33,7 @@ struct BusinessComponent {
 
     // CALLER_DELETE IAgentTaskPtr aquireTask();
     void addIdleWorker(entt::entity worker);
+    void onWorkerFailTask(entt::entity worker, IAgentTask* task);
 
     // TODO: Trade empires? Multi city?
     City* mCity = nullptr;

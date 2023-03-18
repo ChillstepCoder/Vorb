@@ -3,6 +3,7 @@
 #include "TileConst.h"
 #include "tile/TileFlags.h"
 #include "item/ItemStack.h"
+#include "item/Recipe.h"
 #include "physics/CollisionShapes.h"
 #include "tile/HarvestableSubChunkRegistry.h"
 
@@ -66,6 +67,7 @@ enum class NavBlockerType {
     COUNT
 };
 
+
 // TODO: separate certain data into multiple arrays because right now every TileData lookup is a cache miss
 // For example we only look up path weight when constructing the nav  graph, why not  have it in a separate vector?
 struct TileData {
@@ -94,7 +96,6 @@ struct TileData {
     };
     std::string name;
     std::vector<ItemDrop> itemDrops;
-    std::vector<ItemStack> recipe;
 };
 
 struct TileOrientation {

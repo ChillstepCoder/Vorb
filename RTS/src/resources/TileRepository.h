@@ -46,10 +46,12 @@ public:
     }
 
     static const std::vector<TileData>& getAllTileData() { return sTileData;  }
+    static const Recipe& getRecipeForTile(TileID tileId) { return sTileRecipes[tileId]; }
 
     static bool loadTileFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository);
 
 private:
-    static std::unordered_map<StrToken, TileID> sTileIdMapping;
-    static std::vector<TileData> sTileData;
+    inline static std::unordered_map<StrToken, TileID> sTileIdMapping;
+    inline static std::vector<TileData> sTileData;
+    inline static std::vector<Recipe> sTileRecipes;
 };

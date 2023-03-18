@@ -53,6 +53,14 @@ void TileRef::release()
     }
 }
 
+i32v2 TileRef::getWorldPos2D() const {
+    return container->getWorldPos2D() + i32v2(container->getTileXYOffset(index));
+}
+
+i32v3 TileRef::getWorldPos3D() const {
+    return container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(index));
+}
+
 TileHandle::TileHandle(const TileContainer* container, TileIndex tileIndex) :
     container(container),
     tileIndex(tileIndex) {

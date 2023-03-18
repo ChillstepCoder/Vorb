@@ -62,57 +62,54 @@ void ItemReservation::operator delete(void* pointer, size_t size) {
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
-
-ItemPromise::ItemPromise(ItemID itemId, ui16 minItemCount, ui16 maxItemCount, ui16 minShipmentSize, std::function<void(ItemPromise*, ui16)>&& onFinish)
-    : mItemId(itemId)
-    , mMinItemCount(minItemCount)
-    , mMaxItemCount(maxItemCount)
-    , mMinShipmentSize(minShipmentSize)
-    , mOnFinish(std::move(onFinish)) {
-    if (mMaxItemCount < mMinItemCount) {
-        mMaxItemCount = mMinItemCount;
-    }
-}
-
-void ItemPromise::promiseShipment(ui16 maxShipmentQuantity) {
-    assert(mItemsReady > 0);
-    mPendingShipmentQuantity += maxShipmentQuantity;
-    assert(mPendingShipmentQuantity);
-}
-
-void ItemPromise::cancelShipment(ui16 maxShipmentQuantity) {
-    assert(mPendingShipmentQuantity >= maxShipmentQuantity);
-    mPendingShipmentQuantity -= maxShipmentQuantity;
-}
-
-ui16 ItemPromise::beginShipment(ui16 maxShipmentQuantity) {
-    assert(maxShipmentQuantity <= mPendingShipmentQuantity);
-    assert(mItemsReady > 0);
-    assert(mItemsReady <= mMaxItemCount);
-    // TODO: Need to have variable shipment size based on what we have, not just max
-    assert(false);
-    mShippingQuantity += maxShipmentQuantity;
-    return maxShipmentQuantity;
-}
-
-void ItemPromise::fulfillQuantity(ui16 quantity) {
-    assert(quantity <= mItemsReady);
-    mItemsReady -= quantity;
-    if (quantity >= mMinItemCount) {
-        mMinItemCount = 0;
-    }
-    else {
-        mMinItemCount -= quantity;
-    }
-    mMinItemCount -= quantity;
-    assert(quantity >= mMaxItemCount);
-    mMaxItemCount -= quantity;
-
-    mTotalFulfilled += quantity;
-
-    // We are finished
-    if (mMinItemCount == 0) {
-        assert(mTotalFulfilled >= mMinItemCount);
-        mOnFinish(this, mTotalFulfilled);
-    }
-}
+//
+//ItemPromise::ItemPromise(ItemID itemId, ui16 minItemCount, ui16 maxItemCount, ui16 minShipmentSize, std::function<void(ItemPromise*, ui16)>&& onFinish)
+//    : mItemId(itemId)
+//    , mMinItemCount(minItemCount)
+//    , mMaxItemCount(maxItemCount)
+//    , mMinShipmentSize(minShipmentSize)
+//    , mOnFinish(std::move(onFinish)) {
+//    if (mMaxItemCount < mMinItemCount) {
+//        mMaxItemCount = mMinItemCount;
+//    }
+//}
+//
+//ShipmentContractPtr ItemPromise::promiseShipment(ui16 quantity) {
+//    assert(mItemsReady > 0);
+//    mPendingShipmentQuantity += quantity;
+//    assert(mPendingShipmentQuantity);
+//}
+//
+//void ItemPromise::cancelShipment(ShipmentContractPtr&& contract) {
+//    assert(mPendingShipmentQuantity >= contract->quantity);
+//    mPendingShipmentQuantity -= contract->quantity;
+//}
+//
+//ui16 ItemPromise::beginShipment(ui16 maxShipmentQuantity) {
+//    assert(maxShipmentQuantity <= mPendingShipmentQuantity);
+//    assert(mItemsReady > 0);
+//    mShippingQuantity += maxShipmentQuantity;
+//    return maxShipmentQuantity;
+//}
+//
+//void ItemPromise::fulfillQuantity(ui16 quantity) {
+//    assert(quantity <= mItemsReady);
+//    mItemsReady -= quantity;
+//    if (quantity >= mMinItemCount) {
+//        mMinItemCount = 0;
+//    }
+//    else {
+//        mMinItemCount -= quantity;
+//    }
+//    mMinItemCount -= quantity;
+//    assert(quantity >= mMaxItemCount);
+//    mMaxItemCount -= quantity;
+//
+//    mTotalFulfilled += quantity;
+//
+//    // We are finished
+//    if (mMinItemCount == 0) {
+//        assert(mTotalFulfilled >= mMinItemCount);
+//        mOnFinish(this, mTotalFulfilled);
+//    }
+//}

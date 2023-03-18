@@ -37,6 +37,7 @@ struct DebugOptions {
     float mWallWoobleChance;
     float mWallWoobleIntensity;
     bool mStructureDebug;
+    bool mBlueprintDebug;
     // Terrain
     f32 mTerrainLodDistanceOffset; // 1500 for ultra
     bool mDebugTerrainLod;

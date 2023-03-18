@@ -3,6 +3,7 @@
 
 #include "pathfinding/NavThread.h"
 #include "resources/ResourceManager.h"
+#include "city/contracts/ContractManager.h"
 
 static bool sIsInit = false;
 bool Services::sUsingNav = false;
@@ -16,10 +17,11 @@ void Services::initHost()
     assert(!sIsInit);
     sIsInit = true;
 
-    std::cout << "Initializing services:\n";
+    LOG_INFO("Initializing host services:");
 
     sUsingNav = true;
     initThreads();
+    ContractManager::set();
 }
 
 void Services::initCli()
@@ -27,7 +29,7 @@ void Services::initCli()
     assert(!sIsInit);
     sIsInit = true;
 
-    std::cout << "Initializing services:\n";
+    LOG_INFO("Initializing client services:");
 
     sUsingNav = false;
     initThreads();
@@ -41,6 +43,7 @@ void Services::destroy()
 
         Threadpool::reset();
         NavThread::reset();
+        ContractManager::reset();
     }
 }
 
@@ -60,7 +63,7 @@ void Services::initThreads()
 {
     // - 2 threads for main thread + nav thread
     const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 2, 1);
-    std::cout << "  Initializing threadpool with " << threadCount << " threads.\n";
+    LOG_INFO("  Initializing threadpool with {} threads. ", threadCount);
     Threadpool::set(threadCount);
     if (sUsingNav) {
         NavThread::set();

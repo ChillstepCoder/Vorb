@@ -9,7 +9,7 @@ struct BuildingBlueprint;
 struct BusinessComponent;
 struct OwnershipComponent;
 class ItemReservation;
-class BuildTask;
+class BuildBlueprintTask;
 
 struct TilesToConstruct {
 	bool isReserved = false;
@@ -33,21 +33,20 @@ struct JobRequiredItems {
     ItemID id = INVALID_ITEM_ID;
     ui32 quantityRequired = 0;
     ui32 quantityReserved = 0;
-    std::set<std::shared_ptr<ItemPromise>> mReservations; // TODO: Split out for faster iteration
     //std::vector<std::unique_ptr<ItemReservation>> mReservations;
 };
 
 class ConstructBuildingJob : public IBusinessJob
 {
 public:
-	ConstructBuildingJob(BuildingBlueprint& blueprint);
+	ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity);
 	~ConstructBuildingJob();
 
 	bool tick(entt::registry& registry, entt::entity business) override;
 
 	float getProgress() const override;
 
-	IAgentTaskPtr tryMakeTaskForWorker(entt::entity worker) override;
+	IAgentTaskPtr tryMakeTaskForWorker(entt::registry& registry, entt::entity worker) override;
 
 private:
 	void tryReserveItems(JobRequiredItems& item, OwnershipComponent& ownerCmp);

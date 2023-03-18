@@ -217,11 +217,12 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
 	motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
 	navCmp.mFinePath = nullptr;
     navCmp.mCoarsePath = nullptr;
-	if (success) {
-		navCmp.mFlags.setBit(NavigationComponentFlags::NAVIGATION_COMPONENT_FLAG_SUCCESS);
+    if (success) {
+		assert(navCmp.mTargetHandle.isValid());
+		navCmp.mStatus = NavigationStatus::SUCCESS;
 	}
     else {
-        navCmp.mFlags.setBit(NavigationComponentFlags::NAVIGATION_COMPONENT_FLAG_FAILED);
+		navCmp.mStatus = NavigationStatus::FAIL;
 	}
 	if (navCmp.mFinishedCallback) {
 		navCmp.mFinishedCallback(success);
@@ -384,7 +385,7 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
     mNavigationType = NavigationType::SIMPLE_LINEAR;
 	mSimpleTargetPoint = targetPoint;
     mFinishedCallback = finishedCallback;
-	mFlags.clearBits();
+	mStatus = NavigationStatus::IN_PROGRESS;
 
     mCoarsePath.reset();
 	mFinePath.reset();
@@ -401,7 +402,7 @@ void NavigationComponent::requestFinePath(const f32v3& start, const f32v3& goal,
     mFinePath = std::shared_ptr<NavPath>(new NavPath());
 	assert(Services::isUsingNav());
     mCurrentFinePoint = 0;
-    mFlags.clearBits();
+	mStatus = NavigationStatus::IN_PROGRESS;
     Services::NavThread::ref().addPathfindTask(mFinePath, start, goal, false /*isCoarse*/, nullptr);
     mFinishedCallback = std::move(finishedCallback);
 }
@@ -412,7 +413,7 @@ void NavigationComponent::requestCoarsePath(const f32v3& start, const f32v3& goa
     mTargetHandle.reset();
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
     assert(Services::isUsingNav());
-	mFlags.clearBits();
+	mStatus = NavigationStatus::IN_PROGRESS;
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, nullptr);
@@ -425,7 +426,7 @@ void NavigationComponent::requestCoarsePathToHarvestable(const f32v3& start, Til
 	mTargetHandle.reset();
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
     assert(Services::isUsingNav());
-	mFlags.clearBits();
+	mStatus = NavigationStatus::IN_PROGRESS;
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     Services::NavThread::ref().addPathfindToHarvestableTask(mCoarsePath, start, harvestable, maxDistance, nullptr);
@@ -434,7 +435,7 @@ void NavigationComponent::requestCoarsePathToHarvestable(const f32v3& start, Til
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
-	mFlags.clearBits();
+	mStatus = NavigationStatus::IN_PROGRESS;
 	mTargetHandle.reset();
 	mFinePath.reset();
 	if (mFinishedCallback) {

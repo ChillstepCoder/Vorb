@@ -7,11 +7,11 @@ public:
     void init(f64 fixedTimeStepSec);
 
     bool tryTick(f64* sleepSec);
-    f64 getCurrentTimeSec() const { return mTimeSec; }
+    TimeStampSec getCurrentTimeSec() const { return mTimeSec; }
     f64 getTimestep() const { return mTimeStepSec; }
 
 private:
     f64 mTimeStepSec = 0.0; // Target timestep
-    f64 mTimeSec = 0.0; // Current tracked time
+    TimeStampSec mTimeSec = 0.0; // Current tracked time
 };
 

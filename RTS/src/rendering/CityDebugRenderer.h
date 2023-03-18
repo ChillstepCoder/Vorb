@@ -19,7 +19,7 @@ public:
     void finishRenderFrame();
     void clearMeshes();
 
-    static void renderBlueprintDebug(BuildingBlueprint& bp, color4* inputColor = nullptr);
+    static void renderBlueprintDebug(BuildingBlueprint& bp, int lifetime, color4* inputColor = nullptr);
 
     bool mNeedsMeshes = true;
 };

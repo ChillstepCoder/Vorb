@@ -493,9 +493,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         glDisable(GL_STENCIL_TEST);
     }
 
-    if (sDebugOptions.mShowBusinessDebug) {
-        mEcsRenderer->renderBusinessDebug(camera);
-    }
     // Clouds
    /* if (!sDebugOptions.mDisableClouds) {
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
@@ -742,6 +739,8 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
         sWorld->getStructureManager().debugRender();
     }
 
+    mEcsRenderer->renderBusinessDebug(camera);
+   
 
     if (sDebugOptions.mChunkBoundaries) {
         for (const auto& chunkDebugState : renderState.getDebugChunks()) {

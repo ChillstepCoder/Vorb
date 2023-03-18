@@ -28,9 +28,72 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(0.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA),
 };
 
-void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, color4* inputColor/* = nullptr*/) {
+void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, int lifetime, color4* inputColor/* = nullptr*/) {
+    PROFILE_FUNCTION();
+    const f32v3 bpRootPos(bp.aabb.x, bp.aabb.y, bp.zPos);
+    constexpr f32 ALPHA = 0.5f;
+    DebugRenderer::drawWireQuad(bpRootPos, f32v2(bp.aabb.dims.x, bp.aabb.dims.y), color4(1.0f, 0.0f, 0.0f, 1.0f), lifetime);
 
+    // TODO: THIS IS NOT THREAD SAFE
+    { // Tiles needing items
+        std::set<TileIndex> tileNeedingItems;
+        for (auto&& it : bp.tilesNeedingItems) {
+            for (BlueprintTileHandle& it2 : it.second) {
+                tileNeedingItems.insert(it2.mTileIndex);
+            }
+        }
 
+        DebugRenderer::reserveFilledQuads(tileNeedingItems.size(), lifetime);
+        for (TileIndex i : tileNeedingItems) {
+            const f32v3 worldPos = bp.getTileWorldPos(i);
+            // Tiles
+            switch (bp.tiles[i].type) {
+                case BlueprintTileType::FLOOR:
+                    DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COLOR_GRAY_ALPHA(ALPHA), lifetime);
+                    break;
+                case BlueprintTileType::DOOR:
+                    DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COLOR_RED_ALPHA(ALPHA), lifetime);
+                    break;
+                case BlueprintTileType::WALL:
+                    DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COLOR_WHITE_ALPHA(ALPHA), lifetime);
+                    break;
+                case BlueprintTileType::STAIRS:
+                    DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COLOR_CYAN_ALPHA(ALPHA), lifetime);
+                    break;
+                case BlueprintTileType::STAIRS_FLAT:
+                    DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COLOR_BLUE_ALPHA(ALPHA), lifetime);
+                    break;
+                case BlueprintTileType::NONE:
+                case BlueprintTileType::AIR:
+                case BlueprintTileType::TYPES:
+                    break;
+                default:
+                    break;
+
+            }
+            // Walls
+            const TileWalls& walls = bp.walls[i];
+            if (walls.south.wallID != TILE_ID_NONE) {
+                DebugRenderer::drawLine(worldPos, f32v3(1.0f, 0.0f, 0.0f), COLOR_WHITE_ALPHA(ALPHA), lifetime);
+            }
+            if (walls.west.wallID != TILE_ID_NONE) {
+                DebugRenderer::drawLine(worldPos, f32v3(0.0f, 1.0f, 0.0f), COLOR_WHITE_ALPHA(ALPHA), lifetime);
+            }
+            if (walls.east.wallID != TILE_ID_NONE) {
+                DebugRenderer::drawLine(worldPos + f32v3(1.0f, 0.0f, 0.0f), f32v3(0.0f, 1.0f, 0.0f), COLOR_WHITE_ALPHA(ALPHA), lifetime);
+            }
+            if (walls.north.wallID != TILE_ID_NONE) {
+                DebugRenderer::drawLine(worldPos + f32v3(0.0f, 1.0f, 0.0f), f32v3(1.0f, 0.0f, 0.0f), COLOR_WHITE_ALPHA(ALPHA), lifetime);
+            }
+        }
+    }
+
+    if (bp.tilesReadyToBuild.size()) { // Tiles ready to build
+        DebugRenderer::reserveFilledQuads(bp.tilesReadyToBuild.size(), lifetime);
+        for (BlueprintTileHandle handle : bp.tilesReadyToBuild) {
+            DebugRenderer::drawFilledQuad(bp.getTileWorldPos(handle.mTileIndex), f32v2(1.0f), COLOR_GREEN_ALPHA(ALPHA), lifetime);
+        }
+    }
 }
 
 void CityDebugRenderer::renderCityPlannerDebug(const CityPlanner& cityPlanner) const {
@@ -52,9 +115,9 @@ void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) c
         return;
     }
 
-    for (auto&& bp : cityBuilder.mBlueprintsToBuild) {
-        renderBlueprintDebug(*bp);
-    }
+    /*  for (auto&& bp : cityBuilder.mBlueprintsToBuild) {
+          renderBlueprintDebug(*bp, 0);
+      }*/
 }
 
 void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) const {

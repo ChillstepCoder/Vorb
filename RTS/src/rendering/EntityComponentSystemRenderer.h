@@ -22,5 +22,9 @@ private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;
     vg::Texture mCircleTexture;
     vg::Texture mSquareTexture;
+
+    mutable int mFrameCount = 0;
+    const int mFramesPerDebugDraw = 12;
+
 };
 

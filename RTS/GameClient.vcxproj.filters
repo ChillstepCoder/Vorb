@@ -225,7 +225,7 @@
     <ClCompile Include="src\item\ItemStockpileRegistry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ai\tasks\BuildTask.cpp">
+    <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\city\BuildingDescriptionRepository.cpp">
@@ -678,10 +678,16 @@
     <ClCompile Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ai\tasks\ShipItemsForPromiseTask.cpp">
+    <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\tile\TileContainerHarvestableRegistry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\city\contracts\ContractManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\city\contracts\IContract.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -965,7 +971,7 @@
     <ClInclude Include="src\item\ItemStockpileRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ai\tasks\BuildTask.h">
+    <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\BuildingBlueprint.h">
@@ -1592,13 +1598,28 @@
     <ClInclude Include="src\util\ThreadSafeDirtyList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ai\tasks\ShipItemsForPromiseTask.h">
+    <ClInclude Include="src\ai\tasks\PathToTargetTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileContainerHarvestableRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\city\contracts\ContractManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\city\contracts\IContract.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\ContractHolderComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\city\contracts\ItemShipmentContract.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\item\Recipe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

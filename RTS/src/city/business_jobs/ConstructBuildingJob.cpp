@@ -5,12 +5,14 @@
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 
-#include "item/ItemReservation.h"
+#include "city/contracts/ContractManager.h"
+
+//#include "item/ItemReservation.h"
 #include "item/ItemStockpile.h"
 
-#include "ai/tasks/BuildTask.h"
+#include "ai/tasks/BuildBlueprintTask.h"
 #include "ai/tasks/GatherTask.h"
-#include "ai/tasks/ShipItemsForPromiseTask.h"
+#include "ai/tasks/PathToTargetTask.h"
 
 // Look for items every 8 ticks
 constexpr ui32 TICK_RATE_RESERVE_ITEMS = 8;
@@ -25,7 +27,7 @@ JobRequiredItems::~JobRequiredItems() {
 }
 
 
-ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint) : mBlueprint(blueprint) {
+ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity) : mBlueprint(blueprint), IBusinessJob(businessEntity) {
     assert(!mBlueprint.isGenerating);
     const std::vector<BlueprintTile>& tiles = mBlueprint.tiles;
     // Track required items internally
@@ -45,6 +47,7 @@ ConstructBuildingJob::~ConstructBuildingJob() {
 }
 
 bool ConstructBuildingJob::tick(entt::registry& registry, entt::entity business) {
+    assert(mBusinessEntity == business);
 
     if (isDone()) {
         return true;
@@ -71,41 +74,35 @@ float ConstructBuildingJob::getProgress() const {
     return (f32)mBlueprint.tilesBuilt / (f32)mBlueprint.totalTilesToBuild;
 }
 
-IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
+IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::registry& registry, entt::entity worker) {
 
     for (auto&& item : mRequiredItems) {
         // Gather
         if (item.quantityReserved < item.quantityRequired) {
             ui32 remainingQuantity = item.quantityRequired - item.quantityReserved;
             // TODO: check worker inventory space
-            ui16 minQuantity = (ui16)std::min(16u, remainingQuantity);
-            ui16 maxQuantity = minQuantity + 16;
+            const ui16 quantity = (ui16)std::min(16u, remainingQuantity);
 
             // Mark as reserved
-            item.quantityRequired += minQuantity;
+            item.quantityReserved += quantity;
 
-            ItemPromisePtr itemPromise = std::make_shared<ItemPromise>(item.id, minQuantity, maxQuantity, minQuantity,
-                [this](ItemPromise* itemPromise, ui16 fulfilledQuantity) {
-                LOG_CRITICAL("WEEEE DID IT {}", fulfilledQuantity);
-                assert(false);
-            });
+            ItemShipmentContract* contract = Services::ContractManager::ref().createItemShipmentContract(registry, worker, mBusinessEntity, item.id, quantity);
 
             // Gather
-            GatherItemsForPromiseTaskPtr gatherTask = std::make_unique<GatherItemsForPromiseTask>(itemPromise);
+            HarvestItemsTaskPtr gatherTask = std::make_unique<HarvestItemsTask>(item.id, quantity, nullptr);
 
             // Ship
             constexpr f32 SHIPMENT_COMPLETE_RADIUS = 16.0f;
             TileHandle targetHandle = mBlueprint.getTileHandle(0); // TODO: BETTER
-            ShipItemsForPromiseTaskPtr shipTask = std::make_unique<ShipItemsForPromiseTask>(itemPromise, mBlueprint.getTileHandle(0), SHIPMENT_COMPLETE_RADIUS);
+            PathToTargetTaskPtr shipTask = std::make_unique<PathToTargetTask>(mBlueprint.getTileHandle(0), SHIPMENT_COMPLETE_RADIUS, nullptr);
             
             // Build
-            BuildTilesFromPromiseTaskPtr buildTask = std::make_unique<BuildTilesFromPromiseTask>(itemPromise, mBlueprint);
+            BuildBlueprintTaskPtr buildTask = std::make_unique<BuildBlueprintTask>(mBlueprint, nullptr);
 
             // Link
             shipTask->setNextTask(std::move(buildTask));
             gatherTask->setNextTask(std::move(shipTask));
 
-            item.mReservations.insert(std::move(itemPromise));
             return std::move(gatherTask);
         }
     }

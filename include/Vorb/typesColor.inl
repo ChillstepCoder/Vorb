@@ -223,11 +223,20 @@ typedef ColorRGBA8 color4; ///< Shortened name for ColorRGBA8
 
 // TODO: Constexpr?
 const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
+#define COLOR_WHITE_ALPHA(a) color4(1.0f, 1.0f, 1.0f, a)
 const color4 COLOR_RED = color4((ui8)255u, (ui8)0u, (ui8)0u, (ui8)255u);
+#define COLOR_RED_ALPHA(a) color4(1.0f, 0.0f, 0.0f, a)
 const color4 COLOR_GREEN = color4((ui8)0u, (ui8)255u, (ui8)0u, (ui8)255u);
+#define COLOR_GREEN_ALPHA(a) color4(0.0f, 1.0f, 0.0f, a)
 const color4 COLOR_BLUE = color4((ui8)0u, (ui8)0u, (ui8)255u, (ui8)255u);
+#define COLOR_BLUE_ALPHA(a) color4(0.0f, 0.0f, 1.0f, a)
 const color4 COLOR_MAGENTA = color4((ui8)255u, (ui8)0u, (ui8)255u, (ui8)255u);
+#define COLOR_MAGENTA_ALPHA(a) color4(1.0f, 0.0f, 1.0f, a)
 const color4 COLOR_CYAN = color4((ui8)0u, (ui8)255u, (ui8)255u, (ui8)255u);
+#define COLOR_CYAN_ALPHA(a) color4(0.0f, 1.0f, 1.0f, a)
 const color4 COLOR_YELLOW = color4((ui8)255u, (ui8)255u, (ui8)0u, (ui8)255u);
+#define COLOR_YELLOW_ALPHA(a) color4(1.0f, 1.0f, 0.0f, a)
 const color4 COLOR_BLACK = color4((ui8)0u, (ui8)0u, (ui8)0u, (ui8)255u);
+#define COLOR_BLACK_ALPHA(a) color4(0.0f, 0.0f, 0.0f, a)
 const color4 COLOR_GRAY = color4((ui8)128u, (ui8)128u, (ui8)128u, (ui8)255u);
+#define COLOR_GRAY_ALPHA(a) color4(0.5f, 0.5f, 0.5f, a)

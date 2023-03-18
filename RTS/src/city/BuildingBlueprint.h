@@ -29,13 +29,42 @@ enum class BuildingBlueprintFlags : ui8 {
     BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE = 1 << 0
 };
 
+struct BlueprintTileItemData {
+    ItemID mItemId;
+    ui16 mRequiredQuanity;
+    ui16 mCurrentQuantity = 0;
+    ui16 mPromisedQuantity = 0;
+};
+struct BlueprintTileHandle {
+    TileIndex mTileIndex;
+    ui32 mItemDataOffset;
+    ui32 mItemDataCount;
+};
+
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
-    TileHandle getTileHandle(ui32 tileIndex) const {
+    TileHandle getTileHandle(TileIndex tileIndex) const {
         assert(IS_GAME_THREAD());
         return TileHandle(building->getTileContainer(), tileIndex);
     }
+
+    f32v3 getTileWorldPos(TileIndex i) const {
+        const i32 layerSize = aabb.dims.x * aabb.dims.y;
+        f32v3 worldRoot(aabb.pos.x, aabb.pos.y, zPos);
+        return f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
+    }
+
+    TileIndex reserveTileToPlaceItems(ItemID item, ui16 maxItemCount) {
+        //xxx;
+    }
+
+    // For construction
+    std::map<ItemID, std::vector<BlueprintTileHandle>> tilesNeedingItems;
+    std::vector<BlueprintTileHandle> tilesReadyToBuild;
+    std::vector<BlueprintTileItemData> tileItemData;
+    std::vector<ItemStackUnbounded> requiredItemsToBuild;
+    // End construction
 
     Building* building = nullptr;
     const BuildingDef& desc;
@@ -48,12 +77,10 @@ struct BuildingBlueprint {
     std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
-    std::vector<ItemStackUnbounded> requiredItemsToBuild;
     std::vector<TileWalls> walls;
     std::vector<std::vector<StairPiece>> stairs;
     std::map<TileIndex, RoomNodeID> exteriorDoors;
-    std::vector<TileIndex> tilesToBuild;
-    const std::vector<ItemStack>* tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
+    const Recipe* tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;

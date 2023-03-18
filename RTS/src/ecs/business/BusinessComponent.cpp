@@ -61,8 +61,13 @@ void BusinessComponent::addIdleWorker(entt::entity worker) {
     if (mIdleWorkers.size() == mIdleWorkers.capacity()) {
         mIdleWorkers.set_capacity(mIdleWorkers.capacity() + IDLE_CAPACITY_INC);
     }
-    std::cout << "ADD IDLE " << mIdleWorkers.size() << " " << mIdleWorkers.capacity() << std::endl;
+    //std::cout << "ADD IDLE " << mIdleWorkers.size() << " " << mIdleWorkers.capacity() << std::endl;
     mIdleWorkers.push_back(worker);
+}
+
+void BusinessComponent::onWorkerFailTask(entt::entity worker, IAgentTask* task) {
+    LOG_CRITICAL("Worker {} failed task {}", task->getTaskName());
+    assert(false);
 }
 
 BusinessSystem::BusinessSystem()
@@ -153,7 +158,7 @@ void updateBuildComponent(BusinessBuildComponent& buildCmp, BusinessComponent& b
 
     // Initialize the job if needed
     if (buildCmp.mCurrentBlueprint && !buildCmp.mCurrentJob) {
-        IBusinessJobPtr newJob = std::make_unique<ConstructBuildingJob>(*buildCmp.mCurrentBlueprint);
+        IBusinessJobPtr newJob = std::make_unique<ConstructBuildingJob>(*buildCmp.mCurrentBlueprint, entity);
         buildCmp.mCurrentJob = static_cast<ConstructBuildingJob*>(newJob.get());
         businessCmp.mActiveJobs.push_back(std::move(newJob));
     }
@@ -185,7 +190,7 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
         entt::entity worker = cmp.mIdleWorkers.front();
         bool didAssign = false;
         for (auto&& it : cmp.mActiveJobs) {
-            if (IAgentTaskPtr task = it->tryMakeTaskForWorker(worker)) {
+            if (IAgentTaskPtr task = it->tryMakeTaskForWorker(registry, worker)) {
                 
                 EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
                 employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);

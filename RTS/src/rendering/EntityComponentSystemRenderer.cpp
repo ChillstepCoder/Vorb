@@ -30,18 +30,24 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer()
 
 void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) const {
 
-    int i = 0;
+	if (++mFrameCount <= mFramesPerDebugDraw) {
+		return;
+	}
+	mFrameCount = 0;
 
-  //  auto& ecs = sWorld->getECS();
-  //  ecs.mRegistry.view<OwnershipComponent>().each([ &i](auto& cmp) {
-		//color4 color((i * 120) % 255, 255 - (i * 60) % 255, (i * 72) % 255, 255);
-		//for (CityPlot* plot : cmp.mOwnedPlots) {
-		//	if (plot->mPendingBlueprint) {
-		//		CityDebugRenderer::renderBlueprintDebug(*plot->mPendingBlueprint, &color);
-		//	}
-		//}
-		//++i;
-  //  });
+    int i = 0;
+    // Blueprint debug
+    if (sDebugOptions.mBlueprintDebug) {
+        auto& ecs = sWorld->getECS();
+
+		auto view = ecs.mRegistry.view<BusinessBuildComponent>();
+		for (auto entity : view) {
+			BuildingBlueprint* bp = ecs.mRegistry.get<BusinessBuildComponent>(entity).mCurrentBlueprint;
+			if (bp) {
+				CityDebugRenderer::renderBlueprintDebug(*bp, mFramesPerDebugDraw);
+			}
+		}
+	}
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {

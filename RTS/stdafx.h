@@ -56,6 +56,9 @@ constexpr entt::entity INVALID_ENTITY = (entt::null);
 #include "types/IdTypes.h"
 #include "util/TypeHash.h"
 
+typedef f64 TimeStampSec;
+typedef f64 TimeSpanSec;
+
 // Services
 #include "services/Services.h"
 

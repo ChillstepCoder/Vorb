@@ -217,9 +217,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\graphics\BlendState.cpp" />
-    <ClCompile Include="src\ai\tasks\BuildTask.cpp" />
+    <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
-    <ClCompile Include="src\ai\tasks\ShipItemsForPromiseTask.cpp" />
+    <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
     <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\camera\CameraController.cpp" />
@@ -238,6 +238,8 @@
     <ClCompile Include="src\city\CityPlotter.cpp" />
     <ClCompile Include="src\city\CityQuartermaster.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
+    <ClCompile Include="src\city\contracts\ContractManager.cpp" />
+    <ClCompile Include="src\city\contracts\IContract.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\debugging\DebugMesh.cpp" />
@@ -442,10 +444,10 @@
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
-    <ClInclude Include="src\ai\tasks\BuildTask.h" />
+    <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
-    <ClInclude Include="src\ai\tasks\ShipItemsForPromiseTask.h" />
+    <ClInclude Include="src\ai\tasks\PathToTargetTask.h" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\camera\Camera3D.h" />
     <ClInclude Include="src\camera\CameraController.h" />
@@ -470,6 +472,9 @@
     <ClInclude Include="src\city\CityPlotter.h" />
     <ClInclude Include="src\city\CityQuartermaster.h" />
     <ClInclude Include="src\city\CityResidentManager.h" />
+    <ClInclude Include="src\city\contracts\ContractManager.h" />
+    <ClInclude Include="src\city\contracts\IContract.h" />
+    <ClInclude Include="src\city\contracts\ItemShipmentContract.h" />
     <ClInclude Include="src\city\RoomNode.h" />
     <ClInclude Include="src\crafting\CraftingConst.h" />
     <ClInclude Include="src\crafting\CraftingRepository.h" />
@@ -493,6 +498,7 @@
     <ClInclude Include="src\ecs\cli\CliEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\component\AttributesComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
+    <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
@@ -541,6 +547,7 @@
     <ClInclude Include="src\item\ItemStockpileEvent.h" />
     <ClInclude Include="src\item\ItemStockpileRegistry.h" />
     <ClInclude Include="src\item\ItemTradeManager.h" />
+    <ClInclude Include="src\item\Recipe.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\logging\ErrorLogging.h" />

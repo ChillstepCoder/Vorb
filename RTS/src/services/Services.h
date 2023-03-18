@@ -5,6 +5,7 @@
 
 class NavThread;
 class ResourceManager;
+class ContractManager;
 
 struct ThreadPoolWorkerData {
 };
@@ -25,6 +26,7 @@ public:
     using Threadpool = entt::service_locator<vcore::ThreadPool<ThreadPoolWorkerData>>;
     using NavThread = entt::service_locator<NavThread>;
     using ResourceManager = entt::service_locator<ResourceManager>;
+    using ContractManager = entt::service_locator<ContractManager>;
 private:
     static void initThreads();
     static bool sUsingNav;

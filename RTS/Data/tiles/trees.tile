@@ -7,7 +7,7 @@ tree_small:
   path_weight: 0
   drops:
     - item: wood_raw
-      count: [3, 6]
+      count: [15, 20]
 tree_pine:
   model: tree_new
   col_shape: cylinder
@@ -17,4 +17,4 @@ tree_pine:
   path_weight: 0
   drops:
     - item: wood_raw
-      count: [5, 8]
+      count: [15, 20]

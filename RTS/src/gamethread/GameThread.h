@@ -20,6 +20,8 @@ public:
     
     bool isRunning() const { return mIsRunning.load(); }
 
+    const GameTimeManager& getTimeManager() const { return mTimeManager; }
+
 private:
     void mainFunc();
     void update();
@@ -39,3 +41,7 @@ private:
     static GameThread* sInstance;
 };
 
+inline TimeStampSec getCurrentTimeStamp() {
+    assert(IS_GAME_THREAD());
+    return GameThread::getInstance().getTimeManager().getCurrentTimeSec();
+}

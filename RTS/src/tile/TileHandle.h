@@ -89,6 +89,9 @@ struct TileRef {
     void release();
     bool isValid() const { return container != nullptr; }
 
+    i32v2 getWorldPos2D() const;
+    i32v3 getWorldPos3D() const;
+
     TileContainer* container = nullptr;
     Tile* tile = nullptr;
     TileIndex index;

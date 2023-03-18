@@ -1683,23 +1683,23 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     std::map<ItemID, ui32> requiredItems;
 
     bp.tileRecipes[e_cast(BlueprintTileType::NONE)] = nullptr;
-    bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]).recipe;
-    bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]).recipe;
-    bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::WALL)]).recipe;
-    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::STAIRS)]).recipe;
-    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]).recipe;
+    bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WALL)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]);
     bp.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
     static_assert(e_cast(BlueprintTileType::TYPES) == 7);
 
     std::unordered_map<RoomNodeID, i32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
     // Guess
-    bp.tilesToBuild.reserve(bp.tiles.size() / 2);
-    for (TileIndex i = 0; i < (TileIndex)bp.tiles.size(); ++i) {
+    bp.tileItemData.reserve(bp.tiles.size() / 2);
+    for (TileIndex tileIndex = 0; tileIndex < (TileIndex)bp.tiles.size(); ++tileIndex) {
         // Compute bounds
-        RoomNodeID id = bp.ownerArray[i];
+        RoomNodeID id = bp.ownerArray[tileIndex];
         if (id != INVALID_ROOM_ID) {
-            const i32v2 pos = getPosAtIndex(i, bp.aabb.dims);
+            const i32v2 pos = getPosAtIndex(tileIndex, bp.aabb.dims);
             auto&& it = roomBoundsLookup.find(id);
             if (it == roomBoundsLookup.end()) {
                 roomBoundsLookup[id] = i32v4(pos.x, pos.x, pos.y, pos.y);
@@ -1719,27 +1719,35 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
             }
         }
         // Tile postprocess
-        switch (bp.tiles[i].type) {
+        switch (bp.tiles[tileIndex].type) {
             case BlueprintTileType::NONE:
             case BlueprintTileType::AIR:
-                bp.tiles[i].isBuilt = true;
+                bp.tiles[tileIndex].isBuilt = true;
                 break;
             case BlueprintTileType::STAIRS:
             case BlueprintTileType::STAIRS_FLAT:
             case BlueprintTileType::WALL:
             case BlueprintTileType::FLOOR:
-            case BlueprintTileType::DOOR:
-                bp.tilesToBuild.emplace_back(i);
-                for (auto&& itemStack : *bp.tileRecipes[e_cast(bp.tiles[i].type)]) {
-                    auto&& it = requiredItems.find(itemStack.id);
+            case BlueprintTileType::DOOR: {
+                const Recipe& recipe = *bp.tileRecipes[e_cast(bp.tiles[tileIndex].type)];
+                const ui32 offset = bp.tileItemData.size();
+                const ui32 itemCount = recipe.mItemCount;
+                bp.tileItemData.reserve(bp.tileItemData.size() + itemCount);
+                for (ui32 r = 0; r < recipe.mItemCount; ++r) {
+                    const ItemStack stack = recipe.mItems[r];
+                    auto&& it = requiredItems.find(stack.id);
                     if (it == requiredItems.end()) {
-                        requiredItems[itemStack.id] = itemStack.quantity;
+                        requiredItems[stack.id] = stack.quantity;
                     }
                     else {
-                        it->second += itemStack.quantity;
+                        it->second += stack.quantity;
                     }
+                    bp.tileItemData.emplace_back(BlueprintTileItemData{stack.id, stack.quantity, 0});
+                    bp.tilesNeedingItems[stack.id].emplace_back(BlueprintTileHandle{ tileIndex, offset, itemCount });
                 }
+                ++bp.totalTilesToBuild;
                 break;
+            }
             case BlueprintTileType::TYPES:
             default:
                 assert(false);
@@ -1762,8 +1770,6 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     for (auto&& it : requiredItems) {
         bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, (ui32)it.second });
     }
-
-    bp.totalTilesToBuild = bp.tilesToBuild.size();
     // TODO: Sort bp.tilesToBuild by distance from entrances
 }
 
