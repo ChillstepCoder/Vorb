@@ -228,6 +228,13 @@ TaskTickResult BuildBlueprintTask::tick(entt::registry& registry, entt::entity a
         case TaskState::PATH_TO_TILE:
             // Waiting callback
             break;
+        case TaskState::FLATTEN_TERRAIN:
+            if (tryFlattenTerrain(registry, agent)) {
+                mState = TaskState::PLACE_ITEMS;
+                break; // Delay one tick on success
+            }
+            mState = TaskState::PLACE_ITEMS;
+            [[fallthrough]];
         case TaskState::PLACE_ITEMS:
             placeItemsOnTile(registry, agent);
             break;
@@ -255,6 +262,8 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
     // Find items in our inventory to build with
     for (ItemStack& s : workingStorage) {
         if (mPlaceTilesTarget = mBlueprint.reserveTileToPlaceItems(s.id, s.quantity)) {
+            f32v3 pos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileIndex);
+            LOG_CRITICAL("FOUND TILE {} AT {}, {}, {}", mPlaceTilesTarget->mTileIndex, pos.x, pos.y, pos.z);
             break;
         }
     }
@@ -268,9 +277,11 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
     const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileIndex);
-    cmp.requestCoarsePath(physCmp.getPosition(), targetWorldPos, [this](bool success) {
+    // TODO: Fallback to coarse path?
+    cmp.requestFinePath(physCmp.getPosition(), targetWorldPos, [this](bool success) {
         if (success) {
-            mState = TaskState::PLACE_ITEMS;
+            // We always check for flatten terrain first
+            mState = TaskState::FLATTEN_TERRAIN;
         }
         else {
             // Path failed, lets try again
@@ -289,6 +300,26 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
     mState = TaskState::PATH_TO_TILE;
 
     return true;
+}
+
+bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entity agent) {
+    assert(mPlaceTilesTarget);
+    assert(mPlaceTilesTarget->isValid());
+
+    // Only first floor
+    if (mPlaceTilesTarget->mTileIndex >= mBlueprint.aabb.dims.x * mBlueprint.aabb.dims.y) {
+        return false;
+    }
+
+    if (mBlueprint.tilesNeedingTerrainFlatten.getBit(mPlaceTilesTarget->mTileIndex)) {
+        mBlueprint.tilesNeedingTerrainFlatten.clearBit(mPlaceTilesTarget->mTileIndex);
+
+        IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+        f32v3 tileWorldPos = mBlueprint.getTileWorldPos(mPlaceTilesTarget->mTileIndex);
+        grid.setHeightAt(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
+        return true;
+    }
+    return false;
 }
 
 bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entity agent) {

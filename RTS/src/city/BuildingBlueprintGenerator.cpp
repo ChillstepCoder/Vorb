@@ -1681,6 +1681,23 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
     return true;
 }
 
+void computeOwnedTilesOnFirstFloor(BuildingBlueprint& bp) {
+    bp.tilesNeedingTerrainFlatten = BitArray(bp.aabb.dims.x * bp.aabb.dims.y);
+    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+            const ui32 tileIndex = y * bp.aabb.dims.x + x;
+            const BlueprintTileType type = bp.tiles[tileIndex];
+            if (type != BlueprintTileType::NONE) {
+
+                const TileID tileId = bp.tileIDs[e_cast(type)];
+                if (tileId != TILE_ID_NONE) {
+                    bp.tilesNeedingTerrainFlatten.setBitTo(tileIndex, true);
+                }
+            }
+        }
+    }
+}
+
 void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     // Tally required items
     std::map<ItemID, ui32> requiredItems;
@@ -1747,7 +1764,8 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
                         it->second += stack.quantity;
                     }
                     bp.tileItemData.emplace_back(BlueprintTileItemData{stack.id, stack.quantity, 0});
-                    bp.tilesNeedingItems[stack.id].emplace_back(tileIndex);
+                    // We will pull from back so lets emplace front to make it a FIFO
+                    bp.tilesNeedingItems[stack.id].emplace_front(tileIndex);
                 }
                 ++bp.totalTilesToBuild;
                 break;
@@ -1774,6 +1792,8 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     for (auto&& it : requiredItems) {
         bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, (ui32)it.second });
     }
+
+    computeOwnedTilesOnFirstFloor(bp);
     // TODO: Sort bp.tilesToBuild by distance from entrances
 }
 

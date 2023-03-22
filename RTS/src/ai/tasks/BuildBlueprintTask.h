@@ -18,6 +18,7 @@ public:
 
 protected:
     bool selectTileToFill(entt::registry& registry, entt::entity agent);
+    bool tryFlattenTerrain(entt::registry& registry, entt::entity agent);
     bool selectTileToBuild(entt::registry& registry, entt::entity agent);
     void placeItemsOnTile(entt::registry& registry, entt::entity agent);
 
@@ -25,6 +26,7 @@ protected:
         SELECT_TILE_TO_FILL,
         SELECT_TILE_TO_BUILD,
         PATH_TO_TILE,
+        FLATTEN_TERRAIN,
         PLACE_ITEMS,
         BUILD_TILE,
         FAIL

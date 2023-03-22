@@ -68,7 +68,7 @@ void GameThread::mainFunc() {
         // Fixed timestep
         f64 sleepSec = 0.0;
         if (mTimeManager.tryTick(&sleepSec)) {
-            update();
+            tick();
             // Force a thread switch if anyone is waiting
             // // TODO: Profile if this matters
             // yojimbo_sleep(0);
@@ -81,7 +81,7 @@ void GameThread::mainFunc() {
 
 }
 
-void GameThread::update() {
+void GameThread::tick() {
 
     updateTimeOfDay();
     updateProcs();
@@ -89,10 +89,10 @@ void GameThread::update() {
     // Update functions
     switch (mWorldType) {
         case WorldType::CLIENT:
-            updateClient();
+            tickClient();
             break;
         case WorldType::HOST:
-            updateHost();
+            tickHost();
             break;
         default:
             assert(false);
@@ -100,7 +100,7 @@ void GameThread::update() {
     }
 }
 
-void GameThread::updateClient() {
+void GameThread::tickClient() {
     PROFILE_FUNCTION();
     CliWorld* cliWorld = static_cast<CliWorld*>(sWorld);
 
@@ -125,10 +125,11 @@ void GameThread::updateClient() {
     //cliWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 }
 
-void GameThread::updateHost() {
+void GameThread::tickHost() {
     PROFILE_FUNCTION();
     HostWorld* hostWorld = static_cast<HostWorld*>(sWorld);
 
+    // TODO: We need to send packets at the end of the tick! We will accrue packets and we dont want to delay an entire frame
     if (GameServer::exists()) {
         GameServer::getInstance().tryTick();
     }

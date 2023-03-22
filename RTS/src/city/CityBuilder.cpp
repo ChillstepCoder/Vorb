@@ -23,23 +23,7 @@
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"
 
-BitArray computeOwnedTilesOnFirstFloor(const BuildingBlueprint& bp) {
-    BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
-    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
-            const ui32 tileIndex = y * bp.aabb.dims.x + x;
-            const BlueprintTileType type = bp.tiles[tileIndex];
-            if (type != BlueprintTileType::NONE) {
 
-                const TileID tileId = bp.tileIDs[e_cast(type)];
-                if (tileId != TILE_ID_NONE) {
-                    ownedTilesOnFirstFloor.setBitTo(tileIndex, true);
-                }
-            }
-        }
-    }
-    return ownedTilesOnFirstFloor;
-}
 
 CityBuilder::CityBuilder(City& city)
     : mCity(city)
@@ -82,11 +66,11 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     PreciseTimer timer;
     const i32v2& worldPos = bp.aabb.pos;
 
-    BitArray ownedTilesOnFirstFloor = computeOwnedTilesOnFirstFloor(bp);
+    BitArray& tilesNeedingTerrainFlatten = bp.tilesNeedingTerrainFlatten;
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = sWorld->getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, tilesNeedingTerrainFlatten));
 
     ui32 floorHeight = 3;
     i32AABB3 aabb;
@@ -176,7 +160,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     }
 
     // Notify terrain data change (TODO: More precise, automatic)
-    sWorld->dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
+    //sWorld->dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
     finishBuilding(*newBuilding, bp);
 
@@ -207,11 +191,9 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     assert(IS_GAME_THREAD());
 
-    BitArray ownedTilesOnFirstFloor = computeOwnedTilesOnFirstFloor(bp);
-
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = sWorld->getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, bp.tilesNeedingTerrainFlatten));
 
     i32AABB3 aabb;
     aabb.x = bp.aabb.x;

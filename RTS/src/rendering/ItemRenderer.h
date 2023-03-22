@@ -2,7 +2,7 @@
 
 #include "rendering/TileVertex.h"
 // TODO: Instead include events?
-#include "util/ThreadSafeDirtyList.h"
+#include "util/ThreadSafeDirtySet.h"
 #include "item/ItemStockpile.h"
 #include "rendering/mesh/Mesh.h"
 
@@ -35,7 +35,7 @@ private:
     void renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const;
     void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const;
 
-    mutable ThreadSafeDirtyList<const ItemStockpile*> mDirtyStockpiles;
+    mutable ThreadSafeDirtySet<const ItemStockpile*> mDirtyStockpiles;
     moodycamel::ConcurrentQueue<ItemStockpileID> mMeshesToDestroy;
     moodycamel::ConcurrentQueue<std::pair<const ItemStockpile*, std::unique_ptr<Mesh>> > mFinishedMeshes;
 

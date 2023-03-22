@@ -20,6 +20,8 @@
 #include "gamethread/GameThreadTasks.h"
 
 #include <boost/pool/singleton_pool.hpp>
+
+#include "world/IChunkGrid.h"
 //
 //// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
 //struct patch_handle_pool {};
@@ -109,7 +111,7 @@ IHeightmapGrid::~IHeightmapGrid()
     }
 }
 
-void IHeightmapGrid::tick() {
+void IHeightmapGrid::tickShared() {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
     // Delete any inactive patches
@@ -130,6 +132,22 @@ void IHeightmapGrid::tick() {
         else {
             ++i;
         }
+    }
+
+
+    // Notify of changed portions
+    // TODO: Server Only
+    {
+        PROFILE_SCOPE("Dirty Heightmap");
+        if (mModifiedVertsThisTick.size()) {
+            xxx; // Do we want height to be queried directly from us instead of duplicating on tile data?
+            // Then we can store offsets in a smaller value and only when needed? hmmm... 
+            //sChunkGrid->onHeightVertsModified(mModifiedVertsThisTick);
+        }
+        for (auto&& it : mModifiedVertsThisTick) {
+            LOG_CRITICAL("   {} Tiles", it.second.size());
+        }
+        mModifiedVertsThisTick.clear();
     }
 }
 
@@ -789,33 +807,37 @@ void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f3
     assert(IS_GAME_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     if (patch.isDone() && patch.mRefCount) {
-        std::lock_guard lock(patch.mHeightData->mMutex);
-        HeightmapPatchData& data = *patch.mHeightData;
-        switch (dir) {
-            case TerrainHeightSetDirection::ANY:
-                data.data[vertIndex] = height;
-                break;
-            case TerrainHeightSetDirection::RAISE:
-                if (height > data.data[vertIndex]) data.data[vertIndex] = height;
-                break;
-            case TerrainHeightSetDirection::LOWER:
-                if (height < data.data[vertIndex]) data.data[vertIndex] = height;
-                break;
-            default:
-                assert(false);
-                break;
+        {
+            std::lock_guard lock(patch.mHeightData->mMutex);
+            HeightmapPatchData& data = *patch.mHeightData;
+            switch (dir) {
+                case TerrainHeightSetDirection::ANY:
+                    data.data[vertIndex] = height;
+                    break;
+                case TerrainHeightSetDirection::RAISE:
+                    if (height > data.data[vertIndex]) data.data[vertIndex] = height;
+                    break;
+                case TerrainHeightSetDirection::LOWER:
+                    if (height < data.data[vertIndex]) data.data[vertIndex] = height;
+                    break;
+                default:
+                    assert(false);
+                    break;
 
+            }
+            // TODO: Can we pull this out of critical section?
+            // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
+            if (height > data.aabb.pos.z + data.aabb.height) {
+                data.aabb.height = height - data.aabb.pos.z;
+                data.boundingSphere = boundingSphereFromAABB(data.aabb);
+            }
+            else if (height < data.aabb.pos.z) {
+                data.aabb.height += data.aabb.pos.z - height;
+                data.aabb.pos.z = height;
+                data.boundingSphere = boundingSphereFromAABB(data.aabb);
+            }
         }
-        // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
-        if (height > data.aabb.pos.z + data.aabb.height) {
-            data.aabb.height = height - data.aabb.pos.z;
-            data.boundingSphere = boundingSphereFromAABB(data.aabb);
-        }
-        else if (height < data.aabb.pos.z) {
-            data.aabb.height += data.aabb.pos.z - height;
-            data.aabb.pos.z = height;
-            data.boundingSphere = boundingSphereFromAABB(data.aabb);
-        }
+        mModifiedVertsThisTick[id.id].insert(vertIndex);
     }
 }
 

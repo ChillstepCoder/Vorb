@@ -319,7 +319,7 @@ void updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 			else if ((navCmp.mCurrentCoarsePoint < numPoints - 1) && (navCmp.mCurrentFinePoint > navCmp.mFinePath->getNumPoints() / 2u)) {
 				// Halfway through path we start generating next path
 				// TODO: This causes a bug where it does this forever, check logic ^
-				//requestNextPath = true;
+				requestNextPath = true;
 			}
 
 			if (requestNextPath) {

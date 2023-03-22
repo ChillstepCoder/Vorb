@@ -67,7 +67,7 @@ void IWorld::tickShared(f32 elapsedSec) {
 
     mChunkGrid->tick(mLoadCenter);
 
-    mHeightmapGrid->tick();
+    mHeightmapGrid->tickShared();
 
     // Update ECS
     // TODO: Move out?

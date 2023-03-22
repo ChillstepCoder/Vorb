@@ -36,7 +36,7 @@
 #include "util/NativeFileBrowser.h"
 
 constexpr f32 MIN_BRUSH_SIZE = 1.0f;
-constexpr f32 MAX_BRUSH_SIZE = 50.0f;
+constexpr f32 MAX_BRUSH_SIZE = 30.0f;
 constexpr f32 MIN_BRUSH_STRENGTH_TERRAIN = 0.01f;
 constexpr f32 MAX_BRUSH_STRENGTH_TERRAIN = 2.0f;
 constexpr f32 MIN_BRUSH_STRENGTH_GRASS = 0.01f;

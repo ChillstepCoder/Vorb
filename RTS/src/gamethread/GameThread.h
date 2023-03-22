@@ -24,9 +24,9 @@ public:
 
 private:
     void mainFunc();
-    void update();
-    void updateClient();
-    void updateHost();
+    void tick();
+    void tickClient();
+    void tickHost();
     void updateTimeOfDay();
     void updateProcs();
     void initWorld();

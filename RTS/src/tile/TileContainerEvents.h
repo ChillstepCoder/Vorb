@@ -66,4 +66,4 @@ struct TileContainerEvent {
 };
 EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);
 
-constexpr ui32 MAX_BULK_EDIT_EVENT_COUNT = 2048;
+constexpr ui32 MAX_BULK_EDIT_EVENT_COUNT = 8192;

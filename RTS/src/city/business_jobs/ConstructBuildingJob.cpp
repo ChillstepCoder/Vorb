@@ -5,6 +5,9 @@
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 
+#include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
+
 #include "city/contracts/ContractManager.h"
 
 //#include "item/ItemReservation.h"
@@ -38,6 +41,10 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::e
         required.quantityRequired = stack.quantity;
     }
     assert(mBlueprint.totalTilesToBuild);
+
+    // Clamp building height to 1 meter increments
+    IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+    mBlueprint.mDesiredTerrainFlattenHeight = round(grid.computeMeanHeightAtAABB(mBlueprint.aabb, mBlueprint.tilesNeedingTerrainFlatten)) - 0.005f;
 }
 
 ConstructBuildingJob::~ConstructBuildingJob() {
@@ -90,7 +97,7 @@ IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::registry& registr
             HarvestItemsTaskPtr gatherTask = std::make_unique<HarvestItemsTask>(item.id, quantity, nullptr);
 
             // Ship
-            constexpr f32 SHIPMENT_COMPLETE_RADIUS = 16.0f;
+            constexpr f32 SHIPMENT_COMPLETE_RADIUS = 20.0f;
             TileHandle targetHandle = mBlueprint.getTileHandle(0); // TODO: BETTER
             PathToTargetTaskPtr shipTask = std::make_unique<PathToTargetTask>(mBlueprint.getTileHandle(0), SHIPMENT_COMPLETE_RADIUS, nullptr);
             

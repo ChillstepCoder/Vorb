@@ -4,12 +4,14 @@
 #include "CoarseNavGraph.h"
 
 #include "tile/TileHandle.h"
-#include "util/ThreadSafeDirtyList.h"
+#include "util/ThreadSafeDirtySet.h"
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/container/flat_map.hpp>
 
 #include "tile/TileContainerEvents.h"
 
@@ -176,6 +178,7 @@ public:
     NavWorld();
     ~NavWorld();
 
+    void tickGameThread();
     void updateNavThread();
 
     void buildNavGraphForContainer(const TileContainer& tileContainer, OPT TerrainExternalEdges* terrainExternalEdges);
@@ -231,10 +234,12 @@ private:
         bool isTerrain;
         BitFlags<ChunkDependencyFlags> chunkDependencyFlags;
     };
-    moodycamel::ConcurrentQueue<TileContainerToDestroy> mContainersToDestroy;
+    
+    GameThreadBatchedDirtySet<const TileContainer*> mDirtyTileContainers;
+    GameThreadBatchedDirtyVector<TileContainerToDestroy> mContainersToDestroy;
+
     TileContainerListeners mTileContainerEventListeners;
 
-    ThreadSafeDirtyList<const TileContainer*> mDirtyTileContainers;
 
     // Large data at the bottom
     TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];

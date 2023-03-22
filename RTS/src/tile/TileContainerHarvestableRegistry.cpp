@@ -153,6 +153,9 @@ void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent
                         ++subchunkRegistry.mTotalHarvestables[e_cast(newHarvestable)];
                         subchunkRegistry.mHarvestablePositions[editData.tileIndex] = newHarvestable;
                     }
+                    else {
+                        subchunkRegistry.mHarvestablePositions.erase(editData.tileIndex);
+                    }
                 } else {
                     // Simply adding a new harvestable where there was none before
                     ++mTotalHarvestables[e_cast(newHarvestable)];

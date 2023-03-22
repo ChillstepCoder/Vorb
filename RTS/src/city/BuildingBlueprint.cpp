@@ -34,7 +34,9 @@ PlaceTileBlueprintItemsHandlePtr BuildingBlueprint::reserveTileToPlaceItems(Item
         return nullptr;
     }
 
-    for (auto&& tileIndex : it->second) {
+    // Reverse iterate since we prefer pulling from the end
+    for (auto&& rit = it->second.rbegin(); rit != it->second.rend(); ++rit) {
+        const TileIndex tileIndex = *rit;
         const BlueprintTileItemDataHandle& itemDataHandle = tileItemDataHandles[tileIndex];
         for (ui32 i = 0; i < itemDataHandle.mItemDataCountRequired; ++i) {
             BlueprintTileItemData& itemData = tileItemData[itemDataHandle.mItemDataOffset + i];
@@ -45,6 +47,7 @@ PlaceTileBlueprintItemsHandlePtr BuildingBlueprint::reserveTileToPlaceItems(Item
                     handle->mItemId = itemId;
                     handle->mPromisedItemCount = std::min(maxItemCount, (ui16)(itemData.mMissingQuantity - itemData.mPromisedQuantity));
                     handle->mBlueprint = this;
+                    itemData.mPromisedQuantity += handle->mPromisedItemCount;
                     ++refCount;
                     return std::move(handle);
                 }
@@ -71,6 +74,7 @@ void BuildingBlueprint::cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHan
     for (ui32 i = 0; i < itemDataHandle.mItemDataCountRequired; ++i) {
         BlueprintTileItemData& itemData = tileItemData[itemDataHandle.mItemDataOffset + i];
         if (itemData.mItemId == handle.mItemId) {
+            assert(itemData.mPromisedQuantity >= handle.mPromisedItemCount);
             itemData.mPromisedQuantity -= handle.mPromisedItemCount;
             handle.mPromisedItemCount = 0;
             return;
@@ -144,6 +148,8 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
         if (itemData.mItemId == mItemId) {
             const ui16 quantityToAdd = std::min(stack.quantity, itemData.mMissingQuantity);
             if (quantityToAdd == 0) {
+                // Someone else filled this, so we can just cancel
+                mPromisedItemCount = 0;
                 return;
             }
             itemData.mMissingQuantity -= quantityToAdd;
@@ -155,6 +161,7 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
             else {
                 itemData.mPromisedQuantity = 0;
             }
+            mPromisedItemCount = 0;
             stack.quantity -= quantityToAdd;
             // Check if we no longer require this item for this tile
             if (itemData.mMissingQuantity == 0) {
@@ -168,10 +175,10 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
                 auto&& it = mBlueprint->tilesNeedingItems.find(stack.id);
                 assert(it != mBlueprint->tilesNeedingItems.end());
                 // Remove tracking
-                for (size_t j = 0; j < it->second.size(); ++j) {
-                    TileIndex& tileIndex = it->second[j];
+                for (auto&& rit = it->second.rbegin(); rit != it->second.rend(); ++rit) {
+                    const TileIndex tileIndex = *rit;
                     if (tileIndex == mTileIndex) {
-                        it->second[j] = it->second.back();
+                        *rit = it->second.back();
                         it->second.pop_back();
                         if (it->second.empty()) {
                             mBlueprint->tilesNeedingItems.erase(it);
@@ -183,6 +190,7 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
             return;
         }
     }
+    assert(false); // Should be impossible?
 }
 
 BuildTileBlueprintHandle::~BuildTileBlueprintHandle() {

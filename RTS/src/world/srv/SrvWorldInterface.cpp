@@ -21,9 +21,8 @@ SrvWorldInterface::~SrvWorldInterface()
 
 }
 
-void SrvWorldInterface::tickSrv()
-{
-
+void SrvWorldInterface::tickSrv() {
+    mNavWorld->tickGameThread();
 }
 
 

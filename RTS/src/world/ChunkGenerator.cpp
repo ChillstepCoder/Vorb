@@ -138,11 +138,11 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
     const ChunkID& id = chunk.getChunkID();
 
     // Cache all min heights
-    f32 minHeights[CHUNK_SIZE];
+    f32 centerHeights[CHUNK_SIZE];
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        minHeights[i] = sHeightmapGrid->computeMinHeightAtTile(heightData, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
+        centerHeights[i] = sHeightmapGrid->computeCenterHeightAtTile(heightData, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
     }
 
     // Large objects
@@ -159,7 +159,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-        const f32 height = minHeights[y * CHUNK_WIDTH + x];
+        const f32 height = centerHeights[y * CHUNK_WIDTH + x];
         ui8 grass = 0;
         Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
         const f32 baseZPos = tile.getGroundZOffset();

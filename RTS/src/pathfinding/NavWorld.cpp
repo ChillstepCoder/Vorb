@@ -66,6 +66,12 @@ NavWorld::~NavWorld()
     sNavWorld = nullptr;
 }
 
+void NavWorld::tickGameThread() {
+    assert(IS_GAME_THREAD());
+    mDirtyTileContainers.gameThreadCopyToWorkerThread();
+    mContainersToDestroy.gameThreadCopyToWorkerThread();
+}
+
 void NavWorld::updateNavThread()
 {
     PROFILE_FUNCTION();
@@ -82,8 +88,8 @@ void NavWorld::updateNavThread()
 
     // Update dirty tile containers
     {
-        std::set<const TileContainer*> dirtyContainers;
-        mDirtyTileContainers.aquireAllDirtyObjects(dirtyContainers);
+        boost::container::flat_set<const TileContainer*> dirtyContainers;
+        mDirtyTileContainers.workerThreadAquireAllDirtyObjects(dirtyContainers);
 
         for (auto&& container : dirtyContainers) {
             // The decref will happen after the build
@@ -121,45 +127,44 @@ void NavWorld::updateNavThread()
         }
     }
 
-    // Destroy tile containers
-    TileContainerToDestroy containersToDestroy[32];
-    if (size_t count = mContainersToDestroy.try_dequeue_bulk(containersToDestroy, 32)) {
-        for (size_t i = 0; i < count; ++i) {
-            TileContainerToDestroy containerData = containersToDestroy[i];
+    // Destroy tile containers 
+    std::vector<TileContainerToDestroy> containersToDestroy;
+    mContainersToDestroy.workerThreadAquireAllDirtyObjects(containersToDestroy);
+    for (size_t i = 0; i < containersToDestroy.size(); ++i) {
+        TileContainerToDestroy containerData = containersToDestroy[i];
 
-            // Remove external edge dependencies on terrain
-            if (!containerData.isTerrain) {
-                // Manually compute chunk dependencies since we dont have the data here
-                std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
-                int j = 0;
-                for (LiteChunkID id : chunkDependencies) {
-                    // Make sure we only decref/modify chunks that we increffed
-                    if (containerData.chunkDependencyFlags.isBitSet(ChunkDependencyFlags(1 << j))) {
-                        assert(id < WorldData::WORLD_SIZE_CHUNKS);
-                        mTerrainDependentEdges[id].erase(containerData.id);
+        // Remove external edge dependencies on terrain
+        if (!containerData.isTerrain) {
+            // Manually compute chunk dependencies since we dont have the data here
+            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
+            int j = 0;
+            for (LiteChunkID id : chunkDependencies) {
+                // Make sure we only decref/modify chunks that we increffed
+                if (containerData.chunkDependencyFlags.isBitSet(ChunkDependencyFlags(1 << j))) {
+                    assert(id < WorldData::WORLD_SIZE_CHUNKS);
+                    mTerrainDependentEdges[id].erase(containerData.id);
 
-                        Chunk& chunk = sWorld->getChunk(id);
-                        // TODO: should we be marking it dirty? Wouldnt this be an invalid chunk?
-                        markChunkContainerNavDirty(id);
-                        chunk.decRef();
-                    }
-                    ++j;
+                    Chunk& chunk = sWorld->getChunk(id);
+                    // TODO: should we be marking it dirty? Wouldnt this be an invalid chunk?
+                    markChunkContainerNavDirty(id);
+                    chunk.decRef();
                 }
+                ++j;
             }
+        }
 
-            mNavGraphs.erase(containerData.id);
+        mNavGraphs.erase(containerData.id);
 
-            // Remove from spatial lookup
-            const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
-            if (containerData.isTerrain) {
-                i32v3 worldPos = containerData.worldPos;
-                ChunkID chunkID = ChunkID::fromWorldI32v2(worldPos2D);
-                mTerrainTileContainers[chunkID.id] = INVALID_TILE_CONTAINER_ID;
-            }
-            else {
-                NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + containerData.dims.x, worldPos2D.y + containerData.dims.y));
-                mSpatialLookup.remove(ContainerNavRegion{ newBox, containerData.id });
-            }
+        // Remove from spatial lookup
+        const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
+        if (containerData.isTerrain) {
+            i32v3 worldPos = containerData.worldPos;
+            ChunkID chunkID = ChunkID::fromWorldI32v2(worldPos2D);
+            mTerrainTileContainers[chunkID.id] = INVALID_TILE_CONTAINER_ID;
+        }
+        else {
+            NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + containerData.dims.x, worldPos2D.y + containerData.dims.y));
+            mSpatialLookup.remove(ContainerNavRegion{ newBox, containerData.id });
         }
     }
 }
@@ -763,7 +768,6 @@ void NavWorld::initEventHandlers() {
 
         assert(IS_GAME_THREAD());
         if (e_cast(containerEvent.edit.type) & EDIT_TYPES_MASK) {
-            LOG_DEBUG("NAV DIRTY {}",  containerEvent.container->getId());
             markContainerNavDirty(containerEvent.container);
         }
     });
@@ -787,7 +791,7 @@ void NavWorld::initEventHandlers() {
                 ++i;
             }
         }
-        mContainersToDestroy.enqueue(TileContainerToDestroy{ container.getWorldPos3D(), container.getDims2D(), container.getId(), container.isTerrain(), dependencyFlags });
+        mContainersToDestroy.gameThreadDirtyObject(TileContainerToDestroy{ container.getWorldPos3D(), container.getDims2D(), container.getId(), container.isTerrain(), dependencyFlags });
     });
 }
 
@@ -872,7 +876,7 @@ void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
     const Chunk& chunk = sWorld->getChunk(chunkId);
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
-    bool didAdd = mDirtyTileContainers.tryDirtyObject(chunkTileContainer);
+    bool didAdd = mDirtyTileContainers.workerThreadTryDirtyObject(chunkTileContainer);
     // If we added, we dont decref as we will get dec-reffed after updating the container
     if (!didAdd) {
         chunk.decRef();
@@ -1358,7 +1362,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
 void NavWorld::markContainerNavDirty(TileContainer* container) {
     assert(IS_GAME_THREAD());
     assert(container);
-    bool didAdd = mDirtyTileContainers.tryDirtyObject(container);
+    bool didAdd = mDirtyTileContainers.gameThreadTryDirtyObject(container);
     
     // Make sure we don't get deallocated while we are in the dirty list
     // TODO: Technically this is race condition if the nav thread and worker thread manage to finish their entire cycle before we get here.. but

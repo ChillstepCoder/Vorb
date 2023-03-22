@@ -1595,7 +1595,7 @@
     <ClInclude Include="src\item\ItemStockpileEvent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\util\ThreadSafeDirtyList.h">
+    <ClInclude Include="src\util\ThreadSafeDirtySet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\PathToTargetTask.h">

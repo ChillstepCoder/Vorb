@@ -90,12 +90,13 @@ struct BuildingBlueprint {
     BuildTileBlueprintHandlePtr reserveTileToBuild(entt::entity builderEntity, const f32v3& entityPosition);
     void endTileToBuild(BuildTileBlueprintHandle& handle);
 
-    std::map<ItemID, std::vector<TileIndex>> tilesNeedingItems;
+    std::map<ItemID, std::deque<TileIndex>> tilesNeedingItems; // Pull from back first
     std::vector<TileIndex> tilesReadyToBuild;
     std::vector<BlueprintTileItemData> tileItemData;
     std::vector<ItemStackUnbounded> requiredItemsToBuild;
     std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
     std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
+    f32 mDesiredTerrainFlattenHeight = 0.0f;
     // End construction
 
     Building* building = nullptr;
@@ -106,6 +107,7 @@ struct BuildingBlueprint {
     ui32 floorCount = 1u;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
+    BitArray tilesNeedingTerrainFlatten;
     std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTileType> tiles;

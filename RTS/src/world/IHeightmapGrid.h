@@ -5,6 +5,11 @@
 #include "terrain/HeightmapPatch.h"
 #include "world/TerrainConstants.h"
 
+#include <boost/container/flat_set.hpp>
+#include <boost/container/flat_map.hpp>
+
+#include "util/ThreadSafeDirtySet.h"
+
 #include <mutex>
 
 class BitArray;
@@ -43,7 +48,7 @@ public:
     IHeightmapGrid();
     ~IHeightmapGrid();
 
-    void tick();
+    void tickShared();
 
     //// NEW INTERFACE
     //const HeightmapPatchData* tryGetHeightDataMainThread(HeightmapPatchID id) const;
@@ -109,7 +114,9 @@ private:
     std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
     //std::mutex mMutex;
 
-protected:
+    // TODO: Server only
+    boost::container::flat_map<GridIdType, boost::container::flat_set<ui32/*vertIndex*/>> mModifiedVertsThisTick;
+
 };
 
 extern IHeightmapGrid* sHeightmapGrid;
