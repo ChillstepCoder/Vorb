@@ -118,3 +118,22 @@ namespace MathUtil {
             : std::numeric_limits<double>::quiet_NaN();
     }
 }
+
+#define DECL_VEC2_LESS(T) \
+template<> \
+struct std::less<T> \
+{ \
+    bool operator() (const T& a, const T& b) const \
+    { \
+        if (a.x < b.x) return true; \
+        if (a.x > b.x) return false; \
+        return a.y < b.y; \
+    } \
+};
+
+// Template specialization for storing these values as keys in a set/map
+namespace std {
+    DECL_VEC2_LESS(ui32v2);
+    DECL_VEC2_LESS(i32v2);
+    DECL_VEC2_LESS(f32v2);
+}
