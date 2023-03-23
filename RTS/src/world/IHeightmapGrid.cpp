@@ -140,15 +140,9 @@ void IHeightmapGrid::tickShared() {
     {
         PROFILE_SCOPE("Dirty Heightmap");
         if (mModifiedVertsThisTick.size()) {
-           // xxx; // Do we want height to be queried directly from us instead of duplicating on tile data?
-            // Then we can store offsets in a smaller value and only when needed? hmmm... 
-            //sChunkGrid->onHeightVertsModified(mModifiedVertsThisTick);
-            LOG_CRITICAL(" EDIT  {} VERTS", mModifiedVertsThisTick.size());
+            sChunkGrid->onTerrainModified(mModifiedVertsThisTick);
+            mModifiedVertsThisTick.clear();
         }
-        /* for (auto&& it : mModifiedVertsThisTick) {
-             LOG_CRITICAL("   {} Tiles", it.second.size());
-         }*/
-        mModifiedVertsThisTick.clear();
     }
 }
 
@@ -573,6 +567,7 @@ f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID ch
     return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
 }
 
+
 f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos)
 {
     const f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos) + f32v2(0.5f);
@@ -844,7 +839,7 @@ void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f3
         const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
         worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
         worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
-        mModifiedVertsThisTick.insert(worldPos);
+        mModifiedVertsThisTick.insert(i32v2(worldPos));
     }
 }
 

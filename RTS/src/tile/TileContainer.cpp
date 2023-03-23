@@ -324,18 +324,19 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
 }
 
 void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editData, size_t count) {
+    assert(IS_GAME_THREAD());
     assert(count);
-    assert(count < MAX_BULK_EDIT_EVENT_COUNT);
+    assert(count <= MAX_BULK_EDIT_EVENT_COUNT);
     TileContainerEvent evnt;
-    TileContainerEditZPosEventData eventData[MAX_BULK_EDIT_EVENT_COUNT];
+    static TileContainerEditZPosEventData sEventData[MAX_BULK_EDIT_EVENT_COUNT];
     evnt.container = this;
     evnt.edit.editCount = count;
     evnt.edit.type = TileContainerEditEventType::ChangeZPos;
-    evnt.edit.changeZPosArray = eventData;
+    evnt.edit.changeZPosArray = sEventData;
     { // Critical section
         std::lock_guard lock(mSharedMutex);
         for (size_t i = 0; i < count; ++i) {
-            TileContainerEditZPosEventData& currEventData = eventData[i];
+            TileContainerEditZPosEventData& currEventData = sEventData[i];
             const TileIndex tileIndex = editData[i].first;
             const f32 zPosition = editData[i].second;
             Tile& tile = mTiles[tileIndex];
@@ -347,7 +348,7 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
 
     // Move out to keep critical section small as possible
     for (size_t i = 0; i < count; ++i) {
-        TileContainerEditZPosEventData& currEventData = eventData[i];
+        TileContainerEditZPosEventData& currEventData = sEventData[i];
         const TileIndex tileIndex = editData[i].first;
         currEventData.tileIndex = tileIndex;
         currEventData.worldPosition = getTileCenterWorldPosition(currEventData.tileIndex);

@@ -32,6 +32,8 @@ public:
     const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
     const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
 
+    void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
+
     // Events
     /*bool addCreateListener(ChunkListeners& remover, const ChunkEventDispatcher::Callback& callback) {
         return remover.appendListener(CHUNK_EVENT_TYPE::Create, callback);

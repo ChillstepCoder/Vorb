@@ -146,6 +146,41 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     }
 }
 
+void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
+    boost::container::flat_map<GridIdType, std::vector<i32v2>> tilePositionsNeedingUpdate;
+    {
+        PROFILE_SCOPE("AAAAA");
+        constexpr ui32 MAX_TILES_CHANGED_PER_POSITION = SQ(HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_SIZE);
+        tilePositionsNeedingUpdate.reserve(modifiedPositions.size() * MAX_TILES_CHANGED_PER_POSITION);
+        for (const i32v2& pos : modifiedPositions) {
+            // TODO: WE CAN OVERFLOW HERE!
+            // Insert the 16 surrounding tiles
+            for (int y = -2; y < 2; ++y) {
+                for (int x = -2; x < 2; ++x) {
+                    const i32v2 newPos = pos + i32v2(x, y);
+                    tilePositionsNeedingUpdate[ChunkID::fromWorldI32v2(newPos).id].emplace_back(newPos);
+                }
+            }
+        }
+        static_assert(HEIGHTMAP_QUAD_SIZE == 2 && MAX_TILES_CHANGED_PER_POSITION == 16, "Update logic");
+    }
+    PROFILE_SCOPE("BBBB");
+    std::vector<std::pair<TileIndex, f32>> editData;
+    for (auto&& it : tilePositionsNeedingUpdate) {
+        Chunk& chunk = getChunk(it.first);
+        if (chunk.isDataReady()) {
+            editData.reserve(it.second.size());
+            for (auto&& pos : it.second) {
+                const ui32 x = (ui32)pos.x & (CHUNK_WIDTH - 1); // Fast modulus
+                const ui32 y = (ui32)pos.y & (CHUNK_WIDTH - 1); // Fast modulus
+                editData.emplace_back(std::make_pair(y * CHUNK_WIDTH + x, sHeightmapGrid->computeCenterHeightAtTile(pos)));
+            }
+            chunk.getTileContainer()->bulkSetTileGroundZPosition(editData.data(), editData.size());
+            editData.clear();
+        }
+    }
+}
+
 void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
     PROFILE_FUNCTION();
     // This will be set if we mutate any data

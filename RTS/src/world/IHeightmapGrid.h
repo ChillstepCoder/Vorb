@@ -115,7 +115,7 @@ private:
     //std::mutex mMutex;
 
     // TODO: Server only
-    boost::container::flat_set<ui32v2> mModifiedVertsThisTick;
+    boost::container::flat_set<i32v2> mModifiedVertsThisTick;
 
 };
 

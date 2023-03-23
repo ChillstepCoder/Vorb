@@ -447,6 +447,7 @@ void WorldEditorPanel::updateTerrainEdit() {
             task->editState = mTerrainEditState;
 
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+                PROFILE_SCOPE("WorldEditorPanel::updateTerrainEdit~lambda");
                 const TerrainEditTask* task = static_cast<TerrainEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
                 const BrushSettings& brushSettings = task->brushSettings;
@@ -473,7 +474,7 @@ void WorldEditorPanel::updateTerrainEdit() {
                 }
 
                 // Notify all terrain stuff to update
-                sWorld->dirtyTerrainFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + HEIGHTMAP_QUAD_SIZE);
+                //sWorld->dirtyTerrainFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + HEIGHTMAP_QUAD_SIZE);
 
                 delete task;
             }, task);
