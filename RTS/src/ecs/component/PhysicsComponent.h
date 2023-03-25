@@ -19,7 +19,7 @@ public:
 
 	f32v2 getDir() const;
 	f32v2 getInterpolatedDir() const;
-	f32v3 getPosition() const;
+    f32v3 getPosition() const;
 	f32v3 getInterpolatedPosition() const;
 	f32v3 getLinearVelocity() const;
 	f32 getRotation() const;
@@ -48,5 +48,5 @@ KEG_TYPE_DECL(PhysicsComponentDef);
 
 class PhysicsSystem {
 public:
-	static void customPhysicsUpdateTest(entt::registry& registry);
+	static void update(entt::registry& registry);
 };

@@ -90,7 +90,7 @@ public:
     STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Create, ItemStockpileEventType::Create, const ItemStockpileEvent&);
     STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Edit, ItemStockpileEventType::Edit, const ItemStockpileEvent&);
     STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Destroy, ItemStockpileEventType::Destroy, const ItemStockpileEvent&);
-    STATIC_EVENT_DISPATCHER(ItemStockpile);
+    STATIC_EVENT_DISPATCHER_DEF(ItemStockpile);
 private:
     void releaseReservation(ItemReservation* reservation);
 

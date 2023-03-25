@@ -153,7 +153,7 @@ namespace vorb {
             std::atomic<i32> m_relative = ATOMIC_VAR_INIT(0); ///< 1 if this mouse is set in a "relative" mode
             std::atomic<i32> m_hidden = ATOMIC_VAR_INIT(0); ///< 1 if this mouse is hidden over the window
 
-            EVENT_DISPATCHER(Mouse);
+            EVENT_DISPATCHER_DEF(Mouse);
         };
     }
 }

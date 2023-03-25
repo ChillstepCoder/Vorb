@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "IChunkGrid.h"
 
-#include "world/IHeightmapGrid.h"
 #include "world/ChunkGenerator.h"
 #include "world/IWorld.h"
 
@@ -56,6 +55,14 @@ IChunkGrid::IChunkGrid() {
 }
 
 void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
+
+    IHeightmapGrid::registerIHeightmapGridListeners(mHeightmapGridListeners);
+    IHeightmapGrid::addEditVertsListener(mHeightmapGridListeners, [this](const HeightmapGridEvent& gridEvent) {
+        assert(gridEvent.mEventType == HeightmapGridEventType::EditVerts);
+        assert(gridEvent.mModifiedVerts);
+        onTerrainModified(*gridEvent.mModifiedVerts);
+    });
+
     // Update the grid until we have no further updates
     do {
         updateGridEdges(loadCenter);
@@ -153,7 +160,6 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
         constexpr ui32 MAX_TILES_CHANGED_PER_POSITION = SQ(HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_SIZE);
         tilePositionsNeedingUpdate.reserve(modifiedPositions.size() * MAX_TILES_CHANGED_PER_POSITION);
         for (const i32v2& pos : modifiedPositions) {
-            // TODO: WE CAN OVERFLOW HERE!
             // Insert the 16 surrounding tiles
             for (int y = -2; y < 2; ++y) {
                 for (int x = -2; x < 2; ++x) {

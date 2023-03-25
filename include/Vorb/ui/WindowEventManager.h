@@ -58,7 +58,7 @@ namespace vorb {
             f32 getCurrentAspectRatio() const { return (f32)mCurrentDims.x / (f32)mCurrentDims.y; }
         private:
             ui32v2 mCurrentDims = ui32v2(0);
-            EVENT_DISPATCHER(Window);
+            EVENT_DISPATCHER_DEF(Window);
         };
     }
 }

@@ -88,7 +88,8 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
                 else if (cdef.physics.disableXyRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE_XY;
                 }
-                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.halfExtents, cdef.physics.massKg, rotType);
+                // TODO: allow collision group specify
+                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.halfExtents, cdef.physics.massKg, CollisionGroup::CHARACTER, rotType);
                 physics.mRigidBody = rbp.first;
                 physics.mZPosOffset = -rbp.second;
                 break;
@@ -128,9 +129,10 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
     }
 
     // Post load
-    if (charControlCmp) {
-        charControlCmp->mController = physWorld.addDynamicCharacterController(newEntity, registry.get<PhysicsComponent>(newEntity).mRigidBody, 0.0f);
-    }
+     // OLD BULLET CONTROLLER
+    // if (charControlCmp) {
+   //     charControlCmp->mController = physWorld.addDynamicCharacterController(newEntity, registry.get<PhysicsComponent>(newEntity).mRigidBody, 0.0f);
+   // }
 
     return newEntity;
 }

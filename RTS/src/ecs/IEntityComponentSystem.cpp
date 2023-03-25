@@ -10,9 +10,7 @@
 
 const float DEAD_COLOR_MULT = 0.4f;
 
-IEntityComponentSystem::IEntityComponentSystem()
-	: mPlayerControlSystem()
-	, mTimedTileInteractSystem() {
+IEntityComponentSystem::IEntityComponentSystem() {
 }
 
 IEntityComponentSystem::~IEntityComponentSystem() {
@@ -26,8 +24,8 @@ void IEntityComponentSystem::tick() {
     //mPlayerControlSystem.update(mRegistry, playerCamera);
     // TODO: Move 
   
-	mCharacterControlSystem.update(mRegistry);
 	mTimedTileInteractSystem.update(mRegistry);
+
     //mCorpseTable.update();
     
 	// TODO: Client ECS
@@ -37,6 +35,11 @@ void IEntityComponentSystem::tick() {
 			mPlayerControlSystem.update(mRegistry, camera->getYaw());
 		}
 	}
+}
+
+void IEntityComponentSystem::tickPhysics() {
+	mPhysicsSystem.update(mRegistry);
+	mCharacterControlSystem.update(mRegistry);
 }
 
 void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)

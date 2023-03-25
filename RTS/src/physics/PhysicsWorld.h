@@ -56,20 +56,28 @@ struct PickParams {
     PickTypes pickTypes;
 };
 
+enum class CollisionGroup {
+    QUERY = 0,
+    TERRAIN = 1,
+    CHARACTER = 2,
+    STATIC = 3,
+    COUNT = 4 // KEEP UP TO DATE
+};
+
 class PhysicsWorld
 {
 public:
     PhysicsWorld(CollisionShapeRepository& shapeRepository);
     ~PhysicsWorld();
 
-    void stepSimulation(f32 deltaTime);
+    int stepSimulation(f32 deltaTime);
 
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btCollisionObject* addHeightField(const HeightmapPatch& patch);
     void deleteHeightField(HeightmapPatch& patch);
 
-    RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
-    RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+    RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, CollisionGroup group, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+    RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, CollisionGroup group, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
 
     void addTrackedStaticCollisionObjectAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape);
     void removeTrackedStaticCollisionObjectAtPosition(TileContainerID containerId, TileIndex tileIndex);
@@ -101,8 +109,8 @@ public:
 private:
     void initEventHandlers();
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialCollisionObjectLookup& lookup);
-    RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape);
-    btCollisionObject* createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape);
+    RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape, CollisionGroup group);
+    btCollisionObject* createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape, CollisionGroup group);
     f32 getShapeHalfHeight(btCollisionShape* shape) const;
     btCollisionObject* allocStaticCollisionObject();
     void freeStaticCollisionObject(btCollisionObject* obj);

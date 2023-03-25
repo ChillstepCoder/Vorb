@@ -21,14 +21,14 @@ constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(CharacterLocomotionMode::COUNT)
 
 constexpr f32 LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(CharacterLocomotionMode::COUNT)] = {
     0.0f, // IDLE
-    0.6f, // WALK
-    1.0f, // RUN
-    1.5f, // SPRINT
-    1.5f, // DODGE
-    1.5f, // BEGIN_JUMP
-    1.5f, // JUMP
-    1.2f, // FALLING
-    1.2f, // LANDING
+    0.05f, // WALK
+    0.05f, // RUN
+    0.05f, // SPRINT
+    1.0f, // DODGE
+    1.0f, // BEGIN_JUMP
+    1.0f, // JUMP
+    1.0f, // FALLING
+    1.0f, // LANDING
 };
 
 // TODO: Pull from the anim machine

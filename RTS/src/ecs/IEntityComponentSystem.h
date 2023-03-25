@@ -9,7 +9,8 @@ public:
     IEntityComponentSystem();
     virtual ~IEntityComponentSystem();
 
-	virtual void tick();
+    virtual void tick();
+    virtual void tickPhysics();
 
     // Create an entity, on server it will optionally replicate, on client it cannot replicate
     virtual entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) = 0;
@@ -23,6 +24,7 @@ public:
     CharacterControlSystem mCharacterControlSystem;
     PlayerControlSystem mPlayerControlSystem;
     TimedTileInteractSystem mTimedTileInteractSystem;
+    PhysicsSystem mPhysicsSystem;
 
 	// Classes with World access
 	friend class PhysicsComponent;

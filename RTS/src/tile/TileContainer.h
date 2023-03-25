@@ -75,7 +75,7 @@ public:
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, Ready, TileContainerEventType::Ready, const TileContainerEvent&);
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, EditTiles, TileContainerEventType::EditTiles, const TileContainerEvent&);
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
-    STATIC_EVENT_DISPATCHER(TileContainer);
+    STATIC_EVENT_DISPATCHER_DEF(TileContainer);
 };
 
 // TODO: Memory recycler?
@@ -276,6 +276,9 @@ public:
     void copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const;
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
+    EVENT_LISTENER_FUNCS(TileContainer, EditTiles, TileContainerEventType::EditTiles, const TileContainerEvent&);
+    EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
+
 private:
     bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
     bool tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType);
@@ -311,4 +314,6 @@ private:
     bool mDirtyData = false;
     std::variant<Chunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
+
+    EVENT_DISPATCHER_DEF(TileContainer);
 };

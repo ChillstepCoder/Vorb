@@ -36,9 +36,18 @@ const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);
 const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
 
-// TODO: Figure out lag
-// https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=10544
+constexpr int COLLISION_FILTER_ALL = 0xffffffff;
+constexpr int COLLISION_FILTER_DYNAMIC = BIT_CAST(CollisionGroup::QUERY) | BIT_CAST(CollisionGroup::CHARACTER);
+constexpr int COLLISION_FILTER_STATIC = BIT_CAST(CollisionGroup::QUERY) | BIT_CAST(CollisionGroup::TERRAIN) | BIT_CAST(CollisionGroup::STATIC);
 
+int collisionMasks[e_cast(CollisionGroup::COUNT)] = {
+    COLLISION_FILTER_ALL, // Query
+    BIT_CAST(CollisionGroup::QUERY), // Terrain
+    BIT_CAST(CollisionGroup::STATIC) | COLLISION_FILTER_DYNAMIC, // Character
+    COLLISION_FILTER_DYNAMIC // Static
+};
+
+static_assert(e_cast(CollisionGroup::COUNT) == 4);
 
 PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository) {
 
@@ -108,14 +117,15 @@ PhysicsWorld::~PhysicsWorld() {
     m_collisionShapes.clear();*/
 }
 
-void PhysicsWorld::stepSimulation(f32 elapsedSec) {
+int PhysicsWorld::stepSimulation(f32 elapsedSec) {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
 
+    int stepCount = 0;
     { // Simulate
         PROFILE_SCOPE("Step");
         std::lock_guard guard(mStepSimulationMutex);
-        mDynamicsWorld->stepSimulation(elapsedSec, 3 /*maxSubSteps*/);
+        stepCount = mDynamicsWorld->stepSimulation(elapsedSec, 3 /*maxSubSteps*/);
     }
 
     // Process picking from other threads
@@ -129,6 +139,8 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
             deferredPick->setPickResult(result);
         }
     }
+
+    return stepCount;
 }
 
 DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {
@@ -162,7 +174,7 @@ btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     heightFieldShape->setUseDiamondSubdivision();
     heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));
 
-    return createStaticCollisionObject(INVALID_PHYSICS_USER_INDEX, INVALID_PHYSICS_USER_INDEX, center, heightFieldShape);
+    return createStaticCollisionObject(INVALID_PHYSICS_USER_INDEX, INVALID_PHYSICS_USER_INDEX, center, heightFieldShape, CollisionGroup::TERRAIN);
 }
 
 void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
@@ -176,14 +188,14 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
     patch.mHeightData->mCollider = nullptr;
 }
 
-RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
+RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, CollisionGroup group, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
     CollisionShapeID shapeId = mShapeRepository.getOrAddCollisionShape(shapeType, halfExtents);
-    return addRigidBody(ownerEntity, position, mShapeRepository.getShape(shapeId), mass, rotationType);
+    return addRigidBody(ownerEntity, position, mShapeRepository.getShape(shapeId), mass, group, rotationType);
 }
 
-RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
-
-    RigidBodyPair rv = createRigidBody(ownerEntity, mass, position, collisionShape);
+RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, CollisionGroup group, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
+    assert((BIT_CAST(group) & COLLISION_FILTER_STATIC) == 0);
+    RigidBodyPair rv = createRigidBody(ownerEntity, mass, position, collisionShape, group);
 
     // Disable rotation optionally
     if (rotationType == RigidBodyRotationType::NO_ROTATE) {
@@ -209,7 +221,7 @@ void PhysicsWorld::addTrackedStaticCollisionObjectAtPosition(TileContainerID con
     const auto&& it = lookup.find(ownerTilePosition);
     assert(it == lookup.end());
 #endif
-    lookup[ownerTilePosition] = createStaticCollisionObject(containerOwner, ownerTilePosition, position, collisionShape);
+    lookup[ownerTilePosition] = createStaticCollisionObject(containerOwner, ownerTilePosition, position, collisionShape, CollisionGroup::STATIC);
 }
 
 
@@ -289,7 +301,7 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
         startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
         // TODO: House owner entity
         staticMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(staticMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
-        staticMesh.mCollisionObject = createStaticCollisionObject(tileContainerId, INVALID_PHYSICS_USER_INDEX, meshBuilder.getRootPos(), staticMesh.mShape.get());
+        staticMesh.mCollisionObject = createStaticCollisionObject(tileContainerId, INVALID_PHYSICS_USER_INDEX, meshBuilder.getRootPos(), staticMesh.mShape.get(), CollisionGroup::STATIC);
     }
 
     // Add all tracked bodies
@@ -355,12 +367,12 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBod
         //const auto&& it2 = lookup.find(it.position);
         //assert(it2 == lookup.end());
 #endif
-        lookup[it.ownerTilePosition] = createStaticCollisionObject(gatherer.mContainerId, it.ownerTilePosition, it.position, mShapeRepository.getShape(it.shapeId));
+        lookup[it.ownerTilePosition] = createStaticCollisionObject(gatherer.mContainerId, it.ownerTilePosition, it.position, mShapeRepository.getShape(it.shapeId), CollisionGroup::STATIC);
     }
 }
 
 
-RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape)
+RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape, CollisionGroup group)
 {
     PROFILE_FUNCTION();
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
@@ -398,7 +410,7 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
     assert(IS_GAME_THREAD());
     {
         std::lock_guard lock(mStepSimulationMutex);
-        mDynamicsWorld->addRigidBody(body);
+        mDynamicsWorld->addRigidBody(body, BIT_CAST(group), collisionMasks[e_cast(group)]);
     }
     //mRigidBodiesToAdd.enqueue(body);
 
@@ -410,7 +422,7 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
     return rv;
 }
 
-btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape) {
+btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape, CollisionGroup group) {
     PROFILE_FUNCTION();
     btTransform startTransform;
     const f32 halfHeight = getShapeHalfHeight(shape);
@@ -433,7 +445,7 @@ btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID own
     object->setUserIndex3(ownerTilePosition);
 
     assert(IS_GAME_THREAD());
-    mDynamicsWorld->addCollisionObject(object);
+    mDynamicsWorld->addCollisionObject(object, BIT_CAST(group), collisionMasks[e_cast(group)]);
     object->setActivationState(DISABLE_SIMULATION);
    
     ++mNumStaticCollisionObjects;
@@ -572,14 +584,15 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
     btVector3 end = f32v3ToBtVector3(rayEnd);
     // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
     CustomRayResult rayResult(start, end);
-    int collisionMask = btBroadphaseProxy::DefaultFilter;
+    int collisionMask = 0;
 
     if (pickTypes & PICK_TYPE_DYNAMIC) {
-        collisionMask |= btBroadphaseProxy::KinematicFilter;
+        collisionMask |= COLLISION_FILTER_DYNAMIC;
     }
     if (pickTypes & PICK_TYPE_STATIC) {
-        collisionMask |= btBroadphaseProxy::StaticFilter;
+        collisionMask |= COLLISION_FILTER_STATIC;
     }
+    rayResult.m_collisionFilterGroup = BIT_CAST(CollisionGroup::QUERY);
     rayResult.m_collisionFilterMask = collisionMask;
     //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
     mDynamicsWorld->rayTest(start, end, rayResult);

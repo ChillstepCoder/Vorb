@@ -100,7 +100,8 @@ extern float sFps;
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
-#define BIT(i) (1 << i)
+#define BIT(i) (1 << (i))
+#define BIT_CAST(i) (BIT(e_cast(i)))
 
 // Thread
 inline void setThreadPriorityToMax() {

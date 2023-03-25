@@ -74,7 +74,12 @@ void IWorld::tickShared(f32 elapsedSec) {
     mEcs->tick();
 
     // Physworld will handle internal interpolation and timestep itself
-    mPhysWorld->stepSimulation(elapsedSec);
+    const int stepCount = mPhysWorld->stepSimulation(elapsedSec);
+
+    // We dont update for every step, we dont need to
+    if (stepCount) {
+        mEcs->tickPhysics();
+    }
 }
 
 void IWorld::setTimeOfDay(float time) {

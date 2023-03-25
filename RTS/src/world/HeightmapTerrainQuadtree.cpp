@@ -68,7 +68,6 @@ void HeightmapTerrainQuadtree::markDirty() {
     }
 }
 
-
 void createTerrainAndWaterMeshFromGen(
     TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,

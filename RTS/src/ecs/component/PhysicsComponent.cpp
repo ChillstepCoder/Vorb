@@ -5,6 +5,7 @@
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 
 #include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 #include "ecs/IEntityComponentSystem.h"
 
 #include "resources/TileRepository.h"
@@ -39,7 +40,6 @@ f32v2 PhysicsComponent::getInterpolatedDir() const {
     return f32v2(result.getX(), result.getY());
 }
 
-#include "debugging/DebugRenderer.h"
 f32v3 PhysicsComponent::getPosition() const {
     assert(IS_GAME_THREAD());
     // TODO: Physics system could cache position
@@ -94,30 +94,36 @@ void PhysicsComponent::setVelocity(const f32v3& vel) {
     mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
 }
 
-#include "world/IHeightmapGrid.h"
-
-void PhysicsSystem::customPhysicsUpdateTest(entt::registry& registry) {
+void PhysicsSystem::update(entt::registry& registry) {
     PROFILE_FUNCTION();
+    const IHeightmapGrid& grid = sWorld->getHeightmapGrid();
     auto view = registry.view<PhysicsComponent>();
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
-        f32v3 pos = cmp.getPosition();
-        f32v2 xyPosition(pos.x, pos.y);
-        const IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+        const f32v3 pos = cmp.getPosition();
+        const f32v2 xyPosition(pos.x, pos.y);
         f32 terrainHeight;
         constexpr f32 SNAP_THRESHOLD = 0.01f;
         if (grid.tryComputeHeightAtPoint(xyPosition, &terrainHeight)) {
             if (terrainHeight >= pos.z - SNAP_THRESHOLD) {
                 f32v3 vel = cmp.getLinearVelocity();
-                cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
+                const f32v3 velocity = cmp.getLinearVelocity();
+                if (velocity.z < 0.0f) {
+                    cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
+                }
                 cmp.setTransform(f32v3(pos.x, pos.y, terrainHeight), 0.0f);
-               /* cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);*/
+                cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
+            }
+            else {
+                cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
             }
         }
         else {
             /*cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);*/
             f32v3 vel = cmp.getLinearVelocity();
             cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
+            cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
+            // TODO: Deactivate? hmmm
         }
     };
 }

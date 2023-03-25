@@ -1,5 +1,9 @@
 #pragma once
 
+
+#include "boost/container/flat_set.hpp"
+#include "tile/TileContainer.h"
+
 class ChunkGrassQuadtree;
 class Chunk;
 class GrassMeshManager
@@ -17,5 +21,6 @@ public:
 
 private:
     std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>> mChunkGrassQuadtrees;
+    boost::container::flat_map<TileContainerID, TileContainerEventDispatcher::Handle> mEditEventHandles;
 };
 

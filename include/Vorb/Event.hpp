@@ -39,7 +39,7 @@
 typedef eventpp::EventDispatcher<eventType, void(paramType)> name##EventDispatcher; \
 typedef eventpp::ScopedRemover<eventpp::EventDispatcher<eventType, void(paramType)>> name##Listeners;
 
-#define EVENT_DISPATCHER(name) \
+#define EVENT_DISPATCHER_DEF(name) \
 name##EventDispatcher m##name##EventDispatcher; \
 public: \
 void register##name##Listeners(name##Listeners& remover) { \
@@ -47,7 +47,7 @@ void register##name##Listeners(name##Listeners& remover) { \
 } \
 private:
 
-#define STATIC_EVENT_DISPATCHER(name) \
+#define STATIC_EVENT_DISPATCHER_DEF(name) \
 inline static name##EventDispatcher s##name##EventDispatcher; \
 public: \
 static void register##name##Listeners(name##Listeners& remover) { \

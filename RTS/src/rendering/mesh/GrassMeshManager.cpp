@@ -53,11 +53,38 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
     auto&& it = mChunkGrassQuadtrees.find(&chunk);
     if (it == mChunkGrassQuadtrees.end()) {
         mChunkGrassQuadtrees[&chunk] = nullptr;
+         // Const cast ~ get fucked
+        TileContainer* container = const_cast<Chunk&>(chunk).getTileContainer();
+        mEditEventHandles[container->getId()] = container->addEditTilesListener([this](const TileContainerEvent& evnt) {
+            PROFILE_SCOPE("GrassEdit Dirty");
+            assert(IS_GAME_THREAD());
+            if (evnt.edit.type == TileContainerEditEventType::ChangeZPos) {
+                const Chunk* owner = evnt.container->getOwnerChunk();
+                auto& quadtreePtr = mChunkGrassQuadtrees[owner];
+                if (quadtreePtr) {
+                    for (ui32 i = 0; i < evnt.edit.editCount; ++i) {
+                        assert(owner);
+                        TileContainerEditZPosEventData& data = evnt.edit.changeZPosArray[i];
+                        quadtreePtr->markDirty(f32v2(data.worldPosition));
+                    }
+                }
+            }
+        });
+        // Destroy will be handled by removeGrassForChunk
     }
 }
 
 void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     assert(IS_GAME_THREAD());
+    assert(chunk.getTileContainer());
+    auto&& it = mEditEventHandles.find(chunk.getTileContainer()->getId());
+    assert(it != mEditEventHandles.end());
+    // Const cast ~ get fucked
+    TileContainer* container = const_cast<Chunk&>(chunk).getTileContainer();
+    // TODO: Can this be automatic? We are only holding a weak_ptr handle...
+    container->removeEditTilesListener(it->second);
+    mEditEventHandles.erase(it);
+    // TODO: uhhh....
     //auto&& it = mChunkGrassQuadtrees.find(&chunk);
     //if (it != mChunkGrassQuadtrees.end()) {
     //    // If we hit this, it means that we didnt reset it in tick above before removing..

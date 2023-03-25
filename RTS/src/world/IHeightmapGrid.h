@@ -42,6 +42,15 @@ enum class TerrainHeightSetDirection {
 //
 //typedef void(*HeightmapRequestFunction)(HeightmapPatchHandleData&& handle);
 
+enum class HeightmapGridEventType {
+    EditVerts
+};
+struct HeightmapGridEvent {
+    HeightmapGridEventType mEventType;
+    const boost::container::flat_set<i32v2>* mModifiedVerts = nullptr;
+};
+EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGridEvent&);
+
 class IHeightmapGrid
 {
 public:
@@ -95,6 +104,8 @@ public:
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb) const;
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const;
 
+    STATIC_EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
+
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
     void onPatchFinishedGenerating(HeightmapPatchID id);
@@ -116,7 +127,8 @@ private:
 
     // TODO: Server only
     boost::container::flat_set<i32v2> mModifiedVertsThisTick;
-
+    // Events
+    STATIC_EVENT_DISPATCHER_DEF(IHeightmapGrid);
 };
 
 extern IHeightmapGrid* sHeightmapGrid;

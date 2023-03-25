@@ -128,9 +128,9 @@ namespace vorb {
             std::array<std::atomic<i32>, NUM_KEY_CODES> m_presses;
             std::atomic<i32> m_focus = ATOMIC_VAR_INIT(0);
 
-            EVENT_DISPATCHER(KeyFocus);
-            EVENT_DISPATCHER(Key);
-            EVENT_DISPATCHER(Text);
+            EVENT_DISPATCHER_DEF(KeyFocus);
+            EVENT_DISPATCHER_DEF(Key);
+            EVENT_DISPATCHER_DEF(Text);
         };
     }
 }

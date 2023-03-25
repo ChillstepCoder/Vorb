@@ -5,51 +5,105 @@
 
 #include "ecs/component/PhysicsComponent.h"
 #include "physics/DynamicCharacterController.h"
+#include "physics/PhysicsConst.h"
 
-constexpr float ACCELERATION = 0.01f;
-constexpr float JUMP_VELOCITY = 0.20f;
+constexpr float JUMP_VELOCITY = 4.0f;
 
 KEG_TYPE_DEF_SAME_NAME(CharacterControlComponentDef, kt) {
     kt.addValue("speed", keg::Value::basic(offsetof(CharacterControlComponentDef, mSpeed), keg::BasicType::F32));
 }
 
-inline void updateComponent(CharacterControlComponent& motionCmp, PhysicsComponent& physCmp) {
-    DynamicCharacterController& controller = *motionCmp.mController;
+inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsComponent& physCmp) {
+    //DynamicCharacterController& controller = *controlCmp.mController;
     // Transitions
-    if (motionCmp.mDesiredMode == CharacterLocomotionMode::BEGIN_JUMP && controller.canJump()) {
-        motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
-        motionCmp.mMode = CharacterLocomotionMode::JUMPING;
-        controller.jump();
+    btRigidBody* rigidBody = physCmp.mRigidBody;
+    const bool onGround = physCmp.mFlags.isBitSet(PhysicsComponentFlag::IS_ON_GROUND);
+
+    const btVector3& currentLinearVelocity = rigidBody->getLinearVelocity();
+    if (controlCmp.mDesiredMode == CharacterLocomotionMode::BEGIN_JUMP && onGround) {
+        controlCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
+        controlCmp.mMode = CharacterLocomotionMode::JUMPING;
+        // Immediately adjust linear velocity to account the jump, this will update currentLinearVelocity
+        btVector3 jumpVelocity = btVector3(currentLinearVelocity.x(), currentLinearVelocity.y(), JUMP_VELOCITY);
+        rigidBody->setLinearVelocity(jumpVelocity);
     }
-    else if (motionCmp.isInAirState()) {
-        if (controller.canJump()) {
+    else if (controlCmp.isInAirState()) {
+        if (onGround) {
             // Transition back to grounded
-            motionCmp.mMode = CharacterLocomotionMode::LANDING;
-            motionCmp.mLandingTimer.start();
+            controlCmp.mMode = CharacterLocomotionMode::LANDING;
+            controlCmp.mLandingTimer.start();
         }
-        else if (motionCmp.mMode == CharacterLocomotionMode::JUMPING) {
+        else if (controlCmp.mMode == CharacterLocomotionMode::JUMPING) {
             if (physCmp.mRigidBody->getLinearVelocity().getZ() <= 0.0f) {
-                motionCmp.mMode = CharacterLocomotionMode::FALLING;
+                controlCmp.mMode = CharacterLocomotionMode::FALLING;
             }
         }
     }
 
-    if (motionCmp.mMode != motionCmp.mDesiredMode) {
-        if (motionCmp.mMode == CharacterLocomotionMode::LANDING) {
+    if (controlCmp.mMode != controlCmp.mDesiredMode) {
+        if (controlCmp.mMode == CharacterLocomotionMode::LANDING) {
+            // TODO: HMM IM NOT SURE ABOUT THISSSSS
             constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
-            if (motionCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
-                motionCmp.mMode = motionCmp.mDesiredMode;
+            if (controlCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
+                controlCmp.mMode = controlCmp.mDesiredMode;
             }
         }
         else {
-            motionCmp.mMode = motionCmp.mDesiredMode;
+            controlCmp.mMode = controlCmp.mDesiredMode;
         }
     }
 
+    const bool isTryingToMove = (controlCmp.mMoveDirection.x != 0.0f || controlCmp.mMoveDirection.y != 0.0f);
+    const f32 currentMaxSpeed = controlCmp.getCurrentSpeed();
+    const f32 currentAcceleration = controlCmp.getCurrentAcceleration();
 
-    float desiredSpeed = motionCmp.getCurrentSpeed();
-    controller.setMovementDirection(btVector3(motionCmp.mMoveDirection.x, motionCmp.mMoveDirection.y, 0.0f));
-    controller.setMaxLinearVelocity(desiredSpeed);
+    const f32v2 currentLinearVelocity2D(currentLinearVelocity.x(), currentLinearVelocity.y());
+    f32v2 newLinearVelocity2D;
+    if (isTryingToMove) {
+        f32v2 desiredLinearVelocity2D;
+        if (onGround || currentLinearVelocity.z() > 0.0f) {
+            // If we are on the ground or moving upwards, allow control
+            desiredLinearVelocity2D = f32v2(controlCmp.mMoveDirection.x * currentMaxSpeed, controlCmp.mMoveDirection.y * currentMaxSpeed);
+        }
+        else {
+            // Allow limited control while falling
+            constexpr f32 FALL_CONTROL_MULT = 1.0f;
+            desiredLinearVelocity2D = f32v2(controlCmp.mMoveDirection.x * FALL_CONTROL_MULT * currentMaxSpeed, controlCmp.mMoveDirection.y * FALL_CONTROL_MULT * currentMaxSpeed);
+        }
+        // https://www.construct.net/en/blogs/ashleys-blog-2/using-lerp-delta-time-924
+        newLinearVelocity2D = vmath::lerp(currentLinearVelocity2D, desiredLinearVelocity2D, currentAcceleration);
+    }
+    else {
+        // Friction
+        constexpr f32 GROUND_FRICTION = 0.8f;
+        constexpr f32 AIR_FRICTION = 0.2f;
+        if (onGround) {
+            newLinearVelocity2D = vmath::lerp(currentLinearVelocity2D, f32v2(0.0f), GROUND_FRICTION);
+        }
+        else {
+            newLinearVelocity2D = vmath::lerp(currentLinearVelocity2D, f32v2(0.0f), AIR_FRICTION);
+        }
+        // NOTE: If we ever need delta time https://www.construct.net/en/blogs/ashleys-blog-2/using-lerp-delta-time-924
+    }
+
+    // Use lerp instead of force so that we dont orbit
+    // https://www.construct.net/en/blogs/ashleys-blog-2/using-lerp-delta-time-924
+    //linearVelocity = linearVelocity.lerp(desiredVelocity, 1.0f - currentAcceleration);
+
+
+    //if (onGround) {
+    //    /* Avoid going down on ramps, if already on ground, and clearGravity()
+    //    is not enough */
+    //    rigidBody->setGravity({ 0, 0, 0 });
+    //}
+    //else {
+    //    rigidBody->setGravity(mGravity);
+    //}
+    rigidBody->setGravity(GRAVITY);
+    const btVector3 newLinearVelocity(newLinearVelocity2D.x, newLinearVelocity2D.y, currentLinearVelocity.z());
+    rigidBody->setLinearVelocity(newLinearVelocity);
+    rigidBody->activate(true); // FORCE
+
     // If we have no desired motion, do nothing and let physics system add friction
    /* if (motionCmp.mDesiredDirection.x == 0.0f && motionCmp.mDesiredDirection.y == 0.0f) {
         return;
@@ -95,6 +149,7 @@ inline void updateComponent(CharacterControlComponent& motionCmp, PhysicsCompone
 }
 
 void CharacterControlSystem::update(entt::registry& registry) {
+    PROFILE_FUNCTION();
     // Update components
     // TODO: Check performance of lambda vs non lambda iteration (see PlayerControlComponent)
     registry.view<CharacterControlComponent, PhysicsComponent>().each([](auto& motionCmp, auto& physCmp) {

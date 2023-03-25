@@ -94,7 +94,9 @@ public:
     void update(const f32v2& loadCenter);
 
     // Mark terrain as dirty at the brush position
-    void onDataChanged(const f32v2& editPosition, f32 editRadius);
+    void onDataChanged(const f32v2& editPosition, f32 editRadius); // TODO: Deprecate?
+    void markLeafDirty(const i32v2& leafPos);
+    void markDirty(const f32v2& editPos);
 
     const f32v2& getWorldPos() const { return mWorldPos; }
 
@@ -162,7 +164,7 @@ protected:
     ui32 mNumCrossfading = 0;
     ui8 mCrossfadeActiveTable[QUADTREE_FADE_LIST_SIZE];
     f32 mCrossfadeTable[QUADTREE_FADE_LIST_SIZE]; // Shared crossfade values
-    f32v2 mWorldPos;
+    f32v2 mWorldPos; // TODO: I hate that this isnt i32v2
     const f32* mSubdivideDistancesSq;
 };
 
@@ -267,6 +269,37 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onDataChanged(const f32v2& editPositi
     }
 }
 
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::markLeafDirty(const i32v2& leafPos) {
+    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+        const ui32 nodeIndex = mActiveNodes[i];
+        const ui32 lod = QUADTREE_LOD_FROM_INDEX[nodeIndex];
+        // LEAF ONLY
+        if (lod == FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::HIGHEST_LOD) {
+            // We dont need round because mWorldPos is passed in and will have a valid whole integer
+            const i32v2 myPosition = i32v2(mWorldPos + f32v2(PATCH_POSITIONS.data[nodeIndex].xy));
+            if (myPosition == leafPos) {
+                QuadtreePatch& patch = mNodes[nodeIndex];
+                patch.mFlags |= QUADTREE_PATCH_FLAG_DIRTY_MESH;
+            }
+        }
+    }
+}
+
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::markDirty(const f32v2& editPos) {
+    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+        const ui32 nodeIndex = mActiveNodes[i];
+        const ui32 lod = QUADTREE_LOD_FROM_INDEX[nodeIndex];
+        const f32v2 patchDims = f32v2(LOD_DIMS[lod].xy);
+        const f32v2 patchOffset = editPos - (mWorldPos + f32v2(PATCH_POSITIONS.data[nodeIndex].xy));
+        // If edit is within our bounds, we are dirty
+        if (patchOffset.x >= 0.0f && patchOffset.y >= 0.0f && patchOffset.x <= patchDims.x && patchOffset.y <= patchDims.y) {
+            QuadtreePatch& patch = mNodes[nodeIndex];
+            patch.mFlags |= QUADTREE_PATCH_FLAG_DIRTY_MESH;
+        }
+    }
+}
 
 // === Utilities ===
 inline ui32 getQuadtreeParentIndex(ui32 index) {

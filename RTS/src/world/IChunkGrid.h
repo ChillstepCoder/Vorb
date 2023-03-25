@@ -1,6 +1,7 @@
 #pragma once
 
 #include "world/Chunk.h"
+#include "world/IHeightmapGrid.h"
 
 #include <Vorb/Event.hpp>
 
@@ -32,16 +33,13 @@ public:
     const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
     const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
 
-    void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
-
     // Events
-    /*bool addCreateListener(ChunkListeners& remover, const ChunkEventDispatcher::Callback& callback) {
-        return remover.appendListener(CHUNK_EVENT_TYPE::Create, callback);
-    }*/
     STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
     STATIC_EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
 
 private:
+    // Events
+    void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     // Grid management
     void updateGridEdges(const f32v2& loadCenter);
     void makeChunkAlive(const ChunkID& chunkId);
@@ -77,6 +75,7 @@ private:
     std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
 
     // Events
-    STATIC_EVENT_DISPATCHER(Chunk);
+    IHeightmapGridListeners mHeightmapGridListeners;
+    STATIC_EVENT_DISPATCHER_DEF(Chunk);
 };
 extern IChunkGrid* sChunkGrid;

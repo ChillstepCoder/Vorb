@@ -21,7 +21,6 @@
 
 #include <boost/pool/singleton_pool.hpp>
 
-#include "world/IChunkGrid.h"
 //
 //// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
 //struct patch_handle_pool {};
@@ -134,15 +133,15 @@ void IHeightmapGrid::tickShared() {
         }
     }
 
-
     // Notify of changed portions
     // TODO: Server Only
-    {
+    if (mModifiedVertsThisTick.size()) {
         PROFILE_SCOPE("Dirty Heightmap");
-        if (mModifiedVertsThisTick.size()) {
-            sChunkGrid->onTerrainModified(mModifiedVertsThisTick);
-            mModifiedVertsThisTick.clear();
-        }
+        HeightmapGridEvent editEvent;
+        editEvent.mEventType = HeightmapGridEventType::EditVerts;
+        editEvent.mModifiedVerts = &mModifiedVertsThisTick;
+        dispatchEditVerts(editEvent);
+        mModifiedVertsThisTick.clear();
     }
 }
 

@@ -61,7 +61,8 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
         assert(false);
     }*/
 
-    ui32 numPoints = navCmp.mFinePath->getNumPoints();
+    const ui32 numPoints = navCmp.mFinePath->getNumPoints();
+	assert(numPoints);
 
     if (navCmp.mCurrentFinePoint >= numPoints) {
 		return PathStatus::SUCCESS;
