@@ -406,6 +406,7 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
         assert((size_t)ownerEntity <= INVALID_PHYSICS_USER_INDEX && "Entity ID overflow in createRigidBody");
         body->setUserIndex((int)ownerEntity); // TODO: ENTT?
     }
+    body->setGravity(GRAVITY);
 
     assert(IS_GAME_THREAD());
     {

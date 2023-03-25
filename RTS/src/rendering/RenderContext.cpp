@@ -663,7 +663,9 @@ void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState&
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+            if (!sDebugOptions.mDisableTerrain) {
+                mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+            }
 
             // Instanced models
             Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();

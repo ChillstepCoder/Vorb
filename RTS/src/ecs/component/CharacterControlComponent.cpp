@@ -99,7 +99,6 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
     //else {
     //    rigidBody->setGravity(mGravity);
     //}
-    rigidBody->setGravity(GRAVITY);
     const btVector3 newLinearVelocity(newLinearVelocity2D.x, newLinearVelocity2D.y, currentLinearVelocity.z());
     rigidBody->setLinearVelocity(newLinearVelocity);
     rigidBody->activate(true); // FORCE
