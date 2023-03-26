@@ -57,7 +57,8 @@ void GameThread::mainFunc() {
     initWorld();
 
     // Init time
-    mTimeManager.init(1.0 / SERVER_TICK_RATE_HZ);
+    GameTimeManager& gameTimeManager = Services::GameTimeManager::ref();
+    gameTimeManager.init(1.0 / SERVER_TICK_RATE_HZ);
 
     // TODO: Load world data
 
@@ -67,7 +68,7 @@ void GameThread::mainFunc() {
         PROFILE_SCOPE("GameLoop");
         // Fixed timestep
         f64 sleepSec = 0.0;
-        if (mTimeManager.tryTick(&sleepSec)) {
+        if (gameTimeManager.tryTick(&sleepSec)) {
             tick();
             // Force a thread switch if anyone is waiting
             // // TODO: Profile if this matters
@@ -113,9 +114,10 @@ void GameThread::tickClient() {
         pError("LOST CONNECTION!");
         assert(false);
     }
-    client.update(mTimeManager.getTimestep());
+    const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
+    client.update(timeStep);
 
-    cliWorld->tick(mTimeManager.getTimestep());
+    cliWorld->tick(timeStep);
 
     //// Update editors
     //UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
@@ -135,7 +137,7 @@ void GameThread::tickHost() {
     }
 
     // Update world
-    hostWorld->tick(mTimeManager.getTimestep());
+    hostWorld->tick(Services::GameTimeManager::ref().getTimestep());
 
     // Update editors
     /*UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());

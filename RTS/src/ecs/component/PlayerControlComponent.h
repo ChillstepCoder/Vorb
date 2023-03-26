@@ -14,5 +14,5 @@ public:
 	void update(entt::registry& registry, f32 cameraYaw);
 
 private:
-	void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, f32 cameraYaw);
+	void updateComponent(entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw);
 };

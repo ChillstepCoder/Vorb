@@ -20,8 +20,6 @@ public:
     
     bool isRunning() const { return mIsRunning.load(); }
 
-    const GameTimeManager& getTimeManager() const { return mTimeManager; }
-
 private:
     void mainFunc();
     void tick();
@@ -36,12 +34,10 @@ private:
     std::unique_ptr<std::thread> mThread;
     WorldType mWorldType;
 
-    GameTimeManager mTimeManager;
-
     static GameThread* sInstance;
 };
 
+// TODO: Move this
 inline TimeStampSec getCurrentTimeStamp() {
-    assert(IS_GAME_THREAD());
-    return GameThread::getInstance().getTimeManager().getCurrentTimeSec();
+    return Services::GameTimeManager::ref().getCurrentTimeSec();
 }

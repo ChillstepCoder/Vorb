@@ -7,6 +7,8 @@
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 
+#include "time/GameTimeManager.h"
+
 #include "city/Building.h"
 
 #include "debugging/VisualLogger.h"
@@ -23,6 +25,9 @@ static_assert(SUBCHUNK_WIDTH == 16);
 
 // Distance threshold where we can still navigate across blocks
 constexpr f32 FINE_NAV_HEIGHT_THRESHOLD = 3.0f / 4.0f + 0.05f;
+
+// Harvestable reservation
+constexpr f64 RESERVE_DURATION_SEC = 10.0;
 
 inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
     return f32v3(pos2d.x, pos2d.y, heightGrid.tryComputeHeightAtPoint(pos2d));
@@ -165,6 +170,17 @@ void NavWorld::updateNavThread()
         else {
             NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + containerData.dims.x, worldPos2D.y + containerData.dims.y));
             mSpatialLookup.remove(ContainerNavRegion{ newBox, containerData.id });
+        }
+    }
+
+    // Cleanup old harvestable reservations
+    const f64 timeStampNow = Services::GameTimeManager::ref().getCurrentTimeSec();
+    for (auto it = mReservedHarvestables.begin(); it != mReservedHarvestables.end();) {
+        if (it->second - timeStampNow > RESERVE_DURATION_SEC) {
+            it = mReservedHarvestables.erase(it);
+        }
+        else {
+            ++it;
         }
     }
 }
@@ -1383,4 +1399,20 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
             }
         }
     }
+}
+
+bool NavWorld::navThreadTryReserveHarvestable(LiteTileHandle position) const {
+    assert(IS_NAV_THREAD());
+    auto&& it = mReservedHarvestables.find(position);
+    if (it == mReservedHarvestables.end()) {
+        mReservedHarvestables.insert(std::make_pair(position, Services::GameTimeManager::ref().getCurrentTimeSec()));
+        return true;
+    }
+    const f64 timeStampNow = Services::GameTimeManager::ref().getCurrentTimeSec();
+    const f64 lifetime = timeStampNow - it->second;
+    if (lifetime >= RESERVE_DURATION_SEC) {
+        it->second = timeStampNow;
+        return true;
+    }
+    return false;
 }

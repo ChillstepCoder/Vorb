@@ -57,6 +57,18 @@ struct LiteTileHandle {
 };
 static_assert(sizeof(LiteTileHandle) == 8, "Keep small as possible");
 
+template<>
+struct std::less<LiteTileHandle>
+{
+    bool operator() (const LiteTileHandle& a, const LiteTileHandle& b) const
+    {
+        if (a.containerId < b.containerId) return true;
+        if (a.containerId > b.containerId) return false;
+        return a.index < b.index;
+    }
+};
+
+
 class LiteTileHandleHash {
 public:
     size_t operator()(const LiteTileHandle& v) const {

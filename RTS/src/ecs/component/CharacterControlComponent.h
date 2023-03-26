@@ -46,16 +46,19 @@ constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(CharacterLocomotionMode::COUNT)
 static_assert(e_cast(CharacterLocomotionMode::COUNT) == 9, "Update above tables");
 
 
+enum class CharacterControlComponentFlags : ui8{
+    HIDE_MODEL = BIT(0),
+    ORIENT_TO_MOVEMENT = BIT(1),
+};
+
 struct CharacterControlComponent {
-    class DynamicCharacterController* mController = nullptr;
-    PreciseTimer mLandingTimer; // TODO: This is wrong as it doesn't account tick rate or timestep
-    // TODO: Compress to f32
+    // TODO: Compress to f32?
     f32v2 mMoveDirection = f32v2(0.0f);
     f32 mControllerAngle = 0.0f;
     f32 mSpeedRun = 4.167f; // ~15 kmph // TODO: AttributesComponent
     CharacterLocomotionMode mMode = CharacterLocomotionMode::IDLE;
     CharacterLocomotionMode mDesiredMode = CharacterLocomotionMode::IDLE;
-    bool mHideModel = false;// TODO: Flags
+    BitFlags<CharacterControlComponentFlags> mFlags = BitFlags<CharacterControlComponentFlags>(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT);
 
     // TODO: Mask
     bool isInAirState() const { return mMode == CharacterLocomotionMode::BEGIN_JUMP || mMode == CharacterLocomotionMode::JUMPING || mMode == CharacterLocomotionMode::FALLING; }
@@ -63,7 +66,7 @@ struct CharacterControlComponent {
     f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
     f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mMode)]; }
 };
-static_assert(sizeof(CharacterControlComponent) == 40, "Keep small");
+static_assert(sizeof(CharacterControlComponent) == 20, "Keep small");
 
 class CharacterControlSystem {
 public:

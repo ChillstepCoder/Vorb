@@ -12,6 +12,6 @@ public:
 
 private:
     f64 mTimeStepSec = 0.0; // Target timestep
-    TimeStampSec mTimeSec = 0.0; // Current tracked time
+    std::atomic<TimeStampSec> mTimeSec = 0.0; // Current tracked time
 };
 

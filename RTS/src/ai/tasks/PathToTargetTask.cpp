@@ -54,6 +54,7 @@ TaskTickResult PathToTargetTask::tick(entt::registry& registry, entt::entity age
                 NavigationComponent* navCmp = registry.try_get<NavigationComponent>(agent);
                 if (navCmp) {
                     navCmp->abort(registry.get<CharacterControlComponent>(agent));
+                    mState = TaskState::SUCCESS;
                 }
                 return TaskTickResult::SUCCESS;
             }

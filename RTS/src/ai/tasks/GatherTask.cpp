@@ -56,7 +56,13 @@ TaskTickResult HarvestItemsTask::tick(entt::registry& registry, entt::entity age
                 harvestItem(registry, agent, navCmp.mTargetHandle.toTileHandle());
             }
             else if (navStatus == NavigationStatus::FAIL) {
-                assert(false);
+                if (++mFailCount >= 4) {
+                    LOG_CRITICAL("HarvestItemsTask failed after 4 attempts");
+                    return TaskTickResult::FAIL;
+                }
+                else {
+                    mState = TaskState::FIND_ITEM;
+                }
             }
             break;
         }

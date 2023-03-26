@@ -52,21 +52,21 @@ f32v2 getMovementDir(f32 cameraYaw) {
 }
 
 
-void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, f32 cameraYaw) {
+void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw) {
 
     // Inputs for states, but only while we are on ground
-    if (!motionCmp.isInAirState()) {
+    if (!characterControlCmp.isInAirState()) {
         if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-            motionCmp.mDesiredMode = CharacterLocomotionMode::BEGIN_JUMP;
+            characterControlCmp.mDesiredMode = CharacterLocomotionMode::BEGIN_JUMP;
         }
         else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-            motionCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
+            characterControlCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
         }
         else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
-            motionCmp.mDesiredMode = CharacterLocomotionMode::WALK;
+            characterControlCmp.mDesiredMode = CharacterLocomotionMode::WALK;
         }
         else {
-            motionCmp.mDesiredMode = CharacterLocomotionMode::RUN;
+            characterControlCmp.mDesiredMode = CharacterLocomotionMode::RUN;
         }
     }
 	// Update skills
@@ -79,17 +79,18 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
     }
 
 	//  Update movement
-    motionCmp.mMoveDirection = getMovementDir(cameraYaw);
+    characterControlCmp.mMoveDirection = getMovementDir(cameraYaw);
+    characterControlCmp.mFlags.clearBit(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT);
 
     // Update controller rotation
-    motionCmp.mControllerAngle = cameraYaw; // glm::rotate(f32v2(0.0f, 1.0f), -cameraYaw);
+    characterControlCmp.mControllerAngle = cameraYaw; // glm::rotate(f32v2(0.0f, 1.0f), -cameraYaw);
 
-    if (motionCmp.mMoveDirection.x != 0.0f || motionCmp.mMoveDirection.y != 0.0f) {
+    if (characterControlCmp.mMoveDirection.x != 0.0f || characterControlCmp.mMoveDirection.y != 0.0f) {
         // Remove any navigation component if we are applying movement input
         registry.remove<NavigationComponent>(entity);
 	}
-	else if (!motionCmp.isInAirState() && motionCmp.mDesiredMode != CharacterLocomotionMode::BEGIN_JUMP) {
-        motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
+	else if (!characterControlCmp.isInAirState() && characterControlCmp.mDesiredMode != CharacterLocomotionMode::BEGIN_JUMP) {
+        characterControlCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
 	}
 
 }

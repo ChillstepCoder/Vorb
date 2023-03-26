@@ -6,6 +6,7 @@
 class NavThread;
 class ResourceManager;
 class ContractManager;
+class GameTimeManager;
 
 struct ThreadPoolWorkerData {
 };
@@ -27,6 +28,7 @@ public:
     using NavThread = entt::service_locator<NavThread>;
     using ResourceManager = entt::service_locator<ResourceManager>;
     using ContractManager = entt::service_locator<ContractManager>;
+    using GameTimeManager = entt::service_locator<GameTimeManager>;
 private:
     static void initThreads();
     static bool sUsingNav;

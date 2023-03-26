@@ -107,7 +107,7 @@ void CliWorldInterface::updateEntitiesRenderState(IWorld& world, RenderState& re
     for (auto entity : view) {
         PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
         CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
-        if (controlCmp.mHideModel == false) {
+        if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) {
             renderState.mCharacters.emplace_back(CharacterRenderState{ entity, physCmp.getPosition(), controlCmp.mControllerAngle, controlCmp.mMode });
         }
     };

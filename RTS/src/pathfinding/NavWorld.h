@@ -202,6 +202,7 @@ public:
 
 
     void markContainerNavDirty(TileContainer* container);
+    bool navThreadTryReserveHarvestable(LiteTileHandle position) const;
 private:
     void finishNavGraphBuildTask(NavGraphBuildTaskData& taskData);
     void initEventHandlers();
@@ -220,6 +221,7 @@ private:
     moodycamel::ConcurrentQueue<NavGraphBuildTaskData> mFinishedNavGraphBuildTasks;
     std::unordered_map<TileContainerID, ContainerNavData> mNavGraphs;
     bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> mSpatialLookup;
+    mutable boost::container::flat_map<LiteTileHandle, TimeStampSec> mReservedHarvestables;
 
     enum class ChunkDependencyFlags : ui8 {
         CHUNK_DEPENDENCY_0 = BIT(0),
@@ -244,6 +246,7 @@ private:
     // Large data at the bottom
     TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];
     std::unordered_map<LiteChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
+
 };
 
 extern NavWorld* sNavWorld;

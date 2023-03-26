@@ -204,11 +204,6 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     LiteTileHandle startLiteHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(start, &startNavData);
     LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(goal, &goalNavData);
 
-    // Testing for assert later
-    if (startLiteHandle == goalHandle) {
-        LOG_CRITICAL("EQUALITY");
-    }
-
     if (!startNavData) {
         LOG_WARN("Failed to find fine path due to invalid start");
         path.finishedGenerating.store(true);
@@ -425,6 +420,11 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
         return false;
     }
 
+    // If we have a null path, make sure we append a single node at least
+    if (pathSize == 0) {
+        sPathPointBuffer[pathSize++] = startLiteHandle;
+    }
+
     path.allocatePath(pathSize);
     // Copy the path in reverse
     for (int i = 0; i < (int)pathSize; ++i) {
@@ -606,11 +606,11 @@ LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchron
         const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];
         const std::set<TileIndex>* harvestablesPtr = navGraph.harvestablesLookup.tryGetHarvestables(navNodeIndex, harvestable);
         if (harvestablesPtr && harvestablesPtr->size()) {
-            // TODO: Reservable harvestables/tiles
-            // TODO: Random harvestable on this node?
-            foundHarvestableHandle = LiteTileHandle(handle.containerId, *harvestablesPtr->begin());
-            if (sDebugOptions.mShowPaths) {
-                DebugRenderer::drawWireQuadThreadSafe(f32v3(navData.getTileWorldPos(foundHarvestableHandle.index)), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 2);
+            const LiteTileHandle targetHarvestable(handle.containerId, *harvestablesPtr->begin());
+            if (mNavWorld.navThreadTryReserveHarvestable(handle)) {
+                if (sDebugOptions.mShowPaths) {
+                    DebugRenderer::drawWireQuadThreadSafe(f32v3(navData.getTileWorldPos(foundHarvestableHandle.index)), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 2);
+                }
             }
             break;
         }

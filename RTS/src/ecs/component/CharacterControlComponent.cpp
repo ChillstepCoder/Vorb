@@ -13,6 +13,41 @@ KEG_TYPE_DEF_SAME_NAME(CharacterControlComponentDef, kt) {
     kt.addValue("speed", keg::Value::basic(offsetof(CharacterControlComponentDef, mSpeed), keg::BasicType::F32));
 }
 
+inline float interpolateYaw(float currentYaw, float targetYaw, float speed) {
+    float yawDifference = targetYaw - currentYaw;
+
+    // Normalize the yaw difference to the range of -180 to 180 degrees
+    if (yawDifference > M_PIF) {
+        yawDifference -= M_2_PIF;
+    }
+    else if (yawDifference < -M_PIF) {
+        yawDifference += M_2_PIF;
+    }
+
+    // Calculate the interpolation step
+    float interpolationStep = speed;
+
+    // Clamp the step to not overshoot the target
+    const float absYawDif = glm::abs(yawDifference);
+    if (absYawDif < interpolationStep) {
+        interpolationStep = absYawDif;
+    }
+
+    // Apply the interpolation step in the correct direction
+    if (yawDifference > 0.0f) {
+        currentYaw += interpolationStep;
+    }
+    else {
+        currentYaw -= interpolationStep;
+    }
+
+    //// Normalize the result to the range of 0 to 360 degrees
+    //while (currentYaw < 0.0f) currentYaw += M_2_PIF;
+    //while (currentYaw > M_2_PIF) currentYaw -= M_2_PIF;
+
+    return currentYaw;
+}
+
 inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsComponent& physCmp) {
     //DynamicCharacterController& controller = *controlCmp.mController;
     // Transitions
@@ -31,7 +66,7 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
         if (onGround) {
             // Transition back to grounded
             controlCmp.mMode = CharacterLocomotionMode::LANDING;
-            controlCmp.mLandingTimer.start();
+            //controlCmp.mLandingTimer.start();
         }
         else if (controlCmp.mMode == CharacterLocomotionMode::JUMPING) {
             if (physCmp.mRigidBody->getLinearVelocity().getZ() <= 0.0f) {
@@ -43,10 +78,10 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
     if (controlCmp.mMode != controlCmp.mDesiredMode) {
         if (controlCmp.mMode == CharacterLocomotionMode::LANDING) {
             // TODO: HMM IM NOT SURE ABOUT THISSSSS
-            constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
-            if (controlCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
+           // constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
+           // if (controlCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
                 controlCmp.mMode = controlCmp.mDesiredMode;
-            }
+           // }
         }
         else {
             controlCmp.mMode = controlCmp.mDesiredMode;
@@ -102,6 +137,12 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
     const btVector3 newLinearVelocity(newLinearVelocity2D.x, newLinearVelocity2D.y, currentLinearVelocity.z());
     rigidBody->setLinearVelocity(newLinearVelocity);
     rigidBody->activate(true); // FORCE
+
+    // Orient rotation to movement
+    if (controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT)) {
+        constexpr f32 YAW_SPEED = 0.12f;
+        controlCmp.mControllerAngle = interpolateYaw(controlCmp.mControllerAngle, M_PI_2 - atan2(newLinearVelocity2D.y, newLinearVelocity2D.x), YAW_SPEED);
+    }
 
     // If we have no desired motion, do nothing and let physics system add friction
    /* if (motionCmp.mDesiredDirection.x == 0.0f && motionCmp.mDesiredDirection.y == 0.0f) {

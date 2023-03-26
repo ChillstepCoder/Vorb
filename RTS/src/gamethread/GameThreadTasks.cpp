@@ -54,7 +54,7 @@ void GameThreadTasks::addHideLocalPlayerModelTask(bool hide) {
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
         bool hidePlayerModel = (bool)vData;
         IEntityComponentSystem& ecs = sWorld->getECS();
-        ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mHideModel = hidePlayerModel;
+        ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mFlags.setBit(CharacterControlComponentFlags::HIDE_MODEL);
     }, (void*)hide));
 }
 
