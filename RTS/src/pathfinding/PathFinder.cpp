@@ -203,6 +203,12 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     const ContainerNavData* goalNavData = nullptr;
     LiteTileHandle startLiteHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(start, &startNavData);
     LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(goal, &goalNavData);
+
+    // Testing for assert later
+    if (startLiteHandle == goalHandle) {
+        LOG_CRITICAL("EQUALITY");
+    }
+
     if (!startNavData) {
         LOG_WARN("Failed to find fine path due to invalid start");
         path.finishedGenerating.store(true);
