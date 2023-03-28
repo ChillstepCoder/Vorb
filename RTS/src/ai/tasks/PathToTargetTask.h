@@ -15,7 +15,7 @@ public:
     static void operator delete(void* pointer, size_t size);
 
     TaskTickResult tick(entt::registry& registry, entt::entity agent) override;
-    const char* getTaskName() const override { return "ShipItemsForPromise"; }
+    const char* getTaskName() const override { return "PathToTarget"; }
 
 protected:
     enum class TaskState : ui8 {

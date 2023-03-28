@@ -431,7 +431,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 // ================= Disjoint Set =================
                 const int gridXOffset = tx % GRID_WIDTH;
                 if (gridXOffset != 0) {
-                    if (tileFineNavData.canAccessDirection(Cartesian8::WEST)) {
+                    if (tileFineNavData.canAccessDirection(Cartesian8::WEST) && (tileFineNavData.getEdgeType(Cartesian::WEST) != TileFineNavEdgeType::EXTERIOR)) {
                         navTileData.tileDjNodeIDs[index] = navTileData.tileDjNodeIDs[index - 1];
                         assigned = true;
                     }
@@ -439,7 +439,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 if (gridYOffset != 0) {
                     const Tile& bottom = tiles[index - dims.x];
                     // Check if we can cross between
-                    if (tileFineNavData.canAccessDirection(Cartesian8::SOUTH)) {
+                    if (tileFineNavData.canAccessDirection(Cartesian8::SOUTH) && (tileFineNavData.getEdgeType(Cartesian::SOUTH) != TileFineNavEdgeType::EXTERIOR)) {
                         if (assigned) {
                             // If we already assigned to left, merge the sets
                             ui16 prevID = navTileData.tileDjNodeIDs[index];

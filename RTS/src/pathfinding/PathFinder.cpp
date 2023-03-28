@@ -24,7 +24,7 @@ constexpr Cartesian CARTESIAN_COARSE_EDGE_WALK_CARTESIAN[4] = {
 constexpr ui32 MAX_PATH_LENGTH = 128; //255;
 constexpr ui8 INVALID_PARENT = 0;
 
-constexpr ui32 MAX_OPEN_LIST_SIZE = 256;
+constexpr ui32 MAX_FINE_OPEN_LIST_SIZE = 512;
 
 constexpr ui32 DEBUG_DURATION = 200;
 inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
@@ -222,8 +222,8 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     // TODO: Static representation?
     FineNodeList openList;
     std::unordered_map<LiteTileHandle, FineNodeData, LiteTileHandleHash> nodeLookup;
-    openList.reserve(MAX_OPEN_LIST_SIZE);
-    nodeLookup.reserve(MAX_OPEN_LIST_SIZE);
+    openList.reserve(MAX_FINE_OPEN_LIST_SIZE);
+    nodeLookup.reserve(MAX_FINE_OPEN_LIST_SIZE);
 
     // Add start node to the open list
     openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startWorldPos, goalWorldPos));
@@ -233,14 +233,14 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
 
     bool foundGoal = false;
     LiteTileHandle handle;
-    while (openList.size() && openList.size() < MAX_OPEN_LIST_SIZE) {
+    while (openList.size() && openList.size() < MAX_FINE_OPEN_LIST_SIZE) {
         ++TOTAL;
         // Pull best node off of the open list
         handle = openList.popLowestScoreNode();
         const ContainerNavData& containerNavData = mNavWorld.getNavDataForContainer(handle.containerId);
         const f32v3 worldPos = containerNavData.getTileWorldPos(handle.index);
 
-        constexpr f32 SUCCESS_DISTANCE_SQ = 1.5f;
+        constexpr f32 SUCCESS_DISTANCE_SQ = SQ(1.5f); // Tweak this as needed
         if (glm::length2(worldPos - goalWorldPos) < SUCCESS_DISTANCE_SQ) {
             foundGoal = true;
             break;
@@ -385,7 +385,10 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     }
 
     if (!foundGoal) {
-        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
+        LOG_WARN("Failed to find fine path in {} ms with {} total nodes checked. OpenListSize: {}", timer.stop(), TOTAL, openList.size());
+        if (sDebugOptions.mShowPaths) {
+            DebugRenderer::drawWireQuadThreadSafe(goalWorldPos, f32v2(1.0f), COLOR_MAGENTA, DEBUG_DURATION * 8);
+        }
         path.finishedGenerating.store(true);
         return false;
     }
@@ -415,7 +418,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
 
     if (pathSize == PATH_POINT_BUFFER_SIZE) {
         // Warning! Path is too long!
-        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked because result path is too long", timer.stop(), TOTAL);
+        LOG_WARN("Failed to find fine path in {} ms with {} total nodes checked because result path is too long", timer.stop(), TOTAL);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -431,7 +434,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
         path.points[i] = sPathPointBuffer[pathSize - i - 1];
     }
 
-    LOG_TRACE("Generated path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
+    LOG_TRACE("Generated fine path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
     path.targetHandle = goalHandle;
     path.finishedGenerating.store(true);
     return true;
@@ -516,7 +519,10 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
         const LiteTileHandle& handle = astarNode.tileHandle;
         const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
         const CoarseNavGraph& navGraph = navData.coarseNavGraph;
-        const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];;
+        const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];
+        if (navNodeIndex == INVALID_NAV_NODE_INDEX) {
+            continue;
+        }
         const CoarseNavNode* navNode = &navGraph.getNode(navNodeIndex);
         if (navNode == endNode) {
             foundGoal = true;
@@ -529,7 +535,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     clearCoarseClosedList();
 
     if (!foundGoal) {
-        LOG_TRACE("Coarse path failed in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
+        LOG_WARN("Failed to find coarse path in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -604,15 +610,19 @@ LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchron
         const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
         const CoarseNavGraph& navGraph = navData.coarseNavGraph;
         const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];
+        if (navNodeIndex == INVALID_NAV_NODE_INDEX) {
+            continue;
+        }
         const std::set<TileIndex>* harvestablesPtr = navGraph.harvestablesLookup.tryGetHarvestables(navNodeIndex, harvestable);
         if (harvestablesPtr && harvestablesPtr->size()) {
             const LiteTileHandle targetHarvestable(handle.containerId, *harvestablesPtr->begin());
             if (mNavWorld.navThreadTryReserveHarvestable(handle)) {
+                foundHarvestableHandle = targetHarvestable;
                 if (sDebugOptions.mShowPaths) {
                     DebugRenderer::drawWireQuadThreadSafe(f32v3(navData.getTileWorldPos(foundHarvestableHandle.index)), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 2);
                 }
+                break;
             }
-            break;
         }
 
         const CoarseNavNode* navNode = &navGraph.getNode(navNodeIndex);

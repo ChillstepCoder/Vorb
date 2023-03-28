@@ -59,18 +59,6 @@ struct GlobalRenderData {
 
 constexpr ui32 INVALID_MESH_INDEX = UINT32_MAX;
 
-// TODO: This is not cache freindly, ideally we just have a massive array of VAOs and loop through them
-struct TileContainerMeshData {
-    TileContainerMeshData() = default;
-    ~TileContainerMeshData();
-
-    VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerMeshData);
-
-    std::unique_ptr<Mesh> mStaticMesh;
-    std::unique_ptr<Mesh> mDynamicMesh;
-    std::unique_ptr<Mesh> mBillboardMesh;
-};
-
 // Singleton
 class RenderContext {
     friend class RenderThreadTasks;
@@ -109,6 +97,7 @@ public:
     const ui32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return mCamera; }
     InstancedStaticModelRenderer& getInstancedStaticModelRenderer() { return *mStaticModelRenderer; }
+    TileContainerRenderer& getTileContainerRenderer() { return *mTileContainerRenderer; }
 
     // Meshing
     void addTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.insert(mesh); }
@@ -136,12 +125,6 @@ private:
 
     // Mesh management
     void buildHorizonMesh();
-    void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }
-    void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }
-    void addDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.insert(mesh); }
-    void removeDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.erase(mesh); }
-    void addBillboardMesh(const Mesh* mesh);
-    void removeBillboardMesh(const Mesh* mesh);
 
     static RenderContext* sInstance;
     
@@ -175,12 +158,7 @@ private:
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;
 
-    // Mesh management
-    std::map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
     // TODO: Profile vector instead (linear removal vs logn but better iteration performance)
-    std::set<const Mesh*> mStaticMeshes;
-    std::set<const Mesh*> mDynamicMeshes;
-    std::set<const Mesh*> mBillboardMeshes;
     std::set<const GrassMesh*> mGrassMeshes;
     std::set<const TerrainMesh*> mTerrainMeshes;
     std::set<const TerrainMesh*> mTerrainWaterMeshes;

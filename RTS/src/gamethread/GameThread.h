@@ -3,6 +3,8 @@
 #include "network/WorldType.h"
 #include "time/GameTimeManager.h"
 
+#include "util/Timing/ThreadUtilizationTimer.h"
+
 class GameThread
 {
 protected:
@@ -20,6 +22,8 @@ public:
     
     bool isRunning() const { return mIsRunning.load(); }
 
+    const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
+
 private:
     void mainFunc();
     void tick();
@@ -33,6 +37,8 @@ private:
     std::atomic_bool mStop = false;
     std::unique_ptr<std::thread> mThread;
     WorldType mWorldType;
+
+    ThreadUtilizationTimer mThreadUtilizationTimer;
 
     static GameThread* sInstance;
 };

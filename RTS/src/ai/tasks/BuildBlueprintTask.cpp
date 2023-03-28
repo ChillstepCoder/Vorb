@@ -90,7 +90,7 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
     for (ItemStack& s : workingStorage) {
         if (mPlaceTilesTarget = mBlueprint.reserveTileToPlaceItems(s.id, s.quantity)) {
             f32v3 pos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileIndex);
-            LOG_CRITICAL("FOUND TILE {} AT {}, {}, {}", mPlaceTilesTarget->mTileIndex, pos.x, pos.y, pos.z);
+            //LOG_DEBUG("FOUND TILE {} AT {}, {}, {}", mPlaceTilesTarget->mTileIndex, pos.x, pos.y, pos.z);
             break;
         }
     }

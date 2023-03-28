@@ -46,8 +46,6 @@
 
 #include "math/Random.h"
 
-#include "rendering/TileContainerRenderer.h"
-
 #include "ui/TileInteractPanel.h"
 #include "ui/UIContext.h"
 

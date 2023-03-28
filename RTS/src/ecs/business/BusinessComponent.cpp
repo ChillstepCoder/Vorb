@@ -67,7 +67,7 @@ void BusinessComponent::addIdleWorker(entt::entity worker) {
 
 void BusinessComponent::onWorkerFailTask(entt::entity worker, IAgentTask* task) {
     LOG_CRITICAL("Worker {} failed task {}", e_cast(worker), task->getTaskName());
-    assert(false);
+    //assert(false);
 }
 
 BusinessSystem::BusinessSystem()

@@ -507,16 +507,6 @@ void InstancedStaticModelRenderer::initEventHandlers() {
         if (e_cast(containerEvent.edit.type) & MODEL_EDIT_HANDLE_MASK) {
             onContainerEditEvent(containerEvent);
         }
-        //    TileContainerModelEditEvent* evnt = new TileContainerModelEditEvent();
-        //    evnt->containerId = containerEvent.container->getId();
-        //    evnt->editEvent = containerEvent.edit;
-
-        //    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vEditEvent) {
-        //        TileContainerModelEditEvent* evnt = static_cast<TileContainerModelEditEvent*>(vEditEvent);
-        //        // TODO: I don't really like how roundabout this is
-        //        context.getInstancedStaticModelRenderer().onModelEditEvent(*evnt);
-        //        delete evnt;
-        //    }, (void*)evnt);
     });
 
     TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [](const TileContainerEvent& containerEvent) {

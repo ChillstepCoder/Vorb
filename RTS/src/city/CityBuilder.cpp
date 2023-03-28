@@ -51,7 +51,6 @@ void CityBuilder::update() {
     }
 }
 
-
 void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint) {
     assert(!blueprint->isBuilding);
     blueprint->isBuilding = true;

@@ -690,6 +690,9 @@
     <ClCompile Include="src\city\contracts\IContract.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1620,6 +1623,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\Recipe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\Timing\ThreadUtilizationTimer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

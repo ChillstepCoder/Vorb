@@ -60,7 +60,6 @@ class Chunk {
 	friend class IWorldGrid;
 	friend class WorldEditorPanel;
 	friend class ChunkGenerator;
-	friend class TileContainerRenderer;
 	friend class ITileContainerMesher;
 	friend class IChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only

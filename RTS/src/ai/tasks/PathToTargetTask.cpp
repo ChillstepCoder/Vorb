@@ -49,7 +49,6 @@ TaskTickResult PathToTargetTask::tick(entt::registry& registry, entt::entity age
             // TODO: can we just rely on a navcmp callback and give nav cmp a distance check?
             const PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
             const f32 distanceSQ = glm::length2(physCmp.getPosition() - mTargetPosition);
-            LOG_CRITICAL("{} {}", sqrt(distanceSQ), sqrt(mCompletionRadiusSQ));
             if (distanceSQ <= mCompletionRadiusSQ) {
                 NavigationComponent* navCmp = registry.try_get<NavigationComponent>(agent);
                 if (navCmp) {

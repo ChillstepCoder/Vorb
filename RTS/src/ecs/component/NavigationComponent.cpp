@@ -218,6 +218,7 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
 void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success) {
 	// Target reached
 	motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
+	motionCmp.mMoveDirection = f32v2(0.0f);
     if (success) {
 		if (!navCmp.mTargetHandle.isValid()) {
 			if (navCmp.mFinePath) {
@@ -271,7 +272,11 @@ void updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
         return;
 	}
 
-	ui32 numPoints = navCmp.mCoarsePath->getNumPoints();
+	const ui32 numPoints = navCmp.mCoarsePath->getNumPoints();
+    if (numPoints == 0) {
+        onPathingFinished(navCmp, motionCmp, false /*success*/);
+        return;
+	}
 
     // Lazy initialize the coarse point to a look-ahead position for better pathing
     if (navCmp.mCurrentCoarsePoint == 0) {

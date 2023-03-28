@@ -8,7 +8,9 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
 #include "pathfinding/NavWorld.h"
+// Performance counters
 #include "pathfinding/NavThread.h"
+#include "gamethread/GameThread.h"
 
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
@@ -130,6 +132,7 @@ void APIENTRY glDebugOutput(GLenum source,
     } ss << std::endl;
     ss << std::endl;
     LOG_CRITICAL("{}", ss.str());
+    assert(false);
 }
 
 constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
@@ -143,20 +146,6 @@ const std::string sPassthroughMaterialNames[] = {
     "shadow_depth_debug",
     "roughness_debug",
 };
-
-void RenderContext::addBillboardMesh(const Mesh* mesh) {
-    assert(IS_RENDER_THREAD());
-    assert(mBillboardMeshes.find(mesh) == mBillboardMeshes.end());
-    mBillboardMeshes.insert(mesh);
-    assert(mesh->isValid());
-}
-
-void RenderContext::removeBillboardMesh(const Mesh* mesh) {
-    assert(IS_RENDER_THREAD());
-    auto&& it = mBillboardMeshes.find(mesh);
-    assert(it != mBillboardMeshes.end());
-    mBillboardMeshes.erase(it);
-}
 
 RenderContext* RenderContext::sInstance = nullptr;
 
@@ -277,7 +266,8 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
         mCharacterRenderer = std::make_unique<CharacterRenderer>();
-        mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
+        mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
+        mTileContainerRenderer = std::make_unique<TileContainerRenderer>(*mStaticModelRenderer);
         mLightRenderer = std::make_unique<LightRenderer>();
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mScreenResolution);
@@ -289,7 +279,6 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         mShadowRenderer = std::make_unique<ShadowRenderer>(mScreenResolution);
         mTerrainRenderer = std::make_unique<TerrainRenderer>();
         mGrassRenderer = std::make_unique<GrassRenderer>();
-        mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
         mSmudgeRenderer = std::make_unique<SmudgeRenderer>(mScreenResolution);
         mTonemapRenderer = std::make_unique<TonemapRenderer>();
         checkGlError("Renderer init");
@@ -442,7 +431,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     // Static meshes
-    mTileContainerRenderer->renderStaticMeshes(mStaticMeshes, camera);
+    mTileContainerRenderer->renderStaticMeshes(camera);
 
     if (!sDebugOptions.mHideCharacters) {
         mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha);
@@ -474,7 +463,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // === Post AO passes ===
     // Grass + billboards
 
-    mTileContainerRenderer->renderBillboards(mBillboardMeshes, camera);
+    mTileContainerRenderer->renderBillboards(camera);
     // PRE SMUDGE GRASS PASS
     /*if (!sDebugOptions.mHideGrass) {
         mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
@@ -664,7 +653,7 @@ void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState&
             // Render all shadow casters
             //glCullFace(GL_FRONT);
             if (!sDebugOptions.mDisableTerrain) {
-                mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+                mTileContainerRenderer->renderWorldShadows(camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
             }
 
             // Instanced models
@@ -843,10 +832,25 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
 
 }
 
+constexpr ui32 STR_BUFFER_SIZE = 512;
+
+color4 sprintfThreadStats(const ThreadUtilizationTimer& timer, const char* name, char* buffer) {
+    const f32 utilization = timer.getUtilizationPercentage();
+    const f32 frameTime = timer.getFrameTimeMS();
+    sprintf_s(buffer, STR_BUFFER_SIZE, "%s:   %-5.2fms     %-3.0f%%", name, frameTime, utilization);
+    if (frameTime > 15.0f) {
+        return color::Red;
+    }
+    else if (frameTime > 8.0f) {
+        return color::Orange;
+    }
+    return color::White;
+}
+
 void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& renderState) {
     if (sDebugOptions.mShowDevHud) {
         mSb->begin(100);
-        char buffer[256];
+        char buffer[STR_BUFFER_SIZE];
         f32 scales = 0.6f;
         const float GAP_SIZE = 35.0f * scales;
         const float START_MULT = 0.1f;
@@ -854,58 +858,71 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         const f32v2 scale(scales);
         const f32 xPos = 10.0f;
 
-        sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
+        sprintf_s(buffer, STR_BUFFER_SIZE, "FPS: %.0f", sFps);
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
+        // Thread stats
+        {
+            color4 drawColor;
+            // Nav
+            drawColor = sprintfThreadStats(Services::NavThread::ref().getThreadUtilizationTimer(), "NavThread", buffer);
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
+            yOffset += GAP_SIZE;
+            // Game
+            drawColor = sprintfThreadStats(GameThread::getInstance().getThreadUtilizationTimer(), "GameThread", buffer);
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
+            yOffset += GAP_SIZE;
+        }
+
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
         if (Services::isUsingNav()) {
-            sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + (int)Services::NavThread::ref().getMainThreadQueuedProcsApprox());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + (int)Services::NavThread::ref().getMainThreadQueuedProcsApprox());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
 
-            sprintf_s(buffer, sizeof(buffer), "NavQueue: %d", (int)Services::NavThread::ref().getTasksSizeApprox());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "NavQueue: %d", (int)Services::NavThread::ref().getTasksSizeApprox());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }
         else {
-            sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }
 
-        sprintf_s(buffer, sizeof(buffer), "GameQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "GameQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "RenderQueue: %d", (int)RenderThreadTasks::getInstance().getQueuedProcsApprox());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "RenderQueue: %d", (int)RenderThreadTasks::getInstance().getQueuedProcsApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "DrawCalls: %u", RenderStats::sDrawCalls);
+        sprintf_s(buffer, STR_BUFFER_SIZE, "DrawCalls: %u", RenderStats::sDrawCalls);
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "Polygons: %u", RenderStats::sPolyCount);
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Polygons: %u", RenderStats::sPolyCount);
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "Models: %u", mStaticModelRenderer->getNumModels());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mStaticModelRenderer->getNumModels());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "Characters: %u", (ui32)renderState.getCharacterRenderState().size());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Characters: %u", (ui32)renderState.getCharacterRenderState().size());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "Static objects: %u", sWorld->getPhysicsWorld().getNumStaticCollisionObjects());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Static objects: %u", sWorld->getPhysicsWorld().getNumStaticCollisionObjects());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "Dynamic objects: %u", sWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Dynamic objects: %u", sWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
@@ -915,7 +932,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         }
 
         if (sDebugOptions.mChunkBoundaries) {
-            sprintf_s(buffer, sizeof(buffer), "Chunks: %u", (ui32)renderState.getDebugChunks().size());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "Chunks: %u", (ui32)renderState.getDebugChunks().size());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }
@@ -933,21 +950,21 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
 
             }
             addressNoPort.ToString(buffer2, 256);
-            sprintf_s(buffer, sizeof(buffer), "Host IP: %s", buffer2);
+            sprintf_s(buffer, STR_BUFFER_SIZE, "Host IP: %s", buffer2);
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }
 
-        /*sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
+        /*sprintf_s(buffer, STR_BUFFER_SIZE, "SunHeight: %.2f", mWorld.getSunHeight());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "SunPosition: %.2f", mWorld.getSunPosition());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "SunPosition: %.2f", mWorld.getSunPosition());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;*/
 
         if (mPassthroughRenderMode != 0) {
-            sprintf_s(buffer, sizeof(buffer), "DEBUG FBO: %s", sPassthroughMaterialNames[mPassthroughRenderMode].c_str());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "DEBUG FBO: %s", sPassthroughMaterialNames[mPassthroughRenderMode].c_str());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }

@@ -69,6 +69,7 @@ void GameThread::mainFunc() {
         // Fixed timestep
         f64 sleepSec = 0.0;
         if (gameTimeManager.tryTick(&sleepSec)) {
+            mThreadUtilizationTimer.beginFrame();
             tick();
             // Force a thread switch if anyone is waiting
             // // TODO: Profile if this matters
@@ -76,7 +77,9 @@ void GameThread::mainFunc() {
         }
         else {
             // Try updating queues with sleepSec as a time budget?
+            mThreadUtilizationTimer.beginSleep();
             yojimbo_sleep(sleepSec);
+            mThreadUtilizationTimer.endSleep();
         }
     }
 

@@ -121,6 +121,20 @@ void BuildingBlueprint::endTileToBuild(BuildTileBlueprintHandle& handle) {
     BlueprintTileBuildData& buildData = tileBuildData[handle.mTileIndex];
     buildData.mReservedBy = INVALID_ENTITY;
     if (buildData.mProgress >= 1.0f) {
+        const BlueprintTileType type = tiles[handle.mTileIndex];
+        assert(type != BlueprintTileType::NONE);
+        TileContainer& container = *(building->getTileContainer());
+        container.setOwnedTile(handle.mTileIndex);
+        // TODO: STAIRS
+        if (type != BlueprintTileType::STAIRS) {
+            const TileID tileId = tileIDs[e_cast(type)];
+            if (tileId != TILE_ID_NONE) {
+                const TileData& data = TileRepository::getTileData(tileId);
+                container.setOwnedTile(handle.mTileIndex);
+                container.setTileGroundZPosition(handle.mTileIndex, 0.0f);
+                container.setTileLayer(handle.mTileIndex, data);
+            }
+        }
         ++tilesBuilt;
     }
     else {

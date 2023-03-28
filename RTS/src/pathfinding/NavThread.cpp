@@ -9,6 +9,7 @@
 
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
+#include "boost/chrono.hpp"
 
 NavThread::NavThread() {
 }
@@ -69,13 +70,16 @@ void NavThread::navThreadFunc() {
     NAV_THREAD_ID = std::this_thread::get_id();
     setThreadName("Nav");
 
+
     NavThreadPathArgs pathArgs;
     LOG_CRITICAL("TODO: Fix srvWorld assert in NavThread::navThreadFunc");
     // TODO: This assert happened three times (FAILED DYNAMIC_CAST. sWorld is valid but srvWorld is null)
     while (!mStop.load()) {
+        mThreadUtilizationTimer.beginFrame();
 
-
-        bool hasTask = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
+        mThreadUtilizationTimer.beginSleep();
+        const bool hasTask = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
+        mThreadUtilizationTimer.endSleep();
 
         mNavWorld->updateNavThread();
         
@@ -103,5 +107,6 @@ void NavThread::navThreadFunc() {
                 mMainThreadProcs.enqueue(std::move(pathArgs.second));
             }
         }
+
     }
 }

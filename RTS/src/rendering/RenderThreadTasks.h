@@ -30,7 +30,6 @@ public:
         const TileContainer* containerToMesh,
         ContainerMeshBuilders&& builders
     );
-    void removeTileContainerMesh(TileContainerID id);
     void addCharacterModel(entt::entity characterEntity, ui32 modelId);
     void removeCharacterModel(entt::entity characterEntity);
     void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);

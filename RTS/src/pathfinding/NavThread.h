@@ -8,6 +8,8 @@
 #include "PathFinder.h"
 #include "tile/TileHandle.h"
 
+#include "util/Timing/ThreadUtilizationTimer.h"
+
 class TileContainer;
 class Building;
 class NavWorld;
@@ -80,12 +82,15 @@ public:
     size_t getTasksSizeApprox() const { return mPathTasks.size_approx(); }
     size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }
 
+    const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
+
 private:
     void navThreadFunc();
 
     std::unique_ptr<PathFinder> mPathFinder;
     std::atomic_bool mStop = false;
     std::unique_ptr<std::thread> mThread;
+    ThreadUtilizationTimer mThreadUtilizationTimer;
 
 
     moodycamel::BlockingConcurrentQueue<NavThreadPathArgs> mPathTasks; ///< Holds tasks to execute

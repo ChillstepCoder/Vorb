@@ -93,6 +93,18 @@ struct MeshGpuData {
     void destroy();
 };
 
+// Small struct for rendering a simple Mesh.draw() with no LOD support
+struct MeshMinimumRenderData {
+    MeshMinimumRenderData(MeshGpuData& gpuData) : mVao(gpuData.mVao), mUbo(gpuData.mUbo), mSSBO(gpuData.mSSBO), mIndexCount(gpuData.mLODData.mTotalIndexCount), mIndexType(gpuData.mIndexType) {}
+    VGBuffer  mVao;
+    VGBuffer  mUbo;
+    VGBuffer  mSSBO;
+    ui32 mIndexCount;
+    MeshIndexType mIndexType; // TODO: we could eliminate this with two separate classes or template
+
+    void draw();
+};
+static_assert(sizeof(MeshMinimumRenderData) == 20, "Keep tiny");
 
 // TODO - This?
 //class BatchedMesh {

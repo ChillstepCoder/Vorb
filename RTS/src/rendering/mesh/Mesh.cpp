@@ -215,3 +215,19 @@ MeshCpuData& MeshCpuData::operator=(MeshCpuData&& o) {
     o.mElementsPtr = nullptr;
     return *this;
 }
+
+void MeshMinimumRenderData::draw() {
+    assert(mVao);
+    assert(mIndexCount);
+    assert(mIndexType != MeshIndexType::INVALID);
+
+    glBindVertexArray(mVao);
+    if (mUbo) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mUbo);
+    }
+    if (mSSBO) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mSSBO);
+    }
+    glDrawElements(GL_TRIANGLES, mIndexCount, e_cast(mIndexType), (const GLvoid*)(0) /* offset */);
+    RenderStats::recordDrawCall(mIndexCount / 3);
+}

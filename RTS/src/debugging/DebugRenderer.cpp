@@ -296,6 +296,9 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         newMesh.type = DebugMeshType::LINES;
 
         std::vector<SimpleMeshVertex> lineVertices(newMesh.numVerts);
+        if (!lineVertices.size()) {
+            continue;
+        }
 
         int index = 0;
         for (size_t i = 0; i < lines.size(); ++i) {
@@ -330,6 +333,9 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
             newMesh.type = DebugMeshType::LINES;
 
             std::vector<SimpleMeshVertex> lineVertices(newMesh.numVerts);
+            if (!lineVertices.size()) {
+                continue;
+            }
 
             int index = 0;
             for (size_t i = 0; i < lines.size(); ++i) {
@@ -361,6 +367,9 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         newMesh.type = DebugMeshType::QUADS;
 
         std::vector<SimpleMeshVertex> quadVertices(quads.size() * 4);
+        if (!quadVertices.size()) {
+            continue;
+        }
 
         int index = 0;
         for (size_t i = 0; i < quads.size(); ++i) {

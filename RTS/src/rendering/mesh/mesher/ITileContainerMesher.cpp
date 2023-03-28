@@ -14,8 +14,6 @@
 #include "gamethread/GameThreadTasks.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
-#include "world/Chunk.h"
-
 #include "tile/TileContainer.h"
 
 

@@ -1,35 +1,75 @@
 #pragma once
 
+#include <boost/container/flat_set.hpp>
 
 DECL_VG(class SpriteBatch);
 
-class CliWorldInterface;
 class ResourceManager;
 class Camera3D;
 class MaterialShader;
 class TileContainer;
 class Mesh;
 class ChunkGrassQuadtree;
+class BuildingMesher;
+class ChunkMesher;
+class InstancedStaticModelRenderer;
+class ContainerMeshBuilders;
+
+//class TileContainerRenderData {
+//    ui32 mStaticMeshRenderIndex = UINT32_MAX;
+//    ui32 mDynamicMeshRenderIndex = UINT32_MAX;
+//    ui32 mBillboardMeshRenderIndex = UINT32_MAX;
+//};
+
+struct TileContainerMeshData {
+    TileContainerMeshData() = default;
+    ~TileContainerMeshData();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerMeshData);
+
+    std::unique_ptr<Mesh> mStaticMesh;
+    std::unique_ptr<Mesh> mDynamicMesh;
+    std::unique_ptr<Mesh> mBillboardMesh;
+};
 
 // TODO: IRendererBase?
 // TODO: DELETE ME
 class TileContainerRenderer {
 public:
-	TileContainerRenderer();
+	TileContainerRenderer(InstancedStaticModelRenderer& instancedStaticModelRenderer);
 	~TileContainerRenderer();
 
-    void renderStaticMeshes(const std::set<const Mesh*>& meshes, const Camera3D& camera);
-    void renderBillboards(const std::set<const Mesh*>& meshes, const Camera3D& camera);
-    void renderWorldShadows(const std::set<const Mesh*>& meshes, const Camera3D& camera, f32 maxDistance);
+    static void updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders);
+
+    void renderStaticMeshes(const Camera3D& camera);
+    void renderBillboards(const Camera3D& camera);
+    void renderWorldShadows(const Camera3D& camera, f32 maxDistance);
+
+    void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }
+    void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }
+    void addDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.insert(mesh); }
+    void removeDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.erase(mesh); }
+    void addBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.insert(mesh); }
+    void removeBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.erase(mesh); }
 
 private:
+    boost::container::flat_set<const Mesh*> mStaticMeshes;
+    boost::container::flat_set<const Mesh*> mDynamicMeshes;
+    boost::container::flat_set<const Mesh*> mBillboardMeshes;
 
     const MaterialShader* mShadowMapperMaterial = nullptr;
     const MaterialShader* mShadowMapperMaterialBillboard = nullptr;
     const MaterialShader* mStandardMaterial = nullptr;
     const MaterialShader* mBillboardMaterial = nullptr;
 
-    // TODO: Unused?
-    CliWorldInterface* mCliWorld = nullptr;
+    InstancedStaticModelRenderer& mInstancedStaticModelRenderer;
+
+    // Mesh management
+    std::map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
+
+    // Meshers
+    std::unique_ptr<BuildingMesher> mBuildingMesher;
+    std::unique_ptr<ChunkMesher> mChunkMesher;
+
 };
 

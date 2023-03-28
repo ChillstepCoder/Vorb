@@ -6,17 +6,14 @@ class MeshTaskData {
 public:
     // TODO: Are we guarenteeing quads?
     MeshTaskData(
-        const TileContainer* container,
         ContainerMeshBuilders&& builders
-    ) :
-        container(container),
+    ) : 
         builders(std::move(builders))
     {};
 
     void* operator new(size_t count);
     void operator delete(void* pointer, size_t size);
 
-    const TileContainer* container;
     ContainerMeshBuilders builders;
 };
 

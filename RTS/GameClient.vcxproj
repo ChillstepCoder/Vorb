@@ -420,6 +420,7 @@
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
     <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
+    <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
@@ -722,6 +723,7 @@
     <ClInclude Include="src\util\TextureUtil.h" />
     <ClInclude Include="src\util\ThreadIDs.h" />
     <ClInclude Include="src\util\ThreadSafeDirtySet.h" />
+    <ClInclude Include="src\util\Timing\ThreadUtilizationTimer.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\util\TypeHash.h" />
