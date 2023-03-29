@@ -98,8 +98,6 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() :
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper_instanced");
     mSmudgeShader = materialManager.getMaterialShader("smudge");
     mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
-
-    initEventHandlers();
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
@@ -446,6 +444,7 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
         return;
     }
     // Gatherer should only be used once for init, and future updates should be done per tile
+    // TODO: Allow doing this multiple times
     assert(mTileContainerModels.find(gatherer.mContainerID) == mTileContainerModels.end());
     SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
     for (auto&& it : gatherer.mInstances) {
@@ -486,7 +485,6 @@ void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID 
         removeTileModelInstanceInternal(it.second);
     }
     mTileContainerModels.erase(it);
-
 }
 
 ui32 InstancedStaticModelRenderer::getNumModels() const {
@@ -500,25 +498,12 @@ ui32 InstancedStaticModelRenderer::getNumModels() const {
     return numModels;
 }
 
-void InstancedStaticModelRenderer::initEventHandlers() {
-    TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
-    TileContainerRepository::addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
-        assert(IS_GAME_THREAD());
-        if (e_cast(containerEvent.edit.type) & MODEL_EDIT_HANDLE_MASK) {
-            onContainerEditEvent(containerEvent);
-        }
-    });
-
-    TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [](const TileContainerEvent& containerEvent) {
-        assert(IS_GAME_THREAD());
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vContainerId) {
-            // TODO: I don't really like how roundabout this is
-            context.getInstancedStaticModelRenderer().removeInstancesFromContainer((TileContainerID)vContainerId);
-        }, (void*)containerEvent.container->getId());
-    });
-}
-
 void InstancedStaticModelRenderer::onContainerEditEvent(const TileContainerEvent& evnt) {
+    assert(IS_GAME_THREAD());
+
+    if ((e_cast(evnt.edit.type) & MODEL_EDIT_HANDLE_MASK) == 0) {
+        return;
+    }
 
     struct ModelAddEvent {
         f32v3 worldPosition;

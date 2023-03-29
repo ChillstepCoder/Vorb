@@ -31,8 +31,6 @@
 #include "rendering/RenderThreadTasks.h"
 #include "gamethread/GameThreadTasks.h"
 
-BuildingMesher sBuildingMesher;
-
 constexpr f32 ROOF_THICKNESS = 0.04f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3

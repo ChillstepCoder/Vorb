@@ -6,7 +6,7 @@ class TileContainer;
 class ChunkMesher : public ITileContainerMesher
 {
 public:
-    void initMeshAndPhysicsAsync(TileContainer& chunk, const f32* heightData);
-};
+    ChunkMesher(TileContainerRenderer& renderer) : ITileContainerMesher(renderer) {}
 
-extern ChunkMesher sChunkMesher;
+    void initMeshAndPhysicsAsync(TileContainer& tileContainer);
+};

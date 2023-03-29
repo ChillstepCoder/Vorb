@@ -161,6 +161,11 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     // Notify terrain data change (TODO: More precise, automatic)
     //sWorld->dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
+
+    TileContainerEvent loadFinishedEvent;
+    loadFinishedEvent.container = newBuilding->getTileContainer();
+    TileContainerRepository::dispatchLoadFinished(loadFinishedEvent);
+
     finishBuilding(*newBuilding, bp);
 
     return newBuilding;
@@ -225,7 +230,6 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
         sNavWorld->markContainerNavDirty(building.mTileContainer);
     }
 
-    sBuildingMesher.buildMeshAndPhysicsAsync(building);
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {

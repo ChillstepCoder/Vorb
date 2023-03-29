@@ -334,6 +334,7 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
     // Allow model renderer to build indirect buffers
     mStaticModelRenderer->frameUpdate(*camera);
+    mTileContainerRenderer->frameUpdate();
 
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
@@ -385,6 +386,7 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+
 
 }
 

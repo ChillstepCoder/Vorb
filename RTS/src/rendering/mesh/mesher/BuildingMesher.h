@@ -43,6 +43,8 @@ struct RoofContourEdgeInfo {
 class BuildingMesher : public ITileContainerMesher
 {
 public:
+    BuildingMesher(TileContainerRenderer& renderer) : ITileContainerMesher(renderer) {}
+
     void buildMeshAndPhysicsAsync(const Building& building) const;
 
 private:
@@ -62,6 +64,3 @@ private:
     static void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
     static void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
 };
-
-extern BuildingMesher sBuildingMesher;
-

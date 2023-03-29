@@ -5,6 +5,7 @@
 class TileContainer;
 
 enum class TileContainerEventType {
+    LoadFinished,
     Ready,
     EditTiles,
     Destroy,

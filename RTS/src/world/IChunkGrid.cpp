@@ -95,17 +95,15 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
             }
             case e_cast(ChunkState::TILE_LOAD_FINISHED): {
                 chunk.mState = e_cast(ChunkState::WAITING_MESH_PHYSICS_NAV);
+                chunk.mTileContainer->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
 
                 // Cache harvestables
                 chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
 
-                // Copy height data
-                // TODO: Minimum size instead of entire block
-                f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
-                const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
-                memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
-                sChunkMesher.initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
-                chunk.getTileContainer()->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
+                TileContainerEvent loadFinishedEvent;
+                loadFinishedEvent.container = chunk.mTileContainer;
+                TileContainerRepository::dispatchLoadFinished(loadFinishedEvent);
+
                 assert(sNavWorld);
                 sNavWorld->markContainerNavDirty(chunk.mTileContainer);
                 ++i;

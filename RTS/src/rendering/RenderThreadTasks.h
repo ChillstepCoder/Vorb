@@ -26,10 +26,6 @@ public:
     static bool exists() { return sInstance != nullptr; }
 
     // Tasks
-    void addTileContainerMeshInitTask(
-        const TileContainer* containerToMesh,
-        ContainerMeshBuilders&& builders
-    );
     void addCharacterModel(entt::entity characterEntity, ui32 modelId);
     void removeCharacterModel(entt::entity characterEntity);
     void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);
@@ -43,7 +39,6 @@ private:
     // Task queue
     // TODO: Clear task queues on destroy?
     moodycamel::ConcurrentQueue<std::pair<RenderFunction, void*>> mRenderThreadProcs;
-
 
     static RenderThreadTasks* sInstance;
 };

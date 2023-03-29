@@ -274,10 +274,18 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     const TileContainerID tileContainerId = meshBuilder.mTrackedRigidBodyGatherer.mContainerId;
     assert(meshBuilder.hasAnyCollision());
 
-    std::lock_guard lock(mStepSimulationMutex);
-    TileContainerPhysicsData& physicsData = mTileContainerPhysicsData[tileContainerId];
-    StaticPhysicsMesh& staticMesh = physicsData.mStaticMesh;
+    TileContainerPhysicsData* physicsData;
+    {
+        std::lock_guard lock(mStepSimulationMutex);
+        physicsData = &mTileContainerPhysicsData[tileContainerId];
+    }
+    StaticPhysicsMesh& staticMesh = physicsData->mStaticMesh;
+    // Clear existing physics if needed
     assert(!staticMesh.isValid());
+    /* if (staticMesh.isValid()) {
+         deletePhysicsForTileContainer(meshBuilder.getOwnerTileContainerID());
+         physicsData = &mTileContainerPhysicsData[tileContainerId];
+     }*/
     // Cache the vertex and index data because bullet uses our memory rather than a copy
     // TODO: Compress this? Because its a vector it may have extra capacity
     staticMesh.mVerts = std::move(meshBuilder.mVerts);
@@ -305,7 +313,7 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     }
 
     // Add all tracked bodies
-    addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, physicsData.mSpatialCollisionObjectLookup);
+    addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, physicsData->mSpatialCollisionObjectLookup);
 }
 
 void PhysicsWorld::initEventHandlers() {

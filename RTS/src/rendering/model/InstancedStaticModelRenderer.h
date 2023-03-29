@@ -3,7 +3,7 @@
 #include "rendering/model/StaticModelInstance.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
-#include "tile/TileContainerEvents.h"
+struct TileContainerEvent;
 
 // TODO: Allow chunks to reference each of their tiles part of a mesh buffer. Allow removing and compacting the mesh buffer instead of full rebuild
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
@@ -76,9 +76,8 @@ public:
     void removeInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
 
-private:
-    void initEventHandlers();
     void onContainerEditEvent(const TileContainerEvent& evnt);
+private:
     void removeTileModelInstanceInternal(TileModelInstance& instance);
 
     ModelInstanceMap mModelsToInstances[e_cast(MaterialRenderPassType::COUNT)];
@@ -89,7 +88,5 @@ private:
     const MaterialShader* mShadowMapperMaterial = nullptr;
     const MaterialShader* mSmudgeShader = nullptr;
     const vg::GLProgram* mCullingComputeShader = nullptr;
-
-    TileContainerListeners mTileContainerEventListeners;
 };
 

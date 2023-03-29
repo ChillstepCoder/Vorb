@@ -39,13 +39,6 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
     return *sInstance;
 }
 
-void RenderThreadTasks::addTileContainerMeshInitTask(
-    const TileContainer* containerToMesh,
-    ContainerMeshBuilders&& builders
-) {
-
-}
-
 void RenderThreadTasks::addCharacterModel(entt::entity characterEntity, ui32 modelId) {
     assert(IS_GAME_THREAD());
     CharacterModelTaskData* taskData = new CharacterModelTaskData();

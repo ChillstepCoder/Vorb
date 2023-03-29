@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/container/flat_set.hpp>
+#include "tile/TileContainerEvents.h"
 
 DECL_VG(class SpriteBatch);
 
@@ -39,6 +40,8 @@ public:
 	TileContainerRenderer(InstancedStaticModelRenderer& instancedStaticModelRenderer);
 	~TileContainerRenderer();
 
+    void frameUpdate();
+
     static void updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders);
 
     void renderStaticMeshes(const Camera3D& camera);
@@ -53,6 +56,10 @@ public:
     void removeBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.erase(mesh); }
 
 private:
+    void initEventHandlers();
+    void updateTileContainerMesh(TileContainer& tileContainer);
+    void removeMeshesForData(TileContainerMeshData& meshData);
+
     boost::container::flat_set<const Mesh*> mStaticMeshes;
     boost::container::flat_set<const Mesh*> mDynamicMeshes;
     boost::container::flat_set<const Mesh*> mBillboardMeshes;
@@ -65,11 +72,15 @@ private:
     InstancedStaticModelRenderer& mInstancedStaticModelRenderer;
 
     // Mesh management
-    std::map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
+    std::unordered_map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
+
+    moodycamel::ConcurrentQueue<TileContainerID> mTileContainersToRemove;
 
     // Meshers
     std::unique_ptr<BuildingMesher> mBuildingMesher;
     std::unique_ptr<ChunkMesher> mChunkMesher;
 
+    // Events
+    TileContainerListeners mTileContainerListeners;
 };
 

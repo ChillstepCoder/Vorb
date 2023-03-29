@@ -10,6 +10,7 @@
 #include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
+#include "rendering/TileContainerRenderer.h"
 
 #include "gamethread/GameThreadTasks.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
@@ -22,7 +23,7 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
 
     // Always incref, will be decrefed in the task
     // TODO: Non terrain is handled differently???
-    assert(!container.isTerrain() || container.getState() == TileContainerState::LOADING);
+    //assert(!container.isTerrain() || container.getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
     // We will incref twice, once for mesh and once for static physics
     container.incRef();
     container.incRef();
@@ -48,7 +49,7 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
 
         builders.computeBoundingSpheres();
 
-        RenderThreadTasks::getInstance().addTileContainerMeshInitTask(&container, std::move(builders));
+        mRenderer.updateMeshFromBuilders(&container, std::move(builders));
 
         if (physicsBuilder.hasAnyCollision()) {
             GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshInitTask(containerId, std::move(physicsBuilder));
@@ -56,6 +57,11 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
         else {
             container.setDidInitPhysics();
             container.decRef();
+        }
+
+        // Allocated with new
+        if (heightData) {
+            delete[] heightData;
         }
     }, nullptr);
 }
