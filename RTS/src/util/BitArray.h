@@ -3,6 +3,8 @@
 class BitArray
 {
 public:
+    typedef ui32 DataType;
+
     BitArray();
     BitArray(ui32 numBits);
     ~BitArray();
@@ -14,18 +16,25 @@ public:
     void setBitTo(ui32 index, bool val);
     bool getBit(ui32 index) const;
     void zeroAllBits();
-    void freeData() { std::vector<ui8>().swap(mData); }
+    void freeData() { std::vector<DataType>().swap(mData); }
+    // Returns UINT32_MAX on failure
+    ui32 getIndexOfFirstSetBit(ui32 startIndex) const;
+    // Returns UINT32_MAX on failure
+    ui32 getIndexOfFirstUnsetBit(ui32 startIndex) const;
 
-    size_t getNumBits() const { return mData.size() * (sizeof(ui8) * 8u); }
+    // Initialize to the other array with the bitwise ~
+    void setNOT(const BitArray& other);
+
+    size_t getNumBits() const { return mData.size() * (sizeof(DataType) * 8u); }
     bool isEmpty() const { return mData.empty(); }
 
-    ui8* data() { return mData.data(); }
-    const ui8* data() const { return mData.data(); }
+    DataType* data() { return mData.data(); }
+    const DataType* data() const { return mData.data(); }
     size_t getNumBytes() const { return mData.size(); }
 
     void debugPrint(ui32 width, ui32 height) const;
 private:
-    std::vector<ui8> mData;
+    std::vector<DataType> mData;
 };
 
 template <size_t N>

@@ -2,10 +2,10 @@
 
 // Cartesian
 enum class Cartesian : ui8 {
-    SOUTH = 0, //-y  south
-    WEST = 1, //-x  west
-    EAST = 2, //+x east
-    NORTH = 3,  //+y    north
+    SOUTH = 0, //-y 
+    WEST = 1, //-x
+    EAST = 2, //+x
+    NORTH = 3,  //+y
     NONE = 100,
     INVALID = 101
 };

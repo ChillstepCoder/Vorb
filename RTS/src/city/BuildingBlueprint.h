@@ -19,7 +19,8 @@ typedef ui32 BuildingBlueprintId;
 #define INVALID_BLUEPRINT_ID UINT32_MAX
 
 enum class BuildingBlueprintFlags : ui8 {
-    BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE = 1 << 0
+    BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE = BIT(0),
+    BLUEPRINT_FLAG_FAILED_TO_GENERATE = BIT(1)
 };
 
 struct BlueprintTileItemData {
@@ -70,8 +71,12 @@ public:
 };
 typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 
-struct BuildingBlueprint {
+class BuildingBlueprint {
+public:
+    BuildingBlueprint() = default;
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
 
     TileHandle getTileHandle(TileIndex tileIndex) const {
         assert(IS_GAME_THREAD());
@@ -100,7 +105,7 @@ struct BuildingBlueprint {
     // End construction
 
     Building* building = nullptr;
-    const BuildingDef& desc;
+    const BuildingDef* desc = nullptr;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::WEST;
     i32AABB2 aabb;

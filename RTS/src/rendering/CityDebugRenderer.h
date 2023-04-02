@@ -4,7 +4,7 @@ class CityPlanner;
 class CityBuilder;
 class CityPlotter;
 class CityQuartermaster;
-struct BuildingBlueprint;
+class BuildingBlueprint;
 
 class Camera2D;
 

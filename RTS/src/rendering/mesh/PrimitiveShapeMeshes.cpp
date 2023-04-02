@@ -246,7 +246,7 @@ void PrimitiveShapeMeshes::generateCubeMesh() {
     uploadMesh(verts, indices, PrimitiveShapeType::Cube);
 }
 
-// Chatgpt made this
+// Chatgpt4 made this. the UVs are fucked :)
 void PrimitiveShapeMeshes::generateCylinderMesh() {
     constexpr float radius = 1.0f;
     constexpr float height = 1.0f;
@@ -271,6 +271,10 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
     // between each side
     float uvIncrement = 1.0f / numSides;
 
+    // Add center vertices for the top and bottom disks
+    vertices.push_back({ {0.0f, 0.0f, height / 2}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.5f, 0.5f} });
+    vertices.push_back({ {0.0f, 0.0f, -height / 2}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.5f, 0.5f} });
+
     // Generate the vertices for the top and bottom disks
     for (int i = 0; i < numSides; i++) {
         // Calculate the angle for this side
@@ -283,7 +287,8 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
 
         // The normal for the top and bottom disks is just the
         // up vector (0, 0, 1) or (0, 0, -1), respectively
-        f32v3 normal = { 0.0f, 0.0f, 1.0f };
+        f32v3 normalTop = { 0.0f, 0.0f, 1.0f };
+        f32v3 normalBottom = { 0.0f, 0.0f, -1.0f };
 
         // The tangent is just the normalized side vector
         f32v3 tangent = { -y, x, 0.0f };
@@ -291,33 +296,28 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
 
         // The texture coordinate for this vertex is based on the
         // angle around the disk
-        f32v2 uv = { uvIncrement * i, 0.0f };
+        f32v2 uv = { 0.5f + 0.5f * std::cos(angle * 3.14159f / 180.0f), 0.5f + 0.5f * std::sin(angle * 3.14159f / 180.0f) };
 
         // Add the top vertex
-        vertices.push_back({ {x, y, height / 2}, normal, tangent, uv });
+        vertices.push_back({ {x, y, height / 2}, normalTop, tangent, uv });
 
-        // Flip the normal and uv.y for the bottom vertex
-        normal = { 0.0f, 0.0f, -1.0f };
-        uv.y = 1.0f;
-        vertices.push_back({ {x, y, -height / 2}, normal, tangent, uv });
+        // Add the bottom vertex
+        vertices.push_back({ {x, y, -height / 2}, normalBottom, tangent, uv });
     }
-
     // Generate the indices for the top and bottom disks
-    for (int i = 0; i < numSides - 1; i++) {
-        indices.push_back(i * 2);
-        indices.push_back(i * 2 + 1);
-        indices.push_back(i * 2 + 3);
-        indices.push_back(i * 2 + 2);
-        indices.push_back(i * 2);
-        indices.push_back(i * 2 + 3);
+    for (int i = 0; i < numSides; i++) {
+        int nextIndex = (i + 1) % numSides;
+
+        // Top disk
+        indices.push_back(0);
+        indices.push_back(2 + i * 2);
+        indices.push_back(2 + nextIndex * 2);
+
+        // Bottom disk
+        indices.push_back(1);
+        indices.push_back(3 + nextIndex * 2);
+        indices.push_back(3 + i * 2);
     }
-    // Add the final indices for the top and bottom disks
-    indices.push_back((numSides - 1) * 2);
-    indices.push_back((numSides - 1) * 2 + 1);
-    indices.push_back(1);
-    indices.push_back(0);
-    indices.push_back((numSides - 1) * 2);
-    indices.push_back(1);
 
     // Generate the vertices for the sides of the cylinder
     for (int i = 0; i < numSides; i++) {
@@ -349,31 +349,20 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
     }
 
     // Generate the indices for the sides of the cylinder
-    for (int i = 0; i < numSides - 1; i++) {
-        // The indices for the two triangles that make up this quad
-        uint32_t i1 = (numSides * 2) + (i * 2);
-        uint32_t i2 = (numSides * 2) + (i * 2 + 1);
-        uint32_t i3 = (numSides * 2) + (i * 2 + 3);
-        uint32_t i4 = (numSides * 2) + (i * 2 + 2);
+    for (int i = 0; i < numSides; i++) {
+        int nextIndex = (i + 1) % numSides;
+        uint32_t i1 = 2 * numSides + i * 2;
+        uint32_t i2 = 2 * numSides + i * 2 + 1;
+        uint32_t i3 = 2 * numSides + nextIndex * 2;
+        uint32_t i4 = 2 * numSides + nextIndex * 2 + 1;
 
         indices.push_back(i1);
         indices.push_back(i2);
-        indices.push_back(i3);
         indices.push_back(i4);
         indices.push_back(i1);
+        indices.push_back(i4);
         indices.push_back(i3);
     }
-    // Add the final indices for the sides of the cylinder
-    uint32_t i1 = (numSides * 2) + (numSides - 1) * 2;
-    uint32_t i2 = (numSides * 2) + (numSides - 1) * 2 + 1;
-    uint32_t i3 = (numSides * 2) + 1;
-    uint32_t i4 = (numSides * 2) + 0;
-    indices.push_back(i1);
-    indices.push_back(i2);
-    indices.push_back(i3);
-    indices.push_back(i4);
-    indices.push_back(i1);
-    indices.push_back(i3);
 
     std::vector<StaticModelVertex> staticVertices(vertices.size());
     for (size_t i = 0; i < staticVertices.size(); ++i) {
@@ -385,10 +374,8 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
         myVert.tangentPacked = Pack_INT_2_10_10_10_REV(vertices[i].tangent);
         myVert.color = COLOR_WHITE;
     }
-
     uploadMesh(staticVertices, indices, PrimitiveShapeType::Cylinder);
 }
-
 
 void PrimitiveShapeMeshes::uploadMesh(const std::vector<StaticModelVertex>& vertices, const std::vector<ui16>& indices16, PrimitiveShapeType shapeType) {
 

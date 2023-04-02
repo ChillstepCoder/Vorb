@@ -216,7 +216,7 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
 }
 
 void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint) {
-    building.mFunction = blueprint.desc.function;
+    building.mFunction = blueprint.desc->function;
     building.mPlotIndex = blueprint.plotIndex;
     building.mDoorTiles = blueprint.exteriorDoors;
     assert(building.mDoorTiles.size());

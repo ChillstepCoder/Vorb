@@ -3,6 +3,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
 #include "resources/TextureRepository.h"
+#include "resources/FontRepository.h"
 #include "world/IWorld.h"
 #include "world/cli/CliWorldInterface.h"
 #include "world/HeightmapTerrainQuadtree.h"
@@ -320,6 +321,9 @@ void RenderContext::initPostLoad() {
     }
 
     BrdfLUT::loadOrComputeTexture();
+
+    // Visual logging
+    VisualLogger::setDefaultFont(&Services::ResourceManager::ref().getFontRepository().getFont("titilium_semibold"));
 
 }
 

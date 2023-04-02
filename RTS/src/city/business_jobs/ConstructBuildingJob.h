@@ -5,7 +5,7 @@
 
 #include "item/ItemReservation.h"
 
-struct BuildingBlueprint;
+class BuildingBlueprint;
 struct BusinessComponent;
 struct OwnershipComponent;
 class ItemReservation;

@@ -2,7 +2,7 @@
 
 class City;
 class CityPlanner;
-struct BuildingBlueprint;
+class BuildingBlueprint;
 
 #include "Building.h"
 

@@ -116,11 +116,22 @@ void VisualLog::addCartesianArrow(const f32v3& center, f32 length, color4 color,
 }
 
 void VisualLog::addText(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, color4 color) {
+    ++mRenderStepInfo.back().shapeCount;
     VisualLogShape& newShape = mShapes.emplace_back();
     newShape.type = VisualLogShapeType::TEXT;
     newShape.color = color;
     newShape.textIndex = mTextData.size();
     mTextData.emplace_back(VisualLogTextData{&font, str, rootPosition, offset2D, glyphHeight});
+}
+
+void VisualLog::addText(const nString& str, const f32v3& rootPosition, f32 glyphHeight, const f32v2& offset2D, color4 color) {
+    assert(sDefaultFont);
+    ++mRenderStepInfo.back().shapeCount;
+    VisualLogShape& newShape = mShapes.emplace_back();
+    newShape.type = VisualLogShapeType::TEXT;
+    newShape.color = color;
+    newShape.textIndex = mTextData.size();
+    mTextData.emplace_back(VisualLogTextData{ sDefaultFont, str, rootPosition, offset2D, glyphHeight });
 }
 
 void VisualLog::finish() {

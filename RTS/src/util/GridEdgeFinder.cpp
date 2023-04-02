@@ -11,10 +11,15 @@ Cartesian sCornerNextEdgeLookupTable[CORNER_TABLE_SIZE];
 std::pair<bool /*IncPrev*/, bool /*IncNext*/> sIncrementEdgeLengthsLookupTable[CORNER_TABLE_SIZE];
 //CornerWinding sCornerTypeLookupTable[ROOF_VERTEX_CORNER_TABLE_SIZE];
 
+// This is a bit confusing, but the idea is we will be iterating an edge CCW 
+// with our origin at top right like so:
+// 0 X
+// 0 0
+// And detecting which direction will be our next edge normal direction
 RUNTIME_INIT_FUNC(initEdgeLookup) {
     // Zero table
     for (ui32 i = 0; i < CORNER_TABLE_SIZE; ++i) {
-        sCornerNextEdgeLookupTable[i] = Cartesian::INVALID;
+        sCornerNextEdgeLookupTable[i] = Cartesian::NONE;
         sIncrementEdgeLengthsLookupTable[i] = std::make_pair(false, false);
     }
     // Set up corners shapes, we move counter clockwise always
@@ -50,47 +55,75 @@ RUNTIME_INIT_FUNC(initEdgeLookup) {
     // Diagonal edge cases
     // 1 0
     // 0 1
-    sCornerNextEdgeLookupTable[0b1001] = Cartesian::NONE;
-    sCornerNextEdgeLookupTable[0b0110] = Cartesian::NONE;
+    sCornerNextEdgeLookupTable[0b1001] = Cartesian::INVALID;
+    sCornerNextEdgeLookupTable[0b0110] = Cartesian::INVALID;
     sIncrementEdgeLengthsLookupTable[0b0110] = std::make_pair(true, false);
 }
 
-Cartesian GridEdgeFinder::getNextEdgeDirFromGrid4x4(GridCell4x4 cell4x4, Cartesian prevDirection, OPT std::pair<bool /*IncPrev*/, bool /*IncNext*/>* incEdgeLengths) {
-    Cartesian dir = sCornerNextEdgeLookupTable[cell4x4.data];
+void GridCell4x4::constructFrom2DBitArray(const BitArray& bitArray, i32 xPos, i32 yPos, i32 xDims, i32 yDims) {
+    const i32 offset = yPos * xDims + xPos;
+    if (xPos == xDims) {
+        bottomRight = false;
+        topRight = false;
+        if (yPos == yDims) {
+            topLeft = false;
+        }
+        else {
+            topLeft = bitArray.getBit(offset - 1);
+        }
+    }
+    else if (yPos == yDims) {
+        topLeft = false;
+        topRight = false;
+        bottomRight = bitArray.getBit(offset - xDims);
+    }
+    else {
+        topLeft = (xPos == 0 || yPos == yDims) ? 0 : bitArray.getBit(offset - 1);
+        topRight = bitArray.getBit(offset);
+        bottomRight = (yPos == 0) ? 0 : bitArray.getBit(offset - xDims);
+    }
+    bottomLeft = (xPos == 0 || yPos == 0) ? 0 : bitArray.getBit(offset - 1 - xDims);
+}
+
+
+Cartesian GridEdgeFinder::getNextCCWEdgeWalkDirFromGrid4x4(GridCell4x4 cell4x4, Cartesian prevDirection, OPT std::pair<bool /*IncPrev*/, bool /*IncNext*/>* incEdgeLengths) {
+    const Cartesian dir = sCornerNextEdgeLookupTable[cell4x4.data];
     if (incEdgeLengths) {
         *incEdgeLengths = sIncrementEdgeLengthsLookupTable[cell4x4.data];
     }
 
-    if (dir == Cartesian::NONE) {
+    // Handle diagonal edge cases
+    if (dir == Cartesian::INVALID) {
         // Branch on these special corners based on where we were coming from (Counter clockwise)
         if (cell4x4.data == 0b1001) {
             // 1 0
             // 0 1
-            if (prevDirection == Cartesian::EAST) {
-                dir = Cartesian::SOUTH;
+            if (prevDirection == Cartesian::NORTH) {
+                return Cartesian::EAST;
             }
-            else if (prevDirection == Cartesian::WEST) {
-                dir = Cartesian::NORTH;
+            else if (prevDirection == Cartesian::SOUTH) {
+                return Cartesian::WEST;
             }
             else {
-                assert(false);
+                LOG_CRITICAL("Invalid getNextEdgeDirFromGrid4x4 A {}", (int)prevDirection);
+                return Cartesian::INVALID;
             }
         }
         else {
             // 0 1
             // 1 0
             if (prevDirection == Cartesian::WEST) {
-                dir = Cartesian::SOUTH;
+                return Cartesian::NORTH;
             }
             else if (prevDirection == Cartesian::EAST) {
-                dir = Cartesian::NORTH;
+                return Cartesian::SOUTH;
             }
             else {
-                assert(false);
+                LOG_CRITICAL("Invalid getNextEdgeDirFromGrid4x4 B{}", (int)prevDirection);
+                return Cartesian::INVALID;
             }
         }
     }
-
     return dir;
 }
 
@@ -107,18 +140,13 @@ i32v2 getPosFromTileIndex(TileIndex index, const ui32v2& dims) {
 }
 
 std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const BitArray& ownershipBits, const ui32v2& dims, VisualLog* visLog, f32 vislogZ /*= 0.0f*/) {
-    assert(ownershipBits.getNumBits() >= (size_t)dims.x * dims.y);
+    const ui32 totalTiles = dims.x * dims.y;
+    assert(ownershipBits.getNumBits() >= totalTiles);
     std::vector<GridEdge> edges;
     // Find first bottom left owned bit to begin iteration
     TileIndex tileIndex;
-    bool found = false;
-    for (tileIndex = 0; tileIndex < ownershipBits.getNumBits(); ++tileIndex) {
-        if (ownershipBits.getBit(tileIndex)) {
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
+    tileIndex = ownershipBits.getIndexOfFirstSetBit(0);
+    if (tileIndex >= totalTiles) {
         return edges;
     }
 
@@ -136,18 +164,15 @@ std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const B
         
         // Now walk the edges
         GridCell4x4 gridCell4x4;
-        gridCell4x4.topLeft = (tilePos.x == 0 || tilePos.y == dims.y) ? 0 : ownershipBits.getBit(tileIndex - 1);
-        gridCell4x4.topRight = (tilePos.x == dims.x || tilePos.y == dims.y) ? 0 : ownershipBits.getBit(tileIndex);
-        gridCell4x4.bottomLeft = (tilePos.x == 0 || tilePos.y == 0) ? 0 : ownershipBits.getBit(tileIndex - 1 - dims.x);
-        gridCell4x4.bottomRight = (tilePos.x == dims.x || tilePos.y == 0) ? 0 : ownershipBits.getBit(tileIndex - dims.x);
+        gridCell4x4.constructFrom2DBitArray(ownershipBits, tilePos.x, tilePos.y, dims.x, dims.y);
 
         if (!gridCell4x4.data) {
             //assert(false && "Must be nonzero or we walked off the edge");
             break;
         }
 
-        Cartesian nextDir = GridEdgeFinder::getNextEdgeDirFromGrid4x4(gridCell4x4, currentEdge->edgeDir, &incEdgeLengths);
-        if (nextDir != Cartesian::INVALID && nextDir != currentEdge->edgeDir) {
+        const Cartesian nextDir = GridEdgeFinder::getNextCCWEdgeWalkDirFromGrid4x4(gridCell4x4, currentEdge->edgeDir, &incEdgeLengths);
+        if (nextDir < Cartesian::NONE && nextDir != currentEdge->edgeDir) {
             if (incEdgeLengths.first) ++currentEdge->length;
             // End prev
             if (currentEdge->length == 0) {
@@ -171,6 +196,12 @@ std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const B
             }
         }
         else {
+            if (nextDir == Cartesian::INVALID) {
+                // Visual log
+                if (visLog) {
+                    visLog->addFilledQuad(f32v3(tilePos.x, tilePos.y, vislogZ), f32v2(1.0f), COLOR_RED);
+                }
+            }
             // Keep going along the edge
             ++currentEdge->length;
         }
@@ -211,6 +242,8 @@ std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const B
 }
 
 std::vector<TileIndex> GridEdgeFinder::getInteriorCounterClockwiseWalkFromGridEdges(const std::vector<GridEdge> gridEdges, const ui32v2& dims) {
+    assert(gridEdges.size());
+
     BitArray addedBits;
     addedBits.resizeAndZero(dims.x * dims.y);
     std::vector<TileIndex> edgeWalk;
@@ -227,6 +260,8 @@ std::vector<TileIndex> GridEdgeFinder::getInteriorCounterClockwiseWalkFromGridEd
             }
         }
     }
+
+    assert(edgeWalk.size());
     return edgeWalk;
 }
 

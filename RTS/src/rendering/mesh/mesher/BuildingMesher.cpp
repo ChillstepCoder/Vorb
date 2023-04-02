@@ -313,11 +313,12 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // ========================== Straight Skeleton ===============================
     const ui32 floorCount = tileContainer.getDims().z;
     const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
+    BitArray roofedTiles;
+    roofedTiles.resize(building.mAABB.dims.x * building.mAABB.dims.y);
     for (ui32 floor = 0; floor < floorCount; ++floor) {
         const f32 zPos = (floor + 1.0f) * tileContainer.getFloorHeight();
         // TODO: Replace bitarray with bool array
-        BitArray roofedTiles;
-        roofedTiles.resizeAndZero(building.mAABB.dims.x * building.mAABB.dims.y);
+        roofedTiles.zeroAllBits();
         for (i32 y = 0; y < building.mAABB.dims.y; ++y) {
             for (i32 x = 0; x < building.mAABB.dims.x; ++x) {
                 const ui32 floorBitIndex = y * building.mAABB.dims.x + x;
@@ -361,80 +362,98 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     if (visLog) visLog->finish();
 }
 
-std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
+std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
-    const i32AABB3& aabb = building.mAABB;
+    const i32v2 dims(building.mAABB.dims.x, building.mAABB.dims.y);
+    const ui32 totalTiles = dims.x * dims.y;
     std::vector<SsPtr> skeletons;
 
     BitArray checkedTiles;
-    checkedTiles.resizeAndZero((ui32)ownedTiles.getNumBits());
-
-    // Find first corner
-    ui32 index = 0;
+    // Mark all unowned tiles as "checked"
+    checkedTiles.setNOT(floorOwnedTiles);
+    i32v2 cornerPos(0, 0);
+   
     // Get multiple straight skeletons
     while (true) {
         ui32 numRoofVertices = 0;
 
-        // TODO: This could be checked byte by byte for nonzero then extract most significant bit?
-        while (checkedTiles.getBit(index) || !ownedTiles.getBit(index)) {
-            ++index;
-            if (index >= ownedTiles.getNumBits()) {
-                // There are no roof tiles
-                return skeletons;
-            }
+        // Find first unchecked corner to start iteration
+        const i32 startIndex = checkedTiles.getIndexOfFirstUnsetBit(cornerPos.y * dims.x + cornerPos.x);
+        if (startIndex >= totalTiles) {
+            return skeletons;
         }
 
-        checkedTiles.setBitTo(index, true);
+        checkedTiles.setBitTo(startIndex, true);
 
-        ui32 startX = index % aabb.dims.x;
-        ui32 startY = index / aabb.dims.y;
-        i32v2 cornerPos(startX, startY);
+        const i32 startX = cornerPos.x = startIndex % dims.x;
+        const i32 startY = cornerPos.y = startIndex / dims.y;
         Cartesian edge = Cartesian::SOUTH; // We are guaranteed theres always a bottom edge at this corner
         // If we do not have a free tile below, it means we are an interior tile on an already skeletoned segment, so continue
-        if (cornerPos.y > 0 && ownedTiles.getBit((cornerPos.y - 1) * aabb.dims.x + cornerPos.x)) {
+        if (cornerPos.y > 0 && floorOwnedTiles.getBit((cornerPos.y - 1) * dims.x + cornerPos.x)) {
             continue;
         }
-
-        // Debug output
-        //std::cout << "GENERATING ROOF\n";
-        //ownedTiles.debugPrint(aabb.dims.x, aabb.dims.y);
 
         sRoofVertices[numRoofVertices++] = cornerPos;
         // First edge always goes right
         ++cornerPos.x;
-
         do {
-            index = cornerPos.y * aabb.dims.x + cornerPos.x;
+            if (cornerPos.x < dims.x && cornerPos.y < dims.y) {
+                checkedTiles.setBitTo(cornerPos.y * dims.x + cornerPos.x, true);
+            }
 
             // Visual log
             if (visLog) {
-                const ui32v2& xy = building.mTileContainer->getTileXYOffset(index);
-                visLog->addWireQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
+                const f32v3 rootPos = f32v3(cornerPos.x, cornerPos.y, zPos);
+                visLog->addWireQuad(rootPos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
+                switch (edge) {
+                    case Cartesian::SOUTH:
+                        visLog->addText("S", rootPos, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+                        break;
+                    case Cartesian::WEST:
+                        visLog->addText("W", rootPos, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+                        break;
+                    case Cartesian::EAST:
+                        visLog->addText("E", rootPos, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+                        break;
+                    case Cartesian::NORTH:
+                        visLog->addText("N", rootPos, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+                        break;
+                    case Cartesian::NONE:
+                        visLog->addText("X", rootPos, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+                        break;
+                    case Cartesian::INVALID:
+                        visLog->addText("!", rootPos, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+                        break;
+                    default:
+                        break;
+                }
             }
-
-            checkedTiles.setBitTo(index, true);
 
             GridCell4x4 gridCell4x4;
-            gridCell4x4.topLeft = (cornerPos.x == 0 || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index - 1);
-            gridCell4x4.topRight = (cornerPos.x == aabb.dims.x || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index);
-            gridCell4x4.bottomLeft = (cornerPos.x == 0 || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - 1 - aabb.dims.x);
-            gridCell4x4.bottomRight = (cornerPos.x == aabb.dims.x || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - aabb.dims.x);
+            gridCell4x4.constructFrom2DBitArray(floorOwnedTiles, cornerPos.x, cornerPos.y, dims.x, dims.y);
 
-            // TODO: FIX THIS LOGIC
             if (!gridCell4x4.data) {
-                assert(false && "Must be nonzero or we walked off the edge");
+                assert(false && "Must be nonzero or we walked off the edge or something");
                 return skeletons;
             }
-            Cartesian nextEdge = GridEdgeFinder::getNextEdgeDirFromGrid4x4(gridCell4x4, edge, nullptr);
+            const Cartesian nextEdge = GridEdgeFinder::getNextCCWEdgeWalkDirFromGrid4x4(gridCell4x4, edge, nullptr);
             
-            if (nextEdge != Cartesian::INVALID) {
+            if (nextEdge < Cartesian::NONE) {
                 assert(edge != nextEdge);
                 edge = nextEdge;
                 // New vertex and connect previous
                 assert(numRoofVertices < MAX_ROOF_VERTICES);
                 sRoofVertices[numRoofVertices] = cornerPos;
                 ++numRoofVertices;
+            }
+            else if (nextEdge == Cartesian::INVALID) {
+                // Visual log
+                if (visLog) {
+                    const ui32v2& xy = building.mTileContainer->getTileXYOffset(startIndex);
+                    visLog->addFilledQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), COLOR_RED);
+                }
+                return skeletons;
             }
             cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge)];
 
@@ -599,6 +618,11 @@ void BuildingMesher::triangulateRoofFacePolygons(bool isGable, ProceduralMeshBui
     // Partition 
     CGAL::Partition_traits_2<K>::Polygon_2 concavePoly;
     for (auto&& pp : sRoofFacePoints) {
+
+        if (pp.x() > 20000.0f || pp.y() > 20000.0f) {
+            LOG_DEBUG("ERROR FACE VAL {} {}", pp.x(), pp.y());
+        }
+
         concavePoly.push_back(pp);
     }
     std::list<CGAL::Partition_traits_2<K>::Polygon_2> convexPolygonList;
@@ -628,7 +652,10 @@ void BuildingMesher::triangulateRoofFacePolygons(bool isGable, ProceduralMeshBui
             // Triangulate higher order polys
             Triangulation triangulation;
             triangulation.insert(convexPoly.vertices_begin(), convexPoly.vertices_end());
-            for (auto&& it = triangulation.all_faces_begin(); it != triangulation.all_faces_end(); ++it) {
+
+
+            int q = 0;
+            for (auto&& it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); ++it) {
                 for (int i = 0; i < 3; ++i) {
                     points[i].x = (f32)it->vertex(i)->point().x();
                     points[i].y = (f32)it->vertex(i)->point().y();
@@ -651,17 +678,11 @@ void BuildingMesher::addRoofTriangle(
     const f32v2 buildingCenter = f32v2(building.mAABB.pos) + f32v2(building.mAABB.dims) * 0.5f;
 
     StaticModelVertex verts[3];
-    bool isInfiniteFace = false;
     for (int i = 0; i < 3; ++i) {
-        f32 x = points[i].x;
-        f32 y = points[i].y;
-        if (isinf(x)) {
-            // This means we are the convex edge
-            isInfiniteFace = true;
-            break;
-        }
-        f32 deg1 = sHeightMap[f32v2(x, y)];
+        const f32 x = points[i].x;
+        const f32 y = points[i].y;
 
+        const f32 deg1 = sHeightMap[f32v2(x, y)];
         verts[i].pos = f32v3(x, y, zPos + deg1 + ROOF_THICKNESS);
 
         /* if (sDebugOptions.mRoofDebug) {
@@ -671,57 +692,54 @@ void BuildingMesher::addRoofTriangle(
         verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    // The infinite face is not needed for our representation
-    if (!isInfiniteFace) {
 
-        // Determine orientation
-        const f32v3 o1 = verts[1].pos - verts[0].pos;
-        const f32v3 o2 = verts[2].pos - verts[0].pos;
-        f32v3 normal = glm::normalize(glm::cross(o1, o2));
-        // Invert normal if needed
-        if (normal.z < 0.0f) normal = -normal;
-        Cartesian dir = Cartesian::WEST;
-        if (abs(normal.x) < abs(normal.y)) {
-            if (normal.y > 0) {
-                dir = Cartesian::NORTH;
-            }
-            else {
-                dir = Cartesian::SOUTH;
-            }
-        }
-        else if (normal.x > 0) {
-            dir = Cartesian::EAST;
-        }
-
-        // Determine how we get UVs
-        const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
-
-        const f32 UV_SCALE = 0.4f;
-        ui32 compressedNormal = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
-        const f32v3& tangent(CUBE_FACING_TANGENTSF[e_cast(dir)]);
-        ui32 compressedTangent = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);
-        if (normal.z > 0.3f) {
-            for (int i = 0; i < 3; ++i) {
-                verts[i].normalPacked = compressedNormal;
-                verts[i].tangentPacked = compressedTangent;
-                f32v2 uvs(verts[i].pos[uvAxis.x] * UV_SCALE, (verts[i].pos[uvAxis.y]) * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)] * (1.0f - ROOF_HEIGHT_MULT * 0.5f));
-                verts[i].uvsPacked = PackUVs(uvs);
-            }
+    // Determine orientation
+    const f32v3 o1 = verts[1].pos - verts[0].pos;
+    const f32v3 o2 = verts[2].pos - verts[0].pos;
+    f32v3 normal = glm::normalize(glm::cross(o1, o2));
+    // Invert normal if needed
+    if (normal.z < 0.0f) normal = -normal;
+    Cartesian dir = Cartesian::WEST;
+    if (abs(normal.x) < abs(normal.y)) {
+        if (normal.y > 0) {
+            dir = Cartesian::NORTH;
         }
         else {
-            // Different texturing for nearly vertical polygons
-            for (int i = 0; i < 3; ++i) {
-                verts[i].normalPacked = compressedNormal;
-                verts[i].tangentPacked = compressedTangent;
-                f32v2 uvs((verts[i].pos[uvAxis.x]) * UV_SCALE, verts[i].pos.z * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)]);
-                verts[i].uvsPacked = PackUVs(uvs);
-            }
+            dir = Cartesian::SOUTH;
         }
-       /* if (sDebugOptions.mRoofDebug) {
-            DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
-        }*/
-        meshBuilder.addTriangle(verts, materialData, false);
     }
+    else if (normal.x > 0) {
+        dir = Cartesian::EAST;
+    }
+
+    // Determine how we get UVs
+    const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
+
+    const f32 UV_SCALE = 0.4f;
+    ui32 compressedNormal = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
+    const f32v3& tangent(CUBE_FACING_TANGENTSF[e_cast(dir)]);
+    ui32 compressedTangent = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);
+    if (normal.z > 0.3f) {
+        for (int i = 0; i < 3; ++i) {
+            verts[i].normalPacked = compressedNormal;
+            verts[i].tangentPacked = compressedTangent;
+            f32v2 uvs(verts[i].pos[uvAxis.x] * UV_SCALE, (verts[i].pos[uvAxis.y]) * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)] * (1.0f - ROOF_HEIGHT_MULT * 0.5f));
+            verts[i].uvsPacked = PackUVs(uvs);
+        }
+    }
+    else {
+        // Different texturing for nearly vertical polygons
+        for (int i = 0; i < 3; ++i) {
+            verts[i].normalPacked = compressedNormal;
+            verts[i].tangentPacked = compressedTangent;
+            f32v2 uvs((verts[i].pos[uvAxis.x]) * UV_SCALE, verts[i].pos.z * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)]);
+            verts[i].uvsPacked = PackUVs(uvs);
+        }
+    }
+    /* if (sDebugOptions.mRoofDebug) {
+        DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
+    }*/
+    meshBuilder.addTriangle(verts, materialData, false);
 }
 
 void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog) {

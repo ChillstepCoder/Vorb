@@ -16,14 +16,16 @@ struct GridCell4x4 {
         };
         ui8 data = 0;
     };
+
+    // 1 Bits will be set to true
+    void constructFrom2DBitArray(const BitArray& bitArray, i32 xPos, i32 yPos, i32 xDims, i32 yDims);
 };
 static_assert(sizeof(GridCell4x4) == 1);
-
 
 class GridEdgeFinder
 {
 public:
-    static Cartesian getNextEdgeDirFromGrid4x4(GridCell4x4 cell4x4, Cartesian prevDirection, OPT std::pair<bool /*IncPrev*/, bool /*IncNext*/>* incEdgeLengths);
+    static Cartesian getNextCCWEdgeWalkDirFromGrid4x4(GridCell4x4 cell4x4, Cartesian prevDirection, OPT std::pair<bool /*IncPrev*/, bool /*IncNext*/>* incEdgeLengths);
     static std::vector<GridEdge> getInteriorEdgesFromOwnershipArray(const BitArray& ownershipBits, const ui32v2& dims, VisualLog* visLog, f32 vislogZ = 0.0f);
     static std::vector<TileIndex> getInteriorCounterClockwiseWalkFromGridEdges(const std::vector<GridEdge> gridEdges, const ui32v2& dims);
     //static CornerWinding getCornerTypeFromGrid4x4(GridCell4x4 cell4x4);

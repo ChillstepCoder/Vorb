@@ -443,9 +443,11 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
     if (gatherer.mInstances.empty()) {
         return;
     }
-    // Gatherer should only be used once for init, and future updates should be done per tile
-    // TODO: Allow doing this multiple times
-    assert(mTileContainerModels.find(gatherer.mContainerID) == mTileContainerModels.end());
+    // OLD: Gatherer should only be used once for init, and future updates should be done per tile
+    // Remove all instances before we add new ones
+    if (mTileContainerModels.find(gatherer.mContainerID) != mTileContainerModels.end()) {
+        removeInstancesFromContainer(gatherer.mContainerID);
+    }
     SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
     for (auto&& it : gatherer.mInstances) {
         // Insert all instance transforms ordered into the transforms array

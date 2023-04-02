@@ -16,6 +16,7 @@ struct RoomGateInfo {
 struct RoomNode {
     std::vector<GridEdge> interiorEdges;
     std::vector<TileIndex> edgeWalk;
+    std::vector<TileIndex> tilePositions;
     const RoomDef* roomDef = nullptr;
     RoomDefID roomDefId;
     RoomNodeID parentRoom = INVALID_ROOM_ID; // Connected via door or stairs

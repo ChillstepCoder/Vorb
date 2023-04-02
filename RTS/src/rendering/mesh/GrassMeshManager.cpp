@@ -54,7 +54,8 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
     if (it == mChunkGrassQuadtrees.end()) {
         mChunkGrassQuadtrees[&chunk] = nullptr;
          // Const cast ~ get fucked
-        TileContainer* container = const_cast<Chunk&>(chunk).getTileContainer();
+        Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
+        TileContainer* container = chunkNonConst.getTileContainer();
         mEditEventHandles[container->getId()] = container->addEditTilesListener([this](const TileContainerEvent& evnt) {
             PROFILE_SCOPE("GrassEdit Dirty");
             assert(IS_GAME_THREAD());
@@ -80,7 +81,8 @@ void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     auto&& it = mEditEventHandles.find(chunk.getTileContainer()->getId());
     assert(it != mEditEventHandles.end());
     // Const cast ~ get fucked
-    TileContainer* container = const_cast<Chunk&>(chunk).getTileContainer();
+    Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
+    TileContainer* container = chunkNonConst.getTileContainer();
     // TODO: Can this be automatic? We are only holding a weak_ptr handle...
     container->removeEditTilesListener(it->second);
     mEditEventHandles.erase(it);

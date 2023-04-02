@@ -1,7 +1,7 @@
 #pragma once
 
 class City;
-struct BuildingBlueprint;
+class BuildingBlueprint;
 
 #include "item/ItemStockpile.h"
 

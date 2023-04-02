@@ -16,7 +16,7 @@
 class City;
 class ItemStockpile;
 class ConstructBuildingJob;
-struct BuildingBlueprint;
+class BuildingBlueprint;
 struct CityPlot;
 struct BusinessDef;
 

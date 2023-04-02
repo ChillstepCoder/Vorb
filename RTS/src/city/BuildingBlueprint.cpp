@@ -12,7 +12,7 @@ BuildingBlueprint::BuildingBlueprint(
     entt::entity ownerEntity,
     BuildingBlueprintFlags flags
 ) :
-    desc(desc), sizeAlpha(sizeAlpha), entrySide(entrySide), aabb(bottomLeftWorldPos.x, bottomLeftWorldPos.y, dims.x, dims.y), mOwnerEntity(ownerEntity), flags(flags) {
+    desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), aabb(bottomLeftWorldPos.x, bottomLeftWorldPos.y, dims.x, dims.y), mOwnerEntity(ownerEntity), flags(flags) {
 
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;

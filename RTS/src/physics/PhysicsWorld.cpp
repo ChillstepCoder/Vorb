@@ -275,17 +275,12 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     assert(meshBuilder.hasAnyCollision());
 
     TileContainerPhysicsData* physicsData;
+    deletePhysicsForTileContainer(meshBuilder.getOwnerTileContainerID());
     {
         std::lock_guard lock(mStepSimulationMutex);
         physicsData = &mTileContainerPhysicsData[tileContainerId];
     }
     StaticPhysicsMesh& staticMesh = physicsData->mStaticMesh;
-    // Clear existing physics if needed
-    assert(!staticMesh.isValid());
-    /* if (staticMesh.isValid()) {
-         deletePhysicsForTileContainer(meshBuilder.getOwnerTileContainerID());
-         physicsData = &mTileContainerPhysicsData[tileContainerId];
-     }*/
     // Cache the vertex and index data because bullet uses our memory rather than a copy
     // TODO: Compress this? Because its a vector it may have extra capacity
     staticMesh.mVerts = std::move(meshBuilder.mVerts);

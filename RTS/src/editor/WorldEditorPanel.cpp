@@ -616,7 +616,11 @@ void WorldEditorPanel::updateBuildingEdit() {
             BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
             const f32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(task->aabb));
             BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
-            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, task->aabb.pos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
+            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, task->aabb.pos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
+            if (!bp) {
+                assert(false);
+                return;
+            }
             CityBuilder::debugBuildInstant(*bp);
             delete task;
         }, task);

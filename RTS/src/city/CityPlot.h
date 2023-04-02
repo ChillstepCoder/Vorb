@@ -11,7 +11,7 @@ enum class CityBlockSize {
 };
 
 struct CityDistrict;
-struct BuildingBlueprint;
+class BuildingBlueprint;
 typedef ui32 CityPlotIndex;
 #define INVALID_PLOT_INDEX UINT32_MAX;
 

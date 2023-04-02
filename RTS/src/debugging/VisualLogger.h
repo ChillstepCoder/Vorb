@@ -76,6 +76,7 @@ public:
     void addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color);
     void addCartesianArrow(const f32v3& center, f32 length, color4 color, Cartesian dir);
     void addText(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, color4 color);
+    void addText(const nString& str, const f32v3& rootPosition, f32 glyphHeight, const f32v2& offset2D, color4 color);
 
     void finish();
 
@@ -105,6 +106,8 @@ private:
     SimpleMesh mQuadsMesh;
     Mesh mTextMesh;
     nString mName;
+
+    inline static const Font* sDefaultFont = nullptr;
 };
 
 class VisualLogger {
@@ -115,6 +118,8 @@ public:
     static void renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix);
     
     static std::vector<std::unique_ptr<VisualLog>> sVisualLogs;
+
+    static void setDefaultFont(const Font* font) { VisualLog::sDefaultFont = font; }
 
 private:
     static void deleteLog(VisualLog* log);

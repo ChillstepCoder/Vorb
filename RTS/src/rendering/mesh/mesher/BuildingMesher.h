@@ -49,7 +49,7 @@ public:
 
 private:
     void addCustomMeshData(ContainerMeshBuilders& meshBuilders, StaticPhysicsMeshBuilder& physicsBuilder, const void* userData) const;
-    static std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog);
+    static std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog);
     static void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const MaterialData& rawWoodMaterial, const MaterialData& shinglesMaterial, ui32 floor, f32 zPos, VisualLog* visLog);
     static void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const MaterialData& shinglesMaterial, ui32 debugColorIndex, f32 zPos);
     static void addRoofTriangle(

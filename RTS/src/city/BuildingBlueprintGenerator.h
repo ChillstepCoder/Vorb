@@ -17,24 +17,28 @@ public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
     std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
 
-    static std::unique_ptr<BuildingBlueprint> generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
+    VORB_NON_COPYABLE(BuildingBlueprintGenerator);
+
+    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
 
 private:
-    static void generateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo);
+
+    static bool tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo);
     // Graph Generation
     static void addPublicRoomsToGraph(BuildingBlueprint& bp);
     static void assignPublicRooms(BuildingBlueprint& bp);
     static void addPrivateRoomsToGraph(BuildingBlueprint& bp);
-    static void addStickOnRoomsToGraph();
     static void initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo);
     static void placeRooms(BuildingBlueprint& bp, VisualLog* visLog);
     static void expandRooms(BuildingBlueprint& bp, VisualLog* visLog);
     static void roomCleanup(BuildingBlueprint& bp, VisualLog* visLog);
+    static void computeRoomAABBs(BuildingBlueprint& bp, VisualLog* visLog);
+    static bool validateRoomsArentEmpty(BuildingBlueprint& bp, VisualLog* visLog);
     static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
     static void placeWalls(BuildingBlueprint& bp, VisualLog* visLog);
     static void placeDoors(BuildingBlueprint& bp, VisualLog* visLog);
     static void buildRoomInteriorEdges(BuildingBlueprint& bp, VisualLog* visLog);
-    static bool placeStairs(BuildingBlueprint& bp, VisualLog* visLog);
+    static void placeStairs(BuildingBlueprint& bp, VisualLog* visLog);
 
     static void postProcessBlueprint(BuildingBlueprint& bp);
 
