@@ -155,7 +155,7 @@ CityDistrict* CityPlotter::addDistrict(DistrictType type, CityDistrict* parent, 
             if (!parent->children[randDirection] && randDirection != e_cast(parent->parentDirection)) {
                 // Possibly valid child, check if it fits in the grid
 
-                newCoords = parentCoords + CARTESIAN_NORMALS[randDirection];
+                newCoords = parentCoords + CARTESIAN_NORMALS_2D[randDirection];
                 if (!mDistrictGrid[newCoords.y * DISTRICT_GRID_WIDTH + newCoords.x]) {
                     // Valid!
                     break;

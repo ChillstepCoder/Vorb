@@ -884,7 +884,7 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
 
             // Only exterior doors create a forced navmesh connection
             if (isExterior) {
-                const i32v2 chunkTilePos = CARTESIAN_NORMALS[e_cast(doorSide)] + worldPos2D;
+                const i32v2 chunkTilePos = CARTESIAN_NORMALS_2D[e_cast(doorSide)] + worldPos2D;
                 Chunk& chunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(chunkTilePos));
                 if (chunk.isDataReady()) {
                     TileContainer* chunkTileContainer = chunk.getTileContainer();

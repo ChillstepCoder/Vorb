@@ -5,14 +5,15 @@
 enum class BlueprintTileType : ui8 {
     NONE    = 0, // THIS SHOULD ALWAYS BE 0
     FLOOR   = 1, // THIS SHOULD ALWAYS BE 1
-    DOOR    = 2,
-    WALL    = 3,
-    STAIRS  = 4,
-    STAIRS_FLAT = 5,
-    AIR     = 6,
-    TYPES   = 7
+    DOOR,
+    WALL,
+    WINDOW,
+    STAIRS,
+    STAIRS_FLAT,
+    AIR,
+    TYPES
 };
-static_assert(int(BlueprintTileType::TYPES) < 1 << 6);
+static_assert(int(BlueprintTileType::TYPES) < (1 << 6)); // TODO: Why did we have 1 << 6 here?
 
 // TODO: Cellular automata rule iteration for room fixup
 typedef ui32 BuildingBlueprintId;
@@ -37,6 +38,12 @@ struct BlueprintTileItemDataHandle {
 struct BlueprintTileBuildData {
     float mProgress = 0.0f; // 0-1
     entt::entity mReservedBy = INVALID_ENTITY;
+};
+
+struct ExteriorWallRun {
+    TileIndex start;
+    ui32 length;
+    Cartesian dir;
 };
 
 // TODO: Pool allocate
@@ -89,6 +96,11 @@ public:
         return f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
     }
 
+    i32v3 getTileOffset(TileIndex i) const {
+        const i32 layerSize = aabb.dims.x * aabb.dims.y;
+        return i32v3(i % aabb.dims.x, (i % layerSize) / aabb.dims.x, i / layerSize);
+    }
+
     // For construction
     PlaceTileBlueprintItemsHandlePtr reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount);
     void cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHandle& handle);
@@ -119,6 +131,7 @@ public:
     std::vector<TileWalls> walls;
     std::vector<std::vector<StairPiece>> stairs;
     std::map<TileIndex, RoomNodeID> exteriorDoors;
+    std::vector<ExteriorWallRun> exteriorWallRuns;
     const Recipe* tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 

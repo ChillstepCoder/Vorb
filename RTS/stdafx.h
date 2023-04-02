@@ -47,7 +47,8 @@
 #include <Vorb/Timing.h>
 #include <Vorb/io/Keg.h>
 #include <Vorb/io/Path.h>
-#include <vorb/decorators.h>
+#include <Vorb/decorators.h>
+#include <Vorb/colors.h>
 
 #include <entt/entt.hpp>
 constexpr entt::entity INVALID_ENTITY = (entt::null);

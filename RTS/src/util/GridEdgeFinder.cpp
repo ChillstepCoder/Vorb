@@ -192,7 +192,7 @@ std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const B
                 // Increment edge length and step the start backwards
                 ++currentEdge->length;
                 i32v2 pos = getPosFromTileIndex(currentEdge->start, dims);
-                currentEdge->start = getTileIndex(i32v2(pos - CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(currentEdge->edgeDir)]), dims);
+                currentEdge->start = getTileIndex(i32v2(pos - CARTESIAN_TANGENTS_CCW[e_cast(currentEdge->edgeDir)]), dims);
             }
         }
         else {
@@ -205,7 +205,7 @@ std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const B
             // Keep going along the edge
             ++currentEdge->length;
         }
-        tilePos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(currentEdge->edgeDir)];
+        tilePos += CARTESIAN_TANGENTS_CCW[e_cast(currentEdge->edgeDir)];
         tileIndex = getTileIndex(tilePos, dims);
         if (visLog) {
             visLog->addWireQuad(f32v3(tilePos.x, tilePos.y, vislogZ), f32v2(1.0f),
@@ -253,7 +253,7 @@ std::vector<TileIndex> GridEdgeFinder::getInteriorCounterClockwiseWalkFromGridEd
         const GridEdge& edge = gridEdges[i];
         const i32v2 startPos = getPosFromTileIndex(edge.start, dims);
         for (i32 j = 0; j < (i32)edge.length; ++j) {
-            TileIndex tileIndex = getTileIndex(startPos + CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge.edgeDir)] * j, dims);
+            TileIndex tileIndex = getTileIndex(startPos + CARTESIAN_TANGENTS_CCW[e_cast(edge.edgeDir)] * j, dims);
             if (!addedBits.getBit(tileIndex)) {
                 addedBits.setBit(tileIndex);
                 edgeWalk.push_back(tileIndex);

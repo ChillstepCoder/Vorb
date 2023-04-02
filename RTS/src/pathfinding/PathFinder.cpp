@@ -675,7 +675,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
             i32v3 edgeStartPosWorld = navData.worldPos + navData.getTileXYZOffsetWithZScale(edge.startPos);
             // Collect all valid external nodes along this edge
             for (int i = 0; i < (int)edge.edgeLength; ++i) {
-                const i32v3& edgeDir = CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)];
+                const i32v3& edgeDir = CARTESIAN_TANGENTS_ABS_3D[e_cast(edge.dir)];
                 const i32v3 edgePosWorld = edgeStartPosWorld + edgeDir * i;
                 const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * containerDims.y) * i;
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];

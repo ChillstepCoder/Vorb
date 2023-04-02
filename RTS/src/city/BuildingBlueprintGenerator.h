@@ -11,6 +11,8 @@ class VisualLog;
 class CityBuilder;
 class BuildingDescriptionRepository;
 
+constexpr ui32 MAX_EXTERIOR_WALL_RUN_LENGTH = 8; // TODO: Enforce this
+
 class BuildingBlueprintGenerator
 {
 public:
@@ -21,6 +23,7 @@ public:
 
     static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
 
+    static void generatePossibleWindowPermutations();
 private:
 
     static bool tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo);
@@ -39,6 +42,8 @@ private:
     static void placeDoors(BuildingBlueprint& bp, VisualLog* visLog);
     static void buildRoomInteriorEdges(BuildingBlueprint& bp, VisualLog* visLog);
     static void placeStairs(BuildingBlueprint& bp, VisualLog* visLog);
+    static void buildExteriorWallRuns(BuildingBlueprint& bp, VisualLog* visLog);
+    static void placeWindows(BuildingBlueprint& bp, VisualLog* visLog);
 
     static void postProcessBlueprint(BuildingBlueprint& bp);
 
@@ -48,5 +53,7 @@ private:
     CityBuilder& mCityBuilder;
     std::set<BuildingBlueprint*> mGeneratingBuildings;
     static BuildingBlueprintId sCurrentId;
+
+    inline static std::vector<std::vector<bool>> sPossibleWindowPermutations[MAX_EXTERIOR_WALL_RUN_LENGTH];
 };
 

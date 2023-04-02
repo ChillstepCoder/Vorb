@@ -15,7 +15,7 @@ struct RoomGateInfo {
 
 struct RoomNode {
     std::vector<GridEdge> interiorEdges;
-    std::vector<TileIndex> edgeWalk;
+    std::vector<TileIndex> edgeWalk; // These tileindex are relative to the floor
     std::vector<TileIndex> tilePositions;
     const RoomDef* roomDef = nullptr;
     RoomDefID roomDefId;

@@ -455,7 +455,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& fl
                 }
                 return skeletons;
             }
-            cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge)];
+            cornerPos += CARTESIAN_TANGENTS_CCW[e_cast(edge)];
 
         } while ((cornerPos.x != startX || cornerPos.y != startY)/* && edge != Cartesian::SOUTH*/);
 
@@ -811,7 +811,7 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
         constexpr f32 BOARD_ANGLE_VARIANCE = 0.15f;
         constexpr f32 BOARD_LENGTH_VARIANCE = 0.15f;
         constexpr f32 BOARDS_PER_METER = 2;
-        constexpr f32 BOARD_DISTANCE = 0.25f + ROOF_EXTRUDE_DISTANCE;
+        constexpr f32 BOARD_LENGTH_BASE = 0.01f + ROOF_EXTRUDE_DISTANCE;
         const f32v3 diff = second - first;
         const f32 distance = glm::length(diff);
         const f32v3 iterNormal = diff / distance;
@@ -830,7 +830,7 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
             // Extruded boards with random offset variance
             const f32v3 offset = iterNormal * (i * boardGapSize + (randFromf32v3(startWithBoardOffset, i << 4) - 0.5f) * BOARD_GAP_VARIANCE);
             const f32v3 p1 = startWithBoardOffset + offset;
-            const f32 boardLength = BOARD_DISTANCE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
+            const f32 boardLength = BOARD_LENGTH_BASE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
             const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.8f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
             meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodMaterial, f32v2(1.0f));
         }

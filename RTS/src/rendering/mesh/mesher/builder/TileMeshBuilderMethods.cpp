@@ -952,7 +952,7 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
     // TODO: ThreadSafe
     const f32 heightAdd = tileGroundZOffset;
     const Cartesian dir = tileOrientation;//  tile.getOrientation((TileLayer)tileData.layer);
-    const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
+    const f32v2 stepDir = CARTESIAN_NORMALS_2D[e_cast(dir)];
     constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
     const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
     const f32 stairPieceTopHeight = stairPieceBaseHeight + STEPS_PER_TILE * stepHeight;

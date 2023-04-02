@@ -87,7 +87,7 @@ constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
     Cartesian::WEST,
     Cartesian::SOUTH,
 };
-const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
+const i32v2 CARTESIAN_NORMALS_2D[CARTESIAN_COUNT] = {
     i32v2(0, -1), // SOUTH
     i32v2(-1, 0), // WEST
     i32v2(1,  0), // EAST
@@ -99,31 +99,25 @@ const i32v3 CARTESIAN_NORMALS_3D[CARTESIAN_COUNT] = {
     i32v3(1,  0, 0), // EAST
     i32v3(0,  1, 0), // NORTH
 };
-const i32v2 CARTESIAN_EDGE_DIRS_ABS[CARTESIAN_COUNT] = {
-    i32v2(1, 0), // SOUTH
-    i32v2(0, 1), // WEST
-    i32v2(0, 1), // EAST
-    i32v2(1, 0), // NORTH
-};
-const i32v3 CARTESIAN_EDGE_DIRS_ABS_3D[CARTESIAN_COUNT] = {
-    i32v3(1, 0, 0), // SOUTH
-    i32v3(0, 1, 0), // WEST
-    i32v3(0, 1, 0), // EAST
-    i32v3(1, 0, 0), // NORTH
-};
-const i32v2 CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[CARTESIAN_COUNT] = {
+const i32v2 CARTESIAN_TANGENTS_CCW[CARTESIAN_COUNT] = {
     i32v2(1, 0), // SOUTH
     i32v2(0, -1), // WEST
     i32v2(0, 1), // EAST
     i32v2(-1, 0), // NORTH
 };
-const i32v2 CARTESIAN_EDGE_INDEX_OFFSET_MULTS[CARTESIAN_COUNT] = {
-    i32v2(0, 0), // SOUTH
-    i32v2(0, 0), // WEST
-    i32v2(1, 0), // EAST
-    i32v2(0, 1), // NORTH
+const i32v2 CARTESIAN_TANGENTS_ABS_2D[CARTESIAN_COUNT] = {
+    i32v2(1, 0), // SOUTH
+    i32v2(0, 1), // WEST
+    i32v2(0, 1), // EAST
+    i32v2(1, 0), // NORTH
 };
-const int CARTESIAN_EDGEWALK_AXIS[CARTESIAN_COUNT] = {
+const i32v3 CARTESIAN_TANGENTS_ABS_3D[CARTESIAN_COUNT] = {
+    i32v3(1, 0, 0), // SOUTH
+    i32v3(0, 1, 0), // WEST
+    i32v3(0, 1, 0), // EAST
+    i32v3(1, 0, 0), // NORTH
+};
+const int CARTESIAN_TANGENT_AXIS[CARTESIAN_COUNT] = {
     AXIS_X, // SOUTH
     AXIS_Y, // WEST
     AXIS_Y, // EAST
@@ -135,10 +129,24 @@ const color4 CARTESIAN_COLORS[CARTESIAN_COUNT] = {
     color4(255, 0, 0, 255), // EAST
     color4(0, 255, 0, 255), // NORTH
 };
+// Offsets from the root of a tile to the start of a line tracing the edge in CCW
+const i32v2 CARTESIAN_TILE_EDGE_WALK_CCW_POSITION_OFFSETS_2D[CARTESIAN_COUNT] = {
+    i32v2(0, 0), // SOUTH
+    i32v2(0, 1), // WEST
+    i32v2(1, 0), // EAST
+    i32v2(1, 1), // NORTH
+};
+// Offsets from the root of a tile to the start of a line tracing the edge in CCW
+const i32v3 CARTESIAN_TILE_EDGE_WALK_CCW_POSITION_OFFSETS_3D[CARTESIAN_COUNT] = {
+    i32v3(0, 0, 0), // SOUTH
+    i32v3(0, 1, 0), // WEST
+    i32v3(1, 0, 0), // EAST
+    i32v3(1, 1, 0), // NORTH
+};
 
-const AXIS_2D CARTESIAN_TO_AXIS_2D[CARTESIAN_COUNT] = {
-    AXIS_VERTICAL,  // DOWN
-    AXIS_HORIZONTAL,// LEFT
-    AXIS_HORIZONTAL,// RIGHT
-    AXIS_VERTICAL   // UP
+const AXIS_2D CARTESIAN_NORMAL_AXIS_2D[CARTESIAN_COUNT] = {
+    AXIS_VERTICAL,  // SOUTH
+    AXIS_HORIZONTAL,// WEST
+    AXIS_HORIZONTAL,// EAST
+    AXIS_VERTICAL   // NORTH
 };

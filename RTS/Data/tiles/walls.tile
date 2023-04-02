@@ -1,0 +1,14 @@
+wd_wall_goth:
+  mat: wood_wall_gothic
+  texture_method: vertical
+  shape: Wall
+  recipe:
+    - item: wood_raw
+      count: 5
+wd_wind_goth:
+  mat: wood_wall_gothic
+  texture_method: vertical
+  shape: Window
+  recipe:
+    - item: wood_raw
+      count: 5

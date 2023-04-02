@@ -129,10 +129,15 @@ WallInfo getWallInfoFromRoomAABB(Cartesian wallDir, const i32AABB2& aabb) {
 }
 
 
+RUNTIME_INIT_FUNC(generateWindowPermutations) {
+    BuildingBlueprintGenerator::generatePossibleWindowPermutations();
+}
+
 BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder) :
     mBuildingRepo(buildingRepo),
     mCityBuilder(cityBuilder)
 {
+    generatePossibleWindowPermutations();
 }
 
 std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox)
@@ -190,6 +195,34 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBluepr
     return nullptr;
 }
 
+void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
+    // TODO: Algorithmic
+    sPossibleWindowPermutations[0] = {};
+    sPossibleWindowPermutations[1] = {
+        {0}, {1}
+    };
+    sPossibleWindowPermutations[2] = {
+        {0, 0}, {1, 1}
+    };
+    sPossibleWindowPermutations[3] = {
+        {0, 0, 0}, {0, 1, 0}
+    };
+    sPossibleWindowPermutations[4] = {
+        {0, 0, 0, 0}, {0, 1, 1, 0}
+    };
+    sPossibleWindowPermutations[5] = {
+        {0, 0, 0, 0, 0}, {0, 1, 0, 1, 0}, {0, 0, 1, 0, 0}, {0, 1, 0, 0, 0}, {0, 0, 0, 1, 0}
+    };
+    sPossibleWindowPermutations[6] = {
+        {0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 1, 0}, {0, 0, 1, 1, 0, 0}, {0, 1, 1, 0, 0, 0}, {0, 0, 0, 1, 1, 0}
+    };
+    sPossibleWindowPermutations[7] = {
+        {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 1, 0, 1, 0, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 1, 0, 0},
+    };
+
+    static_assert(MAX_EXTERIOR_WALL_RUN_LENGTH == 8);
+}
+
 bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo) {
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint");
@@ -232,6 +265,10 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint*
 
     // Stairs
     placeStairs(*bPtr, visLog);
+
+    // Windows + facade details
+    buildExteriorWallRuns(*bPtr, visLog);
+    placeWindows(*bPtr, visLog);
 
     // Furniture
 
@@ -529,9 +566,11 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
     // We will generate to the right, then will rotate the coordinates around based on the cartesian
-    char buf[64];
-    root->roomDef->nameToken.toString(buf, nullptr);
-    visLog->addText(buf, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.floorHeight), 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+    if (visLog) {
+        char buf[64];
+        root->roomDef->nameToken.toString(buf, nullptr);
+        visLog->addText(buf, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.floorHeight), 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+    }
     placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, dims, visLog);
 
     // Rotate all coordinates around for Cartesian direction
@@ -1602,7 +1641,7 @@ bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprint& bp, Cartesian di
     i16v2 pos = getPosAtIndex(index, bp.aabb.dims);
     const i32 floorIndex = index / (bp.aabb.dims.x * bp.aabb.dims.y);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
-    pos += CARTESIAN_NORMALS[e_cast(dir)];
+    pos += CARTESIAN_NORMALS_2D[e_cast(dir)];
     return bp.tiles[getIndexAtPos(pos, bp.aabb.dims, floorIndex + 1)] != BlueprintTileType::FLOOR;
 }
 
@@ -1817,6 +1856,179 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
     }
 }
 
+void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, VisualLog* visLog) {
+
+    if (visLog) visLog->nextStep("Exterior Wall Runs");
+
+    std::vector<ExteriorWallRun>& exteriorWallRuns = bp.exteriorWallRuns;
+    exteriorWallRuns.reserve(32);
+
+    const i32 floorSize = bp.aabb.dims.x * bp.aabb.dims.y;
+    const i32v2& dims = bp.aabb.dims;
+    // Helper function for checking if tile is unowned and therefore external (TODO: Owned could still be external in the garden)
+    auto isTileExternal = [&](i32v2 outerPos, i32 floorIndex) -> bool {
+        if (outerPos.x < 0 || outerPos.y < 0 || outerPos.x >= dims.x || outerPos.y >= dims.y) {
+            return true;
+        }
+        return bp.ownerArray[outerPos.x + outerPos.y * dims.x + floorIndex * floorSize] == INVALID_ROOM_ID;
+    };
+
+    for (auto&& room : bp.rooms) {
+        if (room.edgeWalk.size() <= 4) { // Fairly arbitrary, this could be larger
+            continue;
+        }
+        // Edge walk is guaranteed to always begin on a southern edge
+        Cartesian currentEdgeNormal = Cartesian::SOUTH;
+        TileIndex prevInteriorTileIndex = room.edgeWalk[0];
+        i32v2 prevOffset2D = bp.getTileOffset(prevInteriorTileIndex);
+        ExteriorWallRun* currentExteriorWallRun = nullptr;
+        if (isTileExternal(prevOffset2D + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)], room.floorIndex)) {
+            exteriorWallRuns.emplace_back(ExteriorWallRun{ prevInteriorTileIndex + room.floorIndex * floorSize, 1, currentEdgeNormal});
+            currentExteriorWallRun = &exteriorWallRuns.back();
+        }
+        if (visLog && currentExteriorWallRun) {
+            const f32v3 outerPos = f32v3(prevOffset2D.x + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)].x, prevOffset2D.y + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)].y, room.floorIndex * bp.floorHeight);
+            visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Green);
+        }
+
+        // We need to build a list of exterior edges by walking the edge and checking for unowned tiles (TODO: Exterior could still be owned)
+        for (size_t i = 1; i < room.edgeWalk.size(); ++i) {
+            // Current edge walk tile
+            const TileIndex currentInteriorTileIndex = room.edgeWalk[i];
+            const i32v2 currentOffset2D = bp.getTileOffset(currentInteriorTileIndex);
+
+            // Detect if we just turned a corner
+            bool didTurnCorner = false;
+            switch (currentEdgeNormal) {
+                case Cartesian::WEST:
+                case Cartesian::EAST:
+                    if (currentOffset2D.x != prevOffset2D.x) {
+                        didTurnCorner = true;
+                        if (currentOffset2D.x > prevOffset2D.x) {
+                            currentEdgeNormal = Cartesian::SOUTH;
+                        }
+                        else {
+                            currentEdgeNormal = Cartesian::NORTH;
+                        }
+                    }
+                    break;
+                case Cartesian::SOUTH:
+                case Cartesian::NORTH:
+                    if (currentOffset2D.y != prevOffset2D.y) {
+                        didTurnCorner = true;
+                        if (currentOffset2D.y > prevOffset2D.y) {
+                            currentEdgeNormal = Cartesian::EAST;
+                        }
+                        else {
+                            currentEdgeNormal = Cartesian::WEST;
+                        }
+                    }
+                    break;
+                default:
+                    assert(false);
+                    break;
+
+            }
+            if (didTurnCorner) {
+                currentExteriorWallRun = nullptr; // End previous edge
+                i32v2 newPrevExteriorOffset = prevOffset2D + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)];
+                if (isTileExternal(newPrevExteriorOffset, room.floorIndex)) {
+                    // Build new exterior edge starting at corner
+                    exteriorWallRuns.emplace_back(ExteriorWallRun{ prevInteriorTileIndex + room.floorIndex * floorSize, 1, currentEdgeNormal });
+                    currentExteriorWallRun = &exteriorWallRuns.back();
+                    if (visLog) {
+                        const f32v3 outerPos = f32v3(newPrevExteriorOffset.x, newPrevExteriorOffset.y, room.floorIndex * bp.floorHeight);
+                        visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Orange);
+                    }
+                }
+            }
+
+            const i32v2 outerOffset2D = currentOffset2D + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)];
+            if (isTileExternal(outerOffset2D, room.floorIndex)) {
+                if (currentExteriorWallRun) {
+                    ++currentExteriorWallRun->length;
+                    assert(currentEdgeNormal == currentExteriorWallRun->dir);
+                }
+                else {
+                    // New edge
+                    exteriorWallRuns.emplace_back(ExteriorWallRun{ currentInteriorTileIndex + room.floorIndex * floorSize, 1, currentEdgeNormal });
+                    currentExteriorWallRun = &exteriorWallRuns.back();
+                }
+            }
+            else {
+                // End previous edge
+                currentExteriorWallRun = nullptr;
+            }
+
+            if (visLog && currentExteriorWallRun) {
+                const f32v3 outerPos = f32v3(outerOffset2D.x, outerOffset2D.y, room.floorIndex * bp.floorHeight);
+                visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Magenta);
+            }
+
+            prevOffset2D = currentOffset2D;
+            prevInteriorTileIndex = currentInteriorTileIndex;
+        }
+        // Final tile is shared with start tile and is guarenteed to be a west cartesian
+        const TileIndex finalTileIndex = room.edgeWalk[0];
+        const i32v2 finalOffset2D = bp.getTileOffset(finalTileIndex);
+        const i32v2 finalExternalOffset2D = finalOffset2D + CARTESIAN_NORMALS_2D[e_cast(Cartesian::WEST)];
+        if (isTileExternal(finalExternalOffset2D, room.floorIndex)) {
+            if (currentExteriorWallRun && currentExteriorWallRun->dir == Cartesian::WEST) {
+                ++currentExteriorWallRun->length;
+            }
+            else {
+                exteriorWallRuns.emplace_back(ExteriorWallRun{ finalTileIndex + room.floorIndex * floorSize, 1, Cartesian::WEST });
+            }
+            if (visLog) {
+                const f32v3 outerPos = f32v3(finalExternalOffset2D.x, finalExternalOffset2D.y, room.floorIndex * bp.floorHeight);
+                visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Red);
+            }
+        }
+    }
+
+    if (visLog) {
+        for (ExteriorWallRun& wallRun : exteriorWallRuns) {
+            const i32v2 edgeOffset = CARTESIAN_TANGENTS_CCW[e_cast(wallRun.dir)] * (i32)wallRun.length;
+            i32v3 startOffset = bp.getTileOffset(wallRun.start) + CARTESIAN_TILE_EDGE_WALK_CCW_POSITION_OFFSETS_3D[e_cast(wallRun.dir)];
+            startOffset.z *= bp.floorHeight;
+            visLog->addLineBetweenPoints(startOffset, startOffset + i32v3(edgeOffset.x, edgeOffset.y, 0), CARTESIAN_COLORS[e_cast(wallRun.dir)]);
+        }
+    }
+
+    // Compress memory
+    exteriorWallRuns.shrink_to_fit();
+}
+
+void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* visLog) {
+    
+    const i32 INDEX_OFFSETS[4] = {
+        -bp.aabb.dims.x, //South
+        -1, //West
+        1, //East
+        bp.aabb.dims.x //North
+    };
+
+    for (ExteriorWallRun& wallRun : bp.exteriorWallRuns) {
+        if (wallRun.length > 1 && wallRun.length <= MAX_EXTERIOR_WALL_RUN_LENGTH) {
+            const ui32 permutation = Random::xorshf96() % sPossibleWindowPermutations[wallRun.length].size();
+            const std::vector<bool>& windowPlacements = sPossibleWindowPermutations[wallRun.length][permutation];
+            assert(windowPlacements.size() == wallRun.length);
+            TileIndex index = wallRun.start;
+            for (ui32 i = 0; i < wallRun.length; ++i) {
+                if (windowPlacements[i]) {
+                    bp.walls[index].walls[e_cast(wallRun.dir)] = TileWall();
+                }
+                if (visLog) {
+                    i32v3 offset = bp.getTileOffset(index);
+                    offset.z *= bp.floorHeight;
+                    visLog->addFilledQuad(offset, f32v2(1.0f), color::Aqua);
+                }
+                index += INDEX_OFFSETS[e_cast(wallRun.dir)];
+            }
+        }
+    }
+}
+
 void computeOwnedTilesOnFirstFloor(BuildingBlueprint& bp) {
     bp.tilesNeedingTerrainFlatten = BitArray(bp.aabb.dims.x * bp.aabb.dims.y);
     for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
@@ -1842,10 +2054,11 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]);
     bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]);
     bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WALL)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::WINDOW)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WINDOW)]);
     bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS)]);
     bp.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]);
     bp.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
-    static_assert(e_cast(BlueprintTileType::TYPES) == 7);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
     // Guess
     bp.tileItemData.reserve(bp.tiles.size() / 2);
@@ -1860,6 +2073,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
             case BlueprintTileType::STAIRS:
             case BlueprintTileType::STAIRS_FLAT:
             case BlueprintTileType::WALL:
+            case BlueprintTileType::WINDOW:
             case BlueprintTileType::FLOOR:
             case BlueprintTileType::DOOR: {
                 const Recipe& recipe = *bp.tileRecipes[e_cast(bp.tiles[tileIndex])];
@@ -1889,7 +2103,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
                 break;
         }
     }
-    static_assert(e_cast(BlueprintTileType::TYPES) == 7);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
     for (auto&& it : requiredItems) {
         bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, (ui32)it.second });

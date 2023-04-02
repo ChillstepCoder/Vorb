@@ -19,11 +19,12 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Block", TileShape::BLOCK);
     kt.addValue("Floor", TileShape::FLOOR);
     kt.addValue("Wall", TileShape::WALL);
+    kt.addValue("Window", TileShape::WINDOW);
     kt.addValue("Door", TileShape::DOOR);
     kt.addValue("Stairs", TileShape::STAIRS);
     kt.addValue("Model", TileShape::MODEL);
 }
-static_assert(e_cast(TileShape::COUNT) == 7);
+static_assert(e_cast(TileShape::COUNT) == 8);
 
 KEG_TYPE_DEF_SAME_NAME(ItemInputDef, kt) {
     kt.addValue("item", keg::Value::basic(offsetof(ItemInputDef, itemName), keg::BasicType::STRING));

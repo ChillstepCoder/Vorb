@@ -703,7 +703,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
             i32v2 worldPos = TileContainer::getTileXYOffset(edge.first, dims);
             worldPos += tileContainer.getWorldPos2D();
             // Add cartesian offset since its an opposite tile
-            worldPos += CARTESIAN_NORMALS[e_cast(edge.second)];
+            worldPos += CARTESIAN_NORMALS_2D[e_cast(edge.second)];
             assert(worldPos.x >= 0 && worldPos.y >= 0);
 
             LiteChunkID chunkId = ChunkID::fromWorldI32v2(worldPos).id;
@@ -1039,7 +1039,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
 
             if (edge.dir == Cartesian::EAST) worldPos.x += 1.0f;
             else if (edge.dir == Cartesian::NORTH) worldPos.y += 1.0f;
-            const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[e_cast(edge.dir)]) * (f32)(edge.edgeLength/* + 1.0f*/);
+            const f32v2 offset = f32v2(CARTESIAN_TANGENTS_ABS_2D[e_cast(edge.dir)]) * (f32)(edge.edgeLength/* + 1.0f*/);
             f32v3 pointA = f32v3(worldPos) + f32v3(0.00f, 0.00f, 0.00f);
             f32v3 pointB = f32v3(worldPos) + f32v3(offset.x, offset.y, 0.0f);
             if (heightData) {
@@ -1058,7 +1058,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                 HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
                 midpoint.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint));
             }
-            f32v3 third(midpoint.x + CARTESIAN_NORMALS[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS[e_cast(edge.dir)].y, midpoint.z);
+            f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
             // TODO: Combine above
             DebugRenderer::drawLineBetweenPoints(midpoint, third, color3, lifetime, debugId);
 
@@ -1072,7 +1072,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                 i32v3 worldPos2 = containerPos + startOffset2;
                 if (edge2.dir == Cartesian::EAST) worldPos2.x += 1.0f;
                 else if (edge2.dir == Cartesian::NORTH) worldPos2.y += 1.0f;
-                const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[e_cast(edge2.dir)]) * (f32)(edge2.edgeLength/* + 1.0f*/);
+                const f32v2 offset2 = f32v2(CARTESIAN_TANGENTS_ABS_2D[e_cast(edge2.dir)]) * (f32)(edge2.edgeLength/* + 1.0f*/);
                 f32v3 midpoint2(worldPos2.x + offset2.x * 0.5f, worldPos2.y + offset2.y * 0.5f, worldPos2.z);
                 // TODO: Not thread safe!
                 midpoint2.z += tileContainer.getTileAt(edge2.startPos).getGroundZOffset();
@@ -1223,7 +1223,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
         worldPos.z += tileHandle.container->getTileAt(edge.startPos).getGroundZOffset();
         if (edge.dir == Cartesian::EAST) worldPos.x += 1.0f;
         else if (edge.dir == Cartesian::NORTH) worldPos.y += 1.0f;
-        const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[e_cast(edge.dir)]) * (f32)(edge.edgeLength/* + 1.0f*/);
+        const f32v2 offset = f32v2(CARTESIAN_TANGENTS_ABS_2D[e_cast(edge.dir)]) * (f32)(edge.edgeLength/* + 1.0f*/);
         f32v3 pointA = f32v3(worldPos) + f32v3(0.00f, 0.00f, 0.00f);
         f32v3 pointB = f32v3(worldPos) + f32v3(offset.x, offset.y, 0.0f);
         if (heightData) {
@@ -1242,7 +1242,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
             HeightmapPatchID patchId(f32v2(tileHandle.container->getWorldPos2D()));
             midpoint.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint));
         }
-        f32v3 third(midpoint.x + CARTESIAN_NORMALS[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS[e_cast(edge.dir)].y, midpoint.z);
+        f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
         // TODO: Combine above
         DebugRenderer::drawLineBetweenPoints(midpoint, third, color3, lifetime, debugId);
 
@@ -1256,7 +1256,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
             i32v3 worldPos2 = containerPos + startOffset2;
             if (edge2.dir == Cartesian::EAST) worldPos2.x += 1.0f;
             else if (edge2.dir == Cartesian::NORTH) worldPos2.y += 1.0f;
-            const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[e_cast(edge2.dir)]) * (f32)(edge2.edgeLength/* + 1.0f*/);
+            const f32v2 offset2 = f32v2(CARTESIAN_TANGENTS_ABS_2D[e_cast(edge2.dir)]) * (f32)(edge2.edgeLength/* + 1.0f*/);
             f32v3 midpoint2(worldPos2.x + offset2.x * 0.5f, worldPos2.y + offset2.y * 0.5f, worldPos2.z);
             // TODO: Not thread safe!
             midpoint2.z += tileHandle.container->getTileAt(edge2.startPos).getGroundZOffset();

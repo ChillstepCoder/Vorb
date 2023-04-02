@@ -23,6 +23,7 @@ enum class TileShape {
     BLOCK, // Most blocks
     FLOOR,
     WALL,
+    WINDOW,
     DOOR,
     STAIRS,
     MODEL,

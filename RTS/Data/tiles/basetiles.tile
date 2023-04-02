@@ -6,13 +6,6 @@ wd_col_goth:
   recipe:
     - item: wood_raw
       count: 5
-wd_wall_goth:
-  mat: wood_wall_gothic
-  texture_method: vertical
-  shape: Wall
-  recipe:
-    - item: wood_raw
-      count: 5
 bricks1:
   layer: 0
   mat: bricks1
