@@ -2000,12 +2000,14 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
 }
 
 void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* visLog) {
+
+    if (visLog) visLog->nextStep("Place Windows");
     
     const i32 INDEX_OFFSETS[4] = {
-        -bp.aabb.dims.x, //South
-        -1, //West
-        1, //East
-        bp.aabb.dims.x //North
+        1, //South
+        -bp.aabb.dims.x, //West
+        bp.aabb.dims.x, //East
+        -1 //North
     };
 
     for (ExteriorWallRun& wallRun : bp.exteriorWallRuns) {
