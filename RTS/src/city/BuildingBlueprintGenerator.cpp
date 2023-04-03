@@ -2009,7 +2009,7 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
     };
 
     for (ExteriorWallRun& wallRun : bp.exteriorWallRuns) {
-        if (wallRun.length > 1 && wallRun.length <= MAX_EXTERIOR_WALL_RUN_LENGTH) {
+        if (wallRun.length > 1 && wallRun.length < MAX_EXTERIOR_WALL_RUN_LENGTH) {
             const ui32 permutation = Random::xorshf96() % sPossibleWindowPermutations[wallRun.length].size();
             const std::vector<bool>& windowPlacements = sPossibleWindowPermutations[wallRun.length][permutation];
             assert(windowPlacements.size() == wallRun.length);
