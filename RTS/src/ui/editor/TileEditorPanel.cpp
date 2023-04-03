@@ -84,7 +84,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf(label, "%04d", def.mModelId);
+                sprintf_s(label, "%04d", def.mModelId);
                 ImGui::Text(label);
                 // Type
                 ImGui::TableSetColumnIndex(2);
@@ -165,7 +165,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf(label, "%04d", it.second);
+                sprintf_s(label, "%04d", it.second);
                 ImGui::Text(label);
 
                 // Preview

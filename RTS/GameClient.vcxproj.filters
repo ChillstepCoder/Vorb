@@ -204,9 +204,6 @@
     <ClCompile Include="src\item\ItemStockpile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\graphics\BlendState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\ItemRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

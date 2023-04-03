@@ -1,3 +1,4 @@
+#include "stdafx.h"
 
 #include "b3ChromeTraceUtil.h"
 #include "LinearMath/btQuickprof.h"
@@ -129,39 +130,39 @@ struct btTimings
 
             if (startTimeRem1000 < 10)
             {
-                sprintf(startTimeRem1000Str, "00%d", startTimeRem1000);
+                sprintf_s(startTimeRem1000Str, "00%d", startTimeRem1000);
             }
             else
             {
                 if (startTimeRem1000 < 100)
                 {
-                    sprintf(startTimeRem1000Str, "0%d", startTimeRem1000);
+                    sprintf_s(startTimeRem1000Str, "0%d", startTimeRem1000);
                 }
                 else
                 {
-                    sprintf(startTimeRem1000Str, "%d", startTimeRem1000);
+                    sprintf_s(startTimeRem1000Str, "%d", startTimeRem1000);
                 }
             }
 
             if (endTimeRem1000 < 10)
             {
-                sprintf(endTimeRem1000Str, "00%d", endTimeRem1000);
+                sprintf_s(endTimeRem1000Str, "00%d", endTimeRem1000);
             }
             else
             {
                 if (endTimeRem1000 < 100)
                 {
-                    sprintf(endTimeRem1000Str, "0%d", endTimeRem1000);
+                    sprintf_s(endTimeRem1000Str, "0%d", endTimeRem1000);
                 }
                 else
                 {
-                    sprintf(endTimeRem1000Str, "%d", endTimeRem1000);
+                    sprintf_s(endTimeRem1000Str, "%d", endTimeRem1000);
                 }
             }
 
             char newname[1024];
             static int counter2 = 0;
-            sprintf(newname, "%s%d", name, counter2++);
+            sprintf_s(newname, "%s%d", name, counter2++);
 
 #ifdef _WIN32
             fprintf(gTimingFile, "{\"cat\":\"timing\",\"pid\":1,\"tid\":%d,\"ts\":%I64d.%s ,\"ph\":\"B\",\"name\":\"%s\",\"args\":{}},\n",
@@ -296,8 +297,8 @@ void b3ChromeUtilsStopTimingsAndWriteJsonFile(const char* fileNamePrefix)
 	btSetCustomLeaveProfileZoneFunc(MyDummyLeaveProfileZoneFunc);
 	char fileName[1024];
 	static int fileCounter = 0;
-	sprintf(fileName, "%s_%d.json", fileNamePrefix, fileCounter/*++*/);
-	gTimingFile = fopen(fileName, "w");
+    sprintf_s(fileName, "%s_%d.json", fileNamePrefix, fileCounter/*++*/);
+	fopen_s(&gTimingFile, fileName, "w");
 	if (gTimingFile)
 	{
 		fprintf(gTimingFile, "{\"traceEvents\":[\n");
