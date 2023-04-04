@@ -27,9 +27,26 @@
 #include "util/GridEdgeFinder.h"
 
 #include "physics/PhysicsWorld.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
 
 #include "rendering/RenderThreadTasks.h"
-#include "gamethread/GameThreadTasks.h"
+
+//CGal
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Polygon_2.h>
+#include <CGAL/create_straight_skeleton_2.h>
+#include <CGAL/Triangulation_2.h>
+#include <CGAL/partition_2.h>
+#include <CGAL/Partition_traits_2.h>
+
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef K::Point_2                   CgalPoint;
+typedef CGAL::Polygon_2<K>           Polygon_2;
+typedef CGAL::Straight_skeleton_2<K> StraightSkeleton;
+typedef boost::shared_ptr<StraightSkeleton> SsPtr;
+typedef CGAL::Triangulation_2<K>         Triangulation;
+typedef Triangulation::Vertex_circulator Vertex_circulator;
+typedef Triangulation::Point             TriangulationPoint;
 
 constexpr f32 ROOF_THICKNESS = 0.04f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
@@ -51,6 +68,22 @@ color4 DEBUG_COLOR_ARRAY[DEBUG_COLOR_ARRAY_SIZE] = {
     color4(0.1f, 0.1f, 0.1f),
 };
 
+
+// Helper forward declare
+std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog);
+void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const MaterialData& rawWoodMaterial, const MaterialData& shinglesMaterial, ui32 floor, f32 zPos, VisualLog* visLog);
+void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const MaterialData& shinglesMaterial, ui32 debugColorIndex, f32 zPos);
+void addRoofTriangle(
+    ProceduralMeshBuilder& meshBuilder,
+    const f32v2 points[3],
+    const Building& building,
+    const MaterialData& materialData,
+    ui32 debugColorIndex,
+    f32 zPos
+);
+void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog);
+void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
+void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
 
 //class f32v2HashFunction {
 //public:
@@ -74,9 +107,6 @@ enum Corners {
     CORNER_BOTTOM_RIGHT = 3
 };
 
-
-constexpr int MAX_ROOF_VERTICES = 8192;
-thread_local f32v2 sRoofVertices[MAX_ROOF_VERTICES];
 
 
 // TODO: MathUtil
@@ -362,10 +392,11 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     if (visLog) visLog->finish();
 }
 
-std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
+std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
-    const i32v2 dims(building.mAABB.dims.x, building.mAABB.dims.y);
+    const i32AABB3& aabb = building.getAABB();
+    const i32v2 dims(aabb.dims.x, aabb.dims.y);
     const ui32 totalTiles = dims.x * dims.y;
     std::vector<SsPtr> skeletons;
 
@@ -374,6 +405,9 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& fl
     checkedTiles.setNOT(floorOwnedTiles);
     i32v2 cornerPos(0, 0);
    
+    constexpr int MAX_ROOF_VERTICES = 8192;
+    static thread_local std::vector<f32v2> sRoofVertices;
+
     // Get multiple straight skeletons
     while (true) {
         ui32 numRoofVertices = 0;
@@ -450,7 +484,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& fl
             else if (nextEdge == Cartesian::INVALID) {
                 // Visual log
                 if (visLog) {
-                    const ui32v2& xy = building.mTileContainer->getTileXYOffset(startIndex);
+                    const ui32v2& xy = building.getTileContainer()->getTileXYOffset(startIndex);
                     visLog->addFilledQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), COLOR_RED);
                 }
                 return skeletons;
@@ -474,10 +508,11 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& fl
 }
 
 
-void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const MaterialData& rawWoodMaterial, const MaterialData& shinglesMaterial, ui32 floor, f32 zPos, VisualLog* visLog) {
+void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const MaterialData& rawWoodMaterial, const MaterialData& shinglesMaterial, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
+    const i32AABB3& aabb = building.getAABB();
 
     // ========================== Gables and Extrudes ===============================
     // Map gable and contour vertex points so we can move all connected verts
@@ -597,7 +632,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
             }
 
             if (sDebugOptions.mRoofDebug && isGablePoint) {
-                DebugRenderer::drawWireQuad(f32v3(building.mAABB.pos.x + x, building.mAABB.pos.y + y, zPos + h) - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
+                DebugRenderer::drawWireQuad(f32v3(aabb.pos.x + x, aabb.pos.y + y, zPos + h) - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
             }
             he = he->next();
 
@@ -610,7 +645,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
     }
 }
 
-void BuildingMesher::triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const MaterialData& shinglesMaterial, ui32 debugColorIndex, f32 zPos) {
+void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const MaterialData& shinglesMaterial, ui32 debugColorIndex, f32 zPos) {
     // Triangulation only works on convex polygons so we will partition the potentially concave poly into
     // separate convex polygons
     // https://stackoverflow.com/questions/1832430/c-cgal-2d-delauny-triangulation-concave-shapes
@@ -667,7 +702,7 @@ void BuildingMesher::triangulateRoofFacePolygons(bool isGable, ProceduralMeshBui
     }
 }
 
-void BuildingMesher::addRoofTriangle(
+void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
     const Building& building,
@@ -675,7 +710,8 @@ void BuildingMesher::addRoofTriangle(
     ui32 debugColorIndex,
     f32 zPos
 ) {
-    const f32v2 buildingCenter = f32v2(building.mAABB.pos) + f32v2(building.mAABB.dims) * 0.5f;
+    const i32AABB3& aabb = building.getAABB();
+    const f32v2 buildingCenter = f32v2(aabb.pos) + f32v2(aabb.dims) * 0.5f;
 
     StaticModelVertex verts[3];
     for (int i = 0; i < 3; ++i) {
@@ -742,7 +778,7 @@ void BuildingMesher::addRoofTriangle(
     meshBuilder.addTriangle(verts, materialData, false);
 }
 
-void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog) {
+void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog) {
     for (auto&& edge : contourEdges) {
         if (edge.v1 == edge.parent1 && edge.v2 == edge.parent2) {
             // Ignore cases where we meld into the wall due to collision
@@ -837,14 +873,14 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
     }
 }
 
-void BuildingMesher::meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
+void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
     constexpr f32 CEILING_THICKNESS = 0.05f;
-    const i32AABB3& aabb = building.mAABB;
-    const TileContainer& tileContainer = *building.mTileContainer;
+    const i32AABB3& aabb = building.getAABB();
+    const TileContainer& tileContainer = *building.getTileContainer();
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
     TileIndex index = 0;
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
+    for (ui32 z = 0; z < tileContainer.getDims().z; ++z) {
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
             for (ui32 x = 0; x < aabb.dims.x; ++x, ++index) {
                 if (ownedTiles.getBit(index)) {
@@ -868,14 +904,14 @@ void BuildingMesher::meshRoomCeilings(const Building& building, ProceduralMeshBu
     }
 }
 
-void BuildingMesher::meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
-    const i32AABB3& aabb = building.mAABB;
-    const TileContainer& tileContainer = *building.mTileContainer;
+void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
+    const i32AABB3& aabb = building.getAABB();
+    const TileContainer& tileContainer = *building.getTileContainer();
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
     TileIndex index = 0;
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    for (i32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
+    for (i32 z = 0; z < tileContainer.getDims().z; ++z) {
         for (i32 y = 0; y < aabb.dims.y; ++y) {
             for (i32 x = 0; x < aabb.dims.x; ++x, ++index) {
                 // Check if we should start supports here, i.e. below us is outside the building
@@ -897,17 +933,3 @@ void BuildingMesher::meshRoomUndercarriage(const Building& building, ProceduralM
         }
     }
 }
-
-const i32v2 STAIR_DIR_OFFSETS[CARTESIAN_COUNT] = {
-    i32v2(0, 1), // SOUTH
-    i32v2(1, 0), // WEST
-    i32v2(0, 0), // EAST
-    i32v2(0, 0), // NORTH
-};
-
-const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
-    f32v2(1, 0.25), // SOUTH
-    f32v2(0.25, 1), // WEST
-    f32v2(0.25, 1), // EAST
-    f32v2(1, 0.25), // NORTH
-};

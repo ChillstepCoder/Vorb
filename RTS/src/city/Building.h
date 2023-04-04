@@ -2,7 +2,6 @@
 
 #include "CityConst.h"
 #include "city/BuildingGrammar.h"
-#include "item/ItemTradeManager.h"
 #include "util/BitArray.h"
 
 #include "city/CityPlot.h"
@@ -12,8 +11,6 @@
 #include "tile/TileContainer.h"
 
 #include "structure/Structure.h"
-
-#include "physics/StaticPhysicsMeshBuilder.h"
 
 
 class Mesh;
