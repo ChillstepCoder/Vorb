@@ -343,6 +343,7 @@
     <ClCompile Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.cpp" />
@@ -617,6 +618,7 @@
     <ClInclude Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.h" />

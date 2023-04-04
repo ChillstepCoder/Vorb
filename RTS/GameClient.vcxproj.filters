@@ -690,6 +690,9 @@
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1623,6 +1626,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\Timing\ThreadUtilizationTimer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

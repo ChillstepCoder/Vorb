@@ -54,6 +54,6 @@ private:
     std::set<BuildingBlueprint*> mGeneratingBuildings;
     static BuildingBlueprintId sCurrentId;
 
-    inline static std::vector<std::vector<bool>> sPossibleWindowPermutations[MAX_EXTERIOR_WALL_RUN_LENGTH];
+    inline static std::vector<std::vector<bool>> sPossibleWindowPermutations[MAX_EXTERIOR_WALL_RUN_LENGTH + 1];
 };
 

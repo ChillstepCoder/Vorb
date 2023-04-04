@@ -14,6 +14,7 @@
 #include "physics/StaticPhysicsMeshBuilder.h"
 #include "resources/TileRepository.h"
 
+#include "rendering/mesh/mesher/builder/ProceduralMeshHelpers.h"
 #include "world/IHeightmapGrid.h"
 
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
@@ -212,9 +213,13 @@ void mergeOrMakeWallFace(
     if (!didMerge) {
         // Check if this is a door and if so ignore it because its a dynamic object not part of this mesh
         const TileID tileId = walls.walls[wallCartesian].wallID;
-        if (TileRepository::getTileData(tileId).shape == TileShape::DOOR) {
+        const TileData& tileData = TileRepository::getTileData(tileId);
+        if (tileData.shape == TileShape::DOOR) {
             prevIndex = UINT32_MAX;
             return;
+        }
+        else if (tileData.shape == TileShape::WINDOW) {
+
         }
 
         prevIndex = wallData.size();
@@ -330,7 +335,7 @@ void mergeOrMakeWestEastWall(const std::vector<TileWalls>& tileWalls, const std:
     }
 }
 
-void meshWalls(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>& tiles, ui32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
+void meshWallsGreedy(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>& tiles, ui32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
     PROFILE_FUNCTION();
 
     // =============== Greedy mesh walls ===============
@@ -519,6 +524,60 @@ void meshWalls(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>&
     }
 }
 
+
+void meshWallsDefault(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>& tiles, ui32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
+    PROFILE_FUNCTION();
+
+    for (ui32 z = 0; z < tileDims.z; ++z) {
+        for (ui32 y = 0; y < tileDims.y; ++y) {
+            for (ui32 x = 0; x < tileDims.x; ++x) {
+                TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(ui32v3(x, y, z), tileDims);
+                const f32 groundZOffset = tiles[tileIndex].getGroundZOffset();
+                const TileWalls& walls = tileWalls[tileIndex];
+
+                for (ui32 c = 0; c < 4; ++c) {
+                    const TileWall& wall = walls.walls[c];
+                    if (wall.isValid()) {
+                        const TileData& tileData = TileRepository::getTileData(walls.walls[c].wallID);
+                        switch (tileData.shape) {
+                            case TileShape::WALL:
+                                break;
+                            case TileShape::WINDOW:
+                                break;
+                            case TileShape::DOOR:
+                                break;
+                            default:
+                                assert(false);
+                                break;
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+            //// Main faces
+            //const TileData& tileData = TileRepository::getTileData(wall.tileId);
+            //const MaterialData& materialData = tileData.materialData;
+            //const f32 UVSCALE_Y = flipV / 3.0f;
+            //meshBuilder.addQuadBetweenPoints(wallPoints, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
+            //physMesh.addQuadBetweenPoints(wallPoints);
+            //if (endcapStart) {
+            //    meshBuilder.addQuadBetweenPoints(encapPointsStart, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
+            //    // The collision is thin enough here we just dont really need it
+            //    /*if (physMesh) {
+            //        physMesh.addQuadBetweenPoints(encapPointsStart);
+            //    }*/
+            //}
+            //if (endcapEnd) {
+            //    meshBuilder.addQuadBetweenPoints(encapPointsEnd, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
+            //    // The collision is thin enough here we just dont really need it
+            //    /*if (physMesh) {
+            //        physMesh.addQuadBetweenPoints(encapPointsStart);
+            //    }*/
+            //}
+}
+
 // TODO: Dual grid meshing? https://www.youtube.com/watch?v=buKQjkad2I0
 void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
     PROFILE_FUNCTION();
@@ -607,7 +666,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     }
 
     // Walls
-    meshWalls(tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, physics);
+    meshWallsGreedy(tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, physics);
 
     // Dynamics
     for (auto&& dynamicTile : tileContainer.getDynamicTiles()) {
@@ -1255,34 +1314,6 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
     physMesh.addQuadBetweenPoints(pointsSide);
     meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.materialData, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
     physMesh.addQuadBetweenPoints(&(pointsSide[4]));
-}
-
-void TileMeshBuilderMethods::addWall(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, StaticPhysicsMeshBuilder& physMesh) {
-    constexpr f32 WALL_THICKNESS = 0.05f;
-    assert(false);
-    //f32v3 rootPos = tilePos
-    //meshBuilder.addQuadBetweenPointsWorldUV()
-    //meshBuilder.addQuadBetweenPoints()
-    //meshBuilder.addAxisAlignedQuad(
-    //    topPos,
-    //    f32v2(1.0f), // Dimensions
-    //    CubeFacing::TOP,
-    //    texture,
-    //    f32v4(0.0f, 2.0f / 3.0f, 1.0f, 1.0f / 3.0f),
-    //    COLOR_WHITE
-    //);
-    //if (physMesh) {
-    //    physMesh.addTileQuad(topPos, f32v2(1.0f), CubeFacing::TOP);
-
-    //    for (int c = 0; c < 4; ++c) {
-    //        if (heightDiffs[c] > 0.0f) {
-    //            CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
-    //            const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
-    //            physMesh.addTileQuad(f32v3(quadPos.x, quadPos.y, quadPos.z), f32v2(1.0f, heightDiffs[c]), quadFacing);
-    //        }
-    //    }
-    //}
-
 }
 
 f32 TileMeshBuilderMethods::getModelRotationAtPosition(const f32v3& worldPos) {

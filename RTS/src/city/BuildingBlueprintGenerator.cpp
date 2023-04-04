@@ -202,13 +202,13 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
         {0}, {1}
     };
     sPossibleWindowPermutations[2] = {
-        {0, 0}, {1, 1}
+        {0, 0}, {0, 0}, {1, 1}
     };
     sPossibleWindowPermutations[3] = {
         {0, 0, 0}, {0, 1, 0}
     };
     sPossibleWindowPermutations[4] = {
-        {0, 0, 0, 0}, {0, 1, 1, 0}
+        {0, 0, 0, 0}, {0, 1, 1, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}
     };
     sPossibleWindowPermutations[5] = {
         {0, 0, 0, 0, 0}, {0, 1, 0, 1, 0}, {0, 0, 1, 0, 0}, {0, 1, 0, 0, 0}, {0, 0, 0, 1, 0}
@@ -218,6 +218,9 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
     };
     sPossibleWindowPermutations[7] = {
         {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 1, 0, 1, 0, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 1, 0, 0},
+    };
+    sPossibleWindowPermutations[8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 1, 0, 0, 0}, {0, 1, 1, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 0, 1, 0, 0}, {0, 1, 0, 1, 1, 0, 1, 0},
     };
 
     static_assert(MAX_EXTERIOR_WALL_RUN_LENGTH == 8);
@@ -2011,19 +2014,23 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
     };
 
     for (ExteriorWallRun& wallRun : bp.exteriorWallRuns) {
-        if (wallRun.length > 1 && wallRun.length < MAX_EXTERIOR_WALL_RUN_LENGTH) {
+        if (wallRun.length > 1 && wallRun.length <= MAX_EXTERIOR_WALL_RUN_LENGTH) {
             const ui32 permutation = Random::xorshf96() % sPossibleWindowPermutations[wallRun.length].size();
             const std::vector<bool>& windowPlacements = sPossibleWindowPermutations[wallRun.length][permutation];
             assert(windowPlacements.size() == wallRun.length);
             TileIndex index = wallRun.start;
             for (ui32 i = 0; i < wallRun.length; ++i) {
                 if (windowPlacements[i]) {
-                    bp.walls[index].walls[e_cast(wallRun.dir)] = TileWall();
-                }
-                if (visLog) {
-                    i32v3 offset = bp.getTileOffset(index);
-                    offset.z *= bp.floorHeight;
-                    visLog->addFilledQuad(offset, f32v2(1.0f), color::Aqua);
+                    TileWall& wall = bp.walls[index].walls[e_cast(wallRun.dir)];
+                    // Don't ever replace doors
+                    if (!wall.isDoor) {
+                        wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::WINDOW)];
+                        if (visLog) {
+                            i32v3 offset = bp.getTileOffset(index);
+                            offset.z *= bp.floorHeight;
+                            visLog->addFilledQuad(offset, f32v2(1.0f), color::Aqua);
+                        }
+                    }
                 }
                 index += INDEX_OFFSETS[e_cast(wallRun.dir)];
             }
