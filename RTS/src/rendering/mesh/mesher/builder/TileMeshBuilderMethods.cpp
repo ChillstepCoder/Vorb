@@ -501,18 +501,19 @@ void meshWallsGreedy(const std::vector<TileWalls>& tileWalls, const std::vector<
             // Main faces
             const TileData& tileData = TileRepository::getTileData(wall.tileId);
             const MaterialData& materialData = tileData.materialData;
-            const f32 UVSCALE_Y = flipV / 3.0f;
-            meshBuilder.addQuadBetweenPoints(wallPoints, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
+            const f32v2 UVSCALE = f32v2(0.6666f * 0.3333f, flipV * 0.3333f);
+            const AXIS_3D uvAxis = (AXIS_3D)CARTESIAN_NORMAL_AXIS_2D[e_cast(wall.dir)];
+            meshBuilder.addQuadBetweenPointsWorldUV(wallPoints, materialData, UVSCALE, COLOR_WHITE, uvAxis, f32v3(0.0f), flipUv);
             physMesh.addQuadBetweenPoints(wallPoints);
             if (endcapStart) {
-                meshBuilder.addQuadBetweenPoints(encapPointsStart, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
+                meshBuilder.addQuadBetweenPointsWorldUV(encapPointsStart, materialData, UVSCALE, COLOR_WHITE, uvAxis, f32v3(0.0f), flipUv);
                 // The collision is thin enough here we just dont really need it
                 /*if (physMesh) {
                     physMesh.addQuadBetweenPoints(encapPointsStart);
                 }*/
             }
             if (endcapEnd) {
-                meshBuilder.addQuadBetweenPoints(encapPointsEnd, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
+                meshBuilder.addQuadBetweenPointsWorldUV(encapPointsEnd, materialData, UVSCALE, COLOR_WHITE, uvAxis, f32v3(0.0f), flipUv);
                 // The collision is thin enough here we just dont really need it
                 /*if (physMesh) {
                     physMesh.addQuadBetweenPoints(encapPointsStart);

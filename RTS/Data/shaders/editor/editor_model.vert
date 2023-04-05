@@ -58,7 +58,6 @@ void main() {
     
     // For displacement, get our world space -> tangent space
     mat3 tfTBN = inverse(fTBN);
-     //vs_out.TangentLightPos = tfTBN * lightPos;
     fViewTangent  = tfTBN * unCameraPos;
     fFragPosTangent  = tfTBN * fWorldPos;
 }

@@ -79,6 +79,10 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         return false;
     }
 
+    // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Handle weird texture dimensions
+
+
     assert(mMaterialGpuData.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
     const MaterialID materialId = mMaterialGpuData.size();
     MaterialData& materialData = mMaterialData.emplace_back();
@@ -145,6 +149,10 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
             LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
             return false;
         }
+        if (normalTextureData->texture.getDims() != textureDims) {
+            LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
+            return false;
+        }
         materialGpuData.normalMap = normalTextureData->texture.getHandleBindless();
     }
     
@@ -153,6 +161,10 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         const TextureData* displacementTextureData = textureRepository.loadTextureNew(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::R8, fileData.flipV);
         if (!displacementTextureData) {
             LOG_CRITICAL("Failed to load displacement texture {} for material {}", fileData.displacementTexture, filePath.getString());
+            return false;
+        }
+        if (displacementTextureData->texture.getDims() != textureDims) {
+            LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
             return false;
         }
         materialGpuData.displacementMap = displacementTextureData->texture.getHandleBindless();

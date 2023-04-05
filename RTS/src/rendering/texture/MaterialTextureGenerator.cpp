@@ -233,6 +233,7 @@ VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const ui8
     VGTexture aoRoughnessMetallicTexture;
     glCreateTextures(GL_TEXTURE_2D, 1, &aoRoughnessMetallicTexture);
     glTextureStorage2D(aoRoughnessMetallicTexture, computeMipmapCount(dims, INT_MAX), (VGEnum)vg::TextureInternalFormat::RGB8, dims.x, dims.y);
+    assert(dims.x * dims.y <= combinedBytes.size());
     glTextureSubImage2D(aoRoughnessMetallicTexture, 0, 0, 0, dims.x, dims.y, (VGEnum)vg::TextureFormat::RGB, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, combinedBytes.data());
 
     samplerState.setForTexture(aoRoughnessMetallicTexture);

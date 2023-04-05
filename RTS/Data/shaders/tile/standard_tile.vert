@@ -17,6 +17,8 @@ out vec2 fUV;
 flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
+out vec3 fViewTangent;
+out vec3 fFragPosTangent;
 
 void main() {
     fTint = vTint;
@@ -32,4 +34,9 @@ void main() {
     vec4 worldPos = vPosition + vec4(unPosition - CameraPos, 0.0);
     //worldPos.x += getWindAtPosition(Time, vPosition) * vWindInfluence;
     gl_Position = VP * worldPos;
+    
+    // For displacement, get our world space -> tangent space
+    mat3 tfTBN = inverse(fTBN);
+    fViewTangent  = tfTBN * CameraPos;
+    fFragPosTangent  = tfTBN * worldPos.xyz;
 }

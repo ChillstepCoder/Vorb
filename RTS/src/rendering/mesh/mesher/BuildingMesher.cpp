@@ -334,7 +334,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
 
     // Materials
     const MaterialData& shinglesMaterial = Services::ResourceManager::ref().getMaterialRepository().getMaterialData("roof");
-    const MaterialData& rawWoodMaterial = Services::ResourceManager::ref().getMaterialRepository().getMaterialData("raw_wood_dark");
+    const MaterialData& primaryBeamMaterial = Services::ResourceManager::ref().getMaterialRepository().getMaterialData("big_beam_0");
 
     // TODO: Not right
     sHeightMap.reserve(100);
@@ -372,19 +372,19 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
         for (auto& ss : iss) {
 
             if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
-            buildMeshFromStraightSkeleton(ss, building, meshBuilders.staticBuilder, contourEdges, rawWoodMaterial, shinglesMaterial, floor, zPos, visLog);
+            buildMeshFromStraightSkeleton(ss, building, meshBuilders.staticBuilder, contourEdges, primaryBeamMaterial, shinglesMaterial, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
-            meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, shinglesMaterial, rawWoodMaterial, zPos, visLog);
+            meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, shinglesMaterial, primaryBeamMaterial, zPos, visLog);
             contourEdges.clear();
         }
     }
 
     // ========================== Room Ceilings ===============================
-    meshRoomCeilings(building, meshBuilders.staticBuilder, rawWoodMaterial);
+    meshRoomCeilings(building, meshBuilders.staticBuilder, primaryBeamMaterial);
 
     // ========================== Room supports ===============================
-    meshRoomUndercarriage(building, meshBuilders.staticBuilder, rawWoodMaterial);
+    meshRoomUndercarriage(building, meshBuilders.staticBuilder, primaryBeamMaterial);
 
 
     physicsBuilder.setRootPos(f32v3(building.mAABB.pos));
@@ -406,7 +406,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
     i32v2 cornerPos(0, 0);
    
     constexpr int MAX_ROOF_VERTICES = 8192;
-    static thread_local std::vector<f32v2> sRoofVertices;
+    static thread_local f32v2 sRoofVertices[MAX_ROOF_VERTICES];
 
     // Get multiple straight skeletons
     while (true) {

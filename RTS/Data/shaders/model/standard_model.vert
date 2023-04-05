@@ -15,6 +15,8 @@ out vec2 fUV;
 flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
+out vec3 fViewTangent;
+out vec3 fFragPosTangent;
 
 void main() {
     fTint = vTint;
@@ -31,4 +33,9 @@ void main() {
     
     vec4 worldPos = (vModelMatrix * vPosition) - vec4(CameraPos, 0.0);
     gl_Position = VP * worldPos;
+    
+    // For displacement, get our world space -> tangent space
+    mat3 tfTBN = inverse(fTBN);
+    fViewTangent  = tfTBN * CameraPos;
+    fFragPosTangent  = tfTBN * worldPos.xyz;
 }

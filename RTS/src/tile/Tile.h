@@ -108,17 +108,16 @@ static_assert(sizeof(TileOrientation) == 1);
 
 struct TileWall {
     TileID wallID = TILE_ID_NONE;
-    TileID paintID = TILE_ID_NONE;
     bool isDoor = false;
 
-    void clear() { wallID = TILE_ID_NONE; paintID = TILE_ID_NONE; }
+    void clear() { wallID = TILE_ID_NONE; }
     bool isValid() const { return wallID != TILE_ID_NONE; }
     bool canNavThrough() const { return isDoor || wallID == TILE_ID_NONE; }
 };
 
 struct TileWalls {
-    TileWalls() : walls{ {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE} } {}
-    static_assert(sizeof(TileWall) == 6, "Make sure constructor still works");
+    TileWalls() : walls{ {TILE_ID_NONE}, {TILE_ID_NONE}, {TILE_ID_NONE}, {TILE_ID_NONE} } {}
+    static_assert(sizeof(TileWall) == 4, "Make sure constructor still works");
     union {
         TileWall walls[4];
         struct {
