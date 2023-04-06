@@ -105,6 +105,7 @@ void TileContainer::allocateData() {
     size_t numTiles = mDims.x * mDims.y * mDims.z;
     mTiles.resize(numTiles);
     mWalls.resize(numTiles);
+    mTileWallsContainer.init(numTiles);
     mHarvestableRegistry.init(*this);
 }
 
@@ -113,6 +114,7 @@ void TileContainer::freeData() {
     std::vector<Tile>().swap(mTiles);
     std::vector<TileWalls>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
+    mTileWallsContainer.destroy();
     mOwnedTiles.freeData();
     mHarvestableRegistry.destroy();
 }
@@ -466,31 +468,6 @@ Building* TileContainer::getOwnerBuilding() const {
         return *building;
     }
     return nullptr;
-}
-
-void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
-    assert(IS_GAME_THREAD());
-    assert(isReady());
-    {
-        std::lock_guard lock(mSharedMutex);
-        auto&& newEntrance = mEntrances.emplace_back();
-        newEntrance.tileIndex = pos;
-        newEntrance.isLocked = true;
-    }
-    LOG_CRITICAL("TODO: Update nav in TileContainer::addEntrance");
-}
-
-void TileContainer::removeEntrance(TileIndex pos) {
-    assert(IS_GAME_THREAD());
-    assert(isReady());
-    std::lock_guard lock(mSharedMutex);
-    for (size_t i = 0; i < mEntrances.size(); ++i) {
-        if (mEntrances[i].tileIndex == pos) {
-            mEntrances[i] = mEntrances.back();
-            mEntrances.pop_back();
-        }
-    }
-    LOG_CRITICAL("TODO: Update nav in TileContainer::removeEntrance");
 }
 
 void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const {

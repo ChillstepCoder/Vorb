@@ -131,6 +131,75 @@ struct TileWalls {
     bool isEmpty() const { return south.wallID == TILE_ID_NONE && west.wallID == TILE_ID_NONE && east.wallID == TILE_ID_NONE && north.wallID == TILE_ID_NONE; }
 };
 
+// TODO: Extract file
+// Holds walls for a TileContainer. The +x and +y outermost edges cannot have walls
+class TileWallsContainer {
+public:
+    void init(ui32 numTiles) {
+        mNumTiles = numTiles;
+        mWalls.resize(mNumTiles * 2);
+    }
+    void destroy() {
+        std::vector<TileWall>().swap(mWalls);
+    }
+    TileWall getSouthWallAtTile(TileIndex tileIndex) const {
+        return mWalls[tileIndex];
+    }
+    TileWall getWestWallAtTile(TileIndex tileIndex) const {
+        return mWalls[mNumTiles + tileIndex];
+    }
+    TileWall getEastWallAtTile(TileIndex tileIndex) const {
+        return mWalls[mNumTiles + tileIndex + 1];
+    }
+    TileWall getNorthWallAtTile(TileIndex tileIndex) const {
+        return mWalls[tileIndex + 1];
+    }
+
+    void getWallsAtTile(TileWall outWalls[4], TileIndex tileIndex) {
+        outWalls[e_cast(Cartesian::SOUTH)] = getSouthWallAtTile(tileIndex);
+        outWalls[e_cast(Cartesian::WEST)] = getWestWallAtTile(tileIndex);
+        outWalls[e_cast(Cartesian::EAST)] = getEastWallAtTile(tileIndex);
+        outWalls[e_cast(Cartesian::NORTH)] = getNorthWallAtTile(tileIndex);
+    }
+    void setSouthWallAtTile(TileIndex tileIndex, TileWall wall) {
+        mWalls[tileIndex] = wall;
+    }
+    void setWestWallAtTile(TileIndex tileIndex, TileWall wall) {
+        mWalls[mNumTiles + tileIndex] = wall;
+    }
+    void setEastWallAtTile(TileIndex tileIndex, TileWall wall) {
+        mWalls[mNumTiles + tileIndex + 1] = wall;
+    }
+    void setNorthWallAtTile(TileIndex tileIndex, TileWall wall) {
+        mWalls[tileIndex + 1] = wall;
+    }
+
+    void setWallAtTile(TileIndex tileIndex, TileWall wall, Cartesian cartesian) {
+        switch (cartesian) {
+            case Cartesian::SOUTH:
+                setSouthWallAtTile(tileIndex, wall);
+                break;
+            case Cartesian::WEST:
+                setWestWallAtTile(tileIndex, wall);
+                break;
+            case Cartesian::EAST:
+                setEastWallAtTile(tileIndex, wall);
+                break;
+            case Cartesian::NORTH:
+                setNorthWallAtTile(tileIndex, wall);
+                break;
+            default:
+                assert(false);
+                break;
+        }
+    }
+private:
+    // Stored horizontal then vertical
+    std::vector<TileWall> mWalls;
+    ui32 mNumTiles = 0;
+};
+
+
 // Per tile steering and navigation usage
 // TODO: Use
 struct TileSteeringData {

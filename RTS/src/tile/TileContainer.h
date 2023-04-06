@@ -36,17 +36,6 @@ struct DynamicTile {
 };
 static_assert(sizeof(DynamicTile) == 8, "Keep small");
 
-struct TileContainerEntranceEdge {
-    ui16 adjacentIndex;
-    ui16 distanceTiles;
-};
-
-struct TileContainerEntrance {
-    mutable std::vector<TileContainerEntranceEdge> adjacentEntrances; // TODO: Smaller data structure
-    TileIndex tileIndex;
-    bool isLocked; // TODO: Access type enum?
-};
-
 enum class TileContainerState : ui8 {
     LOADING,
     WAITING_MESH_AND_PHYSICS,
@@ -124,6 +113,7 @@ public:
 
     const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i]; }
     const std::vector<TileWalls>& getTileWalls() const { return mWalls; }
+    const TileWallsContainer& getTileWallsContainer() const { return  mTileWalls; }
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
     const TileContainerHarvestableRegistry& getHarvestables() const { return mHarvestableRegistry; }
@@ -210,18 +200,19 @@ public:
         return scoffset.z * subchunkDims.x * subchunkDims.y + scoffset.y * subchunkDims.x + scoffset.x;
     }
 
-    // Ownership
+
+    // =========== State  ===========
+    bool isReady() const { return mState == e_cast(TileContainerState::READY); }
+    TileContainerState getState() const { return (TileContainerState)mState.load(); }
+    void setState(TileContainerState state) const { mState = e_cast(state); }
+
+    // =========== Ownership  ===========
     TileContainerOwnerType getOwnerType() const { return mOwnerType; }
     bool isTerrain() const { return mOwnerType == TileContainerOwnerType::CHUNK; }
     const VarTileContainerOwner& getOwnerVariant() const { return mOwner; }
     Chunk* getOwnerChunk() const;
     Building* getOwnerBuilding() const;
 
-    bool isReady() const { return mState == e_cast(TileContainerState::READY); }
-    TileContainerState getState() const { return (TileContainerState)mState.load(); }
-    void setState(TileContainerState state) const { mState = e_cast(state); }
-
-    // =========== Ownership  ===========
     static bool isTileOwned(const BitArray& ownedTiles, TileIndex index) { return ownedTiles.getNumBits() == 0 || ownedTiles.getBit(index); }
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
     const BitArray& getOwnedTiles() const { return mOwnedTiles; }
@@ -269,11 +260,6 @@ public:
     const std::vector<TileWalls>& getWalls() const { assert(IS_GAME_THREAD()); return mWalls; }
     size_t getNumTiles() const { return mTiles.size(); }
 
-    // Nav // TODO: Move?
-    const std::vector<TileContainerEntrance>& getEntrances() const { return mEntrances; }
-    void addEntrance(TileIndex pos, bool isLocked);
-    void removeEntrance(TileIndex pos);
-
     void copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const;
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
@@ -297,10 +283,10 @@ private:
     mutable std::shared_mutex mSharedMutex;
     // TODO: Can we use arrays instead of vectors to shrink these a bit?
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
-    std::vector<TileWalls> mWalls; // TODO: Memory recycler and or compression
+    //std::vector<TileWalls> mWalls; // TODO: Memory recycler and or compression
+    TileWallsContainer mTileWallsContainer;
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
-    std::vector<TileContainerEntrance> mEntrances;
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;
     i32v3 mDims;
