@@ -31,7 +31,7 @@ GameThreadTasks& GameThreadTasks::initInstance() {
 }
 
 GameThreadTasks& GameThreadTasks::getInstance() {
-    assert(sInstance);
+    assert(sInstance); // TODO: had a crash here
     return *sInstance;
 }
 
