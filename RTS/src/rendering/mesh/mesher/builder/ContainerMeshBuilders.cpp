@@ -7,7 +7,7 @@ ContainerMeshBuilders::ContainerMeshBuilders(const TileContainer& container, boo
     staticBuilder(staticMeshIsOnlyQuads),
     dynamicBuilder(false),
     billboardBuilder(),
-    modelGatherer(container.getId(), f32v3(container.getWorldPos3D()))
+    modelGatherer(container.getId(), f32v3(container.getTileSpatialGrid().getWorldPos3D()))
 {
     container.copyDataWorkerThread(tileData);
 }

@@ -50,7 +50,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     // TODO:  aspect ratio
     //plotDims.y = plotDims.x * desc.minAspectRatio;
 
-    const ui32v2 bottomLeftPos(plot.aabb.pos); // TODO: Actual position
+    const ui32v3 rootPos(plot.aabb.pos.x, plot.aabb.pos.y, 5.0f /*TODO: Not estimate*/); // TODO: Actual position
     Cartesian dir = Cartesian::NORTH;
     if (plot.neighborRoads[e_cast(Cartesian::WEST)] != INVALID_ROAD_ID) {
         dir = Cartesian::WEST;
@@ -61,13 +61,13 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     else if (plot.neighborRoads[e_cast(Cartesian::NORTH)] != INVALID_ROAD_ID) {
         dir = Cartesian::SOUTH;
     }
-    plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos, plot.mOwnerEntity, flags, 5.0f /*TODO: Pass in*/);
+    plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, rootPos, plot.mOwnerEntity, flags);
     plot.mPendingBlueprint->plotIndex = plot.plotIndex;
 }
 
 void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
     const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
-    LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->aabb.dims.x);
+    LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->mTileSpatialGrid.getDims().x);
     for (auto&& node : bp->rooms) {
         char nameBuf[64];
         buildingRepo.getNameFromRoomDefID(node.roomDefId).toString(nameBuf, nullptr);

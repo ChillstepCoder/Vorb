@@ -23,6 +23,8 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
     bool ownershipMask[CHUNK_SIZE];
 
+    const i32v3& rootPos = bp.mTileSpatialGrid.getWorldPos3D();
+    const i32v3& bpDims = bp.mTileSpatialGrid.getDims();
     const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
     for (auto&& room : bp.rooms) {
         const RoomDef& def = buildingRepo.getRoomDefFromID(room.roomDefId);
@@ -31,10 +33,10 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
             assert(room.aabb.dims.x < CHUNK_WIDTH && room.aabb.dims.y < CHUNK_WIDTH);
             // Create the ownership mask
             for (ui32 y = 0; y < room.aabb.dims.y; ++y) {
-                const ui32 ty = room.aabb.pos.y + y - bp.aabb.pos.y;
+                const ui32 ty = room.aabb.pos.y + y - rootPos.y;
                 for (ui32 x = 0; x < room.aabb.dims.x; ++x) {
-                    const ui32 tx = room.aabb.pos.x + x - bp.aabb.pos.x;
-                    ownershipMask[index++] = (bp.ownerArray[ty * bp.aabb.dims.x + tx] == room.id);
+                    const ui32 tx = room.aabb.pos.x + x - rootPos.x;
+                    ownershipMask[index++] = (bp.ownerArray[ty * bpDims.x + tx] == room.id);
                 }
             }
           

@@ -37,19 +37,21 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
     constexpr f32 EPSILON = 0.001f;
 
     // Entire AABB
-    visLog.addWireQuad(f32v3(0.0f, 0.0f, 0.0f), bp.aabb.dims, inputColor ? *inputColor : color4(0.7f, 0.4f, 0.0f));
+    const i32AABB3& aabb = bp.mTileSpatialGrid.getAABB();
+    const i32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
+    visLog.addWireQuad(f32v3(0.0f, 0.0f, 0.0f), aabb.dims, inputColor ? *inputColor : color4(0.7f, 0.4f, 0.0f));
 
     // AABBS first
     int i = 0;
     for (auto&& node : bp.rooms) {
 
         const color4& color = ROOM_COLORS[i % MAX_ROOM_COLORS];
-        visLog.addWireQuad(f32v3(node.aabb.x - bp.aabb.x, node.aabb.y - bp.aabb.y, node.floorIndex * bp.floorHeight), node.aabb.dims, color4(color.r, color.g, color.b, 255u));
+        visLog.addWireQuad(f32v3(node.aabb.x - aabb.x, node.aabb.y - aabb.y, node.floorIndex * floorHeight), node.aabb.dims, color4(color.r, color.g, color.b, 255u));
         // Draw parent line
         if (node.parentRoom != INVALID_ROOM_ID) {
             RoomNode& parent = bp.rooms[node.parentRoom];
-            const f32v3 startPos(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * bp.floorHeight);
-            const f32v3 endPos(parent.offsetFromZero.x + 0.5f, parent.offsetFromZero.y + 0.5f, parent.floorIndex * bp.floorHeight);
+            const f32v3 startPos(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * floorHeight);
+            const f32v3 endPos(parent.offsetFromZero.x + 0.5f, parent.offsetFromZero.y + 0.5f, parent.floorIndex * floorHeight);
             if (node.isPrivate) {
                 visLog.addLineBetweenPoints(startPos, endPos, color4(1.0f, 1.0f, 0.0f));
             }
@@ -61,22 +63,22 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
         // Room name
         char buf[64];
         node.roomDef->nameToken.toString(buf, nullptr);
-        visLog.addText(buf, f32v3(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * bp.floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
+        visLog.addText(buf, f32v3(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
         ++i;
     }
 
     // Render all the tiles
     for (int z = 0; z < bp.floorCount; ++z) {
-        const i32 floorIndex = z * bp.aabb.dims.x * bp.aabb.dims.y;
-        for (int y = 0; y < bp.aabb.dims.y; ++y) {
-            for (int x = 0; x < bp.aabb.dims.x; ++x) {
-                const TileIndex index = floorIndex + y * bp.aabb.dims.x + x;
+        const i32 floorIndex = z * aabb.dims.x * aabb.dims.y;
+        for (int y = 0; y < aabb.dims.y; ++y) {
+            for (int x = 0; x < aabb.dims.x; ++x) {
+                const TileIndex index = floorIndex + y * aabb.dims.x + x;
                 RoomNodeID id = bp.ownerArray[index];
                 if (id != INVALID_ROOM_ID) {
                     const RoomNode& room = bp.rooms[id];
                     const f32v2 pos = f32v2(x, y);
                     const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
-                    visLog.addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
+                    visLog.addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
                 }
             }
         }
@@ -140,21 +142,18 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
     generatePossibleWindowPermutations();
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox)
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
-    BuildingBlueprintId id = getNextBuildingID();
 
-    std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
+    std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
-    bp->id = id;
-    bp->zPos = zPosApprox;
     BuildingBlueprint* bPtr = bp.get();
     mGeneratingBuildings.insert(bPtr);
     
-    Services::Threadpool::ref().addTask([this, bPtr, &desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags, zPosApprox](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([this, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags](ThreadPoolWorkerData* workerData) {
         PROFILE_FUNCTION("Generate blueprint async");
-        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags, zPosApprox);
+        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
         if (newBP) {
             // TODO: If we destroy the original we are fucked
             // Copy the result to the output bp
@@ -173,16 +172,15 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     return bp;
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
     PROFILE_FUNCTION();
-    BuildingBlueprintId id = getNextBuildingID();
+    BuildingBlueprintId id = getNextBuildingID(); // TODO: Move this to game thread only so we dont need to lock?
     constexpr ui32 maxFailCount = 5;
     ui32 failCount = 0;
     do {
-        std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
+        std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
         assert(plotSize.x > 2 && plotSize.y > 2);
         bp->id = id;
-        bp->zPos = zPosApprox;
         if (tryGenerateBlueprintInternal(bp.get(), buildingRepo)) {
             if (failCount > 0) {
                 LOG_DEBUG("Finished building with fail count {}", failCount);
@@ -230,7 +228,7 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint*
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint");
     if (visLog) {
-        visLog->setRootPos(f32v3(bPtr->aabb.pos.x, bPtr->aabb.pos.y, bPtr->zPos));
+        visLog->setRootPos(f32v3(bPtr->mTileSpatialGrid.getWorldPos3D()));
     }
 
     // Room Graph
@@ -246,6 +244,7 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint*
     // Rooms
     initRooms(*bPtr, buildingRepo);
     placeRooms(*bPtr, visLog);
+    allocateTileData(*bPtr);
     expandRooms(*bPtr, visLog);
     roomCleanup(*bPtr, visLog);
     computeRoomAABBs(*bPtr, visLog);
@@ -427,6 +426,7 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
     }
     assert(currentOffset.x < 10000 && currentOffset.y < 10000);
     std::vector<RoomNode>& nodes = bp.rooms;
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
 
     // TODO: Worry about even vs odd?
     const i32 myDesiredRadius = node->desiredWidth / 2;
@@ -465,14 +465,14 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                 // Visual log
                 if (visLog) {
                     const color4& color = ROOM_COLORS[node->childRooms[i] % MAX_ROOM_COLORS];
-                    const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * bp.floorHeight);
+                    const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * floorHeight);
                     visLog->addWireQuad(childPos, f32v2(1.0f), color);
-                    const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
+                    const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * floorHeight);
                     visLog->addLineBetweenPoints(childPos, parentPos, color);
 
                     char buf[64];
                     child.roomDef->nameToken.toString(buf, nullptr);
-                    visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
+                    visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
                 }
                 placeChildrenRecursive(bp, &child, availableWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
                 break;
@@ -506,13 +506,13 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
             // Visual log
             if (visLog) {
                 const color4& color = ROOM_COLORS[node->childRooms[i] % MAX_ROOM_COLORS];
-                const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * bp.floorHeight);
+                const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * floorHeight);
                 visLog->addWireQuad(childPos, f32v2(1.0f), color);
-                const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
+                const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * floorHeight);
                 visLog->addLineBetweenPoints(childPos, parentPos, color);
                 char buf[64];
                 child.roomDef->nameToken.toString(buf, nullptr);
-                visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
+                visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
             }
             assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
             placeChildrenRecursive(bp, &child, childWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
@@ -545,18 +545,20 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     // Breadth first search room placement
     RoomNode* root = &bp.rooms[0];
     i32 maximumDepth = getMaximumDepthRecursive(bp.rooms, root);
+    const i32v3& dims3D = bp.mTileSpatialGrid.getDims();
 
     // Determine which dims to use for cartesian
     i32v2 dims;
     switch (bp.entrySide) {
         case Cartesian::SOUTH:
         case Cartesian::NORTH:
-            dims.x = bp.aabb.dims.y;
-            dims.y = bp.aabb.dims.x;
+            dims.x = dims3D.y;
+            dims.y = dims3D.x;
             break;
         case Cartesian::WEST:
         case Cartesian::EAST:
-            dims = bp.aabb.dims;
+            dims.x = dims3D.x;
+            dims.y = dims3D.y;
             break;
     }
     const i32 maxDepthOffsetPerLayer = dims.x / maximumDepth;
@@ -572,7 +574,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     if (visLog) {
         char buf[64];
         root->roomDef->nameToken.toString(buf, nullptr);
-        visLog->addText(buf, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.floorHeight), 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+        visLog->addText(buf, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.mTileSpatialGrid.getFloorHeight()), 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
     }
     placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, dims, visLog);
 
@@ -583,26 +585,26 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
             for (auto&& room : bp.rooms) {
                 i32 tmp = room.offsetFromZero.x;
                 room.offsetFromZero.x = room.offsetFromZero.y;
-                room.offsetFromZero.y = bp.aabb.dims.y - tmp - 1;
+                room.offsetFromZero.y = dims3D.y - tmp - 1;
             }
             break;
         case Cartesian::EAST:
             for (auto&& room : bp.rooms) {
-                room.offsetFromZero.x = bp.aabb.dims.x - room.offsetFromZero.x - 1;
+                room.offsetFromZero.x = dims3D.x - room.offsetFromZero.x - 1;
             }
             break;
         case Cartesian::NORTH:
             for (auto&& room : bp.rooms) {
                 std::swap(room.offsetFromZero.x, room.offsetFromZero.y);
-                room.offsetFromZero.x = bp.aabb.dims.x - room.offsetFromZero.x - 1;
+                room.offsetFromZero.x = dims3D.x - room.offsetFromZero.x - 1;
             }
             break;
     }
 
     // Clamp positions to be withing facade
     for (auto&& room : bp.rooms) {
-        room.offsetFromZero.x = vmath::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)bp.aabb.dims.x);
-        room.offsetFromZero.y = vmath::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)bp.aabb.dims.y);
+        room.offsetFromZero.x = vmath::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)dims3D.x);
+        room.offsetFromZero.y = vmath::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)dims3D.y);
         assert(room.offsetFromZero.x < 10000 && room.offsetFromZero.y < 10000);
     }
 
@@ -633,12 +635,12 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
                 // Collide with everything
                 if (distance < desiredDistance) {
                     const f32v2 pushForce = offset * ((desiredDistance - distance) * FORCE_MULT);
-                    applyForceOffset(room1.offsetFromZero, -pushForce, bp.aabb.dims);
-                    applyForceOffset(room2.offsetFromZero, pushForce, bp.aabb.dims);
+                    applyForceOffset(room1.offsetFromZero, -pushForce, dims3D);
+                    applyForceOffset(room2.offsetFromZero, pushForce, dims3D);
                 } else if (room2.parentRoom == i) { // Magnet only to children
                     const f32v2 pullForce = offset * ((distance - desiredDistance) * FORCE_MULT);
-                    applyForceOffset(room1.offsetFromZero, pullForce, bp.aabb.dims);
-                    applyForceOffset(room2.offsetFromZero, -pullForce, bp.aabb.dims);
+                    applyForceOffset(room1.offsetFromZero, pullForce, dims3D);
+                    applyForceOffset(room2.offsetFromZero, -pullForce, dims3D);
                 }
             }
         }
@@ -670,8 +672,8 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
                 // Collide with everything
                 if (distance < desiredDistance && distance < 3) {
                     const f32v2 pushForce = offset * ((desiredDistance - distance));
-                    applyForceOffset(room1.offsetFromZero, -pushForce, bp.aabb.dims);
-                    applyForceOffset(room2.offsetFromZero, pushForce, bp.aabb.dims);
+                    applyForceOffset(room1.offsetFromZero, -pushForce, dims3D);
+                    applyForceOffset(room2.offsetFromZero, pushForce, dims3D);
                 }
             }
         }
@@ -680,19 +682,19 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
 
 // Helper
 
-inline TileIndex getIndexAtPos(i32v2 pos, i32v2 dims, i32 floorIndex) {
+inline TileIndex getIndex2DAtPos(i32v2 pos, i32v2 dims, i32 floorIndex) {
     return (TileIndex)(floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x);
 }
 
-inline TileIndex getIndexAtPos(i16v2 pos, i32v2 dims, i32 floorIndex) {
+inline TileIndex getIndex2DAtPos(i16v2 pos, i32v2 dims, i32 floorIndex) {
     return (TileIndex)(floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x);
 }
 
-inline TileIndex getIndexAtPos(i32 x, i32 y, i32v2 dims, i32 floorIndex) {
+inline TileIndex getIndex2DAtPos(i32 x, i32 y, i32v2 dims, i32 floorIndex) {
     return (TileIndex)(floorIndex * dims.y * dims.x + y * dims.x + x);
 }
 
-inline i32v2 getPosAtIndex(TileIndex tileIndex, i32v2 dims) {
+inline i32v2 getPosAtIndex2D(TileIndex tileIndex, i32v2 dims) {
     i32 floorStride = dims.x * dims.y;
     return i32v2(tileIndex % dims.x, (tileIndex % floorStride) / dims.x);
 }
@@ -721,33 +723,33 @@ i32v2 WALL_ITERATE_OFFSETS[4] = {
 
 void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
 
-    i32AABB2& aabb = room.aabb;
+    i32AABB2& roomAABB = room.aabb;
     i32v2 iterPos;
     i32 length;
     switch (wallDir) {
         case Cartesian::SOUTH:
-            --aabb.pos.y;
-            length = aabb.width;
-            iterPos = aabb.pos;
-            ++aabb.depth;
+            --roomAABB.pos.y;
+            length = roomAABB.width;
+            iterPos = roomAABB.pos;
+            ++roomAABB.depth;
             break;
         case Cartesian::WEST:
-            --aabb.pos.x;
-            length = aabb.depth;
-            iterPos = aabb.pos;
-            ++aabb.width;
+            --roomAABB.pos.x;
+            length = roomAABB.depth;
+            iterPos = roomAABB.pos;
+            ++roomAABB.width;
             break;
         case Cartesian::EAST:
-            length = aabb.depth;
-            iterPos = aabb.pos;
-            iterPos.x += aabb.width;
-            ++aabb.width;
+            length = roomAABB.depth;
+            iterPos = roomAABB.pos;
+            iterPos.x += roomAABB.width;
+            ++roomAABB.width;
             break;
         case Cartesian::NORTH:
-            length = aabb.width;
-            iterPos = aabb.pos;
-            iterPos.y += aabb.depth;
-            ++aabb.depth;
+            length = roomAABB.width;
+            iterPos = roomAABB.pos;
+            iterPos.y += roomAABB.depth;
+            ++roomAABB.depth;
             break;
         default:
             assert(false);
@@ -758,7 +760,7 @@ void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room, Visual
     const i32v2& iterateOffset = WALL_ITERATE_OFFSETS[e_cast(wallDir)];
     // i32 tilesAdded = 0;
     for (int j = 0; j < length; ++j) {
-        const i32 index = getIndexAtPos(iterPos, bp.aabb.dims, room.floorIndex);
+        const i32 index = getIndex2DAtPos(iterPos, bp.mTileSpatialGrid.getDims(), room.floorIndex);
         RoomNodeID ownerId = bp.ownerArray[index];
         assert(ownerId == INVALID_ROOM_ID);
         //if (ownerId != INVALID_ROOM_ID) {
@@ -770,7 +772,7 @@ void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room, Visual
 
         if (visLog) {
             const color4& color = ROOM_COLORS[room.id % MAX_ROOM_COLORS];
-            const f32v3 rootPos(iterPos.x, iterPos.y, room.floorIndex * bp.floorHeight);
+            const f32v3 rootPos(iterPos.x, iterPos.y, room.floorIndex * bp.mTileSpatialGrid.getFloorHeight());
             visLog->addWireQuad(rootPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color);
         }
         // Step
@@ -819,7 +821,7 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room
     i32 tilesAdded = 0;
     for (int j = 0; j < length; ++j) {
         // Only if we aren't an overwritten wall
-        const i32 index = getIndexAtPos(iterPos, bp.aabb.dims, room.floorIndex);
+        const i32 index = getIndex2DAtPos(iterPos, bp.mTileSpatialGrid.getDims(), room.floorIndex);
         RoomNodeID ownerId = bp.ownerArray[index];
         if (ownerId == INVALID_ROOM_ID) {
             ++tilesAdded;
@@ -827,7 +829,7 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room
             bp.tiles[index] = BlueprintTileType::FLOOR;
             // Visual log
             if (visLog) {
-                visLog->addFilledQuad(f32v3(iterPos.x + 0.1f, iterPos.y + 0.1f, room.floorIndex * bp.floorHeight), f32v2(0.8f), ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
+                visLog->addFilledQuad(f32v3(iterPos.x + 0.1f, iterPos.y + 0.1f, room.floorIndex * bp.mTileSpatialGrid.getFloorHeight()), f32v2(0.8f), ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
             }
         }
         // Step
@@ -842,8 +844,9 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room
 bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
 
     bool didExpand = false;
-
-    i32AABB2& aabb = room.aabb;
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
+    i32AABB2& roomAABB = room.aabb;
     for (int i = 0; i < 4; ++i) {
         Cartesian wallDir = Cartesian(i);
         f32 currentPressure = getPressureValue(room);
@@ -853,18 +856,18 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
         }
 
         // Expand
-        const WallInfo wallInfo = getWallInfoFromRoomAABB(wallDir, aabb);
+        const WallInfo wallInfo = getWallInfoFromRoomAABB(wallDir, roomAABB);
         const i16v2& iterateOffset = WALL_ITERATE_OFFSETS[i];
         const int isY = (int)(wallDir == Cartesian::SOUTH || wallDir == Cartesian::NORTH);
         const i32v2 nextStart = i32v2(wallInfo.startPos) + WALL_EXPAND_OFFSETS[i];
         // Bounds check
-        if (boundsCheckRoom(nextStart[isY], bp.aabb.dims[isY])) {
+        if (boundsCheckRoom(nextStart[isY], dims[isY])) {
             assert(wallInfo.length <= MAX_WALL_LENGTH);
             // We will only expand if we arent expanding into another room
             bool canExpand = true;
             i16v2 outerPos = nextStart;
             for (int j = 0; j < wallInfo.length; ++j) {
-                const i32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
+                const i32 index = getIndex2DAtPos(outerPos, dims, room.floorIndex);
                 RoomNodeID ownerId = bp.ownerArray[index];
                 if (ownerId != INVALID_ROOM_ID) {
                     canExpand = false;
@@ -877,8 +880,8 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
             if (canExpand) {
                 expandWall(wallDir, bp, room, visLog);
                 if (visLog) {
-                    const f32v3 lineStart(wallInfo.startPos.x + 0.5f, wallInfo.startPos.y + 0.5f, room.floorIndex * bp.floorHeight);
-                    f32v3 lineEnd(wallInfo.startPos.x + 0.5f, wallInfo.startPos.y + 0.5f, room.floorIndex * bp.floorHeight);
+                    const f32v3 lineStart(wallInfo.startPos.x + 0.5f, wallInfo.startPos.y + 0.5f, room.floorIndex * floorHeight);
+                    f32v3 lineEnd(wallInfo.startPos.x + 0.5f, wallInfo.startPos.y + 0.5f, room.floorIndex * floorHeight);
                     lineEnd.x += WALL_ITERATE_OFFSETS[i].x * wallInfo.length;
                     lineEnd.y += WALL_ITERATE_OFFSETS[i].y * wallInfo.length;
                     visLog->addLineBetweenPoints(lineStart, lineEnd, ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
@@ -894,7 +897,8 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
 
     bool didExpand = false;
 
-    i32AABB2& aabb = room.aabb;
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
+    i32AABB2& roomAABB = room.aabb;
     for (int iter = 0; iter < ITER_STEP; ++iter) {
         i32 expandCount = 0;
         for (int i = 0; i < 4; ++i) {
@@ -906,18 +910,18 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
             }
 
             // Expand
-            const WallInfo wallInfo = getWallInfoFromRoomAABB(wallDir, aabb);
+            const WallInfo wallInfo = getWallInfoFromRoomAABB(wallDir, roomAABB);
             const i16v2& iterateOffset = WALL_ITERATE_OFFSETS[i];
             const int isY = (int)(wallDir == Cartesian::SOUTH || wallDir == Cartesian::NORTH);
             const i32v2 nextStart = i32v2(wallInfo.startPos) + WALL_EXPAND_OFFSETS[i];
             // Bounds check
-            if (boundsCheckRoom(nextStart[isY], bp.aabb.dims[isY])) {
+            if (boundsCheckRoom(nextStart[isY], dims[isY])) {
                 assert(wallInfo.length <= MAX_WALL_LENGTH);
                 // We will only expand if we arent expanding into another room
                 bool canExpand = false;
                 i16v2 outerPos = nextStart;
                 for (int j = 0; j < wallInfo.length; ++j) {
-                    const i32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
+                    const i32 index = getIndex2DAtPos(outerPos, dims, room.floorIndex);
                     RoomNodeID ownerId = bp.ownerArray[index];
                     if (ownerId == INVALID_ROOM_ID) {
                         // We need at least one gap to expand into
@@ -947,64 +951,76 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
 
 void BuildingBlueprintGenerator::placeWalls(BuildingBlueprint& bp, VisualLog* visLog) {
     if (visLog) visLog->nextStep("Place walls");
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
     // First place main segments
     for (i32 z = 0; z < bp.floorCount; ++z) {
-        for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
-            for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
-                const i32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+        for (i32 y = 0; y < dims.y; ++y) {
+            for (i32 x = 0; x < dims.x; ++x) {
+                const i32 index = getIndex2DAtPos(x, y, dims, z);
                 RoomNodeID roomId = bp.ownerArray[index];
                 if (roomId == INVALID_ROOM_ID) {
                     continue;
                 }
 
                 bool didSetWall = false;
-                TileWalls& walls = bp.walls[index];
+                TileWall walls[4] = { TILE_ID_NONE, TILE_ID_NONE , TILE_ID_NONE , TILE_ID_NONE };
                 // South
-                if (y == 0 || bp.ownerArray[getIndexAtPos(x, y - 1, bp.aabb.dims, z)] != roomId) {
-                    walls.south.wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
+                if (y == 0 || bp.ownerArray[getIndex2DAtPos(x, y - 1, dims, z)] != roomId) {
+                    walls[e_cast(Cartesian::SOUTH)].wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
-                        visLog->addLineBetweenPoints(f32v3(x, y + 0.01f, z * bp.floorHeight), f32v3(x + 1.0f, y + 0.01f, z * bp.floorHeight), COLOR_WHITE);
+                        visLog->addLineBetweenPoints(f32v3(x, y + 0.01f, z * floorHeight), f32v3(x + 1.0f, y + 0.01f, z * floorHeight), COLOR_WHITE);
                     }
                 }
                 // West
-                if (x == 0 || bp.ownerArray[getIndexAtPos(x - 1, y, bp.aabb.dims, z)] != roomId) {
-                    walls.west.wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
+                if (x == 0 || bp.ownerArray[getIndex2DAtPos(x - 1, y, dims, z)] != roomId) {
+                    walls[e_cast(Cartesian::WEST)].wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
-                        visLog->addLineBetweenPoints(f32v3(x + 0.01f, y, z * bp.floorHeight), f32v3(x + 0.01f, y + 1.0f, z * bp.floorHeight), COLOR_WHITE);
+                        visLog->addLineBetweenPoints(f32v3(x + 0.01f, y, z * floorHeight), f32v3(x + 0.01f, y + 1.0f, z * floorHeight), COLOR_WHITE);
                     }
                 }
                 // East
-                if (x == bp.aabb.dims.x - 1 || bp.ownerArray[getIndexAtPos(x + 1, y, bp.aabb.dims, z)] != roomId) {
-                    walls.east.wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
+                if (x == dims.x - 1 || bp.ownerArray[getIndex2DAtPos(x + 1, y, dims, z)] != roomId) {
+                    walls[e_cast(Cartesian::EAST)].wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
-                        visLog->addLineBetweenPoints(f32v3(x + 1.0f - 0.01f, y, z * bp.floorHeight), f32v3(x + 1.0f - 0.01f, y + 1.0f, z * bp.floorHeight), COLOR_WHITE);
+                        visLog->addLineBetweenPoints(f32v3(x + 1.0f - 0.01f, y, z * floorHeight), f32v3(x + 1.0f - 0.01f, y + 1.0f, z * floorHeight), COLOR_WHITE);
                     }
                 }
                 // North
-                if (y == bp.aabb.dims.y - 1 || bp.ownerArray[getIndexAtPos(x, y + 1, bp.aabb.dims, z)] != roomId) {
-                    walls.north.wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
+                if (y == dims.y - 1 || bp.ownerArray[getIndex2DAtPos(x, y + 1, dims, z)] != roomId) {
+                    walls[e_cast(Cartesian::NORTH)].wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
-                        visLog->addLineBetweenPoints(f32v3(x, y + 1.0f - 0.01f, z * bp.floorHeight), f32v3(x + 1.0f, y + 1.0f - 0.01f, z * bp.floorHeight), COLOR_WHITE);
+                        visLog->addLineBetweenPoints(f32v3(x, y + 1.0f - 0.01f, z * floorHeight), f32v3(x + 1.0f, y + 1.0f - 0.01f, z * floorHeight), COLOR_WHITE);
                     }
                 }
+                bp.walls.setWallsAtTile(index, walls);
             }
         }
     }
 }
 
-void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* visLog) {
-    if (visLog) visLog->nextStep("Expand rooms");
-    bp.tiles.resize((size_t)bp.floorCount * bp.aabb.dims.x * bp.aabb.dims.y, BlueprintTileType::NONE);
-    bp.walls.resize(bp.tiles.size());
+
+void BuildingBlueprintGenerator::allocateTileData(BuildingBlueprint& bp) {
+    const i32v2 dims2D = bp.mTileSpatialGrid.getDims2D();
+    ui32 numTiles = dims2D.x * dims2D.y * bp.floorCount;
+    // Set proper floor count into the AABB
+    bp.mTileSpatialGrid.init(bp.mTileSpatialGrid.getWorldPos3D(), i32v3(dims2D.x, dims2D.y, bp.floorCount), bp.mTileSpatialGrid.getFloorHeight());
+    bp.tiles.resize((size_t)bp.floorCount * dims2D.x * dims2D.y, BlueprintTileType::NONE);
+    bp.walls.init(&bp.mTileSpatialGrid);
     bp.ownerArray.resize(bp.tiles.size(), INVALID_ROOM_ID);
     // Construction data
     bp.tileItemDataHandles.resize(bp.tiles.size());
     bp.tileBuildData.resize(bp.tiles.size());
+}
+
+void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* visLog) {
+    if (visLog) visLog->nextStep("Expand rooms");
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
 
     // Init rooms
     for (size_t i = 0; i < bp.rooms.size(); ++i) {
         if (visLog) {
-            f32v3 pos(bp.rooms[i].offsetFromZero.x, bp.rooms[i].offsetFromZero.y, bp.rooms[i].floorIndex * bp.floorHeight);
+            f32v3 pos(bp.rooms[i].offsetFromZero.x, bp.rooms[i].offsetFromZero.y, bp.rooms[i].floorIndex * bp.mTileSpatialGrid.getFloorHeight());
             visLog->addWireQuad(pos, f32v2(1.0f), ROOM_COLORS[bp.rooms[i].id % MAX_ROOM_COLORS]);
         }
         initRoomWalls(bp, bp.rooms[i]);
@@ -1025,10 +1041,10 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* v
                     room.aabb = parent.aabb;
                     // Iterate over every tile on the floor to copy
                     // TODO: AABB iterate instead
-                    for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
-                        for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
-                            TileIndex myIndex = getIndexAtPos(x, y, bp.aabb.dims, z);
-                            TileIndex parentIndex = myIndex - bp.aabb.dims.x * bp.aabb.dims.y;
+                    for (i32 y = 0; y < dims.y; ++y) {
+                        for (i32 x = 0; x < dims.x; ++x) {
+                            TileIndex myIndex = getIndex2DAtPos(x, y, dims, z);
+                            TileIndex parentIndex = myIndex - dims.x * dims.y;
                             if (bp.ownerArray[parentIndex] == parent.id) {
                                 bp.ownerArray[myIndex] = room.id;
                                 bp.tiles[myIndex] = bp.tiles[parentIndex];
@@ -1077,6 +1093,8 @@ ui8 ROOM_NODE_COUNT_CACHE[0xff + 0x1] = {};
 void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, VisualLog* visLog) {
 
     bool iterateAgain;
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
 
     do {
         Cartesian bestDir;
@@ -1089,7 +1107,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
 
         ++ROOM_NODE_COUNT_CACHE[myID];
         // Down
-        const RoomNodeID downID = bp.ownerArray[(i32)(index - bp.aabb.dims.x)];
+        const RoomNodeID downID = bp.ownerArray[(i32)(index - dims.x)];
         ++ROOM_NODE_COUNT_CACHE[downID];
         // Left
         const RoomNodeID leftID = bp.ownerArray[(i32)(index - 1)];
@@ -1098,7 +1116,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
         const RoomNodeID rightID = bp.ownerArray[(i32)(index + 1)];
         ++ROOM_NODE_COUNT_CACHE[rightID];
         // Top
-        const RoomNodeID topID = bp.ownerArray[(i32)(index + bp.aabb.dims.x)];
+        const RoomNodeID topID = bp.ownerArray[(i32)(index + dims.x)];
         ++ROOM_NODE_COUNT_CACHE[topID];
 
         // If we are surrounded on 3 or more sides
@@ -1149,13 +1167,13 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
                 if (bestId != INVALID_ROOM_ID) {
                     ++bp.rooms[bestId].size;
                     if (visLog) {
-                        visLog->addFilledQuad(f32v3(x, y, bp.rooms[bestId].floorIndex * bp.floorHeight), f32v2(1.0f), ROOM_COLORS[bestId % MAX_ROOM_COLORS]);
+                        visLog->addFilledQuad(f32v3(x, y, bp.rooms[bestId].floorIndex * floorHeight), f32v2(1.0f), ROOM_COLORS[bestId % MAX_ROOM_COLORS]);
                     }
                 }
                 else {
                     // Clear any tile data here
                     if (visLog) {
-                        visLog->addFilledQuad(f32v3(x, y, bp.rooms[myID].floorIndex * bp.floorHeight), f32v2(1.0f), COLOR_GRAY);
+                        visLog->addFilledQuad(f32v3(x, y, bp.rooms[myID].floorIndex * floorHeight), f32v2(1.0f), COLOR_GRAY);
                     }
                     bp.tiles[index] = BlueprintTileType::NONE;
                 }
@@ -1167,7 +1185,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
                 assert(myID != INVALID_ROOM_ID);
                 // Visual log
                 if (visLog) {
-                    visLog->addFilledQuad(f32v3(x, y, bp.rooms[myID].floorIndex * bp.floorHeight), f32v2(1.0f), COLOR_RED);
+                    visLog->addFilledQuad(f32v3(x, y, bp.rooms[myID].floorIndex * floorHeight), f32v2(1.0f), COLOR_RED);
                 }
                 bp.tiles[index] = BlueprintTileType::NONE;
                 bp.ownerArray[index] = INVALID_ROOM_ID;
@@ -1192,7 +1210,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
                         return;
                     }
                     --y;
-                    index -= bp.aabb.dims.x;
+                    index -= dims.x;
                     break;
                 case Cartesian::WEST: // left
                     if (x == 1) {
@@ -1202,18 +1220,18 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
                     --index;
                     break;
                 case Cartesian::EAST: // right
-                    if (x == bp.aabb.dims.x - 2) {
+                    if (x == dims.x - 2) {
                         return;
                     }
                     ++x;
                     ++index;
                     break;
                 case Cartesian::NORTH: // up
-                    if (y == bp.aabb.dims.y - 2) {
+                    if (y == dims.y - 2) {
                         return;
                     }
                     ++y;
-                    index += bp.aabb.dims.x;
+                    index += dims.x;
                     break;
             }
         }
@@ -1263,12 +1281,13 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp, VisualLog* v
     constexpr int CELLULAR_AUTOMATA_ITERATIONS = 1;
 
     if (visLog) visLog->nextStep("Room cleanup");
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
 
     for (int step = 0; step < CELLULAR_AUTOMATA_ITERATIONS; ++step) {
         for (i32 z = 0; z < bp.floorCount; ++z) {
-            for (i32 y = 1; y < bp.aabb.dims.y - 1; ++y) {
-                for (i32 x = 1; x < bp.aabb.dims.x - 1; ++x) {
-                    const i32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+            for (i32 y = 1; y < dims.y - 1; ++y) {
+                for (i32 x = 1; x < dims.x - 1; ++x) {
+                    const i32 index = getIndex2DAtPos(x, y, dims, z);
                     FixupSingleRoomPieces(bp, x, y, index, visLog);
                 }
             }
@@ -1289,16 +1308,19 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprint& bp, VisualL
     }
 
     bp.tileItemData.reserve(bp.tiles.size() / 2);
+    const i32v3& rootPos = bp.mTileSpatialGrid.getWorldPos3D();
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
     for (TileIndex tileIndex = 0; tileIndex < (TileIndex)bp.tiles.size(); ++tileIndex) {
         // Compute bounds
         const RoomNodeID id = bp.ownerArray[tileIndex];
         if (id != INVALID_ROOM_ID) {
 
-            const i32v2 pos = getPosAtIndex(tileIndex, bp.aabb.dims);
+            const i32v2 pos = getPosAtIndex2D(tileIndex, dims);
 
             if (visLog) {
                 const color4& color = ROOM_COLORS[id % MAX_ROOM_COLORS];
-                const f32v3 rootPos(pos.x, pos.y, bp.rooms[id].floorIndex * bp.floorHeight);
+                const f32v3 rootPos(pos.x, pos.y, bp.rooms[id].floorIndex * floorHeight);
                 visLog->addWireQuad(rootPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color);
             }
 
@@ -1329,17 +1351,17 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprint& bp, VisualL
     for (auto&& it : roomBoundsLookup) {
         RoomNode& room = bp.rooms[it.first];
         // i32AABB2 oldAABB = room.aabb;
-        room.aabb.pos.x = it.second.x + bp.aabb.x;
+        room.aabb.pos.x = it.second.x + rootPos.x;
         room.aabb.dims.x = it.second.y - it.second.x + 1;
-        room.aabb.pos.y = it.second.z + bp.aabb.y;
+        room.aabb.pos.y = it.second.z + rootPos.y;
         room.aabb.dims.y = it.second.w - it.second.z + 1;
         room.offsetFromZero.x = it.second.x;
         room.offsetFromZero.y = it.second.z;
         if (visLog) {
             const color4& color = ROOM_COLORS[room.id % MAX_ROOM_COLORS];
-            const f32v3 rootPos(room.offsetFromZero.x, room.offsetFromZero.y, room.floorIndex * bp.floorHeight);
+            const f32v3 rootPos(room.offsetFromZero.x, room.offsetFromZero.y, room.floorIndex * floorHeight);
             visLog->addWireQuad(rootPos, f32v2(1.0f), color);
-            const f32v3 origin(it.second.x, it.second.z, room.floorIndex * bp.floorHeight);
+            const f32v3 origin(it.second.x, it.second.z, room.floorIndex * floorHeight);
             visLog->addWireQuad(origin, f32v2(room.aabb.dims), ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
         }
         //assert(oldAABB == room.aabb); true AABB whereas oldAABB is relative AABB
@@ -1367,7 +1389,7 @@ bool BuildingBlueprintGenerator::validateRoomsArentEmpty(BuildingBlueprint& bp, 
 
 void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room)
 {
-    const i32 index = getIndexAtPos(i32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
+    const i32 index = getIndex2DAtPos(i32v2(room.offsetFromZero), bp.mTileSpatialGrid.getDims2D(), room.floorIndex);
     // Init root node
     room.size = 1;
     bp.tiles[index] = BlueprintTileType::FLOOR;
@@ -1388,7 +1410,9 @@ struct DoorBFSNode {
 void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, Cartesian dir, TileIndex tileIndex, RoomNode& room, const i32v2& currentPos, BitArray& visited, BitArray& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
     const i32v2& directionOffset = WALL_EXPAND_OFFSETS[e_cast(dir)];
     const i32v2 nextPos = currentPos + directionOffset;
-    const TileIndex nextTileIndex = getIndexAtPos(i32v2(nextPos), bp.aabb.dims, room.floorIndex);
+    const TileIndex nextTileIndex = getIndex2DAtPos(i32v2(nextPos), bp.mTileSpatialGrid.getDims2D(), room.floorIndex);
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
     if (!visited.getBit(nextTileIndex)) {
         RoomNodeID owner = bp.ownerArray[tileIndex];
         RoomNodeID nextOwner = bp.ownerArray[nextTileIndex];
@@ -1403,14 +1427,14 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 // Exterior doors
                 if (canConnectToOutside) {
                     canConnectToOutside = false;
-                    TileWalls& walls = bp.walls[tileIndex];
-                    TileWall& wall = walls.walls[e_cast(dir)];
+                    TileWall wall;
                     wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
                     wall.isDoor = true;
+                    bp.walls.setWallAtTile(tileIndex, wall, dir);
                     bp.exteriorDoors[tileIndex] = bp.ownerArray[tileIndex];
                     // Visual log
                     if (visLog) {
-                        const f32v3 pos(tileIndex % bp.aabb.dims.x, tileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (tileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
+                        const f32v3 pos(tileIndex % dims.x, tileIndex % (dims.x * dims.y) / dims.x, (tileIndex / (dims.x * dims.y)) * floorHeight);
                         visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 0.8f));
                     }
                 }
@@ -1422,19 +1446,18 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
 
                     if (bp.tiles[nextTileIndex] == BlueprintTileType::FLOOR) {
 
-                        TileWalls& walls = bp.walls[tileIndex];
-                        TileWall& wall = walls.walls[e_cast(dir)];
+                        TileWall wall;
                         wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
                         wall.isDoor = true;
-                        // Clear opposite wall
-                        bp.walls[nextTileIndex].walls[e_cast(CARTESIAN_OPPOSITES[e_cast(dir)])].clear();
+                        bp.walls.setWallAtTile(tileIndex, wall, dir);
+                      
                         // Clear out any wall on opposite side
                         isConnected.setBit(adjacent.id);
                         room.adjacentRooms[room.numAdjacentRooms++] = RoomGateInfo{ adjacent.id, nextTileIndex };
                         adjacent.adjacentRooms[adjacent.numAdjacentRooms++] = RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex };
                         // Visual log
                         if (visLog) {
-                            const f32v3 pos(tileIndex % bp.aabb.dims.x, tileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (tileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
+                            const f32v3 pos(tileIndex % dims.x, tileIndex % (dims.x * dims.y) / dims.x, (tileIndex / (dims.x * dims.y)) * floorHeight);
                             visLog->addFilledQuad(pos, f32v2(1.0f), color4(0.0f, 1.0f, 1.0f, 0.8f));
                         }
                     }
@@ -1449,6 +1472,9 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
     // TODO: Re-use memory
     BitArray visited(bp.tiles.size());
     BitArray isConnected(bp.rooms.size());
+
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
 
     // Ringbuffer
     // TODO: Re-use memory
@@ -1475,17 +1501,17 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
         assert(bp.ownerArray[startIndex] == room.id);
         // Visual log
         if (visLog) {
-            const i32 floorStride = bp.aabb.dims.x * bp.aabb.dims.y;
-            const f32v3 offset(startIndex % bp.aabb.dims.x, (startIndex % floorStride) / bp.aabb.dims.x, startIndex / floorStride);
+            const i32 floorStride = dims.x * dims.y;
+            const f32v3 offset(startIndex % dims.x, (startIndex % floorStride) / dims.x, startIndex / floorStride);
             visLog->addFilledQuad(offset, f32v2(1.0f), ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
         }
         visited.setBit(startIndex);
         bfs[bfsFrontIndex].index = startIndex;
-        const i32 floorSize = bp.aabb.dims.x * bp.aabb.dims.y;
+        const i32 floorSize = dims.x * dims.y;
         // Do the bfs
         while (bfsFrontIndex != bfsBackIndex) {
             const DoorBFSNode& node = bfs[bfsFrontIndex];
-            i32v2 pos(node.index % bp.aabb.dims.x, (node.index % floorSize) / bp.aabb.dims.x);
+            i32v2 pos(node.index % dims.x, (node.index % floorSize) / dims.x);
             RoomNodeID roomId = bp.ownerArray[node.index];
             assert(roomId == room.id);
             if (room.numAdjacentRooms == MAX_ADJACENT_ROOMS) {
@@ -1493,7 +1519,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
             }
 
             if (visLog) {
-                visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.8f, 0.8f, 0.8f, 0.5f));
+                visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(0.8f, 0.8f, 0.8f, 0.5f));
             }
 
             // Bottom
@@ -1507,12 +1533,12 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
             }
 
             // Right
-            if (pos.x < bp.aabb.dims.x - 1) {
+            if (pos.x < dims.x - 1) {
                 doorBfs(bfs, bfsBackIndex, bp, Cartesian::EAST, node.index, room, pos, visited, isConnected, canConnectToOutside, visLog);
             }
 
             // Up
-            if (pos.y < bp.aabb.dims.y - 1) {
+            if (pos.y < dims.y - 1) {
                 doorBfs(bfs, bfsBackIndex, bp, Cartesian::NORTH, node.index, room, pos, visited, isConnected, canConnectToOutside, visLog);
             }
             ++bfsFrontIndex;
@@ -1525,20 +1551,20 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
     if (visLog) visLog->nextStep("Build interior edges");
     // TODO: Room minimum AABB?
     BitArray bits;
-    const i32v2 floorDims(bp.aabb.dims.x, bp.aabb.dims.y);
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
     bits.resize(floorDims.x * floorDims.y);
     for (auto&& room : bp.rooms) {
    
         TileIndex tileIndex = room.floorIndex * floorDims.x * floorDims.y;
-        for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
-            for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
+        for (i32 y = 0; y < floorDims.y; ++y) {
+            for (i32 x = 0; x < floorDims.x; ++x) {
                 bits.setBitTo(y * floorDims.x + x, bp.ownerArray[tileIndex] == room.id && bp.tiles[tileIndex] == BlueprintTileType::FLOOR);
                 ++tileIndex;
             }
         }
-        const i32v2 dims2d(bp.aabb.dims.x, bp.aabb.dims.y);
-        room.interiorEdges = GridEdgeFinder::getInteriorEdgesFromOwnershipArray(bits, dims2d, visLog, room.floorIndex * bp.floorHeight);
-        room.edgeWalk = GridEdgeFinder::getInteriorCounterClockwiseWalkFromGridEdges(room.interiorEdges, dims2d);
+        room.interiorEdges = GridEdgeFinder::getInteriorEdgesFromOwnershipArray(bits, floorDims, visLog, room.floorIndex * floorHeight);
+        room.edgeWalk = GridEdgeFinder::getInteriorCounterClockwiseWalkFromGridEdges(room.interiorEdges, floorDims);
     }
 
     if (visLog) {
@@ -1546,20 +1572,20 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
         for (auto&& room : bp.rooms) {
             for (auto&& edge : room.interiorEdges) {
                 if (edge.edgeDir == Cartesian::SOUTH) {
-                    i32v2 pos = getPosAtIndex(edge.start, bp.aabb.dims);
-                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(edge.length, 1.0f), color4(0.0f, 1.0f, 1.0f, 0.9f));
+                    i32v2 pos = getPosAtIndex2D(edge.start, floorDims);
+                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(edge.length, 1.0f), color4(0.0f, 1.0f, 1.0f, 0.9f));
                 }
                 else if (edge.edgeDir == Cartesian::NORTH) {
-                    i32v2 pos = getPosAtIndex(edge.end, bp.aabb.dims);
-                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(edge.length, 1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
+                    i32v2 pos = getPosAtIndex2D(edge.end, floorDims);
+                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(edge.length, 1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
                 }
                 else if (edge.edgeDir == Cartesian::WEST) {
-                    i32v2 pos = getPosAtIndex(edge.end, bp.aabb.dims);
-                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f, edge.length), color4(1.0f, 0.0f, 1.0f, 0.9f));
+                    i32v2 pos = getPosAtIndex2D(edge.end, floorDims);
+                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f, edge.length), color4(1.0f, 0.0f, 1.0f, 0.9f));
                 }
                 else if (edge.edgeDir == Cartesian::EAST) {
-                    i32v2 pos = getPosAtIndex(edge.start, bp.aabb.dims);
-                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f, edge.length), color4(1.0f, 0.0f, 0.0f, 0.9f));
+                    i32v2 pos = getPosAtIndex2D(edge.start, floorDims);
+                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f, edge.length), color4(1.0f, 0.0f, 0.0f, 0.9f));
                 }
             }
         }
@@ -1569,8 +1595,8 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
         visLog->nextStep("Debug edge walk");
         for (auto&& room : bp.rooms) {
             for (auto&& index : room.edgeWalk) {
-                i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-                visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.9f));
+                i32v2 pos = getPosAtIndex2D(index, floorDims);
+                visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.9f));
             }
         }
     }
@@ -1582,35 +1608,23 @@ inline bool isDoor(TileID tileId) {
 }
 
 bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
-    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-    assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
-    TileWalls& walls = bp.walls[index];
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    const i32v2 pos = getPosAtIndex2D(index, floorDims);
+    assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
+    TileWalls walls;
+    bp.walls.getWallsAtTile(walls, index);
     for (int i = 0; i < 4; ++i) {
         if (isDoor(walls.walls[i].wallID)) {
             return true;
         }
     }
-    // Check South
-    if (isDoor(bp.walls[(i32)(index - bp.aabb.dims.x)].north.wallID)) {
-        return true;
-    }
-    // Check west
-    if (isDoor(bp.walls[(i32)(index - 1)].east.wallID)) {
-        return true;
-    }
-    // Check East
-    if (isDoor(bp.walls[(i32)(index + 1)].west.wallID)) {
-        return true;
-    }
-    // Check North
-    if (isDoor(bp.walls[(i32)(index + bp.aabb.dims.x)].south.wallID)) {
-        return true;
-    }
+    
     return false;
 }
 
 bool canPlaceStairsHere(TileIndex index, BuildingBlueprint& bp, RoomNode& child) {
-    const TileIndex aboveIndex = index + bp.aabb.dims.x * bp.aabb.dims.y;
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    const TileIndex aboveIndex = index + floorDims.x * floorDims.y;
     if (bp.tiles[index] == BlueprintTileType::FLOOR &&
         bp.ownerArray[aboveIndex] == child.id &&
         bp.tiles[aboveIndex] == BlueprintTileType::FLOOR &&
@@ -1621,31 +1635,28 @@ bool canPlaceStairsHere(TileIndex index, BuildingBlueprint& bp, RoomNode& child)
 }
 
 bool isAtWallCorner(TileIndex index, BuildingBlueprint& bp) {
-    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-    assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    const i32v2 pos = getPosAtIndex2D(index, floorDims);
+    assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
     i32 adjacentWallCount = 0;
-    if (bp.walls[index].west.isValid() || bp.walls[(i32)(index - 1)].east.isValid()) {
-        ++adjacentWallCount;
+    TileWalls walls;
+    bp.walls.getWallsAtTile(walls, index);
+    for (int i = 0; i < 4; ++i) {
+        if (walls.walls[i].isValid()) {
+            ++adjacentWallCount;
+        }
     }
-    if (bp.walls[index].south.isValid() || bp.walls[(i32)(index - bp.aabb.dims.x)].north.isValid()) {
-        ++adjacentWallCount;
-    }
-    if (bp.walls[index].east.isValid() || bp.walls[(i32)(index + 1)].west.isValid()) {
-        ++adjacentWallCount;
-    }
-    if (bp.walls[index].north.isValid() || bp.walls[(i32)(index + bp.aabb.dims.x)].south.isValid()) {
-        ++adjacentWallCount;
-    }
-    // TODO: This disallows single block hallways but meh...
+    // TODO: This disallows single block hallways
     return adjacentWallCount >= 2;
 }
 
 bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprint& bp, Cartesian dir) {
-    i16v2 pos = getPosAtIndex(index, bp.aabb.dims);
-    const i32 floorIndex = index / (bp.aabb.dims.x * bp.aabb.dims.y);
-    assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    i16v2 pos = getPosAtIndex2D(index, floorDims);
+    const i32 floorIndex = index / (floorDims.x * floorDims.y);
+    assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
     pos += CARTESIAN_NORMALS_2D[e_cast(dir)];
-    return bp.tiles[getIndexAtPos(pos, bp.aabb.dims, floorIndex + 1)] != BlueprintTileType::FLOOR;
+    return bp.tiles[getIndex2DAtPos(pos, floorDims, floorIndex + 1)] != BlueprintTileType::FLOOR;
 }
 
 void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* visLog) {
@@ -1655,8 +1666,11 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
     boost::container::static_vector<ui8, 256> runStarts;
     boost::container::static_vector<ui8, 256> runLengths;
     boost::container::static_vector<Cartesian, 256> dirs;
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    const i32 floorSize = floorDims.x * floorDims.y;
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
     BitArray usedTiles;
-    usedTiles.resize(bp.aabb.dims.x * bp.aabb.dims.y);
+    usedTiles.resize(floorSize);
     for (auto&& room : bp.rooms) {
         runs.clear();
         runStarts.clear();
@@ -1681,7 +1695,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         i32 i = 0;
         while (true) {
             const i32 bitIndex = room.edgeWalk[i];
-            const TileIndex index = bitIndex + room.floorIndex * bp.aabb.dims.x * bp.aabb.dims.y;
+            const TileIndex index = bitIndex + room.floorIndex * floorSize;
             // Valid stair placement?
             if (currentRunLength < room.edgeWalk.size() && canPlaceStairsHere(index, bp, *child) &&
                 (currentRunLength == 0 || index != runs.back() /*make sure we dont double back*/) &&
@@ -1701,8 +1715,8 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 runs.push_back(index);
                 ++currentRunLength;
                 if (visLog) {
-                    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-                    visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.25f));
+                    const i32v2 pos = getPosAtIndex2D(index, floorDims);
+                    visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.25f));
                 }
             }
             else {
@@ -1714,8 +1728,8 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 }
                 currentRunLength = 0;
                 if (visLog) {
-                    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.7f, 0.0f, 0.0f, 0.9f));
+                    const i32v2 pos = getPosAtIndex2D(index, floorDims);
+                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(0.7f, 0.0f, 0.0f, 0.9f));
                 }
             }
             usedTiles.setBit(bitIndex);
@@ -1727,7 +1741,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         }
         assert(currentRunLength == 0);
         // Enumerate runs and find the best/most valid one for stairs
-        const i32 STAIRS_UP_COUNT = bp.floorHeight + 1;
+        const i32 STAIRS_UP_COUNT = bp.mTileSpatialGrid.getFloorHeight() + 1;
         i32 bestRunStart = INT32_MAX;
         i32 bestRunLength = INT32_MAX;
         if (runs.size()) {
@@ -1748,8 +1762,8 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 for (j = 0; j < runLength - 1; ++j) {
                     // Look ahead for direction
                     const TileIndex index = runs[(i32)(runStart + j)];
-                    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-                    const i32v2 nextPos = getPosAtIndex(runs[(i32)(runStart + j + 1)], bp.aabb.dims);
+                    const i32v2 pos = getPosAtIndex2D(index, floorDims);
+                    const i32v2 nextPos = getPosAtIndex2D(runs[(i32)(runStart + j + 1)], floorDims);
                     if (nextPos.x > pos.x) {
                         dir = Cartesian::EAST;
                         assert(prevDir != Cartesian::WEST);
@@ -1767,7 +1781,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                         assert(prevDir != Cartesian::NORTH);
                     }
                     if (visLog) {
-                        visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), CARTESIAN_COLORS[e_cast(dir)]);
+                        visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), CARTESIAN_COLORS[e_cast(dir)]);
                     }
                     // Store dir
                     dirs[(i32)(runStart + j)] = dir;
@@ -1785,7 +1799,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                                     bestRunStart = runStart;
                                     bestRunLength = j + 1;
                                     if (visLog) {
-                                        visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+                                        visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
                                     }
                                 }
 
@@ -1793,12 +1807,12 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                             }
                         }
                         if (visLog) {
-                            visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
+                            visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
                         }
                     }
                     else {
                         if (visLog) {
-                            visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 0.0f, 1.0f, 1.0f));
+                            visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(0.0f, 0.0f, 1.0f, 1.0f));
                         }
                     }
 
@@ -1835,7 +1849,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
             const TileIndex tileIndex = runs[bestRunStart + j];
             bp.tiles[tileIndex] = BlueprintTileType::STAIRS;
             if (j > 0) {
-                bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y] = BlueprintTileType::AIR;
+                bp.tiles[tileIndex + floorSize] = BlueprintTileType::AIR;
             }
             StairPiece& stairPiece = stairs.emplace_back(StairPiece{});
             stairPiece.dir = dirs[bestRunStart + j];
@@ -1850,8 +1864,8 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
             }
             prevDir = stairPiece.dir;
             if (visLog) {
-                const i32v2 pos = getPosAtIndex(runs[bestRunStart + j], bp.aabb.dims);
-                const f32v3 visPos = f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight);
+                const i32v2 pos = getPosAtIndex2D(runs[bestRunStart + j], floorDims);
+                const f32v3 visPos = f32v3(pos.x, pos.y, room.floorIndex * floorHeight);
                 visLog->addFilledQuad(visPos, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
                 visLog->addCartesianArrow(visPos + f32v3(0.5f, 0.5f, 0.0f), 0.75f, CARTESIAN_COLORS[e_cast(stairPiece.dir)], stairPiece.dir);
             }
@@ -1866,8 +1880,9 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
     std::vector<ExteriorWallRun>& exteriorWallRuns = bp.exteriorWallRuns;
     exteriorWallRuns.reserve(32);
 
-    const i32 floorSize = bp.aabb.dims.x * bp.aabb.dims.y;
-    const i32v2& dims = bp.aabb.dims;
+    const i32v2& dims = bp.mTileSpatialGrid.getDims2D();
+    const i32 floorSize = dims.x * dims.y;
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
     // Helper function for checking if tile is unowned and therefore external (TODO: Owned could still be external in the garden)
     auto isTileExternal = [&](i32v2 outerPos, i32 floorIndex) -> bool {
         if (outerPos.x < 0 || outerPos.y < 0 || outerPos.x >= dims.x || outerPos.y >= dims.y) {
@@ -1883,14 +1898,14 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
         // Edge walk is guaranteed to always begin on a southern edge
         Cartesian currentEdgeNormal = Cartesian::SOUTH;
         TileIndex prevInteriorTileIndex = room.edgeWalk[0];
-        i32v2 prevOffset2D = bp.getTileOffset(prevInteriorTileIndex);
+        i32v2 prevOffset2D = bp.mTileSpatialGrid.getTileXYOffset(prevInteriorTileIndex);
         ExteriorWallRun* currentExteriorWallRun = nullptr;
         if (isTileExternal(prevOffset2D + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)], room.floorIndex)) {
             exteriorWallRuns.emplace_back(ExteriorWallRun{ prevInteriorTileIndex + room.floorIndex * floorSize, 1, currentEdgeNormal});
             currentExteriorWallRun = &exteriorWallRuns.back();
         }
         if (visLog && currentExteriorWallRun) {
-            const f32v3 outerPos = f32v3(prevOffset2D.x + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)].x, prevOffset2D.y + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)].y, room.floorIndex * bp.floorHeight);
+            const f32v3 outerPos = f32v3(prevOffset2D.x + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)].x, prevOffset2D.y + CARTESIAN_NORMALS_2D[e_cast(currentEdgeNormal)].y, room.floorIndex * floorHeight);
             visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Green);
         }
 
@@ -1898,7 +1913,7 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
         for (size_t i = 1; i < room.edgeWalk.size(); ++i) {
             // Current edge walk tile
             const TileIndex currentInteriorTileIndex = room.edgeWalk[i];
-            const i32v2 currentOffset2D = bp.getTileOffset(currentInteriorTileIndex);
+            const i32v2 currentOffset2D = bp.mTileSpatialGrid.getTileXYOffset(currentInteriorTileIndex);
 
             // Detect if we just turned a corner
             bool didTurnCorner = false;
@@ -1940,7 +1955,7 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
                     exteriorWallRuns.emplace_back(ExteriorWallRun{ prevInteriorTileIndex + room.floorIndex * floorSize, 1, currentEdgeNormal });
                     currentExteriorWallRun = &exteriorWallRuns.back();
                     if (visLog) {
-                        const f32v3 outerPos = f32v3(newPrevExteriorOffset.x, newPrevExteriorOffset.y, room.floorIndex * bp.floorHeight);
+                        const f32v3 outerPos = f32v3(newPrevExteriorOffset.x, newPrevExteriorOffset.y, room.floorIndex * floorHeight);
                         visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Orange);
                     }
                 }
@@ -1964,7 +1979,7 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
             }
 
             if (visLog && currentExteriorWallRun) {
-                const f32v3 outerPos = f32v3(outerOffset2D.x, outerOffset2D.y, room.floorIndex * bp.floorHeight);
+                const f32v3 outerPos = f32v3(outerOffset2D.x, outerOffset2D.y, room.floorIndex * floorHeight);
                 visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Magenta);
             }
 
@@ -1973,7 +1988,7 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
         }
         // Final tile is shared with start tile and is guarenteed to be a west cartesian
         const TileIndex finalTileIndex = room.edgeWalk[0];
-        const i32v2 finalOffset2D = bp.getTileOffset(finalTileIndex);
+        const i32v2 finalOffset2D = bp.mTileSpatialGrid.getTileXYOffset(finalTileIndex);
         const i32v2 finalExternalOffset2D = finalOffset2D + CARTESIAN_NORMALS_2D[e_cast(Cartesian::WEST)];
         if (isTileExternal(finalExternalOffset2D, room.floorIndex)) {
             if (currentExteriorWallRun && currentExteriorWallRun->dir == Cartesian::WEST) {
@@ -1983,7 +1998,7 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
                 exteriorWallRuns.emplace_back(ExteriorWallRun{ finalTileIndex + room.floorIndex * floorSize, 1, Cartesian::WEST });
             }
             if (visLog) {
-                const f32v3 outerPos = f32v3(finalExternalOffset2D.x, finalExternalOffset2D.y, room.floorIndex * bp.floorHeight);
+                const f32v3 outerPos = f32v3(finalExternalOffset2D.x, finalExternalOffset2D.y, room.floorIndex * floorHeight);
                 visLog->addWireQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Red);
             }
         }
@@ -1992,8 +2007,8 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
     if (visLog) {
         for (ExteriorWallRun& wallRun : exteriorWallRuns) {
             const i32v2 edgeOffset = CARTESIAN_TANGENTS_CCW[e_cast(wallRun.dir)] * (i32)wallRun.length;
-            i32v3 startOffset = bp.getTileOffset(wallRun.start) + CARTESIAN_TILE_EDGE_WALK_CCW_POSITION_OFFSETS_3D[e_cast(wallRun.dir)];
-            startOffset.z *= bp.floorHeight;
+            i32v3 startOffset = bp.mTileSpatialGrid.getTileXYZOffset(wallRun.start) + CARTESIAN_TILE_EDGE_WALK_CCW_POSITION_OFFSETS_3D[e_cast(wallRun.dir)];
+            startOffset.z *= floorHeight;
             visLog->addLineBetweenPoints(startOffset, startOffset + i32v3(edgeOffset.x, edgeOffset.y, 0), CARTESIAN_COLORS[e_cast(wallRun.dir)]);
         }
     }
@@ -2006,10 +2021,12 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
 
     if (visLog) visLog->nextStep("Place Windows");
     
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    const f32 floorHeight = bp.mTileSpatialGrid.getFloorHeight();
     const i32 INDEX_OFFSETS[4] = {
         1, //South
-        -bp.aabb.dims.x, //West
-        bp.aabb.dims.x, //East
+        -floorDims.x, //West
+        floorDims.x, //East
         -1 //North
     };
 
@@ -2021,13 +2038,13 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
             TileIndex index = wallRun.start;
             for (ui32 i = 0; i < wallRun.length; ++i) {
                 if (windowPlacements[i]) {
-                    TileWall& wall = bp.walls[index].walls[e_cast(wallRun.dir)];
+                    TileWall wall = bp.walls.getWallAtTile(index, wallRun.dir);
                     // Don't ever replace doors
                     if (!wall.isDoor) {
                         wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::WINDOW)];
                         if (visLog) {
-                            i32v3 offset = bp.getTileOffset(index);
-                            offset.z *= bp.floorHeight;
+                            i32v3 offset = bp.mTileSpatialGrid.getTileXYZOffset(index);
+                            offset.z *= floorHeight;
                             visLog->addFilledQuad(offset, f32v2(1.0f), color::Aqua);
                         }
                     }
@@ -2039,10 +2056,11 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
 }
 
 void computeOwnedTilesOnFirstFloor(BuildingBlueprint& bp) {
-    bp.tilesNeedingTerrainFlatten = BitArray(bp.aabb.dims.x * bp.aabb.dims.y);
-    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
-            const ui32 tileIndex = y * bp.aabb.dims.x + x;
+    const i32v2& floorDims = bp.mTileSpatialGrid.getDims2D();
+    bp.tilesNeedingTerrainFlatten = BitArray(floorDims.x * floorDims.y);
+    for (ui32 y = 0; y < floorDims.y; ++y) {
+        for (ui32 x = 0; x < floorDims.x; ++x) {
+            const ui32 tileIndex = y * floorDims.x + x;
             const BlueprintTileType type = bp.tiles[tileIndex];
             if (type != BlueprintTileType::NONE) {
 
@@ -2123,6 +2141,8 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
 }
 
 BuildingBlueprintId BuildingBlueprintGenerator::getNextBuildingID() {
+    static std::mutex sMutex;
+    std::lock_guard lock(sMutex);
     ++sCurrentId;
     // Will this ever happen? maybe...
     if (sCurrentId == INVALID_BLUEPRINT_ID) {

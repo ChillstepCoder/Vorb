@@ -241,7 +241,7 @@ void mergeOrMakeWallFace(
 }
 
 void mergeOrMakeSouthNorthWall(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>& tiles, const ui32v3& dims, f32 floorHeight, ui32 x, ui32 y, ui32 z, PrevWallIndices& prevSouthNorthWallIndices, std::vector<WallChainData>& wallData, int isNorth) {
-    TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(ui32v3(x, y, z), dims);
+    TileIndex tileIndex = TileSpatialGrid::getTileIndexFromXYZOffset(ui32v3(x, y, z), dims);
     const f32 groundZOffset = tiles[tileIndex].getGroundZOffset();
     const TileWalls& walls = tileWalls[tileIndex];
     // TODO: Use paint ID
@@ -289,7 +289,7 @@ void mergeOrMakeSouthNorthWall(const std::vector<TileWalls>& tileWalls, const st
 }
 
 void mergeOrMakeWestEastWall(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>& tiles, const ui32v3& dims, f32 floorHeight, ui32 x, ui32 y, ui32 z, PrevWallIndices& prevSouthNorthWallIndices, std::vector<WallChainData>& wallData, int isEast) {
-    TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(ui32v3(x, y, z), dims);
+    TileIndex tileIndex = TileSpatialGrid::getTileIndexFromXYZOffset(ui32v3(x, y, z), dims);
     const f32 groundZOffset = tiles[tileIndex].getGroundZOffset();
     const TileWalls& walls = tileWalls[tileIndex];
     // TODO: Use paint ID
@@ -526,13 +526,13 @@ void meshWallsGreedy(const std::vector<TileWalls>& tileWalls, const std::vector<
 }
 
 
-void meshWallsDefault(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>& tiles, ui32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
+void meshWallsDefault(const TileWallContainer& tileWalls, const std::vector<Tile>& tiles, ui32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
     PROFILE_FUNCTION();
 
-    for (ui32 z = 0; z < tileDims.z; ++z) {
+   /* for (ui32 z = 0; z < tileDims.z; ++z) {
         for (ui32 y = 0; y < tileDims.y; ++y) {
             for (ui32 x = 0; x < tileDims.x; ++x) {
-                TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(ui32v3(x, y, z), tileDims);
+                TileIndex tileIndex = TileSpatialGrid::getTileIndexFromXYZOffset(ui32v3(x, y, z), tileDims);
                 const f32 groundZOffset = tiles[tileIndex].getGroundZOffset();
                 const TileWalls& walls = tileWalls[tileIndex];
 
@@ -556,7 +556,7 @@ void meshWallsDefault(const std::vector<TileWalls>& tileWalls, const std::vector
                 }
             }
         }
-    }
+    }*/
             //// Main faces
             //const TileData& tileData = TileRepository::getTileData(wall.tileId);
             //const MaterialData& materialData = tileData.materialData;
@@ -586,9 +586,10 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     const TileContainer& tileContainer = builders.container;
     const ContainerMeshDataCopy& tiles = builders.tileData;
     // TODO: Do we need to handle container resize? Or is resize destroy and remake?
-    const ui32v3& tileDims = tileContainer.getDims();
-    const f32v3 tileContainerWorldPos = tileContainer.getWorldPos3D();
-    const f32 floorHeight = tileContainer.getFloorHeight();
+    const TileSpatialGrid& spatialGrid = tileContainer.getTileSpatialGrid();
+    const ui32v3& tileDims = spatialGrid.getDims();
+    const f32v3 tileContainerWorldPos = spatialGrid.getWorldPos3D();
+    const f32 floorHeight = spatialGrid.getFloorHeight();
     // =============== Mesh tiles ===============
     TileIndex index = 0;
     ui32v3 xyz;
@@ -608,7 +609,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     // Flora mesh ONLY
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
-                        f32v3 tilePosition = tileContainer.getTileCenterWorldPositionThreadSafe(index, tiles.mTiles[index].getGroundZOffset());
+                        const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
                         builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData.id, true);
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
@@ -649,7 +650,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation((TileLayer)layerIndex), tileData, physics);
                     }
                     else if (tileData.shape == TileShape::MODEL) {
-                        f32v3 worldPos = tileContainer.getTileCenterWorldPositionThreadSafe(index, tiles.mTiles[index].getGroundZOffset());
+                        f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                             builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
@@ -667,59 +668,60 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     }
 
     // Walls
-    meshWallsGreedy(tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, physics);
+    const TileWallContainer& tileWalls = tileContainer.getTileWallContainer();
+    meshWallsDefault(tileWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, physics);
 
     // Dynamics
-    for (auto&& dynamicTile : tileContainer.getDynamicTiles()) {
-        TileIndex tileIndex = dynamicTile.mTileIndex;
-        // If this is a wall
-        if (dynamicTile.mType <= DynamicTileType::WALL_TERM) {
-            Cartesian dir = Cartesian(dynamicTile.mType);
-            static_assert(e_cast(DynamicTileType::WALL_SOUTH) == 0 && e_cast(DynamicTileType::WALL_TERM) == 3);
-            const TileWall& wall = tileContainer.getWallsMainThread(tileIndex).walls[e_cast(dir)];
-            assert(wall.wallID != TILE_ID_NONE);
-            // Check if is door
-            const TileData& tileData = TileRepository::getTileData(wall.wallID);
-            if (tileData.shape == TileShape::DOOR) {
-                f32v2 dims;
-                f32v3 p1 = tileContainer.getTileXYZOffset(tileIndex);
-                p1.z *= floorHeight;
-                switch (dir) {
-                    case Cartesian::SOUTH:
-                        dims = f32v2(DOOR_THICKNESS, 0.5f);
-                        p1.x += 0.5f;
-                        break;
-                    case Cartesian::WEST:
-                        dims = f32v2(0.5f, DOOR_THICKNESS);
-                        p1.y += 0.5f;
-                        break;
-                    case Cartesian::EAST:
-                        dims = f32v2(0.5f, DOOR_THICKNESS);
-                        p1.x += 1.0f;
-                        p1.y += 0.5f;
-                        break;
-                    case Cartesian::NORTH:
-                        dims = f32v2(DOOR_THICKNESS, 0.5f);
-                        p1.x += 0.5f;
-                        p1.y += 1.0f;
-                        break;
-                    default:
-                        assert(false);
-                        break;
+    //for (auto&& dynamicTile : tileContainer.getDynamicTiles()) {
+    //    TileIndex tileIndex = dynamicTile.mTileIndex;
+    //    // If this is a wall
+    //    if (dynamicTile.mType <= DynamicTileType::WALL_TERM) {
+    //        Cartesian dir = Cartesian(dynamicTile.mType);
+    //        static_assert(e_cast(DynamicTileType::WALL_SOUTH) == 0 && e_cast(DynamicTileType::WALL_TERM) == 3);
+    //        const TileWall& wall = tileWalls.getWallAtTile(tileIndex).walls[e_cast(dir)];
+    //        assert(wall.wallID != TILE_ID_NONE);
+    //        // Check if is door
+    //        const TileData& tileData = TileRepository::getTileData(wall.wallID);
+    //        if (tileData.shape == TileShape::DOOR) {
+    //            f32v2 dims;
+    //            f32v3 p1 = tileContainer.getTileXYZOffset(tileIndex);
+    //            p1.z *= floorHeight;
+    //            switch (dir) {
+    //                case Cartesian::SOUTH:
+    //                    dims = f32v2(DOOR_THICKNESS, 0.5f);
+    //                    p1.x += 0.5f;
+    //                    break;
+    //                case Cartesian::WEST:
+    //                    dims = f32v2(0.5f, DOOR_THICKNESS);
+    //                    p1.y += 0.5f;
+    //                    break;
+    //                case Cartesian::EAST:
+    //                    dims = f32v2(0.5f, DOOR_THICKNESS);
+    //                    p1.x += 1.0f;
+    //                    p1.y += 0.5f;
+    //                    break;
+    //                case Cartesian::NORTH:
+    //                    dims = f32v2(DOOR_THICKNESS, 0.5f);
+    //                    p1.x += 0.5f;
+    //                    p1.y += 1.0f;
+    //                    break;
+    //                default:
+    //                    assert(false);
+    //                    break;
 
-                }
-                f32v3 p2 = p1;
-                p2.z += floorHeight;
-                builders.staticBuilder.addBoardBetweenPoints(p1, p2, dims, tileData.materialData, f32v2(1.0f, 1.0f / 3.0f));
-            }
-            else {
-                assert(false);
-            }
-        }
-        else {
-            assert(false); // Implement other types
-        }
-    }
+    //            }
+    //            f32v3 p2 = p1;
+    //            p2.z += floorHeight;
+    //            builders.staticBuilder.addBoardBetweenPoints(p1, p2, dims, tileData.materialData, f32v2(1.0f, 1.0f / 3.0f));
+    //        }
+    //        else {
+    //            assert(false);
+    //        }
+    //    }
+    //    else {
+    //        assert(false); // Implement other types
+    //    }
+    //}
 }
 
 

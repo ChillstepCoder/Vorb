@@ -4,6 +4,8 @@
 #include "util/BitArray.h"
 #include "tile/TileContainerEvents.h"
 #include "tile/TileContainerHarvestableRegistry.h"
+#include "tile/TileSpatialGrid.h"
+#include "tile/TileWallContainer.h"
 
 #include "physics/StaticPhysicsMesh.h"
 #include <shared_mutex>
@@ -92,7 +94,6 @@ private:
 
 public:
     void allocateData();
-
     void updateActiveDynamicTiles();
 
     // =========== Tile mutators ===========
@@ -109,14 +110,17 @@ public:
     void bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editData, size_t count);
     void setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer);
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
-    void setWallsAt(TileIndex index, TileWalls walls);
-
-    const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i]; }
-    const std::vector<TileWalls>& getTileWalls() const { return mWalls; }
-    const TileWallsContainer& getTileWallsContainer() const { return  mTileWalls; }
+    void setWallsAt(TileIndex index, TileWall walls[4]);
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
     const TileContainerHarvestableRegistry& getHarvestables() const { return mHarvestableRegistry; }
+
+    // Tile indexing
+    const TileSpatialGrid& getTileSpatialGrid() const { return mTileSpatialGrid; }
+
+    f32v3 getTileCenterWorldPosition(TileIndex i) const {
+        return mTileSpatialGrid.getTileCenterWorldPos3D(i, mTiles[i].groundZOffset);
+    }
 
     // This needs to be floor(f32v3worldPos)
     TileHandle tryGetTileHandleAtWorldPos(const i32v3& worldPos) const;
@@ -127,79 +131,21 @@ public:
         assert(i < mTiles.size());
         return mTiles[i];
     }
-
     const Tile& getTileAt(TileIndex i) const {
         assert(i < mTiles.size());
         return mTiles[i];
     }
-    const Tile& getTileAt(ui32 offsetX, ui32 offsetY, ui32 offsetZ) const {
-        const TileIndex i = getTileIndexFromXYZOffset(offsetX, offsetY, offsetZ);
-        assert(i < mTiles.size());
-        return mTiles[i];
-    }
+    const Tile& getTileAt(ui32 offsetX, ui32 offsetY, ui32 offsetZ) const;
+    const Tile& getTileAtNoAssert(TileIndex i) const { return mTiles[i]; }
 
-    const Tile& getTileAtNoAssert(TileIndex i) const {
-        return mTiles[i];
-    }
-    i32v3 getTileXYZOffsetWithZScale(TileIndex i) const {
-        const i32 layerSize = mDims.x * mDims.y;
-        return i32v3(i % mDims.x, (i % layerSize) / mDims.x, (i / layerSize) * mFloorHeight);
-    }
-    static i32v3 getTileXYZOffsetWithZScale(TileIndex i, const i32v3& dims, i32 floorHeight) {
-        const i32 layerSize = dims.x * dims.y;
-        return i32v3(i % dims.x, (i % layerSize) / dims.x, (i / layerSize) * floorHeight);
-    }
-    i32v3 getTileXYZOffset(TileIndex i) const {
-       const i32 layerSize = mDims.x * mDims.y;
-       return i32v3(i % mDims.x, (i % layerSize) / mDims.x, i / layerSize);
-    }
-    static i32v3 getTileXYZOffset(TileIndex i, const i32v3& dims) {
-        const i32 layerSize = dims.x * dims.y;
-        return i32v3(i % dims.x, (i % layerSize) / dims.x, i / layerSize);
-    }
-    i32v2 getTileXYOffset(TileIndex i) const {
-        const i32 layerSize = mDims.x * mDims.y;
-        return i32v2(i % mDims.x, (i % layerSize) / mDims.x);
-    }
-    static i32v2 getTileXYOffset(TileIndex i, const i32v2& dims) {
-        const i32 layerSize = dims.x * dims.y;
-        return i32v2(i % dims.x, (i % layerSize) / dims.x);
-    }
-    f32v3 getTileCenterWorldPosition(TileIndex i) const {
-        const i32 layerSize = mDims.x * mDims.y;
-        return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + mTiles[i].groundZOffset);
-    }
-    f32v3 getTileCenterWorldPositionThreadSafe(TileIndex i, f32 tileGroundZOffset) const {
-        const i32 layerSize = mDims.x * mDims.y;
-        return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + tileGroundZOffset);
-    }
-    static TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz, const ui32v3& dims) {
-        return xyz.x + xyz.y * dims.x + xyz.z * dims.x * dims.y;
-    }
-    static TileIndex getTileIndexFromXYZOffset(const i32v3& xyz, const i32v3& dims) {
-        return xyz.x + xyz.y * dims.x + xyz.z * dims.x * dims.y;
-    }
-    static TileIndex getBaseTileIndexFromXYOffset(const i32v2& xy, const i32v3& dims) {
-        return xy.x + xy.y * dims.x;
-    }
-    TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
-        return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;
-    }
-    TileIndex getTileIndexFromXYZOffset(const i32v3& xyz) const {
-        return (TileIndex)(xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y);
-    }
-    TileIndex getTileIndexFromXYZOffset(i32 x, i32 y, i32 z) const {
-        return (TileIndex)(x + y * mDims.x + z * mDims.x * mDims.y);
-    }
     TileContainerID getId() const { return mId; }
 
     SubchunkIndex getSubchunkIndexFromTileIndex(TileIndex tileIndex) const {
-        const i32v3 offset = getTileXYZOffset(tileIndex);
+        const i32v3 offset = mTileSpatialGrid.getTileXYZOffset(tileIndex);
         const i32v3 scoffset = offset / SUBCHUNK_WIDTH;
-        const i32v3 subchunkDims = mDims / SUBCHUNK_WIDTH;
+        const i32v3 subchunkDims = mTileSpatialGrid.getDims() / SUBCHUNK_WIDTH;
         return scoffset.z * subchunkDims.x * subchunkDims.y + scoffset.y * subchunkDims.x + scoffset.x;
     }
-
 
     // =========== State  ===========
     bool isReady() const { return mState == e_cast(TileContainerState::READY); }
@@ -216,7 +162,7 @@ public:
     static bool isTileOwned(const BitArray& ownedTiles, TileIndex index) { return ownedTiles.getNumBits() == 0 || ownedTiles.getBit(index); }
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
     const BitArray& getOwnedTiles() const { return mOwnedTiles; }
-    void allocateOwnedTiles() { mOwnedTiles.resizeAndZero(mDims.x * mDims.y * mDims.z); assert(!mOwnedTiles.isEmpty()); }
+    void allocateOwnedTiles();
     void setOwnedTile(TileIndex index) { mOwnedTiles.setBit(index); }
     void clearOwnedTile(TileIndex index) { mOwnedTiles.clearBit(index); }
     void setOwnedTileTo(TileIndex index, bool isOwned) { mOwnedTiles.setBitTo(index, isOwned); }
@@ -248,16 +194,8 @@ public:
     void clearDirtyData() { mDirtyData = false; }
 
     // =========== Accessors  ===========
-    const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mRootPos); }
-    const i32v3& getWorldPos3D() const { return mRootPos; }
-    const f32v3 getWorldPosCenter3D() const { return f32v3(mRootPos) + f32v3(mDims) * 0.5f; }
-    const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mDims); }
-    const i32v3& getDims() const { return mDims; }
-    const i32 getFloorStride() const { return mDims.x * mDims.y; }
-    i32 getFloorHeight() const { return mFloorHeight; }
-
     const std::vector<Tile>& getTiles() const { assert(IS_GAME_THREAD()); return mTiles; }
-    const std::vector<TileWalls>& getWalls() const { assert(IS_GAME_THREAD()); return mWalls; }
+    const TileWallContainer& getTileWallContainer() const { return  mTileWallsContainer; }
     size_t getNumTiles() const { return mTiles.size(); }
 
     void copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const;
@@ -279,19 +217,18 @@ private:
     void addDoor(Cartesian doorSide, TileIndex tileIndex);
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
 
+    // Indexing
+    TileSpatialGrid mTileSpatialGrid;
+
     BitArray mOwnedTiles;
     mutable std::shared_mutex mSharedMutex;
     // TODO: Can we use arrays instead of vectors to shrink these a bit?
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
-    //std::vector<TileWalls> mWalls; // TODO: Memory recycler and or compression
-    TileWallsContainer mTileWallsContainer;
+    TileWallContainer mTileWallsContainer;
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;
-    i32v3 mDims;
-    i32v3 mRootPos;
-    i32 mFloorHeight = 3;
     mutable std::atomic_uint32_t mRefCount = 0u;
     mutable std::atomic_bool mDidInitMesh = false;
     mutable std::atomic_bool mDidInitPhysics = false;

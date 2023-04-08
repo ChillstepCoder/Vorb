@@ -3,6 +3,7 @@
 #include "TileConst.h"
 #include "tile/TileFlags.h"
 #include "item/ItemStack.h"
+#include "tile/TileWallContainer.h"
 #include "item/Recipe.h"
 #include "physics/CollisionShapes.h"
 #include "tile/HarvestableSubChunkRegistry.h"
@@ -106,99 +107,6 @@ struct TileOrientation {
 };
 static_assert(sizeof(TileOrientation) == 1);
 
-struct TileWall {
-    TileID wallID = TILE_ID_NONE;
-    bool isDoor = false;
-
-    void clear() { wallID = TILE_ID_NONE; }
-    bool isValid() const { return wallID != TILE_ID_NONE; }
-    bool canNavThrough() const { return isDoor || wallID == TILE_ID_NONE; }
-};
-
-struct TileWalls {
-    TileWalls() : walls{ {TILE_ID_NONE}, {TILE_ID_NONE}, {TILE_ID_NONE}, {TILE_ID_NONE} } {}
-    static_assert(sizeof(TileWall) == 4, "Make sure constructor still works");
-    union {
-        TileWall walls[4];
-        struct {
-            TileWall south;
-            TileWall west;
-            TileWall east;
-            TileWall north;
-        };
-    };
-
-    bool isEmpty() const { return south.wallID == TILE_ID_NONE && west.wallID == TILE_ID_NONE && east.wallID == TILE_ID_NONE && north.wallID == TILE_ID_NONE; }
-};
-
-// TODO: Extract file
-// Holds walls for a TileContainer. The +x and +y outermost edges cannot have walls
-class TileWallsContainer {
-public:
-    void init(ui32 numTiles) {
-        mNumTiles = numTiles;
-        mWalls.resize(mNumTiles * 2);
-    }
-    void destroy() {
-        std::vector<TileWall>().swap(mWalls);
-    }
-    TileWall getSouthWallAtTile(TileIndex tileIndex) const {
-        return mWalls[tileIndex];
-    }
-    TileWall getWestWallAtTile(TileIndex tileIndex) const {
-        return mWalls[mNumTiles + tileIndex];
-    }
-    TileWall getEastWallAtTile(TileIndex tileIndex) const {
-        return mWalls[mNumTiles + tileIndex + 1];
-    }
-    TileWall getNorthWallAtTile(TileIndex tileIndex) const {
-        return mWalls[tileIndex + 1];
-    }
-
-    void getWallsAtTile(TileWall outWalls[4], TileIndex tileIndex) {
-        outWalls[e_cast(Cartesian::SOUTH)] = getSouthWallAtTile(tileIndex);
-        outWalls[e_cast(Cartesian::WEST)] = getWestWallAtTile(tileIndex);
-        outWalls[e_cast(Cartesian::EAST)] = getEastWallAtTile(tileIndex);
-        outWalls[e_cast(Cartesian::NORTH)] = getNorthWallAtTile(tileIndex);
-    }
-    void setSouthWallAtTile(TileIndex tileIndex, TileWall wall) {
-        mWalls[tileIndex] = wall;
-    }
-    void setWestWallAtTile(TileIndex tileIndex, TileWall wall) {
-        mWalls[mNumTiles + tileIndex] = wall;
-    }
-    void setEastWallAtTile(TileIndex tileIndex, TileWall wall) {
-        mWalls[mNumTiles + tileIndex + 1] = wall;
-    }
-    void setNorthWallAtTile(TileIndex tileIndex, TileWall wall) {
-        mWalls[tileIndex + 1] = wall;
-    }
-
-    void setWallAtTile(TileIndex tileIndex, TileWall wall, Cartesian cartesian) {
-        switch (cartesian) {
-            case Cartesian::SOUTH:
-                setSouthWallAtTile(tileIndex, wall);
-                break;
-            case Cartesian::WEST:
-                setWestWallAtTile(tileIndex, wall);
-                break;
-            case Cartesian::EAST:
-                setEastWallAtTile(tileIndex, wall);
-                break;
-            case Cartesian::NORTH:
-                setNorthWallAtTile(tileIndex, wall);
-                break;
-            default:
-                assert(false);
-                break;
-        }
-    }
-private:
-    // Stored horizontal then vertical
-    std::vector<TileWall> mWalls;
-    ui32 mNumTiles = 0;
-};
-
 
 // Per tile steering and navigation usage
 // TODO: Use
@@ -273,12 +181,12 @@ static_assert(sizeof(Tile) == 12, "Keep small");
 // All meshable data from a container, copied to prevent race conditions or mutex locks
 struct ContainerMeshDataCopy {
     std::vector<Tile> mTiles;
-    std::vector<TileWalls> mWalls;
+    TileWallContainer mWalls;
 };
 
 struct ContainerNavDataCopy {
     std::vector<HarvestableSubchunkRegistry> mHarvestables;
     std::vector<Tile> mTiles;
-    std::vector<TileWalls> mWalls;
+    TileWallContainer mWalls;
     BitArray mOwnedTiles;
 };

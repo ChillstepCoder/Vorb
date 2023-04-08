@@ -44,7 +44,7 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::e
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = sWorld->getHeightmapGrid();
-    mBlueprint.mDesiredTerrainFlattenHeight = round(grid.computeMeanHeightAtAABB(mBlueprint.aabb, mBlueprint.tilesNeedingTerrainFlatten)) - 0.005f;
+    mBlueprint.mDesiredTerrainFlattenHeight = round(grid.computeMeanHeightAtAABB(i32AABB2(mBlueprint.mTileSpatialGrid.getAABB()), mBlueprint.tilesNeedingTerrainFlatten)) - 0.005f;
 
     // Initialize building data
     mBlueprint.building->getTileContainer()->allocateOwnedTiles();

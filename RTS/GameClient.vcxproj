@@ -398,12 +398,14 @@
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\structure\StructureManager.cpp" />
+    <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
     <ClCompile Include="src\tile\Tile.cpp" />
     <ClCompile Include="src\tile\TileContainer.cpp" />
     <ClCompile Include="src\tile\TileContainerHarvestableRegistry.cpp" />
     <ClCompile Include="src\tile\TileHandle.cpp" />
     <ClCompile Include="src\tile\TileHarvestable.cpp" />
     <ClCompile Include="src\tile\TileUtil.cpp" />
+    <ClCompile Include="src\tile\TileWallContainer.cpp" />
     <ClCompile Include="src\time\GameTimeManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
@@ -687,6 +689,7 @@
     <ClInclude Include="src\structure\StructureManager.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
     <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h" />
+    <ClInclude Include="src\tile\TileSpatialGrid.h" />
     <ClInclude Include="src\tile\Stairs.h" />
     <ClInclude Include="src\tile\Tile.h" />
     <ClInclude Include="src\tile\TileConst.h" />
@@ -697,6 +700,7 @@
     <ClInclude Include="src\tile\TileHandle.h" />
     <ClInclude Include="src\tile\TileHarvestable.h" />
     <ClInclude Include="src\tile\TileUtil.h" />
+    <ClInclude Include="src\tile\TileWallContainer.h" />
     <ClInclude Include="src\time\GameTimeManager.h" />
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />

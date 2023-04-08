@@ -63,26 +63,17 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     assert(IS_GAME_THREAD());
 
     PreciseTimer timer;
-    const i32v2& worldPos = bp.aabb.pos;
+    const i32v2& worldPos = bp.mTileSpatialGrid.getWorldPos2D();
 
     BitArray& tilesNeedingTerrainFlatten = bp.tilesNeedingTerrainFlatten;
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = sWorld->getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, tilesNeedingTerrainFlatten));
-
-    ui32 floorHeight = 3;
-    i32AABB3 aabb;
-    aabb.x = bp.aabb.x;
-    aabb.y = bp.aabb.y;
-    aabb.z = meanHeight;
-    aabb.width = bp.aabb.width;
-    aabb.depth = bp.aabb.depth;
-    aabb.height = bp.floorCount * floorHeight;
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), tilesNeedingTerrainFlatten));
 
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, aabb, floorHeight));
+    Building* newBuilding = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
@@ -92,12 +83,13 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     std::vector<Tile>& tiles = tileContainer.mTiles;
     std::vector<TileContainer*> dirtyNavTileContainers;
+    const i32v3& dims = bp.mTileSpatialGrid.getDims();
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;
-    for (i32 z = 0; z < bp.floorCount; ++z) {
-        for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
-            for (i32 x = 0; x < bp.aabb.dims.x; ++x, ++tileIndex) {
+    for (i32 z = 0; z < dims.z; ++z) {
+        for (i32 y = 0; y < dims.y; ++y) {
+            for (i32 x = 0; x < dims.x; ++x, ++tileIndex) {
                 // TODO: Bitindex
                 const BlueprintTileType type = bp.tiles[tileIndex];
                 if (type != BlueprintTileType::NONE) {
@@ -109,8 +101,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     }
 
                     tileContainer.setOwnedTile(tileIndex);
-
-                    tileContainer.mWalls[tileIndex] = bp.walls[tileIndex];
+                    tileContainer.mTileWallsContainer.setSouthWallAtTile(tileIndex, bp.walls.getSouthWallAtTile(tileIndex));
+                    tileContainer.mTileWallsContainer.setWestWallAtTile(tileIndex, bp.walls.getWestWallAtTile(tileIndex));
                     // Stairs are processed below
                     if (type != BlueprintTileType::STAIRS) {
                         const TileID tileId = bp.tileIDs[e_cast(type)];
@@ -146,7 +138,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     TileID stairsFlatTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
     for (auto& stairsVec : bp.stairs) {
         for (auto& stairPiece : stairsVec) {
-            const f32v3 tilePos = tileContainer.getTileXYZOffsetWithZScale(stairPiece.pos);
+            const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
             // Place stair steps
             const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
             const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
@@ -197,17 +189,9 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = sWorld->getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, bp.tilesNeedingTerrainFlatten));
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.tilesNeedingTerrainFlatten));
 
-    i32AABB3 aabb;
-    aabb.x = bp.aabb.x;
-    aabb.y = bp.aabb.y;
-    aabb.z = meanHeight;
-    aabb.width = bp.aabb.width;
-    aabb.depth = bp.aabb.depth;
-    aabb.height = bp.floorCount * bp.floorHeight;
-
-    bp.building = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, aabb, bp.floorHeight));
+    bp.building = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     // Force ready so we can place tiles
     bp.building->getTileContainer()->setState(TileContainerState::READY);
     if (bp.flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {

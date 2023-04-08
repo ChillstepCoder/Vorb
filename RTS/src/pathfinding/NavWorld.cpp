@@ -198,19 +198,19 @@ constexpr CartesianPair CARTESIAN_DIAGONAL_OPPOSITES[8] = {
 };
 
 // toDir = south means we enter from the north
-bool canEnterTileInDirection(const Tile& tile, const TileWalls& walls, Cartesian toDir) {
+bool canEnterTileInDirection(const Tile& tile, Cartesian toDir) {
     if (!IsTileNavBlocked(tile.getFlags())) {
         const Cartesian fromDir = CARTESIAN_OPPOSITES[e_cast(toDir)];
         if (!tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDir)])) return false;
-        return walls.walls[e_cast(fromDir)].canNavThrough();
+        return true;
     }
     return false;
 }
-bool canEnterTileInDirectionDiagonal(const Tile& tile, const TileWalls& walls, Cartesian8 toDir) {
+bool canEnterTileInDirectionDiagonal(const Tile& tile, Cartesian8 toDir) {
     if (!IsTileNavBlocked(tile.getFlags())) {
         const CartesianPair fromDirs = CARTESIAN_DIAGONAL_OPPOSITES[e_cast(toDir)];
         if (!tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDirs.first)]) || !tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDirs.second)])) return false;
-        return (walls.walls[e_cast(fromDirs.first)].canNavThrough() && walls.walls[e_cast(fromDirs.second)].canNavThrough());
+        return true;
     }
     return false;
 }
@@ -245,8 +245,8 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     NavGraphTileDataToCopy& navTileData = taskData.navTileData;
     CoarseNavGraph& coarseNavGraph = taskData.navGraph;
     std::vector<TileFineNavData>& fineNavData = taskData.fineNavData;
-    const i32v3& dims = tileContainer.getDims();
-    const f32 floorHeight = tileContainer.getFloorHeight();
+    const i32v3& dims = tileContainer.getTileSpatialGrid().getDims();
+    const f32 floorHeight = tileContainer.getTileSpatialGrid().getFloorHeight();
     const bool isTerrain = tileContainer.isTerrain();
     // We only care about external edges for non terrain
     StructureExternalEdgeList* externalEdges = nullptr;
@@ -276,7 +276,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     ContainerNavDataCopy tileData;
     tileContainer.copyDataWorkerThread(tileData);
     const std::vector<Tile>& tiles = tileData.mTiles;
-    const std::vector<TileWalls>& tileWalls = tileData.mWalls;
+    const TileWallContainer& tileWalls = tileData.mWalls;
     const std::vector<HarvestableSubchunkRegistry>& harvestables = tileData.mHarvestables;
     fineNavData.resize(tiles.size());
     const BitArray& ownedTiles = tileData.mOwnedTiles;
@@ -309,7 +309,8 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 }
                 tileFineNavData.isOwned = true;
 
-                const TileWalls& walls = tileWalls[index];
+                TileWalls walls;
+                tileWalls.getWallsAtTile(walls, index);
                 const f32 groundZPosition = tileFineNavData.zPositionOffsetFromFloor + tz * floorHeight;
                 bool assigned = false;
 
@@ -340,12 +341,12 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     int z = (groundZPosition + offset + 0.001f) / floorHeight;
                     TileIndex adjIndex;
                     if (z != tz && z > 0 && z < dims.z) {
-                        adjIndex = TileContainer::getTileIndexFromXYZOffset(i32v3(tx, ty - 1, z), dims);
+                        adjIndex = TileSpatialGrid::getTileIndexFromXYZOffset(i32v3(tx, ty - 1, z), dims);
                     } else {
                         adjIndex = index - dims.x;
                     }
                     const bool isInner = ty > 0 && (!terrainExternalEdges || !terrainExternalEdges->isExternal(index, Cartesian::SOUTH));
-                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::SOUTH, isInner, dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::SOUTH, isInner, dims, tiles, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoSouthWest = canGoSouthEast = false;
                     }
                 }
@@ -357,14 +358,14 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     const f32 offset = tile.getEdgeHeightOffset(Cartesian::WEST);
                     int z = (groundZPosition + offset + 0.001f) / floorHeight;
                     TileIndex adjIndex;
-                    if (z != tz && z > 0 && z < tileContainer.getDims().z) {
-                        adjIndex = TileContainer::getTileIndexFromXYZOffset(i32v3(tx - 1, ty, z), dims);
+                    if (z != tz && z > 0 && z < dims.z) {
+                        adjIndex = TileSpatialGrid::getTileIndexFromXYZOffset(i32v3(tx - 1, ty, z), dims);
                     }
                     else {
                         adjIndex = index - 1;
                     }
                     const bool isInner = tx > 0 && (!terrainExternalEdges || !terrainExternalEdges->isExternal(index, Cartesian::WEST));
-                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::WEST, isInner, dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::WEST, isInner, dims, tiles, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoSouthWest = canGoNorthWest = false;
                     }
                 }
@@ -377,13 +378,13 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     int z = (groundZPosition + offset + 0.001f) / floorHeight;
                     TileIndex adjIndex;
                     if (z != tz && z > 0 && z < dims.z) {
-                        adjIndex = TileContainer::getTileIndexFromXYZOffset(i32v3(tx + 1, ty, z), dims);
+                        adjIndex = TileSpatialGrid::getTileIndexFromXYZOffset(i32v3(tx + 1, ty, z), dims);
                     }
                     else {
                         adjIndex = index + 1;
                     }
                     const bool isInner = tx < dims.x - 1 && (!terrainExternalEdges || !terrainExternalEdges->isExternal(index, Cartesian::EAST));
-                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::EAST, isInner, dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::EAST, isInner, dims, tiles, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoSouthEast = canGoNorthEast = false;
                     }
                 }
@@ -397,13 +398,13 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     if (z < 0) z = 0;
                     TileIndex adjIndex;
                     if (z != tz && z > 0 && z < dims.z) {
-                        adjIndex = TileContainer::getTileIndexFromXYZOffset(i32v3(tx, ty + 1, z), dims);
+                        adjIndex = TileSpatialGrid::getTileIndexFromXYZOffset(i32v3(tx, ty + 1, z), dims);
                     }
                     else {
                         adjIndex = index + dims.x;
                     }
                     const bool isInner = ty < dims.y - 1 && (!terrainExternalEdges || !terrainExternalEdges->isExternal(index, Cartesian::NORTH));
-                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::NORTH, isInner, dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::NORTH, isInner, dims, tiles, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoNorthWest = canGoNorthEast = false;
                     }
                 }
@@ -413,19 +414,19 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
                 // South West
                 if (canGoSouthWest && tile.canNavInDirection(Cartesian8::SOUTH_WEST)) {
-                    trySetFineNavEdgeCartesianDiagonal(index - dims.x - 1, Cartesian8::SOUTH_WEST, ty > 0 && tx > 0, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index - dims.x - 1, Cartesian8::SOUTH_WEST, ty > 0 && tx > 0, dims, tiles, ownedTiles, groundZPosition, tileFineNavData);
                 }
                 // South East
                 if (canGoSouthEast && tile.canNavInDirection(Cartesian8::SOUTH_EAST)) {
-                    trySetFineNavEdgeCartesianDiagonal(index - dims.x + 1, Cartesian8::SOUTH_EAST, ty > 0 && tx < dims.x - 1, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index - dims.x + 1, Cartesian8::SOUTH_EAST, ty > 0 && tx < dims.x - 1, dims, tiles, ownedTiles, groundZPosition, tileFineNavData);
                 }
                 // North West
                 if (canGoNorthWest && tile.canNavInDirection(Cartesian8::NORTH_WEST)) {
-                    trySetFineNavEdgeCartesianDiagonal(index + dims.x - 1, Cartesian8::NORTH_WEST, ty < dims.y - 1 && tx > 0, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index + dims.x - 1, Cartesian8::NORTH_WEST, ty < dims.y - 1 && tx > 0, dims, tiles, ownedTiles, groundZPosition, tileFineNavData);
                 }
                 // North East
                 if (canGoNorthEast && tile.canNavInDirection(Cartesian8::NORTH_EAST)) {
-                    trySetFineNavEdgeCartesianDiagonal(index + dims.x + 1, Cartesian8::NORTH_EAST, ty < dims.y - 1 && tx < dims.x - 1, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index + dims.x + 1, Cartesian8::NORTH_EAST, ty < dims.y - 1 && tx < dims.x - 1, dims, tiles, ownedTiles, groundZPosition, tileFineNavData);
                 }
 
                 // ================= Disjoint Set =================
@@ -531,7 +532,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
         for (int ty = 0; ty < dims.y; ++ty) {
             for (int tx = 0; tx < dims.x; ++tx) {
                 // Determine if we own this tile
-                const TileIndex index = tileContainer.getTileIndexFromXYZOffset(tx, ty, tz);
+                const TileIndex index = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset(tx, ty, tz);
                 const TileFineNavData& fineData = fineNavData[index];
 
                 // Non pathable tiles are not navable, but may represent resources
@@ -647,10 +648,10 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 }
 
                 // TODO: Should fine nav data include resource info?
-                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - 1, index - dims.x, dims, tiles, tileWalls, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::SOUTH, ty == 0, tx > 0);
-                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - dims.x, index - 1, dims, tiles, tileWalls, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::WEST, tx == 0, ty > 0);
-                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - dims.x, index + 1, dims, tiles, tileWalls, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::EAST, tx == dims.x - 1, ty > 0);
-                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - 1, index + dims.x, dims, tiles, tileWalls, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::NORTH, ty == dims.y - 1, tx > 0);
+                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - 1, index - dims.x, dims, tiles, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::SOUTH, ty == 0, tx > 0);
+                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - dims.x, index - 1, dims, tiles, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::WEST, tx == 0, ty > 0);
+                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - dims.x, index + 1, dims, tiles, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::EAST, tx == dims.x - 1, ty > 0);
+                edgeCount += (int)tryBuildCoarseEdge(navTileData, fineData, index, index - 1, index + dims.x, dims, tiles, ownedTiles, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::NORTH, ty == dims.y - 1, tx > 0);
             }
         }
     }
@@ -700,8 +701,8 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     if (externalEdges) {
         for (auto& edge : *externalEdges) {
             // Get world position
-            i32v2 worldPos = TileContainer::getTileXYOffset(edge.first, dims);
-            worldPos += tileContainer.getWorldPos2D();
+            i32v2 worldPos = TileSpatialGrid::getTileXYOffset(edge.first, dims);
+            worldPos += tileContainer.getTileSpatialGrid().getWorldPos2D();
             // Add cartesian offset since its an opposite tile
             worldPos += CARTESIAN_NORMALS_2D[e_cast(edge.second)];
             assert(worldPos.x >= 0 && worldPos.y >= 0);
@@ -725,23 +726,24 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     // Store nav data
     const auto& navGraphIt = mNavGraphs.find(containerId);
     bool isNewContainer = (navGraphIt == mNavGraphs.end());
+    const TileSpatialGrid& spatialGrid = taskData.container->getTileSpatialGrid();
     if (isNewContainer) {
-        mNavGraphs.insert(std::make_pair(containerId, ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), taskData.container->getWorldPos3D(), taskData.container->getDims(), taskData.container->getFloorHeight(), taskData.container->getId() }));
+        mNavGraphs.insert(std::make_pair(containerId, ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), spatialGrid.getWorldPos3D(), spatialGrid.getDims(), spatialGrid.getFloorHeight(), taskData.container->getId() }));
     }
     else {
-        navGraphIt->second = ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), taskData.container->getWorldPos3D(), taskData.container->getDims(), taskData.container->getFloorHeight(), taskData.container->getId() };
+        navGraphIt->second = ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), spatialGrid.getWorldPos3D(), spatialGrid.getDims(), spatialGrid.getFloorHeight(), taskData.container->getId() };
     }
 
     // Store in spatial lookup
     if (isNewContainer) {
         if (taskData.container->isTerrain()) {
-            i32v3 worldPos = taskData.container->getWorldPos3D();
+            i32v3 worldPos = spatialGrid.getWorldPos3D();
             ChunkID chunkID = ChunkID::fromWorldI32v2(i32v2(worldPos.x, worldPos.y));
             mTerrainTileContainers[chunkID.id] = taskData.container->getId();
         }
         else {
-            const i32v2& worldPos2D = taskData.container->getWorldPos2D();
-            const i32v2 dims2D = taskData.container->getDims2D();
+            const i32v2& worldPos2D = spatialGrid.getWorldPos2D();
+            const i32v2 dims2D = spatialGrid.getDims2D();
             NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + dims2D.x, worldPos2D.y + dims2D.y));
             mSpatialLookup.insert(ContainerNavRegion{ newBox, taskData.container->getId() });
         }
@@ -794,7 +796,7 @@ void NavWorld::initEventHandlers() {
         BitFlags<ChunkDependencyFlags> dependencyFlags;
         if (!container.isTerrain()) {
             // Manually compute chunk dependencies since we dont have the data here
-            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(container.getWorldPos2D(), container.getDims2D()); // TODO: boost::container::flat_set?
+            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D()); // TODO: boost::container::flat_set?
             int i = 0;
             for (LiteChunkID id : chunkDependencies) {
                 assert(id < WorldData::WORLD_SIZE_CHUNKS);
@@ -807,11 +809,11 @@ void NavWorld::initEventHandlers() {
                 ++i;
             }
         }
-        mContainersToDestroy.gameThreadDirtyObject(TileContainerToDestroy{ container.getWorldPos3D(), container.getDims2D(), container.getId(), container.isTerrain(), dependencyFlags });
+        mContainersToDestroy.gameThreadDirtyObject(TileContainerToDestroy{ container.getTileSpatialGrid().getWorldPos3D(), container.getTileSpatialGrid().getDims2D(), container.getId(), container.isTerrain(), dependencyFlags });
     });
 }
 
-bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges) {
+bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges) {
 
     const Cartesian cartesian = CARTESIAN8_TO_CARTESIAN[e_cast(cartesian8)];
     assert(cartesian != Cartesian::NONE);
@@ -839,7 +841,7 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacen
                 }
             }
         }
-        if (canEnterTileInDirection(*adjacent, tileWallsContainer[adjacentIndex], cartesian) &&
+        if (canEnterTileInDirection(*adjacent, cartesian) &&
             abs(((adjacentIndex / floorStride) * floorHeight + adjacent->getGroundZOffset()) - groundZPosition) <= FINE_NAV_HEIGHT_THRESHOLD) {
             tileFineNavData.setCanAccessDirection(cartesian8, true);
             const int adjZ = adjacentIndex / floorStride;
@@ -864,12 +866,12 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacen
     return false;
 }
 
-bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
+bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
     UNUSED(containerDims);
     if (isInner && TileContainer::isTileOwned(ownedTiles, adjacentIndex)) {
         // Interior edge
         const Tile& adjacent = tiles[adjacentIndex];
-        if (canEnterTileInDirectionDiagonal(adjacent, tileWallsContainer[adjacentIndex], cartesian8) &&
+        if (canEnterTileInDirectionDiagonal(adjacent, cartesian8) &&
             abs(adjacent.getGroundZOffset() - groundZPosition) <= FINE_NAV_HEIGHT_THRESHOLD) {
             fineNavData.setCanAccessDirection(cartesian8, true);
             // TODO: Handle stairs
@@ -902,7 +904,7 @@ void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
     }
 }
 
-bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
+bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
 {
     // We have an edge only if there is no wall
      // South edge
@@ -952,8 +954,7 @@ bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const Til
             if (outerNavNodeIndex == navNodeIndex) {
                 return false;
             }
-            const TileWalls& outerWalls = tileWallsContainer[outerIndex];
-            if (canEnterTileInDirection(outerTile, outerWalls, dir)) {
+            if (canEnterTileInDirection(outerTile, dir)) {
                 adjacentNodeIndex = outerNavNodeIndex;
                 // If we can extend prev wall
                 if (canExtendPrevEdge) {
@@ -1022,15 +1023,15 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
     // Draw edges and connections
     for (ui32 nodeIndex = 0; nodeIndex < graph.numNodes; ++nodeIndex) {
         const CoarseNavNode& node = graph.nodes[nodeIndex];
-        const i32v3& containerPos = tileContainer.getWorldPos3D();
+        const i32v3& containerPos = tileContainer.getTileSpatialGrid().getWorldPos3D();
         const ui32 edgeCount = node.edgeCount;
         for (ui32 i = 0; i < edgeCount; ++i) {
             const CoarseNavNodeEdge& edge = graph.edges[node.edgesStart + i];
             const Tile& tile = tileContainer.getTileAt(edge.startPos); // TODO: RACE CONDITION
-            i32v3 startOffset = tileContainer.getTileXYZOffsetWithZScale(edge.startPos);
+            i32v3 startOffset = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(edge.startPos);
             // TODO: Remove
             if (heightData) {
-                HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
+                HeightmapPatchID patchId(f32v2(tileContainer.getTileSpatialGrid().getWorldPos2D()));
                 startOffset.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset));
             }
             i32v3 worldPos = containerPos + startOffset;
@@ -1043,7 +1044,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
             f32v3 pointA = f32v3(worldPos) + f32v3(0.00f, 0.00f, 0.00f);
             f32v3 pointB = f32v3(worldPos) + f32v3(offset.x, offset.y, 0.0f);
             if (heightData) {
-                HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
+                HeightmapPatchID patchId(f32v2(tileContainer.getTileSpatialGrid().getWorldPos2D()));
                 pointA.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointA));
                 pointB.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointB));
             }
@@ -1055,7 +1056,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
             }
             f32v3 midpoint(worldPos.x + offset.x * 0.5f, worldPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
             if (heightData) {
-                HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
+                HeightmapPatchID patchId(f32v2(tileContainer.getTileSpatialGrid().getWorldPos2D()));
                 midpoint.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint));
             }
             f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
@@ -1064,9 +1065,9 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
 
             for (ui32 j = i + 1; j < edgeCount; ++j) {
                 const CoarseNavNodeEdge& edge2 = graph.edges[node.edgesStart + j];
-                i32v3 startOffset2 = tileContainer.getTileXYZOffsetWithZScale(edge2.startPos);
+                i32v3 startOffset2 = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(edge2.startPos);
                 if (heightData) {
-                    HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
+                    HeightmapPatchID patchId(f32v2(tileContainer.getTileSpatialGrid().getWorldPos2D()));
                     startOffset2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset2));
                 }
                 i32v3 worldPos2 = containerPos + startOffset2;
@@ -1077,7 +1078,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                 // TODO: Not thread safe!
                 midpoint2.z += tileContainer.getTileAt(edge2.startPos).getGroundZOffset();
                 if (heightData) {
-                    HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
+                    HeightmapPatchID patchId(f32v2(tileContainer.getTileSpatialGrid().getWorldPos2D()));
                     midpoint2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint2));
                 }
                 DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
@@ -1131,7 +1132,7 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
 
     for (ui32 tileIndex = 0; tileIndex < fineNavData.size(); ++tileIndex) {
         if (tileContainer.isTileOwned(tileIndex)) {
-            f32v3 worldPos = f32v3(tileContainer.getTileXYZOffsetWithZScale(tileIndex) + tileContainer.getWorldPos3D());
+            f32v3 worldPos = f32v3(tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(tileIndex) + tileContainer.getTileSpatialGrid().getWorldPos3D());
             worldPos.z += tileContainer.getTileAt(tileIndex).getGroundZOffset();
             const f32v3 centerPos = worldPos + f32v3(0.5f, 0.5f, 0.0f);
             const TileFineNavData& navData = fineNavData[tileIndex];
@@ -1208,14 +1209,14 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
     }
     const CoarseNavGraph& graph = it->second.coarseNavGraph;
     const CoarseNavNode& node = graph.nodes[coarseIndex];
-    const i32v3& containerPos = tileHandle.container->getWorldPos3D();
+    const i32v3& containerPos = tileHandle.container->getTileSpatialGrid().getWorldPos3D();
     const ui32 edgeCount = node.edgeCount;
     for (ui32 i = 0; i < edgeCount; ++i) {
         const CoarseNavNodeEdge& edge = graph.edges[node.edgesStart + i];
-        i32v3 startOffset = tileHandle.container->getTileXYZOffsetWithZScale(edge.startPos);
+        i32v3 startOffset = tileHandle.container->getTileSpatialGrid().getTileXYZOffsetWithZScale(edge.startPos);
         // TODO: Remove
         if (heightData) {
-            HeightmapPatchID patchId(f32v2(tileHandle.container->getWorldPos2D()));
+            HeightmapPatchID patchId(f32v2(tileHandle.container->getTileSpatialGrid().getWorldPos2D()));
             startOffset.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset));
         }
         f32v3 worldPos = containerPos + startOffset;
@@ -1227,7 +1228,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
         f32v3 pointA = f32v3(worldPos) + f32v3(0.00f, 0.00f, 0.00f);
         f32v3 pointB = f32v3(worldPos) + f32v3(offset.x, offset.y, 0.0f);
         if (heightData) {
-            HeightmapPatchID patchId(f32v2(tileHandle.container->getWorldPos2D()));
+            HeightmapPatchID patchId(f32v2(tileHandle.container->getTileSpatialGrid().getWorldPos2D()));
             pointA.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointA));
             pointB.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointB));
         }
@@ -1239,7 +1240,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
         }
         f32v3 midpoint(worldPos.x + offset.x * 0.5f, worldPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
         if (heightData) {
-            HeightmapPatchID patchId(f32v2(tileHandle.container->getWorldPos2D()));
+            HeightmapPatchID patchId(f32v2(tileHandle.container->getTileSpatialGrid().getWorldPos2D()));
             midpoint.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint));
         }
         f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
@@ -1248,9 +1249,9 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
 
         for (ui32 j = i + 1; j < edgeCount; ++j) {
             const CoarseNavNodeEdge& edge2 = graph.edges[node.edgesStart + j];
-            i32v3 startOffset2 = tileHandle.container->getTileXYZOffsetWithZScale(edge2.startPos);
+            i32v3 startOffset2 = tileHandle.container->getTileSpatialGrid().getTileXYZOffsetWithZScale(edge2.startPos);
             if (heightData) {
-                HeightmapPatchID patchId(f32v2(tileHandle.container->getWorldPos2D()));
+                HeightmapPatchID patchId(f32v2(tileHandle.container->getTileSpatialGrid().getWorldPos2D()));
                 startOffset2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset2));
             }
             i32v3 worldPos2 = containerPos + startOffset2;
@@ -1261,7 +1262,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
             // TODO: Not thread safe!
             midpoint2.z += tileHandle.container->getTileAt(edge2.startPos).getGroundZOffset();
             if (heightData) {
-                HeightmapPatchID patchId(f32v2(tileHandle.container->getWorldPos2D()));
+                HeightmapPatchID patchId(f32v2(tileHandle.container->getTileSpatialGrid().getWorldPos2D()));
                 midpoint2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint2));
             }
             DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
@@ -1349,7 +1350,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
         offset.y = glm::clamp(offset.y, 0, navData.containerDims.y);
         offset.z = glm::clamp(offset.z, 0, navData.containerDims.z * navData.floorHeight);
         offset.z /= navData.floorHeight;
-        TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(offset, navData.containerDims);
+        TileIndex tileIndex = TileSpatialGrid::getTileIndexFromXYZOffset(offset, navData.containerDims);
         if (navData.fineNavGraph[tileIndex].isOwned) {
             *outNavData = &navData;
             return LiteTileHandle(containerRegion.id, tileIndex);
@@ -1366,7 +1367,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
         assert(it != mNavGraphs.end());
         const ContainerNavData& navData = it->second;
         const i32v2 offset = i32v2(worldPos.x - navData.worldPos.x, worldPos.y - navData.worldPos.y);
-        TileIndex tileIndex = TileContainer::getBaseTileIndexFromXYOffset(offset, navData.containerDims);
+        TileIndex tileIndex = TileSpatialGrid::getBaseTileIndexFromXYOffset(offset, navData.containerDims);
         assert(tileIndex < navData.containerDims.x* navData.containerDims.y* navData.containerDims.z);
         *outNavData = &navData;
         return LiteTileHandle(containerId, tileIndex);

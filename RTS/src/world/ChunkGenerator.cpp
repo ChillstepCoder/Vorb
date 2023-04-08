@@ -142,7 +142,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = sHeightmapGrid->computeCenterHeightAtTile(heightData, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
+        centerHeights[i] = sHeightmapGrid->computeCenterHeightAtTile(heightData, chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
     }
 
     // Large objects

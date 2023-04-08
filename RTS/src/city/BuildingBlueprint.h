@@ -81,7 +81,7 @@ typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 class BuildingBlueprint {
 public:
     BuildingBlueprint() = default;
-    BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
 
@@ -90,16 +90,10 @@ public:
         return TileHandle(building->getTileContainer(), tileIndex);
     }
 
-    f32v3 getTileWorldPos(TileIndex i) const {
-        const i32 layerSize = aabb.dims.x * aabb.dims.y;
-        const f32v3 worldRoot(aabb.pos.x, aabb.pos.y, zPos);
-        return f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
-    }
+    
 
-    i32v3 getTileOffset(TileIndex i) const {
-        const i32 layerSize = aabb.dims.x * aabb.dims.y;
-        return i32v3(i % aabb.dims.x, (i % layerSize) / aabb.dims.x, i / layerSize);
-    }
+    // Indexing
+    TileSpatialGrid mTileSpatialGrid;
 
     // For construction
     PlaceTileBlueprintItemsHandlePtr reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount);
@@ -120,7 +114,6 @@ public:
     const BuildingDef* desc = nullptr;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::WEST;
-    i32AABB2 aabb;
     ui32 floorCount = 1u;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
@@ -128,7 +121,7 @@ public:
     std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTileType> tiles;
-    std::vector<TileWalls> walls;
+    TileWallContainer walls;
     std::vector<std::vector<StairPiece>> stairs;
     std::map<TileIndex, RoomNodeID> exteriorDoors;
     std::vector<ExteriorWallRun> exteriorWallRuns;
@@ -142,7 +135,5 @@ public:
     bool isGenerating = true;
     bool isBuilding = false;
     BitFlags<BuildingBlueprintFlags> flags;
-    f32 zPos = 0.0f;
-    ui32 floorHeight = 3;
     ui32 refCount = 0;
 };

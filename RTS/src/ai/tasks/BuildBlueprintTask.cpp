@@ -89,7 +89,7 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
     // Find items in our inventory to build with
     for (ItemStack& s : workingStorage) {
         if (mPlaceTilesTarget = mBlueprint.reserveTileToPlaceItems(s.id, s.quantity)) {
-            f32v3 pos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileIndex);
+            f32v3 pos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
             //LOG_DEBUG("FOUND TILE {} AT {}, {}, {}", mPlaceTilesTarget->mTileIndex, pos.x, pos.y, pos.z);
             break;
         }
@@ -103,7 +103,7 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
 
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->getTileWorldPos(mPlaceTilesTarget->mTileIndex);
+    const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
     // TODO: Fallback to coarse path?
     cmp.requestFinePath(physCmp.getPosition(), targetWorldPos, [this](bool success) {
         if (success) {
@@ -134,7 +134,8 @@ bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entit
     assert(mPlaceTilesTarget->isValid());
 
     // Only first floor
-    if (mPlaceTilesTarget->mTileIndex >= mBlueprint.aabb.dims.x * mBlueprint.aabb.dims.y) {
+    const i32v2& dims2D = mBlueprint.mTileSpatialGrid.getDims2D();
+    if (mPlaceTilesTarget->mTileIndex >= dims2D.x * dims2D.y) {
         return false;
     }
 
@@ -142,7 +143,7 @@ bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entit
         mBlueprint.tilesNeedingTerrainFlatten.clearBit(mPlaceTilesTarget->mTileIndex);
 
         IHeightmapGrid& grid = sWorld->getHeightmapGrid();
-        f32v3 tileWorldPos = mBlueprint.getTileWorldPos(mPlaceTilesTarget->mTileIndex);
+        f32v3 tileWorldPos = mBlueprint.mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
         grid.setHeightAt(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
         return true;
     }
@@ -159,7 +160,7 @@ bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entit
     }
 
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    const f32v3 targetWorldPos = mBuildTilesTarget->mBlueprint->getTileWorldPos(mBuildTilesTarget->mTileIndex);
+    const f32v3 targetWorldPos = mBuildTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mBuildTilesTarget->mTileIndex);
     cmp.requestCoarsePath(position, targetWorldPos, [this](bool success) {
         if (success) {
             mState = TaskState::BUILD_TILE;

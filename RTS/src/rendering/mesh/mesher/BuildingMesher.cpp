@@ -327,7 +327,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
     if (visLog) {
-        visLog->setRootPos(tileContainer.getWorldPos3D());
+        visLog->setRootPos(tileContainer.getTileSpatialGrid().getWorldPos3D());
         visLog->nextStep("AABB");
         visLog->addWireQuad(f32v3(0.0f), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
@@ -341,12 +341,12 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     sRoofFacePoints.reserve(100);
 
     // ========================== Straight Skeleton ===============================
-    const ui32 floorCount = tileContainer.getDims().z;
+    const ui32 floorCount = tileContainer.getTileSpatialGrid().getDims().z;
     const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
     BitArray roofedTiles;
     roofedTiles.resize(building.mAABB.dims.x * building.mAABB.dims.y);
     for (ui32 floor = 0; floor < floorCount; ++floor) {
-        const f32 zPos = (floor + 1.0f) * tileContainer.getFloorHeight();
+        const f32 zPos = (floor + 1.0f) * tileContainer.getTileSpatialGrid().getFloorHeight();
         // TODO: Replace bitarray with bool array
         roofedTiles.zeroAllBits();
         for (i32 y = 0; y < building.mAABB.dims.y; ++y) {
@@ -484,7 +484,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
             else if (nextEdge == Cartesian::INVALID) {
                 // Visual log
                 if (visLog) {
-                    const ui32v2& xy = building.getTileContainer()->getTileXYOffset(startIndex);
+                    const ui32v2& xy = building.getTileContainer()->getTileSpatialGrid().getTileXYOffset(startIndex);
                     visLog->addFilledQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), COLOR_RED);
                 }
                 return skeletons;
@@ -880,17 +880,17 @@ void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuild
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
     TileIndex index = 0;
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    for (ui32 z = 0; z < tileContainer.getDims().z; ++z) {
+    for (ui32 z = 0; z < tileContainer.getTileSpatialGrid().getDims().z; ++z) {
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
             for (ui32 x = 0; x < aabb.dims.x; ++x, ++index) {
                 if (ownedTiles.getBit(index)) {
                     // If were at the top or the tile above us is outside the interior, or its interior and a non air tile above us, mesh a ceiling
                     const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
-                    if (z == tileContainer.getDims().z - 1 || // If were at the top
+                    if (z == tileContainer.getTileSpatialGrid().getDims().z - 1 || // If were at the top
                         !ownedTiles.getBit(aboveIndex) // Or tile above us is an exterior tile
                         /*|| !tileContainer.getTileAt(aboveIndex).isEmpty()*/) { // Or its an interior tile and not empty
                         // Mesh ceiling
-                        f32v3 startPos(x, y, tileContainer.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
+                        f32v3 startPos(x, y, tileContainer.getTileSpatialGrid().getFloorHeight() * (z + 1) - CEILING_THICKNESS);
                         meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodMaterial, uvRect, COLOR_WHITE);
                         // TODO: Cull edges appropriately
                         meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::LEFT, rawWoodMaterial, uvRect, COLOR_WHITE);
@@ -911,7 +911,7 @@ void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& mesh
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
     TileIndex index = 0;
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    for (i32 z = 0; z < tileContainer.getDims().z; ++z) {
+    for (i32 z = 0; z < tileContainer.getTileSpatialGrid().getDims().z; ++z) {
         for (i32 y = 0; y < aabb.dims.y; ++y) {
             for (i32 x = 0; x < aabb.dims.x; ++x, ++index) {
                 // Check if we should start supports here, i.e. below us is outside the building
@@ -925,7 +925,7 @@ void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& mesh
                     } while (++x < aabb.dims.x && ownedTiles.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
-                    f32v3 startPos(startX, y + 0.5f, tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
+                    f32v3 startPos(startX, y + 0.5f, tileContainer.getTileSpatialGrid().getFloorHeight() * z - boardThickness - 0.0001f);
                     f32v3 endPos = startPos + f32v3(x - startX, 0.0f, 0.0f);
                     meshBuilder.addBoardBetweenPoints(startPos, endPos, f32v2(boardThickness), rawWoodMaterial, f32v2(1.0f));
                 }

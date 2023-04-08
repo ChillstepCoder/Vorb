@@ -17,11 +17,11 @@ class BuildingBlueprintGenerator
 {
 public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
-    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
+    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     VORB_NON_COPYABLE(BuildingBlueprintGenerator);
 
-    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
+    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     static void generatePossibleWindowPermutations();
 private:
@@ -33,6 +33,7 @@ private:
     static void addPrivateRoomsToGraph(BuildingBlueprint& bp);
     static void initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo);
     static void placeRooms(BuildingBlueprint& bp, VisualLog* visLog);
+    static void allocateTileData(BuildingBlueprint& bp);
     static void expandRooms(BuildingBlueprint& bp, VisualLog* visLog);
     static void roomCleanup(BuildingBlueprint& bp, VisualLog* visLog);
     static void computeRoomAABBs(BuildingBlueprint& bp, VisualLog* visLog);

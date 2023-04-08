@@ -125,7 +125,7 @@ void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chun
             spanY = std::min(distFromTopEdge, aabb.depth); // TODO: Prob clever way to move this up a loop
             for (ui32 dy = 0; dy < spanY; ++dy) {
                 for (ui32 dx = 0; dx < spanX; ++dx) {
-                    func(chunk, chunk.getTileContainer()->getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
+                    func(chunk, chunk.getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
                 }
             }
             worldPos.x += spanX;
@@ -202,7 +202,7 @@ TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
+        TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
         assert(worldPos2D.x >= 0.0f && worldPos2D.y >= 0.0f);
         std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(worldPos2D);
         for (auto&& structure : structures) {
@@ -227,7 +227,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
+        return chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
     }
     return TileHandle();
 }
@@ -238,7 +238,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
+        return chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
     }
     return TileHandle();
 }

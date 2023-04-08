@@ -518,7 +518,7 @@ void WorldEditorPanel::updateGrassEdit() {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                             ChunkID id(worldPos);
                             const TileContainer& tileContainer = *sWorld->getChunk(id).getTileContainer();
-                            TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
+                            TileIndex tileIndex = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
                             const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                             const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
                             if (glm::length2(offsetToTile) < brushSizeSq) {
@@ -614,9 +614,10 @@ void WorldEditorPanel::updateBuildingEdit() {
 
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
             BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
-            const f32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(task->aabb));
+            const i32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(task->aabb));
             BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
-            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, task->aabb.pos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
+            const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
+            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
             if (!bp) {
                 assert(false);
                 return;

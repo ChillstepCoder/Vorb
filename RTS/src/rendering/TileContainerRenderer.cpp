@@ -103,9 +103,10 @@ void TileContainerRenderer::updateMeshFromBuilders(const TileContainer* containe
         renderer.removeMeshesForData(meshData);
 
         // Upload mesh buffers
-        taskData->builders.staticBuilder.finishMesh(meshData.mStaticMesh, tileContainer.getWorldPos3D());
-        taskData->builders.dynamicBuilder.finishMesh(meshData.mDynamicMesh, tileContainer.getWorldPos3D());
-        taskData->builders.billboardBuilder.finishMesh(meshData.mBillboardMesh, tileContainer.getWorldPos3D(), 0 /*bufferFlags*/);
+        const i32v3& worldPos3D = tileContainer.getTileSpatialGrid().getWorldPos3D();
+        taskData->builders.staticBuilder.finishMesh(meshData.mStaticMesh, worldPos3D);
+        taskData->builders.dynamicBuilder.finishMesh(meshData.mDynamicMesh, worldPos3D);
+        taskData->builders.billboardBuilder.finishMesh(meshData.mBillboardMesh, worldPos3D, 0 /*bufferFlags*/);
 
         // Static
         if (meshData.mStaticMesh) {

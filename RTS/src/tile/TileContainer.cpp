@@ -80,10 +80,7 @@ TileContainer::~TileContainer() {
 }
 
 void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, VarTileContainerOwner owner) {
-   
-    mRootPos = rootPos;
-    mDims = dims;
-    mFloorHeight = floorHeight;
+    mTileSpatialGrid.init(rootPos, dims, floorHeight);
     mId = id;
     mOwner = owner;
     if (std::holds_alternative<Chunk*>(owner)) {
@@ -102,17 +99,15 @@ void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 f
 }
 
 void TileContainer::allocateData() {
-    size_t numTiles = mDims.x * mDims.y * mDims.z;
+    size_t numTiles = mTileSpatialGrid.getNumTiles();
     mTiles.resize(numTiles);
-    mWalls.resize(numTiles);
-    mTileWallsContainer.init(numTiles);
+    mTileWallsContainer.init(&mTileSpatialGrid);
     mHarvestableRegistry.init(*this);
 }
 
 void TileContainer::freeData() {
     assert(IS_GAME_THREAD());
     std::vector<Tile>().swap(mTiles);
-    std::vector<TileWalls>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
     mTileWallsContainer.destroy();
     mOwnedTiles.freeData();
@@ -395,12 +390,13 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer lay
 void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     assert(isReady());
     assert(IS_GAME_THREAD());
-    TileWalls& tileWalls = mWalls[index];
+    TileWalls prevTileWalls;
+    mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
     Tile& tile = mTiles[index];
 
     // Check for removed or added door (Dynamic object)
     // Old door
-    TileID oldId = tileWalls.walls[e_cast(dir)].wallID;
+    TileID oldId = prevTileWalls.walls[e_cast(dir)].wallID;
     if (oldId != TILE_ID_NONE && TileRepository::getTileData(oldId).shape == TileShape::DOOR) {
         removeDoor(dir, index);
     }
@@ -412,31 +408,32 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
 
     {
         std::lock_guard lock(mSharedMutex);
-        tileWalls.walls[e_cast(dir)] = wall;
+        mTileWallsContainer.setWallAtTile(index, wall, dir);
     }
     onTileChanged(index);
 }
 
-void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
+void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
     assert(isReady());
     assert(IS_GAME_THREAD());
-    TileWalls& tileWalls = mWalls[index];
+    TileWalls prevTileWalls;
+    mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
     // Check for any removed or added doors (Dynamic objects)
     for (int i = 0; i < 4; ++i) {
         // Old door
-        TileID oldId = tileWalls.walls[i].wallID;
+        TileID oldId = prevTileWalls.walls[i].wallID;
         if (oldId != TILE_ID_NONE && TileRepository::getTileData(oldId).shape == TileShape::DOOR) {
             removeDoor(Cartesian(i), index);
         }
         // New door
-        TileID newId = walls.walls[i].wallID;
+        TileID newId = walls[i].wallID;
         if (newId != TILE_ID_NONE && TileRepository::getTileData(newId).shape == TileShape::DOOR) {
             addDoor(Cartesian(i), index);
         }
     }
     {
         std::lock_guard lock(mSharedMutex);
-        tileWalls = walls;
+        mTileWallsContainer.setWallsAtTile(index, walls);
     }
     onTileChanged(index);
 }
@@ -445,13 +442,21 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
     if (!isReady()) {
         return TileHandle();
     }
-    i32v3 offset = worldPos - mRootPos;
-    if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= mDims.x || offset.y >= mDims.y || offset.z >= mDims.z * (i32)mFloorHeight) {
+    const i32v3& rootPos = mTileSpatialGrid.getWorldPos3D();
+    const i32v3& dims = mTileSpatialGrid.getDims();
+    i32v3 offset = worldPos - rootPos;
+    if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= dims.x || offset.y >= dims.y || offset.z >= dims.z * (i32)mTileSpatialGrid.getFloorHeight()) {
         return TileHandle();
     }
     // Scale to floor height
-    offset.z /= (i32)mFloorHeight;
-    return TileHandle(this, getTileIndexFromXYZOffset(ui32v3(offset)));
+    offset.z /= (i32)mTileSpatialGrid.getFloorHeight();
+    return TileHandle(this, mTileSpatialGrid.getTileIndexFromXYZOffset(ui32v3(offset)));
+}
+
+const Tile& TileContainer::getTileAt(ui32 offsetX, ui32 offsetY, ui32 offsetZ) const {
+    const TileIndex i = mTileSpatialGrid.getTileIndexFromXYZOffset(offsetX, offsetY, offsetZ);
+    assert(i < mTiles.size());
+    return mTiles[i];
 }
 
 Chunk* TileContainer::getOwnerChunk() const {
@@ -470,16 +475,21 @@ Building* TileContainer::getOwnerBuilding() const {
     return nullptr;
 }
 
+void TileContainer::allocateOwnedTiles() {
+    const i32v3& dims = mTileSpatialGrid.getDims();
+    mOwnedTiles.resizeAndZero(dims.x * dims.y * dims.z); assert(!mOwnedTiles.isEmpty());
+}
+
 void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const {
     assert(!IS_GAME_THREAD());
     PROFILE_SCOPE("copyDataWorkerThread::MESH");
     // Allocate outside critical section
     dataCopy.mTiles.resize(mTiles.size());
-    dataCopy.mWalls.resize(mWalls.size());
+    dataCopy.mWalls.resizeForCopy(mTiles.size());
     {
         std::shared_lock lock(mSharedMutex);
         memcpy(dataCopy.mTiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
-        memcpy(dataCopy.mWalls.data(), mWalls.data(), mWalls.size() * sizeof(TileWalls));
+        dataCopy.mWalls.copyFrom(mTileWallsContainer);
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 
@@ -489,12 +499,12 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
     // Allocate outside critical section
     dataCopy.mHarvestables.resize(mHarvestableRegistry.getRegistryCount());
     dataCopy.mTiles.resize(mTiles.size());
-    dataCopy.mWalls.resize(mWalls.size());
+    dataCopy.mWalls.resizeForCopy(mTiles.size());
     dataCopy.mOwnedTiles.resize(mOwnedTiles.getNumBits());
     {
         std::shared_lock lock(mSharedMutex);
         memcpy(dataCopy.mTiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
-        memcpy(dataCopy.mWalls.data(), mWalls.data(), mWalls.size() * sizeof(TileWalls));
+        dataCopy.mWalls.copyFrom(mTileWallsContainer);
         memcpy(dataCopy.mOwnedTiles.data(), mOwnedTiles.data(), mOwnedTiles.getNumBytes() * sizeof(ui8));
         for (size_t i = 0; i < dataCopy.mHarvestables.size(); ++i) {
             // Only copying positions cause its all we care about when navving
@@ -519,16 +529,17 @@ bool TileContainer::tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType)
     flagsEvent.edit.editCount = EDIT_COUNT;
     flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
     flagsEvent.edit.changeFlagsArray = eventData;
+    const i32v3& dims = mTileSpatialGrid.getDims();
     const TileIndex tileIndices[EDIT_COUNT] = {
-        i - mDims.x - 1 /*SW*/,
-        i - mDims.x     /*S*/,
-        i - mDims.x + 1 /*SE*/,
+        i - dims.x - 1 /*SW*/,
+        i - dims.x     /*S*/,
+        i - dims.x + 1 /*SE*/,
         i - 1           /*W*/,
         i               /*C*/,
         i + 1           /*E*/,
-        i + mDims.x - 1 /*NW*/,
-        i + mDims.x     /*N*/,
-        i + mDims.x + 1 /*NE*/,
+        i + dims.x - 1 /*NW*/,
+        i + dims.x     /*N*/,
+        i + dims.x + 1 /*NE*/,
     };
     for (int n = 0; n < EDIT_COUNT; ++n) {
         const TileIndex nindex = tileIndices[n];
@@ -583,16 +594,17 @@ bool TileContainer::tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType n
 
     // Apply blockage
     constexpr int EDIT_COUNT = 10;
+    const i32v3& dims = mTileSpatialGrid.getDims();
     const TileIndex tileIndices[EDIT_COUNT] = {
-        i - mDims.x - 1 /*SW*/,
-        i - mDims.x     /*S*/,
-        i - mDims.x + 1 /*SE*/,
+        i - dims.x - 1 /*SW*/,
+        i - dims.x     /*S*/,
+        i - dims.x + 1 /*SE*/,
         i - 1           /*W*/,
         i               /*C*/,
         i + 1           /*E*/,
-        i + mDims.x - 1 /*NW*/,
-        i + mDims.x     /*N*/,
-        i + mDims.x + 1 /*NE*/,
+        i + dims.x - 1 /*NW*/,
+        i + dims.x     /*N*/,
+        i + dims.x + 1 /*NE*/,
     };
     if (navBlockerType == NavBlockerType::LARGE) {
         mTiles[tileIndices[0]].tileFlags.setBit(TileFlags(e_cast(TileFlags::HAS_DIAGONAL_BLOCKER))); // SW
@@ -632,16 +644,17 @@ void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNa
     flagsEvent.edit.editCount = EDIT_COUNT;
     flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
     flagsEvent.edit.changeFlagsArray = eventData;
+    const i32v3& dims = mTileSpatialGrid.getDims();
     const TileIndex tileIndices[EDIT_COUNT] = {
-        i - mDims.x - 1 /*SW*/,
-        i - mDims.x     /*S*/,
-        i - mDims.x + 1 /*SE*/,
+        i - dims.x - 1 /*SW*/,
+        i - dims.x     /*S*/,
+        i - dims.x + 1 /*SE*/,
         i - 1           /*W*/,
         i               /*C*/,
         i + 1           /*E*/,
-        i + mDims.x - 1 /*NW*/,
-        i + mDims.x     /*N*/,
-        i + mDims.x + 1 /*NE*/,
+        i + dims.x - 1 /*NW*/,
+        i + dims.x     /*N*/,
+        i + dims.x + 1 /*NE*/,
     };
     for (int n = 0; n < EDIT_COUNT; ++n) {
         const TileIndex nindex = tileIndices[n];
@@ -695,11 +708,12 @@ void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNa
 
 // Checks 4 diagonal corners for any blockers and adds TILE_DIAGONAL_BLOCKERS_MASK if needed
 void TileContainer::updateTileDiagonalBlocked(TileIndex index) {
-    const i32v3 offset = getTileXYZOffset(index);
+    const i32v3& dims = mTileSpatialGrid.getDims();
+    const i32v3 offset = mTileSpatialGrid.getTileXYZOffset(index);
     if (offset.y > 0) {
         // SW
         if (offset.x > 0) {
-            const TileIndex SW = index - 1 - mDims.x;
+            const TileIndex SW = index - 1 - dims.x;
             if (isTileOwned(SW) && mTiles[SW].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
                 std::lock_guard lock(mSharedMutex);
                 mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
@@ -707,8 +721,8 @@ void TileContainer::updateTileDiagonalBlocked(TileIndex index) {
             }
         }
         // SE
-        if (offset.x < mDims.x - 1) {
-            const TileIndex SE = index + 1 - mDims.x;
+        if (offset.x < dims.x - 1) {
+            const TileIndex SE = index + 1 - dims.x;
             if (isTileOwned(SE) && mTiles[SE].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
                 std::lock_guard lock(mSharedMutex);
                 mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
@@ -718,10 +732,10 @@ void TileContainer::updateTileDiagonalBlocked(TileIndex index) {
     }
 
 
-    if (offset.y < mDims.y - 1) {
+    if (offset.y < dims.y - 1) {
         // NW
         if (offset.x > 0) {
-            const TileIndex NW = index - 1 + mDims.x;
+            const TileIndex NW = index - 1 + dims.x;
             if (isTileOwned(NW) && mTiles[NW].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
                 std::lock_guard lock(mSharedMutex);
                 mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
@@ -729,8 +743,8 @@ void TileContainer::updateTileDiagonalBlocked(TileIndex index) {
             }
         }
         // NE
-        if (offset.x < mDims.x - 1) {
-            const TileIndex NE = index + 1 + mDims.x;
+        if (offset.x < dims.x - 1) {
+            const TileIndex NE = index + 1 + dims.x;
             if (isTileOwned(NE) && mTiles[NE].hasFlagsMaskAny(TILE_DIAGONAL_BLOCKERS_MASK)) {
                 std::lock_guard lock(mSharedMutex);
                 mTiles[index].setTileFlag(TileFlags::HAS_DIAGONAL_BLOCKER);
@@ -741,32 +755,33 @@ void TileContainer::updateTileDiagonalBlocked(TileIndex index) {
 }
 
 bool TileContainer::canPlaceAdjNavBlockerTile(TileIndex i) {
-    const i32v3 offset = getTileXYZOffset(i);
+    const i32v3& dims = mTileSpatialGrid.getDims();
+    const i32v3 offset = mTileSpatialGrid.getTileXYZOffset(i);
     if (offset.x == 0) {
         return false;
     }
     if (offset.y == 0) {
         return false;
     }
-    if (offset.x == mDims.x - 1) {
+    if (offset.x == dims.x - 1) {
         return false;
     }
-    if (offset.y == mDims.y - 1) {
+    if (offset.y == dims.y - 1) {
         return false;
     }
 
     // Check ownership if needed
     if (mOwnedTiles.getNumBits()) {
         // SW
-        if (!mOwnedTiles.getBit(i - 1 - mDims.x)) {
+        if (!mOwnedTiles.getBit(i - 1 - dims.x)) {
             return false;
         }
         // S
-        if (!mOwnedTiles.getBit(i - mDims.x)) {
+        if (!mOwnedTiles.getBit(i - dims.x)) {
             return false;
         }
         // SE
-        if (!mOwnedTiles.getBit(i + 1 - mDims.x)) {
+        if (!mOwnedTiles.getBit(i + 1 - dims.x)) {
             return false;
         }
         // W
@@ -778,15 +793,15 @@ bool TileContainer::canPlaceAdjNavBlockerTile(TileIndex i) {
             return false;
         }
         // NW
-        if (!mOwnedTiles.getBit(i - 1 + mDims.x)) {
+        if (!mOwnedTiles.getBit(i - 1 + dims.x)) {
             return false;
         }
         // N
-        if (!mOwnedTiles.getBit(i + mDims.x)) {
+        if (!mOwnedTiles.getBit(i + dims.x)) {
             return false;
         }
         // NE
-        if (!mOwnedTiles.getBit(i + 1 + mDims.x)) {
+        if (!mOwnedTiles.getBit(i + 1 + dims.x)) {
             return false;
         }
     }
@@ -806,14 +821,16 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
     // TODO: Only when the layer changes
     if (!isTerrain()) {
         IChunkGrid& chunkGrid = sWorld->getChunkGrid();
-        const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
+        const i32v3& rootPos = mTileSpatialGrid.getWorldPos3D();
+        const i32v3 offset = mTileSpatialGrid.getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
-            const i32v2 worldPos2D(mRootPos.x + offset.x, mRootPos.y + offset.y);
+            const i32v2 worldPos2D(rootPos.x + offset.x, rootPos.y + offset.y);
             Chunk& chunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(worldPos2D));
             if (chunk.isDataReady()) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
+                const TileSpatialGrid& chunkTileIndexManager = chunkTileContainer->getTileSpatialGrid();
                 assert(chunkTileContainer);
-                TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(worldPos2D.x - chunkTileContainer->getWorldPos2D().x, worldPos2D.y - chunkTileContainer->getWorldPos2D().y, 0);
+                TileIndex chunkTileIndex = chunkTileIndexManager.getTileIndexFromXYZOffset(worldPos2D.x - chunkTileIndexManager.getWorldPos2D().x, worldPos2D.y - chunkTileIndexManager.getWorldPos2D().y, 0);
                 if (tile.isEmpty()) {
                     chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
                 }
@@ -834,52 +851,10 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     std::lock_guard lock(mSharedMutex);
     assert(isReady());
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
-    if (!isTerrain()) {
-        IChunkGrid& chunkGrid = sWorld->getChunkGrid();
-        const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
-        if (offset.z == 0) {
-            const i32v2 worldPos2D(mRootPos.x + offset.x, mRootPos.y + offset.y);
-
-            //DebugRenderer::drawFilledQuad(f32v3(worldPos2D.x, worldPos2D.y, 5.0f), f32v2(1.0f), COLOR_RED, 10000000);
-            bool isExterior = false;
-            switch (doorSide) {
-                case Cartesian::SOUTH:
-                    isExterior = ((offset.y == 0) || !isTileOwned(tileIndex - mDims.x));
-                    break;
-                case Cartesian::WEST:
-                    isExterior = ((offset.x == 0) || !isTileOwned(tileIndex - 1));
-                    break;
-                case Cartesian::EAST:
-                    isExterior = ((offset.x == mDims.x - 1) || !isTileOwned(tileIndex + 1));
-                    break;
-                case Cartesian::NORTH:
-                    isExterior = ((offset.y == mDims.y - 1) || !isTileOwned(tileIndex + mDims.x));
-                    break;
-                default:
-                    break;
-            }
-
-            // Only exterior doors create a forced navmesh connection
-            if (isExterior) {
-                const i32v2 chunkTilePos = CARTESIAN_NORMALS_2D[e_cast(doorSide)] + worldPos2D;
-                Chunk& chunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(chunkTilePos));
-                if (chunk.isDataReady()) {
-                    TileContainer* chunkTileContainer = chunk.getTileContainer();
-                    assert(chunkTileContainer);
-                    TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(chunkTilePos.x - chunkTileContainer->getWorldPos2D().x, chunkTilePos.y - chunkTileContainer->getWorldPos2D().y, 0);
-                   // DebugRenderer::drawFilledQuad(f32v3(chunkTileContainer->getTileXYZOffsetWithZScale(chunkTileIndex) + chunkTileContainer->getWorldPos3D()), f32v2(1.0f), COLOR_WHITE, 10000000);
-                }
-                else {
-                    assert(false && "Building on invalid chunk");
-                }
-            }
-        }
-    }
 }
 
 void TileContainer::removeDoor(Cartesian doorSide, TileIndex tileIndex) {
     std::lock_guard lock(mSharedMutex);
-    assert(false); // Implement removing the navnode edge
     for (size_t i = 0; i < mDynamicTiles.size(); ++i) {
         if (mDynamicTiles[i].mTileIndex == tileIndex && mDynamicTiles[i].mType == e_cast(doorSide)) {
             mDynamicTiles[i] = mDynamicTiles.back();

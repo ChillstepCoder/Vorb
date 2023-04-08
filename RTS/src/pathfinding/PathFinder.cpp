@@ -275,7 +275,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
             if (isExternal) {
                 assert(cartesian4 != Cartesian::NONE);
                 // External edge
-                const i32v3 containerOffset = TileContainer::getTileXYZOffsetWithZScale(handle.index, containerNavData.containerDims, containerNavData.floorHeight);
+                const i32v3 containerOffset = TileSpatialGrid::getTileXYZOffsetWithZScale(handle.index, containerNavData.containerDims, containerNavData.floorHeight);
                 const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + fineNavData.zPositionOffsetFromFloor));
 
                 const ContainerNavData* outNavData = nullptr;
@@ -325,7 +325,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
             }
             else {
                 // Internal edge
-                const i32v3 containerOffset = TileContainer::getTileXYZOffset(handle.index, containerNavData.containerDims);
+                const i32v3 containerOffset = TileSpatialGrid::getTileXYZOffset(handle.index, containerNavData.containerDims);
                 i32v3 adjPos(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, containerOffset.z);
                 if (edgeType == TileFineNavEdgeType::DOWN) {
                     --adjPos.z;
@@ -333,7 +333,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
                 else if (edgeType == TileFineNavEdgeType::UP) {
                     ++adjPos.z;
                 }
-                TileIndex adjIndex = TileContainer::getTileIndexFromXYZOffset(adjPos, containerNavData.containerDims);
+                TileIndex adjIndex = TileSpatialGrid::getTileIndexFromXYZOffset(adjPos, containerNavData.containerDims);
                 adjHandle = LiteTileHandle(handle.containerId, adjIndex);
                 adjFineNavData = containerNavData.fineNavGraph[adjHandle.index];
                 assert(adjFineNavData.isOwned);

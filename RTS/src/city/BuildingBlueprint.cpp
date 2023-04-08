@@ -8,12 +8,13 @@ BuildingBlueprint::BuildingBlueprint(
     float sizeAlpha,
     Cartesian entrySide,
     ui32v2 dims,
-    ui32v2 bottomLeftWorldPos,
+    const i32v3& worldPosRoot,
     entt::entity ownerEntity,
     BuildingBlueprintFlags flags
 ) :
-    desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), aabb(bottomLeftWorldPos.x, bottomLeftWorldPos.y, dims.x, dims.y), mOwnerEntity(ownerEntity), flags(flags) {
-
+    desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), mOwnerEntity(ownerEntity), flags(flags) {
+    // We will reinitialize later with the proper Z dimensions
+    mTileSpatialGrid.init(worldPosRoot, i32v3(dims.x, dims.y, 1), 3);
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
     tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile(StrToken("bricks", 1));
@@ -92,10 +93,11 @@ BuildTileBlueprintHandlePtr BuildingBlueprint::reserveTileToBuild(entt::entity b
     // Get closest via linear check
     size_t closest = UINT32_MAX;
     f32 closestDistanceSq = FLT_MAX;
-    const i32 layerSize = aabb.dims.x * aabb.dims.y;
-    const f32v3 worldRoot(aabb.pos.x, aabb.pos.y, zPos);
+    const i32v3& rootPos = mTileSpatialGrid.getWorldPos3D();
+    const i32v3& dims = mTileSpatialGrid.getDims();
+    const i32 layerSize = dims.x * dims.y;
     for (size_t i = 0; i < tilesReadyToBuild.size(); ++i) {
-        const f32v3 tilePosition = f32v3(worldRoot.x + (i % aabb.dims.x), worldRoot.y + ((i % layerSize) / aabb.dims.x), worldRoot.z + (i / layerSize) * floorHeight);
+        const f32v3 tilePosition = f32v3(rootPos.x + (i % dims.x), rootPos.y + ((i % layerSize) / dims.x), rootPos.z + (i / layerSize) * mTileSpatialGrid.getFloorHeight());
         f32 distSq = glm::length2(entityPosition - tilePosition);
         if (distSq < closestDistanceSq) {
             closest = i;

@@ -61,9 +61,9 @@ void TileInspectionPanel::updateAndRender() {
     }
 
     const TileContainer& container = *mTileHandle.container;
-    const i32v3 xyzOffset = container.getTileXYZOffset(mTileHandle.tileIndex);
+    const i32v3 xyzOffset = container.getTileSpatialGrid().getTileXYZOffset(mTileHandle.tileIndex);
     const i32v2 xyOffset(xyzOffset.x, xyzOffset.y);
-    const i32v2 worldPos2D = i32v2(xyOffset) + container.getWorldPos2D();
+    const i32v2 worldPos2D = i32v2(xyOffset) + container.getTileSpatialGrid().getWorldPos2D();
     const bool isOwned = container.isTileOwned(mTileHandle.tileIndex);
 
     // Debug tile cursor
@@ -114,29 +114,29 @@ void TileInspectionPanel::updateAndRender() {
             }
         } ImGui::SameLine();
         if (ImGui::Button("x+1")) {
-            if (xyzOffset.x < mTileHandle.container->getDims().x - 1) {
+            if (xyzOffset.x < mTileHandle.container->getTileSpatialGrid().getDims().x - 1) {
                 mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex + 1);
             }
         }
         if (ImGui::Button("y-1")) {
             if (xyzOffset.y > 0) {
-                mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex - mTileHandle.container->getDims().x);
+                mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex - mTileHandle.container->getTileSpatialGrid().getDims().x);
             }
         } ImGui::SameLine();
         if (ImGui::Button("y+1")) {
-            if (xyzOffset.y < mTileHandle.container->getDims().y - 1) {
-                mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex + mTileHandle.container->getDims().x);
+            if (xyzOffset.y < mTileHandle.container->getTileSpatialGrid().getDims().y - 1) {
+                mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex + mTileHandle.container->getTileSpatialGrid().getDims().x);
             }
         }
-        if (mTileHandle.container->getDims().z > 1) {
+        if (mTileHandle.container->getTileSpatialGrid().getDims().z > 1) {
             if (ImGui::Button("z-1")) {
                 if (xyzOffset.z > 0) {
-                    mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex - mTileHandle.container->getFloorStride());
+                    mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex - mTileHandle.container->getTileSpatialGrid().getFloorStride());
                 }
             } ImGui::SameLine();
             if (ImGui::Button("z+1")) {
-                if (xyzOffset.z < mTileHandle.container->getDims().z - 1) {
-                    mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex + mTileHandle.container->getFloorStride());
+                if (xyzOffset.z < mTileHandle.container->getTileSpatialGrid().getDims().z - 1) {
+                    mTileHandle = TileHandle(mTileHandle.container, mTileHandle.tileIndex + mTileHandle.container->getTileSpatialGrid().getFloorStride());
                 }
             }
         }

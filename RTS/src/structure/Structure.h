@@ -28,7 +28,6 @@ public:
     StructureType getType() const { return mType; }
     TileContainer* getTileContainer() { return mTileContainer; }
     const TileContainer* getTileContainer() const { return mTileContainer; }
-    i32v3 getWorldPositionOfTile(TileIndex tile) const;
 
     bool isTileOwned(TileIndex index) const { assert(mTileContainer);  return mTileContainer->isTileOwned(index); }
 

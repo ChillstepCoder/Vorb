@@ -40,6 +40,7 @@ struct i32AABB2 {
     i32AABB2() = default;
     i32AABB2(i32 v) : x(v), y(v), width(v), depth(v) {};
     i32AABB2(i32 x, i32 y, i32 width, i32 depth) : x(x), y(y), width(width), depth(depth) {};
+    i32AABB2(const i32AABB3& other) : x(other.x), y(other.y), width(other.width), depth(other.depth) {};
 
     i32& operator[](int i) { return data[i]; }
     bool operator==(const i32AABB2& other) { return data == other.data; }

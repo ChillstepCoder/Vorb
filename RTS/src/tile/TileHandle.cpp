@@ -54,11 +54,11 @@ void TileRef::release()
 }
 
 i32v2 TileRef::getWorldPos2D() const {
-    return container->getWorldPos2D() + i32v2(container->getTileXYOffset(index));
+    return container->getTileSpatialGrid().getTileBaseWorldPos2D(index);
 }
 
 i32v3 TileRef::getWorldPos3D() const {
-    return container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(index));
+    return container->getTileSpatialGrid().getTileWorldPos3D(index, tile->getGroundZOffset());
 }
 
 TileHandle::TileHandle(const TileContainer* container, TileIndex tileIndex) :
@@ -70,15 +70,15 @@ TileHandle::TileHandle(const TileContainer* container, TileIndex tileIndex) :
 }
 
 i32v2 TileHandle::getWorldPos2D() const {
-    return container->getWorldPos2D() + i32v2(container->getTileXYOffset(tileIndex));
+    return container->getTileSpatialGrid().getTileBaseWorldPos2D(tileIndex);
 }
 
 i32v3 TileHandle::getWorldPos3D() const {
-    return container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(tileIndex));
+    return container->getTileSpatialGrid().getTileWorldPos3D(tileIndex, tile->getGroundZOffset());
 }
 
 ui32v3 TileHandle::getContainerOffset() const {
-    return container->getTileXYZOffset(tileIndex);
+    return container->getTileSpatialGrid().getTileXYZOffset(tileIndex);
 }
 
 LiteTileHandle TileHandle::toLiteTileHandle() const {

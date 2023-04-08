@@ -19,7 +19,7 @@ TileContainerHarvestableRegistry::~TileContainerHarvestableRegistry()
 
 void TileContainerHarvestableRegistry::init(const TileContainer& owner) {
     mOwner = &owner;
-    const ui32v3& containerDims = owner.getDims();
+    const i32v3& containerDims = owner.getTileSpatialGrid().getDims();
     // Round up with / TILE_CONTAINER_ITEM_REGISTRY_CELL_WIDTH
     for (int i = 0; i < 3; ++i) {
         // TODO: see BitArray::resize for more efficient method
@@ -67,7 +67,7 @@ void TileContainerHarvestableRegistry::refreshFromOwner() {
         }
     }
 
-    const ui32v3& containerDims = mOwner->getDims();
+    const i32v3& containerDims = mOwner->getTileSpatialGrid().getDims();
     const std::vector<Tile>& tiles = mOwner->getTiles();
 
     // Cache all harvestable data

@@ -795,7 +795,7 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
             DebugRenderer::reserveLines(sWorld->getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = TileContainerRepository::getTileContainers();
             for (auto&& container : containers) {
-                const f32v3 containerCenter = container->getWorldPosCenter3D();
+                const f32v3 containerCenter = container->getTileSpatialGrid().getWorldPosCenter3D();
                 const f32v3& cameraPos = camera.getPosition();
                 if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
                     // TODO: make this only work on host world
