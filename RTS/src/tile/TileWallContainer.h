@@ -45,6 +45,7 @@ public:
     }
     void destroy() {
         std::vector<TileWall>().swap(mWalls);
+        mTileSpatialGrid = nullptr;
     }
     TileWall getWallAtTile(TileIndex tileIndex, Cartesian cartesian) const {
         switch (cartesian) {
@@ -81,7 +82,11 @@ public:
         }
         return mWalls[tileIndex + 1];
     }
-
+    // Most optimized way to query/iterate tiles as it avoids bounds checking on +x or +y
+    void getSouthAndWestWallsAtTile(TileWall outWalls[2], TileIndex tileIndex) const {
+        outWalls[0] = getSouthWallAtTile(tileIndex);
+        outWalls[1] = getWestWallAtTile(tileIndex);
+    }
     void getWallsAtTile(TileWalls& outWalls, TileIndex tileIndex) const {
         outWalls.south = getSouthWallAtTile(tileIndex);
         outWalls.west = getWestWallAtTile(tileIndex);

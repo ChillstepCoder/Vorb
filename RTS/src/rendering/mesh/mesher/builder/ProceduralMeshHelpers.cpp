@@ -1,8 +1,41 @@
 #include "stdafx.h"
 #include "ProceduralMeshHelpers.h"
 
-void ProceduralMeshHelpers::addTileWallMesh(Cartesian dir, const f32v3& tilePos, f32 wallHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh, bool adjNegative, bool adjPositive)
+#include "tile/TileWallContainer.h"
+#include "tile/TileSpatialGrid.h"
+
+void ProceduralMeshHelpers::addTileWallMesh(const TileSpatialGrid& spatialGrid, const TileWallContainer& tileWalls, TileIndex index, Cartesian dir, const i32v3& tilePos, f32 wallHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh)
 {
+
+    const i32v3& dims = spatialGrid.getDims();
+
+    if (dir != Cartesian::SOUTH) return; // TODO: Test
+
+    // South wall example - numbered represent adjacent wall possibilities
+    //    4   5
+    //    |   |
+    // 2-- -c- --3
+    //    |   |
+    //    0   1
+
+    bool adjacentWalls[6] = {};
+    if (tilePos.y > 0) {
+        // 0
+        adjacentWalls[0] = tileWalls.getWestWallAtTile(index - dims.x).isValid();
+        if (tilePos.x < dims.x - 1) {
+            // 1
+            adjacentWalls[1] = tileWalls.getWestWallAtTile(index - dims.x + 1).isValid();
+        }
+    }
+
+    // Positive face vertices
+    // Left vertex
+
+
+    // Negative face vertices
+
+
+
     //f32v3 wallPoints[4];
     //f32v3 encapPointsStart[4];
     //f32v3 encapPointsEnd[4];
