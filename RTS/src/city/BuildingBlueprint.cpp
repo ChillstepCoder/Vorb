@@ -25,6 +25,8 @@ BuildingBlueprint::BuildingBlueprint(
     tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)] = TileRepository::getTile(StrToken("stairs_wd_f"));
     tileIDs[e_cast(BlueprintTileType::AIR)] = TILE_ID_NONE;
 
+    assert(TileRepository::getTileData(tileIDs[e_cast(BlueprintTileType::WINDOW)]).shape == TileShape::WINDOW);
+
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
 }

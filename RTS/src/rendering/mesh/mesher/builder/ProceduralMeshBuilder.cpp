@@ -34,7 +34,7 @@ ProceduralMeshBuilder::~ProceduralMeshBuilder() {
 
 }
 
-void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const MaterialData& materialData, const f32v4& uvRect, color4 color) {
+void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 rootPosition, const f32v2& xyDims, CubeFacing axis, const MaterialData& materialData, const f32v4& uvRect, color4 color) {
     
     SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
 
@@ -62,35 +62,34 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& 
     const f32v3& tangent(CUBE_FACING_TANGENTSF[e_cast(axis)]);
     const f32v2& xyAxisDirection = CUBE_FACING_AXIS_DIRECTIONS[e_cast(axis)];
     const f32v2& initialOffsetMult = CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(axis)];
-    f32v4 uvs = uvRect;
     
     // TODO: Support indexes?
     mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
 
     // Offset for back faces so we can invert direction and have proper back face culling
-    tilePosition[xyAxis.x] += xyDims.x * initialOffsetMult.x;
-    tilePosition[xyAxis.y] += xyDims.y * initialOffsetMult.y;
+    rootPosition[xyAxis.x] += xyDims.x * initialOffsetMult.x;
+    rootPosition[xyAxis.y] += xyDims.y * initialOffsetMult.y;
 
     { // Bottom Left
-        verts[0].build(tilePosition, normal, tangent, uvs, color, materialData.id, 0);
+        verts[0].build(rootPosition, normal, tangent, uvRect, color, materialData.id, 0);
     }
     { // Bottom Right
-        f32v3 pos = tilePosition;
+        f32v3 pos = rootPosition;
         pos[xyAxis.x] += (xyDims.x) * xyAxisDirection.x;
 
-        verts[1].build(pos, normal, tangent, f32v2(uvs.x + uvs.z, uvs.y), color, materialData.id, 0);
+        verts[1].build(pos, normal, tangent, f32v2(uvRect.x + uvRect.z, uvRect.y), color, materialData.id, 0);
     }
     { // Top Right
-        f32v3 pos = tilePosition;
+        f32v3 pos = rootPosition;
         pos[xyAxis.x] += (xyDims.x) * xyAxisDirection.x;
         pos[xyAxis.y] += (xyDims.y) * xyAxisDirection.y;
 
-        verts[2].build(pos, normal, tangent, f32v2(uvs.x + uvs.z, uvs.y + uvs.w), color, materialData.id, 0);
+        verts[2].build(pos, normal, tangent, f32v2(uvRect.x + uvRect.z, uvRect.y + uvRect.w), color, materialData.id, 0);
     }
     { // Top Left
-        f32v3 pos = tilePosition;
+        f32v3 pos = rootPosition;
         pos[xyAxis.y] += (xyDims.y) * xyAxisDirection.y;
-        verts[3].build(pos, normal, tangent, f32v2(uvs.x, uvs.y + uvs.w), color, materialData.id, 0);
+        verts[3].build(pos, normal, tangent, f32v2(uvRect.x, uvRect.y + uvRect.w), color, materialData.id, 0);
     }
 
     // HACK fix bottom faces to be correct winding

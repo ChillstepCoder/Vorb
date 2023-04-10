@@ -92,6 +92,10 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
             for (i32 x = 0; x < dims.x; ++x, ++tileIndex) {
                 // TODO: Bitindex
                 const BlueprintTileType type = bp.tiles[tileIndex];
+                
+                // Copy walls
+                tileContainer.mTileWallsContainer.setSouthWallAtTile(tileIndex, bp.walls.getSouthWallAtTile(tileIndex));
+                tileContainer.mTileWallsContainer.setWestWallAtTile(tileIndex, bp.walls.getWestWallAtTile(tileIndex));
                 if (type != BlueprintTileType::NONE) {
                     // Flatten heightmap
                     if (z == 0) {
@@ -101,8 +105,6 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     }
 
                     tileContainer.setOwnedTile(tileIndex);
-                    tileContainer.mTileWallsContainer.setSouthWallAtTile(tileIndex, bp.walls.getSouthWallAtTile(tileIndex));
-                    tileContainer.mTileWallsContainer.setWestWallAtTile(tileIndex, bp.walls.getWestWallAtTile(tileIndex));
                     // Stairs are processed below
                     if (type != BlueprintTileType::STAIRS) {
                         const TileID tileId = bp.tileIDs[e_cast(type)];

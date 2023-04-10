@@ -3,10 +3,10 @@
 // QUAD FACINGS
 // TODO: Do we need bottom?
 enum class CubeFacing {
-    LEFT,
-    FRONT,
-    RIGHT,
-    BACK,
+    LEFT,  // WEST
+    FRONT, // SOUTH
+    RIGHT, // EAST
+    BACK, // NORTH
     TOP,
     BOTTOM,
     COUNT

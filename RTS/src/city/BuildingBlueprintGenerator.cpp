@@ -206,19 +206,19 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
         {0, 0, 0}, {0, 1, 0}
     };
     sPossibleWindowPermutations[4] = {
-        {0, 0, 0, 0}, {0, 1, 1, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}
+        {0, 0, 0, 0}, {0, 1, 1, 0},
     };
     sPossibleWindowPermutations[5] = {
-        {0, 0, 0, 0, 0}, {0, 1, 0, 1, 0}, {0, 0, 1, 0, 0}, {0, 1, 0, 0, 0}, {0, 0, 0, 1, 0}
+        {0, 0, 0, 0, 0}, {0, 0, 1, 0, 0}, {0, 1, 1, 0, 0}, {0, 0, 1, 1, 0}
     };
     sPossibleWindowPermutations[6] = {
-        {0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 1, 0}, {0, 0, 1, 1, 0, 0}, {0, 1, 1, 0, 0, 0}, {0, 0, 0, 1, 1, 0}
+        {0, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0}, {0, 1, 1, 0, 0, 0}, {0, 0, 0, 1, 1, 0}
     };
     sPossibleWindowPermutations[7] = {
-        {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 1, 0, 1, 0, 1, 0}, {0, 1, 1, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 1, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0}, {0, 0, 1, 1, 1, 0, 0}, {0, 1, 1, 0, 1, 1, 0},
     };
     sPossibleWindowPermutations[8] = {
-        {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 1, 0, 0, 0}, {0, 1, 1, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 0, 1, 0, 0}, {0, 1, 0, 1, 1, 0, 1, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 1, 0, 0, 0}, {0, 1, 1, 0, 0, 1, 1, 0},
     };
 
     static_assert(MAX_EXTERIOR_WALL_RUN_LENGTH == 8);
@@ -964,7 +964,7 @@ void BuildingBlueprintGenerator::placeWalls(BuildingBlueprint& bp, VisualLog* vi
                 }
 
                 bool didSetWall = false;
-                TileWall walls[4] = { TILE_ID_NONE, TILE_ID_NONE , TILE_ID_NONE , TILE_ID_NONE };
+                TileWall walls[4];
                 // South
                 if (y == 0 || bp.ownerArray[getIndex2DAtPos(x, y - 1, dims, z)] != roomId) {
                     walls[e_cast(Cartesian::SOUTH)].wallID = bp.tileIDs[e_cast(BlueprintTileType::WALL)];
@@ -1976,6 +1976,10 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprint& bp, Vi
             else {
                 // End previous edge
                 currentExteriorWallRun = nullptr;
+                if (visLog && currentExteriorWallRun) {
+                    const f32v3 outerPos = f32v3(outerOffset2D.x, outerOffset2D.y, room.floorIndex * floorHeight);
+                    visLog->addFilledQuad(outerPos + f32v3(0.1f, 0.1f, 0.0f), f32v2(0.8f), color::Red);
+                }
             }
 
             if (visLog && currentExteriorWallRun) {
@@ -2041,13 +2045,23 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
                     TileWall wall = bp.walls.getWallAtTile(index, wallRun.dir);
                     // Don't ever replace doors
                     if (!wall.isDoor) {
-                        wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::WINDOW)];
+                        bp.walls.setWallAtTile(index, TileWall{ bp.tileIDs[e_cast(BlueprintTileType::WINDOW)], false /*isDoor*/ }, wallRun.dir);
                         if (visLog) {
                             i32v3 offset = bp.mTileSpatialGrid.getTileXYZOffset(index);
                             offset.z *= floorHeight;
                             visLog->addFilledQuad(offset, f32v2(1.0f), color::Aqua);
                         }
                     }
+                    else if (visLog) {
+                        i32v3 offset = bp.mTileSpatialGrid.getTileXYZOffset(index);
+                        offset.z *= floorHeight;
+                        visLog->addFilledQuad(offset, f32v2(1.0f), color::Red);
+                    }
+                }
+                if (visLog) {
+                    i32v3 offset = bp.mTileSpatialGrid.getTileXYZOffset(index);
+                    offset.z *= floorHeight;
+                    visLog->addWireQuad(offset, f32v2(1.0f), color::Red);
                 }
                 index += INDEX_OFFSETS[e_cast(wallRun.dir)];
             }

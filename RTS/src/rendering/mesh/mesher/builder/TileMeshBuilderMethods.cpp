@@ -525,14 +525,13 @@ void meshWallsGreedy(const std::vector<TileWalls>& tileWalls, const std::vector<
     }
 }
 
-
 void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContainer& tileWalls, const std::vector<Tile>& tiles, i32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
     PROFILE_FUNCTION();
     TileIndex tileIndex = 0;
-    i32v3 xyz(0);
-    for (; xyz.z < tileDims.z; ++xyz.z) {
-        for (; xyz.y < tileDims.y; ++xyz.y) {
-            for (; xyz.x < tileDims.x; ++xyz.x, ++tileIndex) {
+    i32v3 xyz;
+    for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
+        for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
+            for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++tileIndex) {
                 const f32 groundZOffset = tiles[tileIndex].getGroundZOffset();
                 TileWall southAndWestWalls[2];
                 tileWalls.getSouthAndWestWallsAtTile(southAndWestWalls, tileIndex);
@@ -540,19 +539,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
                 for (int i = 0; i < 2; ++i) {
                     if (southAndWestWalls[i].isValid()) {
                         const TileData& tileData = TileRepository::getTileData(southAndWestWalls[i].wallID);
-                        switch (tileData.shape) {
-                            case TileShape::WALL:
-                                ProceduralMeshHelpers::addTileWallMesh(spatialGrid, tileWalls, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, physMesh);
-                                break;
-                            case TileShape::WINDOW:
-                                break;
-                            case TileShape::DOOR:
-                                break;
-                            default:
-                                assert(false);
-                                break;
-
-                        }
+                        ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, physMesh);
                     }
                 }
             }
@@ -613,6 +600,8 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
     PROFILE_FUNCTION();
 
+
+
     const TileContainer& tileContainer = builders.container;
     const ContainerMeshDataCopy& tiles = builders.tileData;
     // TODO: Do we need to handle container resize? Or is resize destroy and remake?
@@ -620,6 +609,9 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     const i32v3& tileDims = spatialGrid.getDims();
     const f32v3 tileContainerWorldPos = spatialGrid.getWorldPos3D();
     const f32 floorHeight = spatialGrid.getFloorHeight();
+
+    LOG_DEBUG("Meshing Container {}", tileContainer.getId());
+
     // =============== Mesh tiles ===============
     TileIndex index = 0;
     i32v3 xyz;
@@ -696,8 +688,6 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
             }
         }
     }
-
-    // Walls
     meshWallsDefault(spatialGrid, tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, physics);
 
     // Dynamics

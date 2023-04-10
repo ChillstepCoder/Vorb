@@ -70,17 +70,17 @@ public:
         return mWalls[mTileSpatialGrid->getNumTiles() + tileIndex];
     }
     TileWall getEastWallAtTile(TileIndex tileIndex) const {
-        if (tileIndex % mTileSpatialGrid->getDims().x >= mTileSpatialGrid->getDims().x - 1) {
+        if ((tileIndex % mTileSpatialGrid->getDims().x) >= (mTileSpatialGrid->getDims().x - 1)) {
             return TileWall();
         }
         return mWalls[mTileSpatialGrid->getNumTiles() + tileIndex + 1];
     }
     TileWall getNorthWallAtTile(TileIndex tileIndex) const {
         const i32 floorStride = mTileSpatialGrid->getFloorStride();
-        if (((tileIndex % floorStride) / mTileSpatialGrid->getDims().x) >= mTileSpatialGrid->getDims().y - 1) {
+        if (((tileIndex % floorStride) / mTileSpatialGrid->getDims().x) >= (mTileSpatialGrid->getDims().y - 1)) {
             return TileWall();
         }
-        return mWalls[tileIndex + 1];
+        return mWalls[tileIndex + mTileSpatialGrid->getDims().x];
     }
     // Most optimized way to query/iterate tiles as it avoids bounds checking on +x or +y
     void getSouthAndWestWallsAtTile(TileWall outWalls[2], TileIndex tileIndex) const {
@@ -106,7 +106,7 @@ public:
         mWalls[mTileSpatialGrid->getNumTiles() + tileIndex] = wall;
     }
     void setEastWallAtTile(TileIndex tileIndex, TileWall wall) {
-        if (tileIndex % mTileSpatialGrid->getDims().x >= mTileSpatialGrid->getDims().x - 1) {
+        if ((tileIndex % mTileSpatialGrid->getDims().x) >= (mTileSpatialGrid->getDims().x - 1)) {
             return;
         }
         mWalls[mTileSpatialGrid->getNumTiles() + tileIndex + 1] = wall;
@@ -116,7 +116,7 @@ public:
         if (((tileIndex % floorStride) / mTileSpatialGrid->getDims().x) >= mTileSpatialGrid->getDims().y - 1) {
             return;
         }
-        mWalls[tileIndex + 1] = wall;
+        mWalls[tileIndex + mTileSpatialGrid->getDims().x] = wall;
     }
 
     void setWallAtTile(TileIndex tileIndex, TileWall wall, Cartesian cartesian) {
