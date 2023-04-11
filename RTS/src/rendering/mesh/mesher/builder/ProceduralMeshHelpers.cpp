@@ -305,6 +305,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
             // p1 p2
             f32v2 boardHalfDims(WALL_HALF_THICKNESS, WALL_HALF_THICKNESS + 0.05f);
             f32v3 p1, p2, p3, p4;
+            f32v3 horizontalOffset;
             f32v3 normalDir;
             bool hasAdjacentWindow = false; // Used for removing a shared board
             p1 = f32v3(tilePosF.x, tilePosF.y, tilePosF.z * wallHeight + bottomQuadHeight);
@@ -312,6 +313,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 p2 = f32v3(p1.x + 1.0f, p1.y, p1.z);
                 p3 = f32v3(p1.x, p1.y, p1.z + WINDOW_HEIGHT);
                 p4 = f32v3(p3.x + 1.0f, p3.y, p3.z);
+                horizontalOffset = f32v3(boardHalfDims.x, 0.0f, 0.0f);
                 normalDir = f32v3(0.0f, 1.0f, 0.0f);
                 if (!spatialGrid.isPosAtEastBorder(tilePos)) {
                     hasAdjacentWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.id;
@@ -321,19 +323,22 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 p2 = f32v3(p1.x, p1.y + 1.0f, p1.z);
                 p3 = f32v3(p1.x, p1.y, p1.z + WINDOW_HEIGHT);
                 p4 = f32v3(p3.x, p3.y + 1.0f, p3.z);
+                horizontalOffset = f32v3(0.0f, boardHalfDims.x, 0.0f);
                 normalDir = f32v3(1.0f, 0.0f, 0.0f);
                 if (!spatialGrid.isPosAtNorthBorder(tilePos)) {
                     hasAdjacentWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.id;
                 }
             }
             // Horizontal
-            meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
-            meshBuilder.addBoardBetweenPoints(p3, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            // Extend extra distance to match up with side boards perfectly
+            meshBuilder.addBoardBetweenPoints(p1 - horizontalOffset, p2 + horizontalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            meshBuilder.addBoardBetweenPoints(p3 - horizontalOffset, p4 + horizontalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
             // Vertical
-            boardHalfDims.y -= 0.01f; // Prevent Z fighting
-            meshBuilder.addBoardBetweenPoints(p1, p3, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            boardHalfDims.y -= 0.01f; // Vertical slightly inset
+            const f32v3 verticalOffset(0.0f, 0.0f, boardHalfDims.x);
+            meshBuilder.addBoardBetweenPoints(p1 + verticalOffset, p3 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
             if (!hasAdjacentWindow) {
-                meshBuilder.addBoardBetweenPoints(p2, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+                meshBuilder.addBoardBetweenPoints(p2 + verticalOffset, p4 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
             }
 
             // Physics
@@ -360,24 +365,28 @@ void ProceduralMeshHelpers::addTileWallMesh(
             // p1 p2
             f32v2 boardHalfDims(WALL_HALF_THICKNESS - 0.025f, WALL_HALF_THICKNESS + 0.05f);
             f32v3 p1, p2, p3, p4;
+            f32v3 horizontalOffset;
             f32v3 normalDir;
             p1 = f32v3(tilePosF.x, tilePosF.y, tilePosF.z * wallHeight);
             if (dir == Cartesian::SOUTH) {
                 p2 = f32v3(p1.x + 1.0f, p1.y, p1.z);
                 p3 = f32v3(p1.x, p1.y, p1.z + DOOR_HEIGHT);
                 p4 = f32v3(p3.x + 1.0f, p3.y, p3.z);
+                horizontalOffset = f32v3(boardHalfDims.x, 0.0f, 0.0f);
                 normalDir = f32v3(0.0f, 1.0f, 0.0f);
             }
             else {
                 p2 = f32v3(p1.x, p1.y + 1.0f, p1.z);
                 p3 = f32v3(p1.x, p1.y, p1.z + DOOR_HEIGHT);
                 p4 = f32v3(p3.x, p3.y + 1.0f, p3.z);
+                horizontalOffset = f32v3(0.0f, boardHalfDims.x, 0.0f);
                 normalDir = f32v3(1.0f, 0.0f, 0.0f);
             }
-            meshBuilder.addBoardBetweenPoints(p3, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
-            boardHalfDims.y -= 0.01f; // Prevent Z fighting
-            meshBuilder.addBoardBetweenPoints(p1, p3, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
-            meshBuilder.addBoardBetweenPoints(p2, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            meshBuilder.addBoardBetweenPoints(p3 - horizontalOffset, p4 + horizontalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            boardHalfDims.y -= 0.01f; // Vertical slightly inset
+            const f32v3 verticalOffset(0.0f, 0.0f, boardHalfDims.x);
+            meshBuilder.addBoardBetweenPoints(p1, p3 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            meshBuilder.addBoardBetweenPoints(p2, p4 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
 
             // TODO: Replace with dynamic mesh!
             // Door board
