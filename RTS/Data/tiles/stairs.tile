@@ -1,5 +1,5 @@
 stairs_wd:
-  mat: big_beam_0
+  mat0: big_beam_0
   texture_method: world_tiling
   shape: Stairs
   layer: 1
@@ -7,7 +7,7 @@ stairs_wd:
     - item: wood_raw
       count: 5
 stairs_wd_f:
-  mat: big_beam_0
+  mat0: big_beam_0
   texture_method: world_tiling
   layer: 1
   recipe:

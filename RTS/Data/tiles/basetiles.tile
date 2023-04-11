@@ -1,6 +1,6 @@
 wd_col_goth:
   layer: 1
-  mat: wood_wall_gothic
+  mat0: wood_wall_gothic
   col: box
   texture_method: vertical
   recipe:
@@ -8,14 +8,16 @@ wd_col_goth:
       count: 5
 bricks1:
   layer: 0
-  mat: bricks1
+  mat0: bricks1
   shape: Floor
   recipe:
     - item: wood_raw
       count: 3
-door:
+wd_door_goth:
   layer: 1
-  mat: door
+  mat0: wood_wall_gothic
+  mat1: big_beam_0
+  mat2: door
   shape: Door
   recipe:
     - item: wood_raw

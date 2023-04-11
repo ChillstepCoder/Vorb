@@ -18,7 +18,7 @@ BuildingBlueprint::BuildingBlueprint(
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
     tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile(StrToken("bricks", 1));
-    tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile(StrToken("door"));
+    tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile(StrToken("wd_door_goth"));
     tileIDs[e_cast(BlueprintTileType::WALL)] = TileRepository::getTile(StrToken("wd_wall_goth"));
     tileIDs[e_cast(BlueprintTileType::WINDOW)] = TileRepository::getTile(StrToken("wd_wind_goth"));
     tileIDs[e_cast(BlueprintTileType::STAIRS)] = TileRepository::getTile(StrToken("stairs_wd"));

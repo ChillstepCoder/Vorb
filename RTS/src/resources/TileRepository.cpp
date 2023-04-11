@@ -10,7 +10,9 @@
 #include "physics/CollisionShapeRepository.h"
 
 KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
-    kt.addValue("mat", keg::Value::basic(offsetof(TileFileData, materialName), keg::BasicType::STRING));
+    kt.addValue("mat0", keg::Value::basic(offsetof(TileFileData, material0), keg::BasicType::STRING));
+    kt.addValue("mat1", keg::Value::basic(offsetof(TileFileData, material1), keg::BasicType::STRING));
+    kt.addValue("mat2", keg::Value::basic(offsetof(TileFileData, material2), keg::BasicType::STRING));
     kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
     kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
     kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
@@ -23,6 +25,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
     kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
 }
+static_assert(MAX_TILE_MATERIAL_SLOTS == 3, "Update matX");
 
 bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository) {
     // Read file
@@ -75,8 +78,15 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             tileData.shape = TileShape::MODEL;
         }
         else {
-            assert(fileData.materialName.size());
-            tileData.materialData = materialRepository.getMaterialData(fileData.materialName);
+            assert(fileData.material0.size());
+            tileData.materialData[0] = materialRepository.getMaterialData(fileData.material0);
+            if (fileData.material1.size()) {
+                tileData.materialData[1] = materialRepository.getMaterialData(fileData.material1);
+            }
+            if (fileData.material2.size()) {
+                tileData.materialData[2] = materialRepository.getMaterialData(fileData.material2);
+            }
+            static_assert(MAX_TILE_MATERIAL_SLOTS == 3);
             tileData.shape = fileData.tileShape;
         }
 

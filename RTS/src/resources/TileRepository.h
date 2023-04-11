@@ -19,7 +19,9 @@ struct TileFileData {
     TileHarvestable resource = TileHarvestable::NONE;
     ui8 pathWeight = 255;
     ui8 layer = 1;
-    nString materialName;
+    nString material0;
+    nString material1;
+    nString material2;
     nString modelName;
     Array<ItemDropDef> itemDrops;
     Array<ItemInputDef> recipe;

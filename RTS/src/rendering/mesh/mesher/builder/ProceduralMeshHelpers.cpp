@@ -200,7 +200,6 @@ void ProceduralMeshHelpers::addTileWallMesh(
 
     const WallVertexPermutation& permutation = sWallVertexPermutationLookup[adjacencyCode];
 
-
     // Negative face vertices
     const f32v3 tilePosF = tilePos;
     const f32 scaledXOffsets[4] = {
@@ -250,7 +249,6 @@ void ProceduralMeshHelpers::addTileWallMesh(
     if (dir == Cartesian::SOUTH) {
         southFaceOffset = f32v2(scaledXOffsets[0], -WALL_HALF_THICKNESS);
         northFaceOffset = f32v2(scaledXOffsets[2], WALL_HALF_THICKNESS);
-
     }
     else {
         // West rotation
@@ -258,11 +256,12 @@ void ProceduralMeshHelpers::addTileWallMesh(
         northFaceOffset = f32v2(WALL_HALF_THICKNESS, -scaledXOffsets[3]);
     }
 
-    // Compute UVs
-
     const f32v3 southRootPos(tilePosF.x + southFaceOffset.x, tilePosF.y + southFaceOffset.y, tilePosF.z * wallHeight);
     const f32v3 northRootPos(tilePosF.x + northFaceOffset.x, tilePosF.y + northFaceOffset.y, tilePosF.z * wallHeight);
 
+    const f32v2 boardUVScale(1.0f);
+
+    // Build specific mesh data
     switch (tileData.shape) {
         case TileShape::WALL: {
             f32v4 uvRectNorth(0.0f, 0.0f, 0.0f, 1.0f);
@@ -270,16 +269,16 @@ void ProceduralMeshHelpers::addTileWallMesh(
             computeTilingUVX(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southFaceDims.x);
             computeTilingUVX(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], northFaceDims.x);
             // Mesh
-            meshBuilder.addAxisAlignedQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData, uvRectSouth, COLOR_WHITE);
-            meshBuilder.addAxisAlignedQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData, uvRectNorth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
             // Physics
             physMesh.addTileQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0]);
             physMesh.addTileQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1]);
             break;
         }
         case TileShape::WINDOW: {
-            f32v4 uvRectSouth(0.0f, 0.0f, 0.0f, 1.0f);
-            f32v4 uvRectNorth(0.0f, 0.0f, 0.0f, 1.0f);
+            f32v4 uvRectSouth;
+            f32v4 uvRectNorth;
             constexpr f32 WINDOW_HEIGHT = 1.2f;
             constexpr f32 WINDOW_BASE_Z = 0.9f;
             const f32 bottomQuadHeight = WINDOW_BASE_Z;
@@ -287,29 +286,110 @@ void ProceduralMeshHelpers::addTileWallMesh(
             // Bottom Quads
             const f32v2 southBottomDims(southFaceDims.x, bottomQuadHeight);
             computeTilingUVXZ(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southRootPos.z, southBottomDims.x, southBottomDims.y);
-            meshBuilder.addAxisAlignedQuad(southRootPos, southBottomDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData, uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southRootPos, southBottomDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
             const f32v2 northBottomDims(northFaceDims.x, bottomQuadHeight);
             computeTilingUVXZ(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], northRootPos.z, northBottomDims.x, northBottomDims.y);
-            meshBuilder.addAxisAlignedQuad(northRootPos, northBottomDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData, uvRectNorth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northRootPos, northBottomDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
             // Top Quads
             const f32v2 southTopDims(southFaceDims.x, topQuadHeight);
             const f32v3 southTopRoot(southRootPos.x, southRootPos.y, southRootPos.z + bottomQuadHeight + WINDOW_HEIGHT);
             computeTilingUVXZ(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southTopRoot.z, southTopDims.x, southTopDims.y);
-            meshBuilder.addAxisAlignedQuad(southTopRoot, southTopDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData, uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southTopRoot, southTopDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
             const f32v2 northTopDims(northFaceDims.x, topQuadHeight);
             const f32v3 northTopRoot(northRootPos.x, northRootPos.y, northRootPos.z + bottomQuadHeight + WINDOW_HEIGHT);
             computeTilingUVXZ(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], northTopRoot.z, northTopDims.x, northTopDims.y);
-            meshBuilder.addAxisAlignedQuad(northTopRoot, northTopDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData, uvRectNorth, COLOR_WHITE);
-            
-            // BOARDS
-            
+            meshBuilder.addAxisAlignedQuad(northTopRoot, northTopDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
+
+            // Rim boards
+            // p3 p4
+            // p1 p2
+            f32v2 boardHalfDims(WALL_HALF_THICKNESS, WALL_HALF_THICKNESS + 0.05f);
+            f32v3 p1, p2, p3, p4;
+            f32v3 normalDir;
+            bool hasAdjacentWindow = false; // Used for removing a shared board
+            p1 = f32v3(tilePosF.x, tilePosF.y, tilePosF.z * wallHeight + bottomQuadHeight);
+            if (dir == Cartesian::SOUTH) {
+                p2 = f32v3(p1.x + 1.0f, p1.y, p1.z);
+                p3 = f32v3(p1.x, p1.y, p1.z + WINDOW_HEIGHT);
+                p4 = f32v3(p3.x + 1.0f, p3.y, p3.z);
+                normalDir = f32v3(0.0f, 1.0f, 0.0f);
+                if (!spatialGrid.isPosAtEastBorder(tilePos)) {
+                    hasAdjacentWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.id;
+                }
+            }
+            else {
+                p2 = f32v3(p1.x, p1.y + 1.0f, p1.z);
+                p3 = f32v3(p1.x, p1.y, p1.z + WINDOW_HEIGHT);
+                p4 = f32v3(p3.x, p3.y + 1.0f, p3.z);
+                normalDir = f32v3(1.0f, 0.0f, 0.0f);
+                if (!spatialGrid.isPosAtNorthBorder(tilePos)) {
+                    hasAdjacentWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.id;
+                }
+            }
+            // Horizontal
+            meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            meshBuilder.addBoardBetweenPoints(p3, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            // Vertical
+            boardHalfDims.y -= 0.01f; // Prevent Z fighting
+            meshBuilder.addBoardBetweenPoints(p1, p3, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            if (!hasAdjacentWindow) {
+                meshBuilder.addBoardBetweenPoints(p2, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            }
+
             // Physics
             physMesh.addTileQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0]);
             physMesh.addTileQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1]);
             break;
         }
-        case TileShape::DOOR:
+        case TileShape::DOOR: {
+            f32v4 uvRectSouth;
+            f32v4 uvRectNorth;
+            constexpr f32 DOOR_HEIGHT = 2.0f;
+            // Top quad
+            const f32v2 topDimsSouth(southFaceDims.x, wallHeight - DOOR_HEIGHT);
+            const f32v3 topRootSouth(southRootPos.x, southRootPos.y, southRootPos.z + DOOR_HEIGHT);
+            computeTilingUVXZ(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], topRootSouth.z, topDimsSouth.x, topDimsSouth.y);
+            meshBuilder.addAxisAlignedQuad(topRootSouth, topDimsSouth, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
+            const f32v2 topDimsNorth(northFaceDims.x, wallHeight - DOOR_HEIGHT);
+            const f32v3 topRootNorth(northRootPos.x, northRootPos.y, northRootPos.z + DOOR_HEIGHT);
+            computeTilingUVXZ(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], topRootNorth.z, topDimsNorth.x, topDimsNorth.y);
+            meshBuilder.addAxisAlignedQuad(topRootNorth, topDimsNorth, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
+
+            // Trim boards
+            // p3 p4
+            // p1 p2
+            f32v2 boardHalfDims(WALL_HALF_THICKNESS - 0.025f, WALL_HALF_THICKNESS + 0.05f);
+            f32v3 p1, p2, p3, p4;
+            f32v3 normalDir;
+            p1 = f32v3(tilePosF.x, tilePosF.y, tilePosF.z * wallHeight);
+            if (dir == Cartesian::SOUTH) {
+                p2 = f32v3(p1.x + 1.0f, p1.y, p1.z);
+                p3 = f32v3(p1.x, p1.y, p1.z + DOOR_HEIGHT);
+                p4 = f32v3(p3.x + 1.0f, p3.y, p3.z);
+                normalDir = f32v3(0.0f, 1.0f, 0.0f);
+            }
+            else {
+                p2 = f32v3(p1.x, p1.y + 1.0f, p1.z);
+                p3 = f32v3(p1.x, p1.y, p1.z + DOOR_HEIGHT);
+                p4 = f32v3(p3.x, p3.y + 1.0f, p3.z);
+                normalDir = f32v3(1.0f, 0.0f, 0.0f);
+            }
+            meshBuilder.addBoardBetweenPoints(p3, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            boardHalfDims.y -= 0.01f; // Prevent Z fighting
+            meshBuilder.addBoardBetweenPoints(p1, p3, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+            meshBuilder.addBoardBetweenPoints(p2, p4, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
+
+            // TODO: Replace with dynamic mesh!
+            // Door board
+            const f32v2 doorDims(1.0f, DOOR_HEIGHT);
+            meshBuilder.addAxisAlignedQuad(southRootPos, doorDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northRootPos, doorDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+
+            // Physics
+            physMesh.addTileQuad(topRootSouth, topDimsSouth, CUBE_FACINGS[e_cast(dir)][0]);
+            physMesh.addTileQuad(topRootNorth, topDimsNorth, CUBE_FACINGS[e_cast(dir)][1]);
             break;
+        }
         default:
             assert(false);
             break;

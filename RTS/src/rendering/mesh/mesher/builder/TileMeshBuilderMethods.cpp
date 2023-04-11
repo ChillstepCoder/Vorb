@@ -500,7 +500,7 @@ void meshWallsGreedy(const std::vector<TileWalls>& tileWalls, const std::vector<
             }
             // Main faces
             const TileData& tileData = TileRepository::getTileData(wall.tileId);
-            const MaterialData& materialData = tileData.materialData;
+            const MaterialData& materialData = tileData.materialData[0];
             const f32v2 UVSCALE = f32v2(0.6666f * 0.3333f, flipV * 0.3333f);
             const AXIS_3D uvAxis = (AXIS_3D)CARTESIAN_NORMAL_AXIS_2D[e_cast(wall.dir)];
             meshBuilder.addQuadBetweenPointsWorldUV(wallPoints, materialData, UVSCALE, COLOR_WHITE, uvAxis, f32v3(0.0f), flipUv);
@@ -632,7 +632,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
-                        builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData.id, true);
+                        builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
                         TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), TileHandle(&tileContainer, index), tileData, physics);
@@ -666,7 +666,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                             }
                         }
 
-                        TileMeshBuilderMethods::addFloor(builders.staticBuilder, adjacentShapes, floorHeight, xyz, tileData.materialData, physics);
+                        TileMeshBuilderMethods::addFloor(builders.staticBuilder, adjacentShapes, floorHeight, xyz, tileData.materialData[0], physics);
                     }
                     else if (tileData.shape == TileShape::STAIRS) {
                         TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation((TileLayer)layerIndex), tileData, physics);
@@ -751,7 +751,7 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
                 tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::BOTTOM)],
                 f32v2(1.0f) /*dims*/,
                 CubeFacing::TOP,
-                tileData.materialData,
+                tileData.materialData[0],
                 f32v4(0.0f, 0.0f, 1.0f, 1.0f),
                 COLOR_WHITE
             );
@@ -782,7 +782,7 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
 
 void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
 
-    const MaterialData& materialData = tileData.materialData;
+    const MaterialData& materialData = tileData.materialData[0];
     const Tile& tile = *tileHandle.tile;
 
     const f32 topZPosition = tile.getGroundZOffset();
@@ -888,11 +888,11 @@ void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuil
     const f32v3 topSE(tilePos.x + 1.0f, tilePos.y, topHeight);
     const f32v3 topNW(tilePos.x, tilePos.y + 1.0f, topHeight);
     const f32v3 topNE(tilePos.x + 1.0f, tilePos.y + 1.0f, topHeight);
-    meshBuilder.addQuadBetweenPointsWorldUV(topSW, topSE, topNE, topNW, tileData.materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, tilePos, false);
-    meshBuilder.addQuadBetweenPointsWorldUV(botSW, topSW, topNW, botNW, tileData.materialData, f32v2(1.0f), COLOR_WHITE, AXIS_X, tilePos, false);
-    meshBuilder.addQuadBetweenPointsWorldUV(botNE, topNE, topSE, botSE, tileData.materialData, f32v2(1.0f), COLOR_WHITE, AXIS_X, tilePos, false);
-    meshBuilder.addQuadBetweenPointsWorldUV(botSW, botSE, topSE, topSW, tileData.materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Y, tilePos, false);
-    meshBuilder.addQuadBetweenPointsWorldUV(botNW, topNW, topNE, botNE, tileData.materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Y, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(topSW, topSE, topNE, topNW, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, AXIS_Z, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botSW, topSW, topNW, botNW, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, AXIS_X, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botNE, topNE, topSE, botSE, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, AXIS_X, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botSW, botSE, topSE, topSW, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, AXIS_Y, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botNW, topNW, topNE, botNE, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, AXIS_Y, tilePos, false);
     physMesh.addQuadBetweenPoints(topSW, topSE, topNE, topNW);
     physMesh.addQuadBetweenPoints(botSW, topSW, topNW, botNW);
     physMesh.addQuadBetweenPoints(botNE, topNE, topSE, botSE);
@@ -1187,11 +1187,11 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
                 break;
         }
         const f32v2 uvScale = f32v2(1.0f);
-        meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, tileData.materialData, uvScale, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+        meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, tileData.materialData[0], uvScale, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
         // The very first step in the entire chain shouldn't have base pieces
-        meshBuilder.addQuadBetweenPointsWorldUV(pointsFront, tileData.materialData, uvScale, COLOR_WHITE, frontUvOrient, f32v3(0.0f));
-        meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, tileData.materialData, uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
-        meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.materialData, uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+        meshBuilder.addQuadBetweenPointsWorldUV(pointsFront, tileData.materialData[0], uvScale, COLOR_WHITE, frontUvOrient, f32v3(0.0f));
+        meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, tileData.materialData[0], uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+        meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.materialData[0], uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
 
     }
     // Collision for the side and top of a stair
@@ -1297,7 +1297,7 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
             break;
 
     }
-    meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, tileData.materialData, f32v2(1.0f), COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
+    meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
     physMesh.addQuadBetweenPoints(pointsEndcap);
        // }
     //}
@@ -1332,9 +1332,9 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
             break;
 
     }
-    meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, tileData.materialData, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+    meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
     physMesh.addQuadBetweenPoints(pointsSide);
-    meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.materialData, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+    meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
     physMesh.addQuadBetweenPoints(&(pointsSide[4]));
 }
 
