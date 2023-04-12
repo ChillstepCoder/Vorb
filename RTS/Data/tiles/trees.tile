@@ -1,18 +1,16 @@
-tree_small:
+tree_a:
   model: tree_new
   col_shape: cylinder
   col_half_dims: [1.0, 1.0, 5.0]
-  shape: Thin
   resource: wood
   path_weight: 0
   drops:
     - item: wood_raw
       count: [15, 20]
 tree_pine:
-  model: tree_new
+  model: tree_pine
   col_shape: cylinder
   col_half_dims: [1.0, 1.0, 5.0]
-  shape: Thin
   resource: wood
   path_weight: 0
   drops:

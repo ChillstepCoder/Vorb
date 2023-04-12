@@ -68,6 +68,9 @@ namespace fbx2raw {
         const int controlPointCount = fbxMesh->GetControlPointsCount();
         controlPointsRemap->resize(controlPointCount);
 
+        // Get the mesh node's transformation matrix
+        FbxAMatrix transformMatrix = fbxMesh->GetNode()->EvaluateGlobalTransform();
+
         // Regenerate normals if they're not available.
         if (!fbxMesh->GenerateNormals(false,     // overwrite
             true,      // by ctrl point
@@ -170,8 +173,6 @@ namespace fbx2raw {
                 assert(controlPoint >= 0);
                 ControlPointRemap& remap = controlPointsRemap->at(controlPoint);
 
-                // Get vertex position.
-                const ozz::math::Float3 position = _converter->ConvertPoint(fbxMesh->GetControlPoints()[controlPoint]);
                 // BEN TMP TEST
                 //const ozz::math::Float4x4 AXIS_CONVERT = ozz::math::Float4x4::FromAxisAngle(ozz::math::simd_float4::Load(1.0f, 0.0f, 0.0f, 0.0f), ozz::math::simd_float4::Load(M_PI_2, 0.0f, 0.0f, 0.0f));
                 //const ozz::math::SimdFloat4 p_in = ozz::math::simd_float4::Load(
@@ -180,6 +181,12 @@ namespace fbx2raw {
                 //// AXIS CONVERT
                 //const ozz::math::SimdFloat4 p_out = AXIS_CONVERT * p_in;
                 //ozz::math::Store3PtrU(p_out, &position.x);
+
+                FbxVector4 positionVec(fbxMesh->GetControlPoints()[controlPoint]);
+                positionVec = transformMatrix.MultT(positionVec);
+
+                // Convert to ozz
+                ozz::math::Float3 position = _converter->ConvertPoint(positionVec);
 
                 // Get vertex normal.
                 FbxVector4 src_normal(0.f, 1.f, 0.f, 0.f);

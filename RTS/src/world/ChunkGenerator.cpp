@@ -32,7 +32,8 @@ void TryGenerateLargeObjectAtPoint(const f32v2& worldPos, ui32 index, f32 minHei
 Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
 
     // TODO: This seems wrong
-    static TileID pineTree = TileRepository::getTile(StrToken("tree_small"));
+    static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
+    static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
     static TileID bushSmall = TileRepository::getTile(StrToken("bush_small"));
     static TileID bushMed = TileRepository::getTile(StrToken("bush_med"));
     static TileID bush2 = TileRepository::getTile(StrToken("bush_g"));
@@ -60,7 +61,12 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             constexpr f32 TREE_DENSITY = 0.1f;
             constexpr f32 BUSH_DENSITY = 0.01f;
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
-                tile.mainLayer = pineTree;
+                if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.5f) {
+                    tile.mainLayer = baseTree;
+                }
+                else {
+                    tile.mainLayer = pineTree;
+                }
                 *grass = 0;
             }
             else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {

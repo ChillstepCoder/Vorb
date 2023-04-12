@@ -456,7 +456,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("tree_small")));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("tree_a")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }

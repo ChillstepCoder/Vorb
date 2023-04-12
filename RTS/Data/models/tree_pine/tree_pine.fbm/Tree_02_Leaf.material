@@ -1,0 +1,3 @@
+albedo: tree_pine_leaf_albedo.png
+normal: tree_pine_leaf_norm.png
+sampler_state: LINEAR_CLAMP_MIPMAP

@@ -137,7 +137,6 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
 
 RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
 
-    // Load scene
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
     ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
     ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)filePath.getCString(), "", fbxManager, settings);

@@ -1,0 +1,3 @@
+albedo: Leaves_Diffuse.png
+normal: Leaves_Normal.png
+sampler_state: LINEAR_CLAMP_MIPMAP
