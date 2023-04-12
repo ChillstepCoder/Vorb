@@ -72,6 +72,7 @@ protected:
     bool mRenderGrid = true;
     f32 mYaw = 0.0f;
     bool mRotate90 = true;
+    bool mDisableBackfaceCulling = true;
 
     // Blend test
     int mBlendTestPasses = 1;

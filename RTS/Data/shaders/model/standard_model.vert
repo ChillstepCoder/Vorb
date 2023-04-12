@@ -25,8 +25,10 @@ void main() {
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);
-    normal = (vModelMatrix * vec4(normal, 0.0)).rgb;
-    tangent = (vModelMatrix * vec4(tangent, 0.0)).rgb;
+    
+    mat3 modelMatrix3 = mat3(vModelMatrix);
+    normal = modelMatrix3 * normal;
+    tangent = modelMatrix3 * tangent;
     
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
@@ -36,6 +38,6 @@ void main() {
     
     // For displacement, get our world space -> tangent space
     mat3 tfTBN = inverse(fTBN);
-    fViewTangent  = tfTBN * CameraPos;
+    fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
     fFragPosTangent  = tfTBN * worldPos.xyz;
 }

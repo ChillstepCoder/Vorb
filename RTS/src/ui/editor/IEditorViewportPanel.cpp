@@ -78,6 +78,14 @@ void IEditorViewportPanel::renderCenterPanel() {
         MaterialRenderer::bindMaterialForRender(*shader, &textureUnit);
         uploadShaderUniforms(shader, textureUnit);
 
+
+        if (mDisableBackfaceCulling) {
+            glDisable(GL_CULL_FACE);
+        }
+        else {
+            glEnable(GL_CULL_FACE);
+        }
+
         if (mRenderArray && mDrawMode == EditorViewportDrawMode::PBRTest) {
             renderPBRArray(shader);
         }
@@ -204,6 +212,9 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
 
     // Grid
     ImGui::Checkbox("Show Grid", &mRenderGrid);
+
+    // Culling
+    ImGui::Checkbox("Disable Backface Cull", &mDisableBackfaceCulling);
 
     // Transform
     ImGui::SliderFloat("Yaw", &mYaw, 0.0f, M_2_PIF);

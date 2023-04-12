@@ -22,6 +22,7 @@ flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out vec3 fTangent;
+out vec3 fNormal;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 
@@ -34,19 +35,19 @@ void main() {
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);
     
-    normal = (unM * vec4(normal.xyz, 0.0)).xyz;
-    tangent = (unM * vec4(tangent.xyz, 0.0)).xyz;
+    mat3 modelMatrix3 = mat3(unM);
+    normal = modelMatrix3 * normal;
+    tangent = modelMatrix3 * tangent;
+    
+    fNormal = normal;
     
 	vec3 bitangent = cross(normal, tangent);
     tangent = cross(bitangent, normal);
-    //tangent = normalize(cross(normal, bitangent));
     
     // For debugging
     fTangent = tangent;
     
 	fTBN = mat3(tangent, bitangent, normal);
-    
-	
     
     vec4 worldPos = unM * (vPosition + unPosOffset);
     fWorldPos = worldPos.xyz;

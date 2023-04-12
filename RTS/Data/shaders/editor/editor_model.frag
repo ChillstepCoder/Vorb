@@ -11,6 +11,7 @@ flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
 in vec3 fTangent;
+in vec3 fNormal;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;

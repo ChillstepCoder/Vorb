@@ -62,6 +62,10 @@ void main() {
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
+    // Invert normals if away from camera
+    if (!gl_FrontFacing) {
+        normal = -normal;
+    }
     
     vec3 sunColor = unSunIntensity * unSunColor;
     oColor.rgb = PBR(fWorldPos, color.rgb, normal, metallic, roughness, ao, sunColor, unLightDir, unCameraPos);
