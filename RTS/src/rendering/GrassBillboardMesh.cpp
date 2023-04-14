@@ -47,8 +47,8 @@ void GrassBillboardMesh::reserveQuadCount(size_t count) {
     mPositionData.reserve(count);
 }
 
-void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, ui8 grassType) {
-    mInstanceData.emplace_back(ui8v2(glm::min(xyDims.x, 1.0f) * 255.0f, glm::min(xyDims.y, 1.0f) * 255.0f), grassType);
+void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, ui8 grassType, ui8 rotation) {
+    mInstanceData.emplace_back(ui8v2(glm::min(xyDims.x, 1.0f) * 255.0f, glm::min(xyDims.y, 1.0f) * 255.0f), grassType, rotation);
     mPositionData.emplace_back(position);
 }
 

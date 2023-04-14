@@ -4,10 +4,9 @@
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
-uniform sampler2D StoneTexture;
-uniform sampler2D StoneNormal;
+uniform sampler2D GrassGradients;
+uniform sampler2D CellNoise;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
-uniform vec3 GrassColor = vec3(255.0 / 255.0, 219.0 / 255.0, 105.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
 uniform float unHeightMult = 0.191;
@@ -15,6 +14,7 @@ uniform float unWavyMult = 0.167;
 uniform float unSquaresIntensity = 0.5;
 uniform float unSquaresPeriod = 0.187;
 uniform float unBlendMult = 0.037;
+uniform float unGrassColorV = 0.2;
 
 in float fHeight;
 in vec3 fPosition;
@@ -80,34 +80,20 @@ void main() {
         discard;
     }
     
-    // === Terrain texturing ===
+    // Grass color
     
     vec2 farStoneUVs = -(fUV * 0.01);
     vec2 farGrassUVs = -(fUV * 0.1);
-    
-    vec3 normal;
     float distance = length(fPosition.xy);
     float distUvLerp = min(distance * 0.001, 1.0);
-    float lerpNoise = -texture(GreyNoise, fUV * 0.05).r * 10.0;
-    float stoneLerpHeight = fHeight - fTBN[2].z * 20.0 + lerpNoise; // Include surface normal val
     
-    if (fHeight < 0.0) {
-        oColor.rgb = WaterColor;
-        normal = vec3(0.0, 0.0, 1.0);
-    } else {
-        vec3 grassColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp) * GrassColor;
-        vec3 stoneColor = mix(texture(StoneTexture, fUV).rgb, texture(StoneTexture, farStoneUVs).rgb, distUvLerp) * StoneColor;
-        
-        //stoneColor = stoneColor * 0.00001 + StoneColor;
-        float stoneLerp = clamp((stoneLerpHeight - 6.0) * 0.5, 0.0, 1.0);
-        oColor.rgb = mix(grassColor, stoneColor, stoneLerp);
-	    normal = mix(vec3(0.0, 0.0, 1.0), texture(StoneNormal, farStoneUVs).xyz * 2.0 - 1.0, stoneLerp);
-    }
+    float cellNoiseColor = texture(CellNoise, fUV * 0.1).r;
+    vec2 gradientUV = vec2(1.0 - cellNoiseColor, unGrassColorV);
+    vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
     
     // === Normals ===
-    // TODO: RESTORE NORMAL MAPPING
-    normal = normal * 0.00001 + vec3(0.0, 0.0, 1.0);
-    
+    // TODO: NORMAL MAPPING
+    vec3 normal = vec3(0.0, 0.0, 1.0);
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
     
@@ -115,8 +101,6 @@ void main() {
     //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
     
     // =========== BEGIN NEW ART STYLE ==========
-
-    oColor.rgb = oColor.rgb * 0.00001;
     
     vec3 colorNormal = normal.rgb; // normal
     
@@ -142,20 +126,25 @@ void main() {
     // Shorten the transition
     lerpVal = (lerpVal - 0.3) * 12.0 * unBlendMult;
     lerpVal = clamp(lerpVal, 0.0, 1.0);
-    oColor.rgb = oColor.rgb + mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
-    //oColor.rgb = oColor.rgb + COLORS[index];
-    //oColor.rgb = oColor.rgb + COLORS[index] * texture(GrassTexture, fUV).rgb;
-    //oColor.rgb *= texture(GrassTexture, fUV).rgb;
+    
+    // TODO: REVISIT THIS!!!!!
+    if (fHeight > 15.0) {
+        oColor.rgb = mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
+    } else {
+        oColor.rgb = GrassColor;
+    }
+  
     
     // =========== END NEW ART STYLE ==========
     // TMP Texturing test with color remapping
     // We use the texture value with the terrain color and saturation
-    vec3 textureColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp) * GrassColor;
-    vec3 currhsv = rgb2hsv(oColor.rgb);
-    vec3 texturehsv = rgb2hsv(textureColor);
+    vec3 textureColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp);
+    //vec3 currhsv = rgb2hsv(oColor.rgb);
+    //vec3 texturehsv = rgb2hsv(textureColor);
     //currhsv.b = texturehsv.b;
-    currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
-    oColor.rgb = hsv2rgb(currhsv);
+    //currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
+    //oColor.rgb = hsv2rgb(currhsv);
+    oColor.rgb *= textureColor;
     oColor.a = 1.0; // AO
     
     // === Roughness + metallic ===

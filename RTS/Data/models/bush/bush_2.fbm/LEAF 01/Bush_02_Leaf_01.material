@@ -1,0 +1,3 @@
+albedo: Bush_02_Leaf_01.png
+normal: Bush_02_Leaf_01_Normal.png
+sampler_state: LINEAR_CLAMP_MIPMAP

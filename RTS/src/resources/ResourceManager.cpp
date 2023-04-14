@@ -45,7 +45,7 @@ ResourceManager::ResourceManager() {
     mTextureCache = std::make_unique<vg::TextureCache>();
     mTextureCache->init(mIoManager.get());
 
-    mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
+    mTextureRepository = std::make_unique<TextureRepository>(*mIoManager);
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository);
     mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);

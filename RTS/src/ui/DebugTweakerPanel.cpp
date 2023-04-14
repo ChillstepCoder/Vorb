@@ -117,6 +117,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             sDebugOptions.mGrassSettings.fadeDistance = sDebugOptions.mGrassSettings.distance * GRASS_FADE_MULT;
         }
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mGrassSettings.lodDistanceOffset, -50.0f, 150.0f, "%.1f");
+        ImGui::SliderFloat2("Blade Scale", &sDebugOptions.mGrassScale.x, 0.5f, 8.0f);
+        ImGui::SliderFloat("Lean Variance", &sDebugOptions.mGrassLeanVariance, 0.0f, 1.0f);
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
         ImGui::Checkbox("Disable", &sDebugOptions.mHideGrass);
         ImGui::PopID();
@@ -142,6 +144,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Squares Period", &sDebugOptions.mTerrainSquaresColorPeriod, 0.0f, 1.0f);
         ImGui::SliderFloat("Squares Intensity", &sDebugOptions.mTerrainSquaresIntensity, 0.0f, 1.0f);
         ImGui::SliderFloat("Blend Mult", &sDebugOptions.mTerrainBlendMult, 0.0f, 1.0f);
+        ImGui::SliderFloat("Grass Color V", &sDebugOptions.mTerrainGrassColorV, 0.0f, 1.0f);
         ImGui::Separator();
         ImGui::NewLine();
         ImGui::BeginChild("Terrain Funcs", ImVec2(0.0f, 0.0f));

@@ -133,7 +133,7 @@ void APIENTRY glDebugOutput(GLenum source,
     } ss << std::endl;
     ss << std::endl;
     LOG_CRITICAL("{}", ss.str());
-    assert(false);
+    //assert(false);
 }
 
 constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
@@ -452,7 +452,9 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         mSmudgeRenderer->beginSmudgePass(mActiveGBuffer);
         mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Smudge, camera);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
+            glDisable(GL_CULL_FACE);
             mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
+            glEnable(GL_CULL_FACE);
         }
         mSmudgeRenderer->renderSmudge(mActiveGBuffer, camera);
     }

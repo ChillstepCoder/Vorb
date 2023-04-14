@@ -17,15 +17,15 @@ vg::SamplerStates vg::sSamplerStates = {
 static_assert(int(vg::SamplerStateType::COUNT) == 9, "Update with new");
 
 KEG_ENUM_DEF(SamplerStateType, vg::SamplerStateType, kt) {
-    kt.addValue("point_wrap", vg::SamplerStateType::POINT_WRAP);
-    kt.addValue("point_clamp", vg::SamplerStateType::POINT_CLAMP);
-    kt.addValue("linear_wrap", vg::SamplerStateType::LINEAR_WRAP);
-    kt.addValue("linear_clamp", vg::SamplerStateType::LINEAR_CLAMP);
-    kt.addValue("linear_clamp_border", vg::SamplerStateType::LINEAR_CLAMP_BORDER);
-    kt.addValue("point_wrap_mipmap", vg::SamplerStateType::POINT_WRAP_MIPMAP);
-    kt.addValue("point_clamp_mipmap", vg::SamplerStateType::POINT_CLAMP_MIPMAP);
-    kt.addValue("linear_wrap_mipmap", vg::SamplerStateType::LINEAR_WRAP_MIPMAP);
-    kt.addValue("linear_clamp_mipmap", vg::SamplerStateType::LINEAR_CLAMP_MIPMAP);
+    kt.addValue("POINT_WRAP", vg::SamplerStateType::POINT_WRAP);
+    kt.addValue("POINT_CLAMP", vg::SamplerStateType::POINT_CLAMP);
+    kt.addValue("LINEAR_WRAP", vg::SamplerStateType::LINEAR_WRAP);
+    kt.addValue("LINEAR_CLAMP", vg::SamplerStateType::LINEAR_CLAMP);
+    kt.addValue("LINEAR_CLAMP_BORDER", vg::SamplerStateType::LINEAR_CLAMP_BORDER);
+    kt.addValue("POINT_WRAP_MIPMAP", vg::SamplerStateType::POINT_WRAP_MIPMAP);
+    kt.addValue("POINT_CLAMP_MIPMAP", vg::SamplerStateType::POINT_CLAMP_MIPMAP);
+    kt.addValue("LINEAR_WRAP_MIPMAP", vg::SamplerStateType::LINEAR_WRAP_MIPMAP);
+    kt.addValue("LINEAR_CLAMP_MIPMAP", vg::SamplerStateType::LINEAR_CLAMP_MIPMAP);
 }
 static_assert(int(vg::SamplerStateType::COUNT) == 9, "Update with new");
 

@@ -31,6 +31,8 @@ struct DebugOptions {
     float mCloudRoughness;
     // Grass
     QuadtreeSettings mGrassSettings;
+    f32v2 mGrassScale;
+    f32 mGrassLeanVariance;
     bool mDebugGrassLod;
     bool mHideGrass;
     // Structures
@@ -46,6 +48,7 @@ struct DebugOptions {
     f32 mTerrainSquaresColorPeriod;
     f32 mTerrainSquaresIntensity;
     f32 mTerrainBlendMult;
+    f32 mTerrainGrassColorV;
     bool mDisableTerrain;
     // DOF
     float mDepthOfFieldBlurRadius;

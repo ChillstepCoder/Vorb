@@ -3,13 +3,14 @@
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
+uniform sampler2D GrassGradients;
+uniform sampler2D CellNoise;
 uniform float unFadeDistance = 1000.0;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 
 in vec3 fPosition;
 in vec2 fUV;
-flat in float fAtlasPage;
 in float fDistance;
 
 layout (location = 0) out vec4 oColor;
@@ -21,11 +22,20 @@ float InvSmoothStep(float x) {
 }
 
 void main() {
-    vec4 color = texture(GrassTexture, fUV).rgba;
+    vec4 color;
     // TODO: Lower settings disable transparency?
+    
+    vec2 worldUV = (fPosition.xy + CameraPos.xy) * 0.05;
+    float cellNoiseColor = texture(CellNoise, worldUV * 0.1).r;
+    vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y);
+    vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
+    
+    
+    color.rgb = GrassColor;
+    color.a = texture(GrassTexture, fUV).r;
 	
 	// Distance fade
-	float noiseVal = texture(GreyNoise, (fPosition.xy + CameraPos.xy) * 0.05).r;
+	float noiseVal = texture(GreyNoise, worldUV).r;
 	float fadeDist = unFadeDistance * 0.35;
 	float lerpVal = clamp(fDistance, 0.0, fadeDist) / fadeDist;
 	color.a *= clamp(mix(0.0, 1.0, 1.0 - ((noiseVal  + 1.0) * lerpVal)), 0.0, 1.0);
@@ -36,7 +46,7 @@ void main() {
 	color.a = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), color.a);
 	color.a = clamp(color.a, 0.0, 1.0);
 	
-    runAlphaTest(color.a, 0.01);
+    runAlphaTest(color.a, 0.001);
     oColor.rgb = color.rgb;
     oColor.a = 1.0; // AO
     

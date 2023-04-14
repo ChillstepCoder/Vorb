@@ -23,6 +23,8 @@ DebugOptions::DebugOptions() :
     mCloudRoughness(1.0f),
     // Grass
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
+    mGrassScale(4.625f, 0.7f),
+    mGrassLeanVariance(0.257f),
     mDebugGrassLod(false),
     mHideGrass(false),
     // Structures
@@ -38,6 +40,7 @@ DebugOptions::DebugOptions() :
     mTerrainSquaresColorPeriod(0.187f),
     mTerrainSquaresIntensity(0.0f),
     mTerrainBlendMult(0.037f),
+    mTerrainGrassColorV(0.95),
     mDisableTerrain(false),
     mDebugToggle0(false),
     // DOF

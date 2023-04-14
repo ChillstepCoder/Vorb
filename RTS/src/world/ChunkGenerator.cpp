@@ -34,7 +34,6 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     // TODO: This seems wrong
     static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
     static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
-    static TileID bushSmall = TileRepository::getTile(StrToken("bush_small"));
     static TileID bushMed = TileRepository::getTile(StrToken("bush_med"));
     static TileID bush2 = TileRepository::getTile(StrToken("bush_g"));
 
@@ -59,7 +58,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.01f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
             constexpr f32 TREE_DENSITY = 0.1f;
-            constexpr f32 BUSH_DENSITY = 0.01f;
+            constexpr f32 BUSH_DENSITY = 0.015f;
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
                 if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.5f) {
                     tile.mainLayer = baseTree;
@@ -71,10 +70,6 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             }
             else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {
                 tile.mainLayer = bush2;
-                *grass = 0;
-            }
-            else if (Random::getThreadSafef(worldPos.x * 1021.0f, worldPos.y * 522.0f) < BUSH_DENSITY * 0.7f) {
-                tile.mainLayer = bushSmall;
                 *grass = 0;
             }
             else if (Random::getThreadSafef(worldPos.x * 4021.0f, worldPos.y * 22.0f) < BUSH_DENSITY * 0.7f) {

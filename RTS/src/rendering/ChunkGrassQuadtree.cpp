@@ -186,7 +186,7 @@ void createGrassMesh(
                 //const float topXMult = (topTile.groundZPosition != tile.groundZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
 
                 // Handle variant UVs
-                constexpr int NUM_GRASS_TYPES = 4;
+                constexpr int NUM_GRASS_TYPES = 12;
 
                 // TODO: Determine edge
 
@@ -199,13 +199,15 @@ void createGrassMesh(
                         float rsize = lerp(0.2f, 0.8f, rnd);
                         const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
                         rsize += -grassNoise * 0.4f;
-                        const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
+                        const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * CHUNK_SIZE - y2 - (tx << 4) + (ty << 5)) & 0xff); // Fast modulus 256
+                        const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * CHUNK_SIZE + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                         f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
                         const f32 zPos = sHeightmapGrid->computeHeightAtChunkOffset(heightData->data, chunk.getChunkID(), truePos);
                         grassMesh.addBladeQuad(
                             f32v3(truePos.x, truePos.y, zPos), // TODO: new height
                             f32v2(bladeWidth, rsize),
-                            variantIndex
+                            variantIndex,
+                            rotation
                         );
                     }
                 }

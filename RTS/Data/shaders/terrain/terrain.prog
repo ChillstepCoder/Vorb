@@ -6,7 +6,7 @@ terrain:
       uniform: GreyNoise
     - name: grass_terrain
       uniform: GrassTexture
-    - name: mountain
-      uniform: StoneTexture
-    - name: mountain_norm
-      uniform: StoneNormal
+    - name: grass_gradients
+      uniform: GrassGradients
+    - name: cell_noise
+      uniform: CellNoise

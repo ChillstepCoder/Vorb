@@ -7,10 +7,10 @@
 #include "rendering/RenderCommon.h"
 
 struct GrassBillboardInstanceData {
-    GrassBillboardInstanceData(ui8v2&& dims, ui8 grassType) : dims(dims), grassType(grassType) {};
+    GrassBillboardInstanceData(ui8v2&& dims, ui8 grassType, ui8 rotation) : dims(dims), grassType(grassType), rotation(rotation) {};
     ui8v2 dims;
-    ui8 grassType;
-    ui8 pad; // TODO: GrassMaterial?
+    ui8 grassType; // We can encode 16 possible colors and 16 possible shapes with this
+    ui8 rotation; // Encodes 0 - 2PI
 };
 static_assert(sizeof(GrassBillboardInstanceData) == 4);
 
@@ -20,7 +20,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(GrassBillboardMesh);
 
     void reserveQuadCount(size_t count);
-    void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType);
+    void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType, ui8 rotation);
     void draw(VGUniform tboSizeType, VGUniform tboPosition) const;
     void finishMesh(MeshDrawMode drawMode);
     void destroy();

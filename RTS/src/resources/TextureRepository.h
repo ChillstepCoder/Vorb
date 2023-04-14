@@ -6,7 +6,6 @@
 #include "rendering/texture/GLTexture.h"
 #include "rendering/texture/Cubemap.h"
 
-DECL_VG(class TextureCache);
 DECL_VG(class SamplerState);
 DECL_VIO(class IOManager);
 DECL_VG(class ScopedBitmapResource);
@@ -24,7 +23,7 @@ struct TextureData {
 
 class TextureRepository {
 public:
-    TextureRepository(vg::TextureCache& textureCache, vio::IOManager& ioManager);
+    TextureRepository(vio::IOManager& ioManager);
     ~TextureRepository();
 
     const TextureData* loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV);
@@ -58,9 +57,6 @@ private:
     std::map<nString, TextureID> mTextureAssetPaths;
     std::vector<std::unique_ptr<Cubemap>> mCubemaps;
     std::map<nString, CubemapID> mCubemapIdLookup;
-
-    // OLD
-    vg::TextureCache& mTextureCache;
 
     vio::IOManager& mIoManager;
     std::unique_ptr<MaterialTextureGenerator> mNormalMapGenerator;

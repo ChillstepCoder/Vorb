@@ -5,14 +5,15 @@
 
 #include "util/TextureUtil.h"
 
-#include <Vorb/graphics/TextureCache.h>
-
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
+#include <Vorb/graphics/ImageIO.h>
 
-TextureRepository::TextureRepository(vg::TextureCache& textureCache, vio::IOManager& ioManager) : mTextureCache(textureCache), mIoManager(ioManager) {
+// TODO: https://github.com/nothings/stb
+
+TextureRepository::TextureRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
     mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
     mNormalMapGenerator->init();
 }
@@ -64,7 +65,8 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
     auto&& it = mTextureIdLookup.find(textureName);
     if (it != mTextureIdLookup.end()) {
         // Replace existing
-        LOG_WARN("Replacing existing texture {}", filePath.getString());
+        LOG_CRITICAL("Replacing existing texture {}", filePath.getString());
+        assert(false); // No reason for this right now.
         textureId = it->second;
         textureData = &mTextures[textureId];
         textureData->texture.destroy();

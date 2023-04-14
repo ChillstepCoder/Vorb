@@ -8,3 +8,7 @@ grass:
       uniform: GreyNoise
     - name: grass_blades
       uniform: GrassTexture
+    - name: grass_gradients
+      uniform: GrassGradients
+    - name: cell_noise
+      uniform: CellNoise

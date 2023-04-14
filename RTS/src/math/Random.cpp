@@ -43,7 +43,7 @@ extern ui32 Random::getCachedRandom() {
 
 extern ui32 Random::getCachedRandomSpecific(ui32 i) {
     assert(hasInitCachedRandom);
-    return cachedRandom[i % (unsigned)cachedRandom.size()];
+    return cachedRandom[i % (unsigned)cachedRandom.size()]; // TODO: Replace modulus with & using power of two size
 }
 
 extern float Random::getCachedRandomf() {

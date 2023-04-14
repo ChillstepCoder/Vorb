@@ -27,6 +27,8 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
     glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
+    glUniform2f(program.getUniform("unGrassScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
+    glUniform1f(program.getUniform("unLeanVariance"), sDebugOptions.mGrassLeanVariance);
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMesh& mesh = grassMesh->mMesh;
         f32v3 offset = grassMesh->mPosition - camera.getPosition();
