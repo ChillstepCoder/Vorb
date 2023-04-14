@@ -9,6 +9,8 @@
 #include "util/TinyThreadsafeVector.hpp"
 #include "world/ChunkState.h"
 
+#include "tile/TileGrass.h"
+
 
 class Chunk;
 class Mesh;
@@ -88,7 +90,6 @@ public:
 	ChunkState getState() const { return (ChunkState)mState.load(); }
     const ChunkID& getChunkID() const { return mChunkId; }
 	const HeightmapPatchID getHeightmapPatchID() const { return heightmapPatchIDFromChunkID(mChunkId); }
-    ui8 getGrassAt(const TileIndex index) const { return mGrass[index]; }
     const f32AABB3& getAABB() const { return mAABB; }
 	const std::vector<StructureID>& getStructures() const { return mStructures; }
 
@@ -119,7 +120,11 @@ public:
 	bool isDataReady() const { return mState == e_cast(ChunkState::READY); }
 
 	void setState(ChunkState state) { mState = e_cast(state); }
-	void setGrassAt(const TileIndex index, ui8 grass);
+	
+    void setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density);
+    void clearGrassAt(const TileIndex index);
+    const TileGrass& getGrassAt(const TileIndex index) const { return mGrass[index]; } // TODO: Game thread assert
+    //void bulkSetGrassAt(std::pair<TileIndex, ui8>* editData, size_t count); // TODO: THIS + EVENTS
 
     // =========== Terrain update  ===========
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
@@ -151,7 +156,7 @@ private:
 	BitFlags<ChunkFlags> mFlags;
 
 	TileContainer* mTileContainer = nullptr;
-    std::vector<ui8> mGrass; // Grass densities
+    std::vector<TileGrass> mGrass; // Grass densities
 	std::vector<StructureID> mStructures;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 };

@@ -7,7 +7,7 @@ in mat3 fTBN;
 in vec3 fViewTangent;
 in vec3 fFragPosTangent;
 
-uniform float unHeightScale = 1.0;
+uniform float unHeightScale = 0.023;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;

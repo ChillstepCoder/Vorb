@@ -837,7 +837,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
                 else {
                     chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
                     // TODO: Don't always clear grass?
-                    chunk.setGrassAt(chunkTileIndex, 0);
+                    chunk.clearGrassAt(chunkTileIndex);
                 }
             }
             else {

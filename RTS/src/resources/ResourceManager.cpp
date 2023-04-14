@@ -18,6 +18,7 @@
 #include "resources/SkillRepository.h"
 #include "resources/TextureRepository.h"
 #include "resources/TileRepository.h"
+#include "resources/TileGrassRepository.h"
 #include "resources/FontRepository.h"
 #include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
@@ -62,6 +63,7 @@ ResourceManager::ResourceManager() {
     mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
     mFontRepository = std::make_unique<FontRepository>();
     mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
+    mTileGrassRepository = std::make_unique<TileGrassRepository>();
 }
 
 ResourceManager::~ResourceManager() {
@@ -85,6 +87,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mMaterialShaderFiles.clear();
     mMaterialFiles.clear();
     mTileFiles.clear();
+    mTileGrassFiles.clear();
     mParticleSystemFiles.clear();
     mRoomFiles.clear();
     mBuildingFiles.clear();
@@ -219,6 +222,14 @@ void ResourceManager::loadFiles() {
         }
     }
 
+    // Load grass
+    {
+        ScopedTimer timer("Grass load");
+        for (auto&& entry : mTileGrassFiles) {
+            // TODO: Tilemanager?
+            mTileGrassRepository->loadGrassFile(*mIoManager, entry, *mMaterialRepository);
+        }
+    }
 
     // Load skills
     {
@@ -312,6 +323,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         return;
     }
 
+    // TODO: This can all be optimized with getFileExtension() and then a string map lookup, std::map<std::string, std::function<void(const Vio::Path& entry)>
     for (auto&& entry : entries) {
         // Recurse
         // TODO: Map lookup for minor optimization? Sort by extension? idk, (im starting to hate this)
@@ -397,6 +409,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".ttf")) {
             mFontFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".grass")) {
+            mTileGrassFiles.emplace_back(entry);
         }
     }
 }

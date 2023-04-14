@@ -29,13 +29,14 @@ void TryGenerateLargeObjectAtPoint(const f32v2& worldPos, ui32 index, f32 minHei
     assert(false);
 }
 
-Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
-
+Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass) {
+    assert(grass);
     // TODO: This seems wrong
     static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
     static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
     static TileID bushMed = TileRepository::getTile(StrToken("bush_med"));
     static TileID bush2 = TileRepository::getTile(StrToken("bush_g"));
+    static TileGrassID defaultGrass = 0; // TODO: DIFFERENT
 
     constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
     constexpr f32 MAX_TREE_HEIGHT = 100.0f;
@@ -48,10 +49,11 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
 
     if (height > 0.0f) {
         // Surface
-        if (grass && height < MAX_GRASS_HEIGHT) {
+        if (height < MAX_GRASS_HEIGHT) {
             f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
             if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) * fadeMult > 0.04f) {
-                *grass = 1;
+                grass->grassIDs[0] = defaultGrass;
+                grass->densities[0] = 255;
             }
         }
         if (height < MAX_TREE_HEIGHT) {
@@ -66,15 +68,15 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
                 else {
                     tile.mainLayer = pineTree;
                 }
-                *grass = 0;
+                *grass = TileGrass();
             }
             else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {
                 tile.mainLayer = bush2;
-                *grass = 0;
+                *grass = TileGrass();
             }
             else if (Random::getThreadSafef(worldPos.x * 4021.0f, worldPos.y * 22.0f) < BUSH_DENSITY * 0.7f) {
                 tile.mainLayer = bushMed;
-                *grass = 0;
+                *grass = TileGrass();
             }
         }
     }
@@ -161,7 +163,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
         const f32 height = centerHeights[y * CHUNK_WIDTH + x];
-        ui8 grass = 0;
+        TileGrass grass;
         Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
         const f32 baseZPos = tile.getGroundZOffset();
         if (baseZPos + 1.0f > maxHeight) {

@@ -52,7 +52,7 @@ void Chunk::freeData() {
         TileContainerRepository::destroyTileContainer(mTileContainer);
         mTileContainer = nullptr;
     }
-    std::vector<ui8>().swap(mGrass);
+    std::vector<TileGrass>().swap(mGrass);
     // TODO: Serialization
     std::vector<StructureID>().swap(mStructures);
     std::map<TileIndex, ItemStack>().swap(mItemsOnGround);
@@ -185,13 +185,41 @@ Chunk& Chunk::getBottomNeighbor() const {
     return sWorld->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
-void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
-    mGrass[index] = grass;
+void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {
     LOG_CRITICAL("Need to update Chunk::setGrassAt");
+    TileGrass& grass = mGrass[index];
+    int lowestDensityIndex = 0;
+    int lowestDensity = INT32_MAX;
+    for (int i = 0; i < MAX_GRASS_TYPES_PER_TILE; ++i) {
+        if (grass.grassIDs[i] == grassId) {
+            grass.densities[i] = density;
+            if (density == 0) {
+                grass.grassIDs[i] = INVALID_TILE_GRASS_ID;
+            }
+            // Prevent default case below
+            density = 0;
+            break;
+        }
+        else if (grass.densities[i] < lowestDensity) {
+            // Keep track of lowest density for replace
+            lowestDensity = grass.densities[i];
+            lowestDensityIndex = i;
+        }
+    }
+    // If we didn't set or clear a grass above, replace the one with the lowest density
+    if (density != 0) {
+        grass.grassIDs[lowestDensityIndex] = grassId;
+        grass.densities[lowestDensityIndex] = density;
+    }
     // TODO: mark dirty
     /* if (mChunkRenderData.mGrassLod) {
          mChunkRenderData.mGrassLod
      }*/
+}
+
+void Chunk::clearGrassAt(const TileIndex index) {
+    mGrass[index] = TileGrass();
+    LOG_CRITICAL("Need to update Chunk::clearGrassAt");
 }
 
 void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {

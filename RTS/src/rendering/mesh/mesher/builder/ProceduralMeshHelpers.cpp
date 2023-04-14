@@ -341,6 +341,13 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 meshBuilder.addBoardBetweenPoints(p2 + verticalOffset, p4 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
             }
 
+            // Glass panes
+            const f32v2 paneDims = f32v2(1.0f - 2.0f * boardHalfDims.x, WINDOW_HEIGHT - 2.0f * boardHalfDims.x);
+            const f32v3 glassRootSouth(southRootPos.x, southRootPos.y, southRootPos.z + WINDOW_BASE_Z + boardHalfDims.x);
+            meshBuilder.addAxisAlignedQuad(glassRootSouth + horizontalOffset, paneDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+            const f32v3 glassRootNorth(northRootPos.x, northRootPos.y, southRootPos.z + WINDOW_BASE_Z + boardHalfDims.x);
+            meshBuilder.addAxisAlignedQuad(glassRootNorth + horizontalOffset, paneDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+
             // Physics
             physMesh.addTileQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0]);
             physMesh.addTileQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1]);

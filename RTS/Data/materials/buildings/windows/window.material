@@ -1,0 +1,5 @@
+albedo: window_albedo.png
+disp: window_disp.png
+ao: window_ao.png
+normal: window_norm.png
+rough: window_rough.png

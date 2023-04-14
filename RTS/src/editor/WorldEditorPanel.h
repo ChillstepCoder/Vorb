@@ -5,6 +5,7 @@ class Camera3D;
 #include "world/ChunkID.h"
 #include "physics/PhysHitResult.h"
 #include "util/StrToken.h"
+#include "tile/TileGrass.h"
 
 class Brush;
 class BrushRepository;
@@ -81,7 +82,7 @@ private:
     void updateBuildingEdit();
 
     static void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
-    static void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
+    static void editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
     static f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
 
@@ -104,6 +105,8 @@ private:
     // Building Edit
     mutable ui32 mSelectedBuilding = 0;
     mutable i32v2 mPlotDims = i32v2(16);
+    // Grass edit
+    mutable TileGrassID mSelectedGrass = 0;
 
     mutable StrToken mSelectedEntity;
     DeferredPhysicsPick mDeferredPhysicsPick;

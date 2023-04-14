@@ -11,6 +11,7 @@
 
 #include "resources/ResourceOperations.h"
 #include "resources/ResourceManager.h"
+#include "resources/TileGrassRepository.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "editor/BrushRepository.h"
 #include "resources/TileRepository.h"
@@ -330,6 +331,20 @@ void WorldEditorPanel::renderGrassEditUI() const {
     if (ImGui::RadioButton("Remove", mGrassEditState == GrassEditState::REMOVE)) {
         mGrassEditState = GrassEditState::REMOVE;
     }
+
+    ImGui::Text("Tile select");
+    const std::vector<TileGrassData>& allData = Services::ResourceManager::ref().getTileGrassRepository().getAllGrassData();
+    ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+    for (size_t i = 0; i < allData.size(); ++i) {
+        const TileGrassData& grassData = allData[i];
+        ImGui::TableNextColumn();
+        if (ImGui::RadioButton(grassData.mName.toString().c_str(), mSelectedGrass == (TileGrassID)i)) {
+            mSelectedGrass = (ui32)i;
+        }
+        ImGui::TableNextColumn();
+        //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
+    }
+    ImGui::EndTable();
     ImGui::SliderFloat("Brush Size", &mGrassBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Brush Strength", &mGrassBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
 }
@@ -495,11 +510,13 @@ void WorldEditorPanel::updateGrassEdit() {
                 PhysHitResult hitResult;
                 BrushSettings brushSettings;
                 GrassEditState editState;
+                TileGrassID selectedGrass;
             };
             GrassEditTask* task = new GrassEditTask;
             task->hitResult = mHitResult;
             task->brushSettings = *mCurrentBrushSettings;
             task->editState = mGrassEditState;
+            task->selectedGrass = mSelectedGrass;
 
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
                 const GrassEditTask* task = static_cast<GrassEditTask*>(vTask);
@@ -522,7 +539,7 @@ void WorldEditorPanel::updateGrassEdit() {
                             const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                             const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
                             if (glm::length2(offsetToTile) < brushSizeSq) {
-                                editGrass(id, tileIndex, offsetToTile, brushSettings, task->editState);
+                                editGrass(id, tileIndex, task->selectedGrass, offsetToTile, brushSettings, task->editState);
                             }
                         }
                     }
@@ -659,16 +676,16 @@ void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, co
     }
 }
 
-void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {
+void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {
 
     f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
     const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     if (random < strength) {
         if (editState == GrassEditState::ADD) {
-            sWorld->getChunk(id).setGrassAt(tileIndex, 1);
+            sWorld->getChunk(id).setGrassAt(tileIndex, grassId, 1);
         }
         else {
-            sWorld->getChunk(id).setGrassAt(tileIndex, 0);
+            sWorld->getChunk(id).setGrassAt(tileIndex, grassId, 0);
         }
     }
 }

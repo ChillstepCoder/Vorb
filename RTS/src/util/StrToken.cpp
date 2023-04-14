@@ -42,3 +42,12 @@ void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
     }
     outStr[i] = '\0';
 }
+
+nString StrToken::toString() const {
+    nString buffer;
+    buffer.resize(14);
+    ui32 tmpLength;
+    toString(buffer.data(), &tmpLength);
+    buffer.resize(tmpLength);
+    return buffer;
+}

@@ -71,6 +71,7 @@ public:
 
     // Buffer length must be at least 14
     void toString(OUT char* outStr, OUT ui32* outLength) const;
+    nString toString() const;
 
     // Index can be 0-15
     ui32 getIndex() const { return (ui32)(mToken >> 60); }

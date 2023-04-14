@@ -8,6 +8,7 @@ wd_wall_goth:
 wd_wind_goth:
   mat0: wood_wall_gothic
   mat1: big_beam_0
+  mat2: window
   texture_method: vertical
   shape: Window
   recipe:
