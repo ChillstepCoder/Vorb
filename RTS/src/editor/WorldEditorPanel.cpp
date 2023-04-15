@@ -325,11 +325,11 @@ void WorldEditorPanel::renderTerrainEditUI() const {
 
 void WorldEditorPanel::renderGrassEditUI() const {
     ImGui::Text("Edit mode");
-    if (ImGui::RadioButton("Add", mGrassEditState == GrassEditState::ADD)) {
-        mGrassEditState = GrassEditState::ADD;
+    if (ImGui::RadioButton("Grow", mGrassEditState == GrassEditState::RAISE)) {
+        mGrassEditState = GrassEditState::RAISE;
     }
-    if (ImGui::RadioButton("Remove", mGrassEditState == GrassEditState::REMOVE)) {
-        mGrassEditState = GrassEditState::REMOVE;
+    if (ImGui::RadioButton("Shrink", mGrassEditState == GrassEditState::LOWER)) {
+        mGrassEditState = GrassEditState::LOWER;
     }
 
     ImGui::Text("Tile select");
@@ -678,16 +678,21 @@ void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, co
 
 void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {
 
+    constexpr f32 POWER = 30.0f;
     f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
-    const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
-    if (random < strength) {
-        if (editState == GrassEditState::ADD) {
-            sWorld->getChunk(id).setGrassAt(tileIndex, grassId, 1);
-        }
-        else {
-            sWorld->getChunk(id).setGrassAt(tileIndex, grassId, 0);
-        }
+    //const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
+    //if (random < strength) {
+    float density = (float)sWorld->getChunk(id).getGrassDensityAt(tileIndex, grassId);
+    if (editState == GrassEditState::RAISE) {
+        density += strength * POWER;
     }
+    else {
+        density -= strength * POWER;
+    }
+
+    ui8 densityUi8 = (ui8)glm::clamp(glm::round(density), 0.0f, 255.0f);
+    sWorld->getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
+    //}
 }
 
 f32 WorldEditorPanel::getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint) {

@@ -28,8 +28,8 @@ enum class TerrainEditState {
 };
 
 enum class GrassEditState {
-    ADD,
-    REMOVE,
+    RAISE,
+    LOWER,
     COUNT
 };
 
@@ -89,7 +89,7 @@ private:
     // Edit states
     mutable WorldEditorEditMode mEditMode = WorldEditorEditMode::TERRAIN;
     mutable TerrainEditState mTerrainEditState = TerrainEditState::RAISE_TERRAIN;
-    mutable GrassEditState mGrassEditState = GrassEditState::ADD;
+    mutable GrassEditState mGrassEditState = GrassEditState::RAISE;
     mutable CityEditState mCityEditState = CityEditState::CREATE;
     mutable BuildingEditState mBuildingEditState = BuildingEditState::CREATE;
     // Brushes

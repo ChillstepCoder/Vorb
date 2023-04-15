@@ -15,9 +15,17 @@ public:
         mFloorStride = tileDims.x * tileDims.y;
     }
     inline bool isPosAtSouthBorder(const i32v3& tilePos) const { return tilePos.y <= 0; }
+    inline bool isPosAtSouthBorder(const i32v2& tilePos) const { return tilePos.y <= 0; }
     inline bool isPosAtWestBorder(const i32v3& tilePos) const { return tilePos.x <= 0; }
+    inline bool isPosAtWestBorder(const i32v2& tilePos) const { return tilePos.x <= 0; }
     inline bool isPosAtEastBorder(const i32v3& tilePos) const { return tilePos.x >= mTileDims.x - 1; }
+    inline bool isPosAtEastBorder(const i32v2& tilePos) const { return tilePos.x >= mTileDims.x - 1; }
     inline bool isPosAtNorthBorder(const i32v3& tilePos) const { return tilePos.y >= mTileDims.y - 1; }
+    inline bool isPosAtNorthBorder(const i32v2& tilePos) const { return tilePos.y >= mTileDims.y - 1; }
+    inline bool isXAtWestBorder(i32 x) const { return x <= 0; }
+    inline bool isXAtEastBorder(i32 x) const { return x >= mTileDims.x - 1; }
+    inline bool isYAtSouthBorder(i32 y) const { return y <= 0; }
+    inline bool isYAtNorthBorder(i32 y) const { return y >= mTileDims.y - 1; }
     inline TileIndex getSouthWestTileIndex(TileIndex tileIndex) const { return tileIndex - mTileDims.x - 1; }
     inline TileIndex getSouthTileIndex(TileIndex tileIndex) const { return tileIndex - mTileDims.x; }
     inline TileIndex getSouthEastTileIndex(TileIndex tileIndex) const { return tileIndex - mTileDims.x + 1; }
@@ -62,6 +70,7 @@ public:
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const { return xyz.x + xyz.y * mTileDims.x + xyz.z * mFloorStride; }
     TileIndex getTileIndexFromXYZOffset(const i32v3& xyz) const { return (TileIndex)(xyz.x + xyz.y * mTileDims.x + xyz.z * mFloorStride); }
     TileIndex getTileIndexFromXYZOffset(i32 x, i32 y, i32 z) const { return (TileIndex)(x + y * mTileDims.x + z * mFloorStride); }
+    TileIndex getBaseTileIndexFromXYOffset(i32 x, i32 y) const { return (TileIndex)(x + y * mTileDims.x); }
 
     const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mTileDims); }
     const i32v3& getDims() const { return mTileDims; }

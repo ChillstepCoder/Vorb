@@ -702,6 +702,9 @@
     <ClCompile Include="src\resources\TileGrassRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1650,6 +1653,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\TileGrassRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

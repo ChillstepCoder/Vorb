@@ -14,6 +14,7 @@ out float fHeight;
 out vec2 fUV;
 flat out float fAtlasPage;
 out float fDistance;
+out vec2 fLean;
 
 const vec2 VertexData[4] = {
  {-1.0, -1.0 },
@@ -77,7 +78,7 @@ void main() {
     // Wind
 	vec3 trueWorldPos = vPosition.xyz + unOffset + CameraPos;
     fWorldRoot = trueWorldPos;
-    fHeight = vertexOffsets.y;
+    fHeight = xzOffsetUncompressed.y;
 	
 	vec4 glPos = VP * cameraRelativePos;
 	vec4 screenCamera = VP * vec4(CameraFront, 0.0);
@@ -86,10 +87,12 @@ void main() {
 	
     fWorldPos = cameraRelativePos.xyz;
 	
+    
 	// Grass blade uvs
-	fUV = UVS[gl_VertexID % 4 + (4 * (bladeIndex % 2))];
+    float randomFlip = rand(trueWorldPos.yx);
+	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))];
     fUV.x += bladeType * GRASS_UV_X;
     
     // Lean at the top
-    fWorldPos.xy += xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy);
+    fLean = xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy);
 }

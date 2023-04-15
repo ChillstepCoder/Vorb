@@ -4,7 +4,7 @@ layout(triangles, equal_spacing, ccw) in;
 
 #include "../util/wind.glsl"
 
-const float WIND_INTENSITY = 0.7;
+const float WIND_INTENSITY = 1.0;
 
 uniform vec3 unPlayerPos;
 
@@ -13,8 +13,9 @@ in float tHeight[];
 flat in vec3 tWorldRoot[];
 in vec2 tUV[];
 in float tDistance[];
+in vec2 tLean[];
 
-out vec3 fPosition;
+out vec3 fRootPosition;
 out vec2 fUV;
 out float fDistance;
 
@@ -38,9 +39,13 @@ void main()
     // Interpolate the attributes of the output vertex using the barycentric coordinates
     vec3 worldPos = interpolate3D(tWorldPos[0], tWorldPos[1], tWorldPos[2]);
     
+    vec2 lean = interpolate2D(tLean[0], tLean[1], tLean[2]);
+    
     float height = interpolate1D(tHeight[0], tHeight[1], tHeight[2]);
     fUV = interpolate2D(tUV[0], tUV[1], tUV[2]);
     fDistance = tDistance[0];
+    
+    worldPos.xy += lean * height;
     
     // Collision with player
     vec2 playerWorldOffset = (tWorldRoot[0].xy) - unPlayerPos.xy;
@@ -55,6 +60,6 @@ void main()
     
     
     worldPos.xy += collisionForce;
-    fPosition = worldPos;
+    fRootPosition = tWorldRoot[0];
     gl_Position = VP * vec4(worldPos, 1.0);
 }

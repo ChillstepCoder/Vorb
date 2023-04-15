@@ -11,6 +11,7 @@
 
 #include "tile/TileGrass.h"
 
+#include <shared_mutex>
 
 class Chunk;
 class Mesh;
@@ -123,7 +124,9 @@ public:
 	
     void setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density);
     void clearGrassAt(const TileIndex index);
-    const TileGrass& getGrassAt(const TileIndex index) const { return mGrass[index]; } // TODO: Game thread assert
+	const TileGrass& getGrassAt(const TileIndex index) const { /*assert(IS_GAME_THREAD()); */return mGrass[index]; } // TODO: Game thread assert
+	const ui8 getGrassDensityAt(const TileIndex index, TileGrassID grassId) const;
+	void copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const;
     //void bulkSetGrassAt(std::pair<TileIndex, ui8>* editData, size_t count); // TODO: THIS + EVENTS
 
     // =========== Terrain update  ===========
@@ -157,6 +160,7 @@ private:
 
 	TileContainer* mTileContainer = nullptr;
     std::vector<TileGrass> mGrass; // Grass densities
+    mutable std::shared_mutex mSharedGrassMutex;
 	std::vector<StructureID> mStructures;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 };

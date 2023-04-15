@@ -186,15 +186,18 @@ Chunk& Chunk::getBottomNeighbor() const {
 }
 
 void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {
-    LOG_CRITICAL("Need to update Chunk::setGrassAt");
+    //LOG_CRITICAL("Need to update Chunk::setGrassAt");
     TileGrass& grass = mGrass[index];
     int lowestDensityIndex = 0;
     int lowestDensity = INT32_MAX;
     for (int i = 0; i < MAX_GRASS_TYPES_PER_TILE; ++i) {
         if (grass.grassIDs[i] == grassId) {
-            grass.densities[i] = density;
-            if (density == 0) {
-                grass.grassIDs[i] = INVALID_TILE_GRASS_ID;
+            {
+                std::lock_guard lock(mSharedGrassMutex);
+                grass.densities[i] = density;
+                if (density == 0) {
+                    grass.grassIDs[i] = INVALID_TILE_GRASS_ID;
+                }
             }
             // Prevent default case below
             density = 0;
@@ -208,6 +211,7 @@ void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) 
     }
     // If we didn't set or clear a grass above, replace the one with the lowest density
     if (density != 0) {
+        std::lock_guard lock(mSharedGrassMutex);
         grass.grassIDs[lowestDensityIndex] = grassId;
         grass.densities[lowestDensityIndex] = density;
     }
@@ -220,6 +224,44 @@ void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) 
 void Chunk::clearGrassAt(const TileIndex index) {
     mGrass[index] = TileGrass();
     LOG_CRITICAL("Need to update Chunk::clearGrassAt");
+}
+
+const ui8 Chunk::getGrassDensityAt(const TileIndex index, TileGrassID grassId) const
+{
+    assert(IS_GAME_THREAD());
+    const TileGrass& grass = mGrass[index];
+    return grass.getDensity(grassId);
+}
+
+void Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const {
+    PROFILE_FUNCTION();
+    assert(!IS_GAME_THREAD());
+    { // Copy true data with lock
+        std::shared_lock lock(mSharedGrassMutex);
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            // Memcpy each row for maximum speed
+            memcpy(&outGrassData[y + 1][1], &mGrass[y * CHUNK_WIDTH], sizeof(TileGrass) * CHUNK_WIDTH);
+        }
+    }
+    // Pad edges with interior copies, no lock needed
+    // We are just using for interpolation so its ok if we have some seams
+    // Bottom left corner
+    outGrassData[0][0] = outGrassData[1][1];
+    // Bottom row
+    memcpy(&outGrassData[0][1], &outGrassData[1][1], sizeof(TileGrass) * CHUNK_WIDTH);
+    // Bottom right corner
+    outGrassData[0][PADDED_CHUNK_WIDTH - 1] = outGrassData[1][PADDED_CHUNK_WIDTH - 2];
+    // Left and right edges
+    for (int y = 1; y < PADDED_CHUNK_WIDTH - 1; ++y) {
+        outGrassData[y][0] = outGrassData[y][1];
+        outGrassData[y][PADDED_CHUNK_WIDTH - 1] = outGrassData[y][PADDED_CHUNK_WIDTH - 2];
+    }
+    // Top left corner
+    outGrassData[PADDED_CHUNK_WIDTH - 1][0] = outGrassData[PADDED_CHUNK_WIDTH - 2][1];
+    // Top row
+    memcpy(&outGrassData[PADDED_CHUNK_WIDTH - 1][1], &outGrassData[PADDED_CHUNK_WIDTH - 2][1], sizeof(TileGrass) * CHUNK_WIDTH);
+    // Top right corner
+    outGrassData[PADDED_CHUNK_WIDTH - 1][PADDED_CHUNK_WIDTH - 1] = outGrassData[PADDED_CHUNK_WIDTH - 2][PADDED_CHUNK_WIDTH - 2];
 }
 
 void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {

@@ -26,6 +26,7 @@ constexpr int MIN_SUBCHUNKS_PER_CHUNK = SQ(MIN_SUBCHUNKS_PER_CHUNK_ROW);*/
 
 constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
+constexpr int PADDED_CHUNK_WIDTH = CHUNK_WIDTH + 2;
 
 typedef ui16 SubchunkIndex;
 constexpr ui32 MAX_TILE_CONTAINER_WIDTH = CHUNK_WIDTH;
