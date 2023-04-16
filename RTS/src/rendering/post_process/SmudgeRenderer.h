@@ -11,9 +11,11 @@ public:
 
     void beginSmudgePass(vg::GBuffer* activeGBuffer);
     void renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& camera);
+    void renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D& camera);
 private:
     // Smudge post process
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
     const MaterialShader* mSmudgeShader = nullptr;
+    const MaterialShader* mPaintNoiseShader = nullptr;
 };
 

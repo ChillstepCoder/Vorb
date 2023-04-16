@@ -14,10 +14,10 @@
 #include <Vorb/graphics/GBuffer.h>
 
 DepthOfFieldPostProcess::DepthOfFieldPostProcess(const ui32v2& gbufferDims) {
-    // TODO: SWAP CHAIN
+    // Blending the HDR post lightingcolor hence RGB16F
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
     }
 
     mMaterial = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("depth_of_field");

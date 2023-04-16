@@ -479,9 +479,10 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // TODO: Where is this getting unset?
     glEnable(GL_CULL_FACE);
 
+    // TODO Try re-enable ambient occlusion for terrain in a smart way?
     {
         glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
+        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::TERRAIN), 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Terrain
         if (!sDebugOptions.mDisableTerrain) {
@@ -489,6 +490,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         }
         glDisable(GL_STENCIL_TEST);
     }
+
+    //mSmudgeRenderer->renderPaintNoise(mActiveGBuffer, camera);
 
     // Clouds
    /* if (!sDebugOptions.mDisableClouds) {
@@ -557,14 +560,13 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mActiveGBuffer = mHDRLightGBuffer.get();
 
     // Depth of field
-    // TODO: THIS DOESNT WORK BECAUSE ITS NOT AN HDR BUFFER
     vg::DepthState::NONE.set();
     mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
 
     // Final render to screen, applying tonemap
     mActiveGBuffer->unuse();
     glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
-    mTonemapRenderer->render(mHDRLightGBuffer->getAlbedoTexture());
+    mTonemapRenderer->render(mActiveGBuffer->getAlbedoTexture());
     //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
 
     // Final Pass through process

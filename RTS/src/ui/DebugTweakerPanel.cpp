@@ -120,6 +120,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat2("Blade Scale", &sDebugOptions.mGrassScale.x, 0.5f, 8.0f);
         ImGui::SliderFloat("Lean Variance", &sDebugOptions.mGrassLeanVariance, 0.0f, 1.0f);
         ImGui::SliderFloat("Dither Power", &sDebugOptions.mGrassDitherPower, 0.1f, 1.0f);
+        ImGui::SliderFloat("Color Map Scale", &sDebugOptions.mGrassColorMapScale, 0.01f, 3.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
         ImGui::Checkbox("Disable", &sDebugOptions.mHideGrass);
         ImGui::PopID();
@@ -326,7 +327,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         }
 
         if (ImGui::CollapsingHeader("Smudge")) {
-            ImGui::SliderInt("Blend Passes", &sDebugOptions.mSmudgeTestPasses, 0, 15);
+            ImGui::SliderInt("Blend Passes", &sDebugOptions.mSmudgeTestPasses, 1, 8);
             ImGui::SliderFloat("Blend Radius", &sDebugOptions.mSmudgeTestRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
             ImGui::SliderFloat("Blend Norm Threshold", &sDebugOptions.mSmudgeTestNormThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
             ImGui::SliderFloat("Blend Depth Threshold", &sDebugOptions.mSmudgeTestDepthThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);

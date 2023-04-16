@@ -9,6 +9,7 @@ uniform float unFadeDistance = 1000.0;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 uniform float unDitherPower = 0.5;
+uniform float unColorMapScale = 0.1;
 
 in vec3 fRootPosition;
 in vec2 fUV;
@@ -27,7 +28,7 @@ void main() {
     // TODO: Lower settings disable transparency?
     
     vec2 worldUV = fRootPosition.xy * 0.05;
-    float cellNoiseColor = texture(CellNoise, worldUV * 0.1).r;
+    float cellNoiseColor = texture(CellNoise, worldUV * unColorMapScale).r;
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y);
     vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
     

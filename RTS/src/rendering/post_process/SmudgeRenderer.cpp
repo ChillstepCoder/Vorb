@@ -20,8 +20,8 @@ SmudgeRenderer::SmudgeRenderer(const ui32v2& screenResolution) {
         // No depth as we will share the depth texture with the main attachment
     }
 
-
     mSmudgeShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("smudge");
+    mPaintNoiseShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("paint_noise");
 }
 
 SmudgeRenderer::~SmudgeRenderer() {
@@ -128,4 +128,36 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
     if (activeGBuffer->hasStencil()) {
         glDisable(GL_STENCIL_TEST);
     }
+}
+
+void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D& camera)
+{
+    assert(activeGBuffer->hasStencil());
+    if (sDebugOptions.mSmudgePaintNoiseDisable) {
+        return;
+    }
+
+    ui32 freeTextureIndex;
+    MaterialRenderer::bindMaterialForRender(*mPaintNoiseShader, &freeTextureIndex);
+
+    const VGUniform& albedoUniform = mPaintNoiseShader->mProgram.getUniform("unAlbedoFbo");
+    const VGUniform& normalUniform = mPaintNoiseShader->mProgram.getUniform("unNormalFbo");
+    const VGUniform& depthUniform = mPaintNoiseShader->mProgram.getUniform("unDepthFbo");
+    const VGUniform& dirUniform = mPaintNoiseShader->mProgram.getUniform("unDirection");
+    glUniform1i(albedoUniform, freeTextureIndex);
+    glUniform1i(normalUniform, freeTextureIndex + 1);
+    glUniform1i(depthUniform, freeTextureIndex + 2);
+    //glUniform2f(mPaintNoiseShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
+    //glUniform2f(mPaintNoiseShader->mProgram.getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
+    activeGBuffer->bindDepthTexture(freeTextureIndex + 2);
+    vg::DepthState::NONE.set();
+
+    // Enable stencil buffer only pass where we have paint targets
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_GREATER, 0, PAINT_SMUDGE_STENCIL_BUFFER_MASK);
+    // Disable stencil modification
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+
+    glDisable(GL_STENCIL_TEST);
 }

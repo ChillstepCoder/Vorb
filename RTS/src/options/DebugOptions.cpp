@@ -26,6 +26,7 @@ DebugOptions::DebugOptions() :
     mGrassScale(4.625f, 1.0f),
     mGrassLeanVariance(0.5f),
     mGrassDitherPower(0.5f),
+    mGrassColorMapScale(0.1f),
     mDebugGrassLod(false),
     mHideGrass(false),
     // Structures
@@ -75,6 +76,11 @@ DebugOptions::DebugOptions() :
     mSmudgeTestShowVariance(0),
     mSmudgeTestShowEdges(0),
     mSmudgeTestDisable(0),
+    mSmudgePaintNoisePasses(2),
+    mSmudgePaintNoiseIntensity(1.0f),
+    mSmudgePaintNoiseOffset(0.0f),
+    mSmudgePaintNoiseFrequency(1.0f),
+    mSmudgePaintNoiseDisable(false),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),

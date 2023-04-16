@@ -8,6 +8,7 @@ uniform sampler2D GrassGradients;
 uniform sampler2D CellNoise;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
+uniform float unColorMapScale = 0.1;
 
 uniform float unHeightMult = 0.191;
 uniform float unWavyMult = 0.167;
@@ -87,7 +88,7 @@ void main() {
     float distance = length(fPosition.xy);
     float distUvLerp = min(distance * 0.001, 1.0);
     
-    float cellNoiseColor = texture(CellNoise, fUV * 0.1).r;
+    float cellNoiseColor = texture(CellNoise, fUV * unColorMapScale).r;
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, unGrassColorV);
     vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
     

@@ -34,6 +34,7 @@ struct DebugOptions {
     f32v2 mGrassScale;
     f32 mGrassLeanVariance;
     f32 mGrassDitherPower;
+    f32 mGrassColorMapScale;
     bool mDebugGrassLod;
     bool mHideGrass;
     // Structures
@@ -82,6 +83,11 @@ struct DebugOptions {
     bool mSmudgeTestShowVariance;
     bool mSmudgeTestShowEdges;
     bool mSmudgeTestDisable;
+    int mSmudgePaintNoisePasses;
+    f32 mSmudgePaintNoiseIntensity;
+    f32 mSmudgePaintNoiseOffset;
+    f32 mSmudgePaintNoiseFrequency;
+    bool mSmudgePaintNoiseDisable;
     // Toggles
     bool mPauseFrustum;
     bool mWireframe;
