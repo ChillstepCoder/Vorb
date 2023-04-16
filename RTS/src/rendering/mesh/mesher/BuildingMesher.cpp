@@ -375,6 +375,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
             buildMeshFromStraightSkeleton(ss, building, meshBuilders.staticBuilder, contourEdges, primaryBeamMaterial, shinglesMaterial, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
+            if (visLog) visLog->nextStep("Countour " + std::to_string(floor) + " " + std::to_string(n));
             meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, shinglesMaterial, primaryBeamMaterial, zPos, visLog);
             contourEdges.clear();
         }
@@ -627,7 +628,9 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
                     f32v3(x, y, h),
                     f32v3(thisVert.x(), thisVert.y(), 0.0f),
                     f32v3(extrudeIt->second.x, extrudeIt->second.y, extrudeIt->second.z),
-                    f32v3(nextVert.x(), nextVert.y(), 0.0f)
+                    f32v3(nextVert.x(), nextVert.y(), 0.0f),
+                    Cartesian::INVALID,
+                    isGable //  TODO: WRONG I THINK
                     });
             }
 
@@ -839,37 +842,43 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
                 dir = Cartesian::WEST;
             }
         }
-
-        // Step along the edge and add extruded board pieces
-        // Random dims
-        constexpr f32 BOARD_SIZE_VARIANCE = 0.04f;
-        constexpr f32 BOARD_GAP_VARIANCE = 0.1f;
-        constexpr f32 BOARD_ANGLE_VARIANCE = 0.1f;
-        constexpr f32 BOARD_LENGTH_VARIANCE = 0.15f;
-        constexpr f32 BOARDS_PER_METER = 2;
-        constexpr f32 BOARD_LENGTH_BASE = ROOF_EXTRUDE_DISTANCE - 0.15f;
-        constexpr f32 BOARD_START_DEPTH_MULT = 0.6f;
-        const f32v3 diff = second - first;
-        const f32 distance = glm::length(diff);
-        const f32v3 iterNormal = diff / distance;
-        const f32v3& edgeNormal = CARTESIAN_NORMALS_3D[e_cast(dir)];
-        const int boardCount = (int)round(distance * BOARDS_PER_METER);
-        const f32 boardGapSize = distance / (boardCount + 1);
-        const f32v3 start = first - edgeNormal * ROOF_EXTRUDE_DISTANCE * BOARD_START_DEPTH_MULT;
-        // TODO: check for intersections with other rooms
-        for (int i = 1; i <= boardCount; ++i) {
-            // Get dims
-            const f32v2 boardHalfDims = f32v2(
-                0.03f + randFromf32v3(first, i << 3) * BOARD_SIZE_VARIANCE,
-                0.03f + randFromf32v3(second, i << 3) * BOARD_SIZE_VARIANCE
-            );
-            const f32v3 startWithBoardOffset = f32v3(start.x, start.y, start.z + 0.15f - boardHalfDims.y);
-            // Extruded boards with random offset variance
-            const f32v3 offset = iterNormal * (i * boardGapSize + (randFromf32v3(startWithBoardOffset, i << 4) - 0.5f) * BOARD_GAP_VARIANCE);
-            const f32v3 p1 = startWithBoardOffset + offset;
-            const f32 boardLength = BOARD_LENGTH_BASE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
-            const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.5f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
-            meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodMaterial, f32v2(1.0f));
+        if (edge.isGable) {
+            // Debug render gable
+            if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(1.0f, 1.0f, 1.0f));
+        }
+        else {
+            // Non gables have supporting boards
+            // Step along the edge and add extruded board pieces
+            // Random dims
+            constexpr f32 BOARD_SIZE_VARIANCE = 0.04f;
+            constexpr f32 BOARD_GAP_VARIANCE = 0.1f;
+            constexpr f32 BOARD_ANGLE_VARIANCE = 0.1f;
+            constexpr f32 BOARD_LENGTH_VARIANCE = 0.15f;
+            constexpr f32 BOARDS_PER_METER = 2;
+            constexpr f32 BOARD_LENGTH_BASE = ROOF_EXTRUDE_DISTANCE - 0.15f;
+            constexpr f32 BOARD_START_DEPTH_MULT = 0.6f;
+            const f32v3 diff = second - first;
+            const f32 distance = glm::length(diff);
+            const f32v3 iterNormal = diff / distance;
+            const f32v3& edgeNormal = CARTESIAN_NORMALS_3D[e_cast(dir)];
+            const int boardCount = (int)round(distance * BOARDS_PER_METER);
+            const f32 boardGapSize = distance / (boardCount + 1);
+            const f32v3 start = first - edgeNormal * ROOF_EXTRUDE_DISTANCE * BOARD_START_DEPTH_MULT;
+            // TODO: check for intersections with other rooms
+            for (int i = 1; i <= boardCount; ++i) {
+                // Get dims
+                const f32v2 boardHalfDims = f32v2(
+                    0.03f + randFromf32v3(first, i << 3) * BOARD_SIZE_VARIANCE,
+                    0.03f + randFromf32v3(second, i << 3) * BOARD_SIZE_VARIANCE
+                );
+                const f32v3 startWithBoardOffset = f32v3(start.x, start.y, start.z + 0.15f - boardHalfDims.y);
+                // Extruded boards with random offset variance
+                const f32v3 offset = iterNormal * (i * boardGapSize + (randFromf32v3(startWithBoardOffset, i << 4) - 0.5f) * BOARD_GAP_VARIANCE);
+                const f32v3 p1 = startWithBoardOffset + offset;
+                const f32 boardLength = BOARD_LENGTH_BASE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
+                const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.5f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
+                meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodMaterial, f32v2(1.0f));
+            }
         }
     }
 }

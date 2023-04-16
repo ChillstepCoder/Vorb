@@ -26,7 +26,7 @@ void main() {
     const vec3 worldPos = relativeWorldPos + CameraPos;
     
     float distance = length(relativeWorldPos);
-    float noiseScale = min(distance * 0.04, 1.0);
+    float noiseScale = min(distance * 0.02, 1.0);
     
     float noiseVal = texture(PerlinNoise, worldPos.xy * unNoiseFrequency).r + unNoiseOffset;
     noiseVal = clamp(noiseVal * unNoiseAmplitude * noiseScale, 0.0, 1.0);
