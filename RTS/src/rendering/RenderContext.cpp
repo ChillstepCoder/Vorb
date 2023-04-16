@@ -491,7 +491,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         glDisable(GL_STENCIL_TEST);
     }
 
-    //mSmudgeRenderer->renderPaintNoise(mActiveGBuffer, camera);
+    // Paint smudges
+    mSmudgeRenderer->renderPaintNoise(mActiveGBuffer, camera);
 
     // Clouds
    /* if (!sDebugOptions.mDisableClouds) {

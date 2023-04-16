@@ -107,6 +107,11 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.1f")) {
             sDebugOptions.mLoadRangeSq = SQ(sDebugOptions.mLoadRange);
         }
+        if (ImGui::Button("LOW POWER MODE")) {
+            sDebugOptions.mDisableClouds = true;
+            sDebugOptions.mDisableShadows = true;
+            sDebugOptions.mVSYNC = true;
+        }
         ImGui::Separator();
     }
 
@@ -334,6 +339,14 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             ImGui::Checkbox("Show Variance", &sDebugOptions.mSmudgeTestShowVariance);
             ImGui::Checkbox("Show Edges", &sDebugOptions.mSmudgeTestShowEdges);
             ImGui::Checkbox("Disable", &sDebugOptions.mSmudgeTestDisable);
+            ImGui::Separator();
+            ImGui::SliderInt("Paint Noise Passes", &sDebugOptions.mSmudgePaintNoisePasses, 1, 8);
+            ImGui::SliderFloat("Paint Noise Intensity", &sDebugOptions.mSmudgePaintNoiseIntensity, 0.0f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Paint Noise Offset", &sDebugOptions.mSmudgePaintNoiseOffset, -1.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Paint Noise Frequency", &sDebugOptions.mSmudgePaintNoiseFrequency, 0.0f, 0.1f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Paint Noise Amplitude", &sDebugOptions.mSmudgePaintNoiseAmplitude, 0.0f, 5.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::Checkbox("Disable Paint Noise", &sDebugOptions.mSmudgePaintNoiseDisable);
+            ImGui::Checkbox("Debug Paint Noise", &sDebugOptions.mSmudgePaintNoiseDebug);
         }
 
         ImGui::Separator();

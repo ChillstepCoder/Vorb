@@ -87,7 +87,9 @@ struct DebugOptions {
     f32 mSmudgePaintNoiseIntensity;
     f32 mSmudgePaintNoiseOffset;
     f32 mSmudgePaintNoiseFrequency;
+    f32 mSmudgePaintNoiseAmplitude;
     bool mSmudgePaintNoiseDisable;
+    bool mSmudgePaintNoiseDebug;
     // Toggles
     bool mPauseFrustum;
     bool mWireframe;

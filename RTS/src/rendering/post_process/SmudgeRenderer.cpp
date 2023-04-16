@@ -61,19 +61,19 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
     ui32 freeTextureIndex;
     MaterialRenderer::bindMaterialForRender(*mSmudgeShader, &freeTextureIndex);
 
-    const VGUniform& albedoUniform = mSmudgeShader->mProgram.getUniform("unAlbedoFbo");
-    const VGUniform& normalUniform = mSmudgeShader->mProgram.getUniform("unNormalFbo");
-    const VGUniform& depthUniform = mSmudgeShader->mProgram.getUniform("unDepthFbo");
-    const VGUniform& dirUniform = mSmudgeShader->mProgram.getUniform("unDirection");
+    const VGUniform& albedoUniform = mSmudgeShader->getUniform("unAlbedoFbo");
+    const VGUniform& normalUniform = mSmudgeShader->getUniform("unNormalFbo");
+    const VGUniform& depthUniform = mSmudgeShader->getUniform("unDepthFbo");
+    const VGUniform& dirUniform = mSmudgeShader->getUniform("unDirection");
     glUniform1i(albedoUniform, freeTextureIndex);
     glUniform1i(normalUniform, freeTextureIndex + 1);
     glUniform1i(depthUniform, freeTextureIndex + 2);
-    glUniform1f(mSmudgeShader->mProgram.getUniform("unNormalThreshold"), sDebugOptions.mSmudgeTestNormThreshold);
-    glUniform1f(mSmudgeShader->mProgram.getUniform("unDepthThreshold"), sDebugOptions.mSmudgeTestDepthThreshold);
-    glUniform1i(mSmudgeShader->mProgram.getUniform("unShowVariance"), sDebugOptions.mSmudgeTestShowVariance);
-    glUniform1i(mSmudgeShader->mProgram.getUniform("unShowEdges"), sDebugOptions.mSmudgeTestShowEdges);
-    glUniform2f(mSmudgeShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
-    glUniform2f(mSmudgeShader->mProgram.getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
+    glUniform1f(mSmudgeShader->getUniform("unNormalThreshold"), sDebugOptions.mSmudgeTestNormThreshold);
+    glUniform1f(mSmudgeShader->getUniform("unDepthThreshold"), sDebugOptions.mSmudgeTestDepthThreshold);
+    glUniform1i(mSmudgeShader->getUniform("unShowVariance"), sDebugOptions.mSmudgeTestShowVariance);
+    glUniform1i(mSmudgeShader->getUniform("unShowEdges"), sDebugOptions.mSmudgeTestShowEdges);
+    glUniform2f(mSmudgeShader->getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
+    glUniform2f(mSmudgeShader->getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
     activeGBuffer->bindDepthTexture(freeTextureIndex + 2);
     vg::DepthState::NONE.set();
 
@@ -137,27 +137,77 @@ void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D
         return;
     }
 
+    mGBuffers[0]->setSharedDepthStencilTexture(activeGBuffer->getDepthTexture());
+    mGBuffers[1]->setSharedDepthStencilTexture(activeGBuffer->getDepthTexture());
+    for (int i = 0; i < 2; ++i) {
+        mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO);
+        mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
+    }
+
     ui32 freeTextureIndex;
     MaterialRenderer::bindMaterialForRender(*mPaintNoiseShader, &freeTextureIndex);
 
-    const VGUniform& albedoUniform = mPaintNoiseShader->mProgram.getUniform("unAlbedoFbo");
-    const VGUniform& normalUniform = mPaintNoiseShader->mProgram.getUniform("unNormalFbo");
-    const VGUniform& depthUniform = mPaintNoiseShader->mProgram.getUniform("unDepthFbo");
+    const VGUniform& albedoUniform = mPaintNoiseShader->getUniform("unAlbedoFbo");
+    const VGUniform& normalUniform = mPaintNoiseShader->getUniform("unNormalFbo");
+    const VGUniform& depthUniform = mPaintNoiseShader->getUniform("unDepthFbo");
     const VGUniform& dirUniform = mPaintNoiseShader->mProgram.getUniform("unDirection");
     glUniform1i(albedoUniform, freeTextureIndex);
     glUniform1i(normalUniform, freeTextureIndex + 1);
     glUniform1i(depthUniform, freeTextureIndex + 2);
-    //glUniform2f(mPaintNoiseShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
+    glUniform1i(mPaintNoiseShader->getUniform("unDebugRender"), sDebugOptions.mSmudgePaintNoiseDebug);
+    glUniform1f(mPaintNoiseShader->getUniform("unNoiseOffset"), sDebugOptions.mSmudgePaintNoiseOffset);
+    glUniform1f(mPaintNoiseShader->getUniform("unNoiseFrequency"), sDebugOptions.mSmudgePaintNoiseFrequency);
+    glUniform1f(mPaintNoiseShader->getUniform("unNoiseAmplitude"), sDebugOptions.mSmudgePaintNoiseAmplitude);
+    glUniform2f(mPaintNoiseShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
     //glUniform2f(mPaintNoiseShader->mProgram.getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
     activeGBuffer->bindDepthTexture(freeTextureIndex + 2);
     vg::DepthState::NONE.set();
 
     // Enable stencil buffer only pass where we have paint targets
     glEnable(GL_STENCIL_TEST);
-    glStencilFunc(GL_GREATER, 0, PAINT_SMUDGE_STENCIL_BUFFER_MASK);
+    glStencilFunc(GL_LESS, 0, PAINT_SMUDGE_STENCIL_BUFFER_MASK);
     // Disable stencil modification
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
+    activeGBuffer->bindAlbedoTexture(freeTextureIndex);
+    activeGBuffer->bindNormalTexture(freeTextureIndex + 1);
+
+    // Vertical only
+    for (int i = 0;; ++i) {
+        // Vertical 1
+        mGBuffers[1]->use();
+        // Replace normals TODO: Build into gbuffer
+        glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
+        glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
+        glUniform2f(dirUniform, 0.0f, sDebugOptions.mSmudgePaintNoiseIntensity);
+        sGlobalFullQuadVBO.draw();
+
+        // Vertical 2
+        // Replace normals TODO: Build into gbuffer
+        mGBuffers[1]->bindAlbedoTexture(freeTextureIndex);
+        mGBuffers[1]->bindNormalTexture(freeTextureIndex + 1);
+        // Last pass composites onto main scene
+        const bool isLastPass = (i == sDebugOptions.mSmudgePaintNoisePasses - 1);
+        if (isLastPass) {
+            activeGBuffer->use();
+        }
+        else {
+            mGBuffers[0]->use();
+        }
+        glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
+        glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
+        glUniform2f(dirUniform, 0.0f, sDebugOptions.mSmudgePaintNoiseIntensity);
+        sGlobalFullQuadVBO.draw();
+
+        if (isLastPass) {
+            break;
+        }
+        else {
+            mGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
+            mGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
+        }
+    }
+    vg::DepthState::restorePrevious();
 
     glDisable(GL_STENCIL_TEST);
 }
