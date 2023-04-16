@@ -33,6 +33,7 @@ struct DebugOptions {
     QuadtreeSettings mGrassSettings;
     f32v2 mGrassScale;
     f32 mGrassLeanVariance;
+    f32 mGrassDitherPower;
     bool mDebugGrassLod;
     bool mHideGrass;
     // Structures

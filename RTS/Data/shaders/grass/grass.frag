@@ -8,6 +8,7 @@ uniform sampler2D CellNoise;
 uniform float unFadeDistance = 1000.0;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
+uniform float unDitherPower = 0.5;
 
 in vec3 fRootPosition;
 in vec2 fUV;
@@ -46,7 +47,7 @@ void main() {
 	color.a = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), color.a);
 	color.a = clamp(color.a, 0.0, 1.0);
 	
-    runAlphaTest(color.a, 0.001);
+    runAlphaTest(pow(color.a, unDitherPower), 0.001);
     oColor.rgb = color.rgb;
     oColor.a = 1.0; // AO
     
