@@ -49,7 +49,7 @@ typedef Triangulation::Vertex_circulator Vertex_circulator;
 typedef Triangulation::Point             TriangulationPoint;
 
 constexpr f32 ROOF_THICKNESS = 0.04f;
-constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
+constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.95f;
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3
 constexpr int BUILDING_DEBUG_LIFETIME = 50000;
 constexpr ui32 DEBUG_COLOR_ARRAY_SIZE = 12;
@@ -536,7 +536,7 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
             const bool isContourEdge = he->vertex()->is_contour() && he->next()->vertex()->is_contour();
 
             f32 x, y, t, h;
-            if (gableIt != gableTargetPoints.end() && gableIt->second.isValidGable()) {
+            if (isGablePoint && gableIt->second.isValidGable()) {
                 // We are a gable pivot! Get our new position
                 x = gableIt->second.pos.x;
                 y = gableIt->second.pos.y;
@@ -579,7 +579,7 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
                 }
             }
 
-            // Edge boards
+            // Skeleton boards (non edge)
             if (!isContourEdge) {
                 const f32v3 boardStart(x, y, zPos + h + ROOF_THICKNESS);
                 // Check if next point is extruded
@@ -788,40 +788,10 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
             return;
         }
 
-        f32v3 first(edge.v1.x, edge.v1.y, edge.v1.z + zPos);
-        f32v3 second(edge.v2.x, edge.v2.y, edge.v2.z + zPos);
-        CubeFacing axis;
-        if (first.x < second.x) {
-            axis = CubeFacing::FRONT;
-        }
-        else if (first.x > second.x) {
-            axis = CubeFacing::BACK;
-        }
-        else if (first.y < second.y) {
-            axis = CubeFacing::RIGHT;
-        }
-        else if (first.y > second.y) {
-            axis = CubeFacing::LEFT;
-        }
-        f32v3 points[4];
-        // Side
-        // TODO: Z fighting here when we have no overhang due to collisions with AABB edge
-        points[0] = first;
-        points[1] = second;
-        points[2] = second + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-        points[3] = first + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
-        // Bottom
-        points[0] = second;
-        points[1] = first;
-        points[2] = f32v3(edge.parent1.x, edge.parent1.y, zPos - ROOF_THICKNESS);
-        points[3] = f32v3(edge.parent2.x, edge.parent2.y, zPos - ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
-
         // Compute edge dir
         Cartesian dir;
-        f32 xDiff = abs(edge.v2.x - edge.v1.x);
-        f32 yDiff = abs(edge.v2.y - edge.v1.y);
+        const f32 xDiff = abs(edge.v2.x - edge.v1.x);
+        const f32 yDiff = abs(edge.v2.y - edge.v1.y);
         if (xDiff > yDiff) {
            if (edge.v2.x > edge.v1.x) {
                if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(1.0f, 0.0f, 0.0f));
@@ -847,15 +817,33 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
             if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(1.0f, 1.0f, 1.0f));
         }
         else {
+            const f32v3 first(edge.v1.x, edge.v1.y, edge.v1.z + zPos);
+            const f32v3 second(edge.v2.x, edge.v2.y, edge.v2.z + zPos);
+
+            f32v3 points[4];
+            // Side
+            // TODO: Z fighting here when we have no overhang due to collisions with AABB edge
+            points[0] = first;
+            points[1] = second;
+            points[2] = second + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
+            points[3] = first + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
+            meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
+            // Bottom
+            points[0] = second;
+            points[1] = first;
+            points[2] = f32v3(edge.parent1.x, edge.parent1.y, zPos - ROOF_THICKNESS);
+            points[3] = f32v3(edge.parent2.x, edge.parent2.y, zPos - ROOF_THICKNESS);
+            meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
+
             // Non gables have supporting boards
             // Step along the edge and add extruded board pieces
             // Random dims
             constexpr f32 BOARD_SIZE_VARIANCE = 0.04f;
             constexpr f32 BOARD_GAP_VARIANCE = 0.1f;
-            constexpr f32 BOARD_ANGLE_VARIANCE = 0.1f;
+            constexpr f32 BOARD_ANGLE_VARIANCE = 0.0f;
             constexpr f32 BOARD_LENGTH_VARIANCE = 0.15f;
             constexpr f32 BOARDS_PER_METER = 2;
-            constexpr f32 BOARD_LENGTH_BASE = ROOF_EXTRUDE_DISTANCE - 0.15f;
+            constexpr f32 BOARD_LENGTH_BASE = ROOF_EXTRUDE_DISTANCE - 0.35f;
             constexpr f32 BOARD_START_DEPTH_MULT = 0.6f;
             const f32v3 diff = second - first;
             const f32 distance = glm::length(diff);
@@ -871,7 +859,7 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
                     0.03f + randFromf32v3(first, i << 3) * BOARD_SIZE_VARIANCE,
                     0.03f + randFromf32v3(second, i << 3) * BOARD_SIZE_VARIANCE
                 );
-                const f32v3 startWithBoardOffset = f32v3(start.x, start.y, start.z + 0.15f - boardHalfDims.y);
+                const f32v3 startWithBoardOffset = f32v3(start.x, start.y, start.z + 0.22f - boardHalfDims.y);
                 // Extruded boards with random offset variance
                 const f32v3 offset = iterNormal * (i * boardGapSize + (randFromf32v3(startWithBoardOffset, i << 4) - 0.5f) * BOARD_GAP_VARIANCE);
                 const f32v3 p1 = startWithBoardOffset + offset;
