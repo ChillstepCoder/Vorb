@@ -85,7 +85,8 @@ void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     TileContainer* container = chunkNonConst.getTileContainer();
     // TODO: Can this be automatic? We are only holding a weak_ptr handle...
     container->removeEditTilesListener(it->second);
-    mEditEventHandles.erase(it);
+    mEditEventHandles.erase(it); // TODO: CRASH HERE WHEN TELEPORTING FAR AWAY
+   
     // TODO: uhhh....
     //auto&& it = mChunkGrassQuadtrees.find(&chunk);
     //if (it != mChunkGrassQuadtrees.end()) {

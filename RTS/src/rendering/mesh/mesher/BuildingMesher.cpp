@@ -67,23 +67,24 @@ color4 DEBUG_COLOR_ARRAY[DEBUG_COLOR_ARRAY_SIZE] = {
     color4(0.5f, 0.5f, 0.5f),
     color4(0.1f, 0.1f, 0.1f),
 };
-
+struct RoofStyle {
+    const MaterialData& shinglesMaterial;
+    const MaterialData& primaryBoardMaterial;
+};
 
 // Helper forward declare
 std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog);
-void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const MaterialData& rawWoodMaterial, const MaterialData& shinglesMaterial, ui32 floor, f32 zPos, VisualLog* visLog);
-void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const MaterialData& shinglesMaterial, ui32 debugColorIndex, f32 zPos);
+void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog);
+void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos);
 void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
-    const Building& building,
     const MaterialData& materialData,
-    ui32 debugColorIndex,
     f32 zPos
 );
-void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog);
-void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
-void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
+void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog);
+void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle);
+void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle);
 
 //class f32v2HashFunction {
 //public:
@@ -136,11 +137,18 @@ f32 AXIS_V_DIR_FROM_CARTESIAN[4] = {
 // Step 3 : Perform a boundary walk, using the least interior angle, to determine the roof planes.
 // Step 4 : Raise the vertices according to their distance from the supporting edge.
 
-struct GableTargetPointInfo {
+struct GableVertexInfo {
     f32v2 pos;
     ui32 borderCount; // If this is ever > 1, we ignore
+    Cartesian gableDir = Cartesian::INVALID;
 
     bool isValidGable() const { return borderCount == 1; }
+};
+
+struct ContourVertexInfo {
+    f32v3 extrudePos = f32v3(0.0f);
+    f32v3 extrudeOffset = f32v3(0.0f); // TODO: UNUSED
+    Cartesian gableDir = Cartesian::INVALID;
 };
 
 bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const i32AABB3& aabb, const ui32 floorIndex, f32 zPos, const Building& building, VisualLog* visLog) {
@@ -192,9 +200,9 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
     return false;
 }
 
-void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableTargetPointInfo, f32v2hash>& gableTargetPoints, std::unordered_map<f32v2, f32v3, f32v2hash>& contourExtrudePositions, SsPtr iss, VisualLog* visLog) {
-    gableTargetPoints.reserve(10);
-    contourExtrudePositions.reserve(30);
+void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableVertexInfo, f32v2hash>& gableVertexInfo, std::unordered_map<f32v2, ContourVertexInfo, f32v2hash>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
+    gableVertexInfo.reserve(10);
+    contourVertexInfo.reserve(30);
     // Compute gable target points
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
@@ -219,19 +227,45 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
             const bool isGablePoint = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
             if (isGablePoint) {
                 f32v2 gableTarget;
-                gableTarget.x = (f32)(he->prev()->vertex()->point().x() + he->next()->vertex()->point().x()) / 2.0f;
-                gableTarget.y = (f32)(he->prev()->vertex()->point().y() + he->next()->vertex()->point().y()) / 2.0f;
+                const auto& thisPoint = he->vertex()->point();
+                const auto& prevPoint = he->prev()->vertex()->point();
+                const auto& nextPoint = he->next()->vertex()->point();
+                gableTarget.x = (f32)(prevPoint.x() + nextPoint.x()) / 2.0f;
+                gableTarget.y = (f32)(prevPoint.y() + nextPoint.y()) / 2.0f;
                 const f32v2 lookup = f32v2(he->vertex()->point().x(), he->vertex()->point().y());
-                auto&& it = gableTargetPoints.find(lookup);
-                if (it == gableTargetPoints.end()) {
-                    gableTargetPoints[lookup] = GableTargetPointInfo{ gableTarget, 1 };
+                auto&& it = gableVertexInfo.find(lookup);
+
+                Cartesian gableDir;
+                if (prevPoint.y() < thisPoint.y() && nextPoint.y() < thisPoint.y()) {
+                    gableDir = Cartesian::SOUTH;
+                } else if (prevPoint.x() < thisPoint.x() && nextPoint.x() < thisPoint.x()) {
+                    gableDir = Cartesian::WEST;
+                }
+                else if (prevPoint.x() > thisPoint.x() && nextPoint.x() > thisPoint.x()) {
+                    gableDir = Cartesian::EAST;
                 }
                 else {
+                    gableDir = Cartesian::NORTH;
+                }
+
+                bool isValidGable = true;
+                if (it == gableVertexInfo.end()) {
+                    gableVertexInfo[lookup] = GableVertexInfo{ gableTarget, 1, gableDir };
+                }
+                else {
+                    // TODO: Does this invalidate below?
                     ++it->second.borderCount;
+                    isValidGable = false;
+                }
+                if (isValidGable) {
+                    // Mark our adjacent contour corners as gable children
+                    ContourVertexInfo& prevVertexInfo = contourVertexInfo[f32v2(prevPoint.x(), prevPoint.y())];
+                    ContourVertexInfo& nextVertexInfo = contourVertexInfo[f32v2(nextPoint.x(), nextPoint.y())];
+                    prevVertexInfo.gableDir = gableDir;
+                    nextVertexInfo.gableDir = gableDir;
                 }
                 // Visual log
                 if (visLog) {
-                    const auto& thisPoint = he->vertex()->point();
                     f32v3 p1(thisPoint.x(), thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
                     visLog->addWireQuad(p1 - f32v3(0.2f, 0.2f, 0.0f), f32v2(0.4f), color4(0.0f, 1.0f, 0.0f, 0.75f));
                 }
@@ -243,9 +277,11 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
                 const auto& oppositePoint = he->opposite()->vertex()->point();
                 const auto& thisPoint = he->vertex()->point();
                 const float h = (f32)he->vertex()->time() * ROOF_HEIGHT_MULT;
-                f32v3 extrudePosition(thisPoint.x() - oppositePoint.x(), thisPoint.y() - oppositePoint.y(), h - he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
-                extrudePosition = normalize(extrudePosition) * ROOF_EXTRUDE_DISTANCE + f32v3(thisPoint.x(), thisPoint.y(), 0.0f);
-                contourExtrudePositions[f32v2(thisPoint.x(), thisPoint.y())] = extrudePosition;
+                const f32v3 extrudePosition(thisPoint.x() - oppositePoint.x(), thisPoint.y() - oppositePoint.y(), h - he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
+                const f32v3 extrudeOffset = normalize(extrudePosition) * ROOF_EXTRUDE_DISTANCE;
+                ContourVertexInfo& vertexInfo = contourVertexInfo[f32v2(thisPoint.x(), thisPoint.y())];
+                vertexInfo.extrudePos = extrudeOffset + f32v3(thisPoint.x(), thisPoint.y(), 0.0f);
+                vertexInfo.extrudeOffset = extrudeOffset;
             }
             he = he->next();
         } while (he != it->halfedge());
@@ -258,14 +294,16 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
         auto&& he = it->halfedge();
         do {
             const auto& thisPoint = he->vertex()->point();
-            auto&& it1 = contourExtrudePositions.find(f32v2(thisPoint.x(), thisPoint.y()));
-            if (it1 != contourExtrudePositions.end()) {
+            auto&& it1 = contourVertexInfo.find(f32v2(thisPoint.x(), thisPoint.y()));
+            if (it1 != contourVertexInfo.end()) {
+                ContourVertexInfo& thisVertexInfo = it1->second;
                 const auto& oppositePoint = he->opposite()->vertex()->point();
-                auto&& it2 = contourExtrudePositions.find(f32v2(oppositePoint.x(), oppositePoint.y()));
-                if (it2 != contourExtrudePositions.end()) {
+                auto&& it2 = contourVertexInfo.find(f32v2(oppositePoint.x(), oppositePoint.y()));
+                if (it2 != contourVertexInfo.end()) {
+                    ContourVertexInfo& oppositeVertexInfo = it2->second;
                     // Loop along the edge and check for collisions
-                    const i32v2 start((int)glm::floor(it1->second.x), (int)glm::floor(it1->second.y));
-                    const i32v2 end((int)glm::floor(it2->second.x), (int)glm::floor(it2->second.y));
+                    const i32v2 start((int)glm::floor(thisVertexInfo.extrudePos.x), (int)glm::floor(thisVertexInfo.extrudePos.y));
+                    const i32v2 end((int)glm::floor(oppositeVertexInfo.extrudePos.x), (int)glm::floor(oppositeVertexInfo.extrudePos.y));
                     // TODO: I dont know what this case means... but it happens. Vislog it?
                     if (start == end) continue;
 
@@ -282,19 +320,19 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
                     if (start.x == end.x) {
                         // Y wall
                         if (collideExtrudeWalls(start, end, 1, aabb, floorIndex, zPos, building, visLog)) {
-                            it1->second.x = it1->first.x;
-                            it2->second.x = it2->first.x;
-                            it1->second.z = 0.0f;
-                            it2->second.z = 0.0f;
+                            thisVertexInfo.extrudePos.x = it1->first.x;
+                            oppositeVertexInfo.extrudePos.x = it2->first.x;
+                            thisVertexInfo.extrudePos.z = 0.0f;
+                            oppositeVertexInfo.extrudePos.z = 0.0f;
                         }
                     }
                     else {
                         // X Wall
                         if (collideExtrudeWalls(start, end, 0, aabb, floorIndex, zPos, building, visLog)) {
-                            it1->second.y = it1->first.y;
-                            it2->second.y = it2->first.y;
-                            it1->second.z = 0.0f;
-                            it2->second.z = 0.0f;
+                            thisVertexInfo.extrudePos.y = it1->first.y;
+                            oppositeVertexInfo.extrudePos.y = it2->first.y;
+                            thisVertexInfo.extrudePos.z = 0.0f;
+                            oppositeVertexInfo.extrudePos.z = 0.0f;
                         }
                     }
                 }
@@ -333,8 +371,10 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     }
 
     // Materials
-    const MaterialData& shinglesMaterial = Services::ResourceManager::ref().getMaterialRepository().getMaterialData("roof");
-    const MaterialData& primaryBeamMaterial = Services::ResourceManager::ref().getMaterialRepository().getMaterialData("big_beam_0");
+    RoofStyle roofStyle = RoofStyle{
+        Services::ResourceManager::ref().getMaterialRepository().getMaterialData("roof"),
+        Services::ResourceManager::ref().getMaterialRepository().getMaterialData("big_beam_0")
+    };
 
     // TODO: Not right
     sHeightMap.reserve(100);
@@ -372,20 +412,20 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
         for (auto& ss : iss) {
 
             if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
-            buildMeshFromStraightSkeleton(ss, building, meshBuilders.staticBuilder, contourEdges, primaryBeamMaterial, shinglesMaterial, floor, zPos, visLog);
+            buildMeshFromStraightSkeleton(ss, building, meshBuilders.staticBuilder, contourEdges, roofStyle, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
             if (visLog) visLog->nextStep("Countour " + std::to_string(floor) + " " + std::to_string(n));
-            meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, shinglesMaterial, primaryBeamMaterial, zPos, visLog);
+            meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, roofStyle, zPos, visLog);
             contourEdges.clear();
         }
     }
 
     // ========================== Room Ceilings ===============================
-    meshRoomCeilings(building, meshBuilders.staticBuilder, primaryBeamMaterial);
+    meshRoomCeilings(building, meshBuilders.staticBuilder, roofStyle);
 
     // ========================== Room supports ===============================
-    meshRoomUndercarriage(building, meshBuilders.staticBuilder, primaryBeamMaterial);
+    meshRoomUndercarriage(building, meshBuilders.staticBuilder, roofStyle);
 
 
     physicsBuilder.setRootPos(f32v3(building.mAABB.pos));
@@ -509,7 +549,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
 }
 
 
-void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const MaterialData& rawWoodMaterial, const MaterialData& shinglesMaterial, ui32 floor, f32 zPos, VisualLog* visLog) {
+void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
@@ -517,9 +557,9 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
 
     // ========================== Gables and Extrudes ===============================
     // Map gable and contour vertex points so we can move all connected verts
-    std::unordered_map<f32v2, GableTargetPointInfo, f32v2hash> gableTargetPoints;
-    std::unordered_map<f32v2, f32v3, f32v2hash> contourExtrudePositions;
-    computeGablePointsAndExtrudePositions(building, floor, zPos, gableTargetPoints, contourExtrudePositions, iss, visLog);
+    std::unordered_map<f32v2, GableVertexInfo, f32v2hash> gableVertexInfo;
+    std::unordered_map<f32v2, ContourVertexInfo, f32v2hash> contourVertexInfo;
+    computeGablePointsAndExtrudePositions(building, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
 
     // Gather and reposition verts
     ui32 debugColorIndex = 0;
@@ -527,12 +567,13 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
         auto&& he = it->halfedge();
         sHeightMap.clear();
         sRoofFacePoints.clear();
+        f32v3 gablePosition = f32v3(0.0f);
         bool isGable = false;
         // Loop through every edge of the SS poly and mark gables + cache points
         do {
             // Detect gable points
-            auto&& gableIt = gableTargetPoints.find(f32v2(he->vertex()->point().x(), he->vertex()->point().y()));
-            const bool isGablePoint = gableIt != gableTargetPoints.end();
+            auto&& gableIt = gableVertexInfo.find(f32v2(he->vertex()->point().x(), he->vertex()->point().y()));
+            const bool isGablePoint = gableIt != gableVertexInfo.end();
             const bool isContourEdge = he->vertex()->is_contour() && he->next()->vertex()->is_contour();
 
             f32 x, y, t, h;
@@ -543,11 +584,12 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
                 t = (f32)he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
                 isGable = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
-                // Extrude along the gable direction
+                // Extrude along the gable direction by the wall thickness
                 f32v3 extrudeNormal(x - he->vertex()->point().x(), y - he->vertex()->point().y(), h * 3.0f); // 3.0f is trial and error
-                extrudeNormal = normalize(extrudeNormal) * ROOF_EXTRUDE_DISTANCE;
-                x += extrudeNormal.x;
-                y += extrudeNormal.y;
+                extrudeNormal = normalize(extrudeNormal);
+                x += extrudeNormal.x * WALL_HALF_THICKNESS;
+                y += extrudeNormal.y * WALL_HALF_THICKNESS;
+                gablePosition = f32v3(x, y, h);
             }
             else {
                 x = (f32)he->vertex()->point().x();
@@ -558,20 +600,38 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
                 // Extrude contours
                 if (he->vertex()->is_contour()) {
                     assert(t == 0.0f);
-                    auto&& extrudeIt = contourExtrudePositions.find(f32v2(x, y));
-                    if (extrudeIt != contourExtrudePositions.end()) {
+                    const f32 baseX = x;
+                    const f32 baseY = y;
+                    auto&& extrudeIt = contourVertexInfo.find(f32v2(baseX, baseY));
+                    if (extrudeIt != contourVertexInfo.end()) {
                         // Create a column
                         // TODO: This column will intersect lower floors! Make it smarter
                         const f32v3 boardStart(x, y, -0.2f);
                         const f32v3 boardEnd(x, y, zPos);
-                        meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v2(0.11f), rawWoodMaterial, f32v2(1.0f));
+                        meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v2(0.11f), roofStyle.primaryBoardMaterial, f32v2(1.0f));
                         // Visual log
                         if (visLog) {
                             visLog->addLineBetweenPoints(boardStart, boardEnd, color4(0.0f, 1.0f, 1.0f, 1.0f));
                         }
 
-                        const f32v3& extrudePosition = extrudeIt->second;
-                        // Extrude
+                        ContourVertexInfo& vertexInfo = extrudeIt->second;
+                        f32v3& extrudePosition = vertexInfo.extrudePos;
+                        // Gables should not extrude diagonally, they should stay in line with their wall
+                        switch (vertexInfo.gableDir) {
+                            case Cartesian::SOUTH:
+                                extrudePosition.y = baseY - WALL_HALF_THICKNESS;
+                                break;
+                            case Cartesian::WEST:
+                                extrudePosition.x = baseX - WALL_HALF_THICKNESS;
+                                break;
+                            case Cartesian::EAST:
+                                extrudePosition.x = baseX + WALL_HALF_THICKNESS;
+                                break;
+                            case Cartesian::NORTH:
+                                extrudePosition.y = baseY + WALL_HALF_THICKNESS;
+                                break;
+                        }
+
                         x = extrudePosition.x;
                         y = extrudePosition.y;
                         h = extrudePosition.z;
@@ -586,9 +646,9 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
                 f32 nextX = (f32)he->next()->vertex()->point().x();
                 f32 nextY = (f32)he->next()->vertex()->point().y();
                 f32 nextH = (f32)he->next()->vertex()->time() * ROOF_HEIGHT_MULT;
-                auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextX, nextY));
-                if (extrudeIt != contourExtrudePositions.end()) {
-                    const f32v3& extrudePosition = extrudeIt->second;
+                auto&& extrudeIt = contourVertexInfo.find(f32v2(nextX, nextY));
+                if (extrudeIt != contourVertexInfo.end()) {
+                    const f32v3& extrudePosition = extrudeIt->second.extrudePos;
                     nextX = extrudePosition.x;
                     nextY = extrudePosition.y;
                     nextH = extrudePosition.z;
@@ -605,7 +665,7 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
                     const f32v2 halfDims = f32v2(
                         0.1f + (randFromf32v3(boardStart - boardEnd, (ui64)&it /*hax*/) - 0.5f) * BOARD_SIZE_VARIANCE
                     );
-                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, rawWoodMaterial, f32v2(1.0f));
+                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, roofStyle.primaryBoardMaterial, f32v2(1.0f));
                     // Visual log
                     if (visLog) {
                         visLog->addLineBetweenPoints(boardStart, boardEnd, color4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -620,15 +680,17 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
             if (isContourEdge) {
                 const auto& thisVert = he->vertex()->point();
                 const auto& nextVert = he->next()->vertex()->point();
-                auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextVert.x(), nextVert.y()));
-                assert(extrudeIt != contourExtrudePositions.end());
+                auto&& extrudeIt = contourVertexInfo.find(f32v2(nextVert.x(), nextVert.y()));
+                assert(extrudeIt != contourVertexInfo.end());
                 // Figure out direction based on position offsets
 
+                const ContourVertexInfo& vertexInfo = extrudeIt->second;
                 contourEdges.emplace_back(RoofContourEdgeInfo{
                     f32v3(x, y, h),
                     f32v3(thisVert.x(), thisVert.y(), 0.0f),
-                    f32v3(extrudeIt->second.x, extrudeIt->second.y, extrudeIt->second.z),
+                    f32v3(vertexInfo.extrudePos.x, vertexInfo.extrudePos.y, vertexInfo.extrudePos.z),
                     f32v3(nextVert.x(), nextVert.y(), 0.0f),
+                    gablePosition,
                     Cartesian::INVALID,
                     isGable //  TODO: WRONG I THINK
                     });
@@ -641,14 +703,17 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
 
         } while (he != it->halfedge());
 
-        triangulateRoofFacePolygons(isGable, meshBuilder, building, shinglesMaterial, debugColorIndex, zPos);
+        if (!isGable) {
+            triangulateRoofFacePolygons(meshBuilder, building, roofStyle, debugColorIndex, zPos);
+        }
 
         ++debugColorIndex;
         if (debugColorIndex >= DEBUG_COLOR_ARRAY_SIZE) debugColorIndex = 0;
     }
 }
 
-void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const MaterialData& shinglesMaterial, ui32 debugColorIndex, f32 zPos) {
+void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos) {
+
     // Triangulation only works on convex polygons so we will partition the potentially concave poly into
     // separate convex polygons
     // https://stackoverflow.com/questions/1832430/c-cgal-2d-delauny-triangulation-concave-shapes
@@ -663,16 +728,10 @@ void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilde
 
         concavePoly.push_back(pp);
     }
-    std::list<CGAL::Partition_traits_2<K>::Polygon_2> convexPolygonList;
-    if (!isGable) {
-        // Partition poly into seperate convex pieces
-        CGAL::optimal_convex_partition_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), std::back_inserter(convexPolygonList));
-    }
-    else {
-        // Gables are never concave ( I THINK )
-        convexPolygonList.push_back(concavePoly);
-    }
-    
+    std::list<CGAL::Partition_traits_2<K>::Polygon_2> convexPolygonList; // TODO: Add holes as well
+    // Partition poly into separate convex pieces
+    CGAL::optimal_convex_partition_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), std::back_inserter(convexPolygonList));
+
     for (auto&& convexPoly : convexPolygonList) {
 
         // Get triangle points
@@ -683,8 +742,7 @@ void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilde
                 points[i].x = (f32)convexPoly.vertex(i).x();
                 points[i].y = (f32)convexPoly.vertex(i).y();
             }
-            // Add to mesh
-            addRoofTriangle(meshBuilder, points, building, shinglesMaterial, debugColorIndex, zPos);
+            addRoofTriangle(meshBuilder, points, roofStyle.shinglesMaterial, zPos);
         }
         else {
             // Triangulate higher order polys
@@ -699,38 +757,82 @@ void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilde
                     points[i].y = (f32)it->vertex(i)->point().y();
                 }
                 // Add to mesh
-                addRoofTriangle(meshBuilder, points, building, shinglesMaterial, debugColorIndex, zPos);
+                addRoofTriangle(meshBuilder, points, roofStyle.shinglesMaterial, zPos);
             }
         }
     }
 }
 
-void addRoofTriangle(
+void addRoofQuad(
     ProceduralMeshBuilder& meshBuilder,
-    const f32v2 points[3],
-    const Building& building,
-    const MaterialData& materialData,
-    ui32 debugColorIndex,
-    f32 zPos
+    const f32v3 points[4],
+    const MaterialData& materialData
 ) {
-    const i32AABB3& aabb = building.getAABB();
-    const f32v2 buildingCenter = f32v2(aabb.pos) + f32v2(aabb.dims) * 0.5f;
 
-    StaticModelVertex verts[3];
-    for (int i = 0; i < 3; ++i) {
-        const f32 x = points[i].x;
-        const f32 y = points[i].y;
-
-        const f32 deg1 = sHeightMap[f32v2(x, y)];
-        verts[i].pos = f32v3(x, y, zPos + deg1 + ROOF_THICKNESS);
-
-        /* if (sDebugOptions.mRoofDebug) {
-             DebugRenderer::drawWireQuad(verts[i].pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
-         }*/
-
+    StaticModelVertex verts[4];
+    for (int i = 0; i < 4; ++i) {
+        verts[i].pos = points[i];
         verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
+    // Determine orientation
+    const f32v3 o1 = verts[1].pos - verts[0].pos;
+    const f32v3 o2 = verts[2].pos - verts[0].pos;
+    f32v3 normal = glm::normalize(glm::cross(o1, o2));
+    Cartesian dir = Cartesian::WEST;
+    if (abs(normal.x) < abs(normal.y)) {
+        if (normal.y > 0) {
+            dir = Cartesian::NORTH;
+        }
+        else {
+            dir = Cartesian::SOUTH;
+        }
+    }
+    else if (normal.x > 0) {
+        dir = Cartesian::EAST;
+    }
+
+    // Determine how we get UVs
+    const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
+
+    const f32 UV_SCALE = 0.4f;
+    ui32 compressedNormal = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
+    const f32v3& tangent(CUBE_FACING_TANGENTSF[e_cast(dir)]);
+    ui32 compressedTangent = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);
+    if (normal.z > 0.3f) {
+        for (int i = 0; i < 4; ++i) {
+            verts[i].normalPacked = compressedNormal;
+            verts[i].tangentPacked = compressedTangent;
+            f32v2 uvs(verts[i].pos[uvAxis.x] * UV_SCALE, (verts[i].pos[uvAxis.y]) * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)] * (1.0f - ROOF_HEIGHT_MULT * 0.5f));
+            verts[i].uvsPacked = PackUVs(uvs);
+        }
+    }
+    else {
+        // Different texturing for mostly vertical polygons
+        for (int i = 0; i < 4; ++i) {
+            verts[i].normalPacked = compressedNormal;
+            verts[i].tangentPacked = compressedTangent;
+            f32v2 uvs((verts[i].pos[uvAxis.x]) * UV_SCALE, verts[i].pos.z * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)]);
+            verts[i].uvsPacked = PackUVs(uvs);
+        }
+    }
+    /* if (sDebugOptions.mRoofDebug) {
+        DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
+    }*/
+    meshBuilder.addQuad(verts, materialData, false);
+}
+
+void addRoofTriangle(
+    ProceduralMeshBuilder& meshBuilder,
+    const f32v3 points[3],
+    const MaterialData& materialData
+) {
+
+    StaticModelVertex verts[3];
+    for (int i = 0; i < 3; ++i) {
+        verts[i].pos = points[i];
+        verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
 
     // Determine orientation
     const f32v3 o1 = verts[1].pos - verts[0].pos;
@@ -767,7 +869,7 @@ void addRoofTriangle(
         }
     }
     else {
-        // Different texturing for nearly vertical polygons
+        // Different texturing for mostly vertical polygons
         for (int i = 0; i < 3; ++i) {
             verts[i].normalPacked = compressedNormal;
             verts[i].tangentPacked = compressedTangent;
@@ -781,7 +883,143 @@ void addRoofTriangle(
     meshBuilder.addTriangle(verts, materialData, false);
 }
 
-void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog) {
+void addRoofTriangle(
+    ProceduralMeshBuilder& meshBuilder,
+    const f32v2 points[3],
+    const MaterialData& materialData,
+    f32 zPos
+) {
+
+    // Lookup z height
+    f32v3 verts[3];
+    for (int i = 0; i < 3; ++i) {
+        const f32 x = points[i].x;
+        const f32 y = points[i].y;
+
+        auto&& it = sHeightMap.find(f32v2(x, y));
+
+        const f32 deg1 = (it == sHeightMap.end()) ? 0.0f : it->second;
+        verts[i] = f32v3(x, y, zPos + deg1 + ROOF_THICKNESS);
+    }
+
+    addRoofTriangle(meshBuilder, verts, materialData);
+}
+
+void meshGable(VisualLog* visLog, const RoofContourEdgeInfo& edge, f32 zPos, Cartesian dir, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle) {
+    // Debug render gable
+    if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(1.0f, 1.0f, 1.0f));
+
+    constexpr f32 GABLE_EXTRUDE_DISTANCE = 1.0f;
+    f32v3 outerPoints[3];
+    f32v3 innerPoints[3];
+    innerPoints[0] = edge.parent1;
+    innerPoints[1] = edge.parent2;
+    innerPoints[2] = edge.gablePos;
+    outerPoints[0] = edge.v1;
+    outerPoints[1] = edge.v2;
+    outerPoints[2] = edge.gablePos;
+    for (int i = 0; i < 3; ++i) {
+        innerPoints[i].z += zPos + ROOF_THICKNESS;
+        outerPoints[i].z += zPos + ROOF_THICKNESS;
+    }
+
+    const f32v3 baseV1 = outerPoints[0];
+    const f32v3 baseV2 = outerPoints[1];
+
+    // Extrude parent vertices along wall (Gable already did)
+    switch (dir) {
+        case Cartesian::SOUTH:
+            innerPoints[0].y -= WALL_HALF_THICKNESS;
+            innerPoints[1].y -= WALL_HALF_THICKNESS;
+            for (int i = 0; i < 3; ++i) {
+                outerPoints[i].y -= GABLE_EXTRUDE_DISTANCE;
+            }
+            break;
+        case Cartesian::WEST:
+            innerPoints[0].x -= WALL_HALF_THICKNESS;
+            innerPoints[1].x -= WALL_HALF_THICKNESS;
+            for (int i = 0; i < 3; ++i) {
+                outerPoints[i].x -= GABLE_EXTRUDE_DISTANCE;
+            }
+            break;
+        case Cartesian::EAST:
+            innerPoints[0].x += WALL_HALF_THICKNESS;
+            innerPoints[1].x += WALL_HALF_THICKNESS;
+            for (int i = 0; i < 3; ++i) {
+                outerPoints[i].x += GABLE_EXTRUDE_DISTANCE;
+            }
+            break;
+        case Cartesian::NORTH:
+            innerPoints[0].y += WALL_HALF_THICKNESS;
+            innerPoints[1].y += WALL_HALF_THICKNESS;
+            for (int i = 0; i < 3; ++i) {
+                outerPoints[i].y += GABLE_EXTRUDE_DISTANCE;
+            }
+            break;
+        default:
+            break;
+    }
+
+    // Wall triangle
+    addRoofTriangle(meshBuilder, innerPoints, roofStyle.primaryBoardMaterial);
+
+    // Bottom trim board
+    constexpr f32 BOARD_SIZE_VARIANCE = 0.03f;
+    const f32v2 halfDims = f32v2(
+        0.1f + (randFromf32v3(innerPoints[0] - innerPoints[1], (ui64)&edge.gablePos /*hax*/) - 0.5f) * BOARD_SIZE_VARIANCE
+    );
+    meshBuilder.addBoardBetweenPoints(innerPoints[0], innerPoints[1], halfDims, roofStyle.primaryBoardMaterial, f32v2(1.0));
+
+    // Extrude upper board
+    meshBuilder.addBoardBetweenPoints(innerPoints[2], outerPoints[2], halfDims, roofStyle.primaryBoardMaterial, f32v2(1.0));
+    // Quad left top
+    f32v3 leftQuad[4] = { baseV1, outerPoints[0], outerPoints[2], innerPoints[2] };
+    addRoofQuad(meshBuilder, leftQuad, roofStyle.shinglesMaterial);
+    // Quad right top
+    f32v3 rightQuad[4] = { baseV2, innerPoints[2], outerPoints[2], outerPoints[1] };
+    addRoofQuad(meshBuilder, rightQuad, roofStyle.shinglesMaterial);
+
+    for (int i = 0; i < 4; ++i) {
+        leftQuad[i].z -= ROOF_THICKNESS;
+        rightQuad[i].z -= ROOF_THICKNESS;
+    }
+    // Swaps to fix winding
+    std::swap(leftQuad[1], leftQuad[3]);
+    std::swap(rightQuad[1], rightQuad[3]);
+    // Left quad bottom
+    addRoofQuad(meshBuilder, leftQuad, roofStyle.primaryBoardMaterial);
+    // Right quad bottom
+    addRoofQuad(meshBuilder, rightQuad, roofStyle.primaryBoardMaterial);
+
+    // Left quad side edge
+    f32v3 leftQuadSideEdge[4] = {leftQuad[0], leftQuad[3], outerPoints[0], baseV1};
+    addRoofQuad(meshBuilder, leftQuadSideEdge, roofStyle.shinglesMaterial);
+    // Right quad side edge
+    f32v3 rightQuadSideEdge[4] = { rightQuad[0], baseV2, outerPoints[1], rightQuad[1] };
+    addRoofQuad(meshBuilder, rightQuadSideEdge, roofStyle.shinglesMaterial);
+
+    const f32v3 outerBottom = outerPoints[2] - f32v3(0.0f, 0.0f, ROOF_THICKNESS);
+    // Left quad end edge
+    f32v3 leftQuadEndEdge[4] = { leftQuadSideEdge[1], outerBottom, outerPoints[2], leftQuadSideEdge[2] };
+    addRoofQuad(meshBuilder, leftQuadEndEdge, roofStyle.shinglesMaterial);
+    // Right quad end edge
+    f32v3 rightQuadEndEdge[4] = { outerBottom, rightQuadSideEdge[3], rightQuadSideEdge[2], outerPoints[2]};
+    addRoofQuad(meshBuilder, rightQuadEndEdge, roofStyle.shinglesMaterial);
+
+    // Placeholder support thingies (Replace with model)
+    f32v3 offsetDown(0.0f, 0.0f, 0.5f);
+    meshBuilder.addBoardBetweenPoints(innerPoints[0], innerPoints[0] - offsetDown, halfDims * 1.5f, roofStyle.primaryBoardMaterial, f32v2(1.0));
+    meshBuilder.addBoardBetweenPoints(innerPoints[1], innerPoints[1] - offsetDown, halfDims * 1.5f, roofStyle.primaryBoardMaterial, f32v2(1.0));
+
+    /*  if (visLog) {
+          visLog->addLineBetweenPoints(rightQuadSideEdge[0], rightQuadSideEdge[1], color4(1.0f, 0.0f, 1.0f));
+          visLog->addLineBetweenPoints(rightQuadSideEdge[1], rightQuadSideEdge[2], color4(1.0f, 0.0f, 1.0f));
+          visLog->addLineBetweenPoints(rightQuadSideEdge[2], rightQuadSideEdge[3], color4(1.0f, 0.0f, 1.0f));
+          visLog->addLineBetweenPoints(rightQuadSideEdge[3], rightQuadSideEdge[0], color4(1.0f, 0.0f, 1.0f));
+      }*/
+}
+
+void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog) {
     for (auto&& edge : contourEdges) {
         if (edge.v1 == edge.parent1 && edge.v2 == edge.parent2) {
             // Ignore cases where we meld into the wall due to collision
@@ -813,8 +1051,7 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
             }
         }
         if (edge.isGable) {
-            // Debug render gable
-            if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(1.0f, 1.0f, 1.0f));
+            meshGable(visLog, edge, zPos, dir, meshBuilder, roofStyle);
         }
         else {
             const f32v3 first(edge.v1.x, edge.v1.y, edge.v1.z + zPos);
@@ -827,13 +1064,13 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
             points[1] = second;
             points[2] = second + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
             points[3] = first + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-            meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
+            meshBuilder.addQuadBetweenPoints(points, roofStyle.shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
             // Bottom
             points[0] = second;
             points[1] = first;
             points[2] = f32v3(edge.parent1.x, edge.parent1.y, zPos - ROOF_THICKNESS);
             points[3] = f32v3(edge.parent2.x, edge.parent2.y, zPos - ROOF_THICKNESS);
-            meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
+            meshBuilder.addQuadBetweenPoints(points, roofStyle.shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
 
             // Non gables have supporting boards
             // Step along the edge and add extruded board pieces
@@ -865,13 +1102,13 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
                 const f32v3 p1 = startWithBoardOffset + offset;
                 const f32 boardLength = BOARD_LENGTH_BASE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
                 const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.5f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
-                meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodMaterial, f32v2(1.0f));
+                meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0f));
             }
         }
     }
 }
 
-void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
+void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle) {
     constexpr f32 CEILING_THICKNESS = 0.05f;
     const i32AABB3& aabb = building.getAABB();
     const TileContainer& tileContainer = *building.getTileContainer();
@@ -889,12 +1126,12 @@ void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuild
                         /*|| !tileContainer.getTileAt(aboveIndex).isEmpty()*/) { // Or its an interior tile and not empty
                         // Mesh ceiling
                         f32v3 startPos(x, y, tileContainer.getTileSpatialGrid().getFloorHeight() * (z + 1) - CEILING_THICKNESS);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodMaterial, uvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
                         // TODO: Cull edges appropriately
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::LEFT, rawWoodMaterial, uvRect, COLOR_WHITE);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::RIGHT, rawWoodMaterial, uvRect, COLOR_WHITE);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::FRONT, rawWoodMaterial, uvRect, COLOR_WHITE);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::BACK, rawWoodMaterial, uvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::LEFT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::RIGHT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::FRONT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::BACK, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
                     }
                 }
             }
@@ -902,7 +1139,7 @@ void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuild
     }
 }
 
-void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
+void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle) {
     const i32AABB3& aabb = building.getAABB();
     const TileContainer& tileContainer = *building.getTileContainer();
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
@@ -919,13 +1156,13 @@ void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& mesh
                     do {
                         // Disabled now since floor takes care of it
                        // const f32v3 floorPos(x, y, tileContainer.getFloorHeight() * z - 0.0001f);
-                       // meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodMaterial, uvRect, COLOR_WHITE);
+                       // meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
                     } while (++x < aabb.dims.x && ownedTiles.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
                     f32v3 startPos(startX, y + 0.5f, tileContainer.getTileSpatialGrid().getFloorHeight() * z - boardThickness - 0.0001f);
                     f32v3 endPos = startPos + f32v3(x - startX, 0.0f, 0.0f);
-                    meshBuilder.addBoardBetweenPoints(startPos, endPos, f32v2(boardThickness), rawWoodMaterial, f32v2(1.0f));
+                    meshBuilder.addBoardBetweenPoints(startPos, endPos, f32v2(boardThickness), roofStyle.primaryBoardMaterial, f32v2(1.0f));
                 }
             }
         }

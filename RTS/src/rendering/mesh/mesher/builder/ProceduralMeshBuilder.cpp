@@ -186,10 +186,38 @@ void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const Materi
     for (ui32 j = v; j < vertexData.size(); ++j) {
         vertexData[j].materialId = materialData.id;
     }
-    // TODO: Can we just draw arrays this?
     indexData[i] = v;
     indexData[i + 1u] = v + 1u;
     indexData[i + 2u] = v + 2u;
+}
+
+void ProceduralMeshBuilder::addQuad(StaticModelVertex verts[4], const MaterialData& materialData, bool calculateNormals)
+{
+    assert(!calculateNormals); // Unsupported so far
+    assert(!mUsingSharedIndexBuffer); // Non shared IBO only
+
+    SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
+
+    mPolyTypeFlags.setBit(PolyTypeFlags::INDEXED_TRIANGLES);
+
+    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<ui32>& indexData = submesh.mIndices;
+
+    const size_t i = indexData.size();
+    const size_t v = vertexData.size();
+    indexData.resize(i + 6u);
+    vertexData.resize(v + 4u);
+    memcpy(&vertexData[vertexData.size() - 4], verts, sizeof(StaticModelVertex) * 4);
+    // Set indices
+    for (ui32 j = v; j < vertexData.size(); ++j) {
+        vertexData[j].materialId = materialData.id;
+    }
+    indexData[i] = v;
+    indexData[i + 1u] = v + 1u;
+    indexData[i + 2u] = v + 2u;
+    indexData[i + 3u] = v + 2u;
+    indexData[i + 4u] = v + 3u;
+    indexData[i + 5u] = v ;
 }
 
 void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV) {

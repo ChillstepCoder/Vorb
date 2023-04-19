@@ -11,6 +11,9 @@ struct TileWall {
     bool canNavThrough() const { return isDoor || wallID == TILE_ID_NONE; }
 };
 
+constexpr f32 WALL_THICKNESS = 0.15f;
+constexpr f32 WALL_HALF_THICKNESS = WALL_THICKNESS / 2.0f;
+
 struct TileWalls {
     TileWalls() : south(), west(), east(), north() {};
 

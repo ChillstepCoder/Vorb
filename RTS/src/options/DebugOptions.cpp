@@ -7,7 +7,7 @@ DebugOptions sDebugOptions;
 #ifdef DEBUG
 constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.35f /*0.35*/;
 #else
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.65f /*0.65*/;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.55f /*0.65*/;
 #endif
 
 DebugOptions::DebugOptions() :
@@ -24,7 +24,7 @@ DebugOptions::DebugOptions() :
     // Grass
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mGrassScale(4.625f, 1.0f),
-    mGrassLeanVariance(0.5f),
+    mGrassLeanVariance(1.0f),
     mGrassDitherPower(0.5f),
     mGrassColorMapScale(0.1f),
     mDebugGrassLod(false),

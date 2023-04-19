@@ -29,6 +29,7 @@ void main() {
     float noiseScale = min(distance * 0.02, 1.0);
     
     float noiseVal = texture(PerlinNoise, worldPos.xy * unNoiseFrequency).r + unNoiseOffset;
+    //noiseVal = smoothstep(0.0, 1.0, noiseVal);
     noiseVal = clamp(noiseVal * unNoiseAmplitude * noiseScale, 0.0, 1.0);
     
     vec3 newAlbedo = blur9(unAlbedoFbo, fUV, unScreenResolution, unDirection * noiseVal).rgb;

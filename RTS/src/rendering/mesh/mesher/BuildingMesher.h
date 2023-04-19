@@ -17,6 +17,7 @@ struct RoofContourEdgeInfo {
     f32v3 parent1;
     f32v3 v2;
     f32v3 parent2;
+    f32v3 gablePos;
     Cartesian dir;
     bool isGable;
 };

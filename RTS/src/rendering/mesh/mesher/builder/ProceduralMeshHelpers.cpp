@@ -16,10 +16,6 @@ struct WallVertexPermutation {
 };
 static WallVertexPermutation sWallVertexPermutationLookup[64]; // 2^6 combinations for 6 bits 0-5
 
-// TODO: This could be parameter maybe?
-constexpr f32 WALL_THICKNESS = 0.15f;
-constexpr f32 WALL_HALF_THICKNESS = WALL_THICKNESS / 2.0f;
-
 RUNTIME_INIT_FUNC(SetupOuterWallVertexOffsetsTable) {
     // Compute corner vertex offsets assuming Cartesian::South, if Cartesian::West we will simply rotate them later
     // according to rotatedOffset = (offset.y, -offset.x)

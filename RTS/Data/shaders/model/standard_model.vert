@@ -37,7 +37,7 @@ void main() {
     gl_Position = VP * worldPos;
     
     // For displacement, get our world space -> tangent space
-    mat3 tfTBN = inverse(fTBN);
+    mat3 tfTBN = transpose(fTBN); // Transpose is same as inverse for tbn because it is orthogonal, apparently
     fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
     fFragPosTangent  = tfTBN * worldPos.xyz;
 }
