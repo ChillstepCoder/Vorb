@@ -70,7 +70,7 @@ DebugOptions::DebugOptions() :
     mDisableShadows(false),
     // Smudge
     mSmudgeTestPasses(1),
-    mSmudgeTestRadius(7.0f),
+    mSmudgeTestRadius(4.0f),
     mSmudgeTestNormThreshold(0.05f), //0.016f
     mSmudgeTestDepthThreshold(0.104f),
     mSmudgeTestShowVariance(0),
