@@ -1,2 +1,6 @@
 default:
   alpha_masks: grass_blades
+  num_textures: 12
+leafy_grass:
+  textures: leafy_grass
+  num_textures: 2

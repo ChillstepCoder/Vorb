@@ -9,6 +9,7 @@ in vec3 fWorldPos[];
 in float fHeight[];
 flat in vec3 fWorldRoot[];
 in vec2 fUV[];
+flat in int fGrassMaterial[];
 in float fDistance[];
 in vec2 fLean[];
 
@@ -17,6 +18,7 @@ out vec3 tWorldPos[];
 out float tHeight[];
 flat out vec3 tWorldRoot[];
 out vec2 tUV[];
+flat out int tGrassMaterial[];
 flat out float tAtlasPage[];
 out float tDistance[];
 out vec2 tLean[];
@@ -45,6 +47,7 @@ void main()
     tHeight[gl_InvocationID] = fHeight[gl_InvocationID];
     tWorldRoot[gl_InvocationID] = fWorldRoot[gl_InvocationID];
     tUV[gl_InvocationID] = fUV[gl_InvocationID];
+    tGrassMaterial[gl_InvocationID] = fGrassMaterial[gl_InvocationID];
     tDistance[gl_InvocationID] = fDistance[gl_InvocationID];
     tLean[gl_InvocationID] = fLean[gl_InvocationID];
     

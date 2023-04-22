@@ -8,11 +8,15 @@ uniform float UnYOffset = 1.0;
 uniform vec2 unGrassScale;
 uniform float unLeanVariance;
 
+const int NUM_GRASS_MATERIALS = 32;
+uniform int unGrassMaterials[NUM_GRASS_MATERIALS];
+uniform int unGrassMaterialCellCounts[NUM_GRASS_MATERIALS];
+
 out vec3 fWorldPos;
 flat out vec3 fWorldRoot;
 out float fHeight;
 out vec2 fUV;
-flat out float fAtlasPage;
+flat out int fGrassMaterial;
 out float fDistance;
 out vec2 fLean;
 
@@ -24,9 +28,7 @@ const vec2 VertexData[4] = {
 };
 
 // TODO: Match number of grass types
-const float GRASS_TYPES_ROW_SIZE = 6;
-const int GRASS_TYPES = 12;
-const float GRASS_UV_X = 0.0833333333333; // 1/12
+const float GRASS_UV_X = 1.0;
 const float GRASS_UV_Y = 1.0; // Single row rn
 const vec2 UVS[8] = {
  // NORMAL UVS
@@ -59,12 +61,10 @@ void main() {
 	vec4 dimsTypeRotation = texelFetch(UnTboSizeType, bladeIndex);
     
 	vec2 vDims = dimsTypeRotation.xy * unGrassScale;
-    float bladeType = round(dimsTypeRotation.z * 255.0);
     float rotation = dimsTypeRotation.w * 6.28318530718; // 2 PI
     
     vec2 xDirection = vec2(cos(rotation), sin(rotation));
 	
-    fAtlasPage = 0.0;
 	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();
@@ -87,11 +87,20 @@ void main() {
 	
     fWorldPos = cameraRelativePos.xyz;
 	
+    // Blade type
+    int grassID = int(round(dimsTypeRotation.z * 255.0));
+    fGrassMaterial = unGrassMaterials[grassID];
+    int cellCounti = unGrassMaterialCellCounts[grassID];
+    float uWidth = 1.0 / float(cellCounti);
+    float bladeType = mod(rand(trueWorldPos.xy + vec2(3425.0, 2331.0)) * 255.0, cellCounti);
+    
     
 	// Grass blade uvs
     float randomFlip = rand(trueWorldPos.yx);
-	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))];
-    fUV.x += bladeType * GRASS_UV_X;
+    // TODO: Only handles one row
+	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))] * vec2(uWidth, 1.0);
+    fUV.x += bladeType * uWidth;
+   
     
     // Lean at the top
     fLean = xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy);

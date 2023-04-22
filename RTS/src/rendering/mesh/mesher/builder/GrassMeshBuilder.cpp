@@ -147,14 +147,14 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 rsize *= densityMult;
                                 rsize = glm::max(rsize, 0.15f);
                                 const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * CHUNK_SIZE - y2 - (tx << 4) + (ty << 5)) & 0xff); // Fast modulus 256
-                                const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * CHUNK_SIZE + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
+                                //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * CHUNK_SIZE + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                                 f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
                                 const f32 zPos = sHeightmapGrid->computeHeightAtChunkOffset(heightData->data, chunk.getChunkID(), truePos);
                                 // Thin out the grass with an x^2 curve as we get closer to 0 density
                                 grassMesh.addBladeQuad(
                                     f32v3(truePos.x, truePos.y, zPos), // TODO: new height
                                     f32v2(bladeWidth, rsize),
-                                    variantIndex,
+                                    (ui8)id,
                                     rotation
                                 );
                             }

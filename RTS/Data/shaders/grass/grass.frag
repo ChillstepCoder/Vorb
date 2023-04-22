@@ -1,8 +1,7 @@
+#include "MaterialData.glsl"
 #include "../GlobalUbo.glsl"
-#include "AlphaTest.glsl"
 
 uniform sampler2D GreyNoise;
-uniform sampler2D GrassTexture;
 uniform sampler2D GrassGradients;
 uniform sampler2D CellNoise;
 uniform float unFadeDistance = 1000.0;
@@ -10,11 +9,13 @@ uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 uniform float unDitherPower = 0.5;
 uniform float unColorMapScale = 0.1;
+const int NUM_GRASS_MATERIALS = 32;
 
 uniform int unDebugLines = 0;
 
 in vec3 fRootPosition;
 in vec2 fUV;
+flat in int fGrassMaterial;
 in float fDistance;
 
 layout (location = 0) out vec4 oColor;
@@ -34,9 +35,11 @@ void main() {
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y);
     vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
     
+    MaterialData mtl = inMaterials[fGrassMaterial];
+    vec4 textureColor = sampleMaterialAlbedo(mtl, fUV);
     
     color.rgb = GrassColor;
-    color.a = texture(GrassTexture, fUV).r;
+    color.a = textureColor.r;
 	
 	// Distance fade
 	float noiseVal = texture(GreyNoise, worldUV).r;

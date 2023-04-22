@@ -11,13 +11,17 @@ class MaterialRepository;
 
 struct TileGrassFileData {
     nString alphaMasks;
+    nString textures;
+    i32 numTextures;
 };
 KEG_TYPE_DECL(TileGrassFileData);
 
 struct TileGrassData {
     StrToken mName;
-    MaterialData mAlphaMaterial;
+    MaterialData mMaterial;
     TileGrassID mId;
+    int mNumTextures;
+    bool mUseGradientColor = false;
 };
 
 class TileGrassRepository

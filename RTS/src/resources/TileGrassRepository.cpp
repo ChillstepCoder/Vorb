@@ -6,6 +6,8 @@
 
 KEG_TYPE_DEF_SAME_NAME(TileGrassFileData, kt) {
     kt.addValue("alpha_masks", keg::Value::basic(offsetof(TileGrassFileData, alphaMasks), keg::BasicType::STRING));
+    kt.addValue("textures", keg::Value::basic(offsetof(TileGrassFileData, textures), keg::BasicType::STRING));
+    kt.addValue("num_textures", keg::Value::basic(offsetof(TileGrassFileData, numTextures), keg::BasicType::I32));
 }
 
 bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository) {
@@ -28,8 +30,16 @@ bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Pa
         tileGrassData.mId = nextId;
         assert(nextId < INVALID_TILE_GRASS_ID); // Make sure we dont roll over
         assert(mTileGrassIdMapping.find(token) == mTileGrassIdMapping.end()); // Duplicate name
-        assert(fileData.alphaMasks.size());
-        tileGrassData.mAlphaMaterial = materialRepository.getMaterialData(fileData.alphaMasks);
+        assert(fileData.alphaMasks.size() || fileData.textures.size());
+        if (fileData.alphaMasks.size()) {
+            tileGrassData.mMaterial = materialRepository.getMaterialData(fileData.alphaMasks);
+            tileGrassData.mUseGradientColor = true;
+        }
+        else {
+            tileGrassData.mMaterial = materialRepository.getMaterialData(fileData.textures);
+            tileGrassData.mUseGradientColor = false;
+        }
+        tileGrassData.mNumTextures = fileData.numTextures;
         
         mTileGrassIdMapping[key] = nextId;
         // TODO: Serialize the string > ID mapping

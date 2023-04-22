@@ -10,6 +10,9 @@
 #include "options/DebugOptions.h"
 #include "camera/Camera3D.h"
 
+#include "resources/ResourceManager.h"
+#include "resources/TileGrassRepository.h"
+
 GrassRenderer::GrassRenderer()
 {
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
@@ -31,6 +34,26 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     glUniform1f(program.getUniform("unLeanVariance"), sDebugOptions.mGrassLeanVariance);
     glUniform1f(program.getUniform("unDitherPower"), sDebugOptions.mGrassDitherPower);
     glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
+
+    // TODO: cache this
+    const int MAX_GRASS = 32;
+    const std::vector<TileGrassData>& grassData = Services::ResourceManager::ref().getTileGrassRepository().getAllGrassData();
+    assert(grassData.size() < 32);
+
+    int grassMaterials[MAX_GRASS];
+    int cellCounts[MAX_GRASS];
+
+    for (size_t i = 0; i < grassData.size(); ++i) {
+        grassMaterials[i] = grassData[i].mMaterial.id;
+        cellCounts[i] = grassData[i].mNumTextures;
+    }
+
+    // Upload grass materials
+    glUniform1iv(program.getUniform("unGrassMaterials[0]"), grassData.size(), grassMaterials);
+
+    // Upload material cell counts
+    glUniform1iv(program.getUniform("unGrassMaterialCellCounts[0]"), grassData.size(), cellCounts);
+
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMesh& mesh = grassMesh->mMesh;
         f32v3 offset = grassMesh->mPosition - camera.getPosition();
