@@ -44,6 +44,8 @@ void main() {
     if (mtl.displacementMap > 0) {
         vec3 tangentViewDir = normalize(fViewTangent - fFragPosTangent);
         uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, unHeightScale);
+        //if(uv.x > 1.0 || uv.y > 1.0 || uv.x < 0.0 || uv.y < 0.0)
+        //    discard;
     }  
 
     vec4 color;

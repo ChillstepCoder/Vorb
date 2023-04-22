@@ -73,6 +73,19 @@ void VisualLog::addWireQuad(const f32v3& origin, const f32v2& dims, color4 color
    
 }
 
+void VisualLog::addWireTriangle(const f32v3 points[3], color4 color)
+{
+    mNumLines += 3;
+    mRenderStepInfo.back().shapeCount += 3;
+    for (int i = 0; i < 3; ++i) {
+        VisualLogShape& newShape = mShapes.emplace_back();
+        newShape.type = VisualLogShapeType::LINE; // TODO: WIRE_TRIANGLE?
+        newShape.line.position1 = mRootPos + points[i];
+        newShape.line.position2 = mRootPos + points[(i + 1) % 3];
+        newShape.color = color;
+    }
+}
+
 void VisualLog::addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color) {
     ++mNumQuads;
     ++mRenderStepInfo.back().shapeCount;

@@ -44,6 +44,27 @@ namespace MathUtil {
         rv.y = x * sn + y * cs;
         return rv;
     }
+    inline f32v3 rotateVectorYaw(const f32v3& in, float angleDeg) {
+        const float angleRad = DEG_TO_RAD(angleDeg);
+        const float cs = cosf(angleRad);
+        const float sn = sinf(angleRad);
+
+        f32v3 rv;
+        rv.x = in.x * cs - in.y * sn;
+        rv.y = in.x * sn + in.y * cs;
+        rv.z = in.z;
+        return rv;
+    }
+    inline f32v2 rotateVector2D(const f32v2& in, float angleDeg) {
+        const float angleRad = DEG_TO_RAD(angleDeg);
+        const float cs = cosf(angleRad);
+        const float sn = sinf(angleRad);
+
+        f32v2 rv;
+        rv.x = in.x * cs - in.y * sn;
+        rv.y = in.x * sn + in.y * cs;
+        return rv;
+    }
 
     namespace Easing {
         inline float easeInOutCubic(float x) {

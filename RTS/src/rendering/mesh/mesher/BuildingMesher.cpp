@@ -39,6 +39,8 @@
 #include <CGAL/partition_2.h>
 #include <CGAL/Partition_traits_2.h>
 
+#include <boost/container/flat_set.hpp>
+
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2                   CgalPoint;
 typedef CGAL::Polygon_2<K>           Polygon_2;
@@ -50,6 +52,7 @@ typedef Triangulation::Point             TriangulationPoint;
 
 constexpr f32 ROOF_THICKNESS = 0.04f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.95f;
+constexpr f32 ROOF_EXTRUDE_DISTANCE_CLIPPING_REDUCE_MULT = 0.35f; // How much we reduce by if our extrude position is clipping with another
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3
 constexpr int BUILDING_DEBUG_LIFETIME = 50000;
 constexpr ui32 DEBUG_COLOR_ARRAY_SIZE = 12;
@@ -74,8 +77,8 @@ struct RoofStyle {
 
 // Helper forward declare
 std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog);
-void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog);
-void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos);
+void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog);
+void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos, VisualLog* visLog);
 void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
@@ -200,9 +203,35 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
     return false;
 }
 
-void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableVertexInfo, f32v2hash>& gableVertexInfo, std::unordered_map<f32v2, ContourVertexInfo, f32v2hash>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
+void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, const Building& building, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableVertexInfo, f32v2hash>& gableVertexInfo, std::unordered_map<f32v2, ContourVertexInfo, f32v2hash>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
     gableVertexInfo.reserve(10);
     contourVertexInfo.reserve(30);
+
+    // Store every tile with 3 or more adjacent walls, those will have their extrusion distance reduced in order to stop clipping + non simple polygons
+    const TileSpatialGrid& spatialGrid = building.getTileContainer()->getTileSpatialGrid();
+    boost::container::flat_set<TileIndex> reduceExtrudeTiles;
+    for (i32 y = 0; y < spatialGrid.getDims().y; ++y) {
+        for (i32 x = 0; x < spatialGrid.getDims().x; ++x) {
+            TileIndex tileIndex = spatialGrid.getBaseTileIndexFromXYOffset(x, y);
+            // Exterior tiles only
+            if (!floorOwnedTiles.getBit(tileIndex)) {
+                int numWalls = TileSpatialGridHelpers::countAdjacentSetOwnershipBits(spatialGrid, i32v3(x, y, 0), floorOwnedTiles);
+                if (numWalls >= 3) {
+                    if (visLog) {
+                        if (numWalls >= 4) {
+                            visLog->addFilledQuad(f32v3(x, y, zPos), f32v2(1.0f), color::Red);
+                        }
+                        else {
+
+                            visLog->addFilledQuad(f32v3(x, y, zPos), f32v2(1.0f), color::Orange);
+                        }
+                    }
+                    reduceExtrudeTiles.insert(tileIndex);
+                }
+            }
+        }
+    }
+    
     // Compute gable target points
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
@@ -282,6 +311,13 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
                 ContourVertexInfo& vertexInfo = contourVertexInfo[f32v2(thisPoint.x(), thisPoint.y())];
                 vertexInfo.extrudePos = extrudeOffset + f32v3(thisPoint.x(), thisPoint.y(), 0.0f);
                 vertexInfo.extrudeOffset = extrudeOffset;
+                TileIndex exteriorTileIndex = spatialGrid.tryGetBaseTileIndexFromXYOffsetf(vertexInfo.extrudePos);
+                if (exteriorTileIndex != INVALID_TILE_INDEX) {
+                    if (reduceExtrudeTiles.find(exteriorTileIndex) != reduceExtrudeTiles.end()) {
+                        vertexInfo.extrudeOffset = ROOF_EXTRUDE_DISTANCE_CLIPPING_REDUCE_MULT * extrudeOffset;
+                        vertexInfo.extrudePos -= vertexInfo.extrudeOffset;
+                    }
+                }
             }
             he = he->next();
         } while (he != it->halfedge());
@@ -342,10 +378,6 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
     }
 }
 
-f32 randFromf32v3(const f32v3& x, ui64 additional) {
-    return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
-}
-
 
 void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) const {
     initMeshAndPhysicsAsyncInternal(*building.getTileContainer(), nullptr, false, 10000 /*reserveCount*/, &building);
@@ -357,6 +389,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     const Building& building = *static_cast<const Building*>(userData);
 
     const i32AABB3& aabb = building.mAABB;
+    // TODO: This is a race condition
     const TileContainer& tileContainer = *building.mTileContainer;
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
 
@@ -412,10 +445,10 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
         for (auto& ss : iss) {
 
             if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
-            buildMeshFromStraightSkeleton(ss, building, meshBuilders.staticBuilder, contourEdges, roofStyle, floor, zPos, visLog);
+            buildMeshFromStraightSkeleton(roofedTiles, ss, building, meshBuilders.staticBuilder, contourEdges, roofStyle, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
-            if (visLog) visLog->nextStep("Countour " + std::to_string(floor) + " " + std::to_string(n));
+            if (visLog) visLog->nextStep("Contour " + std::to_string(floor) + " " + std::to_string(n));
             meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, roofStyle, zPos, visLog);
             contourEdges.clear();
         }
@@ -549,7 +582,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
 }
 
 
-void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog) {
+void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
@@ -559,7 +592,10 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
     // Map gable and contour vertex points so we can move all connected verts
     std::unordered_map<f32v2, GableVertexInfo, f32v2hash> gableVertexInfo;
     std::unordered_map<f32v2, ContourVertexInfo, f32v2hash> contourVertexInfo;
-    computeGablePointsAndExtrudePositions(building, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
+    computeGablePointsAndExtrudePositions(floorOwnedTiles, building, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
+
+
+    visLog->nextStep("Position verts + triangulate");
 
     // Gather and reposition verts
     ui32 debugColorIndex = 0;
@@ -704,7 +740,8 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
         } while (he != it->halfedge());
 
         if (!isGable) {
-            triangulateRoofFacePolygons(meshBuilder, building, roofStyle, debugColorIndex, zPos);
+
+            triangulateRoofFacePolygons(meshBuilder, building, roofStyle, debugColorIndex, zPos, visLog);
         }
 
         ++debugColorIndex;
@@ -712,26 +749,74 @@ void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, Procedur
     }
 }
 
-void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos) {
+
+void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos, VisualLog* visLog) {
 
     // Triangulation only works on convex polygons so we will partition the potentially concave poly into
     // separate convex polygons
     // https://stackoverflow.com/questions/1832430/c-cgal-2d-delauny-triangulation-concave-shapes
     // 
     // Partition 
+
+    // Remove duplicate vertices
+    boost::container::flat_set<TriangulationPoint> duplicateVertexCheck; // Should be impossible?
     CGAL::Partition_traits_2<K>::Polygon_2 concavePoly;
     for (auto&& pp : sRoofFacePoints) {
-
-        if (pp.x() > 20000.0f || pp.y() > 20000.0f) {
-            LOG_DEBUG("ERROR FACE VAL {} {}", pp.x(), pp.y());
+        if (duplicateVertexCheck.find(pp) == duplicateVertexCheck.end()) {
+            concavePoly.push_back(pp);
+            duplicateVertexCheck.insert(pp);
         }
-
-        concavePoly.push_back(pp);
+        else {
+            // TODO: Should be impossible?
+            assert(false);
+        }
     }
     std::list<CGAL::Partition_traits_2<K>::Polygon_2> convexPolygonList; // TODO: Add holes as well
+
+    // Convex partition requires a "simple" polygon, no overlaps, and no 
+    if (!concavePoly.is_simple()) {
+        LOG_CRITICAL("Input polygon to CGAL::optimal_convex_partition_2 is not simple: ");
+        assert(false);
+        bool firstPoint = true;
+        f32v2 prevPoint;
+        // Vislog
+        for (auto&& pp : concavePoly) {
+            f32v2 p2(pp.x(), pp.y());
+            if (firstPoint) {
+                firstPoint = false;
+            }
+            else {
+                if (visLog) {
+                    visLog->addLineBetweenPoints(f32v3(prevPoint.x, prevPoint.y, zPos), f32v3(p2.x, p2.y, zPos), COLOR_MAGENTA);
+                }
+            }
+            prevPoint = p2;
+            LOG_ERROR("  {}  {}", pp.x(), pp.y());
+        }
+        if (visLog) {
+            visLog->addLineBetweenPoints(f32v3(prevPoint.x, prevPoint.y, zPos), f32v3(concavePoly.begin()->x(), concavePoly.begin()->y(), zPos), COLOR_MAGENTA);
+        }
+        return; // TODO: REMOVE
+        if (CGAL::orientation_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), CGAL::Partition_traits_2<K>()) == CGAL::CLOCKWISE) {
+            LOG_ERROR("Reversing vertices");
+            std::reverse(concavePoly.vertices_begin(), concavePoly.vertices_end());
+        }
+    }
+
     // Partition poly into separate convex pieces
     CGAL::optimal_convex_partition_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), std::back_inserter(convexPolygonList));
 
+    const auto vislogRender = [](VisualLog* visLog, const f32v2 points2D[3], f32 zPos) {
+        if (visLog) {
+            f32v3 points3D[3];
+            for (int j = 0; j < 3; ++j) {
+                points3D[j].x = points2D[j].x;
+                points3D[j].y = points2D[j].y;
+                points3D[j].z = zPos;
+            }
+            visLog->addWireTriangle(points3D, COLOR_WHITE);
+        }
+    };
     for (auto&& convexPoly : convexPolygonList) {
 
         // Get triangle points
@@ -742,6 +827,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Build
                 points[i].x = (f32)convexPoly.vertex(i).x();
                 points[i].y = (f32)convexPoly.vertex(i).y();
             }
+            vislogRender(visLog, points, zPos);
             addRoofTriangle(meshBuilder, points, roofStyle.shinglesMaterial, zPos);
         }
         else {
@@ -757,6 +843,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Build
                     points[i].y = (f32)it->vertex(i)->point().y();
                 }
                 // Add to mesh
+                vislogRender(visLog, points, zPos);
                 addRoofTriangle(meshBuilder, points, roofStyle.shinglesMaterial, zPos);
             }
         }
@@ -1011,12 +1098,6 @@ void meshGable(VisualLog* visLog, const RoofContourEdgeInfo& edge, f32 zPos, Car
     meshBuilder.addBoardBetweenPoints(innerPoints[0], innerPoints[0] - offsetDown, halfDims * 1.5f, roofStyle.primaryBoardMaterial, f32v2(1.0));
     meshBuilder.addBoardBetweenPoints(innerPoints[1], innerPoints[1] - offsetDown, halfDims * 1.5f, roofStyle.primaryBoardMaterial, f32v2(1.0));
 
-    /*  if (visLog) {
-          visLog->addLineBetweenPoints(rightQuadSideEdge[0], rightQuadSideEdge[1], color4(1.0f, 0.0f, 1.0f));
-          visLog->addLineBetweenPoints(rightQuadSideEdge[1], rightQuadSideEdge[2], color4(1.0f, 0.0f, 1.0f));
-          visLog->addLineBetweenPoints(rightQuadSideEdge[2], rightQuadSideEdge[3], color4(1.0f, 0.0f, 1.0f));
-          visLog->addLineBetweenPoints(rightQuadSideEdge[3], rightQuadSideEdge[0], color4(1.0f, 0.0f, 1.0f));
-      }*/
 }
 
 void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog) {

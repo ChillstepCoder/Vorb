@@ -159,81 +159,6 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     return rv;
 }
 
-struct PrevWallIndices {
-    PrevWallIndices() : indices{ UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX } {};
-    union {
-        struct {
-            ui32 indexInA;
-            ui32 indexOutA;
-            ui32 indexInB;
-            ui32 indexOutB;
-        };
-        ui32 indices[4];
-    };
-};
-
-void mergeOrMakeWallFace(
-    f32 floorHeight,
-    ui32& prevIndex,
-    std::vector<WallChainData>& wallData,
-    f32 groundZPosition,
-    const TileWalls& walls,
-    ui32 wallCartesian,
-    Cartesian wallDir,
-    ui32 x,
-    ui32 y,
-    ui32 z,
-    f32 xAdd,
-    f32 yAdd,
-    bool isInside,
-    const f32v2& woobleStartBottom,
-    const f32v2& woobleStartTop,
-    const f32v2& woobleEndBottom,
-    const f32v2& woobleEndTop
-) {
-    bool didMerge = false;
-    if (prevIndex != UINT32_MAX) {
-        WallChainData& prevWall = wallData[prevIndex];
-        // Woobles cant merge
-        if (prevWall.hasWooble() == false && woobleEndBottom == f32v2(0.0f) && woobleEndTop == f32v2(0.0f)) {
-            // We can only merge if same height, same tile ID, and not a door, and if we arent about to blow our UV range
-            if (prevWall.groundPos == groundZPosition && prevWall.tileId == walls.walls[wallCartesian].wallID && prevWall.length < UV_MAX_RANGE) {
-                // Extend previous wall
-                ++prevWall.length;
-                didMerge = true;
-            }
-        }
-    }
-    if (!didMerge) {
-        // Check if this is a door and if so ignore it because its a dynamic object not part of this mesh
-        const TileID tileId = walls.walls[wallCartesian].wallID;
-        const TileData& tileData = TileRepository::getTileData(tileId);
-        if (tileData.shape == TileShape::DOOR) {
-            prevIndex = UINT32_MAX;
-            return;
-        }
-        else if (tileData.shape == TileShape::WINDOW) {
-
-        }
-
-        prevIndex = wallData.size();
-        WallChainData& newWall = wallData.emplace_back();
-        // Add new wall
-        // TODO: No copy paste
-        newWall.tileId = tileId;
-        newWall.dir = wallDir;
-        newWall.length = 1;
-        newWall.groundPos = groundZPosition;
-        newWall.startPos = f32v3(x + xAdd, y + yAdd, z * floorHeight);
-        newWall.cornerTypeStart = WallCornerType::FLAT;
-        newWall.isPrimary = isInside;
-        newWall.vertWoobleStartBottom = woobleStartBottom;
-        newWall.vertWoobleStartTop = woobleStartTop;
-        newWall.vertWoobleEndBottom = woobleEndBottom;
-        newWall.vertWoobleEndTop = woobleEndTop;
-    }         
-}
-
 void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContainer& tileWalls, const std::vector<Tile>& tiles, i32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
     PROFILE_FUNCTION();
     TileIndex tileIndex = 0;
@@ -248,61 +173,12 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
                 for (int i = 0; i < 2; ++i) {
                     if (southAndWestWalls[i].isValid()) {
                         const TileData& tileData = TileRepository::getTileData(southAndWestWalls[i].wallID);
-                        ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, physMesh);
+                        ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tiles, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, physMesh);
                     }
                 }
             }
         }
     }
-
-   /* for (ui32 z = 0; z < tileDims.z; ++z) {
-        for (ui32 y = 0; y < tileDims.y; ++y) {
-            for (ui32 x = 0; x < tileDims.x; ++x) {
-                TileIndex tileIndex = TileSpatialGrid::getTileIndexFromXYZOffset(ui32v3(x, y, z), tileDims);
-                const f32 groundZOffset = tiles[tileIndex].getGroundZOffset();
-                const TileWalls& walls = tileWalls[tileIndex];
-
-                for (ui32 c = 0; c < 4; ++c) {
-                    const TileWall& wall = walls.walls[c];
-                    if (wall.isValid()) {
-                        const TileData& tileData = TileRepository::getTileData(walls.walls[c].wallID);
-                        switch (tileData.shape) {
-                            case TileShape::WALL:
-                                break;
-                            case TileShape::WINDOW:
-                                break;
-                            case TileShape::DOOR:
-                                break;
-                            default:
-                                assert(false);
-                                break;
-
-                        }
-                    }
-                }
-            }
-        }
-    }*/
-            //// Main faces
-            //const TileData& tileData = TileRepository::getTileData(wall.tileId);
-            //const MaterialData& materialData = tileData.materialData;
-            //const f32 UVSCALE_Y = flipV / 3.0f;
-            //meshBuilder.addQuadBetweenPoints(wallPoints, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
-            //physMesh.addQuadBetweenPoints(wallPoints);
-            //if (endcapStart) {
-            //    meshBuilder.addQuadBetweenPoints(encapPointsStart, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
-            //    // The collision is thin enough here we just dont really need it
-            //    /*if (physMesh) {
-            //        physMesh.addQuadBetweenPoints(encapPointsStart);
-            //    }*/
-            //}
-            //if (endcapEnd) {
-            //    meshBuilder.addQuadBetweenPoints(encapPointsEnd, materialData, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE, flipUv);
-            //    // The collision is thin enough here we just dont really need it
-            //    /*if (physMesh) {
-            //        physMesh.addQuadBetweenPoints(encapPointsStart);
-            //    }*/
-            //}
 }
 
 // TODO: Dual grid meshing? https://www.youtube.com/watch?v=buKQjkad2I0

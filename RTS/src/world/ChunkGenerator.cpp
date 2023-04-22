@@ -52,8 +52,8 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, TileGr
         if (height < MAX_GRASS_HEIGHT) {
             //f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
 
-            constexpr f32 GRASS_SCALE = 1.25f; // No greater than 2
-            constexpr f32 GRASS_OFFSET = 0.5f;
+            constexpr f32 GRASS_SCALE = 2.0f; 
+            constexpr f32 GRASS_OFFSET = 0.45f;
             const f32 grassNoise = sWorldGen.mGrassNoise.compute(worldPos.x, worldPos.y);
             const ui8 density = (ui8)glm::clamp(glm::round((grassNoise * GRASS_SCALE + GRASS_OFFSET) * 255.0f), 0.0f, 255.0f);
             grass->grassIDs[0] = defaultGrass;

@@ -1,5 +1,6 @@
 #pragma once
 
+
 // 3D container which can be indexed by a TileIndex
 class TileSpatialGrid {
 public:
@@ -71,6 +72,13 @@ public:
     TileIndex getTileIndexFromXYZOffset(const i32v3& xyz) const { return (TileIndex)(xyz.x + xyz.y * mTileDims.x + xyz.z * mFloorStride); }
     TileIndex getTileIndexFromXYZOffset(i32 x, i32 y, i32 z) const { return (TileIndex)(x + y * mTileDims.x + z * mFloorStride); }
     TileIndex getBaseTileIndexFromXYOffset(i32 x, i32 y) const { return (TileIndex)(x + y * mTileDims.x); }
+    // Returns INVALID_INDEX if out of bounds
+    TileIndex tryGetBaseTileIndexFromXYOffsetf(const f32v2& offset) const {
+        if (offset.x <= 0.0f || offset.y <= 0.0f || (int)offset.x > mTileDims.x - 1 || (int)offset.y > mTileDims.y - 1) {
+            return INVALID_TILE_INDEX;
+        }
+        return getBaseTileIndexFromXYOffset((i32)offset.x, (i32)offset.y);
+    }
 
     const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mTileDims); }
     const i32v3& getDims() const { return mTileDims; }
@@ -91,3 +99,35 @@ private:
     i32 mFloorHeight = 0;
     i32 mFloorStride = 0;
 };
+
+// TODO Refactor this somewhere
+
+// FOR HELPERS
+#include "util/BitArray.h"
+namespace TileSpatialGridHelpers {
+    inline int countAdjacentSetOwnershipBits(const TileSpatialGrid& spatialGrid, const i32v3& bitOffsetXYZ, const BitArray& ownershipBits) {
+        int numAdjacent = 0;
+        TileIndex tileIndex = spatialGrid.getTileIndexFromXYZOffset(bitOffsetXYZ.x, bitOffsetXYZ.y, bitOffsetXYZ.z);
+        if (!spatialGrid.isPosAtSouthBorder(bitOffsetXYZ)) {
+            if (ownershipBits.getBit(spatialGrid.getSouthTileIndex(tileIndex))) {
+                ++numAdjacent;
+            }
+        }
+        if (!spatialGrid.isPosAtWestBorder(bitOffsetXYZ)) {
+            if (ownershipBits.getBit(spatialGrid.getWestTileIndex(tileIndex))) {
+                ++numAdjacent;
+            }
+        }
+        if (!spatialGrid.isPosAtEastBorder(bitOffsetXYZ)) {
+            if (ownershipBits.getBit(spatialGrid.getEastTileIndex(tileIndex))) {
+                ++numAdjacent;
+            }
+        }
+        if (!spatialGrid.isPosAtNorthBorder(bitOffsetXYZ)) {
+            if (ownershipBits.getBit(spatialGrid.getNorthTileIndex(tileIndex))) {
+                ++numAdjacent;
+            }
+        }
+        return numAdjacent;
+    }
+}

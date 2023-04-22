@@ -27,3 +27,7 @@ namespace Random {
         std::vector<unsigned> mPerm;
     };
 }
+
+inline f32 randFromf32v3(const f32v3& x, ui64 additional) {
+    return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
+}

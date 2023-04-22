@@ -10,3 +10,5 @@ terrain:
       uniform: GrassGradients
     - name: cell_noise
       uniform: CellNoise
+    - name: terrain_gradients
+      uniform: TerrainGradients

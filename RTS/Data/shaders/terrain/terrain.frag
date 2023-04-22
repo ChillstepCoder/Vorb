@@ -5,6 +5,7 @@
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform sampler2D GrassGradients;
+uniform sampler2D TerrainGradients;
 uniform sampler2D CellNoise;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
@@ -16,6 +17,9 @@ uniform float unSquaresIntensity = 0.5;
 uniform float unSquaresPeriod = 0.187;
 uniform float unBlendMult = 0.037;
 uniform float unGrassColorV = 0.2;
+
+uniform int unDebugLines = 0;
+uniform int unUseNewGradient = 1;
 
 in float fHeight;
 in vec3 fPosition;
@@ -90,7 +94,12 @@ void main() {
     
     float cellNoiseColor = texture(CellNoise, fUV * unColorMapScale).r;
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, unGrassColorV);
-    vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
+    vec3 GrassColor;
+    if (unUseNewGradient == 1){
+        GrassColor = texture(TerrainGradients, gradientUV).rgb;
+    } else {
+        GrassColor = texture(GrassGradients, gradientUV).rgb;
+    }
     
     // === Normals ===
     // TODO: NORMAL MAPPING
@@ -145,8 +154,29 @@ void main() {
     //currhsv.b = texturehsv.b;
     //currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
     //oColor.rgb = hsv2rgb(currhsv);
-    oColor.rgb *= textureColor;
+    
+    if (unUseNewGradient == 1){
+        float v = textureColor.r;
+        vec2 uv = vec2(gradientUV.x, v);
+        oColor.rgb = texture(TerrainGradients, uv).rgb;
+    } else {
+        oColor.rgb *= textureColor;
+    }
+    if (unDebugLines == 1)
+    {
+        vec2 scaledUV = fUV * 0.3;
+        vec2 uv = vec2(fract(scaledUV.x), fract(scaledUV.y));
+        if (uv.x > 0.9 || uv.y > 0.9) {
+            oColor.rgb = vec3(0.0);
+        } else {
+            vec2 uv2 = vec2(uv.x * (1.0 / 0.9), textureColor.r);
+            oColor.rgb = texture(TerrainGradients, uv2).rgb;
+        }
+    }
+    
     oColor.a = 1.0; // AO
+    
+    //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
     
     // === Roughness + metallic ===
     oMetallicRoughness.r = 0.0; // Metallic

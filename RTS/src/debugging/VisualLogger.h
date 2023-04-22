@@ -73,6 +73,7 @@ public:
 
     void addLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color);
     void addWireQuad(const f32v3& origin, const f32v2& dims, color4 color);
+    void addWireTriangle(const f32v3 points[3], color4 color);
     void addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color);
     void addCartesianArrow(const f32v3& center, f32 length, color4 color, Cartesian dir);
     void addText(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, color4 color);

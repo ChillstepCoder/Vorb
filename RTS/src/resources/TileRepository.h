@@ -22,6 +22,11 @@ struct TileFileData {
     nString material0;
     nString material1;
     nString material2;
+    nString material3;
+    nString material4;
+    nString material5;
+    nString material6;
+    nString material7;
     nString modelName;
     Array<ItemDropDef> itemDrops;
     Array<ItemInputDef> recipe;

@@ -388,6 +388,10 @@ void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& 
     // If vertical board, new tangent
     if (glm::length2(tangent) < 0.00001f) {
         tangent = glm::cross(offset, f32v3(1.0f, 0.0f, 0.0f));
+        // This can fail again if the normalDir is 1,0,0 TODO: Is there a smarter fallback?
+        if (glm::length2(tangent) < 0.00001f) {
+            tangent = glm::cross(offset, f32v3(0.0f, 1.0f, 0.0f));
+        }
     }
     tangent = glm::normalize(tangent);
     f32v3 bitangent = glm::normalize(glm::cross(tangent, offset));

@@ -69,7 +69,7 @@ enum class NavBlockerType {
     COUNT
 };
 
-constexpr int MAX_TILE_MATERIAL_SLOTS = 3;
+constexpr int MAX_TILE_MATERIAL_SLOTS = 8;
 
 
 // TODO: separate certain data into multiple arrays because right now every TileData lookup is a cache miss

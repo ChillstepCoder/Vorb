@@ -8,6 +8,10 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
+#include <glm/gtx/rotate_vector.hpp>
+
+#include "math/Random.h"
+
 struct WallVertexPermutation {
     f32 outerXOffsets[4]; // SW,SE,NW,NE -1, 0 or 1. Multiply by WALL_HALF_THICKNESS
     bool hasWestCap;
@@ -114,6 +118,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
     const TileData& tileData,
     const TileSpatialGrid& spatialGrid,
     const TileWallContainer& tileWalls,
+    const std::vector<Tile>& tiles,
     TileIndex index,
     Cartesian dir,
     const i32v3& tilePos,
@@ -206,7 +211,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
     };
 
     // Stored as SOUTH, NORTH, ENDCAP_WEST, ENDCAP_EAST
-    constexpr CubeFacing CUBE_FACINGS[2][4] = {
+    constexpr CubeFacing WALL_CUBE_FACINGS[2][4] = {
         { CubeFacing::FRONT, CubeFacing::BACK, CubeFacing::LEFT, CubeFacing::RIGHT }, // SOUTH
         { CubeFacing::LEFT, CubeFacing::RIGHT, CubeFacing::BACK, CubeFacing::FRONT }, // WEST
     };
@@ -265,11 +270,11 @@ void ProceduralMeshHelpers::addTileWallMesh(
             computeTilingUVX(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southFaceDims.x);
             computeTilingUVX(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], northFaceDims.x);
             // Mesh
-            meshBuilder.addAxisAlignedQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
-            meshBuilder.addAxisAlignedQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southRootPos, southFaceDims, WALL_CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northRootPos, northFaceDims, WALL_CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
             // Physics
-            physMesh.addTileQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0]);
-            physMesh.addTileQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1]);
+            physMesh.addTileQuad(southRootPos, southFaceDims, WALL_CUBE_FACINGS[e_cast(dir)][0]);
+            physMesh.addTileQuad(northRootPos, northFaceDims, WALL_CUBE_FACINGS[e_cast(dir)][1]);
             break;
         }
         case TileShape::WINDOW: {
@@ -282,47 +287,79 @@ void ProceduralMeshHelpers::addTileWallMesh(
             // Bottom Quads
             const f32v2 southBottomDims(southFaceDims.x, bottomQuadHeight);
             computeTilingUVXZ(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southRootPos.z, southBottomDims.x, southBottomDims.y);
-            meshBuilder.addAxisAlignedQuad(southRootPos, southBottomDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southRootPos, southBottomDims, WALL_CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
             const f32v2 northBottomDims(northFaceDims.x, bottomQuadHeight);
             computeTilingUVXZ(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], northRootPos.z, northBottomDims.x, northBottomDims.y);
-            meshBuilder.addAxisAlignedQuad(northRootPos, northBottomDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northRootPos, northBottomDims, WALL_CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
             // Top Quads
             const f32v2 southTopDims(southFaceDims.x, topQuadHeight);
             const f32v3 southTopRoot(southRootPos.x, southRootPos.y, southRootPos.z + bottomQuadHeight + WINDOW_HEIGHT);
             computeTilingUVXZ(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southTopRoot.z, southTopDims.x, southTopDims.y);
-            meshBuilder.addAxisAlignedQuad(southTopRoot, southTopDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southTopRoot, southTopDims, WALL_CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
             const f32v2 northTopDims(northFaceDims.x, topQuadHeight);
             const f32v3 northTopRoot(northRootPos.x, northRootPos.y, northRootPos.z + bottomQuadHeight + WINDOW_HEIGHT);
             computeTilingUVXZ(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], northTopRoot.z, northTopDims.x, northTopDims.y);
-            meshBuilder.addAxisAlignedQuad(northTopRoot, northTopDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northTopRoot, northTopDims, WALL_CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
 
             // Rim boards
             // p3 p4
             // p1 p2
             f32v2 boardHalfDims(WALL_HALF_THICKNESS, WALL_HALF_THICKNESS + 0.05f);
             f32v3 p1, p2, p3, p4;
+            f32v3 horizontalDir;
             f32v3 horizontalOffset;
             f32v3 normalDir;
-            bool hasAdjacentWindow = false; // Used for removing a shared board
+            bool hasAdjacentRightWindow = false; // Used for removing a shared board
+            bool hasAdjacentWindow = false; // Used for determining shutter style
+            int shutterDir = 0; // -1, 0, 1 Default no shutters
+            f32 rotationDir;
             p1 = f32v3(tilePosF.x, tilePosF.y, tilePosF.z * wallHeight + bottomQuadHeight);
             if (dir == Cartesian::SOUTH) {
                 p2 = f32v3(p1.x + 1.0f, p1.y, p1.z);
                 p3 = f32v3(p1.x, p1.y, p1.z + WINDOW_HEIGHT);
                 p4 = f32v3(p3.x + 1.0f, p3.y, p3.z);
+                horizontalDir = f32v3(1.0f, 0.0f, 0.0f);
                 horizontalOffset = f32v3(boardHalfDims.x, 0.0f, 0.0f);
                 normalDir = f32v3(0.0f, 1.0f, 0.0f);
+                rotationDir = 1.0f;
                 if (!spatialGrid.isPosAtEastBorder(tilePos)) {
-                    hasAdjacentWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.id;
+                    hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.id;
+                }
+                if (!spatialGrid.isPosAtWestBorder(tilePos)) {
+                    if (tileWalls.getSouthWallAtTile(spatialGrid.getWestTileIndex(index)).wallID == tileData.id) {
+                        hasAdjacentWindow = true;
+                    }
+                }
+                // Determine which way shutters face and if they exist based on nearby empty tiles
+                if (spatialGrid.isPosAtSouthBorder(tilePos) || tiles[spatialGrid.getSouthTileIndex(index)].isEmpty()) {
+                    shutterDir = -1;
+                }
+                else if (spatialGrid.isPosAtNorthBorder(tilePos) || tiles[spatialGrid.getNorthTileIndex(index)].isEmpty()) {
+                    shutterDir = 1;
                 }
             }
             else {
                 p2 = f32v3(p1.x, p1.y + 1.0f, p1.z);
                 p3 = f32v3(p1.x, p1.y, p1.z + WINDOW_HEIGHT);
                 p4 = f32v3(p3.x, p3.y + 1.0f, p3.z);
+                horizontalDir = f32v3(0.0f, 1.0f, 0.0f);
                 horizontalOffset = f32v3(0.0f, boardHalfDims.x, 0.0f);
                 normalDir = f32v3(1.0f, 0.0f, 0.0f);
+                rotationDir = -1.0f;
                 if (!spatialGrid.isPosAtNorthBorder(tilePos)) {
-                    hasAdjacentWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.id;
+                    hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.id;
+                }
+                if (!spatialGrid.isPosAtSouthBorder(tilePos)) {
+                    if (tileWalls.getWestWallAtTile(spatialGrid.getSouthTileIndex(index)).wallID == tileData.id) {
+                        hasAdjacentWindow = true;
+                    }
+                }
+                // Determine which way shutters face and if they exist based on nearby empty tiles
+                if (spatialGrid.isPosAtWestBorder(tilePos) || tiles[spatialGrid.getWestTileIndex(index)].isEmpty()) {
+                    shutterDir = -1;
+                }
+                else if (spatialGrid.isPosAtEastBorder(tilePos) || tiles[spatialGrid.getEastTileIndex(index)].isEmpty()) {
+                    shutterDir = 1;
                 }
             }
             // Horizontal
@@ -333,20 +370,74 @@ void ProceduralMeshHelpers::addTileWallMesh(
             boardHalfDims.y -= 0.01f; // Vertical slightly inset
             const f32v3 verticalOffset(0.0f, 0.0f, boardHalfDims.x);
             meshBuilder.addBoardBetweenPoints(p1 + verticalOffset, p3 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
-            if (!hasAdjacentWindow) {
+            if (!hasAdjacentRightWindow) {
                 meshBuilder.addBoardBetweenPoints(p2 + verticalOffset, p4 - verticalOffset, boardHalfDims, tileData.materialData[1], boardUVScale, normalDir);
             }
 
             // Glass panes
             const f32v2 paneDims = f32v2(1.0f - 2.0f * boardHalfDims.x, WINDOW_HEIGHT - 2.0f * boardHalfDims.x);
             const f32v3 glassRootSouth(southRootPos.x, southRootPos.y, southRootPos.z + WINDOW_BASE_Z + boardHalfDims.x);
-            meshBuilder.addAxisAlignedQuad(glassRootSouth + horizontalOffset, paneDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(glassRootSouth + horizontalOffset, paneDims, WALL_CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
             const f32v3 glassRootNorth(northRootPos.x, northRootPos.y, southRootPos.z + WINDOW_BASE_Z + boardHalfDims.x);
-            meshBuilder.addAxisAlignedQuad(glassRootNorth + horizontalOffset, paneDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(glassRootNorth + horizontalOffset, paneDims, WALL_CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+
+            // Shutters
+            if (shutterDir != 0) {
+                if (hasAdjacentWindow) {
+                    // Horizontal style
+                    const f32v2 shutterHalfDims(0.03, paneDims.x * 0.5f);
+                    f32v3 shutterRoot;
+                    f32v3 bottomWindowNormal;
+                    if (shutterDir == -1) {
+                        shutterRoot = glassRootSouth;
+                        bottomWindowNormal = CUBE_FACING_NORMALSF[e_cast(WALL_CUBE_FACINGS[e_cast(dir)][0])];
+                    }
+                    else {
+                        shutterRoot = glassRootNorth;
+                        bottomWindowNormal = CUBE_FACING_NORMALSF[e_cast(WALL_CUBE_FACINGS[e_cast(dir)][1])];
+                        rotationDir = -rotationDir;
+                    }
+                    f32v3 topWindowNormal = bottomWindowNormal;
+                    constexpr f32 ANGLE_VARIANCE = 1.0f;
+                    constexpr f32 BASE_ANGLE = 1.0f;
+                    //bottomWindowNormal = glm::rotate(bottomWindowNormal, DEG_TO_RAD(-(BASE_ANGLE + randFromf32v3(shutterRoot, 12345) * ANGLE_VARIANCE) * rotationDir), horizontalDir);
+                    //topWindowNormal = glm::rotate(topWindowNormal, DEG_TO_RAD((BASE_ANGLE + randFromf32v3(-shutterRoot, 54321) * ANGLE_VARIANCE) * rotationDir), horizontalDir);
+                    const f32v3 bottomShutterRoot = shutterRoot + horizontalOffset + horizontalDir * shutterHalfDims.y;
+                    const f32v3 topShutterRoot = bottomShutterRoot + f32v3(0.0f, 0.0f, paneDims.y);
+                    const f32v2 shutterUvScale(1.0f / (shutterHalfDims.y * 2.0f), 1.0f / paneDims.y);
+                    meshBuilder.addBoardBetweenPoints(bottomShutterRoot, bottomShutterRoot + bottomWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, bottomWindowNormal);
+                    meshBuilder.addBoardBetweenPoints(topShutterRoot, topShutterRoot + topWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, topWindowNormal);
+                }
+                else {
+                    // Vertical style
+                    const f32v2 shutterHalfDims(0.03, paneDims.x * 0.25f);
+                    f32v3 shutterRoot;
+                    f32v3 leftWindowNormal;
+                    if (shutterDir == -1) {
+                        shutterRoot = glassRootSouth;
+                        leftWindowNormal = CUBE_FACING_NORMALSF[e_cast(WALL_CUBE_FACINGS[e_cast(dir)][0])];
+                    }
+                    else {
+                        shutterRoot = glassRootNorth;
+                        leftWindowNormal = CUBE_FACING_NORMALSF[e_cast(WALL_CUBE_FACINGS[e_cast(dir)][1])];
+                        rotationDir = -rotationDir;
+                    }
+                    f32v3 rightWindowNormal = leftWindowNormal;
+                    constexpr f32 ANGLE_VARIANCE = 45.0f;
+                    constexpr f32 BASE_ANGLE = 30.0f;
+                    leftWindowNormal = MathUtil::rotateVectorYaw(leftWindowNormal, -(BASE_ANGLE + randFromf32v3(shutterRoot, 12345) * ANGLE_VARIANCE) * rotationDir);
+                    rightWindowNormal = MathUtil::rotateVectorYaw(rightWindowNormal, (BASE_ANGLE + randFromf32v3(-shutterRoot, 54321) * ANGLE_VARIANCE) * rotationDir);
+                    const f32v3 leftShutterRoot = shutterRoot + horizontalOffset + leftWindowNormal * shutterHalfDims.y;
+                    const f32v3 rightShutterRoot = shutterRoot + horizontalOffset + horizontalDir * paneDims.x + rightWindowNormal * shutterHalfDims.y;
+                    const f32v2 shutterUvScale(1.0f / (shutterHalfDims.y * 2.0f), 1.0f / paneDims.y);
+                    meshBuilder.addBoardBetweenPoints(leftShutterRoot, leftShutterRoot + f32v3(0.0f, 0.0f, paneDims.y), shutterHalfDims, tileData.materialData[3], shutterUvScale, leftWindowNormal);
+                    meshBuilder.addBoardBetweenPoints(rightShutterRoot, rightShutterRoot + f32v3(0.0f, 0.0f, paneDims.y), shutterHalfDims, tileData.materialData[3], shutterUvScale, rightWindowNormal);
+                }
+            }
 
             // Physics
-            physMesh.addTileQuad(southRootPos, southFaceDims, CUBE_FACINGS[e_cast(dir)][0]);
-            physMesh.addTileQuad(northRootPos, northFaceDims, CUBE_FACINGS[e_cast(dir)][1]);
+            physMesh.addTileQuad(southRootPos, southFaceDims, WALL_CUBE_FACINGS[e_cast(dir)][0]);
+            physMesh.addTileQuad(northRootPos, northFaceDims, WALL_CUBE_FACINGS[e_cast(dir)][1]);
             break;
         }
         case TileShape::DOOR: {
@@ -357,11 +448,11 @@ void ProceduralMeshHelpers::addTileWallMesh(
             const f32v2 topDimsSouth(southFaceDims.x, wallHeight - DOOR_HEIGHT);
             const f32v3 topRootSouth(southRootPos.x, southRootPos.y, southRootPos.z + DOOR_HEIGHT);
             computeTilingUVXZ(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], topRootSouth.z, topDimsSouth.x, topDimsSouth.y);
-            meshBuilder.addAxisAlignedQuad(topRootSouth, topDimsSouth, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(topRootSouth, topDimsSouth, WALL_CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[0], uvRectSouth, COLOR_WHITE);
             const f32v2 topDimsNorth(northFaceDims.x, wallHeight - DOOR_HEIGHT);
             const f32v3 topRootNorth(northRootPos.x, northRootPos.y, northRootPos.z + DOOR_HEIGHT);
             computeTilingUVXZ(uvRectNorth, tilePosF[e_cast(dir)] + northFaceOffset[e_cast(dir)], topRootNorth.z, topDimsNorth.x, topDimsNorth.y);
-            meshBuilder.addAxisAlignedQuad(topRootNorth, topDimsNorth, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(topRootNorth, topDimsNorth, WALL_CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[0], uvRectNorth, COLOR_WHITE);
 
             // Trim boards
             // p3 p4
@@ -394,12 +485,12 @@ void ProceduralMeshHelpers::addTileWallMesh(
             // TODO: Replace with dynamic mesh!
             // Door board
             const f32v2 doorDims(1.0f, DOOR_HEIGHT);
-            meshBuilder.addAxisAlignedQuad(southRootPos, doorDims, CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
-            meshBuilder.addAxisAlignedQuad(northRootPos, doorDims, CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(southRootPos, doorDims, WALL_CUBE_FACINGS[e_cast(dir)][0], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+            meshBuilder.addAxisAlignedQuad(northRootPos, doorDims, WALL_CUBE_FACINGS[e_cast(dir)][1], tileData.materialData[2], f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
 
             // Physics
-            physMesh.addTileQuad(topRootSouth, topDimsSouth, CUBE_FACINGS[e_cast(dir)][0]);
-            physMesh.addTileQuad(topRootNorth, topDimsNorth, CUBE_FACINGS[e_cast(dir)][1]);
+            physMesh.addTileQuad(topRootSouth, topDimsSouth, WALL_CUBE_FACINGS[e_cast(dir)][0]);
+            physMesh.addTileQuad(topRootNorth, topDimsNorth, WALL_CUBE_FACINGS[e_cast(dir)][1]);
             break;
         }
         default:

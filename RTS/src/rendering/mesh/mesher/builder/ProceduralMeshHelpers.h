@@ -4,6 +4,7 @@ class ProceduralMeshBuilder;
 class StaticPhysicsMeshBuilder;
 class TileWallContainer;
 class TileSpatialGrid;
+class Tile;
 struct TileData;
 
 namespace ProceduralMeshHelpers
@@ -13,6 +14,7 @@ namespace ProceduralMeshHelpers
         const TileData& tileData,
         const TileSpatialGrid& spatialGrid,
         const TileWallContainer& tileWalls,
+        const std::vector<Tile>& tiles,
         TileIndex index,
         Cartesian dir,
         const i32v3& tilePos,

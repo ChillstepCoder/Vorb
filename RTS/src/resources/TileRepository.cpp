@@ -13,6 +13,11 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("mat0", keg::Value::basic(offsetof(TileFileData, material0), keg::BasicType::STRING));
     kt.addValue("mat1", keg::Value::basic(offsetof(TileFileData, material1), keg::BasicType::STRING));
     kt.addValue("mat2", keg::Value::basic(offsetof(TileFileData, material2), keg::BasicType::STRING));
+    kt.addValue("mat3", keg::Value::basic(offsetof(TileFileData, material3), keg::BasicType::STRING));
+    kt.addValue("mat4", keg::Value::basic(offsetof(TileFileData, material4), keg::BasicType::STRING));
+    kt.addValue("mat5", keg::Value::basic(offsetof(TileFileData, material5), keg::BasicType::STRING));
+    kt.addValue("mat6", keg::Value::basic(offsetof(TileFileData, material6), keg::BasicType::STRING));
+    kt.addValue("mat7", keg::Value::basic(offsetof(TileFileData, material7), keg::BasicType::STRING));
     kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
     kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
     kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
@@ -25,7 +30,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
     kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
 }
-static_assert(MAX_TILE_MATERIAL_SLOTS == 3, "Update matX");
+static_assert(MAX_TILE_MATERIAL_SLOTS == 8, "Update matX");
 
 bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository) {
     // Read file
@@ -86,7 +91,22 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             if (fileData.material2.size()) {
                 tileData.materialData[2] = materialRepository.getMaterialData(fileData.material2);
             }
-            static_assert(MAX_TILE_MATERIAL_SLOTS == 3);
+            if (fileData.material3.size()) {
+                tileData.materialData[3] = materialRepository.getMaterialData(fileData.material3);
+            }
+            if (fileData.material4.size()) {
+                tileData.materialData[4] = materialRepository.getMaterialData(fileData.material4);
+            }
+            if (fileData.material5.size()) {
+                tileData.materialData[5] = materialRepository.getMaterialData(fileData.material5);
+            }
+            if (fileData.material6.size()) {
+                tileData.materialData[6] = materialRepository.getMaterialData(fileData.material6);
+            }
+            if (fileData.material7.size()) {
+                tileData.materialData[7] = materialRepository.getMaterialData(fileData.material7);
+            }
+            static_assert(MAX_TILE_MATERIAL_SLOTS == 8);
             tileData.shape = fileData.tileShape;
         }
 

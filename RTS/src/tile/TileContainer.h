@@ -161,7 +161,7 @@ public:
 
     static bool isTileOwned(const BitArray& ownedTiles, TileIndex index) { return ownedTiles.getNumBits() == 0 || ownedTiles.getBit(index); }
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
-    const BitArray& getOwnedTiles() const { return mOwnedTiles; }
+    const BitArray& getOwnedTiles() const { return mOwnedTiles; } // TODO: ASSERT(IS_GAME_THREAD());
     void allocateOwnedTiles();
     void setOwnedTile(TileIndex index) { mOwnedTiles.setBit(index); }
     void clearOwnedTile(TileIndex index) { mOwnedTiles.clearBit(index); }

@@ -11,6 +11,8 @@ uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 uniform float unDitherPower = 0.5;
 uniform float unColorMapScale = 0.1;
 
+uniform int unDebugLines = 0;
+
 in vec3 fRootPosition;
 in vec2 fUV;
 in float fDistance;
@@ -51,6 +53,18 @@ void main() {
     runAlphaTest(pow(color.a, unDitherPower), 0.001);
     oColor.rgb = color.rgb;
     oColor.a = 1.0; // AO
+    
+    if (unDebugLines == 1)
+    {
+        vec2 scaledUV = worldUV * 0.3;
+        vec2 uv = vec2(fract(scaledUV.x), fract(scaledUV.y));
+        if (uv.x > 0.9 || uv.y > 0.9) {
+            oColor.rgb = vec3(0.0);
+        } else {
+            vec2 uv2 = vec2(uv.x * (1.0 / 0.9), fUV.y);
+            oColor.rgb = texture(GrassGradients, uv2).rgb;
+        }
+    }
     
     // Normal (Upwards)
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);

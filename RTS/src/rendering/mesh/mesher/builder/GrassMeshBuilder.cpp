@@ -134,7 +134,7 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 getOffsetFromD0(xb, yb)
                             );
 
-                            const f32 spawnChance = Random::getCachedRandomfSpecific((x2 + y2) * CHUNK_SIZE + (tx << 4) - (ty << 6));
+                            const f32 spawnChance = Random::getCachedRandomfSpecific((x2 << 3 + y2 << 4) * CHUNK_SIZE + (tx << 4) - (ty << 6));
                             if (SQ(spawnChance) <= densityMult) {
 
                                 const f32 rnd = Random::getCachedRandomfSpecific(x2 + CHUNK_SIZE * y2 - tx - ty * CHUNK_SIZE);
