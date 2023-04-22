@@ -51,6 +51,7 @@ typedef Triangulation::Vertex_circulator Vertex_circulator;
 typedef Triangulation::Point             TriangulationPoint;
 
 constexpr f32 ROOF_THICKNESS = 0.04f;
+constexpr f32 TRIM_BOARD_HALF_THICKNESS = 0.06f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.95f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE_CLIPPING_REDUCE_MULT = 0.35f; // How much we reduce by if our extrude position is clipping with another
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3
@@ -1078,29 +1079,80 @@ void meshGable(VisualLog* visLog, const RoofContourEdgeInfo& edge, f32 zPos, Car
     // Right quad bottom
     addRoofQuad(meshBuilder, rightQuad, roofStyle.primaryBoardMaterial);
 
-    // Left quad side edge
+    const f32v2 trimBoardHalfDims(TRIM_BOARD_HALF_THICKNESS);
+    // Left side trim
     f32v3 leftQuadSideEdge[4] = {leftQuad[0], leftQuad[3], outerPoints[0], baseV1};
-    addRoofQuad(meshBuilder, leftQuadSideEdge, roofStyle.shinglesMaterial);
-    // Right quad side edge
+    meshBuilder.addBoardBetweenPoints(
+        (baseV1 + leftQuad[0]) * 0.5f ,
+        (outerPoints[0] + leftQuad[3]) * 0.5f,
+        trimBoardHalfDims,
+        roofStyle.primaryBoardMaterial,
+        f32v2(1.0f)
+    );
+    
+    // Right side trim
     f32v3 rightQuadSideEdge[4] = { rightQuad[0], baseV2, outerPoints[1], rightQuad[1] };
-    addRoofQuad(meshBuilder, rightQuadSideEdge, roofStyle.shinglesMaterial);
+    meshBuilder.addBoardBetweenPoints(
+        (baseV2 + rightQuad[0]) * 0.5f,
+        (outerPoints[1] + rightQuad[1]) * 0.5f,
+        trimBoardHalfDims,
+        roofStyle.primaryBoardMaterial,
+        f32v2(1.0f)
+    );
 
     const f32v3 outerBottom = outerPoints[2] - f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-    // Left quad end edge
-    f32v3 leftQuadEndEdge[4] = { leftQuadSideEdge[1], outerBottom, outerPoints[2], leftQuadSideEdge[2] };
-    addRoofQuad(meshBuilder, leftQuadEndEdge, roofStyle.shinglesMaterial);
-    // Right quad end edge
-    f32v3 rightQuadEndEdge[4] = { outerBottom, rightQuadSideEdge[3], rightQuadSideEdge[2], outerPoints[2]};
-    addRoofQuad(meshBuilder, rightQuadEndEdge, roofStyle.shinglesMaterial);
+    const f32v3 outerMiddle = outerPoints[2] - f32v3(0.0f, 0.0f, ROOF_THICKNESS * 0.5f);
+    // Left quad end edge trim board
+    const f32v3 leftSideTrimPoints[2] = { (leftQuadSideEdge[1] + leftQuadSideEdge[2]) * 0.5f, outerMiddle };
+    meshBuilder.addBoardBetweenPoints(leftSideTrimPoints[0], leftSideTrimPoints[1], trimBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0f));
+    // Right quad end edge trim board
+    const f32v3 rightSideTrimPoints[2] = { (rightQuadSideEdge[2] + rightQuadSideEdge[3]) * 0.5f, outerMiddle };
+    meshBuilder.addBoardBetweenPoints(rightSideTrimPoints[0], rightSideTrimPoints[1], trimBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0f));
 
     // Placeholder support thingies (Replace with model)
-    f32v3 offsetDown(0.0f, 0.0f, 0.5f);
+    const f32v3 offsetDown(0.0f, 0.0f, 0.5f);
     meshBuilder.addBoardBetweenPoints(innerPoints[0], innerPoints[0] - offsetDown, halfDims * 1.5f, roofStyle.primaryBoardMaterial, f32v2(1.0));
     meshBuilder.addBoardBetweenPoints(innerPoints[1], innerPoints[1] - offsetDown, halfDims * 1.5f, roofStyle.primaryBoardMaterial, f32v2(1.0));
 
+    // Outer diagonal support boards
+    const f32v2 supportBoardHalfDims(TRIM_BOARD_HALF_THICKNESS);
+    const f32v3 ol1 = leftQuad[2] - leftQuad[0];
+    const f32v3 ol2 = leftQuad[1] - leftQuad[0];
+    const f32v3 normalLeft = glm::normalize(glm::cross(ol1, ol2));
+    const f32v3 offsetLeft = normalLeft * supportBoardHalfDims.x;
+    const f32v3 or1 = rightQuad[2] - rightQuad[0];
+    const f32v3 or2 = rightQuad[1] - rightQuad[0];
+    const f32v3 normalRight = glm::normalize(glm::cross(or1, or2));
+    const f32v3 offsetRight = normalRight * supportBoardHalfDims.x;
+    meshBuilder.addBoardBetweenPoints(innerPoints[0] - offsetLeft - f32v3(0.0f, 0.0f, ROOF_THICKNESS), leftQuadSideEdge[1] - offsetLeft, supportBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0), normalLeft);
+    meshBuilder.addBoardBetweenPoints(innerPoints[1] - offsetRight - f32v3(0.0f, 0.0f, ROOF_THICKNESS), rightQuadSideEdge[3] - offsetRight, supportBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0), normalRight);
+
+    { // Outer straight support boards
+        constexpr f32 SPACING = 0.34f;
+        const f32v3 innerStepLeft = (innerPoints[2] - innerPoints[0]) * SPACING;
+        const f32v3 outerStepLeft = (leftSideTrimPoints[1] - leftSideTrimPoints[0]) * SPACING;
+        const f32v3 innerStepRight = (innerPoints[2] - innerPoints[1]) * SPACING;
+        const f32v3 outerStepRight = (rightSideTrimPoints[1] - rightSideTrimPoints[0]) * SPACING;
+        for (int i = 1; i < 3; ++i) {
+            const f32v3 innerPointLeft = innerPoints[0] + innerStepLeft * (f32)i;
+            const f32v3 outerPointLeft = leftSideTrimPoints[0] + outerStepLeft * (f32)i;
+            meshBuilder.addBoardBetweenPoints(innerPointLeft - offsetLeft, outerPointLeft - offsetLeft, supportBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0), normalLeft);
+            const f32v3 innerPointRight = innerPoints[1] + innerStepRight * (f32)i;
+            const f32v3 outerPointRight = rightSideTrimPoints[0] + outerStepRight * (f32)i;
+            meshBuilder.addBoardBetweenPoints(innerPointRight - offsetRight, outerPointRight - offsetRight, supportBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0), normalRight);
+        }
+    }
+
+    /*  if (visLog) {
+          visLog->addLineBetweenPoints(rightQuadSideEdge[0], rightQuadSideEdge[1], color4(1.0f, 0.0f, 1.0f));
+          visLog->addLineBetweenPoints(rightQuadSideEdge[1], rightQuadSideEdge[2], color4(1.0f, 0.0f, 1.0f));
+          visLog->addLineBetweenPoints(rightQuadSideEdge[2], rightQuadSideEdge[3], color4(1.0f, 0.0f, 1.0f));
+          visLog->addLineBetweenPoints(rightQuadSideEdge[3], rightQuadSideEdge[0], color4(1.0f, 0.0f, 1.0f));
+      }*/
 }
 
 void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog) {
+    const f32v2 trimBoardHalfDims(TRIM_BOARD_HALF_THICKNESS);
     for (auto&& edge : contourEdges) {
         if (edge.v1 == edge.parent1 && edge.v2 == edge.parent2) {
             // Ignore cases where we meld into the wall due to collision
@@ -1139,19 +1191,18 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
             const f32v3 second(edge.v2.x, edge.v2.y, edge.v2.z + zPos);
 
             f32v3 points[4];
-            // Side
-            // TODO: Z fighting here when we have no overhang due to collisions with AABB edge
+            // Side trim
             points[0] = first;
             points[1] = second;
             points[2] = second + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
             points[3] = first + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-            meshBuilder.addQuadBetweenPoints(points, roofStyle.shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
-            // Bottom
+            meshBuilder.addBoardBetweenPoints((points[0] + points[3]) * 0.5f, (points[1] + points[2]) * 0.5f, trimBoardHalfDims, roofStyle.primaryBoardMaterial, f32v2(1.0f));
+            // Bottom quad
             points[0] = second;
             points[1] = first;
             points[2] = f32v3(edge.parent1.x, edge.parent1.y, zPos - ROOF_THICKNESS);
             points[3] = f32v3(edge.parent2.x, edge.parent2.y, zPos - ROOF_THICKNESS);
-            meshBuilder.addQuadBetweenPoints(points, roofStyle.shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
+            meshBuilder.addQuadBetweenPoints(points, roofStyle.primaryBoardMaterial, f32v2(1.0f), COLOR_WHITE, false);
 
             // Non gables have supporting boards
             // Step along the edge and add extruded board pieces
