@@ -4,6 +4,7 @@
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "resources/ResourceManager.h"
+#include "resources/MaterialRepository.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 
@@ -35,17 +36,19 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     glUniform1f(program.getUniform("unDitherPower"), sDebugOptions.mGrassDitherPower);
     glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
 
-    // TODO: cache this
+    // TODO: cache this? UBO?
     const int MAX_GRASS = 32;
     const std::vector<TileGrassData>& grassData = Services::ResourceManager::ref().getTileGrassRepository().getAllGrassData();
     assert(grassData.size() < 32);
 
     int grassMaterials[MAX_GRASS];
     int cellCounts[MAX_GRASS];
+    int useGradient[MAX_GRASS];
 
     for (size_t i = 0; i < grassData.size(); ++i) {
-        grassMaterials[i] = grassData[i].mMaterial.id;
+        grassMaterials[i] = grassData[i].mMaterialID;
         cellCounts[i] = grassData[i].mNumTextures;
+        useGradient[i] = (int)grassData[i].mUseGradientColor;
     }
 
     // Upload grass materials
@@ -54,24 +57,27 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     // Upload material cell counts
     glUniform1iv(program.getUniform("unGrassMaterialCellCounts[0]"), grassData.size(), cellCounts);
 
+    // Upload material cell counts
+    glUniform1iv(program.getUniform("unShouldUseColorGradient[0]"), grassData.size(), useGradient);
+
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMesh& mesh = grassMesh->mMesh;
-        f32v3 offset = grassMesh->mPosition - camera.getPosition();
-        glUniform3fv(offsetUniform, 1, &offset.x);
-
-        ui32 lod = QUADTREE_LOD_FROM_INDEX[grassMesh->mIndex];
-        f32v2 centerPos = f32v2(ChunkGrassQuadtree::PATCH_POSITIONS.data[grassMesh->mIndex].xy) + f32v2(ChunkGrassQuadtree::LOD_HALF_DIMS[lod].xy);
-        f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
-        int crossfadeDir = grassMesh->mCrossfadeDir.load();
-        if (crossfadeDir != 0) {
-            glUniform1f(crossfadeAlphaUniform, grassMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
-            glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
-        }
-        else {
-            glUniform1f(crossfadeAlphaUniform, 0.0f);
-            glUniform1f(crossfadeDirectionUniform, 0.0f);
-        }
         if (camera.sphereIsVisible(mesh.getBoundingSphere())) {
+            f32v3 offset = grassMesh->mPosition - camera.getPosition();
+            glUniform3fv(offsetUniform, 1, &offset.x);
+
+            ui32 lod = QUADTREE_LOD_FROM_INDEX[grassMesh->mIndex];
+            f32v2 centerPos = f32v2(ChunkGrassQuadtree::PATCH_POSITIONS.data[grassMesh->mIndex].xy) + f32v2(ChunkGrassQuadtree::LOD_HALF_DIMS[lod].xy);
+            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
+            int crossfadeDir = grassMesh->mCrossfadeDir.load();
+            if (crossfadeDir != 0) {
+                glUniform1f(crossfadeAlphaUniform, grassMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
+                glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
+            }
+            else {
+                glUniform1f(crossfadeAlphaUniform, 0.0f);
+                glUniform1f(crossfadeDirectionUniform, 0.0f);
+            }
             mesh.draw(tboSizeTypeUniform, tboPositionUniform);
         }
     };

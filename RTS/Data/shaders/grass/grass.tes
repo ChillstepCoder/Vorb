@@ -45,6 +45,7 @@ void main()
     
     float height = interpolate1D(tHeight[0], tHeight[1], tHeight[2]);
     fUV = interpolate2D(tUV[0], tUV[1], tUV[2]);
+    fGrassMaterial = tGrassMaterial[0];
     fDistance = tDistance[0];
     
     worldPos.xy += lean * height;

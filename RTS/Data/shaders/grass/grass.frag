@@ -9,9 +9,12 @@ uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 uniform float unDitherPower = 0.5;
 uniform float unColorMapScale = 0.1;
-const int NUM_GRASS_MATERIALS = 32;
 
 uniform int unDebugLines = 0;
+
+const int NUM_GRASS_MATERIALS = 32;
+uniform int unGrassMaterials[NUM_GRASS_MATERIALS];
+uniform int unShouldUseColorGradient[NUM_GRASS_MATERIALS];
 
 in vec3 fRootPosition;
 in vec2 fUV;
@@ -33,13 +36,19 @@ void main() {
     vec2 worldUV = fRootPosition.xy * 0.05;
     float cellNoiseColor = texture(CellNoise, worldUV * unColorMapScale).r;
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y);
-    vec3 GrassColor = texture(GrassGradients, gradientUV).rgb;
     
-    MaterialData mtl = inMaterials[fGrassMaterial];
+    
+    int materialID = unGrassMaterials[fGrassMaterial];
+    MaterialData mtl = inMaterials[materialID];
     vec4 textureColor = sampleMaterialAlbedo(mtl, fUV);
     
-    color.rgb = GrassColor;
-    color.a = textureColor.r;
+    if (unShouldUseColorGradient[fGrassMaterial] == 1) {
+        color.rgb = texture(GrassGradients, gradientUV).rgb;
+        color.a = textureColor.r;
+    } else {
+        color = textureColor;
+    }
+    
 	
 	// Distance fade
 	float noiseVal = texture(GreyNoise, worldUV).r;

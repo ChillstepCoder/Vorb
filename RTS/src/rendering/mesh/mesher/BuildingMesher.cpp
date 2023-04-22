@@ -10,13 +10,8 @@
 
 #include "util/IntersectionUtil.h"
 
-#include "world/IWorld.h"
-
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
-#include "rendering/model/InstancedStaticModelGatherer.h"
-
-#include "options/DebugOptions.h"
 
 #include "math/Random.h"
 
@@ -26,10 +21,7 @@
 
 #include "util/GridEdgeFinder.h"
 
-#include "physics/PhysicsWorld.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
-
-#include "rendering/RenderThreadTasks.h"
 
 //CGal
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -102,25 +94,7 @@ thread_local std::unordered_map<f32v2, f32, f32v2hash> sHeightMap;
 thread_local std::vector<TriangulationPoint> sRoofFacePoints;
 thread_local Polygon_2 sCgalPoly;
 
-
 struct RoofSkeletonVertex;
-
-enum Corners {
-    CORNER_TOP_LEFT = 0,
-    CORNER_TOP_RIGHT = 1,
-    CORNER_BOTTOM_LEFT = 2,
-    CORNER_BOTTOM_RIGHT = 3
-};
-
-
-
-// TODO: MathUtil
-f32v2 rotate90(f32v2 vec) {
-    return f32v2(vec.y, -vec.x);
-}
-f32v2 rotate270(f32v2 vec) {
-    return f32v2(-vec.y, vec.x);
-}
 
 ui32v2 AXIS_UV_LOOKUP_FROM_CARTESIAN[4] = {
     ui32v2(AXIS_X, AXIS_Y), // Cartesian::DOWN
@@ -393,8 +367,6 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // TODO: This is a race condition
     const TileContainer& tileContainer = *building.mTileContainer;
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
-
-    PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
 
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
@@ -733,9 +705,6 @@ void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, c
                     });
             }
 
-            if (sDebugOptions.mRoofDebug && isGablePoint) {
-                DebugRenderer::drawWireQuad(f32v3(aabb.pos.x + x, aabb.pos.y + y, zPos + h) - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
-            }
             he = he->next();
 
         } while (he != it->halfedge());
@@ -904,9 +873,6 @@ void addRoofQuad(
             verts[i].uvsPacked = PackUVs(uvs);
         }
     }
-    /* if (sDebugOptions.mRoofDebug) {
-        DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
-    }*/
     meshBuilder.addQuad(verts, materialData, false);
 }
 
@@ -965,9 +931,6 @@ void addRoofTriangle(
             verts[i].uvsPacked = PackUVs(uvs);
         }
     }
-    /* if (sDebugOptions.mRoofDebug) {
-        DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
-    }*/
     meshBuilder.addTriangle(verts, materialData, false);
 }
 

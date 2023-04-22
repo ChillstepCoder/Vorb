@@ -9,7 +9,6 @@ uniform vec2 unGrassScale;
 uniform float unLeanVariance;
 
 const int NUM_GRASS_MATERIALS = 32;
-uniform int unGrassMaterials[NUM_GRASS_MATERIALS];
 uniform int unGrassMaterialCellCounts[NUM_GRASS_MATERIALS];
 
 out vec3 fWorldPos;
@@ -59,8 +58,10 @@ void main() {
     int bladeIndex = (gl_VertexID / 4);
 	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
 	vec4 dimsTypeRotation = texelFetch(UnTboSizeType, bladeIndex);
+    int grassID = int(round(dimsTypeRotation.z * 255.0));
     
 	vec2 vDims = dimsTypeRotation.xy * unGrassScale;
+    if (grassID == 1) vDims.y *= 1.5;
     float rotation = dimsTypeRotation.w * 6.28318530718; // 2 PI
     
     vec2 xDirection = vec2(cos(rotation), sin(rotation));
@@ -88,11 +89,10 @@ void main() {
     fWorldPos = cameraRelativePos.xyz;
 	
     // Blade type
-    int grassID = int(round(dimsTypeRotation.z * 255.0));
-    fGrassMaterial = unGrassMaterials[grassID];
+    fGrassMaterial = grassID;
     int cellCounti = unGrassMaterialCellCounts[grassID];
     float uWidth = 1.0 / float(cellCounti);
-    float bladeType = mod(rand(trueWorldPos.xy + vec2(3425.0, 2331.0)) * 255.0, cellCounti);
+    float bladeType = round(mod(rand(trueWorldPos.xy + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
     
     
 	// Grass blade uvs
@@ -100,7 +100,6 @@ void main() {
     // TODO: Only handles one row
 	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))] * vec2(uWidth, 1.0);
     fUV.x += bladeType * uWidth;
-   
     
     // Lean at the top
     fLean = xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy);

@@ -8,6 +8,9 @@ KEG_TYPE_DEF_SAME_NAME(TileGrassFileData, kt) {
     kt.addValue("alpha_masks", keg::Value::basic(offsetof(TileGrassFileData, alphaMasks), keg::BasicType::STRING));
     kt.addValue("textures", keg::Value::basic(offsetof(TileGrassFileData, textures), keg::BasicType::STRING));
     kt.addValue("num_textures", keg::Value::basic(offsetof(TileGrassFileData, numTextures), keg::BasicType::I32));
+    kt.addValue("size", keg::Value::basic(offsetof(TileGrassFileData, sizeMults), keg::BasicType::I32_V2));
+    kt.addValue("lean_variance", keg::Value::basic(offsetof(TileGrassFileData, leanVariance), keg::BasicType::I32));
+    kt.addValue("density", keg::Value::basic(offsetof(TileGrassFileData, density), keg::BasicType::I32));
 }
 
 bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository) {
@@ -32,14 +35,17 @@ bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Pa
         assert(mTileGrassIdMapping.find(token) == mTileGrassIdMapping.end()); // Duplicate name
         assert(fileData.alphaMasks.size() || fileData.textures.size());
         if (fileData.alphaMasks.size()) {
-            tileGrassData.mMaterial = materialRepository.getMaterialData(fileData.alphaMasks);
+            tileGrassData.mMaterialID = materialRepository.getMaterialData(fileData.alphaMasks).id;
             tileGrassData.mUseGradientColor = true;
         }
         else {
-            tileGrassData.mMaterial = materialRepository.getMaterialData(fileData.textures);
+            tileGrassData.mMaterialID = materialRepository.getMaterialData(fileData.textures).id;
             tileGrassData.mUseGradientColor = false;
         }
         tileGrassData.mNumTextures = fileData.numTextures;
+        tileGrassData.mSizeMults = fileData.sizeMults;
+        tileGrassData.mLeanVariance = fileData.leanVariance;
+        tileGrassData.mDensity = fileData.density;
         
         mTileGrassIdMapping[key] = nextId;
         // TODO: Serialize the string > ID mapping

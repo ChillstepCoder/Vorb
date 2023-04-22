@@ -134,10 +134,12 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 getOffsetFromD0(xb, yb)
                             );
 
-                            const f32 spawnChance = Random::getCachedRandomfSpecific((x2 << 3 + y2 << 4) * CHUNK_SIZE + (tx << 4) - (ty << 6));
+                            constexpr f32 BIG_PRIME1 = 7919;
+                            constexpr f32 BIG_PRIME2 = 7673;
+                            const f32 spawnChance = Random::getCachedRandomfSpecific((x2 << 3 + y2 << 4) * 15 + (tx << 4) - (ty << 6));
                             if (SQ(spawnChance) <= densityMult) {
 
-                                const f32 rnd = Random::getCachedRandomfSpecific(x2 + CHUNK_SIZE * y2 - tx - ty * CHUNK_SIZE);
+                                const f32 rnd = Random::getCachedRandomfSpecific(x2 + BIG_PRIME1 * y2 - tx - ty * BIG_PRIME2);
                                 const float xo = (x2 + rnd) / (float)detail;
                                 const float yo = (y2 - rnd) / (float)detail;
 
@@ -146,8 +148,8 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 rsize += -grassNoise * 0.4f;
                                 rsize *= densityMult;
                                 rsize = glm::max(rsize, 0.15f);
-                                const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * CHUNK_SIZE - y2 - (tx << 4) + (ty << 5)) & 0xff); // Fast modulus 256
-                                //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * CHUNK_SIZE + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
+                                const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * BIG_PRIME1 - y2 - (tx << 4) + (ty << 5)) & 0xff); // Fast modulus 256
+                                //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                                 f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
                                 const f32 zPos = sHeightmapGrid->computeHeightAtChunkOffset(heightData->data, chunk.getChunkID(), truePos);
                                 // Thin out the grass with an x^2 curve as we get closer to 0 density
