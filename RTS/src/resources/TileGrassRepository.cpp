@@ -8,8 +8,8 @@ KEG_TYPE_DEF_SAME_NAME(TileGrassFileData, kt) {
     kt.addValue("alpha_masks", keg::Value::basic(offsetof(TileGrassFileData, alphaMasks), keg::BasicType::STRING));
     kt.addValue("textures", keg::Value::basic(offsetof(TileGrassFileData, textures), keg::BasicType::STRING));
     kt.addValue("num_textures", keg::Value::basic(offsetof(TileGrassFileData, numTextures), keg::BasicType::I32));
-    kt.addValue("size", keg::Value::basic(offsetof(TileGrassFileData, sizeMults), keg::BasicType::I32_V2));
-    kt.addValue("lean_variance", keg::Value::basic(offsetof(TileGrassFileData, leanVariance), keg::BasicType::I32));
+    kt.addValue("size", keg::Value::basic(offsetof(TileGrassFileData, sizeMults), keg::BasicType::F32_V2));
+    kt.addValue("lean_variance", keg::Value::basic(offsetof(TileGrassFileData, leanVariance), keg::BasicType::F32));
     kt.addValue("density", keg::Value::basic(offsetof(TileGrassFileData, density), keg::BasicType::I32));
 }
 
@@ -46,6 +46,7 @@ bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Pa
         tileGrassData.mSizeMults = fileData.sizeMults;
         tileGrassData.mLeanVariance = fileData.leanVariance;
         tileGrassData.mDensity = fileData.density;
+        assert(tileGrassData.mDensity <= MAX_GRASS_DETAIL);
         
         mTileGrassIdMapping[key] = nextId;
         // TODO: Serialize the string > ID mapping

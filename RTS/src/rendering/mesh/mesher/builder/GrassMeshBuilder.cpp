@@ -8,15 +8,27 @@
 
 #include "generation/WorldGeneration.h"
 
+#include "resources/ResourceManager.h"
+#include "resources/TileGrassRepository.h"
+
 #include "math/Random.h"
 
-constexpr int GRASS_LOD_DETAIL[GRASS_QUADTREE_MAX_LOD] = {
-    0,
-    1,
-    3,
-    6,
-    12,
+constexpr int GRASS_LOD_DETAIL[MAX_GRASS_DETAIL + 1][GRASS_QUADTREE_MAX_LOD] = {
+    { 0, 0, 0, 0, 0 }, // 0
+    { 0, 1, 1, 1, 1 }, // 1
+    { 0, 1, 1, 2, 2 }, // 2
+    { 0, 1, 1, 2, 3 }, // 3
+    { 0, 1, 1, 3, 4 }, // 4
+    { 0, 1, 1, 3, 5 }, // 5
+    { 0, 1, 1, 4, 6 }, // 6
+    { 0, 1, 2, 4, 7 }, // 7
+    { 0, 1, 2, 5, 8 }, // 8
+    { 0, 1, 2, 5, 9 }, // 9
+    { 0, 1, 3, 6, 10 }, // 10
+    { 0, 1, 3, 6, 11 }, // 11
+    { 0, 1, 3, 6, 12 }, // 12
 };
+static_assert(MAX_GRASS_DETAIL == 12);
 
 constexpr f32 GRASS_BLADE_WIDTHS[GRASS_QUADTREE_MAX_LOD] = {
     0.0f,
@@ -33,10 +45,10 @@ inline float smoothstep(float t) {
 void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatchData* heightData)
 {
     PROFILE_FUNCTION();
+    const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
-    const ui32 detail = GRASS_LOD_DETAIL[lod];
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
-    grassMesh.reserveQuadCount((size_t)dims.x * dims.y * SQ(detail));
+    grassMesh.reserveQuadCount((size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
 
     TileGrass paddedGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH];
     chunk.copyPaddedGrassDataWorkerThread(paddedGrassData);
@@ -99,6 +111,8 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                         continue;
                     }
 
+                    const TileGrassData& grassData = grassRepository.getTileGrassData(id);
+                    const ui32 detail = GRASS_LOD_DETAIL[grassData.mDensity][lod];
                     const f32 baseDensity = grassVal.densities[i] * DIVIDE_MULT;
 
 

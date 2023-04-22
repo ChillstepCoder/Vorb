@@ -5,11 +5,13 @@ uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
 uniform vec3 unOffset;
 uniform float UnYOffset = 1.0;
-uniform vec2 unGrassScale;
+uniform vec2 unScale;
 uniform float unLeanVariance;
 
 const int NUM_GRASS_MATERIALS = 32;
 uniform int unGrassMaterialCellCounts[NUM_GRASS_MATERIALS];
+uniform float unGrassLeanVariance[NUM_GRASS_MATERIALS];
+uniform vec2 unGrassScale[NUM_GRASS_MATERIALS];
 
 out vec3 fWorldPos;
 flat out vec3 fWorldRoot;
@@ -60,7 +62,7 @@ void main() {
 	vec4 dimsTypeRotation = texelFetch(UnTboSizeType, bladeIndex);
     int grassID = int(round(dimsTypeRotation.z * 255.0));
     
-	vec2 vDims = dimsTypeRotation.xy * unGrassScale;
+	vec2 vDims = dimsTypeRotation.xy * unGrassScale[grassID] * unScale;
     if (grassID == 1) vDims.y *= 1.5;
     float rotation = dimsTypeRotation.w * 6.28318530718; // 2 PI
     
@@ -102,5 +104,5 @@ void main() {
     fUV.x += bladeType * uWidth;
     
     // Lean at the top
-    fLean = xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy);
+    fLean = xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy) * unGrassLeanVariance[grassID];
 }

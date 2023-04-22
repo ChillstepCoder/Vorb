@@ -309,6 +309,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
             f32v3 horizontalDir;
             f32v3 horizontalOffset;
             f32v3 normalDir;
+            f32v3 tangentDir;
             bool hasAdjacentRightWindow = false; // Used for removing a shared board
             bool hasAdjacentWindow = false; // Used for determining shutter style
             int shutterDir = 0; // -1, 0, 1 Default no shutters
@@ -321,6 +322,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 horizontalDir = f32v3(1.0f, 0.0f, 0.0f);
                 horizontalOffset = f32v3(boardHalfDims.x, 0.0f, 0.0f);
                 normalDir = f32v3(0.0f, 1.0f, 0.0f);
+                tangentDir = f32v3(1.0f, 0.0f, 0.0f);
                 rotationDir = 1.0f;
                 if (!spatialGrid.isPosAtEastBorder(tilePos)) {
                     hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.id;
@@ -345,6 +347,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 horizontalDir = f32v3(0.0f, 1.0f, 0.0f);
                 horizontalOffset = f32v3(0.0f, boardHalfDims.x, 0.0f);
                 normalDir = f32v3(1.0f, 0.0f, 0.0f);
+                tangentDir = f32v3(0.0f, 1.0f, 0.0f);
                 rotationDir = -1.0f;
                 if (!spatialGrid.isPosAtNorthBorder(tilePos)) {
                     hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.id;
@@ -385,7 +388,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
             if (shutterDir != 0) {
                 if (hasAdjacentWindow) {
                     // Horizontal style
-                    const f32v2 shutterHalfDims(0.03, paneDims.x * 0.5f);
+                    const f32v2 shutterHalfDims(paneDims.x * 0.5f, 0.03f);
                     f32v3 shutterRoot;
                     f32v3 bottomWindowNormal;
                     if (shutterDir == -1) {
@@ -398,19 +401,25 @@ void ProceduralMeshHelpers::addTileWallMesh(
                         rotationDir = -rotationDir;
                     }
                     f32v3 topWindowNormal = bottomWindowNormal;
-                    constexpr f32 ANGLE_VARIANCE = 1.0f;
-                    constexpr f32 BASE_ANGLE = 1.0f;
-                    //bottomWindowNormal = glm::rotate(bottomWindowNormal, DEG_TO_RAD(-(BASE_ANGLE + randFromf32v3(shutterRoot, 12345) * ANGLE_VARIANCE) * rotationDir), horizontalDir);
-                    //topWindowNormal = glm::rotate(topWindowNormal, DEG_TO_RAD((BASE_ANGLE + randFromf32v3(-shutterRoot, 54321) * ANGLE_VARIANCE) * rotationDir), horizontalDir);
-                    const f32v3 bottomShutterRoot = shutterRoot + horizontalOffset + horizontalDir * shutterHalfDims.y;
+                    constexpr f32 ANGLE_VARIANCE_BOTTOM = 15.0f;
+                    constexpr f32 ANGLE_VARIANCE_TOP = 25.0f;
+                    constexpr f32 BASE_ANGLE_BOTTOM = -15.0f;
+                    constexpr f32 BASE_ANGLE_TOP = 10.0f;
+                    bottomWindowNormal = glm::rotate(bottomWindowNormal, DEG_TO_RAD(-(BASE_ANGLE_BOTTOM + randFromf32v3(shutterRoot, 12345) * ANGLE_VARIANCE_BOTTOM) * rotationDir), horizontalDir);
+                    topWindowNormal = glm::rotate(topWindowNormal, DEG_TO_RAD((BASE_ANGLE_TOP + randFromf32v3(-shutterRoot, 54321) * ANGLE_VARIANCE_TOP) * rotationDir), horizontalDir);
+                    const f32v3 bottomShutterRoot = shutterRoot + horizontalOffset + horizontalDir * shutterHalfDims.x;
                     const f32v3 topShutterRoot = bottomShutterRoot + f32v3(0.0f, 0.0f, paneDims.y);
-                    const f32v2 shutterUvScale(1.0f / (shutterHalfDims.y * 2.0f), 1.0f / paneDims.y);
-                    meshBuilder.addBoardBetweenPoints(bottomShutterRoot, bottomShutterRoot + bottomWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, bottomWindowNormal);
-                    meshBuilder.addBoardBetweenPoints(topShutterRoot, topShutterRoot + topWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, topWindowNormal);
+                    const f32v2 shutterUvScale(1.0f / (shutterHalfDims.x * 2.0f), 1.0f / paneDims.y);
+                    meshBuilder.addBoardBetweenPoints(bottomShutterRoot, bottomShutterRoot + bottomWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, bottomWindowNormal, &tangentDir);
+                    meshBuilder.addBoardBetweenPoints(topShutterRoot, topShutterRoot + topWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, topWindowNormal, &tangentDir);
+                    // Little support bars
+                    const f32v3 bottomShutterLeftSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f);
+                    const f32v3 bottomShutterLeftSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f;
+                    meshBuilder.addBoardBetweenPoints(bottomShutterLeftSupportStart, bottomShutterLeftSupportEnd, f32v2(0.02f), tileData.materialData[2], f32v2(1.0f), bottomWindowNormal);
                 }
                 else {
                     // Vertical style
-                    const f32v2 shutterHalfDims(0.03, paneDims.x * 0.25f);
+                    const f32v2 shutterHalfDims(0.03f, paneDims.x * 0.25f);
                     f32v3 shutterRoot;
                     f32v3 leftWindowNormal;
                     if (shutterDir == -1) {

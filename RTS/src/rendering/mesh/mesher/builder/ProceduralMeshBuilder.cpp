@@ -382,15 +382,17 @@ void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f
 
 }
 
-void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const MaterialData& materialData, f32v2 uvScale, f32v3 normalDir /*= f32v3(0.0f, 0.0f, 1.0f)*/) {
+void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const MaterialData& materialData, f32v2 uvScale, f32v3 normalDir /*= f32v3(0.0f, 0.0f, 1.0f)*/, const f32v3* tangentDir /*= nullptr*/) {
     f32v3 offset = p2 - p1;
-    f32v3 tangent = glm::cross(offset, normalDir);
-    // If vertical board, new tangent
-    if (glm::length2(tangent) < 0.00001f) {
-        tangent = glm::cross(offset, f32v3(1.0f, 0.0f, 0.0f));
-        // This can fail again if the normalDir is 1,0,0 TODO: Is there a smarter fallback?
+    f32v3 tangent;
+    if (tangentDir) {
+        tangent = *tangentDir;
+    }
+    else {
+        tangent = glm::cross(offset, normalDir);
+        // If vertical board, new tangent
         if (glm::length2(tangent) < 0.00001f) {
-            tangent = glm::cross(offset, f32v3(0.0f, 1.0f, 0.0f));
+            tangent = glm::cross(offset, f32v3(1.0, 0.0, 0.0));
         }
     }
     tangent = glm::normalize(tangent);

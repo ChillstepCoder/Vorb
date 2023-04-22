@@ -33,16 +33,17 @@ struct TileGrassData {
 class TileGrassRepository
 {
 public:
-    const TileGrassData& getTileGrassData(TileGrassID tileId) {
+    const TileGrassData& getTileGrassData(TileGrassID tileId) const {
         assert(tileId < mTileGrassData.size());
         return mTileGrassData[tileId];
     }
-    const TileGrassData& getTileGrassData(StrToken tileToken) {
+    const TileGrassData& getTileGrassData(StrToken tileToken) const {
         // TOOD: Hashed string and error handling
-        TileID id = mTileGrassIdMapping[tileToken];
-        return mTileGrassData[id];
+        auto&& it = mTileGrassIdMapping.find(tileToken);
+        assert(it != mTileGrassIdMapping.end());
+        return mTileGrassData[it->second];
     }
-    TileID getTile(StrToken tileToken) {
+    TileID getTile(StrToken tileToken) const {
         auto&& it = mTileGrassIdMapping.find(tileToken);
         assert(it != mTileGrassIdMapping.end());
         return it->second;

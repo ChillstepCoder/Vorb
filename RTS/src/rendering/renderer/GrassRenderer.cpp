@@ -31,7 +31,7 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
     glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
-    glUniform2f(program.getUniform("unGrassScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
+    glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
     glUniform1f(program.getUniform("unLeanVariance"), sDebugOptions.mGrassLeanVariance);
     glUniform1f(program.getUniform("unDitherPower"), sDebugOptions.mGrassDitherPower);
     glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
@@ -44,11 +44,15 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     int grassMaterials[MAX_GRASS];
     int cellCounts[MAX_GRASS];
     int useGradient[MAX_GRASS];
+    float leanVariance[MAX_GRASS];
+    f32v2 grassScale[MAX_GRASS];
 
     for (size_t i = 0; i < grassData.size(); ++i) {
         grassMaterials[i] = grassData[i].mMaterialID;
         cellCounts[i] = grassData[i].mNumTextures;
         useGradient[i] = (int)grassData[i].mUseGradientColor;
+        leanVariance[i] = (float)grassData[i].mLeanVariance;
+        grassScale[i] = grassData[i].mSizeMults;
     }
 
     // Upload grass materials
@@ -59,6 +63,12 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
 
     // Upload material cell counts
     glUniform1iv(program.getUniform("unShouldUseColorGradient[0]"), grassData.size(), useGradient);
+
+    // Upload material cell counts
+    glUniform1fv(program.getUniform("unGrassLeanVariance[0]"), grassData.size(), leanVariance);
+
+    // Upload material cell counts
+    glUniform2fv(program.getUniform("unGrassScale[0]"), grassData.size(), &grassScale[0].x);
 
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMesh& mesh = grassMesh->mMesh;
@@ -81,4 +91,6 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
             mesh.draw(tboSizeTypeUniform, tboPositionUniform);
         }
     };
+
+    checkGlError("GrassRenderer::renderGrass");
 }
