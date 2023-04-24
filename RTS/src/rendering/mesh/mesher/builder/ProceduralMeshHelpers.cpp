@@ -114,6 +114,7 @@ RUNTIME_INIT_FUNC(SetupOuterWallVertexOffsetsTable) {
     }
 }
 
+// TODO: This is a prototype - we should instead data drive this
 void ProceduralMeshHelpers::addTileWallMesh(
     const TileData& tileData,
     const TileSpatialGrid& spatialGrid,
@@ -401,6 +402,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
                         rotationDir = -rotationDir;
                     }
                     f32v3 topWindowNormal = bottomWindowNormal;
+                    // Main shutter panels
                     constexpr f32 ANGLE_VARIANCE_BOTTOM = 15.0f;
                     constexpr f32 ANGLE_VARIANCE_TOP = 25.0f;
                     constexpr f32 BASE_ANGLE_BOTTOM = -15.0f;
@@ -413,9 +415,17 @@ void ProceduralMeshHelpers::addTileWallMesh(
                     meshBuilder.addBoardBetweenPoints(bottomShutterRoot, bottomShutterRoot + bottomWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, bottomWindowNormal, &tangentDir);
                     meshBuilder.addBoardBetweenPoints(topShutterRoot, topShutterRoot + topWindowNormal * paneDims.y * 0.5f, shutterHalfDims, tileData.materialData[3], shutterUvScale, topWindowNormal, &tangentDir);
                     // Little support bars
+                    const f32v2 supportHalfDims = f32v2(0.02f);
+                    // Bottom left
                     const f32v3 bottomShutterLeftSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f);
                     const f32v3 bottomShutterLeftSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f;
-                    meshBuilder.addBoardBetweenPoints(bottomShutterLeftSupportStart, bottomShutterLeftSupportEnd, f32v2(0.02f), tileData.materialData[2], f32v2(1.0f), bottomWindowNormal);
+                    meshBuilder.addBoardBetweenPoints(bottomShutterLeftSupportStart, bottomShutterLeftSupportEnd, supportHalfDims, tileData.materialData[2], f32v2(1.0f), bottomWindowNormal);
+                    // Bottom right
+                    const f32v3 rightOffset = horizontalDir * shutterHalfDims.x * 2.0f;
+                    const f32v3 bottomShutterRightSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f) + rightOffset;
+                    const f32v3 bottomShutterRightSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f + rightOffset;
+                    meshBuilder.addBoardBetweenPoints(bottomShutterRightSupportStart, bottomShutterRightSupportEnd, supportHalfDims, tileData.materialData[2], f32v2(1.0f), bottomWindowNormal);
+
                 }
                 else {
                     // Vertical style
