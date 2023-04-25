@@ -371,6 +371,7 @@
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
     <ClCompile Include="src\rendering\texture\Cubemap.cpp" />
     <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
@@ -409,11 +410,13 @@
     <ClCompile Include="src\tile\TileUtil.cpp" />
     <ClCompile Include="src\tile\TileWallContainer.cpp" />
     <ClCompile Include="src\time\GameTimeManager.cpp" />
+    <ClCompile Include="src\time\TimeOfDayManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
+    <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
     <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
-    <ClCompile Include="src\ui\editor\MaterialEditorPanel.cpp" />
-    <ClCompile Include="src\ui\editor\ModelEditorPanel.cpp" />
+    <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
     <ClCompile Include="src\ui\PauseMenuPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
@@ -441,7 +444,7 @@
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp" />
-    <ClCompile Include="src\world\srv\SrvWorld.cpp" />
+    <ClCompile Include="src\world\srv\DedicatedSrvWorld.cpp" />
     <ClCompile Include="src\world\srv\SrvWorldInterface.cpp" />
     <ClCompile Include="src\world\WorldFactory.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
@@ -574,7 +577,7 @@
     <ClInclude Include="src\network\srv\GameServer.h" />
     <ClInclude Include="src\network\srv\SrvAdapter.h" />
     <ClInclude Include="src\network\srv\SrvMessage.h" />
-    <ClInclude Include="src\network\WorldType.h" />
+    <ClInclude Include="src\network\WorldNetMode.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\options\LightingOptions.h" />
     <ClInclude Include="src\particles\ParticleSystem.h" />
@@ -656,6 +659,7 @@
     <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h" />
     <ClInclude Include="src\rendering\post_process\TonemapRenderer.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
+    <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
@@ -707,12 +711,14 @@
     <ClInclude Include="src\tile\TileUtil.h" />
     <ClInclude Include="src\tile\TileWallContainer.h" />
     <ClInclude Include="src\time\GameTimeManager.h" />
+    <ClInclude Include="src\time\TimeOfDayManager.h" />
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
+    <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\EditorRoot.h" />
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
-    <ClInclude Include="src\ui\editor\MaterialEditorPanel.h" />
-    <ClInclude Include="src\ui\editor\ModelEditorPanel.h" />
+    <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\PauseMenuPanel.h" />
@@ -762,12 +768,13 @@
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
     <ClInclude Include="src\world\srv\SrvHeightmapGrid.h" />
-    <ClInclude Include="src\world\srv\SrvWorld.h" />
+    <ClInclude Include="src\world\srv\DedicatedSrvWorld.h" />
     <ClInclude Include="src\world\srv\SrvWorldInterface.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldFactory.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
+    <ClInclude Include="src\world\WorldType.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>

@@ -30,10 +30,6 @@ void CliWorld::tick(f32 elapsedSec) {
     // TODO: Figure out best order
     tickShared(elapsedSec);
 
-    updateTimeOfDay();
-
-    updateCities();
-
     // TickClient always last as it updates render state
     tickClient(*this);
 }
@@ -55,11 +51,14 @@ void CliWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginClient();
 }
 
-void CliWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-    cliDirtyTerrainFromBrush(pos, brushRadius);
-    sharedDirtyTerrainFromBrush(pos, brushRadius);
-}
-
 void CliWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
     cliDirtyGrassFromBrush(pos, brushRadius);
+}
+
+WorldNetMode CliWorld::getNetMode() {
+    return WorldNetMode::Client;
+}
+
+WorldType CliWorld::getWorldType() {
+    return WorldType::Game;
 }

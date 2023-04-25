@@ -30,17 +30,9 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 void TerrainMeshManager::tick() {
     assert(IS_GAME_THREAD());
-    const f32v2& loadCenter = sWorld->getLoadCenter();
+    const f32v2& loadCenter = sMainGameWorld->getLoadCenter();
     for (auto&& terrainQuadtree : mTerrainTrees) {
         terrainQuadtree.update(loadCenter);
-    }
-}
-
-void TerrainMeshManager::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-    assert(IS_GAME_THREAD());
-    // Only update terrain which was impacted by brush
-    for (auto&& quadtree : mTerrainTrees) {
-        quadtree.onDataChanged(pos, brushRadius);
     }
 }
 

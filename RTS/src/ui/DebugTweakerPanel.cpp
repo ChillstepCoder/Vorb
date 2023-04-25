@@ -12,6 +12,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
+#include "time/TimeOfDayManager.h"
+
 #include "rendering/GLExtensions.h"
 #include "rendering/MaterialUtils.h"
 
@@ -96,7 +98,7 @@ void setDefaultTheme() {
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
 {
-    IEntityComponentSystem& ecs = sWorld->getECS();
+    IEntityComponentSystem& ecs = sMainGameWorld->getECS();
 
     ImGui::BeginChild("Value Tweaker", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Value Tweaker");
@@ -189,7 +191,6 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
 
     if (ImGui::CollapsingHeader("Lighting")) {
         ImGui::PushID(++ID);
-        f64v2 range(0.0, 1600.0);
         if (ImGui::Checkbox("Use PBR", &sDebugOptions.mUsingPBR)) {
             sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mUsingPBR][sDebugOptions.mLightingPreset];
         }
@@ -198,7 +199,12 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             ImGui::ColorPicker3("Sunset Color", &sDebugOptions.mSunColorSunset.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
             ImGui::Separator();
         }
-        ImGui::SliderScalar("Time of Day", ImGuiDataType_Double, &sDebugOptions.mTimeOffset, &range.x, &range.y);
+        f64v2 range(0.0, 24.0);
+        TimeOfDayManager& timeOfDayMgr = sMainGameWorld->getTimeOfDayManager();
+        f32 currentTimeHours = timeOfDayMgr.getTimeOfDayHours();
+        if (ImGui::SliderFloat("Time of Day", &currentTimeHours, 0.0f, 24.0f)) {
+            timeOfDayMgr.setTimeOfDay(currentTimeHours);
+        }
         ImGui::Checkbox("Split View", &sDebugOptions.mLightPresetSplitView);
         if (sDebugOptions.mLightPresetSplitView) {
             ImGui::SliderFloat("Split Line", &sDebugOptions.mLightPresetSplitAmount, 0.0f, 1.0f);

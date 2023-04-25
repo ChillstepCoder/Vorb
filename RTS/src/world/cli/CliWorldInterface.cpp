@@ -37,8 +37,8 @@ CliWorldInterface::CliWorldInterface() {
 }
 
 CliWorldInterface::~CliWorldInterface() {
-    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
-    sWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
+    sMainGameWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
+    sMainGameWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
 }
 
 void CliWorldInterface::tickClient(IWorld& world) {
@@ -57,21 +57,15 @@ void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
 
 void CliWorldInterface::onWorldBeginClient() {
     // When character models are added, we should let the render thread know
-    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
-    sWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
+    sMainGameWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
+    sMainGameWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
 
-    sWorld->getChunkGrid().addReadyListener([this](const Chunk& chunk) {
+    sMainGameWorld->getChunkGrid().addReadyListener([this](const Chunk& chunk) {
         mGrassMeshManager->addGrassForChunk(chunk);
     });
-    sWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
+    sMainGameWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
         mGrassMeshManager->removeGrassForChunk(chunk);
     });
-}
-
-void CliWorldInterface::cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-    PROFILE_FUNCTION();
-    mTerrainMeshManager->dirtyTerrainFromBrush(pos, brushRadius);
-    mGrassMeshManager->dirtyGrassFromBrush(pos, brushRadius);
 }
 
 void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {

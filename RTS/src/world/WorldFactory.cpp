@@ -2,22 +2,22 @@
 #include "WorldFactory.h"
 
 #include "world/host/HostWorld.h"
-#include "world/srv/SrvWorld.h"
+#include "world/srv/DedicatedSrvWorld.h"
 #include "world/srv/SrvChunkGrid.h"
 #include "world/srv/SrvHeightmapGrid.h"
 #include "world/cli/CliWorld.h"
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 
-IWorld& WorldFactory::makeWorld(WorldType type) {
+IWorld& WorldFactory::makeWorld(WorldNetMode type) {
     switch (type) {
-        case WorldType::CLIENT:
+        case WorldNetMode::Client:
             return makeClientWorld();
             break;
-        case WorldType::HOST:
+        case WorldNetMode::Host:
             return makeHostWorld();
             break;
-        case WorldType::DEDICATED:
+        case WorldNetMode::DedicatedServer:
             assert(false);
             break;
         default:
@@ -27,36 +27,36 @@ IWorld& WorldFactory::makeWorld(WorldType type) {
     }
     // Failure case
     assert(false);
-    return *sWorld;
+    return *sMainGameWorld;
 }
 
 void WorldFactory::destroyWorld()
 {
     delete sHeightmapGrid;
     delete sChunkGrid;
-    delete sWorld;
+    delete sMainGameWorld;
     sHeightmapGrid = nullptr;
     sChunkGrid = nullptr;
-    sWorld = nullptr;
+    sMainGameWorld = nullptr;
 }
 
 IWorld& WorldFactory::makeClientWorld() {
     sHeightmapGrid = new CliHeightmapGrid();
     sChunkGrid = new CliChunkGrid();
-    sWorld = new CliWorld(sChunkGrid, sHeightmapGrid);
-    return *sWorld;
+    sMainGameWorld = new CliWorld(sChunkGrid, sHeightmapGrid);
+    return *sMainGameWorld;
 }
 
 IWorld& WorldFactory::makeHostWorld() {
     sHeightmapGrid = new SrvHeightmapGrid();
     sChunkGrid = new SrvChunkGrid();
-    sWorld = new HostWorld(sChunkGrid, sHeightmapGrid);
-    return *sWorld;
+    sMainGameWorld = new HostWorld(sChunkGrid, sHeightmapGrid);
+    return *sMainGameWorld;
 }
 
 IWorld& WorldFactory::makeServerWorld() {
     sHeightmapGrid = new SrvHeightmapGrid();
     sChunkGrid = new SrvChunkGrid();
-    sWorld = new SrvWorld(sChunkGrid, sHeightmapGrid);
-    return *sWorld;
+    sMainGameWorld = new DedicatedSrvWorld(sChunkGrid, sHeightmapGrid);
+    return *sMainGameWorld;
 }

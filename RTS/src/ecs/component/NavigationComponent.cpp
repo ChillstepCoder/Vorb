@@ -84,7 +84,7 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
     }*/
 
 	// Check for stuck on new tile/jump
-	const Tile* targetTile = sWorld->getTileHandleAtWorldPos(nextTilePos).tile;
+	const Tile* targetTile = sMainGameWorld->getTileHandleAtWorldPos(nextTilePos).tile;
 	if (targetTile) {
         f32 baseZ = targetTile->getGroundZOffset();
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
@@ -251,7 +251,7 @@ void requestFinePathToPoint(NavigationComponent& navCmp, const f32v3& start, con
         assert(Services::isUsingNav());
 		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle]() {
 
-			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(sWorld->getHeightmapGrid())));
+			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(sMainGameWorld->getHeightmapGrid())));
 
 			RenderThreadTasks::getInstance().addGenericTask([](RenderContext&, void* vPathHandle) {
 				std::vector<f32v3>* pathHandle = static_cast<std::vector<f32v3>*>(vPathHandle);

@@ -120,7 +120,7 @@ void IHeightmapGrid::tickShared() {
         if (patch.mRefCount == 0) {
             assert(!patch.isGenerating());
             // Remove the collider
-            sWorld->getPhysicsWorld().deleteHeightField(patch);
+            sMainGameWorld->getPhysicsWorld().deleteHeightField(patch);
             patch.mFlags = 0u;
             delete patch.mHeightData; // TODO: Recycle
             patch.mHeightData = nullptr;
@@ -499,10 +499,6 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
             setHeightAt(id, vertIndex, flattenHeight);
         }
     }
-
-    const f32v2 aabbCenter(aabb.getCenter());
-    const f32 aabbDiagonalRadius = sqrt(SQ(aabb.dims.x * 0.5f) + SQ(aabb.dims.y * 0.5f));
-    sWorld->dirtyTerrainFromBrush(aabbCenter, aabbDiagonalRadius);
 }
 
 f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const {
@@ -766,7 +762,7 @@ void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
 
     assert(!patch.mHeightData->mCollider);
     // Generate collider
-    patch.mHeightData->mCollider = sWorld->getPhysicsWorld().addHeightField(patch);
+    patch.mHeightData->mCollider = sMainGameWorld->getPhysicsWorld().addHeightField(patch);
 
     // See if any other patches were waiting on us for padded data access
     {

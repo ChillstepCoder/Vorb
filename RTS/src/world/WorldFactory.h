@@ -1,13 +1,13 @@
 #pragma once
 
-#include "network/WorldType.h"
+#include "network/WorldNetMode.h"
 
 class IWorld;
 
 class WorldFactory
 {
 public:
-    static IWorld& makeWorld(WorldType type);
+    static IWorld& makeWorld(WorldNetMode type);
     static void destroyWorld();
 private:
     static IWorld& makeClientWorld();

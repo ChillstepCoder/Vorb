@@ -4,8 +4,9 @@
 #include "editor/WorldEditorPanel.h"
 #include "ui/DebugTweakerPanel.h"
 #include "ui/editor/TileEditorPanel.h"
-#include "ui/editor/ModelEditorPanel.h"
-#include "ui/editor/MaterialEditorPanel.h"
+#include "ui/editor/ModelEditorViewportPanel.h"
+#include "ui/editor/MaterialEditorViewportPanel.h"
+#include "ui/editor/BiomeEditorViewportPanel.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -36,8 +37,9 @@ EditorRoot::EditorRoot() {
     mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>();
     mWorldEditorPanel = std::make_unique<WorldEditorPanel>();
     mTileEditorPanel = std::make_unique<TileEditorPanel>();
-    mModelEditorPanel = std::make_unique<ModelEditorPanel>();
-    mMaterialEditorPanel = std::make_unique<MaterialEditorPanel>();
+    mModelEditorViewportPanel = std::make_unique<ModelEditorViewportPanel>();
+    mMaterialEditorViewportPanel = std::make_unique<MaterialEditorViewportPanel>();
+    mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
 
     // Initialize inputs
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
@@ -120,11 +122,14 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                 case TileEditorPanelResultCode::EDIT_MATERIAL:
                     openMaterialForEdit(*std::get<std::unique_ptr<MaterialHandle>>(result.second));
                     break;
+                case TileEditorPanelResultCode::EDIT_FOLIAGE:
+                    openFoliageForEdit(*std::get<TileGrassData*>(result.second));
+                    break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 3);
+            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 4);
 
         }
 
@@ -149,11 +154,17 @@ void EditorRoot::renderEditorBrushDecals(const Camera3D& camera) {
 }
 
 void EditorRoot::openModelForEdit(ModelDef& model) {
-    mModelEditorPanel->setModel(model);
-    mActiveCenterPanel = mModelEditorPanel.get();
+    mModelEditorViewportPanel->setModel(model);
+    mActiveCenterPanel = mModelEditorViewportPanel.get();
 }
 
 void EditorRoot::openMaterialForEdit(MaterialHandle& materialHandle) {
-    mMaterialEditorPanel->setMaterial(materialHandle);
-    mActiveCenterPanel = mMaterialEditorPanel.get();
+    mMaterialEditorViewportPanel->setMaterial(materialHandle);
+    mActiveCenterPanel = mMaterialEditorViewportPanel.get();
+}
+
+void EditorRoot::openFoliageForEdit(TileGrassData& grassData)
+{
+    //mBiomeEditorViewportPanel->setMaterial(materialHandle);
+    mActiveCenterPanel = mBiomeEditorViewportPanel.get();
 }

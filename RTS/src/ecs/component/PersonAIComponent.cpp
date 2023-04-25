@@ -26,7 +26,7 @@ inline void updateComponent(entt::registry& registry, entt::entity entity, Perso
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
-        ai.mCity = sWorld->getCityGraph().getClosestCityToPoint(physics.getPosition());
+        ai.mCity = sMainGameWorld->getCityGraph().getClosestCityToPoint(physics.getPosition());
         // No city? No work!
         if (!ai.mCity) {
             return;

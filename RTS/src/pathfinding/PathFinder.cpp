@@ -196,7 +196,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     assert(IS_NAV_THREAD());
     // TODO: Profiling
     PreciseTimer timer;
-    const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
 
     // We pathfind forwards
     const ContainerNavData* startNavData = nullptr;

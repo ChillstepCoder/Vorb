@@ -62,8 +62,9 @@ protected:
 
     VGVertexArray mGridVao = 0;
     std::unique_ptr<Skybox> mSkybox;
-    std::unique_ptr<vg::GBuffer> mGBuffers[3];
     EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::PBRTest;
+    // All editor viewport panels share the same GBuffers
+    static std::unique_ptr<vg::GBuffer> sGBuffers[3];
 
     int mSelectedSkyboxIndex = 0;
     bool mShowSkyboxIrradiance = false;

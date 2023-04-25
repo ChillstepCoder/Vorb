@@ -149,7 +149,7 @@ void NavWorld::updateNavThread()
                     assert(id < WorldData::WORLD_SIZE_CHUNKS);
                     mTerrainDependentEdges[id].erase(containerData.id);
 
-                    Chunk& chunk = sWorld->getChunk(id);
+                    Chunk& chunk = sMainGameWorld->getChunk(id);
                     // TODO: should we be marking it dirty? Wouldnt this be an invalid chunk?
                     markChunkContainerNavDirty(id);
                     chunk.decRef();
@@ -264,7 +264,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
     /* Chunk* chunk = nullptr;
      if (isTerrain) {
-         chunk = &sWorld->getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
+         chunk = &sMainGameWorld->getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
      }*/
 
     ui32 totalDjSets = 0;
@@ -800,7 +800,7 @@ void NavWorld::initEventHandlers() {
             int i = 0;
             for (LiteChunkID id : chunkDependencies) {
                 assert(id < WorldData::WORLD_SIZE_CHUNKS);
-                Chunk& chunk = sWorld->getChunk(id);
+                Chunk& chunk = sMainGameWorld->getChunk(id);
                 // Only have dependencies on chunks with valid chunks
                 if (chunk.getRefCount()) {
                     chunk.incRef();
@@ -891,7 +891,7 @@ bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Carte
 void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
 {
     assert(IS_NAV_THREAD());
-    const Chunk& chunk = sWorld->getChunk(chunkId);
+    const Chunk& chunk = sMainGameWorld->getChunk(chunkId);
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
     bool didAdd = mDirtyTileContainers.workerThreadTryDirtyObject(chunkTileContainer);
@@ -1009,7 +1009,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const color4 color3(1.0f, 1.0f, 1.0f, 0.75f);
     const color4 color4(1.0f, 0.0f, 1.0f, 0.75f);
-    const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
     const TileContainerID containerId = tileContainer.getId();
     if (!tileContainer.isTerrain()) {
         heightData = nullptr;
@@ -1197,7 +1197,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const color4 color3(1.0f, 1.0f, 1.0f, 0.75f);
     const color4 color4(1.0f, 0.0f, 1.0f, 0.75f);
-    const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
     const TileContainerID containerId = tileHandle.container->getId();
     if (!tileHandle.container->isTerrain()) {
         heightData = nullptr;
@@ -1396,7 +1396,7 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
                     break;
                 }
                 // Make sure this chunk stays
-                sWorld->getChunk(id).incRef();
+                sMainGameWorld->getChunk(id).incRef();
             }
         }
     }

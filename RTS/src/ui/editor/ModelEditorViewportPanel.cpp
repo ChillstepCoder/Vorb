@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "ModelEditorPanel.h"
+#include "ModelEditorViewportPanel.h"
 
 #include "definitions/ModelDef.h"
 
@@ -20,15 +20,15 @@
 
 #include "camera/SimpleCamera.h"
 
-ModelEditorPanel::ModelEditorPanel()
+ModelEditorViewportPanel::ModelEditorViewportPanel()
 {
 }
 
-ModelEditorPanel::~ModelEditorPanel()
+ModelEditorViewportPanel::~ModelEditorViewportPanel()
 {
 }
 
-bool ModelEditorPanel::updateAndRender() {
+bool ModelEditorViewportPanel::updateAndRender() {
     bool isOpen = true;
     ImGui::Begin("Model Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -47,7 +47,7 @@ bool ModelEditorPanel::updateAndRender() {
     }
 
     // Lazy init so we don't use GPU memory when not in editor
-    if (mGBuffers[0] == nullptr) {
+    if (sGBuffers[0] == nullptr) {
         initGBuffers(imageDims);
     }
     
@@ -58,7 +58,7 @@ bool ModelEditorPanel::updateAndRender() {
     return isOpen;
 }
 
-void ModelEditorPanel::updateAndRenderControls(f32 ySize)
+void ModelEditorViewportPanel::updateAndRenderControls(f32 ySize)
 {
     ImGui::BeginChild("Model Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Model Editor Controls");
@@ -100,7 +100,7 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
     ImGui::EndChild();
 }
 
-const MaterialShader* ModelEditorPanel::getShader() {
+const MaterialShader* ModelEditorViewportPanel::getShader() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     switch (mDrawMode) {
         case EditorViewportDrawMode::PBRTest:
@@ -126,11 +126,11 @@ const MaterialShader* ModelEditorPanel::getShader() {
     return nullptr;
 }
 
-void ModelEditorPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
+void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
     UNUSED(shader, availableTextureUnit);
 }
 
-void ModelEditorPanel::renderMesh() {
+void ModelEditorViewportPanel::renderMesh() {
     if (mCurrentModel) {
         Model3D& mModel = mCurrentModel->mModel;
         mModel.getMesh()->draw(MeshLODLevel(mLod));

@@ -103,7 +103,7 @@ void WorldEditorPanel::update(const Camera3D& camera, const f32v3& pickRay) {
     {
         PROFILE_SCOPE("Tile picking");
         mHitResult = mDeferredPhysicsPick.getLastPickResult();
-        sWorld->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+        sMainGameWorld->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
     }
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
@@ -488,9 +488,6 @@ void WorldEditorPanel::updateTerrainEdit() {
                     }
                 }
 
-                // Notify all terrain stuff to update
-                //sWorld->dirtyTerrainFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + HEIGHTMAP_QUAD_SIZE);
-
                 delete task;
             }, task);
         }
@@ -534,7 +531,7 @@ void WorldEditorPanel::updateGrassEdit() {
                     for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                             ChunkID id(worldPos);
-                            const TileContainer& tileContainer = *sWorld->getChunk(id).getTileContainer();
+                            const TileContainer& tileContainer = *sMainGameWorld->getChunk(id).getTileContainer();
                             TileIndex tileIndex = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
                             const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                             const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
@@ -547,7 +544,7 @@ void WorldEditorPanel::updateGrassEdit() {
 
          
                 // Notify all terrain stuff to update
-                sWorld->dirtyGrassFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + 1);
+                sMainGameWorld->dirtyGrassFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + 1);
 
             delete task;
             }, task);
@@ -572,7 +569,7 @@ void WorldEditorPanel::updateTileEdit() {
             GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
                 std::tuple<LiteChunkID, TileIndex, TileID>* taskData = (std::tuple<LiteChunkID, TileIndex, TileID>*)v;
                 LiteChunkID chunkId = std::get<0>(*taskData);
-                Chunk& chunk = sWorld->getChunk(chunkId);
+                Chunk& chunk = sMainGameWorld->getChunk(chunkId);
                 if (chunk.isDataReady()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
                     const TileData& data = TileRepository::getTileData(std::get<2>(*taskData));
@@ -608,7 +605,7 @@ void WorldEditorPanel::updateCityEdit() {
         task->worldPos = f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y);
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
             CityCreateTask* task = static_cast<CityCreateTask*>(vTask);
-            sWorld->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
+            sMainGameWorld->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
             delete task;
         }, task);
     }
@@ -682,7 +679,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
     //const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     //if (random < strength) {
-    float density = (float)sWorld->getChunk(id).getGrassDensityAt(tileIndex, grassId);
+    float density = (float)sMainGameWorld->getChunk(id).getGrassDensityAt(tileIndex, grassId);
     if (editState == GrassEditState::RAISE) {
         density += strength * POWER;
     }
@@ -691,7 +688,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     }
 
     ui8 densityUi8 = (ui8)glm::clamp(glm::round(density), 0.0f, 255.0f);
-    sWorld->getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
+    sMainGameWorld->getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
     //}
 }
 

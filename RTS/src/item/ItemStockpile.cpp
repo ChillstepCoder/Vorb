@@ -30,7 +30,7 @@ ItemStockpile::ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool*
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.depth; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             const i32v2 worldPos(x, y);
-            TileRef ref(sWorld->getTerrainTileHandleAtWorldPos(worldPos));
+            TileRef ref(sMainGameWorld->getTerrainTileHandleAtWorldPos(worldPos));
             const bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlag(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid
@@ -54,7 +54,7 @@ ItemStockpile::ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool*
 
     // Ownership
     if (mOwnerEntity != INVALID_ENTITY) {
-        OwnershipComponent& ownershipCmp = sWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        OwnershipComponent& ownershipCmp = sMainGameWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         ownershipCmp.mOwnedStockpiles.push_back(this);
     }
 
@@ -76,7 +76,7 @@ ItemStockpile::~ItemStockpile() {
 
     // Clean up ownership
     if (mOwnerEntity != INVALID_ENTITY) {
-        OwnershipComponent& ownershipCmp = sWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        OwnershipComponent& ownershipCmp = sMainGameWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         for (size_t i = 0; i < ownershipCmp.mOwnedStockpiles.size(); ++i) {
             if (ownershipCmp.mOwnedStockpiles[i] == this) {
                 ownershipCmp.mOwnedStockpiles[i] = ownershipCmp.mOwnedStockpiles.back();

@@ -504,7 +504,7 @@
     <ClCompile Include="src\world\host\HostWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\srv\SrvWorld.cpp">
+    <ClCompile Include="src\world\srv\DedicatedSrvWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\srv\SrvWorldInterface.cpp">
@@ -582,7 +582,7 @@
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\editor\ModelEditorPanel.cpp">
+    <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\camera\SimpleCamera.cpp">
@@ -618,7 +618,7 @@
     <ClCompile Include="src\rendering\mesh\RawMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\editor\MaterialEditorPanel.cpp">
+    <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp">
@@ -703,6 +703,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\time\TimeOfDayManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1364,7 +1373,7 @@
     <ClInclude Include="src\world\host\HostWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\srv\SrvWorld.h">
+    <ClInclude Include="src\world\srv\DedicatedSrvWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\srv\SrvWorldInterface.h">
@@ -1373,7 +1382,7 @@
     <ClInclude Include="src\world\WorldFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\network\WorldType.h">
+    <ClInclude Include="src\network\WorldNetMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\screens\ScreenState.h">
@@ -1481,7 +1490,7 @@
     <ClInclude Include="src\ui\editor\TileEditorPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\editor\ModelEditorPanel.h">
+    <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera\SimpleCamera.h">
@@ -1544,7 +1553,7 @@
     <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\editor\MaterialEditorPanel.h">
+    <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\PrimitiveShapeMeshes.h">
@@ -1656,6 +1665,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\renderer\WorldRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\WorldType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\time\TimeOfDayManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

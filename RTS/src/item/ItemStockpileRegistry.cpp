@@ -57,7 +57,7 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
     int i = 0;
     for (auto&& id : chunkPositions) {
-        Chunk& chunk = sWorld->getChunk(id);
+        Chunk& chunk = sMainGameWorld->getChunk(id);
         if (chunk.getTileContainer()) {
             const TileContainerID chunkContainerId = chunk.getTileContainer()->getId();
             mAreaLookup[chunkContainerId].push_back(&stockpile);
@@ -80,7 +80,7 @@ void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpi
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
     int i = 0;
     for (auto&& id : chunkPositions) {
-        Chunk& chunk = sWorld->getChunk(id);
+        Chunk& chunk = sMainGameWorld->getChunk(id);
         assert(chunk.getTileContainer());
         const auto& it = mAreaLookup.find(chunk.getTileContainer()->getId());
         assert(it != mAreaLookup.end());

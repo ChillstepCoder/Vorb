@@ -234,7 +234,7 @@ void GameServer::processClientReadyJoinMessage(int clientIndex) {
                 // Create client entity post state replicate. Ecs will handle the entity replicate and begin message
                 // TODO: Save spawn point
                 f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-                mClientPlayerEntities[clientIndex] = ((SrvEntityComponentSystem&)sWorld->getECS()).createPlayerEntity(clientIndex, playerPos);
+                mClientPlayerEntities[clientIndex] = ((SrvEntityComponentSystem&)sMainGameWorld->getECS()).createPlayerEntity(clientIndex, playerPos);
             }
             break;
         }
@@ -242,7 +242,7 @@ void GameServer::processClientReadyJoinMessage(int clientIndex) {
 }
 
 void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerStateMessage* message) {
-    SrvEntityComponentSystem& srvEcs = (SrvEntityComponentSystem&)sWorld->getECS();
+    SrvEntityComponentSystem& srvEcs = (SrvEntityComponentSystem&)sMainGameWorld->getECS();
     entt::entity entity = mClientPlayerEntities[clientIndex];
     if (entity != entt::null) {
         PhysicsComponent& physCmp = srvEcs.mRegistry.get<PhysicsComponent>(entity);
@@ -284,7 +284,7 @@ void GameServer::onClientDisconnected(int clientIndex) {
 }
 
 void GameServer::replicateStartGameStateToClient(int clientIndex) {
-    IWorld& world = *sWorld;
+    IWorld& world = *sMainGameWorld;
     SrvEntityComponentSystem& ecs = ((SrvEntityComponentSystem&)world.getECS());
 
     // Replicate all entites
@@ -299,7 +299,7 @@ void GameServer::replicateStartGameStateToClient(int clientIndex) {
 }
 
 void GameServer::replicateEntities() {
-    IWorld& world = *sWorld;
+    IWorld& world = *sMainGameWorld;
     SrvEntityComponentSystem& ecs = ((SrvEntityComponentSystem&)world.getECS());
 
     // Replicate all characters

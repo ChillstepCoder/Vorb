@@ -4,11 +4,11 @@
 
 struct ModelDef;
 
-class ModelEditorPanel : public IEditorViewportPanel
+class ModelEditorViewportPanel : public IEditorViewportPanel
 {
 public:
-    ModelEditorPanel();
-    ~ModelEditorPanel();
+    ModelEditorViewportPanel();
+    ~ModelEditorViewportPanel();
 
     bool updateAndRender() override;
     void updateAndRenderControls(f32 ySize) override;

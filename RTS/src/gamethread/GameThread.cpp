@@ -12,11 +12,13 @@
 
 #include "gamethread/GameThreadTasks.h"
 
+#include "time/TimeOfDayManager.h"
+
 
 
 GameThread* GameThread::sInstance = nullptr;
 
-GameThread::GameThread(WorldType worldType) : mWorldType(worldType) {
+GameThread::GameThread(WorldNetMode worldType) : mNetMode(worldType) {
     assert(!mThread); // No double init
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&GameThread::mainFunc, this);
@@ -30,7 +32,7 @@ GameThread::~GameThread() {
     }
 }
 
-GameThread& GameThread::initInstance(WorldType worldType) {
+GameThread& GameThread::initInstance(WorldNetMode worldType) {
     if (!sInstance) {
         sInstance = new GameThread(worldType);
         GameThreadTasks::initInstance();
@@ -87,15 +89,14 @@ void GameThread::mainFunc() {
 
 void GameThread::tick() {
 
-    updateTimeOfDay();
     updateProcs();
 
     // Update functions
-    switch (mWorldType) {
-        case WorldType::CLIENT:
+    switch (mNetMode) {
+        case WorldNetMode::Client:
             tickClient();
             break;
-        case WorldType::HOST:
+        case WorldNetMode::Host:
             tickHost();
             break;
         default:
@@ -106,7 +107,7 @@ void GameThread::tick() {
 
 void GameThread::tickClient() {
     PROFILE_FUNCTION();
-    CliWorld* cliWorld = static_cast<CliWorld*>(sWorld);
+    CliWorld* cliWorld = static_cast<CliWorld*>(sMainGameWorld);
 
     // Update main thread update queues
     cliWorld->onFrameBegin();
@@ -132,7 +133,7 @@ void GameThread::tickClient() {
 
 void GameThread::tickHost() {
     PROFILE_FUNCTION();
-    HostWorld* hostWorld = static_cast<HostWorld*>(sWorld);
+    HostWorld* hostWorld = static_cast<HostWorld*>(sMainGameWorld);
 
     // TODO: We need to send packets at the end of the tick! We will accrue packets and we dont want to delay an entire frame
     if (GameServer::exists()) {
@@ -148,35 +149,6 @@ void GameThread::tickHost() {
     updateTilePicking();*/
 
     // hostWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
-}
-
-void GameThread::updateTimeOfDay() {
-
-    //mGameTimer.startFrame();
-
-    // DEBUG Time advance
-    /*static constexpr float TIME_ADVANCE_MULT = 4.0f;
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
-        if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-            sDebugOptions.mTimeOffset -= gameTime.elapsedSec * 250.0f;
-        }
-        else {
-            sDebugOptions.mTimeOffset -= gameTime.elapsedSec * TIME_ADVANCE_MULT;
-        }
-        mGameTimer.setMsPerTick(MS_PER_GAME_TICK / 2.0f);
-    }
-    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
-        if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-            sDebugOptions.mTimeOffset += gameTime.elapsedSec * 250.0f;
-        }
-        else {
-            sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
-        }
-        mGameTimer.setMsPerTick(MS_PER_GAME_TICK / 2.0f);
-    }
-    else {
-        mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
-    }*/
 }
 
 void GameThread::updateProcs()
@@ -212,11 +184,11 @@ void GameThread::initWorld()
     //displayLoadScreen("Loading...", true);
 
     // Starting time of day to noon
-    sWorld->setTimeOfDay(12.0f);
+    sMainGameWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
 
     // Begin world
     // TODO: Better pos?
-    sWorld->onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
+    sMainGameWorld->onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
 
     // Start world rendering
     //mRenderContext->onWorldBegin();

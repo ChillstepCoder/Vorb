@@ -4,6 +4,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
 #include "resources/MaterialRepository.h"
+#include "resources/TileGrassRepository.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/TileRepository.h"
@@ -41,6 +42,7 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
 
         updateAndRenderModelsTab(returnValue);
         updateAndRenderMaterialsTab(returnValue);
+        updateAndRenderFoliageTab(returnValue);
 
         ImGui::EndTabBar();
     }
@@ -187,6 +189,93 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
                     result.second = std::make_unique<MaterialHandle>(materialRepository.getMutableMaterialHandle(it.first));
+                }
+
+                ImGui::PopID();
+
+            }
+
+            vg::DepthState::restorePrevious();
+
+            ImGui::EndTable();
+        }
+        ImGui::EndTabItem();
+    }
+}
+
+void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
+    if (ImGui::BeginTabItem("Foliage")) {
+
+        constexpr f32 FIXED_WIDTH = 75.0f;
+        ImGui::Text("Foliage");
+        TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
+        MaterialRepository& materialRepository = Services::ResourceManager::ref().getMaterialRepository();
+
+        // Submit table
+        if (ImGui::BeginTable("foliageTable", 4, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+
+            // TODO: Sortable table https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
+            /*ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
+            if (sortSpecs && sortSpecs->SpecsDirty) {
+                for (int i = 0; i < sortSpecs->SpecsCount; ++i) {
+                    const ImGuiTableColumnSortSpecs& spec = sortSpecs->Specs[i];
+                    spec.
+                }
+            }*/
+
+            // Declare columns
+            // We use the "user_id" parameter of TableSetupColumn() to specify a user id that will be stored in the sort specifications.
+            // This is so our sort function can identify a column given our own identifier. We could also identify them based on their index!
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH * 2.0f);
+            ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH);
+            ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH);
+            ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH);
+            ImGui::TableSetupScrollFreeze(1, 1);
+
+            ImGui::TableHeadersRow();
+
+
+            // Rendering
+            const MaterialShader* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
+            vg::DepthState::NONE.set();
+            MaterialRenderer::bindMaterialForRender(*previewShader);
+
+            ui32 ID = 250;
+            ui32 previewIndex = 0;
+            for (auto&& it : grassRepository.mTileGrassData) {
+                MaterialGpuData& material = materialRepository.mMaterialGpuData[it.mMaterialID];
+                ImGui::PushID(++ID);
+                ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
+
+                // Name
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text(it.mName.toString().c_str());
+
+                // ID
+                ImGui::TableSetColumnIndex(1);
+                char label[32];
+                sprintf_s(label, "%04d", it.mId);
+                ImGui::Text(label);
+
+                // Preview
+                ImGui::TableSetColumnIndex(2);
+                const ImVec2 uv0(0, 1);
+                const ImVec2 uv1(1, 0);
+                const ImVec2 dims(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x);
+                const bool visibleImage = ImGui::IsRectVisible(dims);
+                if (visibleImage) {
+                    const VGTexture texture = renderMaterialPreview(previewShader, previewIndex++, material);
+                    ImGui::Image((ImTextureID)texture, dims, uv0, uv1);
+                }
+                else {
+                    ImGui::Image((ImTextureID)0, dims, uv0, uv1);
+                }
+
+                // Action
+                ImGui::TableSetColumnIndex(3);
+                if (ImGui::Button("Edit")) {
+                    result.first = TileEditorPanelResultCode::EDIT_FOLIAGE;
+                    result.second = &it;
                 }
 
                 ImGui::PopID();

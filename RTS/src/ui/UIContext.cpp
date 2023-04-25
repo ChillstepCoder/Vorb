@@ -88,3 +88,7 @@ UIContext& UIContext::getInstance() {
     assert(sInstance);
     return *sInstance;
 }
+
+bool UIContext::shouldPauseGameRendering() const {
+    return sDebugOptions.mShowEditor && mEditorRoot && mEditorRoot->hasActiveCenterPanel();
+}

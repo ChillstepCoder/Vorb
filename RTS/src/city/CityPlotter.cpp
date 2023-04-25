@@ -383,7 +383,7 @@ void CityPlotter::generateAlleysForUnroadedPlots(CityDistrict &district) {
 
 bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
     bool wasConflict = false;
-    sWorld->efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
+    sMainGameWorld->efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
         // TODO: Look into forcing branch prediction, we should rarely conflict
         const Tile& tile = chunk.getTileContainer()->getTileAt(tileIndex);
         if (tile.hasFlag(TileFlags::IN_CITY)) {

@@ -621,10 +621,10 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
                 }
                 else {
                     f32v2 tilePos2D(rv.mPosition.x, rv.mPosition.y);
-                    TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+                    TileHandle handle = sMainGameWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
                     if (handle.isValid()) {
                         assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-                        std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+                        std::vector<Structure*> structures = sMainGameWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
                         for (auto&& structure : structures) {
                             TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
                             if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {

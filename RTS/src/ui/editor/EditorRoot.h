@@ -9,8 +9,10 @@ class Camera3D;
 class TileEditorPanel;
 struct ModelDef;
 struct MaterialHandle;
-class ModelEditorPanel;
-class MaterialEditorPanel;
+struct TileGrassData;
+class ModelEditorViewportPanel;
+class MaterialEditorViewportPanel;
+class BiomeEditorViewportPanel;
 class IEditorViewportPanel;
 
 class EditorRoot
@@ -22,9 +24,12 @@ public:
     void updateAndRenderUI(const vg::GBuffer* activeGBuffer);
     void renderEditorBrushDecals(const Camera3D& camera);
 
+    bool hasActiveCenterPanel() const { return mActiveCenterPanel != nullptr; }
+
 private:
     void openModelForEdit(ModelDef& model);
     void openMaterialForEdit(MaterialHandle& materialHandle);
+    void openFoliageForEdit(TileGrassData& grassData);
 
     // Center panel display
     IEditorViewportPanel* mActiveCenterPanel = nullptr;
@@ -33,9 +38,10 @@ private:
     std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
     std::unique_ptr<WorldEditorPanel> mWorldEditorPanel;
     std::unique_ptr<TileEditorPanel> mTileEditorPanel;
-    // Center panels
-    std::unique_ptr<ModelEditorPanel> mModelEditorPanel;
-    std::unique_ptr<MaterialEditorPanel> mMaterialEditorPanel;
+    // Viewport panels
+    std::unique_ptr<ModelEditorViewportPanel> mModelEditorViewportPanel;
+    std::unique_ptr<MaterialEditorViewportPanel> mMaterialEditorViewportPanel;
+    std::unique_ptr<BiomeEditorViewportPanel> mBiomeEditorViewportPanel;
 
     // Event listeners
     vui::KeyListeners mKeyListeners;

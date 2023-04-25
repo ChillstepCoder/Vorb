@@ -131,7 +131,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-            Chunk& bottomChunk = sWorld->getChunk(ChunkID::fromWorldI32v2(bottom.getWorldPos2D()));
+            Chunk& bottomChunk = sMainGameWorld->getChunk(ChunkID::fromWorldI32v2(bottom.getWorldPos2D()));
 			neighbors[(int)NeighborIndex8::BOTTOM] = *bottom.tile;
 			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = *bottomLeft.tile;
@@ -149,7 +149,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            Chunk& topChunk = sWorld->getChunk(ChunkID::fromWorldI32v2(top.getWorldPos2D()));
+            Chunk& topChunk = sMainGameWorld->getChunk(ChunkID::fromWorldI32v2(top.getWorldPos2D()));
             neighbors[(int)NeighborIndex8::TOP] = *top.tile;
             TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;
@@ -170,19 +170,19 @@ void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]
 }
 
 Chunk& Chunk::getLeftNeighbor() const {
-    return sWorld->getChunk(mChunkId.id - 1);
+    return sMainGameWorld->getChunk(mChunkId.id - 1);
 }
 
 Chunk& Chunk::getTopNeighbor() const {
-    return sWorld->getChunk(mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
+    return sMainGameWorld->getChunk(mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 Chunk& Chunk::getRightNeighbor() const {
-    return sWorld->getChunk(mChunkId.id + 1);
+    return sMainGameWorld->getChunk(mChunkId.id + 1);
 }
 
 Chunk& Chunk::getBottomNeighbor() const {
-    return sWorld->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
+    return sMainGameWorld->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {

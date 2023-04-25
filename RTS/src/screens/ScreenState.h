@@ -2,7 +2,7 @@
 
 // Static data for inter-screen sharing
 
-#include "network/WorldType.h"
+#include "network/WorldNetMode.h"
 #include "network/NetworkConst.h"
 
 class MainMenuScreenGlobalState {

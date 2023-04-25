@@ -93,7 +93,7 @@ void HarvestItemsTask::harvestItem(entt::registry& registry, entt::entity agent,
     assert(targetTileHandle.isValid());
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
-    if (!sWorld->terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
+    if (!sMainGameWorld->terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
         // Try again
         findItem(registry, agent);
         return;

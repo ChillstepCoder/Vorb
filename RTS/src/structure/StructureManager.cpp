@@ -60,13 +60,13 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     i32v2 worldXY;
     std::set<Chunk*> chunkDependencies;
     worldXY = i32v2(aabb.x, aabb.y);
-    chunkDependencies.insert(&sWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y);
-    chunkDependencies.insert(&sWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x, aabb.y + aabb.dims.y);
-    chunkDependencies.insert(&sWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y + aabb.dims.y);
-    chunkDependencies.insert(&sWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
 
     assert(chunkDependencies.size() && chunkDependencies.size() <= 4);
     int chunkCount = 0;

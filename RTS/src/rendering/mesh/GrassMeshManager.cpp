@@ -20,7 +20,7 @@ void GrassMeshManager::tick() {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
 
-    const f32v2& loadCenter = sWorld->getLoadCenter();
+    const f32v2& loadCenter = sMainGameWorld->getLoadCenter();
 
     // Update grass
     for (auto&& it : mChunkGrassQuadtrees) {

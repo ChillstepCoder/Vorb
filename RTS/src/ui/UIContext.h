@@ -31,6 +31,8 @@ public:
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static UIContext& getInstance();
 
+    bool shouldPauseGameRendering() const;
+
 private:
 
     static UIContext* sInstance;

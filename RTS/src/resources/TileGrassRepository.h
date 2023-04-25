@@ -32,6 +32,7 @@ struct TileGrassData {
 
 class TileGrassRepository
 {
+    friend class TileEditorPanel;
 public:
     const TileGrassData& getTileGrassData(TileGrassID tileId) const {
         assert(tileId < mTileGrassData.size());

@@ -152,9 +152,9 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
 }
 
 void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
+    PROFILE_FUNCTION();
     boost::container::flat_map<GridIdType, std::vector<i32v2>> tilePositionsNeedingUpdate;
     {
-        PROFILE_SCOPE("AAAAA");
         constexpr ui32 MAX_TILES_CHANGED_PER_POSITION = SQ(HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_SIZE);
         tilePositionsNeedingUpdate.reserve(modifiedPositions.size() * MAX_TILES_CHANGED_PER_POSITION);
         for (const i32v2& pos : modifiedPositions) {
@@ -168,7 +168,6 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
         }
         static_assert(HEIGHTMAP_QUAD_SIZE == 2 && MAX_TILES_CHANGED_PER_POSITION == 16, "Update logic");
     }
-    PROFILE_SCOPE("BBBB");
     std::vector<std::pair<TileIndex, f32>> editData;
     for (auto&& it : tilePositionsNeedingUpdate) {
         Chunk& chunk = getChunk(it.first);

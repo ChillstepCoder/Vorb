@@ -156,17 +156,17 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
         CliMessage::sendClientReadyJoinMessage();
         // Send the packet
         GameClient::getInstance().update(0.0f);
-        mClientType = WorldType::CLIENT;
+        mNetMode = WorldNetMode::Client;
     }
     else {
         Services::initHost();
 
         mState = GameplayScreenState::RUNNING;
-        mClientType = WorldType::HOST;
+        mNetMode = WorldNetMode::Host;
     }
 
     // Allocate world
-    mWorld = &WorldFactory::makeWorld(mClientType);
+    mWorld = &WorldFactory::makeWorld(mNetMode);
 
     // Always init the world
     displayLoadScreen("Loading...", true);
@@ -177,7 +177,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     initCamera();
 
     // Start the game :O
-    GameThread::initInstance(mClientType);
+    GameThread::initInstance(mNetMode);
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
@@ -206,11 +206,11 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     if (mState == GameplayScreenState::RUNNING) {
 
         // Update functions
-        switch (mClientType) {
-            case WorldType::CLIENT:
+        switch (mNetMode) {
+            case WorldNetMode::Client:
                 updateClient(gameTime);
                 break;
-            case WorldType::HOST:
+            case WorldNetMode::Host:
                 updateHost(gameTime);
                 break;
             default:
@@ -431,7 +431,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                     // TODO: Small race condition here if tile handle changes or chunk is destroyed
                     TileHandle tileHandle = *static_cast<TileHandle*>(vTileHandle);
                     if (tileHandle.isValid()) {
-                        IEntityComponentSystem& ecs = sWorld->getECS();
+                        IEntityComponentSystem& ecs = sMainGameWorld->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                         cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), nullptr);
@@ -509,7 +509,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
             assert(false);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
-            if (mClientType == WorldType::HOST) {
+            if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
                 static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
             }
@@ -518,7 +518,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
-            if (mClientType == WorldType::HOST) {
+            if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
                 static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
             }
@@ -527,7 +527,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
-            if (mClientType == WorldType::HOST) {
+            if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
                 static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
             }
@@ -536,7 +536,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_HARVESTABLES) {
-            if (mClientType == WorldType::HOST) {
+            if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
                 tileHandle.container->getHarvestables().debugDraw();
             }
@@ -547,7 +547,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD) {
             if (mSelectedTileHandle.isValid()) {
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void*) {
-                    IEntityComponentSystem& ecs = sWorld->getECS();
+                    IEntityComponentSystem& ecs = sMainGameWorld->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                     cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
@@ -627,11 +627,11 @@ void GameplayScreen::initInputs()
         }
         else if (event.keyCode == VKEY_P) {
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void*) {
-                if (sWorld->getPhysicsWorld().isProfiling()) {
-                    sWorld->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
+                if (sMainGameWorld->getPhysicsWorld().isProfiling()) {
+                    sMainGameWorld->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
                 }
                 else {
-                    sWorld->getPhysicsWorld().startB3Profiling();
+                    sMainGameWorld->getPhysicsWorld().startB3Profiling();
                 }
             }, nullptr);
         }
@@ -699,7 +699,7 @@ void GameplayScreen::initInputs()
             else if (!mRightClickUpPick && mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                 const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
                 mRightClickUpPick = std::make_unique<DeferredPhysicsPick>();
-                sWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+                sMainGameWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
                 mRightClickUpPickScreenPos = screenPos;
             }
         }

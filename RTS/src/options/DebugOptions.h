@@ -19,7 +19,6 @@ constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 
 struct DebugOptions {
     DebugOptions();
-    f64 mTimeOffset;
     // Clouds
     bool mDebugClouds;
     bool mDisableClouds;

@@ -68,12 +68,12 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     BitArray& tilesNeedingTerrainFlatten = bp.tilesNeedingTerrainFlatten;
 
     // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+    IHeightmapGrid& grid = sMainGameWorld->getHeightmapGrid();
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), tilesNeedingTerrainFlatten));
 
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
+    Building* newBuilding = static_cast<Building*>(sMainGameWorld->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
@@ -152,10 +152,6 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
         }
     }
 
-    // Notify terrain data change (TODO: More precise, automatic)
-    //sWorld->dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
-    
-
     TileContainerEvent loadFinishedEvent;
     loadFinishedEvent.container = newBuilding->getTileContainer();
     TileContainerRepository::dispatchLoadFinished(loadFinishedEvent);
@@ -180,7 +176,7 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
     i32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
-            TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(xy);
+            TileHandle handle = sMainGameWorld->getTerrainTileHandleAtWorldPos(xy);
             handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileRepository::getTileData(tileId));
         }
     }
@@ -190,10 +186,10 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     assert(IS_GAME_THREAD());
 
     // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+    IHeightmapGrid& grid = sMainGameWorld->getHeightmapGrid();
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.tilesNeedingTerrainFlatten));
 
-    bp.building = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
+    bp.building = static_cast<Building*>(sMainGameWorld->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     // Force ready so we can place tiles
     bp.building->getTileContainer()->setState(TileContainerState::READY);
     if (bp.flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
@@ -220,7 +216,7 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
 
-    auto view = sWorld->getECS().mRegistry.view<BusinessBuildComponent>();
+    auto view = sMainGameWorld->getECS().mRegistry.view<BusinessBuildComponent>();
     bool success = false;
     // Find a business who can take on this build job
     for (auto entity : view) {

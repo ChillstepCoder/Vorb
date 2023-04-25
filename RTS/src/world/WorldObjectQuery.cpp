@@ -2,6 +2,7 @@
 #include "WorldObjectQuery.h"
 
 #include "world/IWorld.h"
+#include "world/IChunkGrid.h"
 #include "city/City.h"
 #include "city/CityQuartermaster.h"
 #include "item/ItemStockpile.h"
@@ -73,6 +74,8 @@ void WorldObjectQuery::query() {
 
 void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
 {
+    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+
     TileHandle handle;
     if (data.mLiteHandle.isValid()) {
         handle = data.mLiteHandle.toTileHandle();
@@ -81,7 +84,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
     else {
         assert(IS_GAME_THREAD());
         f32v2 tilePos2D(data.mWorldPos.x, data.mWorldPos.y);
-        handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+        handle = sMainGameWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
         if (!handle.isValid()) {
             return;
         }
@@ -89,7 +92,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
         Chunk* chunk = handle.container->getOwnerChunk();
         if (chunk->isDataReady()) {
             assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-            std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+            std::vector<Structure*> structures = sMainGameWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
             for (size_t i = 0; i < structures.size(); ++i) {
                 Structure* structure = structures[i];
                 TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);
@@ -110,7 +113,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
     assert(handle.isValid());
     if (handle.tile->hasFlag(TileFlags::IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
-        const auto* stockPiles = sWorld->getItemStockpileRegistry().tryGetStockpilesAtTileContainer(sWorld->getChunk(id).getTileContainer()->getId());
+        const auto* stockPiles = sMainGameWorld->getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
         if (stockPiles) {
             for (auto& stockpile : *stockPiles) {
                 if (pointIsWithinAABBInclusive(data.mWorldPos, stockpile->getAABB())) {

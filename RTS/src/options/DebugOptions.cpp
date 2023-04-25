@@ -11,7 +11,6 @@ constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.55f /*0.65*/;
 #endif
 
 DebugOptions::DebugOptions() :
-    mTimeOffset(0.0f),
     // Clouds
     mDebugClouds(false),
     mDisableClouds(false),

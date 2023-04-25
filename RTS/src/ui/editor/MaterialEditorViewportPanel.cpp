@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "MaterialEditorPanel.h"
+#include "MaterialEditorViewportPanel.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
@@ -16,15 +16,15 @@
 
 #include "camera/SimpleCamera.h"
 
-MaterialEditorPanel::MaterialEditorPanel()
+MaterialEditorViewportPanel::MaterialEditorViewportPanel()
 {
 }
 
-MaterialEditorPanel::~MaterialEditorPanel()
+MaterialEditorViewportPanel::~MaterialEditorViewportPanel()
 {
 }
 
-bool MaterialEditorPanel::updateAndRender()
+bool MaterialEditorViewportPanel::updateAndRender()
 {
     bool isOpen = true;
     ImGui::Begin("Material Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -44,7 +44,7 @@ bool MaterialEditorPanel::updateAndRender()
     }
 
     // Lazy init so we don't use GPU memory when not in editor
-    if (mGBuffers[0] == nullptr) {
+    if (sGBuffers[0] == nullptr) {
         initGBuffers(imageDims);
     }
 
@@ -60,7 +60,7 @@ bool MaterialEditorPanel::updateAndRender()
     return isOpen;
 }
 
-void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
+void MaterialEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::BeginChild("Material Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Material Editor Controls");
     ImGui::Separator();
@@ -103,7 +103,7 @@ void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
     ImGui::EndChild();
 }
 
-const MaterialShader* MaterialEditorPanel::getShader()
+const MaterialShader* MaterialEditorViewportPanel::getShader()
 {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     switch (mDrawMode) {
@@ -129,7 +129,7 @@ const MaterialShader* MaterialEditorPanel::getShader()
     return nullptr;
 }
 
-void MaterialEditorPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
+void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
     UNUSED(availableTextureUnit);
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
         VGUniform unMaterialIndex = shader->getUniform("unMaterialIndex");
@@ -141,7 +141,7 @@ void MaterialEditorPanel::uploadCustomShaderUniforms(const MaterialShader* shade
     }
 }
 
-void MaterialEditorPanel::renderMesh() {
+void MaterialEditorViewportPanel::renderMesh() {
     glEnable(GL_CULL_FACE);
     Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
     mesh.draw(MeshLODLevel(0));

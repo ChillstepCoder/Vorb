@@ -25,6 +25,8 @@
 
 #include "camera/SimpleCamera.h"
 
+std::unique_ptr<vg::GBuffer> IEditorViewportPanel::sGBuffers[3];
+
 IEditorViewportPanel::IEditorViewportPanel() {
     positioner = std::make_unique<CameraPositioner_FirstPerson>(f32v3(0.0f, -5.0f, 1.5f), f32v3(0.0f, 0.0f, 0.5f), f32v3(0.0f, 0.0f, 1.0f));
     camera = std::make_unique<SimpleCamera>(*positioner);
@@ -49,11 +51,11 @@ void IEditorViewportPanel::renderCenterPanel() {
 
     // Clear framebuffers
     for (int i = 0; i < 3; ++i) {
-        mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 1.0f));
-        mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
-        mGBuffers[i]->clearDepth();
+        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 1.0f));
+        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
+        sGBuffers[i]->clearDepth();
     }
-    mGBuffers[0]->use();
+    sGBuffers[0]->use();
 
     if (mSkybox->hasTexture()) {
         if (mShowSkyboxIrradiance) {
@@ -99,8 +101,8 @@ void IEditorViewportPanel::renderCenterPanel() {
                 postProcessBlendTest();
             }
         }
-        displayTexture = getFinalOutputTexture();
     }
+    displayTexture = getFinalOutputTexture();
     vg::GBuffer::unuse();
 
     f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
@@ -114,25 +116,25 @@ VGTexture IEditorViewportPanel::getFinalOutputTexture() {
     if (mDrawMode == EditorViewportDrawMode::BlendTest) {
         switch (mBlendTestDisplayMode) {
             case 0:
-                return mGBuffers[0]->getAlbedoTexture();
+                return sGBuffers[0]->getAlbedoTexture();
             case 1:
-                return mGBuffers[0]->getNormalTexture();
+                return sGBuffers[0]->getNormalTexture();
             default:
-                return mGBuffers[0]->getDepthTexture();
+                return sGBuffers[0]->getDepthTexture();
         }
     }
     else if (mDrawMode == EditorViewportDrawMode::EdgeTest) {
         switch (mEdgeTestDisplayMode) {
             case 0:
-                return mGBuffers[0]->getAlbedoTexture();
+                return sGBuffers[0]->getAlbedoTexture();
             case 1:
-                return mGBuffers[0]->getNormalTexture();
+                return sGBuffers[0]->getNormalTexture();
             default:
-                return mGBuffers[0]->getDepthTexture();
+                return sGBuffers[0]->getDepthTexture();
         }
     }
     else {
-        return mGBuffers[0]->getAlbedoTexture();
+        return sGBuffers[0]->getAlbedoTexture();
     }
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Make sure you don't need to set a custom output texture");
 }
@@ -283,7 +285,7 @@ void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
 }
 
 void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
-
+    assert(!sGBuffers[0]);
     // TODO: PBR https://www.hiagodesena.com/blog/physically-based-deferred-renderer
     // https://learnopengl.com/PBR/Theory
     // https://learnopengl.com/PBR/Lighting
@@ -294,13 +296,13 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
 
     // TODO: RG16F normals or R11F_G11F_B10F?? https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
     for (int i = 0; i < 3; ++i) {
-        mGBuffers[i] = std::make_unique<vg::GBuffer>(imageDims);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
-        mGBuffers[i]->initDepthStencil(vg::GBufferDepthStencilFormat::DEPTH_24_STENCIL_8);
+        sGBuffers[i] = std::make_unique<vg::GBuffer>(imageDims);
+        sGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
+        sGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
+        sGBuffers[i]->initDepthStencil(vg::GBufferDepthStencilFormat::DEPTH_24_STENCIL_8);
     }
 
-    checkGlError("ModelEditorPanel::initGBuffer");
+    checkGlError("IEditorViewportPanel::initGBuffer");
 }
 
 void IEditorViewportPanel::renderGrid() {
@@ -421,17 +423,17 @@ void IEditorViewportPanel::postProcessBlendTest() {
     glUniform1f(blendShader->mProgram.getUniform("unDepthThreshold"), mBlendTestDepthThreshold);
     glUniform1i(blendShader->mProgram.getUniform("unShowVariance"), mBlendTestShowVariance);
     glUniform1i(blendShader->mProgram.getUniform("unShowEdges"), mBlendTestShowEdges);
-    glUniform2f(blendShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
+    glUniform2f(blendShader->mProgram.getUniform("unScreenResolution"), sGBuffers[0]->getWidth(), sGBuffers[0]->getHeight());
     glUniform2f(blendShader->mProgram.getUniform("unCameraZRange"), SimpleCamera::ZNEAR, SimpleCamera::ZFAR);
-    mGBuffers[0]->bindDepthTexture(freeTextureIndex + 2);
+    sGBuffers[0]->bindDepthTexture(freeTextureIndex + 2);
     vg::DepthState::NONE.set();
     if (!mBlendTestDisable) {
         for (int i = 0; i < mBlendTestPasses; ++i) {
 
             // Horizontal
-            mGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
-            mGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
-            mGBuffers[1]->use();
+            sGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
+            sGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
+            sGBuffers[1]->use();
             // Replace normals TODO: Build into gbuffer
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
@@ -440,9 +442,9 @@ void IEditorViewportPanel::postProcessBlendTest() {
 
             // Vertical
             // Replace normals TODO: Build into gbuffer
-            mGBuffers[1]->bindAlbedoTexture(freeTextureIndex);
-            mGBuffers[1]->bindNormalTexture(freeTextureIndex + 1);
-            mGBuffers[0]->use();
+            sGBuffers[1]->bindAlbedoTexture(freeTextureIndex);
+            sGBuffers[1]->bindNormalTexture(freeTextureIndex + 1);
+            sGBuffers[0]->use();
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
             glUniform2f(dirUniform, 0.0f, mBlendTestRadius);
@@ -467,10 +469,10 @@ void IEditorViewportPanel::postProcessEdgeTest() {
         glUniform1f(edgeShader->mProgram.getUniform("unEdgeThreshold"), mEdgeTestThreshold);
         glUniform1f(edgeShader->mProgram.getUniform("unDepthThreshold"), mEdgeTestDepthThreshold);
         glUniform2f(edgeShader->mProgram.getUniform("unCameraZRange"), SimpleCamera::ZNEAR, SimpleCamera::ZFAR);
-        mGBuffers[0]->bindNormalTexture(freeTextureIndex);
-        mGBuffers[0]->bindDepthTexture(freeTextureIndex + 1);
+        sGBuffers[0]->bindNormalTexture(freeTextureIndex);
+        sGBuffers[0]->bindDepthTexture(freeTextureIndex + 1);
 
-        mGBuffers[1]->use();
+        sGBuffers[1]->use();
 
         // Replace normals TODO: Build into gbuffer
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
@@ -488,12 +490,12 @@ void IEditorViewportPanel::postProcessEdgeTest() {
         glUniform1f(expandShader->mProgram.getUniform("unDepthThreshold"), mEdgeTestDepthThreshold);
         glUniform2f(expandShader->mProgram.getUniform("unCameraZRange"), SimpleCamera::ZNEAR, SimpleCamera::ZFAR);
 
-        mGBuffers[0]->bindDepthTexture(freeTextureIndex + 1);
+        sGBuffers[0]->bindDepthTexture(freeTextureIndex + 1);
         for (int i = 0; i < mEdgeSize; ++i) {
             // Increments of 2 so it always ends up in gbuffer 2
             for (int j = 0; j < 2; ++j) {
-                mGBuffers[sourceGBuffer]->bindAlbedoTexture(freeTextureIndex);
-                mGBuffers[targetGBuffer]->use();
+                sGBuffers[sourceGBuffer]->bindAlbedoTexture(freeTextureIndex);
+                sGBuffers[targetGBuffer]->use();
 
                 // Replace normals TODO: Build into gbuffer
                 // TODO: we dont need clear buffer because of this?
@@ -514,16 +516,16 @@ void IEditorViewportPanel::postProcessEdgeTest() {
         glUniform1i(blendShader->mProgram.getUniform("unEdgeFbo"), freeTextureIndex + 2);
         glUniform1i(blendShader->mProgram.getUniform("unShowEdges"), mEdgeTestShowEdges);
 
-        mGBuffers[2]->bindAlbedoTexture(freeTextureIndex + 2);
-        glUniform2f(blendShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
+        sGBuffers[2]->bindAlbedoTexture(freeTextureIndex + 2);
+        glUniform2f(blendShader->mProgram.getUniform("unScreenResolution"), sGBuffers[0]->getWidth(), sGBuffers[0]->getHeight());
         //glUniform2f(blendShader->mProgram.getUniform("unCameraZRange"), SimpleCamera::ZNEAR, SimpleCamera::ZFAR);
         if (!mEdgeTestDisable) {
             for (int i = 0; i < mEdgeBlendPasses; ++i) {
 
                 // Horizontal
-                mGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
-                mGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
-                mGBuffers[1]->use();
+                sGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
+                sGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
+                sGBuffers[1]->use();
                 // Replace normals TODO: Build into gbuffer
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
@@ -532,9 +534,9 @@ void IEditorViewportPanel::postProcessEdgeTest() {
 
                 // Vertical
                 // Replace normals TODO: Build into gbuffer
-                mGBuffers[1]->bindAlbedoTexture(freeTextureIndex);
-                mGBuffers[1]->bindNormalTexture(freeTextureIndex + 1);
-                mGBuffers[0]->use();
+                sGBuffers[1]->bindAlbedoTexture(freeTextureIndex);
+                sGBuffers[1]->bindNormalTexture(freeTextureIndex + 1);
+                sGBuffers[0]->use();
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
                 glUniform2f(dirUniform, 0.0f, mEdgeBlendRadius);

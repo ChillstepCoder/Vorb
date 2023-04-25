@@ -5,11 +5,11 @@
 
 #include "rendering/material/MaterialData.h"
 
-class MaterialEditorPanel : public IEditorViewportPanel
+class MaterialEditorViewportPanel : public IEditorViewportPanel
 {
 public:
-    MaterialEditorPanel();
-    ~MaterialEditorPanel();
+    MaterialEditorViewportPanel();
+    ~MaterialEditorViewportPanel();
 
     bool updateAndRender() override;
     void updateAndRenderControls(f32 ySize) override;

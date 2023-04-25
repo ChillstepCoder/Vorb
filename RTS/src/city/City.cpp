@@ -19,8 +19,8 @@ City::City(const ui32v2& cityCenterWorldPos)
     , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)
 {
 
-    TileHandle root = sWorld->getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
-    mChunks.push_back(&sWorld->getChunk(root.getChunkIDAtPos()));
+    TileHandle root = sMainGameWorld->getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
+    mChunks.push_back(&sMainGameWorld->getChunk(root.getChunkIDAtPos()));
     // This belongs to us, don't go away
     // TODO: Need to release later
     mChunks.back()->incRef();
@@ -36,7 +36,7 @@ City::City(const ui32v2& cityCenterWorldPos)
     //mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
 
     // Add test business
-    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, sWorld->getECS().mRegistry, "lumbermill");
+    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, sMainGameWorld->getECS().mRegistry, "lumbermill");
 }
 
 City::~City() {

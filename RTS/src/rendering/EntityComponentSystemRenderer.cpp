@@ -38,7 +38,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
     int i = 0;
     // Blueprint debug
     if (sDebugOptions.mBlueprintDebug) {
-        auto& ecs = sWorld->getECS();
+        auto& ecs = sMainGameWorld->getECS();
 
 		auto view = ecs.mRegistry.view<BusinessBuildComponent>();
 		for (auto entity : view) {
@@ -52,7 +52,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {
 
-    auto& ecs = sWorld->getECS();
+    auto& ecs = sMainGameWorld->getECS();
 	// TODO: 3D
 	//ecs.mRegistry.view<PhysicsComponent, DynamicLightComponent>().each([&](auto& physCmp, auto& lightCmp) {
 	//	assert(false);

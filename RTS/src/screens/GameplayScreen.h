@@ -5,7 +5,7 @@
 
 // TODO: MOVE
 #include "ecs/IEntityComponentSystem.h"
-#include "network/WorldType.h"
+#include "network/WorldNetMode.h"
 
 #include <Vorb/Timing.h>
 
@@ -90,7 +90,7 @@ private:
 	WorldObjectQuery mWorldObjectQuery;
 	bool mIsQuerying = false;
 
-	WorldType mClientType = WorldType::HOST;
+	WorldNetMode mNetMode = WorldNetMode::Host;
 
 	GameplayScreenState mState = GameplayScreenState::INIT;
 	vui::MouseListeners mMouseListeners;

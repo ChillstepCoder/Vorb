@@ -48,10 +48,6 @@ void HostWorld::tick(f32 elapsedSec) {
     //   // debugRefreshWorldGeneration();
     //}
 
-    updateTimeOfDay();
-
-    updateCities();
-
     // TickClient always last as it updates render state
     tickClient(*this);
 }
@@ -75,12 +71,16 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
 }
 
-void HostWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-    PROFILE_FUNCTION();
-    cliDirtyTerrainFromBrush(pos, brushRadius);
-    sharedDirtyTerrainFromBrush(pos, brushRadius);
-}
-
 void HostWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
     cliDirtyGrassFromBrush(pos, brushRadius);
+}
+
+WorldNetMode HostWorld::getNetMode()
+{
+    return WorldNetMode::Host;
+}
+
+WorldType HostWorld::getWorldType()
+{
+    return WorldType::Game;
 }
