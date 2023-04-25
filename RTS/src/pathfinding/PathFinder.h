@@ -1,14 +1,13 @@
 #pragma once
 
-#include "NavPath.h"
 #include "tile/TileHarvestable.h"
 
 class NavWorld;
-class TileContainer;
 struct CoarseNavNode;
 struct CoarseNavGraph;
 struct ContainerNavData;
-struct TileHandle;
+struct LiteTileHandle;
+class NavPath;
 
 #include <boost/heap/priority_queue.hpp>
 

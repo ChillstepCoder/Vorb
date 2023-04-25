@@ -1,8 +1,9 @@
 #pragma once
 
+#include "city/CityConst.h"
 #include <world/Chunk.h>
-#include "Building.h"
 
+struct CityRoad;
 class CityPlotter;
 class CityPlanner;
 class CityBuilder;
@@ -10,6 +11,7 @@ class CityResidentManager;
 class CityBusinessManager;
 class CityQuartermaster;
 class BuildingDescriptionRepository;
+class Building;
 
 //
 //enum class MarketStallType {

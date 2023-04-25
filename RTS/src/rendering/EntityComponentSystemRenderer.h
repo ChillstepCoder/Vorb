@@ -6,9 +6,6 @@ DECL_VG(class SpriteBatch)
 DECL_VG(class DepthState)
 
 class Camera3D;
-class PhysicsSystem;
-class CharacterRenderer;
-class IEntityComponentSystem;
 class LightRenderer;
 
 class EntityComponentSystemRenderer {

@@ -4,10 +4,10 @@
 
 #include "world/ChunkID.h"
 #include "util/BitArray.h"
-#include "ItemReservation.h"
 #include "ItemStockpileEvent.h"
 #include "tile/TileHandle.h"
 
+class ItemReservation;
 class Camera3D;
 
 constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;

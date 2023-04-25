@@ -2,8 +2,6 @@
 #include "ecs/component/ComponentDefinition.h"
 #include "util/StrToken.h"
 
-class Camera3D;
-
 class IEntityComponentSystem {
 public:
     IEntityComponentSystem();

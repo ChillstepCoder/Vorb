@@ -4,6 +4,8 @@
 #include "world/srv/SrvWorldInterface.h"
 #include "world/IWorld.h"
 #include "NavWorld.h"
+#include "NavPath.h"
+#include "PathFinder.h"
 
 #include "tile/TileContainer.h"
 

@@ -6,7 +6,6 @@
 class SrvAdapter;
 
 struct PingMessage;
-struct ClientJoinMessage;
 
 extern void logSrv(const wchar_t* str);
 extern void logSrv(const std::string& str);

@@ -1,7 +1,5 @@
 #pragma once
 
-struct SpriteData;
-
 #include <Vorb/graphics/Texture.h>
 
 #include "definitions/AnimMachineDef.h"
@@ -10,8 +8,6 @@ struct SpriteData;
 #include <ozz/animation/runtime/sampling_job.h>
 #include "rendering/model/ModelConst.h"
 
-struct ModelDef;
-struct RigDef;
 
 enum CharacterModelTextureIndex {
 	CHARACTER_MODEL_TEXTURE_FRONT = 0,

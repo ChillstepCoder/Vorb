@@ -5,22 +5,14 @@
 
 DECL_VG(class SpriteBatch);
 
-class ResourceManager;
 class Camera3D;
 class MaterialShader;
 class TileContainer;
 class Mesh;
-class ChunkGrassQuadtree;
 class BuildingMesher;
 class ChunkMesher;
 class InstancedStaticModelRenderer;
 class ContainerMeshBuilders;
-
-//class TileContainerRenderData {
-//    ui32 mStaticMeshRenderIndex = UINT32_MAX;
-//    ui32 mDynamicMeshRenderIndex = UINT32_MAX;
-//    ui32 mBillboardMeshRenderIndex = UINT32_MAX;
-//};
 
 struct TileContainerMeshData {
     TileContainerMeshData() = default;

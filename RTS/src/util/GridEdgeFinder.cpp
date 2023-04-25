@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "GridEdgeFinder.h"
 
+
+#include "GridEdge.h"
 #include "util/BitArray.h"
 
 #include "debugging/VisualLogger.h"

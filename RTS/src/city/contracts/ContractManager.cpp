@@ -1,9 +1,21 @@
 #include "stdafx.h"
 #include "ContractManager.h"
 
+#include "city/contracts/IContract.h"
+#include "ItemShipmentContract.h"
 #include "ecs/component/ContractHolderComponent.h"
 
 ContractID sContractIdGen = 0;
+
+ContractManager::ContractManager()
+{
+
+}
+
+ContractManager::~ContractManager()
+{
+
+}
 
 ItemShipmentContract* ContractManager::createItemShipmentContract(entt::registry& registry, entt::entity shipper, entt::entity shippee, ItemID itemId, ui16 quantity, TimeSpanSec maxAllowedTime /*= std::numeric_limits<TimeSpanSec>::max()*/) {
     std::unique_ptr<ItemShipmentContract> newContract = std::make_unique<ItemShipmentContract>(shipper, shippee, maxAllowedTime);

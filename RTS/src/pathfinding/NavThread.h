@@ -5,7 +5,6 @@
 
 #include "CoarseNavGraph.h"
 
-#include "PathFinder.h"
 #include "tile/TileHandle.h"
 
 #include "util/Timing/ThreadUtilizationTimer.h"
@@ -13,6 +12,8 @@
 class TileContainer;
 class Building;
 class NavWorld;
+class NavPath;
+class PathFinder;
 
 enum class PathRequestType {
     FINE,

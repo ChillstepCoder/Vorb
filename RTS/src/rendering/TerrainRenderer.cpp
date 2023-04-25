@@ -16,6 +16,7 @@
 #include "camera/Camera3D.h"
 #include "mesh/Mesh.h"
 
+#include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
 TerrainRenderer::TerrainRenderer()

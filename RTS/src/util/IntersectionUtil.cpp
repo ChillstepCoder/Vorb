@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "IntersectionUtil.h"
+#include "IntersectionHit.h"
 
 bool IntersectionUtil::segmentSegmentIntersect(const f32v2& a1, const f32v2& a2, const f32v2& b1, const f32v2& b2, OUT f32v2* intersection)
 {

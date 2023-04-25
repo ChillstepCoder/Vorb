@@ -17,6 +17,7 @@
 #include "rendering/GLExtensions.h"
 #include "rendering/MaterialUtils.h"
 
+#include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
 #include "definitions/ModelDef.h"

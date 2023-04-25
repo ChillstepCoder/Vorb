@@ -3,26 +3,24 @@
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 
-class BrushRepository;
-class TextureAtlas;
-class TextureRepository;
-class MaterialShaderManager;
-class MaterialRepository;
-class ParticleSystemManager;
-class BuildingDescriptionRepository;
-class EntityDefinitionRepository;
-class ItemRepository;
-class CraftingRepository;
-class BusinessRepository;
-class ModelRepository;
 class AnimationRepository;
-class RigRepository;
 class AnimMachineRepository;
-class SkillRepository;
-class FontRepository;
+class BrushRepository;
+class BuildingDescriptionRepository;
+class BusinessRepository;
 class CollisionShapeRepository;
+class CraftingRepository;
+class EntityDefinitionRepository;
+class FontRepository;
+class ItemRepository;
+class MaterialRepository;
+class MaterialShaderManager;
+class ModelRepository;
+class ParticleSystemManager;
+class RigRepository;
+class SkillRepository;
+class TextureRepository;
 class TileGrassRepository;
-struct SubTexture;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?

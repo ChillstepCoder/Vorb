@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "BuildingBlueprintGenerator.h"
 #include "BuildingDescriptionRepository.h"
+#include "BuildingBlueprint.h"
 
 #include "city/CityBuilder.h"
 

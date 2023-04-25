@@ -12,6 +12,7 @@ public:
         posOffset(posOffset),
         amplitude(amplitude),
         heightOffset(heightOffset) { }
+    virtual ~NoiseFunction() = default;
 
     virtual f64 compute(f64 x, f64 y) const {
         return (Noise::fractal(octaves, persistence, frequency, x + posOffset.x, y + posOffset.y) + heightOffset) * amplitude;

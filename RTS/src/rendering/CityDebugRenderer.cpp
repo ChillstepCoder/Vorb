@@ -8,6 +8,7 @@
 #include "city/CityPlanner.h"
 #include "city/CityPlotter.h"
 #include "city/CityQuartermaster.h"
+#include "city/BuildingBlueprint.h"
 #include "item/ItemStockpile.h"
 
 constexpr int DEBUG_ID_CITY = 123;

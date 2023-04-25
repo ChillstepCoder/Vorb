@@ -12,6 +12,7 @@
 #include "rendering/material/BrdfLUT.h"
 #include "rendering/StencilBufferIDs.h"
 
+#include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/graphics/GBuffer.h>

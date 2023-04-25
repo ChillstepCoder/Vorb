@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "BuildingBlueprint.h"
+#include "Building.h"
 
 #include "resources/TileRepository.h"
 
@@ -29,6 +30,11 @@ BuildingBlueprint::BuildingBlueprint(
 
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
+}
+
+TileHandle BuildingBlueprint::getTileHandle(TileIndex tileIndex) const {
+    assert(IS_GAME_THREAD());
+    return TileHandle(building->getTileContainer(), tileIndex);
 }
 
 PlaceTileBlueprintItemsHandlePtr BuildingBlueprint::reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount) {

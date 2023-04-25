@@ -7,6 +7,7 @@
 
 #include "options/DebugOptions.h"
 #include "pathfinding/NavThread.h"
+#include "pathfinding/NavPath.h"
 
 #include "rendering/RenderThreadTasks.h"
 

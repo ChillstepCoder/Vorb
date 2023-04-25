@@ -1,6 +1,7 @@
 #pragma once
 
-#include "IntersectionHit.h"
+struct IntersectionHit2D;
+struct IntersectionHit3D;
 
 namespace IntersectionUtil
 {

@@ -1,7 +1,5 @@
 #pragma once
 
-class Camera3D;
-
 struct CharacterControlComponent;
 
 struct PlayerControlComponent {

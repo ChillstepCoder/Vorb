@@ -1,9 +1,6 @@
 #pragma once
-struct b2AABB;
-
 
 constexpr int MAX_DEBUG_RENDER_LIFETIME = INT32_MAX;
-
 
 class DebugRenderer
 {

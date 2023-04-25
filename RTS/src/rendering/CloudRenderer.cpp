@@ -16,6 +16,7 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
 
+#include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/graphics/GBuffer.h>

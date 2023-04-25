@@ -3,13 +3,8 @@
 #include "IBusinessJob.h"
 #include "item/ItemStack.h"
 
-#include "item/ItemReservation.h"
-
 class BuildingBlueprint;
-struct BusinessComponent;
 struct OwnershipComponent;
-class ItemReservation;
-class BuildBlueprintTask;
 
 struct TilesToConstruct {
 	bool isReserved = false;

@@ -3,7 +3,7 @@
 #include "data_structure/QuadtreeSettings.h"
 #include "camera/CameraMode.h"
 
-#include "LightingOptions.h"
+struct LightingOptions;
 
 constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
 

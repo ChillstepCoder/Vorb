@@ -1,9 +1,5 @@
 #pragma once
 
-class TileContainer;
-class ContainerMeshBuilders;
-struct ModelDef;
-
 typedef void(*RenderFunction)(class RenderContext& context, void*);
 
 // Singleton class that manages passing render tasks so we don't need to include RenderContext in every object

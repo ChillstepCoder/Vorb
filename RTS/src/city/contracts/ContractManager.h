@@ -1,10 +1,12 @@
 #pragma once
 
-#include "IContract.h"
-#include "ItemShipmentContract.h"
+class ItemShipmentContract;
+class IContract;
 
 class ContractManager {
 public:
+    ContractManager();
+    ~ContractManager();
     // TODO: ContractFactory?
     ItemShipmentContract* createItemShipmentContract(entt::registry& registry, entt::entity shipper, entt::entity shippee, ItemID itemId, ui16 quantity, TimeSpanSec maxAllowedTime = std::numeric_limits<TimeSpanSec>::max());
 

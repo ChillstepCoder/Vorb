@@ -11,6 +11,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 
+#include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
 Skybox::~Skybox() {

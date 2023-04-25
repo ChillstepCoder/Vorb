@@ -3,9 +3,6 @@
  // TODO: Will receive notifications if that tile changes so it can refresh
 
 class ItemStockpile;
-class Building;
-class Structure;
-class Chunk;
 
 #include "tile/TileHandle.h"
 #include "actor/ActorTypes.h"

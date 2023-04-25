@@ -2,7 +2,6 @@
 #include "LightData.h"
 
 class MaterialShader;
-class Camera3D;
 class Cubemap;
 
 DECL_VG(class GBuffer);

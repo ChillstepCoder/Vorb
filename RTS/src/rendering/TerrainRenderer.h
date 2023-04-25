@@ -1,8 +1,6 @@
 #pragma once
 
-class MaterialRenderer;
 class MaterialShader;
-class HeightmapTerrainQuadtree;
 class Camera3D;
 class TerrainMesh;
 class Cubemap;

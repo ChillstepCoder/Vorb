@@ -10,6 +10,7 @@ class VisualLog;
 
 class CityBuilder;
 class BuildingDescriptionRepository;
+struct RoomNode;
 
 constexpr ui32 MAX_EXTERIOR_WALL_RUN_LENGTH = 8; // TODO: Enforce this
 

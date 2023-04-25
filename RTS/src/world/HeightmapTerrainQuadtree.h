@@ -6,7 +6,6 @@
 #include "rendering/mesh/Mesh.h"
 
 struct TerrainMeshTaskData;
-class Camera3D;
 class TerrainMeshBuilder;
 DECL_VG(class GLProgram);
 

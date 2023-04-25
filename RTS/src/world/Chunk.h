@@ -14,11 +14,8 @@
 #include <shared_mutex>
 
 class Chunk;
-class Mesh;
 class BillboardMesh;
 class TBOBillboardMesh;
-class GrassBillboardMesh;
-class ChunkGrassQuadtree;
 class NavWorld;
 class Structure;
 

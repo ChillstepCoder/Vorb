@@ -3,8 +3,9 @@
 class City;
 class CityPlanner;
 class BuildingBlueprint;
+class Building;
 
-#include "Building.h"
+#include "city/CityConst.h"
 
 // ***********************************************************************************************************
 // The city builder recieves blueprints, and contracts them out to builder businesses to be constructed

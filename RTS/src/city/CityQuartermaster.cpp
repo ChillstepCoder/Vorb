@@ -7,7 +7,6 @@
 #include "item/ItemStockpileRegistry.h"
 
 #include "city/BuildingBlueprint.h"
-
 #include "resources/ResourceManager.h"
 #include "BuildingDescriptionRepository.h"
 

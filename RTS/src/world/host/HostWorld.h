@@ -4,10 +4,7 @@
 #include "world/cli/CliWorldInterface.h"
 #include "world/srv/SrvWorldInterface.h"
 
-class CityGraph;
-class StructureManager;
 class ItemStockpileRegistry;
-class CloudManager;
 
 class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterface {
     friend class WorldFactory;

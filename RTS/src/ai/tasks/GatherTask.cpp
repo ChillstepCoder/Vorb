@@ -13,7 +13,6 @@
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
-#include "item/ItemReservation.h"
 #include "resources/TileRepository.h"
 #include "math/Random.h"
 

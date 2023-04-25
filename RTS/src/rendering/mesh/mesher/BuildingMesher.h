@@ -3,14 +3,7 @@
 #include "city/Building.h"
 #include "rendering/mesh/mesher/ITileContainerMesher.h"
 
-class VisualLog;
-class InstancedStaticModelGatherer;
-class ResourceManager;
 class Building;
-class ProceduralMeshBuilder;
-class BillboardMeshBuilder;
-class PhysicsWorld;
-struct MaterialData;
 
 struct RoofContourEdgeInfo {
     f32v3 v1;

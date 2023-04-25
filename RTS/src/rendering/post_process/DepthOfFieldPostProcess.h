@@ -1,6 +1,5 @@
 #pragma once
 
-class ResourceManager;
 class MaterialShader;
 
 DECL_VG(class GBuffer);

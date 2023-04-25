@@ -1,7 +1,6 @@
 #pragma once
 
 class MaterialShader;
-class MeshBase;
 class Mesh;
 
 #include <Vorb/graphics/DepthState.h>

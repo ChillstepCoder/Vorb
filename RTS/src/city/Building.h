@@ -7,14 +7,9 @@
 #include "city/CityPlot.h"
 
 #include "definitions/BuildingDef.h"
-#include "rendering/mesh/Mesh.h"
 #include "tile/TileContainer.h"
 
 #include "structure/Structure.h"
-
-
-class Mesh;
-class btTriangleIndexVertexArray;
 
 // TODO: Can we optimize passing this around so theres no copies?
 class Building : public Structure {

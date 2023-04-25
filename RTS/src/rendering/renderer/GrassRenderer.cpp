@@ -11,7 +11,6 @@
 #include "options/DebugOptions.h"
 #include "camera/Camera3D.h"
 
-#include "resources/ResourceManager.h"
 #include "resources/TileGrassRepository.h"
 
 GrassRenderer::GrassRenderer()

@@ -16,8 +16,6 @@
 #include "debugging/PhysicsDebugDrawer.h"
 
 #include "physics/DynamicCharacterController.h"
-#include "physics/CollisionShapes.h"
-#include "physics/StaticPhysicsMesh.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
 #include "terrain/HeightmapPatch.h"

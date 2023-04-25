@@ -8,6 +8,7 @@
 #include "item/ItemRepository.h"
 
 #include "ecs/IEntityComponentSystem.h"
+#include "ItemReservation.h"
 #include "ecs/component/OwnershipComponent.h"
 
 #include "camera/Camera3D.h"

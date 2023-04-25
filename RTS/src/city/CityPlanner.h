@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Building.h"
-#include "BuildingBlueprintGenerator.h"
+#include "BuildingBlueprintFlags.h"
 
 #include "tile/TileConst.h"
 
+class BuildingBlueprintGenerator;
 class City;
-class CityBuilder;
 struct CityPlot;
 // ***********************************************************************************************************
 // The city planner handles determining where current and future buildings should be placed.

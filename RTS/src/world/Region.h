@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Chunk.h"
+class Chunk;
 
 #include "world/WorldData.h"
 

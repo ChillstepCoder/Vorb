@@ -1,7 +1,6 @@
 #pragma once
 
 class Mesh;
-struct SubTexture;
 
 #include "world/ChunkID.h"
 

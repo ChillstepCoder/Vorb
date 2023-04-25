@@ -1,7 +1,6 @@
 #pragma once
 
-#include "ItemStack.h"
-
+struct ItemStack;
 class ItemStockpile;
 
 struct ItemReservationTarget {

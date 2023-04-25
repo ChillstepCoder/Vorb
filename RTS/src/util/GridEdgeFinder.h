@@ -2,8 +2,7 @@
 
 class BitArray;
 class VisualLog;
-
-#include "GridEdge.h"
+struct GridEdge;
 
 // Bits are 1 if they are part of the active shape
 struct GridCell4x4 {

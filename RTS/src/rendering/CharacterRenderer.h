@@ -1,10 +1,7 @@
 #pragma once
 #include "rendering/CharacterModel.h"
 
-class PhysicsComponent;
 class MaterialShader;
-struct CharacterModelComponent;
-struct CharacterControlComponent;
 class Camera3D;
 struct CharacterRenderState;
 

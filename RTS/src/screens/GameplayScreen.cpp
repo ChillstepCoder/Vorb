@@ -34,6 +34,7 @@
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
+#include "item/ItemReservation.h"
 
 #include "physics/PhysHitResult.h"
 #include "physics/PhysicsWorld.h"

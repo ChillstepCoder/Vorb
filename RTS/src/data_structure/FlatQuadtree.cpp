@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "FlatQuadtree.h"
 
-#include "camera/Camera3D.h"
-
 #include "debugging/DebugRenderer.h"
 
 #include "rendering/renderstate/RenderState.h"

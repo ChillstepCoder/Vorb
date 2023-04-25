@@ -6,8 +6,6 @@ class CityPlotter;
 class CityQuartermaster;
 class BuildingBlueprint;
 
-class Camera2D;
-
 class CityDebugRenderer
 {
 public:

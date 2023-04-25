@@ -4,6 +4,7 @@
 #include "City.h"
 #include "CityPlotter.h"
 #include "BuildingDescriptionRepository.h"
+#include "city/BuildingBlueprintGenerator.h"
 
 #include "math/Random.h"
 

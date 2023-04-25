@@ -10,7 +10,6 @@ class btRigidBody;
 class PhysicsDebugDrawer;
 class HeightmapPatch;
 class btCollisionShape;
-class btTransform;
 class btVector4;
 class btHeightfieldTerrainShape;
 class DynamicCharacterController;

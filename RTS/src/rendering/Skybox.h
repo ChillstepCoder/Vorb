@@ -1,8 +1,5 @@
 #pragma once
 
-class QuadMesh;
-class ICamera;
-class MaterialRenderer;
 class Mesh;
 class MaterialShader;
 class Cubemap;

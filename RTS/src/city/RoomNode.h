@@ -1,7 +1,6 @@
 #pragma once
 
 struct RoomDef;
-class Building;
 
 #include "util/GridEdge.h"
 #include "tile/Stairs.h"
@@ -10,7 +9,6 @@ struct RoomGateInfo {
     RoomNodeID adjacentRoom;
     ui32 tileIndex;
 };
-
 
 
 struct RoomNode {

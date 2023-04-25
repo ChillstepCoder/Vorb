@@ -5,7 +5,6 @@
 #include <Vorb/graphics/RasterizerState.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
-#include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/SpriteFont.h>
 #include <Vorb/graphics/BlendState.h>
 #include <glm/gtx/rotate_vector.hpp>

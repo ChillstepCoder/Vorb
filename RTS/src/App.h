@@ -6,8 +6,6 @@
 
 class MainMenuScreen;
 class GameplayScreen;
-class WorldEditorScreen;
-class Test3DScreen;
 
 class App : public vui::MainGame
 {

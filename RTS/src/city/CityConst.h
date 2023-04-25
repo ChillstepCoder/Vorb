@@ -16,6 +16,8 @@ typedef ui32 BuildingID;
 // Types
 typedef ui16 RoomDefID;
 typedef ui16 BuildingTypeID;
+typedef ui32 CityPlotIndex;
+constexpr CityPlotIndex INVALID_PLOT_INDEX = UINT32_MAX;
 
 // TODO: Data driven
 // TODO: District Conversion

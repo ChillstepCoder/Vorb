@@ -3,9 +3,9 @@
 #include "actor/ActorTypes.h"
 #include "pathfinding/PathFinder.h"
 #include "tile/TileHarvestable.h"
+#include "tile/TileHandle.h"
 
 struct CharacterControlComponent;
-struct LiteTileHandle;
 class TileContainer;
 
 enum class NavigationType : ui8 {

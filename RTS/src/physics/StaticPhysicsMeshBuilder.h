@@ -2,12 +2,7 @@
 
 #include "physics/TrackedStaticRigidBodyGatherer.h"
 
-class btTriangleIndexVertexArray;
-class btRigidBody;
-class btBvhTriangleMeshShape;
-struct btIndexedMesh;
 class PhysicsWorld;
-struct StaticPhysicsMesh;
 
 class StaticPhysicsMeshBuilder
 {

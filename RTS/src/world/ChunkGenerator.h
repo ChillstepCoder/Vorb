@@ -3,7 +3,6 @@
 #include "tile/Tile.h"
 
 class Chunk;
-class Region;
 struct TileGrass;
 
 struct HeightmapPatchData;

@@ -17,7 +17,6 @@ class City;
 class ItemStockpile;
 class ConstructBuildingJob;
 class BuildingBlueprint;
-struct CityPlot;
 struct BusinessDef;
 
 typedef std::unique_ptr<IBusinessJob> IBusinessJobPtr;

@@ -6,8 +6,6 @@
 
 class GrassBillboardMesh;
 class Chunk;
-class Camera3D;
-class IWorldGrid;
 DECL_VG(class GLProgram);
 
 using ChunkGrassFlatQuadtree = FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>;

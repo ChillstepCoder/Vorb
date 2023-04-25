@@ -10,8 +10,6 @@
 #include "physics/StaticPhysicsMesh.h"
 #include <shared_mutex>
 
-class btRigidBody;
-class Mesh;
 class Chunk;
 class Building;
 

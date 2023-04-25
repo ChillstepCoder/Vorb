@@ -6,14 +6,13 @@
 #include "util/StrToken.h"
 #include "network/WorldNetMode.h"
 
+class CityGraph;
 class IChunkGrid;
-class IHeightmapGrid;
 class IEntityComponentSystem;
+class IHeightmapGrid;
+class ItemStockpileRegistry;
 class PhysicsWorld;
 class StructureManager;
-class ItemStockpileRegistry;
-class CityGraph;
-class HeightmapTerrainQuadtree;
 class TimeOfDayManager;
 
 

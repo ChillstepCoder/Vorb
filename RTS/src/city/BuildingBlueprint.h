@@ -1,6 +1,16 @@
 #pragma once
+#include "CityConst.h"
+#include "BuildingBlueprintFlags.h"
+#include "tile/TileSpatialGrid.h"
+#include "tile/TileWallContainer.h"
+#include "city/RoomNode.h"
+#include "item/ItemStack.h"
 
-#include "Building.h"
+class Building;
+class BuildingBlueprint;
+struct BuildingDef;
+struct Recipe;
+struct TileHandle;
 
 enum class BlueprintTileType : ui8 {
     NONE    = 0, // THIS SHOULD ALWAYS BE 0
@@ -18,11 +28,6 @@ static_assert(int(BlueprintTileType::TYPES) < (1 << 6)); // TODO: Why did we hav
 // TODO: Cellular automata rule iteration for room fixup
 typedef ui32 BuildingBlueprintId;
 #define INVALID_BLUEPRINT_ID UINT32_MAX
-
-enum class BuildingBlueprintFlags : ui8 {
-    BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE = BIT(0),
-    BLUEPRINT_FLAG_FAILED_TO_GENERATE = BIT(1)
-};
 
 struct BlueprintTileItemData {
     ItemID mItemId;
@@ -85,12 +90,7 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
 
-    TileHandle getTileHandle(TileIndex tileIndex) const {
-        assert(IS_GAME_THREAD());
-        return TileHandle(building->getTileContainer(), tileIndex);
-    }
-
-    
+    TileHandle getTileHandle(TileIndex tileIndex) const;
 
     // Indexing
     TileSpatialGrid mTileSpatialGrid;

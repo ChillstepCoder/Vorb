@@ -2,15 +2,12 @@
 
 #include "tile/Tile.h"
 
-class BillboardMeshBuilder;
 class ProceduralMeshBuilder;
-class Chunk;
 
 struct HeightmapPatchData;
 struct TileHandle;
 struct MaterialData;
 class ContainerMeshBuilders;
-class TileContainer;
 class StaticPhysicsMeshBuilder;
 
 namespace TileMeshBuilderMethods {

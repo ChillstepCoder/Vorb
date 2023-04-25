@@ -1,6 +1,5 @@
 #pragma once
 
-class CityGraph;
 class NavWorld;
 class ItemStockpileRegistry;
 

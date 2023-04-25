@@ -16,6 +16,8 @@ enum class ContractType : ui8 {
 // A contract is a binding agreement between two entities
 class IContract {
     friend class ContractManager;
+public:
+    virtual ~IContract() = default;
 protected:
     IContract() = delete;
     IContract(entt::entity entityA, entt::entity entityB, TimeSpanSec maxAllowedTime = std::numeric_limits<TimeSpanSec>::max());

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "DebugOptions.h"
 
+#include "LightingOptions.h"
+
 DebugOptions sDebugOptions;
 
 // Lower for faster loading in test

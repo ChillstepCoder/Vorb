@@ -8,9 +8,6 @@
 
 struct RawSubMesh;
 struct RawMaterialData;
-class SkinnedMesh; // TODO: Just mesh?
-class SkinnedModel3D;
-class StaticModel3D;
 class MaterialRepository;
 typedef ozz::animation::offline::fbx::FbxSceneLoader OzzFbxSceneLoader;
 

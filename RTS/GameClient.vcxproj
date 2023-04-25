@@ -399,6 +399,10 @@
     <ClCompile Include="src\screens\MainMenuScreen.cpp" />
     <ClCompile Include="src\screens\ScreenState.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
+    <ClCompile Include="src\stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\structure\StructureManager.cpp" />
     <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
@@ -448,11 +452,6 @@
     <ClCompile Include="src\world\srv\SrvWorldInterface.cpp" />
     <ClCompile Include="src\world\WorldFactory.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
@@ -470,6 +469,7 @@
     <ClInclude Include="src\character\CharacterConst.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprint.h" />
+    <ClInclude Include="src\city\BuildingBlueprintFlags.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\BuildingDescriptionRepository.h" />
     <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
@@ -693,6 +693,7 @@
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />
     <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\structure\Structure.h" />
     <ClInclude Include="src\structure\StructureManager.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
@@ -775,7 +776,6 @@
     <ClInclude Include="src\world\WorldFactory.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="src\world\WorldType.h" />
-    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

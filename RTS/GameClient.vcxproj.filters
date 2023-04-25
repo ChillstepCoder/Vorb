@@ -441,9 +441,6 @@
     <ClCompile Include="src\resources\ResourceManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\screens\MainMenuScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -712,6 +709,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\time\TimeOfDayManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1280,9 +1280,6 @@
     <ClInclude Include="src\util\MathUtil.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\screens\MainMenuScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1677,6 +1674,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\time\TimeOfDayManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\city\BuildingBlueprintFlags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

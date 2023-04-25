@@ -12,7 +12,6 @@
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/PersonAIComponent.h"
 #include "ecs/component/PhysicsComponent.h"
-#include "ecs/component/CorpseComponent.h"
 #include "ecs/component/ProfessionComponent.h"
 #include "ecs/component/SimpleSpriteComponent.h"
 #include "ecs/component/SoldierAIComponent.h"

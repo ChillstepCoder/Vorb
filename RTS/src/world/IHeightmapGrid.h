@@ -13,7 +13,6 @@
 #include <mutex>
 
 class BitArray;
-class Camera3D;
 struct TileHandle;
 
 enum class TerrainHeightSetDirection {

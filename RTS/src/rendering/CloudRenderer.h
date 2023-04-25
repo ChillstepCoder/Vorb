@@ -1,7 +1,6 @@
 #pragma once
 
 class CloudManager;
-class ResourceManager;
 class MaterialShader;
 class Camera3D;
 class Cubemap;

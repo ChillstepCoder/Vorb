@@ -40,7 +40,6 @@ const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
 // Prevent rounding errors, 0.0001 is half a pixel
 constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
-static constexpr float EPSILON = 0.005f;
 
 void GrassBillboardMesh::reserveQuadCount(size_t count) {
     mInstanceData.reserve(count);
