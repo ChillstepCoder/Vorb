@@ -803,7 +803,7 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
     if (sDebugOptions.mShowNavGraph) {
         if (!wasRenderingNavGraph) {
             ScopedTimer timer("Debug Draw Navgraph");
-            DebugRenderer::reserveLines(sMainGameWorld->getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+            DebugRenderer::reserveLines(sMainGameWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = TileContainerRepository::getTileContainers();
             for (auto&& container : containers) {
                 const f32v3 containerCenter = container->getTileSpatialGrid().getWorldPosCenter3D();

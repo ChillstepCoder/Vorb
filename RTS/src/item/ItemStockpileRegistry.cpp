@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ItemStockpileRegistry.h"
 
+#include "world/IChunkGrid.h"
 #include "world/IWorld.h"
 
 static ItemStockpileID sItemStockpileIdGen;
@@ -49,6 +50,7 @@ const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtTile
 void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stockpile) {
     // TODO: I think this is bad
     // Get all possible chunks
+    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(ChunkID(f32v2(aabb.pos)));
@@ -57,7 +59,7 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
     int i = 0;
     for (auto&& id : chunkPositions) {
-        Chunk& chunk = sMainGameWorld->getChunk(id);
+        Chunk& chunk = chunkGrid.getChunk(id);
         if (chunk.getTileContainer()) {
             const TileContainerID chunkContainerId = chunk.getTileContainer()->getId();
             mAreaLookup[chunkContainerId].push_back(&stockpile);
@@ -72,6 +74,7 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
 void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpile) {
     // TODO: I think this is bad
     // Get all possible chunks
+    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(ChunkID(f32v2(aabb.pos)));
@@ -80,7 +83,7 @@ void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpi
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
     int i = 0;
     for (auto&& id : chunkPositions) {
-        Chunk& chunk = sMainGameWorld->getChunk(id);
+        Chunk& chunk = chunkGrid.getChunk(id);
         assert(chunk.getTileContainer());
         const auto& it = mAreaLookup.find(chunk.getTileContainer()->getId());
         assert(it != mAreaLookup.end());

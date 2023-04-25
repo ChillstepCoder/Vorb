@@ -10,6 +10,7 @@
 #include "BuildingDescriptionRepository.h"
 #include "ecs/business/BusinessRepository.h"
 #include "world/IWorld.h"
+#include "world/IChunkGrid.h"
 #include "resources/ResourceManager.h"
 
 #include "ecs/IEntityComponentSystem.h"
@@ -20,7 +21,7 @@ City::City(const ui32v2& cityCenterWorldPos)
 {
 
     TileHandle root = sMainGameWorld->getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
-    mChunks.push_back(&sMainGameWorld->getChunk(root.getChunkIDAtPos()));
+    mChunks.push_back(&sMainGameWorld->getChunkGrid().getChunk(root.getChunkIDAtPos()));
     // This belongs to us, don't go away
     // TODO: Need to release later
     mChunks.back()->incRef();

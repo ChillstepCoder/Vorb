@@ -5,6 +5,7 @@
 #include "world/IHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/Chunk.h"
+#include "world/IChunkGrid.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
@@ -531,7 +532,7 @@ void WorldEditorPanel::updateGrassEdit() {
                     for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                             ChunkID id(worldPos);
-                            const TileContainer& tileContainer = *sMainGameWorld->getChunk(id).getTileContainer();
+                            const TileContainer& tileContainer = *sMainGameWorld->getChunkGrid().getChunk(id).getTileContainer();
                             TileIndex tileIndex = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
                             const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                             const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
@@ -569,7 +570,7 @@ void WorldEditorPanel::updateTileEdit() {
             GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
                 std::tuple<LiteChunkID, TileIndex, TileID>* taskData = (std::tuple<LiteChunkID, TileIndex, TileID>*)v;
                 LiteChunkID chunkId = std::get<0>(*taskData);
-                Chunk& chunk = sMainGameWorld->getChunk(chunkId);
+                Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(chunkId);
                 if (chunk.isDataReady()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
                     const TileData& data = TileRepository::getTileData(std::get<2>(*taskData));
@@ -679,7 +680,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
     //const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     //if (random < strength) {
-    float density = (float)sMainGameWorld->getChunk(id).getGrassDensityAt(tileIndex, grassId);
+    float density = (float)sMainGameWorld->getChunkGrid().getChunk(id).getGrassDensityAt(tileIndex, grassId);
     if (editState == GrassEditState::RAISE) {
         density += strength * POWER;
     }
@@ -688,7 +689,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     }
 
     ui8 densityUi8 = (ui8)glm::clamp(glm::round(density), 0.0f, 255.0f);
-    sMainGameWorld->getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
+    sMainGameWorld->getChunkGrid().getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
     //}
 }
 

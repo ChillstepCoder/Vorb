@@ -113,7 +113,7 @@ void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chun
         for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.depth;) {
             TileHandle cornerHandle = getTerrainTileHandleAtWorldPos(worldPos);
             assert(cornerHandle.container);
-            Chunk& chunk = sMainGameWorld->getChunk(ChunkID::fromWorldI32v2(cornerHandle.getWorldPos2D()));
+            Chunk& chunk = mChunkGrid->getChunk(ChunkID::fromWorldI32v2(cornerHandle.getWorldPos2D()));
             ui32v3 offset = cornerHandle.getContainerOffset();
             const i32 distFromRightEdge = CHUNK_WIDTH - offset.x;
             const i32 distFromTopEdge = CHUNK_WIDTH - offset.y;

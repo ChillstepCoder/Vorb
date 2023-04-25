@@ -3,6 +3,7 @@
 
 #include "world/IWorld.h"
 #include "world/Chunk.h"
+#include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
@@ -149,7 +150,7 @@ void NavWorld::updateNavThread()
                     assert(id < WorldData::WORLD_SIZE_CHUNKS);
                     mTerrainDependentEdges[id].erase(containerData.id);
 
-                    Chunk& chunk = sMainGameWorld->getChunk(id);
+                    Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(id);
                     // TODO: should we be marking it dirty? Wouldnt this be an invalid chunk?
                     markChunkContainerNavDirty(id);
                     chunk.decRef();
@@ -800,7 +801,7 @@ void NavWorld::initEventHandlers() {
             int i = 0;
             for (LiteChunkID id : chunkDependencies) {
                 assert(id < WorldData::WORLD_SIZE_CHUNKS);
-                Chunk& chunk = sMainGameWorld->getChunk(id);
+                Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(id);
                 // Only have dependencies on chunks with valid chunks
                 if (chunk.getRefCount()) {
                     chunk.incRef();
@@ -891,7 +892,7 @@ bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Carte
 void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
 {
     assert(IS_NAV_THREAD());
-    const Chunk& chunk = sMainGameWorld->getChunk(chunkId);
+    const Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(chunkId);
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
     bool didAdd = mDirtyTileContainers.workerThreadTryDirtyObject(chunkTileContainer);
@@ -1396,7 +1397,7 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
                     break;
                 }
                 // Make sure this chunk stays
-                sMainGameWorld->getChunk(id).incRef();
+                sMainGameWorld->getChunkGrid().getChunk(id).incRef();
             }
         }
     }

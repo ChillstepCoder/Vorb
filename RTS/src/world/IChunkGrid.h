@@ -32,6 +32,7 @@ public:
     const std::vector<LiteChunkID>& getLoadingChunks() const { return mLoadingChunks; }
     const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
     const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
+    size_t getNumActiveChunks() const { return mActiveChunks.size(); }
 
     // Events
     STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
