@@ -534,9 +534,10 @@ f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
     return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
 }
 
-f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset) {
-    i32v2 chunkPos = mWorld->getChunkGrid().getWorldPosXYFromChunkID(chunkId);
-    const f32v2 offset = chunkOffset + f32v2((chunkPos % i32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (i32)CHUNK_WIDTH);
+f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk) {
+    i32v2 chunkPos = mWorld->getChunkGrid().getChunkOffsetFromChunkID(chunkId);
+    // TODO: This doesnt account the individual world dimensions
+    const f32v2 offset = offsetIntoChunk + f32v2((chunkPos % i32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (i32)CHUNK_WIDTH);
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
 
     // Compute normalized offset from bl

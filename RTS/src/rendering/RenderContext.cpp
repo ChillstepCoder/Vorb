@@ -54,6 +54,8 @@
 
 #include "ui/UIContext.h"
 
+#include "tile/TileContainerRepository.h"
+
 #include "editor/WorldEditorPanel.h"
 
 // TODO: Move to renderer?
@@ -804,9 +806,9 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
         if (!wasRenderingNavGraph) {
             ScopedTimer timer("Debug Draw Navgraph");
             DebugRenderer::reserveLines(sMainGameWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
-            const auto& containers = TileContainerRepository::getTileContainers();
-            for (auto&& container : containers) {
-                const f32v3 containerCenter = container->getTileSpatialGrid().getWorldPosCenter3D();
+            const auto& containers = sMainGameWorld->getTileContainerRepository().getTileContainers();
+            for (auto&& it : containers) {
+                const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter3D();
                 const f32v3& cameraPos = camera.getPosition();
                 if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
                     // TODO: make this only work on host world

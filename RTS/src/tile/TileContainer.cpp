@@ -13,6 +13,11 @@
 
 #include "physics/PhysicsWorld.h"
 
+TileContainer::TileContainer(IWorld& world) : mWorld(world)
+{
+
+}
+
 TileContainer::~TileContainer() {
 
 }

@@ -4,7 +4,7 @@
 #include "tile/TileContainer.h"
 
 
-TileContainerRepository::TileContainerRepository()
+TileContainerRepository::TileContainerRepository(IWorld& world) : mWorld(world)
 {
 }
 
@@ -14,7 +14,7 @@ TileContainerRepository::~TileContainerRepository()
 
 TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner) {
     assert(IS_GAME_THREAD());
-    std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
+    std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>(mWorld);
     TileContainer* rv = newContainer.get();
 
     // Ensure no collisions
@@ -32,7 +32,7 @@ TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPo
     }
     {
         std::lock_guard lock(mMutex);
-        mTileContainers.insert(std::make_pair(newContainer->mId, rv));
+        mTileContainers.insert(std::make_pair(newContainer->mId, std::move(newContainer)));
     }
     return rv;
 }
@@ -54,7 +54,7 @@ TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
     assert(IS_GAME_THREAD());
     auto&& it = mTileContainers.find(id);
     assert(it != mTileContainers.end());
-    return it->second;
+    return it->second.get();
 }
 
 TileContainer* TileContainerRepository::tryGetTileContainer(TileContainerID id) {
@@ -64,5 +64,5 @@ TileContainer* TileContainerRepository::tryGetTileContainer(TileContainerID id) 
     if (it == mTileContainers.end()) {
         return nullptr;
     }
-    return it->second;
+    return it->second.get();
 }

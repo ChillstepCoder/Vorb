@@ -46,6 +46,7 @@ IChunkGrid::IChunkGrid(ui32 widthChunks) : mWidthChunks(widthChunks), mTotalChun
     mAliveChunkBits.resizeAndZero(mTotalChunks);
     mChunks = std::unique_ptr<Chunk[]>(new Chunk[mTotalChunks]);
     mNeighborBits = std::unique_ptr<ui8[]>(new ui8[mTotalChunks]);
+    memset(mNeighborBits.get(), 0, sizeof(ui8) * mTotalChunks);
     for (ChunkID i = 0; i < mTotalChunks; ++i) {
         mChunks[i].init(i, getWorldPosXYFromChunkID(i));
     }
@@ -368,7 +369,7 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
     mAliveChunkBits.clearBit(id);
 
     // Notify alive neighbors
-    const i32v2 xy = chunk.getWorldPos();
+    const i32v2 xy = chunk.getChunkOffset();
     for (ui8 i = 0; i < 8; ++i) {
         const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
         const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
@@ -465,7 +466,7 @@ void IChunkGrid::beginTileLoadForChunk(Chunk& chunk) {
 
 void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 
-    chunk.allocateTileContainer();
+    chunk.allocateTileContainer(mWorld->getTileContainerRepository());
     chunk.incRef();
 
     // Make sure we dont lose height data

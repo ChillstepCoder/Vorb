@@ -35,7 +35,7 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     sMainGameWorld = this;
 
     // Tile Containers
-    mTileContainerRepository = std::make_unique<TileContainerRepository>();
+    mTileContainerRepository = std::make_unique<TileContainerRepository>(*this);
 
     // Time of day
     mTimeOfDayManager = std::make_unique<TimeOfDayManager>();
@@ -44,7 +44,7 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     mCities = std::make_unique<CityGraph>();
 
     // Structures
-    mStructureManager = std::make_unique<StructureManager>();
+    mStructureManager = std::make_unique<StructureManager>(*mTileContainerRepository);
 
     // Stockpiles
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();

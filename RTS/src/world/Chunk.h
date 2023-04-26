@@ -18,6 +18,7 @@ class BillboardMesh;
 class TBOBillboardMesh;
 class NavWorld;
 class Structure;
+class TileContainerRepository;
 
 #define USE_INSTANCED_BILLBOARDS 1
 #if USE_INSTANCED_BILLBOARDS == 1
@@ -73,7 +74,7 @@ public:
 
     // =========== Main methods  ===========
 	void init(const ChunkID& chunkId, i32v2 worldPos);
-	void allocateTileContainer();
+	void allocateTileContainer(TileContainerRepository& tileContainerRepository);
 	void freeData();
 	void dispose();
 	// TODO: REMOVE
@@ -82,6 +83,7 @@ public:
 
     // =========== Accessors  ===========
     const i32v2 getWorldPos() const { return mAABB.pos; }
+	const i32v2 getChunkOffset() const { return i32v2(mAABB.pos.x / CHUNK_WIDTH, mAABB.pos.y / CHUNK_WIDTH); }
     const i32v3 getWorldPos3D() const { return i32v3(mAABB.pos.x, mAABB.pos.y, 0); }
     i32v2 getWorldPosCenter2D() const { return i32v2(mAABB.pos.x + HALF_CHUNK_WIDTH, mAABB.pos.y + HALF_CHUNK_WIDTH); }
     i32v3 getWorldPosCenter3D() const { return i32v3(mAABB.pos.x + HALF_CHUNK_WIDTH, mAABB.pos.y + HALF_CHUNK_WIDTH, 0); }

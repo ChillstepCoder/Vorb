@@ -13,6 +13,7 @@
 #include "structure/Structure.h"
 
 #include "resources/TileRepository.h"
+#include "tile/TileContainerRepository.h"
 
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
@@ -39,17 +40,17 @@ void Chunk::init(const ChunkID& chunkId, i32v2 worldPos) {
     mAABB.height = 4;
 }
 
-void Chunk::allocateTileContainer() {
+void Chunk::allocateTileContainer(TileContainerRepository& tileContainerRepository) {
     assert(!mTileContainer);
     const ui32v3 worldPosInt3D(mAABB.pos.x, mAABB.pos.y, 0u);
-    mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
+    mTileContainer = tileContainerRepository.getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
     mGrass.resize(CHUNK_SIZE);
     assert(mTileContainer);
 }
 
 void Chunk::freeData() {
     if (mTileContainer) {
-        TileContainerRepository::destroyTileContainer(mTileContainer);
+        mTileContainer->getWorld().getTileContainerRepository().destroyTileContainer(mTileContainer);
         mTileContainer = nullptr;
     }
     std::vector<TileGrass>().swap(mGrass);
@@ -133,7 +134,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-            Chunk& bottomChunk = chunkGrid.getChunkAtPosition(bottom.getWorldPos2D()));
+            Chunk& bottomChunk = chunkGrid.getChunkAtPosition(bottom.getWorldPos2D());
 			neighbors[(int)NeighborIndex8::BOTTOM] = bottom.getTile();
 			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = bottomLeft.getTile();

@@ -51,7 +51,7 @@ public:
     friend class NavWorld; // TODO: Remove
     friend class IChunkGrid;
     friend class PathFinder;
-    TileContainer() = default;
+    TileContainer(IWorld& world);
     ~TileContainer();
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
@@ -174,7 +174,7 @@ public:
 
 
     // =========== World  ===========
-    IWorld& getWorld() const { return *mWorld; }
+    IWorld& getWorld() const { return mWorld; }
 
 private:
     bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
@@ -210,7 +210,7 @@ private:
     bool mDirtyData = false;
     std::variant<Chunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
-    IWorld* mWorld = nullptr;
+    IWorld& mWorld;
 
     EVENT_DISPATCHER_DEF(TileContainer);
 };
