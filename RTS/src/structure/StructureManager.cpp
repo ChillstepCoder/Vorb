@@ -27,6 +27,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     i32v3 tileDims = aabb.dims;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
     std::unique_ptr<Structure> newStructure;
+    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
     switch (type) {
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
@@ -60,20 +61,20 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     i32v2 worldXY;
     std::set<Chunk*> chunkDependencies;
     worldXY = i32v2(aabb.x, aabb.y);
-    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y);
-    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x, aabb.y + aabb.dims.y);
-    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y + aabb.dims.y);
-    chunkDependencies.insert(&sMainGameWorld->getChunkAtPosition(worldXY));
+    chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
 
     assert(chunkDependencies.size() && chunkDependencies.size() <= 4);
     int chunkCount = 0;
     for (auto&& c : chunkDependencies) {
         assert(c->isDataReady());
         // Chunks increment our refcount while they are loaded
-        rv->mChunkDependencies[chunkCount++] = c->getChunkID().id;
+        rv->mChunkDependencies[chunkCount++] = c->getChunkID();
         c->addStructure(rv);
     }
     while (chunkCount < 4) {
@@ -128,7 +129,7 @@ void StructureManager::initEventHandlers() {
     IChunkGrid::registerChunkListeners(mChunkEventListeners);
     IChunkGrid::addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
         assert(IS_GAME_THREAD());
-        auto&& it = mDormantStructures.find(chunk.getChunkID().id);
+        auto&& it = mDormantStructures.find(chunk.getChunkID());
         if (it == mDormantStructures.end()) {
             return;
         }
@@ -156,7 +157,7 @@ void StructureManager::initEventHandlers() {
         if (chunk.getStructures().empty()) {
             return;
         }
-        std::vector<StructureID>& chunkDormantList = mDormantStructures[chunk.getChunkID().id];
+        std::vector<StructureID>& chunkDormantList = mDormantStructures[chunk.getChunkID()];
         chunkDormantList.reserve(chunkDormantList.size() + chunkStructures.size());
         for (StructureID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);

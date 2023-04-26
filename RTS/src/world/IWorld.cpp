@@ -130,34 +130,10 @@ void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chun
     }
 }
 
-Chunk& IWorld::getChunkAtPosition(const f32v2& worldPos) {
-    return mChunkGrid->getChunk(ChunkID(worldPos));
-}
-
-const Chunk& IWorld::getChunkAtPosition(const f32v2& worldPos) const {
-    return mChunkGrid->getChunk(ChunkID(worldPos));
-}
-
-Chunk& IWorld::getChunkAtPosition(const i32v2& worldPos) {
-    return mChunkGrid->getChunk(ChunkID::fromWorldI32v2(worldPos));
-}
-
-const Chunk& IWorld::getChunkAtPosition(const i32v2& worldPos) const {
-    return mChunkGrid->getChunk(ChunkID::fromWorldI32v2(worldPos));
-}
-
-Chunk& IWorld::getChunkAtPosition(const ui16v2& worldPos) {
-    return mChunkGrid->getChunk(ChunkID::fromWorldUI16v2(worldPos));
-}
-
-const Chunk& IWorld::getChunkAtPosition(const ui16v2& worldPos) const {
-    return mChunkGrid->getChunk(ChunkID::fromWorldUI16v2(worldPos));
-}
-
 TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     assert(IS_GAME_THREAD());
     i32v2 worldPos2D = worldPos;
-    const Chunk* chunk = &getChunkAtPosition(worldPos2D);
+    const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos2D);
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -182,7 +158,7 @@ TileHandle IWorld::getTileHandleAtWorldPos(const f32v3& worldPos) const {
 
 TileHandle IWorld::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     TileHandle handle;
-    const Chunk* chunk = &getChunkAtPosition(worldPos);
+    const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -193,7 +169,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
 
 TileHandle IWorld::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     TileHandle handle;
-    const Chunk* chunk = &getChunkAtPosition(worldPos);
+    const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus

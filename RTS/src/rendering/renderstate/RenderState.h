@@ -25,6 +25,7 @@ static_assert(sizeof(DebugWireQuadState) == 20);
 
 struct DebugChunkRenderState {
     ChunkID mId;
+    i32v2 mWorldPos;
     ChunkState mState;
     DebugChunkListIndex mList;
     ui8 mRefCount;

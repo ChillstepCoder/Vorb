@@ -28,22 +28,20 @@ Chunk::~Chunk() {
 	dispose();
 }
 
-void Chunk::init(const ChunkID& chunkId) {
+void Chunk::init(const ChunkID& chunkId, i32v2 worldPos) {
 	assert(mState == e_cast(ChunkState::INVALID));
 	mChunkId = chunkId;
-    f32v2 worldPos = chunkId.getWorldPos();
     mAABB.x = worldPos.x;
     mAABB.y = worldPos.y;
-    mAABB.z = -2.0f;
+    mAABB.z = -2;
     mAABB.width = CHUNK_WIDTH;
     mAABB.depth = CHUNK_WIDTH;
-    mAABB.height = 4.0f;
+    mAABB.height = 4;
 }
 
 void Chunk::allocateTileContainer() {
     assert(!mTileContainer);
-    const i32v2& worldPosInt2D = mChunkId.getWorldPosInt();
-    const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
+    const ui32v3 worldPosInt3D(mAABB.pos.x, mAABB.pos.y, 0u);
     mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
     mGrass.resize(CHUNK_SIZE);
     assert(mTileContainer);
@@ -153,7 +151,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            Chunk& topChunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(top.getWorldPos2D()));
+            Chunk& topChunk = chunkGrid.getChunk(chunkGrid.getChunkIDFromWorldPos(top.getWorldPos2D()));
             neighbors[(int)NeighborIndex8::TOP] = *top.tile;
             TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;

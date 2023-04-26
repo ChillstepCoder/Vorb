@@ -81,27 +81,8 @@ protected:
 };
 
 typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
-typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
+//typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
 
+typedef ui32 ChunkID;
 typedef ui32 LiteChunkID;
 constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;
-
-namespace {
-    inline HeightmapPatchID heightmapPatchIDFromChunkID(ChunkID id) {
-        return HeightmapPatchID(id.pos / (ui32)HEIGHTMAP_PATCH_WIDTH_CHUNKS);
-    }
-}
-
-
-// Hash function
-namespace std {
-    template <>
-    struct hash<ChunkID>
-    {
-        size_t operator()(const ChunkID& id) const
-        {
-            // Compute individual hash values for two data members and combine them using XOR and bit shifting
-            return hash<ui32>()(id.id);
-        }
-    };
-}

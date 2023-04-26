@@ -16,17 +16,27 @@ class IWorldGrid;
 
 class IChunkGrid
 {
-    friend class IWorldGrid;
 public:
-    IChunkGrid();
+    IChunkGrid(ui32 widthChunks);
 
     void onWorldBegin(const f32v2& loadCenter);
     void tick(const f32v2& loadCenter);
 
-    Chunk& getChunk(LiteChunkID i) { return mChunks[i]; }
-    const Chunk& getChunk(LiteChunkID i) const { return mChunks[i]; }
-    Chunk& getChunk(ChunkID id) { return mChunks[id.id]; }
-    const Chunk& getChunk(ChunkID id) const { return mChunks[id.id]; }
+    Chunk& getChunk(ChunkID id) { return mChunks[id]; }
+    const Chunk& getChunk(ChunkID id) const { return mChunks[id]; }
+
+    Chunk& getChunkAtPosition(const f32v2& worldPos);
+    const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
+    Chunk& getChunkAtPosition(const i32v2& worldPos);
+    const Chunk& getChunkAtPosition(const i32v2& worldPos) const;
+    Chunk& getChunkAtChunkOffset(const i32v2& chunkOffset);
+    const Chunk& getChunkAtChunkOffset(const i32v2& chunkOffset) const;
+
+    ChunkID getChunkIDFromWorldPos(const i32v2& worldPos) const;
+    ChunkID getChunkIDFromWorldPos(const f32v2& worldPos) const;
+    ChunkID getChunkIDFromChunkOffset(const i32v2& chunkOffset) const;
+    i32v2 getWorldPosXYFromChunkID(ChunkID id) const;
+    i32v2 getChunkOffsetFromChunkID(ChunkID id) const;
 
     static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
     const std::vector<LiteChunkID>& getLoadingChunks() const { return mLoadingChunks; }
@@ -60,19 +70,21 @@ private:
     void onChunkReady(Chunk& chunk);
     
     // Chunk data
-    Chunk mChunks[WorldData::WORLD_SIZE_CHUNKS];
+    ui32 mWidthChunks;
+    ui32 mTotalChunks;
+    std::unique_ptr<Chunk[]> mChunks;
+    std::unique_ptr<ui8[]> mNeighborBits;
     
     // Chunk grid data
-    BitArray mAliveChunkBits = BitArray(WorldData::WORLD_SIZE_CHUNKS); // Includes any chunk which is in range, but an "alive" chunk is not active until it loads, which triggers once 8 neighbors are alive
-    ui8 mNeighborBits[WorldData::WORLD_SIZE_CHUNKS] = {};
+    BitArray mAliveChunkBits; // Includes any chunk which is in range, but an "alive" chunk is not active until it loads, which triggers once 8 neighbors are alive
     f32v2 mPrevLoadCenter = f32v2(0);
     bool mForceUpdateEdgeChunks = true;
-    std::vector<LiteChunkID> mEdgeChunkPositions;
+    std::vector<ChunkID> mEdgeChunkPositions;
 
     // Chunk lists
-    std::vector<LiteChunkID> mLoadingChunks;
-    std::vector<LiteChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
-    std::vector<LiteChunkID> mDestroyingChunks;
+    std::vector<ChunkID> mLoadingChunks;
+    std::vector<ChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
+    std::vector<ChunkID> mDestroyingChunks;
     std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
 
     // Events

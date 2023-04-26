@@ -42,21 +42,21 @@ void WorldFactory::destroyWorld()
 
 IWorld& WorldFactory::makeClientWorld() {
     sHeightmapGrid = new CliHeightmapGrid();
-    sChunkGrid = new CliChunkGrid();
+    sChunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     sMainGameWorld = new CliWorld(sChunkGrid, sHeightmapGrid);
     return *sMainGameWorld;
 }
 
 IWorld& WorldFactory::makeHostWorld() {
     sHeightmapGrid = new SrvHeightmapGrid();
-    sChunkGrid = new SrvChunkGrid();
+    sChunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     sMainGameWorld = new HostWorld(sChunkGrid, sHeightmapGrid);
     return *sMainGameWorld;
 }
 
 IWorld& WorldFactory::makeServerWorld() {
     sHeightmapGrid = new SrvHeightmapGrid();
-    sChunkGrid = new SrvChunkGrid();
+    sChunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     sMainGameWorld = new DedicatedSrvWorld(sChunkGrid, sHeightmapGrid);
     return *sMainGameWorld;
 }

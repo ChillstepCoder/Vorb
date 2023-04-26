@@ -72,7 +72,7 @@ public:
 	~Chunk();
 
     // =========== Main methods  ===========
-	void init(const ChunkID& chunkId);
+	void init(const ChunkID& chunkId, i32v2 worldPos);
 	void allocateTileContainer();
 	void freeData();
 	void dispose();
@@ -81,14 +81,14 @@ public:
 
 
     // =========== Accessors  ===========
-    const f32v2 getWorldPos() const { return mChunkId.getWorldPos(); }
-    const f32v3 getWorldPos3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x, worldPos.y, 0.0f); }
-    f32v2 getWorldPosCenter2D() const { const f32v2& worldPos = getWorldPos(); return f32v2(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH); }
-    f32v3 getWorldPosCenter3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
+    const i32v2 getWorldPos() const { return mAABB.pos; }
+    const i32v3 getWorldPos3D() const { return i32v3(mAABB.pos.x, mAABB.pos.y, 0); }
+    i32v2 getWorldPosCenter2D() const { return i32v2(mAABB.pos.x + HALF_CHUNK_WIDTH, mAABB.pos.y + HALF_CHUNK_WIDTH); }
+    i32v3 getWorldPosCenter3D() const { return i32v3(mAABB.pos.x + HALF_CHUNK_WIDTH, mAABB.pos.y + HALF_CHUNK_WIDTH, 0); }
 	ChunkState getState() const { return (ChunkState)mState.load(); }
     const ChunkID& getChunkID() const { return mChunkId; }
-	const HeightmapPatchID getHeightmapPatchID() const { return heightmapPatchIDFromChunkID(mChunkId); }
-    const f32AABB3& getAABB() const { return mAABB; }
+	const HeightmapPatchID getHeightmapPatchID() const { return HeightmapPatchID::fromWorldI32v2(mAABB.pos); }
+    const i32AABB3& getAABB() const { return mAABB; }
 	const std::vector<StructureID>& getStructures() const { return mStructures; }
 
 
@@ -139,18 +139,13 @@ public:
 	inline void decRef() const { mTileContainer->decRef(); }
     ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
-	// TODO: DELETE
-	f32 getDistanceFromLoadCenterSQ() const { return mDistanceFromLoadCenterSQ; }
-	void setDistanceFromLoadCenterSQ(f32 distSq) { mDistanceFromLoadCenterSQ = distSq; }
-
 	void addStructure(Structure* structure);
 
 private:
 
     // =========== Members ===========
 	ChunkID mChunkId;
-	f32AABB3 mAABB = f32AABB3(0.0f);
-	f32 mDistanceFromLoadCenterSQ = 0.0f; // Used for sorting
+	i32AABB3 mAABB = i32AABB3(0);
 	// TODO: Not atomic
     std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 	BitFlags<ChunkFlags> mFlags;

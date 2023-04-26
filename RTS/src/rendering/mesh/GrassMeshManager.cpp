@@ -27,7 +27,7 @@ void GrassMeshManager::tick() {
         const Chunk& chunk = *it.first;
         if (chunk.isDataReady()) {
 
-            const f32 distSq = glm::length2(chunk.getWorldPosCenter2D() - loadCenter);
+            const f32 distSq = glm::length2(f32v2(chunk.getWorldPosCenter2D()) - loadCenter);
 
             std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = it.second;
             if (grassQuadtree) {

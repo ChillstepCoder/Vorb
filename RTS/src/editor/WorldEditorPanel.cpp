@@ -531,8 +531,9 @@ void WorldEditorPanel::updateGrassEdit() {
                     PROFILE_SCOPE("Edit Grass");
                     for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
-                            ChunkID id(worldPos);
-                            const TileContainer& tileContainer = *sMainGameWorld->getChunkGrid().getChunk(id).getTileContainer();
+                            IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+                            const ChunkID id = chunkGrid.getChunkIDFromWorldPos(worldPos);
+                            const TileContainer& tileContainer = *chunkGrid.getChunk(id).getTileContainer();
                             TileIndex tileIndex = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
                             const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                             const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
@@ -558,7 +559,7 @@ void WorldEditorPanel::updateTileEdit() {
     static TileIndex prevTileIndex;
     if (mHitResult.didHit() && (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && (mDragToPlace || !mDidPlaceTile))) {
         mDidPlaceTile = true;
-        const ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
+        const ChunkID chunkID = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
         const TileIndex tileIndex = (TileIndex)((ui32)mHitResult.mPosition.x % CHUNK_WIDTH + ((ui32)mHitResult.mPosition.y % CHUNK_WIDTH) * CHUNK_WIDTH);
 
         // Make sure while mouse is held we aren't spamming tiles in the same spot
@@ -566,10 +567,10 @@ void WorldEditorPanel::updateTileEdit() {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
 
-            std::tuple<LiteChunkID, TileIndex, TileID>* taskData = new std::tuple<LiteChunkID, TileIndex, TileID>(chunkID.id, tileIndex, mSelectedTile);
+            std::tuple<ChunkID, TileIndex, TileID>* taskData = new std::tuple<ChunkID, TileIndex, TileID>(chunkID, tileIndex, mSelectedTile);
             GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
-                std::tuple<LiteChunkID, TileIndex, TileID>* taskData = (std::tuple<LiteChunkID, TileIndex, TileID>*)v;
-                LiteChunkID chunkId = std::get<0>(*taskData);
+                std::tuple<ChunkID, TileIndex, TileID>* taskData = (std::tuple<ChunkID, TileIndex, TileID>*)v;
+                ChunkID chunkId = std::get<0>(*taskData);
                 Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(chunkId);
                 if (chunk.isDataReady()) {
                     TileIndex tileIndex = std::get<1>(*taskData);

@@ -784,7 +784,7 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
                 }
             }
 
-            const f32v2 worldPos = chunkDebugState.mId.getWorldPos();
+            const f32v2 worldPos = chunkDebugState.mWorldPos;
             DebugRenderer::drawWireQuad(worldPos, f32v2(CHUNK_WIDTH), color);
 
             // Count refs

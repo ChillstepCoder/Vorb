@@ -105,7 +105,7 @@ void NavWorld::updateNavThread()
                 // Build external edges if needed
                 TerrainExternalEdges* externalEdges = nullptr;
                 // TODO: Calculate chunkID instead?
-                auto&& it = mTerrainDependentEdges.find(container->getOwnerChunk()->getChunkID().id);
+                auto&& it = mTerrainDependentEdges.find(container->getOwnerChunk()->getChunkID());
                 if (it != mTerrainDependentEdges.end()) {
                     if (!it->second.empty()) {
                         externalEdges = new TerrainExternalEdges;
@@ -166,7 +166,7 @@ void NavWorld::updateNavThread()
         if (containerData.isTerrain) {
             i32v3 worldPos = containerData.worldPos;
             ChunkID chunkID = ChunkID::fromWorldI32v2(worldPos2D);
-            mTerrainTileContainers[chunkID.id] = INVALID_TILE_CONTAINER_ID;
+            mTerrainTileContainers[chunkID] = INVALID_TILE_CONTAINER_ID;
         }
         else {
             NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + containerData.dims.x, worldPos2D.y + containerData.dims.y));

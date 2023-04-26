@@ -580,7 +580,7 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worl
 f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
     assert(IS_GAME_THREAD());
 
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
+    HeightmapPatchID id = HeightmapPatchID::fromWorldI32v2(worldTilePos);
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
@@ -647,7 +647,7 @@ f32 IHeightmapGrid::computeMinHeightAtTile(const f32* heightData, ui32v2 worldTi
 f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
     assert(IS_GAME_THREAD());
 
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
+    HeightmapPatchID id = HeightmapPatchID::fromWorldI32v2(worldTilePos);
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
@@ -659,7 +659,7 @@ f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
 
 f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
     assert(IS_GAME_THREAD());
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
+    HeightmapPatchID id = HeightmapPatchID::fromWorldI32v2(worldTilePos);
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
