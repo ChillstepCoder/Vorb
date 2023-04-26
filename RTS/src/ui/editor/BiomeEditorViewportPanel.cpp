@@ -94,7 +94,7 @@ void BiomeEditorViewportPanel::renderMesh()
 void BiomeEditorViewportPanel::initializeChunks()
 {
     mChunks = std::unique_ptr<Chunk[]>(new Chunk[NUM_EDITOR_CHUNKS]);
-    for (ui32 i = 0; i < NUM_EDITOR_CHUNKS; ++i) {
+   /* for (ui32 i = 0; i < NUM_EDITOR_CHUNKS; ++i) {
         mChunks[i].init(ChunkID(i));
-    }
+    }*/
 }

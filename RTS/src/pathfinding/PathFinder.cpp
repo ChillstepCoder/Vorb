@@ -436,7 +436,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     }
 
     LOG_TRACE("Generated fine path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
-    path.targetHandle = goalHandle;
+    path.targetHandle = goalHandle.toTileHandle(*sMainGameWorld);
     path.finishedGenerating.store(true);
     return true;
 }
@@ -824,6 +824,6 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
         }
     }
 
-    path.targetHandle = goalHandle;
+    path.targetHandle = goalHandle.toTileHandle(*sMainGameWorld);
     path.finishedGenerating.store(true);
 }

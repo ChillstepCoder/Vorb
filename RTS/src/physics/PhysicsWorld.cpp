@@ -12,6 +12,7 @@
 
 #include "world/IWorld.h"
 #include "tile/TileContainer.h"
+#include "tile/TileContainerRepository.h"
 
 #include "debugging/PhysicsDebugDrawer.h"
 

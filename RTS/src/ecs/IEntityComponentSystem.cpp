@@ -10,7 +10,7 @@
 
 const float DEAD_COLOR_MULT = 0.4f;
 
-IEntityComponentSystem::IEntityComponentSystem() {
+IEntityComponentSystem::IEntityComponentSystem(IWorld& world) : mWorld(world) {
 }
 
 IEntityComponentSystem::~IEntityComponentSystem() {

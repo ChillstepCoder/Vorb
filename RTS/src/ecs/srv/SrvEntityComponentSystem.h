@@ -5,6 +5,7 @@
 class SrvEntityComponentSystem : public IEntityComponentSystem
 {
 public:
+    SrvEntityComponentSystem(IWorld& world) : IEntityComponentSystem(world) {};
 
     void tick() override;
 

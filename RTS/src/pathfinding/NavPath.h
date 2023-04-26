@@ -78,16 +78,16 @@ public:
 
     const LiteTileHandle* getPoints() const { return points; }
     ui32 getNumPoints() const { return numPoints; }
-    LiteTileHandle getTargetHandle() const { return targetHandle; }
+    TileHandle getTargetHandle() const { return targetHandle; }
 
     std::vector<f32v3> convertToWorldPoints(const IHeightmapGrid& heightGrid) const;
 
 private:
+    TileHandle targetHandle;
     LiteTileHandle* points = nullptr; // Raw pointer
-    LiteTileHandle targetHandle;
     ui32 numPoints = 0;
 public:
     // Atomic access check
     std::atomic_bool finishedGenerating = false;
 };
-static_assert(sizeof(NavPath) == 24);
+static_assert(sizeof(NavPath) == 32);

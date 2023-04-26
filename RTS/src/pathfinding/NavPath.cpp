@@ -43,7 +43,7 @@ std::vector<f32v3> NavPath::convertToWorldPoints(const IHeightmapGrid& heightGri
     assert(IS_GAME_THREAD() || IS_NAV_THREAD());
     std::vector<f32v3> rv(numPoints);
     for (ui32 i = 0; i < numPoints; ++i) {
-        i32v2 worldPosI = points[i].getWorldPosition();
+        i32v2 worldPosI = points[i].getWorldPosition(heightGrid.getWorld());
         rv[i] = f32v3(worldPosI.x, worldPosI.y, heightGrid.tryComputeHeightAtPoint(worldPosI));
     }
     return rv;

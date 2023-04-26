@@ -2,9 +2,11 @@
 #include "ecs/component/ComponentDefinition.h"
 #include "util/StrToken.h"
 
+class IWorld;
+
 class IEntityComponentSystem {
 public:
-    IEntityComponentSystem();
+    IEntityComponentSystem(IWorld& world);
     virtual ~IEntityComponentSystem();
 
     virtual void tick();
@@ -27,6 +29,7 @@ public:
 	// Classes with World access
 	friend class PhysicsComponent;
 
+    IWorld& mWorld;
 
     entt::registry mRegistry;
 

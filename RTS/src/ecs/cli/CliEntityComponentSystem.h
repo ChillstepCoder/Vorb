@@ -5,6 +5,8 @@
 class CliEntityComponentSystem : public IEntityComponentSystem
 {
 public:
+    CliEntityComponentSystem(IWorld& world) : IEntityComponentSystem(world) {};
+
     // Begin IEntityComponentSystem interface
     entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) override;
     void destroyEntity(entt::entity entity) override;

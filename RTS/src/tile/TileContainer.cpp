@@ -3,6 +3,7 @@
 
 #include "pathfinding/NavThread.h"
 
+#include "tile/TileContainerRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/RenderThreadTasks.h"
 
@@ -11,69 +12,6 @@
 #include "world/IChunkGrid.h"
 
 #include "physics/PhysicsWorld.h"
-
-// TODO: The vector is pointless, every container is a cache miss anyways
-std::vector<std::unique_ptr<TileContainer>> sTileContainers;
-std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
-TileContainerID sTileContainerIdGen = 0;
-
-RUNTIME_INIT_FUNC(reserveTileContainerData) {
-    sTileContainers.reserve(500);
-    sTileContainerLookup.reserve(500);
-}
-
-TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner) {
-    assert(IS_GAME_THREAD());
-    std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
-    TileContainer* rv = newContainer.get();
-    newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, owner);
-    // Clamp to int to prevent issues with PhysicsWorld storing these as signed integers
-    if (sTileContainerIdGen > INT32_MAX) {
-        sTileContainerIdGen = 0;
-    }
-    sTileContainerLookup[newContainer->mId] = rv;
-    sTileContainers.push_back(std::move(newContainer));
-    return rv;
-}
-
-void TileContainerRepository::destroyTileContainer(TileContainer* container) {
-    // TODO: Maybe just dont destroy this on the game thread
-    assert(IS_GAME_THREAD() || IS_SHUTTING_DOWN);
-    sTileContainerLookup.erase(container->mId);
-
-    assert(container->mRefCount == 0);
-    // TODO: Profile linear search
-    for (size_t i = 0; i < sTileContainers.size(); ++i) {
-        if (sTileContainers[i].get() == container) {
-            // container->freeData();
-            const TileContainerEvent destroyEvent{ container, {} };
-            TileContainerRepository::dispatchDestroy(destroyEvent);
-            container->dispatchDestroy(destroyEvent);
-            sTileContainers[i] = std::move(sTileContainers.back()); // TODO: We hit a crash here on destructor
-            sTileContainers.pop_back(); 
-            return;
-        }
-    }
-}
-
-TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
-    assert(IS_GAME_THREAD());
-    auto&& it = sTileContainerLookup.find(id);
-    assert(it != sTileContainerLookup.end());
-    return it->second;
-}
-
-TileContainer* TileContainerRepository::tryGetTileContainer(TileContainerID id) {
-    auto&& it = sTileContainerLookup.find(id);
-    if (it == sTileContainerLookup.end()) {
-        return nullptr;
-    }
-    return it->second;
-}
-
-std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileContainers() {
-    return sTileContainers;
-}
 
 TileContainer::~TileContainer() {
 
@@ -825,7 +763,8 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
         const i32v3 offset = mTileSpatialGrid.getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
             const i32v2 worldPos2D(rootPos.x + offset.x, rootPos.y + offset.y);
-            Chunk& chunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(worldPos2D));
+
+            Chunk& chunk = chunkGrid.getChunkAtPosition(worldPos2D);
             if (chunk.isDataReady()) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
                 const TileSpatialGrid& chunkTileIndexManager = chunkTileContainer->getTileSpatialGrid();

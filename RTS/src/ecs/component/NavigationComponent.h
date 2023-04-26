@@ -66,7 +66,7 @@ struct NavigationComponent {
 		ui32v2 mSimpleTargetPoint = ui32v2(0);
     };
 	TileContainer* mResidingTileContainer = nullptr;
-	LiteTileHandle mTargetHandle;
+	TileHandle mTargetHandle;
 	TileIndex mResidingTile;
 	ui32v2 mPrevNavCell;
     NavigationType mNavigationType = NavigationType::INVALID;
@@ -81,5 +81,5 @@ struct NavigationComponent {
 
 class NavigationComponentSystem {
 public:
-	void update(entt::registry& registry);
+	void update(IWorld& world, entt::registry& registry);
 };

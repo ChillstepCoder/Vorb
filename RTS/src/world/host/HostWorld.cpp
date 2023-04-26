@@ -4,6 +4,8 @@
 #include "world/srv/SrvChunkGrid.h"
 #include "world/srv/SrvHeightmapGrid.h"
 
+#include "tile/TileContainerRepository.h"
+
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/srv/SrvEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
@@ -13,7 +15,7 @@
 
 HostWorld::HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid)
 {
-    mEcs = std::make_unique<SrvEntityComponentSystem>();
+    mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
 }
 
 void HostWorld::tick(f32 elapsedSec) {
@@ -33,9 +35,10 @@ void HostWorld::tick(f32 elapsedSec) {
     }*/
 
     // Update all dynamic tiles
-    auto&& tileContainers = TileContainerRepository::getTileContainers();
-    for (auto&& container : tileContainers) {
-        container->updateActiveDynamicTiles();
+    // TODO: Handle a different way?
+    auto&& tileContainers = mTileContainerRepository->getTileContainers();
+    for (auto&& it : tileContainers) {
+        it.second->updateActiveDynamicTiles();
     }
 
     // TODO: Figure out best order

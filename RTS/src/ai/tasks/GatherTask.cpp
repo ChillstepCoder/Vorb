@@ -52,7 +52,7 @@ TaskTickResult HarvestItemsTask::tick(entt::registry& registry, entt::entity age
             NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
             const NavigationStatus navStatus = navCmp.getStatus();
             if (navStatus == NavigationStatus::SUCCESS) {
-                harvestItem(registry, agent, navCmp.mTargetHandle.toTileHandle());
+                harvestItem(registry, agent, navCmp.mTargetHandle);
             }
             else if (navStatus == NavigationStatus::FAIL) {
                 if (++mFailCount >= 4) {
@@ -99,7 +99,7 @@ void HarvestItemsTask::harvestItem(entt::registry& registry, entt::entity agent,
     }
 
     // Interact
-    if (targetTileHandle.tile->hasFlagsMaskAny(e_cast(TileFlags::IS_INTERACTING) | e_cast(TileFlags::IS_RESOURCE_RESERVED))) {
+    if (targetTileHandle.getTile().hasFlagsMaskAny(e_cast(TileFlags::IS_INTERACTING) | e_cast(TileFlags::IS_RESOURCE_RESERVED))) {
         // Someone else is using this tile
         // Try again
         findItem(registry, agent);

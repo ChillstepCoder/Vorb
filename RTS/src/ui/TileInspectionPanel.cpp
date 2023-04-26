@@ -3,6 +3,8 @@
 
 #include "tile/TileHandle.h"
 #include "world/Chunk.h"
+#include "world/IWorld.h"
+#include "world/IChunkGrid.h"
 #include "resources/TileRepository.h"
 
 #include "debugging/DebugRenderer.h"
@@ -13,14 +15,15 @@
 
 #include <Vorb/ui/GameWindow.h>
 
-TileInspectionPanel::TileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle) : mScreenPos(screenPos), mTileHandle(tileHandle) {
+TileInspectionPanel::TileInspectionPanel(IWorld& world, const f32v2& screenPos, const TileHandle& tileHandle) : mWorld(world), mScreenPos(screenPos), mTileHandle(tileHandle) {
 
 }
 
-#define FLAG_DISPLAY(flag) ImGui::TextColored(tileHandle.tile->hasFlag(flag) != 0 ? ImVec4(0.5f, 1.0f, 0.5f, 1.0f) : ImVec4(1.0f, 0.5f, 0.5f, 1.0f)," %-30s  %s", #flag, (tileHandle.tile->hasFlag(flag) != 0 ? "True" : "False")); ImGui::Separator();
+#define FLAG_DISPLAY(flag) ImGui::TextColored(tile.hasFlag(flag) != 0 ? ImVec4(0.5f, 1.0f, 0.5f, 1.0f) : ImVec4(1.0f, 0.5f, 0.5f, 1.0f)," %-30s  %s", #flag, (tile.hasFlag(flag) != 0 ? "True" : "False")); ImGui::Separator();
 
 inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     ImGui::Text("Flags:");
+    const Tile& tile = tileHandle.getTile();
     FLAG_DISPLAY(TileFlags::HAS_SOUTH_BLOCKER);
     FLAG_DISPLAY(TileFlags::HAS_WEST_BLOCKER);
     FLAG_DISPLAY(TileFlags::HAS_EAST_BLOCKER);
@@ -41,7 +44,7 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
 
-    const ui32 id = tileHandle.tile->getLayers()[layer];
+    const ui32 id = tileHandle.getTile().getLayers()[layer];
     if (id == TILE_ID_NONE) {
         ImGui::Text(format, id, "NONE");
     }
@@ -68,9 +71,9 @@ void TileInspectionPanel::updateAndRender() {
 
     // Debug tile cursor
     f32v3 worldPos3D = mTileHandle.getWorldPos3D();
-    if (mTileHandle.tile->getGroundZOffset()) {
+    if (mTileHandle.getTile().getGroundZOffset()) {
         DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), color4(255, 128, 128, 180));
-        worldPos3D.z += mTileHandle.tile->getGroundZOffset();
+        worldPos3D.z += mTileHandle.getTile().getGroundZOffset();
     }
     if (isOwned) {
         DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), COLOR_WHITE);
@@ -89,7 +92,7 @@ void TileInspectionPanel::updateAndRender() {
         ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "UNOWNED");
     }
     ImGui::Text("World Position: <%u, %u>", worldPos2D.x, worldPos2D.y);
-    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getGroundZOffset());
+    ImGui::Text("Base Z Position: %f", mTileHandle.getTile().getGroundZOffset());
     switch (container.getOwnerType()) {
         case TileContainerOwnerType::CHUNK:
             ImGui::Text("Owner Type: CHUNK");
@@ -103,7 +106,7 @@ void TileInspectionPanel::updateAndRender() {
     }
     static_assert(e_cast(TileContainerOwnerType::COUNT) == 2);
     ImGui::Text("TileContainerID: %u", container.getId());
-    ImGui::Text("ChunkID: %u", ChunkID::fromWorldI32v2(worldPos2D));
+    ImGui::Text("ChunkID: %u", mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos2D));
     ImGui::Text("Tile Index: %u", mTileHandle.tileIndex);
     ImGui::Text("Container Offset: <%u,%u,%u>", xyzOffset.x, xyzOffset.y, xyzOffset.z);
 

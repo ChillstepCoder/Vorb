@@ -14,6 +14,7 @@
 #include "physics/PhysicsWorld.h"
 
 #include "world/IWorld.h"
+#include "world/IChunkGrid.h"
 
 #include "util/BitArray.h"
 
@@ -96,14 +97,12 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 }
 
 
-IHeightmapGrid::IHeightmapGrid()
-{
+IHeightmapGrid::IHeightmapGrid() {
     assert(!sHeightmapGrid);
     sHeightmapGrid = this;
 }
 
-IHeightmapGrid::~IHeightmapGrid()
-{
+IHeightmapGrid::~IHeightmapGrid() {
     // TODO: Unique_ptr?
     for (int i = 0; i < WORLD_SIZE_HEIGHTMAP_PATCHES; ++i) {
         delete mHeightData[i].mHeightData;
@@ -365,7 +364,7 @@ void IHeightmapGrid::releasePaddedHeightDataAt(HeightmapPatchID id) {
 
 void IHeightmapGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
     assert(IS_GAME_THREAD());
-    return setHeightAt(HeightmapPatchID(id.getWorldPos()), vertIndex, height, dir);
+    return setHeightAt(HeightmapPatchID(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, height, dir);
 }
 
 void IHeightmapGrid::setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
@@ -477,7 +476,7 @@ void IHeightmapGrid::setHeightAt(HeightmapPatchID patchId, ui32 vertIndex, f32 h
 
 void IHeightmapGrid::adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust) {
     assert(IS_GAME_THREAD());
-    return adjustHeightAt(HeightmapPatchID(id.getWorldPos()), vertIndex, adjust);
+    return adjustHeightAt(HeightmapPatchID(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, adjust);
 }
 
 void IHeightmapGrid::adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adjust) {
@@ -535,10 +534,22 @@ f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
     return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
 }
 
+f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset) {
+    i32v2 chunkPos = mWorld->getChunkGrid().getWorldPosXYFromChunkID(chunkId);
+    const f32v2 offset = chunkOffset + f32v2((chunkPos % i32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (i32)CHUNK_WIDTH);
+    const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
+
+    // Compute normalized offset from bl
+    // TODO: Optimize
+    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
+    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
+
+    return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
+}
+
 f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos)
 {
     const f32v2 offset = worldPos - id.getWorldPos();
-
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
 
     // Compute normalized offset from bl
@@ -548,20 +559,6 @@ f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightD
 
     return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
 }
-
-f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset)
-{
-    const f32v2 offset = chunkOffset + f32v2((chunkId.pos % ui32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (ui32)CHUNK_WIDTH);
-    const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
-
-    // Compute normalized offset from bl
-    // TODO: Optimize
-    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
-    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
-
-    return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-}
-
 
 f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos)
 {

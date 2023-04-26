@@ -58,18 +58,21 @@ void GameThreadTasks::addHideLocalPlayerModelTask(bool hide) {
     }, (void*)hide));
 }
 
-void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(TileContainerID containerId, StaticPhysicsMeshBuilder&& meshBuilder) {
-    StaticPhysicsMeshBuilder* builderPtr = new StaticPhysicsMeshBuilder(std::move(meshBuilder));
+void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder) {
+    typedef std::pair<const TileContainer*, StaticPhysicsMeshBuilder> TaskData;
+    TaskData* taskData;
+    taskData = new TaskData{ container, std::move(meshBuilder) };
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
-        StaticPhysicsMeshBuilder* builder = static_cast<StaticPhysicsMeshBuilder*>(vData);
-        builder->finish(sMainGameWorld->getPhysicsWorld());
+        TaskData* taskData = static_cast<TaskData*>(vData);
+        StaticPhysicsMeshBuilder& builder = taskData->second;
+        builder.finish(sMainGameWorld->getPhysicsWorld());
         // Release
-        TileContainer* container = TileContainerRepository::getTileContainer(builder->getOwnerTileContainerID());
+        const TileContainer* container = taskData->first;
         //assert(container->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
         container->setDidInitPhysics();
         container->decRef();
-        delete builder;
-    }, (void*)builderPtr));
+        delete taskData;
+    }, (void*)taskData));
 }
 
 void GameThreadTasks::addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate) {

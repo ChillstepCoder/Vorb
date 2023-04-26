@@ -60,7 +60,7 @@ void UIContext::renderEditorBrushDecals(const Camera3D& camera) {
 
 void UIContext::activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle) {
     if (tileHandle.isValid()) {
-        mTileInspectionPanel = std::make_unique<TileInspectionPanel>(screenPos, tileHandle);
+        mTileInspectionPanel = std::make_unique<TileInspectionPanel>(tileHandle.getWorld(), screenPos, tileHandle);
     }
 }
 

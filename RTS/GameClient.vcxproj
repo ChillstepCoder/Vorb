@@ -405,6 +405,7 @@
     </ClCompile>
     <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\structure\StructureManager.cpp" />
+    <ClCompile Include="src\tile\TileContainerRepository.cpp" />
     <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
     <ClCompile Include="src\tile\Tile.cpp" />
     <ClCompile Include="src\tile\TileContainer.cpp" />
@@ -698,6 +699,8 @@
     <ClInclude Include="src\structure\StructureManager.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
     <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h" />
+    <ClInclude Include="src\tile\TileContainerConst.h" />
+    <ClInclude Include="src\tile\TileContainerRepository.h" />
     <ClInclude Include="src\tile\TileGrass.h" />
     <ClInclude Include="src\tile\TileSpatialGrid.h" />
     <ClInclude Include="src\tile\Stairs.h" />

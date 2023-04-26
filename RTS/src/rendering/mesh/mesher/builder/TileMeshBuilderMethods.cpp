@@ -368,7 +368,7 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
 void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
 
     const MaterialData& materialData = tileData.materialData[0];
-    const Tile& tile = *tileHandle.tile;
+    const Tile& tile = tileHandle.getTile();
 
     const f32 topZPosition = tile.getGroundZOffset();
     const f32v3 topPos(tilePos.x, tilePos.y, topZPosition);
@@ -463,7 +463,7 @@ void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder
 }
 
 void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
-    const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZOffset();
+    const f32 topHeight = tilePos.z + tileHandle.getTile().getGroundZOffset();
 
     const f32v3 botSW(tilePos);
     const f32v3 botSE(tilePos.x + 1.0f, tilePos.y, tilePos.z);

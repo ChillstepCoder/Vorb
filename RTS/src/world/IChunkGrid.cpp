@@ -3,6 +3,7 @@
 
 #include "world/ChunkGenerator.h"
 #include "world/IWorld.h"
+#include "tile/TileContainerRepository.h"
 
 // TODO: SrvChunkGrid?
 

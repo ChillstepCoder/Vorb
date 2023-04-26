@@ -8,6 +8,8 @@
 #include "world/IHeightmapGrid.h"
 #include "structure/Structure.h"
 
+#include "tile/TileContainerRepository.h"
+
 #include "time/TimeOfDayManager.h"
 
 #include "ecs/IEntityComponentSystem.h"
@@ -31,6 +33,9 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
 
     assert(!sMainGameWorld);
     sMainGameWorld = this;
+
+    // Tile Containers
+    mTileContainerRepository = std::make_unique<TileContainerRepository>();
 
     // Time of day
     mTimeOfDayManager = std::make_unique<TimeOfDayManager>();
@@ -95,7 +100,7 @@ entt::entity IWorld::createEntity(const f32v3& pos, StrToken typeToken, bool sho
 bool IWorld::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {
     TileHandle handle = getTerrainTileHandleAtWorldPos(worldPos);
     if (handle.isValid()) {
-        return handle.tile->hasHarvestableResource(resource, outLayer);
+        return handle.getTile().hasHarvestableResource(resource, outLayer);
     }
     return false;
 }
@@ -113,7 +118,7 @@ void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chun
         for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.depth;) {
             TileHandle cornerHandle = getTerrainTileHandleAtWorldPos(worldPos);
             assert(cornerHandle.container);
-            Chunk& chunk = mChunkGrid->getChunk(ChunkID::fromWorldI32v2(cornerHandle.getWorldPos2D()));
+            Chunk& chunk = mChunkGrid->getChunkAtPosition(cornerHandle.getWorldPos2D());
             ui32v3 offset = cornerHandle.getContainerOffset();
             const i32 distFromRightEdge = CHUNK_WIDTH - offset.x;
             const i32 distFromTopEdge = CHUNK_WIDTH - offset.y;

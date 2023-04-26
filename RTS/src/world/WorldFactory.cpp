@@ -44,6 +44,11 @@ IWorld& WorldFactory::makeClientWorld() {
     sHeightmapGrid = new CliHeightmapGrid();
     sChunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     sMainGameWorld = new CliWorld(sChunkGrid, sHeightmapGrid);
+
+    // World references
+    sChunkGrid->mWorld = sMainGameWorld;
+    sHeightmapGrid->mWorld = sMainGameWorld;
+
     return *sMainGameWorld;
 }
 
@@ -51,6 +56,11 @@ IWorld& WorldFactory::makeHostWorld() {
     sHeightmapGrid = new SrvHeightmapGrid();
     sChunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     sMainGameWorld = new HostWorld(sChunkGrid, sHeightmapGrid);
+
+    // World references
+    sChunkGrid->mWorld = sMainGameWorld;
+    sHeightmapGrid->mWorld = sMainGameWorld;
+
     return *sMainGameWorld;
 }
 
@@ -58,5 +68,10 @@ IWorld& WorldFactory::makeServerWorld() {
     sHeightmapGrid = new SrvHeightmapGrid();
     sChunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     sMainGameWorld = new DedicatedSrvWorld(sChunkGrid, sHeightmapGrid);
+
+    // World references
+    sChunkGrid->mWorld = sMainGameWorld;
+    sHeightmapGrid->mWorld = sMainGameWorld;
+
     return *sMainGameWorld;
 }

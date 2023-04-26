@@ -12,6 +12,7 @@
 
 #include <mutex>
 
+class IWorld;
 class BitArray;
 struct TileHandle;
 
@@ -52,6 +53,7 @@ EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGri
 
 class IHeightmapGrid
 {
+    friend class WorldFactory;
 public:
     IHeightmapGrid();
     ~IHeightmapGrid();
@@ -88,8 +90,8 @@ public:
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
     f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
 
+    f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset);
     static f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos);
-    static f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset);
     static f32 computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
     static void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]);
     static bool areTrianglesFlippedAtTile(const TileHandle& tileHandle);
@@ -102,6 +104,8 @@ public:
 
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb) const;
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const;
+
+    IWorld& getWorld() const { return *mWorld; }
 
     STATIC_EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
@@ -122,6 +126,8 @@ private:
     std::map<ui32, std::list<std::function<void()>>> mPaddedFinishCallbacks; // Runs when generation is finished
     std::map<ui32, ui32> mPaddedGenWaitCount;
     std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
+
+    IWorld* mWorld = nullptr;
     //std::mutex mMutex;
 
     // TODO: Server only

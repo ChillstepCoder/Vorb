@@ -8,6 +8,8 @@
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 
+#include "tile/TileContainerRepository.h"
+
 #include "time/GameTimeManager.h"
 
 #include "city/Building.h"
@@ -42,16 +44,16 @@ inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapP
     return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(patchId, heightData, pos2d));
 }
 
-std::set<LiteChunkID> getChunkDependenciesForContainer(const i32v2& pos, const i32v2& dims) {
+std::set<LiteChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
     std::set<LiteChunkID> chunkDependencies; // TODO: flatset?
     i32v2 worldXY = i32v2(pos.x, pos.y);
-    chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+    chunkDependencies.insert(chunkGrid.getChunkIDFromWorldPos(worldXY));
     worldXY = i32v2(pos.x + dims.x, pos.y);
-    chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+    chunkDependencies.insert(chunkGrid.getChunkIDFromWorldPos(worldXY));
     worldXY = i32v2(pos.x, pos.y + dims.y);
-    chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+    chunkDependencies.insert(chunkGrid.getChunkIDFromWorldPos(worldXY));
     worldXY = i32v2(pos.x + dims.x, pos.y + dims.y);
-    chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+    chunkDependencies.insert(chunkGrid.getChunkIDFromWorldPos(worldXY));
     return chunkDependencies;
 }
 
@@ -142,7 +144,7 @@ void NavWorld::updateNavThread()
         // Remove external edge dependencies on terrain
         if (!containerData.isTerrain) {
             // Manually compute chunk dependencies since we dont have the data here
-            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
+            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(sMainGameWorld->getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
             int j = 0;
             for (LiteChunkID id : chunkDependencies) {
                 // Make sure we only decref/modify chunks that we increffed
@@ -165,7 +167,7 @@ void NavWorld::updateNavThread()
         const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
         if (containerData.isTerrain) {
             i32v3 worldPos = containerData.worldPos;
-            ChunkID chunkID = ChunkID::fromWorldI32v2(worldPos2D);
+            ChunkID chunkID = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(worldPos2D);
             mTerrainTileContainers[chunkID] = INVALID_TILE_CONTAINER_ID;
         }
         else {
@@ -708,7 +710,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
             worldPos += CARTESIAN_NORMALS_2D[e_cast(edge.second)];
             assert(worldPos.x >= 0 && worldPos.y >= 0);
 
-            LiteChunkID chunkId = ChunkID::fromWorldI32v2(worldPos).id;
+            LiteChunkID chunkId = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(worldPos);
 
             // Chunk relative
             worldPos %= CHUNK_WIDTH;
@@ -739,8 +741,8 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     if (isNewContainer) {
         if (taskData.container->isTerrain()) {
             i32v3 worldPos = spatialGrid.getWorldPos3D();
-            ChunkID chunkID = ChunkID::fromWorldI32v2(i32v2(worldPos.x, worldPos.y));
-            mTerrainTileContainers[chunkID.id] = taskData.container->getId();
+            ChunkID chunkID = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(i32v2(worldPos.x, worldPos.y));
+            mTerrainTileContainers[chunkID] = taskData.container->getId();
         }
         else {
             const i32v2& worldPos2D = spatialGrid.getWorldPos2D();
@@ -797,7 +799,7 @@ void NavWorld::initEventHandlers() {
         BitFlags<ChunkDependencyFlags> dependencyFlags;
         if (!container.isTerrain()) {
             // Manually compute chunk dependencies since we dont have the data here
-            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D()); // TODO: boost::container::flat_set?
+            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(sMainGameWorld->getChunkGrid(), container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D()); // TODO: boost::container::flat_set?
             int i = 0;
             for (LiteChunkID id : chunkDependencies) {
                 assert(id < WorldData::WORLD_SIZE_CHUNKS);

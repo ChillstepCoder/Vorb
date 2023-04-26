@@ -3,6 +3,8 @@
 #include "city/Building.h"
 #include "StructureManager.h"
 
+#include "tile/TileContainerRepository.h"
+
 #include "world/IWorld.h"
 
 #include "debugging/DebugRenderer.h"
@@ -18,7 +20,7 @@
 // * When a dormant structure becomes active, we allocate its tiles and do all the rest
 StructureID sStructureIdGen = 0;
 
-StructureManager::StructureManager() {
+StructureManager::StructureManager(TileContainerRepository& tileContainerRepository) : mTileContainerRepository(tileContainerRepository) {
     initEventHandlers();
 }
 
@@ -32,7 +34,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
-            newStructure->mTileContainer = TileContainerRepository::getNewTileContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            newStructure->mTileContainer = mTileContainerRepository.getNewTileContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
             break;
         }
         default:

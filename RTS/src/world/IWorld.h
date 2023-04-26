@@ -14,6 +14,7 @@ class ItemStockpileRegistry;
 class PhysicsWorld;
 class StructureManager;
 class TimeOfDayManager;
+class TileContainerRepository;
 
 
 // Shared world interface
@@ -65,7 +66,11 @@ public:
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     StructureManager& getStructureManager() { return *mStructureManager; }
     const StructureManager& getStructureManager() const { return *mStructureManager; }
-    TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
+    TimeOfDayManager& getTimeOfDayManager() { return *mTimeOfDayManager; }
+    const TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
+    TileContainerRepository& getTileContainerRepository() { return *mTileContainerRepository; }
+    const TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
+
 
     const f32v2& getLoadCenter() const;
 
@@ -78,6 +83,8 @@ protected:
 
     f32v2 mLoadCenter = f32v2(0);
 
+    // Tile containers
+    std::unique_ptr<TileContainerRepository> mTileContainerRepository;
     // Time of day
     std::unique_ptr<TimeOfDayManager> mTimeOfDayManager;
     // ECS

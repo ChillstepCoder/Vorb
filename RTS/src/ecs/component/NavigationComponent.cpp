@@ -46,7 +46,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	return false;
 }
 
-PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
+PathStatus updateComponentFinePath(IWorld& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 
 	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return PathStatus::IN_PROGRESS;
@@ -73,7 +73,7 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
 
 	// TODO: do this conversion in the generator?
 	const LiteTileHandle* points = navCmp.mFinePath->getPoints();
-	const i32v3 nextTilePos = points[navCmp.mCurrentFinePoint].getWorldPosition();
+	const i32v3 nextTilePos = points[navCmp.mCurrentFinePoint].getWorldPosition(world);
 	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
@@ -85,9 +85,9 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
     }*/
 
 	// Check for stuck on new tile/jump
-	const Tile* targetTile = sMainGameWorld->getTileHandleAtWorldPos(nextTilePos).tile;
-	if (targetTile) {
-        f32 baseZ = targetTile->getGroundZOffset();
+	const TileHandle tileHandle = sMainGameWorld->getTileHandleAtWorldPos(nextTilePos);
+	if (tileHandle.isValid()) {
+        const f32 baseZ = tileHandle.getTile().getGroundZOffset();
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
             // Climb
 			motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
@@ -110,7 +110,7 @@ PathStatus updateComponentFinePath(entt::entity entity, NavigationComponent& nav
 		else {
 			// Immediately raycheck each time we get to a new point
 			navCmp.mFramesUntilNextRayCheck = 0;
-			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].getWorldPosition()) + f32v2(0.5f);
+			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].getWorldPosition(world)) + f32v2(0.5f);
 		}
 	}
 
@@ -267,7 +267,7 @@ void requestFinePathToPoint(NavigationComponent& navCmp, const f32v3& start, con
 	}
 }
 
-void updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
+void updateComponentCoarsePath(IWorld& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 
     if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return;
@@ -296,7 +296,7 @@ void updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 
 	const LiteTileHandle* points = navCmp.mCoarsePath->getPoints();
 
-	f32v3 nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
+	f32v3 nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition(world)) + f32v3(0.5f, 0.5f, 0.0f);
 
 	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
 
@@ -317,7 +317,7 @@ void updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 		if (navCmp.mFinePath) {
 			bool requestNextPath = false;
 			assert(navCmp.mFinePath->finishedGenerating.load());
-			const PathStatus fineStatus = updateComponentFinePath(entity, navCmp, motionCmp, pos);
+			const PathStatus fineStatus = updateComponentFinePath(world, entity, navCmp, motionCmp, pos);
 			if (fineStatus == PathStatus::SUCCESS) {
                 navCmp.mFinePath = nullptr;
 				requestNextPath = true;
@@ -341,7 +341,7 @@ void updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     // Immediately raycheck each time we get to a new point
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
-                    nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
+                    nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition(world)) + f32v3(0.5f, 0.5f, 0.0f);
                     requestFinePathToPoint(navCmp, pos, nextCoarseTilePos);
                 }
 			}
@@ -356,7 +356,7 @@ void updateComponentCoarsePathBuilding(entt::entity entity, NavigationComponent&
 	return;
 }
 
-void NavigationComponentSystem::update(entt::registry& registry) {
+void NavigationComponentSystem::update(IWorld& world, entt::registry& registry) {
 	// Update components
     auto view = registry.view<NavigationComponent, PhysicsComponent, CharacterControlComponent>();
 
@@ -369,7 +369,7 @@ void NavigationComponentSystem::update(entt::registry& registry) {
 
         switch (navCmp.mNavigationType) {
 			case NavigationType::FINE_PATH: {
-				const PathStatus fineStatus = updateComponentFinePath(entity, navCmp, controlCmp, position);
+				const PathStatus fineStatus = updateComponentFinePath(world, entity, navCmp, controlCmp, position);
 				if (isPathStatusDone(fineStatus)) {
 					onPathingFinished(navCmp, controlCmp, fineStatus == PathStatus::SUCCESS ? true : false);
 				}
@@ -377,7 +377,7 @@ void NavigationComponentSystem::update(entt::registry& registry) {
 			}
             case NavigationType::COARSE_PATH:
 				// TODO: Are these checks pointless?
-				updateComponentCoarsePath(entity, navCmp, controlCmp, position);
+				updateComponentCoarsePath(world, entity, navCmp, controlCmp, position);
                 break;
             case NavigationType::SIMPLE_LINEAR:
                 if (updateComponentSimpleLinear(entity, navCmp, controlCmp, position)) {

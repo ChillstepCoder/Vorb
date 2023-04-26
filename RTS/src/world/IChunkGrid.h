@@ -5,6 +5,8 @@
 
 #include <Vorb/Event.hpp>
 
+class IWorld;
+
 enum class CHUNK_EVENT_TYPE {
     Create,
     Ready,
@@ -16,6 +18,7 @@ class IWorldGrid;
 
 class IChunkGrid
 {
+    friend class WorldFactory;
 public:
     IChunkGrid(ui32 widthChunks);
 
@@ -43,6 +46,8 @@ public:
     const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
     const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
+
+    IWorld& getWorld() const { return *mWorld; }
 
     // Events
     STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
@@ -86,6 +91,9 @@ private:
     std::vector<ChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
     std::vector<ChunkID> mDestroyingChunks;
     std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
+
+    // World
+    IWorld* mWorld = nullptr;
 
     // Events
     IHeightmapGridListeners mHeightmapGridListeners;

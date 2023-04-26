@@ -5,6 +5,7 @@
 #include "city/CityQuartermaster.h"
 #include "CityPlanner.h"
 #include "BuildingBlueprint.h"
+#include "tile/TileContainerRepository.h"
 
 #include "pathfinding/NavThread.h"
 #include "pathfinding/NavWorld.h"

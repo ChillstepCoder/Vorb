@@ -14,7 +14,7 @@ void SrvEntityComponentSystem::tick()
     IEntityComponentSystem::tick();
     mBusinessSystem.update(mRegistry);
     mPersonAISystem.update(mRegistry);
-    mNavigationSystem.update(mRegistry);
+    mNavigationSystem.update(mWorld, mRegistry);
 }
 
 entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {

@@ -133,30 +133,30 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-            Chunk& bottomChunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(bottom.getWorldPos2D()));
-			neighbors[(int)NeighborIndex8::BOTTOM] = *bottom.tile;
+            Chunk& bottomChunk = chunkGrid.getChunkAtPosition(bottom.getWorldPos2D()));
+			neighbors[(int)NeighborIndex8::BOTTOM] = bottom.getTile();
 			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
-            neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = *bottomLeft.tile;
+            neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = bottomLeft.getTile();
             TileHandle bottomRight = bottomChunk.getRightTileHandle(bottom.tileIndex);
-            neighbors[(int)NeighborIndex8::BOTTOM_RIGHT] = *bottomRight.tile;
+            neighbors[(int)NeighborIndex8::BOTTOM_RIGHT] = bottomRight.getTile();
 		}
 	}
 
 	// Left
-    neighbors[(int)NeighborIndex8::LEFT] = *getLeftTileHandle(index).tile;
+    neighbors[(int)NeighborIndex8::LEFT] = getLeftTileHandle(index).getTile();
 
     // Right
-    neighbors[(int)NeighborIndex8::RIGHT] = *getRightTileHandle(index).tile;
+    neighbors[(int)NeighborIndex8::RIGHT] = getRightTileHandle(index).getTile();
 
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
             Chunk& topChunk = chunkGrid.getChunk(chunkGrid.getChunkIDFromWorldPos(top.getWorldPos2D()));
-            neighbors[(int)NeighborIndex8::TOP] = *top.tile;
+            neighbors[(int)NeighborIndex8::TOP] = top.getTile();
             TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
-            neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;
+            neighbors[(int)NeighborIndex8::TOP_LEFT] = topLeft.getTile();
             TileHandle topRight = topChunk.getRightTileHandle(top.tileIndex);
-            neighbors[(int)NeighborIndex8::TOP_RIGHT] = *topRight.tile;
+            neighbors[(int)NeighborIndex8::TOP_RIGHT] = topRight.getTile();
         }
     }
 
@@ -172,19 +172,19 @@ void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]
 }
 
 Chunk& Chunk::getLeftNeighbor() const {
-    return sMainGameWorld->getChunkGrid().getChunk(mChunkId.id - 1);
+    return sMainGameWorld->getChunkGrid().getChunk(mChunkId - 1);
 }
 
 Chunk& Chunk::getTopNeighbor() const {
-    return sMainGameWorld->getChunkGrid().getChunk(mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
+    return sMainGameWorld->getChunkGrid().getChunk(mChunkId + WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 Chunk& Chunk::getRightNeighbor() const {
-    return sMainGameWorld->getChunkGrid().getChunk(mChunkId.id + 1);
+    return sMainGameWorld->getChunkGrid().getChunk(mChunkId + 1);
 }
 
 Chunk& Chunk::getBottomNeighbor() const {
-    return sMainGameWorld->getChunkGrid().getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
+    return sMainGameWorld->getChunkGrid().getChunk(mChunkId - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {

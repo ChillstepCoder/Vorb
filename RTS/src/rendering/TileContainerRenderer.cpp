@@ -16,6 +16,8 @@
 #include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
 
+#include "tile/TileContainerRepository.h"
+
 // TODO: Remove
 #include "util/Utils.h"
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tile/TileContainerConst.h"
 #include "tile/TileHandle.h"
 #include "util/BitArray.h"
 #include "tile/TileContainerEvents.h"
@@ -12,6 +13,7 @@
 
 class Chunk;
 class Building;
+class IWorld;
 
 enum DynamicTileType : ui8 {
     // Walls (Keep first)
@@ -35,38 +37,6 @@ struct DynamicTile {
     DynamicTileType mType;
 };
 static_assert(sizeof(DynamicTile) == 8, "Keep small");
-
-enum class TileContainerState : ui8 {
-    LOADING,
-    WAITING_MESH_AND_PHYSICS,
-    READY
-};
-
-enum class TileContainerOwnerType : ui8 {
-    CHUNK,
-    BUILDING,
-    COUNT
-};
-typedef std::variant<Chunk*, Building*> VarTileContainerOwner;
-
-class TileContainer;
-// Static class
-class TileContainerRepository {
-public:
-    static TileContainer* getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner);
-    static void destroyTileContainer(TileContainer* container);
-    
-    static TileContainer* getTileContainer(TileContainerID id);
-    static TileContainer* tryGetTileContainer(TileContainerID id);
-
-    static std::vector<std::unique_ptr<TileContainer>>& getTileContainers();
-
-    STATIC_EVENT_LISTENER_FUNCS(TileContainer, LoadFinished, TileContainerEventType::LoadFinished, const TileContainerEvent&);
-    STATIC_EVENT_LISTENER_FUNCS(TileContainer, Ready, TileContainerEventType::Ready, const TileContainerEvent&);
-    STATIC_EVENT_LISTENER_FUNCS(TileContainer, EditTiles, TileContainerEventType::EditTiles, const TileContainerEvent&);
-    STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
-    STATIC_EVENT_DISPATCHER_DEF(TileContainer);
-};
 
 // TODO: Memory recycler?
 class TileContainer
@@ -202,6 +172,10 @@ public:
     EVENT_LISTENER_FUNCS(TileContainer, EditTiles, TileContainerEventType::EditTiles, const TileContainerEvent&);
     EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
 
+
+    // =========== World  ===========
+    IWorld& getWorld() const { return *mWorld; }
+
 private:
     bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
     bool tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType);
@@ -236,6 +210,7 @@ private:
     bool mDirtyData = false;
     std::variant<Chunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
+    IWorld* mWorld = nullptr;
 
     EVENT_DISPATCHER_DEF(TileContainer);
 };

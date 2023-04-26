@@ -5,6 +5,7 @@
 
 #include <boost/container_hash/hash.hpp>
 
+class IWorld;
 class TileContainer;
 struct LiteTileHandle;
 
@@ -18,35 +19,36 @@ struct TileHandle {
     i32v2 getWorldPos2D() const;
     i32v3 getWorldPos3D() const;
     ui32v3 getContainerOffset() const;
+    const Tile& getTile() const;
     LiteTileHandle toLiteTileHandle() const;
+    ChunkID getChunkIDAtPos() const;
+    IWorld& getWorld() const;
+
+    void reset() { container = nullptr; }
 
     TileHandle& operator=(const TileHandle& other) {
         container = other.container;
         const_cast<TileIndex&>(tileIndex) = other.tileIndex;
-        tile = other.tile;
         return *this;
     }
 
     const TileContainer* container = nullptr;
-    const Tile* tile = nullptr;
     const TileIndex tileIndex = INVALID_TILE_INDEX;
 };
-static_assert(sizeof(TileHandle) == 24, "Keep small as possible");
+static_assert(sizeof(TileHandle) == 16, "Keep small as possible");
 
 struct LiteTileHandle {
     LiteTileHandle() {};
     LiteTileHandle(TileContainerID containerId, TileIndex index) : containerId(containerId), index(index) {};
 
-    TileContainer* getTileContainer() const;
-    TileContainer* tryGetTileContainer() const;
+    TileContainer* getTileContainer(IWorld& world) const;
+    TileContainer* tryGetTileContainer(IWorld& world) const;
     bool isValid() const { return  containerId != INVALID_TILE_CONTAINER_ID; }
-    TileHandle toTileHandle() const;
+    TileHandle toTileHandle(IWorld& world) const;
 
-    i32v3 getWorldPosition() const;
+    i32v3 getWorldPosition(IWorld& world) const;
 
-    void reset() {
-        containerId = INVALID_TILE_CONTAINER_ID;
-    }
+    void reset() { containerId = INVALID_TILE_CONTAINER_ID; }
 
     bool operator==(const LiteTileHandle& rhs) const { return index == rhs.index && containerId == rhs.containerId; }
     bool operator!=(const LiteTileHandle& rhs) const { return index != rhs.index || containerId != rhs.containerId; }

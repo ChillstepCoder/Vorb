@@ -78,7 +78,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
 
     TileHandle handle;
     if (data.mLiteHandle.isValid()) {
-        handle = data.mLiteHandle.toTileHandle();
+        handle = data.mLiteHandle.toTileHandle(*sMainGameWorld);
         data.mTileRef.acquire(handle);
     }
     else {
@@ -111,7 +111,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
     // TODO: Tile flag city?
     // Stockpile
     assert(handle.isValid());
-    if (handle.tile->hasFlag(TileFlags::IS_STOCKPILE)) {
+    if (handle.getTile().hasFlag(TileFlags::IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
         const auto* stockPiles = sMainGameWorld->getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
         if (stockPiles) {

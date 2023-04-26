@@ -714,6 +714,9 @@
     <ClCompile Include="src\stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\tile\TileContainerRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1680,6 +1683,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\BuildingBlueprintFlags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\TileContainerRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\TileContainerConst.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

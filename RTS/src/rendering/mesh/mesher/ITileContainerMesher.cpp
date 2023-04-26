@@ -52,7 +52,7 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
         mRenderer.updateMeshFromBuilders(&container, std::move(builders));
 
         if (physicsBuilder.hasAnyCollision()) {
-            GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshInitTask(containerId, std::move(physicsBuilder));
+            GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshInitTask(&container, std::move(physicsBuilder));
         }
         else {
             container.setDidInitPhysics();

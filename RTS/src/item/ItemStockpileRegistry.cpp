@@ -53,10 +53,10 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
     IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos)));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, 0.0f))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(0.0f, aabb.depth))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(aabb.width, 0.0f)));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(0.0f, aabb.depth)));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(aabb.width, aabb.depth)));
     int i = 0;
     for (auto&& id : chunkPositions) {
         Chunk& chunk = chunkGrid.getChunk(id);
@@ -77,10 +77,10 @@ void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpi
     IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos)));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, 0.0f))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(0.0f, aabb.depth))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(aabb.width, 0.0f)));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(0.0f, aabb.depth)));
+    chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(aabb.width, aabb.depth)));
     int i = 0;
     for (auto&& id : chunkPositions) {
         Chunk& chunk = chunkGrid.getChunk(id);
