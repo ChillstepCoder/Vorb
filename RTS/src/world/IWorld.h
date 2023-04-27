@@ -82,6 +82,8 @@ protected:
     IChunkGrid* mChunkGrid = nullptr;
     IHeightmapGrid* mHeightmapGrid = nullptr;
 
+    // TODO: Is this still needed? Can we make a ThreadSafeDataContainer?
+    mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
 
     // Tile containers

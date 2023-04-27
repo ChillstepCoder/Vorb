@@ -69,7 +69,7 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     PROFILE_FUNCTION();
 
     onWorldBeginShared(loadCenter);
-    onWorldBeginClient();
+    onWorldBeginClient(*this);
 
     // TODO: Move
     mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));

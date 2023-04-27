@@ -20,8 +20,19 @@ RenderStateManager& RenderStateManager::getInstance() {
     return *sInstance;
 }
 
+void RenderStateManager::setActiveWorld(const IWorld* activeWorld) {
+    std::lock_guard<std::mutex> lock(mWorldLock);
+    mActiveWorld = activeWorld;
+}
+
+bool RenderStateManager::isActiveWorld(const IWorld* world) {
+    std::lock_guard<std::mutex> lock(mWorldLock);
+    return world == mActiveWorld;
+}
+
 RenderState& RenderStateManager::getRenderStateForUpdate() {
     assert(IS_GAME_THREAD());
+    assert(mActiveWorld);
     {
         std::lock_guard<std::mutex> lock(mLock);
         // Get the next free state

@@ -14,6 +14,7 @@
 
 #include "rendering/ChunkGrassQuadtree.h"
 
+#include "rendering/RenderContext.h"
 #include "rendering/mesh/TerrainMeshManager.h"
 #include "rendering/mesh/GrassMeshManager.h"
 
@@ -60,7 +61,7 @@ void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
     Services::ResourceManager::ref().getParticleSystemManager().update(playerPos);
 }
 
-void CliWorldInterface::onWorldBeginClient() {
+void CliWorldInterface::onWorldBeginClient(IWorld& world) {
     // When character models are added, we should let the render thread know
     sMainGameWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
     sMainGameWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
@@ -71,6 +72,11 @@ void CliWorldInterface::onWorldBeginClient() {
     sMainGameWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
         mGrassMeshManager->removeGrassForChunk(chunk);
     });
+
+    // Register for rendering
+    RenderStateManager::getInstance().setActiveWorld(&world);
+    RenderContext::getInstance().registerWorld(&world);
+    RenderContext::getInstance().setActiveWorld(&world);
 }
 
 void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
@@ -79,11 +85,17 @@ void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius
 }
 
 void CliWorldInterface::updateRenderState(IWorld& world) {
+
+    if (!RenderStateManager::getInstance().isActiveWorld(&world)) {
+        return;
+    }
+
     // Cache things we need to update so we can keep the update section small as possible
     const f32v3 playerPos = world.mEcs->mRegistry.get<PhysicsComponent>(world.mEcs->getLocalPlayer()).getInterpolatedPosition();
 
     // Acquire render state
     RenderState& renderState = RenderStateManager::getInstance().getRenderStateForUpdate();
+    renderState.mWorld = &world;
     renderState.mWorldLoadCenter = world.getLoadCenter();
     renderState.mCameraOwningEntityPos = playerPos;
 

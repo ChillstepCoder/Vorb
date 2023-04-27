@@ -43,6 +43,7 @@
 #include "rendering/renderstate/RenderStateManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
 #include "rendering/StencilBufferIDs.h"
+#include "rendering/renderer/WorldRenderer.h"
 #include "weather/CloudManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -259,10 +260,27 @@ RenderContext& RenderContext::getInstance() {
     return *sInstance;
 }
 
+void RenderContext::registerWorld(IWorld* world) {
+    assert(IS_GAME_THREAD());
+    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vWorld) {
+        IWorld* world = (IWorld*)vWorld;
+        assert(context.mWorldRenderers.find(world) == context.mWorldRenderers.end());
+
+        std::unique_ptr<WorldRenderer> newWorldRenderer = std::make_unique<WorldRenderer>(*world);
+        context.mWorldRenderers[world] = std::move(newWorldRenderer);
+    }, (void*)world);
+}
+
+void RenderContext::setActiveWorld(IWorld* world) {
+    assert(IS_GAME_THREAD());
+    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vWorld) {
+        IWorld* world = (IWorld*)vWorld;
+        assert(context.mWorldRenderers.find(world) != context.mWorldRenderers.end());
+        context.mActiveWorld = world;
+    }, (void*)world);
+}
+
 void RenderContext::onWorldBegin(const f32v2& worldCenter) {
-    // We require client interface to function
-    mCliWorld = dynamic_cast<CliWorldInterface*>(sMainGameWorld);
-    assert(mCliWorld);
 
     // Initialize renderer after material assets are loaded
     {

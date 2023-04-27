@@ -5,7 +5,6 @@ class Camera3D;
 class CameraController;
 class CharacterRenderer;
 class CityDebugRenderer;
-class CliWorldInterface;
 class CloudManager;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
@@ -15,6 +14,7 @@ class GrassRenderer;
 class ICamera;
 class InstancedStaticModelGatherer;
 class InstancedStaticModelRenderer;
+class IWorld;
 class ItemRenderer;
 class LightRenderer;
 class MaterialShader;
@@ -28,6 +28,7 @@ class TerrainMesh;
 class TerrainRenderer;
 class TileContainerRenderer;
 class TonemapRenderer;
+class WorldRenderer;
 
 struct SDL_Window;
 
@@ -66,6 +67,8 @@ public:
     static RenderContext* tryGetInstance() { return sInstance; }
     static bool exists() { return sInstance != nullptr; }
 
+    void registerWorld(IWorld* world);
+    void setActiveWorld(IWorld* world);
     void onWorldBegin(const f32v2& worldCenter);
 
     void initPostLoad();
@@ -119,9 +122,6 @@ private:
 
     static RenderContext* sInstance;
     
-    // Client world
-    CliWorldInterface* mCliWorld = nullptr;
-
     // Data
     GlobalRenderData mRenderData;
     ui32v2 mScreenResolution;
@@ -145,6 +145,10 @@ private:
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
     mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
+
+    // Worlds
+    IWorld* mActiveWorld = nullptr;
+    std::map<IWorld*, std::unique_ptr<WorldRenderer>> mWorldRenderers;
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;

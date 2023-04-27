@@ -6,6 +6,8 @@
 #include "character/CharacterConst.h"
 #include "rendering/renderstate/CharacterRenderState.h"
 
+class IWorld;
+
 enum class DebugChunkFlags : ui8 {
     IS_NAVMESHING = 1 << 0,
 };
@@ -43,6 +45,7 @@ public:
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
 private:
     // ======================== Game State  ========================
+    IWorld* mWorld;
     f32v2 mWorldLoadCenter;
     f32v3 mCameraOwningEntityPos;
     std::vector<CharacterRenderState> mCharacters;

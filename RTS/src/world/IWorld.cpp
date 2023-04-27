@@ -69,7 +69,10 @@ void IWorld::tickShared(f32 elapsedSec) {
     if (localPlayer != entt::null) {
         PhysicsComponent& physCmp = mEcs->mRegistry.get<PhysicsComponent>(localPlayer);
         const f32v3 localPlayerPos = physCmp.getPosition();
-        mLoadCenter = localPlayerPos;
+        {
+            std::lock_guard lock(mLoadCenterMutex);
+            mLoadCenter = localPlayerPos;
+        }
     }
 
     mChunkGrid->tick(mLoadCenter);
@@ -189,7 +192,10 @@ std::vector<Structure*> IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos
 }
 
 const f32v2& IWorld::getLoadCenter() const {
-    assert(IS_GAME_THREAD());
+    if (IS_GAME_THREAD()) {
+        return mLoadCenter;
+    }
+    std::lock_guard lock(mLoadCenterMutex);
     return mLoadCenter;
 }
 
@@ -197,5 +203,8 @@ void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
 
     // Init chunks
     mChunkGrid->onWorldBegin(loadCenter);
-    mLoadCenter = loadCenter;
+    {
+        std::lock_guard lock(mLoadCenterMutex);
+        mLoadCenter = loadCenter;
+    }
 }

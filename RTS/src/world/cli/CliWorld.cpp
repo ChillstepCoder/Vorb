@@ -49,7 +49,7 @@ void CliWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec)
 
 void CliWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginShared(loadCenter);
-    onWorldBeginClient();
+    onWorldBeginClient(*this);
 }
 
 void CliWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
