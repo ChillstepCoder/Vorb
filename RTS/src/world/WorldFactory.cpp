@@ -32,46 +32,41 @@ IWorld& WorldFactory::makeWorld(WorldNetMode type) {
 
 void WorldFactory::destroyWorld()
 {
-    delete sHeightmapGrid;
-    delete sChunkGrid;
-    delete sMainGameWorld;
-    sHeightmapGrid = nullptr;
-    sChunkGrid = nullptr;
-    sMainGameWorld = nullptr;
+    assert(false);
 }
 
 IWorld& WorldFactory::makeClientWorld() {
-    sHeightmapGrid = new CliHeightmapGrid();
-    sChunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    sMainGameWorld = new CliWorld(sChunkGrid, sHeightmapGrid);
+    CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid();
+    CliChunkGrid* chunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
+    sMainGameWorld = new CliWorld(chunkGrid, heightmapGrid);
 
     // World references
-    sChunkGrid->mWorld = sMainGameWorld;
-    sHeightmapGrid->mWorld = sMainGameWorld;
+    chunkGrid->mWorld = sMainGameWorld;
+    heightmapGrid->mWorld = sMainGameWorld;
 
     return *sMainGameWorld;
 }
 
 IWorld& WorldFactory::makeHostWorld() {
-    sHeightmapGrid = new SrvHeightmapGrid();
-    sChunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    sMainGameWorld = new HostWorld(sChunkGrid, sHeightmapGrid);
+    SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid();
+    SrvChunkGrid* chunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
+    sMainGameWorld = new HostWorld(chunkGrid, heightmapGrid);
 
     // World references
-    sChunkGrid->mWorld = sMainGameWorld;
-    sHeightmapGrid->mWorld = sMainGameWorld;
+    chunkGrid->mWorld = sMainGameWorld;
+    heightmapGrid->mWorld = sMainGameWorld;
 
     return *sMainGameWorld;
 }
 
 IWorld& WorldFactory::makeServerWorld() {
-    sHeightmapGrid = new SrvHeightmapGrid();
-    sChunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    sMainGameWorld = new DedicatedSrvWorld(sChunkGrid, sHeightmapGrid);
+    SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid();
+    SrvChunkGrid* chunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
+    sMainGameWorld = new DedicatedSrvWorld(chunkGrid, heightmapGrid);
 
     // World references
-    sChunkGrid->mWorld = sMainGameWorld;
-    sHeightmapGrid->mWorld = sMainGameWorld;
+    chunkGrid->mWorld = sMainGameWorld;
+    heightmapGrid->mWorld = sMainGameWorld;
 
     return *sMainGameWorld;
 }

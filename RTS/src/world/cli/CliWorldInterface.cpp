@@ -32,13 +32,18 @@ void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
 }
 
 CliWorldInterface::CliWorldInterface() {
-    mTerrainMeshManager = std::make_unique<TerrainMeshManager>();
-    mGrassMeshManager = std::make_unique<GrassMeshManager>();
+
 }
 
 CliWorldInterface::~CliWorldInterface() {
     sMainGameWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
     sMainGameWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
+}
+
+void CliWorldInterface::initClient(IWorld& world)
+{
+    mTerrainMeshManager = std::make_unique<TerrainMeshManager>(world);
+    mGrassMeshManager = std::make_unique<GrassMeshManager>();
 }
 
 void CliWorldInterface::tickClient(IWorld& world) {

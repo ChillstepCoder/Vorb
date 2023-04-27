@@ -1,14 +1,15 @@
 #pragma once
 
-class Camera3D;
 
 #include "world/ChunkID.h"
 #include "physics/PhysHitResult.h"
 #include "util/StrToken.h"
 #include "tile/TileGrass.h"
 
+class Camera3D;
 class Brush;
 class BrushRepository;
+class IWorld;
 
 enum class WorldEditorEditMode {
     TERRAIN,
@@ -64,6 +65,8 @@ public:
 	void renderBrushDecals(const Camera3D& camera) const;
     void renderUI(f32 ySize) const;
 
+    void setActiveWorld(IWorld* world) { mActiveWorld = world; }
+
 private:
     void renderMenuBar() const;
     void tryRenderBrushSelect(const BrushRepository& brushRepo) const;
@@ -81,9 +84,9 @@ private:
     void updateCityEdit();
     void updateBuildingEdit();
 
-    static void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
-    static void editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
-    static f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);
+    void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
+    void editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
+    f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
 
     // Edit states
@@ -112,5 +115,7 @@ private:
     DeferredPhysicsPick mDeferredPhysicsPick;
     PhysHitResult mHitResult;
     TickingTimer mUpdateTimer = TickingTimer(WORLD_EDITOR_UPDATE_RATE_MS);
+
+    IWorld* mActiveWorld = nullptr;
 };
 

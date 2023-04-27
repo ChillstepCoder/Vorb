@@ -10,6 +10,7 @@
 
 CliWorld::CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid)
 {
+    initClient(*this);
     mEcs = std::make_unique<CliEntityComponentSystem>(*this);
 }
 

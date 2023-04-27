@@ -12,6 +12,7 @@ public:
     CliWorldInterface();
     virtual ~CliWorldInterface();
 
+    void initClient(IWorld& world);
     void tickClient(IWorld& world);
     // Pure virtual interface
     virtual void onFrameBegin() = 0;

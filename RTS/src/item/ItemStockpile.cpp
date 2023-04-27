@@ -13,8 +13,9 @@
 
 #include "camera/Camera3D.h"
 
-ItemStockpile::ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
-    : mId(id)
+ItemStockpile::ItemStockpile(IWorld& world, ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+    : mWorld(world)
+    , mId(id)
     , mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
 
@@ -27,11 +28,12 @@ ItemStockpile::ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool*
     f32 maxZPos = FLT_MIN;
     // Set stockpile flags
 
+    const IHeightmapGrid& heightmapGrid = mWorld.getHeightmapGrid();
     ui32 index = 0;
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.depth; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             const i32v2 worldPos(x, y);
-            TileRef ref(sMainGameWorld->getTerrainTileHandleAtWorldPos(worldPos));
+            TileRef ref(mWorld.getTerrainTileHandleAtWorldPos(worldPos));
             const bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlag(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid
@@ -42,7 +44,7 @@ ItemStockpile::ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool*
                 if (mFirstFreeSlot == UINT32_MAX) mFirstFreeSlot = index;
                 ++mTotalSlots;
                 ref.container->setTileFlag(ref.index, TileFlags::IS_STOCKPILE);
-                f32 height = sHeightmapGrid->computeMaxHeightAtTile(worldPos);
+                f32 height = heightmapGrid.computeMaxHeightAtTile(worldPos);
                 if (height > maxZPos) maxZPos = height;
             }
             ++index;

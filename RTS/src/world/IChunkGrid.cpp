@@ -32,8 +32,6 @@ constexpr ui8 ALL_NEIGHBORS_ALIVE = 0xff;
 //
 //Terrain quadtree is purely rendering
 
-IChunkGrid* sChunkGrid = nullptr;
-
 bool isChunkInLoadRange(const f32v2& worldPos, const f32v2& loadCenter) {
     const f32v2 centerPos = worldPos + f32v2(HALF_CHUNK_WIDTH);
     const f32 distSq = glm::length2(centerPos - loadCenter);
@@ -41,8 +39,6 @@ bool isChunkInLoadRange(const f32v2& worldPos, const f32v2& loadCenter) {
 }
 
 IChunkGrid::IChunkGrid(ui32 widthChunks) : mWidthChunks(widthChunks), mTotalChunks(SQ(widthChunks)) {
-    assert(!sChunkGrid);
-    sChunkGrid = this;
     mAliveChunkBits.resizeAndZero(mTotalChunks);
     mChunks = std::unique_ptr<Chunk[]>(new Chunk[mTotalChunks]);
     mNeighborBits = std::unique_ptr<ui8[]>(new ui8[mTotalChunks]);
@@ -75,13 +71,15 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         updateGridEdges(loadCenter);
     }
 
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+
     // Update all loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
         Chunk& chunk = mChunks[mLoadingChunks[i]];
         switch (chunk.mState) {
             case e_cast(ChunkState::WAITING_HEIGHT): {
                 // Poll for generated height
-                if (sHeightmapGrid->tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
+                if (heightGrid.tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
                     beginTileLoadForChunk(chunk);
                 }
                 ++i;
@@ -136,7 +134,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
             // Release height and notify only if we were ever valid
             if (chunk.mState != e_cast(ChunkState::INVALID)) {
                 const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
-                sHeightmapGrid->releaseHeightDataAt(heightId);
+                heightGrid.releaseHeightDataAt(heightId);
                 dispatchDestroy(chunk);
             }
             chunk.dispose();
@@ -215,6 +213,8 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
         }
         static_assert(HEIGHTMAP_QUAD_SIZE == 2 && MAX_TILES_CHANGED_PER_POSITION == 16, "Update logic");
     }
+    IHeightmapGrid& heightmapGrid = mWorld->getHeightmapGrid();
+
     std::vector<std::pair<TileIndex, f32>> editData;
     for (auto&& it : tilePositionsNeedingUpdate) {
         Chunk& chunk = getChunk(it.first);
@@ -223,7 +223,7 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
             for (auto&& pos : it.second) {
                 const ui32 x = (ui32)pos.x & (CHUNK_WIDTH - 1); // Fast modulus
                 const ui32 y = (ui32)pos.y & (CHUNK_WIDTH - 1); // Fast modulus
-                editData.emplace_back(std::make_pair(y * CHUNK_WIDTH + x, sHeightmapGrid->computeCenterHeightAtTile(pos)));
+                editData.emplace_back(std::make_pair(y * CHUNK_WIDTH + x, heightmapGrid.computeCenterHeightAtTile(pos)));
             }
             chunk.getTileContainer()->bulkSetTileGroundZPosition(editData.data(), editData.size());
             editData.clear();
@@ -412,6 +412,8 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
     // Once all neighbors are alive, we can begin loading
     // Only begin load if we are flagged as "Invalid" since otherwise we never disposed, and we can just keep our old state
 
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+
     if (chunk.mFlags.isBitSet(ChunkFlags::IN_EDGE_LIST)) {
         LiteChunkID id = chunk.getChunkID();
         for (size_t i = 0; i < mEdgeChunkPositions.size(); ++i) {
@@ -431,7 +433,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 
     if (chunk.mState == e_cast(ChunkState::INVALID)) {
         // Begin load
-        if (sHeightmapGrid->tryAquireHeightData(chunk.getHeightmapPatchID())) {
+        if (heightGrid.tryAquireHeightData(chunk.getHeightmapPatchID())) {
             beginTileLoadForChunk(chunk);
         }
         else {
@@ -452,7 +454,8 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 void IChunkGrid::beginHeightLoadForChunk(Chunk& chunk) {
     assert(chunk.mState != e_cast(ChunkState::WAITING_HEIGHT));
     chunk.mState = e_cast(ChunkState::WAITING_HEIGHT);
-    sHeightmapGrid->requestHeightDataGenAndAquireAt(chunk.getHeightmapPatchID(), nullptr);
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+    heightGrid.requestHeightDataGenAndAquireAt(chunk.getHeightmapPatchID(), nullptr);
 }
 
 void IChunkGrid::beginTileLoadForChunk(Chunk& chunk) {
@@ -472,7 +475,8 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
     // Make sure we dont lose height data
     // TODO: copy minimum
     f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
-    const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+    const f32* srcData = heightGrid.getHeightDataAt(chunk.getHeightmapPatchID())->data;
     memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
     Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
         ChunkGenerator::GenerateChunk(chunk, heightData);

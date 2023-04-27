@@ -474,7 +474,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     mOpenList.clear();
     mOpenList.reserve(MAXIMUM_COARSE_NODES);
     
-    const IHeightmapGrid& heightGrid = *sHeightmapGrid;
+    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
     const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
     const CoarseNavGraph& endNavGraph = goalNavData->coarseNavGraph;
     const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
@@ -577,7 +577,7 @@ LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchron
     mOpenList.clear();
     mOpenList.reserve(MAXIMUM_COARSE_NODES);
 
-    const IHeightmapGrid& heightGrid = *sHeightmapGrid;
+    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
     const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
     const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
 

@@ -91,6 +91,7 @@ public:
     f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
 
     f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk);
+    static f32 computeHeightAtPoint(const f32* heightData, const f32v2& worldPos);
     static f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos);
     static f32 computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
     static void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]);
@@ -135,5 +136,3 @@ private:
     // Events
     STATIC_EVENT_DISPATCHER_DEF(IHeightmapGrid);
 };
-
-extern IHeightmapGrid* sHeightmapGrid;

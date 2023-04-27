@@ -2,6 +2,7 @@
 #include "ChunkGrassQuadtree.h"
 
 #include "rendering/RenderContext.h"
+#include "world/IWorld.h"
 #include "world/Chunk.h"
 #include "world/IHeightmapGrid.h"
 #include "camera/Camera3D.h"
@@ -129,9 +130,10 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
     const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-    if (const HeightmapPatchData* heightData = sHeightmapGrid->tryGetHeightDataAt(id)) {
+    IHeightmapGrid& heightmapGrid = mChunk.getWorld()->getHeightmapGrid();
+    if (const HeightmapPatchData* heightData = heightmapGrid.tryGetHeightDataAt(id)) {
         if (!hasAquired) {
-            sHeightmapGrid->aquireHeightData(id);
+            heightmapGrid.aquireHeightData(id);
         }
         // Instantly generate
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
@@ -187,7 +189,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
     if (mMeshes[patchIndex]) {
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-        sHeightmapGrid->releaseHeightDataAt(id);
+        mChunk.getWorld()->getHeightmapGrid().releaseHeightDataAt(id);
 
         assert(IS_GAME_THREAD());
         GrassMeshFreeTask* freeTask = new GrassMeshFreeTask(std::move(mMeshes[patchIndex]));

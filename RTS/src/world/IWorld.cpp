@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "IWorld.h"
 
+#include "world/Chunk.h"
 #include "pathfinding/NavThread.h"
 
 #include "world/HeightmapTerrainQuadtree.h"
@@ -47,7 +48,7 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     mStructureManager = std::make_unique<StructureManager>(*mTileContainerRepository);
 
     // Stockpiles
-    mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();
+    mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
 
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(Services::ResourceManager::ref().getCollisionShapeRepository());

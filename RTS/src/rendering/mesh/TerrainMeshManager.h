@@ -8,7 +8,7 @@ class HeightmapTerrainQuadtree;
 class TerrainMeshManager
 {
 public:
-    TerrainMeshManager();
+    TerrainMeshManager(IWorld& world);
     ~TerrainMeshManager();
 
     void tick();

@@ -99,4 +99,3 @@ private:
     IHeightmapGridListeners mHeightmapGridListeners;
     STATIC_EVENT_DISPATCHER_DEF(Chunk);
 };
-extern IChunkGrid* sChunkGrid;

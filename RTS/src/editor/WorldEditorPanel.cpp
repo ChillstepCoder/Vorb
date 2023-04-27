@@ -453,11 +453,13 @@ void WorldEditorPanel::updateTerrainEdit() {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
 
             struct TerrainEditTask {
+                WorldEditorPanel* editor;
                 PhysHitResult hitResult;
                 BrushSettings brushSettings;
                 TerrainEditState editState;
             };
             TerrainEditTask* task = new TerrainEditTask;
+            task->editor = this;
             task->hitResult = mHitResult;
             task->brushSettings = *mCurrentBrushSettings;
             task->editState = mTerrainEditState;
@@ -484,7 +486,7 @@ void WorldEditorPanel::updateTerrainEdit() {
                         const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
                         const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
                         if (glm::length2(offsetToVertex) < brushSizeSq) {
-                            editVertex(id, vertexPos, offsetToVertex, brushSettings, task->editState);
+                            task->editor->editVertex(id, vertexPos, offsetToVertex, brushSettings, task->editState);
                         }
                     }
                 }
@@ -505,12 +507,14 @@ void WorldEditorPanel::updateGrassEdit() {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
 
             struct GrassEditTask {
+                WorldEditorPanel* editor;
                 PhysHitResult hitResult;
                 BrushSettings brushSettings;
                 GrassEditState editState;
                 TileGrassID selectedGrass;
             };
             GrassEditTask* task = new GrassEditTask;
+            task->editor = this;
             task->hitResult = mHitResult;
             task->brushSettings = *mCurrentBrushSettings;
             task->editState = mGrassEditState;
@@ -538,7 +542,7 @@ void WorldEditorPanel::updateGrassEdit() {
                             const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                             const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
                             if (glm::length2(offsetToTile) < brushSizeSq) {
-                                editGrass(id, tileIndex, task->selectedGrass, offsetToTile, brushSettings, task->editState);
+                                task->editor->editGrass(id, tileIndex, task->selectedGrass, offsetToTile, brushSettings, task->editState);
                             }
                         }
                     }
@@ -614,6 +618,7 @@ void WorldEditorPanel::updateCityEdit() {
 }
 
 void WorldEditorPanel::updateBuildingEdit() {
+    assert(mActiveWorld);
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
@@ -622,15 +627,17 @@ void WorldEditorPanel::updateBuildingEdit() {
         struct BuildingEditCreateTask {
             i32AABB2 aabb;
             ui32 selectedBuildingId;
+            IHeightmapGrid* heightGrid;
         };
         BuildingEditCreateTask* task = new BuildingEditCreateTask;
         task->aabb.pos = createPos;
         task->aabb.dims = mPlotDims;
         task->selectedBuildingId = mSelectedBuilding;
+        task->heightGrid = &mActiveWorld->getHeightmapGrid();
 
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
             BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
-            const i32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(task->aabb));
+            const i32 meanHeight = round(task->heightGrid->computeMeanHeightAtAABB(task->aabb));
             BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
             const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
             std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
@@ -646,7 +653,8 @@ void WorldEditorPanel::updateBuildingEdit() {
 }
 
 void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
-    
+    assert(mActiveWorld);
+
     // Read brush data
     f32 strength = getBrushStrengthAtPoint(brush, offsetToVertex);
 
@@ -664,24 +672,28 @@ void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, co
                 break;
         }
         static_assert((int)TerrainEditState::COUNT == 3, "Update for new edit type");
+
+        IHeightmapGrid& heightmapGrid = mActiveWorld->getHeightmapGrid();
+
         const f32 adjust = strength * brush.brushStrength;
-        sHeightmapGrid->adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
+        heightmapGrid.adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
 
         // Debug render
         f32v2 chunkPos = id.getWorldPos();
         f32v2 dims(0.5f);
-        f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, sHeightmapGrid->getHeightAtVert(id, vertPos) + adjust);
+        f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, heightmapGrid.getHeightAtVert(id, vertPos) + adjust);
         DebugRenderer::drawWireQuadThreadSafe(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
     }
 }
 
 void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {
+    assert(mActiveWorld);
 
     constexpr f32 POWER = 30.0f;
     f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
     //const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     //if (random < strength) {
-    float density = (float)sMainGameWorld->getChunkGrid().getChunk(id).getGrassDensityAt(tileIndex, grassId);
+    float density = (float)mActiveWorld->getChunkGrid().getChunk(id).getGrassDensityAt(tileIndex, grassId);
     if (editState == GrassEditState::RAISE) {
         density += strength * POWER;
     }
@@ -690,7 +702,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     }
 
     ui8 densityUi8 = (ui8)glm::clamp(glm::round(density), 0.0f, 255.0f);
-    sMainGameWorld->getChunkGrid().getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
+    mActiveWorld->getChunkGrid().getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
     //}
 }
 

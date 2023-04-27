@@ -1,11 +1,12 @@
 #pragma once
 
 #include "tile/TileHandle.h"
-#include "world/Chunk.h"
 #include "world/WorldType.h"
 #include "util/StrToken.h"
 #include "network/WorldNetMode.h"
 
+class Structure;
+class Chunk;
 class CityGraph;
 class IChunkGrid;
 class IEntityComponentSystem;

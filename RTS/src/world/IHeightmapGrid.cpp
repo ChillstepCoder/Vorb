@@ -27,7 +27,6 @@
 //struct patch_handle_pool {};
 //using singleton_handle_pool = boost::singleton_pool<patch_handle_pool, sizeof(HeightmapPatchHandleData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 128u>;
 //
-IHeightmapGrid* sHeightmapGrid = nullptr;
 //
 //
 //HeightmapPatchHandleData::HeightmapPatchHandleData() {
@@ -98,8 +97,6 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 
 
 IHeightmapGrid::IHeightmapGrid() {
-    assert(!sHeightmapGrid);
-    sHeightmapGrid = this;
 }
 
 IHeightmapGrid::~IHeightmapGrid() {
@@ -559,6 +556,10 @@ f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightD
     assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
 
     return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
+}
+
+f32 IHeightmapGrid::computeHeightAtPoint(const f32* heightData, const f32v2& worldPos) {
+    return computeHeightAtPoint(HeightmapPatchID::fromWorldI32v2(i32v2(worldPos)), heightData, worldPos);
 }
 
 f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos)

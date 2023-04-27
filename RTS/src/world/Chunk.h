@@ -143,6 +143,8 @@ public:
 
 	void addStructure(Structure* structure);
 
+	IWorld* getWorld() const { return mTileContainer ? &mTileContainer->getWorld() : nullptr; }
+
 private:
 
     // =========== Members ===========

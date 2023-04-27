@@ -6,6 +6,7 @@
 #include "rendering/mesh/Mesh.h"
 
 struct TerrainMeshTaskData;
+class IWorld;
 class TerrainMeshBuilder;
 DECL_VG(class GLProgram);
 
@@ -29,7 +30,7 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(HeightmapTerrainQuadtree);
 
-    void init(const f32v2& worldPosition);
+    void init(IWorld* world, const f32v2& worldPosition);
     void markDirty();
 
 private:
@@ -42,6 +43,7 @@ private:
     void finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex);
     void freeMeshForPatch(ui32 patchIndex) override;
 
+    IWorld* mWorld = nullptr;
     std::unique_ptr<TerrainMesh> mTerrainMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     std::unique_ptr<TerrainMesh> mWaterMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
 };

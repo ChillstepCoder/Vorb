@@ -6,7 +6,7 @@
 
 static ItemStockpileID sItemStockpileIdGen;
 
-ItemStockpileRegistry::ItemStockpileRegistry()
+ItemStockpileRegistry::ItemStockpileRegistry(IWorld& world) : mWorld(world)
 {
 
 }
@@ -19,7 +19,7 @@ ItemStockpileRegistry::~ItemStockpileRegistry()
 ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity) {
     // Create new stockpile and leave unassigned (city ownership)
     ItemStockpileID id = sItemStockpileIdGen++;
-    std::unique_ptr<ItemStockpile> newUnique = std::make_unique<ItemStockpile>(id, aabb, ownershipMask, ownerEntity);
+    std::unique_ptr<ItemStockpile> newUnique = std::make_unique<ItemStockpile>(mWorld, id, aabb, ownershipMask, ownerEntity);
     ItemStockpile* newStockpile = newUnique.get();
     mAllStockpiles.insert(std::make_pair(id, std::move(newUnique)));
 

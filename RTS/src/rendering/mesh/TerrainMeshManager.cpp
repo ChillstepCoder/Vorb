@@ -7,12 +7,12 @@
 
 #include <boost/container/flat_map.hpp>
 
-TerrainMeshManager::TerrainMeshManager() {
+TerrainMeshManager::TerrainMeshManager(IWorld& world) {
     // Init terrain
     mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
     for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
         f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
-        mTerrainTrees[i].init(pos);
+        mTerrainTrees[i].init(&world, pos);
     }
 
     // Init events
