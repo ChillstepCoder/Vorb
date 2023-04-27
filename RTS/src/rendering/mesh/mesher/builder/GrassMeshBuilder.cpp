@@ -84,6 +84,7 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
     };
 
     IHeightmapGrid& heightmapGrid = chunk.getWorld()->getHeightmapGrid();
+    const HeightmapPatchID heightmapPatchId = HeightmapPatchID::fromWorldI32v2(i32v2(chunkWorldPos));
     { // Read lock
         std::shared_lock lock(heightData->mMutex); // TODO: This can be locked for a long time, we need a worker thread copy function
 
@@ -117,7 +118,7 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                     const ui32 detail = GRASS_LOD_DETAIL[grassData.mDensity][lod];
                     const f32 baseDensity = grassVal.densities[i] * DIVIDE_MULT;
 
-                    const f32v2 tileWorldPos = f32v2(tx, ty);
+                    const f32v2 tileWorldOffset = f32v2(tx, ty);
 
                     // Handle variant UVs
                     constexpr int NUM_GRASS_TYPES = 12;
@@ -158,17 +159,17 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 const float yo = (y2 - rnd) / (float)detail;
 
                                 float rsize = lerp(0.2f, 0.8f, rnd);
-                                const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
+                                const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldOffset.x + xo + chunk.getWorldPos().x, (f64)tileWorldOffset.y + yo + chunk.getWorldPos().y);
                                 rsize += -grassNoise * 0.4f;
                                 rsize *= densityMult;
                                 rsize = glm::max(rsize, 0.15f);
                                 const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * BIG_PRIME1 - y2 - (tx << 4) + (ty << 5)) & 0xff); // Fast modulus 256
                                 //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
-                                f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
-                                const f32 zPos = IHeightmapGrid::computeHeightAtPoint(heightData->data, truePos);
+                                f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
+                                const f32 zPos = IHeightmapGrid::computeHeightAtPoint(heightmapPatchId, heightData->data, chunkWorldPos + bladePos);
                                 // Thin out the grass with an x^2 curve as we get closer to 0 density
                                 grassMesh.addBladeQuad(
-                                    f32v3(truePos.x, truePos.y, zPos), // TODO: new height
+                                    f32v3(bladePos.x, bladePos.y, zPos), // TODO: new height
                                     f32v2(bladeWidth, rsize),
                                     (ui8)id,
                                     rotation
