@@ -103,15 +103,6 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
-            case MaterialShaderUniform::ZoomScale:
-                // TODO: remove this
-                glUniform1f(it.second, 1.0f);
-                break;
-            case MaterialShaderUniform::CameraZAngle: {
-                const f32 zAngle = atan2f(renderData.mainCamera->getFrontVector().y, renderData.mainCamera->getFrontVector().x) + M_PIF;
-                glUniform1f(it.second, zAngle);
-                break;
-            }
             case MaterialShaderUniform::SkyRotMatrix:
                 glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
                 break;
@@ -120,26 +111,14 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
-            case MaterialShaderUniform::ShadowFrustumMatrices:
-                glUniformMatrix4fv(it.second, renderData.shadowFrustumMatricesCount, false, &(*renderData.shadowFrustumMatrices)[0][0]);
-                break;
-            case MaterialShaderUniform::ShadowCascadePlaneDistances:
-                glUniform1fv(it.second, renderData.shadowFrustumMatricesCount, renderData.shadowCascadePlaneDistances);
-                break;
-            case MaterialShaderUniform::ShadowMap:
-                glBindTextureUnit(nextAvailableTextureIndex, renderData.shadowMap);
-                glUniform1i(it.second, nextAvailableTextureIndex++);
-                break;
             case MaterialShaderUniform::ShadowColor:
+                assert(false);
                 glUniform3fv(it.second, 1, &sDebugOptions.mShadowColor[0]);
                 break;
-            case MaterialShaderUniform::ShadowTexture:
-                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getShadowTexture());
-                glUniform1i(it.second, nextAvailableTextureIndex++);
-                break;
             case MaterialShaderUniform::SSAOTexture:
-                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getSSAOTexture());
-                glUniform1i(it.second, nextAvailableTextureIndex++);
+                assert(false);
+                //glBindTextureUnit(nextAvailableTextureIndex, renderContext.getSSAOTexture());
+                //glUniform1i(it.second, nextAvailableTextureIndex++);
                 break;
             case MaterialShaderUniform::SSAOColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mSSAOColor[0]);
@@ -163,6 +142,6 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
                 glUniform1f(it.second, sDebugOptions.mDebugFloat04);
                 break;
         }
-        static_assert((int)MaterialShaderUniform::COUNT == 25, "Update for new uniform type");
+        static_assert((int)MaterialShaderUniform::COUNT == 19, "Update for new uniform type");
     }
 }

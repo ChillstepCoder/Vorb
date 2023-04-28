@@ -32,15 +32,9 @@ const std::map<nString, MaterialShaderUniform> sUniformLookup = {
     std::make_pair("PrevFbo0", MaterialShaderUniform::PrevFbo0),
     std::make_pair("PrevFboDepth", MaterialShaderUniform::PrevFboDepth),
     std::make_pair("PixelDims", MaterialShaderUniform::PixelDims),
-    std::make_pair("ZoomScale", MaterialShaderUniform::ZoomScale),
-    std::make_pair("CameraZAngle", MaterialShaderUniform::CameraZAngle),
     std::make_pair("SkyRotMatrix", MaterialShaderUniform::SkyRotMatrix),
     std::make_pair("ScreenResolution", MaterialShaderUniform::ScreenResolution),
-    std::make_pair("ShadowFrustumMatrices", MaterialShaderUniform::ShadowFrustumMatrices),
-    std::make_pair("ShadowMap", MaterialShaderUniform::ShadowMap),
-    std::make_pair("ShadowCascadePlaneDistances", MaterialShaderUniform::ShadowCascadePlaneDistances),
     std::make_pair("ShadowColor", MaterialShaderUniform::ShadowColor),
-    std::make_pair("ShadowTexture", MaterialShaderUniform::ShadowTexture),
     std::make_pair("SSAOTexture", MaterialShaderUniform::SSAOTexture),
     std::make_pair("SSAOColor", MaterialShaderUniform::SSAOColor),
     std::make_pair("DebugColor1", MaterialShaderUniform::DebugColor1),
@@ -50,7 +44,7 @@ const std::map<nString, MaterialShaderUniform> sUniformLookup = {
     std::make_pair("DebugFloat3", MaterialShaderUniform::DebugFloat3),
     std::make_pair("DebugFloat4", MaterialShaderUniform::DebugFloat4),
 };
-static_assert((int)MaterialShaderUniform::COUNT == 25, "Update for new material uniform");
+static_assert((int)MaterialShaderUniform::COUNT == 19, "Update for new material uniform");
 
 extern MaterialShaderUniform lookupMaterialUniform(const nString& str) {
     // For arrays we remove the array syntax

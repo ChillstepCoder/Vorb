@@ -1,7 +1,7 @@
 #pragma once
 
+#include "rendering/post_process/ShadowPassShaderData.h"
 
-constexpr int MAX_SHADOW_CASCADE_LEVELS = 4;
 enum class ShadowLodDetail {
     None,
     Low,

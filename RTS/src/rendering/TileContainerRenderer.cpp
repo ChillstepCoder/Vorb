@@ -15,6 +15,7 @@
 #include "rendering/mesh/mesher/BuildingMesher.h"
 #include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
+#include "rendering/post_process/ShadowPassShaderData.h"
 
 #include "tile/TileContainerRepository.h"
 
@@ -161,11 +162,12 @@ void TileContainerRenderer::renderBillboards(const Camera3D& camera) {
     };
 }
 
-void TileContainerRenderer::renderWorldShadows(const Camera3D& camera, f32 maxDistance) {
+void TileContainerRenderer::renderWorldShadows(const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance) {
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
     VGUniform unPosition = mShadowMapperMaterial->getUniform("unPosition");
+    glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
     for (auto&& mesh : mStaticMeshes) {
         f32v3 offset = mesh->getPosition() - camera.getPosition();
         if (glm::length2(offset) <= maxDistSQ) {

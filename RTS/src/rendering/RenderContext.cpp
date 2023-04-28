@@ -67,6 +67,7 @@
 #include "camera/CameraController.h"
 #include "physics/PhysicsWorld.h"
 
+#include "time/TimeOfDayManager.h" // TODO: Move to WorldRenderer
 #include "city/City.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -141,16 +142,6 @@ void APIENTRY glDebugOutput(GLenum source,
 
 constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
 
-// TODO: Instead of single shader these should be able to be shader chains.
-const std::string sPassthroughMaterialNames[] = {
-    "pass_through",
-    "depth_debug",
-    //"motion_blur",
-    "normals",
-    "shadow_depth_debug",
-    "roughness_debug",
-};
-
 RenderContext* RenderContext::sInstance = nullptr;
 
 // TODO: Read http://iquilezles.org/articles/
@@ -219,8 +210,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         mGBuffers[i]->initDepth(vg::GBufferDepthFormat::DEPTH_32);
 #endif
     }
-    mHDRLightGBuffer = std::make_unique<vg::GBuffer>(mScreenResolution);
-    mHDRLightGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
     checkGlError("GBuffer init");
 
@@ -235,8 +224,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     glCreateBuffers(1, &mGlobalUbo);
     glNamedBufferStorage(mGlobalUbo, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), nullptr, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_GLOBAL_UBO, mGlobalUbo);
-
-    mCloudManager = std::make_unique<CloudManager>();
 
     // Improve depth precision (req for reverse depth buffer if we ever wanna do that)
     // https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/
@@ -260,85 +247,14 @@ RenderContext& RenderContext::getInstance() {
     return *sInstance;
 }
 
-void RenderContext::registerWorld(IWorld* world) {
-    assert(IS_GAME_THREAD());
-    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vWorld) {
-        IWorld* world = (IWorld*)vWorld;
-        assert(context.mWorldRenderers.find(world) == context.mWorldRenderers.end());
-
-        std::unique_ptr<WorldRenderer> newWorldRenderer = std::make_unique<WorldRenderer>(*world);
-        context.mWorldRenderers[world] = std::move(newWorldRenderer);
-    }, (void*)world);
-}
-
-void RenderContext::setActiveWorld(IWorld* world) {
-    assert(IS_GAME_THREAD());
-    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vWorld) {
-        IWorld* world = (IWorld*)vWorld;
-        assert(context.mWorldRenderers.find(world) != context.mWorldRenderers.end());
-        context.mActiveWorld = world;
-    }, (void*)world);
-}
-
-void RenderContext::onWorldBegin(const f32v2& worldCenter) {
-
-    // Initialize renderer after material assets are loaded
-    {
-        // Init renderers
-        ScopedTimer timer("renderer allocations", 2);
-        mCharacterRenderer = std::make_unique<CharacterRenderer>();
-        mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
-        mTileContainerRenderer = std::make_unique<TileContainerRenderer>(*mStaticModelRenderer);
-        mLightRenderer = std::make_unique<LightRenderer>();
-        mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
-        mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mScreenResolution);
-        mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-        mItemRenderer = std::make_unique<ItemRenderer>();
-        mCloudRenderer = std::make_unique<CloudRenderer>(mScreenResolution);
-        mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mScreenResolution);
-        mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mScreenResolution);
-        mShadowRenderer = std::make_unique<ShadowRenderer>(mScreenResolution);
-        mTerrainRenderer = std::make_unique<TerrainRenderer>();
-        mGrassRenderer = std::make_unique<GrassRenderer>();
-        mSmudgeRenderer = std::make_unique<SmudgeRenderer>(mScreenResolution);
-        mTonemapRenderer = std::make_unique<TonemapRenderer>();
-        checkGlError("Renderer init");
-    }
-
- 
-    mCloudManager->init(worldCenter);
-}
-
 void RenderContext::initPostLoad() {
 
     const ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialShaderManager& materialManager = resourceManager.getMaterialShaderManager();
 
-    // Init all passthrough materials
-    {
-        ScopedTimer timer("Passthrough init", 2);
-        for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-            const MaterialShader* material = materialManager.getMaterialShader(sPassthroughMaterialNames[i]);
-            if (material) {
-                mPassthroughMaterials.emplace_back(material);
-            }
-            else {
-                pError("Missing material for pass through: " + std::string(sPassthroughMaterialNames[i]));
-            }
-        }
-    }
-
-
-    mSceneLightingMaterial = materialManager.getMaterialShader("scene_lighting");
-    mCopyDepthMaterial = materialManager.getMaterialShader("copy_depth");
-    mPassthroughMaterial = materialManager.getMaterialShader("pass_through");
-
-    {
-        ScopedTimer timer("Skybox init", 2);
-        buildHorizonMesh();
-        mSkyBox = std::make_unique<Skybox>();
-        mSkyBox->init(materialManager.getMaterialShader("sky"), &resourceManager.getTextureRepository().getCubemap("graycloud"));
-    }
+  
+    mWorldRenderer = std::make_unique<WorldRenderer>(mScreenResolution);
+    mWorldRenderer->initPostLoad();
 
     BrdfLUT::loadOrComputeTexture();
 
@@ -347,37 +263,29 @@ void RenderContext::initPostLoad() {
 
 }
 
-#include "time/TimeOfDayManager.h" // TODO: Move to WorldRenderer
-void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
+void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* camera, f32v3 playerPos) {
 
     PROFILE_FUNCTION();
-
 
     mCamera = camera;
     // Update thread msg queue
     updateRenderThreadProcs();
 
-    // Allow model renderer to build indirect buffers
-    mStaticModelRenderer->frameUpdate(*camera);
-    mTileContainerRenderer->frameUpdate();
+    mWorldRenderer->onBeginFrame(renderState, camera, playerPos);
 
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
     // Misc renderData
     const TimeOfDayManager& timeOfDayManager = sMainGameWorld->getTimeOfDayManager();
-    mRenderData.mainCamera = camera;
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.skyRotMatrix = timeOfDayManager.getSkyRotMatrix();
     // Ubo data
     uboData.Time = sTotalTimeSeconds;
     uboData.TimeOfDay = timeOfDayManager.getTimeOfDayHours();
     uboData.PlayerPosWorld = playerPos;
-
-    // Sun
-    const f32v3& sun = timeOfDayManager.getSunPosition();
-    mShadowRenderer->beginFrame(*camera, sun);
-
-    const f32v3 lastSunPosition = mShadowRenderer->getLastUpdatedSunPosition();
+    
+    ShadowRenderer& shadowRenderer = mWorldRenderer->getShadowRenderer();
+    const f32v3 lastSunPosition = shadowRenderer.getLastUpdatedSunPosition();
     uboData.SunColor = timeOfDayManager.getSunColor();
     uboData.SunHeight = timeOfDayManager.getSunHeight();
     uboData.SunPosition = lastSunPosition;
@@ -391,12 +299,6 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     uboData.CameraRight = camera->getRightVector();
     uboData.CameraUp = camera->getUpVector();
     uboData.CameraZRange = f32v2(camera->getZNear(), camera->getZFar());
-
-    // Shadows
-    mRenderData.shadowFrustumMatrices = mShadowRenderer->getShadowFrustumMatrices();
-    mRenderData.shadowCascadePlaneDistances = mShadowRenderer->getShadowCascadePlaneDistances();
-    mRenderData.shadowMap = mShadowRenderer->getShadowMap();
-    mRenderData.shadowFrustumMatricesCount = MAX_SHADOW_CASCADE_LEVELS;
 
     // Update ubo
     // Camera matrices
@@ -413,7 +315,6 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-
 }
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
@@ -426,11 +327,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     cameraController.update(1.0f /*TODO DELTATIME*/, frameAlpha, playerPos);
     const Camera3D& camera = cameraController.getOwnedCamera();
 
-    beginFrame(&camera, playerPos);
+    beginFrame(&renderState, &camera, playerPos);
     checkGlError("RenderContext::Begin Frame");
-
-    // Update clouds
-    mCloudManager->tick(renderState.getWorldLoadCenter());
     
     mActiveGBuffer = mGBuffers[mActiveGBufferIndex].get();
 
@@ -448,169 +346,17 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     else {
-        // TODO: Can we not do GL_COLOR_BUFFER_BIT? (IT causes clouds issues rn)
-        // TODO2: What issues? lol thanks for nothing previous self
         glClear(GL_DEPTH_BUFFER_BIT | (GL_STENCIL_BUFFER_BIT * USE_STENCIL));
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    if (!UIContext::getInstance().shouldPauseGameRendering()) {
+    // World
+    mWorldRenderer->renderWorld(mRenderData, mActiveGBuffer, frameAlpha, elapsedSec);
 
-        // Mark everything we draw as geometry
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        // Static meshes
-        mTileContainerRenderer->renderStaticMeshes(camera);
+    // Debug rendering
+    renderPassDebug(*mCamera, renderState);
 
-        if (!sDebugOptions.mHideCharacters) {
-            mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha);
-        }
-
-        // Instanced models
-        Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-        mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Default, camera);
-
-        // Smudge
-        {
-            mSmudgeRenderer->beginSmudgePass(mActiveGBuffer);
-            mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Smudge, camera);
-            if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
-                glDisable(GL_CULL_FACE);
-                mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
-                glEnable(GL_CULL_FACE);
-            }
-            mSmudgeRenderer->renderSmudge(mActiveGBuffer, camera);
-        }
-
-        // Render stockpiles
-        mItemRenderer->render(camera);
-
-        // TODO: Render loose items
-
-
-        // Ambient occlusion
-        mAmbientOcclusion->render(mActiveGBuffer);
-
-        // === Post AO passes ===
-        // Grass + billboards
-
-        mTileContainerRenderer->renderBillboards(camera);
-        // PRE SMUDGE GRASS PASS
-        /*if (!sDebugOptions.mHideGrass) {
-            mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
-        }*/
-        // TODO: Where is this getting unset?
-        glEnable(GL_CULL_FACE);
-
-        // TODO Try re-enable ambient occlusion for terrain in a smart way?
-        {
-            glEnable(GL_STENCIL_TEST);
-            glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::TERRAIN), 0xFF);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            // Terrain
-            if (!sDebugOptions.mDisableTerrain) {
-                mTerrainRenderer->renderTerrain(camera, mTerrainMeshes);
-            }
-            glDisable(GL_STENCIL_TEST);
-        }
-
-        // Paint smudges
-        mSmudgeRenderer->renderPaintNoise(mActiveGBuffer, camera);
-
-        // Clouds
-       /* if (!sDebugOptions.mDisableClouds) {
-            mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
-        }*/
-
-        // Editor brushes
-        UIContext::getInstance().renderEditorBrushDecals(camera);
-
-        // Horizon
-        //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
-
-
-        renderPassShadows(camera, renderState);
-
-        // TODO: Particles
-
-        if (sDebugOptions.mWireframe) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-
-        // *** Post processes ***
-        // TODO: Bloom note (from acerola) https://www.youtube.com/watch?v=IMiiUEG-sLQ_
-        // Contrast -> Brighness -> Saturation -> Gamma correction -> Bloom -> Bloom can be done via mipmapping (GPU DOWNSCALING then UPSCALING)
-
-        vg::DepthState::NONE.set();
-
-        // Render characters that are behind geometry with some transparency
-        //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, camera, 0.20f, frameAlpha);
-            // Depth debug
-        if (mPassthroughRenderMode == 1) {
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-            assert(postMat);
-
-            // TODO: Swap chain for this to work
-            MaterialRenderer::renderFullScreenQuad(*postMat);
-        }
-
-
-        mCurrentFramebufferDims = mScreenResolution;
-
-        // Sky (non PBR version)
-        if (!sDebugOptions.mUsingPBR) {
-            renderPassSky(camera);
-        }
-
-        // Final render for pre-transparency
-        mHDRLightGBuffer->use();
-        // Share values
-        mHDRLightGBuffer->setTertiaryTexture(mActiveGBuffer->getTertiaryTexture());
-        mHDRLightGBuffer->setNormalTexture(mActiveGBuffer->getNormalTexture());
-        mHDRLightGBuffer->setSharedDepthStencilTexture(mActiveGBuffer->getDepthStencilTexture());
-
-        // Sunlight
-        mLightRenderer->renderSunlight(*mActiveGBuffer, mShadowRenderer->getShadowTexture(), *mSkyBox->getCubemap());
-
-        // Sky (PBR version)
-        if (sDebugOptions.mUsingPBR) {
-            renderPassSky(camera);
-        }
-
-        renderPassTransparent(camera, renderState);
-
-        // Update active
-        mActiveGBuffer = mHDRLightGBuffer.get();
-
-        // Depth of field
-        vg::DepthState::NONE.set();
-        mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
-
-        // Final render to screen, applying tonemap
-        mActiveGBuffer->unuse();
-        glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
-        mTonemapRenderer->render(mActiveGBuffer->getAlbedoTexture());
-        //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
-
-        // Final Pass through process
-        // TODO: Make this work. When in debug, render tonemap to a new texture
-        // FBODebugRenderer?
-        if (mPassthroughRenderMode > 1) {
-            const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-            assert(postMat);
-
-            // TODO: Swap chain for this to work
-            MaterialRenderer::renderFullScreenQuad(*postMat);
-        }
-
-        // Debug rendering
-        renderPassDebug(camera, renderState);
-
-    }
-
-    // UI last
+    // UI
     renderPassUI(camera, renderState);
 
     // Swap
@@ -627,23 +373,47 @@ void RenderContext::endFrame() {
 }
 
 void RenderContext::selectNextDebugShader() {
-    //mChunkRenderer->SelectNextShader();
-    ++mPassthroughRenderMode;
-    if (mPassthroughRenderMode >= mPassthroughMaterials.size()) {
-        mPassthroughRenderMode = 0;
-    }
+    mWorldRenderer->selectNextDebugShader();
 }
 
 VGTexture RenderContext::getShadowTexture() const {
-    return mShadowRenderer->getShadowTexture();
+    return mWorldRenderer->getShadowRenderer().getShadowTexture();
 }
 
-VGTexture RenderContext::getSSAOTexture() const {
-    return mAmbientOcclusion->getSSAOTexture();
+void RenderContext::addTerrainMesh(const TerrainMesh* mesh) {
+    mWorldRenderer->addTerrainMesh(mesh);
+}
+
+void RenderContext::removeTerrainMesh(const TerrainMesh* mesh) {
+    mWorldRenderer->removeTerrainMesh(mesh);
+}
+
+void RenderContext::addTerrainWaterMesh(const TerrainMesh* mesh) {
+    mWorldRenderer->addTerrainWaterMesh(mesh);
+}
+
+void RenderContext::removeTerrainWaterMesh(const TerrainMesh* mesh) {
+    mWorldRenderer->removeTerrainWaterMesh(mesh);
+}
+
+void RenderContext::addGrassMesh(const GrassMesh* mesh) {
+    mWorldRenderer->addGrassMesh(mesh);
+}
+
+void RenderContext::removeGrassMesh(const GrassMesh* mesh) {
+    mWorldRenderer->removeGrassMesh(mesh);
 }
 
 void RenderContext::addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
-    mStaticModelRenderer->addInstancesFromGatherer(gatherer);
+    mWorldRenderer->addStaticModelInstancesFromGatherer(gatherer);
+}
+
+TileContainerRenderer& RenderContext::getTileContainerRenderer() {
+    return mWorldRenderer->getTileContainerRenderer();
+}
+
+CharacterRenderer& RenderContext::getCharacterRenderer() {
+    return mWorldRenderer->getCharacterRenderer();
 }
 
 void RenderContext::initEventHandlers() {
@@ -666,198 +436,9 @@ void RenderContext::updateRenderThreadProcs() {
     }
 }
 
-void RenderContext::renderPassSky(const Camera3D& camera) {
-   // glEnable(GL_STENCIL_TEST);
-   // glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::SKY), 0xFF);
-    //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    if (sDebugOptions.mUsingPBR) {
-        mSkyBox->renderPbr(camera.getVPMatrix());
-    }
-    else {
-        mSkyBox->render(camera.getVPMatrix());
-    }
-   // glDisable(GL_STENCIL_TEST);
-}
-
-void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState& renderState) {
-    PROFILE_FUNCTION();
-    if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
-        if (mShadowRenderer->shouldUpdateShadowsThisFrame()) {
-            mShadowRenderer->useShadowBuffer();
-            glEnable(GL_DEPTH_CLAMP);
-
-            vg::DepthState::FULL.set();
-            // Render all shadow casters
-            //glCullFace(GL_FRONT);
-            if (!sDebugOptions.mDisableTerrain) {
-                mTileContainerRenderer->renderWorldShadows(camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
-            }
-
-            // Instanced models
-            Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-            if (!sDebugOptions.mHideModels) {
-                mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
-            }
-
-            // TODO: Frustum cull
-            if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
-            }
-
-            //const CityGraph& cities = sWorld->getCityGraph();
-            //for (auto&& city : cities.mNodes) {
-            //    const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
-            //    for (auto& building : buildings) {
-            //        mBuildingRenderer->renderBuildingShadows(*building, camera);
-            //    }
-            //}
-            //for (auto&& structure : structures) {
-            //    // TODO: List of buildings instead?
-            //    if (structure->getType() == StructureType::Building) {
-            //        mBuildingRenderer->renderBuildingShadows((Building&)*structure, camera);
-            //    }
-            //}
-
-            glDisable(GL_DEPTH_CLAMP);
-        }
-
-        vg::DepthState::NONE.set();
-        mShadowRenderer->renderShadows(camera.getPosition());
-        mActiveGBuffer->use();
-    }
-    else {
-        // No shadow bleed from previous frames
-        mShadowRenderer->clearShadowTexture();
-    }
-}
-
-void RenderContext::renderPassTransparent(const Camera3D& camera, const RenderState& renderState) {
-    // Render clouds without shadows
-    if (!sDebugOptions.mDisableClouds && !sDebugOptions.mWireframe) {
-        mCloudRenderer->renderClouds(*mCloudManager, mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), camera, *mSkyBox->getCubemap());
-    }
-
-    // Water (No depth write)
-    if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
-        mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes, *mSkyBox->getCubemap());
-    }
-    
-    // Light transparent layer
-}
-
 void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& renderState) {
     PROFILE_FUNCTION();
-    // City Debug
-    if (sDebugOptions.mCities) {
-        const CityGraph& cities = sMainGameWorld->getCityGraph();
-        for (auto&& city : cities.mNodes) {
-            mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
-            mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
-            mCityDebugRenderer->renderCityPlotterDebug(city->getCityPlotter());
-            mCityDebugRenderer->renderCityQuartermasterDebug(city->getCityQuartermaster());
-        }
-        mCityDebugRenderer->finishRenderFrame();
-    }
-    else {
-        mCityDebugRenderer->clearMeshes();
-    }
-
-    // Structure debug
-    if (sDebugOptions.mStructureDebug) {
-        sMainGameWorld->getStructureManager().debugRender();
-    }
-
-    mEcsRenderer->renderBusinessDebug(camera);
-   
-
-    if (sDebugOptions.mChunkBoundaries) {
-        for (const auto& chunkDebugState : renderState.getDebugChunks()) {
-            color4 color = COLOR_WHITE;
-            if (chunkDebugState.mList == DebugChunkListIndex::DESTROYING) {
-                color = color4(1.0f, 0.0f, 0.0f);
-            }
-            else if (chunkDebugState.mFlags.isBitSet(DebugChunkFlags::IS_NAVMESHING)) {
-                color = color4(1.0f, 0.0f, 1.0f);
-            }
-            else {
-                switch (chunkDebugState.mState) {
-                    case ChunkState::INVALID:
-                        color = color4(0.5f, 0.5f, 0.5f);
-                        break;
-                    case ChunkState::WAITING_HEIGHT:
-                        color = color4(1.0f, 1.0f, 0.0f);
-                        break;
-                    case ChunkState::LOADING_TILES:
-                        color = color4(0.0f, 1.0f, 1.0f);
-                        break;
-                    case ChunkState::TILE_LOAD_FINISHED:
-                        color = color4(0.0f, 0.0f, 1.0f);
-                        break;
-                    case ChunkState::WAITING_MESH_PHYSICS_NAV:
-                        color = color4(0.0f, 0.5f, 1.0f);
-                        break;
-                    case ChunkState::READY:
-                        color = color4(0.0f, 1.0f, 0.0f);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            const f32v2 worldPos = chunkDebugState.mWorldPos;
-            DebugRenderer::drawWireQuad(worldPos, f32v2(CHUNK_WIDTH), color);
-
-            // Count refs
-            constexpr f32 REF_BOX_WIDTH = 1.0f;
-            constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
-            for (int i = 0; i < chunkDebugState.mRefCount; ++i) {
-                DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
-            }
-        }
-    }
-
-    // Nav graph (Render is slow so we only build the line meshes when toggle changes)
-    constexpr int NAVGRAPH_ID = 44432;
-    constexpr f32 NAVGRAPH_RENDER_DISTANCE = 100.0f; // TODO: Move to debugoptions
-    static bool wasRenderingNavGraph = false;
-    if (sDebugOptions.mShowNavGraph) {
-        if (!wasRenderingNavGraph) {
-            ScopedTimer timer("Debug Draw Navgraph");
-            DebugRenderer::reserveLines(sMainGameWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
-            const auto& containers = sMainGameWorld->getTileContainerRepository().getTileContainers();
-            for (auto&& it : containers) {
-                const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter3D();
-                const f32v3& cameraPos = camera.getPosition();
-                if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
-                    // TODO: make this only work on host world
-                    assert(false);
-                    //mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
-                }
-            }
-            wasRenderingNavGraph = true;
-        }
-    }
-    else if (wasRenderingNavGraph) {
-        wasRenderingNavGraph = 0;
-        DebugRenderer::clearAllMeshesWithId(NAVGRAPH_ID);
-    }
-
-    // Debug Shapes
-    const std::vector<DebugWireQuadState>& debugQuads = renderState.getDebugQuads();
-    for (const DebugWireQuadState& quad : debugQuads) {
-        DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
-    }
-
-    // Axis labels
-    if (sDebugOptions.mShowDevHud) {
-        const f32v3 axisOrigin = camera.getPosition() + camera.getFrontVector() * 5.0f + camera.getRightVector() * -5.0f + camera.getUpVector() * 2.5f;
-        DebugRenderer::drawLine(axisOrigin, f32v3(1.0f, 0.0f, 0.0f), color4(1.0f, 0.0f, 0.0f)); //X
-        DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 1.0f, 0.0f), color4(0.0f, 1.0f, 0.0f)); //Y
-        DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 0.0f, 1.0f), color4(0.0f, 0.0f, 1.0f)); //Z
-    }
-
-    // Physics
-    sMainGameWorld->getPhysicsWorld().debugRender();
+    mWorldRenderer->renderDebug();
 
     // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
@@ -947,7 +528,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mStaticModelRenderer->getNumModels());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mWorldRenderer->getNumStaticModels());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
@@ -1000,8 +581,9 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;*/
 
-        if (mPassthroughRenderMode != 0) {
-            sprintf_s(buffer, STR_BUFFER_SIZE, "DEBUG FBO: %s", sPassthroughMaterialNames[mPassthroughRenderMode].c_str());
+        const nString& passThroughName = mWorldRenderer->getCurrentPassthroughRenderStageName();
+        if (passThroughName.size()) {
+            sprintf_s(buffer, STR_BUFFER_SIZE, "DEBUG FBO: %s", passThroughName.c_str());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }
@@ -1010,15 +592,6 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->render(mScreenResolution);
     }
     UIContext::getInstance().updateAndRenderUI(mActiveGBuffer);
-}
-
-void RenderContext::buildHorizonMesh()
-{
-    mHorizonQuad = std::make_unique<Mesh>();
-    ProceduralMeshBuilder meshBuilder(true);
-    constexpr float QUAD_WIDTH = 140000.0f;
-    meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, MaterialData(), f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
-    meshBuilder.finishMesh(mHorizonQuad, f32v3(0.0f));
 }
 
 TileContainerMeshData::~TileContainerMeshData()

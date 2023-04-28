@@ -606,6 +606,7 @@
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\rendering\font\Font.h" />
     <ClInclude Include="src\rendering\GLExtensions.h" />
+    <ClInclude Include="src\rendering\GlobalRenderData.h" />
     <ClInclude Include="src\rendering\GlobalUboData.h" />
     <ClInclude Include="src\rendering\gl\GL.h" />
     <ClInclude Include="src\rendering\gl\GLAPI.h" />
@@ -655,6 +656,7 @@
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />
+    <ClInclude Include="src\rendering\post_process\ShadowPassShaderData.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
     <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h" />

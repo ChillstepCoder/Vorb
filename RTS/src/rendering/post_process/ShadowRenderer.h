@@ -4,10 +4,12 @@ class Camera3D;
 class MaterialShader;
 
 #include "rendering/post_process/ShadowLodDetail.h"
+#include "ShadowPassShaderData.h"
 
 DECL_VG(class GBuffer);
 
 constexpr int SHADOW_FRUSTUM_CORNER_COUNT = 8;
+
 
 // Cascading shadow maps
 // https://learnopengl.com/Guest-Articles/2021/CSM
@@ -33,6 +35,7 @@ public:
     VGTexture getShadowTexture() const;
 
     const f32* getShadowPlaneDistances() const { return mPlaneDistances; }
+    const ShadowPassShaderData& getShaderData() const { return mShaderData; }
 
 private:
     void updateFrustumCorners(const f32m4& projection, const f32m4& view);
@@ -58,5 +61,7 @@ private:
     f32 mPlaneDistances[MAX_SHADOW_CASCADE_LEVELS];
     f32 mLastUpdateTime = 0.0f;
     bool mShouldUpdateShadowsThisFrame = true;
+
+    ShadowPassShaderData mShaderData;
 };
 

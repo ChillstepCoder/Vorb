@@ -1,12 +1,12 @@
 //uniform sampler2D Fbo0;
 uniform sampler2D FboNormal;
 uniform sampler2D FboDepth;
-uniform sampler2DArray ShadowMap;
+uniform sampler2DArray unShadowMap;
 #include "GlobalUbo.glsl"
 #include "util/depth.glsl"
 
-uniform float ShadowCascadePlaneDistances[4];
-uniform mat4 ShadowFrustumMatrices[4];
+uniform float unShadowCascadePlaneDistances[4];
+uniform mat4 unShadowFrustumMatrices[4];
 uniform vec3 CameraOffset;
 
 in vec2 fUV;
@@ -31,7 +31,7 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 	//}
 
 	// Calc moments and variance
-	vec2 moments = texture(ShadowMap, vec3(projCoords.xy, layer)).rg;
+	vec2 moments = texture(unShadowMap, vec3(projCoords.xy, layer)).rg;
 	float p = step(currentDepth, moments.x);
 	float variance = max(moments.y - moments.x * moments.x, 0.00002);
 	
@@ -56,7 +56,7 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 
 vec2 getShadowAndDistAtLayer(int layer, vec3 worldSpacePosition) {
   // Get the position of our fragment relative to the light view
-	vec4 fragPosLightSpace = ShadowFrustumMatrices[layer] * vec4(worldSpacePosition, 1.0);
+	vec4 fragPosLightSpace = unShadowFrustumMatrices[layer] * vec4(worldSpacePosition, 1.0);
 	
 	// Remove shadow acne with bias
 	// perform perspective divide
@@ -64,7 +64,7 @@ vec2 getShadowAndDistAtLayer(int layer, vec3 worldSpacePosition) {
 	// transform to [0,1] range
 	projCoords = projCoords * 0.5 + 0.5;
 	
-	vec2 shadowAndDist = getShadowVariance(projCoords, layer, worldSpacePosition, inverse(ShadowFrustumMatrices[layer]));
+	vec2 shadowAndDist = getShadowVariance(projCoords, layer, worldSpacePosition, inverse(unShadowFrustumMatrices[layer]));
 
 	return shadowAndDist;
 }
@@ -79,10 +79,10 @@ vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
 	int layer = cascadeCount;
     for (int i = 0; i < cascadeCount; ++i) {
 	    // This branch is fine because local kernel will all follow same path usually
-		if (depthValue < ShadowCascadePlaneDistances[i]) {
+		if (depthValue < unShadowCascadePlaneDistances[i]) {
 		    if (i > 0) {
 			    // Store distance from previous plane so we can blend
-		        dist = depthValue - ShadowCascadePlaneDistances[i - 1];
+		        dist = depthValue - unShadowCascadePlaneDistances[i - 1];
 				dist = clamp(dist, 0.0, 10.0) / 10.0;
 			}
 			layer = i;

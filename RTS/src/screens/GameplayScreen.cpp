@@ -172,9 +172,6 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     // Always init the world
     displayLoadScreen("Loading...", true);
 
-    // Start world rendering
-    mRenderContext->onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
-
     initCamera();
 
     // Start the game :O
@@ -281,7 +278,7 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
     }
 
     // Update editors
-    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera(), mMousePickRay);
+    UIContext::getInstance().updateEditors(mWorld, mCameraController->getOwnedCamera(), mMousePickRay);
 
     updateTilePicking();
 
@@ -296,7 +293,7 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     hostWorld->onFrameBegin();
 
     // Update editors
-    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera(), mMousePickRay);
+    UIContext::getInstance().updateEditors(mWorld, mCameraController->getOwnedCamera(), mMousePickRay);
 
     updateTilePicking();
 

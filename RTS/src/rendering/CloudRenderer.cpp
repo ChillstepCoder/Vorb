@@ -16,6 +16,8 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
 
+#include "rendering/post_process/ShadowPassShaderData.h"
+
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
@@ -83,11 +85,12 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, VGTexture sha
     glDisable(GL_STENCIL_TEST);
 }
 
-void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
+void CloudRenderer::renderCloudShadows(const ShadowPassShaderData& shaderData, const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
     MaterialRenderer::bindMaterialForRender(*mCloudShadowMaterial);
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
     glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     const GLuint rootPosUniform = glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnRootPos");
+    glUniformMatrix4fv(mCloudShadowMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
 
     // All clouds are rendered for shadows
     for (auto&& batch : cloudManager.mCloudBatches) {

@@ -14,6 +14,7 @@
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
+#include "rendering/post_process/ShadowPassShaderData.h"
 #include "options/DebugOptions.h"
 #include "tile/TileContainer.h"
 
@@ -402,7 +403,7 @@ void InstancedStaticModelRenderer::renderModelPass(MaterialRenderPassType render
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
-void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, const f32* shadowDistances) {
+void InstancedStaticModelRenderer::renderModelShadows(const ShadowPassShaderData& shaderData, const Camera3D& camera) {
     assert(IS_RENDER_THREAD());
     // TODO: Material specific
     glDisable(GL_CULL_FACE);
@@ -410,6 +411,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
     PROFILE_FUNCTION();
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
+    glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
     for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             // TODO: Have a no shadow render type?

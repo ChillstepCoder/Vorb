@@ -13,6 +13,7 @@ class BuildingMesher;
 class ChunkMesher;
 class InstancedStaticModelRenderer;
 class ContainerMeshBuilders;
+struct ShadowPassShaderData;
 
 struct TileContainerMeshData {
     TileContainerMeshData() = default;
@@ -38,7 +39,7 @@ public:
 
     void renderStaticMeshes(const Camera3D& camera);
     void renderBillboards(const Camera3D& camera);
-    void renderWorldShadows(const Camera3D& camera, f32 maxDistance);
+    void renderWorldShadows(const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance);
 
     void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }
     void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }

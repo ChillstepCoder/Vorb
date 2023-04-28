@@ -338,6 +338,11 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
         const f32m4 lightP = glm::ortho(minX + offsetX, maxX + offsetX, minY + offsetY, maxY + offsetY, minZ, maxZ);
         mLightVP[i] = lightP * lightV;
     }
+
+    // Cache shader data
+    mShaderData.shadowFrustumMatrices = getShadowFrustumMatrices();
+    mShaderData.shadowCascadePlaneDistances = getShadowCascadePlaneDistances();
+    mShaderData.shadowMap = getShadowMap();
 }
 
 void ShadowRenderer::useShadowBuffer() {
@@ -362,9 +367,13 @@ void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
 
     mShadowMipGBuffer->use();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer->getAlbedoTexture(), 0);
-    MaterialRenderer::bindMaterialForRender(*mShadowVarianceMaterial);
-
-    glUniform3fv(glGetUniformLocation(mShadowVarianceMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
+    ui32 nextTextureIndex;
+    MaterialRenderer::bindMaterialForRender(*mShadowVarianceMaterial, &nextTextureIndex);
+    glUniformMatrix4fv(mShadowVarianceMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*getShadowFrustumMatrices())[0][0]);
+    glUniform1fv(mShadowVarianceMaterial->getUniform("unShadowCascadePlaneDistances[0]"), MAX_SHADOW_CASCADE_LEVELS, getShadowCascadePlaneDistances());
+    glUniform3fv(mShadowVarianceMaterial->getUniform("CameraOffset"), 1, &offset[0]);
+    glBindTextureUnit(nextTextureIndex, getShadowMap());
+    glUniform1i(mShadowVarianceMaterial->getUniform("unShadowMap"), nextTextureIndex++);
 
     // Need to store alpha as replace
     vg::BlendState::set(vorb::graphics::BlendStateType::REPLACE);

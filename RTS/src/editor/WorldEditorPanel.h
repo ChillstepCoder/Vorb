@@ -60,12 +60,10 @@ class WorldEditorPanel {
 public:
     WorldEditorPanel();
 
-    void update(const Camera3D& camera, const f32v3& pickRay);
+    void update(IWorld* world, const Camera3D& camera, const f32v3& pickRay);
 
 	void renderBrushDecals(const Camera3D& camera) const;
     void renderUI(f32 ySize) const;
-
-    void setActiveWorld(IWorld* world) { mActiveWorld = world; }
 
 private:
     void renderMenuBar() const;

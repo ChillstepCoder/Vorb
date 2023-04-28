@@ -28,6 +28,11 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer()
 	mSpriteBatch->init();
 }
 
+EntityComponentSystemRenderer::~EntityComponentSystemRenderer()
+{
+
+}
+
 void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) const {
 
 	if (++mFrameCount <= mFramesPerDebugDraw) {

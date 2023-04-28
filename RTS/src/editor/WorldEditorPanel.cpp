@@ -93,8 +93,9 @@ WorldEditorPanel::WorldEditorPanel() {
     });
 }
 
-void WorldEditorPanel::update(const Camera3D& camera, const f32v3& pickRay) {
+void WorldEditorPanel::update(IWorld* world, const Camera3D& camera, const f32v3& pickRay) {
     PROFILE_FUNCTION();
+    mActiveWorld = world;
 
     mUpdateTimer.startFrame();
     if (!mUpdateTimer.tryTick()) {

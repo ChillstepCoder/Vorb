@@ -59,9 +59,9 @@ EditorRoot::~EditorRoot() {
 
 }
 
-void EditorRoot::updateEditors(const Camera3D& camera, const f32v3& mousePickRay) {
+void EditorRoot::updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay) {
     if (sDebugOptions.mShowEditor) {
-        mWorldEditorPanel->update(camera, mousePickRay);
+        mWorldEditorPanel->update(world, camera, mousePickRay);
     }
 }
 

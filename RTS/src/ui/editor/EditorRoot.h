@@ -14,13 +14,14 @@ class ModelEditorViewportPanel;
 class MaterialEditorViewportPanel;
 class BiomeEditorViewportPanel;
 class IEditorViewportPanel;
+class IWorld;
 
 class EditorRoot
 {
 public:
     EditorRoot();
     ~EditorRoot();
-    void updateEditors(const Camera3D& camera, const f32v3& mousePickRay);
+    void updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay);
     void updateAndRenderUI(const vg::GBuffer* activeGBuffer);
     void renderEditorBrushDecals(const Camera3D& camera);
 

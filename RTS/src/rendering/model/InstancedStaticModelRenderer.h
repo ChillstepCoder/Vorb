@@ -29,6 +29,7 @@ class Camera3D;
 class InstancedStaticModelGatherer;
 class MaterialShader;
 class GLIndirectBuffer;
+struct ShadowPassShaderData;
 
 DECL_VG(class GLProgram);
 
@@ -71,7 +72,7 @@ public:
     void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
     void renderModelPass(MaterialRenderPassType renderPass, const Camera3D& camera);
-    void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
+    void renderModelShadows(const ShadowPassShaderData& shaderData, const Camera3D& camera);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;

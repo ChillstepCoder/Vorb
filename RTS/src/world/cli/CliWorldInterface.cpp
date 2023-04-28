@@ -75,8 +75,6 @@ void CliWorldInterface::onWorldBeginClient(IWorld& world) {
 
     // Register for rendering
     RenderStateManager::getInstance().setActiveWorld(&world);
-    RenderContext::getInstance().registerWorld(&world);
-    RenderContext::getInstance().setActiveWorld(&world);
 }
 
 void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {

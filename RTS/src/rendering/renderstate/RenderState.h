@@ -43,6 +43,7 @@ public:
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
+    IWorld* getWorld() const { return mWorld; }
 private:
     // ======================== Game State  ========================
     IWorld* mWorld;

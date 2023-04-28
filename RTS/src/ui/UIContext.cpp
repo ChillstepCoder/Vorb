@@ -21,8 +21,8 @@ UIContext::~UIContext() {
 
 }
 
-void UIContext::updateEditors(const Camera3D& camera, const f32v3& mousePickRay) {
-    mEditorRoot->updateEditors(camera, mousePickRay);
+void UIContext::updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay) {
+    mEditorRoot->updateEditors(world, camera, mousePickRay);
 }
 
 void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {

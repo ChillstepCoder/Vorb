@@ -6,6 +6,7 @@ class TileInspectionPanel;
 struct TileHandle;
 class PauseMenuPanel;
 class EditorRoot;
+class IWorld;
 
 DECL_VG(class GBuffer);
 
@@ -19,7 +20,7 @@ public:
     UIContext(UIContext& other) = delete;
     void operator=(const UIContext&) = delete;
     
-    void updateEditors(const Camera3D& camera, const f32v3& mousePickRay);
+    void updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay);
     void updateAndRenderUI(const vg::GBuffer* activeGBuffer);
     void renderEditorBrushDecals(const Camera3D& camera);
 

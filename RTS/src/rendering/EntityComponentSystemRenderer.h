@@ -11,6 +11,7 @@ class LightRenderer;
 class EntityComponentSystemRenderer {
 public:
 	EntityComponentSystemRenderer();
+    ~EntityComponentSystemRenderer();
     void renderBusinessDebug(const Camera3D& camera) const;
 	void renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer);
 	void renderInteractUI(const Camera3D& camera) const;
