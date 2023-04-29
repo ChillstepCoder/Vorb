@@ -112,7 +112,6 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
                 break;
             }
             case MaterialShaderUniform::ShadowColor:
-                assert(false);
                 glUniform3fv(it.second, 1, &sDebugOptions.mShadowColor[0]);
                 break;
             case MaterialShaderUniform::SSAOTexture:

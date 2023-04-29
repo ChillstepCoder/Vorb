@@ -417,13 +417,13 @@ void ProceduralMeshHelpers::addTileWallMesh(
                     // Little support bars
                     const f32v2 supportHalfDims = f32v2(0.02f);
                     // Bottom left
-                    const f32v3 bottomShutterLeftSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f);
-                    const f32v3 bottomShutterLeftSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f;
+                    const f32v3 bottomShutterLeftSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f) + horizontalOffset;
+                    const f32v3 bottomShutterLeftSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f + horizontalOffset;
                     meshBuilder.addBoardBetweenPoints(bottomShutterLeftSupportStart, bottomShutterLeftSupportEnd, supportHalfDims, tileData.materialData[2], f32v2(1.0f), bottomWindowNormal);
                     // Bottom right
                     const f32v3 rightOffset = horizontalDir * shutterHalfDims.x * 2.0f;
-                    const f32v3 bottomShutterRightSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f) + rightOffset;
-                    const f32v3 bottomShutterRightSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f + rightOffset;
+                    const f32v3 bottomShutterRightSupportStart = shutterRoot + f32v3(0.0f, 0.0f, paneDims.y * 0.4f) + rightOffset + horizontalOffset;
+                    const f32v3 bottomShutterRightSupportEnd = shutterRoot + bottomWindowNormal * paneDims.y * 0.5f + rightOffset + horizontalOffset;
                     meshBuilder.addBoardBetweenPoints(bottomShutterRightSupportStart, bottomShutterRightSupportEnd, supportHalfDims, tileData.materialData[2], f32v2(1.0f), bottomWindowNormal);
 
                 }
