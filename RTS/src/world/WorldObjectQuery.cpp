@@ -12,7 +12,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-WorldObjectQuery::WorldObjectQuery()
+WorldObjectQuery::WorldObjectQuery(IWorld& world) : mWorld(world)
 {
 }
 
@@ -51,6 +51,7 @@ bool WorldObjectQuery::tryQuery(LiteTileHandle handle) {
 }
 
 void WorldObjectQuery::query() {
+    mData->mWorld = &mWorld;
     mData->mStockpileAtTile = nullptr;
 
     if (IS_GAME_THREAD()) {
@@ -69,22 +70,21 @@ void WorldObjectQuery::query() {
             delete threadHandle;
         }, threadHandle);
     }
-    
 }
 
 void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
 {
-    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+    IChunkGrid& chunkGrid = data.mWorld->getChunkGrid();
 
     TileHandle handle;
     if (data.mLiteHandle.isValid()) {
-        handle = data.mLiteHandle.toTileHandle(*sMainGameWorld);
+        handle = data.mLiteHandle.toTileHandle(*data.mWorld);
         data.mTileRef.acquire(handle);
     }
     else {
         assert(IS_GAME_THREAD());
         f32v2 tilePos2D(data.mWorldPos.x, data.mWorldPos.y);
-        handle = sMainGameWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+        handle = data.mWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
         if (!handle.isValid()) {
             return;
         }
@@ -92,7 +92,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
         Chunk* chunk = handle.container->getOwnerChunk();
         if (chunk->isDataReady()) {
             assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-            std::vector<Structure*> structures = sMainGameWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+            std::vector<Structure*> structures = data.mWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
             for (size_t i = 0; i < structures.size(); ++i) {
                 Structure* structure = structures[i];
                 TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);

@@ -763,7 +763,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
     // TODO: Proper intersection
     // TODO: Only when the layer changes
     if (!isTerrain()) {
-        IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+        IChunkGrid& chunkGrid = mWorld.getChunkGrid();
         const i32v3& rootPos = mTileSpatialGrid.getWorldPos3D();
         const i32v3 offset = mTileSpatialGrid.getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {

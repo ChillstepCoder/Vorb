@@ -20,7 +20,7 @@
 // * When a dormant structure becomes active, we allocate its tiles and do all the rest
 StructureID sStructureIdGen = 0;
 
-StructureManager::StructureManager(TileContainerRepository& tileContainerRepository) : mTileContainerRepository(tileContainerRepository) {
+StructureManager::StructureManager(IWorld& world) : mWorld(world) {
     initEventHandlers();
 }
 
@@ -29,12 +29,12 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     i32v3 tileDims = aabb.dims;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
     std::unique_ptr<Structure> newStructure;
-    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     switch (type) {
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
-            newStructure->mTileContainer = mTileContainerRepository.getNewTileContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            newStructure->mTileContainer = mWorld.getTileContainerRepository().getNewTileContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
             break;
         }
         default:

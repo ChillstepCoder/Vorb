@@ -24,7 +24,6 @@ NavThread::~NavThread() {
 
 void NavThread::init(NavWorld& navWorld) {
     assert(!mThread); // No double init
-    assert(sMainGameWorld);
     mNavWorld = &navWorld;
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&NavThread::navThreadFunc, this);

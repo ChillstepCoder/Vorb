@@ -14,6 +14,7 @@ class btVector4;
 class btHeightfieldTerrainShape;
 class DynamicCharacterController;
 class StaticPhysicsMeshBuilder;
+class IWorld;
 struct HeightmapPatchData;
 
 constexpr int INVALID_PHYSICS_USER_INDEX = INT32_MAX;
@@ -66,7 +67,7 @@ enum class CollisionGroup {
 class PhysicsWorld
 {
 public:
-    PhysicsWorld(CollisionShapeRepository& shapeRepository);
+    PhysicsWorld(IWorld& world, CollisionShapeRepository& shapeRepository);
     ~PhysicsWorld();
 
     int stepSimulation(f32 deltaTime);
@@ -138,6 +139,8 @@ private:
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
 
     std::map<TileContainerID, TileContainerPhysicsData> mTileContainerPhysicsData; // Model colliders and such
+
+    IWorld& mWorld;
 
     // Debug drawing
     std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;

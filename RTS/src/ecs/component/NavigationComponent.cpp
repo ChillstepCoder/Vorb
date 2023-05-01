@@ -85,7 +85,7 @@ PathStatus updateComponentFinePath(IWorld& world, entt::entity entity, Navigatio
     }*/
 
 	// Check for stuck on new tile/jump
-	const TileHandle tileHandle = sMainGameWorld->getTileHandleAtWorldPos(nextTilePos);
+	const TileHandle tileHandle = world.getTileHandleAtWorldPos(nextTilePos);
 	if (tileHandle.isValid()) {
         const f32 baseZ = tileHandle.getTile().getGroundZOffset();
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
@@ -244,15 +244,15 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestFinePathToPoint(NavigationComponent& navCmp, const f32v3& start, const f32v3& goal) {
+void requestFinePathToPoint(IWorld& world, NavigationComponent& navCmp, const f32v3& start, const f32v3& goal) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
         std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
         assert(Services::isUsingNav());
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle]() {
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle, &world]() {
 
-			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(sMainGameWorld->getHeightmapGrid())));
+			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(world.getHeightmapGrid())));
 
 			RenderThreadTasks::getInstance().addGenericTask([](RenderContext&, void* vPathHandle) {
 				std::vector<f32v3>* pathHandle = static_cast<std::vector<f32v3>*>(vPathHandle);
@@ -303,7 +303,7 @@ void updateComponentCoarsePath(IWorld& world, entt::entity entity, NavigationCom
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestFinePathToPoint(navCmp, pos, nextCoarseTilePos);
+		requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos);
 
     }
     else {
@@ -342,7 +342,7 @@ void updateComponentCoarsePath(IWorld& world, entt::entity entity, NavigationCom
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
                     nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition(world)) + f32v3(0.5f, 0.5f, 0.0f);
-                    requestFinePathToPoint(navCmp, pos, nextCoarseTilePos);
+                    requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos);
                 }
 			}
 		}

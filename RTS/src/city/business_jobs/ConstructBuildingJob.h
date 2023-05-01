@@ -4,6 +4,7 @@
 #include "item/ItemStack.h"
 
 class BuildingBlueprint;
+class IWorld;
 struct OwnershipComponent;
 
 struct TilesToConstruct {
@@ -34,7 +35,7 @@ struct JobRequiredItems {
 class ConstructBuildingJob : public IBusinessJob
 {
 public:
-	ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity);
+	ConstructBuildingJob(IWorld& world, BuildingBlueprint& blueprint, entt::entity businessEntity);
 	~ConstructBuildingJob();
 
 	bool tick(entt::registry& registry, entt::entity business) override;

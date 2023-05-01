@@ -53,7 +53,7 @@ public:
     virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
-	void initWorld(const vui::GameTime& gameTime);
+	void initWorld();
 	void initCamera();
 
 	void updateClient(const vui::GameTime& gameTime);
@@ -67,7 +67,8 @@ private:
 	void displayLoadScreen(const nString& text, bool syncWindow);
 	void initInputs();
 
-	IWorld* mWorld = nullptr;
+	// TODO: Maybe shouldn't live on the screen?
+	std::unique_ptr<IWorld> mWorld;
 
     // Rendering
     std::unique_ptr<CameraController> mCameraController;

@@ -38,7 +38,7 @@ void IEntityComponentSystem::tick() {
 }
 
 void IEntityComponentSystem::tickPhysics() {
-	mPhysicsSystem.update(mRegistry);
+	mPhysicsSystem.update(mWorld, mRegistry);
 	mCharacterControlSystem.update(mRegistry);
 }
 

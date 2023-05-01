@@ -20,7 +20,7 @@ void CityBusinessManager::registerBusiness(entt::entity businessEntity)
 
 bool CityBusinessManager::tryEmploy(entt::entity personToEmploy)
 {
-    entt::registry& registry = sMainGameWorld->getECS().mRegistry;
+    entt::registry& registry = mCity.getWorld().getECS().mRegistry;
 
     entt::entity bestBusiness = INVALID_ENTITY;
     ui32 bestScore = 0;

@@ -7,7 +7,7 @@
 #include "BuildingBlueprint.h"
 
 class VisualLog;
-
+class IWorld;
 class CityBuilder;
 class BuildingDescriptionRepository;
 struct RoomNode;
@@ -18,11 +18,11 @@ class BuildingBlueprintGenerator
 {
 public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
-    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(IWorld& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     VORB_NON_COPYABLE(BuildingBlueprintGenerator);
 
-    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(IWorld& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     static void generatePossibleWindowPermutations();
 private:

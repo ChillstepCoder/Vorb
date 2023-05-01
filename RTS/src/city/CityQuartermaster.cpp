@@ -46,7 +46,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::entity ownerEntity) {
 
-    ItemStockpile* newStockpile = sMainGameWorld->getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
+    ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
     
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
@@ -58,7 +58,7 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::ent
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
 
-    ItemStockpile* newStockpile = sMainGameWorld->getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
+    ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
 
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {

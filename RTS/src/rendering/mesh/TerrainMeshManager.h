@@ -21,6 +21,7 @@ private:
     // Events
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     IHeightmapGridListeners mHeightmapGridListeners;
+    IWorld& mWorld;
 
     std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
 };

@@ -25,15 +25,10 @@
 
 #include "resources/ResourceManager.h"
 
-IWorld* sMainGameWorld = nullptr;
-
 IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGrid(chunkGrid), mHeightmapGrid(heightmapGrid)
 {
     assert(mChunkGrid);
     assert(mHeightmapGrid);
-
-    assert(!sMainGameWorld);
-    sMainGameWorld = this;
 
     // Tile Containers
     mTileContainerRepository = std::make_unique<TileContainerRepository>(*this);
@@ -148,7 +143,7 @@ TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
         assert(worldPos2D.x >= 0.0f && worldPos2D.y >= 0.0f);
-        std::vector<Structure*> structures = sMainGameWorld->tryGetStructuresAtWorldPos(worldPos2D);
+        std::vector<Structure*> structures = tryGetStructuresAtWorldPos(worldPos2D);
         for (auto&& structure : structures) {
             TileHandle structureHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(worldPos);
             if (structureHandle.isValid() && structure->isTileOwned(structureHandle.tileIndex)) {

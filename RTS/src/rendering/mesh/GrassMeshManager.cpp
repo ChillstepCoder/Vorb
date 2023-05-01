@@ -16,11 +16,11 @@ GrassMeshManager::~GrassMeshManager() {
 
 }
 
-void GrassMeshManager::tick() {
+void GrassMeshManager::tick(IWorld& world) {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
 
-    const f32v2& loadCenter = sMainGameWorld->getLoadCenter();
+    const f32v2& loadCenter = world.getLoadCenter();
 
     // Update grass
     for (auto&& it : mChunkGrassQuadtrees) {

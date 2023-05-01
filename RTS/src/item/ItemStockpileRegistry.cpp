@@ -50,7 +50,7 @@ const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtTile
 void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stockpile) {
     // TODO: I think this is bad
     // Get all possible chunks
-    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos));
@@ -74,7 +74,7 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
 void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpile) {
     // TODO: I think this is bad
     // Get all possible chunks
-    IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos));

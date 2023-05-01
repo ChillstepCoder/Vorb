@@ -102,6 +102,3 @@ protected:
     std::unique_ptr<CityGraph> mCities;
 
 };
-
-// TODO: Make const and use const_cast to set it? Singleton?
-extern IWorld* sMainGameWorld;

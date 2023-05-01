@@ -185,7 +185,8 @@ void GameClient::processPingMessage(PingMessage* message) {
 }
 
 void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sMainGameWorld->getECS();
+    assert(mActiveWorld);
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
     assert(cliEcs.getLocalPlayer() == entt::null);
     entt::entity playerEntity = cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, StrToken("player"));
     cliEcs.setLocalPlayer(playerEntity);
@@ -193,12 +194,14 @@ void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
 }
 
 void GameClient::processEntityCreateMessage(EntityCreateMessage* message) {
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sMainGameWorld->getECS();
+    assert(mActiveWorld);
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
     cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, message->mEntityToken);
 }
 
 void GameClient::processEntityTransformMessage(EntityTransformMessage* message) {
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sMainGameWorld->getECS();
+    assert(mActiveWorld);
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
     if (entity != entt::null) {
         PhysicsComponent& physCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
@@ -207,7 +210,8 @@ void GameClient::processEntityTransformMessage(EntityTransformMessage* message) 
 }
 
 void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sMainGameWorld->getECS();
+    assert(mActiveWorld);
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
     if (entity != entt::null) {
         PhysicsComponent& physCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
@@ -220,7 +224,8 @@ void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
 }
 
 void GameClient::replicatePlayerState() {
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sMainGameWorld->getECS();
+    assert(mActiveWorld);
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getLocalPlayer();
     if (entity != entt::null) {
         PhysicsComponent& physicsCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);

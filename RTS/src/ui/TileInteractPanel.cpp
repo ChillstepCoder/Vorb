@@ -27,7 +27,8 @@ constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoRe
 //    return changed;
 //}
 
-TileInteractPanel::TileInteractPanel(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery) :
+TileInteractPanel::TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery) :
+    mWorld(world),
     mScreenPos(screenPos),
     mWindow(window),
     mWorldObjectQuery(std::move(worldObjectQuery))
@@ -75,7 +76,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
 
             // Agents
             for (auto& it : mWorldObjectQuery.getEntities()) {
-                if (CharacterDetailsComponent* cmp = sMainGameWorld->getECS().mRegistry.try_get<CharacterDetailsComponent>(it.second)) {
+                if (CharacterDetailsComponent* cmp = mWorld.getECS().mRegistry.try_get<CharacterDetailsComponent>(it.second)) {
                     ++optionCount;
                     nextState = UIInteractMenuState::SELECTED_AGENT;
                     if (ImGui::Button((std::to_string(i++) + " " + cmp->name).c_str(), sButtonSize)) {
@@ -197,7 +198,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
             Chunk* owner = mWorldObjectQuery.getTileContainer()->getOwnerChunk();
             assert(owner);
-            std::vector<Structure*> structures = sMainGameWorld->tryGetStructuresAtWorldPos(i32v2(mWorldObjectQuery.getTilePos()));
+            std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(mWorldObjectQuery.getTilePos()));
             if (structures.empty()) {
                 // If we got here the structure  was deleted while we had it selected
                 resultFlags = INTERACT_MENU_RESULT_INVALID;

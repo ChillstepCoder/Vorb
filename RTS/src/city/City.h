@@ -12,6 +12,7 @@ class CityBusinessManager;
 class CityQuartermaster;
 class BuildingDescriptionRepository;
 class Building;
+class IWorld;
 
 //
 //enum class MarketStallType {
@@ -112,7 +113,7 @@ class City
     friend class CityDebugRenderer;
 
 public:
-    City(const ui32v2& cityCenterWorldPos);
+    City(IWorld& world, const ui32v2& cityCenterWorldPos);
     ~City();
 
     VORB_NON_COPYABLE(City);
@@ -129,6 +130,7 @@ public:
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
     std::vector<std::unique_ptr<Building>>& getBuildings() { return mBuildings; }
     const std::vector<std::unique_ptr<Building>>& getBuildings() const { return mBuildings; }
+    IWorld& getWorld() const { return mWorld; }
 
     // Mutators
     void addResidentToCity(entt::entity entity);
@@ -159,6 +161,7 @@ private:
     std::unique_ptr<CityQuartermaster> mCityQuartermaster;
 
     // City center dims is even so this will be bottom left most center tile
+    IWorld& mWorld;
     ui32v2 mCityCenterWorldPos;
     i32AABB2 mCityAABB; // x,y,w,h
 

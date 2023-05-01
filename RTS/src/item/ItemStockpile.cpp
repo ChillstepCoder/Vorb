@@ -57,7 +57,7 @@ ItemStockpile::ItemStockpile(IWorld& world, ItemStockpileID id, const i32AABB2& 
 
     // Ownership
     if (mOwnerEntity != INVALID_ENTITY) {
-        OwnershipComponent& ownershipCmp = sMainGameWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         ownershipCmp.mOwnedStockpiles.push_back(this);
     }
 
@@ -79,7 +79,7 @@ ItemStockpile::~ItemStockpile() {
 
     // Clean up ownership
     if (mOwnerEntity != INVALID_ENTITY) {
-        OwnershipComponent& ownershipCmp = sMainGameWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         for (size_t i = 0; i < ownershipCmp.mOwnedStockpiles.size(); ++i) {
             if (ownershipCmp.mOwnedStockpiles[i] == this) {
                 ownershipCmp.mOwnedStockpiles[i] = ownershipCmp.mOwnedStockpiles.back();

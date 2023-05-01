@@ -38,5 +38,8 @@ protected:
     float mTimeOfDay = 0.0f; // span of 24:00
     f32v3 mSunColor = f32v3(1.0f);
     f32m4 mSkyRotMatrix = f32m4(1.0f);
+
+private:
+    IWorld* mCliWorld = nullptr;
 };
 

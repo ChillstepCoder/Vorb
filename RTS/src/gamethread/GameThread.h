@@ -5,17 +5,19 @@
 
 #include "util/Timing/ThreadUtilizationTimer.h"
 
+class IWorld;
+
 class GameThread
 {
 protected:
-    GameThread(WorldNetMode worldType);
+    GameThread(IWorld& world, WorldNetMode worldType);
     ~GameThread();
 
 public:
     GameThread(GameThread& other) = delete;
     void operator=(const GameThread&) = delete;
 
-    static GameThread& initInstance(WorldNetMode worldType);
+    static GameThread& initInstance(IWorld& world, WorldNetMode worldType);
     static GameThread& getInstance();
     static void destroyInstance();
     static bool exists() { return sInstance != nullptr; }
@@ -32,6 +34,7 @@ private:
     void updateProcs();
     void initWorld();
 
+    IWorld& mWorld;
     std::atomic_bool mIsRunning = false;
     std::atomic_bool mStop = false;
     std::unique_ptr<std::thread> mThread;

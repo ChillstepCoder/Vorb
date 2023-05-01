@@ -4,6 +4,7 @@
 
 class StaticPhysicsMeshBuilder;
 class TileContainer;
+class IWorld;
 
 typedef void(*GameFunction)(class GameThread& gameThread, void*);
 
@@ -11,7 +12,7 @@ class GameThreadTasks
 {
     friend class GameThread;
 protected:
-    GameThreadTasks();
+    GameThreadTasks(IWorld& world);
     ~GameThreadTasks();
 
 public:
@@ -19,7 +20,7 @@ public:
     void operator=(const GameThreadTasks&) = delete;
 
 protected:
-    static GameThreadTasks& initInstance();
+    static GameThreadTasks& initInstance(IWorld& world);
 public:
     static GameThreadTasks& getInstance();
 
@@ -36,6 +37,7 @@ private:
     // Task queue
     // TODO: Clear task queues on destroy?
     moodycamel::ConcurrentQueue<std::pair<GameFunction, void*>> mGameThreadProcs;
+    IWorld& mWorld;
 
     static GameThreadTasks* sInstance;
 };

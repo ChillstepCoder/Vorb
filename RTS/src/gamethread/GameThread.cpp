@@ -18,7 +18,7 @@
 
 GameThread* GameThread::sInstance = nullptr;
 
-GameThread::GameThread(WorldNetMode worldType) : mNetMode(worldType) {
+GameThread::GameThread(IWorld& world, WorldNetMode worldType) : mWorld(world), mNetMode(worldType) {
     assert(!mThread); // No double init
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&GameThread::mainFunc, this);
@@ -32,10 +32,10 @@ GameThread::~GameThread() {
     }
 }
 
-GameThread& GameThread::initInstance(WorldNetMode worldType) {
+GameThread& GameThread::initInstance(IWorld& world, WorldNetMode worldType) {
     if (!sInstance) {
-        sInstance = new GameThread(worldType);
-        GameThreadTasks::initInstance();
+        sInstance = new GameThread(world, worldType);
+        GameThreadTasks::initInstance(world);
     }
     return *sInstance;
 }
@@ -107,7 +107,7 @@ void GameThread::tick() {
 
 void GameThread::tickClient() {
     PROFILE_FUNCTION();
-    CliWorld* cliWorld = static_cast<CliWorld*>(sMainGameWorld);
+    CliWorld* cliWorld = static_cast<CliWorld*>(&mWorld);
 
     // Update main thread update queues
     cliWorld->onFrameBegin();
@@ -118,6 +118,7 @@ void GameThread::tickClient() {
         pError("LOST CONNECTION!");
         assert(false);
     }
+    client.setActiveWorld(&mWorld);
     const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
     client.update(timeStep);
 
@@ -133,7 +134,7 @@ void GameThread::tickClient() {
 
 void GameThread::tickHost() {
     PROFILE_FUNCTION();
-    HostWorld* hostWorld = static_cast<HostWorld*>(sMainGameWorld);
+    HostWorld* hostWorld = static_cast<HostWorld*>(&mWorld);
 
     // TODO: We need to send packets at the end of the tick! We will accrue packets and we dont want to delay an entire frame
     if (GameServer::exists()) {
@@ -184,11 +185,11 @@ void GameThread::initWorld()
     //displayLoadScreen("Loading...", true);
 
     // Starting time of day to noon
-    sMainGameWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
+    mWorld.getTimeOfDayManager().setTimeOfDay(12.0f);
 
     // Begin world
     // TODO: Better pos?
-    sMainGameWorld->onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
+    mWorld.onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
 
     // Start world rendering
     //mRenderContext->onWorldBegin();

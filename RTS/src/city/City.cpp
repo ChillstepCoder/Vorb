@@ -16,13 +16,14 @@
 
 #include "ecs/IEntityComponentSystem.h"
 
-City::City(const ui32v2& cityCenterWorldPos)
-    : mCityCenterWorldPos(cityCenterWorldPos)
+City::City(IWorld& world, const ui32v2& cityCenterWorldPos)
+    : mWorld(world)
+    , mCityCenterWorldPos(cityCenterWorldPos)
     , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)
 {
 
-    TileHandle root = sMainGameWorld->getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
-    mChunks.push_back(&sMainGameWorld->getChunkGrid().getChunk(root.getChunkIDAtPos()));
+    TileHandle root = mWorld.getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
+    mChunks.push_back(&mWorld.getChunkGrid().getChunk(root.getChunkIDAtPos()));
     // This belongs to us, don't go away
     // TODO: Need to release later
     mChunks.back()->incRef();
@@ -38,7 +39,7 @@ City::City(const ui32v2& cityCenterWorldPos)
     //mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
 
     // Add test business
-    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, sMainGameWorld->getECS().mRegistry, "lumbermill");
+    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");
 }
 
 City::~City() {

@@ -33,7 +33,7 @@ EntityComponentSystemRenderer::~EntityComponentSystemRenderer()
 
 }
 
-void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) const {
+void EntityComponentSystemRenderer::renderBusinessDebug(IWorld& world, const Camera3D& camera) const {
 
 	if (++mFrameCount <= mFramesPerDebugDraw) {
 		return;
@@ -43,7 +43,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
     int i = 0;
     // Blueprint debug
     if (sDebugOptions.mBlueprintDebug) {
-        auto& ecs = sMainGameWorld->getECS();
+        auto& ecs = world.getECS();
 
 		auto view = ecs.mRegistry.view<BusinessBuildComponent>();
 		for (auto entity : view) {
@@ -55,9 +55,9 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
 	}
 }
 
-void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {
+void EntityComponentSystemRenderer::renderDynamicLightComponents(IWorld& world, const Camera3D& camera, const LightRenderer& lightRenderer) {
 
-    auto& ecs = sMainGameWorld->getECS();
+    auto& ecs = world.getECS();
 	// TODO: 3D
 	//ecs.mRegistry.view<PhysicsComponent, DynamicLightComponent>().each([&](auto& physCmp, auto& lightCmp) {
 	//	assert(false);

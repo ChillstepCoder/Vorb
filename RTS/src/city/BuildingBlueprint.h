@@ -8,6 +8,7 @@
 
 class Building;
 class BuildingBlueprint;
+class IWorld;
 struct BuildingDef;
 struct Recipe;
 struct TileHandle;
@@ -86,7 +87,7 @@ typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 class BuildingBlueprint {
 public:
     BuildingBlueprint() = default;
-    BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    BuildingBlueprint(IWorld& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
 
@@ -110,6 +111,7 @@ public:
     f32 mDesiredTerrainFlattenHeight = 0.0f;
     // End construction
 
+    IWorld* world = nullptr;
     Building* building = nullptr;
     const BuildingDef* desc = nullptr;
     float sizeAlpha;

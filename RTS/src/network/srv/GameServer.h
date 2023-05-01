@@ -4,6 +4,7 @@
 #include "network/Message.h"
 
 class SrvAdapter;
+class IWorld;
 
 struct PingMessage;
 
@@ -20,20 +21,19 @@ enum class ClientFlags : ui8 {
     JOINED = 1 << 0,
 };
 
-
 typedef std::vector<int> ClientList;
 typedef std::vector<BitFlags<ClientFlags>> ClientFlagsList;
 
 class GameServer {
 protected:
-    GameServer(ServerType serverType);
+    GameServer(IWorld& world, ServerType serverType);
     ~GameServer();
 
 public:
     GameServer(GameServer& other) = delete;
     void operator=(const GameServer&) = delete;
 
-    static GameServer& initInstance(ServerType serverType);
+    static GameServer& initInstance(IWorld& world, ServerType serverType);
     static GameServer& getInstance();
     static void destroyInstance();
     static bool exists() { return sInstance != nullptr; }
@@ -83,6 +83,7 @@ private:
     ClientFlagsList mConnectedClientFlags;
     // MAINTAIN ORDER
 
+    IWorld& mWorld;
     ServerType mServerType;
     std::atomic_bool mRunning;
     double mTimeSec;

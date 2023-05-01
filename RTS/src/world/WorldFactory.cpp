@@ -9,7 +9,7 @@
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 
-IWorld& WorldFactory::makeWorld(WorldNetMode type) {
+std::unique_ptr<IWorld> WorldFactory::makeWorld(WorldNetMode type) {
     switch (type) {
         case WorldNetMode::Client:
             return makeClientWorld();
@@ -26,8 +26,7 @@ IWorld& WorldFactory::makeWorld(WorldNetMode type) {
 
     }
     // Failure case
-    assert(false);
-    return *sMainGameWorld;
+    throw std::invalid_argument("Invalid WorldNetMode value passed to makeWorld()");
 }
 
 void WorldFactory::destroyWorld()
@@ -35,38 +34,38 @@ void WorldFactory::destroyWorld()
     assert(false);
 }
 
-IWorld& WorldFactory::makeClientWorld() {
+std::unique_ptr<CliWorld> WorldFactory::makeClientWorld() {
     CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid();
     CliChunkGrid* chunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    sMainGameWorld = new CliWorld(chunkGrid, heightmapGrid);
+    std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = sMainGameWorld;
-    heightmapGrid->mWorld = sMainGameWorld;
+    chunkGrid->mWorld = newWorld.get();
+    heightmapGrid->mWorld = newWorld.get();
 
-    return *sMainGameWorld;
+    return newWorld;
 }
 
-IWorld& WorldFactory::makeHostWorld() {
+std::unique_ptr<HostWorld> WorldFactory::makeHostWorld() {
     SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid();
     SrvChunkGrid* chunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    sMainGameWorld = new HostWorld(chunkGrid, heightmapGrid);
+    std::unique_ptr<HostWorld> newWorld = std::make_unique<HostWorld>(chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = sMainGameWorld;
-    heightmapGrid->mWorld = sMainGameWorld;
+    chunkGrid->mWorld = newWorld.get();
+    heightmapGrid->mWorld = newWorld.get();
 
-    return *sMainGameWorld;
+    return newWorld;
 }
 
-IWorld& WorldFactory::makeServerWorld() {
+std::unique_ptr<DedicatedSrvWorld> WorldFactory::makeServerWorld() {
     SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid();
     SrvChunkGrid* chunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    sMainGameWorld = new DedicatedSrvWorld(chunkGrid, heightmapGrid);
+    std::unique_ptr<DedicatedSrvWorld> newWorld = std::make_unique<DedicatedSrvWorld>(chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = sMainGameWorld;
-    heightmapGrid->mWorld = sMainGameWorld;
+    chunkGrid->mWorld = newWorld.get();
+    heightmapGrid->mWorld = newWorld.get();
 
-    return *sMainGameWorld;
+    return newWorld;
 }

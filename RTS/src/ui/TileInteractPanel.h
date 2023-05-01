@@ -4,6 +4,7 @@ struct SDL_Window;
 class Structure;
 struct RoomNode;
 class Building;
+class IWorld;
 
 #include "city/CityConst.h"
 #include "world/WorldObjectQuery.h"
@@ -40,7 +41,7 @@ enum class UIInteractMenuState {
 class TileInteractPanel
 {
 public:
-    TileInteractPanel(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery);
+    TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery);
     ~TileInteractPanel();
 
     UIInteractMenuResultFlags updateAndRender();
@@ -64,5 +65,6 @@ private:
     Structure* mSelectedStructure = nullptr;
     RoomNodeID mSelectedRoomID = INVALID_ROOM_ID;
     TileHandle mSelectedTileHandle;
+    IWorld& mWorld;
 };
 

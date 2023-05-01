@@ -48,7 +48,7 @@ int collisionMasks[e_cast(CollisionGroup::COUNT)] = {
 
 static_assert(e_cast(CollisionGroup::COUNT) == 4);
 
-PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository) {
+PhysicsWorld::PhysicsWorld(IWorld& world, CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository), mWorld(world) {
 
     /// collision configuration contains default setup for memory , collision setup . Advanced users can create their own configuration .
     mCollisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
@@ -620,10 +620,10 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
                 }
                 else {
                     f32v2 tilePos2D(rv.mPosition.x, rv.mPosition.y);
-                    TileHandle handle = sMainGameWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+                    TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(tilePos2D);
                     if (handle.isValid()) {
                         assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-                        std::vector<Structure*> structures = sMainGameWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+                        std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(tilePos2D));
                         for (auto&& structure : structures) {
                             TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
                             if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {

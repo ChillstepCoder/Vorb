@@ -4,6 +4,8 @@
 #include "tile/TileHandle.h"
 #include "item/ItemReservation.h"
 
+class IWorld;
+
 class HarvestItemsTask : public IAgentTask {
 public:
 	HarvestItemsTask(ItemID itemId, ui16 itemCount, AgentTaskFinishedFunc finishedFunc);
@@ -25,13 +27,13 @@ public:
 		FAIL
 	};
 
-	TaskTickResult tick(entt::registry& registry, entt::entity agent) override;
+	TaskTickResult tick(IWorld& world, entt::registry& registry, entt::entity agent) override;
 
 	const char* getTaskName() const override { return "GatherItemsForPromise"; }
 
 protected:
     void findItem(entt::registry& registry, entt::entity agent);
-    void harvestItem(entt::registry& registry, entt::entity agent, TileHandle targetTileHandle);
+    void harvestItem(IWorld& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle);
 	void failTask();
 
 	ItemID mItemId;

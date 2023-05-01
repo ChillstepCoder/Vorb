@@ -6,13 +6,15 @@
 
 class ChunkGrassQuadtree;
 class Chunk;
+class IWorld;
+
 class GrassMeshManager
 {
 public:
     GrassMeshManager();
     ~GrassMeshManager();
 
-    void tick();
+    void tick(IWorld& world);
     void addGrassForChunk(const Chunk& chunk);
     void removeGrassForChunk(const Chunk& chunk);
     void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);

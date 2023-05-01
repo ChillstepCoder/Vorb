@@ -22,11 +22,11 @@ PersonAISystem::PersonAISystem()
 // 4. Safety needs
 // 5. physiological needs
 // https://www.youtube.com/watch?v=RYZSdPuvta8
-inline void updateComponent(entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
+inline void updateComponent(IWorld& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
-        ai.mCity = sMainGameWorld->getCityGraph().getClosestCityToPoint(physics.getPosition());
+        ai.mCity = world.getCityGraph().getClosestCityToPoint(physics.getPosition());
         // No city? No work!
         if (!ai.mCity) {
             return;
@@ -53,7 +53,7 @@ inline void updateComponent(entt::registry& registry, entt::entity entity, Perso
     if (employeeCmp) {
         if (employeeCmp->mCurrentTask) {
             IAgentTaskPtr& currentTask = employeeCmp->mCurrentTask;
-            TaskTickResult result = currentTask->tick(registry, entity);
+            TaskTickResult result = currentTask->tick(world, registry, entity);
             if (result != TaskTickResult::IN_PROGRESS) {
                 if (result == TaskTickResult::SUCCESS) {
                     AgentTaskFinishedFunc finishedFunc = currentTask->getFinishedFunc();
@@ -93,12 +93,12 @@ inline void updateComponent(entt::registry& registry, entt::entity entity, Perso
     // Needs
 }
 
-void PersonAISystem::update(entt::registry& registry) {
+void PersonAISystem::update(IWorld& world, entt::registry& registry) {
     PROFILE_FUNCTION();
     auto view = registry.view<PersonAIComponent, PhysicsComponent>();
     for (auto entity : view) {
         PersonAIComponent& ai = view.get<PersonAIComponent>(entity);
         PhysicsComponent& physics = view.get<PhysicsComponent>(entity);
-        updateComponent(registry, entity, ai, physics);
+        updateComponent(world, registry, entity, ai, physics);
     }
 }

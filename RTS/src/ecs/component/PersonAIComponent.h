@@ -2,6 +2,7 @@
 
 class City;
 class Building;
+class IWorld;
 
 #include "ai/tasks/IAgentTask.h"
 
@@ -53,5 +54,5 @@ class PersonAISystem {
 public:
     PersonAISystem();
 
-    void update(entt::registry& registry);
+    void update(IWorld& world, entt::registry& registry);
 };

@@ -21,6 +21,7 @@ namespace bgi = boost::geometry::index;
 typedef bg::model::point<i32, 2, bg::cs::cartesian> NavBoxPoint;
 typedef bg::model::box<NavBoxPoint> NavBBox;
 
+class IWorld;
 class Chunk;
 class TileContainer;
 struct TileFineNavData;
@@ -175,7 +176,7 @@ private:
 class NavWorld
 {
 public:
-    NavWorld();
+    NavWorld(IWorld& world);
     ~NavWorld();
 
     void tickGameThread();
@@ -242,6 +243,7 @@ private:
 
     TileContainerListeners mTileContainerEventListeners;
 
+    IWorld& mWorld;
 
     // Large data at the bottom
     TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];

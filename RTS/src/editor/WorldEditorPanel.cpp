@@ -96,6 +96,7 @@ WorldEditorPanel::WorldEditorPanel() {
 void WorldEditorPanel::update(IWorld* world, const Camera3D& camera, const f32v3& pickRay) {
     PROFILE_FUNCTION();
     mActiveWorld = world;
+    assert(mActiveWorld);
 
     mUpdateTimer.startFrame();
     if (!mUpdateTimer.tryTick()) {
@@ -105,7 +106,7 @@ void WorldEditorPanel::update(IWorld* world, const Camera3D& camera, const f32v3
     {
         PROFILE_SCOPE("Tile picking");
         mHitResult = mDeferredPhysicsPick.getLastPickResult();
-        sMainGameWorld->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+        world->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
     }
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
@@ -525,6 +526,7 @@ void WorldEditorPanel::updateGrassEdit() {
                 const GrassEditTask* task = static_cast<GrassEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
                 const BrushSettings& brushSettings = task->brushSettings;
+                IWorld* world = task->editor->mActiveWorld;
                 PreciseTimer timer;
                 // Edit the terrain with iteration
                 const f32v2 hitPosition2D(hitResult.mPosition.x, hitResult.mPosition.y);
@@ -536,7 +538,7 @@ void WorldEditorPanel::updateGrassEdit() {
                     PROFILE_SCOPE("Edit Grass");
                     for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
-                            IChunkGrid& chunkGrid = sMainGameWorld->getChunkGrid();
+                            IChunkGrid& chunkGrid = world->getChunkGrid();
                             const ChunkID id = chunkGrid.getChunkIDFromWorldPos(worldPos);
                             const TileContainer& tileContainer = *chunkGrid.getChunk(id).getTileContainer();
                             TileIndex tileIndex = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
@@ -551,7 +553,7 @@ void WorldEditorPanel::updateGrassEdit() {
 
          
                 // Notify all terrain stuff to update
-                sMainGameWorld->dirtyGrassFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + 1);
+                world->dirtyGrassFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + 1);
 
             delete task;
             }, task);
@@ -564,7 +566,7 @@ void WorldEditorPanel::updateTileEdit() {
     static TileIndex prevTileIndex;
     if (mHitResult.didHit() && (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && (mDragToPlace || !mDidPlaceTile))) {
         mDidPlaceTile = true;
-        const ChunkID chunkID = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
+        const ChunkID chunkID = mActiveWorld->getChunkGrid().getChunkIDFromWorldPos(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
         const TileIndex tileIndex = (TileIndex)((ui32)mHitResult.mPosition.x % CHUNK_WIDTH + ((ui32)mHitResult.mPosition.y % CHUNK_WIDTH) * CHUNK_WIDTH);
 
         // Make sure while mouse is held we aren't spamming tiles in the same spot
@@ -572,11 +574,12 @@ void WorldEditorPanel::updateTileEdit() {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
 
-            std::tuple<ChunkID, TileIndex, TileID>* taskData = new std::tuple<ChunkID, TileIndex, TileID>(chunkID, tileIndex, mSelectedTile);
+            typedef std::tuple<ChunkID, TileIndex, TileID, IWorld*> TaskTuple;
+            TaskTuple* taskData = new TaskTuple(chunkID, tileIndex, mSelectedTile, mActiveWorld);
             GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
-                std::tuple<ChunkID, TileIndex, TileID>* taskData = (std::tuple<ChunkID, TileIndex, TileID>*)v;
+                TaskTuple* taskData = (TaskTuple*)v;
                 ChunkID chunkId = std::get<0>(*taskData);
-                Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(chunkId);
+                Chunk& chunk = std::get<3>(*taskData)->getChunkGrid().getChunk(chunkId);
                 if (chunk.isDataReady()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
                     const TileData& data = TileRepository::getTileData(std::get<2>(*taskData));
@@ -607,12 +610,14 @@ void WorldEditorPanel::updateCityEdit() {
 
         struct CityCreateTask {
             f32v2 worldPos;
+            IWorld* world;
         };
         CityCreateTask* task = new CityCreateTask;
         task->worldPos = f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y);
+        task->world = mActiveWorld;
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
             CityCreateTask* task = static_cast<CityCreateTask*>(vTask);
-            sMainGameWorld->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
+            task->world->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
             delete task;
         }, task);
     }
@@ -628,20 +633,20 @@ void WorldEditorPanel::updateBuildingEdit() {
         struct BuildingEditCreateTask {
             i32AABB2 aabb;
             ui32 selectedBuildingId;
-            IHeightmapGrid* heightGrid;
+            IWorld* world;
         };
         BuildingEditCreateTask* task = new BuildingEditCreateTask;
         task->aabb.pos = createPos;
         task->aabb.dims = mPlotDims;
         task->selectedBuildingId = mSelectedBuilding;
-        task->heightGrid = &mActiveWorld->getHeightmapGrid();
+        task->world = mActiveWorld;
 
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
             BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
-            const i32 meanHeight = round(task->heightGrid->computeMeanHeightAtAABB(task->aabb));
+            const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
             BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
             const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
-            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
+            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(*task->world, buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
             if (!bp) {
                 assert(false);
                 return;

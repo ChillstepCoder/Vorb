@@ -37,8 +37,8 @@ CliWorldInterface::CliWorldInterface() {
 }
 
 CliWorldInterface::~CliWorldInterface() {
-    sMainGameWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
-    sMainGameWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
+    mCliWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
+    mCliWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
 }
 
 void CliWorldInterface::initClient(IWorld& world)
@@ -50,7 +50,7 @@ void CliWorldInterface::initClient(IWorld& world)
 void CliWorldInterface::tickClient(IWorld& world) {
 
     mTerrainMeshManager->tick();
-    mGrassMeshManager->tick();
+    mGrassMeshManager->tick(world);
 
     updateRenderState(world);
 }
@@ -62,14 +62,15 @@ void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
 }
 
 void CliWorldInterface::onWorldBeginClient(IWorld& world) {
+    mCliWorld = &world;
     // When character models are added, we should let the render thread know
-    sMainGameWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
-    sMainGameWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
+    mCliWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
+    mCliWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
 
-    sMainGameWorld->getChunkGrid().addReadyListener([this](const Chunk& chunk) {
+    mCliWorld->getChunkGrid().addReadyListener([this](const Chunk& chunk) {
         mGrassMeshManager->addGrassForChunk(chunk);
     });
-    sMainGameWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
+    mCliWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
         mGrassMeshManager->removeGrassForChunk(chunk);
     });
 

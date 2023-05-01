@@ -13,13 +13,13 @@ void SrvEntityComponentSystem::tick()
     PROFILE_FUNCTION();
     IEntityComponentSystem::tick();
     mBusinessSystem.update(mRegistry);
-    mPersonAISystem.update(mRegistry);
+    mPersonAISystem.update(mWorld, mRegistry);
     mNavigationSystem.update(mWorld, mRegistry);
 }
 
 entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     assert(IS_GAME_THREAD());
-    entt::entity newEntity = EntityFactory::createEntity(position, typeToken);
+    entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     if (shouldReplicate && GameServer::exists()) {
         mRegistry.emplace<ReplicationComponent>(newEntity);
         SrvMessage::sendEntityCreateMessageToAll(newEntity, typeToken, position, 0.0f);
@@ -32,7 +32,7 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
 
 entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const f32v3& position) {
     assert(IS_GAME_THREAD());
-    entt::entity entity = EntityFactory::createEntity(position, StrToken("player"));
+    entt::entity entity = EntityFactory::createEntity(mWorld, position, StrToken("player"));
 
     if (GameServer::exists()) {
         ReplicationComponent& repCmp = mRegistry.emplace<ReplicationComponent>(entity);

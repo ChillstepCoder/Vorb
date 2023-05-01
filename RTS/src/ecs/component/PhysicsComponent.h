@@ -6,6 +6,7 @@
 class IEntityComponentSystem;
 class PhysicsWorld;
 class btRigidBody;
+class IWorld;
 
 enum class PhysicsComponentFlag : ui8 {
 	IS_ON_GROUND         = 1 << 0,
@@ -48,5 +49,5 @@ KEG_TYPE_DECL(PhysicsComponentDef);
 
 class PhysicsSystem {
 public:
-	static void update(entt::registry& registry);
+	static void update(IWorld& world, entt::registry& registry);
 };

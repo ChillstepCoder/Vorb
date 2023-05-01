@@ -116,7 +116,7 @@ void IHeightmapGrid::tickShared() {
         if (patch.mRefCount == 0) {
             assert(!patch.isGenerating());
             // Remove the collider
-            sMainGameWorld->getPhysicsWorld().deleteHeightField(patch);
+            mWorld->getPhysicsWorld().deleteHeightField(patch);
             patch.mFlags = 0u;
             delete patch.mHeightData; // TODO: Recycle
             patch.mHeightData = nullptr;
@@ -761,7 +761,7 @@ void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
 
     assert(!patch.mHeightData->mCollider);
     // Generate collider
-    patch.mHeightData->mCollider = sMainGameWorld->getPhysicsWorld().addHeightField(patch);
+    patch.mHeightData->mCollider = mWorld->getPhysicsWorld().addHeightField(patch);
 
     // See if any other patches were waiting on us for padded data access
     {

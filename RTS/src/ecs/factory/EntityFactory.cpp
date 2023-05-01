@@ -15,10 +15,10 @@
 #include "world/IWorld.h"
 #include "physics/PhysicsWorld.h"
 
-entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeToken) {
+entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, StrToken typeToken) {
     assert(IS_GAME_THREAD());
-    PhysicsWorld& physWorld = sMainGameWorld->getPhysicsWorld();
-    IEntityComponentSystem& ecs = sMainGameWorld->getECS();
+    PhysicsWorld& physWorld = world.getPhysicsWorld();
+    IEntityComponentSystem& ecs = world.getECS();
 
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();

@@ -57,8 +57,7 @@ std::set<LiteChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, co
     return chunkDependencies;
 }
 
-NavWorld::NavWorld()
-{
+NavWorld::NavWorld(IWorld& world) : mWorld(world) {
     assert(!sNavWorld);
     sNavWorld = this;
     // TODO: This is arbitrary
@@ -144,7 +143,7 @@ void NavWorld::updateNavThread()
         // Remove external edge dependencies on terrain
         if (!containerData.isTerrain) {
             // Manually compute chunk dependencies since we dont have the data here
-            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(sMainGameWorld->getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
+            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
             int j = 0;
             for (LiteChunkID id : chunkDependencies) {
                 // Make sure we only decref/modify chunks that we increffed
@@ -152,7 +151,7 @@ void NavWorld::updateNavThread()
                     assert(id < WorldData::WORLD_SIZE_CHUNKS);
                     mTerrainDependentEdges[id].erase(containerData.id);
 
-                    Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(id);
+                    Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
                     // TODO: should we be marking it dirty? Wouldnt this be an invalid chunk?
                     markChunkContainerNavDirty(id);
                     chunk.decRef();
@@ -167,7 +166,7 @@ void NavWorld::updateNavThread()
         const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
         if (containerData.isTerrain) {
             i32v3 worldPos = containerData.worldPos;
-            ChunkID chunkID = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(worldPos2D);
+            ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos2D);
             mTerrainTileContainers[chunkID] = INVALID_TILE_CONTAINER_ID;
         }
         else {
@@ -267,7 +266,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
     /* Chunk* chunk = nullptr;
      if (isTerrain) {
-         chunk = &sMainGameWorld->getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
+         chunk = &mWorld.getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
      }*/
 
     ui32 totalDjSets = 0;
@@ -710,7 +709,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
             worldPos += CARTESIAN_NORMALS_2D[e_cast(edge.second)];
             assert(worldPos.x >= 0 && worldPos.y >= 0);
 
-            LiteChunkID chunkId = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(worldPos);
+            LiteChunkID chunkId = mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos);
 
             // Chunk relative
             worldPos %= CHUNK_WIDTH;
@@ -741,7 +740,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     if (isNewContainer) {
         if (taskData.container->isTerrain()) {
             i32v3 worldPos = spatialGrid.getWorldPos3D();
-            ChunkID chunkID = sMainGameWorld->getChunkGrid().getChunkIDFromWorldPos(i32v2(worldPos.x, worldPos.y));
+            ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(i32v2(worldPos.x, worldPos.y));
             mTerrainTileContainers[chunkID] = taskData.container->getId();
         }
         else {
@@ -799,11 +798,11 @@ void NavWorld::initEventHandlers() {
         BitFlags<ChunkDependencyFlags> dependencyFlags;
         if (!container.isTerrain()) {
             // Manually compute chunk dependencies since we dont have the data here
-            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(sMainGameWorld->getChunkGrid(), container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D()); // TODO: boost::container::flat_set?
+            std::set<LiteChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D()); // TODO: boost::container::flat_set?
             int i = 0;
             for (LiteChunkID id : chunkDependencies) {
                 assert(id < WorldData::WORLD_SIZE_CHUNKS);
-                Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(id);
+                Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
                 // Only have dependencies on chunks with valid chunks
                 if (chunk.getRefCount()) {
                     chunk.incRef();
@@ -894,7 +893,7 @@ bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Carte
 void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
 {
     assert(IS_NAV_THREAD());
-    const Chunk& chunk = sMainGameWorld->getChunkGrid().getChunk(chunkId);
+    const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
     bool didAdd = mDirtyTileContainers.workerThreadTryDirtyObject(chunkTileContainer);
@@ -1012,7 +1011,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const color4 color3(1.0f, 1.0f, 1.0f, 0.75f);
     const color4 color4(1.0f, 0.0f, 1.0f, 0.75f);
-    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const TileContainerID containerId = tileContainer.getId();
     if (!tileContainer.isTerrain()) {
         heightData = nullptr;
@@ -1200,7 +1199,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const color4 color3(1.0f, 1.0f, 1.0f, 0.75f);
     const color4 color4(1.0f, 0.0f, 1.0f, 0.75f);
-    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const TileContainerID containerId = tileHandle.container->getId();
     if (!tileHandle.container->isTerrain()) {
         heightData = nullptr;
@@ -1399,7 +1398,7 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
                     break;
                 }
                 // Make sure this chunk stays
-                sMainGameWorld->getChunkGrid().getChunk(id).incRef();
+                mWorld.getChunkGrid().getChunk(id).incRef();
             }
         }
     }

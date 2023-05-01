@@ -42,7 +42,7 @@ void HarvestItemsTask::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-TaskTickResult HarvestItemsTask::tick(entt::registry& registry, entt::entity agent) {
+TaskTickResult HarvestItemsTask::tick(IWorld& world, entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case TaskState::FIND_ITEM:
             findItem(registry, agent);
@@ -52,7 +52,7 @@ TaskTickResult HarvestItemsTask::tick(entt::registry& registry, entt::entity age
             NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
             const NavigationStatus navStatus = navCmp.getStatus();
             if (navStatus == NavigationStatus::SUCCESS) {
-                harvestItem(registry, agent, navCmp.mTargetHandle);
+                harvestItem(world, registry, agent, navCmp.mTargetHandle);
             }
             else if (navStatus == NavigationStatus::FAIL) {
                 if (++mFailCount >= 4) {
@@ -86,13 +86,13 @@ void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
     mState = TaskState::PATH_TO_ITEM;
 }
 
-void HarvestItemsTask::harvestItem(entt::registry& registry, entt::entity agent, TileHandle targetTileHandle) {
+void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle) {
     assert(IS_GAME_THREAD());
 
     assert(targetTileHandle.isValid());
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
-    if (!sMainGameWorld->terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
+    if (!world.terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
         // Try again
         findItem(registry, agent);
         return;

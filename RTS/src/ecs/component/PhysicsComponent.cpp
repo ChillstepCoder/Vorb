@@ -94,9 +94,9 @@ void PhysicsComponent::setVelocity(const f32v3& vel) {
     mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
 }
 
-void PhysicsSystem::update(entt::registry& registry) {
+void PhysicsSystem::update(IWorld& world, entt::registry& registry) {
     PROFILE_FUNCTION();
-    const IHeightmapGrid& grid = sMainGameWorld->getHeightmapGrid();
+    const IHeightmapGrid& grid = world.getHeightmapGrid();
     auto view = registry.view<PhysicsComponent>();
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);

@@ -33,13 +33,14 @@ BuildBlueprintTask::BuildBlueprintTask(BuildingBlueprint& blueprint, AgentTaskFi
     : mBlueprint(blueprint)
     , IAgentTask(finishedFunc) {
 
+    assert(mBlueprint.world);
 }
 
 BuildBlueprintTask::~BuildBlueprintTask() {
 
 }
 
-TaskTickResult BuildBlueprintTask::tick(entt::registry& registry, entt::entity agent) {
+TaskTickResult BuildBlueprintTask::tick(IWorld& world, entt::registry& registry, entt::entity agent) {
     constexpr f32 BUILD_PER_TICK = 1.0f / 100.0f;
     switch (mState) {
         case TaskState::SELECT_TILE_TO_FILL:
@@ -142,7 +143,7 @@ bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entit
     if (mBlueprint.tilesNeedingTerrainFlatten.getBit(mPlaceTilesTarget->mTileIndex)) {
         mBlueprint.tilesNeedingTerrainFlatten.clearBit(mPlaceTilesTarget->mTileIndex);
 
-        IHeightmapGrid& grid = sMainGameWorld->getHeightmapGrid();
+        IHeightmapGrid& grid = mBlueprint.world->getHeightmapGrid();
         f32v3 tileWorldPos = mBlueprint.mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
         grid.setHeightAt(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
         return true;

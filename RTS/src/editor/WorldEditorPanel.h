@@ -65,6 +65,8 @@ public:
 	void renderBrushDecals(const Camera3D& camera) const;
     void renderUI(f32 ySize) const;
 
+    IWorld* getActiveWorld() const { return mActiveWorld; }
+
 private:
     void renderMenuBar() const;
     void tryRenderBrushSelect(const BrushRepository& brushRepo) const;

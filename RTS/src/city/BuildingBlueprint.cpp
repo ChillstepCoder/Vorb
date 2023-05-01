@@ -5,6 +5,7 @@
 #include "resources/TileRepository.h"
 
 BuildingBlueprint::BuildingBlueprint(
+    IWorld& world,
     const BuildingDef& desc,
     float sizeAlpha,
     Cartesian entrySide,
@@ -13,7 +14,7 @@ BuildingBlueprint::BuildingBlueprint(
     entt::entity ownerEntity,
     BuildingBlueprintFlags flags
 ) :
-    desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), mOwnerEntity(ownerEntity), flags(flags) {
+    world(&world), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), mOwnerEntity(ownerEntity), flags(flags) {
     // We will reinitialize later with the proper Z dimensions
     mTileSpatialGrid.init(worldPosRoot, i32v3(dims.x, dims.y, 1), 3);
     // TODO: Different per building

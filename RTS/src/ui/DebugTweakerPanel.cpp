@@ -97,9 +97,9 @@ void setDefaultTheme() {
 
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
+void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
 {
-    IEntityComponentSystem& ecs = sMainGameWorld->getECS();
+    IEntityComponentSystem& ecs = world.getECS();
 
     ImGui::BeginChild("Value Tweaker", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Value Tweaker");
@@ -201,7 +201,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             ImGui::Separator();
         }
         f64v2 range(0.0, 24.0);
-        TimeOfDayManager& timeOfDayMgr = sMainGameWorld->getTimeOfDayManager();
+        TimeOfDayManager& timeOfDayMgr = world.getTimeOfDayManager();
         f32 currentTimeHours = timeOfDayMgr.getTimeOfDayHours();
         if (ImGui::SliderFloat("Time of Day", &currentTimeHours, 0.0f, 24.0f)) {
             timeOfDayMgr.setTimeOfDay(currentTimeHours);

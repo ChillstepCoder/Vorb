@@ -67,6 +67,7 @@ void EditorRoot::updateEditors(IWorld* world, const Camera3D& camera, const f32v
 
 void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
     if (sDebugOptions.mShowEditor) {
+        IWorld* world = mWorldEditorPanel->getActiveWorld();
         const ui32v2& dims = vui::InputDispatcher::window.getCurrentWindowDims();
         const f32 defaultPanelWidth = dims.x * 0.16f;
         const ImGuiCond cond = ImGuiCond_Once /*ImGuiCond_FirstUseEver*/;
@@ -84,7 +85,9 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
             Splitter(false, 10.0f, &ySize1, &ySize2, 8, 8, ImGui::GetContentRegionAvail().x);
 
             mWorldEditorPanel->renderUI(ySize1);
-            mDebugTweakerPanel->updateAndRender(activeGBuffer, ySize2, vui::InputDispatcher::window.getCurrentAspectRatio());
+            if (world) {
+                mDebugTweakerPanel->updateAndRender(*world, activeGBuffer, ySize2, vui::InputDispatcher::window.getCurrentAspectRatio());
+            }
 
             ImGui::End();
         }

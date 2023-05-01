@@ -143,18 +143,18 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
     generatePossibleWindowPermutations();
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags)
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(IWorld& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
 
-    std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
+    std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(world, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
     BuildingBlueprint* bPtr = bp.get();
     mGeneratingBuildings.insert(bPtr);
     
-    Services::Threadpool::ref().addTask([this, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([this, &world, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags](ThreadPoolWorkerData* workerData) {
         PROFILE_FUNCTION("Generate blueprint async");
-        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
+        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(world, mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
         if (newBP) {
             // TODO: If we destroy the original we are fucked
             // Copy the result to the output bp
@@ -173,13 +173,13 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     return bp;
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(IWorld& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
     PROFILE_FUNCTION();
     BuildingBlueprintId id = getNextBuildingID(); // TODO: Move this to game thread only so we dont need to lock?
     constexpr ui32 maxFailCount = 5;
     ui32 failCount = 0;
     do {
-        std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
+        std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(world, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
         assert(plotSize.x > 2 && plotSize.y > 2);
         bp->id = id;
         if (tryGenerateBlueprintInternal(bp.get(), buildingRepo)) {

@@ -7,7 +7,7 @@
 
 #include <boost/container/flat_map.hpp>
 
-TerrainMeshManager::TerrainMeshManager(IWorld& world) {
+TerrainMeshManager::TerrainMeshManager(IWorld& world) : mWorld(world) {
     // Init terrain
     mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
     for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
@@ -30,7 +30,7 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 void TerrainMeshManager::tick() {
     assert(IS_GAME_THREAD());
-    const f32v2& loadCenter = sMainGameWorld->getLoadCenter();
+    const f32v2& loadCenter = mWorld.getLoadCenter();
     for (auto&& terrainQuadtree : mTerrainTrees) {
         terrainQuadtree.update(loadCenter);
     }

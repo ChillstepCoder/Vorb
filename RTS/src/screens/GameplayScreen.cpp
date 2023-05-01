@@ -144,10 +144,12 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
     GameplayScreenGlobalState::initDefaults();
 
+    // Allocate world
+    initWorld();
 
     // Initialize hosted server if needed
     if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
-        GameServer::initInstance(MainMenuScreenGlobalState::serverType);
+        GameServer::initInstance(*mWorld, MainMenuScreenGlobalState::serverType);
     }
 
     if (MainMenuScreenGlobalState::isClient()) {
@@ -166,8 +168,6 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
         mNetMode = WorldNetMode::Host;
     }
 
-    // Allocate world
-    mWorld = &WorldFactory::makeWorld(mNetMode);
 
     // Always init the world
     displayLoadScreen("Loading...", true);
@@ -175,7 +175,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     initCamera();
 
     // Start the game :O
-    GameThread::initInstance(mNetMode);
+    GameThread::initInstance(*mWorld, mNetMode);
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
@@ -255,9 +255,8 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
 }
 
-void GameplayScreen::initWorld(const vui::GameTime& gameTime) {
-
-
+void GameplayScreen::initWorld() {
+    mWorld = WorldFactory::makeWorld(mNetMode);
 }
 
 void GameplayScreen::initCamera() {
@@ -266,7 +265,7 @@ void GameplayScreen::initCamera() {
 
 void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
 
-    CliWorld* cliWorld = static_cast<CliWorld*>(mWorld);
+    CliWorld* cliWorld = static_cast<CliWorld*>(mWorld.get());
 
     // Update main thread update queues
     cliWorld->onFrameBegin();
@@ -278,7 +277,7 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
     }
 
     // Update editors
-    UIContext::getInstance().updateEditors(mWorld, mCameraController->getOwnedCamera(), mMousePickRay);
+    UIContext::getInstance().updateEditors(mWorld.get(), mCameraController->getOwnedCamera(), mMousePickRay);
 
     updateTilePicking();
 
@@ -287,13 +286,13 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
 
 void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
 
-    HostWorld* hostWorld = static_cast<HostWorld*>(mWorld);
+    HostWorld* hostWorld = static_cast<HostWorld*>(mWorld.get());
 
     // Update main thread update queues
     hostWorld->onFrameBegin();
 
     // Update editors
-    UIContext::getInstance().updateEditors(mWorld, mCameraController->getOwnedCamera(), mMousePickRay);
+    UIContext::getInstance().updateEditors(mWorld.get(), mCameraController->getOwnedCamera(), mMousePickRay);
 
     updateTilePicking();
 
@@ -424,16 +423,20 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
+            typedef std::pair<IWorld*, TileHandle*> TaskData;
+            TaskData* taskData = new TaskData{ mWorld.get(), &mSelectedTileHandle };
             if (mSelectedTileHandle.isValid()) {
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandle) {
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
                     // TODO: Small race condition here if tile handle changes or chunk is destroyed
-                    TileHandle tileHandle = *static_cast<TileHandle*>(vTileHandle);
+                    TaskData* data = static_cast<TaskData*>(vTaskData);
+                    TileHandle tileHandle = *data->second;
                     if (tileHandle.isValid()) {
-                        IEntityComponentSystem& ecs = sMainGameWorld->getECS();
+                        IEntityComponentSystem& ecs = data->first->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                         cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), nullptr);
                     }
+                    delete data;
                 }, &mSelectedTileHandle);
             }
         }
@@ -509,7 +512,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
             if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
+                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
             }
             else {
                 assert(false);
@@ -518,7 +521,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
             if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
             }
             else {
                 assert(false);
@@ -527,7 +530,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
             if (mNetMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
+                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
             }
             else {
                 assert(false);
@@ -544,12 +547,13 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD) {
             if (mSelectedTileHandle.isValid()) {
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void*) {
-                    IEntityComponentSystem& ecs = sMainGameWorld->getECS();
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* worldPtr) {
+                    IWorld* world = static_cast<IWorld*>(worldPtr);
+                    IEntityComponentSystem& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                     cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
-                }, nullptr);
+                }, mWorld.get());
             }
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 15, "update");
