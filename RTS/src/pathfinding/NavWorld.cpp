@@ -18,8 +18,6 @@
 
 #include "resources/TileRepository.h"
 
-NavWorld* sNavWorld = nullptr;
-
 constexpr ui32 GRID_WIDTH = SUBCHUNK_WIDTH;
 static_assert(SUBCHUNK_WIDTH == 16);
 
@@ -58,8 +56,6 @@ std::set<LiteChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, co
 }
 
 NavWorld::NavWorld(IWorld& world) : mWorld(world) {
-    assert(!sNavWorld);
-    sNavWorld = this;
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
     for (int i = 0; i < WorldData::WORLD_SIZE_CHUNKS; ++i) {
@@ -70,7 +66,7 @@ NavWorld::NavWorld(IWorld& world) : mWorld(world) {
 
 NavWorld::~NavWorld()
 {
-    sNavWorld = nullptr;
+
 }
 
 void NavWorld::tickGameThread() {

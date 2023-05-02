@@ -6,11 +6,8 @@
 
 class CliWorld : public IWorld, public CliWorldInterface
 {
-    friend class WorldFactory;
-protected:
-    CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
-
 public:
+    CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
     void tick(f32 elapsedSec);
     
     void onFrameBegin() override;
@@ -21,8 +18,6 @@ public:
 
     WorldNetMode getNetMode() override;
     WorldType getWorldType() override;
-
-private:
 
 };
 

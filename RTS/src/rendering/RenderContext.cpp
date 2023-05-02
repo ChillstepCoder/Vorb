@@ -276,7 +276,7 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
     // Misc renderData
-    const TimeOfDayManager& timeOfDayManager = sMainGameWorld->getTimeOfDayManager();
+    const TimeOfDayManager& timeOfDayManager = mActiveWorld->getTimeOfDayManager();
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.skyRotMatrix = timeOfDayManager.getSkyRotMatrix();
     // Ubo data
@@ -321,6 +321,10 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     PROFILE_FUNCTION();
 
     const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
+    mActiveWorld = renderState.getWorld();
+    if (!mActiveWorld) {
+        return;
+    }
 
     // Update camera
     const f32v3& playerPos = renderState.getCameraOwningEntityPos();
@@ -536,15 +540,15 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Static objects: %u", sMainGameWorld->getPhysicsWorld().getNumStaticCollisionObjects());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Static objects: %u", mActiveWorld->getPhysicsWorld().getNumStaticCollisionObjects());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Dynamic objects: %u", sMainGameWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Dynamic objects: %u", mActiveWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        if (sMainGameWorld->getPhysicsWorld().isProfiling()) {
+        if (mActiveWorld->getPhysicsWorld().isProfiling()) {
             mSb->drawString(mSpriteFont.get(), "PHYSICS PROFILING ON", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::Red);
             yOffset += GAP_SIZE;
         }

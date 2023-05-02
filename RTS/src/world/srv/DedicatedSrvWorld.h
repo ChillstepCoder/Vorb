@@ -5,11 +5,8 @@
 
 class DedicatedSrvWorld : public IWorld, public SrvWorldInterface
 {
-    friend class WorldFactory;
-protected:
-    DedicatedSrvWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
-
 public:
+    DedicatedSrvWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
 
     void onWorldBegin(const f32v2& loadCenter) override;
 

@@ -12,13 +12,14 @@ public:
     CliWorldInterface();
     virtual ~CliWorldInterface();
 
-    void initClient(IWorld& world);
     void tickClient(IWorld& world);
     // Pure virtual interface
     virtual void onFrameBegin() = 0;
     virtual void frameUpdate(const Camera3D& camera, f32 elapsedSec) = 0;
 
 protected:
+    void initClient(IWorld& world);
+
     void updateParticleSystems(const f32v2& playerPos);
     void onWorldBeginClient(IWorld& world);
     void cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);

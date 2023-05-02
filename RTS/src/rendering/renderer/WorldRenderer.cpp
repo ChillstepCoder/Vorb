@@ -304,9 +304,7 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
 
 void WorldRenderer::renderDebug()
 {
-    if (!mActiveWorld) {
-        return;
-    }
+    assert(mActiveWorld);
     // City Debug
     if (sDebugOptions.mCities) {
         const CityGraph& cities = mActiveWorld->getCityGraph();
@@ -327,7 +325,7 @@ void WorldRenderer::renderDebug()
         mActiveWorld->getStructureManager().debugRender();
     }
 
-    mEcsRenderer->renderBusinessDebug(*mCamera);
+    mEcsRenderer->renderBusinessDebug(*mActiveWorld, *mCamera);
 
 
     if (sDebugOptions.mChunkBoundaries) {

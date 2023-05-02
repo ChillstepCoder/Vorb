@@ -7,11 +7,8 @@
 class ItemStockpileRegistry;
 
 class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterface {
-    friend class WorldFactory;
-protected:
-	HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
-
 public:
+    HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 
 	void tick(f32 elapsedSec);
 	// IWorld interface
@@ -22,8 +19,5 @@ public:
 
 	WorldNetMode getNetMode() override;
 	WorldType getWorldType() override;
-
-private:
-
 };
 

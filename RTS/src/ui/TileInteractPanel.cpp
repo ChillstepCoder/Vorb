@@ -27,11 +27,11 @@ constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoRe
 //    return changed;
 //}
 
-TileInteractPanel::TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery) :
+TileInteractPanel::TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, const WorldObjectQueryPtr& worldObjectQuery) :
     mWorld(world),
     mScreenPos(screenPos),
     mWindow(window),
-    mWorldObjectQuery(std::move(worldObjectQuery))
+    mWorldObjectQuery(worldObjectQuery)
 {
 
 }
@@ -50,7 +50,7 @@ UIInteractMenuResultFlags TileInteractPanel::updateAndRender()
     ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
-    if (mWorldObjectQuery.getTileHandle().container->getOwnerBuilding()) {
+    if (mWorldObjectQuery->getTileHandle().container->getOwnerBuilding()) {
         resultFlags = updateAndRenderStructureTile();
     }
     else {
@@ -75,7 +75,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             UIInteractMenuState nextState = UIInteractMenuState::SELECT_OBJECT; // Store best state in case we only have one so we can auto select
 
             // Agents
-            for (auto& it : mWorldObjectQuery.getEntities()) {
+            for (auto& it : mWorldObjectQuery->getEntities()) {
                 if (CharacterDetailsComponent* cmp = mWorld.getECS().mRegistry.try_get<CharacterDetailsComponent>(it.second)) {
                     ++optionCount;
                     nextState = UIInteractMenuState::SELECTED_AGENT;
@@ -87,7 +87,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             }
 
             // Stockpile
-            if (mWorldObjectQuery.getStockpile()) {
+            if (mWorldObjectQuery->getStockpile()) {
                 ++optionCount;
                 nextState = UIInteractMenuState::SELECTED_STOCKPILE;
                 if (ImGui::Button((std::to_string(i++) + " Stockpile").c_str(), sButtonSize)) {
@@ -106,9 +106,9 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
 
             // Structure list
             /*++optionCount;
-            Chunk* owner = mWorldObjectQuery.getTileHandle().container->getOwnerChunk();
+            Chunk* owner = mWorldObjectQuery->getTileHandle().container->getOwnerChunk();
             assert(owner);
-            const StructureArrayPtr& structures = owner->getStructuresAt(mWorldObjectQuery.getTileIndex());
+            const StructureArrayPtr& structures = owner->getStructuresAt(mWorldObjectQuery->getTileIndex());
             if (structures.second) {
                 nextState = UIInteractMenuState::SELECTED_STRUCTURE_LIST;
                 if (ImGui::Button("Structures")) {
@@ -133,19 +133,19 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             if (ImGui::CollapsingHeader("Debug Rendering")) {
                 if (ImGui::Button("Debug Coarse Navmesh")) {
                     resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
-                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                    mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
                 }
                 if (ImGui::Button("Debug Fine Navmesh")) {
                     resultFlags |= INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH;
-                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                    mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
                 }
                 if (ImGui::Button("Debug Coarse Nav Node")) {
                     resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
-                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                    mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
                 }
                 if (ImGui::Button("Debug Harvestables", sButtonSize)) {
                     resultFlags |= INTERACT_MENU_RESULT_DEBUG_HARVESTABLES;
-                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                    mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
                 }
             }
 
@@ -196,9 +196,9 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
         }
         case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
-            Chunk* owner = mWorldObjectQuery.getTileContainer()->getOwnerChunk();
+            Chunk* owner = mWorldObjectQuery->getTileContainer()->getOwnerChunk();
             assert(owner);
-            std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(mWorldObjectQuery.getTilePos()));
+            std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(mWorldObjectQuery->getTilePos()));
             if (structures.empty()) {
                 // If we got here the structure  was deleted while we had it selected
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
@@ -211,7 +211,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
                         if (ImGui::Button(name.c_str())) {
                             // TODO: Now what?
                             LOG_DEBUG("Building selected but we don't handle it yet");
-                            //mWorldObjectQuery.setSelectedStructure(mSelectedStructure = structure);
+                            //mWorldObjectQuery->setSelectedStructure(mSelectedStructure = structure);
                             break;
                         }
                     }
@@ -226,7 +226,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     }
 
     // Debug render
-    TileHandle handle = mWorldObjectQuery.getTileHandle();
+    TileHandle handle = mWorldObjectQuery->getTileHandle();
     f32v3 tilePos(f32v3(handle.getWorldPos3D()));
     // TODO: Not thread safe!
     tilePos.z += handle.getTile().getGroundZOffset();
@@ -241,25 +241,25 @@ ui32 TileInteractPanel::updateAndRenderStructureTile() {
     ImGui::Begin("Structure", nullptr, WINDOW_FLAGS);
     if (ImGui::Button("Move Here")) {
         resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
-        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
     }
     if (ImGui::Button("Debug Coarse Navmesh")) {
         resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
-        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
     }
     if (ImGui::Button("Debug Fine Navmesh")) {
         resultFlags |= INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH;
-        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
     }
     if (ImGui::Button("Debug Coarse Nav node")) {
         resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
-        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
     }
     if (ImGui::Button("Inspect", sButtonSize)) {
         resultFlags |= INTERACT_MENU_RESULT_INSPECT;
-        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
     }
-    TileHandle handle = mWorldObjectQuery.getTileHandle();
+    TileHandle handle = mWorldObjectQuery->getTileHandle();
     f32v3 tilePos(f32v3(handle.getWorldPos3D()));
     // TODO: Not thread safe!
     tilePos.z += handle.getTile().getGroundZOffset();

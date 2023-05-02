@@ -206,5 +206,5 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
     }
     // TODO: uhhhh?
     // TODO: use heightData.bounding sphere?
-    chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
+    chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
 }

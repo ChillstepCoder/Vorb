@@ -88,7 +88,7 @@ private:
 	PreciseTimer mRightClickTimer;
     f32v3 mRightClickPickPos = f32v3(FLT_MAX);
     f32v3 mMousePickRay = f32v3(0.0f);
-	WorldObjectQuery mWorldObjectQuery;
+	WorldObjectQueryPtr mWorldObjectQuery;
 	bool mIsQuerying = false;
 
 	WorldNetMode mNetMode = WorldNetMode::Host;

@@ -197,7 +197,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     assert(IS_NAV_THREAD());
     // TODO: Profiling
     PreciseTimer timer;
-    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
 
     // We pathfind forwards
     const ContainerNavData* startNavData = nullptr;
@@ -343,7 +343,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
             pathWeight *= ((f32)adjFineNavData.pathWeight / 255.0f);
 
             // Compute cost to the adj node
-            const ui16 newG = g + MOVEMENT_COSTS[dir] / pathWeight;
+            const ui16 newG = (ui16)(g + MOVEMENT_COSTS[dir] / pathWeight);
 
             // 0 weight means we cannot path
             if (pathWeight == 0.0f) {
@@ -436,7 +436,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     }
 
     LOG_TRACE("Generated fine path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
-    path.targetHandle = goalHandle.toTileHandle(*sMainGameWorld);
+    path.targetHandle = goalHandle.toTileHandle(mNavWorld.getWorld());
     path.finishedGenerating.store(true);
     return true;
 }
@@ -474,7 +474,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     mOpenList.clear();
     mOpenList.reserve(MAXIMUM_COARSE_NODES);
     
-    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
     const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
     const CoarseNavGraph& endNavGraph = goalNavData->coarseNavGraph;
     const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
@@ -577,7 +577,7 @@ LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchron
     mOpenList.clear();
     mOpenList.reserve(MAXIMUM_COARSE_NODES);
 
-    const IHeightmapGrid& heightGrid = sMainGameWorld->getHeightmapGrid();
+    const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
     const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
     const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
 
@@ -680,7 +680,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                 const i32v3 edgePosWorld = edgeStartPosWorld + edgeDir * i;
                 const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * containerDims.y) * i;
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
-                worldPosOuter.z = glm::round(worldPosOuter.z + navData.fineNavGraph[nextIndex].zPositionOffsetFromFloor);
+                worldPosOuter.z = (i32)glm::round((f32)worldPosOuter.z + navData.fineNavGraph[nextIndex].zPositionOffsetFromFloor);
                 // Get the outer tile along this coarse edge point
                 const ContainerNavData* outerNavData = nullptr;
                 LiteTileHandle outerTileHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(worldPosOuter, &outerNavData);
@@ -824,6 +824,6 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
         }
     }
 
-    path.targetHandle = goalHandle.toTileHandle(*sMainGameWorld);
+    path.targetHandle = goalHandle.toTileHandle(mNavWorld.getWorld());
     path.finishedGenerating.store(true);
 }

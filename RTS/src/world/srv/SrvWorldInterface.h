@@ -1,6 +1,7 @@
 #pragma once
 
 class NavWorld;
+class IWorld;
 class ItemStockpileRegistry;
 
 class SrvWorldInterface
@@ -17,6 +18,7 @@ public:
     const NavWorld& getNavWorld() const { return *mNavWorld; }
 
 protected:
+    void initSrv(IWorld& world);
 
     // Stockpiles
     std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;

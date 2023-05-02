@@ -16,6 +16,7 @@
 HostWorld::HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid)
 {
     initClient(*this);
+    initSrv(*this);
     mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
 }
 

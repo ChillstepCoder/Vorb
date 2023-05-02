@@ -37,16 +37,16 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     mTimeOfDayManager = std::make_unique<TimeOfDayManager>();
 
     // Cities
-    mCities = std::make_unique<CityGraph>();
+    mCities = std::make_unique<CityGraph>(*this);
 
     // Structures
-    mStructureManager = std::make_unique<StructureManager>(*mTileContainerRepository);
+    mStructureManager = std::make_unique<StructureManager>(*this);
 
     // Stockpiles
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
 
     // Physics
-    mPhysWorld = std::make_unique<PhysicsWorld>(Services::ResourceManager::ref().getCollisionShapeRepository());
+    mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
 
 }
 

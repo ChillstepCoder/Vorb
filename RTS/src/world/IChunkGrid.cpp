@@ -3,6 +3,7 @@
 
 #include "world/ChunkGenerator.h"
 #include "world/IWorld.h"
+#include "world/srv/SrvWorldInterface.h"
 #include "tile/TileContainerRepository.h"
 
 // TODO: SrvChunkGrid?
@@ -100,8 +101,9 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 loadFinishedEvent.container = chunk.mTileContainer;
                 TileContainerRepository::dispatchLoadFinished(loadFinishedEvent);
 
-                assert(sNavWorld);
-                sNavWorld->markContainerNavDirty(chunk.mTileContainer);
+                SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mWorld);
+                assert(srvWorldInterface);
+                srvWorldInterface->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
                 ++i;
                 break;
             }

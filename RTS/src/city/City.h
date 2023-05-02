@@ -171,10 +171,12 @@ private:
 
 class CityGraph {
 public:
+    CityGraph(IWorld& world) : mWorld(world) {}
 
     void update();
     City* getClosestCityToPoint(const f32v2& pos) const;
     void createCityAt(const i32v2& worldPos);
 
+    IWorld& mWorld;
     std::vector<std::unique_ptr<City>> mNodes;
 };

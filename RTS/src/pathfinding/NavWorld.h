@@ -201,6 +201,7 @@ public:
     // Spatial lookup
     LiteTileHandle getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const;
 
+    IWorld& getWorld() const { return mWorld; }
 
     void markContainerNavDirty(TileContainer* container);
     bool navThreadTryReserveHarvestable(LiteTileHandle position) const;
@@ -250,5 +251,3 @@ private:
     std::unordered_map<LiteChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
 
 };
-
-extern NavWorld* sNavWorld;

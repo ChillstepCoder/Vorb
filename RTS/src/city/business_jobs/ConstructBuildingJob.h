@@ -35,7 +35,7 @@ struct JobRequiredItems {
 class ConstructBuildingJob : public IBusinessJob
 {
 public:
-	ConstructBuildingJob(IWorld& world, BuildingBlueprint& blueprint, entt::entity businessEntity);
+	ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity);
 	~ConstructBuildingJob();
 
 	bool tick(entt::registry& registry, entt::entity business) override;

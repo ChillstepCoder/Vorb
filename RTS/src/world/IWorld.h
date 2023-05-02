@@ -25,8 +25,8 @@ class IWorld
     friend class CliWorldInterface;
 protected:
     IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
-    virtual ~IWorld();
 public:
+    virtual ~IWorld();
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
 
     // Pure virtual interface

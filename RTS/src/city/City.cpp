@@ -226,6 +226,6 @@ City* CityGraph::getClosestCityToPoint(const f32v2& pos) const
 }
 
 void CityGraph::createCityAt(const i32v2& worldPos) {
-    std::unique_ptr<City> newCity = std::make_unique<City>(worldPos);
+    std::unique_ptr<City> newCity = std::make_unique<City>(mWorld, worldPos);
     mNodes.emplace_back(std::move(newCity));
 }

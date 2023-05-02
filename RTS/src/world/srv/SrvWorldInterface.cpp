@@ -8,17 +8,18 @@
 #include "city/City.h"
 #include "pathfinding/NavThread.h"
 
-SrvWorldInterface::SrvWorldInterface()
-{
-    // Nav graph
-    mNavWorld = std::make_unique<NavWorld>();
+SrvWorldInterface::SrvWorldInterface() {
 
-    Services::NavThread::ref().init(*mNavWorld);
 }
 
 SrvWorldInterface::~SrvWorldInterface()
 {
 
+}
+
+void SrvWorldInterface::initSrv(IWorld& world) {
+    mNavWorld = std::make_unique<NavWorld>(world);
+    Services::NavThread::ref().init(*mNavWorld);
 }
 
 void SrvWorldInterface::tickSrv() {

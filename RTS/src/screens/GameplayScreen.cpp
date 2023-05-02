@@ -144,14 +144,9 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
     GameplayScreenGlobalState::initDefaults();
 
-    // Allocate world
-    initWorld();
 
-    // Initialize hosted server if needed
-    if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
-        GameServer::initInstance(*mWorld, MainMenuScreenGlobalState::serverType);
-    }
 
+    // Initialize services
     if (MainMenuScreenGlobalState::isClient()) {
         Services::initCli();
 
@@ -166,6 +161,14 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
         mState = GameplayScreenState::RUNNING;
         mNetMode = WorldNetMode::Host;
+    }
+
+    // Allocate world
+    initWorld();
+
+    // Initialize hosted server if needed
+    if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
+        GameServer::initInstance(*mWorld, MainMenuScreenGlobalState::serverType);
     }
 
 
@@ -301,11 +304,11 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::updateScreen() {
-    if (mIsQuerying && mWorldObjectQuery.isValid()) {
+    if (mIsQuerying && mWorldObjectQuery && mWorldObjectQuery->isValid()) {
         // Right click picking
-        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
         // Enable context menu
-        mRightClickInteractPopup = std::make_unique<TileInteractPanel>(mSelectedScreenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(mWorldObjectQuery));
+        mRightClickInteractPopup = std::make_unique<TileInteractPanel>(*mWorld, mSelectedScreenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), mWorldObjectQuery);
         mIsQuerying = false;
     }
 }
@@ -373,37 +376,16 @@ void GameplayScreen::updateTilePicking() {
                         TileIndex index = hitResult.mTileIndex;
                         // ONLY WORKS FOR MODELS
                         if (index != INVALID_TILE_INDEX) {
-                            // Select individual tile/model
-                            // DELETE MODEL TILE TMP
-                            // Terrain destroy
-                            //LiteTileHandle* tileHandlePtr = new LiteTileHandle(containerOwner, index);
-                            //GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                            //    LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
-                            //    TileHandle handle = tileHandlePtr->toTileHandle();
-                            //    if (handle.isValid()) {
-                            //        TileContainer* container = handle.getMutableContainer();
-                            //        // TEMPORARY
-                            //        if (container->isTerrain()) {
-                            //            // Delete terrain objects
-                            //            handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Ground, TILE_ID_NONE);
-                            //            handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Main, TILE_ID_NONE);
-                            //        }
-                            //    }
-                            //    delete tileHandlePtr;
-                            //}, tileHandlePtr);
-
                             // Query whatever we selected
-                            if (mWorldObjectQuery.tryQuery(LiteTileHandle(containerOwner, index))) {
-                                mIsQuerying = true;
-                            }
+                            mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, LiteTileHandle(containerOwner, index));
+                            mIsQuerying = true;
                         }
                     }
                     else {
                         // Selected terrain
                         f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                        if (mWorldObjectQuery.tryQuery(worldPos)) {
-                            mIsQuerying = true;
-                        }
+                        mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, worldPos);
+                        mIsQuerying = true;
                     }
                 }
             }
@@ -488,8 +470,8 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {
             // grass
-			WorldObjectQuery& worldObjects = mRightClickInteractPopup->getWorldObjects();
-			ItemStockpile* stockPile = worldObjects.getStockpile();
+			WorldObjectQueryPtr& worldObjects = mRightClickInteractPopup->getWorldObjects();
+			ItemStockpile* stockPile = worldObjects->getStockpile();
 			assert(stockPile);
 			ItemStack woodPile;
 			woodPile.id = mResourceManager.getItemRepository().getItem("wood_raw").getID();
@@ -502,8 +484,8 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK) {
             // grass
-            WorldObjectQuery& worldObjects = mRightClickInteractPopup->getWorldObjects();
-            ItemStockpile* stockPile = worldObjects.getStockpile();
+            WorldObjectQueryPtr& worldObjects = mRightClickInteractPopup->getWorldObjects();
+            ItemStockpile* stockPile = worldObjects->getStockpile();
 			mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
@@ -628,14 +610,15 @@ void GameplayScreen::initInputs()
             }
         }
         else if (event.keyCode == VKEY_P) {
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void*) {
-                if (sMainGameWorld->getPhysicsWorld().isProfiling()) {
-                    sMainGameWorld->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
+            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
+                IWorld* world = static_cast<IWorld*>(vWorld);
+                if (world->getPhysicsWorld().isProfiling()) {
+                    world->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
                 }
                 else {
-                    sMainGameWorld->getPhysicsWorld().startB3Profiling();
+                    world->getPhysicsWorld().startB3Profiling();
                 }
-            }, nullptr);
+            }, (void*)mWorld.get());
         }
         else if (event.keyCode == VKEY_ESCAPE) {
             UIContext::getInstance().toggleMainMenu();
@@ -701,7 +684,7 @@ void GameplayScreen::initInputs()
             else if (!mRightClickUpPick && mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                 const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
                 mRightClickUpPick = std::make_unique<DeferredPhysicsPick>();
-                sMainGameWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+                mWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
                 mRightClickUpPickScreenPos = screenPos;
             }
         }

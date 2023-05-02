@@ -30,7 +30,7 @@ JobRequiredItems::~JobRequiredItems() {
 }
 
 
-ConstructBuildingJob::ConstructBuildingJob(IWorld& world, BuildingBlueprint& blueprint, entt::entity businessEntity) : mBlueprint(blueprint), IBusinessJob(businessEntity) {
+ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity) : mBlueprint(blueprint), IBusinessJob(businessEntity) {
     assert(!mBlueprint.isGenerating);
     // Track required items internally
     mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
@@ -41,9 +41,10 @@ ConstructBuildingJob::ConstructBuildingJob(IWorld& world, BuildingBlueprint& blu
         required.quantityRequired = stack.quantity;
     }
     assert(mBlueprint.totalTilesToBuild);
+    assert(mBlueprint.world);
 
     // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = world.getHeightmapGrid();
+    IHeightmapGrid& grid = mBlueprint.world->getHeightmapGrid();
     mBlueprint.mDesiredTerrainFlattenHeight = round(grid.computeMeanHeightAtAABB(i32AABB2(mBlueprint.mTileSpatialGrid.getAABB()), mBlueprint.tilesNeedingTerrainFlatten)) - 0.005f;
 
     // Initialize building data

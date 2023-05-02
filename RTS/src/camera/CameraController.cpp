@@ -26,7 +26,7 @@ CameraController::CameraController(vui::GameWindow& window) : mWindow(window) {
 }
 
 void CameraController::update(f32 deltaTime, f32 frameAlpha, const f32v3& followEntityPos) {
-    PROFILE_SCOPE();
+    PROFILE_FUNCTION();
     if (mCameraMode != sDebugOptions.mCameraMode) {
         setCameraMode(sDebugOptions.mCameraMode);
     }

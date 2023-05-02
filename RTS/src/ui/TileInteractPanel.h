@@ -41,13 +41,13 @@ enum class UIInteractMenuState {
 class TileInteractPanel
 {
 public:
-    TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery);
+    TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, const WorldObjectQueryPtr& worldObjectQuery);
     ~TileInteractPanel();
 
     UIInteractMenuResultFlags updateAndRender();
 
 
-    WorldObjectQuery& getWorldObjects() { return mWorldObjectQuery; }
+    WorldObjectQueryPtr& getWorldObjects() { return mWorldObjectQuery; }
 
     Structure* getSelectedStructure() const { return mSelectedStructure; }
     RoomNodeID getSelectedRoomID() const { return mSelectedRoomID; }
@@ -60,7 +60,7 @@ private:
     ui32 updateAndRenderStructureTile();
     const ui32v2 mScreenPos;
     SDL_Window* mWindow;
-    WorldObjectQuery mWorldObjectQuery;
+    WorldObjectQueryPtr mWorldObjectQuery;
     UIInteractMenuState mState = UIInteractMenuState::SELECT_OBJECT;
     Structure* mSelectedStructure = nullptr;
     RoomNodeID mSelectedRoomID = INVALID_ROOM_ID;

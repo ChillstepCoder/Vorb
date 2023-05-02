@@ -21,70 +21,38 @@ WorldObjectQuery::~WorldObjectQuery()
 
 }
 
-bool WorldObjectQuery::tryQuery(const f32v3& worldPos)
-{
-    if (mData) {
-        if (mData->mIsQuerying) {
-            return false;
-        }
-    }
-    else {
-        mData = std::make_shared<WorldObjectQueryData>();
-    }
-    mData->mWorldPos = worldPos;
-    query();
-    return true;
-}
-
-bool WorldObjectQuery::tryQuery(LiteTileHandle handle) {
-    if (mData) {
-        if (mData->mIsQuerying) {
-            return false;
-        }
-    }
-    else {
-        mData = std::make_shared<WorldObjectQueryData>();
-    }
-    mData->mLiteHandle = handle;
-    query();
-    return true;
-}
-
 void WorldObjectQuery::query() {
-    mData->mWorld = &mWorld;
-    mData->mStockpileAtTile = nullptr;
+    mStockpileAtTile = nullptr;
 
     if (IS_GAME_THREAD()) {
-        queryInternal(*mData);
+        queryInternal();
     }
     else {
-        mData->mIsReady = false;
-        mData->mIsQuerying = true;
+        mIsReady = false;
+        mIsQuerying = true;
         // Copy our handle on the heap so it cannot be destroyed even if the original WorldObjectQuery is destroyed
-        std::shared_ptr<WorldObjectQueryData>* threadHandle = new std::shared_ptr<WorldObjectQueryData>(mData);
+        WorldObjectQueryPtr* threadHandle = new WorldObjectQueryPtr(this);
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vHandle) {
-            std::shared_ptr<WorldObjectQueryData>* threadHandle = static_cast<std::shared_ptr<WorldObjectQueryData>*>(vHandle);
-            WorldObjectQueryData& data = **threadHandle;
-            WorldObjectQuery::queryInternal(data);
-            data.mIsQuerying = false;
+            WorldObjectQueryPtr* threadHandle = static_cast<WorldObjectQueryPtr*>(vHandle);
+            (*threadHandle)->queryInternal();
+            (*threadHandle)->mIsQuerying = false;
             delete threadHandle;
         }, threadHandle);
     }
 }
 
-void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
-{
-    IChunkGrid& chunkGrid = data.mWorld->getChunkGrid();
+void WorldObjectQuery::queryInternal() {
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
 
     TileHandle handle;
-    if (data.mLiteHandle.isValid()) {
-        handle = data.mLiteHandle.toTileHandle(*data.mWorld);
-        data.mTileRef.acquire(handle);
+    if (mLiteHandle.isValid()) {
+        handle = mLiteHandle.toTileHandle(mWorld);
+        mTileRef.acquire(handle);
     }
     else {
         assert(IS_GAME_THREAD());
-        f32v2 tilePos2D(data.mWorldPos.x, data.mWorldPos.y);
-        handle = data.mWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+        f32v2 tilePos2D(mWorldPos.x, mWorldPos.y);
+        handle = mWorld.getTerrainTileHandleAtWorldPos(tilePos2D);
         if (!handle.isValid()) {
             return;
         }
@@ -92,19 +60,19 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
         Chunk* chunk = handle.container->getOwnerChunk();
         if (chunk->isDataReady()) {
             assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-            std::vector<Structure*> structures = data.mWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+            std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(tilePos2D));
             for (size_t i = 0; i < structures.size(); ++i) {
                 Structure* structure = structures[i];
-                TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);
+                TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(mWorldPos);
                 if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
-                    data.mTileRef.acquire(nextHandle);
+                    mTileRef.acquire(nextHandle);
                     break;
                 }
             }
         }
         // Fallback to terrain if no structure
-        if (!data.mTileRef.container) {
-            data.mTileRef.acquire(handle);
+        if (!mTileRef.container) {
+            mTileRef.acquire(handle);
         }
     }
 
@@ -113,20 +81,34 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
     assert(handle.isValid());
     if (handle.getTile().hasFlag(TileFlags::IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
-        const auto* stockPiles = sMainGameWorld->getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
+        const auto* stockPiles = mWorld.getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
         if (stockPiles) {
             for (auto& stockpile : *stockPiles) {
-                if (pointIsWithinAABBInclusive(data.mWorldPos, stockpile->getAABB())) {
-                    data.mStockpileAtTile = stockpile;
+                if (pointIsWithinAABBInclusive(mWorldPos, stockpile->getAABB())) {
+                    mStockpileAtTile = stockpile;
                     break;
                 }
             }
         }
     }
 
-    data.mIsReady = true;
+    mIsReady = true;
     // Entities
     // TODO: more precise
     //const f32v2 queryPos(mTilePos.x + 0.5f, mTilePos.y + 0.5f);
     //mEntitiesAtTile = mWorld.queryActorsInRadius(queryPos, 0.5f, ACTORTYPE_ANY, 0, true);
+}
+
+WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(IWorld& world, const f32v3& worldPos) {
+    WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
+    newQuery->mWorldPos = worldPos;
+    newQuery->query();
+    return newQuery;
+}
+
+WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(IWorld& world, LiteTileHandle handle) {
+    WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
+    newQuery->mLiteHandle = handle;
+    newQuery->query();
+    return newQuery;
 }
