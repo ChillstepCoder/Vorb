@@ -24,7 +24,7 @@ void HostWorld::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
 
     assert(mEcs);
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 
     // Update services
     // TODO: Could we use remaining frame time for these?
@@ -58,12 +58,12 @@ void HostWorld::tick(f32 elapsedSec) {
 }
 
 void HostWorld::onFrameBegin() {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
 }
 
 void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 }
 
 void HostWorld::onWorldBegin(const f32v2& loadCenter) {

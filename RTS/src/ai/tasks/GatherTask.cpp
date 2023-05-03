@@ -31,13 +31,13 @@ HarvestItemsTask::~HarvestItemsTask() {
 }
 
 void* HarvestItemsTask::operator new(size_t count) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void HarvestItemsTask::operator delete(void* pointer, size_t size) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
@@ -87,7 +87,7 @@ void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
 }
 
 void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 
     assert(targetTileHandle.isValid());
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
@@ -114,7 +114,7 @@ void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt
         INTERACT_TICKS,
         0,
         [&registry, agent, this](bool success, TimedTileInteractComponent& cmp) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
 
         // TODO: Handle failure
         assert(success);

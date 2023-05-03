@@ -49,7 +49,7 @@ void TileContainer::allocateData() {
 }
 
 void TileContainer::freeData() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     std::vector<Tile>().swap(mTiles);
     std::vector<DynamicTile>().swap(mDynamicTiles);
     mTileWallsContainer.destroy();
@@ -271,7 +271,7 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
 }
 
 void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editData, size_t count) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(count);
     assert(count <= MAX_BULK_EDIT_EVENT_COUNT);
     TileContainerEvent evnt;
@@ -332,7 +332,7 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer lay
 
 void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     assert(isReady());
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     TileWalls prevTileWalls;
     mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
     Tile& tile = mTiles[index];
@@ -358,7 +358,7 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
 
 void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
     assert(isReady());
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     TileWalls prevTileWalls;
     mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
     // Check for any removed or added doors (Dynamic objects)
@@ -458,7 +458,7 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
 
 
 bool TileContainer::tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // Check for if we can place here (NO BOUNDARIES)
     if (!canPlaceAdjNavBlockerTile(i)) {
         return false;
@@ -752,7 +752,7 @@ bool TileContainer::canPlaceAdjNavBlockerTile(TileIndex i) {
 }
 
 void TileContainer::onTileChanged(TileIndex tileIndex) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     //assert(isReady());
     Tile& tile = mTiles[tileIndex];
 

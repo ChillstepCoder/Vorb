@@ -34,7 +34,7 @@ BuildingBlueprint::BuildingBlueprint(
 }
 
 TileHandle BuildingBlueprint::getTileHandle(TileIndex tileIndex) const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     return TileHandle(building->getTileContainer(), tileIndex);
 }
 

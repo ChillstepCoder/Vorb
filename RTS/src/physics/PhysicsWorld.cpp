@@ -117,7 +117,7 @@ PhysicsWorld::~PhysicsWorld() {
 }
 
 int PhysicsWorld::stepSimulation(f32 elapsedSec) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
 
     int stepCount = 0;
@@ -143,7 +143,7 @@ int PhysicsWorld::stepSimulation(f32 elapsedSec) {
 }
 
 DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(rigidBody->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::CAPSULE_SHAPE_PROXYTYPE);
     DynamicCharacterController* dynamicCharacterController = new DynamicCharacterController(rigidBody, (btCapsuleShape*)rigidBody->getCollisionShape());
     mDynamicsWorld->addAction(dynamicCharacterController);
@@ -152,7 +152,7 @@ DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::en
 
 btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     btTransform startTransform;
     const f32v3 center = patch.mHeightData->aabb.getCenter();
 
@@ -177,7 +177,7 @@ btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
 }
 
 void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     auto&& it = mHeightShapes.find(patch.mHeightData);
     assert(it != mHeightShapes.end());
     delete it->second;
@@ -254,7 +254,7 @@ void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
 }
 
 void PhysicsWorld::deleteRigidBody(btRigidBody* rigidBody) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     --mNumDynamicCollisionObjects;
     mDynamicsWorld->removeRigidBody(rigidBody);
     delete rigidBody;
@@ -269,7 +269,7 @@ void PhysicsWorld::deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh) {
 
 void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
     PROFILE_FUNCTION();
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     const TileContainerID tileContainerId = meshBuilder.mTrackedRigidBodyGatherer.mContainerId;
     assert(meshBuilder.hasAnyCollision());
 
@@ -314,11 +314,11 @@ void PhysicsWorld::initEventHandlers() {
     TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
     // TODO: Profile version without lambda capture?
     TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         deletePhysicsForTileContainer(event.container->getId());
     });
     TileContainerRepository::addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         const TileContainerEditEvent& editEvent = event.edit;
         switch (event.edit.type) {
             case TileContainerEditEventType::ChangeFlags:
@@ -350,7 +350,7 @@ void PhysicsWorld::initEventHandlers() {
             case TileContainerEditEventType::ChangeWall:
                 break;
             default:
-                assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
+                assert(false && "Unhandled edit event in physworld edit tiles listener");
                 break;
         }
         static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
@@ -358,7 +358,7 @@ void PhysicsWorld::initEventHandlers() {
 }
 
 void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialCollisionObjectLookup& lookup) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
     if (gatherer.mRigidBodiesToAdd.empty()) {
         return;
@@ -410,7 +410,7 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
     }
     body->setGravity(GRAVITY);
 
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     {
         std::lock_guard lock(mStepSimulationMutex);
         mDynamicsWorld->addRigidBody(body, BIT_CAST(group), collisionMasks[e_cast(group)]);
@@ -447,7 +447,7 @@ btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID own
     assert(ownerTilePosition <= INVALID_PHYSICS_USER_INDEX && "Tile index overflow in createRigidBody");
     object->setUserIndex3(ownerTilePosition);
 
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     mDynamicsWorld->addCollisionObject(object, BIT_CAST(group), collisionMasks[e_cast(group)]);
     object->setActivationState(DISABLE_SIMULATION);
    
@@ -491,7 +491,7 @@ void PhysicsWorld::freeStaticCollisionObject(btCollisionObject* obj) {
 }
 
 void PhysicsWorld::debugRender() const {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
 
     const bool showStatic = sDebugOptions.mShowStaticPhysics;
@@ -581,7 +581,7 @@ struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
 
 PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) const
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
     btVector3 start = f32v3ToBtVector3(rayStart);
     btVector3 end = f32v3ToBtVector3(rayEnd);

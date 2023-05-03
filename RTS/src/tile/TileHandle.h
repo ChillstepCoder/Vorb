@@ -15,7 +15,7 @@ struct TileHandle {
     TileHandle(const TileContainer* container, TileIndex tileIndex);
 
     bool isValid() const { return container != nullptr; }
-    TileContainer* getMutableContainer() { assert(IS_GAME_THREAD());  return const_cast<TileContainer*>(container); }
+    TileContainer* getMutableContainer() { ASSERT_GAME_THREAD();  return const_cast<TileContainer*>(container); }
     i32v2 getWorldPos2D() const;
     i32v3 getWorldPos3D() const;
     ui32v3 getContainerOffset() const;

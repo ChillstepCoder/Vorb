@@ -13,7 +13,7 @@ TileContainerRepository::~TileContainerRepository()
 }
 
 TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>(mWorld);
     TileContainer* rv = newContainer.get();
 
@@ -51,7 +51,7 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
 }
 
 TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     auto&& it = mTileContainers.find(id);
     assert(it != mTileContainers.end());
     return it->second.get();

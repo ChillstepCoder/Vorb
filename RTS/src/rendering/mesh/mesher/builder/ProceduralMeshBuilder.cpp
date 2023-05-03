@@ -455,7 +455,7 @@ void ProceduralMeshBuilder::computeBoundingSphere() {
 }
 
 void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& worldPos) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
     assert(mSubMeshesData[e_cast(MaterialRenderPassType::Smudge)].mVerts.empty()); // TODO: SUPPORT THIS, we should return multiple meshes
 
@@ -474,7 +474,7 @@ void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3&
 }
 
 void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     assert(mSubMeshesData[e_cast(MaterialRenderPassType::Smudge)].mVerts.empty()); // TODO: SUPPORT THIS, we should return multiple meshes
 
     // Set bounds
@@ -507,13 +507,13 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
 }
 
 void* ProceduralMeshBuilder::operator new(size_t count) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void ProceduralMeshBuilder::operator delete(void* pointer, size_t size) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

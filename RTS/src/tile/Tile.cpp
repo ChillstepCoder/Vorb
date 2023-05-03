@@ -37,12 +37,12 @@ KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
 }
 
 void Tile::setTileFlag(TileFlags flag) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     tileFlags.setBit(flag);
 }
 
 void Tile::overwriteTileFlags(TileFlags flags) {
-    assert(IS_GAME_THREAD()); 
+    ASSERT_GAME_THREAD(); 
     tileFlags = flags;
 }
 
@@ -61,12 +61,12 @@ void Tile::setOrientation(Cartesian dir, TileLayer layer) {
 }
 
 void Tile::clearTileFlag(TileFlags flag) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     tileFlags.clearBit(flag);
 }
 
 void Tile::zeroTileFlags() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     tileFlags = 0;
 }
 
@@ -92,7 +92,7 @@ Tile::Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags) : tileFlags(fla
 }
 
 bool Tile::hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
         // Harvestble resources only exist on ground floor
         TileID tileId = layers[i];
@@ -196,17 +196,17 @@ Cartesian Tile::getOrientation(TileLayer layer) const {
 }
 
 bool Tile::canAddTileData(const TileData& tile) const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     return layers[tile.layer] == TILE_ID_NONE;
 }
 
 void Tile::setGroundZOffset(f32 groundZPosition) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     groundZOffset = groundZPosition;
 }
 //void Tile::setWall(Cartesian cartesianSouthOrWest, TileWall wall, bool isReadLocked) {
 //    assert(e_cast(cartesianSouthOrWest) <= 1);
-//    assert(IS_GAME_THREAD());
+//    ASSERT_GAME_THREAD();
 //    if (isReadLocked) {
 //        tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
 //    }

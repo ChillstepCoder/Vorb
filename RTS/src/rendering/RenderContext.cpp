@@ -41,7 +41,6 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/renderstate/RenderStateManager.h"
-#include "rendering/model/InstancedStaticModelRenderer.h"
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"

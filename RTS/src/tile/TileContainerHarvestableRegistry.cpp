@@ -103,7 +103,7 @@ void TileContainerHarvestableRegistry::refreshFromOwner() {
 
 void TileContainerHarvestableRegistry::debugDraw() const {
     // NOTE: NOT THREAD SAFE
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     if (!mOwner) {
         return;
     }

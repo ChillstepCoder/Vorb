@@ -77,7 +77,8 @@ void CliWorldInterface::onWorldBeginClient(IWorld& world) {
 
 void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
     PROFILE_FUNCTION();
-    mGrassMeshManager->dirtyGrassFromBrush(pos, brushRadius);
+    assert(false); // REAL GRASS UPDATES
+    //mGrassMeshManager->dirtyGrassFromBrush(pos, brushRadius);
 }
 
 void CliWorldInterface::updateRenderState(IWorld& world) {

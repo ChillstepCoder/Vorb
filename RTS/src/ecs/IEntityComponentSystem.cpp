@@ -19,7 +19,7 @@ IEntityComponentSystem::~IEntityComponentSystem() {
 
 void IEntityComponentSystem::tick() {
     PROFILE_FUNCTION();
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 	
     //mPlayerControlSystem.update(mRegistry, playerCamera);
     // TODO: Move 
@@ -44,7 +44,7 @@ void IEntityComponentSystem::tickPhysics() {
 
 void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 	if (mPlayerEntity != entt::null) {
 		mRegistry.remove<PlayerControlComponent>(mPlayerEntity);
 	}

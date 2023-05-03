@@ -47,7 +47,7 @@ public:
 
     // TODO: non vector
     std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
-    const StructureMap& getStructures() const { assert(IS_GAME_THREAD()); return mStructures; }
+    const StructureMap& getStructures() const { ASSERT_GAME_THREAD(); return mStructures; }
 
 private:
     void initEventHandlers();

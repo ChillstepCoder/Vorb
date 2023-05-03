@@ -17,7 +17,7 @@ GrassMeshManager::~GrassMeshManager() {
 }
 
 void GrassMeshManager::tickGameThread(const f32v2& loadCenter) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
 
     // Update grass
@@ -47,7 +47,7 @@ void GrassMeshManager::tickGameThread(const f32v2& loadCenter) {
 }
 
 void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     auto&& it = mChunkGrassQuadtrees.find(&chunk);
     if (it == mChunkGrassQuadtrees.end()) {
         mChunkGrassQuadtrees[&chunk] = nullptr;
@@ -56,7 +56,7 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
         TileContainer* container = chunkNonConst.getTileContainer();
         mEditEventHandles[container->getId()] = container->addEditTilesListener([this](const TileContainerEvent& evnt) {
             PROFILE_SCOPE("GrassEdit Dirty");
-            assert(IS_GAME_THREAD());
+            ASSERT_GAME_THREAD();
             if (evnt.edit.type == TileContainerEditEventType::ChangeZPos) {
                 const Chunk* owner = evnt.container->getOwnerChunk();
                 auto& quadtreePtr = mChunkGrassQuadtrees[owner];
@@ -74,7 +74,7 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
 }
 
 void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(chunk.getTileContainer());
     auto&& it = mEditEventHandles.find(chunk.getTileContainer()->getId());
     assert(it != mEditEventHandles.end());
@@ -95,7 +95,7 @@ void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
 }
 
 void GrassMeshManager::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // Only update grass which was impacted by brush
     for (auto&& quadtree : mChunkGrassQuadtrees) {
         if (quadtree.second) {

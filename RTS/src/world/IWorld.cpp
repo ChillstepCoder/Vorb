@@ -92,7 +92,7 @@ void IWorld::tickShared(f32 elapsedSec) {
 }
 
 entt::entity IWorld::createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     return mEcs->createEntity(pos, typeToken, shouldReplicate);
 }
 
@@ -107,7 +107,7 @@ bool IWorld::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable re
 //  TODO: No std function?
 void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // TODO: handle this without asserts
     // Start at bottom left
     i32v2 worldPos;
@@ -135,7 +135,7 @@ void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chun
 }
 
 TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     i32v2 worldPos2D = worldPos;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos2D);
     if (chunk->isDataReady()) {

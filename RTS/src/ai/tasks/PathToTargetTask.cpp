@@ -23,13 +23,13 @@ PathToTargetTask::~PathToTargetTask() {
 }
 
 void* PathToTargetTask::operator new(size_t count) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void PathToTargetTask::operator delete(void* pointer, size_t size) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

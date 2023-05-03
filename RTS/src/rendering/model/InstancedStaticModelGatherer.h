@@ -3,7 +3,7 @@
 #include "rendering/model/StaticModelInstance.h"
 
 class InstancedStaticModelGatherer {
-    friend class InstancedStaticModelRenderer;
+    friend class InstancedStaticModelManager;
 public:
     InstancedStaticModelGatherer(TileContainerID containerID, const f32v3& rootPosition) : mContainerID(containerID), mRootPosition(rootPosition) {};
     VORB_NON_COPYABLE_BUT_MOVABLE(InstancedStaticModelGatherer);

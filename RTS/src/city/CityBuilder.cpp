@@ -62,7 +62,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
 
 Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     PROFILE_FUNCTION();
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(bp.world);
 
     PreciseTimer timer;
@@ -186,7 +186,7 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 }
 
 void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(bp.world == &mCity.getWorld());
 
     // Clamp building height to 1 meter increments

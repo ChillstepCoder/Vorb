@@ -53,7 +53,7 @@ class GameThreadBatchedDirtySet
 public:
     // Returns false if already dirty
     bool gameThreadTryDirtyObject(T obj) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         bool didAdd = false;
         auto&& it = mDirtyObjectsGameThread.find(obj);
         if (it == mDirtyObjectsGameThread.end()) {
@@ -80,7 +80,7 @@ public:
 
     // Will fill outObjects with all currently dirty objects and clear
     void gameThreadCopyToWorkerThread() {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         {
             std::lock_guard lock(mMutex);
             mDirtyObjectsWorkerThread.merge(mDirtyObjectsGameThread);
@@ -109,7 +109,7 @@ class GameThreadBatchedDirtyMapSet
 public:
     // Returns false if already dirty
     bool gameThreadTryDirtyObject(K key, const V& val) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         bool didAdd = false;
         auto&& it = mDirtyObjectsGameThread.find(key);
         if (it == mDirtyObjectsGameThread.end()) {
@@ -129,7 +129,7 @@ public:
 
     // Will fill outObjects with all currently dirty objects and clear
     void gameThreadCopyToWorkerThread() {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         {
             std::lock_guard lock(mMutex);
             for (auto&& gameIt : mDirtyObjectsGameThread) {
@@ -166,17 +166,17 @@ class GameThreadBatchedDirtyVector
 public:
     // Returns false if already dirty
     void gameThreadDirtyObject(const T& obj) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         mDirtyObjectsGameThread.emplace_back(obj);
     }
     void gameThreadDirtyObject(T&& obj) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         mDirtyObjectsGameThread.emplace_back(std::move(obj));
     }
 
     // Will fill outObjects with all currently dirty objects and clear
     void gameThreadCopyToWorkerThread() {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         {
             std::lock_guard lock(mMutex);
             mDirtyObjectsWorkerThread.reserve(mDirtyObjectsWorkerThread.size() + mDirtyObjectsGameThread.size());

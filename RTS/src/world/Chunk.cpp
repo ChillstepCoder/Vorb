@@ -231,7 +231,7 @@ void Chunk::clearGrassAt(const TileIndex index) {
 
 const ui8 Chunk::getGrassDensityAt(const TileIndex index, TileGrassID grassId) const
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     const TileGrass& grass = mGrass[index];
     return grass.getDensity(grassId);
 }
@@ -317,7 +317,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
 }
 
 void Chunk::addStructure(Structure* structure) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(isDataReady());
     structure->incRef();
     mStructures.emplace_back(structure->getId());

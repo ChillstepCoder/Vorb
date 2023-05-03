@@ -40,7 +40,7 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
 }
 
 void RenderThreadTasks::addCharacterModel(entt::entity characterEntity, ui32 modelId) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     CharacterModelTaskData* taskData = new CharacterModelTaskData();
     taskData->entityId = characterEntity;
     taskData->modelId = modelId;
@@ -54,7 +54,7 @@ void RenderThreadTasks::addCharacterModel(entt::entity characterEntity, ui32 mod
 }
 
 void RenderThreadTasks::removeCharacterModel(entt::entity characterEntity) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // TODO: maybe this should be its own queue?
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
         entt::entity entityId = entt::entity(reinterpret_cast<entt::id_type>(data));

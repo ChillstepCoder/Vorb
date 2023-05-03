@@ -29,14 +29,14 @@ TerrainMeshManager::~TerrainMeshManager() {
 }
 
 void TerrainMeshManager::tickGameThread(const f32v2& loadCenter) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     for (auto&& terrainQuadtree : mTerrainTrees) {
         terrainQuadtree.update(loadCenter);
     }
 }
 
 void TerrainMeshManager::dirtyAllTerrain() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // Force all terrain to regenerate
     for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
         mTerrainTrees[i].markDirty();

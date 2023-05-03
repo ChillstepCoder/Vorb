@@ -18,7 +18,6 @@ WorldObjectQuery::WorldObjectQuery(IWorld& world) : mWorld(world)
 
 WorldObjectQuery::~WorldObjectQuery()
 {
-
 }
 
 void WorldObjectQuery::query() {
@@ -50,7 +49,7 @@ void WorldObjectQuery::queryInternal() {
         mTileRef.acquire(handle);
     }
     else {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         f32v2 tilePos2D(mWorldPos.x, mWorldPos.y);
         handle = mWorld.getTerrainTileHandleAtWorldPos(tilePos2D);
         if (!handle.isValid()) {

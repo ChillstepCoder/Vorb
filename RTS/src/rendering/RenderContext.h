@@ -15,7 +15,6 @@ class GrassMesh;
 class GrassRenderer;
 class ICamera;
 class InstancedStaticModelGatherer;
-class InstancedStaticModelRenderer;
 class IWorld;
 class ItemRenderer;
 class LightRenderer;

@@ -134,10 +134,12 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, const Camera3D*
     {
         auto&& it = mRenderDataManagers.find(mActiveWorld);
         if (it == mRenderDataManagers.end()) {
-            mCurrentWorldRenderDataManager = mRenderDataManagers.insert(std::make_unique< WorldRenderDataManager>(mActiveWorld)).second;
+            mCurrentWorldRenderDataManager = mRenderDataManagers.insert(
+                std::make_pair(mActiveWorld, std::make_unique<WorldRenderDataManager>(mActiveWorld))
+            ).first->second.get();
         }
         else {
-            mCurrentWorldRenderDataManager = it->second;
+            mCurrentWorldRenderDataManager = it->second.get();
         }
     }
 
@@ -145,15 +147,13 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, const Camera3D*
     mCamera = camera;
     mPlayerPos = playerPos;
 
-    // Allow model renderer to build indirect buffers
-    mStaticModelRenderer->frameUpdate(*camera);
-    mTileContainerRenderer->frameUpdate();
+    // Any per frame world render data
+    mCurrentWorldRenderDataManager->frameUpdate(*camera);
+
     // Sun
     const f32v3& sun = mActiveWorld->getTimeOfDayManager().getSunPosition();
     mShadowRenderer->beginFrame(*camera, sun);
 
-    // Any per frame world render data
-    mCurrentWorldRenderDataManager->frameUpdate();
 }
 
 void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec) {
@@ -167,7 +167,7 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
         glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Static meshes
-        mTileContainerRenderer->renderStaticMeshes(*mCurrentWorldRenderData, *mCamera);
+        mTileContainerRenderer->renderStaticMeshes(mCurrentWorldRenderDataManager->getStaticMeshes(), *mCamera);
 
         if (!sDebugOptions.mHideCharacters) {
             mCharacterRenderer->renderCharacters(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha);
@@ -201,7 +201,7 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
         // === Post AO passes ===
         // Grass + billboards
 
-        mTileContainerRenderer->renderBillboards(*mCurrentWorldRenderData, *mCamera);
+        mTileContainerRenderer->renderBillboards(mCurrentWorldRenderDataManager->getBillboardMeshes(), *mCamera);
         // PRE SMUDGE GRASS PASS
         /*if (!sDebugOptions.mHideGrass) {
             mGrassRenderer->renderGrass(*mCamera, playerPos, mGrassMeshes);
@@ -433,7 +433,7 @@ void WorldRenderer::addStaticModelInstancesFromGatherer(InstancedStaticModelGath
 }
 
 WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const IWorld& world) const {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     auto&& it = mRenderDataManagers.find(&world);
     if (it == mRenderDataManagers.end()) {
         return nullptr;
@@ -442,7 +442,7 @@ WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const IWo
 }
 
 WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const IWorld& world) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     auto&& it = mRenderDataManagers.find(&world);
     if (it == mRenderDataManagers.end()) {
         return mRenderDataManagers.insert(std::make_unique<WorldRenderDataManager>(mActiveWorld)).second;

@@ -70,7 +70,7 @@ NavWorld::~NavWorld()
 }
 
 void NavWorld::tickGameThread() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     mDirtyTileContainers.gameThreadCopyToWorkerThread();
     mContainersToDestroy.gameThreadCopyToWorkerThread();
 }
@@ -78,7 +78,7 @@ void NavWorld::tickGameThread() {
 void NavWorld::updateNavThread()
 {
     PROFILE_FUNCTION();
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
 
     constexpr int MAX_BULK_DEQUE_TASK_DATA = 32;
     NavGraphBuildTaskData taskDataBulk[MAX_BULK_DEQUE_TASK_DATA];
@@ -782,14 +782,14 @@ void NavWorld::initEventHandlers() {
         constexpr ui8 EDIT_TYPES_MASK = 0xffui8;
         static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         if (e_cast(containerEvent.edit.type) & EDIT_TYPES_MASK) {
             markContainerNavDirty(containerEvent.container);
         }
     });
 
     TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         const TileContainer& container = *containerEvent.container;
         BitFlags<ChunkDependencyFlags> dependencyFlags;
         if (!container.isTerrain()) {
@@ -888,7 +888,7 @@ bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Carte
 
 void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
 {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
@@ -1269,14 +1269,14 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f3
 }
 
 const CoarseNavGraph* NavWorld::tryGetCoarseNavGraph(TileContainerID containerId) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     auto&& it = mNavGraphs.find(containerId);
     if (it == mNavGraphs.end()) return nullptr;
     return &it->second.coarseNavGraph;
 }
 
 const CoarseNavGraph& NavWorld::getCoarseNavGraph(TileContainerID containerId) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     auto&& it = mNavGraphs.find(containerId);
     assert(it != mNavGraphs.end());
     return it->second.coarseNavGraph;
@@ -1288,7 +1288,7 @@ const CoarseNavNode* NavWorld::getCoarseNavNode(CoarseNavNodeIndexPair index) co
 }
 
 const CoarseNavNode* NavWorld::getCoarseNavNode(TileContainerID containerId, ui16 navNodeIndex) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     // TODO: what if invalid
     auto&& it = mNavGraphs.find(containerId);
     assert(it != mNavGraphs.end());
@@ -1298,7 +1298,7 @@ const CoarseNavNode* NavWorld::getCoarseNavNode(TileContainerID containerId, ui1
 }
 
 TileFineNavData NavWorld::getFineNavData(TileContainerID containerId, TileIndex tileIndex) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     // TODO: what if invalid
     auto&& it = mNavGraphs.find(containerId);
     assert(it != mNavGraphs.end());
@@ -1308,7 +1308,7 @@ TileFineNavData NavWorld::getFineNavData(TileContainerID containerId, TileIndex 
 }
 
 TileFineNavData NavWorld::getFineNavDataAndContainerDims(TileContainerID containerId, TileIndex tileIndex, OUT i32v3& containerDims, OUT i32& floorHeight) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     // TODO: what if invalid
     auto&& it = mNavGraphs.find(containerId);
     assert(it != mNavGraphs.end());
@@ -1320,7 +1320,7 @@ TileFineNavData NavWorld::getFineNavDataAndContainerDims(TileContainerID contain
 }
 
 const ContainerNavData& NavWorld::getNavDataForContainer(TileContainerID containerId) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     // TODO: what if invalid
     auto&& it = mNavGraphs.find(containerId);
     assert(it != mNavGraphs.end());
@@ -1328,7 +1328,7 @@ const ContainerNavData& NavWorld::getNavDataForContainer(TileContainerID contain
 }
 
 LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     // TODO: Stack memory?
     std::vector<ContainerNavRegion> overlappingContainers;
     overlappingContainers.reserve(4);
@@ -1375,7 +1375,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
 }
 
 void NavWorld::markContainerNavDirty(TileContainer* container) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(container);
     bool didAdd = mDirtyTileContainers.gameThreadTryDirtyObject(container);
     
@@ -1401,7 +1401,7 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
 }
 
 bool NavWorld::navThreadTryReserveHarvestable(LiteTileHandle position) const {
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     auto&& it = mReservedHarvestables.find(position);
     if (it == mReservedHarvestables.end()) {
         mReservedHarvestables.insert(std::make_pair(position, Services::GameTimeManager::ref().getCurrentTimeSec()));

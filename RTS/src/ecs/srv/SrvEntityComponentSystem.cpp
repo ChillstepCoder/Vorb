@@ -18,7 +18,7 @@ void SrvEntityComponentSystem::tick()
 }
 
 entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     if (shouldReplicate && GameServer::exists()) {
         mRegistry.emplace<ReplicationComponent>(newEntity);
@@ -31,7 +31,7 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
 }
 
 entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const f32v3& position) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     entt::entity entity = EntityFactory::createEntity(mWorld, position, StrToken("player"));
 
     if (GameServer::exists()) {

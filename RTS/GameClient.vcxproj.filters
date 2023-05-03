@@ -726,6 +726,12 @@
     <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\model\StaticModelInstanceData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1716,6 +1722,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\TileContainerMeshManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\StaticModelInstanceData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

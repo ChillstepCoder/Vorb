@@ -95,7 +95,7 @@ public:
 
     // =========== Tile accessors  ===========
     Tile& getMutableTileAt(TileIndex i) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         assert(i < mTiles.size());
         return mTiles[i];
     }
@@ -129,7 +129,7 @@ public:
 
     static bool isTileOwned(const BitArray& ownedTiles, TileIndex index) { return ownedTiles.getNumBits() == 0 || ownedTiles.getBit(index); }
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
-    const BitArray& getOwnedTiles() const { return mOwnedTiles; } // TODO: ASSERT(IS_GAME_THREAD());
+    const BitArray& getOwnedTiles() const { return mOwnedTiles; } // TODO: ASSERT_GAME_THREAD();
     void allocateOwnedTiles();
     void setOwnedTile(TileIndex index) { mOwnedTiles.setBit(index); }
     void clearOwnedTile(TileIndex index) { mOwnedTiles.clearBit(index); }
@@ -137,7 +137,7 @@ public:
 
     // =========== Refcount  ===========
     inline void incRef() const {
-        assert(IS_GAME_THREAD()); // Only main thread is allowed to incref
+        ASSERT_GAME_THREAD(); // Only main thread is allowed to incref
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
         if (mRefCount > 400) {
@@ -162,7 +162,7 @@ public:
     void clearDirtyData() { mDirtyData = false; }
 
     // =========== Accessors  ===========
-    const std::vector<Tile>& getTiles() const { assert(IS_GAME_THREAD()); return mTiles; }
+    const std::vector<Tile>& getTiles() const { ASSERT_GAME_THREAD(); return mTiles; }
     const TileWallContainer& getTileWallContainer() const { return  mTileWallsContainer; }
     size_t getNumTiles() const { return mTiles.size(); }
 

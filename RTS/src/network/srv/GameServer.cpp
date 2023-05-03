@@ -137,7 +137,7 @@ void GameServer::clientDisconnected(int clientIndex) {
 }
 
 void GameServer::update() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // stop if server is not running
     if (!mServer.IsRunning()) {
         mRunning = false;

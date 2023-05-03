@@ -100,7 +100,7 @@ PlayerControlSystem::PlayerControlSystem() {
 }
 
 void PlayerControlSystem::update(entt::registry& registry, f32 cameraYaw) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // Don't update while in free fly
     if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }
 	// Update components

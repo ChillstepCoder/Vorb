@@ -52,7 +52,7 @@ void BillboardMeshBuilder::computeBoundingSphere() {
 }
 
 void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& worldPos, GLbitfield bufferFlags) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     // return blank mesh if we have no geometry
     if (mBillboards.empty()) {
         mesh.reset();
@@ -91,13 +91,13 @@ void BillboardMeshBuilder::uploadBufferData(MeshGpuData& subMesh, const f32v3& p
 }
 
 void* BillboardMeshBuilder::operator new(size_t count) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void BillboardMeshBuilder::operator delete(void* pointer, size_t size) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

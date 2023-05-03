@@ -19,7 +19,7 @@ public:
     TileContainer* getTileContainer(TileContainerID id);
     TileContainer* tryGetTileContainer(TileContainerID id);
 
-    const TileContainerMap& getTileContainers() const { /*assert(IS_GAME_THREAD());*/return mTileContainers; }
+    const TileContainerMap& getTileContainers() const { /*ASSERT_GAME_THREAD();*/return mTileContainers; }
 
     // TODO: NON STATIC
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, LoadFinished, TileContainerEventType::LoadFinished, const TileContainerEvent&);

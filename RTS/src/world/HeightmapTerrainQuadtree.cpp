@@ -115,7 +115,7 @@ void HeightmapTerrainQuadtree::updateCrossfadeRenderForPatch(ui32 patchIndex, f3
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     bool hasAquired = true;
     if (!mTerrainMeshes[patchIndex] || !mWaterMeshes[patchIndex]) {
         hasAquired = false; // If we dont have a mesh, we haven't aquired yet
@@ -221,26 +221,26 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
 
     if (mTerrainMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().getWorldRenderDataManager().addTerrainMesh(*mWorld, mTerrainMeshes[patchIndex].get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).addTerrainMesh(mTerrainMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
-        RenderContext::getInstance().getWorldRenderDataManager().removeTerrainMesh(*mWorld, mTerrainMeshes[patchIndex].get());
+        RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).removeTerrainMesh(mTerrainMeshes[patchIndex].get());
     }
 
     if (mWaterMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().getWorldRenderDataManager().addTerrainWaterMesh(*mWorld, mWaterMeshes[patchIndex].get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).addTerrainWaterMesh(mWaterMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
-        RenderContext::getInstance().getWorldRenderDataManager().removeTerrainWaterMesh(*mWorld, mWaterMeshes[patchIndex].get());
+        RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).removeTerrainWaterMesh(mWaterMeshes[patchIndex].get());
     }
 }
 
 void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
 {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // Only highest LOD has reference to heightmap
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     if (QUADTREE_LOD_FROM_INDEX[patchIndex] == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
@@ -260,10 +260,10 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
     RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
         TerrainMeshFreeTask* taskData = static_cast<TerrainMeshFreeTask*>(vTaskData);
         if (taskData->terrainMesh) {
-            RenderContext::getInstance().getWorldRenderDataManager().removeTerrainMesh(taskData->world, taskData->terrainMesh.get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).removeTerrainMesh(taskData->terrainMesh.get());
         }
         if (taskData->waterMesh) {
-            RenderContext::getInstance().getWorldRenderDataManager().removeTerrainWaterMesh(taskData->world, taskData->waterMesh.get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).removeTerrainWaterMesh(taskData->waterMesh.get());
         }
         delete taskData;
     }, freeTask);

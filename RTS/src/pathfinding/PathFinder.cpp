@@ -194,7 +194,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     PROFILE_FUNCTION();
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     // TODO: Profiling
     PreciseTimer timer;
     const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
@@ -444,7 +444,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
 bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path)
 {
     PROFILE_FUNCTION();
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     assert(path.numPoints == 0); // Should be uninitialized
 
     // We pathfind backwards so swap start and goal
@@ -551,7 +551,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
 
 LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, OUT NavPath& path) {
     PROFILE_FUNCTION();
-    assert(IS_NAV_THREAD());
+    ASSERT_NAV_THREAD();
     assert(path.numPoints == 0); // Should be uninitialized
 
     // We pathfind forwards

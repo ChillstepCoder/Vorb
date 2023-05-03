@@ -17,7 +17,7 @@ public:
     // Client or server
     virtual void destroyEntity(entt::entity entity) = 0;
 
-    entt::entity getLocalPlayer() const { assert(IS_GAME_THREAD()); return mPlayerEntity; }
+    entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mPlayerEntity; }
     void setLocalPlayer(entt::entity playerEntity);
 
     // TODO: UniquePtr for faster include

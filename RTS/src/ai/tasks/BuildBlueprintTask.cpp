@@ -18,13 +18,13 @@ struct build_pool {};
 using singleton_task_pool = boost::singleton_pool<build_pool, sizeof(BuildBlueprintTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
 void* BuildBlueprintTask::operator new(size_t count) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void BuildBlueprintTask::operator delete(void* pointer, size_t size) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

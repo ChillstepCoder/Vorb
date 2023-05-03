@@ -73,7 +73,7 @@ void QuadtreePatch::trySignalParentNoLongerDesireRecombine(ui32 myIndex, Quadtre
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getDebugQuads(std::vector<DebugWireQuadState>& outQuads) const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 
     f32v3 mPos3D(mWorldPos.x, mWorldPos.y, 0.0f);
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {

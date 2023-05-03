@@ -19,7 +19,7 @@ struct RoofContourEdgeInfo {
 class BuildingMesher : public ITileContainerMesher
 {
 public:
-    BuildingMesher(TileContainerRenderer& renderer) : ITileContainerMesher(renderer) {}
+    BuildingMesher(TileContainerMeshManager& meshManager) : ITileContainerMesher(meshManager) {}
 
     void buildMeshAndPhysicsAsync(const Building& building) const;
 

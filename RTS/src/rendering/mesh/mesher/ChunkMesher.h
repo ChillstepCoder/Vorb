@@ -6,7 +6,7 @@ class TileContainer;
 class ChunkMesher : public ITileContainerMesher
 {
 public:
-    ChunkMesher(TileContainerRenderer& renderer) : ITileContainerMesher(renderer) {}
+    ChunkMesher(TileContainerMeshManager& meshManager) : ITileContainerMesher(meshManager) {}
 
     void initMeshAndPhysicsAsync(TileContainer& tileContainer);
 };

@@ -11,7 +11,7 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 void MaterialUtils::uploadLightingUniforms(const MaterialShader& material) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
     LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
     glUniform2i(material.getUniform("unLightingModel"), optionsLeft.mLightingModel, optionsRight.mLightingModel);
@@ -45,7 +45,7 @@ void MaterialUtils::uploadTonemapUniforms(const MaterialShader& material) {
 }
 
 void MaterialUtils::updateAndRenderLightingControls(ui32& ID, LightingOptions* options, int presetIndex) {
-    assert(IS_RENDER_THREAD()); ImGui::PushID(++ID);
+    ASSERT_RENDER_THREAD(); ImGui::PushID(++ID);
     ImGui::SliderFloat("Gamma", &options->mGamma, 0.0f, 4.0f);
     ImGui::SliderFloat("Exposure", &options->mExposure, 0.0f, 4.0f);
     ImGui::SliderFloat("Haze Exponent", &options->mHazeExponent, 0.0f, 2.0f);

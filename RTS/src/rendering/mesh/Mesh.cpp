@@ -149,13 +149,13 @@ void MeshGpuData::destroy() {
 }
 
 void* Mesh::operator new(size_t count) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     UNUSED(count);
     return singleton_mesh_pool::malloc();
 }
 
 void Mesh::operator delete(void* pointer, size_t size) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     UNUSED(size);
     return singleton_mesh_pool::free(pointer);
 }

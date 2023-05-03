@@ -16,7 +16,7 @@
 #include "physics/PhysicsWorld.h"
 
 entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, StrToken typeToken) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     PhysicsWorld& physWorld = world.getPhysicsWorld();
     IEntityComponentSystem& ecs = world.getECS();
 

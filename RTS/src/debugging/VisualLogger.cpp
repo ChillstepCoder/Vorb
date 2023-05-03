@@ -157,7 +157,7 @@ void VisualLog::finish() {
 }
 
 void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     if (!mShapesToRender) {
         return;
     }

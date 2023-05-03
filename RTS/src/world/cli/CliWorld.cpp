@@ -15,7 +15,7 @@ CliWorld::CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorl
 }
 
 void CliWorld::tick(f32 elapsedSec) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 
     // Update services
     Services::Threadpool::ref().mainThreadUpdate();
@@ -36,13 +36,13 @@ void CliWorld::tick(f32 elapsedSec) {
 }
 
 void CliWorld::onFrameBegin() {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
 }
 
 void CliWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec)
 {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     // Physworld will handle internal interpolation and timestep itself
     //mPhysWorld->stepSimulation(elapsedSec);
 }

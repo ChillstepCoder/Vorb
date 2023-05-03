@@ -65,7 +65,7 @@ void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
 }
 
 void IChunkGrid::tick(const f32v2& loadCenter) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
 
     // Check if we need to force update
     if (mForceUpdateEdgeChunks || (glm::length2(loadCenter - mPrevLoadCenter) > DISTANCE_SQ_CHANGE_UNTIL_FORCE_UPDATE_EDGES)) {

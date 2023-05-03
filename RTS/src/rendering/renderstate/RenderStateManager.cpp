@@ -31,7 +31,7 @@ bool RenderStateManager::isActiveWorld(const IWorld* world) {
 }
 
 RenderState& RenderStateManager::getRenderStateForUpdate() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(mActiveWorld);
     {
         std::lock_guard<std::mutex> lock(mLock);
@@ -45,14 +45,14 @@ RenderState& RenderStateManager::getRenderStateForUpdate() {
 }
 
 void RenderStateManager::finishUpdating() {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     std::lock_guard<std::mutex> lock(mLock);
     // Mark the currently updating buffer as the last updated
     mLastUpdated = mUpdating;
 }
 
 const RenderState& RenderStateManager::getRenderStateForRender() {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     {
         std::lock_guard<std::mutex> lock(mLock);
         // Render the last updated state

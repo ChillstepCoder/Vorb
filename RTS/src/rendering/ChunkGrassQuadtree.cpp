@@ -113,7 +113,7 @@ bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) 
 //}
 
 void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     bool hasAquired = true;
     if (!mMeshes[patchIndex]) {
         hasAquired = false;
@@ -193,11 +193,11 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
             IWorld& world;
         };
 
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         GrassMeshFreeTask* freeTask = new GrassMeshFreeTask(std::move(mMeshes[patchIndex]), *mChunk.getWorld());
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
             GrassMeshFreeTask* taskData = static_cast<GrassMeshFreeTask*>(vTaskData);
-            RenderContext::getInstance().getWorldRenderDataManager().removeGrassMesh(taskData->world, taskData->grassMesh.get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).removeGrassMesh(taskData->grassMesh.get());
             delete taskData;
         }, freeTask);
     }
@@ -211,12 +211,12 @@ void ChunkGrassQuadtree::finishMesh(ui32 patchIndex) {
     if (mesh->mMesh.isValid()) {
         if (!mesh->mHadMesh) {
             assert(mesh->mIndex < ChunkGrassFlatQuadtree::NODE_COUNT);
-            RenderContext::getInstance().getWorldRenderDataManager().addGrassMesh(*mChunk.getWorld(), mesh.get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(*mChunk.getWorld()).addGrassMesh(mesh.get());
             mesh->mHadMesh = true;
         }
     }
     else if (mesh->mHadMesh) {
-        RenderContext::getInstance().getWorldRenderDataManager().removeGrassMesh(*mChunk.getWorld(), mesh.get());
+        RenderContext::getInstance().getRenderDataManagerForWorld(*mChunk.getWorld()).removeGrassMesh(mesh.get());
         mesh.reset();
     }
 }

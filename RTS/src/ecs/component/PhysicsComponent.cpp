@@ -27,21 +27,21 @@ KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
 }
 
 f32v2 PhysicsComponent::getDir() const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     btVector3 result = btVector3(1.0, 0.0, 0.0);
     result = mRigidBody->getWorldTransform() * result;
     return f32v2(result.getX(), result.getY());
 }
 
 f32v2 PhysicsComponent::getInterpolatedDir() const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     btVector3 result = btVector3(1.0, 0.0, 0.0);
     result = mRigidBody->getInterpolationWorldTransform() * result;
     return f32v2(result.getX(), result.getY());
 }
 
 f32v3 PhysicsComponent::getPosition() const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // TODO: Physics system could cache position
     // TODO: Get origin?
     f32v3 rv = btVector3ToF32v3(mRigidBody->getWorldTransform().getOrigin());
@@ -50,7 +50,7 @@ f32v3 PhysicsComponent::getPosition() const {
 }
 
 f32v3 PhysicsComponent::getInterpolatedPosition() const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // TODO: Physics system could cache position
     f32v3 rv = btVector3ToF32v3(mRigidBody->getInterpolationWorldTransform().getOrigin());
     rv.z += mZPosOffset;
@@ -58,19 +58,19 @@ f32v3 PhysicsComponent::getInterpolatedPosition() const {
 }
 
 f32v3 PhysicsComponent::getLinearVelocity() const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     return btVector3ToF32v3(mRigidBody->getLinearVelocity());
 }
 
 f32 PhysicsComponent::getRotation() const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     // TODO: Interpolated or no?
     f32v2 dir = getDir();
     return atan2(dir.y, dir.x);
 }
 
 void PhysicsComponent::teleportToPoint(f32v3 worldPos) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(mRigidBody);
     btTransform worldTransform;
     worldPos.z -= mZPosOffset;
@@ -80,7 +80,7 @@ void PhysicsComponent::teleportToPoint(f32v3 worldPos) {
 }
 
 void PhysicsComponent::setTransform(const f32v3& worldPos, f32 rotation) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(mRigidBody);
     btTransform worldTransform;
     worldTransform.setOrigin(btVector3(worldPos.x, worldPos.y, worldPos.z - mZPosOffset));
@@ -89,7 +89,7 @@ void PhysicsComponent::setTransform(const f32v3& worldPos, f32 rotation) {
 }
 
 void PhysicsComponent::setVelocity(const f32v3& vel) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(mRigidBody);
     mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
 }

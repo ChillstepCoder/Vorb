@@ -6,7 +6,7 @@
 #include "tile/TileContainer.h"
 
 void ChunkMesher::initMeshAndPhysicsAsync(TileContainer& tileContainer) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     assert(tileContainer.getOwnerType() == TileContainerOwnerType::CHUNK);
 
     IWorld& world = tileContainer.getWorld();

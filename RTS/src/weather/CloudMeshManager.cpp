@@ -161,7 +161,7 @@ void CloudMeshManager::frameUpdate(const f32v2& loadCenter) {
 }
 
 void CloudMeshManager::updateGridShift(const f32v2& loadCenter) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     i32v2 centerCloudPos = i32v2(floor(loadCenter.x / CLOUD_BATCH_WIDTH), floor(loadCenter.y / CLOUD_BATCH_WIDTH));
     i32v2 offsetSinceLastTick = centerCloudPos - mLastCenterPosition;
     if (offsetSinceLastTick.x != 0) {
@@ -192,7 +192,7 @@ void CloudMeshManager::updateGridShift(const f32v2& loadCenter) {
 }
 
 void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
     const f32v2 pos(cloudPos.x * CLOUD_BATCH_WIDTH, cloudPos.y * CLOUD_BATCH_WIDTH);
     const f32 size = 10.0f;

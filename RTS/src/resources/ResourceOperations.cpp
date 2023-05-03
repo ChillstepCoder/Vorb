@@ -6,7 +6,7 @@
 #include "resources/ModelRepository.h"
 
 bool ResourceOperations::importFbxModel(const vio::Path& path) {
-    assert(IS_RENDER_THREAD()); // This isnt actually a requirement but just need to make sure it handles other threads
+    ASSERT_RENDER_THREAD(); // This isnt actually a requirement but just need to make sure it handles other threads
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     ModelRepository& modelRepo = resourceManager.getModelRepository();

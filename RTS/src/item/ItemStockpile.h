@@ -72,7 +72,7 @@ public:
 
     // =========== Refcount  ===========
     inline void incRef() const {
-        assert(IS_GAME_THREAD()); // Only main thread is allowed to incref
+        ASSERT_GAME_THREAD(); // Only main thread is allowed to incref
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
         if (mRefCount > 400) {

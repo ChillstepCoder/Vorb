@@ -16,7 +16,7 @@ constexpr f32 MAX_FADE_DURATION = 1.0f / FADE_SPEED_SCALE;
 constexpr f32 MIN_FADE_DURATION = 1.0f / (FADE_SPEED_SCALE * 255.0f);
 
 void AnimTrack::fadeIn(f32 fadeTime) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     // TODO: Tmp
     mWeight = 1.0f;
     // Don't fade in if we already are
@@ -36,7 +36,7 @@ void AnimTrack::fadeIn(f32 fadeTime) {
 }
 
 void AnimTrack::fadeOut(f32 fadeTime) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
     // Don't fade out if we already are
     if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT) || mWeight == 0) {
@@ -50,7 +50,7 @@ void AnimTrack::fadeOut(f32 fadeTime) {
 }
 
 void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     // Update fade
     if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_IN)) {
         const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
@@ -110,19 +110,19 @@ void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
 }
 
 void AnimState::fadeInStateTrack(AnimMachineState state, f32 fadeDuration) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     mTracks[e_cast(state)].fadeIn(fadeDuration);
     mPrimaryStateTrack = (ui8)state;
 }
 
 void AnimState::setAnimTrackWeight(AnimMachineState currentState, f32 weightScale) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     AnimTrack& track = mTracks[e_cast(currentState)];
     track.mWeightScale = weightScale;
 }
 
 void AnimState::updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
     // TODO: Allow per model specification
     const f32 cycleDuration = FOOTSTEP_CYCLE_DURATION_SEC[e_cast(currentLocomotionMode)];
     assert(cycleDuration);
@@ -133,7 +133,7 @@ void AnimState::updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode curr
 }
 
 void AnimState::playOneShotAnimation(const ozz::animation::Animation* animation) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
     mCurrentOneShotTrack.mTime = 0.0f;
     mCurrentOneShotTrack.mDuration = animation->duration();

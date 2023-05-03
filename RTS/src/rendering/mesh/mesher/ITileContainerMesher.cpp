@@ -10,7 +10,7 @@
 #include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
-#include "rendering/TileContainerRenderer.h"
+#include "rendering/mesh/TileContainerMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
@@ -19,7 +19,7 @@
 
 
 void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& container, const f32* heightData, bool staticMeshIsOnlyQuads, ui32 reserveStaticVertexCount, const void* userData) const {
-    assert(IS_GAME_THREAD()); // Game thread makes the request
+    ASSERT_GAME_THREAD(); // Game thread makes the request
 
     // Always incref, will be decrefed in the task
     // TODO: Non terrain is handled differently???
@@ -49,7 +49,7 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
 
         builders.computeBoundingSpheres();
 
-        mRenderer.updateMeshFromBuilders(&container, std::move(builders));
+        mMeshManager.updateMeshFromBuilders(&container, std::move(builders));
 
         if (physicsBuilder.hasAnyCollision()) {
             GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshInitTask(&container, std::move(physicsBuilder));

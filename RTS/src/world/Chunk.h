@@ -123,7 +123,7 @@ public:
 	
     void setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density);
     void clearGrassAt(const TileIndex index);
-	const TileGrass& getGrassAt(const TileIndex index) const { /*assert(IS_GAME_THREAD()); */return mGrass[index]; } // TODO: Game thread assert
+	const TileGrass& getGrassAt(const TileIndex index) const { /*ASSERT_GAME_THREAD(); */return mGrass[index]; } // TODO: Game thread assert
 	const ui8 getGrassDensityAt(const TileIndex index, TileGrassID grassId) const;
 	void copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const;
     //void bulkSetGrassAt(std::pair<TileIndex, ui8>* editData, size_t count); // TODO: THIS + EVENTS
@@ -132,12 +132,12 @@ public:
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
 
     // =========== Tiles  ===========
-	TileContainer* getTileContainer() { assert(IS_GAME_THREAD()); return mTileContainer; }
+	TileContainer* getTileContainer() { ASSERT_GAME_THREAD(); return mTileContainer; }
     const TileContainer* getTileContainer() const { return mTileContainer; }
 
     // =========== Ref counting  ===========
 	// Only game thread can incref but any thread can decref
-	inline void incRef() const { assert(IS_GAME_THREAD());  mTileContainer->incRef(); }
+	inline void incRef() const { ASSERT_GAME_THREAD();  mTileContainer->incRef(); }
 	inline void decRef() const { mTileContainer->decRef(); }
     ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
 

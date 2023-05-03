@@ -9,7 +9,7 @@
 #include "glm/gtx/rotate_vector.hpp"
 
 Mesh& PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType type) {
-    assert(IS_RENDER_THREAD());
+    ASSERT_RENDER_THREAD();
 
     // Generate lazily if needed
     if (mMeshes[e_cast(type)] == nullptr) {

@@ -25,7 +25,7 @@ StructureManager::StructureManager(IWorld& world) : mWorld(world) {
 }
 
 Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight) {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     i32v3 tileDims = aabb.dims;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
     std::unique_ptr<Structure> newStructure;
@@ -111,7 +111,7 @@ void StructureManager::debugRender() {
 }
 
 std::vector<Structure*> StructureManager::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
-    assert(IS_GAME_THREAD());
+    ASSERT_GAME_THREAD();
     std::vector<StructureRegion> overlappingStructures;
     overlappingStructures.reserve(4);
     // https://valelab4.ucsf.edu/svn/3rdpartypublic/boost-versions/boost_1_55_0/libs/geometry/doc/html/geometry/spatial_indexes/queries.html
@@ -130,7 +130,7 @@ std::vector<Structure*> StructureManager::tryGetStructuresAtWorldPos(const i32v2
 void StructureManager::initEventHandlers() {
     IChunkGrid::registerChunkListeners(mChunkEventListeners);
     IChunkGrid::addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         auto&& it = mDormantStructures.find(chunk.getChunkID());
         if (it == mDormantStructures.end()) {
             return;
@@ -153,7 +153,7 @@ void StructureManager::initEventHandlers() {
     });
 
     IChunkGrid::addDestroyListener(mChunkEventListeners, [this](Chunk& chunk) {
-        assert(IS_GAME_THREAD());
+        ASSERT_GAME_THREAD();
         // Move structures to dormancy
         const std::vector<StructureID>& chunkStructures = chunk.getStructures();
         if (chunk.getStructures().empty()) {

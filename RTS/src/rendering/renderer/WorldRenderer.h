@@ -62,8 +62,6 @@ public:
     // Queries
     ui32 getNumStaticModels() const;
 
-
-
 private:
 
     // Render passes
