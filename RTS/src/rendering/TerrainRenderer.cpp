@@ -27,7 +27,7 @@ TerrainRenderer::TerrainRenderer()
     mWaterPbrMaterial = materialManager.getMaterialShader("water_pbr");
 }
 
-void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const TerrainMesh*>& terrainMeshes) {
+void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes) {
 
     glEnable(GL_CULL_FACE);
 
@@ -67,7 +67,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const
     }
 }
 
-void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const TerrainMesh*>& waterMeshes, const Cubemap& skyCubeMap)
+void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const Cubemap& skyCubeMap)
 {
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();

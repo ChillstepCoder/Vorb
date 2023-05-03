@@ -3,6 +3,8 @@
 #include "tile/TileContainerEvents.h"
 #include "rendering/TileContainerMeshData.h"
 
+#include <boost/container/flat_set.hpp>
+
 class BuildingMesher;
 class ChunkMesher;
 class InstancedStaticModelManager;
@@ -15,19 +17,35 @@ public:
     TileContainerMeshManager(InstancedStaticModelManager& instancedStaticModelManager);
     ~TileContainerMeshManager();
 
-    void frameUpdate(WorldRenderDataManager& renderDataManager);
+    void frameUpdate();
 
     static void updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders);
 
+    // Accessors
     TileContainerMeshData& getMeshDataForTileContainer(TileContainerID id) { return mTileContainerMeshData[id]; }
+    const boost::container::flat_set<const Mesh*>& getStaticMeshes() const { return mStaticMeshes; }
+    const boost::container::flat_set<const Mesh*>& getDynamicMeshes() const { return mDynamicMeshes; }
+    const boost::container::flat_set<const Mesh*>& getBillboardMeshes() const { return mBillboardMeshes; }
 
 private:
+    void removeMeshesForData(TileContainerMeshData& meshData);
+    void addStaticMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mStaticMeshes.insert(mesh); }
+    void removeStaticMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mStaticMeshes.erase(mesh); }
+    void addDynamicMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mDynamicMeshes.insert(mesh); }
+    void removeDynamicMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mDynamicMeshes.erase(mesh); }
+    void addBillboardMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mBillboardMeshes.insert(mesh); }
+    void removeBillboardMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mBillboardMeshes.erase(mesh); }
+
     void initEventHandlers();
     void updateTileContainerMesh(TileContainer& tileContainer);
     // Mesh management
     std::unordered_map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
-
     moodycamel::ConcurrentQueue<TileContainerID> mTileContainersToRemove;
+
+    // Mesh lists
+    boost::container::flat_set<const Mesh*> mStaticMeshes;
+    boost::container::flat_set<const Mesh*> mDynamicMeshes;
+    boost::container::flat_set<const Mesh*> mBillboardMeshes;
 
     // Meshers
     std::unique_ptr<BuildingMesher> mBuildingMesher;

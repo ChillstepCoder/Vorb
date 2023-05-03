@@ -10,6 +10,7 @@
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
+#include "rendering/mesh/TerrainMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
 
@@ -219,22 +220,23 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
     // TODO: if this can happen, we need to store a "has acquired" bit since right now we are using existence of a mesh to determine if we acquired
     assert(mTerrainMeshes[patchIndex] || mWaterMeshes[patchIndex]);
 
+    TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).getTerrainMeshManager();
     if (mTerrainMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).addTerrainMesh(mTerrainMeshes[patchIndex].get());
+            terrainMeshManager.addTerrainMesh(mTerrainMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
-        RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).removeTerrainMesh(mTerrainMeshes[patchIndex].get());
+        terrainMeshManager.removeTerrainMesh(mTerrainMeshes[patchIndex].get());
     }
 
     if (mWaterMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).addTerrainWaterMesh(mWaterMeshes[patchIndex].get());
+            terrainMeshManager.addTerrainWaterMesh(mWaterMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
-        RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).removeTerrainWaterMesh(mWaterMeshes[patchIndex].get());
+        terrainMeshManager.removeTerrainWaterMesh(mWaterMeshes[patchIndex].get());
     }
 }
 
@@ -259,11 +261,12 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
     TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]), *mWorld);
     RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
         TerrainMeshFreeTask* taskData = static_cast<TerrainMeshFreeTask*>(vTaskData);
+        TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).getTerrainMeshManager();
         if (taskData->terrainMesh) {
-            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).removeTerrainMesh(taskData->terrainMesh.get());
+            terrainMeshManager.removeTerrainMesh(taskData->terrainMesh.get());
         }
         if (taskData->waterMesh) {
-            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).removeTerrainWaterMesh(taskData->waterMesh.get());
+            terrainMeshManager.removeTerrainWaterMesh(taskData->waterMesh.get());
         }
         delete taskData;
     }, freeTask);

@@ -35,6 +35,8 @@ struct GlobalRenderData;
 
 DECL_VG(class GBuffer);
 
+// Manages both rendering and data for one or more worlds
+// TODO: Split into data + render?
 class WorldRenderer
 {
 public:
@@ -52,15 +54,11 @@ public:
     ShadowRenderer& getShadowRenderer() { return *mShadowRenderer; }
 
     // Assets
-    void addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     WorldRenderDataManager* tryGetRenderDataManagerForWorld(const IWorld& world) const;
     WorldRenderDataManager& getRenderDataManagerForWorld(const IWorld& world);
 
     void selectNextDebugShader();
     const std::string& getCurrentPassthroughRenderStageName() const;
-
-    // Queries
-    ui32 getNumStaticModels() const;
 
 private:
 
@@ -92,6 +90,7 @@ private:
 
     // World Data
     WorldRenderDataManager* mCurrentWorldRenderDataManager = nullptr;
+    mutable std::mutex mRenderDataManagersMutex;
     std::unordered_map<const IWorld*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;

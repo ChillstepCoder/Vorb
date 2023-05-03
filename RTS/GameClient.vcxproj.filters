@@ -1715,9 +1715,6 @@
     <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\renderdata\WorldRenderData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\rendering\TileContainerMeshData.h">
       <Filter>Header Files</Filter>
     </ClInclude>

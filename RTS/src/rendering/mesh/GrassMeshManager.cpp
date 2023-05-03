@@ -3,13 +3,21 @@
 
 #include "rendering/ChunkGrassQuadtree.h"
 
+#include "world/IChunkGrid.h"
 #include "world/IWorld.h"
 #include "world/Chunk.h"
 
 #include "options/DebugOptions.h"
 
-GrassMeshManager::GrassMeshManager() {
-  
+GrassMeshManager::GrassMeshManager(IWorld& world) {
+    // TODO: LISTENERS!
+    LOG_CRITICAL("Missing event listeners in GrassMeshManager::GrassMeshManager");
+    world.getChunkGrid().addReadyListener([this](const Chunk& chunk) {
+        addGrassForChunk(chunk);
+    });
+    world.getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
+        removeGrassForChunk(chunk);
+    });
 }
 
 GrassMeshManager::~GrassMeshManager() {

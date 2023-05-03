@@ -19,7 +19,7 @@ GrassRenderer::GrassRenderer()
     mGrassMaterial = materialManager.getMaterialShader("grass");
 }
 
-void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const std::set<const GrassMesh*>& grassMeshes) {
+void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {
 
     MaterialRenderer::bindMaterialForRender(*mGrassMaterial);
     const vg::GLProgram& program = mGrassMaterial->mProgram;

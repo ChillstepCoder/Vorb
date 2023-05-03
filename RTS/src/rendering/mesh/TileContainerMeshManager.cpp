@@ -5,7 +5,6 @@
 #include "rendering/mesh/mesher/BuildingMesher.h"
 #include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
 #include "rendering/RenderThreadTasks.h"
-#include "rendering/renderdata/WorldRenderData.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/RenderContext.h"
 
@@ -28,7 +27,7 @@ TileContainerMeshManager::~TileContainerMeshManager()
 {
 }
 
-void TileContainerMeshManager::frameUpdate(WorldRenderDataManager& renderDataManager)
+void TileContainerMeshManager::frameUpdate()
 {
     PROFILE_FUNCTION();
 
@@ -41,7 +40,7 @@ void TileContainerMeshManager::frameUpdate(WorldRenderDataManager& renderDataMan
             auto&& it = mTileContainerMeshData.find(containerId);
             if (it != mTileContainerMeshData.end()) {
                 TileContainerMeshData& meshData = it->second;
-                renderDataManager.removeMeshesForData(meshData);
+                removeMeshesForData(meshData);
 
                 // Notify instanced models to be removed
                 mInstancedStaticModelManager.removeInstancesFromContainer(containerId);
@@ -72,9 +71,10 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         WorldRenderDataManager& renderDataManager = context.getRenderDataManagerForWorld(world);
         TileContainerMeshManager& meshManager = renderDataManager.getTileContainerMeshManager();
         TileContainerMeshData& meshData = meshManager.getMeshDataForTileContainer(id);
+        InstancedStaticModelManager& instancedModelManager = renderDataManager.getInstancedStaticModelManager();
 
         // Remove existing meshes
-        renderDataManager.removeMeshesForData(meshData);
+        meshManager.removeMeshesForData(meshData);
 
         // Upload mesh buffers
         const i32v3& worldPos3D = tileContainer.getTileSpatialGrid().getWorldPos3D();
@@ -84,21 +84,21 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
 
         // Static
         if (meshData.mStaticMesh) {
-            renderDataManager.addStaticMesh(meshData.mStaticMesh.get());
+            meshManager.addStaticMesh(meshData.mStaticMesh.get());
         }
 
         // Dynamic
         if (meshData.mDynamicMesh) {
-            renderDataManager.addDynamicMesh(meshData.mDynamicMesh.get());
+            meshManager.addDynamicMesh(meshData.mDynamicMesh.get());
         }
 
         // Billboard
         if (meshData.mBillboardMesh) {
-            renderDataManager.addBillboardMesh(meshData.mBillboardMesh.get());
+            meshManager.addBillboardMesh(meshData.mBillboardMesh.get());
         }
 
         // Model instances
-        context.addStaticModelInstancesFromGatherer(taskData->builders.modelGatherer);
+        instancedModelManager.addInstancesFromGatherer(taskData->builders.modelGatherer);
 
         // Release
         tileContainer.setDidInitMesh();
@@ -106,6 +106,22 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
 
         delete taskData;
     }, taskData);
+}
+
+void TileContainerMeshManager::removeMeshesForData(TileContainerMeshData& meshData)
+{
+    if (meshData.mStaticMesh != nullptr) {
+        mStaticMeshes.erase(meshData.mStaticMesh.get());
+        meshData.mStaticMesh.reset();
+    }
+    if (meshData.mDynamicMesh != nullptr) {
+        mDynamicMeshes.erase(meshData.mDynamicMesh.get());
+        meshData.mDynamicMesh.reset();
+    }
+    if (meshData.mBillboardMesh != nullptr) {
+        mBillboardMeshes.erase(meshData.mBillboardMesh.get());
+        meshData.mBillboardMesh.reset();
+    }
 }
 
 void TileContainerMeshManager::initEventHandlers() {

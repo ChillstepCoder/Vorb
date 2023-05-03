@@ -14,11 +14,13 @@
 
 
 WorldRenderDataManager::WorldRenderDataManager(IWorld& world) : mWorld(world) {
-    mCloudManager = std::make_unique<CloudMeshManager>(mWorld.getLoadCenter());
+    mCloudManager = std::make_unique<CloudMeshManager>();
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>(mWorld);
-    mGrassMeshManager = std::make_unique<GrassMeshManager>();
+    mGrassMeshManager = std::make_unique<GrassMeshManager>(mWorld);
     mInstancedStaticModelManager = std::make_unique<InstancedStaticModelManager>();
-    mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(mInstancedStaticModelManager);
+    mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(*mInstancedStaticModelManager);
+
+    mCloudManager->init(mWorld.getLoadCenter());
 }
 
 WorldRenderDataManager::~WorldRenderDataManager() {
@@ -38,22 +40,5 @@ void WorldRenderDataManager::frameUpdate(const Camera3D& camera) {
 
     const f32v2 loadCenter = mWorld.getLoadCenter();
     mCloudManager->frameUpdate(loadCenter);
-    mTileContainerMeshManager->frameUpdate(*this);
-}
-
-void WorldRenderDataManager::removeMeshesForData(TileContainerMeshData& meshData) {
-    WorldRenderData& renderData = mWorldRenderData;
-
-    if (meshData.mStaticMesh != nullptr) {
-        renderData.mStaticMeshes.erase(meshData.mStaticMesh.get());
-        meshData.mStaticMesh.reset();
-    }
-    if (meshData.mDynamicMesh != nullptr) {
-        renderData.mDynamicMeshes.erase(meshData.mDynamicMesh.get());
-        meshData.mDynamicMesh.reset();
-    }
-    if (meshData.mBillboardMesh != nullptr) {
-        renderData.mBillboardMeshes.erase(meshData.mBillboardMesh.get());
-        meshData.mBillboardMesh.reset();
-    }
+    mTileContainerMeshManager->frameUpdate();
 }

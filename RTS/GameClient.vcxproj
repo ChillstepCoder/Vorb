@@ -669,7 +669,6 @@
     <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
     <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h" />
     <ClInclude Include="src\rendering\post_process\TonemapRenderer.h" />
-    <ClInclude Include="src\rendering\renderdata\WorldRenderData.h" />
     <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />

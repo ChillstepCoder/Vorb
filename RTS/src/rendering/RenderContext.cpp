@@ -40,6 +40,7 @@
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
+#include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/renderstate/RenderStateManager.h"
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/renderer/WorldRenderer.h"
@@ -391,20 +392,20 @@ VGTexture RenderContext::getShadowTexture() const {
     return mWorldRenderer->getShadowRenderer().getShadowTexture();
 }
 
-void RenderContext::addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
-    mWorldRenderer->addStaticModelInstancesFromGatherer(gatherer);
-}
-
-TileContainerRenderer& RenderContext::getTileContainerRenderer() {
+TileContainerRenderer& RenderContext::getTileContainerRenderer() const {
     return mWorldRenderer->getTileContainerRenderer();
 }
 
-CharacterRenderer& RenderContext::getCharacterRenderer() {
+CharacterRenderer& RenderContext::getCharacterRenderer() const {
     return mWorldRenderer->getCharacterRenderer();
 }
 
-WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& world) {
+WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& world) const {
     return mWorldRenderer->getRenderDataManagerForWorld(world);
+}
+
+WorldRenderDataManager* RenderContext::tryGetRenderDataManagerForWorld(IWorld& world) const {
+    return mWorldRenderer->tryGetRenderDataManagerForWorld(world);
 }
 
 void RenderContext::initEventHandlers() {
@@ -519,7 +520,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mWorldRenderer->getNumStaticModels());
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mWorldRenderer->getRenderDataManagerForWorld(*mActiveWorld).getInstancedStaticModelManager().getNumModels());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 

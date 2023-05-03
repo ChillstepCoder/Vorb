@@ -2,6 +2,7 @@
 #include "ChunkGrassQuadtree.h"
 
 #include "rendering/RenderContext.h"
+#include "rendering/mesh/GrassMeshManager.h"
 #include "renderdata/WorldRenderDataManager.h"
 #include "world/IWorld.h"
 #include "world/Chunk.h"
@@ -197,7 +198,7 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
         GrassMeshFreeTask* freeTask = new GrassMeshFreeTask(std::move(mMeshes[patchIndex]), *mChunk.getWorld());
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
             GrassMeshFreeTask* taskData = static_cast<GrassMeshFreeTask*>(vTaskData);
-            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).removeGrassMesh(taskData->grassMesh.get());
+            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).getGrassMeshManager().removeGrassMesh(taskData->grassMesh.get());
             delete taskData;
         }, freeTask);
     }
@@ -208,15 +209,16 @@ void ChunkGrassQuadtree::finishMesh(ui32 patchIndex) {
     mesh->mPosition = getWorldPos3D();
     mesh->mMesh.finishMesh(MeshDrawMode::STATIC);
 
+    GrassMeshManager& grassMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(*mChunk.getWorld()).getGrassMeshManager();
     if (mesh->mMesh.isValid()) {
         if (!mesh->mHadMesh) {
             assert(mesh->mIndex < ChunkGrassFlatQuadtree::NODE_COUNT);
-            RenderContext::getInstance().getRenderDataManagerForWorld(*mChunk.getWorld()).addGrassMesh(mesh.get());
+            grassMeshManager.addGrassMesh(mesh.get());
             mesh->mHadMesh = true;
         }
     }
     else if (mesh->mHadMesh) {
-        RenderContext::getInstance().getRenderDataManagerForWorld(*mChunk.getWorld()).removeGrassMesh(mesh.get());
+        grassMeshManager.removeGrassMesh(mesh.get());
         mesh.reset();
     }
 }

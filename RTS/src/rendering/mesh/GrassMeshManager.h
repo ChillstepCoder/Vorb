@@ -7,11 +7,13 @@
 class ChunkGrassQuadtree;
 class Chunk;
 class IWorld;
+class GrassMesh;
 
+// Shared by game + render thread
 class GrassMeshManager
 {
 public:
-    GrassMeshManager();
+    GrassMeshManager(IWorld& world);
     ~GrassMeshManager();
 
     void tickGameThread(const f32v2& loadCenter);
@@ -19,9 +21,15 @@ public:
     void removeGrassForChunk(const Chunk& chunk);
     void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);
 
-    const std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>>& getGrassQuadtrees() const { return mChunkGrassQuadtrees; }
+    void addGrassMesh(const GrassMesh* mesh) { ASSERT_RENDER_THREAD(); mGrassMeshes.insert(mesh); }
+    void removeGrassMesh(const GrassMesh* mesh) { ASSERT_RENDER_THREAD(); mGrassMeshes.erase(mesh); }
+
+    const std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>>& getGrassQuadtrees() const { ASSERT_GAME_THREAD(); return mChunkGrassQuadtrees; }
+    const boost::container::flat_set<const GrassMesh*>& getGrassMeshes() const { ASSERT_RENDER_THREAD(); return mGrassMeshes; }
 
 private:
+    boost::container::flat_set<const GrassMesh*> mGrassMeshes;
+
     std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>> mChunkGrassQuadtrees;
     boost::container::flat_map<TileContainerID, TileContainerEventDispatcher::Handle> mEditEventHandles;
 };

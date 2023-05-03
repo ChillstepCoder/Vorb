@@ -42,6 +42,9 @@ public:
     ui32 getNumModels() const;
 
     void onContainerEditEvent(const TileContainerEvent& evnt);
+
+    const ModelInstanceMap& getModelInstanceMapForRenderPass(MaterialRenderPassType renderPassType) const { return mModelsToInstances[e_cast(renderPassType)]; }
+    const ModelInstanceMap* getAllModelInstanceMaps() const { return mModelsToInstances; }
 private:
     void removeTileModelInstanceInternal(TileModelInstance& instance);
 

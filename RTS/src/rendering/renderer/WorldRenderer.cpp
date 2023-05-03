@@ -25,6 +25,10 @@
 #include "rendering/renderstate/RenderState.h"
 #include "rendering/GlobalRenderData.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
+#include "rendering/model/InstancedStaticModelManager.h"
+#include "rendering/mesh/TileContainerMeshManager.h"
+#include "rendering/mesh/TerrainMeshManager.h"
+#include "rendering/mesh/GrassMeshManager.h"
 #include "debugging/DebugRenderer.h"
 
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
@@ -66,7 +70,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
 
     mCharacterRenderer = std::make_unique<CharacterRenderer>();
     mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
-    mTileContainerRenderer = std::make_unique<TileContainerRenderer>(*mStaticModelRenderer);
+    mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
     mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
     mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(screenResolution);
@@ -135,7 +139,7 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, const Camera3D*
         auto&& it = mRenderDataManagers.find(mActiveWorld);
         if (it == mRenderDataManagers.end()) {
             mCurrentWorldRenderDataManager = mRenderDataManagers.insert(
-                std::make_pair(mActiveWorld, std::make_unique<WorldRenderDataManager>(mActiveWorld))
+                std::make_pair(mActiveWorld, std::make_unique<WorldRenderDataManager>(*mActiveWorld))
             ).first->second.get();
         }
         else {
@@ -161,13 +165,14 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
         return;
     }
     if (!UIContext::getInstance().shouldPauseGameRendering()) {
+        const TileContainerMeshManager& tileContainerMeshManager = mCurrentWorldRenderDataManager->getTileContainerMeshManager();
 
         // Mark everything we draw as geometry
         glEnable(GL_STENCIL_TEST);
         glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Static meshes
-        mTileContainerRenderer->renderStaticMeshes(mCurrentWorldRenderDataManager->getStaticMeshes(), *mCamera);
+        mTileContainerRenderer->renderStaticMeshes(tileContainerMeshManager.getStaticMeshes(), *mCamera);
 
         if (!sDebugOptions.mHideCharacters) {
             mCharacterRenderer->renderCharacters(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha);
@@ -175,15 +180,15 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
 
         // Instanced models
         Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-        mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Default, *mCamera);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
 
         // Smudge
         {
             mSmudgeRenderer->beginSmudgePass(activeGBuffer);
-            mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Smudge, *mCamera);
-            if (mCurrentWorldRenderData && !sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
+            mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera);
+            if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
                 glDisable(GL_CULL_FACE);
-                mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderData->mGrassMeshes);
+                mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderDataManager->getGrassMeshManager().getGrassMeshes());
                 glEnable(GL_CULL_FACE);
             }
             mSmudgeRenderer->renderSmudge(activeGBuffer, *mCamera);
@@ -201,7 +206,7 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
         // === Post AO passes ===
         // Grass + billboards
 
-        mTileContainerRenderer->renderBillboards(mCurrentWorldRenderDataManager->getBillboardMeshes(), *mCamera);
+        mTileContainerRenderer->renderBillboards(tileContainerMeshManager.getBillboardMeshes(), *mCamera);
         // PRE SMUDGE GRASS PASS
         /*if (!sDebugOptions.mHideGrass) {
             mGrassRenderer->renderGrass(*mCamera, playerPos, mGrassMeshes);
@@ -215,8 +220,8 @@ void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer*
             glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::TERRAIN), 0xFF);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
             // Terrain
-            if (mCurrentWorldRenderData && !sDebugOptions.mDisableTerrain) {
-                mTerrainRenderer->renderTerrain(*mCamera, mCurrentWorldRenderData->mTerrainMeshes);
+            if (!sDebugOptions.mDisableTerrain) {
+                mTerrainRenderer->renderTerrain(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainMeshes());
             }
             glDisable(GL_STENCIL_TEST);
         }
@@ -428,26 +433,44 @@ void WorldRenderer::renderDebug()
     mActiveWorld->getPhysicsWorld().debugRender();
 }
 
-void WorldRenderer::addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
-    mStaticModelRenderer->addInstancesFromGatherer(gatherer);
-}
-
 WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const IWorld& world) const {
-    ASSERT_RENDER_THREAD();
-    auto&& it = mRenderDataManagers.find(&world);
-    if (it == mRenderDataManagers.end()) {
-        return nullptr;
+    if (IS_RENDER_THREAD()) {
+        auto&& it = mRenderDataManagers.find(&world);
+        if (it == mRenderDataManagers.end()) {
+            return nullptr;
+        }
+        return it->second.get();
     }
-    return it->second.get();
+    else {
+        std::lock_guard lock(mRenderDataManagersMutex);
+        auto&& it = mRenderDataManagers.find(&world);
+        if (it == mRenderDataManagers.end()) {
+            return nullptr;
+        }
+        return it->second.get();
+    }
 }
 
 WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const IWorld& world) {
-    ASSERT_RENDER_THREAD();
-    auto&& it = mRenderDataManagers.find(&world);
-    if (it == mRenderDataManagers.end()) {
-        return mRenderDataManagers.insert(std::make_unique<WorldRenderDataManager>(mActiveWorld)).second;
+    if (IS_RENDER_THREAD()) {
+        auto&& it = mRenderDataManagers.find(&world);
+        if (it == mRenderDataManagers.end()) {
+            std::lock_guard lock(mRenderDataManagersMutex);
+            return *mRenderDataManagers.insert(
+                std::make_pair(&world, std::make_unique<WorldRenderDataManager>(*mActiveWorld))
+            ).first->second;
+        }
+        return *it->second;
     }
-    return it->second;
+    else {
+        std::lock_guard lock(mRenderDataManagersMutex);
+        auto&& it = mRenderDataManagers.find(&world);
+        if (it == mRenderDataManagers.end()) {
+            assert(false);
+            throw std::exception("Invalid world on game thread query");
+        }
+        return *it->second;
+    }
 }
 
 void WorldRenderer::selectNextDebugShader() {
@@ -463,10 +486,6 @@ const std::string& WorldRenderer::getCurrentPassthroughRenderStageName() const
         return std::string();
     }
     return sPassthroughMaterialNames[mPassthroughRenderMode];
-}
-
-ui32 WorldRenderer::getNumStaticModels() const {
-    return mStaticModelRenderer->getNumModels();
 }
 
 void WorldRenderer::renderPassSky() {
@@ -492,19 +511,20 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
+            // TODO: Why is this labeled as terrain?
             if (!sDebugOptions.mDisableTerrain) {
-                mTileContainerRenderer->renderWorldShadows(*mCurrentWorldRenderData, mShadowRenderer->getShaderData(), *mCamera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+                mTileContainerRenderer->renderWorldShadows(mCurrentWorldRenderDataManager->getTileContainerMeshManager().getStaticMeshes(), mShadowRenderer->getShaderData(), *mCamera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
             }
 
             // Instanced models
             Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
             if (!sDebugOptions.mHideModels) {
-                mStaticModelRenderer->renderModelShadows(mShadowRenderer->getShaderData(), *mCamera);
+                mStaticModelRenderer->renderModelShadows(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getAllModelInstanceMaps(), mShadowRenderer->getShaderData(), *mCamera);
             }
 
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(mShadowRenderer->getShaderData(), *mCloudManager, *mCamera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
+                mCloudRenderer->renderCloudShadows(mShadowRenderer->getShaderData(), mCurrentWorldRenderDataManager->getCloudMeshManager(), *mCamera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
             }
 
             //const CityGraph& cities = sWorld->getCityGraph();
@@ -536,13 +556,17 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
 
 void WorldRenderer::renderPassTransparent() {
     // Render clouds without shadows
+    if (!mCurrentWorldRenderDataManager) {
+        return;
+    }
+
     if (!sDebugOptions.mDisableClouds && !sDebugOptions.mWireframe) {
-        mCloudRenderer->renderClouds(*mCloudManager, mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *mSkyBox->getCubemap());
+        mCloudRenderer->renderClouds(mCurrentWorldRenderDataManager->getCloudMeshManager(), mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *mSkyBox->getCubemap());
     }
 
     // Water (No depth write)
-    if (mCurrentWorldRenderData && !sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
-        mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderData->mTerrainWaterMeshes, *mSkyBox->getCubemap());
+    if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
+        mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *mSkyBox->getCubemap());
     }
 
     // Light transparent layer

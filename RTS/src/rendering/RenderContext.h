@@ -76,15 +76,12 @@ public:
     const ui32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return mCamera; }
 
-    
-    // Static models
-    void addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
-
     // Renderers
-    TileContainerRenderer& getTileContainerRenderer();
-    CharacterRenderer& getCharacterRenderer();
+    TileContainerRenderer& getTileContainerRenderer() const;
+    CharacterRenderer& getCharacterRenderer() const;
     WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
-    WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world);
+    WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world) const;
+    WorldRenderDataManager* tryGetRenderDataManagerForWorld(IWorld& world) const;
 private:
     void initEventHandlers();
     void updateRenderThreadProcs();

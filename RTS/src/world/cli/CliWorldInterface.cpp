@@ -13,6 +13,7 @@
 #include "options/DebugOptions.h"
 
 #include "rendering/ChunkGrassQuadtree.h"
+#include "rendering/renderdata/WorldRenderDataManager.h"
 
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/TerrainMeshManager.h"
@@ -63,13 +64,6 @@ void CliWorldInterface::onWorldBeginClient(IWorld& world) {
     // When character models are added, we should let the render thread know
     mCliWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
     mCliWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
-
-    mCliWorld->getChunkGrid().addReadyListener([this](const Chunk& chunk) {
-        mGrassMeshManager->addGrassForChunk(chunk);
-    });
-    mCliWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
-        mGrassMeshManager->removeGrassForChunk(chunk);
-    });
 
     // Register for rendering
     RenderStateManager::getInstance().setActiveWorld(&world);
@@ -127,16 +121,22 @@ void CliWorldInterface::updateDebugRenderState(IWorld& world, RenderState& rende
     renderState.mDebugQuads.clear();
     // Terrain debug rendering
     if (sDebugOptions.mDebugTerrainLod) {
-        for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
-            terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
+        WorldRenderDataManager* manager = RenderContext::getInstance().tryGetRenderDataManagerForWorld(world);
+        if (manager) {
+            for (auto&& terrainQuadtree : manager->getTerrainMeshManager().getTerrainQuadtrees()) {
+                terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
+            }
         }
     }
 
     // Grass debug rendering
     if (sDebugOptions.mDebugGrassLod) {
-        for (auto&& it : mGrassMeshManager->getGrassQuadtrees()) {
-            if (it.second) {
-                it.second->getDebugQuads(renderState.mDebugQuads);
+        WorldRenderDataManager* manager = RenderContext::getInstance().tryGetRenderDataManagerForWorld(world);
+        if (manager) {
+            for (auto&& it : manager->getGrassMeshManager().getGrassQuadtrees()) {
+                if (it.second) {
+                    it.second->getDebugQuads(renderState.mDebugQuads);
+                }
             }
         }
     }
