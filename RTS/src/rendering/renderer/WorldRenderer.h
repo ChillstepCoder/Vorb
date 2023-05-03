@@ -6,7 +6,7 @@ class AmbientOcclusionPostProcess;
 class Camera3D;
 class CharacterRenderer;
 class CityDebugRenderer;
-class CloudManager;
+class CloudMeshManager;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
@@ -28,7 +28,9 @@ class MaterialShader;
 class Mesh;
 class TerrainMesh;
 class GrassMesh;
+class WorldRenderDataManager;
 
+struct WorldRenderData;
 struct GlobalRenderData;
 
 DECL_VG(class GBuffer);
@@ -51,30 +53,16 @@ public:
 
     // Assets
     void addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
-    void addTerrainMesh(const TerrainMesh* mesh) {
-        assert(IS_RENDER_THREAD()); mTerrainMeshes.insert(mesh);
-    }
-    void removeTerrainMesh(const TerrainMesh* mesh) {
-        assert(IS_RENDER_THREAD()); mTerrainMeshes.erase(mesh);
-    }
-    void addTerrainWaterMesh(const TerrainMesh* mesh) {
-        assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.insert(mesh);
-    }
-    void removeTerrainWaterMesh(const TerrainMesh* mesh) {
-        assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.erase(mesh);
-    }
-    void addGrassMesh(const GrassMesh* mesh) {
-        assert(IS_RENDER_THREAD()); mGrassMeshes.insert(mesh);
-    }
-    void removeGrassMesh(const GrassMesh* mesh) {
-        assert(IS_RENDER_THREAD()); mGrassMeshes.erase(mesh);
-    }
+    WorldRenderDataManager* tryGetRenderDataManagerForWorld(const IWorld& world) const;
+    WorldRenderDataManager& getRenderDataManagerForWorld(const IWorld& world);
 
     void selectNextDebugShader();
     const std::string& getCurrentPassthroughRenderStageName() const;
 
     // Queries
     ui32 getNumStaticModels() const;
+
+
 
 private:
 
@@ -85,6 +73,8 @@ private:
 
     void buildHorizonMesh();
 
+    // Renderers
+    // TODO: Remove mutable?
     mutable std::unique_ptr<TileContainerRenderer> mTileContainerRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
@@ -101,13 +91,10 @@ private:
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
     mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
-    std::unique_ptr<CloudManager> mCloudManager;
 
-    // TODO: Profile vector instead (linear removal vs logn but better iteration performance)
-    // TODO: WorldRenderData
-    std::set<const GrassMesh*> mGrassMeshes;
-    std::set<const TerrainMesh*> mTerrainMeshes;
-    std::set<const TerrainMesh*> mTerrainWaterMeshes;
+    // World Data
+    WorldRenderDataManager* mCurrentWorldRenderDataManager = nullptr;
+    std::unordered_map<const IWorld*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
 
@@ -118,7 +105,6 @@ private:
     const Camera3D* mCamera = nullptr;
     const RenderState* mRenderState = nullptr;
     IWorld* mActiveWorld = nullptr;
-    std::set<IWorld*> mWorlds; // TODO: Per world data
 
     int mPassthroughRenderMode = 0;
     std::vector<const MaterialShader*> mPassthroughMaterials;

@@ -14,7 +14,7 @@ public:
     GrassMeshManager();
     ~GrassMeshManager();
 
-    void tick(IWorld& world);
+    void tickGameThread(const f32v2& loadCenter);
     void addGrassForChunk(const Chunk& chunk);
     void removeGrassForChunk(const Chunk& chunk);
     void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);

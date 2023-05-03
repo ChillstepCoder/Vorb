@@ -9,7 +9,7 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "resources/ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
-#include "weather/CloudManager.h"
+#include "weather/CloudMeshManager.h"
 #include "options/DebugOptions.h"
 
 #include "rendering/ChunkGrassQuadtree.h"
@@ -41,16 +41,13 @@ CliWorldInterface::~CliWorldInterface() {
     mCliWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
 }
 
-void CliWorldInterface::initClient(IWorld& world)
-{
-    mTerrainMeshManager = std::make_unique<TerrainMeshManager>(world);
-    mGrassMeshManager = std::make_unique<GrassMeshManager>();
+void CliWorldInterface::initClient(IWorld& world) {
+
 }
 
 void CliWorldInterface::tickClient(IWorld& world) {
 
-    mTerrainMeshManager->tick();
-    mGrassMeshManager->tick(world);
+    RenderContext::getInstance().tickGameThread(world);
 
     updateRenderState(world);
 }

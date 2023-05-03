@@ -28,9 +28,8 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 }
 
-void TerrainMeshManager::tick() {
+void TerrainMeshManager::tickGameThread(const f32v2& loadCenter) {
     assert(IS_GAME_THREAD());
-    const f32v2& loadCenter = mWorld.getLoadCenter();
     for (auto&& terrainQuadtree : mTerrainTrees) {
         terrainQuadtree.update(loadCenter);
     }

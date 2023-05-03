@@ -2,6 +2,7 @@
 #include "ChunkGrassQuadtree.h"
 
 #include "rendering/RenderContext.h"
+#include "renderdata/WorldRenderDataManager.h"
 #include "world/IWorld.h"
 #include "world/Chunk.h"
 #include "world/IHeightmapGrid.h"
@@ -28,12 +29,6 @@ constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(p
     SQ(46.0f),
     SQ(23.0f),
     -FLT_MAX // Never subdivide last
-};
-
-struct GrassMeshFreeTask {
-    GrassMeshFreeTask(std::unique_ptr<GrassMesh>&& grassMesh) : grassMesh(std::move(grassMesh)) {}
-
-    std::unique_ptr<GrassMesh> grassMesh;
 };
 
 
@@ -191,11 +186,18 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         mChunk.getWorld()->getHeightmapGrid().releaseHeightDataAt(id);
 
+        struct GrassMeshFreeTask {
+            GrassMeshFreeTask(std::unique_ptr<GrassMesh>&& grassMesh, IWorld& world) : grassMesh(std::move(grassMesh)), world(world) {}
+
+            std::unique_ptr<GrassMesh> grassMesh;
+            IWorld& world;
+        };
+
         assert(IS_GAME_THREAD());
-        GrassMeshFreeTask* freeTask = new GrassMeshFreeTask(std::move(mMeshes[patchIndex]));
+        GrassMeshFreeTask* freeTask = new GrassMeshFreeTask(std::move(mMeshes[patchIndex]), *mChunk.getWorld());
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
             GrassMeshFreeTask* taskData = static_cast<GrassMeshFreeTask*>(vTaskData);
-            RenderContext::getInstance().removeGrassMesh(taskData->grassMesh.get());
+            RenderContext::getInstance().getWorldRenderDataManager().removeGrassMesh(taskData->world, taskData->grassMesh.get());
             delete taskData;
         }, freeTask);
     }
@@ -209,12 +211,12 @@ void ChunkGrassQuadtree::finishMesh(ui32 patchIndex) {
     if (mesh->mMesh.isValid()) {
         if (!mesh->mHadMesh) {
             assert(mesh->mIndex < ChunkGrassFlatQuadtree::NODE_COUNT);
-            RenderContext::getInstance().addGrassMesh(mesh.get());
+            RenderContext::getInstance().getWorldRenderDataManager().addGrassMesh(*mChunk.getWorld(), mesh.get());
             mesh->mHadMesh = true;
         }
     }
     else if (mesh->mHadMesh) {
-        RenderContext::getInstance().removeGrassMesh(mesh.get());
+        RenderContext::getInstance().getWorldRenderDataManager().removeGrassMesh(*mChunk.getWorld(), mesh.get());
         mesh.reset();
     }
 }

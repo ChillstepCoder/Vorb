@@ -44,7 +44,8 @@
 #include "rendering/model/InstancedStaticModelRenderer.h"
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/renderer/WorldRenderer.h"
-#include "weather/CloudManager.h"
+#include "rendering/renderdata/WorldRenderDataManager.h"
+#include "weather/CloudMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
 
@@ -376,36 +377,19 @@ void RenderContext::endFrame() {
     ImGui::EndFrame();
 }
 
+void RenderContext::tickGameThread(IWorld& world) {
+    WorldRenderDataManager* renderDataManager = mWorldRenderer->tryGetRenderDataManagerForWorld(world);
+    if (renderDataManager) {
+        renderDataManager->tickGameThread();
+    }
+}
+
 void RenderContext::selectNextDebugShader() {
     mWorldRenderer->selectNextDebugShader();
 }
 
 VGTexture RenderContext::getShadowTexture() const {
     return mWorldRenderer->getShadowRenderer().getShadowTexture();
-}
-
-void RenderContext::addTerrainMesh(const TerrainMesh* mesh) {
-    mWorldRenderer->addTerrainMesh(mesh);
-}
-
-void RenderContext::removeTerrainMesh(const TerrainMesh* mesh) {
-    mWorldRenderer->removeTerrainMesh(mesh);
-}
-
-void RenderContext::addTerrainWaterMesh(const TerrainMesh* mesh) {
-    mWorldRenderer->addTerrainWaterMesh(mesh);
-}
-
-void RenderContext::removeTerrainWaterMesh(const TerrainMesh* mesh) {
-    mWorldRenderer->removeTerrainWaterMesh(mesh);
-}
-
-void RenderContext::addGrassMesh(const GrassMesh* mesh) {
-    mWorldRenderer->addGrassMesh(mesh);
-}
-
-void RenderContext::removeGrassMesh(const GrassMesh* mesh) {
-    mWorldRenderer->removeGrassMesh(mesh);
 }
 
 void RenderContext::addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
@@ -418,6 +402,10 @@ TileContainerRenderer& RenderContext::getTileContainerRenderer() {
 
 CharacterRenderer& RenderContext::getCharacterRenderer() {
     return mWorldRenderer->getCharacterRenderer();
+}
+
+WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& world) {
+    return mWorldRenderer->getRenderDataManagerForWorld(world);
 }
 
 void RenderContext::initEventHandlers() {
@@ -596,9 +584,4 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->render(mScreenResolution);
     }
     UIContext::getInstance().updateAndRenderUI(mActiveGBuffer);
-}
-
-TileContainerMeshData::~TileContainerMeshData()
-{
-
 }

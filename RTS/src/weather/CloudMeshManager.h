@@ -16,15 +16,15 @@ struct CloudBatch {
     std::unique_ptr<Mesh> mMesh;
 };
 
-class CloudManager
+class CloudMeshManager
 {
 public:
     friend class CloudRenderer;
-    CloudManager();
-    ~CloudManager();
+    CloudMeshManager();
+    ~CloudMeshManager();
 
     void init(const f32v2& loadCenter);
-    void tick(const f32v2& loadCenter);
+    void frameUpdate(const f32v2& loadCenter);
 
 private:
     void updateGridShift(const f32v2& loadCenter);

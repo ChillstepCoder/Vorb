@@ -14,6 +14,7 @@ public:
     static void destroyWorld();
 private:
     static std::unique_ptr<CliWorld> makeClientWorld();
+    static std::unique_ptr<CliWorld> makeEditorWorld();
     static std::unique_ptr<HostWorld> makeHostWorld();
     static std::unique_ptr<DedicatedSrvWorld> makeServerWorld();
 };

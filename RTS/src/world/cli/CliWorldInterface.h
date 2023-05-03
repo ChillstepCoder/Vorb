@@ -28,11 +28,6 @@ protected:
     void updateEntitiesRenderState(IWorld& world, RenderState& renderState);
     void updateDebugRenderState(IWorld& world, RenderState& renderState);
 
-    // Terrain
-    std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;
-    // Grass
-    std::unique_ptr<GrassMeshManager> mGrassMeshManager;
-
     // Sunlight
     float mSunHeight = 1.0f;
     f32v3 mSunPosition = f32v3(0.0f, 0.0f, 1.0f);

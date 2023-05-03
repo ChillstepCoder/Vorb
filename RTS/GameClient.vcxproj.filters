@@ -237,7 +237,7 @@
     <ClCompile Include="src\rendering\CloudRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\weather\CloudManager.cpp">
+    <ClCompile Include="src\weather\CloudMeshManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\options\DebugOptions.cpp">
@@ -717,6 +717,15 @@
     <ClCompile Include="src\tile\TileContainerRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\TileContainerMeshData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1013,7 +1022,7 @@
     <ClInclude Include="src\rendering\CloudRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\weather\CloudManager.h">
+    <ClInclude Include="src\weather\CloudMeshManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\options\DebugOptions.h">
@@ -1695,6 +1704,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\ShadowPassShaderData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\renderdata\WorldRenderData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\TileContainerMeshData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\TileContainerMeshManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,6 +6,7 @@
 #include "debugging/DebugRenderer.h"
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
+#include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
@@ -41,12 +42,6 @@ struct TerrainMeshGenTaskData {
     bool isAnyMeshValid;
 };
 
-struct TerrainMeshFreeTask {
-    TerrainMeshFreeTask(std::unique_ptr<TerrainMesh>&& terrainMesh, std::unique_ptr<TerrainMesh>&& waterMesh) : terrainMesh(std::move(terrainMesh)), waterMesh(std::move(waterMesh)) {}
-
-    std::unique_ptr<TerrainMesh> terrainMesh;
-    std::unique_ptr<TerrainMesh> waterMesh;
-};
 
 HeightmapTerrainQuadtree::HeightmapTerrainQuadtree() : FlatQuadtree(f32v2(0.0f), TERRAIN_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mTerrainLodDistanceOffset) {
 
@@ -226,20 +221,20 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
 
     if (mTerrainMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().addTerrainMesh(mTerrainMeshes[patchIndex].get());
+            RenderContext::getInstance().getWorldRenderDataManager().addTerrainMesh(*mWorld, mTerrainMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
-        RenderContext::getInstance().removeTerrainMesh(mTerrainMeshes[patchIndex].get());
+        RenderContext::getInstance().getWorldRenderDataManager().removeTerrainMesh(*mWorld, mTerrainMeshes[patchIndex].get());
     }
 
     if (mWaterMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().addTerrainWaterMesh(mWaterMeshes[patchIndex].get());
+            RenderContext::getInstance().getWorldRenderDataManager().addTerrainWaterMesh(*mWorld, mWaterMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
-        RenderContext::getInstance().removeTerrainWaterMesh(mWaterMeshes[patchIndex].get());
+        RenderContext::getInstance().getWorldRenderDataManager().removeTerrainWaterMesh(*mWorld, mWaterMeshes[patchIndex].get());
     }
 }
 
@@ -252,14 +247,23 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         heightGrid.releasePaddedHeightDataAt(id);
     }
-    TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]));
+
+    struct TerrainMeshFreeTask {
+        TerrainMeshFreeTask(std::unique_ptr<TerrainMesh>&& terrainMesh, std::unique_ptr<TerrainMesh>&& waterMesh, IWorld& world) : terrainMesh(std::move(terrainMesh)), waterMesh(std::move(waterMesh)), world(world) {}
+
+        std::unique_ptr<TerrainMesh> terrainMesh;
+        std::unique_ptr<TerrainMesh> waterMesh;
+        IWorld& world;
+    };
+
+    TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]), *mWorld);
     RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
         TerrainMeshFreeTask* taskData = static_cast<TerrainMeshFreeTask*>(vTaskData);
         if (taskData->terrainMesh) {
-            RenderContext::getInstance().removeTerrainMesh(taskData->terrainMesh.get());
+            RenderContext::getInstance().getWorldRenderDataManager().removeTerrainMesh(taskData->world, taskData->terrainMesh.get());
         }
         if (taskData->waterMesh) {
-            RenderContext::getInstance().removeTerrainWaterMesh(taskData->waterMesh.get());
+            RenderContext::getInstance().getWorldRenderDataManager().removeTerrainWaterMesh(taskData->world, taskData->waterMesh.get());
         }
         delete taskData;
     }, freeTask);

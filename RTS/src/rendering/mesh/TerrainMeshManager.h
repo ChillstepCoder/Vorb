@@ -11,7 +11,7 @@ public:
     TerrainMeshManager(IWorld& world);
     ~TerrainMeshManager();
 
-    void tick();
+    void tickGameThread(const f32v2& loadCenter);
 
     void dirtyAllTerrain();
 

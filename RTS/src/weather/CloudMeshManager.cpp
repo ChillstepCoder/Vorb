@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "CloudManager.h"
+#include "CloudMeshManager.h"
 
 #include "debugging/DebugRenderer.h"
 
@@ -41,22 +41,22 @@ constexpr int CLOUD_DIR_UP    = 1;
 // TODO: Singleton pool?
 struct CloudBatchTaskData {
     BillboardMeshBuilder meshBuilder;
-    CloudManager* cloudManager;
+    CloudMeshManager* cloudManager;
     CloudBatch* cloudBatch;
     ui32 index;
 };
 
-CloudManager::CloudManager()
+CloudMeshManager::CloudMeshManager()
 {
 
 }
 
-CloudManager::~CloudManager()
+CloudMeshManager::~CloudMeshManager()
 {
 
 }
 
-void CloudManager::init(const f32v2& loadCenter) {
+void CloudMeshManager::init(const f32v2& loadCenter) {
 
     ScopedTimer timer("Cloud init");
 
@@ -102,7 +102,7 @@ void CloudManager::init(const f32v2& loadCenter) {
 
 }
 
-void CloudManager::tick(const f32v2& loadCenter) {
+void CloudMeshManager::frameUpdate(const f32v2& loadCenter) {
 
     // Handle any new cloud spawns from grid shift
     updateGridShift(loadCenter);
@@ -160,7 +160,7 @@ void CloudManager::tick(const f32v2& loadCenter) {
     }
 }
 
-void CloudManager::updateGridShift(const f32v2& loadCenter) {
+void CloudMeshManager::updateGridShift(const f32v2& loadCenter) {
     assert(IS_RENDER_THREAD());
     i32v2 centerCloudPos = i32v2(floor(loadCenter.x / CLOUD_BATCH_WIDTH), floor(loadCenter.y / CLOUD_BATCH_WIDTH));
     i32v2 offsetSinceLastTick = centerCloudPos - mLastCenterPosition;
@@ -191,7 +191,7 @@ void CloudManager::updateGridShift(const f32v2& loadCenter) {
     mLastCenterPosition = centerCloudPos;
 }
 
-void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
+void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
     assert(IS_RENDER_THREAD());
 
     const f32v2 pos(cloudPos.x * CLOUD_BATCH_WIDTH, cloudPos.y * CLOUD_BATCH_WIDTH);
@@ -240,7 +240,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& c, void* vData) {
             CloudBatchTaskData* data = static_cast<CloudBatchTaskData*>(vData);
             CloudBatch* batch = data->cloudBatch;
-            CloudManager* manager = data->cloudManager;
+            CloudMeshManager* manager = data->cloudManager;
             data->meshBuilder.finishMesh(batch->mMesh, f32v3(0.0f), 0 /*bufferFlags*/);
             auto&& it = manager->mGeneratingBatches.find(data->index);
             assert(it != manager->mGeneratingBatches.end());
@@ -253,7 +253,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
     }, nullptr);
 }
 
-void CloudManager::destroyCloudBatch(CloudBatch& batch)
+void CloudMeshManager::destroyCloudBatch(CloudBatch& batch)
 {
     ui32 index = ((const char*)&batch - (const char*)&mCloudBatches[0]) / sizeof(CloudBatch); // Get the index in our vector
     assert(&batch == &mCloudBatches[index]);
@@ -261,7 +261,7 @@ void CloudManager::destroyCloudBatch(CloudBatch& batch)
     mCloudBatches.pop_back();
 }
 
-void CloudManager::spawnNewCloudWaveX(i32 dir) {
+void CloudMeshManager::spawnNewCloudWaveX(i32 dir) {
     assert(dir == -1 || dir == 1);
     mDx += CLOUD_BATCH_WIDTH * dir;
     for (auto&& it : mCloudSpawnOffsets) {
@@ -273,7 +273,7 @@ void CloudManager::spawnNewCloudWaveX(i32 dir) {
     }
 }
 
-void CloudManager::spawnNewCloudWaveY(i32 dir) {
+void CloudMeshManager::spawnNewCloudWaveY(i32 dir) {
     assert(dir == -1 || dir == 1);
     mDy += CLOUD_BATCH_WIDTH * dir;
     for (auto&& it : mCloudSpawnOffsets) {

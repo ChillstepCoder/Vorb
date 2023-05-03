@@ -186,7 +186,7 @@ std::vector<Structure*> IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos
     return mStructureManager->tryGetStructuresAtWorldPos(worldPos);
 }
 
-const f32v2& IWorld::getLoadCenter() const {
+f32v2 IWorld::getLoadCenter() const {
     if (IS_GAME_THREAD()) {
         return mLoadCenter;
     }

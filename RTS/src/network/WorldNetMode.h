@@ -3,5 +3,7 @@
 enum class WorldNetMode {
     Client,
     Host,
-    DedicatedServer
+    DedicatedServer,
+    Editor,
+    COUNT
 };

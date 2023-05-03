@@ -73,7 +73,7 @@ public:
     const TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
 
 
-    const f32v2& getLoadCenter() const;
+    f32v2 getLoadCenter() const;
 
 protected:
     void onWorldBeginShared(const f32v2& loadCenter);

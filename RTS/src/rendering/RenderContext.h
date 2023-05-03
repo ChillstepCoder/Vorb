@@ -7,7 +7,7 @@ class Camera3D;
 class CameraController;
 class CharacterRenderer;
 class CityDebugRenderer;
-class CloudManager;
+class CloudMeshManager;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
@@ -31,6 +31,7 @@ class TerrainRenderer;
 class TileContainerRenderer;
 class TonemapRenderer;
 class WorldRenderer;
+class WorldRenderDataManager;
 
 struct SDL_Window;
 
@@ -62,6 +63,8 @@ public:
     void renderFrame(CameraController& camera, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
+    void tickGameThread(IWorld& world);
+
     void selectNextDebugShader();
 
     const GlobalRenderData& getRenderData() const { return mRenderData; }
@@ -74,13 +77,6 @@ public:
     const ui32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return mCamera; }
 
-    // Meshing
-    void addTerrainMesh(const TerrainMesh* mesh);
-    void removeTerrainMesh(const TerrainMesh* mesh);
-    void addTerrainWaterMesh(const TerrainMesh* mesh);
-    void removeTerrainWaterMesh(const TerrainMesh* mesh);
-    void addGrassMesh(const GrassMesh* mesh);
-    void removeGrassMesh(const GrassMesh* mesh);
     
     // Static models
     void addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
@@ -88,6 +84,8 @@ public:
     // Renderers
     TileContainerRenderer& getTileContainerRenderer();
     CharacterRenderer& getCharacterRenderer();
+    WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
+    WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world);
 private:
     void initEventHandlers();
     void updateRenderThreadProcs();
@@ -109,8 +107,6 @@ private:
     // Worlds
     IWorld* mActiveWorld = nullptr;
     std::unique_ptr<WorldRenderer> mWorldRenderer;
-
-
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

@@ -14,6 +14,9 @@ std::unique_ptr<IWorld> WorldFactory::makeWorld(WorldNetMode type) {
         case WorldNetMode::Client:
             return makeClientWorld();
             break;
+        case WorldNetMode::Editor:
+            return makeEditorWorld();
+            break;
         case WorldNetMode::Host:
             return makeHostWorld();
             break;
@@ -25,6 +28,7 @@ std::unique_ptr<IWorld> WorldFactory::makeWorld(WorldNetMode type) {
             break;
 
     }
+    static_assert(e_cast(WorldNetMode::COUNT) == 4);
     // Failure case
     throw std::invalid_argument("Invalid WorldNetMode value passed to makeWorld()");
 }
@@ -35,6 +39,18 @@ void WorldFactory::destroyWorld()
 }
 
 std::unique_ptr<CliWorld> WorldFactory::makeClientWorld() {
+    CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid();
+    CliChunkGrid* chunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
+    std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(chunkGrid, heightmapGrid);
+
+    // World references
+    chunkGrid->mWorld = newWorld.get();
+    heightmapGrid->mWorld = newWorld.get();
+
+    return newWorld;
+}
+
+std::unique_ptr<CliWorld> WorldFactory::makeEditorWorld() {
     CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid();
     CliChunkGrid* chunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
     std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(chunkGrid, heightmapGrid);

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CloudRenderer.h"
 
-#include "weather/CloudManager.h"
+#include "weather/CloudMeshManager.h"
 
 #include "camera/Camera3D.h"
 #include "resources/ResourceManager.h"
@@ -39,7 +39,7 @@ CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
     checkGlError("CloudRenderer GBuffer init");
 }
 
-void CloudRenderer::renderClouds(const CloudManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const Cubemap& skyCubeMap) {
+void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const Cubemap& skyCubeMap) {
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::CLOUD_OR_WATER), 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -85,7 +85,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, VGTexture sha
     glDisable(GL_STENCIL_TEST);
 }
 
-void CloudRenderer::renderCloudShadows(const ShadowPassShaderData& shaderData, const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
+void CloudRenderer::renderCloudShadows(const ShadowPassShaderData& shaderData, const CloudMeshManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
     MaterialRenderer::bindMaterialForRender(*mCloudShadowMaterial);
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
     glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset

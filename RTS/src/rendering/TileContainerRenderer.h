@@ -1,7 +1,8 @@
 #pragma once
 
-#include <boost/container/flat_set.hpp>
 #include "tile/TileContainerEvents.h"
+#include "TileContainerMeshData.h"
+#include <boost/container/flat_set.hpp>
 
 DECL_VG(class SpriteBatch);
 
@@ -15,19 +16,6 @@ class InstancedStaticModelRenderer;
 class ContainerMeshBuilders;
 struct ShadowPassShaderData;
 
-struct TileContainerMeshData {
-    TileContainerMeshData() = default;
-    ~TileContainerMeshData();
-
-    VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerMeshData);
-
-    std::unique_ptr<Mesh> mStaticMesh;
-    std::unique_ptr<Mesh> mDynamicMesh;
-    std::unique_ptr<Mesh> mBillboardMesh;
-};
-
-// TODO: IRendererBase?
-// TODO: DELETE ME
 class TileContainerRenderer {
 public:
 	TileContainerRenderer(InstancedStaticModelRenderer& instancedStaticModelRenderer);
@@ -35,27 +23,16 @@ public:
 
     void frameUpdate();
 
+    // TODO: TileContainerMeshManager
     static void updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders);
 
-    void renderStaticMeshes(const Camera3D& camera);
-    void renderBillboards(const Camera3D& camera);
-    void renderWorldShadows(const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance);
-
-    void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }
-    void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }
-    void addDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.insert(mesh); }
-    void removeDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.erase(mesh); }
-    void addBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.insert(mesh); }
-    void removeBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.erase(mesh); }
+    void renderStaticMeshes(const boost::container::flat_set<const Mesh*>& meshes, const Camera3D& camera);
+    void renderBillboards(const boost::container::flat_set<const Mesh*>& meshes, const Camera3D& camera);
+    void renderWorldShadows(const boost::container::flat_set<const Mesh*>& meshes, const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance);
 
 private:
     void initEventHandlers();
     void updateTileContainerMesh(TileContainer& tileContainer);
-    void removeMeshesForData(TileContainerMeshData& meshData);
-
-    boost::container::flat_set<const Mesh*> mStaticMeshes;
-    boost::container::flat_set<const Mesh*> mDynamicMeshes;
-    boost::container::flat_set<const Mesh*> mBillboardMeshes;
 
     const MaterialShader* mShadowMapperMaterial = nullptr;
     const MaterialShader* mShadowMapperMaterialBillboard = nullptr;
@@ -65,7 +42,7 @@ private:
     InstancedStaticModelRenderer& mInstancedStaticModelRenderer;
 
     // Mesh management
-    std::unordered_map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
+    std::unordered_map<TileContainerID, TileContainerMeshData> mTileContainerMeshData; // TODO: MOVE TO WorldRenderData
 
     moodycamel::ConcurrentQueue<TileContainerID> mTileContainersToRemove;
 

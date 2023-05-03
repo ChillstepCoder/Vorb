@@ -357,6 +357,7 @@
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
+    <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
@@ -370,11 +371,13 @@
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
     <ClCompile Include="src\rendering\texture\Cubemap.cpp" />
     <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
+    <ClCompile Include="src\rendering\TileContainerMeshData.cpp" />
     <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
     <ClCompile Include="src\rendering\RenderStats.cpp" />
@@ -434,7 +437,7 @@
     <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
-    <ClCompile Include="src\weather\CloudManager.cpp" />
+    <ClCompile Include="src\weather\CloudMeshManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
@@ -642,6 +645,7 @@
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />
+    <ClInclude Include="src\rendering\mesh\TileContainerMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
@@ -661,6 +665,8 @@
     <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
     <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h" />
     <ClInclude Include="src\rendering\post_process\TonemapRenderer.h" />
+    <ClInclude Include="src\rendering\renderdata\WorldRenderData.h" />
+    <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
@@ -670,6 +676,7 @@
     <ClInclude Include="src\rendering\tasks\MeshTask.inl" />
     <ClInclude Include="src\rendering\texture\Cubemap.h" />
     <ClInclude Include="src\rendering\texture\GLTexture.h" />
+    <ClInclude Include="src\rendering\TileContainerMeshData.h" />
     <ClInclude Include="src\rendering\TileContainerRenderer.h" />
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
@@ -756,7 +763,7 @@
     <ClInclude Include="src\util\TypeHash.h" />
     <ClInclude Include="src\util\Utils.h" />
     <ClInclude Include="src\util\Winding.h" />
-    <ClInclude Include="src\weather\CloudManager.h" />
+    <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />

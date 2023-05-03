@@ -10,6 +10,8 @@
 #include "rendering/RenderContext.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/RenderThreadTasks.h"
+#include "rendering/renderdata/WorldRenderData.h"
+#include "rendering/renderdata/WorldRenderDataManager.h"
 
 #include "rendering/mesh/mesher/ChunkMesher.h"
 #include "rendering/mesh/mesher/BuildingMesher.h"
@@ -99,11 +101,13 @@ void TileContainerRenderer::updateMeshFromBuilders(const TileContainer* containe
         MeshTaskData* taskData = static_cast<MeshTaskData*>(meshTaskData);
         const TileContainer& tileContainer = taskData->builders.container;
         const TileContainerID id = tileContainer.getId();
+        IWorld& world = tileContainer.getWorld();
+        WorldRenderDataManager& renderDataManager = context.getRenderDataManagerForWorld(world);
 
         TileContainerMeshData& meshData = renderer.mTileContainerMeshData[id];
 
         // Remove existing meshes
-        renderer.removeMeshesForData(meshData);
+        renderDataManager.removeMeshesForData(meshData);
 
         // Upload mesh buffers
         const i32v3& worldPos3D = tileContainer.getTileSpatialGrid().getWorldPos3D();
@@ -113,17 +117,17 @@ void TileContainerRenderer::updateMeshFromBuilders(const TileContainer* containe
 
         // Static
         if (meshData.mStaticMesh) {
-            renderer.addStaticMesh(meshData.mStaticMesh.get());
+            renderDataManager.addStaticMesh(meshData.mStaticMesh.get());
         }
 
         // Dynamic
         if (meshData.mDynamicMesh) {
-            renderer.addDynamicMesh(meshData.mDynamicMesh.get());
+            renderDataManager.addDynamicMesh(meshData.mDynamicMesh.get());
         }
 
         // Billboard
         if (meshData.mBillboardMesh) {
-            renderer.addBillboardMesh(meshData.mBillboardMesh.get());
+            renderDataManager.addBillboardMesh(meshData.mBillboardMesh.get());
         }
 
         // Model instances
@@ -137,12 +141,12 @@ void TileContainerRenderer::updateMeshFromBuilders(const TileContainer* containe
     }, taskData);
 }
 
-void TileContainerRenderer::renderStaticMeshes(const Camera3D& camera) {
+void TileContainerRenderer::renderStaticMeshes(const boost::container::flat_set<const Mesh*>& meshes, const Camera3D& camera) {
     // Tiles
     // TODO: Move this to MaterialRenderer::renderMeshes();
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
     VGUniform unPosition = mStandardMaterial->getUniform("unPosition");
-    for (auto&& mesh : mStaticMeshes) {
+    for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             glUniform3fv(unPosition, 1, &mesh->getPosition().x);
             mesh->draw();
@@ -150,11 +154,11 @@ void TileContainerRenderer::renderStaticMeshes(const Camera3D& camera) {
     }
 }
 
-void TileContainerRenderer::renderBillboards(const Camera3D& camera) {
+void TileContainerRenderer::renderBillboards(const boost::container::flat_set<const Mesh*>& meshes, const Camera3D& camera) {
 
     // TODO: Move this to MaterialRenderer::renderMeshes();
     MaterialRenderer::bindMaterialForRender(*mBillboardMaterial);
-    for (auto&& mesh : mBillboardMeshes) {
+    for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             assert(mesh->isValid());
             mesh->draw();
@@ -162,13 +166,13 @@ void TileContainerRenderer::renderBillboards(const Camera3D& camera) {
     };
 }
 
-void TileContainerRenderer::renderWorldShadows(const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance) {
+void TileContainerRenderer::renderWorldShadows(const boost::container::flat_set<const Mesh*>& meshes, const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance) {
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
     VGUniform unPosition = mShadowMapperMaterial->getUniform("unPosition");
     glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
-    for (auto&& mesh : mStaticMeshes) {
+    for (auto&& mesh : meshes) {
         f32v3 offset = mesh->getPosition() - camera.getPosition();
         if (glm::length2(offset) <= maxDistSQ) {
             glUniform3fv(unPosition, 1, &mesh->getPosition().x);
@@ -209,19 +213,4 @@ void TileContainerRenderer::updateTileContainerMesh(TileContainer& tileContainer
 
     }
     static_assert(e_cast(TileContainerOwnerType::COUNT) == 2);
-}
-
-void TileContainerRenderer::removeMeshesForData(TileContainerMeshData& meshData) {
-    if (meshData.mStaticMesh != nullptr) {
-        removeStaticMesh(meshData.mStaticMesh.get());
-        meshData.mStaticMesh.reset();
-    }
-    if (meshData.mDynamicMesh != nullptr) {
-        removeDynamicMesh(meshData.mDynamicMesh.get());
-        meshData.mDynamicMesh.reset();
-    }
-    if (meshData.mBillboardMesh != nullptr) {
-        removeBillboardMesh(meshData.mBillboardMesh.get());
-        meshData.mBillboardMesh.reset();
-    }
 }
