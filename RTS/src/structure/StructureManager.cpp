@@ -128,8 +128,9 @@ std::vector<Structure*> StructureManager::tryGetStructuresAtWorldPos(const i32v2
 }
 
 void StructureManager::initEventHandlers() {
-    IChunkGrid::registerChunkListeners(mChunkEventListeners);
-    IChunkGrid::addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    chunkGrid.registerChunkListeners(mChunkEventListeners);
+    chunkGrid.addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
         ASSERT_GAME_THREAD();
         auto&& it = mDormantStructures.find(chunk.getChunkID());
         if (it == mDormantStructures.end()) {
@@ -152,7 +153,7 @@ void StructureManager::initEventHandlers() {
         mDormantStructures.erase(it);
     });
 
-    IChunkGrid::addDestroyListener(mChunkEventListeners, [this](Chunk& chunk) {
+    chunkGrid.addDestroyListener(mChunkEventListeners, [this](Chunk& chunk) {
         ASSERT_GAME_THREAD();
         // Move structures to dormancy
         const std::vector<StructureID>& chunkStructures = chunk.getStructures();

@@ -143,7 +143,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     }
     // Dispatch notify
     mHarvestableRegistry.onTileLayerChanged(evnt.edit);
-    TileContainerRepository::dispatchEditTiles(evnt);
+    mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
     dispatchEditTiles(evnt);
 
     onTileChanged(i);
@@ -167,7 +167,7 @@ void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
         eventData.newFlags = tile.tileFlags;
         eventData.tileIndex = i;
         eventData.worldPosition = getTileCenterWorldPosition(i);
-        TileContainerRepository::dispatchEditTiles(evnt);
+        mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
         dispatchEditTiles(evnt);
         onTileChanged(i);
     }
@@ -192,7 +192,7 @@ void TileContainer::overwriteTileFlags(TileIndex i, TileFlags flags) {
         eventData.newFlags = tile.tileFlags;
         eventData.tileIndex = i;
         eventData.worldPosition = getTileCenterWorldPosition(i);
-        TileContainerRepository::dispatchEditTiles(evnt);
+        mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
         dispatchEditTiles(evnt);
         onTileChanged(i);
     }
@@ -216,7 +216,7 @@ void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
         eventData.newFlags = tile.tileFlags;
         eventData.tileIndex = i;
         eventData.worldPosition = getTileCenterWorldPosition(i);
-        TileContainerRepository::dispatchEditTiles(evnt);
+        mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
         dispatchEditTiles(evnt);
         onTileChanged(i);
     }
@@ -241,7 +241,7 @@ void TileContainer::clearTileFlags(TileIndex i) {
         eventData.newFlags = tile.tileFlags;
         eventData.tileIndex = i;
         eventData.worldPosition = getTileCenterWorldPosition(i);
-        TileContainerRepository::dispatchEditTiles(evnt);
+        mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
         dispatchEditTiles(evnt);
         onTileChanged(i);
     }
@@ -264,7 +264,7 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
         eventData.newGroundZOffset = tile.getGroundZOffset();
         eventData.worldPosition = getTileCenterWorldPosition(i);
         eventData.tileIndex = i;
-        TileContainerRepository::dispatchEditTiles(evnt);
+        mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
         dispatchEditTiles(evnt);
         onTileChanged(i);
     }
@@ -302,7 +302,7 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
         onTileChanged(tileIndex);
     }
 
-    TileContainerRepository::dispatchEditTiles(evnt);
+    mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
     dispatchEditTiles(evnt);
 }
 
@@ -324,7 +324,7 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer lay
         eventData.newOrientation = tile.orientation;
         eventData.worldPosition = getTileCenterWorldPosition(i);
         eventData.tileIndex = i;
-        TileContainerRepository::dispatchEditTiles(evnt);
+        mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
         dispatchEditTiles(evnt);
         onTileChanged(i);
     }
@@ -523,7 +523,7 @@ bool TileContainer::tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType)
         const TileIndex nindex = tileIndices[n];
         eventData[n].newFlags = mTiles[nindex].tileFlags;
     }
-    TileContainerRepository::dispatchEditTiles(flagsEvent);
+    mWorld.getTileContainerRepository().dispatchEditTiles(flagsEvent);
     dispatchEditTiles(flagsEvent);
     return true;
 }
@@ -645,7 +645,7 @@ void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNa
         const TileIndex nindex = tileIndices[n];
         eventData[n].newFlags = mTiles[nindex].tileFlags;
     }
-    TileContainerRepository::dispatchEditTiles(flagsEvent);
+    mWorld.getTileContainerRepository().dispatchEditTiles(flagsEvent);
     dispatchEditTiles(flagsEvent);
 }
 

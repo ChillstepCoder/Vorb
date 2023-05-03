@@ -85,13 +85,14 @@ void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     ASSERT_GAME_THREAD();
     assert(chunk.getTileContainer());
     auto&& it = mEditEventHandles.find(chunk.getTileContainer()->getId());
-    assert(it != mEditEventHandles.end());
-    // Const cast ~ get fucked
-    Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
-    TileContainer* container = chunkNonConst.getTileContainer();
-    // TODO: Can this be automatic? We are only holding a weak_ptr handle...
-    container->removeEditTilesListener(it->second);
-    mEditEventHandles.erase(it); // TODO: CRASH HERE WHEN TELEPORTING FAR AWAY
+    if (it != mEditEventHandles.end()) {
+        // Const cast ~ get fucked
+        Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
+        TileContainer* container = chunkNonConst.getTileContainer();
+        // TODO: Can this be automatic? We are only holding a weak_ptr handle...
+        container->removeEditTilesListener(it->second);
+        mEditEventHandles.erase(it);
+    }
    
     // TODO: uhhh....
     //auto&& it = mChunkGrassQuadtrees.find(&chunk);

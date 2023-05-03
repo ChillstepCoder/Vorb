@@ -8,6 +8,8 @@
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/RenderContext.h"
 
+#include "world/IWorld.h"
+
 #include "tile/TileContainerRepository.h"
 
 #include "rendering/model/InstancedStaticModelManager.h"
@@ -15,12 +17,12 @@
 #include <boost/pool/singleton_pool.hpp>
 #include "rendering/tasks/MeshTask.inl"
 
-TileContainerMeshManager::TileContainerMeshManager(InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {
+TileContainerMeshManager::TileContainerMeshManager(IWorld& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {
 
     mBuildingMesher = std::make_unique<BuildingMesher>(*this);
     mChunkMesher = std::make_unique<ChunkMesher>(*this);
 
-    initEventHandlers();
+    initEventHandlers(world);
 }
 
 TileContainerMeshManager::~TileContainerMeshManager()
@@ -124,20 +126,21 @@ void TileContainerMeshManager::removeMeshesForData(TileContainerMeshData& meshDa
     }
 }
 
-void TileContainerMeshManager::initEventHandlers() {
+void TileContainerMeshManager::initEventHandlers(IWorld& world) {
 
-    TileContainerRepository::registerTileContainerListeners(mTileContainerListeners);
+    TileContainerRepository& tileContainerRepository = world.getTileContainerRepository();
+    tileContainerRepository.registerTileContainerListeners(mTileContainerListeners);
 
-    TileContainerRepository::addLoadFinishedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
+    tileContainerRepository.addLoadFinishedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
         updateTileContainerMesh(*containerEvent.container);
     });
 
-    TileContainerRepository::addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
+    tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
         updateTileContainerMesh(*containerEvent.container);
         //mInstancedStaticModelRenderer.onContainerEditEvent(containerEvent);
     });
 
-    TileContainerRepository::addDestroyListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
+    tileContainerRepository.addDestroyListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
         assert(containerEvent.container->getRefCount() == 0); // It must not be in a mesher task
         mTileContainersToRemove.enqueue(containerEvent.container->getId());
     });

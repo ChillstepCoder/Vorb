@@ -50,8 +50,8 @@ public:
     IWorld& getWorld() const { return *mWorld; }
 
     // Events
-    STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
-    STATIC_EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
+    EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
+    EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
 
 private:
     // Events
@@ -97,5 +97,5 @@ private:
 
     // Events
     IHeightmapGridListeners mHeightmapGridListeners;
-    STATIC_EVENT_DISPATCHER_DEF(Chunk);
+    EVENT_DISPATCHER_DEF(Chunk);
 };

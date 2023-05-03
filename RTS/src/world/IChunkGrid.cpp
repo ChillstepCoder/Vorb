@@ -99,7 +99,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
 
                 TileContainerEvent loadFinishedEvent;
                 loadFinishedEvent.container = chunk.mTileContainer;
-                TileContainerRepository::dispatchLoadFinished(loadFinishedEvent);
+                mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
                 SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mWorld);
                 assert(srvWorldInterface);
@@ -500,5 +500,5 @@ void IChunkGrid::onChunkReady(Chunk& chunk)
     // Notify observers
     dispatchReady(chunk);
     TileContainerEvent event{ chunk.mTileContainer, {} };
-    TileContainerRepository::dispatchReady(event);
+    mWorld->getTileContainerRepository().dispatchReady(event);
 }

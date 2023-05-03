@@ -156,8 +156,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     }
 
     TileContainerEvent loadFinishedEvent;
-    loadFinishedEvent.container = newBuilding->getTileContainer();
-    TileContainerRepository::dispatchLoadFinished(loadFinishedEvent);
+    loadFinishedEvent.container = &tileContainer;
+    tileContainer.getWorld().getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
     finishBuilding(*newBuilding, bp);
 

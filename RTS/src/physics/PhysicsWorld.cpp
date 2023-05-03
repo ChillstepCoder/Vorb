@@ -311,13 +311,14 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
 }
 
 void PhysicsWorld::initEventHandlers() {
-    TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
+    TileContainerRepository& tileContainerRepository = mWorld.getTileContainerRepository();
+    tileContainerRepository.registerTileContainerListeners(mTileContainerEventListeners);
     // TODO: Profile version without lambda capture?
-    TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
+    tileContainerRepository.addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
         ASSERT_GAME_THREAD();
         deletePhysicsForTileContainer(event.container->getId());
     });
-    TileContainerRepository::addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
+    tileContainerRepository.addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
         ASSERT_GAME_THREAD();
         const TileContainerEditEvent& editEvent = event.edit;
         switch (event.edit.type) {

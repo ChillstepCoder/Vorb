@@ -18,7 +18,7 @@ WorldRenderDataManager::WorldRenderDataManager(IWorld& world) : mWorld(world) {
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>(mWorld);
     mGrassMeshManager = std::make_unique<GrassMeshManager>(mWorld);
     mInstancedStaticModelManager = std::make_unique<InstancedStaticModelManager>();
-    mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(*mInstancedStaticModelManager);
+    mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(mWorld , *mInstancedStaticModelManager);
 
     mCloudManager->init(mWorld.getLoadCenter());
 }

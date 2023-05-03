@@ -775,9 +775,9 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
 }
 
 void NavWorld::initEventHandlers() {
-
-    TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
-    TileContainerRepository::addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
+    TileContainerRepository& tileContainerRepository = mWorld.getTileContainerRepository();
+    tileContainerRepository.registerTileContainerListeners(mTileContainerEventListeners);
+    tileContainerRepository.addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
 
         constexpr ui8 EDIT_TYPES_MASK = 0xffui8;
         static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
@@ -788,7 +788,7 @@ void NavWorld::initEventHandlers() {
         }
     });
 
-    TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
+    tileContainerRepository.addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
         ASSERT_GAME_THREAD();
         const TileContainer& container = *containerEvent.container;
         BitFlags<ChunkDependencyFlags> dependencyFlags;
