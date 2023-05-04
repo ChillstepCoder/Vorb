@@ -8,7 +8,7 @@ class CliWorld : public IWorld, public CliWorldInterface
 {
 public:
     CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
-    void tick(f32 elapsedSec);
+    void tick(f32 elapsedSec) override;
     
     void onFrameBegin() override;
     void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;

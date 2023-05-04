@@ -156,8 +156,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // Make sure we can filter cubemaps properly
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-    initEventHandlers();
-
     // TODO: New depth - https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
 
     // If we are in a debug context, initialize debug output
@@ -406,10 +404,6 @@ WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& worl
 
 WorldRenderDataManager* RenderContext::tryGetRenderDataManagerForWorld(IWorld& world) const {
     return mWorldRenderer->tryGetRenderDataManagerForWorld(world);
-}
-
-void RenderContext::initEventHandlers() {
-    // TODO: Remove?
 }
 
 void RenderContext::updateRenderThreadProcs() {

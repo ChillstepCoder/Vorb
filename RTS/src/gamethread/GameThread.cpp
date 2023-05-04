@@ -14,6 +14,7 @@
 
 #include "time/TimeOfDayManager.h"
 
+#include "rendering/renderstate/RenderStateManager.h"
 
 
 GameThread* GameThread::sInstance = nullptr;
@@ -48,6 +49,19 @@ GameThread& GameThread::getInstance() {
 void GameThread::destroyInstance() {
     delete sInstance;
     sInstance = nullptr;
+}
+
+void GameThread::setActiveEditorWorld(IWorld* editorWorld)
+{
+    mActiveEditorWorld = editorWorld;
+    if (RenderStateManager::exists()) {
+        if (mActiveEditorWorld) {
+            RenderStateManager::getInstance().setActiveWorld(mActiveEditorWorld);
+        }
+        else {
+            RenderStateManager::getInstance().setActiveWorld(&mWorld);
+        }
+    }
 }
 
 void GameThread::mainFunc() {
@@ -102,6 +116,11 @@ void GameThread::tick() {
         default:
             assert(false);
             break;
+    }
+
+    if (mActiveEditorWorld) {
+        const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
+        mActiveEditorWorld->tick(timeStep);
     }
 }
 

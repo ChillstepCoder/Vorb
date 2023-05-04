@@ -10,7 +10,11 @@
 
 #include "resources/ResourceManager.h"
 
+#include "world/IWorld.h"
 #include "world/Chunk.h"
+#include "world/WorldFactory.h"
+
+#include "gamethread/GameThreadTasks.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -29,10 +33,7 @@ BiomeEditorViewportPanel::~BiomeEditorViewportPanel()
 
 bool BiomeEditorViewportPanel::updateAndRender()
 {
-    if (!mChunks) {
-        initializeChunks();
-    }
-
+   
     bool isOpen = true;
     ImGui::Begin("Material Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -76,6 +77,18 @@ void BiomeEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::EndChild();
 }
 
+void BiomeEditorViewportPanel::onEnter() {
+    if (!mEditorWorld) {
+        initializeWorld();
+    }
+
+    GameThreadTasks::getInstance().setActiveEditorWorld(mEditorWorld.get());
+}
+
+void BiomeEditorViewportPanel::onExit() {
+    GameThreadTasks::getInstance().setActiveEditorWorld(nullptr);
+}
+
 const MaterialShader* BiomeEditorViewportPanel::getShader()
 {
     return nullptr;
@@ -91,10 +104,7 @@ void BiomeEditorViewportPanel::renderMesh()
     
 }
 
-void BiomeEditorViewportPanel::initializeChunks()
-{
-    mChunks = std::unique_ptr<Chunk[]>(new Chunk[NUM_EDITOR_CHUNKS]);
-   /* for (ui32 i = 0; i < NUM_EDITOR_CHUNKS; ++i) {
-        mChunks[i].init(ChunkID(i));
-    }*/
+void BiomeEditorViewportPanel::initializeWorld() {
+    LOG_INFO("Initializing Editor World...");
+    mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor);
 }

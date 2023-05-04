@@ -143,7 +143,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                 ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
                 ImGui::SetNextWindowSize(ImVec2(width, dims.y));
                 if (!mActiveCenterPanel->updateAndRender()) {
-                    mActiveCenterPanel = nullptr;
+                    setActiveCenterPanel(nullptr);
                 }
             }
         }
@@ -158,16 +158,25 @@ void EditorRoot::renderEditorBrushDecals(const Camera3D& camera) {
 
 void EditorRoot::openModelForEdit(ModelDef& model) {
     mModelEditorViewportPanel->setModel(model);
-    mActiveCenterPanel = mModelEditorViewportPanel.get();
+    setActiveCenterPanel(mModelEditorViewportPanel.get());
 }
 
 void EditorRoot::openMaterialForEdit(MaterialHandle& materialHandle) {
     mMaterialEditorViewportPanel->setMaterial(materialHandle);
-    mActiveCenterPanel = mMaterialEditorViewportPanel.get();
+    setActiveCenterPanel(mMaterialEditorViewportPanel.get());
 }
 
 void EditorRoot::openFoliageForEdit(TileGrassData& grassData)
 {
     //mBiomeEditorViewportPanel->setMaterial(materialHandle);
-    mActiveCenterPanel = mBiomeEditorViewportPanel.get();
+    setActiveCenterPanel(mBiomeEditorViewportPanel.get());
+}
+
+void EditorRoot::setActiveCenterPanel(IEditorViewportPanel* newCenterPanel)
+{
+    if (mActiveCenterPanel != newCenterPanel) {
+        if (mActiveCenterPanel) mActiveCenterPanel->onExit();
+        mActiveCenterPanel = newCenterPanel;
+        if (mActiveCenterPanel) mActiveCenterPanel->onEnter();
+    }
 }

@@ -10,6 +10,8 @@ public:
 
     void onWorldBegin(const f32v2& loadCenter) override;
 
+    void tick(f32 elapsedSec) override;
+
     WorldNetMode getNetMode() override;
     WorldType getWorldType() override;
 
@@ -34,6 +36,8 @@ public:
 
 
     void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) override;
+
+
 
 
 };

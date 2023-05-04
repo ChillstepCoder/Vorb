@@ -83,14 +83,11 @@ public:
     WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world) const;
     WorldRenderDataManager* tryGetRenderDataManagerForWorld(IWorld& world) const;
 private:
-    void initEventHandlers();
     void updateRenderThreadProcs();
 
     // Render passes
     void renderPassDebug(const Camera3D& camera, const RenderState& renderState);
     void renderPassUI(const Camera3D& camera, const RenderState& renderState);
-
-    // Mesh management
 
     static RenderContext* sInstance;
     
@@ -100,7 +97,7 @@ private:
     ui32v2 mCurrentFramebufferDims;
     const Camera3D* mCamera = nullptr;
 
-    // Worlds
+    // World
     IWorld* mActiveWorld = nullptr;
     std::unique_ptr<WorldRenderer> mWorldRenderer;
 

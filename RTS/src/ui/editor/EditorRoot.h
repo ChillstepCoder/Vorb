@@ -31,6 +31,7 @@ private:
     void openModelForEdit(ModelDef& model);
     void openMaterialForEdit(MaterialHandle& materialHandle);
     void openFoliageForEdit(TileGrassData& grassData);
+    void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 
     // Center panel display
     IEditorViewportPanel* mActiveCenterPanel = nullptr;

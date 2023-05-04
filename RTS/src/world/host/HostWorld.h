@@ -10,7 +10,7 @@ class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterf
 public:
     HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 
-	void tick(f32 elapsedSec);
+	void tick(f32 elapsedSec) override;
 	// IWorld interface
 	void onFrameBegin() override;
 	void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;

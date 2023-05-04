@@ -12,7 +12,7 @@ class GameThreadTasks
 {
     friend class GameThread;
 protected:
-    GameThreadTasks(IWorld& world);
+    GameThreadTasks(IWorld& mainGameWorld);
     ~GameThreadTasks();
 
 public:
@@ -30,6 +30,7 @@ public:
     void addHideLocalPlayerModelTask(bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);
     void addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
+    void setActiveEditorWorld(IWorld* editorWorld);
 
     size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx(); }
 
@@ -37,7 +38,7 @@ private:
     // Task queue
     // TODO: Clear task queues on destroy?
     moodycamel::ConcurrentQueue<std::pair<GameFunction, void*>> mGameThreadProcs;
-    IWorld& mWorld;
+    IWorld& mMainGameWorld;
 
     static GameThreadTasks* sInstance;
 };

@@ -198,6 +198,10 @@ i32v2 IChunkGrid::getChunkOffsetFromChunkID(ChunkID id) const {
     return i32v2(id % mWidthChunks, id / mWidthChunks);
 }
 
+bool IChunkGrid::isChunkXYInBounds(const i32v2& xy) {
+    return (xy.x >= 0 && xy.y >= 0 && xy.x < mWidthChunks && xy.y < mWidthChunks);
+}
+
 void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
     PROFILE_FUNCTION();
     boost::container::flat_map<GridIdType, std::vector<i32v2>> tilePositionsNeedingUpdate;
@@ -255,9 +259,11 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
             for (ui8 i = 0; i < 8; ++i) {
                 if ((neighborBits & (1 << i)) == 0) {
                     const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
-                    const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
-                    if (isChunkInLoadRange(getWorldPosXYFromChunkID(neighborId), loadCenter)) {
-                        makeChunkAlive(neighborId);
+                    if (isChunkXYInBounds(neighborXy)) {
+                        const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
+                        if (isChunkInLoadRange(getWorldPosXYFromChunkID(neighborId), loadCenter)) {
+                            makeChunkAlive(neighborId);
+                        }
                     }
                 }
             }

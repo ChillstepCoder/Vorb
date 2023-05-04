@@ -16,6 +16,11 @@ void DedicatedSrvWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius)
     // Do nothing
 }
 
+void DedicatedSrvWorld::tick(f32 elapsedSec)
+{
+    throw std::logic_error("The method or operation is not implemented.");
+}
+
 WorldNetMode DedicatedSrvWorld::getNetMode()
 {
     return WorldNetMode::DedicatedServer;

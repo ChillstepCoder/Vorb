@@ -2,6 +2,7 @@
 #include "IEditorViewportPanel.h"
 
 class Chunk;
+class IWorld;
 
 class BiomeEditorViewportPanel : public IEditorViewportPanel
 {
@@ -11,14 +12,17 @@ public:
 	bool updateAndRender() override;
 	void updateAndRenderControls(f32 ySize) override;
 
+    void onEnter() override;
+    void onExit() override;
+
 protected:
 	const MaterialShader* getShader() override;
 	void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) override;
 	void renderMesh() override;
 
-	void initializeChunks();
+	void initializeWorld();
 
-	std::unique_ptr<Chunk[]> mChunks;
+	std::unique_ptr<IWorld> mEditorWorld;
 
 };
 

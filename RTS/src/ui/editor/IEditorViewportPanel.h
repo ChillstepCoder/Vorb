@@ -33,6 +33,9 @@ public:
     virtual bool updateAndRender() = 0;
     virtual void updateAndRenderControls(f32 ySize) = 0;
 
+    virtual void onEnter() {};
+    virtual void onExit() {};
+
 protected:
     void renderCenterPanel();
 

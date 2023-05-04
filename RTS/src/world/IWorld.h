@@ -33,6 +33,8 @@ public:
     virtual void onWorldBegin(const f32v2& loadCenter) = 0;
     virtual WorldNetMode getNetMode() = 0;
     virtual WorldType getWorldType() = 0;
+    virtual void tick(f32 elapsedSec) = 0;
+
 
     // Shared interface
     void tickShared(f32 elapsedSec);

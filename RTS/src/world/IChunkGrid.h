@@ -54,6 +54,8 @@ public:
     EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
 
 private:
+    bool isChunkXYInBounds(const i32v2& xy);
+
     // Events
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     // Grid management

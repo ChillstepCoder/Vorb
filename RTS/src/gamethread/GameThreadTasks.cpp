@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "GameThreadTasks.h"
 
+#include "gamethread/GameThread.h"
+
 #include "world/IWorld.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
@@ -10,7 +12,7 @@
 
 GameThreadTasks* GameThreadTasks::sInstance = nullptr;
 
-GameThreadTasks::GameThreadTasks(IWorld& world) : mWorld(world) {
+GameThreadTasks::GameThreadTasks(IWorld& mainGameWorld) : mMainGameWorld(mainGameWorld) {
 
 }
 
@@ -37,7 +39,7 @@ void GameThreadTasks::addCameraPickTeleportTask(const f32v3& camPos, const f32v3
         f32v3 camPos;
         f32v3 camDir;
     };
-    CameraPickTeleportData* teleportData = new CameraPickTeleportData{ &mWorld, camPos, camDir };
+    CameraPickTeleportData* teleportData = new CameraPickTeleportData{ &mMainGameWorld, camPos, camDir };
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
         CameraPickTeleportData* data = static_cast<CameraPickTeleportData*>(vData);
         IEntityComponentSystem& ecs = data->world->getECS();
@@ -53,7 +55,7 @@ void GameThreadTasks::addCameraPickTeleportTask(const f32v3& camPos, const f32v3
 
 void GameThreadTasks::addHideLocalPlayerModelTask(bool hide) {
     typedef std::pair<IWorld*, bool> TaskData;
-    TaskData* data = new TaskData{ &mWorld, hide };
+    TaskData* data = new TaskData{ &mMainGameWorld, hide };
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
         TaskData* data = static_cast<TaskData*>(vData);
         IEntityComponentSystem& ecs = data->first->getECS();
@@ -70,7 +72,7 @@ void GameThreadTasks::addHideLocalPlayerModelTask(bool hide) {
 void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder) {
     typedef std::tuple<IWorld*, const TileContainer*, StaticPhysicsMeshBuilder> TaskData;
     TaskData* taskData;
-    taskData = new TaskData{ &mWorld, container, std::move(meshBuilder) };
+    taskData = new TaskData{ &container->getWorld(), container, std::move(meshBuilder) };
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
         TaskData* taskData = static_cast<TaskData*>(vData);
         StaticPhysicsMeshBuilder& builder = std::get<2>(*taskData);
@@ -87,10 +89,16 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(const TileContai
 
 void GameThreadTasks::addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate) {
     typedef std::tuple<f32v3, StrToken, bool, IWorld*> TaskData;
-    TaskData* createData = new TaskData(pos, typeToken, shouldReplicate, &mWorld);
+    TaskData* createData = new TaskData(pos, typeToken, shouldReplicate, &mMainGameWorld);
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
         TaskData* createData = static_cast<TaskData*>(vData);
         std::get<3>(*createData)->getECS().createEntity(std::get<0>(*createData), std::get<1>(*createData), std::get<2>(*createData));
         delete createData;
     }, (void*)createData));
+}
+
+void GameThreadTasks::setActiveEditorWorld(IWorld* editorWorld) {
+    mGameThreadProcs.enqueue(std::make_pair([](GameThread& gameThread, void* vData) {
+        gameThread.setActiveEditorWorld(static_cast<IWorld*>(vData));
+    }, (void*)editorWorld));
 }
