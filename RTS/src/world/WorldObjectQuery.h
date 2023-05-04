@@ -22,6 +22,9 @@ struct WorldObjectQueryData {
     std::atomic_bool mIsQuerying = false;
 };
 
+
+typedef std::shared_ptr<class WorldObjectQuery> WorldObjectQueryPtr;
+
 class WorldObjectQuery {
     friend class TileInteractPanel;
     friend class WorldObjectQueryFactory;
@@ -42,7 +45,7 @@ public:
     const f32v2& getTilePos() const { return mWorldPos; }
 
 private:
-    void query();
+    void query(const WorldObjectQueryPtr& ptr);
     void queryInternal();
 
     IWorld& mWorld;
@@ -58,7 +61,6 @@ private:
     std::atomic_bool mIsQuerying = false;
 };
 
-typedef std::shared_ptr<WorldObjectQuery> WorldObjectQueryPtr;
 
 class WorldObjectQueryFactory {
 public:

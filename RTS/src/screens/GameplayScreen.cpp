@@ -405,13 +405,13 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
-            typedef std::pair<IWorld*, TileHandle*> TaskData;
-            TaskData* taskData = new TaskData{ mWorld.get(), &mSelectedTileHandle };
+            typedef std::pair<IWorld*, TileHandle> TaskData;
+            TaskData* taskData = new TaskData(mWorld.get(), mSelectedTileHandle);
             if (mSelectedTileHandle.isValid()) {
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
                     // TODO: Small race condition here if tile handle changes or chunk is destroyed
                     TaskData* data = static_cast<TaskData*>(vTaskData);
-                    TileHandle tileHandle = *data->second;
+                    const TileHandle& tileHandle = data->second;
                     if (tileHandle.isValid()) {
                         IEntityComponentSystem& ecs = data->first->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
@@ -419,7 +419,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                         cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), nullptr);
                     }
                     delete data;
-                }, &mSelectedTileHandle);
+                }, (void*)taskData);
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {

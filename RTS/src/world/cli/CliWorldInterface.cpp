@@ -82,13 +82,17 @@ void CliWorldInterface::updateRenderState(IWorld& world) {
     }
 
     // Cache things we need to update so we can keep the update section small as possible
-    const f32v3 playerPos = world.mEcs->mRegistry.get<PhysicsComponent>(world.mEcs->getLocalPlayer()).getInterpolatedPosition();
+    entt::entity playerEntity = world.mEcs->getLocalPlayer();
+    f32v3 cameraEntityPos = f32v3(0.0f);
+    if (playerEntity != INVALID_ENTITY) {
+        cameraEntityPos = world.mEcs->mRegistry.get<PhysicsComponent>(playerEntity).getInterpolatedPosition();
+    }
 
     // Acquire render state
     RenderState& renderState = RenderStateManager::getInstance().getRenderStateForUpdate();
     renderState.mWorld = &world;
     renderState.mWorldLoadCenter = world.getLoadCenter();
-    renderState.mCameraOwningEntityPos = playerPos;
+    renderState.mCameraOwningEntityPos = cameraEntityPos;
 
     updateEntitiesRenderState(world, renderState);
     updateDebugRenderState(world, renderState);

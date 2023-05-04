@@ -199,7 +199,10 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool 
     }
     else {
         patch.mFlags &= (~QUADTREE_PATCH_FLAG_HAS_MESH);
-        freeMeshForPatch(patchIndex);
+        // Sentinal ids never mesh
+        if (!getHeightmapPatchID(patchIndex).isSentinelID()) {
+            freeMeshForPatch(patchIndex);
+        }
     }
 
     // If recombining we wont update till next cycle

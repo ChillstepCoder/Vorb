@@ -15,6 +15,7 @@
 #include "world/WorldFactory.h"
 
 #include "gamethread/GameThreadTasks.h"
+#include "time/TimeOfDayManager.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -107,4 +108,10 @@ void BiomeEditorViewportPanel::renderMesh()
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
     mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor);
+
+    GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
+        IWorld* editorWorld = static_cast<IWorld*>(vWorld);
+        editorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
+        editorWorld->onWorldBegin(f32v2(0.0f));
+    }, (void*)mEditorWorld.get());
 }

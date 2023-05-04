@@ -102,8 +102,9 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
                 SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mWorld);
-                assert(srvWorldInterface);
-                srvWorldInterface->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
+                if (srvWorldInterface) {
+                    srvWorldInterface->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
+                }
                 ++i;
                 break;
             }
@@ -298,14 +299,16 @@ void IChunkGrid::makeChunkAlive(const ChunkID& chunkId) {
     const i32v2 xy = getChunkOffsetFromChunkID(chunkId);
     for (ui8 i = 0; i < 8; ++i) {
         const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
-        const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
-        if (mAliveChunkBits.getBit(neighborId)) {
-            // Create the alive neighbor connection
-            neighborBits |= (1ui8 << i);
-            ui8& adjacentNeighborBits = mNeighborBits[neighborId];
-            adjacentNeighborBits |= (1ui8 << (ui8)CARTESIAN8_OPPOSITES[i]);
-            if (adjacentNeighborBits == ALL_NEIGHBORS_ALIVE) {
-                onAllNeighborsAlive(mChunks[neighborId]);
+        if (isChunkXYInBounds(neighborXy)) {
+            const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
+            if (mAliveChunkBits.getBit(neighborId)) {
+                // Create the alive neighbor connection
+                neighborBits |= (1ui8 << i);
+                ui8& adjacentNeighborBits = mNeighborBits[neighborId];
+                adjacentNeighborBits |= (1ui8 << (ui8)CARTESIAN8_OPPOSITES[i]);
+                if (adjacentNeighborBits == ALL_NEIGHBORS_ALIVE) {
+                    onAllNeighborsAlive(mChunks[neighborId]);
+                }
             }
         }
     }

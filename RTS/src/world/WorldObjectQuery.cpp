@@ -20,7 +20,7 @@ WorldObjectQuery::~WorldObjectQuery()
 {
 }
 
-void WorldObjectQuery::query() {
+void WorldObjectQuery::query(const WorldObjectQueryPtr& ptr) {
     mStockpileAtTile = nullptr;
 
     if (IS_GAME_THREAD()) {
@@ -30,7 +30,7 @@ void WorldObjectQuery::query() {
         mIsReady = false;
         mIsQuerying = true;
         // Copy our handle on the heap so it cannot be destroyed even if the original WorldObjectQuery is destroyed
-        WorldObjectQueryPtr* threadHandle = new WorldObjectQueryPtr(this);
+        WorldObjectQueryPtr* threadHandle = new WorldObjectQueryPtr(ptr);
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vHandle) {
             WorldObjectQueryPtr* threadHandle = static_cast<WorldObjectQueryPtr*>(vHandle);
             (*threadHandle)->queryInternal();
@@ -101,13 +101,13 @@ void WorldObjectQuery::queryInternal() {
 WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(IWorld& world, const f32v3& worldPos) {
     WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
     newQuery->mWorldPos = worldPos;
-    newQuery->query();
+    newQuery->query(newQuery);
     return newQuery;
 }
 
 WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(IWorld& world, LiteTileHandle handle) {
     WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
     newQuery->mLiteHandle = handle;
-    newQuery->query();
+    newQuery->query(newQuery);
     return newQuery;
 }
