@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "IChunkGrid.h"
 
-#include "world/ChunkGenerator.h"
+#include "generation/WorldGenerator.h"
 #include "world/IWorld.h"
 #include "world/srv/SrvWorldInterface.h"
 #include "tile/TileContainerRepository.h"
@@ -39,14 +39,7 @@ bool isChunkInLoadRange(const f32v2& worldPos, const f32v2& loadCenter) {
     return distSq <= sDebugOptions.mLoadRangeSq;
 }
 
-IChunkGrid::IChunkGrid(ui32 widthChunks) : mWidthChunks(widthChunks), mTotalChunks(SQ(widthChunks)) {
-    mAliveChunkBits.resizeAndZero(mTotalChunks);
-    mChunks = std::unique_ptr<Chunk[]>(new Chunk[mTotalChunks]);
-    mNeighborBits = std::unique_ptr<ui8[]>(new ui8[mTotalChunks]);
-    memset(mNeighborBits.get(), 0, sizeof(ui8) * mTotalChunks);
-    for (ChunkID i = 0; i < mTotalChunks; ++i) {
-        mChunks[i].init(i, getWorldPosXYFromChunkID(i));
-    }
+IChunkGrid::IChunkGrid() {
 }
 
 void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
@@ -78,7 +71,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     for (size_t i = 0; i < mLoadingChunks.size();) {
         Chunk& chunk = mChunks[mLoadingChunks[i]];
         switch (chunk.mState) {
-            case e_cast(ChunkState::WAITING_HEIGHT): {
+            case ChunkState::WAITING_HEIGHT: {
                 // Poll for generated height
                 if (heightGrid.tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
                     beginTileLoadForChunk(chunk);
@@ -86,12 +79,12 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 ++i;
                 break;
             }
-            case e_cast(ChunkState::LOADING_TILES): {
+            case ChunkState::LOADING_TILES: {
                 ++i;
                 break;
             }
-            case e_cast(ChunkState::TILE_LOAD_FINISHED): {
-                chunk.mState = e_cast(ChunkState::WAITING_MESH_PHYSICS_NAV);
+            case ChunkState::TILE_LOAD_FINISHED: {
+                chunk.mState = ChunkState::WAITING_MESH_PHYSICS_NAV;
                 chunk.mTileContainer->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
 
                 // Cache harvestables
@@ -108,7 +101,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 ++i;
                 break;
             }
-            case e_cast(ChunkState::WAITING_MESH_PHYSICS_NAV): {
+            case ChunkState::WAITING_MESH_PHYSICS_NAV: {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mLoadingChunks[i] = mLoadingChunks.back();
                     mLoadingChunks.pop_back();
@@ -135,7 +128,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         Chunk& chunk = mChunks[mDestroyingChunks[i]];
         if (chunk.getRefCount() == 0) {
             // Release height and notify only if we were ever valid
-            if (chunk.mState != e_cast(ChunkState::INVALID)) {
+            if (chunk.mState != ChunkState::INVALID) {
                 const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
                 heightGrid.releaseHeightDataAt(heightId);
                 dispatchDestroy(chunk);
@@ -197,6 +190,19 @@ i32v2 IChunkGrid::getWorldPosXYFromChunkID(ChunkID id) const {
 
 i32v2 IChunkGrid::getChunkOffsetFromChunkID(ChunkID id) const {
     return i32v2(id % mWidthChunks, id / mWidthChunks);
+}
+
+void IChunkGrid::setWorldAndAllocateChunks(IWorld& world) {
+    mWorld = &world;
+    mWidthChunks = world.getWidthChunks();
+    mTotalChunks = SQ(mWidthChunks);
+    mAliveChunkBits.resizeAndZero(mTotalChunks);
+    mNeighborBits = std::unique_ptr<ui8[]>(new ui8[mTotalChunks]);
+    memset(mNeighborBits.get(), 0, sizeof(ui8) * mTotalChunks);
+    mChunks = std::unique_ptr<Chunk[]>(new Chunk[mTotalChunks]);
+    for (ChunkID i = 0; i < mTotalChunks; ++i) {
+        mChunks[i].init(world, i, getWorldPosXYFromChunkID(i));
+    }
 }
 
 bool IChunkGrid::isChunkXYInBounds(const i32v2& xy) {
@@ -442,7 +448,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         return;
     }
 
-    if (chunk.mState == e_cast(ChunkState::INVALID)) {
+    if (chunk.mState == ChunkState::INVALID) {
         // Begin load
         if (heightGrid.tryAquireHeightData(chunk.getHeightmapPatchID())) {
             beginTileLoadForChunk(chunk);
@@ -452,7 +458,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         }
         addChunkToLoadList(chunk);
     }
-    else if (chunk.mState == e_cast(ChunkState::READY)) {
+    else if (chunk.mState == ChunkState::READY) {
         // If we are already loaded, just insert us back into the active list
         addChunkToActiveList(chunk);
     }
@@ -463,15 +469,15 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 }
 
 void IChunkGrid::beginHeightLoadForChunk(Chunk& chunk) {
-    assert(chunk.mState != e_cast(ChunkState::WAITING_HEIGHT));
-    chunk.mState = e_cast(ChunkState::WAITING_HEIGHT);
+    assert(chunk.mState != ChunkState::WAITING_HEIGHT);
+    chunk.mState = ChunkState::WAITING_HEIGHT;
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     heightGrid.requestHeightDataGenAndAquireAt(chunk.getHeightmapPatchID(), nullptr);
 }
 
 void IChunkGrid::beginTileLoadForChunk(Chunk& chunk) {
-    assert(chunk.mState != e_cast(ChunkState::LOADING_TILES));
-    chunk.mState = e_cast(ChunkState::LOADING_TILES);
+    assert(chunk.mState != ChunkState::LOADING_TILES);
+    chunk.mState = ChunkState::LOADING_TILES;
     generateChunkAsync(chunk);
 }
 
@@ -490,8 +496,7 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
     const f32* srcData = heightGrid.getHeightDataAt(chunk.getHeightmapPatchID())->data;
     memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
     Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
-        ChunkGenerator::GenerateChunk(chunk, heightData);
-        assert(chunk.getState() == ChunkState::LOADING_TILES);
+        chunk.getWorld().getWorldGenerator().generateChunk(chunk, heightData);
         chunk.setState(ChunkState::TILE_LOAD_FINISHED);
         chunk.decRef();
         delete heightData;
@@ -503,7 +508,7 @@ void IChunkGrid::onChunkReady(Chunk& chunk)
 {
     // Now we need nav
     addChunkToActiveList(chunk);
-    chunk.mState = e_cast(ChunkState::READY);
+    chunk.mState = ChunkState::READY;
     chunk.mTileContainer->setState(TileContainerState::READY);
 
     // Notify observers

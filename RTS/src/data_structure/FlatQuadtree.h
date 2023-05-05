@@ -5,6 +5,7 @@ struct DebugWireQuadState;
 DECL_VG(class GLProgram);
 
 #include "data_structure/QuadtreeSettings.h"
+#include "world/IHeightmapGrid.h"
 #include "world/ChunkID.h"
 
 // Lookup tables are generated via this
@@ -84,7 +85,7 @@ class FlatQuadtree
 public:
     template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH, ui32 NODE_COUNT> friend struct QuadtreePositionTable;
 
-    FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistances[], f32& lodDistanceOffset);
+    FlatQuadtree(IHeightmapGrid& heightmapGrid, const f32v2& worldPos, const f32 subdivideDistances[], f32& lodDistanceOffset);
     virtual ~FlatQuadtree() { };
 
     // === Public Methods ===
@@ -157,6 +158,7 @@ public:
     static constexpr QuadtreePositionTable<MAX_DEPTH, TOTAL_WIDTH, NODE_COUNT> PATCH_POSITIONS = QuadtreePositionTable<MAX_DEPTH, TOTAL_WIDTH, NODE_COUNT>();
 protected:
     // === Protected members ===
+    IHeightmapGrid& mHeightmapGrid;
     f32& mLodDistanceOffset; // Reference to a setting
     ui32 mNumActiveNodes = 0;
     ui16 mActiveNodes[NODE_COUNT];
@@ -171,7 +173,7 @@ protected:
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 HeightmapPatchID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getHeightmapPatchID(ui32 patchIndex) const {
     f32v2 pos = f32v2(PATCH_POSITIONS.data[patchIndex].xy);
-    return HeightmapPatchID(mWorldPos + pos);
+    return mHeightmapGrid.getSpatialGrid2D().getIDAtWorldPos(mWorldPos + pos);
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
@@ -200,7 +202,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool 
     else {
         patch.mFlags &= (~QUADTREE_PATCH_FLAG_HAS_MESH);
         // Sentinal ids never mesh
-        if (!getHeightmapPatchID(patchIndex).isSentinelID()) {
+        if (!mHeightmapGrid.getSpatialGrid2D().isSentinelID(getHeightmapPatchID(patchIndex))) {
             freeMeshForPatch(patchIndex);
         }
     }
@@ -217,7 +219,8 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool 
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
-FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistancesSq[], f32& lodDistanceOffset) : mWorldPos(worldPos), mSubdivideDistancesSq(subdivideDistancesSq), mLodDistanceOffset(lodDistanceOffset)
+FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(IHeightmapGrid& heightmapGrid, const f32v2& worldPos, const f32 subdivideDistancesSq[], f32& lodDistanceOffset) 
+    : mHeightmapGrid(heightmapGrid), mWorldPos(worldPos), mSubdivideDistancesSq(subdivideDistancesSq), mLodDistanceOffset(lodDistanceOffset)
 {
     assert(mSubdivideDistancesSq[MAX_DEPTH - 1] == -FLT_MAX); // We should never subdivide at final distance
 

@@ -14,13 +14,13 @@
 
 
 WorldRenderDataManager::WorldRenderDataManager(IWorld& world) : mWorld(world) {
-    mCloudManager = std::make_unique<CloudMeshManager>();
+    mCloudManager = std::make_unique<CloudMeshManager>(world.getWorldGenerator());
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>(mWorld);
     mGrassMeshManager = std::make_unique<GrassMeshManager>(mWorld);
     mInstancedStaticModelManager = std::make_unique<InstancedStaticModelManager>();
     mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(mWorld , *mInstancedStaticModelManager);
 
-    mCloudManager->init(mWorld.getLoadCenter());
+    mCloudManager->init(mWorld.getWidthChunks(), mWorld.getLoadCenter());
 }
 
 WorldRenderDataManager::~WorldRenderDataManager() {

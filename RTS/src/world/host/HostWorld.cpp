@@ -11,9 +11,9 @@
 #include "physics/PhysicsWorld.h"
 #include "pathfinding/NavThread.h"
 
-#include "generation/WorldGeneration.h"
+#include "generation/WorldGenerationData.h"
 
-HostWorld::HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid)
+HostWorld::HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid)
 {
     initClient(*this);
     initSrv(*this);

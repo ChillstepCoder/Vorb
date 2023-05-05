@@ -1,8 +1,10 @@
 #pragma once
 
 class Mesh;
+class WorldGenerator;
 
 #include "world/ChunkID.h"
+#include "util/SpatialGrid2D.h"
 
 struct CloudBatch {
     CloudBatch() = default;
@@ -20,10 +22,10 @@ class CloudMeshManager
 {
 public:
     friend class CloudRenderer;
-    CloudMeshManager();
+    CloudMeshManager(WorldGenerator& worldGenerator);
     ~CloudMeshManager();
 
-    void init(const f32v2& loadCenter);
+    void init(i32 worldWidthChunks, const f32v2& loadCenter);
     void frameUpdate(const f32v2& loadCenter);
 
 private:
@@ -33,12 +35,13 @@ private:
     void spawnNewCloudWaveX(i32 dir);
     void spawnNewCloudWaveY(i32 dir);
 
+    ui32 mWorldWidthCloudBatches = 0;
     std::vector<CloudBatch> mCloudBatches;
     std::map<ui32, CloudBatch> mGeneratingBatches; // Use this so we dont need synchronization
     std::vector<i32v2> mCloudSpawnOffsets;
     std::unordered_map<i32 /*yOffset*/, i32 /*xOffset*/> mCloudBoundsCheckMap;
-
-
+    SpatialGrid2D mSpatialGrid2D;
+    WorldGenerator& mWorldGenerator;
     i32v2 mLastCenterPosition;
     // This is actually genius - TODO: Can this be used for chunks?
     f32 mDx = 0.0f;

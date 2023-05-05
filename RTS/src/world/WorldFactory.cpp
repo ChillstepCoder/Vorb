@@ -9,16 +9,24 @@
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 
-std::unique_ptr<IWorld> WorldFactory::makeWorld(WorldNetMode type) {
+std::unique_ptr<IWorld> WorldFactory::makeWorld(WorldNetMode type, ui32 worldWidthTiles) {
+    assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
+
+    // Clamp world width to multiple of HEIGHTMAP_WIDTH
+    worldWidthTiles = (worldWidthTiles / HEIGHTMAP_WIDTH) * HEIGHTMAP_WIDTH;
+    if (worldWidthTiles == 0) {
+        worldWidthTiles = HEIGHTMAP_WIDTH;
+    }
+
     switch (type) {
         case WorldNetMode::Client:
-            return makeClientWorld();
+            return makeClientWorld(worldWidthTiles);
             break;
         case WorldNetMode::Editor:
-            return makeEditorWorld();
+            return makeEditorWorld(worldWidthTiles);
             break;
         case WorldNetMode::Host:
-            return makeHostWorld();
+            return makeHostWorld(worldWidthTiles);
             break;
         case WorldNetMode::DedicatedServer:
             assert(false);
@@ -38,49 +46,49 @@ void WorldFactory::destroyWorld()
     assert(false);
 }
 
-std::unique_ptr<CliWorld> WorldFactory::makeClientWorld() {
-    CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid();
-    CliChunkGrid* chunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(chunkGrid, heightmapGrid);
+std::unique_ptr<CliWorld> WorldFactory::makeClientWorld(ui32 worldWidthTiles) {
+    CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid(worldWidthTiles);
+    CliChunkGrid* chunkGrid = new CliChunkGrid();
+    std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = newWorld.get();
+    chunkGrid->setWorldAndAllocateChunks(*newWorld);
     heightmapGrid->mWorld = newWorld.get();
 
     return newWorld;
 }
 
-std::unique_ptr<CliWorld> WorldFactory::makeEditorWorld() {
-    CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid();
-    CliChunkGrid* chunkGrid = new CliChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(chunkGrid, heightmapGrid);
+std::unique_ptr<CliWorld> WorldFactory::makeEditorWorld(ui32 worldWidthTiles) {
+    CliHeightmapGrid* heightmapGrid = new CliHeightmapGrid(worldWidthTiles);
+    CliChunkGrid* chunkGrid = new CliChunkGrid();
+    std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = newWorld.get();
+    chunkGrid->setWorldAndAllocateChunks(*newWorld);
     heightmapGrid->mWorld = newWorld.get();
 
     return newWorld;
 }
 
-std::unique_ptr<HostWorld> WorldFactory::makeHostWorld() {
-    SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid();
-    SrvChunkGrid* chunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    std::unique_ptr<HostWorld> newWorld = std::make_unique<HostWorld>(chunkGrid, heightmapGrid);
+std::unique_ptr<HostWorld> WorldFactory::makeHostWorld(ui32 worldWidthTiles) {
+    SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid(worldWidthTiles);
+    SrvChunkGrid* chunkGrid = new SrvChunkGrid();
+    std::unique_ptr<HostWorld> newWorld = std::make_unique<HostWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = newWorld.get();
+    chunkGrid->setWorldAndAllocateChunks(*newWorld);
     heightmapGrid->mWorld = newWorld.get();
 
     return newWorld;
 }
 
-std::unique_ptr<DedicatedSrvWorld> WorldFactory::makeServerWorld() {
-    SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid();
-    SrvChunkGrid* chunkGrid = new SrvChunkGrid(WorldData::WORLD_WIDTH_CHUNKS);
-    std::unique_ptr<DedicatedSrvWorld> newWorld = std::make_unique<DedicatedSrvWorld>(chunkGrid, heightmapGrid);
+std::unique_ptr<DedicatedSrvWorld> WorldFactory::makeServerWorld(ui32 worldWidthTiles) {
+    SrvHeightmapGrid* heightmapGrid = new SrvHeightmapGrid(worldWidthTiles);
+    SrvChunkGrid* chunkGrid = new SrvChunkGrid();
+    std::unique_ptr<DedicatedSrvWorld> newWorld = std::make_unique<DedicatedSrvWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
     // World references
-    chunkGrid->mWorld = newWorld.get();
+    chunkGrid->setWorldAndAllocateChunks(*newWorld);
     heightmapGrid->mWorld = newWorld.get();
 
     return newWorld;

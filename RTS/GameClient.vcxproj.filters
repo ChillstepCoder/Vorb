@@ -60,9 +60,6 @@
     <ClCompile Include="src\rendering\TileContainerRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\ChunkGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\ShaderLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -111,7 +108,7 @@
     <ClCompile Include="src\world\Region.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\generation\WorldGeneration.cpp">
+    <ClCompile Include="src\generation\WorldGenerationData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\city\City.cpp">
@@ -732,6 +729,12 @@
     <ClCompile Include="src\rendering\model\StaticModelInstanceData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\generation\WorldGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\SpatialGrid2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -780,9 +783,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\TileContainerRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\ChunkGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\ShaderLoader.h">
@@ -845,7 +845,7 @@
     <ClInclude Include="src\generation\NoiseFunction.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\generation\WorldGeneration.h">
+    <ClInclude Include="src\generation\WorldGenerationData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\editor\ImguiViews.hpp">
@@ -1725,6 +1725,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\StaticModelInstanceData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generation\WorldGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\SpatialGrid2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

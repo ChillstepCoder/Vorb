@@ -247,7 +247,7 @@ private:
     IWorld& mWorld;
 
     // Large data at the bottom
-    TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];
+    std::unique_ptr<TileContainerID[]> mTerrainTileContainers;
     std::unordered_map<LiteChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
 
 };

@@ -45,7 +45,7 @@ public:
     friend struct TileRef;
     friend struct TileHandle;
     friend class TileContainerRepository;
-    friend class ChunkGenerator;
+    friend class WorldGenerator;
     friend class CityBuilder; // ONLY FOR DEBUG GENERATION
     friend class NavThread; // TODO: Too many friends?
     friend class NavWorld; // TODO: Remove

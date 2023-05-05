@@ -7,7 +7,7 @@ constexpr f32 MAX_WORLD_GEN_HEIGHT = 900.0f;
 
 // NoiseFunction(const char* label, int octaves, f64 persistence, f64 frequency, f64v2 posOffset, f64 amplitude = 1.0, f64 heightOffset = 0.0) 
 // TIP FOR USING NOISE - Start with a very high frequency to see the shape at a zoomed out scale, then reduce frequency
-struct WorldGeneration {
+struct WorldGenerationData {
     // NoiseFunction mBaseNoise = NoiseFunction("Base", 7, 0.7, 0.001, { 0, 0 }, 3.0, 0.4);
     NoiseFunction mBaseNoise             = NoiseFunction("Base", 7, 0.7, 0.001, {0, 0}, 25.0, 0.0);
     NoiseFunction mContinentOutlineNoise = NoiseFunction("Continent Outline", 9, 0.65, 0.0001, {-2000.0, 0.0}, 1.0, 0.0);
@@ -24,13 +24,10 @@ struct WorldGeneration {
 
     // === Continent noise modifiers ===
     // Configurable
-    static constexpr f64 CONTINENT_RADIUS = 10000.0;
-    static constexpr f64 CONTINENT_OUTLINE_SCALE = SQ(20000.0);
+    f64 CONTINENT_RADIUS = 10000.0;
+    f64 CONTINENT_OUTLINE_SCALE = SQ(20000.0);
     // Constant
-    static constexpr f64 CONTINENT_RADIUS_SQ = SQ(CONTINENT_RADIUS);
-
-    f32 getHeightAtPos(const f32v2& worldPos);
+    f64 CONTINENT_RADIUS_SQ = SQ(CONTINENT_RADIUS);
 
     bool mIsDirty = false;
 };
-extern WorldGeneration sWorldGen;

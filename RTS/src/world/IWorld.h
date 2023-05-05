@@ -16,6 +16,7 @@ class PhysicsWorld;
 class StructureManager;
 class TimeOfDayManager;
 class TileContainerRepository;
+class WorldGenerator;
 
 
 // Shared world interface
@@ -24,7 +25,7 @@ class IWorld
     friend class WorldFactory;
     friend class CliWorldInterface;
 protected:
-    IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
+    IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 public:
     virtual ~IWorld();
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
@@ -56,26 +57,21 @@ public:
     std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
 
     // Accessors 
-    IHeightmapGrid& getHeightmapGrid() { return *mHeightmapGrid; }
-    const IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
-    IChunkGrid& getChunkGrid() { return *mChunkGrid; }
-    const IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
-    CityGraph& getCityGraph() { return *mCities; }
-    const CityGraph& getCityGraph() const { return *mCities; }
-    PhysicsWorld& getPhysicsWorld() { return *mPhysWorld; }
-    const PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
-    IEntityComponentSystem& getECS() { return *mEcs; }
-    const IEntityComponentSystem& getECS() const { return *mEcs; }
+    IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
+    IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
+    CityGraph& getCityGraph() const { return *mCities; }
+    PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
+    IEntityComponentSystem& getECS() const { return *mEcs; }
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
-    StructureManager& getStructureManager() { return *mStructureManager; }
-    const StructureManager& getStructureManager() const { return *mStructureManager; }
-    TimeOfDayManager& getTimeOfDayManager() { return *mTimeOfDayManager; }
-    const TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
-    TileContainerRepository& getTileContainerRepository() { return *mTileContainerRepository; }
-    const TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
-
+    StructureManager& getStructureManager() const { return *mStructureManager; }
+    TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
+    TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
+    WorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
 
     f32v2 getLoadCenter() const;
+    ui32 getWidthTiles() const { return mWidthTiles; }
+    ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
+    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_WIDTH; }
 
 protected:
     void onWorldBeginShared(const f32v2& loadCenter);
@@ -87,6 +83,7 @@ protected:
     // TODO: Is this still needed? Can we make a ThreadSafeDataContainer?
     mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
+    ui32 mWidthTiles;
 
     // Tile containers
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
@@ -102,5 +99,7 @@ protected:
     std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
     // Cities
     std::unique_ptr<CityGraph> mCities;
+    // Generation
+    std::unique_ptr<WorldGenerator> mWorldGenerator;
 
 };

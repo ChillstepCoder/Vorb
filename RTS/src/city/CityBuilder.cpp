@@ -104,7 +104,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     if (z == 0) {
                         f32v2 tileWorldPos = worldPos + i32v2(x, y);
                         // Epsilon to prevent z fighting
-                        grid.setHeightAt(tileWorldPos, meanHeight - 0.005f);
+                        grid.setHeightAtWorldPos(tileWorldPos, meanHeight - 0.005f);
                     }
 
                     tileContainer.setOwnedTile(tileIndex);

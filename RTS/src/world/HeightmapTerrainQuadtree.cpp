@@ -14,7 +14,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "generation/WorldGeneration.h"
+#include "generation/WorldGenerator.h"
 #include <Vorb/graphics/GLProgram.h>
 
 constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[TERRAIN_QUADTREE_MAX_LOD] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths
@@ -35,8 +35,9 @@ struct TerrainMeshTaskData {
 };
 
 struct TerrainMeshGenTaskData {
-    TerrainMeshGenTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : owner(owner), patchIndex(patchIndex) {}
+    TerrainMeshGenTaskData(IWorld& world, HeightmapTerrainQuadtree* owner, ui32 patchIndex) : world(world), owner(owner), patchIndex(patchIndex) {}
 
+    IWorld& world;
     TerrainMeshBuilder terrainBuilder;
     HeightmapTerrainQuadtree* owner;
     ui32 patchIndex;
@@ -44,17 +45,13 @@ struct TerrainMeshGenTaskData {
 };
 
 
-HeightmapTerrainQuadtree::HeightmapTerrainQuadtree() : FlatQuadtree(f32v2(0.0f), TERRAIN_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mTerrainLodDistanceOffset) {
+HeightmapTerrainQuadtree::HeightmapTerrainQuadtree(IWorld& world, const f32v2& worldPosition)
+    : mWorld(world), FlatQuadtree(world.getHeightmapGrid(), worldPosition, TERRAIN_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mTerrainLodDistanceOffset) {
 
 }
 
 HeightmapTerrainQuadtree::~HeightmapTerrainQuadtree() {
 
-}
-
-void HeightmapTerrainQuadtree::init(IWorld* world, const f32v2& worldPosition) {
-    mWorld = world;
-    mWorldPos = worldPosition;
 }
 
 void HeightmapTerrainQuadtree::markDirty() {
@@ -66,6 +63,7 @@ void HeightmapTerrainQuadtree::markDirty() {
 }
 
 void createTerrainAndWaterMeshFromGen(
+    IWorld& world,
     TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,
     ui32 lod,
@@ -75,12 +73,14 @@ void createTerrainAndWaterMeshFromGen(
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     assert(dims.x == dims.y);
 
+    WorldGenerator& worldGenerator = world.getWorldGenerator();
+
     // Generate heightfield
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            f32 zPos = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            f32 zPos = worldGenerator.getTerrainHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
             paddedHeightfield[y][x] = zPos;
         }
     }
@@ -126,12 +126,12 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     }
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     if (lod == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         // At highest LOD we ask the heightmap generator to handle it
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         // Sentinal IDs never mesh
-        if (id.isSentinelID()) {
+        if (heightGrid.getSpatialGrid2D().isSentinelID(id)) {
             onMeshFinished(patchIndex, false);
             return;
         }
@@ -150,12 +150,12 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         }
     }
     else {
-        TerrainMeshGenTaskData* taskData = new TerrainMeshGenTaskData(this, patchIndex);
+        TerrainMeshGenTaskData* taskData = new TerrainMeshGenTaskData(mWorld, this, patchIndex);
         // At lower LODs we have to regenerate every time
         // TODO: we actually shouldnt do this.. it ignores diffs
         // Generate mesh data on worker thread
         Services::Threadpool::ref().addTask([this, lod, taskData](ThreadPoolWorkerData*) {
-            createTerrainAndWaterMeshFromGen(taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
+            createTerrainAndWaterMeshFromGen(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
 
             // To render thread for upload
             RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
@@ -181,7 +181,7 @@ void HeightmapTerrainQuadtree::createMeshesHighestLOD(TerrainMeshTaskData* taskD
     f32v2 patchWorldPos = mWorldPos + f32v2(PATCH_POSITIONS.data[taskData->patchIndex].xy);
     ui32v2 intWorldPos(glm::round(patchWorldPos));
 
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const ui32 quadWidth = HEIGHTMAP_QUAD_SIZE;
     intWorldPos -= quadWidth; // Padding so we start on the side
     for (int y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
@@ -220,7 +220,7 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
     // TODO: if this can happen, we need to store a "has acquired" bit since right now we are using existence of a mesh to determine if we acquired
     assert(mTerrainMeshes[patchIndex] || mWaterMeshes[patchIndex]);
 
-    TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(*mWorld).getTerrainMeshManager();
+    TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(mWorld).getTerrainMeshManager();
     if (mTerrainMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
             terrainMeshManager.addTerrainMesh(mTerrainMeshes[patchIndex].get());
@@ -244,7 +244,7 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
 {
     ASSERT_GAME_THREAD();
     // Only highest LOD has reference to heightmap
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     if (QUADTREE_LOD_FROM_INDEX[patchIndex] == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         heightGrid.releasePaddedHeightDataAt(id);
@@ -258,7 +258,7 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
         IWorld& world;
     };
 
-    TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]), *mWorld);
+    TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]), mWorld);
     RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
         TerrainMeshFreeTask* taskData = static_cast<TerrainMeshFreeTask*>(vTaskData);
         TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).getTerrainMeshManager();

@@ -23,20 +23,22 @@
 
 
 Chunk::Chunk() {
+    
 }
 
 Chunk::~Chunk() {
 	dispose();
 }
 
-void Chunk::init(const ChunkID& chunkId, i32v2 worldPos) {
-	assert(mState == e_cast(ChunkState::INVALID));
-	mChunkId = chunkId;
+void Chunk::init(IWorld& world, const ChunkID& chunkId, i32v2 worldPos) {
+    mWorld = &world;
+    mChunkId = chunkId;
     mAABB.x = worldPos.x;
     mAABB.y = worldPos.y;
     mAABB.z = -2;
     mAABB.width = CHUNK_WIDTH;
     mAABB.depth = CHUNK_WIDTH;
+    // TODO: uhhh...
     mAABB.height = 4;
 }
 
@@ -61,12 +63,12 @@ void Chunk::freeData() {
 
 void Chunk::dispose() {
     mFlags = 0;
-    mState = e_cast(ChunkState::INVALID);
+    mState = ChunkState::INVALID;
     freeData();
 }
 
-void Chunk::updateMainThread() {
-    assert(mTileContainer);
+const HeightmapPatchID Chunk::getHeightmapPatchID() const {
+    return mWorld->getHeightmapGrid().getSpatialGrid2D().getIDAtWorldPos(mAABB.pos);
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
@@ -129,7 +131,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 
     // TODO: Branchless interior nodes? :thinkies:
 
-    IChunkGrid& chunkGrid = getWorld()->getChunkGrid();
+    IChunkGrid& chunkGrid = mWorld->getChunkGrid();
 
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
@@ -173,19 +175,21 @@ void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]
 }
 
 Chunk& Chunk::getLeftNeighbor() const {
-    return getWorld()->getChunkGrid().getChunk(mChunkId - 1);
+    return mWorld->getChunkGrid().getChunk(mChunkId - 1);
 }
 
 Chunk& Chunk::getTopNeighbor() const {
-    return getWorld()->getChunkGrid().getChunk(mChunkId + WorldData::WORLD_WIDTH_CHUNKS);
+    IChunkGrid& chunkGrid = mWorld->getChunkGrid();
+    return chunkGrid.getChunk(mChunkId + chunkGrid.getWidthChunks());
 }
 
 Chunk& Chunk::getRightNeighbor() const {
-    return getWorld()->getChunkGrid().getChunk(mChunkId + 1);
+    return mWorld->getChunkGrid().getChunk(mChunkId + 1);
 }
 
 Chunk& Chunk::getBottomNeighbor() const {
-    return getWorld()->getChunkGrid().getChunk(mChunkId - WorldData::WORLD_WIDTH_CHUNKS);
+    IChunkGrid& chunkGrid = mWorld->getChunkGrid();
+    return chunkGrid.getChunk(mChunkId - chunkGrid.getWidthChunks());
 }
 
 void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {
@@ -269,7 +273,7 @@ void Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_
 
 void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
     assert(mTileContainer);
-    IHeightmapGrid& heightmapGrid = getWorld()->getHeightmapGrid();
+    IHeightmapGrid& heightmapGrid = mWorld->getHeightmapGrid();
 
     constexpr ui32 DEBUG_DURATION = 100;
     const f32v2 dims = f32v2(CHUNK_WIDTH);

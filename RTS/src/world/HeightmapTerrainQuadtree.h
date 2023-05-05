@@ -25,12 +25,11 @@ public:
 class HeightmapTerrainQuadtree : public FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>
 {
 public:
-    HeightmapTerrainQuadtree();
+    HeightmapTerrainQuadtree(IWorld& world, const f32v2& worldPosition);
     ~HeightmapTerrainQuadtree();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(HeightmapTerrainQuadtree);
 
-    void init(IWorld* world, const f32v2& worldPosition);
     void markDirty();
 
 private:
@@ -43,7 +42,7 @@ private:
     void finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex);
     void freeMeshForPatch(ui32 patchIndex) override;
 
-    IWorld* mWorld = nullptr;
+    IWorld& mWorld;
     std::unique_ptr<TerrainMesh> mTerrainMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     std::unique_ptr<TerrainMesh> mWaterMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
 };

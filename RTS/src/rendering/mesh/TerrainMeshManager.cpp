@@ -9,10 +9,13 @@
 
 TerrainMeshManager::TerrainMeshManager(IWorld& world) : mWorld(world) {
     // Init terrain
-    mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
-    for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
-        f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
-        mTerrainTrees[i].init(&world, pos);
+    mWidthTerrainTrees = mWorld.getWidthChunks() / CHUNKS_PER_TERRAIN_QUADTREE;
+    const i32 WORLD_SIZE_TERRAIN_QUADTREES = SQ(mWidthTerrainTrees);
+
+    mTerrainTrees.reserve(WORLD_SIZE_TERRAIN_QUADTREES);
+    for (size_t i = 0; i < WORLD_SIZE_TERRAIN_QUADTREES; ++i) {
+        const f32v2 pos((i % mWidthTerrainTrees) * TERRAIN_QUADTREE_WIDTH, (i / mWidthTerrainTrees) * TERRAIN_QUADTREE_WIDTH);
+        mTerrainTrees.emplace_back(HeightmapTerrainQuadtree(mWorld, pos));
     }
 
     // Init events
@@ -53,7 +56,7 @@ void TerrainMeshManager::onTerrainModified(const boost::container::flat_set<i32v
     for (const i32v2& modifiedPos : modifiedPositions) {
         const i32v2 rootPosition = modifiedPos / ROOT_DIMS;
         const i32v2 leafPosition = modifiedPos / LEAF_DIMS;
-        const ui32 terrainTreeIndex = rootPosition.y * WORLD_WIDTH_TERRAIN_QUADTREES + rootPosition.x;
+        const ui32 terrainTreeIndex = rootPosition.y * mWidthTerrainTrees + rootPosition.x;
         modifiedLeafNodePositions[terrainTreeIndex].emplace_back(leafPosition);
     }
 

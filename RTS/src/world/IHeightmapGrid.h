@@ -8,7 +8,7 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/container/flat_map.hpp>
 
-#include "util/ThreadSafeDirtySet.h"
+#include "util/SpatialGrid2D.h"
 
 #include <mutex>
 
@@ -55,7 +55,7 @@ class IHeightmapGrid
 {
     friend class WorldFactory;
 public:
-    IHeightmapGrid();
+    IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();
 
     void tickShared();
@@ -68,6 +68,7 @@ public:
     // Aquire
     void requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
     void requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
+    const HeightmapPatchData* getHeightDataAtWorldPos(const i32v2& worldPos) const;
     const HeightmapPatchData* getHeightDataAt(HeightmapPatchID id) const;
     const HeightmapPatchData* tryGetHeightDataAt(HeightmapPatchID id) const;
     const HeightmapPatchData* aquireHeightData(HeightmapPatchID id);
@@ -79,11 +80,11 @@ public:
     void releasePaddedHeightDataAt(HeightmapPatchID id);
 
     // Mutators
-    void setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
-    void setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
-    void setHeightAt(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
-    void adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust);
-    void adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
+    void setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
+    void setHeightAtChunkId(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
+    void setHeightAtPatch(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
+    void adjustHeightAtChunk(ChunkID id, ui32 vertIndex, f32 adjust);
+    void adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
@@ -91,24 +92,26 @@ public:
     f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
 
     f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk);
-    static f32 computeHeightAtPoint(const f32* heightData, const f32v2& worldPos);
-    static f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos);
-    static f32 computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
-    static void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]);
-    static bool areTrianglesFlippedAtTile(const TileHandle& tileHandle);
+    f32 computeHeightAtPoint(const f32* heightData, const f32v2& worldPos) const;
+    f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos) const;
+    f32 computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos) const;
+    void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]) const;
+    bool areTrianglesFlippedAtTile(const TileHandle& tileHandle) const;
     f32 computeCenterHeightAtTile(ui32v2 worldTilePos) const;
     void copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 rowLength) const;
 
-    static f32 computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
+    f32 computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos) const;
     f32 computeMinHeightAtTile(ui32v2 worldTilePos) const;
     f32 computeMaxHeightAtTile(ui32v2 worldTilePos) const;
 
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb) const;
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const;
 
+    const SpatialGrid2D& getSpatialGrid2D() const { return mSpatialGrid2D; }
     IWorld& getWorld() const { return *mWorld; }
 
     STATIC_EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
+
 
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
@@ -120,7 +123,10 @@ private:
     static ui32v2 getHeightmapXYfromTilePos(ui32v2 worldTilePos);
     static f32v2 getHeightmapOffsetFromTilePos(ui32v2 worldTilePos);
 
-    HeightmapPatch mHeightData[WORLD_SIZE_HEIGHTMAP_PATCHES];
+    SpatialGrid2D mSpatialGrid2D;
+    std::unique_ptr<HeightmapPatch[]> mHeightData;
+    ui32 mWidthPatches;
+    ui32 mTotalPatches;
     std::vector<ui32> mActiveHeightmapPatches;
 
     std::map<ui32, std::list<std::function<void()>>> mFinishCallbacks; // Runs when generation is finished

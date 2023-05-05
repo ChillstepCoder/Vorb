@@ -145,7 +145,7 @@ bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entit
 
         IHeightmapGrid& grid = mBlueprint.world->getHeightmapGrid();
         f32v3 tileWorldPos = mBlueprint.mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
-        grid.setHeightAt(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
+        grid.setHeightAtWorldPos(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
         return true;
     }
     return false;

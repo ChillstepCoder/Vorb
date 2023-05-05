@@ -37,6 +37,7 @@ private:
     IHeightmapGridListeners mHeightmapGridListeners;
     IWorld& mWorld;
 
+    ui32 mWidthTerrainTrees = 0;
     std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
 };
 

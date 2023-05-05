@@ -282,7 +282,8 @@
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
-    <ClCompile Include="src\generation\WorldGeneration.cpp" />
+    <ClCompile Include="src\generation\WorldGenerationData.cpp" />
+    <ClCompile Include="src\generation\WorldGenerator.cpp" />
     <ClCompile Include="src\instrumentation\instrumentor.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
@@ -436,12 +437,12 @@
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\SpatialGrid2D.cpp" />
     <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
     <ClCompile Include="src\weather\CloudMeshManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
-    <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
     <ClCompile Include="src\world\host\HostWorld.cpp" />
@@ -553,7 +554,8 @@
     <ClInclude Include="src\gamethread\GameThread.h" />
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
-    <ClInclude Include="src\generation\WorldGeneration.h" />
+    <ClInclude Include="src\generation\WorldGenerationData.h" />
+    <ClInclude Include="src\generation\WorldGenerator.h" />
     <ClInclude Include="src\instrumentation\instrumentor.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\Item.h" />
@@ -755,6 +757,7 @@
     <ClInclude Include="src\util\MathDefines.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\NativeFileBrowser.h" />
+    <ClInclude Include="src\util\SpatialGrid2D.h" />
     <ClInclude Include="src\util\StringHash.h" />
     <ClInclude Include="src\util\StrToken.h" />
     <ClInclude Include="src\util\TextureUtil.h" />
@@ -769,7 +772,6 @@
     <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />
-    <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\ChunkState.h" />
     <ClInclude Include="src\world\cli\CliChunkGrid.h" />
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />

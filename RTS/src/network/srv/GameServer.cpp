@@ -234,8 +234,7 @@ void GameServer::processClientReadyJoinMessage(int clientIndex) {
 
                 // Create client entity post state replicate. Ecs will handle the entity replicate and begin message
                 // TODO: Save spawn point
-                f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-                mClientPlayerEntities[clientIndex] = ((SrvEntityComponentSystem&)mWorld.getECS()).createPlayerEntity(clientIndex, playerPos);
+                mClientPlayerEntities[clientIndex] = ((SrvEntityComponentSystem&)mWorld.getECS()).createPlayerEntity(clientIndex, WorldData::DEFAULT_PLAYER_SPAWN);
             }
             break;
         }

@@ -20,12 +20,12 @@ class IChunkGrid
 {
     friend class WorldFactory;
 public:
-    IChunkGrid(ui32 widthChunks);
+    IChunkGrid();
 
     void onWorldBegin(const f32v2& loadCenter);
     void tick(const f32v2& loadCenter);
 
-    Chunk& getChunk(ChunkID id) { return mChunks[id]; }
+    Chunk& getChunk(ChunkID id) { assert(id < mTotalChunks); return mChunks[id]; }
     const Chunk& getChunk(ChunkID id) const { return mChunks[id]; }
 
     Chunk& getChunkAtPosition(const f32v2& worldPos);
@@ -41,7 +41,8 @@ public:
     i32v2 getWorldPosXYFromChunkID(ChunkID id) const;
     i32v2 getChunkOffsetFromChunkID(ChunkID id) const;
 
-    static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
+    ui32 getWidthChunks() const { return mWidthChunks; }
+    ui32 getTotalChunks() const { return mTotalChunks; }
     const std::vector<LiteChunkID>& getLoadingChunks() const { return mLoadingChunks; }
     const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
     const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
@@ -54,6 +55,7 @@ public:
     EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
 
 private:
+    void setWorldAndAllocateChunks(IWorld& world);
     bool isChunkXYInBounds(const i32v2& xy);
 
     // Events
@@ -77,8 +79,8 @@ private:
     void onChunkReady(Chunk& chunk);
     
     // Chunk data
-    ui32 mWidthChunks;
-    ui32 mTotalChunks;
+    ui32 mWidthChunks = 0;
+    ui32 mTotalChunks = 0;
     std::unique_ptr<Chunk[]> mChunks;
     std::unique_ptr<ui8[]> mNeighborBits;
     

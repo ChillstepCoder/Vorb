@@ -4,5 +4,7 @@
 
 class SrvHeightmapGrid : public IHeightmapGrid
 {
+public:
+    SrvHeightmapGrid(ui32 worldWidthTiles) : IHeightmapGrid(worldWidthTiles) {}
 };
 

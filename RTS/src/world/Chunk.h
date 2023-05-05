@@ -60,7 +60,7 @@ class Chunk {
 	friend class IWorld;
 	friend class IWorldGrid;
 	friend class WorldEditorPanel;
-	friend class ChunkGenerator;
+	friend class WorldGenerator;
 	friend class ITileContainerMesher;
 	friend class IChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
@@ -73,12 +73,11 @@ public:
 	~Chunk();
 
     // =========== Main methods  ===========
-	void init(const ChunkID& chunkId, i32v2 worldPos);
+
+    void init(IWorld& world, const ChunkID& chunkId, i32v2 worldPos);
 	void allocateTileContainer(TileContainerRepository& tileContainerRepository);
 	void freeData();
 	void dispose();
-	// TODO: REMOVE
-	void updateMainThread();
 
 
     // =========== Accessors  ===========
@@ -87,9 +86,9 @@ public:
     const i32v3 getWorldPos3D() const { return i32v3(mAABB.pos.x, mAABB.pos.y, 0); }
     i32v2 getWorldPosCenter2D() const { return i32v2(mAABB.pos.x + HALF_CHUNK_WIDTH, mAABB.pos.y + HALF_CHUNK_WIDTH); }
     i32v3 getWorldPosCenter3D() const { return i32v3(mAABB.pos.x + HALF_CHUNK_WIDTH, mAABB.pos.y + HALF_CHUNK_WIDTH, 0); }
-	ChunkState getState() const { return (ChunkState)mState.load(); }
+	ChunkState getState() const { ASSERT_GAME_THREAD(); return mState; }
     const ChunkID& getChunkID() const { return mChunkId; }
-	const HeightmapPatchID getHeightmapPatchID() const { return HeightmapPatchID::fromWorldI32v2(mAABB.pos); }
+	const HeightmapPatchID getHeightmapPatchID() const;
     const i32AABB3& getAABB() const { return mAABB; }
 	const std::vector<StructureID>& getStructures() const { return mStructures; }
 
@@ -116,10 +115,10 @@ public:
 	ItemStack getItemStackOnGround(TileIndex pos);
 
     // =========== State  ===========
-	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
-	bool isDataReady() const { return mState == e_cast(ChunkState::READY); }
+	bool isInvalid() const { ASSERT_GAME_THREAD(); return mState == ChunkState::INVALID; }
+	bool isDataReady() const { ASSERT_GAME_THREAD(); return mState == ChunkState::READY; }
 
-	void setState(ChunkState state) { mState = e_cast(state); }
+	void setState(ChunkState state) { mState = state; }
 	
     void setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density);
     void clearGrassAt(const TileIndex index);
@@ -143,17 +142,17 @@ public:
 
 	void addStructure(Structure* structure);
 
-	IWorld* getWorld() const { return mTileContainer ? &mTileContainer->getWorld() : nullptr; }
+	IWorld& getWorld() const { return *mWorld; }
 
 private:
 
     // =========== Members ===========
 	ChunkID mChunkId;
 	i32AABB3 mAABB = i32AABB3(0);
-	// TODO: Not atomic
-    std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
+	std::atomic<ChunkState> mState = ChunkState::INVALID;
 	BitFlags<ChunkFlags> mFlags;
 
+	IWorld* mWorld = nullptr;
 	TileContainer* mTileContainer = nullptr;
     std::vector<TileGrass> mGrass; // Grass densities
     mutable std::shared_mutex mSharedGrassMutex;

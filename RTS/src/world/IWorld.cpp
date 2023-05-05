@@ -7,6 +7,7 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
+#include "generation/WorldGenerator.h"
 #include "structure/Structure.h"
 
 #include "tile/TileContainerRepository.h"
@@ -25,7 +26,7 @@
 
 #include "resources/ResourceManager.h"
 
-IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGrid(chunkGrid), mHeightmapGrid(heightmapGrid)
+IWorld::IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mWidthTiles(widthTiles), mChunkGrid(chunkGrid), mHeightmapGrid(heightmapGrid)
 {
     assert(mChunkGrid);
     assert(mHeightmapGrid);
@@ -47,6 +48,9 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
 
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
+
+    // Generation
+    mWorldGenerator = std::make_unique<WorldGenerator>(*this);
 
 }
 

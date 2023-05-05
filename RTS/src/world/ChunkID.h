@@ -80,9 +80,11 @@ protected:
     }
 };
 
-typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
+//typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
 //typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
 
+
+typedef ui32 HeightmapPatchID;
 typedef ui32 ChunkID;
 typedef ui32 LiteChunkID;
 constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;

@@ -14,12 +14,10 @@
 
 #include "options/DebugOptions.h"
 
-#include "generation/WorldGeneration.h"
+#include "generation/WorldGenerator.h"
  
 constexpr ui32 CHUNK_STRIDE_PER_CLOUD_BATCH = 8; // POWER OF TWO ONLY
 constexpr i32 CLOUD_BATCH_WIDTH = CHUNK_WIDTH * CHUNK_STRIDE_PER_CLOUD_BATCH;
-constexpr ui32 WORLD_WIDTH_CLOUD_BATCHES = WorldData::WORLD_WIDTH_CHUNKS / CHUNK_STRIDE_PER_CLOUD_BATCH;
-constexpr ui32 WORLD_SIZE_CLOUD_BATCHES = SQ(WORLD_WIDTH_CLOUD_BATCHES);
 const float CLOUD_DIAGONAL_RADIUS = (float)(sqrt(SQ(CLOUD_BATCH_WIDTH) + SQ(CLOUD_BATCH_WIDTH)) / 2.0);
 const f32 CLOUD_LOAD_RANGE = CHUNK_LOAD_RANGE * 2.0;
 const f32 CLOUD_LOAD_RANGE_SQ = SQ(CLOUD_LOAD_RANGE);
@@ -29,8 +27,7 @@ constexpr int MAX_CLOUDS_PER_BATCH = SQ(CLOUD_BATCH_WIDTH / CLOUD_GEN_STRIDE);
 static_assert(MAX_CLOUDS_PER_BATCH < UINT16_MAX);
 constexpr int CLOUD_DEBUG_DRAW_TIME = 500;
 
-
-typedef GridID<WORLD_WIDTH_CLOUD_BATCHES, CLOUD_BATCH_WIDTH> CloudID;
+typedef ui32 CloudID;
 
 constexpr ui32 MAX_MESH_RECYCLES = 32;
 constexpr int CLOUD_DIR_LEFT  = -1;
@@ -46,7 +43,7 @@ struct CloudBatchTaskData {
     ui32 index;
 };
 
-CloudMeshManager::CloudMeshManager()
+CloudMeshManager::CloudMeshManager(WorldGenerator& worldGenerator) : mWorldGenerator(worldGenerator)
 {
 
 }
@@ -56,33 +53,40 @@ CloudMeshManager::~CloudMeshManager()
 
 }
 
-void CloudMeshManager::init(const f32v2& loadCenter) {
+void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
+
+
+    mWorldWidthCloudBatches = worldWidthChunks / CHUNK_STRIDE_PER_CLOUD_BATCH;
+    const ui32 WORLD_SIZE_CLOUD_BATCHES = SQ(mWorldWidthCloudBatches);
+
+    mSpatialGrid2D.init(CLOUD_BATCH_WIDTH, mWorldWidthCloudBatches);
 
     ScopedTimer timer("Cloud init");
 
-    CloudID centerCloudID = CloudID(loadCenter);
-    f32v2 centerPos(centerCloudID.pos.x * CLOUD_BATCH_WIDTH, centerCloudID.pos.y * CLOUD_BATCH_WIDTH);
+    const CloudID centerCloudID = mSpatialGrid2D.getIDAtWorldPos(loadCenter);
+    const i32v2 centerGridPos = mSpatialGrid2D.getGridXYFromID(centerCloudID);
+    const i32v2 centerWorldPos = mSpatialGrid2D.getWorldPosXYFromID(centerCloudID);
 
     // Initial variables
-    mLastCenterPosition = i32v2(centerCloudID.pos.x, centerCloudID.pos.y);
+    mLastCenterPosition = centerGridPos;
 
     std::map<ui32 /*ycoord*/, CloudID /*leftMost*/> spawnLookup;
 
     // TODO: Optimize iteration
     // TODO: This wont generate clouds off map if we spawn at edge of world
-    for (ui32 i = 0; i < WORLD_SIZE_CLOUD_BATCHES; ++i) {
-        CloudID id(i);
-        f32v2 pos(id.getWorldPos());
-        if (glm::length2(pos - centerPos) < CLOUD_LOAD_RANGE_SQ) {
-            tryGenerateCloudBatchAt(i32v2(id.pos.x, id.pos.y));
+    for (CloudID id = 0; id < WORLD_SIZE_CLOUD_BATCHES; ++id) {
+        const i32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
+        if (glm::length2(f32v2(worldPos - centerWorldPos)) < CLOUD_LOAD_RANGE_SQ) {
+            const i32v2 gridPos = mSpatialGrid2D.getGridXYFromID(id);
+            tryGenerateCloudBatchAt(gridPos);
             // See if this is a spawn position
-            auto&& it = spawnLookup.find(id.pos.y);
+            auto&& it = spawnLookup.find(gridPos.y);
             if (it == spawnLookup.end()) {
-                spawnLookup[id.pos.y] = id;
+                spawnLookup[gridPos.y] = id;
             }
             else {
                 // We are leftmost
-                if (id.pos.x < it->second.pos.x) {
+                if (gridPos.x < mSpatialGrid2D.getGridXYFromID(it->second).x) {
                     it->second = id;
                 }
             }
@@ -92,7 +96,8 @@ void CloudMeshManager::init(const f32v2& loadCenter) {
     // Build spawn positions
     mCloudSpawnOffsets.reserve(spawnLookup.size());
     for (auto&& id : spawnLookup) {
-        const i32v2 offset(id.second.pos.x - centerCloudID.pos.x, id.second.pos.y - centerCloudID.pos.y);
+        const i32v2 spawnPos = mSpatialGrid2D.getGridXYFromID(id.second);
+        const i32v2 offset(spawnPos.x - centerGridPos.x, spawnPos.y - centerGridPos.y);
         mCloudSpawnOffsets.push_back(offset);
     }
     // Debug draw
@@ -210,10 +215,12 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
     CloudBatchTaskData* data = new CloudBatchTaskData{ {}, this, &newBatch, index };
 
     Services::Threadpool::ref().addTask([size, genPos, this, cloudMaterialId, data](ThreadPoolWorkerData*) {
+        const NoiseFunction& cloudNoiseFunction = mWorldGenerator.getGenerationData().mCloudsNoise;
+        const NoiseFunction& cloudHeightFunction = mWorldGenerator.getGenerationData().mCloudHeightNoise;
         for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {
             for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += CLOUD_GEN_STRIDE) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
-                const f32 n = sWorldGen.mCloudsNoise.compute((f32)trueGenPos.x, (f32)trueGenPos.y);
+                const f32 n = cloudNoiseFunction.compute((f32)trueGenPos.x, (f32)trueGenPos.y);
                 if (n > 0.3f) {
                     constexpr f32 RAND_OFFSET_FACTOR = 8.0f;
                     constexpr f32 HEIGHT_OFFSET_FACTOR = 8.0f;
@@ -229,7 +236,7 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                         newSize += 30.0f;
                     }
                     newSize *= 1.3f;// TALIA SIZE TESTING
-                    const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute((f32)trueGenPos.x, (f32)trueGenPos.y) * 50.0f;
+                    const f32 heightOffset = cloudHeightFunction.compute((f32)trueGenPos.x, (f32)trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     // TODO: Fix clouds
                     data->meshBuilder.addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudMaterialId, true /*randFlip*/);

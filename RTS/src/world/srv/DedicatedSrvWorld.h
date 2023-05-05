@@ -6,7 +6,7 @@
 class DedicatedSrvWorld : public IWorld, public SrvWorldInterface
 {
 public:
-    DedicatedSrvWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
+    DedicatedSrvWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid) {}
 
     void onWorldBegin(const f32v2& loadCenter) override;
 

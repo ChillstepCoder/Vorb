@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "ChunkGenerator.h"
+#include "WorldGenerator.h"
 
-#include "Chunk.h"
+#include "world/Chunk.h"
 #include "math/Noise.h"
 #include "math/Random.h"
 
@@ -12,25 +12,18 @@
 #include "resources/TileRepository.h"
 
 #include "generation/NoiseFunction.hpp"
-#include "generation/WorldGeneration.h"
+#include "generation/WorldGenerationData.h"
 
-// RESOURCES:
-// Domain warping https://iquilezles.org/articles/warp/
-// Voronoi biome placement https://www.youtube.com/watch?v=g7j3jmHj2Rg
 
-// Region LOD data
-#ifdef DEBUG
-constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH;
-#else
-constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH * 4;
-#endif
-constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUTION;
-
-void TryGenerateLargeObjectAtPoint(const f32v2& worldPos, ui32 index, f32 minHeights[CHUNK_SIZE], std::vector<Tile>& tiles) {
-    assert(false);
+WorldGenerator::WorldGenerator(IWorld& world) : mWorld(world) {
+    mWorldCenter = f32v2(mWorld.getWidthTiles() * 0.5f);
 }
 
-Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass) {
+WorldGenerator::~WorldGenerator() {
+
+}
+
+Tile WorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass /*= nullptr*/) {
     assert(grass);
     // TODO: This seems wrong
     static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
@@ -44,8 +37,8 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, TileGr
 
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     f32v2 offsetToCenter(
-        worldPos.x - WorldData::WORLD_CENTER.x,
-        worldPos.y - WorldData::WORLD_CENTER.y
+        worldPos.x - mWorldCenter.x,
+        worldPos.y - mWorldCenter.y
     );
 
     if (height > 0.0f) {
@@ -53,16 +46,16 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, TileGr
         if (height < MAX_GRASS_HEIGHT) {
             //f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
 
-            constexpr f32 GRASS_SCALE = 2.0f; 
+            constexpr f32 GRASS_SCALE = 2.0f;
             constexpr f32 GRASS_OFFSET = 0.45f;
-            const f32 grassNoise = sWorldGen.mGrassNoise.compute(worldPos.x, worldPos.y);
+            const f32 grassNoise = mGenerationData.mGrassNoise.compute(worldPos.x, worldPos.y);
             const ui8 density = (ui8)glm::clamp(glm::round((grassNoise * GRASS_SCALE + GRASS_OFFSET) * 255.0f), 0.0f, 255.0f);
             grass->grassIDs[0] = defaultGrass;
             grass->densities[0] = density;
         }
         if (height < MAX_TREE_HEIGHT) {
             f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.01f, 1.0f);
-            f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
+            f32 treeNoise = mGenerationData.mForestNoise.compute(worldPos.x, worldPos.y);
             constexpr f32 TREE_DENSITY = 0.1f;
             constexpr f32 BUSH_DENSITY = 0.015f;
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
@@ -133,11 +126,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, TileGr
     return tile;
 }
 
-// Pass 1 - Height
-// Pass 2 - Large Objects (Trees, boulders) 
-// Pass 3 - Small Objects
-void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
-
+void WorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
     PROFILE_FUNCTION();
 
     // Allocate tiles if needed
@@ -149,7 +138,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = chunk.getWorld()->getHeightmapGrid().computeCenterHeightAtTile(heightData, chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
+        centerHeights[i] = chunk.getWorld().getHeightmapGrid().computeCenterHeightAtTile(heightData, chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
     }
 
     // Large objects
@@ -168,7 +157,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
         const f32 height = centerHeights[y * CHUNK_WIDTH + x];
         TileGrass grass;
-        Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
+        Tile tile = generateTileAtPos(tilePosWorld, height, &grass);
         const f32 baseZPos = tile.getGroundZOffset();
         if (baseZPos + 1.0f > maxHeight) {
             maxHeight = baseZPos + 1.0f;
@@ -207,4 +196,37 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
     // TODO: uhhhh?
     // TODO: use heightData.bounding sphere?
     chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
+}
+
+f32 WorldGenerator::getTerrainHeightAtPos(const f32v2& worldPos) {
+    // Base height
+    f64 height = mGenerationData.mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+
+    f32v2 offsetToCenter(
+        worldPos.x - mWorldCenter.x,
+        worldPos.y - mWorldCenter.y
+    );
+
+    //  TODO: Precompute and interpolate, can cubic interpolate and others
+    f64 distanceFromCenter2 = glm::length2(offsetToCenter);
+
+    // Preturb the outline via noise
+    distanceFromCenter2 += mGenerationData.CONTINENT_OUTLINE_SCALE * mGenerationData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
+
+    // Outline check
+    if (distanceFromCenter2 > mGenerationData.CONTINENT_RADIUS_SQ) {
+        // Ocean
+        height -= (distanceFromCenter2 - mGenerationData.CONTINENT_RADIUS_SQ) * 0.0000001;
+    }
+    else {
+        // Continent internals
+        f64 lerp = (mGenerationData.CONTINENT_RADIUS_SQ - distanceFromCenter2) * 0.00000001;
+        // Mountains
+        f64 mountainDist = mGenerationData.mMountainsDistNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+        if (mountainDist > 0.0) {
+            f64 mountain = mGenerationData.mMountainsNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+            height += lerp * mountain * glm::min(mountainDist, 1.0);
+        }
+    }
+    return glm::clamp((f32)height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
 }

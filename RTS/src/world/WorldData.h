@@ -3,27 +3,25 @@
 // Global static world-specific data
 namespace WorldData {
 
+    constexpr ui32 DEFAULT_WORLD_WIDTH_TILES = CHUNK_WIDTH * 256;
+    constexpr ui32 DEFAULT_WORLD_SIZE_TILES = SQ(DEFAULT_WORLD_WIDTH_TILES);
+
+    constexpr ui32 DEFAULT_WORLD_WIDTH_CHUNKS = DEFAULT_WORLD_WIDTH_TILES / CHUNK_WIDTH;
+
     constexpr ui32 REGION_WIDTH_CHUNKS = 16;
-    constexpr ui32 REGION_SIZE_CHUNKS = SQ(REGION_WIDTH_CHUNKS);
-
-    constexpr ui32 WORLD_WIDTH_REGIONS = 16;
-    constexpr ui32 WORLD_SIZE_REGIONS = SQ(WORLD_WIDTH_REGIONS);
-
-    constexpr ui32 WORLD_WIDTH_CHUNKS = WORLD_WIDTH_REGIONS * REGION_WIDTH_CHUNKS;
-    constexpr ui32 WORLD_SIZE_CHUNKS = SQ(WORLD_WIDTH_CHUNKS);
-
-    constexpr ui32 WORLD_WIDTH_TILES = WORLD_WIDTH_CHUNKS * CHUNK_WIDTH;
-    constexpr ui32 WORLD_SIZE_TILES = SQ(WORLD_WIDTH_TILES);
-
     constexpr ui32 REGION_WIDTH_TILES = REGION_WIDTH_CHUNKS * CHUNK_WIDTH;
     constexpr ui32 HALF_REGION_WIDTH_TILES = REGION_WIDTH_TILES / 2;
     static const f32 REGION_DIAGONAL_RADIUS = sqrtf(SQ(HALF_REGION_WIDTH_TILES) + SQ(HALF_REGION_WIDTH_TILES));
+    constexpr ui32 REGION_SIZE_CHUNKS = SQ(REGION_WIDTH_CHUNKS);
+
+    constexpr ui32 DEFAULT_WORLD_WIDTH_REGIONS = DEFAULT_WORLD_WIDTH_CHUNKS / REGION_WIDTH_CHUNKS;
+    constexpr ui32 DEFAULT_WORLD_SIZE_REGIONS = SQ(DEFAULT_WORLD_WIDTH_REGIONS);
 
     const i32v2 WORLD_ORIGIN(0);
-    const f32v2 WORLD_CENTER((WORLD_WIDTH_CHUNKS* CHUNK_WIDTH) / 2.0f);
-    const f32v3 DEFAULT_PLAYER_SPAWN(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
+    const f32v2 DEFAULT_WORLD_CENTER((DEFAULT_WORLD_WIDTH_CHUNKS* CHUNK_WIDTH) / 2.0f);
+    const f32v3 DEFAULT_PLAYER_SPAWN(WorldData::DEFAULT_WORLD_CENTER.x, WorldData::DEFAULT_WORLD_CENTER.y, 20.0f);
 }
 
 
-
-static_assert(WorldData::WORLD_WIDTH_TILES < UINT16_MAX - 1, "World assumes that xy coordinates can fit inside a ui16v2, going higher also results in integer overflow in WORLD_SIZE_TILES");
+constexpr ui32 MAX_WORLD_WIDTH_TILES = UINT16_MAX - 1;
+static_assert(WorldData::DEFAULT_WORLD_WIDTH_TILES < MAX_WORLD_WIDTH_TILES, "World assumes that xy coordinates can fit inside a ui16v2, going higher also results in integer overflow in WORLD_SIZE_TILES");

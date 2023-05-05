@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "DebugTweakerPanel.h"
 
-#include "generation/WorldGeneration.h"
+#include "generation/WorldGenerationData.h"
 #include "editor/ImguiViews.hpp"
 
 #include "debugging/VisualLogger.h"
@@ -158,13 +158,13 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
         ImGui::Separator();
         ImGui::NewLine();
         ImGui::BeginChild("Terrain Funcs", ImVec2(0.0f, 0.0f));
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise, ID);
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsNoise, ID);
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsDistNoise, ID);
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mContinentOutlineNoise, ID);
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mHumidityNoise, ID);
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise, ID);
-        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);
+        /* sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise, ID);
+         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsNoise, ID);
+         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsDistNoise, ID);
+         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mContinentOutlineNoise, ID);
+         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mHumidityNoise, ID);
+         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise, ID);
+         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);*/
         ImGui::EndChild();
         ImGui::PopID();
         ImGui::Separator();
