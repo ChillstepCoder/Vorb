@@ -107,7 +107,7 @@ void BiomeEditorViewportPanel::renderMesh()
 
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
-    mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor, WorldData::DEFAULT_WORLD_WIDTH_TILES);
+    mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES);
 
     GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
         IWorld* editorWorld = static_cast<IWorld*>(vWorld);

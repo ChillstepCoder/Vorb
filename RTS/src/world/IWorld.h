@@ -68,6 +68,8 @@ public:
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     WorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
 
+    f32v3 getDefaultSpawn() const { return f32v3(mWidthTiles * 0.5f, mWidthTiles * 0.5f, 20.0f); }
+    f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
     f32v2 getLoadCenter() const;
     ui32 getWidthTiles() const { return mWidthTiles; }
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }

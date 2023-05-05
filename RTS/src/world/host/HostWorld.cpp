@@ -73,7 +73,7 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginClient(*this);
 
     // TODO: Move
-    mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
+    mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), StrToken("player"), true));
 }
 
 void HostWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {

@@ -9,13 +9,15 @@
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 
+constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
+
 std::unique_ptr<IWorld> WorldFactory::makeWorld(WorldNetMode type, ui32 worldWidthTiles) {
     assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
 
-    // Clamp world width to multiple of HEIGHTMAP_WIDTH
-    worldWidthTiles = (worldWidthTiles / HEIGHTMAP_WIDTH) * HEIGHTMAP_WIDTH;
-    if (worldWidthTiles == 0) {
-        worldWidthTiles = HEIGHTMAP_WIDTH;
+    // Clamp world width to multiple of MIN_WORLD_WIDTH_TILES
+    worldWidthTiles = (worldWidthTiles / MIN_WORLD_WIDTH_TILES) * MIN_WORLD_WIDTH_TILES;
+    if (worldWidthTiles < MIN_WORLD_WIDTH_TILES) {
+        worldWidthTiles = MIN_WORLD_WIDTH_TILES;
     }
 
     switch (type) {

@@ -13,7 +13,7 @@ public:
     ui32 getWestID(ui32 id) const { return id - 1; }
     ui32 getEastID(ui32 id) const { return id + 1; }
     ui32 getNorthID(ui32 id) const { return id + mGridWidthCells; }
-    bool isIdValid(ui32 id) const { return id < mGridWidthCells; }
+    bool isIdValid(ui32 id) const { return id < SQ(mGridWidthCells); }
     bool isSentinelID(ui32 id) const;
     i32v2 getGridXYFromID(ui32 id) const;
 

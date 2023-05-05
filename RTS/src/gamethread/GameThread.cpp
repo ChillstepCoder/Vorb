@@ -208,7 +208,7 @@ void GameThread::initWorld()
 
     // Begin world
     // TODO: Better pos?
-    mWorld.onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
+    mWorld.onWorldBegin(mWorld.getWorldCenter());
 
     // Start world rendering
     //mRenderContext->onWorldBegin();
