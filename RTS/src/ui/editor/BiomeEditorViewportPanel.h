@@ -18,9 +18,7 @@ public:
     void onExit() override;
 
 protected:
-	const MaterialShader* getShader() override;
-	void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) override;
-	void renderMesh() override;
+	void renderCenterPanel() override;
 
 	VGTexture getFinalOutputTexture() override;
 

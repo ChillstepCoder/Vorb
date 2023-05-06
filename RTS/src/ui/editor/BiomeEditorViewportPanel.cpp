@@ -104,16 +104,7 @@ void BiomeEditorViewportPanel::onExit() {
     GameThreadTasks::getInstance().setActiveEditorWorld(nullptr);
 }
 
-const MaterialShader* BiomeEditorViewportPanel::getShader()
-{
-    return nullptr;
-}
-
-void BiomeEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
-    
-}
-
-void BiomeEditorViewportPanel::renderMesh() {
+void BiomeEditorViewportPanel::renderCenterPanel() {
     const RenderContext& renderContext = RenderContext::getInstance();
     mActiveGBuffer = &renderContext.getActiveGBuffer();
     mActiveGBuffer->use();
@@ -123,10 +114,19 @@ void BiomeEditorViewportPanel::renderMesh() {
 
     vg::DepthState::NONE.set();
 
-    renderContext.getWorldRenderer().renderDebug();
+    renderContext.renderPassWorldDebug(*renderContext.getCamera());
     if (mRenderGrid) {
         renderGrid(renderContext.getCamera()->getVPMatrix());
     }
+
+    vg::GBuffer::unuse();
+
+    VGTexture displayTexture = sGBuffers[0]->getAlbedoTexture();
+    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+    const ImVec2 uv0(0, 1);
+    const ImVec2 uv1(1, 0);
+    const ImVec2 dims(imageDims.x, imageDims.y);
+    ImGui::Image((ImTextureID)displayTexture, dims, uv0, uv1);
 }
 
 VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()

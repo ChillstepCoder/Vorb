@@ -85,17 +85,20 @@ public:
 
     f32 getCurrentFrameAlpha() const { return mCurrentFrameAlpha; }
     f32 getCurrentFrameElapsedSec() const { return mCurrentFrameElapsedSec; }
+
+    // Callable from world renderer
+    void renderPassWorldDebug(const Camera3D& camera) const;
 private:
     void updateRenderThreadProcs();
 
     // Render passes
-    void renderPassDebug(const Camera3D& camera, const RenderState& renderState);
     void renderPassUI(const Camera3D& camera, const RenderState& renderState);
 
     static RenderContext* sInstance;
     
     // Data
     GlobalRenderData mRenderData;
+    const RenderState* mCurrentRenderState = nullptr;
     ui32v2 mScreenResolution;
     ui32v2 mCurrentFramebufferDims;
     const Camera3D* mCamera = nullptr;

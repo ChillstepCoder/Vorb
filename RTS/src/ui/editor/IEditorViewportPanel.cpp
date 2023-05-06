@@ -69,8 +69,6 @@ void IEditorViewportPanel::renderCenterPanel() {
         }
     }
 
-    
-
     VGTexture displayTexture = 0;
     const MaterialShader* shader = getShader();
     if (shader) {

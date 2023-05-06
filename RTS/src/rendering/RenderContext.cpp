@@ -326,6 +326,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     if (!mActiveWorld) {
         return;
     }
+    mCurrentRenderState = &renderState;
 
     // Update camera
     f32v3 cameraPos = renderState.getCameraOwningEntityPos();
@@ -366,10 +367,9 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // World
     if (!UIContext::getInstance().shouldPauseGameRendering()) {
         mWorldRenderer->renderWorld(mCamera, mRenderData, mActiveGBuffer, frameAlpha, elapsedSec, nullptr/*targetGBuffer*/);
+        // World Debug rendering
+        renderPassWorldDebug(*mCamera);
     }
-
-    // Debug rendering
-    renderPassDebug(*mCamera, renderState);
 
     // UI
     renderPassUI(camera, renderState);
@@ -434,7 +434,7 @@ void RenderContext::updateRenderThreadProcs() {
     }
 }
 
-void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& renderState) {
+void RenderContext::renderPassWorldDebug(const Camera3D& camera) const {
     PROFILE_FUNCTION();
     mWorldRenderer->renderDebug();
 

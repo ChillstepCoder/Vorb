@@ -40,12 +40,12 @@ public:
     f32v3 getCameraDirection() const;
 
 protected:
-    void renderCenterPanel();
+    virtual void renderCenterPanel();
 
     // Virtual API
-    virtual const MaterialShader* getShader() = 0;
-    virtual void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) = 0;
-    virtual void renderMesh() = 0;
+    virtual const MaterialShader* getShader() { return nullptr; };
+    virtual void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {};
+    virtual void renderMesh() {};
 
     virtual VGTexture getFinalOutputTexture();
     void updateAndRenderSharedControls();
