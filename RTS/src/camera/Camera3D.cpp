@@ -26,6 +26,7 @@ void Camera3D::offsetPosition(const f32v3& offset) {
     mViewChanged = true;
 }
 
+// TODO: Update should take delta time and interpolate it
 void Camera3D::update() {
 
     bool updateFrustum = false;

@@ -51,7 +51,7 @@ bool MaterialEditorViewportPanel::updateAndRender()
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    renderGrid();
+    renderGrid(camera->getViewProjectionMatrix());
     renderCenterPanel();
 
 

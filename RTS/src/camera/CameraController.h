@@ -39,11 +39,15 @@ public:
     Camera3D& getOwnedCamera() { return mCamera; }
     const Camera3D& getOwnedCamera() const { return mCamera; }
     void setCameraMode(CameraMode cameraMode);
+
+    void setCameraDirection(const f32v3& dir);
+    void setEditorMode(bool editorMode) { mEditorMode = editorMode; }
 private:
     // Mode updates
     void updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos);
     void updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime);
     void updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEntityPos);
+    void updateCameraEditorMode(f32 frameAlpha, const f32v3& ownerEntityPos);
     void updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& ownerEntityPos);
 
     // Delegates
@@ -63,6 +67,7 @@ private:
     vui::GameWindow& mWindow;
     bool mWasMouseHidden = false;
     bool mIsMouseHidden = false;
+    bool mEditorMode = false;
 
     Cartesian mCameraCartesianDirection = Cartesian::NORTH;
     Tweener<f32v3> mCameraPositionTweener = Tweener<f32v3>(f32v3(0.0f));

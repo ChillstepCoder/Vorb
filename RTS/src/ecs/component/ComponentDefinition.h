@@ -19,6 +19,7 @@
 #include "ecs/component/TimedTileInteractComponent.h"
 #include "ecs/component/InventoryComponent.h"
 #include "ecs/component/SkillsComponent.h"
+#include "ecs/component/CameraAttachComponent.h"
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"

@@ -36,23 +36,29 @@ void CameraController::update(f32 deltaTime, f32 frameAlpha, const f32v3& follow
         mCamera.setFieldOfView(sDebugOptions.mFoV);
     }
 
-    switch (mCameraMode) {
-        case CameraMode::CARTESIAN:
-            updateCameraCartesianMode(frameAlpha, followEntityPos);
-            break;
-        case CameraMode::MMO:
-            updateCameraMMOMode(frameAlpha, followEntityPos);
-            break;
-        case CameraMode::MOUSELOCK:
-            break;
-        case CameraMode::FREE_LOOK:
-            updateCameraFreeLookMode(frameAlpha, deltaTime);
-            break;
-        case CameraMode::FIRST_PERSON:
-            updateCameraFirstPersonMode(frameAlpha, followEntityPos);
-            break;
-        default:
-            break;
+    // Editor mode is an override
+    if (mEditorMode) {
+        updateCameraEditorMode(frameAlpha, followEntityPos);
+    }
+    else {
+        switch (mCameraMode) {
+            case CameraMode::CARTESIAN:
+                updateCameraCartesianMode(frameAlpha, followEntityPos);
+                break;
+            case CameraMode::MMO:
+                updateCameraMMOMode(frameAlpha, followEntityPos);
+                break;
+            case CameraMode::MOUSELOCK:
+                break;
+            case CameraMode::FREE_LOOK:
+                updateCameraFreeLookMode(frameAlpha, deltaTime);
+                break;
+            case CameraMode::FIRST_PERSON:
+                updateCameraFirstPersonMode(frameAlpha, followEntityPos);
+                break;
+            default:
+                break;
+        }
     }
     static_assert(e_cast(CameraMode::COUNT) == 6, "Add new mode functionality");
 
@@ -100,6 +106,10 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
     }
     static_assert(e_cast(CameraMode::COUNT) == 6, "Update any input register");
 
+}
+
+void CameraController::setCameraDirection(const f32v3& dir) {
+    mCameraDirectionTweener.mTarget = dir;
 }
 
 void CameraController::updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos) {
@@ -175,19 +185,19 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEnt
     const f32v3 camPos = followTargetPos - lookAtOffset;
 
     // Collision raycast
-    PhysHitResult result;
+    //PhysHitResult result;
     // TODO: We used to use tryPick here but it causes contention with the physics system and jitters
     // TODO: Transparent render all objects?
     //result = sWorld->getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
     // DebugRenderer::drawWireQuad(followTargetPos, f32v2(0.2f), COLOR_WHITE);
-    if (result.didHit()) {
-        mCamera.setPosition(result.mPosition);
-        mCamera.lookAt(followTargetPos);
-    }
-    else {
+    //if (result.didHit()) {
+    //    mCamera.setPosition(result.mPosition);
+    //    mCamera.lookAt(followTargetPos);
+    //}
+    //else {
         mCamera.setPosition(camPos);
         mCamera.lookAt(followTargetPos);
-    }
+    //}
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
         mIsMouseHidden = false;
@@ -207,6 +217,19 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEnt
   /*  const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
     const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
     mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);*/
+}
+
+// TODO: Use?
+void CameraController::updateCameraEditorMode(f32 frameAlpha, const f32v3& ownerEntityPos)
+{
+    if (mIsMouseHidden) {
+        mIsMouseHidden = false;
+        mWindow.setRelativeMouseMode(false);
+        mWasMouseHidden = mIsMouseHidden;
+    }
+
+    mCamera.setPosition(ownerEntityPos);
+    mCamera.lookAt(ownerEntityPos + mCameraDirectionTweener.mTarget);
 }
 
 void CameraController::updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& ownerEntityPos) {

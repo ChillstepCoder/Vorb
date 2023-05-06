@@ -26,6 +26,7 @@ public:
     void renderEditorBrushDecals(const Camera3D& camera);
 
     bool hasActiveCenterPanel() const { return mActiveCenterPanel != nullptr; }
+    IEditorViewportPanel* getActiveCenterPanel() const { return mActiveCenterPanel; }
 
 private:
     void openModelForEdit(ModelDef& model);

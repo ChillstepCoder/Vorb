@@ -25,6 +25,7 @@ public:
     PlayerControlSystem mPlayerControlSystem;
     TimedTileInteractSystem mTimedTileInteractSystem;
     PhysicsSystem mPhysicsSystem;
+    CameraAttachSystem mCameraAttachSystem;
 
 	// Classes with World access
 	friend class PhysicsComponent;

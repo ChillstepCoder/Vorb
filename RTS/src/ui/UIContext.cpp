@@ -8,6 +8,7 @@
 
 #include "world/IWorld.h"
 #include "ui/editor/EditorRoot.h"
+#include "ui/editor/IEditorViewportPanel.h"
 
 #include "screens/ScreenState.h"
 
@@ -66,6 +67,22 @@ void UIContext::activateTileInspectionPanel(const f32v2& screenPos, const TileHa
 
 void UIContext::closeTileInspectionPanel() {
     mTileInspectionPanel.reset();
+}
+
+f32v3 UIContext::getEditorCameraPosition() {
+    IEditorViewportPanel* centerPanel = mEditorRoot->getActiveCenterPanel();
+    if (centerPanel) {
+        return centerPanel->getCameraPosition();
+    }
+    return f32v3(0);
+}
+
+f32v3 UIContext::getEditorCameraDirection() {
+    IEditorViewportPanel* centerPanel = mEditorRoot->getActiveCenterPanel();
+    if (centerPanel) {
+        return centerPanel->getCameraDirection();
+    }
+    return f32v3(1.0f, 0.0f, 0.0f);
 }
 
 void UIContext::toggleMainMenu() {

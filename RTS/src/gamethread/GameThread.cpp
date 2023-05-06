@@ -175,12 +175,20 @@ void GameThread::updateProcs()
 {
     PROFILE_FUNCTION();
     constexpr ui32 BULK_DEQUEUE_SIZE = 16;
+    // NOTE: Due to two separate queues, if one queue  is very full, then they may occur out of order!
     std::pair<GameFunction, void*> procs[BULK_DEQUEUE_SIZE];
+    std::pair<GameFunctionWithCapture, void*> procsCapture[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;
     // TODO: Use optik for profiling
+
     if (const size_t count = GameThreadTasks::getInstance().mGameThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             procs[i].first(*this, procs[i].second);
+        }
+    }
+    if (const size_t count = GameThreadTasks::getInstance().mGameThreadFuncProcs.try_dequeue_bulk(procsCapture, BULK_DEQUEUE_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            procsCapture[i].first(*this, procs[i].second);
         }
     }
     if (timer.stop() > 20.0f) {

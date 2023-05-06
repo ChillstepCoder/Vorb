@@ -69,13 +69,15 @@ void IEditorViewportPanel::renderCenterPanel() {
         }
     }
 
-    if (mRenderGrid) {
-        renderGrid();
-    }
+    
 
     VGTexture displayTexture = 0;
     const MaterialShader* shader = getShader();
     if (shader) {
+        if (mRenderGrid) {
+            renderGrid(camera->getViewProjectionMatrix());
+        }
+
         ui32 textureUnit;
         MaterialRenderer::bindMaterialForRender(*shader, &textureUnit);
         uploadShaderUniforms(shader, textureUnit);
@@ -101,6 +103,10 @@ void IEditorViewportPanel::renderCenterPanel() {
                 postProcessBlendTest();
             }
         }
+    }
+    else {
+        // If no shader, simpy renderMesh as we are doing world rendering or no rendering
+        renderMesh();
     }
     displayTexture = getFinalOutputTexture();
     vg::GBuffer::unuse();
@@ -305,7 +311,7 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
     checkGlError("IEditorViewportPanel::initGBuffer");
 }
 
-void IEditorViewportPanel::renderGrid() {
+void IEditorViewportPanel::renderGrid(const f32m4& VP) {
     vg::DepthState::NONE.set();
     vg::sBlendStates.ALPHA.set();
 
@@ -313,13 +319,22 @@ void IEditorViewportPanel::renderGrid() {
     const MaterialShader* gridMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("grid");
     VGUniform unVP = gridMaterial->getUniform("unVP");
     MaterialRenderer::bindMaterialForRender(*gridMaterial);
-    glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+    glUniformMatrix4fv(unVP, 1, false, &(VP[0][0]));
 
     glBindVertexArray(mGridVao);
     glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
 
     vg::DepthState::restorePrevious();
     vg::BlendState::restorePrevious();
+}
+
+f32v3 IEditorViewportPanel::getCameraPosition() const {
+    assert(camera);
+    return camera->getPosition();
+}
+
+f32v3 IEditorViewportPanel::getCameraDirection() const {
+    return camera->getDirection();
 }
 
 void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {

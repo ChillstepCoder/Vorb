@@ -36,6 +36,9 @@ public:
     virtual void onEnter() {};
     virtual void onExit() {};
 
+    f32v3 getCameraPosition() const;
+    f32v3 getCameraDirection() const;
+
 protected:
     void renderCenterPanel();
 
@@ -44,12 +47,12 @@ protected:
     virtual void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) = 0;
     virtual void renderMesh() = 0;
 
-    VGTexture getFinalOutputTexture();
+    virtual VGTexture getFinalOutputTexture();
     void updateAndRenderSharedControls();
     void updateAndRenderTweakers();
     void updateCamera(f32 aspectRatio);
     void initGBuffers(ui32v2 imageDims);
-    void renderGrid();
+    void renderGrid(const f32m4& VP);
 private:
     void uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit);
     void renderPBRArray(const MaterialShader* shader);

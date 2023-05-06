@@ -561,6 +561,11 @@ void GameplayScreen::initInputs()
     vui::InputDispatcher::mouse.registerMouseListeners(mMouseListeners);
 
     vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& event) {
+        // Wait for initialization to prevent crash from input
+        // TODO: Move this higher? We could still crash in another listener...
+        if (!GameThreadTasks::exists()) {
+            return;
+        }
         // View toggle
         if (event.keyCode == VKEY_B) {
             sDebugOptions.mWireframe = !sDebugOptions.mWireframe;

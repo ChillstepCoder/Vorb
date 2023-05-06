@@ -270,7 +270,7 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
     // Update thread msg queue
     updateRenderThreadProcs();
 
-    mWorldRenderer->onBeginFrame(renderState, camera, playerPos);
+    mWorldRenderer->onBeginFrame(renderState, playerPos);
 
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
@@ -318,6 +318,8 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
     PROFILE_FUNCTION();
+    mCurrentFrameAlpha = frameAlpha;
+    mCurrentFrameElapsedSec = elapsedSec;
 
     const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
     mActiveWorld = renderState.getWorld();
@@ -326,11 +328,19 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Update camera
-    const f32v3& playerPos = renderState.getCameraOwningEntityPos();
-    cameraController.update(1.0f /*TODO DELTATIME*/, frameAlpha, playerPos);
+    f32v3 cameraPos = renderState.getCameraOwningEntityPos();
+    if (!renderState.isCameraOwned()) {
+        cameraPos = UIContext::getInstance().getEditorCameraPosition();
+        cameraController.setEditorMode(true);
+        cameraController.setCameraDirection(UIContext::getInstance().getEditorCameraDirection());
+    }
+    else {
+        cameraController.setEditorMode(false);
+    }
+    cameraController.update(1.0f /*TODO DELTATIME*/, frameAlpha, cameraPos);
     const Camera3D& camera = cameraController.getOwnedCamera();
 
-    beginFrame(&renderState, &camera, playerPos);
+    beginFrame(&renderState, &camera, cameraPos);
     checkGlError("RenderContext::Begin Frame");
     
     mActiveGBuffer = mGBuffers[mActiveGBufferIndex].get();
@@ -354,7 +364,9 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // World
-    mWorldRenderer->renderWorld(mRenderData, mActiveGBuffer, frameAlpha, elapsedSec);
+    if (!UIContext::getInstance().shouldPauseGameRendering()) {
+        mWorldRenderer->renderWorld(mCamera, mRenderData, mActiveGBuffer, frameAlpha, elapsedSec, nullptr/*targetGBuffer*/);
+    }
 
     // Debug rendering
     renderPassDebug(*mCamera, renderState);

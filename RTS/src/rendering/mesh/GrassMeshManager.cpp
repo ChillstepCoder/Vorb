@@ -59,7 +59,7 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
     auto&& it = mChunkGrassQuadtrees.find(&chunk);
     if (it == mChunkGrassQuadtrees.end()) {
         mChunkGrassQuadtrees[&chunk] = nullptr;
-         // Const cast ~ get fucked
+        // Const cast ~ get fucked
         Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
         TileContainer* container = chunkNonConst.getTileContainer();
         mEditEventHandles[container->getId()] = container->addEditTilesListener([this](const TileContainerEvent& evnt) {
@@ -83,7 +83,10 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
 
 void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     ASSERT_GAME_THREAD();
-    assert(chunk.getTileContainer());
+    // If we never existed, return
+    if (!chunk.getTileContainer()) {
+        return;
+    }
     auto&& it = mEditEventHandles.find(chunk.getTileContainer()->getId());
     if (it != mEditEventHandles.end()) {
         // Const cast ~ get fucked

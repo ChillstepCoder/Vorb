@@ -32,6 +32,10 @@ GameThreadTasks& GameThreadTasks::getInstance() {
     return *sInstance;
 }
 
+bool GameThreadTasks::exists() {
+    return sInstance != nullptr;
+}
+
 void GameThreadTasks::addCameraPickTeleportTask(const f32v3& camPos, const f32v3& camDir) {
 
     struct CameraPickTeleportData {

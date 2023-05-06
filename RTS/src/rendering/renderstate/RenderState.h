@@ -40,6 +40,7 @@ class RenderState {
 public:
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }
+    bool isCameraOwned() const { return mIsCameraOwned; }
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
@@ -49,6 +50,7 @@ private:
     IWorld* mWorld;
     f32v2 mWorldLoadCenter;
     f32v3 mCameraOwningEntityPos;
+    bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
 
     // ======================== Debug state ========================

@@ -257,6 +257,7 @@
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\cli\CliEntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\component\AttributesComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CameraAttachComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
@@ -517,6 +518,7 @@
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
     <ClInclude Include="src\ecs\cli\CliEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\component\AttributesComponent.h" />
+    <ClInclude Include="src\ecs\component\CameraAttachComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />

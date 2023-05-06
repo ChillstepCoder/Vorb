@@ -10,6 +10,7 @@ public:
     virtual glm::mat4 getViewProjectionMatrix() const = 0;
     virtual glm::mat4 getViewProjectionMatrixNoTranslation() const = 0;
     virtual glm::vec3 getPosition() const = 0;
+    virtual glm::vec3 getDirection() const = 0;
 };
 
 class SimpleCamera final
@@ -26,6 +27,7 @@ public:
     glm::mat4 getViewProjectionMatrix() const { return positioner_->getViewProjectionMatrix(); }
     glm::mat4 getViewProjectionMatrixNoTranslation() const { return positioner_->getViewProjectionMatrixNoTranslation(); }
     glm::vec3 getPosition() const { return positioner_->getPosition(); }
+    glm::vec3 getDirection() const { return positioner_->getDirection(); }
 
     inline static constexpr f32 ZNEAR = 0.1f;
     inline static constexpr f32 ZFAR = 100.0f;
@@ -40,6 +42,7 @@ public:
     CameraPositioner_FirstPerson(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& up)
         : cameraPosition_(pos)
         , cameraOrientation_(glm::lookAt(pos, target, up))
+        , cameraDirection_(glm::normalize(target - pos))
         , up_(up)
     {}
 
@@ -70,6 +73,8 @@ public:
         const glm::vec3 forward = -glm::vec3(v[0][2], v[1][2], v[2][2]);
         const glm::vec3 right = glm::vec3(v[0][0], v[1][0], v[2][0]);
         const glm::vec3 up = glm::cross(right, forward);
+
+        cameraDirection_ = forward;
 
         glm::vec3 accel(0.0f);
 
@@ -120,15 +125,10 @@ public:
         return r;
     }
 
-    virtual glm::vec3 getPosition() const override
-    {
-        return cameraPosition_;
-    }
+    virtual glm::vec3 getPosition() const override { return cameraPosition_; }
+    virtual glm::vec3 getDirection() const override {  return cameraDirection_; }
 
-    void setPosition(const glm::vec3& pos)
-    {
-        cameraPosition_ = pos;
-    }
+    void setPosition(const glm::vec3& pos) { cameraPosition_ = pos; }
 
     void resetMousePosition(const glm::vec2& p) { mousePos_ = p; };
 
@@ -167,6 +167,7 @@ public:
 private:
     glm::vec2 mousePos_ = glm::vec2(0);
     glm::vec3 cameraPosition_ = glm::vec3(0.0f, 10.0f, 10.0f);
+    glm::vec3 cameraDirection_ = glm::vec3(1.0f, 0.0f, 0.0f);
     glm::quat cameraOrientation_ = glm::quat(glm::vec3(0));
     glm::vec3 moveSpeed_ = glm::vec3(0.0f);
     glm::vec3 up_ = glm::vec3(0.0f, 0.0f, 1.0f);
@@ -209,6 +210,7 @@ public:
     void setDesiredAngles(float pitch, float pan, float roll) { anglesDesired_ = glm::vec3(pitch, pan, roll); }
     void setDesiredAngles(const glm::vec3& angles) { anglesDesired_ = angles; }
 
+    virtual glm::vec3 getDirection() const override {  return cameraDirection_; }
     virtual glm::vec3 getPosition() const override { return positionCurrent_; }
     virtual glm::mat4 getViewMatrix() const override { return currentTransform_; }
 
@@ -217,6 +219,7 @@ public:
     glm::vec3 dampingEulerAngles_ = glm::vec3(5.0f, 5.0f, 5.0f);
 
 private:
+    glm::vec3 cameraDirection_ = glm::vec3(1.0f, 0.0f, 0.0f);
     glm::vec3 positionCurrent_ = glm::vec3(0.0f);
     glm::vec3 positionDesired_ = glm::vec3(0.0f);
 

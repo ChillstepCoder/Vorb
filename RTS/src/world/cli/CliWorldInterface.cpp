@@ -81,15 +81,21 @@ void CliWorldInterface::updateRenderState(IWorld& world) {
         return;
     }
 
+    RenderState& renderState = RenderStateManager::getInstance().getRenderStateForUpdate();
     // Cache things we need to update so we can keep the update section small as possible
-    entt::entity playerEntity = world.mEcs->getLocalPlayer();
+
+    // TODO: If we have a camera attach component, use that
+    // ...
+    // Otherwise fall back to the player entity
+    renderState.mIsCameraOwned = false;
     f32v3 cameraEntityPos = f32v3(0.0f);
+    entt::entity playerEntity = world.mEcs->getLocalPlayer();
     if (playerEntity != INVALID_ENTITY) {
         cameraEntityPos = world.mEcs->mRegistry.get<PhysicsComponent>(playerEntity).getInterpolatedPosition();
+        renderState.mIsCameraOwned = true;
     }
 
     // Acquire render state
-    RenderState& renderState = RenderStateManager::getInstance().getRenderStateForUpdate();
     renderState.mWorld = &world;
     renderState.mWorldLoadCenter = world.getLoadCenter();
     renderState.mCameraOwningEntityPos = cameraEntityPos;

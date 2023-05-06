@@ -75,6 +75,8 @@ public:
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
     ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_WIDTH; }
 
+    void setLoadCenter(const f32v2& loadCenter);
+
 protected:
     void onWorldBeginShared(const f32v2& loadCenter);
 

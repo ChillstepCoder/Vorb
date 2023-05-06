@@ -10,10 +10,6 @@
 
 #include "ecs/component/EmployeeComponent.h"
 
-PersonAISystem::PersonAISystem()
-{
-}
-
 // TODO: Refactor
 // TODO: Investigate maslows hierarchy (probability weight?) (Concern probability gradually increases for things that didnt run recently?
 // 1. Self Actuation
@@ -22,7 +18,7 @@ PersonAISystem::PersonAISystem()
 // 4. Safety needs
 // 5. physiological needs
 // https://www.youtube.com/watch?v=RYZSdPuvta8
-inline void updateComponent(IWorld& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
+void updateComponent(IWorld& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {

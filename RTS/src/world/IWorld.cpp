@@ -198,6 +198,11 @@ f32v2 IWorld::getLoadCenter() const {
     return mLoadCenter;
 }
 
+void IWorld::setLoadCenter(const f32v2& loadCenter) {
+    assert(IS_GAME_THREAD());
+    mLoadCenter = loadCenter;
+}
+
 void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
 
     // Init chunks

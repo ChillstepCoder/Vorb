@@ -389,17 +389,19 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
     const i32v2 xy = chunk.getChunkOffset();
     for (ui8 i = 0; i < 8; ++i) {
         const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
-        const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
-        if (mAliveChunkBits.getBit(neighborId)) {
-            ui8& adjacentNeighborBits = mNeighborBits[neighborId];
-            // If neighbor wasn't an edge, make him one
-            if (adjacentNeighborBits == ALL_NEIGHBORS_ALIVE) {
-                mEdgeChunkPositions.emplace_back(neighborId);
-                mChunks[neighborId].mFlags.setBit(ChunkFlags::IN_EDGE_LIST);
-                // TODO: Deactivate neighbor?
+        if (isChunkXYInBounds(neighborXy)) {
+            const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
+            if (mAliveChunkBits.getBit(neighborId)) {
+                ui8& adjacentNeighborBits = mNeighborBits[neighborId];
+                // If neighbor wasn't an edge, make him one
+                if (adjacentNeighborBits == ALL_NEIGHBORS_ALIVE) {
+                    mEdgeChunkPositions.emplace_back(neighborId);
+                    mChunks[neighborId].mFlags.setBit(ChunkFlags::IN_EDGE_LIST);
+                    // TODO: Deactivate neighbor?
+                }
+                // Remove our bit
+                adjacentNeighborBits &= ~(1ui8 << (ui8)CARTESIAN8_OPPOSITES[i]);
             }
-            // Remove our bit
-            adjacentNeighborBits &= ~(1ui8 << (ui8)CARTESIAN8_OPPOSITES[i]);
         }
     }
 

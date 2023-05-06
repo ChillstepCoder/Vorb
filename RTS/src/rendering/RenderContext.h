@@ -67,7 +67,7 @@ public:
     void selectNextDebugShader();
 
     const GlobalRenderData& getRenderData() const { return mRenderData; }
-    const vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
+    vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
     const vg::GBuffer& getPrevFinalGBuffer() const { return *mGBuffers[mPrevGBufferIndex]; }
     const ui32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
     VGTexture getShadowTexture() const;
@@ -82,6 +82,9 @@ public:
     WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
     WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world) const;
     WorldRenderDataManager* tryGetRenderDataManagerForWorld(IWorld& world) const;
+
+    f32 getCurrentFrameAlpha() const { return mCurrentFrameAlpha; }
+    f32 getCurrentFrameElapsedSec() const { return mCurrentFrameElapsedSec; }
 private:
     void updateRenderThreadProcs();
 
@@ -96,6 +99,8 @@ private:
     ui32v2 mScreenResolution;
     ui32v2 mCurrentFramebufferDims;
     const Camera3D* mCamera = nullptr;
+    f32 mCurrentFrameAlpha;
+    f32 mCurrentFrameElapsedSec;
 
     // World
     IWorld* mActiveWorld = nullptr;

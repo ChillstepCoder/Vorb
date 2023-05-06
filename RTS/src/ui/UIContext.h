@@ -27,6 +27,8 @@ public:
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
     void closeTileInspectionPanel();
 
+    f32v3 getEditorCameraPosition();
+    f32v3 getEditorCameraDirection();
     void toggleMainMenu();
 
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);

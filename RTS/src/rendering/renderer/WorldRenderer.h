@@ -44,8 +44,8 @@ public:
     ~WorldRenderer();
 
     void initPostLoad();
-    void onBeginFrame(const RenderState* renderState, const Camera3D* camera, f32v3 playerPos);
-    void renderWorld(const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec);
+    void onBeginFrame(const RenderState* renderState, f32v3 playerPos);
+    void renderWorld(const Camera3D* camera, const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec, vg::GBuffer* targetGBuffer);
     void renderDebug();
 
     // Renderer accessors

@@ -13,17 +13,20 @@
 #include "world/IWorld.h"
 #include "world/Chunk.h"
 #include "world/WorldFactory.h"
+#include "rendering/renderer/WorldRenderer.h"
+
+#include "rendering/RenderContext.h"
 
 #include "gamethread/GameThreadTasks.h"
 #include "time/TimeOfDayManager.h"
 
+#include "camera/Camera3D.h"
 #include "camera/SimpleCamera.h"
 
 constexpr ui32 EDITOR_CHUNK_GRID_WIDTH = 2; // nxn grid
 constexpr ui32 NUM_EDITOR_CHUNKS = SQ(EDITOR_CHUNK_GRID_WIDTH);
 
-BiomeEditorViewportPanel::BiomeEditorViewportPanel()
-{
+BiomeEditorViewportPanel::BiomeEditorViewportPanel() {
 
 }
 
@@ -36,7 +39,7 @@ bool BiomeEditorViewportPanel::updateAndRender()
 {
    
     bool isOpen = true;
-    ImGui::Begin("Material Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
+    ImGui::Begin("Biome Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
     ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
@@ -44,6 +47,17 @@ bool BiomeEditorViewportPanel::updateAndRender()
     f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
 
     updateCamera(imageDims.x / imageDims.y);
+
+
+    // Tell the world to follow our camera
+    if (mEditorWorld) {
+        const f32v2 cameraPos = camera->getPosition();
+        IWorld* editorWorld = mEditorWorld.get();
+        GameThreadTasks::getInstance().addGenericTaskWithCapture([cameraPos, editorWorld](GameThread&, void* vWorld) {
+            //assert(editorWorld == static_cast<IWorld*>(vWorld));
+            editorWorld->setLoadCenter(cameraPos);
+        }, (void*)editorWorld);
+    }
 
     //if (mCurrentMaterial.isValid()) {
     //    ImGui::Text(mCurrentMaterial.name.c_str());
@@ -60,7 +74,6 @@ bool BiomeEditorViewportPanel::updateAndRender()
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    renderGrid();
     renderCenterPanel();
 
     ImGui::End();
@@ -81,6 +94,7 @@ void BiomeEditorViewportPanel::updateAndRenderControls(f32 ySize) {
 void BiomeEditorViewportPanel::onEnter() {
     if (!mEditorWorld) {
         initializeWorld();
+        positioner->setPosition(mEditorWorld->getDefaultSpawn());
     }
 
     GameThreadTasks::getInstance().setActiveEditorWorld(mEditorWorld.get());
@@ -95,14 +109,32 @@ const MaterialShader* BiomeEditorViewportPanel::getShader()
     return nullptr;
 }
 
-void BiomeEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit)
-{
+void BiomeEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
     
 }
 
-void BiomeEditorViewportPanel::renderMesh()
+void BiomeEditorViewportPanel::renderMesh() {
+    const RenderContext& renderContext = RenderContext::getInstance();
+    mActiveGBuffer = &renderContext.getActiveGBuffer();
+    mActiveGBuffer->use();
+    renderContext.getWorldRenderer().renderWorld(
+        renderContext.getCamera(), renderContext.getRenderData(), mActiveGBuffer, renderContext.getCurrentFrameAlpha(), renderContext.getCurrentFrameElapsedSec(), sGBuffers[0].get()
+    );
+
+    vg::DepthState::NONE.set();
+
+    renderContext.getWorldRenderer().renderDebug();
+    if (mRenderGrid) {
+        renderGrid(renderContext.getCamera()->getVPMatrix());
+    }
+}
+
+VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 {
-    
+    if (mActiveGBuffer) {
+        return sGBuffers[0]->getAlbedoTexture();
+    }
+    return VGTexture(0);
 }
 
 void BiomeEditorViewportPanel::initializeWorld() {

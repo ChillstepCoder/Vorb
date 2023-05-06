@@ -127,7 +127,7 @@ void WorldRenderer::initPostLoad() {
     mPassthroughMaterial = materialManager.getMaterialShader("pass_through");
 }
 
-void WorldRenderer::onBeginFrame(const RenderState* renderState, const Camera3D* camera, f32v3 playerPos) {
+void WorldRenderer::onBeginFrame(const RenderState* renderState, f32v3 playerPos) {
     if (!renderState->getWorld()) {
         return;
     }
@@ -148,8 +148,15 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, const Camera3D*
     }
 
     mRenderState = renderState;
-    mCamera = camera;
     mPlayerPos = playerPos;
+
+}
+
+void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec, vg::GBuffer* targetGBuffer) {
+    if (!mActiveWorld) {
+        return;
+    }
+    mCamera = camera;
 
     // Any per frame world render data
     mCurrentWorldRenderDataManager->frameUpdate(*camera);
@@ -158,162 +165,159 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, const Camera3D*
     const f32v3& sun = mActiveWorld->getTimeOfDayManager().getSunPosition();
     mShadowRenderer->beginFrame(*camera, sun);
 
-}
+    const TileContainerMeshManager& tileContainerMeshManager = mCurrentWorldRenderDataManager->getTileContainerMeshManager();
 
-void WorldRenderer::renderWorld(const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec) {
-    if (!mActiveWorld) {
-        return;
+    // Mark everything we draw as geometry
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    // Static meshes
+    mTileContainerRenderer->renderStaticMeshes(tileContainerMeshManager.getStaticMeshes(), *mCamera);
+
+    if (!sDebugOptions.mHideCharacters) {
+        mCharacterRenderer->renderCharacters(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha);
     }
-    if (!UIContext::getInstance().shouldPauseGameRendering()) {
-        const TileContainerMeshManager& tileContainerMeshManager = mCurrentWorldRenderDataManager->getTileContainerMeshManager();
 
-        // Mark everything we draw as geometry
+    // Instanced models
+    Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
+    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
+
+    // Smudge
+    {
+        mSmudgeRenderer->beginSmudgePass(activeGBuffer);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera);
+        if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
+            glDisable(GL_CULL_FACE);
+            mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderDataManager->getGrassMeshManager().getGrassMeshes());
+            glEnable(GL_CULL_FACE);
+        }
+        mSmudgeRenderer->renderSmudge(activeGBuffer, *mCamera);
+    }
+
+    // Render stockpiles
+    mItemRenderer->render(*mCamera);
+
+    // TODO: Render loose items
+
+
+    // Ambient occlusion
+    mAmbientOcclusion->render(activeGBuffer);
+
+    // === Post AO passes ===
+    // Grass + billboards
+
+    mTileContainerRenderer->renderBillboards(tileContainerMeshManager.getBillboardMeshes(), *mCamera);
+    // PRE SMUDGE GRASS PASS
+    /*if (!sDebugOptions.mHideGrass) {
+        mGrassRenderer->renderGrass(*mCamera, playerPos, mGrassMeshes);
+    }*/
+    // TODO: Where is this getting unset?
+    glEnable(GL_CULL_FACE);
+
+    // TODO Try re-enable ambient occlusion for terrain in a smart way?
+    {
         glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
+        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::TERRAIN), 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        // Static meshes
-        mTileContainerRenderer->renderStaticMeshes(tileContainerMeshManager.getStaticMeshes(), *mCamera);
-
-        if (!sDebugOptions.mHideCharacters) {
-            mCharacterRenderer->renderCharacters(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha);
+        // Terrain
+        if (!sDebugOptions.mDisableTerrain) {
+            mTerrainRenderer->renderTerrain(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainMeshes());
         }
-
-        // Instanced models
-        Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
-
-        // Smudge
-        {
-            mSmudgeRenderer->beginSmudgePass(activeGBuffer);
-            mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera);
-            if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
-                glDisable(GL_CULL_FACE);
-                mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderDataManager->getGrassMeshManager().getGrassMeshes());
-                glEnable(GL_CULL_FACE);
-            }
-            mSmudgeRenderer->renderSmudge(activeGBuffer, *mCamera);
-        }
-
-        // Render stockpiles
-        mItemRenderer->render(*mCamera);
-
-        // TODO: Render loose items
-
-
-        // Ambient occlusion
-        mAmbientOcclusion->render(activeGBuffer);
-
-        // === Post AO passes ===
-        // Grass + billboards
-
-        mTileContainerRenderer->renderBillboards(tileContainerMeshManager.getBillboardMeshes(), *mCamera);
-        // PRE SMUDGE GRASS PASS
-        /*if (!sDebugOptions.mHideGrass) {
-            mGrassRenderer->renderGrass(*mCamera, playerPos, mGrassMeshes);
-        }*/
-        // TODO: Where is this getting unset?
-        glEnable(GL_CULL_FACE);
-
-        // TODO Try re-enable ambient occlusion for terrain in a smart way?
-        {
-            glEnable(GL_STENCIL_TEST);
-            glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::TERRAIN), 0xFF);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            // Terrain
-            if (!sDebugOptions.mDisableTerrain) {
-                mTerrainRenderer->renderTerrain(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainMeshes());
-            }
-            glDisable(GL_STENCIL_TEST);
-        }
-
-        // Paint smudges
-        mSmudgeRenderer->renderPaintNoise(activeGBuffer, *mCamera);
-
-        // Clouds
-       /* if (!sDebugOptions.mDisableClouds) {
-            mCloudRenderer->renderClouds(mWorld.getCloudManager(), activeGBuffer, camera);
-        }*/
-
-        // Editor brushes
-        UIContext::getInstance().renderEditorBrushDecals(*mCamera);
-
-        // Horizon
-        //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
-
-
-        renderPassShadows(renderData, activeGBuffer);
-
-        // TODO: Particles
-
-        if (sDebugOptions.mWireframe) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-
-        // *** Post processes ***
-        // TODO: Bloom note (from acerola) https://www.youtube.com/watch?v=IMiiUEG-sLQ_
-        // Contrast -> Brighness -> Saturation -> Gamma correction -> Bloom -> Bloom can be done via mipmapping (GPU DOWNSCALING then UPSCALING)
-
-        vg::DepthState::NONE.set();
-
-        // Render characters that are behind geometry with some transparency
-        //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, camera, 0.20f, frameAlpha);
-            // Depth debug
-        if (mPassthroughRenderMode == 1) {
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-            assert(postMat);
-
-            // TODO: Swap chain for this to work
-            MaterialRenderer::renderFullScreenQuad(*postMat);
-        }
-
-        // Sky (non PBR version)
-        if (!sDebugOptions.mUsingPBR) {
-            renderPassSky();
-        }
-
-        // Final render for pre-transparency
-        mHDRLightGBuffer->use();
-        // Share values
-        mHDRLightGBuffer->setTertiaryTexture(activeGBuffer->getTertiaryTexture());
-        mHDRLightGBuffer->setNormalTexture(activeGBuffer->getNormalTexture());
-        mHDRLightGBuffer->setSharedDepthStencilTexture(activeGBuffer->getDepthStencilTexture());
-
-        // Sunlight
-        mLightRenderer->renderSunlight(*activeGBuffer, mShadowRenderer->getShadowTexture(), *mSkyBox->getCubemap());
-
-        // Sky (PBR version)
-        if (sDebugOptions.mUsingPBR) {
-            renderPassSky();
-        }
-
-        renderPassTransparent();
-
-        // Update active
-        activeGBuffer = mHDRLightGBuffer.get();
-
-        // Depth of field
-        vg::DepthState::NONE.set();
-        activeGBuffer = mDepthOfField->render(activeGBuffer);
-
-        // Final render to screen, applying tonemap
-        activeGBuffer->unuse();
-        glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
-        mTonemapRenderer->render(activeGBuffer->getAlbedoTexture());
-        //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
-
-        // Final Pass through process
-        // TODO: Make this work. When in debug, render tonemap to a new texture
-        // FBODebugRenderer?
-        if (mPassthroughRenderMode > 1) {
-            const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-            assert(postMat);
-
-            // TODO: Swap chain for this to work
-            MaterialRenderer::renderFullScreenQuad(*postMat);
-        }
-
+        glDisable(GL_STENCIL_TEST);
     }
+
+    // Paint smudges
+    mSmudgeRenderer->renderPaintNoise(activeGBuffer, *mCamera);
+
+    // Clouds
+    /* if (!sDebugOptions.mDisableClouds) {
+        mCloudRenderer->renderClouds(mWorld.getCloudManager(), activeGBuffer, camera);
+    }*/
+
+    // Editor brushes
+    UIContext::getInstance().renderEditorBrushDecals(*mCamera);
+
+    // Horizon
+    //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
+
+
+    renderPassShadows(renderData, activeGBuffer);
+
+    // TODO: Particles
+
+    if (sDebugOptions.mWireframe) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    // *** Post processes ***
+    // TODO: Bloom note (from acerola) https://www.youtube.com/watch?v=IMiiUEG-sLQ_
+    // Contrast -> Brighness -> Saturation -> Gamma correction -> Bloom -> Bloom can be done via mipmapping (GPU DOWNSCALING then UPSCALING)
+
+    vg::DepthState::NONE.set();
+
+    // Render characters that are behind geometry with some transparency
+    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, camera, 0.20f, frameAlpha);
+        // Depth debug
+    if (mPassthroughRenderMode == 1) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        assert(postMat);
+
+        // TODO: Swap chain for this to work
+        MaterialRenderer::renderFullScreenQuad(*postMat);
+    }
+
+    // Sky (non PBR version)
+    if (!sDebugOptions.mUsingPBR) {
+        renderPassSky();
+    }
+
+    // Final render for pre-transparency
+    mHDRLightGBuffer->use();
+    // Share values
+    mHDRLightGBuffer->setTertiaryTexture(activeGBuffer->getTertiaryTexture());
+    mHDRLightGBuffer->setNormalTexture(activeGBuffer->getNormalTexture());
+    mHDRLightGBuffer->setSharedDepthStencilTexture(activeGBuffer->getDepthStencilTexture());
+
+    // Sunlight
+    mLightRenderer->renderSunlight(*activeGBuffer, mShadowRenderer->getShadowTexture(), *mSkyBox->getCubemap());
+
+    // Sky (PBR version)
+    if (sDebugOptions.mUsingPBR) {
+        renderPassSky();
+    }
+
+    renderPassTransparent();
+
+    // Update active
+    activeGBuffer = mHDRLightGBuffer.get();
+
+    // Depth of field
+    vg::DepthState::NONE.set();
+    activeGBuffer = mDepthOfField->render(activeGBuffer);
+
+    // Final render to screen or target GBuffer, applying tonemap
+    if (targetGBuffer) {
+        targetGBuffer->use();
+    }
+    else {
+        activeGBuffer->unuse();
+    }
+    glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
+    mTonemapRenderer->render(activeGBuffer->getAlbedoTexture());
+    //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
+
+    // Final Pass through process
+    // TODO: Make this work. When in debug, render tonemap to a new texture
+    // FBODebugRenderer?
+    if (mPassthroughRenderMode > 1) {
+        const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        assert(postMat);
+
+        // TODO: Swap chain for this to work
+        MaterialRenderer::renderFullScreenQuad(*postMat);
+    }
+
 }
 
 

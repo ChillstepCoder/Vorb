@@ -52,7 +52,5 @@ struct PersonAIComponent {
 
 class PersonAISystem {
 public:
-    PersonAISystem();
-
     void update(IWorld& world, entt::registry& registry);
 };
