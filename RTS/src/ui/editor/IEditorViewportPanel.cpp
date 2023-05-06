@@ -303,8 +303,8 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
     // TODO: RG16F normals or R11F_G11F_B10F?? https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
     for (int i = 0; i < 3; ++i) {
         sGBuffers[i] = std::make_unique<vg::GBuffer>(imageDims);
-        sGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
-        sGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
+        sGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8); // Final color
+        sGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2); // Normal
         sGBuffers[i]->initDepthStencil(vg::GBufferDepthStencilFormat::DEPTH_24_STENCIL_8);
     }
 

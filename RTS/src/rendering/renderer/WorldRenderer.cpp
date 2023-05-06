@@ -302,8 +302,8 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     }
     else {
         activeGBuffer->unuse();
+        glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
     }
-    glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
     mTonemapRenderer->render(activeGBuffer->getAlbedoTexture());
     //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
 
