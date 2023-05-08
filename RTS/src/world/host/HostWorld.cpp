@@ -15,9 +15,16 @@
 
 HostWorld::HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid)
 {
+    mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
+}
+
+void HostWorld::init() {
+
+    mChunkGrid->setWorldAndAllocateChunks(*this);
+    mHeightmapGrid->setWorld(*this);
+
     initClient(*this);
     initSrv(*this);
-    mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
 }
 
 void HostWorld::tick(f32 elapsedSec) {

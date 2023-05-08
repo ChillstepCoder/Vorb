@@ -225,7 +225,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         if (hasTexture) {
             VGTexture generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData.bytesUI8, roughnessData.bytesUI8, metalData.bytesUI8, textureDims, *samplerState);
             GLTexture& aoMetalRoughGLTexture = mGeneratedAOMetallicRoughnessTextures[materialName];
-            aoMetalRoughGLTexture.init(generatedTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
+            aoMetalRoughGLTexture.init(generatedTexture, vg::TextureTarget::TEXTURE_2D, textureDims);
             materialGpuData.aoMetallicRoughnessMap = aoMetalRoughGLTexture.getHandleBindless();
         }
     }

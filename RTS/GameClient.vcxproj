@@ -446,6 +446,8 @@
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\controller\EditorWorldInterfaceController.cpp" />
+    <ClCompile Include="src\world\controller\IWorldInterfaceController.cpp" />
     <ClCompile Include="src\world\host\HostWorld.cpp" />
     <ClCompile Include="src\world\IChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliWorldInterface.cpp" />
@@ -777,6 +779,8 @@
     <ClInclude Include="src\world\ChunkState.h" />
     <ClInclude Include="src\world\cli\CliChunkGrid.h" />
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
+    <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
+    <ClInclude Include="src\world\controller\IWorldInterfaceController.h" />
     <ClInclude Include="src\world\host\HostWorld.h" />
     <ClInclude Include="src\world\IChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />

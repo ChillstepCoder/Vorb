@@ -10,6 +10,7 @@ class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterf
 public:
     HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 
+	void init() override;
 	void tick(f32 elapsedSec) override;
 	// IWorld interface
 	void onFrameBegin() override;

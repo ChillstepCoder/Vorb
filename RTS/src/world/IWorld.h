@@ -30,7 +30,9 @@ public:
     virtual ~IWorld();
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
 
+
     // Pure virtual interface
+    virtual void init() = 0;
     virtual void onWorldBegin(const f32v2& loadCenter) = 0;
     virtual WorldNetMode getNetMode() = 0;
     virtual WorldType getWorldType() = 0;

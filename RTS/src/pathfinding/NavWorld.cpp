@@ -59,6 +59,7 @@ NavWorld::NavWorld(IWorld& world) : mWorld(world) {
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
     const ui32 totalChunks = mWorld.getChunkGrid().getTotalChunks();
+    assert(totalChunks);
     mTerrainTileContainers = std::unique_ptr<TileContainerID[]>(new TileContainerID[totalChunks]);
     for (int i = 0; i < totalChunks; ++i) {
         mTerrainTileContainers[i] = INVALID_TILE_CONTAINER_ID;

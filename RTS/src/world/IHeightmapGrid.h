@@ -109,6 +109,7 @@ public:
 
     const SpatialGrid2D& getSpatialGrid2D() const { return mSpatialGrid2D; }
     IWorld& getWorld() const { return *mWorld; }
+    void setWorld(IWorld& world) { mWorld = &world; }
 
     STATIC_EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 

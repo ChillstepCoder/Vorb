@@ -53,10 +53,7 @@ std::unique_ptr<CliWorld> WorldFactory::makeClientWorld(ui32 worldWidthTiles) {
     CliChunkGrid* chunkGrid = new CliChunkGrid();
     std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
-    // World references
-    chunkGrid->setWorldAndAllocateChunks(*newWorld);
-    heightmapGrid->mWorld = newWorld.get();
-
+    newWorld->init();
     return newWorld;
 }
 
@@ -65,10 +62,7 @@ std::unique_ptr<CliWorld> WorldFactory::makeEditorWorld(ui32 worldWidthTiles) {
     CliChunkGrid* chunkGrid = new CliChunkGrid();
     std::unique_ptr<CliWorld> newWorld = std::make_unique<CliWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
-    // World references
-    chunkGrid->setWorldAndAllocateChunks(*newWorld);
-    heightmapGrid->mWorld = newWorld.get();
-
+    newWorld->init();
     return newWorld;
 }
 
@@ -77,10 +71,7 @@ std::unique_ptr<HostWorld> WorldFactory::makeHostWorld(ui32 worldWidthTiles) {
     SrvChunkGrid* chunkGrid = new SrvChunkGrid();
     std::unique_ptr<HostWorld> newWorld = std::make_unique<HostWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
-    // World references
-    chunkGrid->setWorldAndAllocateChunks(*newWorld);
-    heightmapGrid->mWorld = newWorld.get();
-
+    newWorld->init();
     return newWorld;
 }
 
@@ -89,9 +80,6 @@ std::unique_ptr<DedicatedSrvWorld> WorldFactory::makeServerWorld(ui32 worldWidth
     SrvChunkGrid* chunkGrid = new SrvChunkGrid();
     std::unique_ptr<DedicatedSrvWorld> newWorld = std::make_unique<DedicatedSrvWorld>(worldWidthTiles, chunkGrid, heightmapGrid);
 
-    // World references
-    chunkGrid->setWorldAndAllocateChunks(*newWorld);
-    heightmapGrid->mWorld = newWorld.get();
-
+    newWorld->init();
     return newWorld;
 }

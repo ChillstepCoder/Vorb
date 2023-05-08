@@ -91,7 +91,7 @@ namespace vorb {
             if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
         }
         else {
-            // No debugger means we are running a packaged build, so CWD should be same as 
+            // No debugger means we are running a packaged build, so CWD should be same as exe
             if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
         }
 

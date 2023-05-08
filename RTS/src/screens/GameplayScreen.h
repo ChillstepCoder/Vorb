@@ -8,7 +8,6 @@
 #include "network/WorldNetMode.h"
 
 #include <Vorb/Timing.h>
-
 #include <Vorb/ui/KeyboardEventManager.h>
 
 #include "world/WorldObjectQuery.h"
@@ -23,6 +22,7 @@ class RenderContext;
 class IWorld;
 class TileInteractPanel;
 class DeferredPhysicsPick;
+class IWorldInterfaceController;
 
 DECL_VUI(class InputDispatcher);
 
@@ -58,14 +58,10 @@ private:
 
 	void updateClient(const vui::GameTime& gameTime);
 	void updateHost(const vui::GameTime& gameTime);
-	void updateScreen();
 
     void updateTimeScaling(const vui::GameTime& gameTime);
-    void updateTilePicking();
-    void tryUpdateAndRenderInteractPopup();
 
 	void displayLoadScreen(const nString& text, bool syncWindow);
-	void initInputs();
 
 	// TODO: Maybe shouldn't live on the screen?
 	std::unique_ptr<IWorld> mWorld;
@@ -75,31 +71,15 @@ private:
 	ResourceManager& mResourceManager;
 	RenderContext* mRenderContext = nullptr;
     float mFps = 0.0f;
-	
-	// Pathfinding test
-	ui32v2 mPathFindStart = ui32v2(0);
-	bool mIsPathfinding = false;
 
-    // UI
-	TileHandle mSelectedTileHandle;
-	f32v2 mSelectedScreenPos = f32v2(0.0f);
-    std::unique_ptr<TileInteractPanel> mRightClickInteractPopup;
-	f32v2 mMousePosition = f32v2(0.0f);
-	PreciseTimer mRightClickTimer;
-    f32v3 mRightClickPickPos = f32v3(FLT_MAX);
-    f32v3 mMousePickRay = f32v3(0.0f);
-	WorldObjectQueryPtr mWorldObjectQuery;
-	bool mIsQuerying = false;
+	// Controller
+	std::unique_ptr<IWorldInterfaceController> mWorldInterfaceController;
 
 	WorldNetMode mNetMode = WorldNetMode::Host;
 
 	GameplayScreenState mState = GameplayScreenState::INIT;
 	vui::MouseListeners mMouseListeners;
 	vui::KeyListeners mKeyListeners;
-
-    std::unique_ptr<DeferredPhysicsPick> mRightClickDownPick;
-    std::unique_ptr<DeferredPhysicsPick> mRightClickUpPick;
-	f32v2 mRightClickUpPickScreenPos = f32v2(0.0);
 
 };
 

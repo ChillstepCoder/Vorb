@@ -8,10 +8,15 @@
 
 #include "physics/PhysicsWorld.h"
 
-CliWorld::CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid)
-{
-    initClient(*this);
+CliWorld::CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid) {
     mEcs = std::make_unique<CliEntityComponentSystem>(*this);
+}
+
+void CliWorld::init() {
+    mChunkGrid->setWorldAndAllocateChunks(*this);
+    mHeightmapGrid->setWorld(*this);
+
+    initClient(*this);
 }
 
 void CliWorld::tick(f32 elapsedSec) {
