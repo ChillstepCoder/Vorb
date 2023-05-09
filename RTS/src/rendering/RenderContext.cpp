@@ -31,7 +31,6 @@
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
-#include "rendering/post_process/SmudgeRenderer.h"
 #include "rendering/post_process/TonemapRenderer.h"
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
