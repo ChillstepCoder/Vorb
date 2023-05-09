@@ -189,25 +189,27 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
     for (auto&& it : cubemapIds) {
         cubemapNames.emplace_back(it.first);
     }
-    if (ImGui::BeginCombo("Skybox", cubemapNames[mSelectedSkyboxIndex].c_str())) {
-        for (size_t i = 0; i < cubemapNames.size(); ++i) {
-            bool isSelected = mSelectedSkyboxIndex == i;
-            ImGui::Selectable(cubemapNames[i].c_str(), &isSelected);
+    if (mSkybox) {
+        if (ImGui::BeginCombo("Skybox", cubemapNames[mSelectedSkyboxIndex].c_str())) {
+            for (size_t i = 0; i < cubemapNames.size(); ++i) {
+                bool isSelected = mSelectedSkyboxIndex == i;
+                ImGui::Selectable(cubemapNames[i].c_str(), &isSelected);
 
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-                mSelectedSkyboxIndex = i;
-                if (i == 0) {
-                    mSkybox->setCubemap(nullptr);
-                }
-                else {
-                    auto&& it = cubemapIds.find(cubemapNames[i]);
-                    assert(it != cubemapIds.end());
-                    mSkybox->setCubemap(&textureRepository.getCubemap(it->second));
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                    mSelectedSkyboxIndex = i;
+                    if (i == 0) {
+                        mSkybox->setCubemap(nullptr);
+                    }
+                    else {
+                        auto&& it = cubemapIds.find(cubemapNames[i]);
+                        assert(it != cubemapIds.end());
+                        mSkybox->setCubemap(&textureRepository.getCubemap(it->second));
+                    }
                 }
             }
+            ImGui::EndCombo();
         }
-        ImGui::EndCombo();
     }
 
     if (mSelectedSkyboxIndex != 0) {

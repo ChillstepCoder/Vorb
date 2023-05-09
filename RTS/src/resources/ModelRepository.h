@@ -15,6 +15,9 @@ namespace ozz::animation {
     class Skeleton;
 };
 
+// TODO: MOVE
+constexpr GLuint MODEL_TRANSFORMS_BINDING_POINT = 2;
+
 class ModelRepository
 {
     friend class TileEditorPanel;

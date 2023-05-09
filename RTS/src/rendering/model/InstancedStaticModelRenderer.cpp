@@ -55,6 +55,9 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
         const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
         const Mesh& mesh = *model.getMesh();
 
+        // Bind our transforms every frame as we could be using different instanced static model managers
+        GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
+
         // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
         //// Make sure we created a fence for this instance
         //assert(instanceData.mFenceSync);
