@@ -39,7 +39,7 @@ IEditorViewportPanel::~IEditorViewportPanel() {
     glDeleteVertexArrays(1, &mGridVao);
 }
 
-void IEditorViewportPanel::renderCenterPanel() {
+void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     // Lazy init resources
     if (!mSkybox) {
         mSkybox = std::make_unique<Skybox>();
@@ -114,6 +114,12 @@ void IEditorViewportPanel::renderCenterPanel() {
     const ImVec2 uv1(1, 0);
     const ImVec2 dims(imageDims.x, imageDims.y);
     ImGui::Image((ImTextureID)displayTexture, dims, uv0, uv1);
+
+    if (outImageRect) {
+        ImVec2 imageRectMin = ImGui::GetItemRectMin();
+        outImageRect->dims = imageDims;
+        outImageRect->pos = f32v2(imageRectMin.x, imageRectMin.y);
+    }
 }
 
 VGTexture IEditorViewportPanel::getFinalOutputTexture() {

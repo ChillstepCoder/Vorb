@@ -40,7 +40,7 @@ public:
     f32v3 getCameraDirection() const;
 
 protected:
-    virtual void renderCenterPanel();
+    virtual void renderCenterPanel(i32AABB2* outImageRect);
 
     // Virtual API
     virtual const MaterialShader* getShader() { return nullptr; };

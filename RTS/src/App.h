@@ -25,4 +25,4 @@ protected:
 
 };
 
-inline static App* sApp = nullptr;
+extern App* sApp;

@@ -20,6 +20,8 @@ public:
     void update() override;
     void renderUI() override;
     void init() override;
+
+    void setMousePosition(const f32v2& mousePosition) { mMousePosition = mousePosition; }
 protected:
     void updateTilePicking();
     void initEvents();

@@ -179,8 +179,9 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     // Start the game :O
     GameThread::initInstance(*mWorld, mNetMode);
 
-    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(m_app->getWindow(), *mWorld, *mCameraController);
-    mWorldInterfaceController->init();
+    initWorldInterfaceController();
+
+    initEvents();
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
@@ -192,6 +193,7 @@ void GameplayScreen::onExit(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::update(const vui::GameTime& gameTime) {
+    ASSERT_RENDER_THREAD();
 
     updateTimeScaling(gameTime);
     if (mWorldInterfaceController) {
@@ -241,6 +243,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::draw(const vui::GameTime& gameTime) {
+    ASSERT_RENDER_THREAD();
 
     if (mState == GameplayScreenState::RUNNING) {
 
@@ -270,6 +273,26 @@ void GameplayScreen::initWorld() {
 
 void GameplayScreen::initCamera() {
     mCameraController = std::make_unique<CameraController>(m_app->getWindow());
+}
+
+void GameplayScreen::initEvents()
+{
+    UIContext::getInstance().registerUIContextListeners(mUIListeners);
+    UIContext::getInstance().addEditorWorldSetListener(mUIListeners, [this](const UIContextEvent& evnt) {
+        ASSERT_RENDER_THREAD();
+        //  When there is an editor world, we will disable our controller to allow the editor one to run
+        if (evnt.mWorld) {
+            mWorldInterfaceController.reset();
+        }
+        else {
+            initWorldInterfaceController();
+        }
+    });
+}
+
+void GameplayScreen::initWorldInterfaceController() {
+    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(m_app->getWindow(), *mWorld, *mCameraController);
+    mWorldInterfaceController->init();
 }
 
 void GameplayScreen::updateClient(const vui::GameTime& gameTime) {

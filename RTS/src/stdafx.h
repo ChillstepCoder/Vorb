@@ -98,6 +98,15 @@ extern float sFps;
 #include <Vorb/logging/Logger.h>
 #include "logging/ErrorLogging.h"
 
+// SPDLog definitions
+#include <spdlog/fmt/ostr.h>
+template<typename OStream>
+OStream& operator<<(OStream& os, const glm::vec2& c)
+{
+    os << fmt::format("<{},{}>", c.x, c.y);
+    return os;
+}
+
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 

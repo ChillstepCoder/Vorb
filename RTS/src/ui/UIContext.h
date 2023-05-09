@@ -1,12 +1,13 @@
 #pragma once
 
+#include "ui/UIContextEvents.h"
+
 struct SDL_Window;
 class Camera3D;
 class TileInspectionPanel;
 struct TileHandle;
 class PauseMenuPanel;
 class EditorRoot;
-class IWorld;
 
 DECL_VG(class GBuffer);
 
@@ -36,6 +37,7 @@ public:
 
     bool shouldPauseGameRendering() const;
 
+    EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:
 
     static UIContext* sInstance;
@@ -46,5 +48,7 @@ private:
 
     SDL_Window* mWindow;
     f32v2 mScreenResolution;
+
+    EVENT_DISPATCHER_DEF(UIContext);
 };
 

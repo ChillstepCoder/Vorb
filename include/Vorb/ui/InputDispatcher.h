@@ -44,6 +44,9 @@ namespace vorb {
             /// Removes the event listener from SDL
             static void dispose();
 
+            // Event injection
+            static void injectMouseButtonEvent(i32 x, i32 y, MouseButton button, ui8 clicks, bool pressed);
+
             static MouseEventManager mouse; ///< Dispatches mouse events
             static KeyboardEventManager key; ///< Dispatches keyboard events
             static WindowEventManager window; ///< Dispatches window events

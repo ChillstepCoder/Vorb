@@ -3,7 +3,7 @@
 
 class Chunk;
 class IWorld;
-class IWorldInterfaceController;
+class EditorWorldInterfaceController;
 
 DECL_VG(class GBuffer);
 
@@ -19,7 +19,7 @@ public:
     void onExit() override;
 
 protected:
-	void renderCenterPanel() override;
+	void renderCenterPanel(i32AABB2* outImageRect) override;
 
 	VGTexture getFinalOutputTexture() override;
 
@@ -27,7 +27,8 @@ protected:
 
 	vg::GBuffer* mActiveGBuffer = nullptr;
     std::unique_ptr<IWorld> mEditorWorld;
-    std::unique_ptr<IWorldInterfaceController> mWorldInterfaceController;
+    std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
+	bool mLeftMousePressed = false;
 
 };
 

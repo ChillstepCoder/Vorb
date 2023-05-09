@@ -44,8 +44,9 @@ IChunkGrid::IChunkGrid() {
 
 void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
 
-    IHeightmapGrid::registerIHeightmapGridListeners(mHeightmapGridListeners);
-    IHeightmapGrid::addEditVertsListener(mHeightmapGridListeners, [this](const HeightmapGridEvent& gridEvent) {
+    IHeightmapGrid& heightmapGrid = mWorld->getHeightmapGrid();
+    heightmapGrid.registerIHeightmapGridListeners(mHeightmapGridListeners);
+    heightmapGrid.addEditVertsListener(mHeightmapGridListeners, [this](const HeightmapGridEvent& gridEvent) {
         assert(gridEvent.mEventType == HeightmapGridEventType::EditVerts);
         assert(gridEvent.mModifiedVerts);
         onTerrainModified(*gridEvent.mModifiedVerts);

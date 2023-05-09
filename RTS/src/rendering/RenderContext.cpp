@@ -318,31 +318,20 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
     PROFILE_FUNCTION();
+    const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
     mCurrentFrameAlpha = frameAlpha;
     mCurrentFrameElapsedSec = elapsedSec;
     mCameraController = &cameraController;
-
-    const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
+    mCurrentRenderState = &renderState;
     mActiveWorld = renderState.getWorld();
     if (!mActiveWorld) {
         return;
     }
-    mCurrentRenderState = &renderState;
 
-    // Update camera
-    f32v3 cameraPos = renderState.getCameraOwningEntityPos();
-    if (!renderState.isCameraOwned()) {
-        cameraPos = UIContext::getInstance().getEditorCameraPosition();
-        cameraController.setEditorMode(true);
-        cameraController.setCameraDirection(UIContext::getInstance().getEditorCameraDirection());
-    }
-    else {
-        cameraController.setEditorMode(false);
-    }
-    cameraController.update(1.0f /*TODO DELTATIME*/, frameAlpha, cameraPos);
+    updateCamera(frameAlpha);
+
     const Camera3D& camera = cameraController.getOwnedCamera();
-
-    beginFrame(&renderState, &camera, cameraPos);
+    beginFrame(&renderState, &camera, renderState.getCameraOwningEntityPos());
     checkGlError("RenderContext::Begin Frame");
     
     mActiveGBuffer = mGBuffers[mActiveGBufferIndex].get();
@@ -417,6 +406,20 @@ WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& worl
 
 WorldRenderDataManager* RenderContext::tryGetRenderDataManagerForWorld(IWorld& world) const {
     return mWorldRenderer->tryGetRenderDataManagerForWorld(world);
+}
+
+void RenderContext::updateCamera(f32 frameAlpha) {
+    // Update camera
+    f32v3 cameraPos = mCurrentRenderState->getCameraOwningEntityPos();
+    if (!mCurrentRenderState->isCameraOwned()) {
+        cameraPos = UIContext::getInstance().getEditorCameraPosition();
+        mCameraController->setEditorMode(true);
+        mCameraController->setCameraDirection(UIContext::getInstance().getEditorCameraDirection());
+    }
+    else {
+        mCameraController->setEditorMode(false);
+    }
+    mCameraController->update(1.0f /*TODO DELTATIME*/, frameAlpha, cameraPos);
 }
 
 void RenderContext::updateRenderThreadProcs() {

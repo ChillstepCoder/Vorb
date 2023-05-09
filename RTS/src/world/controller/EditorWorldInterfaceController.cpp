@@ -26,8 +26,7 @@
 
 void EditorWorldInterfaceController::init()
 {
-    assert(!mWorld);
-
+    assert(mWorld);
     initEvents();
 }
 

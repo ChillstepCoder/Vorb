@@ -98,6 +98,21 @@ struct InputEvent {
 };
 #endif
 
+void vui::InputDispatcher::injectMouseButtonEvent(i32 x, i32 y, MouseButton button, ui8 clicks, bool pressed) {
+    InputEvent ie{};
+    ie.mouseButton.x = x;
+    ie.mouseButton.y = y;
+    ie.mouseButton.button = button;
+    ie.mouseButton.clicks = clicks;
+    if (pressed) {
+        vui::InputDispatcher::mouse.dispatchButtonDown(ie.mouseButton);
+    }
+    else {
+        vui::InputDispatcher::mouse.dispatchButtonUp(ie.mouseButton);
+    }
+    vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = pressed;
+}
+
 #if defined(VORB_IMPL_UI_SDL)
 void convert(vui::KeyModifiers& km, const ui16& sm) {
 #define MASK_BOOL(F) ((F) == 0) ? false : true;

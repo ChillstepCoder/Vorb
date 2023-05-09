@@ -12,6 +12,8 @@
 
 #include "world/WorldObjectQuery.h"
 
+#include "ui/UIContextEvents.h"
+
 constexpr f64 MS_PER_GAME_TICK = 40.0;
 constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
@@ -55,6 +57,8 @@ public:
 private:
 	void initWorld();
 	void initCamera();
+	void initEvents();
+	void initWorldInterfaceController();
 
 	void updateClient(const vui::GameTime& gameTime);
 	void updateHost(const vui::GameTime& gameTime);
@@ -78,8 +82,7 @@ private:
 	WorldNetMode mNetMode = WorldNetMode::Host;
 
 	GameplayScreenState mState = GameplayScreenState::INIT;
-	vui::MouseListeners mMouseListeners;
-	vui::KeyListeners mKeyListeners;
+	UIContextListeners mUIListeners;
 
 };
 

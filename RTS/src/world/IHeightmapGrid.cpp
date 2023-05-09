@@ -485,6 +485,7 @@ void IHeightmapGrid::adjustHeightAtChunk(ChunkID id, ui32 vertIndex, f32 adjust)
 
 void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f32 adjust) {
     ASSERT_GAME_THREAD();
+    assert(id < mTotalPatches);
     HeightmapPatch& patch = mHeightData[id];
     setHeightAtPatch(id, vertIndex, patch.mHeightData->data[vertIndex] + adjust);
 }

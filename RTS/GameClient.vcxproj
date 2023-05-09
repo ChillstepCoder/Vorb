@@ -747,6 +747,7 @@
     <ClInclude Include="src\ui\TileInspectionPanel.h" />
     <ClInclude Include="src\ui\UIContext.h" />
     <ClInclude Include="src\ui\TileInteractPanel.h" />
+    <ClInclude Include="src\ui\UIContextEvents.h" />
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\b3ChromeTraceUtil.h" />
     <ClInclude Include="src\util\BitArray.h" />

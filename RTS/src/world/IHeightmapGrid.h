@@ -111,7 +111,7 @@ public:
     IWorld& getWorld() const { return *mWorld; }
     void setWorld(IWorld& world) { mWorld = &world; }
 
-    STATIC_EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
+    EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
 
 private:
@@ -141,5 +141,5 @@ private:
     // TODO: Server only
     boost::container::flat_set<i32v2> mModifiedVertsThisTick;
     // Events
-    STATIC_EVENT_DISPATCHER_DEF(IHeightmapGrid);
+    EVENT_DISPATCHER_DEF(IHeightmapGrid);
 };

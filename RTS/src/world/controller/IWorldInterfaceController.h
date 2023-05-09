@@ -14,6 +14,9 @@ public:
     virtual void renderUI() = 0;
     virtual void init() = 0;
 
+    vui::GameWindow* getGameWindow() const { return mWindow; }
+    IWorld* getWorld() const { return mWorld; }
+    CameraController* getCameraController() const { return mCameraController; }
 protected:
     vui::GameWindow* mWindow = nullptr;
     IWorld* mWorld = nullptr;

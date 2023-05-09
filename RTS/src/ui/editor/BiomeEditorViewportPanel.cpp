@@ -4,6 +4,7 @@
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+#include <Vorb/ui/InputDispatcher.h>
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
@@ -26,6 +27,8 @@
 #include "camera/SimpleCamera.h"
 
 #include "App.h"
+
+#include "ui/UIContext.h"
 
 constexpr ui32 EDITOR_CHUNK_GRID_WIDTH = 2; // nxn grid
 constexpr ui32 NUM_EDITOR_CHUNKS = SQ(EDITOR_CHUNK_GRID_WIDTH);
@@ -78,9 +81,46 @@ bool BiomeEditorViewportPanel::updateAndRender()
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    renderCenterPanel();
+    i32AABB2 imageRect;
+    renderCenterPanel(&imageRect);
 
+    // Check if the mouse just clicked on the image
+    bool clickedLeft = false;
+    bool releasedLeft = false;
+    if (ImGui::IsItemHovered()) {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            clickedLeft = true;
+            mLeftMousePressed = true;
+        }
+        else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            releasedLeft = true;
+            mLeftMousePressed = false;
+        }
+    }
+    else if (mLeftMousePressed) {
+        releasedLeft = true;
+        mLeftMousePressed = false;
+    }
     ImGui::End();
+
+    if (mWorldInterfaceController) {
+        // Force mouse position to the panel mouse position as we are squishing the viewport into this panel
+        const f32v2 mousePos(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+        const f32v2 mouseOffset = mousePos - f32v2(imageRect.pos.x, imageRect.pos.y);
+        const f32v2 mouseOffsetNormalized = mouseOffset / f32v2(imageRect.dims.x, imageRect.dims.y);
+        const f32v2 viewportMousePos = mouseOffsetNormalized * f32v2(mWorldInterfaceController->getGameWindow()->getViewportDims());
+        mWorldInterfaceController->setMousePosition(viewportMousePos);
+
+        if (clickedLeft) {
+            vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, true);
+        }
+        else if (releasedLeft) {
+            vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, false);
+        }
+
+        mWorldInterfaceController->update();
+        mWorldInterfaceController->renderUI();
+    }
 
     return isOpen;
 }
@@ -102,6 +142,13 @@ void BiomeEditorViewportPanel::onEnter() {
     }
 
     GameThreadTasks::getInstance().setActiveEditorWorld(mEditorWorld.get());
+    {
+        // Dispatch editor world
+        UIContextEvent evnt;
+        evnt.eventType = UIContextEventType::EditorWorldSet;
+        evnt.mWorld = mEditorWorld.get();
+        UIContext::getInstance().dispatchEditorWorldSet(evnt);
+    }
 
     mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(sApp->getWindow(), *mEditorWorld, *RenderContext::getInstance().getCameraController());
     mWorldInterfaceController->init();
@@ -109,11 +156,18 @@ void BiomeEditorViewportPanel::onEnter() {
 
 void BiomeEditorViewportPanel::onExit() {
     GameThreadTasks::getInstance().setActiveEditorWorld(nullptr);
+    {
+        // Dispatch editor world
+        UIContextEvent evnt;
+        evnt.eventType = UIContextEventType::EditorWorldSet;
+        evnt.mWorld = nullptr;
+        UIContext::getInstance().dispatchEditorWorldSet(evnt);
+    }
 
     mWorldInterfaceController.reset();
 }
 
-void BiomeEditorViewportPanel::renderCenterPanel() {
+void BiomeEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     const RenderContext& renderContext = RenderContext::getInstance();
     mActiveGBuffer = &renderContext.getActiveGBuffer();
     mActiveGBuffer->use();
@@ -136,6 +190,12 @@ void BiomeEditorViewportPanel::renderCenterPanel() {
     const ImVec2 uv1(1, 0);
     const ImVec2 dims(imageDims.x, imageDims.y);
     ImGui::Image((ImTextureID)displayTexture, dims, uv0, uv1);
+
+    if (outImageRect) {
+        ImVec2 imageRectMin = ImGui::GetItemRectMin();
+        outImageRect->dims = imageDims;
+        outImageRect->pos = f32v2(imageRectMin.x, imageRectMin.y);
+    }
 }
 
 VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()

@@ -10,6 +10,7 @@
 TerrainMeshManager::TerrainMeshManager(IWorld& world) : mWorld(world) {
     // Init terrain
     mWidthTerrainTrees = mWorld.getWidthChunks() / CHUNKS_PER_TERRAIN_QUADTREE;
+    IHeightmapGrid& heightmapGrid = mWorld.getHeightmapGrid();
     const i32 WORLD_SIZE_TERRAIN_QUADTREES = SQ(mWidthTerrainTrees);
 
     mTerrainTrees.reserve(WORLD_SIZE_TERRAIN_QUADTREES);
@@ -19,8 +20,8 @@ TerrainMeshManager::TerrainMeshManager(IWorld& world) : mWorld(world) {
     }
 
     // Init events
-    IHeightmapGrid::registerIHeightmapGridListeners(mHeightmapGridListeners);
-    IHeightmapGrid::addEditVertsListener(mHeightmapGridListeners, [this](const HeightmapGridEvent& editEvent) {
+    heightmapGrid.registerIHeightmapGridListeners(mHeightmapGridListeners);
+    heightmapGrid.addEditVertsListener(mHeightmapGridListeners, [this](const HeightmapGridEvent& editEvent) {
         assert(editEvent.mEventType == HeightmapGridEventType::EditVerts);
         assert(editEvent.mModifiedVerts);
         onTerrainModified(*editEvent.mModifiedVerts);

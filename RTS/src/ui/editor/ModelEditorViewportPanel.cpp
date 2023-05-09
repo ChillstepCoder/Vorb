@@ -51,7 +51,7 @@ bool ModelEditorViewportPanel::updateAndRender() {
         initGBuffers(imageDims);
     }
     
-    renderCenterPanel();
+    renderCenterPanel(nullptr);
 
     ImGui::End();
 

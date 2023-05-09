@@ -90,6 +90,7 @@ public:
     // Callable from world renderer
     void renderPassWorldDebug(const Camera3D& camera) const;
 private:
+    void updateCamera(f32 frameAlpha);
     void updateRenderThreadProcs();
 
     // Render passes

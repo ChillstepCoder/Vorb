@@ -52,7 +52,7 @@ bool MaterialEditorViewportPanel::updateAndRender()
     vg::DepthState::FULL.set();
 
     renderGrid(camera->getViewProjectionMatrix());
-    renderCenterPanel();
+    renderCenterPanel(nullptr);
 
 
     ImGui::End();
