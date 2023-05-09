@@ -18,9 +18,11 @@ int main(int argc, char **argv) {
     vorb::init(vorb::InitParam::ALL);
 
     App app;
+    sApp = &app;
 
     app.run();
 
+    sApp = nullptr;
 #ifdef VORB_OS_WINDOWS
     // Tell windows that our priority class should be above normal
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);

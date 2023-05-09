@@ -25,3 +25,4 @@ protected:
 
 };
 
+inline static App* sApp = nullptr;

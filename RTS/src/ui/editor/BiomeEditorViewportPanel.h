@@ -3,6 +3,7 @@
 
 class Chunk;
 class IWorld;
+class IWorldInterfaceController;
 
 DECL_VG(class GBuffer);
 
@@ -25,7 +26,8 @@ protected:
 	void initializeWorld();
 
 	vg::GBuffer* mActiveGBuffer = nullptr;
-	std::unique_ptr<IWorld> mEditorWorld;
+    std::unique_ptr<IWorld> mEditorWorld;
+    std::unique_ptr<IWorldInterfaceController> mWorldInterfaceController;
 
 };
 

@@ -80,8 +80,6 @@ GameplayScreen::GameplayScreen(App* const app)
     // TODO: Config
     sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
 
-    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>();
-
     // TODO: This is kinda stupid
     /*if (WeaponRegistry::s_allWeaponItems.empty()) {
         ArmorRegistry::loadArmors();
@@ -181,7 +179,8 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     // Start the game :O
     GameThread::initInstance(*mWorld, mNetMode);
 
-    mWorldInterfaceController->init(m_app->getWindow(), *mWorld, *mCameraController);
+    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(m_app->getWindow(), *mWorld, *mCameraController);
+    mWorldInterfaceController->init();
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
@@ -195,7 +194,9 @@ void GameplayScreen::onExit(const vui::GameTime& gameTime) {
 void GameplayScreen::update(const vui::GameTime& gameTime) {
 
     updateTimeScaling(gameTime);
-    mWorldInterfaceController->update();
+    if (mWorldInterfaceController) {
+        mWorldInterfaceController->update();
+    }
 
     // Check quit
     if (GameplayScreenGlobalState::isQuittingToDesktop) {
@@ -251,7 +252,9 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
         mRenderContext->renderFrame(*mCameraController, frameAlpha, gameTime.elapsedSec);
 
-        mWorldInterfaceController->renderUI();
+        if (mWorldInterfaceController) {
+            mWorldInterfaceController->renderUI();
+        }
 
         mRenderContext->endFrame();
     }

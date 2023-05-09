@@ -59,7 +59,7 @@ public:
     void initPostLoad();
 
     void beginFrame(const RenderState* renderState, const Camera3D* camera, f32v3 playerPos); // Called automatically by beginFrame
-    void renderFrame(CameraController& camera, f32 frameAlpha, f32 elapsedSec);
+    void renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
     void tickGameThread(IWorld& world);
@@ -75,6 +75,7 @@ public:
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
     const ui32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return mCamera; }
+    CameraController* getCameraController() const { return mCameraController; }
 
     // Renderers
     TileContainerRenderer& getTileContainerRenderer() const;
@@ -101,6 +102,7 @@ private:
     const RenderState* mCurrentRenderState = nullptr;
     ui32v2 mScreenResolution;
     ui32v2 mCurrentFramebufferDims;
+    CameraController* mCameraController = nullptr;
     const Camera3D* mCamera = nullptr;
     f32 mCurrentFrameAlpha;
     f32 mCurrentFrameElapsedSec;

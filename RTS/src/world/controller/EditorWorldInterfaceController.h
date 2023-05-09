@@ -8,28 +8,23 @@
 #include "tile/TileHandle.h"
 #include "world/WorldObjectQuery.h"
 
-class TileInteractPanel;
-class DeferredPhysicsPick;
+// TODO: Why doesn't forward declare work?
+#include "physics/PhysHitResult.h"
+#include "ui/TileInteractPanel.h"
 
 class EditorWorldInterfaceController : public IWorldInterfaceController
 {
 public:
-    void init(vui::GameWindow& window, IWorld& world, CameraController& cameraController) override;
+    EditorWorldInterfaceController(vui::GameWindow& window, IWorld& world, CameraController& cameraController) : IWorldInterfaceController(window, world, cameraController) {};
+    virtual ~EditorWorldInterfaceController();
     void update() override;
     void renderUI() override;
-
-private:
+    void init() override;
+protected:
     void updateTilePicking();
     void initEvents();
     void tryUpdateAndRenderInteractPopup();
 
-    // Pathfinding test
-    ui32v2 mPathFindStart = ui32v2(0);
-    bool mIsPathfinding = false;
-
-    vui::GameWindow* mWindow = nullptr;
-    IWorld* mWorld = nullptr;
-    CameraController* mCameraController = nullptr;
     // UI
     TileHandle mSelectedTileHandle;
     f32v2 mSelectedScreenPos = f32v2(0.0f);

@@ -320,6 +320,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     PROFILE_FUNCTION();
     mCurrentFrameAlpha = frameAlpha;
     mCurrentFrameElapsedSec = elapsedSec;
+    mCameraController = &cameraController;
 
     const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
     mActiveWorld = renderState.getWorld();

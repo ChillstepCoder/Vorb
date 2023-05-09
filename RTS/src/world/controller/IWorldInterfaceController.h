@@ -8,9 +8,15 @@ DECL_VUI(class GameWindow);
 class IWorldInterfaceController
 {
 public:
-    virtual void init(vui::GameWindow& window, IWorld& world, CameraController& cameraController) = 0;
+    IWorldInterfaceController(vui::GameWindow& window, IWorld& world, CameraController& cameraController);
+    virtual ~IWorldInterfaceController() {};
     virtual void update() = 0;
     virtual void renderUI() = 0;
+    virtual void init() = 0;
 
+protected:
+    vui::GameWindow* mWindow = nullptr;
+    IWorld* mWorld = nullptr;
+    CameraController* mCameraController = nullptr;
 };
 

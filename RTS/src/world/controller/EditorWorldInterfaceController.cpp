@@ -2,7 +2,6 @@
 #include "EditorWorldInterfaceController.h"
 
 #include "camera/CameraController.h"
-#include "physics/PhysHitResult.h"
 #include "gamethread/GameThreadTasks.h"
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
@@ -15,7 +14,6 @@
 #include "physics/PhysicsWorld.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "ui/UIContext.h"
-#include "ui/TileInteractPanel.h"
 #include "pathfinding/NavWorld.h"
 
 #include "resources/TileRepository.h"
@@ -26,14 +24,15 @@
 
 #include "options/DebugOptions.h"
 
-void EditorWorldInterfaceController::init(vui::GameWindow& window, IWorld& world, CameraController& cameraController)
+void EditorWorldInterfaceController::init()
 {
     assert(!mWorld);
-    mWindow = &window;
-    mWorld = &world;
-    mCameraController = &cameraController;
 
     initEvents();
+}
+
+EditorWorldInterfaceController::~EditorWorldInterfaceController() {
+
 }
 
 void EditorWorldInterfaceController::update()

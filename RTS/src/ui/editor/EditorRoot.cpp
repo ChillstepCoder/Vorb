@@ -48,6 +48,15 @@ EditorRoot::EditorRoot() {
     vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& event) {
         if (event.keyCode == VKEY_T) {
             sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
+            // Notify panels that we are losing or gaining context
+            if (mActiveCenterPanel) {
+                if (sDebugOptions.mShowEditor) {
+                    mActiveCenterPanel->onEnter();
+                }
+                else {
+                    mActiveCenterPanel->onExit();
+                }
+            }
         }
     });
     vui::InputDispatcher::window.addResizeListener(mWindowListeners, [this](const vui::WindowResizeEvent& event) {

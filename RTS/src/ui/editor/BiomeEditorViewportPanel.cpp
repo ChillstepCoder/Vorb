@@ -8,6 +8,8 @@
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
 
+#include "world/controller/EditorWorldInterfaceController.h"
+
 #include "resources/ResourceManager.h"
 
 #include "world/IWorld.h"
@@ -22,6 +24,8 @@
 
 #include "camera/Camera3D.h"
 #include "camera/SimpleCamera.h"
+
+#include "App.h"
 
 constexpr ui32 EDITOR_CHUNK_GRID_WIDTH = 2; // nxn grid
 constexpr ui32 NUM_EDITOR_CHUNKS = SQ(EDITOR_CHUNK_GRID_WIDTH);
@@ -98,10 +102,15 @@ void BiomeEditorViewportPanel::onEnter() {
     }
 
     GameThreadTasks::getInstance().setActiveEditorWorld(mEditorWorld.get());
+
+    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(sApp->getWindow(), *mEditorWorld, *RenderContext::getInstance().getCameraController());
+    mWorldInterfaceController->init();
 }
 
 void BiomeEditorViewportPanel::onExit() {
     GameThreadTasks::getInstance().setActiveEditorWorld(nullptr);
+
+    mWorldInterfaceController.reset();
 }
 
 void BiomeEditorViewportPanel::renderCenterPanel() {
