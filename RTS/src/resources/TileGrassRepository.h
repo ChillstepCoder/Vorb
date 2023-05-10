@@ -14,18 +14,20 @@ class MaterialRepository;
 struct TileGrassFileData {
     nString alphaMasks;
     nString textures;
-    f32v2 sizeMults;
-    f32 leanVariance;
-    i32 density;
-    i32 numTextures;
+    f32v2 sizeMults = f32v2(1.0f);
+    f32v2 heightVariance = f32v2(0.2f, 0.8f);
+    f32 leanVariance = 0.5f;
+    i32 density = 8;
+    i32 numTextures = 1;
 };
 KEG_TYPE_DECL(TileGrassFileData);
 
 struct TileGrassData {
     StrToken mName;
     f32v2 mSizeMults;
+    f32v2 mHeightVariance;
     f32 mLeanVariance;
-    ui8 mDensity; // 1, 2, 4, 8, 16
+    ui8 mDensity; //  MAX_GRASS_DETAIL
     ui8 mNumTextures;
     MaterialID mMaterialID;
     TileGrassID mId;

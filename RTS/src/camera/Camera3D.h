@@ -5,6 +5,8 @@
 
 class SimpleCamera;
 
+constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
+
 class Camera3D : public ICamera
 {
 public:
@@ -84,6 +86,7 @@ protected:
     f32v3 mUp = f32v3(0.0f, 1.0f, 0.0f);
 
     // This must match layout of GlobalUbo.glsl for fast data store copy
+    // See: CAMERA_MATRICES_BYTE_SIZE
     //  ****************
     f32m4 mV;
     f32m4 mInverseV;

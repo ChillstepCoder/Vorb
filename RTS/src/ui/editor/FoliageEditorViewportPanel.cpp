@@ -21,13 +21,14 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/mesh/mesher/builder/GrassMeshBuilder.h"
+#include "rendering/UboHelpers.h"
 
 #include "camera/Camera3D.h"
 #include "camera/SimpleCamera.h"
 
 FoliageEditorViewportPanel::FoliageEditorViewportPanel()
 {
-
+    mShowDrawModeDropdown = false;
 }
 
 FoliageEditorViewportPanel::~FoliageEditorViewportPanel()
@@ -75,6 +76,7 @@ void FoliageEditorViewportPanel::updateAndRenderControls(f32 ySize)
     updateAndRenderSharedControls();
     ImGui::Separator();
     
+    renderGrassControls();
 
     ImGui::EndChild();
 }
@@ -89,21 +91,31 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
 
     sGBuffers[0]->use();
 
-    GrassBillboardMesh& mesh = mGrassMeshes.begin()->get()->mMesh;
-    constexpr ui32 WIDTH_TILES = 8;
-    TileGrass grassDataArray[SQ(WIDTH_TILES)];
-    for (ui32 i = 0; i < SQ(WIDTH_TILES); ++i) {
-        grassDataArray[i].grassIDs[0] = mGrassData->mId;
-        grassDataArray[i].densities[0] = 255;
-    }
+    if (mDirtyFoliageMesh) {
+        GrassBillboardMesh& mesh = mGrassMeshes.begin()->get()->mMesh;
+        mesh.destroy(); // If we already had a mesh, make sure to clean up
+        constexpr ui32 WIDTH_TILES = 8;
+        TileGrass grassDataArray[SQ(WIDTH_TILES)];
+        for (ui32 i = 0; i < SQ(WIDTH_TILES); ++i) {
+            int x = i % WIDTH_TILES;
+            const f32 gradientAlpha = (f32)x / (WIDTH_TILES - 1);
+            const int density = round(glm::lerp((f32)mDensityGradient.x, (f32)mDensityGradient.y, gradientAlpha));
+            grassDataArray[i].grassIDs[0] = mGrassData->mId;
+            grassDataArray[i].densities[0] = (ui8)glm::clamp(density, 0, 255);
+        }
 
-    GrassMeshBuilder::editorCreateGrassMesh(mesh, WIDTH_TILES, grassDataArray);
-    mesh.finishMesh();
+        GrassMeshBuilder::editorCreateGrassMesh(mesh, WIDTH_TILES, grassDataArray);
+        mesh.finishMesh();
+        mDirtyFoliageMesh = false;
+    }
 
     Camera3D camera3D;
     camera3D.copyFromSimpleCamera(*camera);
-    mGrassRenderer->renderGrass(camera3D, f32v3(FLT_MAX), mGrassMeshesSet);
-    mesh.destroy();
+    
+    UboHelpers::uploadCameraUbo(RenderContext::getInstance().getCameraUbo(), camera3D);
+    if (mGrassMeshes.begin()->get()->mMesh.isValid()) {
+        mGrassRenderer->renderGrass(camera3D, f32v3(FLT_MAX), mGrassMeshesSet);
+    }
 
     vg::DepthState::NONE.set();
     renderGrid(camera->getViewProjectionMatrix());
@@ -116,4 +128,35 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     vg::GBuffer::unuse();
 
     renderCenterPanelImage(outImageRect, getFinalOutputTexture());
+}
+
+void FoliageEditorViewportPanel::renderGrassControls()
+{
+    if (!mGrassData) {
+        return;
+    }
+    ImGui::Text(mGrassData->mName.toString().c_str());
+    if (ImGui::SliderFloat2("Size Mults", &mGrassData->mSizeMults.x, 0.01f, 10.0f)) {
+        mDirtyFoliageMesh = true;
+    }
+    if (ImGui::SliderFloat2("Height Variance", &mGrassData->mHeightVariance.x, 0.01f, 1.0f)) {
+        mDirtyFoliageMesh = true;
+    }
+    if (ImGui::SliderFloat("Lean Variance", &mGrassData->mLeanVariance, 0.0f, 2.0f)) {
+        mDirtyFoliageMesh = true;
+    }
+    if (ImGui::Checkbox("Use Gradient Color", &mGrassData->mUseGradientColor)) {
+        mDirtyFoliageMesh = true;
+    }
+    // Densities are power of two but display as index
+    int density = mGrassData->mDensity;
+    if (ImGui::SliderInt("Density", &density, 1, MAX_GRASS_DETAIL)) {
+        mGrassData->mDensity = density;
+        mDirtyFoliageMesh = true;
+    }
+
+    ImGui::Separator();
+    if (ImGui::SliderInt2("Density Gradient", &mDensityGradient.x, 0, 255)) {
+        mDirtyFoliageMesh = true;
+    }
 }

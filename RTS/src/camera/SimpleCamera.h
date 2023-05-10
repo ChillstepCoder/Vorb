@@ -14,6 +14,7 @@ public:
     virtual glm::vec3 getRight() const = 0;
     virtual glm::vec3 getUp() const = 0;
     virtual f32 getAspectRatio() const = 0;
+    virtual f32 getFov() const = 0;
 };
 
 class SimpleCamera final
@@ -34,6 +35,7 @@ public:
     glm::vec3 getRight() const { return positioner_->getRight(); }
     glm::vec3 getUp() const { return positioner_->getUp(); }
     f32 getAspectRatio() const { return positioner_->getAspectRatio(); }
+    f32 getFov() const { return positioner_->getFov(); }
 
     inline static constexpr f32 ZNEAR = 0.1f;
     inline static constexpr f32 ZFAR = 100.0f;
@@ -123,13 +125,13 @@ public:
     virtual glm::mat4 getViewProjectionMatrix() const override {
         const glm::mat4 t = glm::translate(glm::mat4(1.0f), -cameraPosition_);
         glm::mat4 r = glm::mat4_cast(cameraOrientation_);
-        r = glm::perspective(glm::radians(90.0f), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
+        r = glm::perspective(glm::radians(mFov), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
         return r * t;
     }
 
     virtual glm::mat4 getViewProjectionMatrixNoTranslation() const override {
         glm::mat4 r = glm::mat4_cast(cameraOrientation_);
-        r = glm::perspective(glm::radians(90.0f), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
+        r = glm::perspective(glm::radians(mFov), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
         return r;
     }
 
@@ -138,6 +140,7 @@ public:
     virtual glm::vec3 getRight() const override { return cameraRight_; }
     virtual glm::vec3 getUp() const override { return cameraUp_; }
     virtual f32 getAspectRatio() const override { return mAspectRatio; }
+    virtual f32 getFov() const override { return mFov; }
 
     void setPosition(const glm::vec3& pos) { cameraPosition_ = pos; }
 
@@ -185,6 +188,7 @@ private:
     glm::vec3 moveSpeed_ = glm::vec3(0.0f);
     glm::vec3 up_ = glm::vec3(0.0f, 0.0f, 1.0f);
     f32 mAspectRatio = 4.0f / 3.0f;
+    f32 mFov = 90.0f;
 };
 
 class CameraPositioner_MoveTo final : public SimpleCameraPositionerInterface

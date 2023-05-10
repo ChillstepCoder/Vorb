@@ -161,7 +161,7 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 const float xo = (x2 + rnd) / (float)detail;
                                 const float yo = (y2 - rnd) / (float)detail;
 
-                                float rsize = lerp(0.2f, 0.8f, rnd);
+                                float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
                                 const f32 grassNoise = -grassNoiseFunction.compute((f64)tileWorldOffset.x + xo + chunk.getWorldPos().x, (f64)tileWorldOffset.y + yo + chunk.getWorldPos().y);
                                 rsize += -grassNoise * 0.4f;
                                 rsize *= densityMult;
@@ -222,6 +222,7 @@ void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32
 
                     const TileGrassData& grassData = grassRepository.getTileGrassData(id);
                     const NoiseFunction& grassNoiseFunction = grassData.mNoiseFunction;
+                    assert(grassData.mDensity <= MAX_GRASS_DETAIL);
                     const ui32 detail = GRASS_LOD_DETAIL[grassData.mDensity][lod];
                     const f32 baseDensity = grassVal.densities[i] * DIVIDE_MULT;
 
@@ -233,7 +234,7 @@ void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32
                     // TODO: Determine edge
 
                     constexpr auto boundsCheckGetDensity = [](int x, int y, int width, const TileGrass* grassData, TileGrassID id) -> f32 {
-                        if (x < 0 || y < 0 || x > width || y > width) return 0.0f;
+                        if (x < 0 || y < 0 || x >= width || y >= width) return 0.0f;
                         return grassData[y * width + x].getDensity(id) * DIVIDE_MULT;
                     };
 
@@ -253,14 +254,13 @@ void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32
                             const f32 d2 = boundsCheckGetDensity(sx, sy + 1, (int)widthTiles, grassDataArray, id);
                             const f32 d3 = boundsCheckGetDensity(sx + 1, sy + 1, (int)widthTiles, grassDataArray, id);
                             // We use negative of our density if zero, so we get a nice transition instead of a hard edge (iamverysmart)
-                            const f32 densityMult = interpolateDensity(
+                             f32 densityMult = interpolateDensity(
                                 d0 > 0 ? d0 : -baseDensity,
                                 d1 > 0 ? d1 : -baseDensity,
                                 d2 > 0 ? d2 : -baseDensity,
                                 d3 > 0 ? d3 : -baseDensity,
                                 getOffsetFromD0(xb, yb)
                             );
-
                             constexpr f32 BIG_PRIME1 = 7919;
                             constexpr f32 BIG_PRIME2 = 7673;
                             const f32 spawnChance = Random::getCachedRandomfSpecific((x2 << 3 + y2 << 4) * 15 + (x << 4) - (y << 6));
@@ -270,7 +270,7 @@ void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32
                                 const float xo = (x2 + rnd) / (float)detail;
                                 const float yo = (y2 - rnd) / (float)detail;
 
-                                float rsize = lerp(0.2f, 0.8f, rnd);
+                                float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
                                 const f32 grassNoise = -grassNoiseFunction.compute((f64)tileWorldOffset.x + xo, (f64)tileWorldOffset.y + yo);
                                 rsize += -grassNoise * 0.4f;
                                 rsize *= densityMult;

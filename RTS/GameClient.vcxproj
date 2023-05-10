@@ -392,6 +392,7 @@
     <ClCompile Include="src\rendering\Skybox.cpp" />
     <ClCompile Include="src\rendering\texture\MaterialTextureGenerator.cpp" />
     <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
+    <ClCompile Include="src\rendering\UboHelpers.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
@@ -702,6 +703,7 @@
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />
     <ClInclude Include="src\rendering\TerrainRenderer.h" />
+    <ClInclude Include="src\rendering\UboHelpers.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />

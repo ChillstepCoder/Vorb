@@ -44,6 +44,7 @@
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
+#include "rendering/UboHelpers.h"
 #include "weather/CloudMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -140,8 +141,6 @@ void APIENTRY glDebugOutput(GLenum source,
     //assert(false);
 }
 
-constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
-
 RenderContext* RenderContext::sInstance = nullptr;
 
 // TODO: Read http://iquilezles.org/articles/
@@ -218,10 +217,8 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         assert(false);
     }
 
-    // UBO
-    glCreateBuffers(1, &mGlobalUbo);
-    glNamedBufferStorage(mGlobalUbo, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), nullptr, GL_DYNAMIC_STORAGE_BIT);
-    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_GLOBAL_UBO, mGlobalUbo);
+    UboHelpers::allocateGlobalUbo(mGlobalUbo);
+    UboHelpers::allocateCameraUbo(mCameraUbo);
 
     // Improve depth precision (req for reverse depth buffer if we ever wanna do that)
     // https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/
@@ -230,6 +227,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 
 RenderContext::~RenderContext() {
     glDeleteBuffers(1, &mGlobalUbo);
+    glDeleteBuffers(1, &mCameraUbo);
 }
 
 RenderContext& RenderContext::initInstance(const f32v2& screenResolution, SDL_Window* window) {
@@ -271,38 +269,18 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
 
     mWorldRenderer->onBeginFrame(renderState, playerPos);
 
-    GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
+
     // Misc renderData
     const TimeOfDayManager& timeOfDayManager = mActiveWorld->getTimeOfDayManager();
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.skyRotMatrix = timeOfDayManager.getSkyRotMatrix();
-    // Ubo data
-    uboData.Time = sTotalTimeSeconds;
-    uboData.TimeOfDay = timeOfDayManager.getTimeOfDayHours();
-    uboData.PlayerPosWorld = playerPos;
     
     ShadowRenderer& shadowRenderer = mWorldRenderer->getShadowRenderer();
-    const f32v3 lastSunPosition = shadowRenderer.getLastUpdatedSunPosition();
-    uboData.SunColor = timeOfDayManager.getSunColor();
-    uboData.SunHeight = timeOfDayManager.getSunHeight();
-    uboData.SunPosition = lastSunPosition;
-    uboData.SunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(lastSunPosition.x, lastSunPosition.y, lastSunPosition.z, 1.0f)));
-    uboData.SunRight = glm::normalize(glm::cross(lastSunPosition, f32v3(0.0f, 0.0f, 1.0f)));
-    uboData.SunUp = glm::normalize(glm::cross(lastSunPosition, uboData.SunRight));
 
-    // Camera data
-    uboData.CameraPos = camera->getPosition();
-    uboData.CameraFront = camera->getFrontVector();
-    uboData.CameraRight = camera->getRightVector();
-    uboData.CameraUp = camera->getUpVector();
-    uboData.CameraZRange = f32v2(camera->getZNear(), camera->getZFar());
-
-    // Update ubo
-    // Camera matrices
-    glNamedBufferSubData(mGlobalUbo, 0, CAMERA_MATRICES_BYTE_SIZE, &camera->getViewMatrix()[0][0]);
-    // Rest of the UBO
-    glNamedBufferSubData(mGlobalUbo, CAMERA_MATRICES_BYTE_SIZE, sizeof(GlobalUboData), &uboData);
+    // Ubo data
+    UboHelpers::uploadGlobalUbo(mGlobalUbo, *camera, playerPos, shadowRenderer.getLastUpdatedSunPosition(), timeOfDayManager);
+    UboHelpers::uploadCameraUbo(mCameraUbo, *camera);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 

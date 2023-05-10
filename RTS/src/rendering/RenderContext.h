@@ -66,6 +66,7 @@ public:
 
     void selectNextDebugShader();
 
+    VGBuffer getCameraUbo() const { return mCameraUbo; }
     const GlobalRenderData& getRenderData() const { return mRenderData; }
     vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
     const vg::GBuffer& getPrevFinalGBuffer() const { return *mGBuffers[mPrevGBufferIndex]; }
@@ -122,6 +123,7 @@ private:
     vg::GBuffer* mActiveGBuffer = nullptr;
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
     VGBuffer mGlobalUbo = 0;
+    VGBuffer mCameraUbo = 0;
 
 
 };

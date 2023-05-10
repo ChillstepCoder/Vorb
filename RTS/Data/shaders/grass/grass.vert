@@ -80,6 +80,7 @@ void main() {
     
     // Wind
 	vec3 trueWorldPos = vPosition.xyz + unOffset + CameraPos;
+    vec2 randSeed = vec2(vPosition.xy);
     fWorldRoot = trueWorldPos;
     fHeight = xzOffsetUncompressed.y;
 	
@@ -94,15 +95,15 @@ void main() {
     fGrassMaterial = grassID;
     int cellCounti = unGrassMaterialCellCounts[grassID];
     float uWidth = 1.0 / float(cellCounti);
-    float bladeType = round(mod(rand(trueWorldPos.xy + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
+    float bladeType = round(mod(rand(randSeed + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
     
     
 	// Grass blade uvs
-    float randomFlip = rand(trueWorldPos.yx);
+    float randomFlip = rand(randSeed);
     // TODO: Only handles one row
 	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))] * vec2(uWidth, 1.0);
     fUV.x += bladeType * uWidth;
     
     // Lean at the top
-    fLean = xDirection * unLeanVariance * fUV.y * rand(trueWorldPos.xy) * unGrassLeanVariance[grassID];
+    fLean = xDirection * unLeanVariance * fUV.y * rand(randSeed) * unGrassLeanVariance[grassID];
 }

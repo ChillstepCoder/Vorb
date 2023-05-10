@@ -169,7 +169,7 @@ VGTexture IEditorViewportPanel::getFinalOutputTexture() {
 
 void IEditorViewportPanel::updateAndRenderSharedControls() {
     // Draw mode
-    const char* drawModes[e_cast(EditorViewportDrawMode::COUNT)] = {
+    constexpr const char* drawModes[e_cast(EditorViewportDrawMode::COUNT)] = {
         "Lit",
         "Unlit",
         "Normals",
@@ -184,17 +184,19 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
         "Wireframe", // Always last
     };
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12);
-    if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
-        for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
-            bool isSelected = e_cast(mDrawMode) == i;
-            ImGui::Selectable(drawModes[i], &isSelected);
+    if (mShowDrawModeDropdown) {
+        if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
+            for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
+                bool isSelected = e_cast(mDrawMode) == i;
+                ImGui::Selectable(drawModes[i], &isSelected);
 
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-                mDrawMode = (EditorViewportDrawMode)i;
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                    mDrawMode = (EditorViewportDrawMode)i;
+                }
             }
+            ImGui::EndCombo();
         }
-        ImGui::EndCombo();
     }
 
     // Skybox

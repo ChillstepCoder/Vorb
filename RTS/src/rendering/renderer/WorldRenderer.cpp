@@ -86,7 +86,6 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mTonemapRenderer = std::make_unique<TonemapRenderer>();
     checkGlError("WorldRenderer::WorldRenderer");
 
-
     mHDRLightGBuffer = std::make_unique<vg::GBuffer>(screenResolution);
     mHDRLightGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
@@ -507,7 +506,9 @@ void WorldRenderer::renderPassSky() {
 
 void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer) {
     PROFILE_FUNCTION();
-    if (renderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
+    const TimeOfDayManager& timeOfDayManager = mActiveWorld->getTimeOfDayManager();
+    // TODO: SunHeight race condition
+    if (timeOfDayManager.getSunHeight() > 0.01f && !sDebugOptions.mDisableShadows) {
         if (mShadowRenderer->shouldUpdateShadowsThisFrame()) {
             mShadowRenderer->useShadowBuffer();
             glEnable(GL_DEPTH_CLAMP);

@@ -3,10 +3,12 @@ default:
   num_textures: 6
   size: [4.625, 1.0]
   lean_variance: 1.0
+  height_variance: [0.2, 0.8]
   density: 12
 leafy_grass:
   textures: leafy_grass
   num_textures: 2
   size: [20.0, 0.7]
   lean_variance: 0.0
+  height_variance: [0.8, 0.8]
   density: 1

@@ -118,5 +118,8 @@ protected:
     f32v3 mLightColor = f32v3(1.0f, 0.8f, 0.8f);
     bool mRenderArray = false;
     bool mFollowAxis = false;
+
+    // Config
+    bool mShowDrawModeDropdown = true;
 };
 

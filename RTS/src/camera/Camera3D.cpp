@@ -125,14 +125,11 @@ void Camera3D::lookAt(const f32v3& pos) {
 void Camera3D::copyFromSimpleCamera(SimpleCamera& simpleCamera) {
     mAspectRatio = simpleCamera.getAspectRatio();
     mPosition = simpleCamera.getPosition();
-    mDirection = simpleCamera.getDirection();
-    mRight = simpleCamera.getRight();
-    mUp = simpleCamera.getUp();
-    lookAt(mPosition + mDirection);
-    mViewChanged = true;
-    mProjectionChanged = true;
+    mFieldOfView = simpleCamera.getFov();
     mZNear = simpleCamera.ZNEAR;
     mZFar = simpleCamera.ZFAR;
+    mProjectionChanged = true;
+    lookAt(mPosition + simpleCamera.getDirection());
     update();
 }
 
