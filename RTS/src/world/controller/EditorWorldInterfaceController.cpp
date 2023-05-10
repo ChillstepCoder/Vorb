@@ -202,7 +202,6 @@ void EditorWorldInterfaceController::initEvents() {
         const f32v2 screenPos(event.x, event.y);
 
         if (event.button == vui::MouseButton::LEFT) {
-
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
                 GameThreadTasks::getInstance().addCameraPickTeleportTask(mCameraController->getOwnedCamera().getPosition(), mMousePickRay);

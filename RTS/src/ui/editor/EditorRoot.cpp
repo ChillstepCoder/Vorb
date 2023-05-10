@@ -7,6 +7,7 @@
 #include "ui/editor/ModelEditorViewportPanel.h"
 #include "ui/editor/MaterialEditorViewportPanel.h"
 #include "ui/editor/BiomeEditorViewportPanel.h"
+#include "ui/editor/FoliageEditorViewportPanel.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -39,6 +40,7 @@ EditorRoot::EditorRoot() {
     mTileEditorPanel = std::make_unique<TileEditorPanel>();
     mModelEditorViewportPanel = std::make_unique<ModelEditorViewportPanel>();
     mMaterialEditorViewportPanel = std::make_unique<MaterialEditorViewportPanel>();
+    mFoliageEditorViewportPanel = std::make_unique<FoliageEditorViewportPanel>();
     mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
 
     // Initialize inputs
@@ -46,7 +48,7 @@ EditorRoot::EditorRoot() {
     vui::InputDispatcher::window.registerWindowListeners(mWindowListeners);
 
     vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& event) {
-        if (event.keyCode == VKEY_T) {
+        if (event.keyCode == VKEY_5) {
             sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
             // Notify panels that we are losing or gaining context
             if (mActiveCenterPanel) {
@@ -137,11 +139,15 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                 case TileEditorPanelResultCode::EDIT_FOLIAGE:
                     openFoliageForEdit(*std::get<TileGrassData*>(result.second));
                     break;
+                case TileEditorPanelResultCode::EDIT_BIOME:
+                    // TODO: Biome
+                    openBiomeForEdit();
+                    break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 4);
+            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 5);
 
         }
 
@@ -177,7 +183,12 @@ void EditorRoot::openMaterialForEdit(MaterialHandle& materialHandle) {
 
 void EditorRoot::openFoliageForEdit(TileGrassData& grassData)
 {
-    //mBiomeEditorViewportPanel->setMaterial(materialHandle);
+    mFoliageEditorViewportPanel->setGrassData(grassData);
+    setActiveCenterPanel(mFoliageEditorViewportPanel.get());
+}
+
+void EditorRoot::openBiomeForEdit()
+{
     setActiveCenterPanel(mBiomeEditorViewportPanel.get());
 }
 

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "WorldGenerator.h"
+#include "IWorldGenerator.h"
 
 #include "world/Chunk.h"
 #include "math/Noise.h"
@@ -15,15 +15,15 @@
 #include "generation/WorldGenerationData.h"
 
 
-WorldGenerator::WorldGenerator(IWorld& world) : mWorld(world) {
+IWorldGenerator::IWorldGenerator(IWorld& world) : mWorld(world) {
     mWorldCenter = f32v2(mWorld.getWidthTiles() * 0.5f);
 }
 
-WorldGenerator::~WorldGenerator() {
+IWorldGenerator::~IWorldGenerator() {
 
 }
 
-Tile WorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass /*= nullptr*/) {
+Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass /*= nullptr*/) {
     assert(grass);
     // TODO: This seems wrong
     static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
@@ -126,7 +126,7 @@ Tile WorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGr
     return tile;
 }
 
-void WorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
+void IWorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
     PROFILE_FUNCTION();
 
     // Allocate tiles if needed
@@ -198,7 +198,7 @@ void WorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
     chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
 }
 
-f32 WorldGenerator::getTerrainHeightAtPos(const f32v2& worldPos) {
+f32 IWorldGenerator::getTerrainHeightAtPos(const f32v2& worldPos) {
     // Base height
     f64 height = mGenerationData.mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
 

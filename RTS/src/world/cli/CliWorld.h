@@ -7,7 +7,7 @@
 class CliWorld : public IWorld, public CliWorldInterface
 {
 public:
-    CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
+    CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType);
 
     void init() override;
     void tick(f32 elapsedSec) override;

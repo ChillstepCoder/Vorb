@@ -8,7 +8,7 @@ class ItemStockpileRegistry;
 
 class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterface {
 public:
-    HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
+    HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType);
 
 	void init() override;
 	void tick(f32 elapsedSec) override;

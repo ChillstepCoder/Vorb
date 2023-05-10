@@ -5,6 +5,8 @@
 
 #include "rendering/material/MaterialData.h"
 
+#include "generation/NoiseFunction.hpp"
+
 DECL_VIO(class IOManager);
 
 class MaterialRepository;
@@ -28,6 +30,7 @@ struct TileGrassData {
     MaterialID mMaterialID;
     TileGrassID mId;
     bool mUseGradientColor = false;
+    NoiseFunction mNoiseFunction = NoiseFunction("Grass", 6, 0.7, 0.05, { 1200.0, -1200.0 }, 1.0, 0.0);
 };
 
 class TileGrassRepository

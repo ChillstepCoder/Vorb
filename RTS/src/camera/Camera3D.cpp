@@ -11,6 +11,8 @@
 
 #include "options/DebugOptions.h"
 
+#include "camera/SimpleCamera.h"
+
 #define UP_ABSOLUTE (f32v3(0.0f, 0.0f, 1.0f))
 
 Camera3D::Camera3D() {
@@ -118,6 +120,20 @@ void Camera3D::lookAt(const f32v3& pos) {
     mYaw = atan2(mDirection.x, mDirection.y);
 
     mViewChanged = true;
+}
+
+void Camera3D::copyFromSimpleCamera(SimpleCamera& simpleCamera) {
+    mAspectRatio = simpleCamera.getAspectRatio();
+    mPosition = simpleCamera.getPosition();
+    mDirection = simpleCamera.getDirection();
+    mRight = simpleCamera.getRight();
+    mUp = simpleCamera.getUp();
+    lookAt(mPosition + mDirection);
+    mViewChanged = true;
+    mProjectionChanged = true;
+    mZNear = simpleCamera.ZNEAR;
+    mZFar = simpleCamera.ZFAR;
+    update();
 }
 
 void Camera3D::setOrientation(const f32q& orientation) {

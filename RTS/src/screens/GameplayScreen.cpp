@@ -268,7 +268,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::initWorld() {
-    mWorld = WorldFactory::makeWorld(mNetMode, WorldData::DEFAULT_WORLD_WIDTH_TILES);
+    mWorld = WorldFactory::makeWorld(mNetMode, WorldData::DEFAULT_WORLD_WIDTH_TILES, WorldGeneratorType::Default);
 }
 
 void GameplayScreen::initCamera() {

@@ -69,7 +69,7 @@ void GrassBillboardMesh::draw(VGUniform tboSizeType, VGUniform tboPosition) cons
     RenderStats::recordDrawCall(mIndexCount / 3);
 }
 
-void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
+void GrassBillboardMesh::finishMesh()
 {
     if (mInstanceData.size()) {
         initBuffers();

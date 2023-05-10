@@ -43,11 +43,6 @@ bool MaterialEditorViewportPanel::updateAndRender()
         ImGui::Text("NO MATERIAL");
     }
 
-    // Lazy init so we don't use GPU memory when not in editor
-    if (sGBuffers[0] == nullptr) {
-        initGBuffers(imageDims);
-    }
-
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 

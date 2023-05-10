@@ -13,7 +13,7 @@
 
 #include "generation/WorldGenerationData.h"
 
-HostWorld::HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid)
+HostWorld::HostWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType) : IWorld(widthTiles, chunkGrid, heightmapGrid, generatorType)
 {
     mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
 }

@@ -5,6 +5,8 @@
 #include "util/StrToken.h"
 #include "network/WorldNetMode.h"
 
+#include "generation/WorldGeneratorType.h"
+
 class Structure;
 class Chunk;
 class CityGraph;
@@ -16,7 +18,7 @@ class PhysicsWorld;
 class StructureManager;
 class TimeOfDayManager;
 class TileContainerRepository;
-class WorldGenerator;
+class IWorldGenerator;
 
 
 // Shared world interface
@@ -25,7 +27,7 @@ class IWorld
     friend class WorldFactory;
     friend class CliWorldInterface;
 protected:
-    IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
+    IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType);
 public:
     virtual ~IWorld();
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
@@ -68,7 +70,7 @@ public:
     StructureManager& getStructureManager() const { return *mStructureManager; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
-    WorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
+    IWorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
 
     f32v3 getDefaultSpawn() const { return f32v3(mWidthTiles * 0.5f, mWidthTiles * 0.5f, 20.0f); }
     f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
@@ -106,6 +108,6 @@ protected:
     // Cities
     std::unique_ptr<CityGraph> mCities;
     // Generation
-    std::unique_ptr<WorldGenerator> mWorldGenerator;
+    std::unique_ptr<IWorldGenerator> mWorldGenerator;
 
 };

@@ -22,7 +22,7 @@ public:
     void reserveQuadCount(size_t count);
     void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType, ui8 rotation);
     void draw(VGUniform tboSizeType, VGUniform tboPosition) const;
-    void finishMesh(MeshDrawMode drawMode);
+    void finishMesh();
     void destroy();
 
     bool isValid() const { return mIndexCount > 0; }
@@ -41,4 +41,18 @@ private:
     VGTexture mTboPositionData = 0;
     VGBuffer mVboInstanceData = 0;
     VGBuffer mVboPosition = 0;
+};
+
+class GrassMesh {
+public:
+    GrassMesh(ui32 patchIndex) : mIndex(patchIndex) {};
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(GrassMesh);
+
+    GrassBillboardMesh mMesh;
+    ui32 mIndex = 0;
+    std::atomic<f32> mCrossfadeAlpha = 0.0f;
+    std::atomic_int mCrossfadeDir = 0; // -1 = down, 0 = none, 1 = up
+    f32v3 mPosition = f32v3(0.0f);
+    bool mHadMesh = false;
 };

@@ -41,6 +41,10 @@ public:
 
 protected:
     virtual void renderCenterPanel(i32AABB2* outImageRect);
+    virtual void clearFramebuffers();
+    virtual void renderSkybox();
+    virtual void renderCenterPanelImage(i32AABB2* outImageRect, VGTexture displayTexture);
+    void updateFramebufferAndLazyInit(const i32v2& framebufferDims);
 
     // Virtual API
     virtual const MaterialShader* getShader() { return nullptr; };
@@ -71,6 +75,7 @@ protected:
     EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::PBRTest;
     // All editor viewport panels share the same GBuffers
     static std::unique_ptr<vg::GBuffer> sGBuffers[3];
+    i32v2 mCurrentGbufferDims = i32v2(0);
 
     int mSelectedSkyboxIndex = 0;
     bool mShowSkyboxIrradiance = false;

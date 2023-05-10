@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "IChunkGrid.h"
 
-#include "generation/WorldGenerator.h"
+#include "generation/IWorldGenerator.h"
 #include "world/IWorld.h"
 #include "world/srv/SrvWorldInterface.h"
 #include "tile/TileContainerRepository.h"
@@ -66,58 +66,9 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         updateGridEdges(loadCenter);
     }
 
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
 
     // Update all loading chunks
-    for (size_t i = 0; i < mLoadingChunks.size();) {
-        Chunk& chunk = mChunks[mLoadingChunks[i]];
-        switch (chunk.mState) {
-            case ChunkState::WAITING_HEIGHT: {
-                // Poll for generated height
-                if (heightGrid.tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
-                    beginTileLoadForChunk(chunk);
-                }
-                ++i;
-                break;
-            }
-            case ChunkState::LOADING_TILES: {
-                ++i;
-                break;
-            }
-            case ChunkState::TILE_LOAD_FINISHED: {
-                chunk.mState = ChunkState::WAITING_MESH_PHYSICS_NAV;
-                chunk.mTileContainer->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
-
-                // Cache harvestables
-                chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
-
-                TileContainerEvent loadFinishedEvent;
-                loadFinishedEvent.container = chunk.mTileContainer;
-                mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
-
-                SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mWorld);
-                if (srvWorldInterface) {
-                    srvWorldInterface->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
-                }
-                ++i;
-                break;
-            }
-            case ChunkState::WAITING_MESH_PHYSICS_NAV: {
-                if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
-                    mLoadingChunks[i] = mLoadingChunks.back();
-                    mLoadingChunks.pop_back();
-                    chunk.mFlags.clearBit(ChunkFlags::IN_LOAD_LIST);
-                    onChunkReady(chunk);
-                }
-                else {
-                    ++i;
-                }
-                break;
-            }
-            default:
-                assert(false);
-        }
-    }
+    updateLoadingChunks();
 
     // Tick all active chunks
    /* for (Chunk* chunk : mActiveChunks) {
@@ -125,6 +76,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     }*/
 
     // Update all destroying chunks
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     for (size_t i = 0; i < mDestroyingChunks.size();) {
         Chunk& chunk = mChunks[mDestroyingChunks[i]];
         if (chunk.getRefCount() == 0) {
@@ -203,6 +155,59 @@ void IChunkGrid::setWorldAndAllocateChunks(IWorld& world) {
     mChunks = std::unique_ptr<Chunk[]>(new Chunk[mTotalChunks]);
     for (ChunkID i = 0; i < mTotalChunks; ++i) {
         mChunks[i].init(world, i, getWorldPosXYFromChunkID(i));
+    }
+}
+
+void IChunkGrid::updateLoadingChunks() {
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
+    for (size_t i = 0; i < mLoadingChunks.size();) {
+        Chunk& chunk = mChunks[mLoadingChunks[i]];
+        switch (chunk.mState) {
+            case ChunkState::WAITING_HEIGHT: {
+                // Poll for generated height
+                if (heightGrid.tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
+                    beginTileLoadForChunk(chunk);
+                }
+                ++i;
+                break;
+            }
+            case ChunkState::LOADING_TILES: {
+                ++i;
+                break;
+            }
+            case ChunkState::TILE_LOAD_FINISHED: {
+                chunk.mState = ChunkState::WAITING_MESH_PHYSICS_NAV;
+                chunk.mTileContainer->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
+
+                // Cache harvestables
+                chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
+
+                TileContainerEvent loadFinishedEvent;
+                loadFinishedEvent.container = chunk.mTileContainer;
+                mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
+
+                SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mWorld);
+                if (srvWorldInterface) {
+                    srvWorldInterface->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
+                }
+                ++i;
+                break;
+            }
+            case ChunkState::WAITING_MESH_PHYSICS_NAV: {
+                if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
+                    mLoadingChunks[i] = mLoadingChunks.back();
+                    mLoadingChunks.pop_back();
+                    chunk.mFlags.clearBit(ChunkFlags::IN_LOAD_LIST);
+                    onChunkReady(chunk);
+                }
+                else {
+                    ++i;
+                }
+                break;
+            }
+            default:
+                assert(false);
+        }
     }
 }
 

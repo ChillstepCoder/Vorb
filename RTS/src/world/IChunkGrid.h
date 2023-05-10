@@ -55,7 +55,9 @@ public:
     EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
 
     void setWorldAndAllocateChunks(IWorld& world);
-private:
+protected:
+    virtual void updateLoadingChunks();
+
     bool isChunkXYInBounds(const i32v2& xy);
 
     // Events

@@ -14,7 +14,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "generation/WorldGenerator.h"
+#include "generation/IWorldGenerator.h"
 #include <Vorb/graphics/GLProgram.h>
 
 constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[TERRAIN_QUADTREE_MAX_LOD] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths
@@ -73,7 +73,7 @@ void createTerrainAndWaterMeshFromGen(
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     assert(dims.x == dims.y);
 
-    WorldGenerator& worldGenerator = world.getWorldGenerator();
+    IWorldGenerator& worldGenerator = world.getWorldGenerator();
 
     // Generate heightfield
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];

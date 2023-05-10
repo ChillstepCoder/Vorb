@@ -35,46 +35,25 @@ IEditorViewportPanel::IEditorViewportPanel() {
 }
 
 IEditorViewportPanel::~IEditorViewportPanel() {
-
     glDeleteVertexArrays(1, &mGridVao);
 }
 
 void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
+
+    const i32v2 imageDims = i32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+
     // Lazy init resources
-    if (!mSkybox) {
-        mSkybox = std::make_unique<Skybox>();
-        mSkybox->init(Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sky"), nullptr);
-    }
+    updateFramebufferAndLazyInit(imageDims);
 
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    // Clear framebuffers
-    for (int i = 0; i < 3; ++i) {
-        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 1.0f));
-        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
-        sGBuffers[i]->clearDepth();
-    }
-    sGBuffers[0]->use();
+    clearFramebuffers();
+    renderSkybox();
 
-    if (mSkybox->hasTexture()) {
-        if (mShowSkyboxIrradiance) {
-            mSkybox->renderIrradianceDebug(camera->getViewProjectionMatrixNoTranslation());
-        }
-        else if (mShowSkyboxPrecomputedMap) {
-            mSkybox->renderPrecomputedMapDebug(camera->getViewProjectionMatrixNoTranslation(), mPrecomputedLOD);
-        }
-        else {
-            mSkybox->render(camera->getViewProjectionMatrixNoTranslation());
-        }
-    }
-
-    VGTexture displayTexture = 0;
     const MaterialShader* shader = getShader();
     if (shader) {
-        if (mRenderGrid) {
-            renderGrid(camera->getViewProjectionMatrix());
-        }
+        renderGrid(camera->getViewProjectionMatrix());
 
         ui32 textureUnit;
         MaterialRenderer::bindMaterialForRender(*shader, &textureUnit);
@@ -106,9 +85,37 @@ void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
         // If no shader, simpy renderMesh as we are doing world rendering or no rendering
         renderMesh();
     }
-    displayTexture = getFinalOutputTexture();
     vg::GBuffer::unuse();
 
+    renderCenterPanelImage(outImageRect, getFinalOutputTexture());
+}
+
+void IEditorViewportPanel::clearFramebuffers() {
+    assert(sGBuffers[0]);
+    // Clear framebuffers
+    for (int i = 0; i < 3; ++i) {
+        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 1.0f));
+        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
+        sGBuffers[i]->clearDepth();
+    }
+    sGBuffers[0]->use();
+}
+
+void IEditorViewportPanel::renderSkybox() {
+    if (mSkybox->hasTexture()) {
+        if (mShowSkyboxIrradiance) {
+            mSkybox->renderIrradianceDebug(camera->getViewProjectionMatrixNoTranslation());
+        }
+        else if (mShowSkyboxPrecomputedMap) {
+            mSkybox->renderPrecomputedMapDebug(camera->getViewProjectionMatrixNoTranslation(), mPrecomputedLOD);
+        }
+        else {
+            mSkybox->render(camera->getViewProjectionMatrixNoTranslation());
+        }
+    }
+}
+
+void IEditorViewportPanel::renderCenterPanelImage(i32AABB2* outImageRect, VGTexture displayTexture) {
     f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
     const ImVec2 uv0(0, 1);
     const ImVec2 uv1(1, 0);
@@ -119,6 +126,17 @@ void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
         ImVec2 imageRectMin = ImGui::GetItemRectMin();
         outImageRect->dims = imageDims;
         outImageRect->pos = f32v2(imageRectMin.x, imageRectMin.y);
+    }
+}
+
+void IEditorViewportPanel::updateFramebufferAndLazyInit(const i32v2& framebufferDims) {
+    if (!mSkybox) {
+        mSkybox = std::make_unique<Skybox>();
+        mSkybox->init(Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sky"), nullptr);
+    }
+    if (sGBuffers[0] == nullptr || mCurrentGbufferDims != framebufferDims) {
+        initGBuffers(framebufferDims);
+        mCurrentGbufferDims = framebufferDims;
     }
 }
 
@@ -297,8 +315,7 @@ void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
 }
 
 void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
-    assert(!sGBuffers[0]);
-    // TODO: PBR https://www.hiagodesena.com/blog/physically-based-deferred-renderer
+    // PBR https://www.hiagodesena.com/blog/physically-based-deferred-renderer
     // https://learnopengl.com/PBR/Theory
     // https://learnopengl.com/PBR/Lighting
     // https://learnopengl.com/PBR/IBL/Diffuse-irradiance
@@ -318,6 +335,11 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
 }
 
 void IEditorViewportPanel::renderGrid(const f32m4& VP) {
+
+    if (!mRenderGrid) {
+        return;
+    }
+
     vg::DepthState::NONE.set();
     vg::sBlendStates.ALPHA.set();
 

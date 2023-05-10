@@ -203,7 +203,7 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
 void ChunkGrassQuadtree::finishMesh(ui32 patchIndex) {
     std::unique_ptr<GrassMesh>& mesh = mMeshes[patchIndex];
     mesh->mPosition = getWorldPos3D();
-    mesh->mMesh.finishMesh(MeshDrawMode::STATIC);
+    mesh->mMesh.finishMesh();
 
     GrassMeshManager& grassMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(mChunk.getWorld()).getGrassMeshManager();
     if (mesh->mMesh.isValid()) {

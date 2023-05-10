@@ -126,7 +126,8 @@ struct TileSteeringData {
 
 class Tile {
     friend class TileContainer;
-    friend class WorldGenerator;
+    friend class IWorldGenerator;
+    friend class FlatWorldGenerator;
     friend class CityBuilder; // TODO: Remove? Only for debug?
 public:
 	Tile() {};

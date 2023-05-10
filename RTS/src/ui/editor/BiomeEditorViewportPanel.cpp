@@ -54,7 +54,6 @@ bool BiomeEditorViewportPanel::updateAndRender() {
 
     updateCamera(imageDims.x / imageDims.y);
 
-
     // Tell the world to follow our camera
     if (mEditorWorld) {
         const f32v2 cameraPos = camera->getPosition();
@@ -73,9 +72,8 @@ bool BiomeEditorViewportPanel::updateAndRender() {
     //}
 
     // Lazy init so we don't use GPU memory when not in editor
-    if (sGBuffers[0] == nullptr) {
-        initGBuffers(imageDims);
-    }
+    // Lazy init resources
+    updateFramebufferAndLazyInit(imageDims);
 
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
@@ -91,7 +89,7 @@ bool BiomeEditorViewportPanel::updateAndRender() {
             clickedLeft = true;
             mLeftMousePressed = true;
         }
-        else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left) && mLeftMousePressed) {
             releasedLeft = true;
             mLeftMousePressed = false;
         }
@@ -177,24 +175,11 @@ void BiomeEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     vg::DepthState::NONE.set();
 
     renderContext.renderPassWorldDebug(*renderContext.getCamera());
-    if (mRenderGrid) {
-        renderGrid(renderContext.getCamera()->getVPMatrix());
-    }
+    renderGrid(renderContext.getCamera()->getVPMatrix());
 
     vg::GBuffer::unuse();
 
-    VGTexture displayTexture = sGBuffers[0]->getAlbedoTexture();
-    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-    const ImVec2 uv0(0, 1);
-    const ImVec2 uv1(1, 0);
-    const ImVec2 dims(imageDims.x, imageDims.y);
-    ImGui::Image((ImTextureID)displayTexture, dims, uv0, uv1);
-
-    if (outImageRect) {
-        ImVec2 imageRectMin = ImGui::GetItemRectMin();
-        outImageRect->dims = imageDims;
-        outImageRect->pos = f32v2(imageRectMin.x, imageRectMin.y);
-    }
+    renderCenterPanelImage(outImageRect, sGBuffers[0]->getAlbedoTexture());
 }
 
 VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
@@ -207,7 +192,7 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
-    mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES);
+    mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat);
 
     GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
         IWorld* editorWorld = static_cast<IWorld*>(vWorld);

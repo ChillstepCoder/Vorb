@@ -11,6 +11,9 @@ public:
     virtual glm::mat4 getViewProjectionMatrixNoTranslation() const = 0;
     virtual glm::vec3 getPosition() const = 0;
     virtual glm::vec3 getDirection() const = 0;
+    virtual glm::vec3 getRight() const = 0;
+    virtual glm::vec3 getUp() const = 0;
+    virtual f32 getAspectRatio() const = 0;
 };
 
 class SimpleCamera final
@@ -28,6 +31,9 @@ public:
     glm::mat4 getViewProjectionMatrixNoTranslation() const { return positioner_->getViewProjectionMatrixNoTranslation(); }
     glm::vec3 getPosition() const { return positioner_->getPosition(); }
     glm::vec3 getDirection() const { return positioner_->getDirection(); }
+    glm::vec3 getRight() const { return positioner_->getRight(); }
+    glm::vec3 getUp() const { return positioner_->getUp(); }
+    f32 getAspectRatio() const { return positioner_->getAspectRatio(); }
 
     inline static constexpr f32 ZNEAR = 0.1f;
     inline static constexpr f32 ZFAR = 100.0f;
@@ -75,6 +81,8 @@ public:
         const glm::vec3 up = glm::cross(right, forward);
 
         cameraDirection_ = forward;
+        cameraRight_ = right;
+        cameraUp_ = up;
 
         glm::vec3 accel(0.0f);
 
@@ -126,7 +134,10 @@ public:
     }
 
     virtual glm::vec3 getPosition() const override { return cameraPosition_; }
-    virtual glm::vec3 getDirection() const override {  return cameraDirection_; }
+    virtual glm::vec3 getDirection() const override { return cameraDirection_; }
+    virtual glm::vec3 getRight() const override { return cameraRight_; }
+    virtual glm::vec3 getUp() const override { return cameraUp_; }
+    virtual f32 getAspectRatio() const override { return mAspectRatio; }
 
     void setPosition(const glm::vec3& pos) { cameraPosition_ = pos; }
 
@@ -168,6 +179,8 @@ private:
     glm::vec2 mousePos_ = glm::vec2(0);
     glm::vec3 cameraPosition_ = glm::vec3(0.0f, 10.0f, 10.0f);
     glm::vec3 cameraDirection_ = glm::vec3(1.0f, 0.0f, 0.0f);
+    glm::vec3 cameraRight_ = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 cameraUp_ = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::quat cameraOrientation_ = glm::quat(glm::vec3(0));
     glm::vec3 moveSpeed_ = glm::vec3(0.0f);
     glm::vec3 up_ = glm::vec3(0.0f, 0.0f, 1.0f);

@@ -11,20 +11,6 @@ DECL_VG(class GLProgram);
 
 using ChunkGrassFlatQuadtree = FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>;
 
-class GrassMesh {
-public:
-    GrassMesh(ui32 patchIndex) : mIndex(patchIndex) {};
-
-    VORB_NON_COPYABLE_BUT_MOVABLE(GrassMesh);
-
-    GrassBillboardMesh mMesh;
-    ui32 mIndex = 0;
-    std::atomic<f32> mCrossfadeAlpha = 0.0f;
-    std::atomic_int mCrossfadeDir = 0; // -1 = down, 0 = none, 1 = up
-    f32v3 mPosition = f32v3(0.0f);
-    bool mHadMesh = false;
-};
-
 // For node I, its children are 4 * i + 1 through 4 * i + 4
 // A complete quadtree of N levels has 4^N - 1)
 class ChunkGrassQuadtree : public ChunkGrassFlatQuadtree

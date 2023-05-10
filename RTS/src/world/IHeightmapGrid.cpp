@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "IHeightmapGrid.h"
 
-#include "generation/WorldGenerator.h"
+#include "generation/IWorldGenerator.h"
 
 #include "util/IntersectionUtil.h"
 
@@ -733,7 +733,7 @@ void IHeightmapGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2&
     aabb.pos.y = position.y;
     f32 minZ = FLT_MAX;
     f32 maxZ = FLT_MIN;
-    WorldGenerator& worldGenerator = mWorld->getWorldGenerator();
+    IWorldGenerator& worldGenerator = mWorld->getWorldGenerator();
     for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
         for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
             const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);

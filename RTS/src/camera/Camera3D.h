@@ -3,6 +3,8 @@
 
 #include <Vorb/graphics/Frustum.h>
 
+class SimpleCamera;
+
 class Camera3D : public ICamera
 {
 public:
@@ -16,6 +18,7 @@ public:
     virtual void rotateFromMouse(float dx, float dy, float speed);
     virtual void rollFromMouse(float dx, float speed);
     void lookAt(const f32v3& pos);
+    void copyFromSimpleCamera(SimpleCamera& simpleCamera);
 
     // Frustum wrappers
     bool pointInFrustum(const f32v3& pos) const { return mFrustum.pointInFrustum(pos - mPosition); }

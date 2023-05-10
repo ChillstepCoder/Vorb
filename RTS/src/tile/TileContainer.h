@@ -45,7 +45,7 @@ public:
     friend struct TileRef;
     friend struct TileHandle;
     friend class TileContainerRepository;
-    friend class WorldGenerator;
+    friend class IWorldGenerator;
     friend class CityBuilder; // ONLY FOR DEBUG GENERATION
     friend class NavThread; // TODO: Too many friends?
     friend class NavWorld; // TODO: Remove
@@ -152,6 +152,7 @@ public:
     ui32 getRefCount() const { return mRefCount; }
 
     bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mDidInitMesh && mDidInitPhysics; }
+    bool didInitMeshPhysics() const { return mDidInitMesh && mDidInitPhysics; }
     void setDidInitMesh() const { mDidInitMesh = true; }
     void setDidInitPhysics() const { mDidInitPhysics = true; }
     void setDidInitNav() const { mDidInitNav = true; }
@@ -165,6 +166,7 @@ public:
     const std::vector<Tile>& getTiles() const { ASSERT_GAME_THREAD(); return mTiles; }
     const TileWallContainer& getTileWallContainer() const { return  mTileWallsContainer; }
     size_t getNumTiles() const { return mTiles.size(); }
+    TileContainerHarvestableRegistry& getHarvestableRegistry() { return mHarvestableRegistry; }
 
     void copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const;
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;

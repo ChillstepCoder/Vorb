@@ -7,18 +7,19 @@ class Tile;
 class Chunk;
 struct TileGrass;
 
-class WorldGenerator
+class IWorldGenerator
 {
 public:
-    WorldGenerator(IWorld& world);
-    ~WorldGenerator();
+    IWorldGenerator(IWorld& world);
+    ~IWorldGenerator();
 
-    Tile generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass = nullptr);
     void generateChunk(Chunk& chunk, f32* heightData);
-    f32 getTerrainHeightAtPos(const f32v2& worldPos);
+    virtual f32 getTerrainHeightAtPos(const f32v2& worldPos);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }
-private:
+protected:
+    virtual Tile generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass = nullptr);
+
     IWorld& mWorld;
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;

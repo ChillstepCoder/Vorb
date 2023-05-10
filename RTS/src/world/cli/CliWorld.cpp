@@ -8,7 +8,7 @@
 
 #include "physics/PhysicsWorld.h"
 
-CliWorld::CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(widthTiles, chunkGrid, heightmapGrid) {
+CliWorld::CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType) : IWorld(widthTiles, chunkGrid, heightmapGrid, generatorType) {
     mEcs = std::make_unique<CliEntityComponentSystem>(*this);
 }
 

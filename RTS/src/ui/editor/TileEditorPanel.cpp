@@ -43,6 +43,7 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
         updateAndRenderModelsTab(returnValue);
         updateAndRenderMaterialsTab(returnValue);
         updateAndRenderFoliageTab(returnValue);
+        updateAndRenderBiomeTab(returnValue);
 
         ImGui::EndTabBar();
     }
@@ -285,6 +286,16 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
             vg::DepthState::restorePrevious();
 
             ImGui::EndTable();
+        }
+        ImGui::EndTabItem();
+    }
+}
+
+void TileEditorPanel::updateAndRenderBiomeTab(TileEditorPanelResult& result) {
+    if (ImGui::BeginTabItem("Biome")) {
+        ImGui::Text("Biome");
+        if (ImGui::Button("Open Editor")) {
+            result.first = TileEditorPanelResultCode::EDIT_BIOME;
         }
         ImGui::EndTabItem();
     }

@@ -283,8 +283,10 @@
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
+    <ClCompile Include="src\generation\FlatWorldGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
-    <ClCompile Include="src\generation\WorldGenerator.cpp" />
+    <ClCompile Include="src\generation\IWorldGenerator.cpp" />
+    <ClCompile Include="src\generation\WorldGeneratorFactory.cpp" />
     <ClCompile Include="src\instrumentation\instrumentor.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
@@ -426,6 +428,7 @@
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
+    <ClCompile Include="src\ui\editor\FoliageEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
@@ -557,9 +560,12 @@
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\gamethread\GameThread.h" />
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
+    <ClInclude Include="src\generation\FlatWorldGenerator.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
-    <ClInclude Include="src\generation\WorldGenerator.h" />
+    <ClInclude Include="src\generation\IWorldGenerator.h" />
+    <ClInclude Include="src\generation\WorldGeneratorFactory.h" />
+    <ClInclude Include="src\generation\WorldGeneratorType.h" />
     <ClInclude Include="src\instrumentation\instrumentor.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\Item.h" />
@@ -738,6 +744,7 @@
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\EditorRoot.h" />
+    <ClInclude Include="src\ui\editor\FoliageEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
