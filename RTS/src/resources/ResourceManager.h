@@ -32,8 +32,6 @@ public:
     void gatherFiles(const vio::Path& folderPath);
     void loadFiles();
 
-    // TODO: Replace?
-    vg::TextureCache& getTextureCache();
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
     MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
@@ -100,7 +98,6 @@ private:
     std::unique_ptr<ModelRepository> mModelRepository;
     std::unique_ptr<BrushRepository> mBrushRepository;
     std::unique_ptr<SkillRepository> mSkillRepository;
-    std::unique_ptr<vg::TextureCache> mTextureCache;
     std::unique_ptr<TextureRepository> mTextureRepository;
     std::unique_ptr<FontRepository> mFontRepository;
     std::unique_ptr<CollisionShapeRepository> mCollisionShapeRepository;

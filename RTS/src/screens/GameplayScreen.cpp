@@ -6,7 +6,6 @@
 #include <Vorb/math/VorbMath.hpp>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteFont.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "pathfinding/NavThread.h"
@@ -111,7 +110,7 @@ void GameplayScreen::build() {
 
     // Show loading screen
     LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
-    loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png", mResourceManager.getTextureCache());
+    loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png");
     displayLoadScreen("Gathering files...", true);
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());

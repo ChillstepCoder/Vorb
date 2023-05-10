@@ -2,7 +2,6 @@
 #include "ModelRepository.h"
 
 #include <Vorb/io/IOManager.h>
-#include <Vorb/graphics/TextureCache.h>
 
 #include "definitions/AnimMachineDef.h"
 #include "resources/RigRepository.h"

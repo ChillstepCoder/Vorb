@@ -3,12 +3,14 @@
 
 #include "rendering/RenderContext.h"
 
+#include "resources/ResourceManager.h"
+#include "resources/TextureRepository.h"
+
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/SpriteFont.h>
 #include <Vorb/ui/GameWindow.h>
@@ -92,8 +94,9 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     }
 }
 
-void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, vg::TextureCache& textureCache, bool setActive) {
-    mBackgroundTextures.push_back(textureCache.addTexture(path).id);
+void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, bool setActive) {
+    TextureRepository& textureRepo = Services::ResourceManager::ref().getTextureRepository();
+    mBackgroundTextures.push_back(textureRepo.loadTexture(path, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP, vg::TextureInternalFormat::RGB8, true)->texture.getHandle());
     if (setActive) {
         mCurrentBackgroundTexture = mBackgroundTextures.size() - 1;
     }

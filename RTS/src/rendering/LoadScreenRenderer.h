@@ -17,7 +17,7 @@ public:
 
     void render(OPT vui::GameWindow* windowToSync);
     
-    void appendLoadingTexture(const vio::Path& path, vg::TextureCache& textureCache, bool setActive = false);
+    void appendLoadingTexture(const vio::Path& path, bool setActive = false);
     void setLoadingTexture(int index);
     void setShowBar(bool showBar);
     void setTotalWork(f32 totalWork);

@@ -1,7 +1,8 @@
 #pragma once
 
 DECL_VIO(class IOManager);
-DECL_VG(class TextureCache);
+
+class TextureRepository;
 
 #include <Vorb/graphics/BitmapResource.h>
 
@@ -18,7 +19,7 @@ public:
     BrushRepository(vio::IOManager& ioManager);
     ~BrushRepository();
 
-    void loadBrush(const vio::Path& filePath, vg::TextureCache& textureCache);
+    void loadBrush(const vio::Path& filePath, TextureRepository& textureRepository);
     const std::vector<Brush>& getBrushes() const { return mBrushes; }
 
 private:

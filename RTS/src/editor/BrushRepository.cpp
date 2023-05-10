@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "BrushRepository.h"
 
+#include "resources/TextureRepository.h"
+
 #include <Vorb/io/IOManager.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <Vorb/io/FileOps.h>
+#include <Vorb/graphics/ImageIO.h>
 
 BrushRepository::BrushRepository(vio::IOManager& ioManager) : mIomanager(ioManager) {
 
@@ -15,25 +17,20 @@ BrushRepository::~BrushRepository() {
     }
 }
 
-void BrushRepository::loadBrush(const vio::Path& filePath, vg::TextureCache& textureCache) {
+void BrushRepository::loadBrush(const vio::Path& filePath, TextureRepository& textureRepository) {
 
     Brush brush;
     nString leafName = vio::getLeafNameFromFilePathNoExtension(filePath);
     vg::ScopedBitmapResource rs;
-    vg::Texture texture = textureCache.addTexture(
-        filePath,
-        leafName,
-        rs,
-        vg::ImageIOFormat::RGBA_UI8,
-        vg::TextureTarget::TEXTURE_2D,
-        &vg::sSamplerStates.LINEAR_WRAP,
-        vg::TextureInternalFormat::COMPRESSED_RGBA
-    );
+    const TextureData* data = textureRepository.loadTexture(filePath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_WRAP, vg::TextureInternalFormat::RGBA8, false, &rs);
+    assert(data);
 
-    if (texture.id) {
+    const GLTexture& texture = data->texture;
+    VGTexture textureHandle = texture.getHandle();
+    if (textureHandle) {
         brush.name = std::move(leafName);
-        brush.texture = texture.id;
-        brush.dims = ui32v2(texture.width, texture.height);
+        brush.texture = textureHandle;
+        brush.dims = texture.getDims();
 
         // Copy alpha channel only
         brush.data = new ui8[rs.height * rs.width];

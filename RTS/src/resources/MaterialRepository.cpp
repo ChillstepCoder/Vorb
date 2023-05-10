@@ -129,7 +129,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
     const vg::SamplerState* samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(fileData.samplerState)];
     // TODO: Texture Compression
-    const TextureData* albedoTextureData = textureRepository.loadTextureNew(albedoTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGBA8, fileData.flipV);
+    const TextureData* albedoTextureData = textureRepository.loadTexture(albedoTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGBA8, fileData.flipV);
     if (!albedoTextureData) {
         LOG_CRITICAL("Failed to load albedo texture {} for material {}", fileData.albedoTexture, filePath.getString());
         return false;
@@ -147,7 +147,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         materialGpuData.normalMap = normalGLTexture.getHandleBindless();
     }
     else if (mIoManager.fileExists(normalTexturePath)) {
-        const TextureData* normalTextureData = textureRepository.loadTextureNew(normalTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGB8, fileData.flipV);
+        const TextureData* normalTextureData = textureRepository.loadTexture(normalTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGB8, fileData.flipV);
         if (!normalTextureData) {
             LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
             return false;
@@ -161,7 +161,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     
     // Displacement
     if (mIoManager.fileExists(displacementTexturePath)) {
-        const TextureData* displacementTextureData = textureRepository.loadTextureNew(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::R8, fileData.flipV);
+        const TextureData* displacementTextureData = textureRepository.loadTexture(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::R8, fileData.flipV);
         if (!displacementTextureData) {
             LOG_CRITICAL("Failed to load displacement texture {} for material {}", fileData.displacementTexture, filePath.getString());
             return false;

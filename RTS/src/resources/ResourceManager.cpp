@@ -26,7 +26,6 @@
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
 #include <vorb/io/FileOps.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
 
@@ -43,8 +42,6 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
 ResourceManager::ResourceManager() {
     
     mIoManager = std::make_unique<vio::IOManager>();
-    mTextureCache = std::make_unique<vg::TextureCache>();
-    mTextureCache->init(mIoManager.get());
 
     mTextureRepository = std::make_unique<TextureRepository>(*mIoManager);
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository);
@@ -122,7 +119,7 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Brush load");
         for (auto&& entry : mTextureFiles) {
             if (vio::containsSubpath(entry, "_brushes")) {
-                mBrushRepository->loadBrush(entry, *mTextureCache);
+                mBrushRepository->loadBrush(entry, *mTextureRepository);
             }
             //else if (!vio::containsSubpath(entry, "_loadscreen")/* && !vio::containsSubpath(entry, "materials")*/) { // Ignore loadscreen files as we manually load them
             ////    mTextureRepository->loadSubTextureOLD(entry);
@@ -283,10 +280,6 @@ void ResourceManager::loadFiles() {
 
     mHasLoadedResources = true;
     LOG_TRACE("Loaded resources in {:.4} ms");
-}
-
-vg::TextureCache& ResourceManager::getTextureCache() {
-    return *mTextureCache;
 }
 
 void ResourceManager::reloadMaterials() {

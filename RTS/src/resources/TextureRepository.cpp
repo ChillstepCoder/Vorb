@@ -22,7 +22,7 @@ TextureRepository::~TextureRepository() {
 
 }
 
-const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV) {
+const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, vg::ScopedBitmapResource* outRs/* = nullptr*/) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
     nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
 
@@ -30,6 +30,12 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
     /*Texture texture = findTexture(textureName);
     if (texture.id) return texture;*/
     GLTexture texture;
+    // Allow caller to optionally hold data
+    vg::ScopedBitmapResource rs;
+    vg::ScopedBitmapResource* rsPtr = &rs;
+    if (outRs) {
+        rsPtr = outRs;
+    }
 
     switch (type)
     {
@@ -41,11 +47,11 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
             mIoManager.resolvePath(filePath, texPath);
 
             // Load the pixel data.
-            vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/));
-            if (!rs.data) return nullptr;
+            *rsPtr = vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);
+            if (!rsPtr->data) return nullptr;
 
-            texture = uploadTexture(rs.bytesUI8,
-                ui32v2(rs.width, rs.height),
+            texture = uploadTexture(rsPtr->bytesUI8,
+                ui32v2(rsPtr->width, rsPtr->height),
                 vg::TexturePixelType::UNSIGNED_BYTE,
                 type,
                 samplerState,
@@ -89,7 +95,7 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
     // TODO: dirty buffer bit?
 }
 
-const TextureData& TextureRepository::getTextureNew(const nString& textureName) const {
+const TextureData& TextureRepository::getTexture(const nString& textureName) const {
     auto&& it = mTextureIdLookup.find(textureName);
     if (it == mTextureIdLookup.end()) {
         LOG_CRITICAL("Failed to find texture {} make sure there is a .material for it", textureName);

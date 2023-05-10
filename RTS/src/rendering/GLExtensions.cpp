@@ -25,6 +25,10 @@ void GLExtensions::init() {
     if (!hasExtension("GL_ARB_bindless_texture")) {
         pError("GL_ARB_bindless_texture not supported by this GPU. Try updating drivers");
     }
+
+    if (!hasExtension("GL_EXT_texture_compression_s3tc")) {
+        pError("GL_EXT_texture_compression_s3tc not supported by this GPU. Try updating drivers");
+    }
 }
 
 bool GLExtensions::hasExtension(const char* extension) {

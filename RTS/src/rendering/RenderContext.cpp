@@ -73,7 +73,6 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteBatch.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/colors.h>

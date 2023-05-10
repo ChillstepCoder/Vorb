@@ -21,13 +21,15 @@ struct TextureData {
     bool flipV; // TODO: Flags
 };
 
+// TODO: https://github.com/g-truc/gli/blob/master/manual.md
+// STB_DXT
 class TextureRepository {
 public:
     TextureRepository(vio::IOManager& ioManager);
     ~TextureRepository();
 
-    const TextureData* loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV);
-    const TextureData& getTextureNew(const nString& textureName) const;
+    const TextureData* loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, vg::ScopedBitmapResource* outRs = nullptr);
+    const TextureData& getTexture(const nString& textureName) const;
 
     const Cubemap* loadCubemap(const vio::Path& cubeFilePath);
     const Cubemap& getCubemap(const nString& cubemapName) const;

@@ -5,7 +5,6 @@
 #include "ShaderLoader.h"
 
 #include <Vorb/io/IOManager.h>
-#include <Vorb/graphics/TextureCache.h> //TODO: Remove
 #include <Vorb/graphics/GLProgram.h>
 
 MaterialShaderManager::MaterialShaderManager(vio::IOManager& ioManager, TextureRepository& textureRepository) :
@@ -60,7 +59,7 @@ bool MaterialShaderManager::loadMaterialShader(const vio::Path& filePath) {
             const MaterialTextureInputData& textureData = materialData.textures[i];
             MaterialTextureInput input;
             input.textureUniform = newMaterial->mProgram.getUniform(textureData.uniformName.c_str());
-            input.texture = mTextureRepository.getTextureNew(textureData.textureName).texture.getHandle();
+            input.texture = mTextureRepository.getTexture(textureData.textureName).texture.getHandle();
             assert(input.texture != 0);
             newMaterial->mInputTextures.emplace_back(std::move(input));
         }

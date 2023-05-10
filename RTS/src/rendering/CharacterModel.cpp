@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "CharacterModel.h"
 
-#include <Vorb/graphics/TextureCache.h>
-
 #include "definitions/ModelDef.h"
 #include "definitions/RigDef.h"
 

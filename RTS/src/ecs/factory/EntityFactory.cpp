@@ -9,7 +9,6 @@
 #include "resources/SkillRepository.h"
 
 #include "resources/ResourceManager.h"
-#include <Vorb/graphics/TextureCache.h>
 
 #include <ozz/animation/runtime/animation.h>
 #include "world/IWorld.h"
@@ -99,9 +98,7 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
                 break;
             }
             case ComponentTypes::SimpleSprite: {
-                VGTexture texture = resourceManager.getTextureCache().addTexture(cdef.simpleSprite.texture).id;
-                auto& spriteComp = registry.emplace<SimpleSpriteComponent>(newEntity, texture, cdef.simpleSprite.dims);
-                spriteComp.mColor = cdef.simpleSprite.color;
+                assert(false);
                 break;
             }
             case ComponentTypes::SoldierAI: {

@@ -16,15 +16,12 @@
 
 #include <Vorb/utils.h>
 #include <Vorb/graphics/SpriteBatch.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
+#include <Vorb/graphics/SamplerState.h>
 
 EntityComponentSystemRenderer::EntityComponentSystemRenderer()
 	: mSpriteBatch(std::make_unique<vg::SpriteBatch>()) {
 	// TODO: Render thread assert?
-	vg::TextureCache& textureCache = Services::ResourceManager::ref().getTextureCache();
-    mCircleTexture = textureCache.addTexture("data/textures/circle_dir.png");
-    mSquareTexture = textureCache.addTexture("data/textures/square.png");
 	mSpriteBatch->init();
 }
 
