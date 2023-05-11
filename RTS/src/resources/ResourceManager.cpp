@@ -80,7 +80,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     PreciseTimer timer;
 
     // Make sure we clear all vectors each gather
-    mTextureFiles.clear();
+    mBrushFiles.clear();
     mMaterialShaderFiles.clear();
     mMaterialFiles.clear();
     mTileFiles.clear();
@@ -117,16 +117,9 @@ void ResourceManager::loadFiles() {
 
     { // Brushes
         ScopedTimer timer("Brush load");
-        for (auto&& entry : mTextureFiles) {
-            if (vio::containsSubpath(entry, "_brushes")) {
-                mBrushRepository->loadBrush(entry, *mTextureRepository);
-            }
-            //else if (!vio::containsSubpath(entry, "_loadscreen")/* && !vio::containsSubpath(entry, "materials")*/) { // Ignore loadscreen files as we manually load them
-            ////    mTextureRepository->loadSubTextureOLD(entry);
-            //}
+        for (auto&& entry : mBrushFiles) {
+             mBrushRepository->loadBrush(entry, *mTextureRepository);
         }
-        // New
-        mTextureRepository->setTextureAssetPaths(mTextureFiles);
     }
 
     // Load Materials
@@ -324,14 +317,8 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             gatherRecursive(entry);
         }
         else if (fileHasExtension(entry, ".png")) {
-            // Ignore .norm and .sten files they will be grabbed
-            // automatically if needed
-            // TODO: Can we do this single pass?
-            const nString& str = entry.getString();
-            if ((str.size() <= sizeof(".norm.png")) ||
-                (strcmp(&str[str.size() - 9], ".norm.png") != 0) &&
-                (strcmp(&str[str.size() - 9], ".sten.png") != 0)) {
-                mTextureFiles.emplace_back(entry);
+            if (vio::containsSubpath(entry, "_brushes")) {
+                mBrushFiles.emplace_back(entry);
             }
         }
         else if (fileHasExtension(entry, ".cube")) {

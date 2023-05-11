@@ -2,9 +2,18 @@
 #include "FileSystem.h"
 
 time_t FileSystem::getLastFileWriteTime(const Path& path) {
-    // todo: 
-    std::filesystem::file_time_type lastWriteTime = std::filesystem::last_write_time(path);
-    return lastWriteTime.time_since_epoch().count();
+    try {
+        auto tp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(fs::last_write_time(path) - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+        std::time_t fileTimeT = std::chrono::system_clock::to_time_t(tp);
+        return fileTimeT;
+    }
+    catch (const fs::filesystem_error& e) {
+        LOG_CRITICAL("File system getLastFileWriteTime error: {}", e.what());
+    }
+    catch (const std::exception& e) {
+        LOG_CRITICAL("File system getLastFileWriteTime exception: {}", e.what());
+    }
+    return 0;
 }
 
 std::string FileSystem::fileTimeToString(time_t time) {

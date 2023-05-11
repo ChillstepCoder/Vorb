@@ -12,3 +12,4 @@ public:
     static std::string fileTimeToString(time_t time);
 };
 
+namespace fs = std::filesystem;

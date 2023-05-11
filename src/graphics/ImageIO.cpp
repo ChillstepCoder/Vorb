@@ -111,7 +111,7 @@ std::pair<png_byte,png_byte> ImageIoFormatToPng(const vg::ImageIOFormat &format)
 }
 
 // TODO: Get this in working order. Reevaluate parameter attribute once done.
-vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
+vg::BitmapResource vg::ImageIO::loadPng(const vio::Path& path,
                                      const ImageIOFormat& requestedformat /* = ImageIOFormat::RGBA_UI8 */,
                                      bool flipV /*= false*/) {
     BitmapResource res = {};
@@ -428,7 +428,7 @@ void readImageDataFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t
 
 //http://pulsarengine.com/2009/01/reading-png-images-from-memory/
 //https://cpp.hotexamples.com/examples/-/-/png_set_sig_bytes/cpp-png_set_sig_bytes-function-examples.html
-vg::BitmapResource vg::ImageIO::load(const ui8* data, const ImageIOFormat& requestedformat /*= ImageIOFormat::RGBA_UI8*/, bool flipV /*= false*/)
+vg::BitmapResource vg::ImageIO::loadPng(const ui8* data, const ImageIOFormat& requestedformat /*= ImageIOFormat::RGBA_UI8*/, bool flipV /*= false*/)
 {
     buffer_read_loc = 0;
     BitmapResource res = {};

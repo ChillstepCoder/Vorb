@@ -66,7 +66,7 @@ vg::Texture vg::TextureCache::addTexture(const vio::Path& filePath,
     if (texture.id) return texture;
 
     // Load the pixel data.
-    vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
+    vg::ScopedBitmapResource rs(vg::ImageIO().loadPng(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
     if (!rs.data) return Texture();
     texture.width = rs.width;
     texture.height = rs.height;
@@ -105,7 +105,7 @@ vg::Texture vg::TextureCache::addTexture(const vio::Path& filePath,
     if (texture.id) return texture;
 
     // Load the pixel data.
-    rvBitmap = vg::ImageIO().load(texPath.getString(), rvFormat, flipV);
+    rvBitmap = vg::ImageIO().loadPng(texPath.getString(), rvFormat, flipV);
     if (!rvBitmap.data) return Texture();
     texture.width = rvBitmap.width;
     texture.height = rvBitmap.height;
@@ -191,7 +191,7 @@ vg::Texture vg::TextureCache::addTexture(
     resolvePath(filePath, texPath);
 
     // Load the pixel data.
-    vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
+    vg::ScopedBitmapResource rs(vg::ImageIO().loadPng(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
     if (!rs.data) return Texture();
     texture.width = rs.width;
     texture.height = rs.height;

@@ -26,12 +26,12 @@ TextureRepository::~TextureRepository() {
 
 const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, vg::ScopedBitmapResource* outRs/* = nullptr*/) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
-    nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
+    const nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
+
 
     // Check if the texture is already cached.
     /*Texture texture = findTexture(textureName);
     if (texture.id) return texture;*/
-    GLTexture texture;
     // Allow caller to optionally hold data
     vg::ScopedBitmapResource rs;
     vg::ScopedBitmapResource* rsPtr = &rs;
@@ -43,27 +43,45 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
     vio::Path texPath;
     mIoManager.resolvePath(filePath, texPath);
 
-    try {
-        const time_t lastWriteTime = FileSystem::getLastFileWriteTime(filePath.getCString());
+    fs::path stdPath(texPath.getString());
+    const nString extension = stdPath.extension().string();
 
-        LOG_INFO("Path: {}   Last write time: {} {}", textureName, lastWriteTime, FileSystem::fileTimeToString(lastWriteTime));
+    const time_t fileLastWriteTime = FileSystem::getLastFileWriteTime(stdPath);
+
+    // .dds files will be created from PNG on the fly and cached to make future loading faster
+    if (extension == ".png") {
+        bool needsGenerateDDS = true;
+        // Check if there is a .dds already
+        fs::path ddsPath = stdPath;
+        ddsPath.replace_extension(".dds");
+
+        if (fs::is_regular_file(ddsPath)) {
+            if (FileSystem::getLastFileWriteTime(ddsPath) >= fileLastWriteTime) {
+                needsGenerateDDS = false;
+            }
+        }
+
+        if (needsGenerateDDS) {
+            // Load PNG
+            if (!loadPngDataInternal(texPath, flipV, rsPtr)) {
+                return nullptr;
+            }
+            // Save DDS file
+        }
+        else {
+            // Load DDS directly
+            assert(false);
+        }
     }
-    catch (const std::filesystem::filesystem_error& e) {
-        LOG_CRITICAL("File system error: {}", e.what());
-    }
-    catch (const std::exception& e) {
-        LOG_CRITICAL("File system error: {}", e.what());
+    else {
+        assert(false);
     }
 
+    GLTexture texture;
     switch (type)
     {
         case vg::TextureTarget::TEXTURE_2D:
         {
-
-            // Load the pixel data.
-            *rsPtr = vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);
-            if (!rsPtr->data) return nullptr;
-
             texture = uploadTexture(rsPtr->bytesUI8,
                 ui32v2(rsPtr->width, rsPtr->height),
                 vg::TexturePixelType::UNSIGNED_BYTE,
@@ -96,8 +114,6 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
         textureData = &mTextures.emplace_back();
         mTextureIdLookup[textureName] = textureId;
     }
-    // Track relative to path as well in case we care
-    mTextureAssetPaths[filePath.getString()] = textureId;
 
     textureData->texture = std::move(texture);
     textureData->type = type;
@@ -153,7 +169,7 @@ const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath) {
             if (mIoManager.resolvePath(texPath, resultPath)) {
 
                 // Load the pixel data.
-                vg::ScopedBitmapResource rs(vg::ImageIO().load(resultPath.getString(), vg::ImageIOFormat::RGBA_UI8, true /*flipv*/));
+                vg::ScopedBitmapResource rs(vg::ImageIO().loadPng(resultPath.getString(), vg::ImageIOFormat::RGBA_UI8, true /*flipv*/));
                 if (!rs.data) {
                     LOG_CRITICAL("Empty cubemap texture {} for {}", str, cubeFilePath.getString());
                     return nullptr;
@@ -189,21 +205,22 @@ const Cubemap& TextureRepository::getCubemap(CubemapID cubemapId) const {
     return *mCubemaps[cubemapId];
 }
 
-void TextureRepository::setTextureAssetPaths(const std::vector<vio::Path>& paths) {
-    mTextureAssetPaths.clear();
-    for (auto& path : paths) {
-        mTextureAssetPaths[path.getString()] = INVALID_TEXTURE_ID;
-    }
-}
-
-bool TextureRepository::loadRawTextureData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV) {
+bool TextureRepository::loadRawPngData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV) {
     // Get absolute path of texture.
     vio::Path texPath;
     mIoManager.resolvePath(filePath, texPath);
 
     // Load the pixel data.
-    outRs = vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);
-    return outRs.data != nullptr;
+    return loadPngDataInternal(texPath, flipV, &outRs);
+}
+
+bool TextureRepository::loadPngDataInternal(const vio::Path& filePath, bool flipV, vg::ScopedBitmapResource* outRs) {
+    *outRs = vg::ImageIO().loadPng(filePath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);
+    if (outRs->data == nullptr) {
+        LOG_CRITICAL("Failed to load PNG data for {}", filePath.getString());
+        return false;
+    }
+    return true;
 }
 
 GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::TexturePixelType texturePixelType, vg::TextureTarget textureTarget, const vg::SamplerState* samplingParameters, vg::TextureInternalFormat internalFormat, vg::TextureFormat textureFormat, i32 mipmapLevels) {

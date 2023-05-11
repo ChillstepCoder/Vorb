@@ -39,9 +39,11 @@ public:
     void setTextureAssetPaths(const std::vector<vio::Path>& paths);
 
     // Loads in as RGBAUI8
-    bool loadRawTextureData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV);
+    bool loadRawPngData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV);
 
 private:
+    bool loadPngDataInternal(const vio::Path& filePath, bool flipV, vg::ScopedBitmapResource* outRs);
+
     GLTexture uploadTexture(
         const void* data,
         ui32v2 dims,
@@ -56,7 +58,6 @@ private:
     // NEW
     std::vector<TextureData> mTextures;
     std::map<nString, TextureID> mTextureIdLookup;
-    std::map<nString, TextureID> mTextureAssetPaths;
     std::vector<std::unique_ptr<Cubemap>> mCubemaps;
     std::map<nString, CubemapID> mCubemapIdLookup;
 

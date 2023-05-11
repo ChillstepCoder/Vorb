@@ -46,10 +46,10 @@ namespace vorb {
             static BitmapResource alloc(const ui32& w, const ui32& h, const ImageIOFormat& format);
             static void free(BitmapResource& res);
 
-            BitmapResource load(const vio::Path& path,
+            BitmapResource loadPng(const vio::Path& path,
                                 const ImageIOFormat& requestedformat = ImageIOFormat::RGBA_UI8,
                                 bool flipV = false);
-            BitmapResource load(const ui8* data,
+            BitmapResource loadPng(const ui8* data,
                                 const ImageIOFormat& requestedformat = ImageIOFormat::RGBA_UI8,
                                 bool flipV = false);
 
