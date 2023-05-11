@@ -11,6 +11,8 @@
 #include <Vorb/io/IOManager.h>
 #include <Vorb/graphics/ImageIO.h>
 
+#include "filesystem/FileSystem.h"
+
 // TODO: https://github.com/nothings/stb
 
 TextureRepository::TextureRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
@@ -37,14 +39,26 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
         rsPtr = outRs;
     }
 
+    // Get absolute path of texture.
+    vio::Path texPath;
+    mIoManager.resolvePath(filePath, texPath);
+
+    try {
+        const time_t lastWriteTime = FileSystem::getLastFileWriteTime(filePath.getCString());
+
+        LOG_INFO("Path: {}   Last write time: {} {}", textureName, lastWriteTime, FileSystem::fileTimeToString(lastWriteTime));
+    }
+    catch (const std::filesystem::filesystem_error& e) {
+        LOG_CRITICAL("File system error: {}", e.what());
+    }
+    catch (const std::exception& e) {
+        LOG_CRITICAL("File system error: {}", e.what());
+    }
+
     switch (type)
     {
         case vg::TextureTarget::TEXTURE_2D:
         {
-
-            // Get absolute path of texture.
-            vio::Path texPath;
-            mIoManager.resolvePath(filePath, texPath);
 
             // Load the pixel data.
             *rsPtr = vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);

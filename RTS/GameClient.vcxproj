@@ -281,6 +281,7 @@
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
+    <ClCompile Include="src\filesystem\FileSystem.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\FlatWorldGenerator.cpp" />
@@ -559,6 +560,7 @@
     <ClInclude Include="src\editor\WorldEditorPanel.h" />
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
+    <ClInclude Include="src\filesystem\FileSystem.h" />
     <ClInclude Include="src\gamethread\GameThread.h" />
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\FlatWorldGenerator.h" />
