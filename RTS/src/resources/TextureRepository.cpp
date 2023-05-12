@@ -13,6 +13,8 @@
 
 #include "filesystem/FileSystem.h"
 
+#include <gli/gli.hpp>
+
 // TODO: https://github.com/nothings/stb
 
 TextureRepository::TextureRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
@@ -48,6 +50,14 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
 
     const time_t fileLastWriteTime = FileSystem::getLastFileWriteTime(stdPath);
 
+    // NOTES
+    // 1. Load with lodepng-turbo
+    // 2. Compress at run time with richgel999/bc7enc
+    // BC1 = DXT1 = RGB
+    // BC3 = DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+    // BC4 = Grayscale
+    // BC5 = RG = Tangent space normal maps
+
     // .dds files will be created from PNG on the fly and cached to make future loading faster
     if (extension == ".png") {
         bool needsGenerateDDS = true;
@@ -67,6 +77,18 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
                 return nullptr;
             }
             // Save DDS file
+            // Uncompressed gli texture
+            const gli::extent2d size(rsPtr->width, rsPtr->height);
+            gli::texture2d uncompressedTexture(gli::FORMAT_RGBA8_UNORM_PACK8, size, 1);
+            memcpy(uncompressedTexture.data(), rsPtr->bytesUI8, uncompressedTexture.size());
+
+            // Compress to DXT5
+            gli::texture2d textureDXT5 = gli::convert(uncompressedTexture, gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16);
+            
+            if (!gli::save(textureDXT5, ddsPath.string())) {
+                LOG_CRITICAL("Failed to save DDS {}", ddsPath.string());
+            }
+            
         }
         else {
             // Load DDS directly

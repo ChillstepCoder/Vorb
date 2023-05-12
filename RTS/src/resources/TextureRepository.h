@@ -36,8 +36,6 @@ public:
     const Cubemap& getCubemap(CubemapID cubemapId) const;
     const std::map<nString, CubemapID>& getCubemapIDs() const { return mCubemapIdLookup; }
 
-    void setTextureAssetPaths(const std::vector<vio::Path>& paths);
-
     // Loads in as RGBAUI8
     bool loadRawPngData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV);
 
