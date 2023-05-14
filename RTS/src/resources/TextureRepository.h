@@ -6,6 +6,11 @@
 #include "rendering/texture/GLTexture.h"
 #include "rendering/texture/Cubemap.h"
 
+// TODO: DECL_GLI
+namespace gli {
+    class texture2d;
+}
+
 DECL_VG(class SamplerState);
 DECL_VIO(class IOManager);
 DECL_VG(class ScopedBitmapResource);
@@ -28,7 +33,7 @@ public:
     TextureRepository(vio::IOManager& ioManager);
     ~TextureRepository();
 
-    const TextureData* loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, vg::ScopedBitmapResource* outRs = nullptr);
+    const TextureData* loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, gli::texture2d* outRs = nullptr);
     const TextureData& getTexture(const nString& textureName) const;
 
     const Cubemap* loadCubemap(const vio::Path& cubeFilePath);
@@ -51,6 +56,12 @@ private:
         vg::TextureInternalFormat internalFormat /* = vg::TextureInternalFormat::RGBA*/,
         vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
         i32 mipmapLevels);
+
+    GLTexture uploadTexture(
+        const gli::texture2d& textureData,
+        vg::TextureTarget textureTarget,
+        const vg::SamplerState& samplerState,
+        i32 maxMipLevels);
 
 
     // NEW

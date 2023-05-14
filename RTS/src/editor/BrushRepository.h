@@ -8,7 +8,7 @@ class TextureRepository;
 
 class Brush {
 public:
-    ui8* data; // TODO: Figure out how to only use R channel to save memory
+    std::vector<ui8> data;
     ui32v2 dims;
     VGTexture texture;
     nString name;

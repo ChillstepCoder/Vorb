@@ -289,6 +289,7 @@
     <ClCompile Include="src\generation\IWorldGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGeneratorFactory.cpp" />
     <ClCompile Include="src\instrumentation\instrumentor.cpp" />
+    <ClCompile Include="src\io\PngLoader.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
@@ -570,6 +571,7 @@
     <ClInclude Include="src\generation\WorldGeneratorFactory.h" />
     <ClInclude Include="src\generation\WorldGeneratorType.h" />
     <ClInclude Include="src\instrumentation\instrumentor.h" />
+    <ClInclude Include="src\io\PngLoader.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemConst.h" />

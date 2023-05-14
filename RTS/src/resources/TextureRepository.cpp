@@ -9,7 +9,9 @@
 #include "Vorb/io/YAMLImpl.h"
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
-#include <Vorb/graphics/ImageIO.h>
+#include <Vorb/graphics/ImageIO.h> // TODO: REMOVE
+
+#include "io/PngLoader.h"
 
 #include "filesystem/FileSystem.h"
 
@@ -26,7 +28,7 @@ TextureRepository::~TextureRepository() {
 
 }
 
-const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, vg::ScopedBitmapResource* outRs/* = nullptr*/) {
+const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, gli::texture2d* outRs/* = nullptr*/) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
     const nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
 
@@ -35,8 +37,8 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
     /*Texture texture = findTexture(textureName);
     if (texture.id) return texture;*/
     // Allow caller to optionally hold data
-    vg::ScopedBitmapResource rs;
-    vg::ScopedBitmapResource* rsPtr = &rs;
+    gli::texture2d rs;
+    gli::texture2d* rsPtr = &rs;
     if (outRs) {
         rsPtr = outRs;
     }
@@ -73,21 +75,21 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
 
         if (needsGenerateDDS) {
             // Load PNG
-            if (!loadPngDataInternal(texPath, flipV, rsPtr)) {
-                return nullptr;
-            }
+           // if (!loadPngDataInternal(texPath, flipV, rsPtr)) {
+           //      return nullptr;
+           // }
+            *rsPtr = PngLoader::loadPng(stdPath, flipV);
+
             // Save DDS file
             // Uncompressed gli texture
-            const gli::extent2d size(rsPtr->width, rsPtr->height);
-            gli::texture2d uncompressedTexture(gli::FORMAT_RGBA8_UNORM_PACK8, size, 1);
-            memcpy(uncompressedTexture.data(), rsPtr->bytesUI8, uncompressedTexture.size());
+           // assert(rsPtr->format() == gli::FORMAT_RGBA8_UNORM_PACK8);
 
             // Compress to DXT5
-            gli::texture2d textureDXT5 = gli::convert(uncompressedTexture, gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16);
+            //gli::texture2d textureDXT5 = gli::convert(uncompressedTexture, gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16);
             
-            if (!gli::save(textureDXT5, ddsPath.string())) {
-                LOG_CRITICAL("Failed to save DDS {}", ddsPath.string());
-            }
+            //if (!gli::save(textureDXT5, ddsPath.string())) {
+            //    LOG_CRITICAL("Failed to save DDS {}", ddsPath.string());
+            //}
             
         }
         else {
@@ -99,25 +101,7 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
         assert(false);
     }
 
-    GLTexture texture;
-    switch (type)
-    {
-        case vg::TextureTarget::TEXTURE_2D:
-        {
-            texture = uploadTexture(rsPtr->bytesUI8,
-                ui32v2(rsPtr->width, rsPtr->height),
-                vg::TexturePixelType::UNSIGNED_BYTE,
-                type,
-                samplerState,
-                internalFormat,
-                vg::TextureFormat::RGBA,
-                INT_MAX /*mipmap levels*/);
-            break;
-        }
-        default:
-            assert(false && "Only TEXTURE_2D is supported currently");
-    }
-
+    GLTexture texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
     assert(texture.isValid());
 
     TextureData* textureData;
@@ -250,8 +234,6 @@ GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::Te
     glCreateTextures((VGEnum)textureTarget, 1, &handle);
     mipmapLevels = computeMipmapCount(dims, mipmapLevels);
 
-
-    // "Bind" the newly created texture : all future texture functions will modify this texture
     switch (textureTarget) {
         case vg::TextureTarget::TEXTURE_1D:
         case vg::TextureTarget::PROXY_TEXTURE_1D:
@@ -270,6 +252,71 @@ GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::Te
     // Setup Texture Sampling Parameters
     assert(samplingParameters);
     samplingParameters->setForTexture(handle);
+
+    // Create Mipmaps If Necessary
+    if (mipmapLevels > 0) {
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
+        glGenerateTextureMipmap(handle);
+    }
+
+    return GLTexture(handle, textureTarget, dims);
+}
+
+GLTexture TextureRepository::uploadTexture(const gli::texture2d& textureData, vg::TextureTarget textureTarget, const vg::SamplerState& samplerState, i32 maxMipLevels) {
+    assert(!textureData.empty());
+    const ui32v2 dims(textureData.extent().x, textureData.extent().y);
+    VGTexture handle;
+    glCreateTextures((VGEnum)textureTarget, 1, &handle);
+    int mipmapLevels = computeMipmapCount(dims, maxMipLevels);
+    // TODO: Currently mipmapLevels is -1...
+    //assert(mipmapLevels == textureData.levels()); 
+
+    vg::TextureInternalFormat internalFormat;
+    vg::TexturePixelType texturePixelType;
+    vg::TextureFormat textureFormat;
+    switch (textureData.format()) {
+        case gli::FORMAT_R8_UNORM_PACK8:
+            internalFormat = vg::TextureInternalFormat::R8;
+            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+            textureFormat = vg::TextureFormat::RED;
+            break;
+        case gli::FORMAT_RG8_UNORM_PACK8:
+            internalFormat = vg::TextureInternalFormat::RG8;
+            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+            textureFormat = vg::TextureFormat::RG;
+            break;
+        case gli::FORMAT_RGB8_UNORM_PACK8:
+            internalFormat = vg::TextureInternalFormat::RGB8;
+            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+            textureFormat = vg::TextureFormat::RGB;
+            break;
+        case gli::FORMAT_RGBA8_UNORM_PACK8:
+            internalFormat = vg::TextureInternalFormat::RGBA8;
+            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+            textureFormat = vg::TextureFormat::RGBA;
+            break;
+        default:
+            assert(false);
+    }
+
+    switch (textureTarget) {
+        case vg::TextureTarget::TEXTURE_1D:
+        case vg::TextureTarget::PROXY_TEXTURE_1D:
+            glTextureStorage1D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x);
+            glTextureSubImage1D(handle, 0, 0, dims.x, (VGEnum)textureFormat, (VGEnum)texturePixelType, textureData.data());
+            break;
+        case vg::TextureTarget::TEXTURE_2D:
+            glTextureStorage2D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x, dims.y);
+            glTextureSubImage2D(handle, 0, 0, 0, dims.x, dims.y, (VGEnum)textureFormat, (VGEnum)texturePixelType, textureData.data());
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    checkGlError("TextureRepository::uploadTexture");
+    // Setup Texture Sampling Parameters
+    samplerState.setForTexture(handle);
 
     // Create Mipmaps If Necessary
     if (mipmapLevels > 0) {
