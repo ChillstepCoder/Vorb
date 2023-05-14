@@ -198,38 +198,41 @@ VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const
    return normalTexture;
 }
 
-VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const ui8* ao, const ui8* roughness, const ui8* metallic, const ui32v2& dims, const vg::SamplerState& samplerState) {
+VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic, const ui32v2& dims, const vg::SamplerState& samplerState) {
+
+    assert(ao.empty() || ao.format() == gli::format::FORMAT_R8_UNORM_PACK8);
+    assert(roughness.empty() || roughness.format() == gli::format::FORMAT_R8_UNORM_PACK8);
+    assert(metallic.empty() || metallic.format() == gli::format::FORMAT_R8_UNORM_PACK8);
+
     const ui32 pixelCount = dims.x * dims.y;
     std::vector<ui8v3> combinedBytes(pixelCount);
     // Combine
-    if (ao && roughness && metallic) {
+    if (!ao.empty() && !roughness.empty() && !metallic.empty()) {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            const int sourceOffset = i * 4; // For RGBA
-            // TODO: Load these as R textures
-            combinedBytes[i] = ui8v3(ao[sourceOffset], metallic[sourceOffset], roughness[sourceOffset]);
+            combinedBytes[i] = ui8v3(ao.data<ui8>()[i], metallic.data<ui8>()[i], roughness.data<ui8>()[i]);
         }
     }
-    else if (roughness && metallic) {
+    else if (!roughness.empty() && !metallic.empty()) {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            const int sourceOffset = i * 4; // For RGBA
-            // TODO: Load these as R textures
-            combinedBytes[i] = ui8v3(UINT8_MAX, metallic[sourceOffset], roughness[sourceOffset]);
+            combinedBytes[i] = ui8v3(UINT8_MAX, metallic.data<ui8>()[i], roughness.data<ui8>()[i]);
         }
     }
-    else if (ao && !(roughness || metallic)) {
+    else if (!ao.empty() && !(!roughness.empty() || !metallic.empty())) {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            const int sourceOffset = i * 4; // For RGBA
-            // TODO: Load these as R textures
-            combinedBytes[i] = ui8v3(ao[sourceOffset], UINT8_MAX, UINT8_MAX);
+            combinedBytes[i] = ui8v3(ao.data<ui8>()[i], UINT8_MAX, UINT8_MAX);
         }
     }
     else {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            const int sourceOffset = i * 4; // For RGBA
-            // TODO: Load these as R textures
-            combinedBytes[i] = ui8v3(ao ? ao[sourceOffset] : UINT8_MAX, metallic ? metallic[sourceOffset] : UINT8_MAX, roughness ? roughness[sourceOffset] : UINT8_MAX);
+            combinedBytes[i] = ui8v3(
+                !ao.empty() ? ao.data<ui8>()[i] : UINT8_MAX,
+                !metallic.empty() ? metallic.data<ui8>()[i] : UINT8_MAX,
+                !roughness.empty() ? roughness.data<ui8>()[i] : UINT8_MAX
+            );
         }
     }
+
+    // TODO: Cache to DXT
     VGTexture aoRoughnessMetallicTexture;
     glCreateTextures(GL_TEXTURE_2D, 1, &aoRoughnessMetallicTexture);
     glTextureStorage2D(aoRoughnessMetallicTexture, computeMipmapCount(dims, INT_MAX), (VGEnum)vg::TextureInternalFormat::RGB8, dims.x, dims.y);

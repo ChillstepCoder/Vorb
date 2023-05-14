@@ -3,7 +3,6 @@
 #include "resources/TextureRepository.h"
 
 #include <Vorb/graphics/SamplerState.h>
-#include <Vorb/graphics/ImageIO.h>
 
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
@@ -11,6 +10,9 @@
 #include <Vorb/io/IOManager.h>
 
 #include "rendering/texture/MaterialTextureGenerator.h"
+#include "rendering/texture/TextureConvert.h"
+
+#include <gli/convert.hpp>
 
 const char* GENERATE_TEXT = "GENERATE";
 
@@ -129,7 +131,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
     const vg::SamplerState* samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(fileData.samplerState)];
     // TODO: Texture Compression
-    const TextureData* albedoTextureData = textureRepository.loadTexture(albedoTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGBA8, fileData.flipV);
+    const TextureData* albedoTextureData = textureRepository.loadTexture(albedoTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
     if (!albedoTextureData) {
         LOG_CRITICAL("Failed to load albedo texture {} for material {}", fileData.albedoTexture, filePath.getString());
         return false;
@@ -147,7 +149,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         materialGpuData.normalMap = normalGLTexture.getHandleBindless();
     }
     else if (mIoManager.fileExists(normalTexturePath)) {
-        const TextureData* normalTextureData = textureRepository.loadTexture(normalTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGB8, fileData.flipV);
+        const TextureData* normalTextureData = textureRepository.loadTexture(normalTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
         if (!normalTextureData) {
             LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
             return false;
@@ -161,7 +163,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     
     // Displacement
     if (mIoManager.fileExists(displacementTexturePath)) {
-        const TextureData* displacementTextureData = textureRepository.loadTexture(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::R8, fileData.flipV);
+        const TextureData* displacementTextureData = textureRepository.loadTexture(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
         if (!displacementTextureData) {
             LOG_CRITICAL("Failed to load displacement texture {} for material {}", fileData.displacementTexture, filePath.getString());
             return false;
@@ -175,55 +177,67 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
     // Ambient Occlusion, Metallic, Roughness
     {
-        vg::ScopedBitmapResource aoData;
-        vg::ScopedBitmapResource roughnessData;
-        vg::ScopedBitmapResource metalData;
+        gli::texture2d aoData;
+        gli::texture2d roughnessData;
+        gli::texture2d metalData;
         // TODO: Free maps
         bool hasTexture = false;
         // AO
         if (mIoManager.fileExists(ambientOcclusionTexturePath)) {
-            textureRepository.loadRawPngData(ambientOcclusionTexturePath, aoData, fileData.flipV);
-            if (!aoData.bytesUI8) {
+            aoData = textureRepository.loadRawPngData(ambientOcclusionTexturePath, fileData.flipV);
+            if (!aoData.size()) {
                 LOG_CRITICAL("Failed to load AO texture {} for material {}", fileData.ambientOcclusionTexture, filePath.getString());
                 return false;
             }
-            if (ui32v2(aoData.width, aoData.height) != textureDims) {
+            if (ui32v2(aoData.extent().x, aoData.extent().y) != textureDims) {
                 LOG_CRITICAL("AO texture {} for material {} doesn't match albedo dims", fileData.ambientOcclusionTexture, filePath.getString());
                 return false;
+            }
+            if (aoData.format() != gli::FORMAT_R8_UNORM_PACK8) {
+                LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", ambientOcclusionTexturePath.getString());
+                aoData = TextureConvert::convertToR8(aoData);
             }
             hasTexture = true;
         }
 
         // Roughness
         if (mIoManager.fileExists(roughnessTexturePath)) {
-            textureRepository.loadRawPngData(roughnessTexturePath, roughnessData, fileData.flipV);
-            if (!roughnessData.bytesUI8) {
+            roughnessData = textureRepository.loadRawPngData(roughnessTexturePath, fileData.flipV);
+            if (!roughnessData.size()) {
                 LOG_CRITICAL("Failed to load roughness texture {} for material {}", fileData.roughnessTexture, filePath.getString());
                 return false;
             }
-            if (ui32v2(roughnessData.width, roughnessData.height) != textureDims) {
+            if (ui32v2(roughnessData.extent().x, roughnessData.extent().y) != textureDims) {
                 LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
                 return false;
+            }
+            if (roughnessData.format() != gli::FORMAT_R8_UNORM_PACK8) {
+                LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", roughnessTexturePath.getString());
+                roughnessData = TextureConvert::convertToR8(roughnessData);
             }
             hasTexture = true;
         }
 
         // Metallic
         if (mIoManager.fileExists(metalTexturePath)) {
-            textureRepository.loadRawPngData(metalTexturePath, metalData, fileData.flipV);
-            if (!metalData.bytesUI8) {
+            metalData = textureRepository.loadRawPngData(metalTexturePath, fileData.flipV);
+            if (!metalData.size()) {
                 LOG_CRITICAL("Failed to load Metallic texture {} for material {}", fileData.metalTexture, filePath.getString());
                 return false;
             }
-            if (ui32v2(metalData.width, metalData.height) != textureDims) {
+            if (ui32v2(metalData.extent().x, metalData.extent().y) != textureDims) {
                 LOG_CRITICAL("Metallic texture {} for material {} doesn't match albedo dims", fileData.metalTexture, filePath.getString());
                 return false;
+            }
+            if (metalData.format() != gli::FORMAT_R8_UNORM_PACK8) {
+                LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", metalTexturePath.getString());
+                metalData = TextureConvert::convertToR8(metalData);
             }
             hasTexture = true;
         }
 
         if (hasTexture) {
-            VGTexture generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData.bytesUI8, roughnessData.bytesUI8, metalData.bytesUI8, textureDims, *samplerState);
+            VGTexture generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData, roughnessData, metalData, textureDims, *samplerState);
             GLTexture& aoMetalRoughGLTexture = mGeneratedAOMetallicRoughnessTextures[materialName];
             aoMetalRoughGLTexture.init(generatedTexture, vg::TextureTarget::TEXTURE_2D, textureDims);
             materialGpuData.aoMetallicRoughnessMap = aoMetalRoughGLTexture.getHandleBindless();

@@ -3,9 +3,8 @@
 
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialShaderManager.h"
+#include "rendering/texture/TextureHelpers.h"
 #include "util/TextureUtil.h"
-
-#include <Vorb/graphics/ImageIO.h>
 
 // Match the shader TODO: profile 32?
 constexpr GLuint WORK_GROUP_SIZE = 16;
@@ -28,22 +27,25 @@ Cubemap::~Cubemap() {
     glDeleteTextures(1, &mTexture);
 }
 
-bool Cubemap::initFace(int face, const vg::ScopedBitmapResource& rs) {
-    assert(rs.width == rs.height);
+bool Cubemap::initFace(int face, const gli::texture2d& rs) {
+
+    const TextureUploadInfo uploadInfo = TextureHelpers::getTextureUploadInfo(rs);
+
+    assert(rs.extent().x == rs.extent().y);
     assert(face >= 0 && face < 6);
     if (face == 0) {
-        mDims.x = rs.width;
-        mDims.y = rs.height;
+        mDims.x = rs.extent().x;
+        mDims.y = rs.extent().y;
         glTextureStorage2D(
             mTexture,
             1,           // one level, no mipmaps
-            GL_RGBA8,    // internal format
-            rs.width,
-            rs.height
+            (VGEnum)uploadInfo.internalFormat,
+            rs.extent().x,
+            rs.extent().y
         );
     }
-    else if (mDims.x != rs.width || mDims.y != rs.height) {
-        LOG_CRITICAL("Cubemap texture size mismatch ({},{}) vs ({},{}). All faces must be the same size", rs.width, rs.height, mDims.x, mDims.y);
+    else if (mDims.x != rs.extent().x || mDims.y != rs.extent().x) {
+        LOG_CRITICAL("Cubemap texture size mismatch ({},{}) vs ({},{}). All faces must be the same size", rs.extent().x, rs.extent().y, mDims.x, mDims.y);
         return false;
     }
 
@@ -53,12 +55,12 @@ bool Cubemap::initFace(int face, const vg::ScopedBitmapResource& rs) {
         0,
         0,
         face,
-        rs.width,
-        rs.height,
+        rs.extent().x,
+        rs.extent().y,
         1,      // depth how many faces to set, if this was 3 we'd set 3 cubemap faces at once
-        GL_BGRA,
-        GL_UNSIGNED_BYTE,
-        rs.data
+        (VGEnum)uploadInfo.textureFormat,
+        (VGEnum)uploadInfo.texturePixelType,
+        rs.data()
     );
 
     return true;

@@ -10,16 +10,17 @@ gli::texture2d allocateTexture(const ui32& w, const ui32& h, int byteDepth, int 
     // the shaders.
     gli::extent2d dimensions{ w, h };
     size_t size = 0;
+    constexpr int MAX_LEVEL = 1;
     if (byteDepth == 1) {
         switch (channels) {
             case 1:
-                return gli::texture2d(gli::FORMAT_R8_UNORM_PACK8, dimensions);
+                return gli::texture2d(gli::FORMAT_R8_UNORM_PACK8, dimensions, MAX_LEVEL);
             case 2:
-                return gli::texture2d(gli::FORMAT_RG8_UNORM_PACK8, dimensions);
+                return gli::texture2d(gli::FORMAT_RG8_UNORM_PACK8, dimensions, MAX_LEVEL);
             case 3:
-                return gli::texture2d(gli::FORMAT_RGB8_UNORM_PACK8, dimensions);
+                return gli::texture2d(gli::FORMAT_RGB8_UNORM_PACK8, dimensions, MAX_LEVEL);
             case 4:
-                return gli::texture2d(gli::FORMAT_RGBA8_UNORM_PACK8, dimensions);
+                return gli::texture2d(gli::FORMAT_RGBA8_UNORM_PACK8, dimensions, MAX_LEVEL);
             default:
                 throw std::exception("Invalid channel count");
         }
@@ -27,13 +28,13 @@ gli::texture2d allocateTexture(const ui32& w, const ui32& h, int byteDepth, int 
     else if (byteDepth == 2) {
         switch (channels) {
             case 1:
-                return gli::texture2d(gli::FORMAT_R16_UNORM_PACK16, dimensions);
+                return gli::texture2d(gli::FORMAT_R16_UNORM_PACK16, dimensions, MAX_LEVEL);
             case 2:
-                return gli::texture2d(gli::FORMAT_RG16_UNORM_PACK16, dimensions);
+                return gli::texture2d(gli::FORMAT_RG16_UNORM_PACK16, dimensions, MAX_LEVEL);
             case 3:
-                return gli::texture2d(gli::FORMAT_RGB16_UNORM_PACK16, dimensions);
+                return gli::texture2d(gli::FORMAT_RGB16_UNORM_PACK16, dimensions, MAX_LEVEL);
             case 4:
-                return gli::texture2d(gli::FORMAT_RGBA16_UNORM_PACK16, dimensions);
+                return gli::texture2d(gli::FORMAT_RGBA16_UNORM_PACK16, dimensions, MAX_LEVEL);
             default:
                 throw std::exception("Invalid channel count");
         }

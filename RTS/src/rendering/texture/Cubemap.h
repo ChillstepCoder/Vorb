@@ -1,10 +1,9 @@
 #pragma once
 
 #include <Vorb/graphics/SamplerState.h>
+#include <gli/texture2d.hpp>
 
 typedef ui32 CubemapID;
-
-DECL_VG(class ScopedBitmapResource);
 
 struct CubemapFileData {
     nString mTexPosX;
@@ -25,7 +24,7 @@ public:
     ~Cubemap();
 
     // Must be called sequencailly 0-6
-    bool initFace(int face, const vg::ScopedBitmapResource& rs);
+    bool initFace(int face, const gli::texture2d& rs);
 
     VGTexture getTexture() const { return mTexture; }
     VGTexture getIrradianceTexture() const { return mIrradianceMap; }

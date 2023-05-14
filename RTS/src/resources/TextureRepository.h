@@ -13,7 +13,6 @@ namespace gli {
 
 DECL_VG(class SamplerState);
 DECL_VIO(class IOManager);
-DECL_VG(class ScopedBitmapResource);
 
 class MaterialTextureGenerator;
 
@@ -33,7 +32,7 @@ public:
     TextureRepository(vio::IOManager& ioManager);
     ~TextureRepository();
 
-    const TextureData* loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, gli::texture2d* outRs = nullptr);
+    const TextureData* loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV, gli::texture2d* outRs = nullptr);
     const TextureData& getTexture(const nString& textureName) const;
 
     const Cubemap* loadCubemap(const vio::Path& cubeFilePath);
@@ -42,20 +41,9 @@ public:
     const std::map<nString, CubemapID>& getCubemapIDs() const { return mCubemapIdLookup; }
 
     // Loads in as RGBAUI8
-    bool loadRawPngData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV);
+    gli::texture2d loadRawPngData(const vio::Path& filePath, bool flipV);
 
 private:
-    bool loadPngDataInternal(const vio::Path& filePath, bool flipV, vg::ScopedBitmapResource* outRs);
-
-    GLTexture uploadTexture(
-        const void* data,
-        ui32v2 dims,
-        vg::TexturePixelType texturePixelType /*= TexturePixelType::UNSIGNED_BYTE*/,
-        vg::TextureTarget textureTarget /*= vg::TextureTarget::TEXTURE_2D*/,
-        const vg::SamplerState* samplingParameters /*= &SamplerState::LINEAR_CLAMP_MIPMAP*/,
-        vg::TextureInternalFormat internalFormat /* = vg::TextureInternalFormat::RGBA*/,
-        vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
-        i32 mipmapLevels);
 
     GLTexture uploadTexture(
         const gli::texture2d& textureData,

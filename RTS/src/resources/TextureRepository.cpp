@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "TextureRepository.h"
 
+#include "rendering/texture/TextureHelpers.h"
 #include "rendering/texture/MaterialTextureGenerator.h"
 
 #include "util/TextureUtil.h"
@@ -9,7 +10,6 @@
 #include "Vorb/io/YAMLImpl.h"
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
-#include <Vorb/graphics/ImageIO.h> // TODO: REMOVE
 
 #include "io/PngLoader.h"
 
@@ -28,7 +28,7 @@ TextureRepository::~TextureRepository() {
 
 }
 
-const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV, gli::texture2d* outRs/* = nullptr*/) {
+const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV, gli::texture2d* outRs/* = nullptr*/) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
     const nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
 
@@ -167,21 +167,21 @@ const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath) {
     for (int i = 0; i < 6; ++i) {
 
         const nString& str = *facePaths[i];
-        if (str.size()) {
+        if (!str.empty()) {
 
             // Get absolute path of texture.
             vio::Path resultPath;
             vio::Path texPath = directory / str;
             if (mIoManager.resolvePath(texPath, resultPath)) {
-
+                fs::path stdPath(resultPath.getString());
                 // Load the pixel data.
-                vg::ScopedBitmapResource rs(vg::ImageIO().loadPng(resultPath.getString(), vg::ImageIOFormat::RGBA_UI8, true /*flipv*/));
-                if (!rs.data) {
+                gli::texture2d texture = PngLoader::loadPng(stdPath, false /*flipV*/);
+                if (!texture.size()) {
                     LOG_CRITICAL("Empty cubemap texture {} for {}", str, cubeFilePath.getString());
                     return nullptr;
                 }
 
-                if (!cubemap.initFace(i, rs)) {
+                if (!cubemap.initFace(i, texture)) {
                     LOG_CRITICAL("Failed to init cubemap face {} for {}", str, cubeFilePath.getString());
                 }
             }
@@ -211,104 +211,36 @@ const Cubemap& TextureRepository::getCubemap(CubemapID cubemapId) const {
     return *mCubemaps[cubemapId];
 }
 
-bool TextureRepository::loadRawPngData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV) {
+gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
     // Get absolute path of texture.
-    vio::Path texPath;
-    mIoManager.resolvePath(filePath, texPath);
+    vio::Path resultPath;
+    mIoManager.resolvePath(filePath, resultPath);
 
     // Load the pixel data.
-    return loadPngDataInternal(texPath, flipV, &outRs);
+    return PngLoader::loadPng(fs::path(resultPath.getString()), flipV);
 }
 
-bool TextureRepository::loadPngDataInternal(const vio::Path& filePath, bool flipV, vg::ScopedBitmapResource* outRs) {
-    *outRs = vg::ImageIO().loadPng(filePath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);
-    if (outRs->data == nullptr) {
-        LOG_CRITICAL("Failed to load PNG data for {}", filePath.getString());
-        return false;
-    }
-    return true;
-}
-
-GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::TexturePixelType texturePixelType, vg::TextureTarget textureTarget, const vg::SamplerState* samplingParameters, vg::TextureInternalFormat internalFormat, vg::TextureFormat textureFormat, i32 mipmapLevels) {
-    VGTexture handle;
-    glCreateTextures((VGEnum)textureTarget, 1, &handle);
-    mipmapLevels = computeMipmapCount(dims, mipmapLevels);
-
-    switch (textureTarget) {
-        case vg::TextureTarget::TEXTURE_1D:
-        case vg::TextureTarget::PROXY_TEXTURE_1D:
-            glTextureStorage1D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x);
-            glTextureSubImage1D(handle, 0, 0, dims.x, (VGEnum)textureFormat, (VGEnum)texturePixelType, data);
-            break;
-        case vg::TextureTarget::TEXTURE_2D:
-            glTextureStorage2D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x, dims.y);
-            glTextureSubImage2D(handle, 0, 0, 0, dims.x, dims.y, (VGEnum)textureFormat, (VGEnum)texturePixelType, data);
-            break;
-        default:
-            assert(false);
-            break;
-    }
-    checkGlError("TextureRepository::uploadTexture");
-    // Setup Texture Sampling Parameters
-    assert(samplingParameters);
-    samplingParameters->setForTexture(handle);
-
-    // Create Mipmaps If Necessary
-    if (mipmapLevels > 0) {
-        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
-        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
-        glGenerateTextureMipmap(handle);
-    }
-
-    return GLTexture(handle, textureTarget, dims);
-}
 
 GLTexture TextureRepository::uploadTexture(const gli::texture2d& textureData, vg::TextureTarget textureTarget, const vg::SamplerState& samplerState, i32 maxMipLevels) {
     assert(!textureData.empty());
     const ui32v2 dims(textureData.extent().x, textureData.extent().y);
     VGTexture handle;
     glCreateTextures((VGEnum)textureTarget, 1, &handle);
-    int mipmapLevels = computeMipmapCount(dims, maxMipLevels);
-    // TODO: Currently mipmapLevels is -1...
-    //assert(mipmapLevels == textureData.levels()); 
+    //const i32 mipmapLevels = glm::min(maxMipLevels, (i32)textureData.levels());
+    // TODO: GLI IS 1 LESS???
+    const i32 mipmapLevels = computeMipmapCount(dims, maxMipLevels);
 
-    vg::TextureInternalFormat internalFormat;
-    vg::TexturePixelType texturePixelType;
-    vg::TextureFormat textureFormat;
-    switch (textureData.format()) {
-        case gli::FORMAT_R8_UNORM_PACK8:
-            internalFormat = vg::TextureInternalFormat::R8;
-            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-            textureFormat = vg::TextureFormat::RED;
-            break;
-        case gli::FORMAT_RG8_UNORM_PACK8:
-            internalFormat = vg::TextureInternalFormat::RG8;
-            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-            textureFormat = vg::TextureFormat::RG;
-            break;
-        case gli::FORMAT_RGB8_UNORM_PACK8:
-            internalFormat = vg::TextureInternalFormat::RGB8;
-            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-            textureFormat = vg::TextureFormat::RGB;
-            break;
-        case gli::FORMAT_RGBA8_UNORM_PACK8:
-            internalFormat = vg::TextureInternalFormat::RGBA8;
-            texturePixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-            textureFormat = vg::TextureFormat::RGBA;
-            break;
-        default:
-            assert(false);
-    }
+    const TextureUploadInfo uploadInfo = TextureHelpers::getTextureUploadInfo(textureData);
 
     switch (textureTarget) {
         case vg::TextureTarget::TEXTURE_1D:
         case vg::TextureTarget::PROXY_TEXTURE_1D:
-            glTextureStorage1D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x);
-            glTextureSubImage1D(handle, 0, 0, dims.x, (VGEnum)textureFormat, (VGEnum)texturePixelType, textureData.data());
+            glTextureStorage1D(handle, mipmapLevels, (VGEnum)uploadInfo.internalFormat, dims.x);
+            glTextureSubImage1D(handle, 0, 0, dims.x, (VGEnum)uploadInfo.textureFormat, (VGEnum)uploadInfo.texturePixelType, textureData.data());
             break;
         case vg::TextureTarget::TEXTURE_2D:
-            glTextureStorage2D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x, dims.y);
-            glTextureSubImage2D(handle, 0, 0, 0, dims.x, dims.y, (VGEnum)textureFormat, (VGEnum)texturePixelType, textureData.data());
+            glTextureStorage2D(handle, mipmapLevels, (VGEnum)uploadInfo.internalFormat, dims.x, dims.y);
+            glTextureSubImage2D(handle, 0, 0, 0, dims.x, dims.y, (VGEnum)uploadInfo.textureFormat, (VGEnum)uploadInfo.texturePixelType, textureData.data());
             break;
         default:
             assert(false);
