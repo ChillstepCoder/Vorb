@@ -114,6 +114,10 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
         LOG_CRITICAL("Texture {} dimensions <{},{}> greater than max of {}", path, width, height, MAX_TEXTURE_DIMENSION);
         assert(false);
     }
+    if (width % 4 != 0 || height % 4 != 0) {
+        LOG_CRITICAL("Texture {} dimensions <{},{}> are not divisible by 4", path, width, height);
+        assert(false);
+    }
 
     //number_of_passes=png_set_interlace_handling(png_ptr);
     assert(color_type == PNG_COLOR_TYPE_PALETTE || color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA || color_type == PNG_COLOR_TYPE_GRAY);

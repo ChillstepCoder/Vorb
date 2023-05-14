@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "TextureRepository.h"
 
+#include "rendering/texture/TextureConvert.h"
 #include "rendering/texture/TextureHelpers.h"
 #include "rendering/texture/MaterialTextureGenerator.h"
 
@@ -59,7 +60,7 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
     // BC3 = DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
     // BC4 = Grayscale
     // BC5 = RG = Tangent space normal maps
-
+    GLTexture texture;
     // .dds files will be created from PNG on the fly and cached to make future loading faster
     if (extension == ".png") {
         bool needsGenerateDDS = true;
@@ -80,6 +81,8 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
            // }
             *rsPtr = PngLoader::loadPng(stdPath, flipV);
 
+            gli::texture2d ddsTexture = TextureConvert::convertToDDS(*rsPtr);
+            texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
             // Save DDS file
             // Uncompressed gli texture
            // assert(rsPtr->format() == gli::FORMAT_RGBA8_UNORM_PACK8);
@@ -101,7 +104,7 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
         assert(false);
     }
 
-    GLTexture texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
+    //texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
     assert(texture.isValid());
 
     TextureData* textureData;
@@ -247,6 +250,68 @@ GLTexture TextureRepository::uploadTexture(const gli::texture2d& textureData, vg
             break;
     }
     checkGlError("TextureRepository::uploadTexture");
+    // Setup Texture Sampling Parameters
+    samplerState.setForTexture(handle);
+
+    // Create Mipmaps If Necessary
+    if (mipmapLevels > 0) {
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
+        glGenerateTextureMipmap(handle);
+    }
+
+    return GLTexture(handle, textureTarget, dims);
+}
+
+GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData, vg::TextureTarget textureTarget, const vg::SamplerState& samplerState, i32 maxMipLevels)
+{
+    assert(!textureData.empty());
+    const ui32v2 dims(textureData.extent().x, textureData.extent().y);
+    VGTexture handle;
+    glCreateTextures((VGEnum)textureTarget, 1, &handle);
+    //const i32 mipmapLevels = glm::min(maxMipLevels, (i32)textureData.levels());
+    // TODO: GLI IS 1 LESS???
+    const i32 mipmapLevels = computeMipmapCount(dims, maxMipLevels);
+
+    VGEnum internalFormat;
+    switch (textureData.format()) {
+        case gli::FORMAT_RGB_DXT1_UNORM_BLOCK8:
+            internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+            break;
+        case gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16:
+            internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            break;
+        case gli::FORMAT_R_ATI1N_UNORM_BLOCK8:
+            internalFormat = GL_COMPRESSED_RED_RGTC1;
+            break;
+        case gli::FORMAT_RGBA_BP_UNORM_BLOCK16:
+            internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+            break;
+        default:
+            assert(false && "Unsupported format in uploadDDSTexture");
+    }
+
+    assert(textureTarget == vg::TextureTarget::TEXTURE_2D);
+    glTextureStorage2D(
+        handle,
+        mipmapLevels,
+        internalFormat,
+        textureData.extent().x,
+        textureData.extent().y
+    );
+
+    glCompressedTextureSubImage2D(
+        handle,
+        0, // mipmap level
+        0, 0, // xoffset, yoffset
+        textureData.extent().x,
+        textureData.extent().y,
+        internalFormat,
+        static_cast<GLsizei>(textureData.size(0)),
+        textureData.data()
+    );
+
+    checkGlError("TextureRepository::uploadDDSTexture");
     // Setup Texture Sampling Parameters
     samplerState.setForTexture(handle);
 

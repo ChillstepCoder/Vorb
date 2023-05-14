@@ -50,6 +50,11 @@ private:
         vg::TextureTarget textureTarget,
         const vg::SamplerState& samplerState,
         i32 maxMipLevels);
+    GLTexture uploadDDSTexture(
+        const gli::texture2d& textureData,
+        vg::TextureTarget textureTarget,
+        const vg::SamplerState& samplerState,
+        i32 maxMipLevels);
 
 
     // NEW
