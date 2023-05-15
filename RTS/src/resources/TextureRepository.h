@@ -43,8 +43,6 @@ public:
     // Loads in as RGBAUI8
     gli::texture2d loadRawPngData(const vio::Path& filePath, bool flipV);
 
-private:
-
     GLTexture uploadTexture(
         const gli::texture2d& textureData,
         vg::TextureTarget textureTarget,
@@ -56,6 +54,7 @@ private:
         const vg::SamplerState& samplerState,
         i32 maxMipLevels);
 
+private:
 
     // NEW
     std::vector<TextureData> mTextures;

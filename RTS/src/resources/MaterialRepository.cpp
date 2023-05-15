@@ -237,10 +237,11 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         }
 
         if (hasTexture) {
-            VGTexture generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData, roughnessData, metalData, textureDims, *samplerState);
-            GLTexture& aoMetalRoughGLTexture = mGeneratedAOMetallicRoughnessTextures[materialName];
-            aoMetalRoughGLTexture.init(generatedTexture, vg::TextureTarget::TEXTURE_2D, textureDims);
-            materialGpuData.aoMetallicRoughnessMap = aoMetalRoughGLTexture.getHandleBindless();
+            LOG_WARN("Generating AoRoughnessMetallicTexture");
+            gli::texture2d generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData, roughnessData, metalData, textureDims, *samplerState);
+            GLTexture uploadedTexture = textureRepository.uploadTexture(generatedTexture, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
+            materialGpuData.aoMetallicRoughnessMap = uploadedTexture.getHandleBindless();
+            mGeneratedAOMetallicRoughnessTextures[materialName] = std::move(uploadedTexture);
         }
     }
 

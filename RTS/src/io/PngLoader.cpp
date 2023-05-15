@@ -44,6 +44,8 @@ gli::texture2d allocateTexture(const ui32& w, const ui32& h, int byteDepth, int 
 }
 
 gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
+    LOG_INFO("Loading png {}", path.string());
+
     gli::texture2d res;
 
     FILE* rawFilePtr = nullptr;

@@ -18,6 +18,7 @@
 
 MaterialEditorViewportPanel::MaterialEditorViewportPanel()
 {
+    mRotate90 = false;
 }
 
 MaterialEditorViewportPanel::~MaterialEditorViewportPanel()

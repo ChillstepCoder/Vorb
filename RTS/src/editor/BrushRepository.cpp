@@ -40,8 +40,9 @@ void BrushRepository::loadBrush(const vio::Path& filePath, TextureRepository& te
         }
         brush.data.resize(rs.extent().x * rs.extent().y);
         // Copy alpha channel only
+        const ui8* rsData = rs.data<ui8>();
         for (std::size_t i = 0; i < brush.data.size(); ++i) {
-            const ui8* pixelData = rs.data<ui8>() + i * numChannels;
+            const ui8* pixelData = rsData + i * numChannels;
             brush.data[i] = pixelData[numChannels - 1];  // Alpha is the last byte in the pixel data
         }
 

@@ -163,6 +163,7 @@ void MaterialTextureGenerator::init() {
 
 VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const ui32v2& dims, const vg::SamplerState& samplerState)
 {
+   LOG_WARN("Generating uncompressed normal texture");
    glBindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
    glViewport(0, 0, dims.x, dims.y);
 
@@ -198,57 +199,72 @@ VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const
    return normalTexture;
 }
 
-VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic, const ui32v2& dims, const vg::SamplerState& samplerState) {
+gli::texture2d MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic, const ui32v2& dims, const vg::SamplerState& samplerState) {
 
     assert(ao.empty() || ao.format() == gli::format::FORMAT_R8_UNORM_PACK8);
     assert(roughness.empty() || roughness.format() == gli::format::FORMAT_R8_UNORM_PACK8);
     assert(metallic.empty() || metallic.format() == gli::format::FORMAT_R8_UNORM_PACK8);
 
     const ui32 pixelCount = dims.x * dims.y;
-    gli::texture2d combinedBytes(gli::FORMAT_RGB8_UNORM_PACK8, gli::texture2d::extent_type(dims.x, dims.y), 1);
-    // Combine
-    if (!ao.empty() && !roughness.empty() && !metallic.empty()) {
+    gli::texture2d resultTexture(gli::FORMAT_RGB8_UNORM_PACK8, gli::texture2d::extent_type(dims.x, dims.y), 1);
+    // These are separated into every possible case so we move all comparisons out of the critical
+    // pixel loops to improve performance in debug mode
+    // Also cache data ptr as the cast is a non trivial operation in debug mode
+    ui8* targetData = resultTexture.data<ui8>();
+    const ui8* aoData = ao.empty() ? nullptr : ao.data<ui8>();
+    const ui8* metallicData = metallic.empty() ? nullptr : metallic.data<ui8>();
+    const ui8* roughnessData = roughness.empty() ? nullptr : roughness.data<ui8>();
+    if (aoData && roughnessData && metallicData) {
         for (ui32 i = 0; i < pixelCount; ++i) {
             const ui32 targetOffset = i * 3;
-            combinedBytes.data<ui8>()[targetOffset] = ao.data<ui8>()[i];
-            combinedBytes.data<ui8>()[targetOffset + 1] = metallic.data<ui8>()[i];
-            combinedBytes.data<ui8>()[targetOffset + 2] = roughness.data<ui8>()[i];
+            targetData[targetOffset] = aoData[i];
+            targetData[targetOffset + 1] = metallicData[i];
+            targetData[targetOffset + 2] = roughnessData[i];
         }
     }
-    else if (!roughness.empty() && !metallic.empty()) {
+    else if (roughnessData && metallicData) {
         for (ui32 i = 0; i < pixelCount; ++i) {
             const ui32 targetOffset = i * 3;
-            combinedBytes.data<ui8>()[targetOffset] = UINT8_MAX;
-            combinedBytes.data<ui8>()[targetOffset + 1] = metallic.data<ui8>()[i];
-            combinedBytes.data<ui8>()[targetOffset + 2] = roughness.data<ui8>()[i];
+            targetData[targetOffset] = UINT8_MAX;
+            targetData[targetOffset + 1] = metallicData[i];
+            targetData[targetOffset + 2] = roughnessData[i];
         }
     }
-    else if (!ao.empty() && !(!roughness.empty() || !metallic.empty())) {
+    else if (aoData && (!roughnessData && !metallicData)) {
         for (ui32 i = 0; i < pixelCount; ++i) {
             const ui32 targetOffset = i * 3;
-            combinedBytes.data<ui8>()[targetOffset] = ao.data<ui8>()[i];
-            combinedBytes.data<ui8>()[targetOffset + 1] = UINT8_MAX;
-            combinedBytes.data<ui8>()[targetOffset + 2] = UINT8_MAX;
+            targetData[targetOffset] = aoData[i];
+            targetData[targetOffset + 1] = UINT8_MAX;
+            targetData[targetOffset + 2] = UINT8_MAX;
+        }
+    }
+    else if (aoData && roughnessData && !metallicData) {
+        for (ui32 i = 0; i < pixelCount; ++i) {
+            const ui32 targetOffset = i * 3;
+            targetData[targetOffset] = aoData[i];
+            targetData[targetOffset + 1] = UINT8_MAX;
+            targetData[targetOffset + 2] = roughnessData[i];
         }
     }
     else {
         for (ui32 i = 0; i < pixelCount; ++i) {
             const ui32 targetOffset = i * 3;
-            combinedBytes.data<ui8>()[targetOffset] = !ao.empty() ? ao.data<ui8>()[i] : UINT8_MAX;
-            combinedBytes.data<ui8>()[targetOffset + 1] = !metallic.empty() ? metallic.data<ui8>()[i] : UINT8_MAX;
-            combinedBytes.data<ui8>()[targetOffset + 2] = !roughness.empty() ? roughness.data<ui8>()[i] : UINT8_MAX;
+            targetData[targetOffset] = aoData ? aoData[i] : UINT8_MAX;
+            targetData[targetOffset + 1] = metallicData ? metallicData[i] : UINT8_MAX;
+            targetData[targetOffset + 2] = roughnessData ? roughnessData[i] : UINT8_MAX;
         }
     }
 
-    // TODO: Cache to DXT
-    VGTexture aoRoughnessMetallicTexture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &aoRoughnessMetallicTexture);
-    glTextureStorage2D(aoRoughnessMetallicTexture, computeMipmapCount(dims, INT_MAX), (VGEnum)vg::TextureInternalFormat::RGB8, dims.x, dims.y);
-    assert(dims.x * dims.y * 3 == combinedBytes.size(0));
-    glTextureSubImage2D(aoRoughnessMetallicTexture, 0, 0, 0, dims.x, dims.y, (VGEnum)vg::TextureFormat::RGB, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, combinedBytes.data());
+    return resultTexture;
+    //// TODO: Cache to DXT
+    //VGTexture aoRoughnessMetallicTexture;
+    //glCreateTextures(GL_TEXTURE_2D, 1, &aoRoughnessMetallicTexture);
+    //glTextureStorage2D(aoRoughnessMetallicTexture, computeMipmapCount(dims, INT_MAX), (VGEnum)vg::TextureInternalFormat::RGB8, dims.x, dims.y);
+    //assert(dims.x * dims.y * 3 == combinedBytes.size(0));
+    //glTextureSubImage2D(aoRoughnessMetallicTexture, 0, 0, 0, dims.x, dims.y, (VGEnum)vg::TextureFormat::RGB, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, combinedBytes.data());
 
-    samplerState.setForTexture(aoRoughnessMetallicTexture);
-    glGenerateTextureMipmap(aoRoughnessMetallicTexture);
+    //samplerState.setForTexture(aoRoughnessMetallicTexture);
+    //glGenerateTextureMipmap(aoRoughnessMetallicTexture);
 
-    return aoRoughnessMetallicTexture;
+    //return aoRoughnessMetallicTexture;
 }

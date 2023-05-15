@@ -8,6 +8,50 @@
 #define RGBCX_IMPLEMENTATION
 #include <extern/bc7enc/rgbcx.h>
 
+bool supportsBC7 = false;
+bc7enc_compress_block_params pack_params;
+
+constexpr int uber_level = 0; // Goes up to 4  // TODO: 4 FOR SHIPPING BUILDS TO PACKAGE DDS?
+constexpr int max_partitions_to_scan = BC7ENC_MAX_PARTITIONS1;
+constexpr bool perceptual = true; // TODO: ENABLE FOR SHIPPING BUILDS TO PACKAGE DDS?
+constexpr bool y_flip = false;
+constexpr uint32_t bc45_channel0 = 0;
+constexpr uint32_t bc45_channel1 = 1;
+
+constexpr rgbcx::bc1_approx_mode bc1_mode = rgbcx::bc1_approx_mode::cBC1Ideal;
+constexpr bool use_bc1_3color_mode = true;
+constexpr bool use_bc1_3color_mode_for_black = false;
+constexpr int bc1_quality_level = 2;
+
+constexpr uint32_t pixel_format_bpp = 8;
+constexpr bool force_dx10_dds = false;
+
+void TextureConvert::initConverters() {
+	static bool needsInit = true;
+	if (needsInit) {
+		LOG_INFO("Initializing texture converters");
+		// DDS init
+		supportsBC7 = false;// glewIsSupported("GL_ARB_texture_compression_bptc");
+
+		if (supportsBC7) {
+			bc7enc_compress_block_params_init(&pack_params);
+			if (!perceptual)
+				bc7enc_compress_block_params_init_linear_weights(&pack_params);
+			pack_params.m_max_partitions_mode = max_partitions_to_scan;
+			pack_params.m_uber_level = std::min(BC7ENC_MAX_UBER_LEVEL, uber_level);
+			bc7enc_compress_block_init();
+			printf("  BCe7 Enabled: Max mode 1 partitions: %u, uber level: %u, perceptual: %u\n", pack_params.m_max_partitions_mode, pack_params.m_uber_level, perceptual);
+		}
+
+        printf(" BC1 Level: %u, use 3-color mode: %u, use 3-color mode for black: %u, bc1_mode: %u\n",
+            bc1_quality_level, use_bc1_3color_mode, use_bc1_3color_mode_for_black, (int)bc1_mode);
+
+        rgbcx::init(bc1_mode);
+
+		needsInit = false;
+	}
+}
+
 gli::texture2d TextureConvert::convertToR8(const gli::texture2d& inputTexture) {
     constexpr int MAX_LEVEL = 1;
     const int numChannels = gli::component_count(inputTexture.format());
@@ -21,9 +65,11 @@ gli::texture2d TextureConvert::convertToR8(const gli::texture2d& inputTexture) {
         throw std::exception("Tried to convert a texture that was already r8");
     }
     gli::texture2d newTexture(gli::FORMAT_R8_UNORM_PACK8, inputTexture.extent(), MAX_LEVEL);
+	const ui8* inputData = inputTexture.data<ui8>();
+	ui8* outputData = newTexture.data<ui8>();
     for (std::size_t i = 0; i < newTexture.size(0); ++i) {
-        const ui8* pixelData = inputTexture.data<ui8>() + i * numChannels;
-        newTexture.data<ui8>()[i] = pixelData[0];  // Grab R channel
+        const ui8* pixelData = inputData + i * numChannels;
+		outputData[i] = pixelData[0];  // Grab R channel
     }
     return newTexture;
 }
@@ -120,18 +166,6 @@ gli::texture2d TextureConvert::convertToDDS(const gli::texture2d& inputTexture) 
 
 	LOG_TRACE("Compressing to DDS...");
 
-	int uber_level = 0; // Goes up to 4  // TODO: 4 FOR SHIPPING BUILDS TO PACKAGE DDS?
-	int max_partitions_to_scan = BC7ENC_MAX_PARTITIONS1;
-	bool perceptual = false; // TODO: ENABLE FOR SHIPPING BUILDS TO PACKAGE DDS?
-	bool y_flip = false;
-	uint32_t bc45_channel0 = 0;
-	uint32_t bc45_channel1 = 1;
-
-	rgbcx::bc1_approx_mode bc1_mode = rgbcx::bc1_approx_mode::cBC1Ideal;
-	bool use_bc1_3color_mode = true;
-	bool use_bc1_3color_mode_for_black = false;
-	int bc1_quality_level = 2;
-
 	DXGI_FORMAT dxgi_format = DXGI_FORMAT_BC3_UNORM;
 	switch (inputTexture.format()) {
 		case gli::FORMAT_R8_UNORM_PACK8:
@@ -147,37 +181,29 @@ gli::texture2d TextureConvert::convertToDDS(const gli::texture2d& inputTexture) 
 			assert(false && "Unsupported format in convertToDDS");
 			throw std::exception("Unsupported format in convertToDDS");
 	}
-	uint32_t pixel_format_bpp = 8;
-	bool force_dx10_dds = false;
 
 	const uint32_t blocks_x = inputTexture.extent().x / 4;
 	const uint32_t blocks_y = inputTexture.extent().y / 4;
 	const uint32_t totalBlocks = blocks_x * blocks_y;
 
-	block16_vec packed_image16(totalBlocks);
-	block8_vec packed_image8(totalBlocks);
-
-	bc7enc_compress_block_params pack_params;
-	bc7enc_compress_block_params_init(&pack_params);
-	if (!perceptual)
-		bc7enc_compress_block_params_init_linear_weights(&pack_params);
-	pack_params.m_max_partitions_mode = max_partitions_to_scan;
-	pack_params.m_uber_level = std::min(BC7ENC_MAX_UBER_LEVEL, uber_level);
-
-	if (dxgi_format == DXGI_FORMAT_BC7_UNORM)
-	{
-		printf("  Max mode 1 partitions: %u, uber level: %u, perceptual: %u\n", pack_params.m_max_partitions_mode, pack_params.m_uber_level, perceptual);
-	}
-	else
-	{
-		printf("  Level: %u, use 3-color mode: %u, use 3-color mode for black: %u, bc1_mode: %u\n",
-			bc1_quality_level, use_bc1_3color_mode, use_bc1_3color_mode_for_black, (int)bc1_mode);
-	}
-
-	bc7enc_compress_block_init();
-	rgbcx::init(bc1_mode);
-
 	clock_t start_t = clock();
+
+    // Allocate memory and init
+    block16_vec packed_image16;
+    block8_vec packed_image8;
+    switch (dxgi_format) {
+        case DXGI_FORMAT_BC1_UNORM: // DXT1 RGB
+        case DXGI_FORMAT_BC4_UNORM: // Greyscale
+			packed_image8.resize(totalBlocks);
+            break;
+        case DXGI_FORMAT_BC3_UNORM: // DXT5 RGBA
+        case DXGI_FORMAT_BC7_UNORM: // RGBA High fidelity (not always supported)
+			packed_image16.resize(totalBlocks);
+            break;
+        default:
+            assert(0);
+            break;
+    }
 
 	for (uint32_t by = 0; by < blocks_y; by++)
 	{

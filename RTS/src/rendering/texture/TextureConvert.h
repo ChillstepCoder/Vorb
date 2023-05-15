@@ -4,6 +4,7 @@
 
 class TextureConvert {
 public:
+    static void initConverters();
     // Does not handle mipmap, only base layer
     static gli::texture2d convertToR8(const gli::texture2d& inputTexture);
     // convert to DDS compressed texture using optimal BCX encoding and

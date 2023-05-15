@@ -24,6 +24,7 @@
 TextureRepository::TextureRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
     mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
     mNormalMapGenerator->init();
+    TextureConvert::initConverters();
 }
 
 TextureRepository::~TextureRepository() {
@@ -234,6 +235,7 @@ const Cubemap& TextureRepository::getCubemap(CubemapID cubemapId) const {
 }
 
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
+
     // Get absolute path of texture.
     vio::Path resultPath;
     mIoManager.resolvePath(filePath, resultPath);
