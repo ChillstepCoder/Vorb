@@ -108,6 +108,8 @@ i32 GameplayScreen::getPreviousScreen() const {
 
 void GameplayScreen::build() {
 
+    mResourceManager.setResourceRoot("data");
+
     // Show loading screen
     LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
     loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png");
@@ -115,7 +117,7 @@ void GameplayScreen::build() {
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 
-    mResourceManager.gatherFiles("data");
+    mResourceManager.gatherFiles();
     displayLoadScreen("Loading files...", true);
 	mResourceManager.loadFiles();
 

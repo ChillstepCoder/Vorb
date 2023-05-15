@@ -125,7 +125,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         png_set_palette_to_rgb(png_ptr);
         color_type = png_get_color_type(png_ptr, info_ptr);
-        LOG_INFO("PNG {} is palettized, make sure it works", path);
+        LOG_WARN("PNG {} is palettized, make sure it works", path);
     }
 
     png_read_update_info(png_ptr, info_ptr);

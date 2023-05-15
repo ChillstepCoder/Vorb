@@ -116,7 +116,7 @@ gli::texture2d TextureConvert::convertToDDS(const gli::texture2d& inputTexture) 
 	assert(inputTexture.extent().x % 4 == 0);
 	assert(inputTexture.extent().y % 4 == 0);
 
-	LOG_INFO("Compressing to DDS...");
+	LOG_TRACE("Compressing to DDS...");
 
 	int uber_level = 0; // Goes up to 4
 	int max_partitions_to_scan = BC7ENC_MAX_PARTITIONS1;
@@ -254,7 +254,7 @@ gli::texture2d TextureConvert::convertToDDS(const gli::texture2d& inputTexture) 
 	}
 
 	clock_t end_t = clock();
-	LOG_INFO("Total time: {} secs", (double)(end_t - start_t) / CLOCKS_PER_SEC);
+	LOG_TRACE("Total time: {} secs", (double)(end_t - start_t) / CLOCKS_PER_SEC);
 
 	return texture;
 }

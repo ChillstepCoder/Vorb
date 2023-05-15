@@ -5,6 +5,8 @@
 #include "rendering/texture/TextureHelpers.h"
 #include "rendering/texture/MaterialTextureGenerator.h"
 
+#include "resources/ResourceManager.h"
+
 #include "util/TextureUtil.h"
 
 #include "Vorb/io/YAML.h"
@@ -17,8 +19,7 @@
 #include "filesystem/FileSystem.h"
 
 #include <gli/gli.hpp>
-
-// TODO: https://github.com/nothings/stb
+#include <gli/texture.hpp>
 
 TextureRepository::TextureRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
     mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
@@ -32,7 +33,7 @@ TextureRepository::~TextureRepository() {
 const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV, gli::texture2d* outRs/* = nullptr*/) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
     const nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
-
+    LOG_INFO("Loading texture {}", filePath.getString());
 
     // Check if the texture is already cached.
     /*Texture texture = findTexture(textureName);
@@ -47,6 +48,8 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
     // Get absolute path of texture.
     vio::Path texPath;
     mIoManager.resolvePath(filePath, texPath);
+
+    const fs::path resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
 
     fs::path stdPath(texPath.getString());
     const nString extension = stdPath.extension().string();
@@ -68,36 +71,50 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
         fs::path ddsPath = stdPath;
         ddsPath.replace_extension(".dds");
 
+        // Get relative to resource root
+        ddsPath = ddsPath.lexically_relative(resourceRoot);
+        ddsPath = resourceRoot / "_cache" / ddsPath;
+
         if (fs::is_regular_file(ddsPath)) {
             if (FileSystem::getLastFileWriteTime(ddsPath) >= fileLastWriteTime) {
                 needsGenerateDDS = false;
             }
         }
 
-        if (needsGenerateDDS) {
-            // Load PNG
-           // if (!loadPngDataInternal(texPath, flipV, rsPtr)) {
-           //      return nullptr;
-           // }
+        if (needsGenerateDDS || outRs) {
             *rsPtr = PngLoader::loadPng(stdPath, flipV);
 
-            gli::texture2d ddsTexture = TextureConvert::convertToDDS(*rsPtr);
-            texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
-            // Save DDS file
-            // Uncompressed gli texture
-           // assert(rsPtr->format() == gli::FORMAT_RGBA8_UNORM_PACK8);
+            if (outRs) {
+                // If caller requires full data, we wont ever generate dds
+                texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
+            } else {
+                // Compression
+                gli::texture2d ddsTexture = TextureConvert::convertToDDS(*rsPtr);
+                texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
 
-            // Compress to DXT5
-            //gli::texture2d textureDXT5 = gli::convert(uncompressedTexture, gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16);
-            
-            //if (!gli::save(textureDXT5, ddsPath.string())) {
-            //    LOG_CRITICAL("Failed to save DDS {}", ddsPath.string());
-            //}
+                // Cache to disk
+                LOG_TRACE("Saving to disk - {}", ddsPath.string());
+
+                // Ensure directories exist
+                fs::path directoryPath = ddsPath;
+                directoryPath._Remove_filename_and_separator();
+                if (!std::filesystem::exists(directoryPath) && !std::filesystem::create_directories(directoryPath)) {
+                    LOG_CRITICAL("Failed to create directories for {}", directoryPath);
+                }
+
+                if (gli::save(ddsTexture, ddsPath.string())) {
+                    LOG_TRACE("Done");
+                }
+                else {
+                    LOG_CRITICAL("FAILED! Ensure directory exists or ensure program has permission to create folders");
+                }
+            }
             
         }
         else {
-            // Load DDS directly
-            assert(false);
+            // Assume 2d texture (potentially unsafe?)
+            gli::texture2d ddsTexture(gli::load(ddsPath.string()));
+            texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
         }
     }
     else {

@@ -95,7 +95,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     --folderPath;
 
 
-    LOG_TRACE("LOADING MATERIAL {} {}", filePath.getString(), materialId);
+    LOG_INFO("LOADING MATERIAL {} {}", filePath.getString(), materialId);
 
     // Filepath Fallbacks
     if (fileData.albedoTexture.empty()) {

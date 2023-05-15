@@ -75,7 +75,13 @@ bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
     return strcmp(filePath.getString().c_str() + (length - extension.size()), extension.c_str()) == 0;
 }
 
-void ResourceManager::gatherFiles(const vio::Path& folderPath) {
+void ResourceManager::setResourceRoot(const vio::Path& folderPath) {
+    if (!mIoManager->resolvePath(folderPath, mResourceRoot)) {
+        pError("Could not resolve /data/ folder. Try verifying game files");
+    }
+}
+
+void ResourceManager::gatherFiles() {
 
     PreciseTimer timer;
 
@@ -99,15 +105,12 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mSkillFiles.clear();
     mFontFiles.clear();
 
-    vio::Path absolutePath;
-    if (!mIoManager->resolvePath(folderPath, absolutePath)) {
-        pError("Could not resolve /data/ folder. Try verifying game files");
-    }
-    gatherRecursive(absolutePath);
+    assert(mResourceRoot.isValid());
 
+    gatherRecursive(mResourceRoot);
     mHasGathered = true;
 
-    LOG_TRACE("Gathered files in {:.4} ms", timer.stop());
+    LOG_INFO("Gathered files in {:.4} ms", timer.stop());
 }
 
 void ResourceManager::loadFiles() {
@@ -272,7 +275,7 @@ void ResourceManager::loadFiles() {
     }
 
     mHasLoadedResources = true;
-    LOG_TRACE("Loaded resources in {:.4} ms");
+    LOG_INFO("Loaded resources in {:.4} ms");
 }
 
 void ResourceManager::reloadMaterials() {

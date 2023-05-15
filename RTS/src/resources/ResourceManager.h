@@ -29,7 +29,9 @@ public:
     ResourceManager();
     ~ResourceManager();
 
-    void gatherFiles(const vio::Path& folderPath);
+    void setResourceRoot(const vio::Path& folderPath);
+
+    void gatherFiles();
     void loadFiles();
 
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
@@ -58,6 +60,7 @@ public:
 
     void generateNormalMaps();
     
+    const vio::Path& getResourceRoot() const { return mResourceRoot; }
 private:
     void gatherRecursive(const vio::Path& folderPath);
 
@@ -106,6 +109,7 @@ private:
     // TODO: Replace with std::filesystem?
     std::unique_ptr<vio::IOManager> mIoManager;
 
+    vio::Path mResourceRoot;
     bool mHasLoadedResources = false;
     bool mHasGathered = false;
 };
