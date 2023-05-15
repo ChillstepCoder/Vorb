@@ -106,7 +106,9 @@ inline void get_block(const gli::texture2d& inputTexture, uint32_t blockx, uint3
 // Based on bc7enc/test.cpp
 gli::texture2d TextureConvert::convertToDDS(const gli::texture2d& inputTexture) {
 
-	const bool supportsBC7 = glewIsSupported("GL_ARB_texture_compression_bptc");
+	// NOTE: BC7 is VERY slow, and is larger in memory, but is much higher quality
+	// Consider selecting specific textures to be compressed via BC7 or dont use it at all
+	const bool supportsBC7 = false;// glewIsSupported("GL_ARB_texture_compression_bptc");
 
 	const int num_channels = gli::component_count(inputTexture.format());
 	const int block_size = gli::block_size(inputTexture.format());
@@ -118,9 +120,9 @@ gli::texture2d TextureConvert::convertToDDS(const gli::texture2d& inputTexture) 
 
 	LOG_TRACE("Compressing to DDS...");
 
-	int uber_level = 0; // Goes up to 4
+	int uber_level = 0; // Goes up to 4  // TODO: 4 FOR SHIPPING BUILDS TO PACKAGE DDS?
 	int max_partitions_to_scan = BC7ENC_MAX_PARTITIONS1;
-	bool perceptual = true;
+	bool perceptual = false; // TODO: ENABLE FOR SHIPPING BUILDS TO PACKAGE DDS?
 	bool y_flip = false;
 	uint32_t bc45_channel0 = 0;
 	uint32_t bc45_channel1 = 1;

@@ -205,30 +205,38 @@ VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const gli
     assert(metallic.empty() || metallic.format() == gli::format::FORMAT_R8_UNORM_PACK8);
 
     const ui32 pixelCount = dims.x * dims.y;
-    std::vector<ui8v3> combinedBytes(pixelCount);
+    gli::texture2d combinedBytes(gli::FORMAT_RGB8_UNORM_PACK8, gli::texture2d::extent_type(dims.x, dims.y), 1);
     // Combine
     if (!ao.empty() && !roughness.empty() && !metallic.empty()) {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            combinedBytes[i] = ui8v3(ao.data<ui8>()[i], metallic.data<ui8>()[i], roughness.data<ui8>()[i]);
+            const ui32 targetOffset = i * 3;
+            combinedBytes.data<ui8>()[targetOffset] = ao.data<ui8>()[i];
+            combinedBytes.data<ui8>()[targetOffset + 1] = metallic.data<ui8>()[i];
+            combinedBytes.data<ui8>()[targetOffset + 2] = roughness.data<ui8>()[i];
         }
     }
     else if (!roughness.empty() && !metallic.empty()) {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            combinedBytes[i] = ui8v3(UINT8_MAX, metallic.data<ui8>()[i], roughness.data<ui8>()[i]);
+            const ui32 targetOffset = i * 3;
+            combinedBytes.data<ui8>()[targetOffset] = UINT8_MAX;
+            combinedBytes.data<ui8>()[targetOffset + 1] = metallic.data<ui8>()[i];
+            combinedBytes.data<ui8>()[targetOffset + 2] = roughness.data<ui8>()[i];
         }
     }
     else if (!ao.empty() && !(!roughness.empty() || !metallic.empty())) {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            combinedBytes[i] = ui8v3(ao.data<ui8>()[i], UINT8_MAX, UINT8_MAX);
+            const ui32 targetOffset = i * 3;
+            combinedBytes.data<ui8>()[targetOffset] = ao.data<ui8>()[i];
+            combinedBytes.data<ui8>()[targetOffset + 1] = UINT8_MAX;
+            combinedBytes.data<ui8>()[targetOffset + 2] = UINT8_MAX;
         }
     }
     else {
         for (ui32 i = 0; i < pixelCount; ++i) {
-            combinedBytes[i] = ui8v3(
-                !ao.empty() ? ao.data<ui8>()[i] : UINT8_MAX,
-                !metallic.empty() ? metallic.data<ui8>()[i] : UINT8_MAX,
-                !roughness.empty() ? roughness.data<ui8>()[i] : UINT8_MAX
-            );
+            const ui32 targetOffset = i * 3;
+            combinedBytes.data<ui8>()[targetOffset] = !ao.empty() ? ao.data<ui8>()[i] : UINT8_MAX;
+            combinedBytes.data<ui8>()[targetOffset + 1] = !metallic.empty() ? metallic.data<ui8>()[i] : UINT8_MAX;
+            combinedBytes.data<ui8>()[targetOffset + 2] = !roughness.empty() ? roughness.data<ui8>()[i] : UINT8_MAX;
         }
     }
 
@@ -236,7 +244,7 @@ VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const gli
     VGTexture aoRoughnessMetallicTexture;
     glCreateTextures(GL_TEXTURE_2D, 1, &aoRoughnessMetallicTexture);
     glTextureStorage2D(aoRoughnessMetallicTexture, computeMipmapCount(dims, INT_MAX), (VGEnum)vg::TextureInternalFormat::RGB8, dims.x, dims.y);
-    assert(dims.x * dims.y <= combinedBytes.size());
+    assert(dims.x * dims.y * 3 == combinedBytes.size(0));
     glTextureSubImage2D(aoRoughnessMetallicTexture, 0, 0, 0, dims.x, dims.y, (VGEnum)vg::TextureFormat::RGB, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, combinedBytes.data());
 
     samplerState.setForTexture(aoRoughnessMetallicTexture);

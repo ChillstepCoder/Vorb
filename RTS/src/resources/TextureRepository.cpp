@@ -113,8 +113,10 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
         }
         else {
             // Assume 2d texture (potentially unsafe?)
+            LOG_INFO("Loading cached dds...");
             gli::texture2d ddsTexture(gli::load(ddsPath.string()));
             texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
+            LOG_INFO("...Done");
         }
     }
     else {
