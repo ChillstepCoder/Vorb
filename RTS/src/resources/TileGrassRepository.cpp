@@ -4,9 +4,16 @@
 
 #include <Vorb/io/IOManager.h>
 
+KEG_ENUM_DEF(TileGrassMeshType, TileGrassMeshType, kt) {
+    kt.addValue("default", TileGrassMeshType::DEFAULT);
+    kt.addValue("plane", TileGrassMeshType::PLANE);
+}
+static_assert(e_cast(TileGrassMeshType::COUNT) == 2, "Update keg definition");
+
 KEG_TYPE_DEF_SAME_NAME(TileGrassFileData, kt) {
     kt.addValue("alpha_masks", keg::Value::basic(offsetof(TileGrassFileData, alphaMasks), keg::BasicType::STRING));
     kt.addValue("textures", keg::Value::basic(offsetof(TileGrassFileData, textures), keg::BasicType::STRING));
+    kt.addValue("mesh_type", keg::Value::custom(offsetof(TileGrassFileData, meshType), "TileGrassMeshType", true));
     kt.addValue("num_textures", keg::Value::basic(offsetof(TileGrassFileData, numTextures), keg::BasicType::I32));
     kt.addValue("size", keg::Value::basic(offsetof(TileGrassFileData, sizeMults), keg::BasicType::F32_V2));
     kt.addValue("height_variance", keg::Value::basic(offsetof(TileGrassFileData, heightVariance), keg::BasicType::F32_V2));
@@ -44,6 +51,7 @@ bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Pa
             tileGrassData.mUseGradientColor = false;
         }
         tileGrassData.mNumTextures = fileData.numTextures;
+        tileGrassData.mMeshType = fileData.meshType;
         tileGrassData.mSizeMults = fileData.sizeMults;
         tileGrassData.mHeightVariance = fileData.heightVariance;
         tileGrassData.mLeanVariance = fileData.leanVariance;

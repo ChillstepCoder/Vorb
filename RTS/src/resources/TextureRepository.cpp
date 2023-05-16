@@ -95,27 +95,27 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
                 texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
 
                 // Cache to disk
-                LOG_TRACE("Saving to disk - {}", ddsPath.string());
+                LOG_TRACE("  Saving to disk - {}", ddsPath.string());
 
                 // Ensure directories exist
                 fs::path directoryPath = ddsPath;
                 directoryPath._Remove_filename_and_separator();
                 if (!std::filesystem::exists(directoryPath) && !std::filesystem::create_directories(directoryPath)) {
-                    LOG_CRITICAL("Failed to create directories for {}", directoryPath);
+                    LOG_CRITICAL("  Failed to create directories for {}", directoryPath);
                 }
 
                 if (gli::save(ddsTexture, ddsPath.string())) {
-                    LOG_TRACE("Done");
+                    LOG_TRACE("  Done");
                 }
                 else {
-                    LOG_CRITICAL("FAILED! Ensure directory exists or ensure program has permission to create folders");
+                    LOG_CRITICAL("  FAILED! Ensure directory exists or ensure program has permission to create folders");
                 }
             }
             
         }
         else {
             // Assume 2d texture (potentially unsafe?)
-            LOG_INFO("Loading cached dds...");
+            LOG_INFO("  Loading cached dds");
             gli::texture2d ddsTexture(gli::load(ddsPath.string()));
             texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
         }
@@ -132,7 +132,7 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
     auto&& it = mTextureIdLookup.find(textureName);
     if (it != mTextureIdLookup.end()) {
         // Replace existing
-        LOG_CRITICAL("Replacing existing texture {}", filePath.getString());
+        LOG_CRITICAL("  Replacing existing texture {}", filePath.getString());
         assert(false); // No reason for this right now.
         textureId = it->second;
         textureData = &mTextures[textureId];

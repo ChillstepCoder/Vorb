@@ -11,9 +11,17 @@ DECL_VIO(class IOManager);
 
 class MaterialRepository;
 
+enum class TileGrassMeshType {
+    DEFAULT,
+    PLANE,
+    COUNT
+};
+KEG_ENUM_DECL(TileGrassMeshType);
+
 struct TileGrassFileData {
     nString alphaMasks;
     nString textures;
+    TileGrassMeshType meshType = TileGrassMeshType::DEFAULT;
     f32v2 sizeMults = f32v2(1.0f);
     f32v2 heightVariance = f32v2(0.2f, 0.8f);
     f32 leanVariance = 0.5f;
@@ -27,6 +35,7 @@ struct TileGrassData {
     f32v2 mSizeMults;
     f32v2 mHeightVariance;
     f32 mLeanVariance;
+    TileGrassMeshType mMeshType;
     ui8 mDensity; //  MAX_GRASS_DETAIL
     ui8 mNumTextures;
     MaterialID mMaterialID;

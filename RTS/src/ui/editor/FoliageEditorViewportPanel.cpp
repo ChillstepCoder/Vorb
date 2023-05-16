@@ -148,6 +148,25 @@ void FoliageEditorViewportPanel::renderGrassControls()
     if (ImGui::Checkbox("Use Gradient Color", &mGrassData->mUseGradientColor)) {
         mDirtyFoliageMesh = true;
     }
+
+    constexpr const char* meshShapes[e_cast(TileGrassMeshType::COUNT)] = {
+      "default",
+      "plane",
+    };
+    static_assert(e_cast(TileGrassMeshType::COUNT) == 2);
+    if (ImGui::BeginCombo("Mesh Shape", meshShapes[e_cast(mGrassData->mMeshType)])) {
+        for (int i = 0; i < e_cast(TileGrassMeshType::COUNT); ++i) {
+            bool isSelected = e_cast(mDrawMode) == i;
+            ImGui::Selectable(meshShapes[i], &isSelected);
+
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+                mGrassData->mMeshType = (TileGrassMeshType)i;
+            }
+        }
+        ImGui::EndCombo();
+    }
+
     // Densities are power of two but display as index
     int density = mGrassData->mDensity;
     if (ImGui::SliderInt("Density", &density, 1, MAX_GRASS_DETAIL)) {

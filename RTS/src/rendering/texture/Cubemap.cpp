@@ -67,6 +67,7 @@ bool Cubemap::initFace(int face, const gli::texture2d& rs) {
 }
 
 void Cubemap::computePBRMaps() {
+    LOG_INFO("  Computing PBR maps");
     createMipmaps(); // Used for precomputed map
     computeIrradianceMap();
     computePrefilterMap();
