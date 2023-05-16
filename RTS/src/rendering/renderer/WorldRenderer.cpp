@@ -187,7 +187,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             glDisable(GL_CULL_FACE);
-            mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderDataManager->getGrassMeshManager().getGrassMeshes());
+            mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderDataManager->getGrassMeshManager().getGrassMeshes(), TileGrassMeshType::DEFAULT);
             glEnable(GL_CULL_FACE);
         }
         mSmudgeRenderer->renderSmudge(activeGBuffer, *mCamera);

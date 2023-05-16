@@ -4,6 +4,8 @@
 #include "boost/container/flat_set.hpp"
 #include "tile/TileContainer.h"
 
+#include "rendering/mesh/TileGrassMeshType.h"
+
 class ChunkGrassQuadtree;
 class Chunk;
 class IWorld;

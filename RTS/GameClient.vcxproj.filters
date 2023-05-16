@@ -1823,6 +1823,9 @@
     <ClInclude Include="src\extern\bc7enc\rgbcx_table4.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\mesh\TileGrassMeshType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

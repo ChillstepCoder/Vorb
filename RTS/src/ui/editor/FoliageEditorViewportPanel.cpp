@@ -114,7 +114,7 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     
     UboHelpers::uploadCameraUbo(RenderContext::getInstance().getCameraUbo(), camera3D);
     if (mGrassMeshes.begin()->get()->mMesh.isValid()) {
-        mGrassRenderer->renderGrass(camera3D, f32v3(FLT_MAX), mGrassMeshesSet);
+        mGrassRenderer->renderGrass(camera3D, f32v3(FLT_MAX), mGrassMeshesSet, TileGrassMeshType::DEFAULT);
     }
 
     vg::DepthState::NONE.set();

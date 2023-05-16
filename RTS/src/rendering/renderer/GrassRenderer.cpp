@@ -19,8 +19,7 @@ GrassRenderer::GrassRenderer()
     mGrassMaterial = materialManager.getMaterialShader("grass");
 }
 
-void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {
-
+void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {
     MaterialRenderer::bindMaterialForRender(*mGrassMaterial);
     const vg::GLProgram& program = mGrassMaterial->mProgram;
     VGUniform offsetUniform = program.getUniform("unOffset");
@@ -90,6 +89,25 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
             mesh.draw(tboSizeTypeUniform, tboPositionUniform);
         }
     };
+}
+
+void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {
+    assert(false);
+}
+
+void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes, TileGrassMeshType meshType) {
+
+    switch (meshType) {
+        case TileGrassMeshType::DEFAULT:
+            renderDefaultGrass(camera, playerPos, grassMeshes);
+            break;
+        case TileGrassMeshType::PLANE:
+            renderPlaneGrass(camera, playerPos, grassMeshes);
+            break;
+        default:
+            assert(false);
+    }
+    static_assert(e_cast(TileGrassMeshType::COUNT) == 2);
 
     checkGlError("GrassRenderer::renderGrass");
 }

@@ -7,16 +7,11 @@
 
 #include "generation/NoiseFunction.hpp"
 
+#include "rendering/mesh/TileGrassMeshType.h"
+
 DECL_VIO(class IOManager);
 
 class MaterialRepository;
-
-enum class TileGrassMeshType {
-    DEFAULT,
-    PLANE,
-    COUNT
-};
-KEG_ENUM_DECL(TileGrassMeshType);
 
 struct TileGrassFileData {
     nString alphaMasks;

@@ -673,6 +673,7 @@
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\TileContainerMeshManager.h" />
+    <ClInclude Include="src\rendering\mesh\TileGrassMeshType.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
