@@ -12,7 +12,11 @@
 #include "rendering/texture/MaterialTextureGenerator.h"
 #include "rendering/texture/TextureConvert.h"
 
+#include "filesystem/FileSystem.h"
+
+#include <resources/ResourceManager.h>
 #include <gli/convert.hpp>
+#include <gli/gli.hpp>
 
 const char* GENERATE_TEXT = "GENERATE";
 
@@ -180,68 +184,112 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         gli::texture2d aoData;
         gli::texture2d roughnessData;
         gli::texture2d metalData;
-        // TODO: Free maps
-        bool hasTexture = false;
-        // AO
-        if (mIoManager.fileExists(ambientOcclusionTexturePath)) {
-            aoData = textureRepository.loadRawPngData(ambientOcclusionTexturePath, fileData.flipV);
-            if (!aoData.size()) {
-                LOG_CRITICAL("Failed to load AO texture {} for material {}", fileData.ambientOcclusionTexture, filePath.getString());
-                return false;
-            }
-            if (ui32v2(aoData.extent().x, aoData.extent().y) != textureDims) {
-                LOG_CRITICAL("AO texture {} for material {} doesn't match albedo dims", fileData.ambientOcclusionTexture, filePath.getString());
-                return false;
-            }
-            if (aoData.format() != gli::FORMAT_R8_UNORM_PACK8) {
-                LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", ambientOcclusionTexturePath.getString());
-                aoData = TextureConvert::convertToR8(aoData);
-            }
-            hasTexture = true;
+        fs::path ddsPath(albedoTexturePath.getString());
+        const fs::path& resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
+        ddsPath.replace_extension("_AMR.dds");
+        ddsPath = ddsPath.lexically_relative(resourceRoot);
+        ddsPath = resourceRoot / "_cache" / ddsPath;
+
+        bool needsGenerateDDS = false;
+        time_t fileLastWriteTime = 0;
+        if (fs::exists(ddsPath)) {
+            fileLastWriteTime = FileSystem::getLastFileWriteTime(ddsPath);
+        }
+        else {
+            needsGenerateDDS = true;
         }
 
-        // Roughness
-        if (mIoManager.fileExists(roughnessTexturePath)) {
-            roughnessData = textureRepository.loadRawPngData(roughnessTexturePath, fileData.flipV);
-            if (!roughnessData.size()) {
-                LOG_CRITICAL("Failed to load roughness texture {} for material {}", fileData.roughnessTexture, filePath.getString());
-                return false;
-            }
-            if (ui32v2(roughnessData.extent().x, roughnessData.extent().y) != textureDims) {
-                LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
-                return false;
-            }
-            if (roughnessData.format() != gli::FORMAT_R8_UNORM_PACK8) {
-                LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", roughnessTexturePath.getString());
-                roughnessData = TextureConvert::convertToR8(roughnessData);
-            }
-            hasTexture = true;
+        fs::path stdAoPath(ambientOcclusionTexturePath.getString());
+        fs::path stdRoughnessPath(roughnessTexturePath.getString());
+        fs::path stdMetalPath(metalTexturePath.getString());
+
+        // Find target path
+        if (fs::exists(stdAoPath) && fs::is_regular_file(stdAoPath)) {
+            needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdAoPath) >= fileLastWriteTime;
+        }
+        if (fs::exists(stdRoughnessPath) && fs::is_regular_file(stdRoughnessPath)) {
+            needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdRoughnessPath) >= fileLastWriteTime;
+        }
+        if (fs::exists(stdMetalPath) && fs::is_regular_file(stdMetalPath)) {
+            needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdMetalPath) >= fileLastWriteTime;
         }
 
-        // Metallic
-        if (mIoManager.fileExists(metalTexturePath)) {
-            metalData = textureRepository.loadRawPngData(metalTexturePath, fileData.flipV);
-            if (!metalData.size()) {
-                LOG_CRITICAL("Failed to load Metallic texture {} for material {}", fileData.metalTexture, filePath.getString());
-                return false;
+        if (needsGenerateDDS) {
+            // TODO: Free maps
+            bool hasTexture = false;
+            // AO
+            if (mIoManager.fileExists(ambientOcclusionTexturePath)) {
+                aoData = textureRepository.loadRawPngData(ambientOcclusionTexturePath, fileData.flipV);
+                if (!aoData.size()) {
+                    LOG_CRITICAL("Failed to load AO texture {} for material {}", fileData.ambientOcclusionTexture, filePath.getString());
+                    return false;
+                }
+                if (ui32v2(aoData.extent().x, aoData.extent().y) != textureDims) {
+                    LOG_CRITICAL("AO texture {} for material {} doesn't match albedo dims", fileData.ambientOcclusionTexture, filePath.getString());
+                    return false;
+                }
+                if (aoData.format() != gli::FORMAT_R8_UNORM_PACK8) {
+                    LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", ambientOcclusionTexturePath.getString());
+                    aoData = TextureConvert::convertToR8(aoData);
+                }
+                hasTexture = true;
             }
-            if (ui32v2(metalData.extent().x, metalData.extent().y) != textureDims) {
-                LOG_CRITICAL("Metallic texture {} for material {} doesn't match albedo dims", fileData.metalTexture, filePath.getString());
-                return false;
-            }
-            if (metalData.format() != gli::FORMAT_R8_UNORM_PACK8) {
-                LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", metalTexturePath.getString());
-                metalData = TextureConvert::convertToR8(metalData);
-            }
-            hasTexture = true;
-        }
 
-        if (hasTexture) {
-            LOG_WARN("Generating AoRoughnessMetallicTexture");
-            gli::texture2d generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData, roughnessData, metalData, textureDims, *samplerState);
-            GLTexture uploadedTexture = textureRepository.uploadTexture(generatedTexture, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
-            materialGpuData.aoMetallicRoughnessMap = uploadedTexture.getHandleBindless();
-            mGeneratedAOMetallicRoughnessTextures[materialName] = std::move(uploadedTexture);
+            // Roughness
+            if (mIoManager.fileExists(roughnessTexturePath)) {
+                roughnessData = textureRepository.loadRawPngData(roughnessTexturePath, fileData.flipV);
+                if (!roughnessData.size()) {
+                    LOG_CRITICAL("Failed to load roughness texture {} for material {}", fileData.roughnessTexture, filePath.getString());
+                    return false;
+                }
+                if (ui32v2(roughnessData.extent().x, roughnessData.extent().y) != textureDims) {
+                    LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
+                    return false;
+                }
+                if (roughnessData.format() != gli::FORMAT_R8_UNORM_PACK8) {
+                    LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", roughnessTexturePath.getString());
+                    roughnessData = TextureConvert::convertToR8(roughnessData);
+                }
+                hasTexture = true;
+            }
+
+            // Metallic
+            if (mIoManager.fileExists(metalTexturePath)) {
+                metalData = textureRepository.loadRawPngData(metalTexturePath, fileData.flipV);
+                if (!metalData.size()) {
+                    LOG_CRITICAL("Failed to load Metallic texture {} for material {}", fileData.metalTexture, filePath.getString());
+                    return false;
+                }
+                if (ui32v2(metalData.extent().x, metalData.extent().y) != textureDims) {
+                    LOG_CRITICAL("Metallic texture {} for material {} doesn't match albedo dims", fileData.metalTexture, filePath.getString());
+                    return false;
+                }
+                if (metalData.format() != gli::FORMAT_R8_UNORM_PACK8) {
+                    LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", metalTexturePath.getString());
+                    metalData = TextureConvert::convertToR8(metalData);
+                }
+                hasTexture = true;
+            }
+
+            if (hasTexture) {
+                LOG_WARN("Generating AoRoughnessMetallicTexture");
+                gli::texture2d generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData, roughnessData, metalData, textureDims, *samplerState);
+                // DDS convert
+                gli::texture2d ddsTexture = TextureConvert::convertToDDS(generatedTexture);
+                GLTexture uploadedTexture = textureRepository.uploadDDSTexture(ddsTexture, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
+                gli::save(ddsTexture, ddsPath.string());
+
+                materialGpuData.aoMetallicRoughnessMap = uploadedTexture.getHandleBindless();
+                mGeneratedAOMetallicRoughnessTextures[materialName] = std::move(uploadedTexture);
+            }
+
+        }
+        else {
+            // LOAD FROM FILE
+              // Assume 2d texture (potentially unsafe?)
+            LOG_INFO("Loading cached dds...");
+            gli::texture2d ddsTexture(gli::load(ddsPath.string()));
+            textureRepository.uploadDDSTexture(ddsTexture, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
         }
     }
 

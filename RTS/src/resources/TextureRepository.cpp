@@ -69,8 +69,9 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
     if (extension == ".png") {
         bool needsGenerateDDS = true;
         // Check if there is a .dds already
+        // TODO: GET CACHE PATH TARGET
         fs::path ddsPath = stdPath;
-        ddsPath.replace_extension(".dds");
+        ddsPath.replace_extension(".dds"); // TODO: DETECT DDS CORRUPTION
 
         // Get relative to resource root
         ddsPath = ddsPath.lexically_relative(resourceRoot);
@@ -117,7 +118,6 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
             LOG_INFO("Loading cached dds...");
             gli::texture2d ddsTexture(gli::load(ddsPath.string()));
             texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
-            LOG_INFO("...Done");
         }
     }
     else {
