@@ -696,7 +696,7 @@
     <ClCompile Include="src\resources\TileGrassRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.cpp">
+    <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp">
@@ -1715,7 +1715,7 @@
     <ClInclude Include="src\resources\TileGrassRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.h">
+    <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h">

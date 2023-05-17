@@ -348,7 +348,7 @@
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.cpp" />
-    <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.cpp" />
@@ -654,7 +654,7 @@
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.h" />
-    <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.h" />

@@ -1,15 +1,15 @@
 #pragma once
 
 class Chunk;
-class GrassBillboardMesh;
+class GrassBillboardMeshBuilder;
 struct HeightmapPatchData;
 struct TileGrass;
 
 
-namespace GrassMeshBuilder
+namespace GrassMeshBuilderMethods
 {
     void createGrassMesh(
-        GrassBillboardMesh& grassMesh,
+        GrassBillboardMeshBuilder& grassMeshBuilder,
         const Chunk& chunk,
         const ui32v2& tilePosStart,
         ui32 lod,
@@ -17,7 +17,7 @@ namespace GrassMeshBuilder
     );
 
     void editorCreateGrassMesh(
-        GrassBillboardMesh& grassMesh,
+        GrassBillboardMeshBuilder& grassMeshBuilder,
         ui32 widthTiles,
         const TileGrass grassDataArray[] // Should be length SQ(widthTiles)
     );

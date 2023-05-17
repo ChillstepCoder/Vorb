@@ -17,7 +17,7 @@
 #include "math/Random.h"
 #include "debugging/DebugRenderer.h"
 
-#include "rendering/mesh/mesher/builder/GrassMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/GrassMeshBuilderMethods.h"
 
 #include "rendering/RenderThreadTasks.h"
 #include "gamethread/GameThreadTasks.h"
@@ -34,11 +34,12 @@ constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(p
 
 
 struct GrassMeshTaskData {
-    GrassMeshTaskData(ChunkGrassQuadtree* owner, ui32 patchIndex) : owner(owner), patchIndex(patchIndex) {}
+    GrassMeshTaskData(ChunkGrassQuadtree* owner, ui32 patchIndex, GrassBillboardMesh& mesh) : meshBuilder(mesh), owner(owner), patchIndex(patchIndex) {}
 
     void* operator new(size_t count);
     void operator delete(void* pointer, size_t size);
-
+    
+    GrassBillboardMeshBuilder meshBuilder;
     ChunkGrassQuadtree* owner;
     f32* heightField;
     ui32 patchIndex;
@@ -131,13 +132,13 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
             //PreciseTimer timer;
-            GrassMeshBuilder::createGrassMesh(mMeshes[patchIndex]->mMesh, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData);
-            GrassMeshTaskData* taskData = new GrassMeshTaskData(this, patchIndex);
+            GrassMeshTaskData* taskData = new GrassMeshTaskData(this, patchIndex, mMeshes[patchIndex]->mMesh);
+            GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData);
 
             // To render thread for upload
             RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
                 GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
-                taskData->owner->finishMesh(taskData->patchIndex);
+                taskData->owner->finishMesh(taskData->meshBuilder, taskData->patchIndex);
 
                 // Back to the main thread to update state
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
@@ -200,10 +201,11 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
     }
 }
 
-void ChunkGrassQuadtree::finishMesh(ui32 patchIndex) {
+void ChunkGrassQuadtree::finishMesh(GrassBillboardMeshBuilder& meshBuilder, ui32 patchIndex) {
     std::unique_ptr<GrassMesh>& mesh = mMeshes[patchIndex];
+    assert(&meshBuilder.getMesh() == mesh->get());
     mesh->mPosition = getWorldPos3D();
-    mesh->mMesh.finishMesh();
+    meshBuilder.finishMesh();
 
     GrassMeshManager& grassMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(mChunk.getWorld()).getGrassMeshManager();
     if (mesh->mMesh.isValid()) {

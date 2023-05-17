@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "GrassMeshBuilder.h"
+#include "GrassMeshBuilderMethods.h"
 
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
@@ -64,13 +64,13 @@ constexpr auto getOffsetFromD0 = [](f32 x, f32 y) -> f32v2 {
     return rv;
 };
 
-void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatchData* heightData)
+void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatchData* heightData)
 {
     PROFILE_FUNCTION();
     const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
-    grassMesh.reserveQuadCount((size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
+    grassMeshBuilder.reserveQuadCount((size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
 
     TileGrass paddedGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH];
     chunk.copyPaddedGrassDataWorkerThread(paddedGrassData);
@@ -170,7 +170,7 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
                                 //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                                 f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
                                 const f32 zPos = heightmapGrid.computeHeightAtPoint(heightmapPatchId, heightData->data, chunkWorldPos + bladePos);
-                                grassMesh.addBladeQuad(
+                                grassMeshBuilder.addBladeQuad(
                                     f32v3(bladePos.x, bladePos.y, zPos), // TODO: new height
                                     f32v2(bladeWidth, rsize),
                                     (ui8)id,
@@ -183,17 +183,17 @@ void GrassMeshBuilder::createGrassMesh(GrassBillboardMesh& grassMesh, const Chun
             }
         }
     } // Read lock end
-    grassMesh.setBoundingSphere(boundingSphere);
+    grassMeshBuilder.setBoundingSphere(boundingSphere);
 }
 
-void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32 widthTiles, const TileGrass grassDataArray[] /* Should be length SQ(widthTiles) */)
+void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, ui32 widthTiles, const TileGrass grassDataArray[] /* Should be length SQ(widthTiles) */)
 {
     PROFILE_FUNCTION();
     const ui32 lod = GRASS_QUADTREE_MAX_LOD - 1;
     const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     const ui32 totalTiles = SQ(widthTiles);
-    grassMesh.reserveQuadCount((size_t)totalTiles * SQ(MAX_GRASS_DETAIL));
+    grassMeshBuilder.reserveQuadCount((size_t)totalTiles * SQ(MAX_GRASS_DETAIL));
 
     // Bounding sphere
     // TODO: This isn't accurate for slopey surfaces! We need a proper AABB
@@ -278,7 +278,7 @@ void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32
                                 const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * BIG_PRIME1 - y2 - (x << 4) + (y << 5)) & 0xff); // Fast modulus 256
                                 //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                                 f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
-                                grassMesh.addBladeQuad(
+                                grassMeshBuilder.addBladeQuad(
                                     f32v3(bladePos.x, bladePos.y, 0.0f), 
                                     f32v2(bladeWidth, rsize),
                                     (ui8)id,
@@ -291,5 +291,5 @@ void GrassMeshBuilder::editorCreateGrassMesh(GrassBillboardMesh& grassMesh, ui32
             }
         }
     } // Read lock end
-    grassMesh.setBoundingSphere(boundingSphere);
+    grassMeshBuilder.setBoundingSphere(boundingSphere);
 }

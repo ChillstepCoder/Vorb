@@ -20,7 +20,7 @@
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/GrassBillboardMesh.h"
-#include "rendering/mesh/mesher/builder/GrassMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/GrassMeshBuilderMethods.h"
 #include "rendering/UboHelpers.h"
 
 #include "camera/Camera3D.h"
@@ -103,9 +103,9 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
             grassDataArray[i].grassIDs[0] = mGrassData->mId;
             grassDataArray[i].densities[0] = (ui8)glm::clamp(density, 0, 255);
         }
-
-        GrassMeshBuilder::editorCreateGrassMesh(mesh, WIDTH_TILES, grassDataArray);
-        mesh.finishMesh();
+        GrassBillboardMeshBuilder builder(mesh);
+        GrassMeshBuilderMethods::editorCreateGrassMesh(builder, WIDTH_TILES, grassDataArray);
+        builder.finishMesh();
         mDirtyFoliageMesh = false;
     }
 

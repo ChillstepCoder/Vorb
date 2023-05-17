@@ -25,7 +25,7 @@ public:
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
     void freeMeshForPatch(ui32 patchIndex) override;
-    void finishMesh(ui32 patchIndex);
+    void finishMesh(GrassBillboardMeshBuilder& meshBuilder, ui32 patchIndex);
 
     // Flat for cache coherency, no allocations, and multithreading
     const Chunk& mChunk;
