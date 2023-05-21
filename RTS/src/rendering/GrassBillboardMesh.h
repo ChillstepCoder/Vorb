@@ -16,6 +16,15 @@ struct GrassBillboardInstanceData {
 };
 static_assert(sizeof(GrassBillboardInstanceData) == 4);
 
+struct GrassBillboardMeshGpuData {
+    VGVertexArray mVao = 0; ///< Vertex Array Object
+    ui32 mIndexCount = 0; ///< Current capacity of the m_ibo
+    VGTexture mTboInstanceData = 0;
+    VGTexture mTboPositionData = 0;
+    VGBuffer mVboInstanceData = 0;
+    VGBuffer mVboPosition = 0;
+};
+
 class GrassBillboardMesh {
     friend class GrassBillboardMeshBuilder;
 public:
@@ -25,18 +34,14 @@ public:
     void draw(VGUniform tboSizeType, VGUniform tboPosition) const;
     void destroy();
 
-    bool isValid() const { return mIndexCount > 0; }
+    bool isValid() const { return mIsValid; }
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mBoundingSphere = boundingSphere; }
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 
 private:
     BoundingSphere mBoundingSphere;  ///< Optional AABB to describe the bounds
-    VGVertexArray mVao = 0; ///< Vertex Array Object
-    ui32 mIndexCount = 0; ///< Current capacity of the m_ibo
-    VGTexture mTboInstanceData = 0;
-    VGTexture mTboPositionData = 0;
-    VGBuffer mVboInstanceData = 0;
-    VGBuffer mVboPosition = 0;
+    GrassBillboardMeshGpuData mData[e_cast(TileGrassMeshType::COUNT)];
+    bool mIsValid = false;
 };
 
 class GrassMesh {
@@ -64,9 +69,9 @@ public:
 
     const GrassBillboardMesh& getMesh() const { return mMesh; }
 private:
-    void initBuffers();
+    void initBuffers(int bufferIndex);
 
     GrassBillboardMesh& mMesh;
-    std::vector<GrassBillboardInstanceData> mInstanceData; // TODO: Recycle?
+    std::vector<GrassBillboardInstanceData> mInstanceData[e_cast(TileGrassMeshType::COUNT)]; // TODO: Recycle?
     std::vector<f32v3> mPositionData; // TODO: Recycle?
 };

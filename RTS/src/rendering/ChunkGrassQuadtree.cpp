@@ -203,7 +203,7 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
 
 void ChunkGrassQuadtree::finishMesh(GrassBillboardMeshBuilder& meshBuilder, ui32 patchIndex) {
     std::unique_ptr<GrassMesh>& mesh = mMeshes[patchIndex];
-    assert(&meshBuilder.getMesh() == mesh->get());
+    assert(&meshBuilder.getMesh() == &mesh->mMesh);
     mesh->mPosition = getWorldPos3D();
     meshBuilder.finishMesh();
 
