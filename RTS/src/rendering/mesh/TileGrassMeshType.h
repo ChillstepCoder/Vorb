@@ -1,6 +1,6 @@
 #pragma once
 
-enum class TileGrassMeshType {
+enum class TileGrassMeshType : ui8 {
     DEFAULT,
     PLANE,
     COUNT

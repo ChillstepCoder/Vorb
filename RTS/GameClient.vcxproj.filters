@@ -1826,6 +1826,9 @@
     <ClInclude Include="src\rendering\mesh\TileGrassMeshType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\mesh\GrassBillboardMeshRenderData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

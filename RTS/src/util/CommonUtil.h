@@ -6,11 +6,7 @@ constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
-template<typename E>
-constexpr auto e_count() -> typename std::underlying_type<E>::type {
-    return static_cast<typename std::underlying_type<E>::type>(E::COUNT);
-}
-
+#define e_count(e) (e_cast(e::COUNT))
 
 #define KEG_ENUM_STR(e, v) kes_##e##.getValueFromKey(v).c_str()
 

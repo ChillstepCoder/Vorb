@@ -5,8 +5,12 @@
 
 #include "rendering/TileVertex.h"
 #include "rendering/RenderCommon.h"
+#include "rendering/mesh/GrassBillboardMeshRenderData.h"
 
 #include "rendering/mesh/TileGrassMeshType.h"
+
+constexpr int GRASS_TBO_INSTANCE_DATA_BINDING = 10;
+constexpr int GRASS_TBO_POSITION_DATA_BINDING = 11;
 
 struct GrassBillboardInstanceData {
     GrassBillboardInstanceData(ui8v2&& dims, ui8 grassType, ui8 rotation) : dims(dims), grassType(grassType), rotation(rotation) {};
@@ -17,12 +21,12 @@ struct GrassBillboardInstanceData {
 static_assert(sizeof(GrassBillboardInstanceData) == 4);
 
 struct GrassBillboardMeshGpuData {
-    VGVertexArray mVao = 0; ///< Vertex Array Object
-    ui32 mIndexCount = 0; ///< Current capacity of the m_ibo
-    VGTexture mTboInstanceData = 0;
-    VGTexture mTboPositionData = 0;
+    GrassBillboardMeshRenderData mRenderData;
     VGBuffer mVboInstanceData = 0;
     VGBuffer mVboPosition = 0;
+
+    bool isValid() const { return mRenderData.mIndexCount > 0; }
+    void destroy();
 };
 
 class GrassBillboardMesh {
@@ -31,10 +35,11 @@ public:
     GrassBillboardMesh() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(GrassBillboardMesh);
 
-    void draw(VGUniform tboSizeType, VGUniform tboPosition) const;
     void destroy();
 
     bool isValid() const { return mIsValid; }
+    bool isValid(TileGrassMeshType type) const { return mData[e_cast(type)].isValid(); }
+    const GrassBillboardMeshRenderData getRenderData(TileGrassMeshType type) const { return mData[e_cast(type)].mRenderData; }
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mBoundingSphere = boundingSphere; }
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 
@@ -62,8 +67,8 @@ class GrassBillboardMeshBuilder {
 public:
     GrassBillboardMeshBuilder(GrassBillboardMesh& mesh);
 
-    void reserveQuadCount(size_t count);
-    void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType, ui8 rotation);
+    void reserveQuadCount(TileGrassMeshType type, size_t count);
+    void addBladeQuad(TileGrassMeshType type, const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType, ui8 rotation);
     void finishMesh();
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mMesh.setBoundingSphere(boundingSphere); }
 
@@ -72,6 +77,6 @@ private:
     void initBuffers(int bufferIndex);
 
     GrassBillboardMesh& mMesh;
-    std::vector<GrassBillboardInstanceData> mInstanceData[e_cast(TileGrassMeshType::COUNT)]; // TODO: Recycle?
-    std::vector<f32v3> mPositionData; // TODO: Recycle?
+    std::vector<GrassBillboardInstanceData> mInstanceData[e_count(TileGrassMeshType)]; // TODO: Recycle?
+    std::vector<f32v3> mPositionData[e_count(TileGrassMeshType)]; // TODO: Recycle?
 };

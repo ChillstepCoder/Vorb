@@ -70,7 +70,9 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
     const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
-    grassMeshBuilder.reserveQuadCount((size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
+    grassMeshBuilder.reserveQuadCount(TileGrassMeshType::DEFAULT, (size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
+    grassMeshBuilder.reserveQuadCount(TileGrassMeshType::PLANE, (size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL) / 2);
+    static_assert(e_count(TileGrassMeshType) == 2);
 
     TileGrass paddedGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH];
     chunk.copyPaddedGrassDataWorkerThread(paddedGrassData);
@@ -171,6 +173,7 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                                 f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
                                 const f32 zPos = heightmapGrid.computeHeightAtPoint(heightmapPatchId, heightData->data, chunkWorldPos + bladePos);
                                 grassMeshBuilder.addBladeQuad(
+                                    grassData.mMeshType,
                                     f32v3(bladePos.x, bladePos.y, zPos), // TODO: new height
                                     f32v2(bladeWidth, rsize),
                                     (ui8)id,
@@ -193,7 +196,9 @@ void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& g
     const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     const ui32 totalTiles = SQ(widthTiles);
-    grassMeshBuilder.reserveQuadCount((size_t)totalTiles * SQ(MAX_GRASS_DETAIL));
+    grassMeshBuilder.reserveQuadCount(TileGrassMeshType::DEFAULT, (size_t)totalTiles * SQ(MAX_GRASS_DETAIL));
+    grassMeshBuilder.reserveQuadCount(TileGrassMeshType::PLANE, (size_t)totalTiles * SQ(MAX_GRASS_DETAIL) / 2);
+    static_assert(e_count(TileGrassMeshType) == 2);
 
     // Bounding sphere
     // TODO: This isn't accurate for slopey surfaces! We need a proper AABB
@@ -279,6 +284,7 @@ void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& g
                                 //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                                 f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
                                 grassMeshBuilder.addBladeQuad(
+                                    grassData.mMeshType,
                                     f32v3(bladePos.x, bladePos.y, 0.0f), 
                                     f32v2(bladeWidth, rsize),
                                     (ui8)id,

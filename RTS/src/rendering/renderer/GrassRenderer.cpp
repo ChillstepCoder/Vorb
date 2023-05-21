@@ -7,22 +7,31 @@
 #include "resources/MaterialRepository.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/RenderStats.h"
 
 #include "options/DebugOptions.h"
 #include "camera/Camera3D.h"
 
 #include "resources/TileGrassRepository.h"
 
-GrassRenderer::GrassRenderer()
-{
+GrassRenderer::GrassRenderer() {
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mGrassMaterial = materialManager.getMaterialShader("grass");
+
+    constexpr size_t RESERVE_COUNT = 128;
+    for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
+        mVisibleMeshes[i].reserve(RESERVE_COUNT);
+    }
 }
 
-void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {
+void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshRenderDataWithPos>& grassMeshes) {
+    if (grassMeshes.empty()) {
+        return;
+    }
+    
     MaterialRenderer::bindMaterialForRender(*mGrassMaterial);
     const vg::GLProgram& program = mGrassMaterial->mProgram;
-    VGUniform offsetUniform = program.getUniform("unOffset");
+    VGUniform positionUniform = program.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
     VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
@@ -68,46 +77,70 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
     // Upload material cell counts
     glUniform2fv(program.getUniform("unGrassScale[0]"), grassData.size(), &grassScale[0].x);
 
-    for (auto&& grassMesh : grassMeshes) {
-        const GrassBillboardMesh& mesh = grassMesh->mMesh;
-        if (camera.sphereIsVisible(mesh.getBoundingSphere())) {
-            f32v3 offset = grassMesh->mPosition - camera.getPosition();
-            glUniform3fv(offsetUniform, 1, &offset.x);
+    glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
+    glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
 
-            ui32 lod = QUADTREE_LOD_FROM_INDEX[grassMesh->mIndex];
-            f32v2 centerPos = f32v2(ChunkGrassQuadtree::PATCH_POSITIONS.data[grassMesh->mIndex].xy) + f32v2(ChunkGrassQuadtree::LOD_HALF_DIMS[lod].xy);
-            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
-            int crossfadeDir = grassMesh->mCrossfadeDir.load();
-            if (crossfadeDir != 0) {
-                glUniform1f(crossfadeAlphaUniform, grassMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
-                glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
-            }
-            else {
-                glUniform1f(crossfadeAlphaUniform, 0.0f);
-                glUniform1f(crossfadeDirectionUniform, 0.0f);
-            }
-            mesh.draw(tboSizeTypeUniform, tboPositionUniform);
-        }
+    glPatchParameteri(GL_PATCH_VERTICES, 3);
+
+    for (auto&& grassMesh : grassMeshes) {
+        const GrassBillboardMeshRenderData& renderData = grassMesh.renderData;
+        glUniform3fv(positionUniform, 1, &grassMesh.pos.x);
+        //TODO: Move out and cache
+        //int crossfadeDir = grassMesh->mCrossfadeDir.load();
+        //if (crossfadeDir != 0) {
+        //    glUniform1f(crossfadeAlphaUniform, grassMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
+        //    glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
+        //}
+        //else {
+        //    glUniform1f(crossfadeAlphaUniform, 0.0f);
+        //    glUniform1f(crossfadeDirectionUniform, 0.0f);
+        //}
+
+        // Make sure we have been initialized
+        assert(renderData.mVao);
+        if (!renderData.mIndexCount) return;
+
+        glBindVertexArray(renderData.mVao);
+
+        // Bind textures
+        glBindTextureUnit(GRASS_TBO_INSTANCE_DATA_BINDING, renderData.mTboInstanceData);
+        glBindTextureUnit(GRASS_TBO_POSITION_DATA_BINDING, renderData.mTboPositionData);
+
+        glDrawElements(GL_PATCHES, renderData.mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
+        RenderStats::recordDrawCall(renderData.mIndexCount / 3);
     };
 }
 
-void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {
+void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshRenderDataWithPos>& grassMeshes) {
+    if (grassMeshes.empty()) {
+        return;
+    }
     assert(false);
 }
 
 void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes, TileGrassMeshType meshType) {
-
-    switch (meshType) {
-        case TileGrassMeshType::DEFAULT:
-            renderDefaultGrass(camera, playerPos, grassMeshes);
-            break;
-        case TileGrassMeshType::PLANE:
-            renderPlaneGrass(camera, playerPos, grassMeshes);
-            break;
-        default:
-            assert(false);
+    
+    for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
+        mVisibleMeshes[i].clear();
     }
-    static_assert(e_cast(TileGrassMeshType::COUNT) == 2);
+
+    // CPU cull and gather
+    for (auto&& grassMesh : grassMeshes) {
+        const GrassBillboardMesh& mesh = grassMesh->mMesh;
+        if (camera.sphereIsVisible(mesh.getBoundingSphere())) {
+            for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
+                if (mesh.isValid((TileGrassMeshType)i)) {
+                    mVisibleMeshes[i].emplace_back(GrassMeshRenderDataWithPos{ mesh.getRenderData((TileGrassMeshType)i), grassMesh->mPosition});
+                }
+            }
+        }
+    }
+
+    // Render
+    renderDefaultGrass(camera, playerPos, mVisibleMeshes[e_cast(TileGrassMeshType::DEFAULT)]);
+    renderPlaneGrass(camera, playerPos, mVisibleMeshes[e_cast(TileGrassMeshType::PLANE)]);
 
     checkGlError("GrassRenderer::renderGrass");
+
+
 }

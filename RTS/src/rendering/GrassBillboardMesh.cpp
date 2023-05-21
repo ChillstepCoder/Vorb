@@ -8,8 +8,6 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/RasterizerState.h>
 
-#include "rendering/RenderStats.h"
-
 #include "mesh/mesher/builder/ProceduralMeshBuilder.h"
 
 #include "rendering/gl/GL.h"
@@ -45,83 +43,77 @@ GrassBillboardMeshBuilder::GrassBillboardMeshBuilder(GrassBillboardMesh& mesh) :
 
 }
 
-void GrassBillboardMeshBuilder::reserveQuadCount(size_t count) {
-    mInstanceData.reserve(count);
-    mPositionData.reserve(count);
+void GrassBillboardMeshBuilder::reserveQuadCount(TileGrassMeshType type, size_t count) {
+    mInstanceData[e_cast(type)].reserve(count);
+    mPositionData[e_cast(type)].reserve(count);
 }
 
-void GrassBillboardMeshBuilder::addBladeQuad(const f32v3& position, const f32v2& xyDims, ui8 grassType, ui8 rotation) {
-    mInstanceData.emplace_back(ui8v2(glm::min(xyDims.x, 1.0f) * 255.0f, glm::min(xyDims.y, 1.0f) * 255.0f), grassType, rotation);
-    mPositionData.emplace_back(position);
+void GrassBillboardMeshBuilder::addBladeQuad(TileGrassMeshType type, const f32v3& position, const f32v2& xyDims, ui8 grassType, ui8 rotation) {
+    mInstanceData[e_cast(type)].emplace_back(ui8v2(glm::min(xyDims.x, 1.0f) * 255.0f, glm::min(xyDims.y, 1.0f) * 255.0f), grassType, rotation);
+    mPositionData[e_cast(type)].emplace_back(position);
 }
 
 void GrassBillboardMeshBuilder::finishMesh() {
-    for (int i = 0; i < e_count<TileGrassMeshType>(); ++i) {
+    mMesh.mIsValid = false; // Mesh is valid if it has any renderable data
+    for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
         if (mInstanceData[i].size()) {
+            GrassBillboardMeshGpuData& gpuData = mMesh.mData[i];
+            GrassBillboardMeshRenderData& renderData = gpuData.mRenderData;
             initBuffers(i);
 
-            mMesh.mIndexCount = mInstanceData.size() * 6;
-            glNamedBufferStorage(mMesh.mVboPosition, sizeof(f32v3) * mPositionData.size(), mPositionData.data(), 0);
-            glNamedBufferStorage(mMesh.mVboInstanceData, sizeof(GrassBillboardInstanceData) * mInstanceData.size(), mInstanceData.data(), 0);
+            renderData.mIndexCount = mInstanceData[i].size() * 6;
+            glNamedBufferStorage(gpuData.mVboPosition, sizeof(f32v3) * mPositionData[i].size(), mPositionData[i].data(), 0);
+            glNamedBufferStorage(gpuData.mVboInstanceData, sizeof(GrassBillboardInstanceData) * mInstanceData[i].size(), mInstanceData[i].data(), 0);
 
-            glTextureBuffer(mMesh.mTboInstanceData, GL_RGBA8, mMesh.mVboInstanceData);
-            glTextureBuffer(mMesh.mTboPositionData, GL_RGB32F, mMesh.mVboPosition);
+            glTextureBuffer(renderData.mTboInstanceData, GL_RGBA8, gpuData.mVboInstanceData);
+            glTextureBuffer(renderData.mTboPositionData, GL_RGB32F, gpuData.mVboPosition);
+
+            mMesh.mIsValid = true;
         }
         else {
-            mMesh.destroy();
+            mMesh.mData[i].destroy();
         }
-        std::vector<GrassBillboardInstanceData>().swap(mInstanceData);
-        std::vector<f32v3>().swap(mPositionData);
+        std::vector<GrassBillboardInstanceData>().swap(mInstanceData[i]);
+        std::vector<f32v3>().swap(mPositionData[i]);
     }
 }
 
 void GrassBillboardMeshBuilder::initBuffers(int bufferIndex) {
-    if (mMesh.mVao == 0) { // Create VAO and textures
-        glCreateVertexArrays(1, &mMesh.mVao);
-        glVertexArrayElementBuffer(mMesh.mVao, ProceduralMeshBuilder::sQuadIboUI32);
+    GrassBillboardMeshGpuData& gpuData = mMesh.mData[bufferIndex];
+    GrassBillboardMeshRenderData& renderData = gpuData.mRenderData;
+    if (renderData.mVao == 0) { // Create VAO and textures
+        glCreateVertexArrays(1, &renderData.mVao);
+        glVertexArrayElementBuffer(renderData.mVao, ProceduralMeshBuilder::sQuadIboUI32);
 
-        glCreateTextures(GL_TEXTURE_BUFFER, 1, &mMesh.mTboInstanceData);
-        glCreateTextures(GL_TEXTURE_BUFFER, 1, &mMesh.mTboPositionData);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &renderData.mTboInstanceData);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &renderData.mTboPositionData);
     }
     else {
         // Recreate immutable buffers
-        glDeleteBuffers(1, &mMesh.mVboInstanceData);
-        glDeleteBuffers(1, &mMesh.mVboPosition);
+        glDeleteBuffers(1, &gpuData.mVboInstanceData);
+        glDeleteBuffers(1, &gpuData.mVboPosition);
     }
-    glCreateBuffers(1, &mMesh.mVboInstanceData);
-    glCreateBuffers(1, &mMesh.mVboPosition);
-}
-
-void GrassBillboardMesh::draw(VGUniform tboSizeType, VGUniform tboPosition) const {
-    // Make sure we have been initialized
-    assert(mVao);
-    if (!mIndexCount) return;
-
-    glBindVertexArray(mVao);
-
-    // Bind textures
-    glBindTextureUnit(10, mTboInstanceData);
-    glBindTextureUnit(11, mTboPositionData);
-    glUniform1i(tboSizeType, 10);
-    glUniform1i(tboPosition, 11);
-
-    glPatchParameteri(GL_PATCH_VERTICES, 3);
-    glDrawElements(GL_PATCHES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
-    RenderStats::recordDrawCall(mIndexCount / 3);
+    glCreateBuffers(1, &gpuData.mVboInstanceData);
+    glCreateBuffers(1, &gpuData.mVboPosition);
 }
 
 void GrassBillboardMesh::destroy()
 {
-    if (mVao != 0) {
+    for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
+        mData[i].destroy();
+    }
+}
+
+void GrassBillboardMeshGpuData::destroy() {
+    if (mRenderData.mVao != 0) {
         GL.glDeleteBuffers(1, &mVboInstanceData);
         mVboInstanceData = 0;
         GL.glDeleteBuffers(1, &mVboPosition);
         mVboPosition = 0;
-        glDeleteVertexArrays(1, &mVao);
-        mVao = 0;
-        glDeleteTextures(1, &mTboInstanceData);
-        glDeleteTextures(1, &mTboPositionData);
+        glDeleteVertexArrays(1, &mRenderData.mVao);
+        mRenderData.mVao = 0;
+        glDeleteTextures(1, &mRenderData.mTboInstanceData);
+        glDeleteTextures(1, &mRenderData.mTboPositionData);
+        mRenderData.mIndexCount = 0;
     }
-
-    mIndexCount = 0;
 }

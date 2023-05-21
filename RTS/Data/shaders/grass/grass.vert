@@ -3,7 +3,7 @@
 
 uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
-uniform vec3 unOffset;
+uniform vec3 unPosition;
 uniform float UnYOffset = 1.0;
 uniform vec2 unScale;
 uniform float unLeanVariance;
@@ -72,16 +72,16 @@ void main() {
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();
 	vec4 vertexPosition = vPosition;
+    vertexPosition.xyz += unPosition;
 	vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
 	vertexPosition.z += xzOffsetUncompressed.y;
 	vertexPosition.xy += xDirection * xzOffsetUncompressed.x;
 	
-	vec4 cameraRelativePos = vertexPosition + vec4(unOffset, 0.0);
+	vec4 cameraRelativePos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
-	vec3 trueWorldPos = vPosition.xyz + unOffset + CameraPos;
     vec2 randSeed = vec2(vPosition.xy);
-    fWorldRoot = trueWorldPos;
+    fWorldRoot = vPosition.xyz + unPosition;
     fHeight = xzOffsetUncompressed.y;
 	
 	vec4 glPos = VP * cameraRelativePos;

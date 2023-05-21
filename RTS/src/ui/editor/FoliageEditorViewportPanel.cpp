@@ -157,7 +157,9 @@ void FoliageEditorViewportPanel::renderGrassControls()
     if (ImGui::BeginCombo("Mesh Shape", meshShapes[e_cast(mGrassData->mMeshType)])) {
         for (int i = 0; i < e_cast(TileGrassMeshType::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;
-            ImGui::Selectable(meshShapes[i], &isSelected);
+            if (ImGui::Selectable(meshShapes[i], &isSelected)) {
+                mDirtyFoliageMesh = true;
+            }
 
             if (isSelected) {
                 ImGui::SetItemDefaultFocus();
