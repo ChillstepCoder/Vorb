@@ -92,6 +92,9 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     sGBuffers[0]->use();
 
     if (mDirtyFoliageMesh) {
+        // Refresh uniform data
+        GrassRenderer::updateUniformBuffer();
+
         GrassBillboardMesh& mesh = mGrassMeshes.begin()->get()->mMesh;
         mesh.destroy(); // If we already had a mesh, make sure to clean up
         constexpr ui32 WIDTH_TILES = 8;

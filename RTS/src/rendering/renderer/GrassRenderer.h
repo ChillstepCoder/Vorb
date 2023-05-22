@@ -19,13 +19,18 @@ class GrassRenderer
 {
 public:
     GrassRenderer();
+    ~GrassRenderer();
     void renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes, TileGrassMeshType meshType);
+
+    // Only call if you update any grass data through foliage editor or file reload
+    static void updateUniformBuffer();
 
 private:
     void renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshRenderDataWithPos>& grassMeshes);
     void renderPlaneGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshRenderDataWithPos>& grassMeshes);
-    const MaterialShader* mGrassMaterial = nullptr;
+    const MaterialShader* mMaterials[e_count(TileGrassMeshType)];
 
     std::vector<GrassMeshRenderDataWithPos> mVisibleMeshes[e_count(TileGrassMeshType)];
+    static VGBuffer sGrassUniformBuffer; // TODO: This will never be destroyed
 };
 

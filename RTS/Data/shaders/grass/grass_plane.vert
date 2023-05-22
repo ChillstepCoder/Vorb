@@ -17,7 +17,6 @@ out float fHeight;
 out vec2 fUV;
 flat out int fGrassMaterial;
 out float fDistance;
-out vec2 fLean;
 
 const vec2 VertexData[4] = {
  {-1.0, -1.0 },
@@ -82,6 +81,8 @@ void main() {
     fWorldRoot = vPosition.xyz + unPosition;
     fHeight = xzOffsetUncompressed.y;
 	
+	gl_Position = VP * cameraRelativePos;
+	
 	fDistance = length(cameraRelativePos.xy);
 	
     fWorldPos = cameraRelativePos.xyz;
@@ -99,6 +100,4 @@ void main() {
 	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))] * vec2(uWidth, 1.0);
     fUV.x += bladeType * uWidth;
     
-    // Lean at the top
-    fLean = xDirection * unLeanVariance * fUV.y * rand(randSeed) * unGrassData[grassID].leanVariance;
 }

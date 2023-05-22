@@ -5,6 +5,7 @@ constexpr GLuint BUFFER_BASE_GLOBAL_UBO = 0; // Always bound
 constexpr GLuint BUFFER_BASE_GLOBAL_MATERIAL_SSBO = 1; // Always bound
 constexpr GLuint BUFFER_BASE_MESH_UBO = 2;
 constexpr GLuint BUFFER_BASE_MESH_SSBO = 3;
+constexpr GLuint BUFFER_BASE_GRASS_UBO = 9;
 constexpr GLuint BUFFER_BASE_CAMERA_UBO = 10;
 
 struct DrawElementsIndirectCommand

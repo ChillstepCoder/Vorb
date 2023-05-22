@@ -14,7 +14,7 @@ uniform float unColorMapScale = 0.1;
 uniform int unDebugLines = 0;
 
 
-in vec3 fRootPosition;
+flat in vec3 fWorldRoot;
 in vec2 fUV;
 flat in int fGrassMaterial;
 in float fDistance;
@@ -31,7 +31,7 @@ void main() {
     vec4 color;
     // TODO: Lower settings disable transparency?
     
-    vec2 worldUV = fRootPosition.xy * 0.05;
+    vec2 worldUV = fWorldRoot.xy * 0.05;
     float cellNoiseColor = texture(CellNoise, worldUV * unColorMapScale).r;
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y);
     
