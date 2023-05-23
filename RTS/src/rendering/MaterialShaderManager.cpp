@@ -91,7 +91,7 @@ const MaterialShader* MaterialShaderManager::getMaterialShader(const nString& st
     if (it != mNameToMaterialShaderMap.end()) {
         return mMaterialShaders[it->second].get();
     }
-    LOG_CRITICAL("Failed to find material {}", strId);
+    LOG_CRITICAL("Failed to find shader {}", strId);
     assert(false);
     return nullptr;
 }

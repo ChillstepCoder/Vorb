@@ -117,7 +117,7 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     
     UboHelpers::uploadCameraUbo(RenderContext::getInstance().getCameraUbo(), camera3D);
     if (mGrassMeshes.begin()->get()->mMesh.isValid()) {
-        mGrassRenderer->renderGrass(camera3D, f32v3(FLT_MAX), mGrassMeshesSet, TileGrassMeshType::DEFAULT);
+        mGrassRenderer->renderGrass(camera3D, f32v3(FLT_MAX), mGrassMeshesSet);
     }
 
     vg::DepthState::NONE.set();
@@ -158,8 +158,9 @@ void FoliageEditorViewportPanel::renderGrassControls()
     constexpr const char* meshShapes[e_cast(TileGrassMeshType::COUNT)] = {
       "default",
       "plane",
+      "billboard",
     };
-    static_assert(e_cast(TileGrassMeshType::COUNT) == 2);
+    static_assert(e_cast(TileGrassMeshType::COUNT) == 3);
     if (ImGui::BeginCombo("Mesh Shape", meshShapes[e_cast(mGrassData->mMeshType)])) {
         for (int i = 0; i < e_cast(TileGrassMeshType::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;

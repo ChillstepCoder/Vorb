@@ -21,3 +21,11 @@ moss:
   height_variance: [0.1, 1.0]
   density: 1
   z_offset_variance: [0.01, 0.065]
+flower_01:
+  textures: flower_01
+  num_textures: 4
+  size: [1.15, 1.15]
+  lean_variance: 0.0
+  height_variance: [0.001, 0.001]
+  z_offset_variance: [0.1, 0.3]
+  density: 3

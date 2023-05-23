@@ -543,12 +543,14 @@ void WorldEditorPanel::updateGrassEdit() {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                             IChunkGrid& chunkGrid = world->getChunkGrid();
                             const ChunkID id = chunkGrid.getChunkIDFromWorldPos(worldPos);
-                            const TileContainer& tileContainer = *chunkGrid.getChunk(id).getTileContainer();
-                            TileIndex tileIndex = tileContainer.getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
-                            const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
-                            const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
-                            if (glm::length2(offsetToTile) < brushSizeSq) {
-                                task->editor->editGrass(id, tileIndex, task->selectedGrass, offsetToTile, brushSettings, task->editState);
+                            const TileContainer* tileContainer = chunkGrid.getChunk(id).getTileContainer();
+                            if (tileContainer) {
+                                TileIndex tileIndex = tileContainer->getTileSpatialGrid().getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
+                                const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
+                                const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
+                                if (glm::length2(offsetToTile) < brushSizeSq) {
+                                    task->editor->editGrass(id, tileIndex, task->selectedGrass, offsetToTile, brushSettings, task->editState);
+                                }
                             }
                         }
                     }

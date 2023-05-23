@@ -7,8 +7,9 @@
 KEG_ENUM_DEF(TileGrassMeshType, TileGrassMeshType, kt) {
     kt.addValue("default", TileGrassMeshType::DEFAULT);
     kt.addValue("plane", TileGrassMeshType::PLANE);
+    kt.addValue("billboard", TileGrassMeshType::BILLBOARD);
 }
-static_assert(e_cast(TileGrassMeshType::COUNT) == 2, "Update keg definition");
+static_assert(e_cast(TileGrassMeshType::COUNT) == 3, "Update keg definition");
 
 KEG_TYPE_DEF_SAME_NAME(TileGrassFileData, kt) {
     kt.addValue("alpha_masks", keg::Value::basic(offsetof(TileGrassFileData, alphaMasks), keg::BasicType::STRING));

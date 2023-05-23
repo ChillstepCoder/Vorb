@@ -18,9 +18,9 @@ struct TileGrassFileData {
     nString textures;
     TileGrassMeshType meshType = TileGrassMeshType::DEFAULT;
     f32v2 sizeMults = f32v2(1.0f);
-    f32v2 heightVariance = f32v2(0.2f, 0.8f);
+    f32v2 heightVariance = f32v2(0.0f, 0.0f);
     f32v2 zOffsetVariance = f32v2(0.0f, 0.0f);
-    f32 leanVariance = 0.5f;
+    f32 leanVariance = 0.0f;
     i32 density = 8;
     i32 numTextures = 1;
 };

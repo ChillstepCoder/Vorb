@@ -149,7 +149,8 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     grassMeshBuilder.reserveQuadCount(TileGrassMeshType::DEFAULT, (size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
     grassMeshBuilder.reserveQuadCount(TileGrassMeshType::PLANE, (size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL) / 2);
-    static_assert(e_count(TileGrassMeshType) == 2);
+    grassMeshBuilder.reserveQuadCount(TileGrassMeshType::BILLBOARD, (size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL) / 2);
+    static_assert(e_count(TileGrassMeshType) == 3);
 
     TileGrass paddedGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH];
     chunk.copyPaddedGrassDataWorkerThread(paddedGrassData);
@@ -250,7 +251,8 @@ void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& g
     const ui32 totalTiles = SQ(widthTiles);
     grassMeshBuilder.reserveQuadCount(TileGrassMeshType::DEFAULT, (size_t)totalTiles * SQ(MAX_GRASS_DETAIL));
     grassMeshBuilder.reserveQuadCount(TileGrassMeshType::PLANE, (size_t)totalTiles * SQ(MAX_GRASS_DETAIL) / 2);
-    static_assert(e_count(TileGrassMeshType) == 2);
+    grassMeshBuilder.reserveQuadCount(TileGrassMeshType::BILLBOARD, (size_t)totalTiles * SQ(MAX_GRASS_DETAIL) / 2);
+    static_assert(e_count(TileGrassMeshType) == 3);
 
     // Bounding sphere
     // TODO: This isn't accurate for slopey surfaces! We need a proper AABB
