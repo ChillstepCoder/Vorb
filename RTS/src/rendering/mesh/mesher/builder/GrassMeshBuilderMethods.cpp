@@ -48,7 +48,7 @@ constexpr f32 DIVIDE_MULT = 1.0f / 255.0f;
 // Bilinear interpolation
 // d2 d3
 // d0 d1
-constexpr auto interpolateDensity = [](f32 d0, f32 d1, f32 d2, f32 d3, const f32v2& offsetFromd0) -> f32 {
+f32 interpolateDensity(f32 d0, f32 d1, f32 d2, f32 d3, const f32v2& offsetFromd0) {
     // We interpolate from d0 to d1, and d2 to d3, then interpolate vertically to get our final value
     const f32 sx = smoothstep(offsetFromd0.x);
     const f32 sy = smoothstep(offsetFromd0.y);
@@ -57,12 +57,89 @@ constexpr auto interpolateDensity = [](f32 d0, f32 d1, f32 d2, f32 d3, const f32
     const f32 r2 = d2 * oneMinusXOffset + d3 * sx;
     return r1 * (1.0f - sy) + r2 * sy;
 };
-constexpr auto getOffsetFromD0 = [](f32 x, f32 y) -> f32v2 {
+
+f32v2 getOffsetFromD0(f32 x, f32 y) {
     f32v2 rv;
     rv.x = x <= 0.5f ? x + 0.5f : x - 0.5f;
     rv.y = y <= 0.5f ? y + 0.5f : y - 0.5f;
     return rv;
 };
+
+float boundsCheckGetDensityMult(int sx, int sy, float xb, float yb, int widthTiles, float baseDensity, const TileGrass* grassDataArray, TileGrassID id) {
+    constexpr auto boundsCheckGetDensity = [](int x, int y, int width, const TileGrass* grassData, TileGrassID id) -> f32 {
+        if (x < 0 || y < 0 || x >= width || y >= width) return 0.0f;
+        return grassData[y * width + x].getDensity(id) * DIVIDE_MULT;
+    };
+
+    const f32 d0 = boundsCheckGetDensity(sx, sy, widthTiles, grassDataArray, id);
+    const f32 d1 = boundsCheckGetDensity(sx + 1, sy, widthTiles, grassDataArray, id);
+    const f32 d2 = boundsCheckGetDensity(sx, sy + 1, widthTiles, grassDataArray, id);
+    const f32 d3 = boundsCheckGetDensity(sx + 1, sy + 1, widthTiles, grassDataArray, id);
+    // We use negative of our density if zero, so we get a nice transition instead of a hard edge (iamverysmart)
+    return interpolateDensity(
+        d0 > 0 ? d0 : -baseDensity,
+        d1 > 0 ? d1 : -baseDensity,
+        d2 > 0 ? d2 : -baseDensity,
+        d3 > 0 ? d3 : -baseDensity,
+        getOffsetFromD0(xb, yb)
+    );
+}
+
+float getDensityMult(int sx, int sy, float xb, float yb, float baseDensity, const TileGrass grassDataArray[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH], TileGrassID id) {
+    const f32 d0 = (f32)grassDataArray[sy][sx].getDensity(id) * DIVIDE_MULT;
+    const f32 d1 = (f32)grassDataArray[sy][sx + 1].getDensity(id) * DIVIDE_MULT;
+    const f32 d2 = (f32)grassDataArray[sy + 1][sx].getDensity(id) * DIVIDE_MULT;
+    const f32 d3 = (f32)grassDataArray[sy + 1][sx + 1].getDensity(id) * DIVIDE_MULT;
+    // We use negative of our density if zero, so we get a nice transition instead of a hard edge (iamverysmart)
+    return interpolateDensity(
+        d0 > 0 ? d0 : -baseDensity,
+        d1 > 0 ? d1 : -baseDensity,
+        d2 > 0 ? d2 : -baseDensity,
+        d3 > 0 ? d3 : -baseDensity,
+        getOffsetFromD0(xb, yb)
+    );
+}
+
+f32 getSpawnChance(int tileX, int tileY, int bladeX, int bladeY) {
+    return Random::getCachedRandomfSpecific((bladeX << 3 + bladeY << 4) * 15 + (tileX << 4) - (tileY << 6));
+}
+
+f32 getBladeRand(int tileX, int tileY, int bladeX, int bladeY) {
+    constexpr f32 BIG_PRIME1 = 7919;
+    constexpr f32 BIG_PRIME2 = 7673;
+    return Random::getCachedRandomfSpecific(bladeX + BIG_PRIME1 * bladeY - tileX - tileY * BIG_PRIME2);
+}
+
+ui8 getRandomRotation(int tileX, int tileY, int bladeX, int bladeY) {
+    constexpr f32 BIG_PRIME1 = 7919;
+    return (ui8)(Random::getCachedRandomSpecific(bladeX * BIG_PRIME1 - bladeY - (tileX << 4) + (tileY << 5)) & 0xff); // Fast modulus 256
+}
+
+f32 getRandomOffset(float a, float b, int tileX, int tileY, int bladeX, int bladeY) {
+    constexpr f32 BIG_PRIME1 = 7673;
+    constexpr f32 BIG_PRIME2 = 7919;
+    return lerp(a, b, Random::getCachedRandomfSpecific(bladeX - BIG_PRIME1 * bladeY - tileX - tileY * BIG_PRIME2));
+}
+
+void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassData& grassData, const NoiseFunction& grassNoiseFunction, const f32v3& relativePos, const f32v3& normal, float rnd, float detail, float bladeWidth, float densityMult, int tileX, int tileY, int bladeX, int bladeY) {
+   
+    float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
+    const f32 grassNoise = -grassNoiseFunction.compute((f64)relativePos.x, (f64)relativePos.y);
+    rsize += -grassNoise * 0.4f;
+    rsize *= densityMult;
+    rsize = glm::max(rsize, 0.15f);
+
+    const f32 zOffset = getRandomOffset(grassData.mZOffsetVariance.x, grassData.mZOffsetVariance.y, tileX, tileY, bladeX, bladeY);
+    const ui8 rotation = getRandomRotation(tileX, tileY, bladeX, bladeY);
+    grassMeshBuilder.addBladeQuad(
+        grassData.mMeshType,
+        f32v3(relativePos.x, relativePos.y, relativePos.z + zOffset), // TODO: new height
+        f32v2(grassData.mMeshType == TileGrassMeshType::DEFAULT ? bladeWidth : rsize, rsize),
+        (ui8)grassData.mId,
+        rotation,
+        normal
+    );
+}
 
 void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatchData* heightData)
 {
@@ -141,44 +218,20 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                             // Interpolate density
                             const int sx = paddedX + xInterpStartOffset;
                             const int sy = paddedY + yInterpStartOffset;
-                            const f32 d0 = (f32)paddedGrassData[sy][sx].getDensity(id) * DIVIDE_MULT;
-                            const f32 d1 = (f32)paddedGrassData[sy][sx + 1].getDensity(id) * DIVIDE_MULT;
-                            const f32 d2 = (f32)paddedGrassData[sy + 1][sx].getDensity(id) * DIVIDE_MULT;
-                            const f32 d3 = (f32)paddedGrassData[sy + 1][sx + 1].getDensity(id) * DIVIDE_MULT;
-                            // We use negative of our density if zero, so we get a nice transition instead of a hard edge (iamverysmart)
-                            const f32 densityMult = interpolateDensity(
-                                d0 > 0 ? d0 : -baseDensity,
-                                d1 > 0 ? d1 : -baseDensity,
-                                d2 > 0 ? d2 : -baseDensity,
-                                d3 > 0 ? d3 : -baseDensity,
-                                getOffsetFromD0(xb, yb)
-                            );
+                            const f32 densityMult = getDensityMult(sx, sy, xb, yb, baseDensity, paddedGrassData, id);
 
-                            constexpr f32 BIG_PRIME1 = 7919;
-                            constexpr f32 BIG_PRIME2 = 7673;
-                            const f32 spawnChance = Random::getCachedRandomfSpecific((x2 << 3 + y2 << 4) * 15 + (tx << 4) - (ty << 6));
+                            const f32 spawnChance = getSpawnChance(x, y, x2, y2);
                             if (SQ(spawnChance) <= densityMult) {
 
-                                const f32 rnd = Random::getCachedRandomfSpecific(x2 + BIG_PRIME1 * y2 - tx - ty * BIG_PRIME2);
+                                //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
+                                const f32 rnd = getBladeRand(x, y, x2, y2);
                                 const float xo = (x2 + rnd) / (float)detail;
                                 const float yo = (y2 - rnd) / (float)detail;
-
-                                float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
-                                const f32 grassNoise = -grassNoiseFunction.compute((f64)tileWorldOffset.x + xo + chunk.getWorldPos().x, (f64)tileWorldOffset.y + yo + chunk.getWorldPos().y);
-                                rsize += -grassNoise * 0.4f;
-                                rsize *= densityMult;
-                                rsize = glm::max(rsize, 0.15f);
-                                const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * BIG_PRIME1 - y2 - (tx << 4) + (ty << 5)) & 0xff); // Fast modulus 256
-                                //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
-                                f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
-                                const f32 zPos = heightmapGrid.computeHeightAtPoint(heightmapPatchId, heightData->data, chunkWorldPos + bladePos);
-                                grassMeshBuilder.addBladeQuad(
-                                    grassData.mMeshType,
-                                    f32v3(bladePos.x, bladePos.y, zPos), // TODO: new height
-                                    f32v2(bladeWidth, rsize),
-                                    (ui8)id,
-                                    rotation
-                                );
+                                f32v3 relativePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo, 0.0f);
+                                f32v3 normal;
+                                relativePos.z = heightmapGrid.computeHeightAndNormalAtPoint(heightmapPatchId, heightData->data, chunkWorldPos + f32v2(relativePos), &normal);
+                                //std::swap(normal.x, normal.y);
+                                addGrass(grassMeshBuilder, grassData, grassNoiseFunction, relativePos, normal, rnd, (f32)detail, bladeWidth, densityMult, x, y, x2, y2);
                             }
                         }
                     }
@@ -254,42 +307,16 @@ void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& g
                             // Interpolate density
                             const int sx = x + xInterpStartOffset;
                             const int sy = y + yInterpStartOffset;
-                            const f32 d0 = boundsCheckGetDensity(sx, sy, (int)widthTiles, grassDataArray, id);
-                            const f32 d1 = boundsCheckGetDensity(sx + 1, sy, (int)widthTiles, grassDataArray, id);
-                            const f32 d2 = boundsCheckGetDensity(sx, sy + 1, (int)widthTiles, grassDataArray, id);
-                            const f32 d3 = boundsCheckGetDensity(sx + 1, sy + 1, (int)widthTiles, grassDataArray, id);
-                            // We use negative of our density if zero, so we get a nice transition instead of a hard edge (iamverysmart)
-                             f32 densityMult = interpolateDensity(
-                                d0 > 0 ? d0 : -baseDensity,
-                                d1 > 0 ? d1 : -baseDensity,
-                                d2 > 0 ? d2 : -baseDensity,
-                                d3 > 0 ? d3 : -baseDensity,
-                                getOffsetFromD0(xb, yb)
-                            );
-                            constexpr f32 BIG_PRIME1 = 7919;
-                            constexpr f32 BIG_PRIME2 = 7673;
-                            const f32 spawnChance = Random::getCachedRandomfSpecific((x2 << 3 + y2 << 4) * 15 + (x << 4) - (y << 6));
+                            const f32 densityMult = boundsCheckGetDensityMult(sx, sy, xb, yb, widthTiles, baseDensity, grassDataArray, id);
+
+                            const f32 spawnChance = getSpawnChance(x, y, x2, y2);
                             if (SQ(spawnChance) <= densityMult) {
 
-                                const f32 rnd = Random::getCachedRandomfSpecific(x2 + BIG_PRIME1 * y2 - x - y * BIG_PRIME2);
+                                const f32 rnd = getBladeRand(x, y, x2, y2);
                                 const float xo = (x2 + rnd) / (float)detail;
                                 const float yo = (y2 - rnd) / (float)detail;
-
-                                float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
-                                const f32 grassNoise = -grassNoiseFunction.compute((f64)tileWorldOffset.x + xo, (f64)tileWorldOffset.y + yo);
-                                rsize += -grassNoise * 0.4f;
-                                rsize *= densityMult;
-                                rsize = glm::max(rsize, 0.15f);
-                                const ui8 rotation = (ui8)(Random::getCachedRandomSpecific(x2 * BIG_PRIME1 - y2 - (x << 4) + (y << 5)) & 0xff); // Fast modulus 256
-                                //const ui8 variantIndex = (ui8)(Random::getCachedRandomSpecific(-x2 * BIG_PRIME + y2 + (tx << 5) - (ty << 4)) % NUM_GRASS_TYPES);
                                 f32v2 bladePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo);
-                                grassMeshBuilder.addBladeQuad(
-                                    grassData.mMeshType,
-                                    f32v3(bladePos.x, bladePos.y, 0.0f), 
-                                    f32v2(bladeWidth, rsize),
-                                    (ui8)id,
-                                    rotation
-                                );
+                                addGrass(grassMeshBuilder, grassData, grassNoiseFunction, f32v3(bladePos.x, bladePos.y, 0.0f), f32v3(0.0f, 0.0f, 1.0f), rnd, detail, bladeWidth, densityMult, x, y, x2, y2);
                             }
                         }
                     }

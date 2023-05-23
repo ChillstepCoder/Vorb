@@ -142,7 +142,10 @@ void FoliageEditorViewportPanel::renderGrassControls()
     if (ImGui::SliderFloat2("Size Mults", &mGrassData->mSizeMults.x, 0.01f, 10.0f)) {
         mDirtyFoliageMesh = true;
     }
-    if (ImGui::SliderFloat2("Height Variance", &mGrassData->mHeightVariance.x, 0.01f, 1.0f)) {
+    if (ImGui::SliderFloat2("Size Variance", &mGrassData->mHeightVariance.x, 0.01f, 1.0f)) {
+        mDirtyFoliageMesh = true;
+    }
+    if (ImGui::SliderFloat2("ZOffset Variance", &mGrassData->mZOffsetVariance.x, 0.0f, 2.0f)) {
         mDirtyFoliageMesh = true;
     }
     if (ImGui::SliderFloat("Lean Variance", &mGrassData->mLeanVariance, 0.0f, 2.0f)) {

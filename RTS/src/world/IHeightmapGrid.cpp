@@ -570,6 +570,19 @@ f32 IHeightmapGrid::computeHeightAtPoint(const f32* heightData, const f32v2& wor
     return computeHeightAtPoint(mSpatialGrid2D.getIDAtWorldPos(i32v2(worldPos)), heightData, worldPos);
 }
 
+f32 IHeightmapGrid::computeHeightAndNormalAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos, OUT f32v3* outNormal) const {
+    assert(outNormal);
+    const f32v2 offset = worldPos - f32v2(mSpatialGrid2D.getWorldPosXYFromID(id));
+    const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
+
+    // Compute normalized offset from bl
+    // TODO: Optimize
+    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
+    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
+
+    return getHeightAndNormalAtOffset(dxy, heightData, heightmapXY, outNormal);
+}
+
 f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos) const
 {
     const f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos) + f32v2(0.5f);
@@ -855,6 +868,114 @@ void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT Heightmap
     requiredIds[6] = mSpatialGrid2D.getWestID(topId);
     requiredIds[7] = topId;
     requiredIds[8] = mSpatialGrid2D.getEastID(topId);
+}
+
+f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const f32* heightData, const ui32v2 heightmapXY, OUT f32v3* outNormal) {
+    // Select which triangle we are looking at, taking into account orientation
+    if ((heightmapXY.x + heightmapXY.y) % 2 == 0) {
+        // This shape
+        // **********
+        // *     ** *
+        // *   **   *
+        // * **     *
+        // **********
+        if (dxy.x + (1.0f - dxy.y) > 1.0f) {
+            // Lower quadrant
+            // Get the 3 corner heights
+            const f32 bl = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x];
+            const f32 br = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1];
+            const f32 tr = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1];
+
+            // Compute normal from this triangle
+            const f32v3 blv(0.0f, 0.0f, bl);
+            const f32v3 brv(HEIGHTMAP_QUAD_SIZE, 0.0f, br);
+            const f32v3 trv(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, tr);
+
+            const f32v3 edge1 = blv - brv; // Edge 1
+            const f32v3 edge2 = trv - brv; // Edge 2
+
+            // Compute the normal
+            const f32v3 normal = cross(edge1, edge2);
+            *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
+
+            const f32v3 uvw = BarycentricBlBrTr(dxy);
+            return bl * uvw.x + br * uvw.y + tr * uvw.z;
+        }
+        else {
+            // Upper quadrant
+            // Get the 3 corner heights
+            const f32 bl = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x];
+            const f32 tl = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x];
+            const f32 tr = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1];
+
+            // Compute normal from this triangle
+            const f32v3 blv(0.0f, 0.0f, bl);
+            const f32v3 tlv(0.0f, HEIGHTMAP_QUAD_SIZE, tl);
+            const f32v3 trv(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, tr);
+
+            const f32v3 edge1 = trv - tlv; // Edge 1
+            const f32v3 edge2 = blv - tlv; // Edge 2
+
+            // Compute the normal
+            const f32v3 normal = cross(edge1, edge2);
+            *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
+
+            const f32v3 uvw = BarycentricBlTlTr(dxy);
+            return bl * uvw.x + tl * uvw.y + tr * uvw.z;
+        }
+    }
+    else {
+        // This shape
+        // **********
+        // * **     *
+        // *   **   *
+        // *     ** *
+        // **********
+        if (dxy.x + dxy.y > 1.0f) {
+            // Upper quadrant
+            // Get the 3 corner heights
+            const f32 br = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1];
+            const f32 tl = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x];
+            const f32 tr = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1];
+
+            // Compute normal from this triangle
+            const f32v3 brv(HEIGHTMAP_QUAD_SIZE, 0.0f, br);
+            const f32v3 tlv(0.0f, HEIGHTMAP_QUAD_SIZE, tl);
+            const f32v3 trv(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, tr);
+
+            const f32v3 edge1 = brv - trv; // Edge 1
+            const f32v3 edge2 = tlv - trv; // Edge 2
+
+            // Compute the normal
+            const f32v3 normal = cross(edge1, edge2);
+            *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
+
+            const f32v3 uvw = BarycentricBrTlTr(dxy);
+            return br * uvw.x + tl * uvw.y + tr * uvw.z;
+        }
+        else {
+            // Lower quadrant
+            // Get the 3 corner heights
+            const f32 bl = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x];
+            const f32 br = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1];
+            const f32 tl = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x];
+
+            // Compute normal from this triangle
+            const f32v3 blv(0.0f, 0.0f, bl);
+            const f32v3 brv(HEIGHTMAP_QUAD_SIZE, 0.0f, br);
+            const f32v3 tlv(0.0f, HEIGHTMAP_QUAD_SIZE, tl);
+
+            const f32v3 edge1 = tlv - bl; // Edge 1
+            const f32v3 edge2 = brv - bl; // Edge 2
+
+            // Compute the normal
+            const f32v3 normal = cross(edge1, edge2);
+            *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
+
+            const f32v3 uvw = BarycentricBlBrTl(dxy);
+            return bl * uvw.x + br * uvw.y + tl * uvw.z;
+        }
+    }
 }
 
 f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY) {

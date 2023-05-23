@@ -9,8 +9,9 @@
 
 #include "rendering/mesh/TileGrassMeshType.h"
 
-constexpr int GRASS_TBO_INSTANCE_DATA_BINDING = 10;
-constexpr int GRASS_TBO_POSITION_DATA_BINDING = 11;
+constexpr int GRASS_TBO_INSTANCE_DATA_BINDING = 9;
+constexpr int GRASS_TBO_POSITION_DATA_BINDING = 10;
+constexpr int GRASS_TBO_NORMAL_DATA_BINDING = 11;
 
 struct GrassBillboardInstanceData {
     GrassBillboardInstanceData(ui8v2&& dims, ui8 grassType, ui8 rotation) : dims(dims), grassType(grassType), rotation(rotation) {};
@@ -24,6 +25,7 @@ struct GrassBillboardMeshGpuData {
     GrassBillboardMeshRenderData mRenderData;
     VGBuffer mVboInstanceData = 0;
     VGBuffer mVboPosition = 0;
+    VGBuffer mVboNormal = 0;
 
     bool isValid() const { return mRenderData.mIndexCount > 0; }
     void destroy();
@@ -68,7 +70,7 @@ public:
     GrassBillboardMeshBuilder(GrassBillboardMesh& mesh);
 
     void reserveQuadCount(TileGrassMeshType type, size_t count);
-    void addBladeQuad(TileGrassMeshType type, const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType, ui8 rotation);
+    void addBladeQuad(TileGrassMeshType type, const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType, ui8 rotation, const f32v3& normal);
     void finishMesh();
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mMesh.setBoundingSphere(boundingSphere); }
 
@@ -79,4 +81,5 @@ private:
     GrassBillboardMesh& mMesh;
     std::vector<GrassBillboardInstanceData> mInstanceData[e_count(TileGrassMeshType)]; // TODO: Recycle?
     std::vector<f32v3> mPositionData[e_count(TileGrassMeshType)]; // TODO: Recycle?
+    std::vector<ui8v2> mNormalData[e_count(TileGrassMeshType)]; // TODO: Recycle?
 };

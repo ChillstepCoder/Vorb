@@ -6,6 +6,7 @@ struct GrassBillboardMeshRenderData {
     ui32 mIndexCount = 0;
     VGTexture mTboInstanceData = 0;
     VGTexture mTboPositionData = 0;
+    VGTexture mTboNormalData = 0;
 };
 // Small for cache friendly drawing
-static_assert(sizeof(GrassBillboardMeshRenderData) == 16);
+static_assert(sizeof(GrassBillboardMeshRenderData) == 20);

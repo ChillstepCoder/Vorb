@@ -94,6 +94,7 @@ public:
     f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk);
     f32 computeHeightAtPoint(const f32* heightData, const f32v2& worldPos) const;
     f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos) const;
+    f32 computeHeightAndNormalAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos, OUT f32v3* outNormal) const;
     f32 computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos) const;
     void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]) const;
     bool areTrianglesFlippedAtTile(const TileHandle& tileHandle) const;
@@ -120,6 +121,7 @@ private:
     void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
+    static f32 getHeightAndNormalAtOffset(f32v2 dxy, const f32* heightData, const ui32v2 heightmapXY, OUT f32v3* outNormal);
     static f32 interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY);
     static ui32v2 getHeightmapXYfromTilePos(ui32v2 worldTilePos);
     static f32v2 getHeightmapOffsetFromTilePos(ui32v2 worldTilePos);

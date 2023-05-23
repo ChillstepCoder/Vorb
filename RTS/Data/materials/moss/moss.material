@@ -3,3 +3,4 @@ disp: moss_disp.png
 ao: moss_ao.png
 normal: moss_norm.png
 rough: moss_rough.png
+sampler_state: LINEAR_CLAMP_MIPMAP

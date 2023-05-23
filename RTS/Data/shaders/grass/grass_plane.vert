@@ -9,8 +9,6 @@ uniform float UnYOffset = 1.0;
 uniform vec2 unScale;
 uniform float unLeanVariance;
 
-uniform vec2 unGrassScale[NUM_GRASS_MATERIALS];
-
 out vec3 fWorldPos;
 flat out vec3 fWorldRoot;
 out float fHeight;
@@ -61,25 +59,26 @@ void main() {
     
 	vec2 vDims = dimsTypeRotation.xy * vec2(unGrassData[grassID].grassScaleX, unGrassData[grassID].grassScaleY) * unScale;
     if (grassID == 1) vDims.y *= 1.5;
-    float rotation = dimsTypeRotation.w * 6.28318530718; // 2 PI
     
-    vec2 xDirection = vec2(cos(rotation), sin(rotation));
-	
-	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();
 	vec4 vertexPosition = vPosition;
     vertexPosition.xyz += unPosition;
-	vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
-	vertexPosition.z += xzOffsetUncompressed.y;
-	vertexPosition.xy += xDirection * xzOffsetUncompressed.x;
+	vec2 xyOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
+    
+    // Rotate xyOffsetUncompressed
+    const float rotation = dimsTypeRotation.w * 6.28318530718; // 2 PI
+    const float cs = cos(rotation);
+    const float sn = sin(rotation);
+    vec2 rotatedOffset = vec2(xyOffsetUncompressed.x * cs - xyOffsetUncompressed.y * sn, xyOffsetUncompressed.x * sn + xyOffsetUncompressed.y * cs);
+	vertexPosition.xy += rotatedOffset;
 	
 	vec4 cameraRelativePos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
     vec2 randSeed = vec2(vPosition.xy);
     fWorldRoot = vPosition.xyz + unPosition;
-    fHeight = xzOffsetUncompressed.y;
+    fHeight = 0.0; // TODO: HEIGHT
 	
 	gl_Position = VP * cameraRelativePos;
 	
@@ -91,13 +90,10 @@ void main() {
     fGrassMaterial = grassID;
     int cellCounti = unGrassData[grassID].materialCellCount;
     float uWidth = 1.0 / float(cellCounti);
-    float bladeType = round(mod(rand(randSeed + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
-    
-    
+    float bladeType = floor(mod(rand(randSeed + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
 	// Grass blade uvs
     float randomFlip = rand(randSeed);
     // TODO: Only handles one row
 	fUV = UVS[gl_VertexID % 4 + 4 * int(step(0.5, randomFlip))] * vec2(uWidth, 1.0);
     fUV.x += bladeType * uWidth;
-    
 }

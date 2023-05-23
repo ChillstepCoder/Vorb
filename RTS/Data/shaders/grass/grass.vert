@@ -4,12 +4,11 @@
 
 uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
+uniform samplerBuffer UnTboNormal;
 uniform vec3 unPosition;
 uniform float UnYOffset = 1.0;
 uniform vec2 unScale;
 uniform float unLeanVariance;
-
-uniform vec2 unGrassScale[NUM_GRASS_MATERIALS];
 
 out vec3 fWorldPos;
 flat out vec3 fWorldRoot;
@@ -54,12 +53,42 @@ float rand(vec2 co){
   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+vec3 reconstructNormal(vec2 normalXY) {
+    float den = max(1.0 - (normalXY.x * normalXY.x) - (normalXY.y * normalXY.y), 0.001);
+    return vec3(normalXY, sqrt(den));
+}
+
+vec3 rotateOffsetToNormal(vec3 offset, vec3 normal) {
+    vec3 up = vec3(0.0, 0.0, 1.0);
+    // Compute the bending direction: perpendicular to the initial direction and the terrain normal
+    vec3 bend_dir = cross(up, normal);
+
+    // If the normal is already equal to the up vector, there is no bending to do
+    if(length(bend_dir) < 0.0001) {
+        return offset;
+    }
+
+    // Normalize the bending direction
+    bend_dir = normalize(bend_dir);
+
+    // Compute the final direction of the blade: perpendicular to the bending direction and the terrain normal
+    vec3 blade_dir = cross(bend_dir, normal);
+
+    // Compute the position of the blade
+    vec3 position = offset.x * bend_dir + offset.y * blade_dir + offset.z * normal;
+
+    return position;
+}
+
 void main() {
     int bladeIndex = (gl_VertexID / 4);
 	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
 	vec4 dimsTypeRotation = texelFetch(UnTboSizeType, bladeIndex);
-    int grassID = int(round(dimsTypeRotation.z * 255.0));
+    vec2 normal2 = (texelFetch(UnTboNormal, bladeIndex).rg * 2.0) - 1.0;
+    //if (normal2.y <= -1.0) normal2.y = 0;
+    vec3 normal = reconstructNormal(normal2);
     
+    int grassID = int(round(dimsTypeRotation.z * 255.0));
 	vec2 vDims = dimsTypeRotation.xy * vec2(unGrassData[grassID].grassScaleX, unGrassData[grassID].grassScaleY) * unScale;
     if (grassID == 1) vDims.y *= 1.5;
     float rotation = dimsTypeRotation.w * 6.28318530718; // 2 PI
@@ -72,15 +101,19 @@ void main() {
 	vec4 vertexPosition = vPosition;
     vertexPosition.xyz += unPosition;
 	vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
-	vertexPosition.z += xzOffsetUncompressed.y;
-	vertexPosition.xy += xDirection * xzOffsetUncompressed.x;
+    vec3 xyzOffset = vec3(xzOffsetUncompressed.x, 0.0, xzOffsetUncompressed.y);
+    // Rotate to surface normal
+    xyzOffset.xy += xDirection * xyzOffset.x;
+    xyzOffset = rotateOffsetToNormal(xyzOffset, normal);
+ 
+	vertexPosition.xyz += xyzOffset.xyz;
 	
 	vec4 cameraRelativePos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
     vec2 randSeed = vec2(vPosition.xy);
     fWorldRoot = vPosition.xyz + unPosition;
-    fHeight = xzOffsetUncompressed.y;
+    fHeight = xyzOffset.z;
 	
 	fDistance = length(cameraRelativePos.xy);
 	
@@ -90,8 +123,7 @@ void main() {
     fGrassMaterial = grassID;
     int cellCounti = unGrassData[grassID].materialCellCount;
     float uWidth = 1.0 / float(cellCounti);
-    float bladeType = round(mod(rand(randSeed + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
-    
+    float bladeType = floor(mod(rand(randSeed + vec2(3425.0, 2331.0)) * 255.0, cellCounti));
     
 	// Grass blade uvs
     float randomFlip = rand(randSeed);

@@ -193,7 +193,6 @@ Chunk& Chunk::getBottomNeighbor() const {
 }
 
 void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {
-    //LOG_CRITICAL("Need to update Chunk::setGrassAt");
     TileGrass& grass = mGrass[index];
     int lowestDensityIndex = 0;
     int lowestDensity = INT32_MAX;
@@ -222,10 +221,6 @@ void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) 
         grass.grassIDs[lowestDensityIndex] = grassId;
         grass.densities[lowestDensityIndex] = density;
     }
-    // TODO: mark dirty
-    /* if (mChunkRenderData.mGrassLod) {
-         mChunkRenderData.mGrassLod
-     }*/
 }
 
 void Chunk::clearGrassAt(const TileIndex index) {

@@ -49,6 +49,7 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
     VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
     VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
+    VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
     glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
     glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
@@ -58,6 +59,7 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
 
     glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
     glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
+    glUniform1i(tboNormalUniform, GRASS_TBO_NORMAL_DATA_BINDING);
 
     glPatchParameteri(GL_PATCH_VERTICES, 3);
 
@@ -84,6 +86,7 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
         // Bind textures
         glBindTextureUnit(GRASS_TBO_INSTANCE_DATA_BINDING, renderData.mTboInstanceData);
         glBindTextureUnit(GRASS_TBO_POSITION_DATA_BINDING, renderData.mTboPositionData);
+        glBindTextureUnit(GRASS_TBO_NORMAL_DATA_BINDING, renderData.mTboNormalData);
 
         glDrawElements(GL_PATCHES, renderData.mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
         RenderStats::recordDrawCall(renderData.mIndexCount / 3);
@@ -103,6 +106,7 @@ void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& player
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
     VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
     VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
+    VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
     //glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x); // No player collision yet
     glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
     glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
@@ -111,6 +115,7 @@ void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& player
 
     glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
     glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
+    glUniform1i(tboNormalUniform, GRASS_TBO_NORMAL_DATA_BINDING);
 
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMeshRenderData& renderData = grassMesh.renderData;
@@ -135,6 +140,7 @@ void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& player
         // Bind textures
         glBindTextureUnit(GRASS_TBO_INSTANCE_DATA_BINDING, renderData.mTboInstanceData);
         glBindTextureUnit(GRASS_TBO_POSITION_DATA_BINDING, renderData.mTboPositionData);
+        glBindTextureUnit(GRASS_TBO_NORMAL_DATA_BINDING, renderData.mTboNormalData);
 
         glDrawElements(GL_TRIANGLES, renderData.mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
         RenderStats::recordDrawCall(renderData.mIndexCount / 3);

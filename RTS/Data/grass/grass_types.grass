@@ -12,3 +12,12 @@ leafy_grass:
   lean_variance: 0.0
   height_variance: [0.8, 0.8]
   density: 1
+moss:
+  mesh_type: plane
+  textures: moss
+  num_textures: 1
+  size: [1.0, 1.0]
+  lean_variance: 0.0
+  height_variance: [0.1, 0.3]
+  density: 2
+  z_offset_variance: [0.01, 0.065]
