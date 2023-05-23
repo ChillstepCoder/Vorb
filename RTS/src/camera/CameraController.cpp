@@ -82,18 +82,22 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         case CameraMode::CARTESIAN:
             vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInput(e); });
             vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& e) { updateKeyInputCartesianMode(e); });
+            mIsMouseHidden = false;
             break;
         case CameraMode::MMO:
             vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInputMMOMode(e); });
             vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputMMOMode(e); });
             vui::InputDispatcher::mouse.addButtonDownListener(mMouseListeners, [this](const vui::MouseButtonEvent& e) { updateMouseButtonDownInputMMO(e); });
             vui::InputDispatcher::mouse.addButtonUpListener(mMouseListeners, [this](const vui::MouseButtonEvent& e) { updateMouseButtonUpInputMMO(e); });
+            mIsMouseHidden = false;
             break;
         case CameraMode::MOUSELOCK:
             vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInput(e); });
+            mIsMouseHidden = false;
             break;
         case CameraMode::FREE_LOOK:
             vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputFreeLookMode(e); });
+            mIsMouseHidden = false;
             break;
         case CameraMode::FIRST_PERSON:
             vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputFirstPersonMode(e); });

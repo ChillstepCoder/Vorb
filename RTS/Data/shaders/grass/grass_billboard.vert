@@ -2,6 +2,10 @@
 #include "GlobalUbo.glsl"
 #include "GrassUbo.glsl"
 #include "NormalUtil.glsl"
+#include "util/wind.glsl"
+
+
+const float WIND_INTENSITY = 0.3; // TODO: PASS IN
 
 uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
@@ -79,6 +83,13 @@ void main() {
     // Wind
     vec2 randSeed = vec2(vPosition.xy);
     fWorldRoot = vPosition.xyz + unPosition;
+    
+    // Displace the vertex along the normal
+    float wind = getWindAtPosition(-Time + xyzOffset.z, vec4(fWorldRoot, 0.0)) * WIND_INTENSITY;
+    vec3 windOffset = vec3(wind, wind, 0.35 * wind);
+    fWorldRoot.xyz += windOffset;
+    cameraRelativePos.xyz += windOffset;
+    
     fHeight = 0.0; // TODO: HEIGHT
 	
 	gl_Position = VP * cameraRelativePos;

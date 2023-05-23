@@ -4,7 +4,7 @@ layout(triangles, equal_spacing, ccw) in;
 
 #include "../util/wind.glsl"
 
-const float WIND_INTENSITY = 0.01;
+const float WIND_INTENSITY = 1.0;
 
 uniform vec3 unPlayerPos;
 
