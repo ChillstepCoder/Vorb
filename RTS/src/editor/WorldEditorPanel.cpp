@@ -554,10 +554,6 @@ void WorldEditorPanel::updateGrassEdit() {
                     }
                 }
 
-         
-                // Notify all terrain stuff to update
-                world->dirtyGrassFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + 1);
-
             delete task;
             }, task);
         }
@@ -712,7 +708,6 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
 
     ui8 densityUi8 = (ui8)glm::clamp(glm::round(density), 0.0f, 255.0f);
     mActiveWorld->getChunkGrid().getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
-    //}
 }
 
 f32 WorldEditorPanel::getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint) {

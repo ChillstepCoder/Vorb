@@ -62,21 +62,30 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
         // Const cast ~ get fucked
         Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
         TileContainer* container = chunkNonConst.getTileContainer();
-        mEditEventHandles[container->getId()] = container->addEditTilesListener([this](const TileContainerEvent& evnt) {
-            PROFILE_SCOPE("GrassEdit Dirty");
-            ASSERT_GAME_THREAD();
-            if (evnt.edit.type == TileContainerEditEventType::ChangeZPos) {
-                const Chunk* owner = evnt.container->getOwnerChunk();
-                auto& quadtreePtr = mChunkGrassQuadtrees[owner];
-                if (quadtreePtr) {
-                    for (ui32 i = 0; i < evnt.edit.editCount; ++i) {
-                        assert(owner);
-                        TileContainerEditZPosEventData& data = evnt.edit.changeZPosArray[i];
-                        quadtreePtr->markDirty(f32v2(data.worldPosition));
+        mTileEditEventHandles[container->getId()] = std::make_pair(
+            container->addEditTilesListener([this](const TileContainerEvent& evnt) {
+                PROFILE_SCOPE("GrassEdit Dirty");
+                ASSERT_GAME_THREAD();
+                if (evnt.edit.type == TileContainerEditEventType::ChangeZPos) {
+                    const Chunk* owner = evnt.container->getOwnerChunk();
+                    auto& quadtreePtr = mChunkGrassQuadtrees[owner];
+                    if (quadtreePtr) {
+                        for (ui32 i = 0; i < evnt.edit.editCount; ++i) {
+                            assert(owner);
+                            TileContainerEditZPosEventData& data = evnt.edit.changeZPosArray[i];
+                            quadtreePtr->markDirty(f32v2(data.worldPosition));
+                        }
                     }
                 }
-            }
-        });
+            }),
+            chunkNonConst.addGrassEditListener([this](const ChunkEvent& evnt) {
+                auto& quadtreePtr = mChunkGrassQuadtrees[&evnt.chunk];
+                if (quadtreePtr) {
+                    const f32v2 worldPos = evnt.chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos2D(evnt.tileIndex);
+                    quadtreePtr->markDirty(worldPos);
+                }
+            })
+        );
         // Destroy will be handled by removeGrassForChunk
     }
 }
@@ -87,14 +96,15 @@ void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     if (!chunk.getTileContainer()) {
         return;
     }
-    auto&& it = mEditEventHandles.find(chunk.getTileContainer()->getId());
-    if (it != mEditEventHandles.end()) {
+    auto&& it = mTileEditEventHandles.find(chunk.getTileContainer()->getId());
+    if (it != mTileEditEventHandles.end()) {
         // Const cast ~ get fucked
         Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
         TileContainer* container = chunkNonConst.getTileContainer();
         // TODO: Can this be automatic? We are only holding a weak_ptr handle...
-        container->removeEditTilesListener(it->second);
-        mEditEventHandles.erase(it);
+        container->removeEditTilesListener(it->second.first);
+        chunkNonConst.removeGrassEditListener(it->second.second);
+        mTileEditEventHandles.erase(it);
     }
    
     // TODO: uhhh....

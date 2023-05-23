@@ -57,6 +57,6 @@ private:
     std::unordered_map<LiteChunkID, std::vector<StructureID>> mDormantStructures; // Structures who depend on multiple chunks can be duplicated here
     StructureMap mStructures;
     bgi::rtree<StructureRegion, bgi::quadratic<16>> mSpatialLookup;
-    ChunkListeners mChunkEventListeners;
+    ChunkGridListeners mChunkEventListeners;
 };
 

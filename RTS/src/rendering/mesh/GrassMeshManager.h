@@ -4,12 +4,15 @@
 #include "boost/container/flat_set.hpp"
 #include "tile/TileContainer.h"
 
+#include "world/ChunkEvents.h"
 #include "rendering/mesh/TileGrassMeshType.h"
 
 class ChunkGrassQuadtree;
 class Chunk;
 class IWorld;
 class GrassMesh;
+
+typedef std::pair<TileContainerEventDispatcher::Handle, ChunkEventDispatcher::Handle> GrassEventPair;
 
 // Shared by game + render thread
 class GrassMeshManager
@@ -33,6 +36,6 @@ private:
     boost::container::flat_set<const GrassMesh*> mGrassMeshes;
 
     std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>> mChunkGrassQuadtrees;
-    boost::container::flat_map<TileContainerID, TileContainerEventDispatcher::Handle> mEditEventHandles;
+    boost::container::flat_map<TileContainerID, GrassEventPair> mTileEditEventHandles;
 };
 

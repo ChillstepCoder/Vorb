@@ -895,9 +895,8 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const f32* heightData,
             const f32v3 edge2 = trv - brv; // Edge 2
 
             // Compute the normal
-            const f32v3 normal = cross(edge1, edge2);
+            const f32v3 normal = cross(edge2, edge1);
             *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
-
             const f32v3 uvw = BarycentricBlBrTr(dxy);
             return bl * uvw.x + br * uvw.y + tr * uvw.z;
         }
@@ -917,9 +916,8 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const f32* heightData,
             const f32v3 edge2 = blv - tlv; // Edge 2
 
             // Compute the normal
-            const f32v3 normal = cross(edge1, edge2);
+            const f32v3 normal = cross(edge2, edge1);
             *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
-
             const f32v3 uvw = BarycentricBlTlTr(dxy);
             return bl * uvw.x + tl * uvw.y + tr * uvw.z;
         }
@@ -947,9 +945,8 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const f32* heightData,
             const f32v3 edge2 = tlv - trv; // Edge 2
 
             // Compute the normal
-            const f32v3 normal = cross(edge1, edge2);
+            const f32v3 normal = cross(edge2, edge1);
             *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
-
             const f32v3 uvw = BarycentricBrTlTr(dxy);
             return br * uvw.x + tl * uvw.y + tr * uvw.z;
         }
@@ -965,13 +962,12 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const f32* heightData,
             const f32v3 brv(HEIGHTMAP_QUAD_SIZE, 0.0f, br);
             const f32v3 tlv(0.0f, HEIGHTMAP_QUAD_SIZE, tl);
 
-            const f32v3 edge1 = tlv - bl; // Edge 1
-            const f32v3 edge2 = brv - bl; // Edge 2
+            const f32v3 edge1 = tlv - blv; // Edge 1
+            const f32v3 edge2 = brv - blv; // Edge 2
 
             // Compute the normal
-            const f32v3 normal = cross(edge1, edge2);
+            const f32v3 normal = cross(edge2, edge1);
             *outNormal = normalize(normal); // Normalize the result to ensure it's a unit vector
-
             const f32v3 uvw = BarycentricBlBrTl(dxy);
             return bl * uvw.x + br * uvw.y + tl * uvw.z;
         }

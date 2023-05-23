@@ -69,12 +69,6 @@ void CliWorldInterface::onWorldBeginClient(IWorld& world) {
     RenderStateManager::getInstance().setActiveWorld(&world);
 }
 
-void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
-    PROFILE_FUNCTION();
-    assert(false); // REAL GRASS UPDATES
-    //mGrassMeshManager->dirtyGrassFromBrush(pos, brushRadius);
-}
-
 void CliWorldInterface::updateRenderState(IWorld& world) {
 
     if (!RenderStateManager::getInstance().isActiveWorld(&world)) {

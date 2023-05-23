@@ -22,7 +22,6 @@ protected:
 
     void updateParticleSystems(const f32v2& playerPos);
     void onWorldBeginClient(IWorld& world);
-    void cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);
 
     void updateRenderState(IWorld& world);
     void updateEntitiesRenderState(IWorld& world, RenderState& renderState);

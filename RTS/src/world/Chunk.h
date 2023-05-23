@@ -8,6 +8,7 @@
 #include "util/AABB.hpp"
 #include "util/TinyThreadsafeVector.hpp"
 #include "world/ChunkState.h"
+#include "world/ChunkEvents.h"
 
 #include "tile/TileGrass.h"
 
@@ -48,11 +49,6 @@ enum class NeighborIndex8 {
 	TOP          = 6,
 	TOP_RIGHT    = 7,
 	COUNT        = 8
-};
-
-enum class ChunkEventType {
-	Ready,
-    Destroy,
 };
 
 // TODO: Chunks and structures both have base class "TileContainer" ???
@@ -126,7 +122,6 @@ public:
 	const TileGrass& getGrassAt(const TileIndex index) const { /*ASSERT_GAME_THREAD(); */return mGrass[index]; } // TODO: Game thread assert
 	const ui8 getGrassDensityAt(const TileIndex index, TileGrassID grassId) const;
 	void copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const;
-    //void bulkSetGrassAt(std::pair<TileIndex, ui8>* editData, size_t count); // TODO: THIS + EVENTS
 
     // =========== Terrain update  ===========
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
@@ -145,6 +140,8 @@ public:
 
 	IWorld& getWorld() const { return *mWorld; }
 
+	EVENT_LISTENER_FUNCS(Chunk, GrassEdit, ChunkEventType::GrassEdit, const ChunkEvent&);
+
 private:
 
     // =========== Members ===========
@@ -159,6 +156,8 @@ private:
     mutable std::shared_mutex mSharedGrassMutex;
 	std::vector<StructureID> mStructures;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
+
+	EVENT_DISPATCHER_DEF(Chunk);
 };
 #ifdef DEBUG // Release has different size
 //static_assert(sizeof(Chunk) == 296, "These are permanently allocated, so keep small");

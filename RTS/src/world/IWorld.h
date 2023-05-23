@@ -48,9 +48,6 @@ public:
     bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);
     void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
 
-    // mutators
-    virtual void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) = 0;
-
     // Tile Accessors
     TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;

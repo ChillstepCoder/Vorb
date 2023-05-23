@@ -35,10 +35,4 @@ public:
     //// Physics
     //std::unique_ptr<PhysicsWorld> mPhysWorld;
 
-
-    void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) override;
-
-
-
-
 };

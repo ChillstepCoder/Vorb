@@ -7,12 +7,12 @@
 
 class IWorld;
 
-enum class CHUNK_EVENT_TYPE {
+enum class CHUNK_GRID_EVENT_TYPE {
     Create,
     Ready,
     Destroy
 };
-EVENT_DISPATCHER_TYPE(Chunk, CHUNK_EVENT_TYPE, Chunk&);
+EVENT_DISPATCHER_TYPE(ChunkGrid, CHUNK_GRID_EVENT_TYPE, Chunk&);
 
 class IWorldGrid;
 
@@ -51,8 +51,8 @@ public:
     IWorld& getWorld() const { return *mWorld; }
 
     // Events
-    EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
-    EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, Ready, CHUNK_GRID_EVENT_TYPE::Ready, Chunk&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, Destroy, CHUNK_GRID_EVENT_TYPE::Destroy, Chunk&);
 
     void setWorldAndAllocateChunks(IWorld& world);
 protected:
@@ -103,5 +103,5 @@ protected:
 
     // Events
     IHeightmapGridListeners mHeightmapGridListeners;
-    EVENT_DISPATCHER_DEF(Chunk);
+    EVENT_DISPATCHER_DEF(ChunkGrid);
 };

@@ -129,7 +129,7 @@ std::vector<Structure*> StructureManager::tryGetStructuresAtWorldPos(const i32v2
 
 void StructureManager::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
-    chunkGrid.registerChunkListeners(mChunkEventListeners);
+    chunkGrid.registerChunkGridListeners(mChunkEventListeners);
     chunkGrid.addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
         ASSERT_GAME_THREAD();
         auto&& it = mDormantStructures.find(chunk.getChunkID());

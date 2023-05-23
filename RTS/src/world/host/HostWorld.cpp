@@ -83,10 +83,6 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), StrToken("player"), true));
 }
 
-void HostWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
-    cliDirtyGrassFromBrush(pos, brushRadius);
-}
-
 WorldNetMode HostWorld::getNetMode()
 {
     return WorldNetMode::Host;

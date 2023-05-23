@@ -230,7 +230,6 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                                 f32v3 relativePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo, 0.0f);
                                 f32v3 normal;
                                 relativePos.z = heightmapGrid.computeHeightAndNormalAtPoint(heightmapPatchId, heightData->data, chunkWorldPos + f32v2(relativePos), &normal);
-                                //std::swap(normal.x, normal.y);
                                 addGrass(grassMeshBuilder, grassData, grassNoiseFunction, relativePos, normal, rnd, (f32)detail, bladeWidth, densityMult, x, y, x2, y2);
                             }
                         }

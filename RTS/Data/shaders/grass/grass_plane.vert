@@ -1,9 +1,11 @@
 
 #include "GlobalUbo.glsl"
 #include "GrassUbo.glsl"
+#include "NormalUtil.glsl"
 
 uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
+uniform samplerBuffer UnTboNormal;
 uniform vec3 unPosition;
 uniform float UnYOffset = 1.0;
 uniform vec2 unScale;
@@ -55,6 +57,8 @@ void main() {
     int bladeIndex = (gl_VertexID / 4);
 	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
 	vec4 dimsTypeRotation = texelFetch(UnTboSizeType, bladeIndex);
+    vec2 normal2 = (texelFetch(UnTboNormal, bladeIndex).rg * 2.0) - 1.0;
+    vec3 normal = reconstructNormal(normal2);
     int grassID = int(round(dimsTypeRotation.z * 255.0));
     
 	vec2 vDims = dimsTypeRotation.xy * vec2(unGrassData[grassID].grassScaleX, unGrassData[grassID].grassScaleY) * unScale;
@@ -71,7 +75,9 @@ void main() {
     const float cs = cos(rotation);
     const float sn = sin(rotation);
     vec2 rotatedOffset = vec2(xyOffsetUncompressed.x * cs - xyOffsetUncompressed.y * sn, xyOffsetUncompressed.x * sn + xyOffsetUncompressed.y * cs);
-	vertexPosition.xy += rotatedOffset;
+    vec3 xyzOffset = rotateOffsetToNormal(vec3(rotatedOffset, 0.0), normal);
+    
+    vertexPosition.xyz += xyzOffset;
 	
 	vec4 cameraRelativePos = vertexPosition - vec4(CameraPos, 0.0);
     

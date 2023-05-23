@@ -57,9 +57,6 @@ void CliWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginClient(*this);
 }
 
-void CliWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
-    cliDirtyGrassFromBrush(pos, brushRadius);
-}
 
 WorldNetMode CliWorld::getNetMode() {
     return WorldNetMode::Client;

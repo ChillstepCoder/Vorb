@@ -221,11 +221,16 @@ void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) 
         grass.grassIDs[lowestDensityIndex] = grassId;
         grass.densities[lowestDensityIndex] = density;
     }
+
+    ChunkEvent editEvent{ *this, ChunkEventType::GrassEdit, index };
+    dispatchGrassEdit(editEvent);
 }
 
 void Chunk::clearGrassAt(const TileIndex index) {
     mGrass[index] = TileGrass();
-    LOG_CRITICAL("Need to update Chunk::clearGrassAt");
+
+    ChunkEvent editEvent{ *this, ChunkEventType::GrassEdit, index };
+    dispatchGrassEdit(editEvent);
 }
 
 const ui8 Chunk::getGrassDensityAt(const TileIndex index, TileGrassID grassId) const

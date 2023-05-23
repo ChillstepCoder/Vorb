@@ -1,6 +1,7 @@
 
 #include "GlobalUbo.glsl"
 #include "GrassUbo.glsl"
+#include "NormalUtil.glsl"
 
 uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
@@ -53,39 +54,11 @@ float rand(vec2 co){
   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
-vec3 reconstructNormal(vec2 normalXY) {
-    float den = max(1.0 - (normalXY.x * normalXY.x) - (normalXY.y * normalXY.y), 0.001);
-    return vec3(normalXY, sqrt(den));
-}
-
-vec3 rotateOffsetToNormal(vec3 offset, vec3 normal) {
-    vec3 up = vec3(0.0, 0.0, 1.0);
-    // Compute the bending direction: perpendicular to the initial direction and the terrain normal
-    vec3 bend_dir = cross(up, normal);
-
-    // If the normal is already equal to the up vector, there is no bending to do
-    if(length(bend_dir) < 0.0001) {
-        return offset;
-    }
-
-    // Normalize the bending direction
-    bend_dir = normalize(bend_dir);
-
-    // Compute the final direction of the blade: perpendicular to the bending direction and the terrain normal
-    vec3 blade_dir = cross(bend_dir, normal);
-
-    // Compute the position of the blade
-    vec3 position = offset.x * bend_dir + offset.y * blade_dir + offset.z * normal;
-
-    return position;
-}
-
 void main() {
     int bladeIndex = (gl_VertexID / 4);
 	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
 	vec4 dimsTypeRotation = texelFetch(UnTboSizeType, bladeIndex);
     vec2 normal2 = (texelFetch(UnTboNormal, bladeIndex).rg * 2.0) - 1.0;
-    //if (normal2.y <= -1.0) normal2.y = 0;
     vec3 normal = reconstructNormal(normal2);
     
     int grassID = int(round(dimsTypeRotation.z * 255.0));
