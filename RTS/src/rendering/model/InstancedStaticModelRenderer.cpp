@@ -52,8 +52,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
         }
 
         ModelID modelId = it.first;
-        const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
-        const Mesh& mesh = *model.getMesh();
+        const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
 
         // Bind our transforms every frame as we could be using different instanced static model managers
         GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
@@ -103,8 +102,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
             const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
 
             ModelID modelId = it.first;
-            const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
-            const Mesh& mesh = *model.getMesh();
+            const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
 
             assert(instanceData.mShadowDrawCommandsCount <= drawCommandsSize);
             mesh.drawIndirect(instanceData.mShadowDrawCommandsCount, &drawCommands);

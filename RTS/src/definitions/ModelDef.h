@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/model/Model3D.h"
 #include "rendering/model/ModelConst.h"
 #include "rendering/model/MaterialRenderPassType.h"
 #include "rendering/post_process/ShadowLodDetail.h"
@@ -45,7 +44,7 @@ struct ModelDef {
 
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    Model3D mModel;
+    std::unique_ptr<Mesh> mMesh;
     ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     const char* mName = nullptr;

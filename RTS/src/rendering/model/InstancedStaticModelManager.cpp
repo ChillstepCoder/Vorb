@@ -27,7 +27,8 @@ static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
 // TODO: One less indirect? Store modelrepository?
 inline int getRenderPassIndexForModel(ModelID modelId) {
-    return e_cast(Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mRenderPass);
+    return 0;
+    //return e_cast(Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mRenderPass);
 }
 
 struct TileContainerModelEditEvent {
@@ -114,8 +115,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera)
             }
 
             ModelID modelId = it.first;
-            const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
-            const Mesh& mesh = *model.getMesh();
+            const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
             MeshLODDrawInfo drawInfos[4];
             for (int i = 0; i < 4; ++i) {
                 drawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));

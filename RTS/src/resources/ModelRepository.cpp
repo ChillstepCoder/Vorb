@@ -6,7 +6,6 @@
 #include "definitions/AnimMachineDef.h"
 #include "resources/RigRepository.h"
 #include "resources/AnimMachineRepository.h"
-#include "rendering/model/Model3D.h"
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/mesh/MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
@@ -98,17 +97,15 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
         if (fileData.mScale != 1.0f) {
             MeshOperations::applyScale(meshData, fileData.mScale);
         }
-        Model3D& model = def.mModel;
         RawMeshSkeletonData& rawSkeletonData = rawMesh->mCombinedMeshData.mSkeletonData;
 
-        model.mNumJoints = rawSkeletonData.mNumJoints;
-        model.mMesh = std::make_unique<Mesh>();
+        def.mMesh = std::make_unique<Mesh>();
 
         // Allocate and fill skeleton data
-        if (model.mNumJoints) {
+        if (rawSkeletonData.mNumJoints) {
             assert(def.mRig && "Missing rig for skeletal model");
-            model.mMesh->mSkeletonData = std::make_unique<MeshSkeletonData>();
-            MeshSkeletonData& skeletonData = *model.mMesh->mSkeletonData;
+            def.mMesh->mSkeletonData = std::make_unique<MeshSkeletonData>();
+            MeshSkeletonData& skeletonData = *def.mMesh->mSkeletonData;
             skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
             skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
             memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
@@ -116,7 +113,7 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
             memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
         }
 
-        ModelMeshBuilder::uploadCpuMeshToGpu(meshData, model.mMesh->mMainMesh);
+        ModelMeshBuilder::uploadCpuMeshToGpu(meshData, def.mMesh->mMainMesh);
 
         // Store lookup
         if (mModelIdLookup.find(modelName) != mModelIdLookup.end()) {

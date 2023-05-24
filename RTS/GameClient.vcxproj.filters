@@ -303,9 +303,6 @@
     <ClCompile Include="src\definitions\ModelDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\Model3D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\resources\RigRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1149,9 +1146,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\ModelDef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\model\Model3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\RigRepository.h">

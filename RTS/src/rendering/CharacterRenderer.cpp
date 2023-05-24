@@ -195,8 +195,7 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
 
     // TODO: cache
     ui8 num_skinning_matrices = 0;
-    const Model3D& skinnedModel = modelDef.mModel;
-    const MeshSkeletonData* skeletonData = skinnedModel.getMesh()->tryGetSkeleton();
+    const MeshSkeletonData* skeletonData = modelDef.mMesh->tryGetSkeleton();
     assert(skeletonData);
     num_skinning_matrices = skeletonData->mNumJoints;
 
@@ -384,13 +383,12 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             // inverse bind pose with the model space matrix.
             ozz::vector<ozz::math::Float4x4> skinningMatrices;
             // Allocates skinning matrices.
-            const Model3D& skinnedModel = modelDef.mModel;
-            skinningMatrices.resize(skinnedModel.getNumJoints());
+            const auto& mesh = *modelDef.mMesh;
+            const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
+            skinningMatrices.resize(skelData->mNumJoints);
 
             if (updateAnimation(animState, character.mLocomotionMode, modelDef, models, elapsedSec)) {
                 // Draw animated
-                const auto& mesh = *skinnedModel.getMesh();
-                const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
                 const ozz::math::Float4x4* bindPoses = skelData->mInverseBindPoses.get();
                 for (size_t i = 0; i < skelData->mNumJoints; ++i) {
                     skinningMatrices[i] = models[skelData->mJointRemaps[i]] * bindPoses[i];
@@ -403,8 +401,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             else {
                 // INVALID ANIMATION
                 // Draw T pose
-                const auto& mesh = *skinnedModel.getMesh();
-                const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
                 for (size_t i = 0; i < skelData->mNumJoints; ++i) {
                     skinningMatrices[i] = ozz::math::Float4x4::identity();
                 }

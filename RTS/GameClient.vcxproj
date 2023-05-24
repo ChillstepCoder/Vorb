@@ -370,7 +370,6 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
-    <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
     <ClCompile Include="src\rendering\model\StaticModelInstanceData.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
@@ -681,7 +680,6 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
-    <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
     <ClInclude Include="src\rendering\model\MaterialRenderPassType.h" />
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
