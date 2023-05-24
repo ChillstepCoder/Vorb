@@ -1,4 +1,3 @@
 model: tree_pine.fbx
 scale: 1.0
 shadow_detail: highest
-render_pass: smudge

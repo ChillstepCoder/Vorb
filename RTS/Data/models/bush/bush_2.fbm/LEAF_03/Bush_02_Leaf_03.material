@@ -1,3 +1,4 @@
 albedo: Bush_02_Leaf_03.png
 normal: Bush_02_Leaf_03_Normal.png
 sampler_state: LINEAR_CLAMP_MIPMAP
+render_pass: smudge

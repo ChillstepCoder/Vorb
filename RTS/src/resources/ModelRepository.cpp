@@ -69,7 +69,6 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
     def.mShadowDetail = fileData.mShadowDetail;
-    def.mRenderPass = fileData.mRenderPass;
 
     // If has rig, we need to load animation and skeleton info
     if (fileData.mRigName.size()) {

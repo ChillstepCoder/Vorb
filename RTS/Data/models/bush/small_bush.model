@@ -1,4 +1,3 @@
 model: small_bush.fbx
 scale: 1.0
 shadow_detail: medium
-render_pass: smudge

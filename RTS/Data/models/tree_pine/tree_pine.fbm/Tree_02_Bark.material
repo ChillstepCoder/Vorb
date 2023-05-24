@@ -3,3 +3,4 @@ normal: tree_pine_norm.png
 ao: tree_pine_ao.png
 rough: tree_pine_rough.png
 sampler_state: LINEAR_CLAMP_MIPMAP
+render_pass: smudge

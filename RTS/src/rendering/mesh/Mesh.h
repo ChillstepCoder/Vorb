@@ -152,7 +152,7 @@ public:
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t size);
 
-public:    
+public:
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
     MeshGpuData              mMainMesh;

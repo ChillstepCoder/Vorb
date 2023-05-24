@@ -1,4 +1,3 @@
 model: bush_2.fbx
 scale: 0.888
 shadow_detail: medium
-render_pass: smudge

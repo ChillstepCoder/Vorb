@@ -27,6 +27,7 @@ struct MaterialFileData {
     nString displacementTexture;
     nString roughnessTexture;
     nString metalTexture;
+    MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
     vg::SamplerStateType samplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -57,6 +58,7 @@ KEG_TYPE_DEF_SAME_NAME(MaterialFileData, kt) {
     kt.addValue("cast_shadow", keg::Value::basic(offsetof(MaterialFileData, castsShadow), keg::BasicType::BOOL));
     kt.addValue("receive_shadow", keg::Value::basic(offsetof(MaterialFileData, receivesShadow), keg::BasicType::BOOL));
     kt.addValue("flipv", keg::Value::basic(offsetof(MaterialFileData, flipV), keg::BasicType::BOOL));
+    kt.addValue("render_pass", keg::Value::custom(offsetof(MaterialFileData, renderPass), "MaterialRenderPassType", true));
 }
 
 MaterialRepository::MaterialRepository(vio::IOManager& ioManager) : mIoManager(ioManager)
@@ -93,11 +95,11 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     const MaterialID materialId = mMaterialGpuData.size();
     MaterialData& materialData = mMaterialData.emplace_back();
     materialData.id = materialId;
+    materialData.renderPass = fileData.renderPass;
     MaterialGpuData& materialGpuData = mMaterialGpuData.emplace_back();
     const nString materialName = filePath.getFileNameNoExtension();
     vio::Path folderPath = filePath;
     --folderPath;
-
 
     LOG_INFO("LOADING MATERIAL {} {}", filePath.getString(), materialId);
 

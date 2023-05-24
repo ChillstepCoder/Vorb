@@ -17,7 +17,6 @@ struct ModelDefFileData {
     nString mMachineName;
     f32 mScale = 1.0f;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
-    MaterialRenderPassType mRenderPass = MaterialRenderPassType::Default;
     bool mForceNormalsUp = false;
 };
 KEG_TYPE_DECL(ModelDefFileData);
@@ -50,6 +49,5 @@ struct ModelDef {
     ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     const char* mName = nullptr;
-    MaterialRenderPassType mRenderPass = MaterialRenderPassType::Default;
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };

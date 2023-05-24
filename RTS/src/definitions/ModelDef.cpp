@@ -7,6 +7,5 @@ KEG_TYPE_DEF_SAME_NAME(ModelDefFileData, kt) {
     kt.addValue("machine", keg::Value::basic(offsetof(ModelDefFileData, mMachineName), keg::BasicType::STRING));
     kt.addValue("scale", keg::Value::basic(offsetof(ModelDefFileData, mScale), keg::BasicType::F32));
     kt.addValue("shadow_detail", keg::Value::custom(offsetof(ModelDefFileData, mShadowDetail), "ShadowLodDetail", true));
-    kt.addValue("render_pass", keg::Value::custom(offsetof(ModelDefFileData, mRenderPass), "MaterialRenderPassType", true));
     kt.addValue("force_normals_up", keg::Value::basic(offsetof(ModelDefFileData, mForceNormalsUp), keg::BasicType::BOOL));
 }
