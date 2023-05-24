@@ -4,7 +4,6 @@
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 #include "rendering/model/StaticModelInstance.h"
 
-#include "rendering/model/Model3D.h"
 #include "rendering/mesh/RawMesh.h"
 #include "rendering/mesh/Mesh.h"
 

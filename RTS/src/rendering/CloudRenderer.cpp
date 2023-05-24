@@ -8,6 +8,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/texture/Cubemap.h"
@@ -64,7 +65,7 @@ void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture
     for (auto&& batch : cloudManager.mCloudBatches) {
         if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius)) {
             glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-            batch.mMesh->draw();
+            MeshDrawer::draw(batch.mMesh->mMainMesh);
         }
     }
 
@@ -95,7 +96,7 @@ void CloudRenderer::renderCloudShadows(const ShadowPassShaderData& shaderData, c
     // All clouds are rendered for shadows
     for (auto&& batch : cloudManager.mCloudBatches) {
         glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-        batch.mMesh->draw();
+        MeshDrawer::draw(batch.mMesh->mMainMesh);
     }
 }
 

@@ -2,7 +2,6 @@
 #include "Mesh.h"
 
 #include "rendering/mesh/Vertex.h"
-#include "rendering/RenderStats.h"
 
 #include <boost/pool/singleton_pool.hpp>
 
@@ -36,93 +35,6 @@ Mesh& Mesh::operator=(Mesh&& o) {
 
 Mesh::~Mesh() {
     destroy();
-}
-
-void Mesh::draw() const {
-    assert(mMainMesh.mVao);
-    assert(mMainMesh.mLODData.mTotalIndexCount);
-    assert(mMainMesh.mIndexType != MeshIndexType::INVALID);
-
-    glBindVertexArray(mMainMesh.mVao);
-    if (mMainMesh.mUbo) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mMainMesh.mUbo);
-    }
-    if (mMainMesh.mSSBO) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
-    }
-    glDrawElements(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(0) /* offset */);
-    RenderStats::recordDrawCall(mMainMesh.mLODData.mTotalIndexCount / 3);
-}
-
-void Mesh::draw(MeshLODLevel lod) const
-{
-    assert(mMainMesh.mVao);
-    assert(mMainMesh.mLODData.mTotalIndexCount);
-
-    MeshLODDrawInfo drawInfo = mMainMesh.mLODData.getDrawInfoForLOD(lod);
-    glBindVertexArray(mMainMesh.mVao);
-    if (mMainMesh.mUbo) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mMainMesh.mUbo);
-    }
-    if (mMainMesh.mSSBO) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
-    }
-
-    glDrawElements(GL_TRIANGLES, drawInfo.indexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */);
-    RenderStats::recordDrawCall(drawInfo.indexCount / 3);
-
-}
-
-void Mesh::drawInstanced(GLsizei instanceCount) const {
-    assert(mMainMesh.mVao);
-    assert(mMainMesh.mLODData.mTotalIndexCount);
-
-    glBindVertexArray(mMainMesh.mVao);
-    if (mMainMesh.mUbo) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mMainMesh.mUbo);
-    }
-    if (mMainMesh.mSSBO) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
-    }
-    glDrawElementsInstanced(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(0) /* offset */, instanceCount);
-    RenderStats::recordDrawCall(mMainMesh.mLODData.mTotalIndexCount / 3);
-
-}
-
-void Mesh::drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const {
-    assert(mMainMesh.mVao);
-    assert(mMainMesh.mLODData.mTotalIndexCount);
-
-    MeshLODDrawInfo drawInfo = mMainMesh.mLODData.getDrawInfoForLOD(lod);
-    glBindVertexArray(mMainMesh.mVao);
-    if (mMainMesh.mUbo) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mMainMesh.mUbo);
-    }
-    if (mMainMesh.mSSBO) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
-    }
-    glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */, instanceCount);
-    RenderStats::recordDrawCall(drawInfo.indexCount / 3);
-
-}
-
-void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) const
-{
-    assert(mMainMesh.mVao);
-    assert(mMainMesh.mLODData.mTotalIndexCount);
-
-    const MeshGpuData* currentSubmesh = &mMainMesh;
-    // Draw any submeshes
-    GL.glBindVertexArray(mMainMesh.mVao);
-    if (mMainMesh.mUbo) {
-        GL.glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mMainMesh.mUbo);
-    }
-    if (mMainMesh.mSSBO) {
-        GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
-    }
-    GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
-    glMultiDrawElementsIndirect(GL_TRIANGLES, e_cast(mMainMesh.mIndexType), nullptr, (GLsizei)numDrawCommands, 0);
-
 }
 
 void Mesh::destroy() {
@@ -214,20 +126,4 @@ MeshCpuData& MeshCpuData::operator=(MeshCpuData&& o) {
     o.mVertsPtr = nullptr;
     o.mElementsPtr = nullptr;
     return *this;
-}
-
-void MeshMinimumRenderData::draw() {
-    assert(mVao);
-    assert(mIndexCount);
-    assert(mIndexType != MeshIndexType::INVALID);
-
-    glBindVertexArray(mVao);
-    if (mUbo) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, mUbo);
-    }
-    if (mSSBO) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mSSBO);
-    }
-    glDrawElements(GL_TRIANGLES, mIndexCount, e_cast(mIndexType), (const GLvoid*)(0) /* offset */);
-    RenderStats::recordDrawCall(mIndexCount / 3);
 }

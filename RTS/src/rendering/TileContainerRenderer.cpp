@@ -3,6 +3,7 @@
 #include "camera/Camera3D.h"
 #include "resources/ResourceManager.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/RenderContext.h"
@@ -36,7 +37,7 @@ void TileContainerRenderer::renderStaticMeshes(const boost::container::flat_set<
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             glUniform3fv(unPosition, 1, &mesh->getPosition().x);
-            mesh->draw();
+            MeshDrawer::draw(mesh->mMainMesh);
         }
     }
 }
@@ -48,7 +49,7 @@ void TileContainerRenderer::renderBillboards(const boost::container::flat_set<co
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             assert(mesh->isValid());
-            mesh->draw();
+            MeshDrawer::draw(mesh->mMainMesh);
         }
     };
 }
@@ -63,7 +64,7 @@ void TileContainerRenderer::renderWorldShadows(const boost::container::flat_set<
         f32v3 offset = mesh->getPosition() - camera.getPosition();
         if (glm::length2(offset) <= maxDistSQ) {
             glUniform3fv(unPosition, 1, &mesh->getPosition().x);
-            mesh->draw();
+            MeshDrawer::draw(mesh->mMainMesh);
         }
     }
 }

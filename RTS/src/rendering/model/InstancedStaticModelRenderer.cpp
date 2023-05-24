@@ -4,6 +4,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/post_process/ShadowLodDetail.h"
@@ -71,7 +72,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
         //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
         //assert(totalCommands == drawCommands.mDrawCommands.size());
         assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
-        mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
+        MeshDrawer::drawIndirect(mesh.mMainMesh, instanceData.mInstanceTransforms.size(), &drawCommands);
     }
     
     // TODO: Material specific
@@ -105,7 +106,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
             const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
 
             assert(instanceData.mShadowDrawCommandsCount <= drawCommandsSize);
-            mesh.drawIndirect(instanceData.mShadowDrawCommandsCount, &drawCommands);
+            MeshDrawer::drawIndirect(mesh.mMainMesh, instanceData.mShadowDrawCommandsCount, &drawCommands);
         }
     }
 

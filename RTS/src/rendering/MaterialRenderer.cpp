@@ -4,6 +4,7 @@
 #include "MaterialShader.h"
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshDrawer.h"
 #include "camera/ICamera.h"
 
 #include <Vorb/graphics/SamplerState.h>
@@ -22,7 +23,7 @@ void MaterialRenderer::renderFullScreenQuad(const MaterialShader& material) {
 void MaterialRenderer::renderMesh(const Mesh& mesh, const MaterialShader& material) {
     bindMaterialForRender(material, nullptr);
 
-    mesh.draw();
+    MeshDrawer::draw(mesh.mMainMesh);
 }
 
 void MaterialRenderer::renderMaterialToQuadWithTexture(const MaterialShader& material, VGTexture texture, const f32v4& worldSpaceRect) {

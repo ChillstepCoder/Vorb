@@ -6,6 +6,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h" // FOR SHARED
+#include "rendering/mesh/MeshDrawer.h"
 
 #include "resources/ResourceManager.h"
 
@@ -201,7 +202,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         glUniform3fv(material->getUniform("unOffset"), 1, &offset.x);
         glUniform1i(material->getUniform("unFontTexture"), textureUnit);
         glBindTextureUnit(textureUnit, mTextData[0].font->mTexture);
-        mTextMesh.draw();
+        MeshDrawer::draw(mTextMesh.mMainMesh);
     }
 }
 

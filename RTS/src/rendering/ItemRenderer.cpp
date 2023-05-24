@@ -7,6 +7,7 @@
 #include "MaterialRenderer.h"
 #include "MaterialShaderManager.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshDrawer.h"
 #include "camera/Camera3D.h"
 
 ItemRenderer::ItemRenderer() {
@@ -177,7 +178,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMe
     // TODO: Reduce swaps
     MaterialRenderer::bindMaterialForRender(*mItemBillboardMaterial, nullptr);
     glUniform3fv(offsetUniform, 1, &offset.x);
-    itemMesh.draw();
+    MeshDrawer::draw(itemMesh.mMainMesh);
 }
 
 

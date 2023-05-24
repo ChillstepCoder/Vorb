@@ -9,6 +9,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/TileVertex.h"
 #include "rendering/renderstate/CharacterRenderState.h"
+#include "rendering/mesh/MeshDrawer.h"
 
 #include "resources/ModelRepository.h"
 #include "resources/AnimationRepository.h"
@@ -396,7 +397,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
 
                 // TODO: Indirect?
-                mesh.draw();
+                MeshDrawer::draw(mesh.mMainMesh);
             }
             else {
                 // INVALID ANIMATION
@@ -406,7 +407,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 }
                 glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
 
-                mesh.draw();
+                MeshDrawer::draw(mesh.mMainMesh);
             }
         }
     }

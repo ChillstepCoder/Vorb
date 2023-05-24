@@ -768,6 +768,9 @@
     <ClCompile Include="src\extern\bc7enc\bc7enc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\mesh\MeshDrawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1824,6 +1827,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\ChunkEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\MeshDrawer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -101,8 +101,6 @@ struct MeshMinimumRenderData {
     VGBuffer  mSSBO;
     ui32 mIndexCount;
     MeshIndexType mIndexType; // TODO: we could eliminate this with two separate classes or template
-
-    void draw();
 };
 static_assert(sizeof(MeshMinimumRenderData) == 20, "Keep tiny");
 
@@ -133,14 +131,6 @@ public:
     Mesh(Mesh&& o);
     Mesh& operator=(Mesh&& o);
 
-    // TODO: Have each renderer implement its own "draw" method
-    //   Renderer knows what type of mesh this is  so we can avoid
-    //   branching and assert on internal state such as ubo
-    void draw() const;
-    void draw(MeshLODLevel lod) const;
-    void drawInstanced(GLsizei instanceCount) const;
-    void drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const;
-    void drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) const;
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 

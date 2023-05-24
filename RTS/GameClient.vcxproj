@@ -346,6 +346,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshDrawer.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.cpp" />
@@ -652,6 +653,7 @@
     <ClInclude Include="src\rendering\material\BrdfLUT.h" />
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\GrassBillboardMeshRenderData.h" />
+    <ClInclude Include="src\rendering\mesh\MeshDrawer.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.h" />

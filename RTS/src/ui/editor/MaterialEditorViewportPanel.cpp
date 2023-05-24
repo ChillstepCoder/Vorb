@@ -13,6 +13,7 @@
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
+#include "rendering/mesh/MeshDrawer.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -140,5 +141,5 @@ void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShade
 void MaterialEditorViewportPanel::renderMesh() {
     glEnable(GL_CULL_FACE);
     Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
-    mesh.draw(MeshLODLevel(0));
+    MeshDrawer::draw(mesh.mMainMesh, MeshLODLevel(0));
 }

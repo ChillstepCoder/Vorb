@@ -8,6 +8,7 @@
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
+#include "rendering/Mesh/MeshDrawer.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -132,6 +133,6 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* 
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mCurrentModel) {
-        mCurrentModel->mMesh->draw(MeshLODLevel(mLod));
+        MeshDrawer::draw(mCurrentModel->mMesh->mMainMesh, MeshLODLevel(mLod));
     }
 }

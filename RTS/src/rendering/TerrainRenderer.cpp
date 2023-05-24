@@ -15,6 +15,7 @@
 #include "resources/ResourceManager.h"
 #include "camera/Camera3D.h"
 #include "mesh/Mesh.h"
+#include "mesh/MeshDrawer.h"
 
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
@@ -62,7 +63,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
             }
             f32v3 position = mesh.getPosition();
             glUniform3fv(positionUniform, 1, &position.x);
-            mesh.draw();
+            MeshDrawer::draw(mesh.mMainMesh);
         }
     }
 }
@@ -132,7 +133,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
         int crossfadeDir = waterMesh->mCrossfadeDir.load();
         const BoundingSphere& bounds = mesh.getBoundingSphere();
         if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-            mesh.draw();
+            MeshDrawer::draw(mesh.mMainMesh);
         }
     }
 }
