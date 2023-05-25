@@ -50,7 +50,7 @@ public:
     bool isSkeletalModel() const { return mRig != nullptr; }
     ui32 getNumMeshes() const { return mNumMeshes; }
     const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
-    const Mesh& getMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return *mMeshes[meshIndex]; }
+    const Mesh& getMesh(ui32 meshIndex) const { return *mMeshes[meshIndex]; }
     void addMesh(std::unique_ptr<Mesh>&& mesh);
 
     const RigDef* mRig = nullptr;

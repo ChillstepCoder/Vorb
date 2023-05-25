@@ -3,4 +3,3 @@ normal: DefaultMaterial_Normal_OpenGL.png
 ao: DefaultMaterial_Mixed_AO.png
 rough: DefaultMaterial_Roughness.png
 sampler_state: LINEAR_CLAMP_MIPMAP
-render_pass: smudge

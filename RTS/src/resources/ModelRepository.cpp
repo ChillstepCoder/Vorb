@@ -122,7 +122,9 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
                 def.addMesh(std::make_unique<Mesh>());
             }
 
-            ModelMeshBuilder::uploadCpuMeshToGpu(meshData, def.mMeshes[def.mNumMeshes - 1]->mMainMesh);
+            Mesh& newMesh = *def.mMeshes[def.mNumMeshes - 1];
+            newMesh.setRenderPass((MaterialRenderPassType)renderPassType);
+            ModelMeshBuilder::uploadCpuMeshToGpu(meshData, newMesh.mMainMesh);
         }
 
         // Store lookup
@@ -228,20 +230,20 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
         rv->mCombinedMeshData[i].mIndices.resize(totalIndices[i]);
     }
     // Combine all submeshes by render pass
-    int v = 0;
-    int i = 0;
+    int v[e_count(MaterialRenderPassType)] = {};
+    int i[e_count(MaterialRenderPassType)] = {};
     int iStart[e_count(MaterialRenderPassType)] = {};
     for (int m = 0; m < numMeshes; ++m) {
         const RawSubMesh& subMesh = rawFbxMesh->mSubMeshes[m];
         const int materialIndex = subMesh.mVertices[0].materialIndex;
-        const MaterialRenderPassType renderPass = rawFbxMesh->mMaterials[materialIndex].materialDescPtr->renderPass;
+        const int renderPassIndex = e_cast(rawFbxMesh->mMaterials[materialIndex].materialDescPtr->renderPass);
         for (int j = 0; j < subMesh.mVertices.size(); ++j) {
-            rv->mCombinedMeshData[e_cast(renderPass)].mVertices[v++] = subMesh.mVertices[j];
+            rv->mCombinedMeshData[renderPassIndex].mVertices[v[renderPassIndex]++] = subMesh.mVertices[j];
         }
         for (int j = 0; j < subMesh.mIndices.size(); ++j) {
-            rv->mCombinedMeshData[e_cast(renderPass)].mIndices[i++] = subMesh.mIndices[j] + iStart[e_cast(renderPass)];
+            rv->mCombinedMeshData[renderPassIndex].mIndices[i[renderPassIndex]++] = subMesh.mIndices[j] + iStart[renderPassIndex];
         }
-        iStart[e_cast(renderPass)] += subMesh.mVertices.size();
+        iStart[renderPassIndex] += subMesh.mVertices.size();
     }
 
     mRawModels[std::move(modelName)] = std::move(rawFbxMesh);

@@ -25,12 +25,6 @@
 constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeLayer) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
 static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
-// TODO: One less indirect? Store modelrepository?
-inline int getRenderPassIndexForModel(ModelID modelId) {
-    return 0;
-    //return e_cast(Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mRenderPass);
-}
-
 struct TileContainerModelEditEvent {
 
     void* operator new(size_t count);
@@ -78,7 +72,8 @@ static_assert(sizeof(GpuCullUniformData) == 132);
 static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 
 InstancedStaticModelManager::InstancedStaticModelManager() :
-    mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
+    mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT),
+    mModelRepository(Services::ResourceManager::ref().getModelRepository())
 {
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
@@ -102,7 +97,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera)
 
     for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
-            StaticModelInstanceData& instanceData = it.second;
+            StaticMeshInstanceData& instanceData = it.second;
             // TODO: Move this to onRemove
             if (!instanceData.mInstanceTransforms.size()) {
                 instanceData.mDrawCommands.reset();
@@ -115,7 +110,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera)
             }
 
             ModelID modelId = it.first;
-            const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
+            const Mesh& mesh = *instanceData.mMesh;
             MeshLODDrawInfo drawInfos[4];
             for (int i = 0; i < 4; ++i) {
                 drawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
@@ -300,37 +295,43 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera)
 void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation)
 {
     ASSERT_RENDER_THREAD();
-    const int ri = getRenderPassIndexForModel(modelId);
-    StaticModelInstanceData& instanceData = mModelsToInstances[ri][modelId];
+    const ModelDef& modelDef = mModelRepository.getModelDef(modelId);
+    for (int m = 0; m < modelDef.getNumMeshes(); ++m) {
+        const Mesh& mesh = modelDef.getMesh(m);
+        const int renderPassIndex = e_cast(mesh.getRenderPass());
+        StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][modelId];
 
-    const size_t instanceIndex = instanceData.mInstanceTransforms.size();
-    if (instanceIndex < instanceData.mFirstDirtyInstance) {
-        instanceData.mFirstDirtyInstance = instanceIndex;
+        const size_t instanceIndex = instanceData.mInstanceTransforms.size();
+        if (instanceIndex < instanceData.mFirstDirtyInstance) {
+            instanceData.mFirstDirtyInstance = instanceIndex;
+        }
+        // Store per tile references
+        instanceData.mInstanceTransforms.emplace_back(ModelUtil::computeTransformMatrixForModel(position, rotation));
+        instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
+        TileModelPositionKey positionKey{ tileIndex };
+
+        SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[renderPassIndex][containerId];
+        assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
+        tileContainerModels[positionKey] = { modelId, (ui32)instanceIndex };
     }
-    // Store per tile references
-    instanceData.mInstanceTransforms.emplace_back(ModelUtil::computeTransformMatrixForModel(position, rotation));
-    instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
-    TileModelPositionKey positionKey{ tileIndex };
-
-    SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[containerId];
-    assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
-    tileContainerModels[positionKey] = { modelId, (ui32)instanceIndex };
 }
 
 void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex)
 {
     ASSERT_RENDER_THREAD();
-    auto&& it = mTileContainerModels.find(containerId);
-    if (it != mTileContainerModels.end()) {
-        TileModelPositionKey key{ tileIndex };
-        SpatialInstanceDataMap& spatialMap = it->second;
-        auto&& spit = spatialMap.find(key);
+    for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
+        auto&& it = mTileContainerModels[renderPassIndex].find(containerId);
+        if (it != mTileContainerModels[renderPassIndex].end()) {
+            TileModelPositionKey key{ tileIndex };
+            SpatialInstanceDataMap& spatialMap = it->second;
+            auto&& spit = spatialMap.find(key);
 
-        if (spit != spatialMap.end()) {
-            removeTileModelInstanceInternal(spit->second);
-            spatialMap.erase(spit);
-            if (spatialMap.empty()) {
-                mTileContainerModels.erase(it);
+            if (spit != spatialMap.end()) {
+                removeTileModelInstanceInternal(renderPassIndex, spit->second);
+                spatialMap.erase(spit);
+                if (spatialMap.empty()) {
+                    mTileContainerModels[renderPassIndex].erase(it);
+                }
             }
         }
     }
@@ -343,33 +344,36 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
     if (gatherer.mInstances.empty()) {
         return;
     }
-    // OLD: Gatherer should only be used once for init, and future updates should be done per tile
     // Remove all instances before we add new ones
-    if (mTileContainerModels.find(gatherer.mContainerID) != mTileContainerModels.end()) {
-        removeInstancesFromContainer(gatherer.mContainerID);
-    }
-    SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
+    removeInstancesFromContainer(gatherer.mContainerID);
+
     for (auto&& it : gatherer.mInstances) {
         // Insert all instance transforms ordered into the transforms array
         const std::vector<StaticModelInstance>& sourceInstances = it.second;
-        const int ri = getRenderPassIndexForModel(it.first);
-        StaticModelInstanceData& instanceData = mModelsToInstances[ri][it.first];
-        const size_t startIndex = instanceData.mInstanceTransforms.size();
-        // Track where our buffer is dirty
-        if (startIndex < instanceData.mFirstDirtyInstance) {
-            instanceData.mFirstDirtyInstance = startIndex;
-        }
-        instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
-        instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
-        // Store per tile references
-        for (size_t i = 0; i < sourceInstances.size(); ++i) {
-            size_t instanceIndex = startIndex + i;
-            const StaticModelInstance& modelInstance = sourceInstances[i];
-            instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
-            TileModelPositionKey positionKey{ modelInstance.tileIndex };
-            assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
-            tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
+        const ModelDef& modelDef = mModelRepository.getModelDef(it.first);
+        for (int m = 0; m < modelDef.getNumMeshes(); ++m) {
+            const Mesh& mesh = modelDef.getMesh(m);
+            const int renderPassIndex = e_cast(mesh.getRenderPass());
+            SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[renderPassIndex][gatherer.mContainerID];
+            StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][it.first];
+            const size_t startIndex = instanceData.mInstanceTransforms.size();
+            // Track where our buffer is dirty
+            if (startIndex < instanceData.mFirstDirtyInstance) {
+                instanceData.mFirstDirtyInstance = startIndex;
+            }
+            instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
+            instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
+            instanceData.mMesh = &mesh;
+            // Store per tile references
+            for (size_t i = 0; i < sourceInstances.size(); ++i) {
+                size_t instanceIndex = startIndex + i;
+                const StaticModelInstance& modelInstance = sourceInstances[i];
+                instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
+                instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+                TileModelPositionKey positionKey{ modelInstance.tileIndex };
+                assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
+                tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
+            }
         }
     }
 }
@@ -379,15 +383,17 @@ void InstancedStaticModelManager::removeInstancesFromContainer(TileContainerID c
     // TODO: There is a race condition if the tile container is being meshed. Make sure we only destroy tile containers once they are done
     // being meshed?
     ASSERT_RENDER_THREAD();
-    auto&& it = mTileContainerModels.find(containerId);
-    if (it == mTileContainerModels.end()) {
-        return;
+    for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
+        auto&& it = mTileContainerModels[renderPassIndex].find(containerId);
+        if (it == mTileContainerModels[renderPassIndex].end()) {
+            return;
+        }
+        SpatialInstanceDataMap& tileContainerModels = it->second;
+        for (auto& it : tileContainerModels) {
+            removeTileModelInstanceInternal(renderPassIndex, it.second);
+        }
+        mTileContainerModels[renderPassIndex].erase(it);
     }
-    SpatialInstanceDataMap& tileContainerModels = it->second;
-    for (auto& it : tileContainerModels) {
-        removeTileModelInstanceInternal(it.second);
-    }
-    mTileContainerModels.erase(it);
 }
 
 ui32 InstancedStaticModelManager::getNumModels() const
@@ -479,12 +485,11 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
     }
 }
 
-void InstancedStaticModelManager::removeTileModelInstanceInternal(TileModelInstance& instance)
+void InstancedStaticModelManager::removeTileModelInstanceInternal(int renderPassIndex, TileModelInstance& instance)
 {
-    const int ri = getRenderPassIndexForModel(instance.mModelID);
-    auto&& it = mModelsToInstances[ri].find(instance.mModelID);
-    assert(it != mModelsToInstances[ri].end());
-    StaticModelInstanceData& instanceData = it->second;
+    auto&& it = mModelsToInstances[renderPassIndex].find(instance.mModelID);
+    assert(it != mModelsToInstances[renderPassIndex].end());
+    StaticMeshInstanceData& instanceData = it->second;
     const ui32 instanceIndex = instance.mInstanceIndex;
     if (instanceIndex < instanceData.mFirstDirtyInstance) {
         instanceData.mFirstDirtyInstance = instanceIndex;
@@ -492,8 +497,8 @@ void InstancedStaticModelManager::removeTileModelInstanceInternal(TileModelInsta
 
     // Tell back owner about new position by grabbing transform position to look up
     ModelInstanceOwner backOwner = instanceData.mInstanceOwners.back();
-    auto&& it2 = mTileContainerModels.find(backOwner.containerId);
-    assert(it2 != mTileContainerModels.end());
+    auto&& it2 = mTileContainerModels[renderPassIndex].find(backOwner.containerId);
+    assert(it2 != mTileContainerModels[renderPassIndex].end());
     SpatialInstanceDataMap& backTileContainerModels = it2->second;
     TileModelPositionKey key{ backOwner.tileIndex };
     auto&& backRef = backTileContainerModels.find(key);
@@ -508,6 +513,6 @@ void InstancedStaticModelManager::removeTileModelInstanceInternal(TileModelInsta
 
     // If we are empty now, remove from the model map
     if (instanceData.mInstanceTransforms.empty()) {
-        mModelsToInstances[ri].erase(it);
+        mModelsToInstances[renderPassIndex].erase(it);
     }
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/model/StaticModelInstanceData.h"
+#include "rendering/model/StaticMeshInstanceData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
 class Camera3D;

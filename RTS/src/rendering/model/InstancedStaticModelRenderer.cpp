@@ -40,7 +40,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
     for (auto& it : modelInstances) {
-        const StaticModelInstanceData& instanceData = it.second;
+        const StaticMeshInstanceData& instanceData = it.second;
         if (!instanceData.mDrawCommands) {
             continue;
         }
@@ -53,7 +53,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
         }
 
         ModelID modelId = it.first;
-        const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
+        const Mesh& mesh = *instanceData.mMesh;
 
         // Bind our transforms every frame as we could be using different instanced static model managers
         GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
@@ -93,7 +93,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
         for (auto& it : allModelPasses[ri]) {
             // TODO: Have a no shadow render type?
 
-            const StaticModelInstanceData& instanceData = it.second;
+            const StaticMeshInstanceData& instanceData = it.second;
             if (!instanceData.mShadowDrawCommandsCount) {
                 continue;
             }
@@ -103,7 +103,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
             const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
 
             ModelID modelId = it.first;
-            const Mesh& mesh = *Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mMesh;
+            const Mesh& mesh = *instanceData.mMesh;
 
             assert(instanceData.mShadowDrawCommandsCount <= drawCommandsSize);
             MeshDrawer::drawIndirect(mesh.mMainMesh, instanceData.mShadowDrawCommandsCount, &drawCommands);

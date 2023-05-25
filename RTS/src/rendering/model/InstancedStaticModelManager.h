@@ -1,12 +1,13 @@
 #pragma once
 
 #include "rendering/model/StaticModelInstance.h"
-#include "rendering/model/StaticModelInstanceData.h"
+#include "rendering/model/StaticMeshInstanceData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
 struct TileContainerEvent;
 class Camera3D;
 class InstancedStaticModelGatherer;
+class ModelRepository;
 
 DECL_VG(class GLProgram);
 
@@ -27,6 +28,7 @@ struct TileModelPositionKey {
 // Allows us to look up the specific model at a position for a tile container
 typedef std::map<TileModelPositionKey, TileModelInstance> SpatialInstanceDataMap;
 
+// TODO: RENAME InstancedStaticMeshManager
 class InstancedStaticModelManager
 {
 public:
@@ -46,11 +48,12 @@ public:
     const ModelInstanceMap& getModelInstanceMapForRenderPass(MaterialRenderPassType renderPassType) const { return mModelsToInstances[e_cast(renderPassType)]; }
     const ModelInstanceMap* getAllModelInstanceMaps() const { return mModelsToInstances; }
 private:
-    void removeTileModelInstanceInternal(TileModelInstance& instance);
+    void removeTileModelInstanceInternal(int renderPassIndex, TileModelInstance& instance);
 
     ModelInstanceMap mModelsToInstances[e_cast(MaterialRenderPassType::COUNT)];
-    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels;
+    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels[e_cast(MaterialRenderPassType::COUNT)];
     GLBuffer mGpuCullingUniformBuffer;
+    const ModelRepository& mModelRepository;
 
     const vg::GLProgram* mCullingComputeShader = nullptr;
 };

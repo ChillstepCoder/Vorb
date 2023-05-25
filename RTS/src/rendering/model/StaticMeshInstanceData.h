@@ -1,18 +1,19 @@
 #pragma once
 
 class GLIndirectBuffer;
+class Mesh;
 
 struct ModelInstanceOwner {
     TileContainerID containerId;
     TileIndex tileIndex;
 };
 
-class StaticModelInstanceData
+class StaticMeshInstanceData
 {
 public:
-    // Instance data for a specific model ID (TODO: Multiple models packed)
-    StaticModelInstanceData();
-    ~StaticModelInstanceData();
+    // Instance data for a specific mesh
+    StaticMeshInstanceData();
+    ~StaticMeshInstanceData();
 
     // TODO: Optimize allocation
     std::vector<f32m4> mInstanceTransforms;
@@ -23,6 +24,7 @@ public:
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
+    const Mesh* mMesh = nullptr;
 
     // TODO: Investigate why, hardware? Driver? - Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
     // std::unique_ptr<GLIndirectBuffer> mOutDrawCommands;
@@ -32,4 +34,4 @@ public:
 };
 
 // Stores all specific instances of a given model in the world
-typedef std::map<ModelID, StaticModelInstanceData> ModelInstanceMap;
+typedef std::map<ModelID, StaticMeshInstanceData> ModelInstanceMap;

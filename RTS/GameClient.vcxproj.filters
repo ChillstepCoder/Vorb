@@ -723,7 +723,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\StaticModelInstanceData.cpp">
+    <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\generation\IWorldGenerator.cpp">
@@ -1757,7 +1757,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\StaticModelInstanceData.h">
+    <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\IWorldGenerator.h">
