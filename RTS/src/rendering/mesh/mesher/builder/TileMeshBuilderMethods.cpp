@@ -367,7 +367,7 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
 
 void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
 
-    const MaterialData& materialData = tileData.materialData[0];
+    const MaterialDesc& materialData = tileData.materialData[0];
     const Tile& tile = tileHandle.getTile();
 
     const f32 topZPosition = tile.getGroundZOffset();
@@ -485,7 +485,7 @@ void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuil
     physMesh.addQuadBetweenPoints(botNW, topNW, topNE, botNE);
 }
 
-void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
 
     constexpr f32 FLOOR_THICKNESS = 0.05f;
     const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight + 0.0001f);
@@ -560,7 +560,7 @@ void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileSh
     }*/
 }
 
-void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
     const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight + 0.0001f);
 
     f32v3 positions[4];

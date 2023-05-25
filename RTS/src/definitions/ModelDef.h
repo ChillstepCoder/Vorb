@@ -7,6 +7,8 @@
 
 #include <ozz/animation/runtime/skeleton.h>
 
+constexpr int MAX_MODEL_MESH_COUNT = e_count(MaterialRenderPassType);
+
 struct RigDef;
 struct AnimMachineDef;
 
@@ -35,16 +37,26 @@ struct ModelDrawInfo {
     f32 mBoundingSphereRadius = 10.0f;
 };
 
+
 // Modeldef contains all information about a 3D model including its location
 // in a ModelBatch
-struct ModelDef {
+class ModelDef {
+public:
+    ModelDef() = default;
+    ~ModelDef() = default;
 
-    // TODO: USE
-    //bool hasGpuMesh() const { return mDrawInfo.isValid(); }
+    VORB_NON_COPYABLE_BUT_MOVABLE(ModelDef);
+
+    bool isSkeletalModel() const { return mRig != nullptr; }
+    ui32 getNumMeshes() const { return mNumMeshes; }
+    const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
+    const Mesh& getMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return *mMeshes[meshIndex]; }
+    void addMesh(std::unique_ptr<Mesh>&& mesh);
 
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    std::unique_ptr<Mesh> mMesh;
+    std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
+    ui32 mNumMeshes = 0;
     ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     const char* mName = nullptr;

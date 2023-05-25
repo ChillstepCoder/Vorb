@@ -29,7 +29,12 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
     materialIds.resize(rawMaterials.size());
     for (int i = 0; i < rawMaterials.size(); ++i) {
         const nString materialName = rawMaterials[i].materialName;
-        materialIds[i] = materialRepo.getMaterialId(materialName);
+        if (rawMaterials[i].materialDescPtr) {
+            materialIds[i] = rawMaterials[i].materialDescPtr->id;
+        }
+        else {
+            materialIds[i] = materialRepo.getMaterialId(materialName);
+        }
     }
 
     // Different vertex format based on skin or no

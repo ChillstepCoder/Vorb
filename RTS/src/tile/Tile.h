@@ -81,7 +81,7 @@ struct TileData {
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
     CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
     TileHarvestable harvestable = TileHarvestable::NONE;
-    MaterialData materialData[MAX_TILE_MATERIAL_SLOTS];
+    MaterialDesc materialData[MAX_TILE_MATERIAL_SLOTS];
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
     ui8 layer = 2;

@@ -19,6 +19,7 @@ struct alignas(16) RawMeshVertex {
 // Not intended to be uploaded to GPU except for editor render
 struct RawMaterialData {
     nString materialName;
+    const MaterialDesc* materialDescPtr = nullptr;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     f32v4 specularColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -41,10 +42,11 @@ struct RawMaterialData {
 };
 
 struct RawSubMesh {
+    // We split all meshes based on render pass
     std::vector<RawMeshVertex> mVertices;
     std::vector<ui32> mIndices;
     RawMeshSkeletonData mSkeletonData;
-    bool mHasSkin;
+    bool mHasSkin = false;
 };
 
 // Contains everything that a mesh could need, skeleton, vertex data, vertex types,
@@ -53,6 +55,6 @@ class RawMesh {
 public:
     std::vector<RawMaterialData> mMaterials;
     std::vector<RawSubMesh> mSubMeshes;
-    RawSubMesh mCombinedMeshData;
+    RawSubMesh mCombinedMeshData[e_count(MaterialRenderPassType)];
 };
 

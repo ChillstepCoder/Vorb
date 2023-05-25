@@ -7,30 +7,11 @@
 
 #include "rendering/gl/GL.h"
 
-struct mesh_pool {};
-using singleton_mesh_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
+//struct mesh_pool {};
+//using singleton_mesh_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
 
 Mesh::Mesh() {
 
-}
-
-Mesh::Mesh(Mesh&& o) {
-    mPosition = std::move(o.mPosition);
-    mBoundingSphere = std::move(o.mBoundingSphere);
-    memcpy(&mMainMesh, &o.mMainMesh, sizeof(MeshGpuData));
-    mSkeletonData = std::move(o.mSkeletonData);
-    // Prevent double destroy
-    o.mMainMesh.mVao = 0;
-}
-
-Mesh& Mesh::operator=(Mesh&& o) {
-    mPosition = std::move(o.mPosition);
-    mBoundingSphere = std::move(o.mBoundingSphere);
-    memcpy(&mMainMesh, &o.mMainMesh, sizeof(MeshGpuData));
-    mSkeletonData = std::move(o.mSkeletonData);
-    // Prevent double destroy
-    o.mMainMesh.mVao = 0;
-    return *this;
 }
 
 Mesh::~Mesh() {
@@ -60,17 +41,17 @@ void MeshGpuData::destroy() {
     }
 }
 
-void* Mesh::operator new(size_t count) {
-    ASSERT_RENDER_THREAD();
-    UNUSED(count);
-    return singleton_mesh_pool::malloc();
-}
-
-void Mesh::operator delete(void* pointer, size_t size) {
-    ASSERT_RENDER_THREAD();
-    UNUSED(size);
-    return singleton_mesh_pool::free(pointer);
-}
+//void* Mesh::operator new(size_t count) {
+//    ASSERT_RENDER_THREAD();
+//    UNUSED(count);
+//    return singleton_mesh_pool::malloc();
+//}
+//
+//void Mesh::operator delete(void* pointer, size_t size) {
+//    ASSERT_RENDER_THREAD();
+//    UNUSED(size);
+//    return singleton_mesh_pool::free(pointer);
+//}
 
 MeshCpuData::~MeshCpuData() {
     if (mVertsPtr) {

@@ -45,11 +45,11 @@ bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Pa
         assert(mTileGrassIdMapping.find(token) == mTileGrassIdMapping.end()); // Duplicate name
         assert(fileData.alphaMasks.size() || fileData.textures.size());
         if (fileData.alphaMasks.size()) {
-            tileGrassData.mMaterialID = materialRepository.getMaterialData(fileData.alphaMasks).id;
+            tileGrassData.mMaterialID = materialRepository.getMaterialDesc(fileData.alphaMasks).id;
             tileGrassData.mUseGradientColor = true;
         }
         else {
-            tileGrassData.mMaterialID = materialRepository.getMaterialData(fileData.textures).id;
+            tileGrassData.mMaterialID = materialRepository.getMaterialDesc(fileData.textures).id;
             tileGrassData.mUseGradientColor = false;
         }
         tileGrassData.mNumTextures = fileData.numTextures;

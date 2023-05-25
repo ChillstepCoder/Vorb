@@ -84,27 +84,27 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         }
         else {
             assert(fileData.material0.size());
-            tileData.materialData[0] = materialRepository.getMaterialData(fileData.material0);
+            tileData.materialData[0] = materialRepository.getMaterialDesc(fileData.material0);
             if (fileData.material1.size()) {
-                tileData.materialData[1] = materialRepository.getMaterialData(fileData.material1);
+                tileData.materialData[1] = materialRepository.getMaterialDesc(fileData.material1);
             }
             if (fileData.material2.size()) {
-                tileData.materialData[2] = materialRepository.getMaterialData(fileData.material2);
+                tileData.materialData[2] = materialRepository.getMaterialDesc(fileData.material2);
             }
             if (fileData.material3.size()) {
-                tileData.materialData[3] = materialRepository.getMaterialData(fileData.material3);
+                tileData.materialData[3] = materialRepository.getMaterialDesc(fileData.material3);
             }
             if (fileData.material4.size()) {
-                tileData.materialData[4] = materialRepository.getMaterialData(fileData.material4);
+                tileData.materialData[4] = materialRepository.getMaterialDesc(fileData.material4);
             }
             if (fileData.material5.size()) {
-                tileData.materialData[5] = materialRepository.getMaterialData(fileData.material5);
+                tileData.materialData[5] = materialRepository.getMaterialDesc(fileData.material5);
             }
             if (fileData.material6.size()) {
-                tileData.materialData[6] = materialRepository.getMaterialData(fileData.material6);
+                tileData.materialData[6] = materialRepository.getMaterialDesc(fileData.material6);
             }
             if (fileData.material7.size()) {
-                tileData.materialData[7] = materialRepository.getMaterialData(fileData.material7);
+                tileData.materialData[7] = materialRepository.getMaterialDesc(fileData.material7);
             }
             static_assert(MAX_TILE_MATERIAL_SLOTS == 8);
             tileData.shape = fileData.tileShape;

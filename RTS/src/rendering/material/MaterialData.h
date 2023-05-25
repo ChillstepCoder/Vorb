@@ -32,11 +32,11 @@ struct PACKED_STRUCT MaterialGpuData final {
 };
 static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded to 16 bytes");
 
-struct MaterialData {
+struct MaterialDesc {
     MaterialID id = INVALID_MATERIAL_ID;
     MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
 };
-static_assert(sizeof(MaterialData) == 4);
+static_assert(sizeof(MaterialDesc) == 4);
 
 struct MaterialHandle {
     bool isValid() const { return data != nullptr; }

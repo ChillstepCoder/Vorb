@@ -39,7 +39,7 @@ void Skybox::init(const MaterialShader* material, const Cubemap* skyTexture) {
     const f32v2 dims(DIAMETER);
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
     f32v3 bottomLeft(-RADIUS);
-    const MaterialData dummyMaterial;
+    const MaterialDesc dummyMaterial;
     meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::RIGHT, dummyMaterial, uvRect, COLOR_WHITE);
     meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::BACK, dummyMaterial, uvRect, COLOR_WHITE);
     meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(DIAMETER, 0.0f, 0.0f), dims, CubeFacing::LEFT, dummyMaterial, uvRect, COLOR_WHITE);

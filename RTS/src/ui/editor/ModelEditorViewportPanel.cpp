@@ -92,8 +92,13 @@ void ModelEditorViewportPanel::updateAndRenderControls(f32 ySize)
         {
             ImGui::SetTooltip("LOD is auto generated");
         }
-        const Mesh& mesh = *mCurrentModel->mMesh;
-        ImGui::Text("Polygons %d", mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3);
+        ImGui::Text("MeshCount %d", mCurrentModel->getNumMeshes());
+        int polyCount = 0;
+        for (int i = 0; i < mCurrentModel->getNumMeshes(); ++i) {
+            const Mesh& mesh = mCurrentModel->getMesh(i);
+            polyCount += mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3;
+        }
+        ImGui::Text("Polygons %d", polyCount);
 
         updateAndRenderTweakers();
     }
@@ -133,6 +138,8 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* 
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mCurrentModel) {
-        MeshDrawer::draw(mCurrentModel->mMesh->mMainMesh, MeshLODLevel(mLod));
+        for (int i = 0; i < mCurrentModel->getNumMeshes(); ++i) {
+            MeshDrawer::draw(mCurrentModel->getMesh(i).mMainMesh, MeshLODLevel(mLod));
+        }
     }
 }

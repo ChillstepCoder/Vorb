@@ -2,7 +2,7 @@
 
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 
-struct MaterialData;
+struct MaterialDesc;
 
 struct SubMeshBufferData {
     void clear() {
@@ -41,15 +41,15 @@ public:
 
     void setBoundingSphere(BoundingSphere sphere) { mBoundingSphere = sphere; }
 
-    void addAxisAlignedQuad(f32v3 rootPosition, const f32v2& xyDims, CubeFacing axis, const MaterialData& materialData, const f32v4& uvRect, color4 color);
-    void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const MaterialData& materialData, color4 color, bool flipTriangleDir);
-    void addTriangle(StaticModelVertex verts[3], const MaterialData& materialData, bool calculateNormals);
-    void addQuad(StaticModelVertex verts[4], const MaterialData& materialData, bool calculateNormals);
-    void addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV);
-    void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV);
-    void addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv = false);
-    void addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialData& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv = false);
-    void addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const MaterialData& materialData, f32v2 uvScale, f32v3 normalDir = f32v3(0.0f, 0.0f, 1.0f), const f32v3* tangentDir = nullptr);
+    void addAxisAlignedQuad(f32v3 rootPosition, const f32v2& xyDims, CubeFacing axis, const MaterialDesc& materialData, const f32v4& uvRect, color4 color);
+    void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const MaterialDesc& materialData, color4 color, bool flipTriangleDir);
+    void addTriangle(StaticModelVertex verts[3], const MaterialDesc& materialData, bool calculateNormals);
+    void addQuad(StaticModelVertex verts[4], const MaterialDesc& materialData, bool calculateNormals);
+    void addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialDesc& materialData, f32v2 uvScale, color4 color, bool swapUV);
+    void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialDesc& materialData, f32v2 uvScale, color4 color, bool swapUV);
+    void addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const MaterialDesc& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv = false);
+    void addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialDesc& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv = false);
+    void addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const MaterialDesc& materialData, f32v2 uvScale, f32v3 normalDir = f32v3(0.0f, 0.0f, 1.0f), const f32v3* tangentDir = nullptr);
 
     // Compute sphere from vertex data
     void computeBoundingSphere();

@@ -36,7 +36,7 @@ public:
 
 private:
     bool loadModelInternal(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath);
-    RawMesh* loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
+    RawMesh* loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton, const MaterialRepository& materialRepo);
 
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;

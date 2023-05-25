@@ -3,6 +3,7 @@
 
 #include "rendering/mesh/VertexType.h"
 #include "rendering/mesh/MeshSkeletonData.h"
+#include "rendering/model/MaterialRenderPassType.h"
 
 // Enough for a full chunk of grass + padding
 // TODO: How much do we really save doing this?
@@ -124,33 +125,43 @@ class Mesh {
     friend class ModelMeshBuilder;
 public:
     Mesh();
-    ~Mesh();
+    virtual ~Mesh();
 
     VORB_NON_COPYABLE(Mesh);
-
-    Mesh(Mesh&& o);
-    Mesh& operator=(Mesh&& o);
 
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 
     const f32v3& getPosition() const { return mPosition; }
+    void setPosition(const f32v3& position) { mPosition = position; }
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
-    MeshSkeletonData* tryGetSkeleton() const { return mSkeletonData.get(); }
+    void setBoundingSphere(const BoundingSphere& boundingSphere) { mBoundingSphere = boundingSphere; }
+    MaterialRenderPassType getRenderPass() const { return mRenderPassType; }
+    void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
 
-    // Override allocation to use boost::singleton_pool
-    static void* operator new(size_t count);
-    static void operator delete(void* pointer, size_t size);
+    // Override allocation to use boost::singleton_pool DOESNT WORK WITH POLYMORPHISM
+    //static void* operator new(size_t count);
+    //static void operator delete(void* pointer, size_t size);
 
-public:
-    f32v3                    mPosition = f32v3(0.0f);
-    BoundingSphere           mBoundingSphere;  ///< Optional
-    MeshGpuData              mMainMesh;
-    std::unique_ptr<MeshSkeletonData> mSkeletonData;
+    // TODO: Protected
+    MeshGpuData            mMainMesh;
+protected:
+    f32v3                  mPosition = f32v3(0.0f);
+    BoundingSphere         mBoundingSphere;  ///< Optional
+    MaterialRenderPassType mRenderPassType = MaterialRenderPassType::Default;
     // Make sure to update move constructor on new members
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array
    // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
 
+};
+
+class SkeletalMesh : public Mesh {
+    friend class ModelRepository;
+public:
+    const MeshSkeletonData& getSkeleton() const { return mSkeletonData; }
+
+protected:
+    MeshSkeletonData mSkeletonData;
 };
 //static_assert(sizeof(Mesh) == 104);

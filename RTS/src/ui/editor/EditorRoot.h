@@ -7,7 +7,7 @@ class DebugTweakerPanel;
 class WorldEditorPanel;
 class Camera3D;
 class TileEditorPanel;
-struct ModelDef;
+class ModelDef;
 struct MaterialHandle;
 struct TileGrassData;
 class ModelEditorViewportPanel;

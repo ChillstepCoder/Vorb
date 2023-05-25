@@ -1,7 +1,7 @@
 #pragma once
 
 #include <variant>
-struct ModelDef;
+class ModelDef;
 struct MaterialGpuData;
 struct MaterialHandle;
 struct TileGrassData;

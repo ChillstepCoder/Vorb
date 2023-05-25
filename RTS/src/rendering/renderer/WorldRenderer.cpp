@@ -582,6 +582,6 @@ void WorldRenderer::buildHorizonMesh() {
     mHorizonQuad = std::make_unique<Mesh>();
     ProceduralMeshBuilder meshBuilder(true);
     constexpr float QUAD_WIDTH = 140000.0f;
-    meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, MaterialData(), f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, MaterialDesc(), f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
     meshBuilder.finishMesh(mHorizonQuad, f32v3(0.0f));
 }

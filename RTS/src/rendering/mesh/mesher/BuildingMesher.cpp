@@ -64,8 +64,8 @@ color4 DEBUG_COLOR_ARRAY[DEBUG_COLOR_ARRAY_SIZE] = {
     color4(0.1f, 0.1f, 0.1f),
 };
 struct RoofStyle {
-    const MaterialData& shinglesMaterial;
-    const MaterialData& primaryBoardMaterial;
+    const MaterialDesc& shinglesMaterial;
+    const MaterialDesc& primaryBoardMaterial;
 };
 
 // Helper forward declare
@@ -75,7 +75,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Build
 void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
-    const MaterialData& materialData,
+    const MaterialDesc& materialData,
     f32 zPos
 );
 void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog);
@@ -378,8 +378,8 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
 
     // Materials
     RoofStyle roofStyle = RoofStyle{
-        Services::ResourceManager::ref().getMaterialRepository().getMaterialData("roof"),
-        Services::ResourceManager::ref().getMaterialRepository().getMaterialData("big_beam_0")
+        Services::ResourceManager::ref().getMaterialRepository().getMaterialDesc("roof"),
+        Services::ResourceManager::ref().getMaterialRepository().getMaterialDesc("big_beam_0")
     };
 
     // TODO: Not right
@@ -823,7 +823,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Build
 void addRoofQuad(
     ProceduralMeshBuilder& meshBuilder,
     const f32v3 points[4],
-    const MaterialData& materialData
+    const MaterialDesc& materialData
 ) {
 
     StaticModelVertex verts[4];
@@ -879,7 +879,7 @@ void addRoofQuad(
 void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v3 points[3],
-    const MaterialData& materialData
+    const MaterialDesc& materialData
 ) {
 
     StaticModelVertex verts[3];
@@ -937,7 +937,7 @@ void addRoofTriangle(
 void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
-    const MaterialData& materialData,
+    const MaterialDesc& materialData,
     f32 zPos
 ) {
 

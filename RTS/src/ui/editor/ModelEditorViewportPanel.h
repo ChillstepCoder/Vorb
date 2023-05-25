@@ -2,7 +2,7 @@
 
 #include "IEditorViewportPanel.h"
 
-struct ModelDef;
+class ModelDef;
 
 class ModelEditorViewportPanel : public IEditorViewportPanel
 {

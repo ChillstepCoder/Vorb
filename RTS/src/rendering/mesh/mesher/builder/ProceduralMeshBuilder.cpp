@@ -34,7 +34,7 @@ ProceduralMeshBuilder::~ProceduralMeshBuilder() {
 
 }
 
-void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 rootPosition, const f32v2& xyDims, CubeFacing axis, const MaterialData& materialData, const f32v4& uvRect, color4 color) {
+void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 rootPosition, const f32v2& xyDims, CubeFacing axis, const MaterialDesc& materialData, const f32v4& uvRect, color4 color) {
     
     SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
 
@@ -99,7 +99,7 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 rootPosition, const f32v2& 
     }
 }
 
-void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const MaterialData& materialData, color4 color, bool flipTriangleDir)
+void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const MaterialDesc& materialData, color4 color, bool flipTriangleDir)
 {
     constexpr f32 EPSILON = 0.01f;
     SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
@@ -165,7 +165,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
     }
 }
 
-void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const MaterialData& materialData, bool calculateNormals) {
+void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const MaterialDesc& materialData, bool calculateNormals) {
 
     assert(!calculateNormals); // Unsupported so far
     assert(!mUsingSharedIndexBuffer); // Non shared IBO only
@@ -191,7 +191,7 @@ void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const Materi
     indexData[i + 2u] = v + 2u;
 }
 
-void ProceduralMeshBuilder::addQuad(StaticModelVertex verts[4], const MaterialData& materialData, bool calculateNormals)
+void ProceduralMeshBuilder::addQuad(StaticModelVertex verts[4], const MaterialDesc& materialData, bool calculateNormals)
 {
     assert(!calculateNormals); // Unsupported so far
     assert(!mUsingSharedIndexBuffer); // Non shared IBO only
@@ -220,11 +220,11 @@ void ProceduralMeshBuilder::addQuad(StaticModelVertex verts[4], const MaterialDa
     indexData[i + 5u] = v ;
 }
 
-void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV) {
+void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialDesc& materialData, f32v2 uvScale, color4 color, bool swapUV) {
     addQuadBetweenPoints(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], materialData, uvScale, color, swapUV);
 }
 
-void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV) {
+void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialDesc& materialData, f32v2 uvScale, color4 color, bool swapUV) {
    
     SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
 
@@ -286,11 +286,11 @@ void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v
     }
 }
 
-void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const MaterialDesc& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
     addQuadBetweenPointsWorldUV(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], materialData, uvScale, color, uvOrient, worldUVRoot, flipUv);
 }
 
-void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialData& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialDesc& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
     
     SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
 
@@ -382,7 +382,7 @@ void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f
 
 }
 
-void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const MaterialData& materialData, f32v2 uvScale, f32v3 normalDir /*= f32v3(0.0f, 0.0f, 1.0f)*/, const f32v3* tangentDir /*= nullptr*/) {
+void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const MaterialDesc& materialData, f32v2 uvScale, f32v3 normalDir /*= f32v3(0.0f, 0.0f, 1.0f)*/, const f32v3* tangentDir /*= nullptr*/) {
     f32v3 offset = p2 - p1;
     f32v3 tangent;
     if (tangentDir) {

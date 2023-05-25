@@ -17,21 +17,21 @@ public:
 
     bool loadMaterial(const vio::Path& filePath, TextureRepository& textureRepository);
 
-    const MaterialGpuData& getMaterial(MaterialID materialId) const;
-    MaterialGpuData& getMutableMaterial(MaterialID materialId);
-    const MaterialGpuData& getMaterial(const nString& materialName) const;
-    MaterialGpuData& getMutableMaterial(const nString& materialName);
+    const MaterialGpuData& getMaterialGpuData(MaterialID materialId) const;
+    MaterialGpuData& getMutableMaterialGpuData(MaterialID materialId);
+    const MaterialGpuData& getMaterialGpuData(const nString& materialName) const;
+    MaterialGpuData& getMutableMaterialGpuData(const nString& materialName);
     MaterialID getMaterialId(const nString& materialName) const;
     MaterialHandle getMutableMaterialHandle(const nString& materialName);
-    MaterialData getMaterialData(const nString& materialName) const;
-    MaterialData getMaterialData(MaterialID materialId) const;
+    const MaterialDesc& getMaterialDesc(const nString& materialName) const;
+    const MaterialDesc& getMaterialDesc(MaterialID materialId) const;
 
     void uploadMaterialData();
     void bindMaterialBuffer() const;
 
 private:
 
-    std::vector<MaterialData> mMaterialData;
+    std::vector<MaterialDesc> mMaterialDescs;
     std::vector<MaterialGpuData> mMaterialGpuData;
     std::map<nString, GLTexture> mGeneratedNormalTextures;
     std::map<nString, GLTexture> mGeneratedAOMetallicRoughnessTextures;

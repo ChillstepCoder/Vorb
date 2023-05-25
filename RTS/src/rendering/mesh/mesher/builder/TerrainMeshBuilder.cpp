@@ -105,10 +105,10 @@ void TerrainMeshBuilder::finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const 
     mBoundingSphere.center += worldPos;
 
     // Set bounds
-    terrainMesh.mPosition = worldPos;
-    waterMesh.mPosition = worldPos;
-    terrainMesh.mBoundingSphere = mBoundingSphere;
-    waterMesh.mBoundingSphere = mBoundingSphere;
+    terrainMesh.setPosition(worldPos);
+    waterMesh.setPosition(worldPos);
+    terrainMesh.setBoundingSphere(mBoundingSphere);
+    waterMesh.setBoundingSphere(mBoundingSphere);
 
     MeshBuilderCommon::initMeshBuffers(terrainMesh.mMainMesh, &sTerrainIboUI32, 0);
     MeshBuilderCommon::initMeshBuffers(waterMesh.mMainMesh, &sTerrainIboUI32, 0);

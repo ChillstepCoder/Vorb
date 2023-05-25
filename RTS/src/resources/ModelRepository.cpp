@@ -10,6 +10,8 @@
 #include "rendering/mesh/MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
 
+#include "resources/MaterialRepository.h"
+
 #include <ozz/base/io/archive.h>
 #include <ozz/base/io/stream.h>
 #include <ozz/animation/runtime/skeleton.h>
@@ -84,36 +86,44 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     }
 
     // Load model to raw
-    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, &def.mRig->mSkeleton);
+    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, &def.mRig->mSkeleton, materialRepository);
     if (rawMesh) {
         if (fileData.mForceNormalsUp) {
             MeshOperations::setAllNormals(*rawMesh, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
         }
 
-
         // TODO: Handle other submeshes?
-        MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository);
-        // Apply scale if needed
-        if (fileData.mScale != 1.0f) {
-            MeshOperations::applyScale(meshData, fileData.mScale);
+        for (int renderPassType = 0; renderPassType < e_count(MaterialRenderPassType); ++renderPassType) {
+            RawSubMesh& combinedMeshData = rawMesh->mCombinedMeshData[renderPassType];
+            if (combinedMeshData.mVertices.empty()) {
+                continue;
+            }
+            MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMesh->mMaterials, materialRepository);
+            // Apply scale if needed
+            if (fileData.mScale != 1.0f) {
+                MeshOperations::applyScale(meshData, fileData.mScale);
+            }
+            RawMeshSkeletonData& rawSkeletonData = combinedMeshData.mSkeletonData;
+
+
+            // Allocate and fill skeleton data
+            if (rawSkeletonData.mNumJoints) {
+                std::unique_ptr<SkeletalMesh> newMesh = std::make_unique<SkeletalMesh>();
+                assert(def.mRig && "Missing rig for skeletal model");
+                MeshSkeletonData& skeletonData = newMesh->mSkeletonData;
+                skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
+                skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
+                memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
+                skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
+                memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
+                def.addMesh(std::move(newMesh));
+            }
+            else {
+                def.addMesh(std::make_unique<Mesh>());
+            }
+
+            ModelMeshBuilder::uploadCpuMeshToGpu(meshData, def.mMeshes[def.mNumMeshes - 1]->mMainMesh);
         }
-        RawMeshSkeletonData& rawSkeletonData = rawMesh->mCombinedMeshData.mSkeletonData;
-
-        def.mMesh = std::make_unique<Mesh>();
-
-        // Allocate and fill skeleton data
-        if (rawSkeletonData.mNumJoints) {
-            assert(def.mRig && "Missing rig for skeletal model");
-            def.mMesh->mSkeletonData = std::make_unique<MeshSkeletonData>();
-            MeshSkeletonData& skeletonData = *def.mMesh->mSkeletonData;
-            skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
-            skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
-            memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
-            skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
-            memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
-        }
-
-        ModelMeshBuilder::uploadCpuMeshToGpu(meshData, def.mMesh->mMainMesh);
 
         // Store lookup
         if (mModelIdLookup.find(modelName) != mModelIdLookup.end()) {
@@ -130,7 +140,7 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     return false;
 }
 
-RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
+RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton, const MaterialRepository& materialRepo) {
 
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
     ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
@@ -158,11 +168,12 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
         FbxSurfaceMaterial* fbxMaterial = sceneLoader.scene()->GetMaterial(i);
         assert(fbxMaterial);
         rawFbxMesh->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
+        rawFbxMesh->mMaterials[i].materialDescPtr = &materialRepo.getMaterialDesc(rawFbxMesh->mMaterials[i].materialName);
     }
 
     // Meshes
-    ui32 totalVertices = 0;
-    ui32 totalIndices = 0;
+    ui32 totalVertices[e_count(MaterialRenderPassType)] = {};
+    ui32 totalIndices[e_count(MaterialRenderPassType)] = {};
     int hasSkin = INT32_MAX;
     rawFbxMesh->mSubMeshes.reserve(numMeshes);
     for (int m = 0; m < numMeshes; ++m) {
@@ -194,31 +205,43 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
             hasSkin = false;
         }
 
-        totalVertices += subMesh.mVertices.size();
-        totalIndices += subMesh.mIndices.size();
+        if (subMesh.mVertices.size()) {
+            const int materialIndex = subMesh.mVertices[0].materialIndex;
+            MaterialRenderPassType renderPass = rawFbxMesh->mMaterials[materialIndex].materialDescPtr->renderPass;
+            totalVertices[e_cast(renderPass)] += subMesh.mVertices.size();
+            totalIndices[e_cast(renderPass)] += subMesh.mIndices.size();
+        }
     }
     assert(hasSkin != INT32_MAX);
 
-    // Combine all submeshes
-    rv->mCombinedMeshData.mVertices.resize(totalVertices);
-    rv->mCombinedMeshData.mIndices.resize(totalIndices);
-    rv->mCombinedMeshData.mHasSkin = hasSkin;
+    // Skin data
     if (hasSkin) {
         assert(numMeshes == 1 && "Currently skinned meshes must be a single submesh only");
-        rv->mCombinedMeshData.mSkeletonData = std::move(rawFbxMesh->mSubMeshes[0].mSkeletonData);
+        const RawSubMesh& baseSubMesh = rawFbxMesh->mSubMeshes[0];
+        const int baseMaterialIndex = baseSubMesh.mVertices[0].materialIndex;
+        const MaterialRenderPassType baseRenderPass = rawFbxMesh->mMaterials[baseMaterialIndex].materialDescPtr->renderPass;
+        rv->mCombinedMeshData[e_cast(baseRenderPass)].mHasSkin = hasSkin;
+        rv->mCombinedMeshData[e_cast(baseRenderPass)].mSkeletonData = std::move(rawFbxMesh->mSubMeshes[0].mSkeletonData);
     }
+    for (int i = 0; i < e_count(MaterialRenderPassType); ++i) {
+        rv->mCombinedMeshData[i].mVertices.resize(totalVertices[i]);
+        rv->mCombinedMeshData[i].mIndices.resize(totalIndices[i]);
+    }
+    // Combine all submeshes by render pass
     int v = 0;
     int i = 0;
-    int iStart = 0;
+    int iStart[e_count(MaterialRenderPassType)] = {};
     for (int m = 0; m < numMeshes; ++m) {
         const RawSubMesh& subMesh = rawFbxMesh->mSubMeshes[m];
+        const int materialIndex = subMesh.mVertices[0].materialIndex;
+        const MaterialRenderPassType renderPass = rawFbxMesh->mMaterials[materialIndex].materialDescPtr->renderPass;
         for (int j = 0; j < subMesh.mVertices.size(); ++j) {
-            rv->mCombinedMeshData.mVertices[v++] = subMesh.mVertices[j];
+            rv->mCombinedMeshData[e_cast(renderPass)].mVertices[v++] = subMesh.mVertices[j];
         }
         for (int j = 0; j < subMesh.mIndices.size(); ++j) {
-            rv->mCombinedMeshData.mIndices[i++] = subMesh.mIndices[j] + iStart;
+            rv->mCombinedMeshData[e_cast(renderPass)].mIndices[i++] = subMesh.mIndices[j] + iStart[e_cast(renderPass)];
         }
-        iStart += subMesh.mVertices.size();
+        iStart[e_cast(renderPass)] += subMesh.mVertices.size();
     }
 
     mRawModels[std::move(modelName)] = std::move(rawFbxMesh);

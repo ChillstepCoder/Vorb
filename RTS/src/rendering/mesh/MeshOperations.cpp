@@ -35,8 +35,10 @@ void MeshOperations::setAllNormals(RawMesh& rawMesh, const f32v3& normal, const 
             v.tangent = tangent;
         }
     }
-    for (auto&& v : rawMesh.mCombinedMeshData.mVertices) {
-        v.normal = normal;
-        v.tangent = tangent;
+    for (int i = 0; i < e_count(MaterialRenderPassType); ++i) {
+        for (auto&& v : rawMesh.mCombinedMeshData[i].mVertices) {
+            v.normal = normal;
+            v.tangent = tangent;
+        }
     }
 }

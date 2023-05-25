@@ -93,7 +93,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
     assert(mMaterialGpuData.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
     const MaterialID materialId = mMaterialGpuData.size();
-    MaterialData& materialData = mMaterialData.emplace_back();
+    MaterialDesc& materialData = mMaterialDescs.emplace_back();
     materialData.id = materialId;
     materialData.renderPass = fileData.renderPass;
     MaterialGpuData& materialGpuData = mMaterialGpuData.emplace_back();
@@ -309,24 +309,24 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     return true;
 }
 
-const MaterialGpuData& MaterialRepository::getMaterial(const nString& materialName) const {
+const MaterialGpuData& MaterialRepository::getMaterialGpuData(const nString& materialName) const {
     auto&& it = mMaterialIDLookup.find(materialName);
     assert(it != mMaterialIDLookup.end());
     return mMaterialGpuData[it->second];
 }
 
-MaterialGpuData& MaterialRepository::getMutableMaterial(const nString& materialName) {
+MaterialGpuData& MaterialRepository::getMutableMaterialGpuData(const nString& materialName) {
     auto&& it = mMaterialIDLookup.find(materialName);
     assert(it != mMaterialIDLookup.end());
     return mMaterialGpuData[it->second];
 }
 
-const MaterialGpuData& MaterialRepository::getMaterial(MaterialID materialId) const {
+const MaterialGpuData& MaterialRepository::getMaterialGpuData(MaterialID materialId) const {
     assert(materialId < mMaterialGpuData.size());
     return mMaterialGpuData[materialId];
 }
 
-MaterialGpuData& MaterialRepository::getMutableMaterial(MaterialID materialId){
+MaterialGpuData& MaterialRepository::getMutableMaterialGpuData(MaterialID materialId){
     assert(materialId < mMaterialGpuData.size());
     return mMaterialGpuData[materialId];
 }
@@ -340,20 +340,20 @@ MaterialID MaterialRepository::getMaterialId(const nString& materialName) const 
 MaterialHandle MaterialRepository::getMutableMaterialHandle(const nString& materialName) {
     MaterialHandle handle;
     handle.materialId = getMaterialId(materialName);
-    handle.data = &getMutableMaterial(handle.materialId);
+    handle.data = &getMutableMaterialGpuData(handle.materialId);
     handle.name = materialName;
     return handle;
 }
 
-MaterialData MaterialRepository::getMaterialData(const nString& materialName) const {
+const MaterialDesc& MaterialRepository::getMaterialDesc(const nString& materialName) const {
     auto&& it = mMaterialIDLookup.find(materialName);
     assert(it != mMaterialIDLookup.end());
-    return mMaterialData[it->second];
+    return mMaterialDescs[it->second];
 }
 
-MaterialData MaterialRepository::getMaterialData(MaterialID materialId) const {
-    assert(materialId < mMaterialData.size());
-    return mMaterialData[materialId];
+const MaterialDesc& MaterialRepository::getMaterialDesc(MaterialID materialId) const {
+    assert(materialId < mMaterialDescs.size());
+    return mMaterialDescs[materialId];
 }
 
 void MaterialRepository::uploadMaterialData() {
