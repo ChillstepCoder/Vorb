@@ -14,6 +14,7 @@ class ModelEditorViewportPanel;
 class MaterialEditorViewportPanel;
 class BiomeEditorViewportPanel;
 class FoliageEditorViewportPanel;
+class FishingEditorViewportPanel;
 class IEditorViewportPanel;
 class IWorld;
 
@@ -34,6 +35,7 @@ private:
     void openMaterialForEdit(MaterialHandle& materialHandle);
     void openFoliageForEdit(TileGrassData& grassData);
     void openBiomeForEdit();
+    void openFishForEdit();
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 
     // Center panel display
@@ -48,6 +50,7 @@ private:
     std::unique_ptr<MaterialEditorViewportPanel> mMaterialEditorViewportPanel;
     std::unique_ptr<FoliageEditorViewportPanel> mFoliageEditorViewportPanel;
     std::unique_ptr<BiomeEditorViewportPanel> mBiomeEditorViewportPanel;
+    std::unique_ptr<FishingEditorViewportPanel> mFishingEditorViewportPanel;
 
     // Event listeners
     vui::KeyListeners mKeyListeners;

@@ -15,6 +15,7 @@ enum class TileEditorPanelResultCode {
     EDIT_MATERIAL,
     EDIT_FOLIAGE,
     EDIT_BIOME,
+    EDIT_FISH,
     COUNT
 };
 
@@ -35,6 +36,7 @@ private:
     void updateAndRenderMaterialsTab(TileEditorPanelResult& result);
     void updateAndRenderFoliageTab(TileEditorPanelResult& result);
     void updateAndRenderBiomeTab(TileEditorPanelResult& result);
+    void updateAndRenderFishingTab(TileEditorPanelResult& result);
     VGTexture renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData);
 
     // Material preview

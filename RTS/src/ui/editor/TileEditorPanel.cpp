@@ -44,6 +44,7 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
         updateAndRenderMaterialsTab(returnValue);
         updateAndRenderFoliageTab(returnValue);
         updateAndRenderBiomeTab(returnValue);
+        updateAndRenderFishingTab(returnValue);
 
         ImGui::EndTabBar();
     }
@@ -296,6 +297,17 @@ void TileEditorPanel::updateAndRenderBiomeTab(TileEditorPanelResult& result) {
         ImGui::Text("Biome");
         if (ImGui::Button("Open Editor")) {
             result.first = TileEditorPanelResultCode::EDIT_BIOME;
+        }
+        ImGui::EndTabItem();
+    }
+}
+
+void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
+{
+    if (ImGui::BeginTabItem("Fishing")) {
+        ImGui::Text("Fishing");
+        if (ImGui::Button("Open Editor")) {
+            result.first = TileEditorPanelResultCode::EDIT_FISH;
         }
         ImGui::EndTabItem();
     }

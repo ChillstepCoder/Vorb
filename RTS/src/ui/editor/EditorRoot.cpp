@@ -8,6 +8,7 @@
 #include "ui/editor/MaterialEditorViewportPanel.h"
 #include "ui/editor/BiomeEditorViewportPanel.h"
 #include "ui/editor/FoliageEditorViewportPanel.h"
+#include "ui/editor/FishingEditorViewportPanel.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -42,6 +43,7 @@ EditorRoot::EditorRoot() {
     mMaterialEditorViewportPanel = std::make_unique<MaterialEditorViewportPanel>();
     mFoliageEditorViewportPanel = std::make_unique<FoliageEditorViewportPanel>();
     mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
+    mFishingEditorViewportPanel = std::make_unique<FishingEditorViewportPanel>();
 
     // Initialize inputs
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
@@ -143,11 +145,15 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                     // TODO: Biome
                     openBiomeForEdit();
                     break;
+                case TileEditorPanelResultCode::EDIT_FISH:
+                    // TODO: Fich
+                    openFishForEdit();
+                    break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 5);
+            static_assert(e_count(TileEditorPanelResultCode) == 6);
 
         }
 
@@ -181,15 +187,17 @@ void EditorRoot::openMaterialForEdit(MaterialHandle& materialHandle) {
     setActiveCenterPanel(mMaterialEditorViewportPanel.get());
 }
 
-void EditorRoot::openFoliageForEdit(TileGrassData& grassData)
-{
+void EditorRoot::openFoliageForEdit(TileGrassData& grassData) {
     mFoliageEditorViewportPanel->setGrassData(grassData);
     setActiveCenterPanel(mFoliageEditorViewportPanel.get());
 }
 
-void EditorRoot::openBiomeForEdit()
-{
+void EditorRoot::openBiomeForEdit() {
     setActiveCenterPanel(mBiomeEditorViewportPanel.get());
+}
+
+void EditorRoot::openFishForEdit() {
+    setActiveCenterPanel(mFishingEditorViewportPanel.get());
 }
 
 void EditorRoot::setActiveCenterPanel(IEditorViewportPanel* newCenterPanel)
