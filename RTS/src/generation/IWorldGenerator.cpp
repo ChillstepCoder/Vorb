@@ -28,6 +28,7 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
     // TODO: This seems wrong
     static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
     static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
+    static TileID birchTree = TileRepository::getTile(StrToken("tree_birch"));
     static TileID bushMed = TileRepository::getTile(StrToken("bush_med"));
     static TileID bush2 = TileRepository::getTile(StrToken("bush_g"));
     static TileGrassID defaultGrass = 0; // TODO: DIFFERENT
@@ -59,8 +60,10 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
             constexpr f32 TREE_DENSITY = 0.1f;
             constexpr f32 BUSH_DENSITY = 0.015f;
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
-                if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.5f) {
+                if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.42f) {
                     tile.mainLayer = baseTree;
+                } else if (Random::getThreadSafef(worldPos.x * 20.353f, worldPos.y * -54.25f) < 0.3f) {
+                    tile.mainLayer = birchTree;
                 }
                 else {
                     tile.mainLayer = pineTree;
