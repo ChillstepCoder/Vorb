@@ -87,7 +87,7 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     spriteBatch.begin(30);
     spriteBatch.drawString(&spriteFont, mText.c_str(), screenResolution * f32v2(0.5f, 0.6f), f32v2(1.0f), COLOR_WHITE, vg::TextAlign::CENTER);
     spriteBatch.end();
-    spriteBatch.render(screenResolution);
+    spriteBatch.render(screenResolution, &vg::sSamplerStates.LINEAR_WRAP);
 
     if (windowToSync) {
         windowToSync->sync(1);

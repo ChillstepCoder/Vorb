@@ -285,7 +285,8 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
     //if (bs == nullptr) bs = BlendState::PremultipliedAlphaBlend;
     if (ds == nullptr) ds = &DepthState::NONE;
     if (rs == nullptr) rs = &RasterizerState::CULL_CLOCKWISE;
-    if (ss == nullptr) ss = &vg::sSamplerStates.LINEAR_WRAP;
+    // DONT BIND SAMPLER STATE ALWAYS, IT WILL CRASH WITH IMMUTABE (Bindless) TEXTURES
+    //if (ss == nullptr) ss = &vg::sSamplerStates.LINEAR_WRAP;
     if (shader == nullptr) shader = &s_program;
 
     // Make sure we have been initialized
@@ -295,12 +296,14 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
     //bs->set();
     ds->set();
     rs->set();
+    assert(glGetError() == GL_NO_ERROR);
 
     shader->use();
 
     glUniformMatrix4fv(shader->getUniform("World"), 1, false, &mWorld[0][0]);
     glUniformMatrix4fv(shader->getUniform("VP"), 1, false, &mCamera[0][0]);
 
+    assert(glGetError() == GL_NO_ERROR);
     glBindVertexArray(m_vao); // TODO(Ben): This wont work with all custom shaders!
     shader->enableVertexAttribArrays();
     glActiveTexture(GL_TEXTURE0);
@@ -309,7 +312,9 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
     for (auto& b : m_batches) {
 
         glBindTexture(GL_TEXTURE_2D, b.textureID);
-        ss->setForTarget(GL_TEXTURE_2D);
+        if (ss) {
+            ss->setForTarget(GL_TEXTURE_2D);
+        }
 
         glDrawElements(GL_TRIANGLES, b.indices, GL_UNSIGNED_INT, (const GLvoid*)(b.indexOffset * sizeof(ui32)));
     }

@@ -1,10 +1,13 @@
 #include "stdafx.h"
 #include "FishingEditorViewportPanel.h"
 
+#include "ui/minigame/FishingMinigame.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+
+#include <Vorb/ui/GameWindow.h>
 
 bool FishingEditorViewportPanel::updateAndRender()
 {
@@ -15,13 +18,12 @@ bool FishingEditorViewportPanel::updateAndRender()
 
     ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+    mViewportDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+    updateCamera(mViewportDims.x / mViewportDims.y);
 
-    updateCamera(imageDims.x / imageDims.y);
+    //updateFramebufferAndLazyInit(imageDims);
 
-    updateFramebufferAndLazyInit(imageDims);
-
-    clearFramebuffers();
+    //clearFramebuffers();
 
     renderCenterPanel(nullptr);
 
@@ -33,10 +35,47 @@ bool FishingEditorViewportPanel::updateAndRender()
 void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::BeginChild("Fishing Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Fishing Editor Controls");
+    if (ImGui::Button("Start Minigame")) {
+        mCurrentFishingMinigame = std::make_unique<FishingMinigame>(mTestFishData);
+    }
+    FishingMinigameFishData& minigameData = mTestFishData.mMinigameData;
+    ImGui::Text("Test Minigame Data");
+    ImGui::Separator();
+    ImGui::SliderFloat("Acceleration", &minigameData.mAcceleration, 0.0f, 2.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Fish Drag", &minigameData.mFishDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Fish Damage Rate", &minigameData.mFishDamageRate, 0.0f, 1.0f);
+    ImGui::SliderFloat("Center Magnitism", &minigameData.mCenterMagnitism, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Gravity", &minigameData.mGravity, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Jerk Chance", &minigameData.mJerkChance, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Jerk Intensity", &minigameData.mJerkIntensity, 0.0f, 5.0f);
+    ImGui::SliderFloat2("Jerk Cooldown Range", &minigameData.mJerkCooldownVarianceSec.x, 0.0f, 10.0f);
+    ImGui::SliderFloat("Max Speed", &minigameData.mMaxSpeed, 0.0f, 20.0f);
+    ImGui::SliderFloat("Out of Stamina Power Mult", &minigameData.mOutOfStaminaPowerMult, 0.0f, 1.0f);
+    ImGui::SliderFloat("Player Damage Rate", &minigameData.mPlayerDamageRate, 0.0f, 1.0f);
+    ImGui::SliderFloat("Radius", &minigameData.mRadius, 0.1f, 1.0f);
+    ImGui::SliderFloat("Stamina Deplete Rate", &minigameData.mStaminaDepleteRate, 0.0f, 1.0f);
+    ImGui::SliderFloat("Stamina Recharge Rate", &minigameData.mStaminaRechargeRate, 0.0f, 1.0f);
+    ImGui::SliderFloat("Steering Intensity", &minigameData.mSteeringIntensity, 0.0f, 1.0f);
+    ImGui::SliderFloat("Wall Bouncyness", &minigameData.mWallBouncyness, 0.0f, 1.0f);
+    ImGui::Separator();
+    ImGui::Text("Player");
+    // Player Data
+    // TODO: Shared struct for physics and motion info
+    ImGui::SliderFloat("Player Max Speed", &minigameData.mPlayerMaxSpeed, 0.0f, 20.0f);
+    ImGui::SliderFloat("Player Acceleration", &minigameData.mPlayerAcceleration, 0.0f, 5.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Player Drag", &minigameData.mPlayerDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Player Wall Bouncyness", &minigameData.mPlayerWallBouncyness, 0.0f, 1.0f);
+    ImGui::SliderFloat2("Player Stickyness", &minigameData.mPlayerStickyness.x, 0.0f, 1.0f);
+    ImGui::SliderFloat("Player Strength", &minigameData.mPlayerStrength, 0.0f, 1.0f);
     ImGui::Separator();
     updateAndRenderSharedControls();
     ImGui::Separator();
-   
 
     ImGui::EndChild();
+}
+
+void FishingEditorViewportPanel::renderMesh() {
+    if (mCurrentFishingMinigame) {
+        mCurrentFishingMinigame->updateAndRender(mViewportDims);
+    }
 }

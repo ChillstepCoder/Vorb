@@ -64,6 +64,7 @@ vg::SamplerState::SamplerState(ui32 texMinFilter, ui32 texMagFilter, ui32 texWra
 //}
 
 void vg::SamplerState::setForTarget(ui32 textureTarget) const {
+    assert(glGetError() == GL_NO_ERROR);
     glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
     glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
     glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S,     static_cast<GLenum>(m_wrapS));

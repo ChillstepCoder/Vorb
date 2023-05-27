@@ -61,9 +61,10 @@ public:
     void reset() { mAccumulator = 0; }
 
     f32 getFrameAlpha() { return (f32)(mAccumulator / mMsPerTick); }
+    TimePoint getCurrTime() const { return mCurrTime; }
 
 protected:
-    TimePoint mCurrTime;
+    TimePoint mCurrTime = {};
     f64 mAccumulator = 0.0;
     f64 mMsPerTick;
     f64 mMaxMsPerFrame;

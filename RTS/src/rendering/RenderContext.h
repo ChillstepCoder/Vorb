@@ -84,6 +84,7 @@ public:
     WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
     WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world) const;
     WorldRenderDataManager* tryGetRenderDataManagerForWorld(IWorld& world) const;
+    vg::SpriteFont& getDebugFont() { return *mSpriteFont; }
 
     f32 getCurrentFrameAlpha() const { return mCurrentFrameAlpha; }
     f32 getCurrentFrameElapsedSec() const { return mCurrentFrameElapsedSec; }

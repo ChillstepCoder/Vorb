@@ -144,6 +144,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     }
     const ui32v2 textureDims = albedoTextureData->texture.getDims();
     materialGpuData.albedoMap = albedoTextureData->texture.getHandleBindless();
+    materialData.albedoTexture = albedoTextureData->texture.getHandle();
 
     // Normal
     // Generated vs loaded normals
