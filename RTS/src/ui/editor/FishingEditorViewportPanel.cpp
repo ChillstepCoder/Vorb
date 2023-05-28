@@ -41,7 +41,7 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     FishingMinigameFishData& minigameData = mTestFishData.mMinigameData;
     ImGui::Text("Test Minigame Data");
     ImGui::Separator();
-    ImGui::SliderFloat("Acceleration", &minigameData.mAcceleration, 0.0f, 2.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 2.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Fish Drag", &minigameData.mFishDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Fish Damage Rate", &minigameData.mFishDamageRate, 0.0f, 1.0f);
     ImGui::SliderFloat("Center Magnitism", &minigameData.mCenterMagnitism, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -57,6 +57,8 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::SliderFloat("Stamina Recharge Rate", &minigameData.mStaminaRechargeRate, 0.0f, 1.0f);
     ImGui::SliderFloat("Steering Intensity", &minigameData.mSteeringIntensity, 0.0f, 1.0f);
     ImGui::SliderFloat("Wall Bouncyness", &minigameData.mWallBouncyness, 0.0f, 1.0f);
+    ImGui::SliderFloat("Success Angle", &minigameData.mSuccessAngle, 1.0f, 90.0f);
+    ImGui::SliderFloat("Fail Angle", &minigameData.mFailAngle, 1.0f, 90.0f);
     ImGui::Separator();
     ImGui::Text("Player");
     // Player Data
@@ -66,7 +68,7 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::SliderFloat("Player Drag", &minigameData.mPlayerDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Player Wall Bouncyness", &minigameData.mPlayerWallBouncyness, 0.0f, 1.0f);
     ImGui::SliderFloat2("Player Stickyness", &minigameData.mPlayerStickyness.x, 0.0f, 1.0f);
-    ImGui::SliderFloat("Player Strength", &minigameData.mPlayerStrength, 0.0f, 1.0f);
+    ImGui::SliderFloat("Player Strength", &minigameData.mPlayerStrength, 0.0f, 2.0f);
     ImGui::Separator();
     updateAndRenderSharedControls();
     ImGui::Separator();
@@ -76,6 +78,13 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
 
 void FishingEditorViewportPanel::renderMesh() {
     if (mCurrentFishingMinigame) {
-        mCurrentFishingMinigame->updateAndRender(mViewportDims);
+        FishingMinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims);
+        if (result.result == MinigameResultType::Fail) {
+            LOG_INFO("Fishing failed!");
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(mTestFishData);
+        } else if (result.result == MinigameResultType::Success) {
+            LOG_INFO("Fishing success!");
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(mTestFishData);
+        }
     }
 }
