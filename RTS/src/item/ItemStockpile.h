@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Item.h"
+#include "ItemDef.h"
 
 #include "world/ChunkID.h"
 #include "util/BitArray.h"

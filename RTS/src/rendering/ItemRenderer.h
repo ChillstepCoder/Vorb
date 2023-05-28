@@ -10,7 +10,7 @@ class ItemRepository;
 struct ItemStack;
 class MaterialShader;
 class ItemStockpile;
-class Item;
+class ItemDef;
 class Camera3D;
 struct ItemStockpileRecord;
 
@@ -33,7 +33,7 @@ private:
     void updateDirtyStockpileMeshes() const;
 
     void renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const;
-    void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const;
+    void addItemStackPlanks(const ItemStockpileRecord& record, const ItemDef& item, const ItemStockpile& stockpile, Mesh& mesh) const;
 
     mutable ThreadSafeDirtySet<const ItemStockpile*> mDirtyStockpiles;
     moodycamel::ConcurrentQueue<ItemStockpileID> mMeshesToDestroy;

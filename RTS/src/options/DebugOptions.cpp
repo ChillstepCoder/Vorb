@@ -100,6 +100,7 @@ DebugOptions::DebugOptions() :
     mShowBusinessDebug(true),
     mShowEditor(false),
     mShowPaths(true),
+    mDebugFishEcosystem(false),
     mShowEntityQueries(false),
     mEnableVisualLogs(true),
     mShowDevHud(true),

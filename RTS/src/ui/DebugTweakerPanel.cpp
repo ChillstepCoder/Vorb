@@ -380,9 +380,10 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
         ImGui::Checkbox("Show Navgraph", &sDebugOptions.mShowNavGraph);
         ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mShowNavGraphUpdates);
         ImGui::Checkbox("Show Business Debug", &sDebugOptions.mShowBusinessDebug);
-        ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
+        ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths); 
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
+        ImGui::Checkbox("Debug Fish Ecosystem", &sDebugOptions.mDebugFishEcosystem);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
         ImGui::Checkbox("Debug Toggle 0", &sDebugOptions.mDebugToggle0);
         ImGui::Separator();

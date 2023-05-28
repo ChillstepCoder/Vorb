@@ -13,6 +13,7 @@ class CraftingRepository;
 class EntityDefinitionRepository;
 class FontRepository;
 class ItemRepository;
+class FishRepository;
 class MaterialRepository;
 class MaterialShaderManager;
 class ModelRepository;
@@ -40,6 +41,7 @@ public:
     BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
+    FishRepository& getFishRepository() const { return *mFishRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     AnimationRepository& getAnimationRepository() const { return *mAnimationRepository; }
     RigRepository& getRigRepository() const { return *mRigRepository; }
@@ -78,6 +80,7 @@ private:
     std::vector<vio::Path> mBuildingFiles;
     std::vector<vio::Path> mEntityFiles;
     std::vector<vio::Path> mItemFiles;
+    std::vector<vio::Path> mFishFiles;
     std::vector<vio::Path> mRecipeFiles;
     std::vector<vio::Path> mBusinessFiles;
     std::vector<vio::Path> mAnimFiles;
@@ -93,6 +96,7 @@ private:
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<ItemRepository> mItemRepository;
+    std::unique_ptr<FishRepository> mFishRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<AnimationRepository> mAnimationRepository;

@@ -28,7 +28,7 @@ f32 differenceBetweenTimePointsSeconds(TimePoint a, TimePoint b) {
     return std::chrono::duration<f32>(a - b).count();
 }
 
-f32 getFishRadius(const FishData& fishData) {
+f32 getFishRadius(const FishDef& fishData) {
     return FISH_RADIUS * fishData.mMinigameData.mRadius;
 }
 
@@ -36,8 +36,8 @@ f32 getAngleOffset(const f32v2 normalizedPos, const f32v2 normal) {
     return glm::acos(glm::dot(normalizedPos, normal));
 }
 
-FishingMinigame::FishingMinigame(const FishData& fishData) :
-    mFishData(fishData),
+FishingMinigame::FishingMinigame(const FishDef& fishData) :
+    mFishDef(fishData),
     mPlayerRadius(BOUNDARY_RADIUS * 0.1f),
     mFishRadius(getFishRadius(fishData))
 {
@@ -56,7 +56,7 @@ FishingMinigame::~FishingMinigame()
 FishingMinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolution) {
     mCurrentScreenResolution = screenResolution;
 
-    mFishRadius = getFishRadius(mFishData);
+    mFishRadius = getFishRadius(mFishDef);
 
     FishingMinigameResult result;
     result.result = update();
@@ -102,7 +102,7 @@ void FishingMinigame::render() {
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
-    const FishingMinigameFishData& minigameData = mFishData.mMinigameData;
+    const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
     const f32v2 boundarySize = getBoundarySize(mCurrentScreenResolution);
     const f32v2 centerPos = mCurrentScreenResolution * 0.5f;
 
@@ -160,7 +160,7 @@ f32v2 getRandomDirectionVector() {
 
 void FishingMinigame::updateFishPosition() {
 
-    const FishingMinigameFishData& minigameData = mFishData.mMinigameData;
+    const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
     const TimePoint currentTime = mTickingTimer.getCurrTime();
 
     mFishVelocity += getRandomDirectionVector() * minigameData.mAcceleration;
@@ -228,7 +228,7 @@ void FishingMinigame::updateFishPosition() {
 
 void FishingMinigame::updatePlayerPosition() {
 
-    const FishingMinigameFishData& minigameData = mFishData.mMinigameData;
+    const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
 
     f32v2 inputDir(0.0f);
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_W) || vui::InputDispatcher::key.isKeyPressed(VKEY_UP)) {

@@ -294,7 +294,7 @@
     <ClCompile Include="src\instrumentation\instrumentor.cpp" />
     <ClCompile Include="src\io\PngLoader.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
-    <ClCompile Include="src\item\Item.cpp" />
+    <ClCompile Include="src\item\ItemDef.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
     <ClCompile Include="src\item\ItemReservation.cpp" />
     <ClCompile Include="src\item\ItemStockpile.cpp" />
@@ -334,6 +334,7 @@
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\fish\FishRenderer.cpp" />
     <ClCompile Include="src\rendering\GLExtensions.cpp" />
     <ClCompile Include="src\rendering\gl\GL.cpp" />
     <ClCompile Include="src\rendering\gl\GLAPITrace.cpp" />
@@ -401,6 +402,7 @@
     <ClCompile Include="src\rendering\UboHelpers.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
+    <ClCompile Include="src\resources\FishRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
     <ClCompile Include="src\resources\MaterialRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
@@ -525,6 +527,7 @@
     <ClInclude Include="src\definitions\AnimMachineDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
     <ClInclude Include="src\definitions\BusinessDef.h" />
+    <ClInclude Include="src\definitions\FishDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
     <ClInclude Include="src\definitions\SkillDef.h" />
@@ -585,8 +588,9 @@
     <ClInclude Include="src\instrumentation\instrumentor.h" />
     <ClInclude Include="src\io\PngLoader.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
-    <ClInclude Include="src\item\Item.h" />
+    <ClInclude Include="src\item\ItemDef.h" />
     <ClInclude Include="src\item\ItemConst.h" />
+    <ClInclude Include="src\item\ItemFileData.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
     <ClInclude Include="src\item\ItemReservation.h" />
@@ -638,6 +642,7 @@
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\fish\FishRenderer.h" />
     <ClInclude Include="src\rendering\font\Font.h" />
     <ClInclude Include="src\rendering\GLExtensions.h" />
     <ClInclude Include="src\rendering\GlobalRenderData.h" />
@@ -726,6 +731,7 @@
     <ClInclude Include="src\rendering\UboHelpers.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
+    <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\MaterialRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />

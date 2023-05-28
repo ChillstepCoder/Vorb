@@ -104,7 +104,7 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
 
 void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
 {
-    const Item& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
+    const ItemDef& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
     //mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
 }
 
@@ -182,7 +182,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMe
 }
 
 
-void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const {
+void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const ItemDef& item, const ItemStockpile& stockpile, Mesh& mesh) const {
     //assert(false);
     //const SubTexture& texture = item.mTexture;
 

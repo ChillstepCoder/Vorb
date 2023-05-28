@@ -17,7 +17,7 @@
 
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
-#include "item/Item.h"
+#include "item/ItemDef.h"
 
 #include "world/IChunkGrid.h"
 

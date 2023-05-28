@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "Item.h"
+#include "ItemDef.h"
 
 KEG_ENUM_DEF(ItemType, ItemType, kt) {
     kt.addValue("unknown", ItemType::UNKNOWN);

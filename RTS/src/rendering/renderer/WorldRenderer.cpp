@@ -29,6 +29,7 @@
 #include "rendering/mesh/TileContainerMeshManager.h"
 #include "rendering/mesh/TerrainMeshManager.h"
 #include "rendering/mesh/GrassMeshManager.h"
+#include "rendering/fish/FishRenderer.h"
 #include "debugging/DebugRenderer.h"
 
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
@@ -84,6 +85,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mGrassRenderer = std::make_unique<GrassRenderer>();
     mSmudgeRenderer = std::make_unique<SmudgeRenderer>(screenResolution);
     mTonemapRenderer = std::make_unique<TonemapRenderer>();
+    mFishRenderer = std::make_unique<FishRenderer>();
     checkGlError("WorldRenderer::WorldRenderer");
 
     mHDRLightGBuffer = std::make_unique<vg::GBuffer>(screenResolution);
@@ -319,7 +321,6 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
 }
 
-
 void WorldRenderer::renderDebug()
 {
     assert(mActiveWorld);
@@ -390,6 +391,11 @@ void WorldRenderer::renderDebug()
                 DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
             }
         }
+    }
+
+    // Fish
+    if (sDebugOptions.mDebugFishEcosystem) {
+        mFishRenderer->debugRenderFishEcosystem(*mActiveWorld);
     }
 
     // Nav graph (Render is slow so we only build the line meshes when toggle changes)

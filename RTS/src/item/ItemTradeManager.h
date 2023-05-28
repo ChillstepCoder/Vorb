@@ -1,6 +1,6 @@
 #pragma once
 
-#include "item/Item.h"
+#include "item/ItemDef.h"
 
 // Manages imports/exports for buildings, npcs, ect
 // Manages item storage and audits

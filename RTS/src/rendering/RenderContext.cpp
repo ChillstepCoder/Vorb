@@ -88,6 +88,8 @@
 
 #define USE_STENCIL 1
 
+// TODO: This video is cool for hallucination effect https://www.youtube.com/watch?v=f4s1h2YETNY
+
 // Opengl debugging
 void APIENTRY glDebugOutput(GLenum source,
     GLenum type,

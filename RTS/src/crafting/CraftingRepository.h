@@ -4,7 +4,7 @@ DECL_VIO(class IOManager);
 class ItemRepository;
 
 #include "crafting/CraftingConst.h"
-#include "item/Item.h"
+#include "item/ItemDef.h"
 
 struct CraftingRecipe {
     CraftingRecipeID mId = INVALID_CRAFTING_RECIPE_ID; // Array index into mCraftingRecipes

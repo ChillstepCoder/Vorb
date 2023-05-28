@@ -29,7 +29,7 @@ enum class ItemStorageShape {
 };
 KEG_ENUM_DECL(ItemStorageShape);
 
-class Item
+class ItemDef
 {
     friend class ItemRepository;
     friend class ItemRenderer;
@@ -53,7 +53,6 @@ protected:
     ui32 mStackSize = 10;
     ui32v3 mStackDims = ui32v3(5, 5, 5);
 };
-KEG_TYPE_DECL(Item);
 
 struct StoredItemStack {
     ItemStack stack;

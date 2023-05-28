@@ -13,7 +13,7 @@ public:
 
     void renderMesh() override;
 
-    FishData mTestFishData;
+    FishDef mTestFishData;
     std::unique_ptr<FishingMinigame> mCurrentFishingMinigame;
     f32v2 mViewportDims;
 

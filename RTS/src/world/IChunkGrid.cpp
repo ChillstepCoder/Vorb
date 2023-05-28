@@ -6,6 +6,8 @@
 #include "world/srv/SrvWorldInterface.h"
 #include "tile/TileContainerRepository.h"
 
+#include "world/ecosystem/FishEcosystem.h"
+
 // TODO: SrvChunkGrid?
 
 #include "services/Services.h"
@@ -506,6 +508,11 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
     Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
         chunk.getWorld().getWorldGenerator().generateChunk(chunk, heightData);
         chunk.setState(ChunkState::TILE_LOAD_FINISHED);
+        // Generate fish if needed
+        SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&chunk.getWorld());
+        if (srvWorld) {
+            srvWorld->getFishEcosystem().initChunkFish(chunk);
+        }
         chunk.decRef();
         delete heightData;
     }, nullptr);

@@ -20,6 +20,7 @@
 #include "resources/TileRepository.h"
 #include "resources/TileGrassRepository.h"
 #include "resources/FontRepository.h"
+#include "resources/FishRepository.h"
 #include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
 
@@ -50,6 +51,7 @@ ResourceManager::ResourceManager() {
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
+    mFishRepository = std::make_unique<FishRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mAnimationRepository = std::make_unique<AnimationRepository>();
@@ -96,6 +98,7 @@ void ResourceManager::gatherFiles() {
     mBuildingFiles.clear();
     mEntityFiles.clear();
     mItemFiles.clear();
+    mFishFiles.clear();
     mRecipeFiles.clear();
     mBusinessFiles.clear();
     mModelFiles.clear();
@@ -139,6 +142,14 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Item load");
         for (auto&& entry : mItemFiles) {
             mItemRepository->loadItemFile(entry, *mTextureRepository);
+        }
+    }
+
+    // Load fish definitions
+    {
+        ScopedTimer timer("Fish load");
+        for (auto&& entry : mFishFiles) {
+            mFishRepository->loadFishFile(entry, *mItemRepository, *mTextureRepository);
         }
     }
 
@@ -371,6 +382,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".item")) {
             mItemFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".fish")) {
+            mFishFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".business")) {
             mBusinessFiles.emplace_back(entry);

@@ -156,7 +156,7 @@
     <ClCompile Include="src\city\CityResidentManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\item\Item.cpp">
+    <ClCompile Include="src\item\ItemDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\ItemRepository.cpp">
@@ -780,6 +780,12 @@
     <ClCompile Include="src\world\ecosystem\FishEcosystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\fish\FishRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\FishRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -965,7 +971,7 @@
     <ClInclude Include="src\city\CityResidentManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\item\Item.h">
+    <ClInclude Include="src\item\ItemDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\ItemRepository.h">
@@ -1847,7 +1853,16 @@
     <ClInclude Include="src\ui\minigame\FishingMinigame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\ecosystem\FishEcosystem.h">
+    <ClInclude Include="src\rendering\fish\FishRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\FishRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\item\ItemFileData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\FishDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

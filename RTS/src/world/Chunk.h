@@ -127,7 +127,7 @@ public:
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
 
     // =========== Tiles  ===========
-	TileContainer* getTileContainer() { ASSERT_GAME_THREAD(); return mTileContainer; }
+	TileContainer* getTileContainer() { return mTileContainer; }
     const TileContainer* getTileContainer() const { return mTileContainer; }
 
     // =========== Ref counting  ===========

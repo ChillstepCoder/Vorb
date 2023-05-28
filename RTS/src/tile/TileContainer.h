@@ -163,7 +163,7 @@ public:
     void clearDirtyData() { mDirtyData = false; }
 
     // =========== Accessors  ===========
-    const std::vector<Tile>& getTiles() const { ASSERT_GAME_THREAD(); return mTiles; }
+    const std::vector<Tile>& getTiles() const { return mTiles; }
     const TileWallContainer& getTileWallContainer() const { return  mTileWallsContainer; }
     size_t getNumTiles() const { return mTiles.size(); }
     TileContainerHarvestableRegistry& getHarvestableRegistry() { return mHarvestableRegistry; }
