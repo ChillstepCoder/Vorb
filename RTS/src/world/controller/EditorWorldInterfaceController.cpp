@@ -319,7 +319,8 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             // grass
             WorldObjectQueryPtr& worldObjects = mRightClickInteractPopup->getWorldObjects();
             ItemStockpile* stockPile = worldObjects->getStockpile();
-            mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
+            SrvWorldInterface& srvWorld = dynamic_cast<SrvWorldInterface&>(*mWorld);
+            srvWorld.getItemStockpileRegistry().destroyStockpile(stockPile);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
             assert(false);

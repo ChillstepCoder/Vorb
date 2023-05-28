@@ -777,6 +777,9 @@
     <ClCompile Include="src\ui\minigame\FishingMinigame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\ecosystem\FishEcosystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1842,6 +1845,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\minigame\FishingMinigame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\ecosystem\FishEcosystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

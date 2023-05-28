@@ -3,6 +3,7 @@
 class NavWorld;
 class IWorld;
 class ItemStockpileRegistry;
+class FishEcosystem;
 
 class SrvWorldInterface
 {
@@ -12,16 +13,18 @@ public:
 
     void tickSrv();
 
-    ItemStockpileRegistry& getItemStockpileRegistry() { return *mItemStockpileRegistry; }
-    const ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
-    NavWorld& getNavWorld() { return *mNavWorld; }
-    const NavWorld& getNavWorld() const { return *mNavWorld; }
+    ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
+    NavWorld& getNavWorld() const { return *mNavWorld; }
+    FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
 
 protected:
     void initSrv(IWorld& world);
 
     // Stockpiles
     std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
+
+    // Ecosystems
+    std::unique_ptr<FishEcosystem> mFishEcosystem;
 
     // Nav graph
     std::unique_ptr<NavWorld> mNavWorld;

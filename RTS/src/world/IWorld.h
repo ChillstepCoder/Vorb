@@ -63,7 +63,6 @@ public:
     CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
     IEntityComponentSystem& getECS() const { return *mEcs; }
-    ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     StructureManager& getStructureManager() const { return *mStructureManager; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
@@ -100,8 +99,6 @@ protected:
     std::unique_ptr<PhysicsWorld> mPhysWorld;
     // Structures
     std::unique_ptr<StructureManager> mStructureManager;
-    // Stockpiles
-    std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
     // Cities
     std::unique_ptr<CityGraph> mCities;
     // Generation

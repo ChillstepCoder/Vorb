@@ -44,9 +44,6 @@ IWorld::IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmap
     // Structures
     mStructureManager = std::make_unique<StructureManager>(*this);
 
-    // Stockpiles
-    mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
-
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
 

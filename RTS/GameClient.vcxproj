@@ -209,6 +209,7 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_NO_SIMD_OPERATOR_OVERLOADS;BT_ENABLE_PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -459,6 +460,7 @@
     <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
     <ClCompile Include="src\world\controller\EditorWorldInterfaceController.cpp" />
     <ClCompile Include="src\world\controller\IWorldInterfaceController.cpp" />
+    <ClCompile Include="src\world\ecosystem\FishEcosystem.cpp" />
     <ClCompile Include="src\world\host\HostWorld.cpp" />
     <ClCompile Include="src\world\IChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliWorldInterface.cpp" />
