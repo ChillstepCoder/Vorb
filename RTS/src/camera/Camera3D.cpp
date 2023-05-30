@@ -80,7 +80,7 @@ void Camera3D::applyRotation(const f32 pitch, const f32 yaw) {
     f32 oldYaw = mYaw.load();
     mYaw = oldYaw + yaw;
 
-    mPitch = glm::clamp(mPitch, -M_PI_4F, M_PI_4F);
+    mPitch = glm::clamp(mPitch, -M_PI_2F + 0.01f, M_PI_2F - 0.01f);
 
     mDirection.x = sin(mYaw) * cos(mPitch);
     mDirection.y = cos(mYaw) * cos(mPitch);

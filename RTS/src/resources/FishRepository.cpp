@@ -44,11 +44,12 @@ void FishRepository::loadFishFile(const vio::Path& filePath, ItemRepository& ite
     }
     else {
         // Failure case
-        pError("Failed to parse item file " + filePath.getString());
+        pError("Failed to parse fish file " + filePath.getString());
     }
 }
 
-const FishDef& FishRepository::getFish(const nString& itemName) const
-{
-   
+const FishDef& FishRepository::getFish(const nString& itemName) const {
+    auto&& it = mFishIdLookup.find(itemName);
+    assert(it != mFishIdLookup.end());
+    return mFishDefinitions[it->second];
 }

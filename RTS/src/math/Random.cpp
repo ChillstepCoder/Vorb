@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "math/Random.h"
 
-static ui32 x = 123456789, y = 362436069, z = 521288629;
+static thread_local ui32 x = 123456789, y = 362436069, z = 521288629;
 bool hasInitCachedRandom = false;
 std::vector<ui32> cachedRandom;
 static thread_local unsigned cachedRandomIndex = 0;

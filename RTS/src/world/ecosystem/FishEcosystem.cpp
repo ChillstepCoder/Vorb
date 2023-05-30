@@ -1,12 +1,18 @@
 #include "stdafx.h"
 #include "FishEcosystem.h"
 
+#include "resources/ResourceManager.h"
+#include "resources/FishRepository.h"
+
 #include "world/IWorld.h"
+#include "math/Random.h"
 
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
 constexpr f32 MAX_DORMANCY_DURATION_SEC = 120.0f;
 
-FishEcosystem::FishEcosystem(IWorld& world) : mWorld(world) {
+FishEcosystem::FishEcosystem(IWorld& world) :
+    mWorld(world),
+    mFishRepository(Services::ResourceManager::ref().getFishRepository()) {
     initEventHandlers();
 }
 
@@ -41,6 +47,8 @@ void FishEcosystem::tickGameThread() {
             }
         }
     }
+
+    updateActiveFish();
 }
 
 void FishEcosystem::initEventHandlers() {
@@ -79,6 +87,7 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
         const int yIndexStart = cy * CELL_ROW_STRIDE;
         for (int cx = 0; cx < FISH_CELLS_WIDTH; ++cx) {
             FishCell& cell = newFishChunk->mCells[cy * FISH_CELLS_WIDTH + cx];
+            cell.mWorldPos = chunk.getWorldPos() + i32v2(cx * FISH_CELL_TILE_WIDTH, cy * FISH_CELL_TILE_WIDTH);
             cell.mSpawnableTiles.resizeAndZero(FISH_CELL_TILE_SIZE);
             cell.mTotalSpawnableTiles = 0;
             const int indexStart = yIndexStart + cx * FISH_CELL_TILE_WIDTH;
@@ -99,6 +108,12 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     }
     else {
         // Fresh spawning
+        const FishDef& fishDef = mFishRepository.getFish("cod");
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 50; ++j) {
+                trySpawnFish(newFishChunk->mCells[i], fishDef);
+            }
+        }
     }
 
     {
@@ -136,6 +151,8 @@ void FishEcosystem::makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk
     dormantChunk.mUnloadedTime = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < FISH_CELLS_PER_CHUNK; ++i) {
         FishCell& activeCell = chunk.mCells[i];
+
+        std::lock_guard lock(activeCell.mMutex);
         DormantFishCell& dormantCell = dormantChunk.mCells[i];
         dormantCell.mPopulations = std::move(activeCell.mPopulations);
     }
@@ -144,5 +161,30 @@ void FishEcosystem::makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk
 void FishEcosystem::makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk) {
     for (int i = 0; i < FISH_CELLS_PER_CHUNK; ++i) {
         chunk.mCells[i].mPopulations = std::move(dormantChunk.mCells[i].mPopulations);
+    }
+}
+
+bool FishEcosystem::trySpawnFish(FishCell& cell, const FishDef& fishDef) {
+    int randomTile = Random::getCachedRandom() % FISH_CELL_TILE_SIZE;
+    if (cell.mSpawnableTiles.getBit(randomTile)) {
+        ActiveFish newFish;
+        newFish.mFishId = fishDef.mId;
+        newFish.mPosition = f32v3(cell.mWorldPos.x + randomTile % FISH_CELL_TILE_WIDTH, cell.mWorldPos.y + randomTile / FISH_CELL_TILE_WIDTH, 0.0f);
+        cell.mFish.emplace_back(newFish);
+    }
+    return false;
+}
+
+void FishEcosystem::updateActiveFish() {
+    PROFILE_FUNCTION();
+    for (auto&& activeFishChunk : mActiveFishChunks) {
+        for (int i = 0; i < 4; ++i) {
+            FishCell& activeCell = activeFishChunk.second->mCells[i];
+            std::lock_guard lock(activeCell.mMutex);
+            for (auto&& fish : activeCell.mFish) {
+                fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+                fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+            }
+        }
     }
 }

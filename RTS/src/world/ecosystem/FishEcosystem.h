@@ -12,9 +12,13 @@ typedef ui32 FishID;
 constexpr int FISH_CELLS_WIDTH = 2;
 constexpr int FISH_CELLS_PER_CHUNK = FISH_CELLS_WIDTH * FISH_CELLS_WIDTH;
 constexpr int FISH_CELL_TILE_WIDTH = CHUNK_WIDTH / FISH_CELLS_WIDTH;
+constexpr int FISH_CELL_HALF_TILE_WIDTH = FISH_CELL_TILE_WIDTH / 2;
 constexpr int FISH_CELL_TILE_SIZE = FISH_CELL_TILE_WIDTH * FISH_CELL_TILE_WIDTH;
 
 typedef boost::container::flat_map<FishID, int> FishPopulationMap;
+
+struct FishDef;
+class FishRepository;
 
 struct FishPopulation {
     FishID mFishId;
@@ -22,10 +26,10 @@ struct FishPopulation {
 };
 
 struct ActiveFish {
-    FishID mFishId;
-    f32v3 mVelocity;
-    f32v3 mPosition;
-    f32 mRotation;
+    FishID mFishId = INVALID_FISH_ID;
+    f32v3 mVelocity = f32v3(0.0f);
+    f32v3 mPosition = f32v3(0.0f);
+    f32 mRotation = 0.0f;
 };
 
 struct InactiveFish {
@@ -34,11 +38,13 @@ struct InactiveFish {
 };
 
 struct FishCell {
+    i32v2 mWorldPos;
     std::vector<ActiveFish> mFish; // LOD rendered
     FishPopulationMap mPopulations;
     BitArray mSpawnableTiles;
     int mTotalSpawnableTiles = 0; // can derive max population and population pressure from this
     bool mRenderingFish = false; // When false, we do not need to update fish
+    mutable std::mutex mMutex;
 };
 
 struct DormantFishCell {
@@ -70,6 +76,8 @@ private:
     void disposeChunkFish(Chunk& chunk);
     void makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
     void makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
+    bool trySpawnFish(FishCell& cell, const FishDef& fishDef);
+    void updateActiveFish();
 
     boost::container::flat_map<ChunkID, FishChunkPtr> mActiveFishChunks;
 
@@ -80,6 +88,7 @@ private:
     boost::container::flat_map<ChunkID, FishChunkPtr> mGeneratedFishChunks;
 
     IWorld& mWorld;
+    FishRepository& mFishRepository;
 
     ChunkGridListeners mChunkGridEventListeners;
 

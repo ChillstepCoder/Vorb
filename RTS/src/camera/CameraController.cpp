@@ -256,6 +256,7 @@ void CameraController::updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& 
     }
 }
 
+
 void CameraController::updateMouseWheelInput(const vui::MouseWheelEvent& evnt) {
     mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + evnt.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_ZOOM_RANGE.x, CAMERA_ZOOM_RANGE.y);
 }

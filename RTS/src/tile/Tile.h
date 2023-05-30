@@ -175,6 +175,7 @@ private:
     };
     BitFlags<TileFlags> tileFlags;
     TileOrientation orientation = {}; // TODO: Combine these?
+    // ui8 padding; // TODO Use?
     f32 groundZOffset = 0.0f;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
