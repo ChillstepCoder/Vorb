@@ -17,6 +17,11 @@ inline int intFloor(float x) {
     return i - (i > x);
 }
 
+// Increments i in modulo 3 for triple buffering
+inline void incrementMod3(OUT int& i) {
+    i = (i + 1) % 3;
+}
+
 namespace {
     inline f32v3 btVector3ToF32v3(const btVector3& v) {
         return f32v3(v.x(), v.y(), v.z());

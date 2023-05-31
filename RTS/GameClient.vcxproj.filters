@@ -540,7 +540,7 @@
     <ClCompile Include="src\gamethread\GameThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp">
+    <ClCompile Include="src\rendering\renderstate\GameRenderStateManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\instrumentation\instrumentor.cpp">
@@ -784,6 +784,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resources\FishRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1493,7 +1496,7 @@
     <ClInclude Include="src\rendering\renderstate\RenderState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\renderstate\RenderStateManager.h">
+    <ClInclude Include="src\rendering\renderstate\GameRenderStateManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\ChunkState.h">
@@ -1863,6 +1866,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\FishDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\renderstate\RenderStateManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

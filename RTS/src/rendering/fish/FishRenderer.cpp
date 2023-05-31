@@ -9,36 +9,103 @@
 #include "world/IWorld.h"
 #include "world/ecosystem/FishEcosystem.h"
 
+#include "resources/ResourceManager.h"
+#include "resources/FishRepository.h"
+#include "resources/ModelRepository.h"
+
+#include "rendering/renderstate/RenderStateManager.h"
+
 #include "camera/Camera3D.h"
 
+#include "rendering/gl/GLObjects.h"
+
+constexpr int MAX_INSTANCES_PER_FRAME = 1000;
+constexpr int INSTANCE_TRANSFORM_DATA_SIZE = sizeof(FishInstanceTransform);
+constexpr int INSTANCE_TRANSFORM_BUFFER_SIZE = INSTANCE_TRANSFORM_DATA_SIZE * MAX_INSTANCES_PER_FRAME * 3; // 3x our maximum size
 
 #define DRAW_WATER_CELLS 0
+
+FishRenderer::FishRenderer() {
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    const std::vector<FishDef>& allFish = resourceManager.getFishRepository().getAllFish();
+    mFishInstanceData.resize(allFish.size());
+
+    // TODO: Only allocate what we need!!! Most fish will not be rendering!
+    for (int i = 0; i < mFishInstanceData.size(); ++i) {
+        FishInstanceData& instanceData = mFishInstanceData[i];
+        const FishDef& fishDef = allFish[i];
+        instanceData.mMesh = &resourceManager.getModelRepository().getModelDef(fishDef.mModel).getMesh(0);
+
+        glCreateBuffers(1, &instanceData.mInstanceTransformBuffer);
+        glNamedBufferStorage(instanceData.mInstanceTransformBuffer, INSTANCE_TRANSFORM_BUFFER_SIZE, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+        instanceData.mMappedTransformBuffer = (FishInstanceTransform*)glMapNamedBufferRange(instanceData.mInstanceTransformBuffer, 0, INSTANCE_TRANSFORM_BUFFER_SIZE,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+    }
+}
+
+FishRenderer::~FishRenderer()
+{
+    for (int i = 0; i < mFishInstanceData.size(); ++i) {
+        FishInstanceData& instanceData = mFishInstanceData[i];
+        glUnmapBuffer(instanceData.mInstanceTransformBuffer);
+        glDeleteBuffers(1, &instanceData.mInstanceTransformBuffer);
+    }
+}
 
 void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& world) {
     PROFILE_FUNCTION();
     const SrvWorldInterface* srvWorldInterface = dynamic_cast<const SrvWorldInterface*>(&world);
+
+    if (!srvWorldInterface) {
+        return;
+    }
+
     BoundingSphere boundingSphere;
     boundingSphere.radius = sqrt(pow(FISH_CELL_TILE_WIDTH * 0.5f, 2.0f) * 3.0f);
     boundingSphere.center.z = 0.0f;
-    if (srvWorldInterface) {
-        const FishEcosystem& fishEcosystem = srvWorldInterface->getFishEcosystem();
-        for (auto&& it : fishEcosystem.mActiveFishChunks) {
-            const FishChunk& fishChunk = *it.second;
-            // Draw active fish
 
-            for (int i = 0; i < 4; ++i) {
-                const FishCell& cell = fishChunk.mCells[i];
-                boundingSphere.center.x = cell.mWorldPos.x + FISH_CELL_HALF_TILE_WIDTH;
-                boundingSphere.center.y = cell.mWorldPos.y + FISH_CELL_HALF_TILE_WIDTH;
-                if (camera.sphereIsVisible(boundingSphere)) {
-                    std::lock_guard lock(cell.mMutex);
-                    for (auto&& fish : cell.mFish) {
-                        DebugRenderer::drawFilledQuad(fish.mPosition, f32v2(1.0f), color::Cyan, 0);
-                    }
-                }
+    // Wait for the GPU to finish with this section of the buffer
+    if (mFence[mFrameIndex] != 0) {
+        while (glClientWaitSync(mFence[mFrameIndex], 0, GL_TIMEOUT_IGNORED) == GL_TIMEOUT_EXPIRED) {
+            // Keep waiting
+        }
+        glDeleteSync(mFence[mFrameIndex]);
+    }
+
+    mInstanceCountsThisFrame.resize(mFishInstanceData.size(), 0);
+
+    const FishRenderState& renderState = srvWorldInterface->getFishEcosystem().getRenderStateManager().getRenderStateForRender();
+    for (auto&& cell : renderState.mActiveCells) {
+        // Draw active fish
+        boundingSphere.center.x = cell.mCellCenter.x;
+        boundingSphere.center.y = cell.mCellCenter.y;
+        if (camera.sphereIsVisible(boundingSphere)) {
+            for (auto&& fish : cell.mFish) {
+                addFishInstance(fish.mFishId, fish.mPosition, 0.0f);
+                DebugRenderer::drawFilledQuad(fish.mPosition, f32v2(1.0f), color::Cyan, 0);
             }
         }
     }
+
+    const int transformBufferOffset = mFrameIndex * MAX_INSTANCES_PER_FRAME;
+    for (size_t i = 0; i < mFishInstanceData.size(); ++i) {
+        const int instanceCount = mInstanceCountsThisFrame[i];
+        if (instanceCount) {
+            FishInstanceData& instanceData = mFishInstanceData[i];
+            glFlushMappedNamedBufferRange(instanceData.mInstanceTransformBuffer, transformBufferOffset, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
+
+            dfdfdf;
+        }
+    }
+
+    //mIndirectBuffer->uploadIndirectBuffer();
+    //MeshDrawer::drawIndirect(mesh.mMainMesh, instanceData.mShadowDrawCommandsCount, &drawCommands);
+
+
+    // Create a new fence sync object for this frame
+    mFence[mFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+    incrementMod3(mFrameIndex);
 }
 
 void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
@@ -104,4 +171,17 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
             }
         }
     }
+}
+
+void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32 yaw) {
+    if (mInstanceCountsThisFrame[fish] >= MAX_INSTANCES_PER_FRAME) {
+        return;
+    }
+    const int transformBufferOffset = mFrameIndex * (MAX_INSTANCES_PER_FRAME + mInstanceCountsThisFrame[fish]);
+
+    FishInstanceData& instanceData = mFishInstanceData[fish];
+    instanceData.mMappedTransformBuffer[transformBufferOffset].mPosition = pos;
+    instanceData.mMappedTransformBuffer[transformBufferOffset].mYaw = yaw;
+
+    ++mInstanceCountsThisFrame[fish];
 }

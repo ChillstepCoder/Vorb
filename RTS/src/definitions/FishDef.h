@@ -32,6 +32,7 @@ struct FishingMinigameFishData {
 
 struct FishDef {
     ItemID mItem;
+    ModelID mModel;
     FishID mId;
     FishingMinigameFishData mMinigameData;
 };

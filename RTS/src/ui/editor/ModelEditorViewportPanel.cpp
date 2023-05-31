@@ -37,7 +37,6 @@ bool ModelEditorViewportPanel::updateAndRender() {
     ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
     f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-    
     updateCamera(imageDims.x / imageDims.y);
 
     if (mCurrentModel) {

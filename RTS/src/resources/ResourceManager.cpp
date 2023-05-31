@@ -145,14 +145,6 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Load fish definitions
-    {
-        ScopedTimer timer("Fish load");
-        for (auto&& entry : mFishFiles) {
-            mFishRepository->loadFishFile(entry, *mItemRepository, *mTextureRepository);
-        }
-    }
-
     // Load recipe definitions
     {
         ScopedTimer timer("Recipe load");
@@ -213,6 +205,14 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Model load");
         for (auto&& entry : mModelFiles) {
             mModelRepository->loadModelFile(entry, *mMaterialRepository, *mAnimMachineRepository);
+        }
+    }
+
+    // Load Fish
+    {
+        ScopedTimer timer("Fish load");
+        for (auto&& entry : mFishFiles) {
+            mFishRepository->loadFishFile(entry, *mModelRepository, *mItemRepository, *mTextureRepository);
         }
     }
 

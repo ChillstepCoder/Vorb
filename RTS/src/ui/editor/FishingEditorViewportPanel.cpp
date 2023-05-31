@@ -3,6 +3,11 @@
 
 #include "ui/minigame/FishingMinigame.h"
 
+#include "rendering/mesh/MeshDrawer.h"
+#include "resources/ResourceManager.h"
+#include "resources/ModelRepository.h"
+#include "rendering/MaterialShaderManager.h"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
@@ -25,6 +30,11 @@ bool FishingEditorViewportPanel::updateAndRender()
 
     //clearFramebuffers();
 
+    // Lazy init so we don't use GPU memory when not in editor
+    if (sGBuffers[0] == nullptr) {
+        initGBuffers(mViewportDims);
+    }
+
     renderCenterPanel(nullptr);
 
     ImGui::End();
@@ -35,10 +45,16 @@ bool FishingEditorViewportPanel::updateAndRender()
 void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::BeginChild("Fishing Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Fishing Editor Controls");
-    if (ImGui::Button("Start Minigame")) {
-        mCurrentFishingMinigame = std::make_unique<FishingMinigame>(mTestFishData);
+    if (mCurrentFishingMinigame) {
+        if (ImGui::Button("Stop Minigame")) {
+            mCurrentFishingMinigame.reset();
+        }
+    } else {
+        if (ImGui::Button("Start Minigame")) {
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);
+        }
     }
-    FishingMinigameFishData& minigameData = mTestFishData.mMinigameData;
+    FishingMinigameFishData& minigameData = mFishDef->mMinigameData;
     ImGui::Text("Test Minigame Data");
     ImGui::Separator();
     ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 2.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -76,15 +92,35 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::EndChild();
 }
 
+const MaterialShader* FishingEditorViewportPanel::getShader() {
+    if (mCurrentFishingMinigame) return nullptr;
+
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    return resourceManager.getMaterialShaderManager().getMaterialShader("editor_model_pbr");
+}
+
 void FishingEditorViewportPanel::renderMesh() {
     if (mCurrentFishingMinigame) {
         FishingMinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims);
         if (result.result == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(mTestFishData);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);
         } else if (result.result == MinigameResultType::Success) {
             LOG_INFO("Fishing success!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(mTestFishData);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);
+        }
+    }
+    else {
+        renderFishModel();
+    }
+}
+
+void FishingEditorViewportPanel::renderFishModel() {
+    ModelRepository& modelRepo = Services::ResourceManager::ref().getModelRepository();
+    if (mFishDef) {
+        const ModelDef& model = modelRepo.getModelDef(mFishDef->mModel);
+        for (int i = 0; i < model.getNumMeshes(); ++i) {
+            MeshDrawer::draw(model.getMesh(i).mMainMesh, MeshLODLevel::Highest);
         }
     }
 }

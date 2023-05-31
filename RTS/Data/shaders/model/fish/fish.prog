@@ -1,0 +1,3 @@
+fish:
+  vert: fish.vert
+  frag: standard_model.frag

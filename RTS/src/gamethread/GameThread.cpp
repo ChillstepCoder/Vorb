@@ -14,7 +14,7 @@
 
 #include "time/TimeOfDayManager.h"
 
-#include "rendering/renderstate/RenderStateManager.h"
+#include "rendering/renderstate/GameRenderStateManager.h"
 
 
 GameThread* GameThread::sInstance = nullptr;
@@ -54,12 +54,12 @@ void GameThread::destroyInstance() {
 void GameThread::setActiveEditorWorld(IWorld* editorWorld)
 {
     mActiveEditorWorld = editorWorld;
-    if (RenderStateManager::exists()) {
+    if (GameRenderStateManager::exists()) {
         if (mActiveEditorWorld) {
-            RenderStateManager::getInstance().setActiveWorld(mActiveEditorWorld);
+            GameRenderStateManager::getInstance().setActiveWorld(mActiveEditorWorld);
         }
         else {
-            RenderStateManager::getInstance().setActiveWorld(&mWorld);
+            GameRenderStateManager::getInstance().setActiveWorld(&mWorld);
         }
     }
 }

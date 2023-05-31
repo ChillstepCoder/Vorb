@@ -19,7 +19,7 @@
 #include "rendering/mesh/TerrainMeshManager.h"
 #include "rendering/mesh/GrassMeshManager.h"
 
-#include "rendering/renderstate/RenderStateManager.h"
+#include "rendering/renderstate/GameRenderStateManager.h"
 #include "rendering/RenderThreadTasks.h"
 
 void onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
@@ -66,16 +66,16 @@ void CliWorldInterface::onWorldBeginClient(IWorld& world) {
     mCliWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
 
     // Register for rendering
-    RenderStateManager::getInstance().setActiveWorld(&world);
+    GameRenderStateManager::getInstance().setActiveWorld(&world);
 }
 
 void CliWorldInterface::updateRenderState(IWorld& world) {
 
-    if (!RenderStateManager::getInstance().isActiveWorld(&world)) {
+    if (!GameRenderStateManager::getInstance().isActiveWorld(&world)) {
         return;
     }
 
-    RenderState& renderState = RenderStateManager::getInstance().getRenderStateForUpdate();
+    RenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForUpdate();
     // Cache things we need to update so we can keep the update section small as possible
 
     // TODO: If we have a camera attach component, use that
@@ -98,7 +98,7 @@ void CliWorldInterface::updateRenderState(IWorld& world) {
     updateDebugRenderState(world, renderState);
 
     // Release render state
-    RenderStateManager::getInstance().finishUpdating();
+    GameRenderStateManager::getInstance().finishUpdating();
 }
 
 void CliWorldInterface::updateEntitiesRenderState(IWorld& world, RenderState& renderState) {

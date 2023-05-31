@@ -4,16 +4,23 @@
 #include "resources/ResourceManager.h"
 #include "resources/FishRepository.h"
 
+#include "rendering/renderstate/RenderStateManager.h"
+
 #include "world/IWorld.h"
 #include "math/Random.h"
 
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
 constexpr f32 MAX_DORMANCY_DURATION_SEC = 120.0f;
+constexpr f32 FISH_COLLIDE_RADIUS = 0.3f; // TODO: Config
 
 FishEcosystem::FishEcosystem(IWorld& world) :
     mWorld(world),
     mFishRepository(Services::ResourceManager::ref().getFishRepository()) {
     initEventHandlers();
+
+    if (mWorld.getNetMode() != WorldNetMode::DedicatedServer) {
+        mRenderStateManager = std::make_unique<RenderStateManager<FishRenderState>>();
+    }
 }
 
 FishEcosystem::~FishEcosystem() {
@@ -68,6 +75,8 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     FishChunkPtr newFishChunk = std::make_unique<FishChunk>();
     assert(chunk.getTileContainer());
 
+    newFishChunk->mContainerID = chunk.getTileContainer()->getId();
+
     f32 timeSinceLastSpawned = FLT_MAX;
     // Retrieve dormant data
     {
@@ -82,14 +91,14 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
 
     // TODO: This is fairly inefficient, is it worth cacheing these bits on the chunks during generation instead?
     const std::vector<Tile>& tiles = chunk.getTileContainer()->getTiles();
-    const int CELL_ROW_STRIDE = FISH_CELLS_WIDTH * FISH_CELL_TILE_SIZE;
     for (int cy = 0; cy < FISH_CELLS_WIDTH; ++cy) {
-        const int yIndexStart = cy * CELL_ROW_STRIDE;
+        const int yIndexStart = cy * FISH_CELL_ROW_STRIDE_TILES;
         for (int cx = 0; cx < FISH_CELLS_WIDTH; ++cx) {
             FishCell& cell = newFishChunk->mCells[cy * FISH_CELLS_WIDTH + cx];
             cell.mWorldPos = chunk.getWorldPos() + i32v2(cx * FISH_CELL_TILE_WIDTH, cy * FISH_CELL_TILE_WIDTH);
             cell.mSpawnableTiles.resizeAndZero(FISH_CELL_TILE_SIZE);
             cell.mTotalSpawnableTiles = 0;
+            cell.mCellXY = ui8v2(cx, cy);
             const int indexStart = yIndexStart + cx * FISH_CELL_TILE_WIDTH;
             for (int y = 0; y < FISH_CELL_TILE_WIDTH; ++y) {
                 for (int x = 0; x < FISH_CELL_TILE_WIDTH; ++x) {
@@ -110,8 +119,8 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
         // Fresh spawning
         const FishDef& fishDef = mFishRepository.getFish("cod");
         for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 50; ++j) {
-                trySpawnFish(newFishChunk->mCells[i], fishDef);
+            for (int j = 0; j < 25; ++j) {
+                trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], fishDef);
             }
         }
     }
@@ -151,8 +160,6 @@ void FishEcosystem::makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk
     dormantChunk.mUnloadedTime = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < FISH_CELLS_PER_CHUNK; ++i) {
         FishCell& activeCell = chunk.mCells[i];
-
-        std::lock_guard lock(activeCell.mMutex);
         DormantFishCell& dormantCell = dormantChunk.mCells[i];
         dormantCell.mPopulations = std::move(activeCell.mPopulations);
     }
@@ -164,12 +171,18 @@ void FishEcosystem::makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChu
     }
 }
 
-bool FishEcosystem::trySpawnFish(FishCell& cell, const FishDef& fishDef) {
+bool FishEcosystem::trySpawnFish(const TileContainer& container, FishCell& cell, const FishDef& fishDef) {
     int randomTile = Random::getCachedRandom() % FISH_CELL_TILE_SIZE;
     if (cell.mSpawnableTiles.getBit(randomTile)) {
+        TileIndex tileIndex = cell.mCellXY.y * FISH_CELL_ROW_STRIDE_TILES + cell.mCellXY.x * FISH_CELL_TILE_WIDTH;
+        tileIndex += randomTile % FISH_CELL_TILE_WIDTH + (randomTile / FISH_CELL_TILE_WIDTH) * CHUNK_WIDTH;
         ActiveFish newFish;
         newFish.mFishId = fishDef.mId;
-        newFish.mPosition = f32v3(cell.mWorldPos.x + randomTile % FISH_CELL_TILE_WIDTH, cell.mWorldPos.y + randomTile / FISH_CELL_TILE_WIDTH, 0.0f);
+        const f32 groundZ = container.getTileAt(tileIndex).getGroundZOffset();
+        // Make sure this is actually underwater
+        if (groundZ >= -FISH_COLLIDE_RADIUS) return false;
+        const f32 randZPos = -FISH_COLLIDE_RADIUS + (groundZ + FISH_COLLIDE_RADIUS) * Random::xorshf96f();
+        newFish.mPosition = f32v3(cell.mWorldPos.x + randomTile % FISH_CELL_TILE_WIDTH, cell.mWorldPos.y + randomTile / FISH_CELL_TILE_WIDTH, randZPos);
         cell.mFish.emplace_back(newFish);
     }
     return false;
@@ -177,14 +190,30 @@ bool FishEcosystem::trySpawnFish(FishCell& cell, const FishDef& fishDef) {
 
 void FishEcosystem::updateActiveFish() {
     PROFILE_FUNCTION();
-    for (auto&& activeFishChunk : mActiveFishChunks) {
-        for (int i = 0; i < 4; ++i) {
-            FishCell& activeCell = activeFishChunk.second->mCells[i];
-            std::lock_guard lock(activeCell.mMutex);
-            for (auto&& fish : activeCell.mFish) {
-                fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
-                fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+    if (mRenderStateManager) {
+        FishRenderState& renderState = mRenderStateManager->getRenderStateForUpdate();
+        renderState.mActiveCells.resize(mActiveFishChunks.size() * 4);
+        size_t renderStateCellIndex = 0;
+        for (auto&& activeFishChunk : mActiveFishChunks) {
+            for (int i = 0; i < 4; ++i) {
+                // Update render state
+                FishCell& activeCell = activeFishChunk.second->mCells[i];
+                FishRenderStateCell& renderStateCell = renderState.mActiveCells[renderStateCellIndex++];
+                renderStateCell.mFish.resize(activeCell.mFish.size());
+                renderStateCell.mCellCenter = f32v2(activeCell.mWorldPos) + f32v2(FISH_CELL_HALF_TILE_WIDTH);
+                for (size_t j = 0; j < activeCell.mFish.size(); ++j) {
+                    ActiveFish& fish = activeCell.mFish[j];
+                    fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+                    fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+                    renderStateCell.mFish[j] = fish;
+                }
+                
             }
         }
+        mRenderStateManager->finishUpdating();
+    }
+    else {
+        // Dedicated server implementation
+        assert(false);
     }
 }

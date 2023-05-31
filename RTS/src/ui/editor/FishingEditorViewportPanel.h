@@ -13,9 +13,14 @@ public:
 
     void renderMesh() override;
 
-    FishDef mTestFishData;
+    void setFishDef(FishDef& fishDef) { mFishDef = &fishDef; mCurrentFishingMinigame = nullptr; }
+
+private:
+    const MaterialShader* getShader() override;
+    void renderFishModel();
+
+    FishDef* mFishDef = nullptr;
     std::unique_ptr<FishingMinigame> mCurrentFishingMinigame;
     f32v2 mViewportDims;
-
 };
 

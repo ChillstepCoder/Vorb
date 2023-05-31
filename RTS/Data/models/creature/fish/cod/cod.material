@@ -1,0 +1,5 @@
+albedo: cod_albedo.png
+normal: cod_normal.png
+ao: cod_ao.png
+sampler_state: LINEAR_CLAMP_MIPMAP
+roughness: [0.2, 0.2]

@@ -147,7 +147,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                     break;
                 case TileEditorPanelResultCode::EDIT_FISH:
                     // TODO: Fich
-                    openFishForEdit();
+                    openFishForEdit(*std::get<FishDef*>(result.second));
                     break;
                 default:
                     assert(false);
@@ -196,7 +196,8 @@ void EditorRoot::openBiomeForEdit() {
     setActiveCenterPanel(mBiomeEditorViewportPanel.get());
 }
 
-void EditorRoot::openFishForEdit() {
+void EditorRoot::openFishForEdit(FishDef& fishDef) {
+    mFishingEditorViewportPanel->setFishDef(fishDef);
     setActiveCenterPanel(mFishingEditorViewportPanel.get());
 }
 

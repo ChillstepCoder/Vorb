@@ -50,7 +50,7 @@ public:
     GLIndirectBuffer& operator=(GLIndirectBuffer&& o) = delete;
 
     explicit GLIndirectBuffer(size_t maxDrawCommands)
-        : mIndirectBuffer(sizeof(DrawElementsIndirectCommand)* maxDrawCommands, nullptr, GL_DYNAMIC_STORAGE_BIT)
+        : mIndirectBuffer(sizeof(DrawElementsIndirectCommand) * maxDrawCommands, nullptr, GL_DYNAMIC_STORAGE_BIT)
         , mDrawCommands(maxDrawCommands)
     {}
 

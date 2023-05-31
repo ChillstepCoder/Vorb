@@ -14,9 +14,14 @@ constexpr int FISH_CELLS_PER_CHUNK = FISH_CELLS_WIDTH * FISH_CELLS_WIDTH;
 constexpr int FISH_CELL_TILE_WIDTH = CHUNK_WIDTH / FISH_CELLS_WIDTH;
 constexpr int FISH_CELL_HALF_TILE_WIDTH = FISH_CELL_TILE_WIDTH / 2;
 constexpr int FISH_CELL_TILE_SIZE = FISH_CELL_TILE_WIDTH * FISH_CELL_TILE_WIDTH;
+constexpr int FISH_CELL_ROW_STRIDE_TILES = FISH_CELLS_WIDTH * FISH_CELL_TILE_SIZE;
 
 typedef boost::container::flat_map<FishID, int> FishPopulationMap;
 
+template <typename T>
+class RenderStateManager;
+
+class TileContainer;
 struct FishDef;
 class FishRepository;
 
@@ -43,8 +48,8 @@ struct FishCell {
     FishPopulationMap mPopulations;
     BitArray mSpawnableTiles;
     int mTotalSpawnableTiles = 0; // can derive max population and population pressure from this
+    ui8v2 mCellXY;
     bool mRenderingFish = false; // When false, we do not need to update fish
-    mutable std::mutex mMutex;
 };
 
 struct DormantFishCell {
@@ -53,12 +58,22 @@ struct DormantFishCell {
 
 struct FishChunk {
     FishCell mCells[FISH_CELLS_PER_CHUNK];
+    TileContainerID mContainerID;
 };
 typedef std::unique_ptr<FishChunk> FishChunkPtr;
 
 struct DormantFishChunk {
     DormantFishCell mCells[FISH_CELLS_PER_CHUNK];
     TimePoint mUnloadedTime; // TODO: GameTime for load/save
+};
+
+struct FishRenderStateCell {
+    std::vector<ActiveFish> mFish;
+    f32v2 mCellCenter;
+};
+
+struct FishRenderState {
+    std::vector<FishRenderStateCell> mActiveCells;
 };
 
 class FishEcosystem
@@ -71,12 +86,14 @@ public:
     void tickGameThread();
 
     void initChunkFish(Chunk& chunk);
+
+    RenderStateManager<FishRenderState>& getRenderStateManager() const { assert(mRenderStateManager); return *mRenderStateManager; }
 private:
     void initEventHandlers();
     void disposeChunkFish(Chunk& chunk);
     void makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
     void makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
-    bool trySpawnFish(FishCell& cell, const FishDef& fishDef);
+    bool trySpawnFish(const TileContainer& container, FishCell& cell, const FishDef& fishDef);
     void updateActiveFish();
 
     boost::container::flat_map<ChunkID, FishChunkPtr> mActiveFishChunks;
@@ -94,5 +111,7 @@ private:
 
     // Very slow ticking for dormancy updates
     TickingTimer mDormancyUpdateTicker = TickingTimer(1000.0f);
+
+    std::unique_ptr<RenderStateManager<FishRenderState>> mRenderStateManager;
 };
 

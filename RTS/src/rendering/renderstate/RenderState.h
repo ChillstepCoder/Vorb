@@ -36,7 +36,7 @@ struct DebugChunkRenderState {
 
 class RenderState {
     friend class CliWorldInterface;
-    friend class RenderStateManager;
+    friend class GameRenderStateManager;
 public:
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }

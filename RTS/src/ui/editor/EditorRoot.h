@@ -10,6 +10,7 @@ class TileEditorPanel;
 class ModelDef;
 struct MaterialHandle;
 struct TileGrassData;
+struct FishDef;
 class ModelEditorViewportPanel;
 class MaterialEditorViewportPanel;
 class BiomeEditorViewportPanel;
@@ -35,7 +36,7 @@ private:
     void openMaterialForEdit(MaterialHandle& materialHandle);
     void openFoliageForEdit(TileGrassData& grassData);
     void openBiomeForEdit();
-    void openFishForEdit();
+    void openFishForEdit(FishDef& fishDef);
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 
     // Center panel display

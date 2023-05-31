@@ -386,6 +386,7 @@
     <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderstate\GameRenderStateManager.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
     <ClCompile Include="src\rendering\texture\Cubemap.cpp" />
     <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
@@ -710,6 +711,7 @@
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
+    <ClInclude Include="src\rendering\renderstate\GameRenderStateManager.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\StencilBufferIDs.h" />
     <ClInclude Include="src\rendering\tasks\MeshTask.inl" />

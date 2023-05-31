@@ -1,5 +1,5 @@
-cod:
-  model: cod
+rarefish:
+  model: rarefish
   item:
     texture: item_wood
     type: food

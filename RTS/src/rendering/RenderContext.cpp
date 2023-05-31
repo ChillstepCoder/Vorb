@@ -40,7 +40,7 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/model/InstancedStaticModelManager.h"
-#include "rendering/renderstate/RenderStateManager.h"
+#include "rendering/renderstate/GameRenderStateManager.h"
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
@@ -150,7 +150,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mWindow(window)
 {
     // State init
-    RenderStateManager::initInstance();
+    GameRenderStateManager::initInstance();
 
     // Make sure we can filter cubemaps properly
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -296,7 +296,7 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
     PROFILE_FUNCTION();
-    const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
+    const RenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForRender();
     mCurrentFrameAlpha = frameAlpha;
     mCurrentFrameElapsedSec = elapsedSec;
     mCameraController = &cameraController;

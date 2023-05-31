@@ -120,6 +120,9 @@ namespace fbx2raw {
         if (fbxMesh->GetElementTangentCount() > 0) {
             element_tangents = fbxMesh->GetElementTangent(0);
         }
+        else {
+            LOG_WARN(" mesh is missing tangents, consider re-exporting");
+        }
 
         // Checks vertex colors availability.
         const FbxGeometryElementVertexColor* element_colors = nullptr;
@@ -193,6 +196,7 @@ namespace fbx2raw {
                 if (!GetElement(*element_normals, vertexId, controlPoint, &src_normal)) {
                     return false;
                 }
+                src_normal = transformMatrix.MultT(src_normal);
                 const ozz::math::Float3 normal = NormalizeSafe(
                     _converter->ConvertVector(src_normal), ozz::math::Float3::y_axis());
 
@@ -203,6 +207,7 @@ namespace fbx2raw {
                         &src_tangent)) {
                         return false;
                     }
+                    src_tangent = transformMatrix.MultT(src_tangent);
                 }
                 const ozz::math::Float3 tangent3 = NormalizeSafe(
                     _converter->ConvertVector(src_tangent), ozz::math::Float3::x_axis());
@@ -263,6 +268,7 @@ namespace fbx2raw {
                     }
                 }
                 else {
+                    // TODO: This doesn't work we need real tangent
                     vertex.tangent = f32v3(1.0f, 0.0f, 0.0f);
                 }
                 if (element_colors) {
@@ -351,10 +357,13 @@ namespace fbx2raw {
         RawMaterialData rv;
         rv.materialName = fbxMaterial.GetName();
 
+        LOG_CRITICAL("{}", rv.materialName);
         //LOG_DEBUG("Material name {} ",fbxMaterial.GetName());
         for (FbxProperty matProp = fbxMaterial.GetFirstProperty(); matProp.IsValid(); matProp = fbxMaterial.GetNextProperty(matProp)) {
             FbxString strName = matProp.GetName();
             const char* propName = strName.Buffer();
+
+            LOG_CRITICAL("  {}", propName);
             if (strcmp(propName, "EmissiveColor") == 0) {
                 rv.emissiveColor = parseMaterialPropertyToVec4(matProp);
             }

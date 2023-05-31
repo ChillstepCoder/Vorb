@@ -1,42 +1,43 @@
 #pragma once
-
-#include "rendering/renderstate/RenderState.h"
-
-class IWorld;
-
+template <typename T>
 class RenderStateManager {
 public:
-    RenderStateManager() = default;
-    ~RenderStateManager() = default;
-
-    RenderStateManager(RenderStateManager& other) = delete;
-    void operator=(const RenderStateManager&) = delete;
-
-    static RenderStateManager& initInstance();
-    static RenderStateManager& getInstance();
-    static RenderStateManager* tryGetInstance() { return sInstance; }
-    static bool exists() { return sInstance != nullptr; }
-
-    void setActiveWorld(const IWorld* activeWorld);
-
-    bool isActiveWorld(const IWorld* world);
-
     /// Gets the state for updating. Only call once per frame.
-    RenderState& getRenderStateForUpdate();
+    T& getRenderStateForUpdate() {
+        ASSERT_GAME_THREAD();
+        {
+            std::lock_guard<std::mutex> lock(mLock);
+            // Get the next free state
+            incrementMod3(mUpdating);
+            if (mUpdating == mRendering) {
+                incrementMod3(mUpdating);
+            }
+        }
+        return mRenderState[mUpdating];
+    }
     /// Marks state as finished updating. Only call once per frame,
     /// must call for every call to getRenderStateForUpdate.
-    void finishUpdating();
+    void finishUpdating() {
+        ASSERT_GAME_THREAD();
+        std::lock_guard<std::mutex> lock(mLock);
+        // Mark the currently updating buffer as the last updated
+        mLastUpdated = mUpdating;
+    }
     /// Gets the state for rendering. Only call once per frame.
-    const RenderState& getRenderStateForRender();
+    const T& getRenderStateForRender() {
+        ASSERT_RENDER_THREAD();
+        {
+            std::lock_guard<std::mutex> lock(mLock);
+            // Render the last updated state
+            mRendering = mLastUpdated;
+        }
+        return mRenderState[mRendering];
+    }
 private:
-    const IWorld* mActiveWorld = nullptr;
     int mUpdating = 0; ///< Currently updating state
     int mLastUpdated = 0; ///< Most recently updated state
     int mRendering = 0; ///< Currently rendering state
-    RenderState mRenderState[3]; ///< Triple-buffered state
+    T mRenderState[3]; ///< Triple-buffered state
     std::mutex mLock;
-    std::mutex mWorldLock;
-
-    static RenderStateManager* sInstance;
 };
 
