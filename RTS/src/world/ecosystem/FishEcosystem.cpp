@@ -119,7 +119,7 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
         // Fresh spawning
         const FishDef& fishDef = mFishRepository.getFish("cod");
         for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 25; ++j) {
+            for (int j = 0; j < 15; ++j) {
                 trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], fishDef);
             }
         }

@@ -3,6 +3,8 @@
 class IWorld;
 class Camera3D;
 class GLIndirectBuffer;
+class Mesh;
+class MaterialShader;
 
 struct FishInstanceTransform {
     f32v3 mPosition;
@@ -31,9 +33,10 @@ private:
     // TODO: Can we guarentee all fish exist in one VBO?
     // One buffer per fish ID
     std::vector<FishInstanceData> mFishInstanceData;
-    std::vector<int> mInstanceCountsThisFrame;
+    std::vector<ui32> mInstanceCountsThisFrame;
     GLsync mFence[3] = { 0 };
     int mFrameIndex = 0;
     FishInstanceData* mMappedData;
+    const MaterialShader* mFishShader;
 };
 

@@ -106,6 +106,7 @@ struct DebugOptions {
     bool mShowEditor;
     bool mShowPaths;
     bool mDebugFishEcosystem;
+    bool mShowFish;
     bool mShowEntityQueries;
     bool mEnableVisualLogs;
     bool mShowDevHud;

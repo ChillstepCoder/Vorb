@@ -13,13 +13,17 @@
 #include "resources/FishRepository.h"
 #include "resources/ModelRepository.h"
 
+#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialRenderer.h"
+
 #include "rendering/renderstate/RenderStateManager.h"
+#include "rendering/mesh/MeshDrawer.h"
 
 #include "camera/Camera3D.h"
 
 #include "rendering/gl/GLObjects.h"
 
-constexpr int MAX_INSTANCES_PER_FRAME = 1000;
+constexpr int MAX_INSTANCES_PER_FRAME = 2000;
 constexpr int INSTANCE_TRANSFORM_DATA_SIZE = sizeof(FishInstanceTransform);
 constexpr int INSTANCE_TRANSFORM_BUFFER_SIZE = INSTANCE_TRANSFORM_DATA_SIZE * MAX_INSTANCES_PER_FRAME * 3; // 3x our maximum size
 
@@ -29,6 +33,8 @@ FishRenderer::FishRenderer() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const std::vector<FishDef>& allFish = resourceManager.getFishRepository().getAllFish();
     mFishInstanceData.resize(allFish.size());
+
+    mFishShader = resourceManager.getMaterialShaderManager().getMaterialShader("fish");
 
     // TODO: Only allocate what we need!!! Most fish will not be rendering!
     for (int i = 0; i < mFishInstanceData.size(); ++i) {
@@ -60,6 +66,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         return;
     }
 
+
     BoundingSphere boundingSphere;
     boundingSphere.radius = sqrt(pow(FISH_CELL_TILE_WIDTH * 0.5f, 2.0f) * 3.0f);
     boundingSphere.center.z = 0.0f;
@@ -72,7 +79,8 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         glDeleteSync(mFence[mFrameIndex]);
     }
 
-    mInstanceCountsThisFrame.resize(mFishInstanceData.size(), 0);
+    mInstanceCountsThisFrame.resize(mFishInstanceData.size());
+    std::fill(mInstanceCountsThisFrame.begin(), mInstanceCountsThisFrame.end(), 0);
 
     const FishRenderState& renderState = srvWorldInterface->getFishEcosystem().getRenderStateManager().getRenderStateForRender();
     for (auto&& cell : renderState.mActiveCells) {
@@ -82,19 +90,21 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         if (camera.sphereIsVisible(boundingSphere)) {
             for (auto&& fish : cell.mFish) {
                 addFishInstance(fish.mFishId, fish.mPosition, 0.0f);
-                DebugRenderer::drawFilledQuad(fish.mPosition, f32v2(1.0f), color::Cyan, 0);
+                DebugRenderer::drawFilledQuad(fish.mPosition, f32v2(1.0f), color4(0, 255, 255, 128), 0);
             }
         }
     }
 
-    const int transformBufferOffset = mFrameIndex * MAX_INSTANCES_PER_FRAME;
+    MaterialRenderer::bindMaterialForRender(*mFishShader);
+    const int transformIndexStart = mFrameIndex * MAX_INSTANCES_PER_FRAME;
+    glUniform1i(mFishShader->getUniform("unBufferOffset"), transformIndexStart);
     for (size_t i = 0; i < mFishInstanceData.size(); ++i) {
-        const int instanceCount = mInstanceCountsThisFrame[i];
+        const ui32 instanceCount = mInstanceCountsThisFrame[i];
         if (instanceCount) {
             FishInstanceData& instanceData = mFishInstanceData[i];
-            glFlushMappedNamedBufferRange(instanceData.mInstanceTransformBuffer, transformBufferOffset, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
-
-            dfdfdf;
+            glFlushMappedNamedBufferRange(instanceData.mInstanceTransformBuffer, transformIndexStart * INSTANCE_TRANSFORM_DATA_SIZE, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, instanceData.mInstanceTransformBuffer);
+            MeshDrawer::drawInstanced(instanceData.mMesh->mMainMesh, instanceCount);
         }
     }
 
@@ -177,7 +187,7 @@ void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32 yaw) {
     if (mInstanceCountsThisFrame[fish] >= MAX_INSTANCES_PER_FRAME) {
         return;
     }
-    const int transformBufferOffset = mFrameIndex * (MAX_INSTANCES_PER_FRAME + mInstanceCountsThisFrame[fish]);
+    const int transformBufferOffset = mFrameIndex * MAX_INSTANCES_PER_FRAME + mInstanceCountsThisFrame[fish];
 
     FishInstanceData& instanceData = mFishInstanceData[fish];
     instanceData.mMappedTransformBuffer[transformBufferOffset].mPosition = pos;

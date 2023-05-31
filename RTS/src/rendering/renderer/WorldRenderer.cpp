@@ -184,7 +184,9 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
 
     // Fish
-    mFishRenderer->renderFishEcosystem(*mCamera, *mActiveWorld);
+    if (sDebugOptions.mShowFish) {
+        mFishRenderer->renderFishEcosystem(*mCamera, *mActiveWorld);
+    }
 
     // Smudge
     {

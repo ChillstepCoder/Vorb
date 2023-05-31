@@ -357,13 +357,11 @@ namespace fbx2raw {
         RawMaterialData rv;
         rv.materialName = fbxMaterial.GetName();
 
-        LOG_CRITICAL("{}", rv.materialName);
         //LOG_DEBUG("Material name {} ",fbxMaterial.GetName());
         for (FbxProperty matProp = fbxMaterial.GetFirstProperty(); matProp.IsValid(); matProp = fbxMaterial.GetNextProperty(matProp)) {
             FbxString strName = matProp.GetName();
             const char* propName = strName.Buffer();
 
-            LOG_CRITICAL("  {}", propName);
             if (strcmp(propName, "EmissiveColor") == 0) {
                 rv.emissiveColor = parseMaterialPropertyToVec4(matProp);
             }
@@ -386,7 +384,6 @@ namespace fbx2raw {
                 rv.transparencyFactor = parseMaterialPropertyToFloat(matProp);
             }
 
-            //LOG_DEBUG("  Property {} {} {}", propName, (int)matProp.GetPropertyDataType().GetType(), matProp.GetPropertyDataType().GetName());
         }
         return rv;
     }

@@ -396,6 +396,10 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
         ImGui::SliderFloat3("LOD Distances", sDebugOptions.mLodDistances, 0.0f, 1000.0f);
         ImGui::Separator();
     }
+    if (ImGui::CollapsingHeader("Fish")) {
+        ImGui::Checkbox("Show Fish", &sDebugOptions.mShowFish);
+        ImGui::Separator();
+    }
     if (activeGBuffer) {
         if (ImGui::CollapsingHeader("GBuffer")) {
             const ImVec2 uv0(0, 1);
