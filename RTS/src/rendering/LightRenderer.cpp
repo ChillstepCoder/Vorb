@@ -69,7 +69,12 @@ void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTe
         LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
         LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
         glUniform2f(mSunlightMaterialPbr->getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
-        glUniform2f(mSunlightMaterialPbr->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        if (sDebugOptions.mIsCameraUnderwater) {
+            glUniform2f(mSunlightMaterialPbr->getUniform("unHazeDivisor"), sDebugOptions.mUnderwaterHazeDivisor, sDebugOptions.mUnderwaterHazeDivisor);
+        }
+        else {
+            glUniform2f(mSunlightMaterialPbr->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        }
         glUniform2f(mSunlightMaterialPbr->getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
         glUniform2f(mSunlightMaterialPbr->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
         glUniform2f(mSunlightMaterialPbr->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);

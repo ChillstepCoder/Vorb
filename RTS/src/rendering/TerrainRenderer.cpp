@@ -9,6 +9,7 @@
 #include "rendering/material/BrdfLUT.h"
 
 #include <Vorb/graphics/GBuffer.h>
+#include <Vorb/graphics/BlendState.h>
 
 #include "world/HeightmapTerrainQuadtree.h"
 
@@ -72,6 +73,8 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
 {
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();
+    vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
+
     const MaterialShader* shader;
     if (sDebugOptions.mUsingPBR) {
         shader = mWaterPbrMaterial;
@@ -93,7 +96,12 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
         glUniform2f(shader->getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
         glUniform2f(shader->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
         glUniform2f(shader->getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
-        glUniform2f(shader->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        if (sDebugOptions.mIsCameraUnderwater) {
+            glUniform2f(shader->getUniform("unHazeDivisor"), sDebugOptions.mUnderwaterHazeDivisor, sDebugOptions.mUnderwaterHazeDivisor);
+        }
+        else {
+            glUniform2f(shader->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        }
         glUniform2f(shader->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
         if (sDebugOptions.mLightPresetSplitView) {
             glUniform1f(shader->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
@@ -136,4 +144,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
             MeshDrawer::draw(mesh.mMainMesh);
         }
     }
+
+
+    vg::BlendState::restorePrevious();
 }

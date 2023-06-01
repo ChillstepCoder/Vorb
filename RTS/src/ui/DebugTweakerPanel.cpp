@@ -383,7 +383,6 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths); 
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
-        ImGui::Checkbox("Debug Fish Ecosystem", &sDebugOptions.mDebugFishEcosystem);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
         ImGui::Checkbox("Debug Toggle 0", &sDebugOptions.mDebugToggle0);
         ImGui::Separator();
@@ -398,6 +397,8 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
     }
     if (ImGui::CollapsingHeader("Fish")) {
         ImGui::Checkbox("Show Fish", &sDebugOptions.mShowFish);
+        ImGui::Checkbox("Debug Render", &sDebugOptions.mDebugFishEcosystem);
+        ImGui::SliderFloat("Render Distance", &sDebugOptions.mFishRenderDistance, 0.0f, 1000.0f);
         ImGui::Separator();
     }
     if (activeGBuffer) {

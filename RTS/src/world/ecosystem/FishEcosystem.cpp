@@ -6,12 +6,48 @@
 
 #include "rendering/renderstate/RenderStateManager.h"
 
+#include "options/DebugOptions.h"
+
 #include "world/IWorld.h"
 #include "math/Random.h"
 
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
 constexpr f32 MAX_DORMANCY_DURATION_SEC = 120.0f;
 constexpr f32 FISH_COLLIDE_RADIUS = 0.3f; // TODO: Config
+
+// Normalizes the angle to be between -PI and PI
+float normalizeAngle(float angle) {
+    while (angle > M_PIf) angle -= 2 * M_PIf;
+    while (angle < -M_PIf) angle += 2 * M_PIf;
+    return angle;
+}
+
+// Rotate currentYaw towards targetYaw with given rotation speed.
+float rotateYaw(float currentYaw, float targetYaw, float rotationSpeed) {
+    currentYaw = normalizeAngle(currentYaw);
+    targetYaw = normalizeAngle(targetYaw);
+
+    float deltaYaw = targetYaw - currentYaw;
+
+    // Select the direction of rotation to take the shortest path.
+    if (deltaYaw > M_PIf)
+        deltaYaw -= 2 * M_PIf;
+    else if (deltaYaw < -M_PIf)
+        deltaYaw += 2 * M_PIf;
+
+    // Apply the rotation speed.
+    deltaYaw = std::clamp(deltaYaw, -rotationSpeed, rotationSpeed);
+
+    // Compute the new yaw value.
+    float newYaw = currentYaw + deltaYaw;
+
+    return normalizeAngle(newYaw);
+}
+
+TileIndex getTileIndexFromCellOffset(const FishCell& cell, i32v2 cellOffset) {
+    const int indexStart = cell.mCellXY.y * FISH_CELL_ROW_STRIDE_TILES + cell.mCellXY.x * FISH_CELL_TILE_WIDTH;
+    return indexStart + cellOffset.y * CHUNK_WIDTH + cellOffset.x;
+}
 
 FishEcosystem::FishEcosystem(IWorld& world) :
     mWorld(world),
@@ -117,10 +153,14 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     }
     else {
         // Fresh spawning
-        const FishDef& fishDef = mFishRepository.getFish("cod");
+        const FishDef& codFish = mFishRepository.getFish("cod");
+        const FishDef& rareFish = mFishRepository.getFish("rarefish");
         for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < 15; ++j) {
-                trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], fishDef);
+                trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], codFish);
+            }
+            for (int j = 0; j < 2; ++j) {
+                trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], rareFish);
             }
         }
     }
@@ -190,24 +230,29 @@ bool FishEcosystem::trySpawnFish(const TileContainer& container, FishCell& cell,
 
 void FishEcosystem::updateActiveFish() {
     PROFILE_FUNCTION();
+
+    const f32 RENDER_DISTANCE_SQ = SQ(sDebugOptions.mFishRenderDistance);
+    const f32v2 loadCenter = mWorld.getLoadCenter();
+
     if (mRenderStateManager) {
         FishRenderState& renderState = mRenderStateManager->getRenderStateForUpdate();
         renderState.mActiveCells.resize(mActiveFishChunks.size() * 4);
         size_t renderStateCellIndex = 0;
         for (auto&& activeFishChunk : mActiveFishChunks) {
+            TileContainer& container = *mWorld.getChunkGrid().getChunk(activeFishChunk.first).getTileContainer();
             for (int i = 0; i < 4; ++i) {
                 // Update render state
                 FishCell& activeCell = activeFishChunk.second->mCells[i];
-                FishRenderStateCell& renderStateCell = renderState.mActiveCells[renderStateCellIndex++];
-                renderStateCell.mFish.resize(activeCell.mFish.size());
-                renderStateCell.mCellCenter = f32v2(activeCell.mWorldPos) + f32v2(FISH_CELL_HALF_TILE_WIDTH);
-                for (size_t j = 0; j < activeCell.mFish.size(); ++j) {
-                    ActiveFish& fish = activeCell.mFish[j];
-                    fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
-                    fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
-                    renderStateCell.mFish[j] = fish;
+                if (glm::distance2(loadCenter, activeCell.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
+                    FishRenderStateCell& renderStateCell = renderState.mActiveCells[renderStateCellIndex++];
+                    renderStateCell.mFish.resize(activeCell.mFish.size());
+                    renderStateCell.mCellCenter = f32v2(activeCell.mWorldPos) + f32v2(FISH_CELL_HALF_TILE_WIDTH);
+                    for (size_t j = 0; j < activeCell.mFish.size(); ++j) {
+                        ActiveFish& fish = activeCell.mFish[j];
+                        updateFish(container, activeCell, fish);
+                        renderStateCell.mFish[j] = fish;
+                    }
                 }
-                
             }
         }
         mRenderStateManager->finishUpdating();
@@ -216,4 +261,83 @@ void FishEcosystem::updateActiveFish() {
         // Dedicated server implementation
         assert(false);
     }
+}
+
+void FishEcosystem::updateFish(const TileContainer& container, FishCell& cell, ActiveFish& fish) {
+
+    constexpr f32 PATH_SUCCESS_DISTANCE_SQ = SQ(0.1f);
+
+    // Update motion
+    fish.mPosition += fish.mVelocity;
+
+    constexpr auto getNewMovePosition = [](const TileContainer& container, FishCell& cell, ActiveFish& fish) {
+        constexpr int MOVE_OFFSETS[8][2] = {
+           {-1, -1},
+           { 0, -1},
+           {1, -1},
+           {-1, 0},
+           {1, 0},
+           {-1, 1},
+           {0, 1},
+           {1, 1},
+        };
+
+        // New move position
+        i32v2 cellOffset = i32v2(fish.mPosition) - cell.mWorldPos;
+        cellOffset = glm::clamp(cellOffset, 0, FISH_CELL_TILE_WIDTH - 1);
+        int randomDir = Random::getCachedRandom() % 8;
+        cellOffset.x += MOVE_OFFSETS[randomDir][0];
+        cellOffset.y += MOVE_OFFSETS[randomDir][1];
+        if (cellOffset.x >= 0 && cellOffset.y >= 0 &&
+            cellOffset.x < FISH_CELL_TILE_WIDTH && cellOffset.y < FISH_CELL_TILE_WIDTH) {
+            const f32v2 targetXY((f32)cell.mWorldPos.x + (f32)cellOffset.x + 0.5f, (f32)cell.mWorldPos.y + (f32)cellOffset.y + 0.5f);
+            f32 targetZ = fish.mPosition.z + Random::xorshf96f() * 2.0f - 1.0f;
+            // Clamp to water
+            const f32 groundZ = container.getTileAt(getTileIndexFromCellOffset(cell, cellOffset)).getGroundZOffset();
+            if (groundZ <= -FISH_COLLIDE_RADIUS) {
+                targetZ = glm::clamp(targetZ, groundZ + FISH_COLLIDE_RADIUS, -FISH_COLLIDE_RADIUS);
+                fish.mTargetPosition = f32v3(targetXY.x, targetXY.y, targetZ);
+                fish.mAIState = FishAIState::MovingToPoint;
+            }
+        }
+    };
+
+    switch (fish.mAIState) {
+        case FishAIState::Idle: {
+            // Drag
+            fish.mVelocity *= 0.9f;
+            if (Random::getCachedRandomf() <= 0.01f) {
+                getNewMovePosition(container, cell, fish);
+            }
+            
+            break;
+        }
+        case FishAIState::MovingToPoint: {
+
+            // Continue move chance
+            if (Random::getCachedRandomf() <= 0.005f) {
+                getNewMovePosition(container, cell, fish);
+            }
+
+            const f32v3 offsetToTarget = fish.mTargetPosition - fish.mPosition;
+            const f32 distSq = glm::length2(offsetToTarget);
+            if (distSq <= PATH_SUCCESS_DISTANCE_SQ) {
+                fish.mAIState = FishAIState::Idle;
+            }
+            else {
+                constexpr f32 ACCELERATION = 0.1f; //[0,1]
+                constexpr f32 ROTATION_SPEED = 0.05f;
+                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * 0.01f;
+                fish.mVelocity = lerp(fish.mVelocity, targetVelocity, ACCELERATION);
+                fish.mRotation = rotateYaw(fish.mRotation, -std::atan2(fish.mVelocity.y, fish.mVelocity.x) - M_PI_2f, ROTATION_SPEED);
+            }
+            break;
+        }
+        default:
+            assert(false);
+        
+    }
+    static_assert(e_count(FishAIState) == 2);
+    //fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+    //fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
 }

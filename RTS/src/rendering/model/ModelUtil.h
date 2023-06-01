@@ -25,7 +25,7 @@ namespace ModelUtil {
         // Yaw transform
         transform = glm::rotate(transform * normRotation, yaw, f32v3(0.0f, 0.0f, 1.0f));
         // ROTATE TO BE Z UP
-        transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+        //transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
 
         // TODO: We can construct the matrix manually (maybe) to optimize out a lot of work
         return transform;

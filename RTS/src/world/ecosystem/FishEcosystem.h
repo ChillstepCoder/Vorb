@@ -30,11 +30,20 @@ struct FishPopulation {
     int mNumFish;
 };
 
+enum class FishAIState {
+    Idle,
+    MovingToPoint,
+    COUNT
+};
+
 struct ActiveFish {
     FishID mFishId = INVALID_FISH_ID;
     f32v3 mVelocity = f32v3(0.0f);
     f32v3 mPosition = f32v3(0.0f);
     f32 mRotation = 0.0f;
+    f32v3 mTargetPosition = f32v3(0.0f);
+    TimePoint mTimeTargetReached = TimePoint::max();
+    FishAIState mAIState = FishAIState::Idle;
 };
 
 struct InactiveFish {
@@ -50,6 +59,8 @@ struct FishCell {
     int mTotalSpawnableTiles = 0; // can derive max population and population pressure from this
     ui8v2 mCellXY;
     bool mRenderingFish = false; // When false, we do not need to update fish
+
+    f32v2 getWorldCenterF() const { return f32v2(mWorldPos.x + FISH_CELL_HALF_TILE_WIDTH, mWorldPos.y + FISH_CELL_HALF_TILE_WIDTH); }
 };
 
 struct DormantFishCell {
@@ -95,6 +106,7 @@ private:
     void makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
     bool trySpawnFish(const TileContainer& container, FishCell& cell, const FishDef& fishDef);
     void updateActiveFish();
+    void updateFish(const TileContainer& container, FishCell& cell, ActiveFish& fish);
 
     boost::container::flat_map<ChunkID, FishChunkPtr> mActiveFishChunks;
 

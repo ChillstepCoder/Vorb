@@ -114,7 +114,11 @@ struct DebugOptions {
     bool mDisableLOD;
     bool mDisableGPUCulling;
     bool mDebugToggle0;
+    // Fish
+    f32 mFishRenderDistance;
     // Water
+    bool mIsCameraUnderwater; // TODO: MOVE
+    f32 mUnderwaterHazeDivisor;
     f32v4 mShallowWaterColor;
     f32v4 mDeepWaterColor;
     f32v4 mWaterFoamColor;

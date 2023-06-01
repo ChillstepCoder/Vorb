@@ -260,11 +260,12 @@ void RenderContext::initPostLoad() {
 
 }
 
-void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* camera, f32v3 playerPos) {
+void RenderContext::beginFrame(const RenderState* renderState, f32v3 playerPos, f32 frameAlpha) {
 
     PROFILE_FUNCTION();
 
-    mCamera = camera;
+    updateCamera(frameAlpha);
+
     // Update thread msg queue
     updateRenderThreadProcs();
 
@@ -274,14 +275,14 @@ void RenderContext::beginFrame(const RenderState* renderState, const Camera3D* c
 
     // Misc renderData
     const TimeOfDayManager& timeOfDayManager = mActiveWorld->getTimeOfDayManager();
-    mRenderData.cameraZAngle = camera->getZAngle();
+    mRenderData.cameraZAngle = mCamera.getZAngle();
     mRenderData.skyRotMatrix = timeOfDayManager.getSkyRotMatrix();
     
     ShadowRenderer& shadowRenderer = mWorldRenderer->getShadowRenderer();
 
     // Ubo data
-    UboHelpers::uploadGlobalUbo(mGlobalUbo, *camera, playerPos, shadowRenderer.getLastUpdatedSunPosition(), timeOfDayManager);
-    UboHelpers::uploadCameraUbo(mCameraUbo, *camera);
+    UboHelpers::uploadGlobalUbo(mGlobalUbo, mCamera, playerPos, shadowRenderer.getLastUpdatedSunPosition(), timeOfDayManager);
+    UboHelpers::uploadCameraUbo(mCameraUbo, mCamera);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -306,10 +307,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         return;
     }
 
-    updateCamera(frameAlpha);
 
-    const Camera3D& camera = cameraController.getOwnedCamera();
-    beginFrame(&renderState, &camera, renderState.getCameraOwningEntityPos());
+    beginFrame(&renderState, renderState.getCameraOwningEntityPos(), frameAlpha);
     checkGlError("RenderContext::Begin Frame");
     
     mActiveGBuffer = mGBuffers[mActiveGBufferIndex].get();
@@ -334,13 +333,13 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // World
     if (!UIContext::getInstance().shouldPauseGameRendering()) {
-        mWorldRenderer->renderWorld(mCamera, mRenderData, mActiveGBuffer, frameAlpha, elapsedSec, nullptr/*targetGBuffer*/);
+        mWorldRenderer->renderWorld(&mCamera, mRenderData, mActiveGBuffer, frameAlpha, elapsedSec, nullptr/*targetGBuffer*/);
         // World Debug rendering
-        renderPassWorldDebug(*mCamera);
+        renderPassWorldDebug(mCamera);
     }
 
     // UI
-    renderPassUI(camera, renderState);
+    renderPassUI(mCamera, renderState);
 
     // Swap
     mPrevGBufferIndex = mActiveGBufferIndex;
@@ -398,6 +397,20 @@ void RenderContext::updateCamera(f32 frameAlpha) {
         mCameraController->setEditorMode(false);
     }
     mCameraController->update(1.0f /*TODO DELTATIME*/, frameAlpha, cameraPos);
+
+    // Copy camera from the controller so we can fuck with it
+    memcpy(&mCamera, &mCameraController->getOwnedCamera(), sizeof(Camera3D));
+
+    // Water clipping
+    constexpr f32 CAMERA_CLIP_DIST = 0.1f;
+    const f32v3 newCameraPos = mCamera.getPosition();
+    if (newCameraPos.z > -CAMERA_CLIP_DIST * 2.0f) {
+        if (newCameraPos.z <= CAMERA_CLIP_DIST) {
+            mCamera.setPosition(f32v3(newCameraPos.x, newCameraPos.y, -CAMERA_CLIP_DIST));
+        }
+    }
+
+    sDebugOptions.mIsCameraUnderwater = mCameraController->getOwnedCamera().getPosition().z <= 0.0f;
 }
 
 void RenderContext::updateRenderThreadProcs() {

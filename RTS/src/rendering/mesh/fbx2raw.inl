@@ -4,6 +4,24 @@
 typedef std::vector<ui32> ControlPointRemap;
 typedef std::vector<ControlPointRemap> ControlPointsRemap;
 
+ozz::math::Float3 convertPointToZUp(ozz::math::Float3 position, const ozz::math::Float4x4& coordinateSystemTransform) {
+    ozz::math::SimdFloat4 posVector = ozz::math::simd_float4::Load(position.x, position.y, position.z, 1.0f);
+    posVector = ozz::math::TransformPoint(coordinateSystemTransform, posVector);
+    position.x = ozz::math::GetX(posVector);
+    position.y = ozz::math::GetY(posVector);
+    position.z = ozz::math::GetZ(posVector);
+    return position;
+}
+
+ozz::math::Float3 convertVectorToZUp(ozz::math::Float3 position, const ozz::math::Float4x4& coordinateSystemTransform) {
+    ozz::math::SimdFloat4 posVector = ozz::math::simd_float4::Load(position.x, position.y, position.z, 1.0f);
+    posVector = ozz::math::TransformVector(coordinateSystemTransform, posVector);
+    position.x = ozz::math::GetX(posVector);
+    position.y = ozz::math::GetY(posVector);
+    position.z = ozz::math::GetZ(posVector);
+    return position;
+}
+
 namespace fbx2raw {
 
     template <typename _Element>
@@ -57,7 +75,8 @@ namespace fbx2raw {
         ozz::animation::offline::fbx::FbxSystemConverter* _converter,
         ControlPointsRemap* controlPointsRemap,
         RawSubMesh& subMesh,
-        const std::vector<RawMaterialData>& materials
+        const std::vector<RawMaterialData>& materials,
+        bool shouldRotateZUp
     ) {
         // This function treat all layers like if they were using mapping mode
         // eByPolygonVertex. This allow to use a single code path for all mapping
@@ -70,6 +89,22 @@ namespace fbx2raw {
 
         // Get the mesh node's transformation matrix
         FbxAMatrix transformMatrix = fbxMesh->GetNode()->EvaluateGlobalTransform();
+        // Convert to Z up
+        ozz::math::Float4x4 coordinateSystemTransform;
+        if (shouldRotateZUp) {
+            coordinateSystemTransform =
+            { {ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, 0.f, 1.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, -1.f, 0.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, 0.f, 0.f, 1.f)} };
+        }
+        else {
+            coordinateSystemTransform =
+            { {ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, 1.f, 0.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, 0.f, 1.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, 0.f, 0.f, 1.f)} };
+        }
 
         // Regenerate normals if they're not available.
         if (!fbxMesh->GenerateNormals(false,     // overwrite
@@ -105,12 +140,6 @@ namespace fbx2raw {
 
         // Checks tangents availability.
         const FbxGeometryElementTangent* element_tangents = nullptr;
-        /*  if (fbxMesh->GetElementTangentCount() > 0) {
-              LOG_WARN("{} HAS TANGENTS", fbxMesh->GetName());
-          }
-          else {
-              LOG_CRITICAL("{} NO TANGENTS", fbxMesh->GetName());
-          }*/
         if (element_uvs) {  // UVs are needed to generate tangents.
             // Regenerate tangents if they're not available.
             if (!fbxMesh->GenerateTangentsData(0, false)) {
@@ -144,20 +173,7 @@ namespace fbx2raw {
         // Reserve vertex buffers. Real size is unknown as redundant vertices will be
         // rejected.
         subMesh.mVertices.reserve(vertexCount);
-        /*part.positions.reserve(vertexCount *
-            ozzfbx::Mesh::Part::kPositionsCpnts);
-        part.normals.reserve(vertexCount * ozzfbx::Mesh::Part::kNormalsCpnts);
-        if (element_tangents) {
-            part.tangents.reserve(vertexCount *
-                ozzfbx::Mesh::Part::kTangentsCpnts);
-        }
-        if (element_uvs) {
-            part.uvs.reserve(vertexCount * ozzfbx::Mesh::Part::kUVsCpnts);
-        }
-        if (element_colors) {
-            part.colors.reserve(vertexCount * ozzfbx::Mesh::Part::kColorsCpnts);
-        }*/
-
+       
         // Resize triangle indices, as their size is known.
         subMesh.mIndices.resize(vertexCount);
 
@@ -176,20 +192,12 @@ namespace fbx2raw {
                 assert(controlPoint >= 0);
                 ControlPointRemap& remap = controlPointsRemap->at(controlPoint);
 
-                // BEN TMP TEST
-                //const ozz::math::Float4x4 AXIS_CONVERT = ozz::math::Float4x4::FromAxisAngle(ozz::math::simd_float4::Load(1.0f, 0.0f, 0.0f, 0.0f), ozz::math::simd_float4::Load(M_PI_2, 0.0f, 0.0f, 0.0f));
-                //const ozz::math::SimdFloat4 p_in = ozz::math::simd_float4::Load(
-                //    static_cast<float>(position.x), static_cast<float>(position.y),
-                //    static_cast<float>(position.z), 1.f);
-                //// AXIS CONVERT
-                //const ozz::math::SimdFloat4 p_out = AXIS_CONVERT * p_in;
-                //ozz::math::Store3PtrU(p_out, &position.x);
-
                 FbxVector4 positionVec(fbxMesh->GetControlPoints()[controlPoint]);
                 positionVec = transformMatrix.MultT(positionVec);
 
                 // Convert to ozz
                 ozz::math::Float3 position = _converter->ConvertPoint(positionVec);
+                position = convertPointToZUp(position, coordinateSystemTransform);
 
                 // Get vertex normal.
                 FbxVector4 src_normal(0.f, 1.f, 0.f, 0.f);
@@ -197,8 +205,9 @@ namespace fbx2raw {
                     return false;
                 }
                 src_normal = transformMatrix.MultT(src_normal);
-                const ozz::math::Float3 normal = NormalizeSafe(
+                ozz::math::Float3 normal = NormalizeSafe(
                     _converter->ConvertVector(src_normal), ozz::math::Float3::y_axis());
+                normal = convertVectorToZUp(normal, coordinateSystemTransform);
 
                 // Get vertex tangent.
                 FbxVector4 src_tangent(1.f, 0.f, 0.f, 0.f);
@@ -209,8 +218,9 @@ namespace fbx2raw {
                     }
                     src_tangent = transformMatrix.MultT(src_tangent);
                 }
-                const ozz::math::Float3 tangent3 = NormalizeSafe(
+                ozz::math::Float3 tangent3 = NormalizeSafe(
                     _converter->ConvertVector(src_tangent), ozz::math::Float3::x_axis());
+                tangent3 = convertVectorToZUp(tangent3, coordinateSystemTransform);
                 const ozz::math::Float4 tangent(tangent3,
                     static_cast<float>(src_tangent[3]));
 
@@ -263,7 +273,7 @@ namespace fbx2raw {
                 if (element_tangents) {
                     vertex.tangent = f32v3(tangent.x, tangent.y, tangent.z);
                     // Right or left handed
-                    if (tangent.w > 0.0f) {
+                    if (tangent.w <= 0.0f) {
                         vertex.tangent = -vertex.tangent;
                     }
                 }
@@ -305,11 +315,6 @@ namespace fbx2raw {
                 }
             }
         }
-
-        // Sorts triangle indices to optimize vertex cache.
-        //std::qsort(array_begin(outputMesh->triangle_indices),
-        //    outputMesh->triangle_indices.size() / 3, sizeof(uint16_t) * 3,
-        //    &SortTriangles);
 
         return true;
     }

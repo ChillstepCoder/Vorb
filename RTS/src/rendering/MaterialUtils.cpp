@@ -16,7 +16,12 @@ void MaterialUtils::uploadLightingUniforms(const MaterialShader& material) {
     LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
     glUniform2i(material.getUniform("unLightingModel"), optionsLeft.mLightingModel, optionsRight.mLightingModel);
     glUniform2f(material.getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
-    glUniform2f(material.getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+    if (sDebugOptions.mIsCameraUnderwater) {
+        glUniform2f(material.getUniform("unHazeDivisor"), sDebugOptions.mUnderwaterHazeDivisor, sDebugOptions.mUnderwaterHazeDivisor);
+    }
+    else {
+        glUniform2f(material.getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+    }
     glUniform2f(material.getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
     glUniform2f(material.getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
     uploadTonemapUniforms(material);

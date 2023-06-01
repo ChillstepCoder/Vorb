@@ -21,6 +21,8 @@
 
 #include "camera/Camera3D.h"
 
+#include "options/DebugOptions.h"
+
 #include "rendering/gl/GLObjects.h"
 
 constexpr int MAX_INSTANCES_PER_FRAME = 2000;
@@ -89,8 +91,8 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         boundingSphere.center.y = cell.mCellCenter.y;
         if (camera.sphereIsVisible(boundingSphere)) {
             for (auto&& fish : cell.mFish) {
-                addFishInstance(fish.mFishId, fish.mPosition, 0.0f);
-                DebugRenderer::drawFilledQuad(fish.mPosition, f32v2(1.0f), color4(0, 255, 255, 128), 0);
+                addFishInstance(fish.mFishId, fish.mPosition, fish.mRotation);
+                //DebugRenderer::drawFilledQuad(f32v3(fish.mPosition.x - 0.3f, fish.mPosition.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
             }
         }
     }
@@ -104,7 +106,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
             FishInstanceData& instanceData = mFishInstanceData[i];
             glFlushMappedNamedBufferRange(instanceData.mInstanceTransformBuffer, transformIndexStart * INSTANCE_TRANSFORM_DATA_SIZE, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, instanceData.mInstanceTransformBuffer);
-            MeshDrawer::drawInstanced(instanceData.mMesh->mMainMesh, instanceCount);
+            MeshDrawer::drawInstanced(instanceData.mMesh->mMainMesh, MeshLODLevel::Highest, instanceCount);
         }
     }
 
@@ -120,7 +122,8 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
 
 void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
 
-    constexpr int DEBUG_LIFETIME = 4; // 40
+    constexpr int DEBUG_LIFETIME = 0; // 40
+    const f32 RENDER_DISTANCE_SQ = SQ(sDebugOptions.mFishRenderDistance);
 
     // Dont spam this every frame
     if (mDebugTickCounter-- == 0) {
@@ -145,9 +148,12 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
                     color::LightPink, DEBUG_LIFETIME);
 
                 // Draw active fish
+
                 for (int i = 0; i < 4; ++i) {
-                    for (auto&& fish : fishChunk.mCells[i].mFish) {
-                        DebugRenderer::drawFilledQuad(fish.mPosition, f32v2(1.0f), color::Cyan, DEBUG_LIFETIME);
+                    if (glm::distance2(world.getLoadCenter(), fishChunk.mCells[i].getWorldCenterF()) < RENDER_DISTANCE_SQ) {
+                        for (auto&& fish : fishChunk.mCells[i].mFish) {
+                            DebugRenderer::drawFilledQuad(f32v3(fish.mPosition.x - 0.3f, fish.mPosition.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
+                        }
                     }
                 }
 

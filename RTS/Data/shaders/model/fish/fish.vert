@@ -11,6 +11,7 @@ layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 
 uniform int unBufferOffset;
+uniform float DebugFloat4;
 
 struct FishTransformData {
     vec4 posYaw;
@@ -28,17 +29,20 @@ out mat3 fTBN;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 
-mat4 createTransformMatrix(vec3 position, float yaw, float pitch) {
+mat4 createTransformMatrix(vec3 position, float yaw, float pitch, float scale) {
     // Calculate the cos and sin of the yaw and pitch
     float cy = cos(yaw);
     float sy = sin(yaw);
-    float cp = cos(pitch);
-    float sp = sin(pitch);
+    float cr = cos(pitch);
+    float sr = sin(pitch);
     
     // Manually create the rotation matrix for yaw and pitch
-    mat3 rotation = mat3(cy*cp, sy, cy*sp,
-                        -sy*cp, cy, -sy*sp,
-                        -sp, 0, cp);
+    mat3 rotation = mat3(cy, -sy*cr, sy*sr,
+                         sy, cy*cr, -cy*sr,
+                         0, sr, cr);
+    
+    // Apply scale to the rotation matrix
+    rotation *= scale;
     
     // Create transformation matrix from rotation and translation
     mat4 transformation = mat4(rotation);
@@ -62,7 +66,15 @@ void main() {
     fMaterialIndex = vMaterialIndex;
     
     FishTransformData transform = transformData[gl_InstanceID + unBufferOffset];
-    mat4 modelMatrix = createTransformMatrix(transform.posYaw.xyz, transform.posYaw.w, 1.57079632679);
+    
+    vec3 rootPosWorld = transform.posYaw.xyz;
+    
+    float intensityMult = 0.1 + DebugFloat4 * 0.1;
+    float timeValue = (Time - (rootPosWorld.x - rootPosWorld.y + rootPosWorld.z));
+    rootPosWorld.x += cos(timeValue + vPosition.y * 3.0) * (vPosition.y + 0.5) * intensityMult;
+    rootPosWorld.z += sin(timeValue) * 0.05;
+    
+    mat4 modelMatrix = createTransformMatrix(rootPosWorld, transform.posYaw.w, 0.0, 1.0);
     //mat4 modelMatrix = buildTranslation(transform.posYaw.xyz);
 	
 	vec3 normal = normalize(vNormal);
@@ -74,6 +86,7 @@ void main() {
     
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
+    
     
     vec4 worldPos = (modelMatrix * vPosition) - vec4(CameraPos, 0.0);
     gl_Position = VP * worldPos;

@@ -147,7 +147,12 @@ void CloudRenderer::renderToOutput(const Cubemap& skyCubeMap)
         glUniform1f(mPostPbrMaterial->getUniform("unCloudRoughness"), sDebugOptions.mCloudRoughness);
 
         glUniform2f(mPostPbrMaterial->getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
-        glUniform2f(mPostPbrMaterial->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        if (sDebugOptions.mIsCameraUnderwater) {
+            glUniform2f(mPostPbrMaterial->getUniform("unHazeDivisor"), sDebugOptions.mUnderwaterHazeDivisor, sDebugOptions.mUnderwaterHazeDivisor);
+        }
+        else {
+            glUniform2f(mPostPbrMaterial->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        }
         glUniform2f(mPostPbrMaterial->getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
         glUniform2f(mPostPbrMaterial->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
         glUniform2f(mPostPbrMaterial->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);

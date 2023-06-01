@@ -86,7 +86,7 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     }
 
     // Load model to raw
-    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, &def.mRig->mSkeleton, materialRepository);
+    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, def.mRig ? &def.mRig->mSkeleton : nullptr, materialRepository);
     if (rawMesh) {
         if (fileData.mForceNormalsUp) {
             MeshOperations::setAllNormals(*rawMesh, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
@@ -184,7 +184,7 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
         RawSubMesh& subMesh = rawFbxMesh->mSubMeshes.emplace_back();
 
         ControlPointsRemap remap;
-        if (!fbx2raw::buildRawSubmesh(fbxMesh, sceneLoader.converter(), &remap, subMesh, rawFbxMesh->mMaterials)) {
+        if (!fbx2raw::buildRawSubmesh(fbxMesh, sceneLoader.converter(), &remap, subMesh, rawFbxMesh->mMaterials, skeleton == nullptr)) {
             LOG_CRITICAL("Failed to build submesh {} for {}", m, filePath.getString());
             pError("Failed to read submesh for: " + filePath.getString());
             return nullptr;

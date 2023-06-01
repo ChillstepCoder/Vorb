@@ -46,6 +46,8 @@ DebugOptions::DebugOptions() :
     mTerrainGrassColorV(0.95),
     mDisableTerrain(false),
     mDebugToggle0(false),
+    // Fish
+    mFishRenderDistance(128.0f),
     // DOF
     mDepthOfFieldBlurRadius(0.6f),
     mDepthOfFieldBlurPasses(1),
@@ -109,6 +111,8 @@ DebugOptions::DebugOptions() :
     mDisableLOD(false),
     mDisableGPUCulling(true), // GPU CULLING HAS A BUG IT CAUSES SHADOW FKERY
     // Water
+    mIsCameraUnderwater(false),
+    mUnderwaterHazeDivisor(70.0f),
     mShallowWaterColor(65.0f / 255.0f, 127.0f / 255.0f, 173.0f / 255.0f, 185.0f / 255.0f),
     mDeepWaterColor(6.0f / 255.0f, 13.0f / 255.0f, 24.0f / 255.0f, 191.0f / 255.0f),
     mWaterFoamColor(126.0f / 255.0f, 164.0f / 255.0f, 216.0f / 255.0f, 255.0f / 255.0f),
