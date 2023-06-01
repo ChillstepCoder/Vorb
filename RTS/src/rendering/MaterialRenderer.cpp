@@ -8,7 +8,7 @@
 #include "camera/ICamera.h"
 
 #include <Vorb/graphics/SamplerState.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/GBuffer.h>
 
 #include "options/DebugOptions.h"
@@ -17,7 +17,7 @@ void MaterialRenderer::renderFullScreenQuad(const MaterialShader& material) {
 
     bindMaterialForRender(material, nullptr);
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 }
 
 void MaterialRenderer::renderMesh(const Mesh& mesh, const MaterialShader& material) {
@@ -41,7 +41,7 @@ void MaterialRenderer::renderMaterialToQuadWithTexture(const MaterialShader& mat
     VGUniform rectUniform = material.mProgram.getUniform("Rect");
     glUniform4fv(rectUniform, 1, &(worldSpaceRect.x));
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 }
 
 void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const MaterialShader& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect) {
@@ -56,7 +56,7 @@ void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const MaterialSha
     VGUniform rectUniform = material.mProgram.getUniform("Rect");
     glUniform4fv(rectUniform, 1, &(worldSpaceRect.x));
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 }
 
 void MaterialRenderer::bindMaterialForRender(const MaterialShader& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) {

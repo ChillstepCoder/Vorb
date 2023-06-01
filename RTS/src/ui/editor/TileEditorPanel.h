@@ -41,7 +41,6 @@ private:
     VGTexture renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData);
 
     // Material preview
-    VGVertexArray mPreviewVAO = 0;
     std::vector<std::unique_ptr<vg::GBuffer>> mMaterialPreviewGBuffers;
 };
 

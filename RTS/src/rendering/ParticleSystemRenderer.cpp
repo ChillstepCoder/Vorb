@@ -8,7 +8,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 ParticleSystemRenderer::ParticleSystemRenderer(const f32v2 & gbufferDims) :
     mGbufferDims(gbufferDims) {
@@ -164,7 +164,7 @@ void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particl
 
      vg::DepthState::NONE.set();
      vg::BlendState::set(particleSystemData.postBlendState);
-     sGlobalFullQuadVBO.draw();
+     sGlobalFullTriangleVAO.draw();
 
      vg::DepthState::NONE.set();*/
 }

@@ -1,14 +1,5 @@
 
-const vec3 pos[4] = vec3[4](
-	vec3(-1.0, -1.0, 0.0),
-	vec3( 1.0, -1.0, 0.0),
-	vec3( 1.0, 1.0, 0.0),
-	vec3(-1.0, 1.0, 0.0)
-);
-
-const int indices[6] = int[6](
-	0, 1, 2, 2, 3, 0
-);
+const vec2 vertices[3]=vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1, 3));
 
 uniform uint unMaterialIndex;
 uniform vec4 unTint;
@@ -19,12 +10,11 @@ out vec4 fTint;
 out mat3 fTBN;
 
 void main() {
-	int idx = indices[gl_VertexID];
-	vec3 position = pos[idx];
 
-	gl_Position = vec4(position, 1.0);
+    gl_Position = vec4(vertices[gl_VertexID],0,1);
     
-	fUV = position.xy;
+    fUV = 0.5 * gl_Position.xy + vec2(0.5);
+    
     fMaterialIndex = unMaterialIndex;
     fTint = unTint;
     

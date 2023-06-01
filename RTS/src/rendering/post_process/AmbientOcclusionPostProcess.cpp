@@ -7,7 +7,7 @@
 
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include "options/DebugOptions.h"
 
@@ -107,7 +107,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     // Send samples
     glUniform3fv(samplesUniform, KERNEL_SIZE, &mSsaoKernel[0].x);
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 
     /*glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     mGBuffers[0].use();
@@ -126,14 +126,14 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
         mGBuffers[1]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mSSAOBlurRadius, 0.0f);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         // Vertical
         mGBuffers[1]->bindAlbedoTexture(nextTexture);
         mGBuffers[0]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mSSAOBlurRadius);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         mGBuffers[0]->bindAlbedoTexture(nextTexture);
     }
@@ -143,7 +143,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     // Apply to gbuffer
     activeGBuffer->use();
     MaterialRenderer::bindMaterialForRender(*mApplyMaterial, &nextTexture);
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 
     vg::DepthState::restorePrevious();
     vg::BlendState::restorePrevious();

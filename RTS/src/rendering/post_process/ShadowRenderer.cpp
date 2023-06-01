@@ -7,7 +7,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/GBuffer.h>
@@ -378,7 +378,7 @@ void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
     // Need to store alpha as replace
     vg::BlendState::set(vorb::graphics::BlendStateType::REPLACE);
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 
     generateMipmaps();
 
@@ -396,7 +396,7 @@ void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
         ui32 mipCount = mShadowMipGBuffer->getNumMipLevels(vg::GBufferAttachmentIndex::ALBEDO);
         glUniform1i(mipCountUniform, mipCount);
 
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
     }
 
     // TODO: We should be blurring the mips
@@ -458,7 +458,7 @@ void ShadowRenderer::generateMipmaps() {
         glDrawBuffers((GLsizei)1, &buf);
         glTextureBarrier();
         glViewport(0.0f, 0.0f, width, height);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
         width /= 2;
         height /= 2;
     }
@@ -483,14 +483,14 @@ void ShadowRenderer::blurShadowMap()
         mShadowBlurGBuffers[1]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mShadowBlurRadius, 0.0f);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         // Vertical
         mShadowBlurGBuffers[1]->bindAlbedoTexture(nextTexture);
         mShadowBlurGBuffers[0]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mShadowBlurRadius);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
     }
     vg::BlendState::restorePrevious();
 }

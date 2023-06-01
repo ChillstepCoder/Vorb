@@ -15,7 +15,7 @@
 #include "rendering/material/BrdfLUT.h"
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include "rendering/post_process/ShadowPassShaderData.h"
 
@@ -117,13 +117,13 @@ void CloudRenderer::blurNormals() {
         mGBuffers[1]->use();
         glUniform1i(fboUniform, textureUnit);
         glUniform2f(dirUniform, sDebugOptions.mCloudBlurRadius, 0.0f);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         // Vertical
         mGBuffers[0]->use();
         glUniform1i(fboUniform, textureUnit + 1);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mCloudBlurRadius);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
     }
 }
 
@@ -183,5 +183,5 @@ void CloudRenderer::renderToOutput(const Cubemap& skyCubeMap)
     }
 
     vg::DepthState::NONE.set();
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 }

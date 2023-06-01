@@ -76,7 +76,7 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/colors.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
@@ -188,7 +188,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mSpriteFont->init(fontPath.getCString(), 32);
     checkGlError("SB init");
 
-    sGlobalFullQuadVBO.init();
+    sGlobalFullTriangleVAO.init();
 
     // GRAPHICS STUDIES
     // GTA5 https://www.adriancourreges.com/blog/2015/11/02/gta-v-graphics-study/

@@ -5,7 +5,7 @@
 
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/BlendState.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/GLProgram.h>
 
 const char* NORMAL_VERT_SRC = R"(
@@ -185,7 +185,7 @@ VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const
    glUniform4f(mUvRectUniform, 0.0f, 0.0f, 1.0f, 1.0f);
    glUniform1i(mTextureUniform, 0);
    glUniform2f(mPixelDimsUniform, 1.0f / dims.x, 1.0f / dims.y);
-   sGlobalFullQuadVBO.draw();
+   sGlobalFullTriangleVAO.draw();
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

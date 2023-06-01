@@ -8,7 +8,7 @@
 #include "rendering/MaterialUtils.h"
 
 #include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 TonemapRenderer::TonemapRenderer() {
     mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("tonemap");
@@ -24,5 +24,5 @@ void TonemapRenderer::render(VGTexture lightTextureInput) {
     glUniform1i(mShader->getUniform("unLightTexture"), textureUnit);
     glBindTextureUnit(textureUnit, lightTextureInput);
     MaterialUtils::uploadTonemapUniforms(*mShader);
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 }

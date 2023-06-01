@@ -1,3 +1,0 @@
-ui_quad:
-  vert: fullscreen_quad.vert
-  frag: ui_quad.frag

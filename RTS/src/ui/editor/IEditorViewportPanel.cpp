@@ -11,7 +11,7 @@
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialShaderManager.h"
@@ -483,7 +483,7 @@ void IEditorViewportPanel::postProcessBlendTest() {
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
             glUniform2f(dirUniform, mBlendTestRadius, 0.0f);
-            sGlobalFullQuadVBO.draw();
+            sGlobalFullTriangleVAO.draw();
 
             // Vertical
             // Replace normals TODO: Build into gbuffer
@@ -493,7 +493,7 @@ void IEditorViewportPanel::postProcessBlendTest() {
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
             glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
             glUniform2f(dirUniform, 0.0f, mBlendTestRadius);
-            sGlobalFullQuadVBO.draw();
+            sGlobalFullTriangleVAO.draw();
         }
     }
     vg::DepthState::restorePrevious();
@@ -521,7 +521,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
 
         // Replace normals TODO: Build into gbuffer
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
     }
 
     int sourceGBuffer = 1;
@@ -545,7 +545,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
                 // Replace normals TODO: Build into gbuffer
                 // TODO: we dont need clear buffer because of this?
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
-                sGlobalFullQuadVBO.draw();
+                sGlobalFullTriangleVAO.draw();
 
                 std::swap(sourceGBuffer, targetGBuffer);
             }
@@ -575,7 +575,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
                 glUniform2f(dirUniform, mEdgeBlendRadius, 0.0f);
-                sGlobalFullQuadVBO.draw();
+                sGlobalFullTriangleVAO.draw();
 
                 // Vertical
                 // Replace normals TODO: Build into gbuffer
@@ -585,7 +585,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
                 glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
                 glUniform2f(dirUniform, 0.0f, mEdgeBlendRadius);
-                sGlobalFullQuadVBO.draw();
+                sGlobalFullTriangleVAO.draw();
             }
         }
     }

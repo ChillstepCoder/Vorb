@@ -7,7 +7,7 @@
 
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include "options/DebugOptions.h"
 
@@ -62,13 +62,13 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
         // Horizontal
         mGBuffers[1]->use();
         glUniform2f(dirUniform, sDebugOptions.mDepthOfFieldBlurRadius, 0.0f);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         // Vertical
         mGBuffers[1]->bindAlbedoTexture(nextTexture);
         mGBuffers[0]->use();
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mDepthOfFieldBlurRadius);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         mGBuffers[0]->bindAlbedoTexture(nextTexture);
     }

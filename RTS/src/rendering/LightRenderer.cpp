@@ -16,7 +16,7 @@
 #include "options/DebugOptions.h"
 
 #include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/BlendState.h>
 
 static_assert((int)LightShape::Count == 1, "Update this file to handle new light shape");
@@ -114,7 +114,7 @@ void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTe
         }
     }
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
     checkGlError("LightRenderer::renderSunlight");
 
     glDisable(GL_STENCIL_TEST);

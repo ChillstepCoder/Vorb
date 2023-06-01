@@ -8,7 +8,7 @@
 
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SpriteBatch.h>
@@ -16,12 +16,11 @@
 #include <Vorb/ui/GameWindow.h>
 
 const cString SIMPLE_VS_SRC = R"(
-in vec4 vPosition;
+const vec2 vertices[3]=vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1, 3));
 out vec2 fUV;
-
 void main() {
-    fUV = vec2((1.0 + vPosition.x) * 0.5, 1.0 - (1.0 + vPosition.y) * 0.5);
-    gl_Position = vPosition;
+    gl_Position = vec4(vertices[gl_VertexID],0,1);
+    fUV = 0.5 * gl_Position.xy + vec2(0.5);
 }
 )";
 const cString SIMPLE_FS_SRC = R"(
@@ -77,7 +76,7 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
         glBindTexture(GL_TEXTURE_2D, mBackgroundTextures[textureIndex]);
     }
 
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
     sProgram.unuse();
 
     // Spritefont text
@@ -96,7 +95,7 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
 
 void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, bool setActive) {
     TextureRepository& textureRepo = Services::ResourceManager::ref().getTextureRepository();
-    mBackgroundTextures.push_back(textureRepo.loadTexture(path, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP, true)->texture.getHandle());
+    mBackgroundTextures.push_back(textureRepo.loadTexture(path, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP, false)->texture.getHandle());
     if (setActive) {
         mCurrentBackgroundTexture = mBackgroundTextures.size() - 1;
     }

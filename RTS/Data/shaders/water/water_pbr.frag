@@ -57,8 +57,8 @@ void main() {
     float maxDepthDiff = 0.8;
     float linFragDepth = linearizeDepth(gl_FragCoord.z, CameraZRange);
     float depthDiff = linearizeDepth(depth, CameraZRange) - linFragDepth;
-    float unClampedDepthDiff = depthDiff / maxDepthDiff;
-    depthDiff = clamp(unClampedDepthDiff, 0.0, 1.0);
+    float unclampedDepthDiff = depthDiff / maxDepthDiff;
+    depthDiff = clamp(unclampedDepthDiff, 0.0, 1.0);
     vec4 waterColor = mix(unShallowColor, unDeepColor, depthDiff);
     
     vec2 timeOffset = vec2(Time) * unSurfaceMoveSpeed;
@@ -85,7 +85,9 @@ void main() {
 
     // Reduce transparency at distance
     oColor = waterColor + vec4(surfaceNoiseColor, 0.0);
-    oColor.a = clamp(mix(oColor.a, 1.0, fCameraDist * 0.01) + unClampedDepthDiff * 0.002, 0.0, 1.0);
+    float cameraDistAlpha = fCameraDist * 0.01;
+    float depthAlphaAdd = pow(unclampedDepthDiff * 0.03, 2.0);
+    oColor.a = clamp(mix(oColor.a, 1.0, cameraDistAlpha) + depthAlphaAdd, 0.0, 1.0);
     
     // Oil paint
     float oilDistortVal = 0.3;
@@ -116,4 +118,7 @@ void main() {
     vec3 hazeColor = texture(GradientTexture, vec2(0.5, max(SunHeight, 0.0))).rgb;
     oColor.rgb = applyHaze(oColor.rgb, fPosition, preset, hazeColor);
     oColor.rgb = gammaEncode(oColor.rgb, 2.2);
+    
+    //oColor.rgb = 0.0001 * oColor.rgb + depthAlphaAdd;
+   // oColor.a = 0.0001 * oColor.a + 1.0;
 }

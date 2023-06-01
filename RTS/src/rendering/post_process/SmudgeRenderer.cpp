@@ -9,7 +9,7 @@
 #include "camera/Camera3D.h"
 
 #include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 SmudgeRenderer::SmudgeRenderer(const ui32v2& screenResolution) {
     for (int i = 0; i < 2; ++i) {
@@ -96,7 +96,7 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
         glUniform2f(dirUniform, sDebugOptions.mSmudgeTestRadius, 0.0f);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         // Vertical
         // Replace normals TODO: Build into gbuffer
@@ -113,7 +113,7 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mSmudgeTestRadius);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         if (isLastPass) {
             break;
@@ -180,7 +180,7 @@ void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mSmudgePaintNoiseIntensity);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         // Vertical 2
         // Replace normals TODO: Build into gbuffer
@@ -197,7 +197,7 @@ void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mSmudgePaintNoiseIntensity);
-        sGlobalFullQuadVBO.draw();
+        sGlobalFullTriangleVAO.draw();
 
         if (isLastPass) {
             break;

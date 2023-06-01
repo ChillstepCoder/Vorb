@@ -16,6 +16,8 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/GBuffer.h>
 
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
+
 const ui32v2 PREVIEW_RESOLUTION(128);
 constexpr f32 ROW_MIN_HEIGHT = 20.0f;
 constexpr ImGuiTableFlags TABLE_FLAGS =
@@ -26,11 +28,9 @@ ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideab
 | ImGuiTableFlags_SizingFixedFit;
 
 TileEditorPanel::TileEditorPanel() {
-    glCreateVertexArrays(1, &mPreviewVAO);
 }
 
 TileEditorPanel::~TileEditorPanel() {
-    glDeleteVertexArrays(1, &mPreviewVAO);
 }
 
 TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
@@ -397,8 +397,7 @@ VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, i
     gBuffer.use();
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glBindVertexArray(mPreviewVAO);
-    glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
+    sGlobalFullTriangleVAO.draw();
 
     gBuffer.unuse();
     return gBuffer.getAlbedoTexture();

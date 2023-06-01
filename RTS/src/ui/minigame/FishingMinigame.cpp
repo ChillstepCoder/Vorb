@@ -10,7 +10,7 @@
 #include <Vorb/ui/InputDispatcher.h>
 
 #include <Vorb/graphics/SpriteFont.h>
-#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include "rendering/RenderContext.h"
 #include "rendering/MaterialRenderer.h"
 
@@ -130,7 +130,7 @@ void FishingMinigame::render() {
     );  
     glUniformMatrix4fv(mArenaShader->getUniform("unVP"), 1, false, &camera[0][0]);
     glBindTextureUnit(TEXTURE_UNIT, mTextureCircle);
-    sGlobalFullQuadVBO.draw();
+    sGlobalFullTriangleVAO.draw();
 
     mSpriteBatch.begin(4);
 
