@@ -2,6 +2,8 @@
 #include "ecs/component/ComponentDefinition.h"
 #include "util/StrToken.h"
 
+#include "ecs/component/FishingComponent.h"
+
 class IWorld;
 
 class IEntityComponentSystem {
@@ -26,6 +28,7 @@ public:
     TimedTileInteractSystem mTimedTileInteractSystem;
     PhysicsSystem mPhysicsSystem;
     CameraAttachSystem mCameraAttachSystem;
+    FishingComponentSystem mFishingSystem;
 
 	// Classes with World access
 	friend class PhysicsComponent;

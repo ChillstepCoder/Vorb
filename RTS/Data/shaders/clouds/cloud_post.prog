@@ -1,5 +1,5 @@
 cloud_post:
-  vert: cloud_post.vert
+  vert: pass_through.vert
   frag: cloud_post.frag
   textures:
     - name: van_gogh_2

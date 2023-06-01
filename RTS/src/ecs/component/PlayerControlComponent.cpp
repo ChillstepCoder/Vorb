@@ -68,6 +68,17 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
         else {
             characterControlCmp.mDesiredMode = CharacterLocomotionMode::RUN;
         }
+
+        // Fishing
+        if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
+            registry.get_or_emplace<FishingComponent>(entity).mIsCastInputPressed = true;
+        }
+        else {
+            FishingComponent* component = registry.try_get<FishingComponent>(entity);
+            if (component) {
+                component->mIsCastInputPressed = false;
+            }
+        }
     }
 	// Update skills
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {

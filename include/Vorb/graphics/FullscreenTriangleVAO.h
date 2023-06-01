@@ -37,6 +37,7 @@ namespace vorb {
 
             // Issues a single 3 vertex draw command with this empty VAO
             void draw() const;
+            void drawTwoTriangles() const;
         private:
             ui32 m_vao = 0; ///< Empty VAO
         };

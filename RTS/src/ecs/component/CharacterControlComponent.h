@@ -60,6 +60,8 @@ struct CharacterControlComponent {
     CharacterLocomotionMode mDesiredMode = CharacterLocomotionMode::IDLE;
     BitFlags<CharacterControlComponentFlags> mFlags = BitFlags<CharacterControlComponentFlags>(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT);
 
+    f32v2 getControllerDir() const { return f32v2(sin(mControllerAngle), cos(mControllerAngle)); }
+
     // TODO: Mask
     bool isInAirState() const { return mMode == CharacterLocomotionMode::BEGIN_JUMP || mMode == CharacterLocomotionMode::JUMPING || mMode == CharacterLocomotionMode::FALLING; }
 

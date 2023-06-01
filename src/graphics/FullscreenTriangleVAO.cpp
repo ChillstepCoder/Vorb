@@ -25,3 +25,9 @@ void vg::FullscreenTriangleVAO::draw() const{
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
+
+void vorb::graphics::FullscreenTriangleVAO::drawTwoTriangles() const {
+    assert(m_vao);
+    glBindVertexArray(m_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}

@@ -261,6 +261,7 @@
     <ClCompile Include="src\ecs\component\CameraAttachComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
+    <ClCompile Include="src\ecs\component\FishingComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
@@ -543,6 +544,7 @@
     <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
+    <ClInclude Include="src\ecs\component\FishingComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />

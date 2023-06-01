@@ -29,14 +29,14 @@ KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
 f32v2 PhysicsComponent::getDir() const {
     ASSERT_GAME_THREAD();
     btVector3 result = btVector3(1.0, 0.0, 0.0);
-    result = mRigidBody->getWorldTransform() * result;
+    result = mRigidBody->getWorldTransform().getBasis() * result;
     return f32v2(result.getX(), result.getY());
 }
 
 f32v2 PhysicsComponent::getInterpolatedDir() const {
     ASSERT_GAME_THREAD();
     btVector3 result = btVector3(1.0, 0.0, 0.0);
-    result = mRigidBody->getInterpolationWorldTransform() * result;
+    result = mRigidBody->getInterpolationWorldTransform().getBasis() * result;
     return f32v2(result.getX(), result.getY());
 }
 

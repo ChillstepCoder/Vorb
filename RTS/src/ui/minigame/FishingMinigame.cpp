@@ -16,6 +16,10 @@
 
 #include "math/Random.h"
 
+// TODO: Remove
+//#include "options/DebugOptions.h"
+
+
 constexpr f32 BOUNDARY_RADIUS = 100.0f;
 constexpr f32 FISH_RADIUS = BOUNDARY_RADIUS * 0.3f;
 constexpr f32 BOUNDARY_RADIUS_SQ = SQ(BOUNDARY_RADIUS);
@@ -45,6 +49,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mSpriteBatch.init();
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     mTextureCircle = resourceManager.getMaterialRepository().getMaterialDesc("fishing_circle").albedoTexture;
+    mTextureBackground = resourceManager.getMaterialRepository().getMaterialDesc("fishing_border").albedoTexture;
     mArenaShader = resourceManager.getMaterialShaderManager().getMaterialShader("fishing_arena");
 
 }
@@ -107,7 +112,8 @@ void FishingMinigame::render() {
     const f32v2 centerPos = mCurrentScreenResolution * 0.5f;
 
     // Scaled
-    const f32 screenScale = boundarySize.y / (BOUNDARY_RADIUS * 2.0);
+    const f32 BOUNDARY_RADIUS_SIZE_RATIO = 1.0f / 0.527f; ////(sDebugOptions.mDebugFloat02 ? sDebugOptions.mDebugFloat02 : 1.0f);
+    const f32 screenScale = boundarySize.y / (BOUNDARY_RADIUS * 2.0 * BOUNDARY_RADIUS_SIZE_RATIO);
     const f32v2 fishPos = centerPos + mFishPosition * screenScale;
     const f32v2 playerPos = centerPos + mPlayerPosition * screenScale;
     const f32v2 fishSize = f32v2(mFishRadius * screenScale * 2.0);
@@ -129,8 +135,8 @@ void FishingMinigame::render() {
         -1, 1, 0, 1
     );  
     glUniformMatrix4fv(mArenaShader->getUniform("unVP"), 1, false, &camera[0][0]);
-    glBindTextureUnit(TEXTURE_UNIT, mTextureCircle);
-    sGlobalFullTriangleVAO.draw();
+    glBindTextureUnit(TEXTURE_UNIT, mTextureBackground);
+    sGlobalFullTriangleVAO.drawTwoTriangles();
 
     mSpriteBatch.begin(4);
 

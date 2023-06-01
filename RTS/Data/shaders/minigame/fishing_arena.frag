@@ -10,10 +10,10 @@ uniform float unFailAngle = M_PI * 0.2;
 
 
 void main() {
-    fColor = texture(unTexture, fUV) * vec4(0.0, 0.0, 0.0, 1.0);
+    fColor = texture(unTexture, fUV);
     vec2 offset = fUV * 2.0 - 1.0;
     float length2 = dot(offset, offset);
-    if (length2 > 0) {
+    if (length2 > 9999999999.0) {
         float length = sqrt(length2);
         offset = offset / length;
         fColor.r = length * 0.001;

@@ -26,6 +26,8 @@ void IEntityComponentSystem::tick() {
   
 	mTimedTileInteractSystem.update(mRegistry);
 
+	mFishingSystem.update(mWorld, mRegistry);
+
     //mCorpseTable.update();
     
 	// TODO: Client ECS
