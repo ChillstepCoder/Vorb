@@ -385,6 +385,7 @@
     <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp" />
     <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderer\OverlayRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\GameRenderStateManager.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
@@ -708,6 +709,7 @@
     <ClInclude Include="src\rendering\post_process\TonemapRenderer.h" />
     <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
+    <ClInclude Include="src\rendering\renderer\OverlayRenderer.h" />
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
@@ -822,6 +824,7 @@
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
     <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
     <ClInclude Include="src\world\controller\IWorldInterfaceController.h" />
+    <ClInclude Include="src\world\ecosystem\FishEcosystem.h" />
     <ClInclude Include="src\world\host\HostWorld.h" />
     <ClInclude Include="src\world\IChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />

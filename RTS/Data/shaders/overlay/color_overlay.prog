@@ -1,0 +1,3 @@
+color_overlay:
+  vert: color_overlay.vert
+  frag: color_overlay.frag

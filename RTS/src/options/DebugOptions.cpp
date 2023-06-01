@@ -113,6 +113,7 @@ DebugOptions::DebugOptions() :
     // Water
     mIsCameraUnderwater(false),
     mUnderwaterHazeDivisor(70.0f),
+    mUnderwaterOverlayColor(10.0f / 255.0f, 24.0f / 255.0f, 61.0f / 255.0f, 175.0f / 255.0f),
     mShallowWaterColor(65.0f / 255.0f, 127.0f / 255.0f, 173.0f / 255.0f, 185.0f / 255.0f),
     mDeepWaterColor(6.0f / 255.0f, 13.0f / 255.0f, 24.0f / 255.0f, 191.0f / 255.0f),
     mWaterFoamColor(126.0f / 255.0f, 164.0f / 255.0f, 216.0f / 255.0f, 255.0f / 255.0f),

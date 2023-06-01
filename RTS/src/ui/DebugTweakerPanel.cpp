@@ -173,6 +173,8 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
     if (ImGui::CollapsingHeader("Water")) {
         ImGui::PushID(++ID);
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableWater);
+        ImGui::SliderFloat("Underwater Haze Divisor", &sDebugOptions.mUnderwaterHazeDivisor, 0.0f, 1000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::ColorPicker4("Underwater Overlay Color", &sDebugOptions.mUnderwaterOverlayColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::ColorPicker4("Shallow Color", &sDebugOptions.mShallowWaterColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::ColorPicker4("Deep Color", &sDebugOptions.mDeepWaterColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::ColorPicker4("Foam Color", &sDebugOptions.mWaterFoamColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);

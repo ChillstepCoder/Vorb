@@ -19,6 +19,7 @@
 #include "rendering/post_process/SmudgeRenderer.h"
 #include "rendering/post_process/TonemapRenderer.h"
 #include "rendering/renderer/GrassRenderer.h"
+#include "rendering/renderer/OverlayRenderer.h"
 #include "rendering/TerrainRenderer.h"
 #include "rendering/TileContainerRenderer.h"
 #include "rendering/Skybox.h"
@@ -86,6 +87,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mSmudgeRenderer = std::make_unique<SmudgeRenderer>(screenResolution);
     mTonemapRenderer = std::make_unique<TonemapRenderer>();
     mFishRenderer = std::make_unique<FishRenderer>();
+    mOverlayRenderer = std::make_unique<OverlayRenderer>();
     checkGlError("WorldRenderer::WorldRenderer");
 
     mHDRLightGBuffer = std::make_unique<vg::GBuffer>(screenResolution);
@@ -312,6 +314,10 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     }
     mTonemapRenderer->render(activeGBuffer->getAlbedoTexture());
     //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
+
+    if (sDebugOptions.mIsCameraUnderwater) {
+        mOverlayRenderer->renderUnderwaterOverlay();
+    }
 
     // Final Pass through process
     // TODO: Make this work. When in debug, render tonemap to a new texture
@@ -582,7 +588,9 @@ void WorldRenderer::renderPassTransparent() {
 
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
+        glEnable(GL_DEPTH_CLAMP);
         mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *mSkyBox->getCubemap());
+        glDisable(GL_DEPTH_CLAMP);
     }
 
     // Light transparent layer

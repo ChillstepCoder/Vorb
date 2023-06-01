@@ -30,6 +30,7 @@ class TerrainMesh;
 class GrassMesh;
 class WorldRenderDataManager;
 class FishRenderer;
+class OverlayRenderer;
 
 struct WorldRenderData;
 struct GlobalRenderData;
@@ -89,6 +90,7 @@ private:
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
     mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
     mutable std::unique_ptr<FishRenderer> mFishRenderer;
+    mutable std::unique_ptr<OverlayRenderer> mOverlayRenderer;
 
     // World Data
     WorldRenderDataManager* mCurrentWorldRenderDataManager = nullptr;

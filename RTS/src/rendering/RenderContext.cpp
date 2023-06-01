@@ -402,15 +402,21 @@ void RenderContext::updateCamera(f32 frameAlpha) {
     memcpy(&mCamera, &mCameraController->getOwnedCamera(), sizeof(Camera3D));
 
     // Water clipping
-    constexpr f32 CAMERA_CLIP_DIST = 0.1f;
+    constexpr f32 CAMERA_SURFACE_CLAMP = 0.01f;
+    constexpr f32 CAMERA_DEPTH_CLAMP = -0.2f;
     const f32v3 newCameraPos = mCamera.getPosition();
-    if (newCameraPos.z > -CAMERA_CLIP_DIST * 2.0f) {
-        if (newCameraPos.z <= CAMERA_CLIP_DIST) {
-            mCamera.setPosition(f32v3(newCameraPos.x, newCameraPos.y, -CAMERA_CLIP_DIST));
+    if (newCameraPos.z > CAMERA_DEPTH_CLAMP) {
+        if (newCameraPos.z <= CAMERA_SURFACE_CLAMP) {
+            mCamera.setPosition(f32v3(newCameraPos.x, newCameraPos.y, CAMERA_DEPTH_CLAMP));
+            sDebugOptions.mIsCameraUnderwater = true;
+        }
+        else {
+            sDebugOptions.mIsCameraUnderwater = false;
         }
     }
-
-    sDebugOptions.mIsCameraUnderwater = mCameraController->getOwnedCamera().getPosition().z <= 0.0f;
+    else {
+        sDebugOptions.mIsCameraUnderwater = true;
+    }
 }
 
 void RenderContext::updateRenderThreadProcs() {

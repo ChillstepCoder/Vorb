@@ -119,6 +119,7 @@ struct DebugOptions {
     // Water
     bool mIsCameraUnderwater; // TODO: MOVE
     f32 mUnderwaterHazeDivisor;
+    f32v4 mUnderwaterOverlayColor;
     f32v4 mShallowWaterColor;
     f32v4 mDeepWaterColor;
     f32v4 mWaterFoamColor;
