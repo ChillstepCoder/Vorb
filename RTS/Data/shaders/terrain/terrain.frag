@@ -176,6 +176,9 @@ void main() {
     
     oColor.a = 1.0; // AO
     
+    // Wet Soil (Shifted warmer)
+    oColor.rgb = mix(oColor.rgb, oColor.rgb * 0.6 * vec3(1.2, 1.1, 1.0), clamp(-fHeight * 10.0 + 0.01, 0.0, 1.0));
+    
     //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
     
     // === Roughness + metallic ===

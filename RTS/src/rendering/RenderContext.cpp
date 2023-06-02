@@ -45,6 +45,7 @@
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/UboHelpers.h"
+#include "rendering/particle/CPUParticleSystem2D.h"
 #include "weather/CloudMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -176,10 +177,13 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     TerrainMeshBuilder::initStaticIBO();
     checkGlError("Meshbase init");
 
-    // int UI resources
+    // Init UI resources
     mSb         = std::make_unique<vg::SpriteBatch>();
     mSpriteFont = std::make_unique<vg::SpriteFont>();
     mSb->init();
+
+    // Init particles
+    mCpuParticleSystem2D = std::make_unique<CPUParticleSystem2D>();
 
     vio::Path fontPath;
     if (!Services::ResourceManager::ref().getIoManager().resolvePath(vio::Path("data/fonts/titilium_semibold.ttf"), fontPath)) {
@@ -189,6 +193,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     checkGlError("SB init");
 
     sGlobalFullTriangleVAO.init();
+
 
     // GRAPHICS STUDIES
     // GTA5 https://www.adriancourreges.com/blog/2015/11/02/gta-v-graphics-study/
@@ -248,7 +253,6 @@ void RenderContext::initPostLoad() {
 
     const ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialShaderManager& materialManager = resourceManager.getMaterialShaderManager();
-
   
     mWorldRenderer = std::make_unique<WorldRenderer>(mScreenResolution);
     mWorldRenderer->initPostLoad();

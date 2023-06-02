@@ -119,6 +119,7 @@ void main() {
     oColor.rgb = applyHaze(oColor.rgb, fPosition, preset, hazeColor);
     oColor.rgb = gammaEncode(oColor.rgb, 2.2);
     
-    //oColor.rgb = 0.0001 * oColor.rgb + depthAlphaAdd;
-   // oColor.a = 0.0001 * oColor.a + 1.0;
+    //oColor.rgb = 0.0001 * oColor.rgb + foamDepthDiff;
+    //oColor.a = 0.0001 * oColor.a + 1.0;
+    oColor.a *= foamDepthDiff;
 }

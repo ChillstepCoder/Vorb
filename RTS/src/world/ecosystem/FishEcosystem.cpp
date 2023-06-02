@@ -156,10 +156,10 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
         const FishDef& codFish = mFishRepository.getFish("cod");
         const FishDef& rareFish = mFishRepository.getFish("rarefish");
         for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 15; ++j) {
+            for (int j = 0; j < 20; ++j) {
                 trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], codFish);
             }
-            for (int j = 0; j < 2; ++j) {
+            for (int j = 0; j < 3; ++j) {
                 trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], rareFish);
             }
         }
