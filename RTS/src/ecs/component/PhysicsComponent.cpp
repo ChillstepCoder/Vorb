@@ -97,10 +97,10 @@ void PhysicsComponent::setVelocity(const f32v3& vel) {
 void PhysicsSystem::update(IWorld& world, entt::registry& registry) {
     PROFILE_FUNCTION();
     const IHeightmapGrid& grid = world.getHeightmapGrid();
-    auto view = registry.view<PhysicsComponent>();
+    auto view = registry.view<PhysicsComponent, PositionComponent>();
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
-        const f32v3 pos = cmp.getPosition();
+        f32v3 pos = cmp.getPosition();
         const f32v2 xyPosition(pos.x, pos.y);
         f32 terrainHeight;
         constexpr f32 SNAP_THRESHOLD = 0.01f;
@@ -111,7 +111,8 @@ void PhysicsSystem::update(IWorld& world, entt::registry& registry) {
                 if (velocity.z < 0.0f) {
                     cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
                 }
-                cmp.setTransform(f32v3(pos.x, pos.y, terrainHeight), 0.0f);
+                pos.z = terrainHeight;
+                cmp.setTransform(pos, 0.0f);
                 cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
             }
             else {
@@ -125,5 +126,7 @@ void PhysicsSystem::update(IWorld& world, entt::registry& registry) {
             cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
             // TODO: Deactivate? hmmm
         }
+        // Copy position to our position component
+        view.get<PositionComponent>(entity).mPosition = pos;
     };
 }

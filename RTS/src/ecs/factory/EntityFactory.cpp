@@ -80,6 +80,7 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
             }
             case ComponentTypes::Physics: {
                 auto& physics = registry.emplace<PhysicsComponent>(newEntity);
+                auto& positionCmp = registry.get_or_emplace<PositionComponent>(newEntity);
                 RigidBodyRotationType rotType = RigidBodyRotationType::FULL;
                 if (cdef.physics.disableXyzRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE;
@@ -91,6 +92,7 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
                 RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.halfExtents, cdef.physics.massKg, CollisionGroup::CHARACTER, rotType);
                 physics.mRigidBody = rbp.first;
                 physics.mZPosOffset = -rbp.second;
+                positionCmp.mPosition = position;
                 break;
             }
             case ComponentTypes::Profession: {

@@ -533,7 +533,7 @@ f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
     const HeightmapPatch& patch = mHeightData[id];
 
     if (!patch.isDone()) {
-        return -100.0f;
+        return FLT_MAX;
     }
 
     return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);

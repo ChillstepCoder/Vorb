@@ -5,7 +5,9 @@ class PhysicsComponent;
 struct CharacterControlComponent;
 
 enum class FishingComponentState {
+    Initializing,
     Casting,
+    Casted,
     Fishing,
     NPCMinigame,
     RemotePlayerMinigame,
@@ -17,8 +19,11 @@ enum class FishingComponentState {
 
 struct FishingComponent {
     FishingComponentState mState = FishingComponentState::Casting;
-    bool mIsCastInputPressed = false;
+    f32v3 mBobberPosition = f32v3(0.0f);
+    f32v3 mTargetPosition = f32v3(0.0f); // Cast target
+    f32v3 mBobberVelocity = f32v3(0.0f);
     f32 mCastCharge = 0.0f;
+    bool mIsCastInputPressed = false;
 
     bool isDone() const { return mState >= FishingComponentState::Success; }
 };
@@ -28,4 +33,6 @@ public:
     void update(IWorld& world, entt::registry& registry);
 private:
     void updateFishing(IWorld& world, entt::registry& registry, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp);
+
+    f32 mTimeStep = 0.0f;
 };

@@ -3,7 +3,7 @@
 
 #include "world/IWorld.h"
 #include "ecs/component/NavigationComponent.h"
-#include "ecs/component/PhysicsComponent.h"
+#include "ecs/component/PositionComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
 #include "city/City.h"
@@ -80,9 +80,9 @@ TaskTickResult HarvestItemsTask::tick(IWorld& world, entt::registry& registry, e
 }
 
 void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
-    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    PositionComponent& posCmp = registry.get<PositionComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
+    cmp.requestCoarsePathToHarvestable(posCmp.mPosition, TileHarvestable::WOOD, 1024.0f, nullptr);
     mState = TaskState::PATH_TO_ITEM;
 }
 
@@ -90,7 +90,7 @@ void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt
     ASSERT_GAME_THREAD();
 
     assert(targetTileHandle.isValid());
-    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    PositionComponent& posCmp = registry.get<PositionComponent>(agent);
     TileLayer layer;
     if (!world.terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
         // Try again

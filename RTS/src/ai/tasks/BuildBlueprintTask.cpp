@@ -2,7 +2,7 @@
 
 #include "BuildBlueprintTask.h"
 #include "ecs/component/NavigationComponent.h"
-#include "ecs/component/PhysicsComponent.h"
+#include "ecs/component/PositionComponent.h"
 #include "ecs/component/InventoryComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
@@ -102,11 +102,11 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
     }
     assert(mPlaceTilesTarget->isValid());
 
-    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    PositionComponent& posCmp = registry.get<PositionComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
     const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
     // TODO: Fallback to coarse path?
-    cmp.requestFinePath(physCmp.getPosition(), targetWorldPos, [this](bool success) {
+    cmp.requestFinePath(posCmp.mPosition, targetWorldPos, [this](bool success) {
         if (success) {
             // We always check for flatten terrain first
             mState = TaskState::FLATTEN_TERRAIN;
@@ -153,8 +153,8 @@ bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entit
 
 bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entity agent) {
 
-    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
-    const f32v3 position = physCmp.getPosition();
+    PositionComponent& posCmp = registry.get<PositionComponent>(agent);
+    const f32v3 position = posCmp.mPosition;
     mBuildTilesTarget = mBlueprint.reserveTileToBuild(agent, position);
     if (!mBuildTilesTarget) {
         return false;

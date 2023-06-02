@@ -358,14 +358,14 @@ void updateComponentCoarsePathBuilding(entt::entity entity, NavigationComponent&
 
 void NavigationComponentSystem::update(IWorld& world, entt::registry& registry) {
 	// Update components
-    auto view = registry.view<NavigationComponent, PhysicsComponent, CharacterControlComponent>();
+    auto view = registry.view<NavigationComponent, PositionComponent, CharacterControlComponent>();
 
 
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
-        auto& physCmp = view.get<PhysicsComponent>(entity);
+        auto& posCmp = view.get<PositionComponent>(entity);
         auto& controlCmp = view.get<CharacterControlComponent>(entity);
-		const f32v3 position = physCmp.getPosition();
+		const f32v3 position = posCmp.mPosition;
 
         switch (navCmp.mNavigationType) {
 			case NavigationType::FINE_PATH: {
