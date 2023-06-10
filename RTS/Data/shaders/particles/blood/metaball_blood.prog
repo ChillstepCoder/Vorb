@@ -1,3 +1,0 @@
-metaball_blood:
-  vert: pass_through.vert
-  frag: metaball_blood.frag

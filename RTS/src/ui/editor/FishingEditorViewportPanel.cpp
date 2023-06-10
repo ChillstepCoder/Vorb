@@ -3,6 +3,7 @@
 
 #include "ui/minigame/FishingMinigame.h"
 
+#include "rendering/RenderContext.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
@@ -101,7 +102,7 @@ const MaterialShader* FishingEditorViewportPanel::getShader() {
 
 void FishingEditorViewportPanel::renderMesh() {
     if (mCurrentFishingMinigame) {
-        FishingMinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims);
+        FishingMinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
         if (result.result == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
             mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);

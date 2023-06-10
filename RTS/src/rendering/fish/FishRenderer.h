@@ -36,7 +36,6 @@ private:
     std::vector<ui32> mInstanceCountsThisFrame;
     GLsync mFence[3] = { 0 };
     int mFrameIndex = 0;
-    FishInstanceData* mMappedData;
     const MaterialShader* mFishShader;
 };
 

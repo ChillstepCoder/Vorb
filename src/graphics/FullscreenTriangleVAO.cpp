@@ -1,3 +1,4 @@
+
 #include "Vorb/stdafx.h"
 #include "Vorb/graphics/FullscreenTriangleVAO.h"
 
@@ -30,4 +31,10 @@ void vorb::graphics::FullscreenTriangleVAO::drawTwoTriangles() const {
     assert(m_vao);
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void vorb::graphics::FullscreenTriangleVAO::drawNTriangles(int numTriangles) const {
+    assert(m_vao);
+    glBindVertexArray(m_vao);
+    glDrawArrays(GL_TRIANGLES, 0, numTriangles * 3);
 }

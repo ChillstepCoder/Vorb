@@ -31,7 +31,6 @@ class TileContainerRenderer;
 class TonemapRenderer;
 class WorldRenderer;
 class WorldRenderDataManager;
-class CPUParticleSystem2D;
 
 struct SDL_Window;
 
@@ -78,7 +77,6 @@ public:
     const ui32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return &mCamera; }
     CameraController* getCameraController() const { return mCameraController; }
-    CPUParticleSystem2D& getCPUParticleSystem2D() const { return *mCpuParticleSystem2D; }
 
     // Renderers
     TileContainerRenderer& getTileContainerRenderer() const;
@@ -120,9 +118,6 @@ private:
     std::unique_ptr<vg::SpriteBatch> mSb;
     std::unique_ptr<vg::SpriteFont> mSpriteFont;
     SDL_Window* mWindow;
-
-    // Particles
-    std::unique_ptr<CPUParticleSystem2D> mCpuParticleSystem2D;
 
     int mPrevGBufferIndex = 1;
     int mActiveGBufferIndex = 0;

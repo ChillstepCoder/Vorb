@@ -340,6 +340,7 @@
     <ClCompile Include="src\rendering\gl\GL.cpp" />
     <ClCompile Include="src\rendering\gl\GLAPITrace.cpp" />
     <ClCompile Include="src\rendering\gl\GLObjects.cpp" />
+    <ClCompile Include="src\rendering\gl\GpuStreamingDataBuffer.cpp" />
     <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
@@ -657,6 +658,7 @@
     <ClInclude Include="src\rendering\gl\GLAPI.h" />
     <ClInclude Include="src\rendering\gl\GLAPITrace.h" />
     <ClInclude Include="src\rendering\gl\GLObjects.h" />
+    <ClInclude Include="src\rendering\gl\GpuStreamingDataBuffer.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />

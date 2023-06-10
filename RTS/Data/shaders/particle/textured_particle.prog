@@ -1,0 +1,3 @@
+textured_particle:
+  vert: textured_particle.vert
+  frag: textured_particle.frag

@@ -30,6 +30,7 @@ namespace vorb {
         // const vec2 vertices[3]=vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1, 3));
         // gl_Position = vec4(vertices[gl_VertexID],0,1);
         // fUV = 0.5 * gl_Position.xy + vec2(0.5);
+        // TODO: Rename ImplicitTriangleVAO
         class FullscreenTriangleVAO {
         public:
             void init();
@@ -38,6 +39,7 @@ namespace vorb {
             // Issues a single 3 vertex draw command with this empty VAO
             void draw() const;
             void drawTwoTriangles() const;
+            void drawNTriangles(int numTriangles) const;
         private:
             ui32 m_vao = 0; ///< Empty VAO
         };

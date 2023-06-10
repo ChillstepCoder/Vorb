@@ -13,12 +13,14 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include "rendering/RenderContext.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/particle/CPUParticleSystem2D.h"
 
 #include "math/Random.h"
 
 // TODO: Remove
 //#include "options/DebugOptions.h"
 
+#define USING_PARTICLE 1
 
 constexpr f32 BOUNDARY_RADIUS = 100.0f;
 constexpr f32 FISH_RADIUS = BOUNDARY_RADIUS * 0.3f;
@@ -26,6 +28,8 @@ constexpr f32 BOUNDARY_RADIUS_SQ = SQ(BOUNDARY_RADIUS);
 constexpr f32 FISH_LIFE_LOST_COOLDOWN = 0.35f;
 
 constexpr f32 END_TRANSITION_TIME = 0.75f;
+
+constexpr ui32 MAX_UI_ELEMENTS = 10;
 
 // TODO: TimeUtility
 f32 differenceBetweenTimePointsSeconds(TimePoint a, TimePoint b) {
@@ -44,13 +48,29 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mFishDef(fishData),
     mPlayerRadius(BOUNDARY_RADIUS * 0.1f),
     mFishRadius(getFishRadius(fishData))
+
 {
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+
+    mUIParticleSystem = std::make_unique<CPUParticleSystem2D>(nullptr, MAX_UI_ELEMENTS,
+        BitFlags<ParticleComponentType>(ParticleComponentType::Scale, ParticleComponentType::MaterialID));
     mPlayerPosition = f32v2(0.0f, BOUNDARY_RADIUS - mPlayerRadius - 1);
     mSpriteBatch.init();
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
-    mTextureCircle = resourceManager.getMaterialRepository().getMaterialDesc("fishing_circle").albedoTexture;
-    mTextureBackground = resourceManager.getMaterialRepository().getMaterialDesc("fishing_border").albedoTexture;
+    mTextureCircle = materialRepository.getMaterialDesc("fishing_circle").albedoTexture;
+    mTextureBackground = materialRepository.getMaterialDesc("fishing_border").albedoTexture;
     mArenaShader = resourceManager.getMaterialShaderManager().getMaterialShader("fishing_arena");
+    mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle");
+
+    // Set up assets
+    mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
+    mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+
+    mFishParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
+    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+
+    mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
+    mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fishing_border").id);
 
 }
 
@@ -58,14 +78,14 @@ FishingMinigame::~FishingMinigame()
 {
 }
 
-FishingMinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolution) {
+FishingMinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolution, f32 elapsedSec) {
     mCurrentScreenResolution = screenResolution;
 
     mFishRadius = getFishRadius(mFishDef);
 
     FishingMinigameResult result;
     result.result = update();
-    render();
+    render(elapsedSec);
     /*if (result.result == MinigameResultType::Success) {
         assert(false);
     }
@@ -103,7 +123,7 @@ f32v2 getScreenPosition(f32v2 gamePosition, const f32v2 screenResolution) {
     return gamePosition * screenScale + screenResolution * 0.5f; // Offset to center since game origin in center
 }
 
-void FishingMinigame::render() {
+void FishingMinigame::render(f32 elapsedSec) {
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
@@ -119,6 +139,33 @@ void FishingMinigame::render() {
     const f32v2 fishSize = f32v2(mFishRadius * screenScale * 2.0);
     const f32v2 playerSize = f32v2(mPlayerRadius * screenScale * 2.0);
 
+    // TODO: Util
+    f32m4 camera(
+        2.0f / mCurrentScreenResolution.x, 0, 0, 0,
+        0, -2.0f / mCurrentScreenResolution.y, 0, 0,
+        0, 0, 1, 0,
+        -1, 1, 0, 1
+    );
+
+#if USING_PARTICLE == 1
+    MaterialRenderer::bindMaterialForRender(*mUIShader);
+    glUniformMatrix4fv(mUIShader->getUniform("unVP"), 1, false, &camera[0][0]);
+
+    // Arena
+    mUIParticleSystem->setParticleScale(mBackgroundParticleID, boundarySize);
+    mUIParticleSystem->setParticlePosition(mBackgroundParticleID, centerPos);
+
+    // Player
+    mUIParticleSystem->setParticleScale(mPlayerParticleID, playerSize);
+    mUIParticleSystem->setParticlePosition(mPlayerParticleID, playerPos);
+
+    // Fish
+    mUIParticleSystem->setParticleScale(mFishParticleID, fishSize);
+    mUIParticleSystem->setParticlePosition(mFishParticleID, fishPos);
+
+    mUIParticleSystem->updateAndRender(mUIShader->getUniform("unBufferStart"), elapsedSec);
+#else
+
     // Arena
     constexpr int TEXTURE_UNIT = 0;
     MaterialRenderer::bindMaterialForRender(*mArenaShader);
@@ -127,13 +174,7 @@ void FishingMinigame::render() {
     glUniform1f(mArenaShader->getUniform("unRadius"), boundarySize.y * 0.5f);
     glUniform1f(mArenaShader->getUniform("unSuccessAngle"), DEG_TO_RAD(minigameData.mSuccessAngle));
     glUniform1f(mArenaShader->getUniform("unFailAngle"), DEG_TO_RAD(minigameData.mFailAngle));
-    // TODO: Util
-    f32m4 camera(
-        2.0f / mCurrentScreenResolution.x, 0, 0, 0,
-        0, -2.0f / mCurrentScreenResolution.y, 0, 0,
-        0, 0, 1, 0,
-        -1, 1, 0, 1
-    );  
+
     glUniformMatrix4fv(mArenaShader->getUniform("unVP"), 1, false, &camera[0][0]);
     glBindTextureUnit(TEXTURE_UNIT, mTextureBackground);
     sGlobalFullTriangleVAO.drawTwoTriangles();
@@ -155,6 +196,8 @@ void FishingMinigame::render() {
 
     mSpriteBatch.end(vg::SpriteSortMode::NONE);
     mSpriteBatch.render(mCurrentScreenResolution);
+
+#endif
 
     vg::DepthState::restorePrevious();
 }

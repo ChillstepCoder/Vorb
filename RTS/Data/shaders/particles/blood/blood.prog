@@ -1,7 +1,0 @@
-blood:
-  vert: particle.vert
-  frag: blood.frag
-  atlas_textures:
-    - name: blood_mask
-      unrect: unMaskRect
-      unpage: unMaskPage

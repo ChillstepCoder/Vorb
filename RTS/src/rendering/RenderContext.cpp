@@ -182,9 +182,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mSpriteFont = std::make_unique<vg::SpriteFont>();
     mSb->init();
 
-    // Init particles
-    mCpuParticleSystem2D = std::make_unique<CPUParticleSystem2D>();
-
     vio::Path fontPath;
     if (!Services::ResourceManager::ref().getIoManager().resolvePath(vio::Path("data/fonts/titilium_semibold.ttf"), fontPath)) {
         pError("Unable to resolve titilium_semibold.ttf font path, try verifying game files");
