@@ -54,7 +54,12 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
 
     mUIParticleSystem = std::make_unique<CPUParticleSystem2D>(nullptr, MAX_UI_ELEMENTS,
-        BitFlags<ParticleComponentType>(ParticleComponentType::Scale, ParticleComponentType::MaterialID));
+        BitFlags<ParticleComponentType>(
+            ParticleComponentType::Scale,
+            ParticleComponentType::MaterialID,
+            ParticleComponentType::Color
+        )
+    );
     mPlayerPosition = f32v2(0.0f, BOUNDARY_RADIUS - mPlayerRadius - 1);
     mSpriteBatch.init();
     mTextureCircle = materialRepository.getMaterialDesc("fishing_circle").albedoTexture;
@@ -65,12 +70,15 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     // Set up assets
     mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
     mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+    mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::White);
 
     mFishParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
-    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
+    mUIParticleSystem->setParticleColor(mFishParticleID, color::Red);
 
     mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
-    mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+    mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
+    mUIParticleSystem->setParticleColor(mPlayerParticleID, color::Green);
 
 }
 

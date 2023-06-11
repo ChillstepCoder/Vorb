@@ -216,7 +216,7 @@ public:
             ui8 b; ///< Blue value
             ui8 a; ///< Alpha value
         };
-        ui8 data[4]; ///< RGBA values stored in array
+        ui8 data[4] = { 255u, 255u, 255u, 255u }; ///< RGBA values stored in array
     };
 };
 typedef ColorRGBA8 color4; ///< Shortened name for ColorRGBA8

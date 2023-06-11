@@ -19,11 +19,13 @@ CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFun
 
     if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
         mParticleData.mVelocities = std::unique_ptr<f32v2[]>(new f32v2[mMaxParticles]);
+        std::fill_n(mParticleData.mVelocities.get(), mMaxParticles, f32v2(0.0f)); // Default values
         // No GPU data for velocities
     }
     if (mComponents.isBitSet(ParticleComponentType::Scale)) {
         mParticleData.mScales = std::unique_ptr<f32v2[]>(new f32v2[mMaxParticles]);
         mGpuData.mScalesBuffer = std::make_unique<GpuStreamingDataBuffer>(maxParticles, sizeof(f32v2));
+        std::fill_n(mParticleData.mScales.get(), mMaxParticles, f32v2(1.0f)); // Default values
     }
     if (mComponents.isBitSet(ParticleComponentType::Color)) {
         mParticleData.mColors = std::unique_ptr<color4[]>(new color4[mMaxParticles]);
@@ -158,13 +160,13 @@ void CPUParticleSystem2D::render(VGUniform bufferIndexUniform) {
         mDataChanged = false;
         // Positions
         f32v2* positions = (f32v2*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
-        memcpy(positions, &mParticleData.mPositions[mFirstActiveParticle].x, sizeof(f32v2) * particlesToRender);
+        memcpy(positions, &mParticleData.mPositions[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
         mCurrentUniformBufferStartIndex = mGpuData.mPositionsBuffer->flushDataAndIncrementFrame(particlesToRender);
 
         // Scales
         if (mGpuData.mScalesBuffer) {
             f32v2* scales = (f32v2*)mGpuData.mScalesBuffer->frameBeginAndGetDataForUpdate();
-            memcpy(scales, &mParticleData.mScales[mFirstActiveParticle].x, sizeof(f32v2) * particlesToRender);
+            memcpy(scales, &mParticleData.mScales[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
             assert(mCurrentUniformBufferStartIndex == mGpuData.mScalesBuffer->flushDataAndIncrementFrame(particlesToRender));
             mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_SCALES_SSBO);
         }
@@ -172,7 +174,7 @@ void CPUParticleSystem2D::render(VGUniform bufferIndexUniform) {
         // Colors
         if (mGpuData.mColorsBuffer) {
             color4* colors = (color4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
-            memcpy(colors, &mParticleData.mPositions[mFirstActiveParticle].x, sizeof(color4) * particlesToRender);
+            memcpy(colors, &mParticleData.mColors[mFirstActiveParticle], sizeof(color4) * particlesToRender);
             assert(mCurrentUniformBufferStartIndex == mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender));
             mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
         }
