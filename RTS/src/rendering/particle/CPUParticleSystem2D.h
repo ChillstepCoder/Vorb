@@ -14,8 +14,8 @@ enum class ParticleComponentType : ui8 {
 };
 
 struct CPUParticleSystemData2D {
-    std::unique_ptr<f32v2[]> mPositions; // If position.x == FLT_MAX, then particle is inactive
-    std::unique_ptr<f32v2[]> mVelocities;
+    std::unique_ptr<f32v3[]> mPositions; // If position.x == FLT_MAX, then particle is inactive
+    std::unique_ptr<f32v3[]> mVelocities;
     std::unique_ptr<f32v2[]> mScales;
     std::unique_ptr<color4[]> mColors;
     std::unique_ptr<f32[]> mLifespans;
@@ -44,14 +44,14 @@ public:
     VORB_NON_COPYABLE(CPUParticleSystem2D);
 
     // Bind shader before calling this
-    void updateAndRender(VGUniform bufferIndexUniform, f32 elapsedSec);
+    void updateAndRender(f32 elapsedSec);
 
     // Particles
-    ParticleID tryAddParticle(f32v2 position);
+    ParticleID tryAddParticle(f32v3 position);
     void removeParticle(ParticleID id);
-    void setParticlePosition(ParticleID id, f32v2 position);
+    void setParticlePosition(ParticleID id, f32v3 position);
     void setParticleScale(ParticleID id, f32v2 scale);
-    void setParticleVelocity(ParticleID id, f32v2 velocity);
+    void setParticleVelocity(ParticleID id, f32v3 velocity);
     void setParticleColor(ParticleID id, color4 color);
     void setParticleMaterial(ParticleID id, MaterialID material);
     CPUParticleSystemData2D& getParticleData() { return mParticleData; }
@@ -67,7 +67,7 @@ public:
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
 
 private:
-    void render(VGUniform bufferIndexUniform);
+    void render();
     void onNewParticleAdded(ParticleID id);
 
     // Updates the whole system with custom logic.

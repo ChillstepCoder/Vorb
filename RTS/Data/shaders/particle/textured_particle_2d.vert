@@ -1,5 +1,4 @@
 uniform mat4 unVP;
-uniform int unBufferStart;
 
 in vec2 vPosition;
 
@@ -20,7 +19,7 @@ const int indices[6] = int[6](
 
 layout(std430, binding = 4) readonly buffer ParticlePosition
 {
-    vec2 ParticlePositions[];
+    vec4 ParticlePositions[];
 };
 
 layout(std430, binding = 5) readonly buffer ParticleScale
@@ -38,8 +37,8 @@ layout(std430, binding = 7) readonly buffer ParticleMaterial
     uint ParticleMaterials[];
 };
 
-vec4 getColor(uint bufferIndex) {
-    uint packedColor = ParticleColors[bufferIndex];
+vec4 getColor() {
+    uint packedColor = ParticleColors[gl_InstanceID];
     vec4 color;
     color.a = float((packedColor >> 24) & 0xFF);
     color.b = float((packedColor >> 16) & 0xFF);
@@ -51,13 +50,12 @@ vec4 getColor(uint bufferIndex) {
 
 void main() {
     const int idx = indices[gl_VertexID % 6];
-    const uint bufferIndex = (gl_VertexID / 6) + unBufferStart;
 	vec2 offset = pos[idx];
 
     fUV = (offset.xy + 0.5);
     // Offset to particle position and scale
-    vec2 position = offset.xy * ParticleScales[bufferIndex] + ParticlePositions[bufferIndex];
-    fColor = getColor(bufferIndex);
-    fParticleMaterial = ParticleMaterials[bufferIndex];
+    vec2 position = offset.xy * ParticleScales[gl_InstanceID] + ParticlePositions[gl_InstanceID].xy;
+    fColor = getColor();
+    fParticleMaterial = ParticleMaterials[gl_InstanceID];
     gl_Position = unVP * vec4(position.xy, 0.0, 1.0);
 }

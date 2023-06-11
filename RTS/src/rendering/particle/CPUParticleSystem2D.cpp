@@ -14,12 +14,13 @@ CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFun
     ASSERT_RENDER_THREAD();
     assert(mMaxParticles <= MAX_PARTICLES);
 
-    mParticleData.mPositions = std::unique_ptr<f32v2[]>(new f32v2[mMaxParticles]);
-    mGpuData.mPositionsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxParticles, sizeof(f32v2));
+    mParticleData.mPositions = std::unique_ptr<f32v3[]>(new f32v3[mMaxParticles]);
+    // These must be f32v4 to match std430 layout
+    mGpuData.mPositionsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxParticles, sizeof(f32v4));
 
     if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
-        mParticleData.mVelocities = std::unique_ptr<f32v2[]>(new f32v2[mMaxParticles]);
-        std::fill_n(mParticleData.mVelocities.get(), mMaxParticles, f32v2(0.0f)); // Default values
+        mParticleData.mVelocities = std::unique_ptr<f32v3[]>(new f32v3[mMaxParticles]);
+        std::fill_n(mParticleData.mVelocities.get(), mMaxParticles, f32v3(0.0f)); // Default values
         // No GPU data for velocities
     }
     if (mComponents.isBitSet(ParticleComponentType::Scale)) {
@@ -43,7 +44,7 @@ CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFun
     static_assert(e_cast(ParticleComponentType::TERM) == 17);
 }
 
-void CPUParticleSystem2D::updateAndRender(VGUniform particleIndexUniform, f32 elapsedSec) {
+void CPUParticleSystem2D::updateAndRender(f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
 
     mTotalElapsedSec = elapsedSec;
@@ -55,10 +56,10 @@ void CPUParticleSystem2D::updateAndRender(VGUniform particleIndexUniform, f32 el
         mUpdateFunction(*this, mParticleData, elapsedSec);
     }
 
-    render(particleIndexUniform);
+    render();
 }
 
-ParticleID CPUParticleSystem2D::tryAddParticle(f32v2 position) {
+ParticleID CPUParticleSystem2D::tryAddParticle(f32v3 position) {
     if (mActiveParticles >= mMaxParticles) {
         return INVALID_PARTICLE_ID;
     }
@@ -95,11 +96,15 @@ void CPUParticleSystem2D::removeParticle(ParticleID id) {
     // This indicates we were already removed
     assert(mParticleData.mPositions[id].x != FLT_MAX);
     // Shove particle off the screen
-    mParticleData.mPositions[id] = f32v2(FLT_MAX);
+    mParticleData.mPositions[id] = f32v3(FLT_MAX);
+    // If we are scaling, scale to zero for good measure
+    if (mParticleData.mScales) {
+        mParticleData.mScales[id] = f32v2(0.0f);
+    }
     mFreeParticleIDs.emplace_back(id);
 }
 
-void CPUParticleSystem2D::setParticlePosition(ParticleID id, f32v2 position) {
+void CPUParticleSystem2D::setParticlePosition(ParticleID id, f32v3 position) {
     mParticleData.mPositions[id] = position;
     mDataChanged = true;
 }
@@ -109,7 +114,7 @@ void CPUParticleSystem2D::setParticleScale(ParticleID id, f32v2 scale) {
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::setParticleVelocity(ParticleID id, f32v2 velocity) {
+void CPUParticleSystem2D::setParticleVelocity(ParticleID id, f32v3 velocity) {
     mParticleData.mVelocities[id] = velocity;
     mDataChanged = true;
 }
@@ -124,7 +129,7 @@ void CPUParticleSystem2D::setParticleMaterial(ParticleID id, MaterialID material
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::render(VGUniform bufferIndexUniform) {
+void CPUParticleSystem2D::render() {
 
     if (mActiveParticles == 0) {
         return;
@@ -159,8 +164,12 @@ void CPUParticleSystem2D::render(VGUniform bufferIndexUniform) {
     if (mDataChanged) {
         mDataChanged = false;
         // Positions
-        f32v2* positions = (f32v2*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
-        memcpy(positions, &mParticleData.mPositions[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
+        f32v4* positions = (f32v4*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
+        // GPU buffer has a padding byte due to std430 so we cant use memcpy
+        for (ui32 i = 0; i < particlesToRender; ++i) {
+            const f32v3& sourcePos = mParticleData.mPositions[mFirstActiveParticle + i];
+            positions[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, 0.0f);
+        }
         mCurrentUniformBufferStartIndex = mGpuData.mPositionsBuffer->flushDataAndIncrementFrame(particlesToRender);
 
         // Scales
@@ -204,12 +213,9 @@ void CPUParticleSystem2D::render(VGUniform bufferIndexUniform) {
         }
     }
     static_assert(e_cast(ParticleComponentType::TERM) == 17);
-    
-    // Tell shader where our data is starting
-    glUniform1i(bufferIndexUniform, mCurrentUniformBufferStartIndex);
 
     // Render two triangles per particle with no vertex data
-    sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
+    sGlobalFullTriangleVAO.drawNQuadsInstanced(particlesToRender, mCurrentUniformBufferStartIndex);
 }
 
 void CPUParticleSystem2D::onNewParticleAdded(ParticleID id) {

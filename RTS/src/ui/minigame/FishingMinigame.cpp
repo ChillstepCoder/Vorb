@@ -65,18 +65,18 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mTextureCircle = materialRepository.getMaterialDesc("fishing_circle").albedoTexture;
     mTextureBackground = materialRepository.getMaterialDesc("fishing_border").albedoTexture;
     mArenaShader = resourceManager.getMaterialShaderManager().getMaterialShader("fishing_arena");
-    mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle");
+    mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle_2d");
 
     // Set up assets
-    mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
+    mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_border").id);
     mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::White);
 
-    mFishParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
+    mFishParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
     mUIParticleSystem->setParticleColor(mFishParticleID, color::Red);
 
-    mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v2(0.0f));
+    mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
     mUIParticleSystem->setParticleColor(mPlayerParticleID, color::Green);
 
@@ -125,7 +125,8 @@ MinigameResultType FishingMinigame::update() {
 
 f32v2 getBoundarySize(const f32v2 screenResolution) { return f32v2(screenResolution.y); }
 
-f32v2 getScreenPosition(f32v2 gamePosition, const f32v2 screenResolution) {
+// ONLY USED FOR SPRITEFONT
+f32v2 getTextScreenPosition(f32v2 gamePosition, const f32v2 screenResolution) {
     const f32v2 boundarySize = getBoundarySize(screenResolution);
     const f32 screenScale = boundarySize.y / (BOUNDARY_RADIUS * 2.0);
     return gamePosition * screenScale + screenResolution * 0.5f; // Offset to center since game origin in center
@@ -136,42 +137,38 @@ void FishingMinigame::render(f32 elapsedSec) {
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
     const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
+
+    constexpr f32 BOUNDARY_RADIUS_SIZE_RATIO = 1.0f / 0.527f; ////(sDebugOptions.mDebugFloat02 ? sDebugOptions.mDebugFloat02 : 1.0f);
+    const f32v2 arenaSize = f32v2(BOUNDARY_RADIUS * 2.0f * BOUNDARY_RADIUS_SIZE_RATIO);
+
+    // Scaled transform
     const f32v2 boundarySize = getBoundarySize(mCurrentScreenResolution);
-    const f32v2 centerPos = mCurrentScreenResolution * 0.5f;
-
-    // Scaled
-    const f32 BOUNDARY_RADIUS_SIZE_RATIO = 1.0f / 0.527f; ////(sDebugOptions.mDebugFloat02 ? sDebugOptions.mDebugFloat02 : 1.0f);
-    const f32 screenScale = boundarySize.y / (BOUNDARY_RADIUS * 2.0 * BOUNDARY_RADIUS_SIZE_RATIO);
-    const f32v2 fishPos = centerPos + mFishPosition * screenScale;
-    const f32v2 playerPos = centerPos + mPlayerPosition * screenScale;
-    const f32v2 fishSize = f32v2(mFishRadius * screenScale * 2.0);
-    const f32v2 playerSize = f32v2(mPlayerRadius * screenScale * 2.0);
-
-    // TODO: Util
+    const f32 screenScale = boundarySize.y / arenaSize.y;
     f32m4 camera(
-        2.0f / mCurrentScreenResolution.x, 0, 0, 0,
-        0, -2.0f / mCurrentScreenResolution.y, 0, 0,
-        0, 0, 1, 0,
-        -1, 1, 0, 1
+        screenScale * (2.0f / mCurrentScreenResolution.x), 0, 0, 0,
+        0, screenScale * (-2.0f / mCurrentScreenResolution.y), 0, 0,
+        0, 0, 1.0f, 0,
+        0, 0, 0, 1.0f
     );
+
 
 #if USING_PARTICLE == 1
     MaterialRenderer::bindMaterialForRender(*mUIShader);
     glUniformMatrix4fv(mUIShader->getUniform("unVP"), 1, false, &camera[0][0]);
 
     // Arena
-    mUIParticleSystem->setParticleScale(mBackgroundParticleID, boundarySize);
-    mUIParticleSystem->setParticlePosition(mBackgroundParticleID, centerPos);
+    mUIParticleSystem->setParticleScale(mBackgroundParticleID, arenaSize);
+    mUIParticleSystem->setParticlePosition(mBackgroundParticleID, f32v3(0.0f, 0.0f, 0.0f));
 
     // Player
-    mUIParticleSystem->setParticleScale(mPlayerParticleID, playerSize);
-    mUIParticleSystem->setParticlePosition(mPlayerParticleID, playerPos);
+    mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0));
+    mUIParticleSystem->setParticlePosition(mPlayerParticleID, f32v3(mPlayerPosition.x, mPlayerPosition.y, 0.0f));
 
     // Fish
-    mUIParticleSystem->setParticleScale(mFishParticleID, fishSize);
-    mUIParticleSystem->setParticlePosition(mFishParticleID, fishPos);
+    mUIParticleSystem->setParticleScale(mFishParticleID, f32v2(mFishRadius * 2.0f));
+    mUIParticleSystem->setParticlePosition(mFishParticleID, f32v3(mFishPosition.x, mFishPosition.y, 0.0f));
 
-    mUIParticleSystem->updateAndRender(mUIShader->getUniform("unBufferStart"), elapsedSec);
+    mUIParticleSystem->updateAndRender(elapsedSec);
 #else
 
     // Arena
@@ -233,7 +230,7 @@ void FishingMinigame::updateFishPosition() {
     // Jerk
     if (Random::xorshf96f() <= minigameData.mJerkChance) {
         if (differenceBetweenTimePointsSeconds(currentTime, mLastJerkTime) >= mCurrentJerkCooldown) {
-            addDebugFloater("JERK", getScreenPosition(mFishPosition, mCurrentScreenResolution), color::White);
+            addDebugFloater("JERK", getTextScreenPosition(mFishPosition, mCurrentScreenResolution), color::White);
             mLastJerkTime = currentTime;
             mFishVelocity += getRandomDirectionVector() * minigameData.mJerkIntensity;
             mCurrentJerkCooldown = lerp(Random::xorshf96f(), minigameData.mJerkCooldownVarianceSec.x, minigameData.mJerkCooldownVarianceSec.y);
@@ -336,7 +333,7 @@ void FishingMinigame::updatePlayerPosition() {
 
 void FishingMinigame::fishLifeLost() {
     constexpr f32 FISH_LAUNCH_VEL = 3.0f;
-    addDebugFloater("SUCCESS", getScreenPosition(mFishPosition, mCurrentScreenResolution), color::Green);
+    addDebugFloater("SUCCESS", getTextScreenPosition(mFishPosition, mCurrentScreenResolution), color::Green);
     if (--mFishLivesLeft <= 0) {
         win();
         return;
@@ -348,7 +345,7 @@ void FishingMinigame::fishLifeLost() {
 
 void FishingMinigame::playerLifeLost() {
     constexpr f32 FISH_LAUNCH_VEL = 3.0f;
-    addDebugFloater("FAIL", getScreenPosition(mFishPosition, mCurrentScreenResolution), color::Green);
+    addDebugFloater("FAIL", getTextScreenPosition(mFishPosition, mCurrentScreenResolution), color::Green);
     if (--mPlayerLivesLeft <= 0) {
         lose();
         return;

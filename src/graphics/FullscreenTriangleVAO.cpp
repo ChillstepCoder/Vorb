@@ -38,3 +38,7 @@ void vorb::graphics::FullscreenTriangleVAO::drawNTriangles(int numTriangles) con
     glBindVertexArray(m_vao);
     glDrawArrays(GL_TRIANGLES, 0, numTriangles * 3);
 }
+
+void vorb::graphics::FullscreenTriangleVAO::drawNQuadsInstanced(int numQuads, int baseInstance) const {
+    glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, numQuads, baseInstance);
+}
