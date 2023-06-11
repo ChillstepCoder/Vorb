@@ -53,6 +53,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
 
+    // UI particles
     mUIParticleSystem = std::make_unique<CPUParticleSystem2D>(nullptr, MAX_UI_ELEMENTS,
         BitFlags<ParticleComponentType>(
             ParticleComponentType::Scale,
@@ -67,7 +68,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mArenaShader = resourceManager.getMaterialShaderManager().getMaterialShader("fishing_arena");
     mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle_2d");
 
-    // Set up assets
+    // Set up particles
     mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_border").id);
     mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::White);
@@ -79,6 +80,57 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
     mUIParticleSystem->setParticleColor(mPlayerParticleID, color::Green);
+
+    // Player particles
+    constexpr int PLAYER_PARTICLE_COUNT = 20000;
+    mPlayerParticleSystem = std::make_unique<CPUParticleSystem2D>(
+        [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+            for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
+                // Check for dead particle
+                if (particleData.mPositions[i].x == FLT_MAX) {
+                    continue;
+                }
+              /*  particleData.mPositions[i].x += (Random::getCachedRandomf() * 2.0f - 1.0f) * elapsedSec * 60.0f;
+                particleData.mPositions[i].y += (Random::getCachedRandomf() * 2.0f - 1.0f) * elapsedSec * 60.0f;*/
+
+                f32v3& position = particleData.mPositions[i];
+                f32v3& velocity = particleData.mVelocities[i];
+
+                const f32v2 offsetToPlayer = f32v2(mPlayerPosition.x - position.x, mPlayerPosition.y - position.y);
+                const f32 distanceToPlayer = glm::length(offsetToPlayer);
+                const f32v2 normalToPlayer = offsetToPlayer / distanceToPlayer;
+
+                constexpr f32 ACCEL = 60.0f;
+                const f32 DRAG = pow(0.95f, elapsedSec); // POW makes it framerate independant
+                velocity.x *= DRAG;
+                velocity.y *= DRAG;
+                velocity.x += normalToPlayer.x * elapsedSec * ACCEL;
+                velocity.y += normalToPlayer.y * elapsedSec * ACCEL;
+
+                particleData.mPositions[i] += velocity * elapsedSec;
+
+                const ui8 distCol = (ui8)glm::min(distanceToPlayer, 255.0f);
+                particleData.mColors[i].r = distCol;
+                particleData.mColors[i].g = 1.0 - distCol;
+                particleData.mColors[i].b = 0;
+            }
+        },
+        PLAYER_PARTICLE_COUNT,
+        BitFlags<ParticleComponentType>(
+            ParticleComponentType::Color,
+            ParticleComponentType::Velocity
+        )
+    );
+    mPlayerParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("soft_particle").id);
+    mPlayerParticleSystem->setGlobalParticleScale(f32v2(5.0f));
+
+    for (int i = 0; i < PLAYER_PARTICLE_COUNT; ++i) {
+        mPlayerParticleSystem->tryAddParticle(f32v3(
+            Random::getCachedRandomf() * 100.0f - 50.0f, 
+            Random::getCachedRandomf() * 100.0f - 50.0f,
+            0.0f)
+        );
+    }
 
 }
 
@@ -158,7 +210,6 @@ void FishingMinigame::render(f32 elapsedSec) {
 
     // Arena
     mUIParticleSystem->setParticleScale(mBackgroundParticleID, arenaSize);
-    mUIParticleSystem->setParticlePosition(mBackgroundParticleID, f32v3(0.0f, 0.0f, 0.0f));
 
     // Player
     mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0));
@@ -168,7 +219,8 @@ void FishingMinigame::render(f32 elapsedSec) {
     mUIParticleSystem->setParticleScale(mFishParticleID, f32v2(mFishRadius * 2.0f));
     mUIParticleSystem->setParticlePosition(mFishParticleID, f32v3(mFishPosition.x, mFishPosition.y, 0.0f));
 
-    mUIParticleSystem->updateAndRender(elapsedSec);
+    mUIParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
+    mPlayerParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
 #else
 
     // Arena

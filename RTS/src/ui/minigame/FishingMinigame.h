@@ -58,6 +58,7 @@ private:
 
     // UI Data
     std::unique_ptr<CPUParticleSystem2D> mUIParticleSystem;
+    std::unique_ptr<CPUParticleSystem2D> mPlayerParticleSystem;
     ParticleID mBackgroundParticleID;
     ParticleID mPlayerParticleID;
     ParticleID mFishParticleID;

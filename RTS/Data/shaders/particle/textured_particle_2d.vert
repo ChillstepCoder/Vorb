@@ -1,6 +1,12 @@
 uniform mat4 unVP;
 
-in vec2 vPosition;
+uniform vec4 unGlobalColor = vec4(1.0);
+uniform uint unGlobalMaterial = 0;
+uniform vec2 unGlobalScale = vec2(1.0);
+
+uniform uint unIsUsingColor = 0;
+uniform uint unIsUsingMaterial = 0;
+uniform uint unIsUsingScale = 0;
 
 out vec2 fUV;
 flat out uint fParticleMaterial;
@@ -17,9 +23,9 @@ const int indices[6] = int[6](
 	0, 1, 2, 2, 3, 0
 );
 
-layout(std430, binding = 4) readonly buffer ParticlePosition
+layout(std430, binding = 4) readonly buffer ParticlePositionAndRotation
 {
-    vec4 ParticlePositions[];
+    vec4 ParticlePositionsAndRotations[]; // w is rotation
 };
 
 layout(std430, binding = 5) readonly buffer ParticleScale
@@ -44,7 +50,7 @@ vec4 getColor() {
     color.b = float((packedColor >> 16) & 0xFF);
     color.g = float((packedColor >> 8) & 0xFF);
     color.r = float(packedColor & 0xFF);
-    return color / 255.0;
+    return (color / 255.0);
 }
 
 
@@ -53,9 +59,28 @@ void main() {
 	vec2 offset = pos[idx];
 
     fUV = (offset.xy + 0.5);
-    // Offset to particle position and scale
-    vec2 position = offset.xy * ParticleScales[gl_InstanceID] + ParticlePositions[gl_InstanceID].xy;
-    fColor = getColor();
-    fParticleMaterial = ParticleMaterials[gl_InstanceID];
+    
+    vec2 position = offset.xy * unGlobalScale;
+    
+    // Scale
+    if (unIsUsingScale == 1) {
+        position *= ParticleScales[gl_InstanceID];
+    }
+    
+    // Translation
+    position += ParticlePositionsAndRotations[gl_InstanceID].xy;
+    
+    // Color
+    fColor = unGlobalColor;
+    if (unIsUsingColor == 1) {
+        fColor *= getColor();
+    }
+    
+    // Material
+    if (unIsUsingMaterial == 1) {
+        fParticleMaterial = ParticleMaterials[gl_InstanceID];
+    } else {
+        fParticleMaterial = unGlobalMaterial;
+    }
     gl_Position = unVP * vec4(position.xy, 0.0, 1.0);
 }
