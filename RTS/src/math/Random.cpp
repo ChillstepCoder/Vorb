@@ -10,12 +10,11 @@ static thread_local unsigned cachedRandomIndex = 0;
 // https://www.youtube.com/watch?v=e4b--cyXEsM
 
 ui32 Random::xorshf96() {          //period 2^96-1
-    ui32 t;
     x ^= x << 16;
     x ^= x >> 5;
     x ^= x << 1;
 
-    t = x;
+    ui32 t = x;
     x = y;
     y = z;
     z = t ^ x ^ y;

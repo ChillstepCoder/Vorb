@@ -34,7 +34,7 @@ extern "C"
 }
 
 // size of global cached random table
-constexpr unsigned CACHED_RANDOM_SIZE = 65536 *2; // TODO: Uncomment *2 to break building generation
+constexpr unsigned CACHED_RANDOM_SIZE = 131072; // TODO: Uncomment *2 to break building generation
 
 App* sApp = nullptr;
 

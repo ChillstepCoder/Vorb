@@ -65,8 +65,6 @@ private:
 
 
     vg::SpriteBatch mSpriteBatch; //TODO: REMOVE
-    VGTexture mTextureCircle;
-    VGTexture mTextureBackground;
 
     static constexpr int UPDATE_RATE_MS = 40;
     TickingTimer mTickingTimer = TickingTimer(UPDATE_RATE_MS);
