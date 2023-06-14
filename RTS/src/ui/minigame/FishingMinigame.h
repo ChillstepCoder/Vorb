@@ -59,14 +59,15 @@ private:
     // UI Data
     std::unique_ptr<CPUParticleSystem2D> mUIParticleSystem;
     std::unique_ptr<CPUParticleSystem2D> mPlayerParticleSystem;
-    ParticleID mBackgroundParticleID;
+    ParticleID mArenaParticleID;
     ParticleID mPlayerParticleID;
     ParticleID mFishParticleID;
+    ParticleID mBackgroundParticleID;
 
 
     vg::SpriteBatch mSpriteBatch; //TODO: REMOVE
 
-    static constexpr int UPDATE_RATE_MS = 40;
+    static constexpr int UPDATE_RATE_MS = 1; // TODO: NEED INTERPOLATION
     TickingTimer mTickingTimer = TickingTimer(UPDATE_RATE_MS);
 
     // Minigame data

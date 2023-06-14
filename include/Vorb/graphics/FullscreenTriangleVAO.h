@@ -40,7 +40,6 @@ namespace vorb {
             void draw() const;
             void drawTwoTriangles() const;
             void drawNTriangles(int numTriangles) const;
-            void drawNQuadsInstanced(int numQuads, int baseInstance) const;
         private:
             ui32 m_vao = 0; ///< Empty VAO
         };

@@ -378,6 +378,7 @@
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
     <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleSystem2D.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
@@ -705,6 +706,7 @@
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
+    <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleSystem2D.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />

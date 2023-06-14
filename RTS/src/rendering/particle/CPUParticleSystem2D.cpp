@@ -271,8 +271,10 @@ void CPUParticleSystem2D::render(const vg::GLProgram& program) {
     }
     static_assert(e_cast(ParticleComponentType::TERM) == 33);
 
+    glUniform1ui(program.getUniform("unBaseInstanceOffset"), mBaseInstance);
+
     // Render two triangles per particle with no vertex data
-    sGlobalFullTriangleVAO.drawNQuadsInstanced(particlesToRender, mBaseInstance);
+    sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
 }
 
 void CPUParticleSystem2D::onNewParticleAdded(ParticleID id) {

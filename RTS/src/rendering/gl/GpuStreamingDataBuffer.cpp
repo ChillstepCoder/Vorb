@@ -6,7 +6,7 @@ GpuStreamingDataBuffer::GpuStreamingDataBuffer(ui32 maxElements, ui32 elementSiz
     mElementSize(elementSize) {
     assert(mMaxElements > 0 && mElementSize > 0);
 
-    const size_t bufferSize = mMaxElements  * mElementSize * 3;
+    const size_t bufferSize = mMaxElements * mElementSize * 3;
 
     glCreateBuffers(1, &mBufferObject);
     glNamedBufferStorage(mBufferObject, bufferSize, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);

@@ -3,6 +3,7 @@ uniform mat4 unVP;
 uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
+uniform uint unBaseInstanceOffset = 0;
 
 uniform uint unIsUsingColor = 0;
 uniform uint unIsUsingMaterial = 0;
@@ -43,8 +44,8 @@ layout(std430, binding = 7) readonly buffer ParticleMaterial
     uint ParticleMaterials[];
 };
 
-vec4 getColor() {
-    uint packedColor = ParticleColors[gl_InstanceID];
+vec4 getColor(uint particleId) {
+    uint packedColor = ParticleColors[particleId];
     vec4 color;
     color.a = float((packedColor >> 24) & 0xFF);
     color.b = float((packedColor >> 16) & 0xFF);
@@ -55,6 +56,8 @@ vec4 getColor() {
 
 
 void main() {
+    const uint particleId = unBaseInstanceOffset + gl_VertexID / 6;
+
     const int idx = indices[gl_VertexID % 6];
 	vec2 offset = pos[idx];
 
@@ -64,21 +67,21 @@ void main() {
     
     // Scale
     if (unIsUsingScale == 1) {
-        position *= ParticleScales[gl_InstanceID];
+        position *= ParticleScales[particleId];
     }
     
     // Translation
-    position += ParticlePositionsAndRotations[gl_InstanceID].xy;
+    position += ParticlePositionsAndRotations[particleId].xy;
     
     // Color
     fColor = unGlobalColor;
     if (unIsUsingColor == 1) {
-        fColor *= getColor();
+        fColor *= getColor(particleId);
     }
     
     // Material
     if (unIsUsingMaterial == 1) {
-        fParticleMaterial = ParticleMaterials[gl_InstanceID];
+        fParticleMaterial = ParticleMaterials[particleId];
     } else {
         fParticleMaterial = unGlobalMaterial;
     }

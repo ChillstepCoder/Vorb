@@ -2,6 +2,8 @@
 
 #include "ParticleSystemData.h"
 
+// TODO: DELETE ME THIS IS OLD CRAP
+
 // A particle is also vertex data, and is streamed to the GPU. It is both data and rendering
 struct Particle {
     f32v3 mPosition;

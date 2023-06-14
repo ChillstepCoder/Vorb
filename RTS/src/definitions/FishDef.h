@@ -1,7 +1,7 @@
 #pragma once
 
 struct FishingMinigameFishData {
-    f32 mMaxSpeed = 5.0f; // Maximum speed the circle can move
+    f32 mMaxSpeed = 3.0f; // Maximum speed the circle can move
     f32v2 mAcceleration = f32v2(0.5f, 0.25f); // How quickly the fish accelerates in X and Y
     f32 mFishDrag = 0.02f;
     f32 mJerkChance = 0.01f; // Chance to instantly change direction and speed
@@ -22,11 +22,11 @@ struct FishingMinigameFishData {
 
     // TODO: Move to PlayerData
     f32 mSuccessAngle = 30.0f;
-    f32 mPlayerMaxSpeed = 5.0f;
+    f32 mPlayerMaxSpeed = 2.5f;
     f32 mPlayerAcceleration = 2.0f;
-    f32 mPlayerDrag = 0.1f;
+    f32 mPlayerDrag = 0.2f;
     f32 mPlayerWallBouncyness = 0.1f;
-    f32v2 mPlayerStickyness = f32v2(0.01f, 0.4f);
+    f32v2 mPlayerStickyness = f32v2(0.05f, 0.4f);
     f32 mPlayerStrength = 1.0f;
 };
 

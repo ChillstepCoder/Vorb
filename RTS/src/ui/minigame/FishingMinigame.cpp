@@ -15,6 +15,8 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/particle/CPUParticleSystem2D.h"
 
+#include "options/DebugOptions.h"
+
 #include "math/Random.h"
 
 // TODO: Remove
@@ -72,20 +74,28 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle_2d");
 
     // Set up particles
+    // TODO: REMOVE 99999
+
+
     mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_border").id);
-    mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::White);
+    mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
+    mUIParticleSystem->setParticleScale(mBackgroundParticleID, f32v2(10000.0f));
+    mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::Black);
+
+    mArenaParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f)); 
+    mUIParticleSystem->setParticleMaterial(mArenaParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+    mUIParticleSystem->setParticleColor(mArenaParticleID, color::White);
 
     mFishParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
+    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("hard_particle").id);
     mUIParticleSystem->setParticleColor(mFishParticleID, color::Red);
 
     mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
+    mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("soft_particle").id);
     mUIParticleSystem->setParticleColor(mPlayerParticleID, color::Green);
 
     // Player particles
-    constexpr int PLAYER_PARTICLE_COUNT = 20000;
+    constexpr int PLAYER_PARTICLE_COUNT = 5000;
     mPlayerParticleSystem = std::make_unique<CPUParticleSystem2D>(
         [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
         for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
@@ -112,7 +122,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
                 velocity.x += normalToPlayer.x * elapsedSec * ACCEL; // * elapsedSec!!!
                 velocity.y += normalToPlayer.y * elapsedSec * ACCEL;
 
-                particleData.mPositions[i] += velocity * elapsedSec;
+                position += velocity * elapsedSec;
 
                 const ui8 distCol = (ui8)glm::min(distanceToPlayer, 255.0f);
                 particleData.mColors[i].r = distCol;
@@ -128,10 +138,10 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
                 const f32v2 normalToPlayerCenter = offsetToPlayerCenter / distanceToPlayerCenter;
                 velocity.x += normalToPlayerCenter.x * gravityForce;
                 velocity.y += normalToPlayerCenter.y * gravityForce;
-                particleData.mPositions[i] += velocity * elapsedSec;
+                position += velocity * elapsedSec;
 
                 // World position (Parented to player)
-                const f32v2 worldPos(f32v2(particleData.mPositions[i]) + mPlayerPosition);
+                const f32v2 worldPos(f32v2(position) + mPlayerPosition);
                 // Check collision with fish
                 const f32v2 fishOffset = mFishPosition - worldPos;
                 if (glm::length2(fishOffset) < SQ(mFishRadius)) {
@@ -148,39 +158,68 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
                 const f32 distanceToPlayerCenter = sqrt(distanceToPlayerCenterSQ);
                 const f32v2 normalToPlayerCenter = offsetToPlayerCenter / distanceToPlayerCenter;
 
-                // True gravity calculation
-                f32 force = gravityForce / distanceToPlayerCenterSQ;
                 // Additional spring force to keep it in the bubble
-                constexpr f32 SPRING_FORCE = 80.0f;
-                if (distanceToPlayerCenter > mPlayerRadius) {
-                    force += (distanceToPlayerCenter - mPlayerRadius) * SPRING_FORCE;
+                // attach particles via a spring with hookes law
+                constexpr f32 SPRING_CONSTANT = 80.0f;
+                constexpr f32 SPRING_DAMPING = 0.25f;
+                // Calculate the force using Hooke's Law
+                const f32v2 springForce = offsetToPlayerCenter * SPRING_CONSTANT - f32v2(velocity) * SPRING_DAMPING;
+              /*  if (distanceToPlayerCenter > mPlayerRadius) {
+                    force += (distanceToPlayerCenter - mPlayerRadius) * SPRING_FORCE * elapsedSec;
                     particleData.mColors[i] = color::Red;
                 }
-                else {
+                else {*/
                     particleData.mColors[i] = color::Cyan;
+               // }
+
+                velocity.x += springForce.x * elapsedSec;
+                velocity.y += springForce.y * elapsedSec;
+
+                // If too far from the player, begin lerping us directly towards him
+                if (distanceToPlayerCenter > 1.5f) {
+                    f32v2 lerpPos = lerp(f32v2(position), mPlayerPosition, 0.1f);
+                    position.x = lerpPos.x;
+                    position.y = lerpPos.y;
                 }
 
-                velocity.x += normalToPlayerCenter.x * force;
-                velocity.y += normalToPlayerCenter.y * force;
-
-                // Limited drag
-                if (glm::length2(velocity) > SQ(20.0f)) {
+                // Drag when close to player
+                if (glm::length2(velocity) > SQ(30.0f) && distanceToPlayerCenter <= mPlayerRadius) {
+                    //https://www.reddit.com/r/Unity3D/comments/5qla41/frame_rate_independent_drag/
                     // TODO: Move out of loop
-                    const f32 DRAG = pow(0.925f, elapsedSec); // POW makes it framerate independant
-                    particleData.mColors[i] = color::Blue;
+                    const f32 DRAG = exp(-0.7f * elapsedSec);
+                    //particleData.mColors[i] = color::Blue;
                     velocity *= DRAG;
                 }
 
-                particleData.mPositions[i] += velocity * elapsedSec;
+                position += velocity * elapsedSec;
+
+                // Attached to player 
+                position += f32v3(mPlayerVelocity.x, mPlayerVelocity.y, 0.0f);
+
+                //  Cool colors
+                particleData.mColors[i].r = (ui8)glm::min(distanceToPlayerCenter * 10.0f, 255.0f);
+                particleData.mColors[i].g = 255ui8 - (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
+                particleData.mColors[i].b = 255u - (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
 
                 // Check collision with fish
                 const f32v2 fishOffset = mFishPosition - f32v2(particleData.mPositions[i]);
-                if (glm::length2(fishOffset) < SQ(mFishRadius)) {
-                    particleData.mColors[i] = color::Yellow;
+                const f32 fishOffsetDistSq = glm::length2(fishOffset);
+                const f32 fishOffsetDist = sqrt(fishOffsetDistSq);
+                if (fishOffsetDistSq < SQ(mFishRadius)) {
+                    particleData.mColors[i] = lerp(particleData.mColors[i], color::Yellow, 1.0f - fishOffsetDist);
                     // When colliding, apply brownian jitter
-                    constexpr f32 BROWNIAN_FORCE = 30.0f;
-                    velocity.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * BROWNIAN_FORCE * elapsedSec;
-                    velocity.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * BROWNIAN_FORCE * elapsedSec;
+                    constexpr f32 BROWNIAN_FORCE = 3000.0f;
+                    f32v2 brownianVec = f32v2(Random::getThreadSafef(i, 0) * 2.0f - 1.0f, Random::getThreadSafef(i, 15243) * 2.0f - 1.0f);
+                    brownianVec = glm::normalize(brownianVec) * BROWNIAN_FORCE * Random::getThreadSafef(i, 2364789);
+                    
+                    // TODO: This creates emergent behavior! It sticks in place. WHY??!?? :O
+                    velocity.x += brownianVec.x * elapsedSec;
+                    velocity.y += brownianVec.y * elapsedSec;
+                } else if (fishOffsetDist < mFishRadius + 1.0f) {
+                    const f32 lerpFactor = pow(1.0f - (fishOffsetDist - mFishRadius), 1.0f);
+                    const f32v2 fishDirFromPlayer = glm::normalize(mFishPosition - mPlayerPosition);
+                    position.x += lerpFactor * fishDirFromPlayer.x;
+                    position.y += lerpFactor * fishDirFromPlayer.y;
                 }
             }
         }
@@ -196,15 +235,21 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
 
     const f32 BALL_RADIUS = mPlayerRadius;
     for (int i = 0; i < PLAYER_PARTICLE_COUNT; ++i) {
-        f32v2 randomPos(Random::getCachedRandomf(), Random::getCachedRandomf());
+        f32v2 randomPos(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f);
         randomPos = glm::normalize(randomPos) * Random::getCachedRandomf() * BALL_RADIUS;
-        mPlayerParticleSystem->tryAddParticle(f32v3(
+        randomPos.x += mPlayerPosition.x;
+        randomPos.y += mPlayerPosition.y;
+        ParticleID newParticle = mPlayerParticleSystem->tryAddParticle(f32v3(
             randomPos.x,
             randomPos.y,
             0.0f)
         );
+        constexpr f32 RANDOM_VEL_FORCE = 30.0f;
+        mPlayerParticleSystem->setParticleVelocity(
+            newParticle,
+            f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
+        );
     }
-
 }
 
 FishingMinigame::~FishingMinigame()
@@ -280,7 +325,7 @@ void FishingMinigame::render(f32 elapsedSec) {
     glUniformMatrix4fv(mUIShader->getUniform("unVP"), 1, false, &camera[0][0]);
 
     // Arena
-    mUIParticleSystem->setParticleScale(mBackgroundParticleID, arenaSize);
+    mUIParticleSystem->setParticleScale(mArenaParticleID, arenaSize);
 
     // Player
     mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0));
@@ -396,7 +441,7 @@ void FishingMinigame::updatePlayerPosition() {
     mPlayerVelocity *= (1.0f - minigameData.mPlayerDrag);
 
     // TMP SIMPLE VELOCITY
-    mPlayerVelocity = minigameData.mPlayerAcceleration * 2.0f * inputDir;
+    //mPlayerVelocity = minigameData.mPlayerAcceleration * 2.0f * inputDir;
 
     mPlayerPosition += mPlayerVelocity;
 

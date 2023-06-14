@@ -358,7 +358,7 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
                 ImGui::Text(label);
 
                 // Action
-                ImGui::TableSetColumnIndex(3);
+                ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_FISH;
                     result.second = &fish;

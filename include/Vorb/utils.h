@@ -109,6 +109,17 @@ template<typename T, typename R>
 inline T lerp(const T& v0, const T& v1, const R& r) {
     return (T)((v1 - v0) * r + v0);
 }
+
+template<>
+inline color4 lerp(const color4& v0, const color4& v1, const f32& r) {
+    color4 newColor;
+    newColor.r = ui8((v1.r - v0.r) * r + (f32)v0.r);
+    newColor.g = ui8((v1.g - v0.g) * r + (f32)v0.g);
+    newColor.b = ui8((v1.b - v0.b) * r + (f32)v0.b);
+    newColor.a = ui8((v1.a - v0.a) * r + (f32)v0.a);
+    return newColor;
+}
+
 template<typename T, typename R>
 inline T bilerp(const T& v00, const T& v01, const T& v10, const T& v11, const R& r1, const R& r2) {
     T v0 = lerp(v00, v01, r2);

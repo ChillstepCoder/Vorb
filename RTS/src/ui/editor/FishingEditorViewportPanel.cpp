@@ -27,6 +27,8 @@ bool FishingEditorViewportPanel::updateAndRender()
     mViewportDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
     updateCamera(mViewportDims.x / mViewportDims.y);
 
+    mClearColor = f32v4(0.0f);
+
     //updateFramebufferAndLazyInit(imageDims);
 
     //clearFramebuffers();
