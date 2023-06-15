@@ -80,6 +80,7 @@ private:
     f32 mCurrentJerkCooldown = 0.0f;
     f32v2 mCurrentScreenResolution = f32v2(0.0f);
     bool mIsPlayerTouchingFish = false;
+    bool mDidPlayerImpactBottom = false;
     int mPlayerLivesLeft = 3;
     int mFishLivesLeft = 3;
     MinigameResultType mStatus = MinigameResultType::InProgress;
