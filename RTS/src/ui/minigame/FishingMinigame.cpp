@@ -22,13 +22,6 @@
 // TODO: Remove
 //#include "options/DebugOptions.h"
 
-enum class PARTICLE_TEST {
-    SimpleGravity,
-    FixedPosition,
-    GravitySpring
-};
-constexpr PARTICLE_TEST PARTICLE_MODE = PARTICLE_TEST::GravitySpring;
-
 constexpr f32 BOUNDARY_RADIUS = 100.0f;
 constexpr f32 FISH_RADIUS = BOUNDARY_RADIUS * 0.3f;
 constexpr f32 BOUNDARY_RADIUS_SQ = SQ(BOUNDARY_RADIUS);
@@ -54,7 +47,7 @@ f32 getAngleOffset(const f32v2 normalizedPos, const f32v2 normal) {
 
 FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mFishDef(fishData),
-    mPlayerRadius(BOUNDARY_RADIUS * 0.1f),
+    mPlayerRadius(BOUNDARY_RADIUS * 0.15f),
     mFishRadius(getFishRadius(fishData))
 
 {
@@ -123,138 +116,92 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
             f32v3& position = particleData.mPositions[i];
             f32v3& velocity = particleData.mVelocities[i];
 
-            // Cool test for particle velocity
-            if (PARTICLE_MODE == PARTICLE_TEST::SimpleGravity) {
-                const f32v2 offsetToPlayer = f32v2(mPlayerPosition.x - position.x, mPlayerPosition.y - position.y);
-                const f32 distanceToPlayer = glm::length(offsetToPlayer);
-                const f32v2 normalToPlayer = offsetToPlayer / distanceToPlayer;
+            const f32 gravityForce = 120.0f * elapsedSec;
+            const f32v2 offsetToPlayerCenter = mPlayerPosition - f32v2(position);
+            const f32 distanceToPlayerCenterSQ = glm::length2(offsetToPlayerCenter);
+            const f32 distanceToPlayerCenter = sqrt(distanceToPlayerCenterSQ);
+            const f32v2 normalToPlayerCenter = offsetToPlayerCenter / distanceToPlayerCenter;
 
-                constexpr f32 ACCEL = 60.0f;
-                const f32 DRAG = pow(0.95f, elapsedSec); // POW makes it framerate independant
-                velocity.x *= DRAG;
-                velocity.y *= DRAG;
-                velocity.x += normalToPlayer.x * elapsedSec * ACCEL; // * elapsedSec!!!
-                velocity.y += normalToPlayer.y * elapsedSec * ACCEL;
+            //  Cool colors
+            particleData.mColors[i].r = (ui8)glm::min(distanceToPlayerCenter * 10.0f, 255.0f);
+            particleData.mColors[i].g = 255ui8 - (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
+            particleData.mColors[i].b = (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
+            particleData.mColors[i].a = 5;
 
-                position += velocity * elapsedSec;
+            f32v2 equilibriumOffset = f32v2(Random::getThreadSafef(i, 0) * 2.0f - 1.0f, Random::getThreadSafef(i, 15243) * 2.0f - 1.0f);
+            equilibriumOffset = glm::normalize(equilibriumOffset) * mPlayerRadius * Random::getThreadSafef(i, 2364789);
 
-                const ui8 distCol = (ui8)glm::min(distanceToPlayer, 255.0f);
-                particleData.mColors[i].r = distCol;
-                particleData.mColors[i].g = 1.0 - distCol;
-                particleData.mColors[i].b = 0;
-            }
-            else if (PARTICLE_MODE == PARTICLE_TEST::FixedPosition) {
+            {// Check collision with fish
+                const f32v2 fishOffset = mFishPosition - f32v2(particleData.mPositions[i]);
+                const f32 fishOffsetDistSq = glm::length2(fishOffset);
+                const f32 fishOffsetDist = sqrt(fishOffsetDistSq);
+                const f32 additionalFishMagnetismDist = mPlayerRadius * 0.25f;
+                if (fishOffsetDist < mFishRadius + additionalFishMagnetismDist) {
 
-                // Local position
-                const f32 gravityForce = 60.0f * elapsedSec;
-                const f32v2 offsetToPlayerCenter = -f32v2(position.x, position.y);
-                const f32 distanceToPlayerCenter = glm::length(offsetToPlayerCenter);
-                const f32v2 normalToPlayerCenter = offsetToPlayerCenter / distanceToPlayerCenter;
-                velocity.x += normalToPlayerCenter.x * gravityForce;
-                velocity.y += normalToPlayerCenter.y * gravityForce;
-                position += velocity * elapsedSec;
+                    constexpr f32 PULL_EXPONENT = 1.0f;
+                    const f32 pushAlpha = pow(glm::min(1.0f - (fishOffsetDist - mFishRadius) / additionalFishMagnetismDist, 1.0f), 8.0f);
 
-                // World position (Parented to player)
-                const f32v2 worldPos(f32v2(position) + mPlayerPosition);
-                // Check collision with fish
-                const f32v2 fishOffset = mFishPosition - worldPos;
-                if (glm::length2(fishOffset) < SQ(mFishRadius)) {
-                    particleData.mColors[i] = color::Yellow;
-                }
-                else {
-                    particleData.mColors[i] = color::Cyan;
-                }
-            }
-            else if (PARTICLE_MODE == PARTICLE_TEST::GravitySpring) {
-                const f32 gravityForce = 120.0f * elapsedSec;
-                const f32v2 offsetToPlayerCenter = mPlayerPosition - f32v2(position);
-                const f32 distanceToPlayerCenterSQ = glm::length2(offsetToPlayerCenter);
-                const f32 distanceToPlayerCenter = sqrt(distanceToPlayerCenterSQ);
-                const f32v2 normalToPlayerCenter = offsetToPlayerCenter / distanceToPlayerCenter;
+                    equilibriumOffset *= 1.0f + pushAlpha;
+                    particleData.mScales[i].y = 1.0f + pushAlpha;
 
-                //  Cool colors
-                particleData.mColors[i].r = (ui8)glm::min(distanceToPlayerCenter * 10.0f, 255.0f);
-                particleData.mColors[i].g = 255ui8 - (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
-                particleData.mColors[i].b = (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
-                particleData.mColors[i].a = 5;
-
-                f32v2 equilibriumOffset = f32v2(Random::getThreadSafef(i, 0) * 2.0f - 1.0f, Random::getThreadSafef(i, 15243) * 2.0f - 1.0f);
-                equilibriumOffset = glm::normalize(equilibriumOffset) * mPlayerRadius * Random::getThreadSafef(i, 2364789);
-
-                {// Check collision with fish
-                    const f32v2 fishOffset = mFishPosition - f32v2(particleData.mPositions[i]);
-                    const f32 fishOffsetDistSq = glm::length2(fishOffset);
-                    const f32 fishOffsetDist = sqrt(fishOffsetDistSq);
-                    const f32 additionalFishMagnetismDist = mPlayerRadius * 2.0f;
-                    if (fishOffsetDist < mFishRadius + additionalFishMagnetismDist) {
-
-                        constexpr f32 PULL_EXPONENT = 1.0f;
-                        const f32 pushAlpha = pow(glm::min(1.0f - (fishOffsetDist - mFishRadius) / additionalFishMagnetismDist, 1.0f), 8.0f);
-
-                        equilibriumOffset *= 1.0f + pushAlpha;
-                        particleData.mScales[i].y = 1.0f + pushAlpha;
-
-                        // coalesce more on the edge
-                        const f32v2 offsetFromFishCenter = (mPlayerPosition + equilibriumOffset) - mFishPosition;
-                        const f32 distanceToFishCenter = glm::length(offsetFromFishCenter);
-                        const f32v2 normalFromFishCenter = offsetFromFishCenter / distanceToFishCenter;
-                        if (distanceToFishCenter <= mFishRadius) {
-                            // This kinda pushes an inner donut outward
-                            const f32 innerDistancePower = (1.0f - (distanceToFishCenter / mFishRadius));
-                            const f32 outerDistancePower = (distanceToFishCenter / mFishRadius);
-                            const f32 distancePower = innerDistancePower * outerDistancePower * 2.0f;
-                            equilibriumOffset += normalFromFishCenter * pow(distancePower, 1.0f + sDebugOptions.mDebugFloat02) * mFishRadius;
-                        }
-                        else {
-                            // Beyond, pull in
-                            const f32 distancePower = glm::min((distanceToFishCenter - mFishRadius) / mFishRadius, 1.0f);
-                            equilibriumOffset -= normalFromFishCenter * distancePower * mFishRadius;
-                        }
-
-                        const f32 pushColorIntensity = pushAlpha * glm::clamp(velocity.y * 0.05f, 0.0f, 1.0f);
-                        particleData.mColors[i] = lerp(particleData.mColors[i], color4(0, 255, 0, 255), pushColorIntensity);
+                    // coalesce more on the edge
+                    const f32v2 offsetFromFishCenter = (mPlayerPosition + equilibriumOffset) - mFishPosition;
+                    const f32 distanceToFishCenter = glm::length(offsetFromFishCenter);
+                    const f32v2 normalFromFishCenter = offsetFromFishCenter / distanceToFishCenter;
+                    if (distanceToFishCenter <= mFishRadius) {
+                        // This kinda pushes an inner donut outward
+                        const f32 innerDistancePower = (1.0f - (distanceToFishCenter / mFishRadius));
+                        const f32 outerDistancePower = (distanceToFishCenter / mFishRadius);
+                        const f32 distancePower = innerDistancePower * outerDistancePower * 2.0f;
+                        equilibriumOffset += normalFromFishCenter * pow(distancePower, 1.0f + sDebugOptions.mDebugFloat02) * mFishRadius;
                     }
+                    else {
+                        // Beyond, pull in
+                        const f32 distancePower = glm::min((distanceToFishCenter - mFishRadius) / mFishRadius, 1.0f);
+                        equilibriumOffset -= normalFromFishCenter * distancePower * mFishRadius;
+                    }
+
+                    const f32 pushColorIntensity = pushAlpha * glm::clamp(velocity.y * 0.05f, 0.0f, 1.0f);
+                    particleData.mColors[i] = lerp(particleData.mColors[i], color4(0, 255, 0, 255), pushColorIntensity);
                 }
+            }
 
-                // Get our equilibrium offset for the player
-                f32v2 equilibriumPoint = mPlayerPosition + equilibriumOffset;
-                const f32v2 offsetToEquilibriumPoint = equilibriumPoint - f32v2(position);
-                const f32 distanceToEqulibriumPoint = glm::length(offsetToEquilibriumPoint);
+            // Get our equilibrium offset for the player
+            f32v2 equilibriumPoint = mPlayerPosition + equilibriumOffset;
+            const f32v2 offsetToEquilibriumPoint = equilibriumPoint - f32v2(position);
+            const f32 distanceToEqulibriumPoint = glm::length(offsetToEquilibriumPoint);
 
-                // Additional spring force to keep it in the bubble
-                // attach particles via a spring with hookes law
-                constexpr f32 SPRING_CONSTANT = 160.0f;
-                // Calculate the force using Hooke's Law
-                const f32v2 springForce = offsetToEquilibriumPoint * SPRING_CONSTANT;
-                velocity.x += springForce.x * elapsedSec;
-                velocity.y += springForce.y * elapsedSec;
-                // Additional spiral force?
-                f32v2 rotated = MathUtil::RotateVector(velocity.x, velocity.y, (Random::getThreadSafef(i, 25231) * 2.0f - 1.0f) * glm::min(distanceToPlayerCenter, 10.0f) * elapsedSec * 30.0f);
-                velocity.x = rotated.x;
-                velocity.y = rotated.y;
+            // Additional spring force to keep it in the bubble
+            // attach particles via a spring with hookes law
+            constexpr f32 SPRING_CONSTANT = 160.0f;
+            // Calculate the force using Hooke's Law
+            const f32v2 springForce = offsetToEquilibriumPoint * SPRING_CONSTANT;
+            velocity.x += springForce.x * elapsedSec;
+            velocity.y += springForce.y * elapsedSec;
+            // Additional spiral force?
+            f32v2 rotated = MathUtil::RotateVector(velocity.x, velocity.y, (Random::getThreadSafef(i, 25231) * 2.0f - 1.0f) * glm::min(distanceToPlayerCenter, 10.0f) * elapsedSec * 30.0f);
+            velocity.x = rotated.x;
+            velocity.y = rotated.y;
 
-                // Drag when close to player
-                if (glm::length2(velocity) > SQ(30.0f) && distanceToPlayerCenter <= mPlayerRadius) {
-                    //https://www.reddit.com/r/Unity3D/comments/5qla41/frame_rate_independent_drag/
-                    // TODO: Move out of loop
-                    const f32 DRAG = exp(-0.7f * elapsedSec);
-                    //particleData.mColors[i] = color::Blue;
-                    velocity *= DRAG;
-                }
+            // Drag when close to player
+            if (glm::length2(velocity) > SQ(30.0f) && distanceToPlayerCenter <= mPlayerRadius) {
+                //https://www.reddit.com/r/Unity3D/comments/5qla41/frame_rate_independent_drag/
+                // TODO: Move out of loop
+                const f32 DRAG = pow(0.7f, elapsedSec);
+                //particleData.mColors[i] = color::Blue;
+                velocity *= DRAG;
+            }
 
-                position += velocity * elapsedSec;
+            position += velocity * elapsedSec;
 
-                // Attached to player 
-                position += f32v3(mPlayerVelocity.x, mPlayerVelocity.y, 0.0f);
+            // Attached to player 
+            position += f32v3(mPlayerVelocity.x, mPlayerVelocity.y, 0.0f);
 
-                // If too far from the equilibriumPoint, begin lerping us directly towards it
-                if (distanceToEqulibriumPoint > mPlayerRadius * 0.3f) {
-                    f32v2 lerpPos = lerp(f32v2(position), equilibriumPoint, 0.1f);
-                    position.x = lerpPos.x;
-                    position.y = lerpPos.y;
-                }
-
-                
+            // If too far from the equilibriumPoint, begin lerping us directly towards it
+            if (distanceToEqulibriumPoint > mPlayerRadius * 0.3f) {
+                f32v2 lerpPos = lerp(f32v2(position), equilibriumPoint, 0.1f);
+                position.x = lerpPos.x;
+                position.y = lerpPos.y;
             }
         }
         },
@@ -284,6 +231,120 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
             newParticle,
             f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
         );
+    }
+
+    // Blocker particles
+    constexpr int BLOCKER_PARTICLE_COUNT = 1;
+    if (BLOCKER_PARTICLE_COUNT) {
+        mBlockerParticleSystem = std::make_unique<CPUParticleSystem2D>(
+            [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+
+            for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
+                if (particleData.mPositions[i].x == FLT_MAX) {
+                    continue;
+                }
+
+                f32v3& position = particleData.mPositions[i];
+                f32v3& velocity = particleData.mVelocities[i];
+                f32v2& scale = particleData.mScales[i];
+                position += velocity * elapsedSec;
+                const f32 distFromCenterSq = glm::length2(position);
+                const f32 radius = scale.x * 0.5f;
+                // Border collision
+                if (distFromCenterSq > SQ(BOUNDARY_RADIUS - radius)) {
+                    const f32v2 hitNormal = -(position / sqrt(distFromCenterSq));
+                    f32v2 velocity2D(velocity);
+                    velocity2D = glm::reflect(velocity2D, hitNormal) * mFishDef.mMinigameData.mWallBouncyness;
+                    position.x = -hitNormal.x * (BOUNDARY_RADIUS - radius);
+                    position.y = -hitNormal.y * (BOUNDARY_RADIUS - radius);
+                    velocity.x = velocity2D.x;
+                    velocity.y = velocity2D.y;
+                }
+                // Collide with other particles
+                constexpr auto collisionCheck = [](f32v2& position, f32v2& velocity, f32v2 scale, f32v2& otherPosition, f32v2& otherVelocity, f32v2 otherScale) {
+                    constexpr f32 COLLISION_ELASTICITY = 1.0f;
+                    // Compute distance between the two particles
+                    f32v2 diff = otherPosition - position;
+                    f32 dist = glm::length(diff);
+                    const f32 radius = scale.x * 0.5f;
+                    const f32 otherRadius = otherScale.x * 0.5f;
+
+                    // Check if a collision is happening
+                    if (dist < radius + otherRadius) {
+                        LOG_INFO("{}", velocity);
+                        const f32 mass1 = M_PIF * SQ(radius);
+                        const f32 mass2 = M_PIF * SQ(otherRadius);
+                        const f32 totalMass = mass1 + mass2;
+                        const f32 pushAlpha = (mass1 / totalMass);
+
+                        // Compute unit vector in the direction of the collision
+                        f32v2 unitVector = diff / dist;
+                        const f32 collisionDepth = radius + otherRadius - dist;
+
+                        // https://www.youtube.com/watch?v=WG3Sl3m4rNs&list=PLSPw4ASQYyymu3PfG9gxywSPghnSMiOAW&index=48 :3
+                        const float aci = glm::dot(velocity, unitVector);
+                        const float bci = glm::dot(otherVelocity, unitVector);
+
+                        const float acf = (aci * (mass1 - mass2) + 2 * mass2 * bci) / totalMass;
+                        const float bcf = (bci * (mass2 - mass1) + 2 * mass1 * aci) / totalMass;
+
+                        velocity += (acf - aci) * unitVector;
+                        otherVelocity += (bcf - bci) * unitVector;
+
+                        // Apply inelastic collision by scaling velocities
+                        velocity *= COLLISION_ELASTICITY;
+                        otherVelocity *= COLLISION_ELASTICITY;
+
+                        // Push away by collision depth
+                        position -= unitVector * collisionDepth * (1.0f - pushAlpha);
+                        otherPosition += unitVector * collisionDepth * pushAlpha;
+                        LOG_CRITICAL("{}", velocity);
+                    }
+                };
+
+                // Collide with other particles
+                for (int j = i + 1; j < system.getLastActiveParticle(); ++j) {
+                    if (particleData.mPositions[j].x == FLT_MAX) {
+                        continue;
+                    }
+
+                    f32v3& otherPosition = particleData.mPositions[j];
+                    f32v3& otherVelocity = particleData.mVelocities[j];
+                    f32v2& otherScale = particleData.mScales[j];
+
+                    collisionCheck((f32v2&)position, (f32v2&)velocity, scale, (f32v2&)otherPosition, (f32v2&)otherVelocity, otherScale);
+                }
+
+                // Collide with player and fish
+                collisionCheck((f32v2&)position, (f32v2&)velocity, scale, mPlayerPosition, mPlayerVelocity, f32v2(mPlayerRadius * 2.0f));
+                //collisionCheck((f32v2&)position, (f32v2&)velocity, scale, mFishPosition, mFishVelocity, f32v2(mFishRadius * 2.0f));
+            }
+            },
+            BLOCKER_PARTICLE_COUNT,
+            BitFlags<ParticleComponentType>(
+                ParticleComponentType::Velocity,
+                ParticleComponentType::Scale
+            )
+        );
+        mBlockerParticles.resize(BLOCKER_PARTICLE_COUNT);
+        for (int i = 0; i < BLOCKER_PARTICLE_COUNT; ++i) {
+            constexpr f32 PARTICLE_SCALE = 15.0f;
+            f32v2 randomPos(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f);
+            randomPos = glm::normalize(randomPos) * (Random::getCachedRandomf() * BOUNDARY_RADIUS + mFishRadius + PARTICLE_SCALE * 0.5f);
+            mBlockerParticles[i] = mBlockerParticleSystem->tryAddParticle(f32v3(
+                randomPos.x,
+                randomPos.y,
+                0.0f)
+            );
+            constexpr f32 RANDOM_VEL_FORCE = 15.0f;
+            mBlockerParticleSystem->setParticleVelocity(
+                mBlockerParticles[i],
+                f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
+            );
+            mBlockerParticleSystem->setParticleScale(mBlockerParticles[i], f32v2(PARTICLE_SCALE));
+        }
+        mBlockerParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("hard_particle").id);
+        mBlockerParticleSystem->setGlobalParticleColor(color::White);
     }
 }
 
@@ -316,8 +377,8 @@ MinigameResultType FishingMinigame::update() {
             return MinigameResultType::InProgress;
         }
 
-        updatePlayerPosition();
-        updateFishPosition();
+        updatePlayerPosition(mTickingTimer.getSecPerTick());
+        updateFishPosition(mTickingTimer.getSecPerTick());
     }
 
     // End Transition
@@ -363,7 +424,7 @@ void FishingMinigame::render(f32 elapsedSec) {
     mUIParticleSystem->setParticleScale(mArenaParticleID, arenaSize);
 
     // Player
-    mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 5.0f));
+    mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0f));
     mUIParticleSystem->setParticlePosition(mPlayerParticleID, f32v3(mPlayerPosition.x, mPlayerPosition.y, 0.0f));
 
     // Fish
@@ -371,6 +432,7 @@ void FishingMinigame::render(f32 elapsedSec) {
     mUIParticleSystem->setParticlePosition(mFishParticleID, f32v3(mFishPosition.x, mFishPosition.y, 0.0f));
 
     mUIParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
+    mBlockerParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
     mPlayerParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
 
     vg::DepthState::restorePrevious();
@@ -381,17 +443,17 @@ f32v2 getRandomDirectionVector() {
     return glm::normalize(f32v2(Random::xorshf96f() * 2.0f - 1.0f, Random::xorshf96f() * 2.0f - 1.0f));
 }
 
-void FishingMinigame::updateFishPosition() {
+void FishingMinigame::updateFishPosition(f32 elapsedSec) {
 
     const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
     const TimePoint currentTime = mTickingTimer.getCurrTime();
 
-    mFishVelocity += getRandomDirectionVector() * minigameData.mAcceleration;
+    mFishVelocity += getRandomDirectionVector() * minigameData.mAcceleration * elapsedSec;
 
     //  Drag
-    mFishVelocity *= (1.0f - minigameData.mFishDrag);
+    mFishVelocity *= pow(1.0f - minigameData.mFishDrag, elapsedSec);
 
-    mFishPosition += mFishVelocity;
+    mFishPosition += mFishVelocity * elapsedSec;
 
     const f32 fishDist = glm::length(mFishPosition);
     const f32v2 fishNormal = mFishPosition / fishDist;
@@ -407,21 +469,25 @@ void FishingMinigame::updateFishPosition() {
     }
 
     // Center magnitism
-    mFishVelocity += -fishNormal * minigameData.mCenterMagnitism;
+    mFishVelocity += -fishNormal * minigameData.mCenterMagnitism * elapsedSec;
 
     // Gravity
-    mFishVelocity.y -= minigameData.mGravity;
+    mFishVelocity.y -= minigameData.mGravity * elapsedSec;
 
     // Player collision
     // Dont collide if we just took a fish life
     if (differenceBetweenTimePointsSeconds(currentTime, mLastFishLifeLostTime) >= FISH_LIFE_LOST_COOLDOWN) {
         const f32v2 offsetToPlayer = mPlayerPosition - mFishPosition;
         const f32 distanceFromPlayer = glm::length(offsetToPlayer);
-        if (distanceFromPlayer <= mPlayerRadius + mFishRadius) {
+        const f32 totalRadius = mPlayerRadius + mFishRadius;
+        if (distanceFromPlayer <= totalRadius) {
             const f32v2 normalToPlayer = offsetToPlayer / distanceFromPlayer;
-            mFishVelocity.x = lerp(mFishVelocity.x, mPlayerVelocity.x, minigameData.mPlayerStickyness.x);
-            mFishVelocity.y = lerp(mFishVelocity.x, mPlayerVelocity.x, minigameData.mPlayerStickyness.y);
-            mFishVelocity.y += minigameData.mPlayerStrength;
+            const f32 overlapAmount = totalRadius - distanceFromPlayer;
+            const f32 overlapPower = pow(glm::min(overlapAmount / mFishRadius, 1.0f), 0.7f);
+            // TODO: Use elapsed?
+            mFishVelocity.x = lerp(mFishVelocity.x, mPlayerVelocity.x, pow(minigameData.mPlayerStickyness.x * overlapPower, elapsedSec));
+            mFishVelocity.y = lerp(mFishVelocity.x, mPlayerVelocity.x, pow(minigameData.mPlayerStickyness.y * overlapPower, elapsedSec));
+            mFishVelocity.y += minigameData.mPlayerStrength * overlapPower * elapsedSec;
             mIsPlayerTouchingFish = true;
         }
         else {
@@ -449,7 +515,7 @@ void FishingMinigame::updateFishPosition() {
     }
 }
 
-void FishingMinigame::updatePlayerPosition() {
+void FishingMinigame::updatePlayerPosition(f32 elapsedSec) {
 
     const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
 
@@ -471,14 +537,14 @@ void FishingMinigame::updatePlayerPosition() {
     }
 
     // TODO: Shared with fish
-    mPlayerVelocity += inputDir * minigameData.mPlayerAcceleration;
+    mPlayerVelocity += inputDir * minigameData.mPlayerAcceleration * elapsedSec;
     //  Drag
-    mPlayerVelocity *= (1.0f - minigameData.mPlayerDrag);
+    mPlayerVelocity *= pow(1.0f - minigameData.mPlayerDrag, elapsedSec);
 
     // TMP SIMPLE VELOCITY
     //mPlayerVelocity = minigameData.mPlayerAcceleration * 2.0f * inputDir;
 
-    mPlayerPosition += mPlayerVelocity;
+    mPlayerPosition += mPlayerVelocity * elapsedSec;
 
     const f32 playerVelocitySq = glm::length2(mPlayerVelocity);
     if (playerVelocitySq >= SQ(minigameData.mPlayerMaxSpeed)) {

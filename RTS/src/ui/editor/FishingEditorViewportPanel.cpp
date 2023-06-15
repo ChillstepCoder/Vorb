@@ -60,7 +60,7 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     FishingMinigameFishData& minigameData = mFishDef->mMinigameData;
     ImGui::Text("Test Minigame Data");
     ImGui::Separator();
-    ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 2.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 2500.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Fish Drag", &minigameData.mFishDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Fish Damage Rate", &minigameData.mFishDamageRate, 0.0f, 1.0f);
     ImGui::SliderFloat("Center Magnitism", &minigameData.mCenterMagnitism, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -68,7 +68,7 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::SliderFloat("Jerk Chance", &minigameData.mJerkChance, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Jerk Intensity", &minigameData.mJerkIntensity, 0.0f, 5.0f);
     ImGui::SliderFloat2("Jerk Cooldown Range", &minigameData.mJerkCooldownVarianceSec.x, 0.0f, 10.0f);
-    ImGui::SliderFloat("Max Speed", &minigameData.mMaxSpeed, 0.0f, 20.0f);
+    ImGui::SliderFloat("Max Speed", &minigameData.mMaxSpeed, 0.0f, 500.0f);
     ImGui::SliderFloat("Out of Stamina Power Mult", &minigameData.mOutOfStaminaPowerMult, 0.0f, 1.0f);
     ImGui::SliderFloat("Player Damage Rate", &minigameData.mPlayerDamageRate, 0.0f, 1.0f);
     ImGui::SliderFloat("Radius", &minigameData.mRadius, 0.1f, 1.0f);
@@ -82,8 +82,8 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::Text("Player");
     // Player Data
     // TODO: Shared struct for physics and motion info
-    ImGui::SliderFloat("Player Max Speed", &minigameData.mPlayerMaxSpeed, 0.0f, 20.0f);
-    ImGui::SliderFloat("Player Acceleration", &minigameData.mPlayerAcceleration, 0.0f, 5.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Player Max Speed", &minigameData.mPlayerMaxSpeed, 0.0f, 2500.0f);
+    ImGui::SliderFloat("Player Acceleration", &minigameData.mPlayerAcceleration, 0.0f, 500.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Player Drag", &minigameData.mPlayerDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Player Wall Bouncyness", &minigameData.mPlayerWallBouncyness, 0.0f, 1.0f);
     ImGui::SliderFloat2("Player Stickyness", &minigameData.mPlayerStickyness.x, 0.0f, 1.0f);

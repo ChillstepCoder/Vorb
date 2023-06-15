@@ -63,6 +63,9 @@ public:
     f32 getFrameAlpha() { return (f32)(mAccumulator / mMsPerTick); }
     TimePoint getCurrTime() const { return mCurrTime; }
 
+    f64 getMsPerTick() const { return mMsPerTick; }
+    f32 getSecPerTick() const { return mMsPerTick / 1000.0; }
+
 protected:
     TimePoint mCurrTime = {};
     f64 mAccumulator = 0.0;

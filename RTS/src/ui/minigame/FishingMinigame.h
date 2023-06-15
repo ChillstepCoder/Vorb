@@ -40,8 +40,8 @@ private:
     MinigameResultType update();
     void render(f32 elapsedSec);
 
-    void updateFishPosition();
-    void updatePlayerPosition();
+    void updateFishPosition(f32 elapsedSec);
+    void updatePlayerPosition(f32 elapsedSec);
     void fishLifeLost();
     void playerLifeLost();
     void win();
@@ -59,15 +59,17 @@ private:
     // UI Data
     std::unique_ptr<CPUParticleSystem2D> mUIParticleSystem;
     std::unique_ptr<CPUParticleSystem2D> mPlayerParticleSystem;
+    std::unique_ptr<CPUParticleSystem2D> mBlockerParticleSystem;
     ParticleID mArenaParticleID;
     ParticleID mPlayerParticleID;
     ParticleID mFishParticleID;
     ParticleID mBackgroundParticleID;
+    std::vector<ParticleID> mBlockerParticles;
 
 
     vg::SpriteBatch mSpriteBatch; //TODO: REMOVE
 
-    static constexpr int UPDATE_RATE_MS = 1; // TODO: NEED INTERPOLATION
+    static constexpr int UPDATE_RATE_MS = 8; // TODO: NEED INTERPOLATION
     TickingTimer mTickingTimer = TickingTimer(UPDATE_RATE_MS);
 
     // Minigame data
