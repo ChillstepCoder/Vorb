@@ -40,6 +40,10 @@ private:
     MinigameResultType update();
     void render(f32 elapsedSec);
 
+    void initUIParticles();
+    void initPlayerParticles();
+    void initBlockerParticles();
+
     void updateFishPosition(f32 elapsedSec);
     void updatePlayerPosition(f32 elapsedSec);
     void fishLifeLost();
@@ -83,8 +87,7 @@ private:
     f32v2 mCurrentScreenResolution = f32v2(0.0f);
     bool mIsPlayerTouchingFish = false;
     bool mDidPlayerImpactBottom = false;
-    int mPlayerLivesLeft = 3;
-    int mFishLivesLeft = 3;
+    int mTugOfWarValue = 0; // Positive is winning
     MinigameResultType mStatus = MinigameResultType::InProgress;
 
     TimePoint mEndTransitionTimeStart = TimePoint::max();
