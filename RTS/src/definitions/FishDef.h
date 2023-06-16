@@ -22,8 +22,8 @@ struct FishingMinigameFishData {
 
     // TODO: Move to PlayerData
     f32 mSuccessAngle = 30.0f;
-    f32 mPlayerMaxSpeed = 800.0f;
-    f32 mPlayerAcceleration = 100.0f;
+    f32 mPlayerMaxSpeed = 300.0f;
+    f32 mPlayerAcceleration = 800.0f;
     f32 mPlayerDrag = 0.16f;
     f32 mPlayerWallBouncyness = 0.1f;
     f32v2 mPlayerStickyness = f32v2(0.05f, 0.4f);
