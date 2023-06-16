@@ -143,6 +143,21 @@ namespace MathUtil {
             ? Detail::sqrtNewtonRaphson(x, x, 0)
             : std::numeric_limits<double>::quiet_NaN();
     }
+    template <typename T>
+    inline T lerpWithDeltaTime(T a, T b, float lerpAlpha, float elapsedSec) {
+        const float fraction = 1.0f - pow(1.0f - lerpAlpha, elapsedSec);
+        return lerp(a, b, fraction);
+    }
+
+    template <typename T>
+    inline void accelerateWithDeltaTime(T& inOutPosition, T& inOutVelocity, T accelerationForce, f32 elapsedSec) {
+        inOutPosition += inOutVelocity * elapsedSec + 0.5f * accelerationForce * SQ(elapsedSec);
+        inOutVelocity += accelerationForce * elapsedSec;
+    }
+
+    inline f32 dragForceWithDeltaTime(f32 dragForce, f32 elapsedSec) {
+        return pow(1.0f - dragForce, elapsedSec);
+    }
 }
 
 #define DECL_VEC2_LESS(T) \

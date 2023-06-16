@@ -69,7 +69,7 @@ private:
 
     vg::SpriteBatch mSpriteBatch; //TODO: REMOVE
 
-    static constexpr int UPDATE_RATE_MS = 8; // TODO: NEED INTERPOLATION
+    static constexpr int UPDATE_RATE_MS = 16; // TODO: NEED INTERPOLATION
     TickingTimer mTickingTimer = TickingTimer(UPDATE_RATE_MS);
 
     // Minigame data

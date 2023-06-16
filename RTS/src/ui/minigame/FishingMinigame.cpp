@@ -68,9 +68,6 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
     mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle_2d");
 
     // Set up particles
-    // TODO: REMOVE 99999
-
-
     mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
     mUIParticleSystem->setParticleScale(mBackgroundParticleID, f32v2(10000.0f));
@@ -126,7 +123,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
             particleData.mColors[i].r = (ui8)glm::min(distanceToPlayerCenter * 10.0f, 255.0f);
             particleData.mColors[i].g = 255ui8 - (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
             particleData.mColors[i].b = (ui8)glm::min(distanceToPlayerCenter * 5.0f, 255.0f);
-            particleData.mColors[i].a = 5;
+            particleData.mColors[i].a = 128;
 
             f32v2 equilibriumOffset = f32v2(Random::getThreadSafef(i, 0) * 2.0f - 1.0f, Random::getThreadSafef(i, 15243) * 2.0f - 1.0f);
             equilibriumOffset = glm::normalize(equilibriumOffset) * mPlayerRadius * Random::getThreadSafef(i, 2364789);
@@ -187,21 +184,20 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
             if (glm::length2(velocity) > SQ(30.0f) && distanceToPlayerCenter <= mPlayerRadius) {
                 //https://www.reddit.com/r/Unity3D/comments/5qla41/frame_rate_independent_drag/
                 // TODO: Move out of loop
-                const f32 DRAG = pow(0.7f, elapsedSec);
+                velocity *= MathUtil::dragForceWithDeltaTime(0.3f, elapsedSec);
                 //particleData.mColors[i] = color::Blue;
-                velocity *= DRAG;
             }
 
             position += velocity * elapsedSec;
 
             // Attached to player 
-            position += f32v3(mPlayerVelocity.x, mPlayerVelocity.y, 0.0f);
+            position += f32v3(mPlayerVelocity.x * elapsedSec, mPlayerVelocity.y * elapsedSec, 0.0f);
 
             // If too far from the equilibriumPoint, begin lerping us directly towards it
             if (distanceToEqulibriumPoint > mPlayerRadius * 0.3f) {
-                f32v2 lerpPos = lerp(f32v2(position), equilibriumPoint, 0.1f);
-                position.x = lerpPos.x;
-                position.y = lerpPos.y;
+                f32v2 position2D = MathUtil::lerpWithDeltaTime(f32v2(position), equilibriumPoint, 0.65f, elapsedSec);
+                position.x = position2D.x;
+                position.y = position2D.y;
             }
         }
         },
@@ -271,7 +267,6 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
 
                     // Check if a collision is happening
                     if (dist < radius + otherRadius) {
-                        LOG_INFO("{}", velocity);
                         const f32 mass1 = M_PIF * SQ(radius);
                         const f32 mass2 = M_PIF * SQ(otherRadius);
                         const f32 totalMass = mass1 + mass2;
@@ -298,7 +293,6 @@ FishingMinigame::FishingMinigame(const FishDef& fishData) :
                         // Push away by collision depth
                         position -= unitVector * collisionDepth * (1.0f - pushAlpha);
                         otherPosition += unitVector * collisionDepth * pushAlpha;
-                        LOG_CRITICAL("{}", velocity);
                     }
                 };
 
@@ -448,10 +442,12 @@ void FishingMinigame::updateFishPosition(f32 elapsedSec) {
     const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
     const TimePoint currentTime = mTickingTimer.getCurrTime();
 
-    mFishVelocity += getRandomDirectionVector() * minigameData.mAcceleration * elapsedSec;
+    // Framerate independant acceleration https://stackoverflow.com/questions/43960217/framerate-independent-acceleration-decceleration
+    const f32v2 accelerationForce = getRandomDirectionVector() * minigameData.mAcceleration;
+    MathUtil::accelerateWithDeltaTime(mFishPosition, mFishVelocity, accelerationForce, elapsedSec);
 
     //  Drag
-    mFishVelocity *= pow(1.0f - minigameData.mFishDrag, elapsedSec);
+    mFishVelocity *= MathUtil::dragForceWithDeltaTime(minigameData.mFishDrag, elapsedSec);
 
     mFishPosition += mFishVelocity * elapsedSec;
 
@@ -485,8 +481,10 @@ void FishingMinigame::updateFishPosition(f32 elapsedSec) {
             const f32 overlapAmount = totalRadius - distanceFromPlayer;
             const f32 overlapPower = pow(glm::min(overlapAmount / mFishRadius, 1.0f), 0.7f);
             // TODO: Use elapsed?
-            mFishVelocity.x = lerp(mFishVelocity.x, mPlayerVelocity.x, pow(minigameData.mPlayerStickyness.x * overlapPower, elapsedSec));
-            mFishVelocity.y = lerp(mFishVelocity.x, mPlayerVelocity.x, pow(minigameData.mPlayerStickyness.y * overlapPower, elapsedSec));
+            const f32v2 lerpAlpha = minigameData.mPlayerStickyness * overlapPower;
+            f32v2 framerateIndependantLerpAlpha;
+            mFishVelocity.x = MathUtil::lerpWithDeltaTime(mFishVelocity.x, mPlayerVelocity.x, lerpAlpha.x, elapsedSec);
+            mFishVelocity.y = MathUtil::lerpWithDeltaTime(mFishVelocity.y, mPlayerVelocity.y, lerpAlpha.y, elapsedSec);
             mFishVelocity.y += minigameData.mPlayerStrength * overlapPower * elapsedSec;
             mIsPlayerTouchingFish = true;
         }
@@ -537,14 +535,17 @@ void FishingMinigame::updatePlayerPosition(f32 elapsedSec) {
     }
 
     // TODO: Shared with fish
-    mPlayerVelocity += inputDir * minigameData.mPlayerAcceleration * elapsedSec;
-    //  Drag
-    mPlayerVelocity *= pow(1.0f - minigameData.mPlayerDrag, elapsedSec);
+
+     // Framerate independant acceleration https://stackoverflow.com/questions/43960217/framerate-independent-acceleration-decceleration
+    const f32v2 acceleration = inputDir * minigameData.mPlayerAcceleration;
+    MathUtil::accelerateWithDeltaTime(mPlayerPosition, mPlayerVelocity, acceleration, elapsedSec);
+
+    // Drag
+    mPlayerVelocity *= MathUtil::dragForceWithDeltaTime(minigameData.mPlayerDrag, elapsedSec);
 
     // TMP SIMPLE VELOCITY
     //mPlayerVelocity = minigameData.mPlayerAcceleration * 2.0f * inputDir;
 
-    mPlayerPosition += mPlayerVelocity * elapsedSec;
 
     const f32 playerVelocitySq = glm::length2(mPlayerVelocity);
     if (playerVelocitySq >= SQ(minigameData.mPlayerMaxSpeed)) {
