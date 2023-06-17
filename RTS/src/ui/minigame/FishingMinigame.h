@@ -74,7 +74,7 @@ private:
     vg::SpriteBatch mSpriteBatch; //TODO: REMOVE
 
     static constexpr int UPDATE_RATE_MS = 16; // TODO: NEED INTERPOLATION
-    TickingTimer mTickingTimer = TickingTimer(UPDATE_RATE_MS);
+    TickingTimer mTickingTimer = TickingTimer(UPDATE_RATE_MS, UPDATE_RATE_MS * 2);
 
     // Minigame data
     f32v2 mPlayerPosition = f32v3(0.0f);

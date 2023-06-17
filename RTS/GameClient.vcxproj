@@ -569,6 +569,8 @@
     <ClInclude Include="src\ecs\component\StatsComponent.h" />
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="src\ecs\component\VelocityComponent.h" />
+    <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
     <ClInclude Include="src\ecs\IEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />

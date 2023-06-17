@@ -4,6 +4,7 @@
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/CharacterControlComponent.h"
 
+#include "world/ecosystem/FishEcosystem.h"
 #include "world/srv/SrvWorldInterface.h"
 #include "debugging/DebugRenderer.h"
 
@@ -28,9 +29,17 @@ void FishingComponentSystem::update(IWorld& world, entt::registry& registry) {
         auto& fishCmp = view.get<FishingComponent>(entity);
         auto& physCmp = view.get<PhysicsComponent>(entity);
         auto& controlCmp = view.get<CharacterControlComponent>(entity);
-        updateFishing(world, registry, fishCmp, physCmp, controlCmp);
+        updateFishing(world, registry, entity, fishCmp, physCmp, controlCmp);
         if (fishCmp.isDone()) {
             // TODO: Notify inventory of caught fish and such? minigame result?
+            // Tell fish we are done
+            if (fishCmp.mTargetFish != INVALID_ENTITY) {
+                SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
+                if (srvWorld ) {
+                    FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
+                    fishEcosystem.clearFishFollowTarget(fishCmp.mTargetFish);
+                }
+            }
             componentsToRemove.emplace_back(entity);
         }
     }
@@ -68,7 +77,8 @@ void castLine(FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterCon
     fishCmp.mState = FishingComponentState::Casted;
 }
 
-void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp) {
+void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, entt::entity entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp) {
+    ASSERT_GAME_THREAD();
     // TODO: Configurable
     constexpr f32 RETICLE_DIMS = 0.5f;
     constexpr f32 CASTING_POWER = 0.1f;
@@ -117,6 +127,7 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             constexpr f32 PULL_ACCELLERATION = 10.0f;
             constexpr f32 MAX_PULL_SPEED = 5.0f;
             constexpr f32 BOBBER_DRAG = 0.95f;
+            constexpr f32 FISH_ATTRACT_DISTANCE = 10.0f;
             // Bobber physics
             fishCmp.mBobberPosition += fishCmp.mBobberVelocity * mTimeStep;
             fishCmp.mBobberVelocity *= BOBBER_DRAG;
@@ -149,8 +160,16 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
 
             // TODO Server version
             SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-            if (srvWorld) {
+            if (srvWorld && fishCmp.mTargetFish == INVALID_ENTITY) {
                 FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
+                PreciseTimer timer;
+                entt::entity closestFish = fishEcosystem.getClosestIdleFishToPoint(fishCmp.mBobberPosition, FISH_ATTRACT_DISTANCE);
+                if (closestFish != INVALID_ENTITY) {
+                    fishCmp.mTargetFish = closestFish;
+                    fishEcosystem.setFishFollowTarget(closestFish, entity);
+                }
+                LOG_WARN("CLOSEST FOUND IN {} ms", timer.stop());
+                return;
             }
 
             DebugRenderer::drawWireQuadThreadSafe(fishCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishCmp.mCastCharge / MAX_CAST_DISTANCE, fishCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);

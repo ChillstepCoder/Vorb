@@ -4,6 +4,11 @@
 #include "resources/ResourceManager.h"
 #include "resources/FishRepository.h"
 
+#include "ecs/IEntityComponentSystem.h"
+#include "ecs/component/PositionComponent.h"
+#include "ecs/component/VelocityComponent.h"
+#include "ecs/component/YawPitchComponent.h"
+
 #include "rendering/renderstate/RenderStateManager.h"
 
 #include "options/DebugOptions.h"
@@ -44,18 +49,13 @@ float rotateYaw(float currentYaw, float targetYaw, float rotationSpeed) {
     return normalizeAngle(newYaw);
 }
 
-TileIndex getTileIndexFromCellOffset(const FishCell& cell, i32v2 cellOffset) {
-    const int indexStart = cell.mCellXY.y * FISH_CELL_ROW_STRIDE_TILES + cell.mCellXY.x * FISH_CELL_TILE_WIDTH;
-    return indexStart + cellOffset.y * CHUNK_WIDTH + cellOffset.x;
-}
-
 FishEcosystem::FishEcosystem(IWorld& world) :
     mWorld(world),
     mFishRepository(Services::ResourceManager::ref().getFishRepository()) {
     initEventHandlers();
 
     if (mWorld.getNetMode() != WorldNetMode::DedicatedServer) {
-        mRenderStateManager = std::make_unique<RenderStateManager<FishRenderState>>();
+        mRenderStateManager = std::make_unique<RenderStateManager<FishChunkRenderStateMap>>();
     }
 }
 
@@ -94,6 +94,76 @@ void FishEcosystem::tickGameThread() {
     updateActiveFish();
 }
 
+entt::entity FishEcosystem::getClosestIdleFishToPoint(f32v3 point, f32 maxRange) const {
+    const Chunk* closestChunks[4];
+    mWorld.getChunkGrid().getClosestChunksAtPosition(f32v2(point), closestChunks);
+    entt::registry& registry = mWorld.getECS().mRegistry;
+
+    f32 closestDistanceSq = SQ(maxRange);
+    // TODO: Better search than linear
+    entt::entity closestFish = INVALID_ENTITY;
+    for (int i = 0; i < 4; ++i) {
+        assert(closestChunks[i]);
+        const Chunk& chunk = *closestChunks[i];
+        if (!chunk.isDataReady()) {
+            continue;
+        }
+        auto&& it = mActiveFishChunks.find(chunk.getChunkID());
+        if (it == mActiveFishChunks.end()) {
+            continue;
+        }
+        FishChunk* chunkPtr = it->second.get();
+        if (chunkPtr) {
+            for (int j = 0; j < chunkPtr->mFish.size(); ++j) {
+                entt::entity fishEntity = chunkPtr->mFish[j];
+                const PositionComponent& position = registry.get<PositionComponent>(fishEntity);
+                const f32 distanceSq = glm::distance2(position.mPosition, point);
+                if (distanceSq < closestDistanceSq) {
+                    closestDistanceSq = distanceSq;
+                    closestFish = fishEntity;
+                }
+            }
+        }
+    }
+    return closestFish;
+}
+
+void FishEcosystem::removeFish(entt::entity fishEntity) {
+    assert(fishEntity != INVALID_ENTITY);
+
+    entt::registry& registry = mWorld.getECS().mRegistry;
+    FishComponent& fishCmp = registry.get<FishComponent>(fishEntity);
+    auto&& it = mActiveFishChunks.find(fishCmp.mResidingChunk);
+    if (it != mActiveFishChunks.end()) {
+        FishChunk& fishChunk = *it->second;
+        for (size_t i = 0; i < fishChunk.mFish.size(); ++i) {
+            if (fishChunk.mFish[i] == fishEntity) {
+                fishChunk.mFish[i] = fishChunk.mFish.back();
+                registry.destroy(fishEntity);
+                return;
+            }
+        }
+    }
+    assert(false);
+}
+
+void FishEcosystem::setFishFollowTarget(entt::entity fishEntity, entt::entity followTarget) {
+    assert(fishEntity != INVALID_ENTITY);
+    assert(followTarget != INVALID_ENTITY);
+
+    entt::registry& registry = mWorld.getECS().mRegistry;
+    FishAIComponent& ai = registry.get<FishAIComponent>(fishEntity);
+    ai.mAIState = FishAIState::FollowBobber;
+    ai.mFollowTarget = followTarget;
+}
+
+void FishEcosystem::clearFishFollowTarget(entt::entity fishEntity) {
+    entt::registry& registry = mWorld.getECS().mRegistry;
+    FishAIComponent& ai = registry.get<FishAIComponent>(fishEntity);
+    ai.mAIState = FishAIState::Idle;
+    ai.mFollowTarget = INVALID_ENTITY;
+}
+
 void FishEcosystem::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkGridEventListeners);
@@ -112,6 +182,8 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     assert(chunk.getTileContainer());
 
     newFishChunk->mContainerID = chunk.getTileContainer()->getId();
+    newFishChunk->mWorldPos = chunk.getWorldPos();
+    newFishChunk->mChunkID = chunk.getChunkID();
 
     f32 timeSinceLastSpawned = FLT_MAX;
     // Retrieve dormant data
@@ -127,24 +199,12 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
 
     // TODO: This is fairly inefficient, is it worth cacheing these bits on the chunks during generation instead?
     const std::vector<Tile>& tiles = chunk.getTileContainer()->getTiles();
-    for (int cy = 0; cy < FISH_CELLS_WIDTH; ++cy) {
-        const int yIndexStart = cy * FISH_CELL_ROW_STRIDE_TILES;
-        for (int cx = 0; cx < FISH_CELLS_WIDTH; ++cx) {
-            FishCell& cell = newFishChunk->mCells[cy * FISH_CELLS_WIDTH + cx];
-            cell.mWorldPos = chunk.getWorldPos() + i32v2(cx * FISH_CELL_TILE_WIDTH, cy * FISH_CELL_TILE_WIDTH);
-            cell.mSpawnableTiles.resizeAndZero(FISH_CELL_TILE_SIZE);
-            cell.mTotalSpawnableTiles = 0;
-            cell.mCellXY = ui8v2(cx, cy);
-            const int indexStart = yIndexStart + cx * FISH_CELL_TILE_WIDTH;
-            for (int y = 0; y < FISH_CELL_TILE_WIDTH; ++y) {
-                for (int x = 0; x < FISH_CELL_TILE_WIDTH; ++x) {
-                    const TileIndex tileIndex = indexStart + y * CHUNK_WIDTH + x;
-                    if (tiles[tileIndex].getGroundZOffset() <= MAX_ZPOS_FISH_SPAWN) {
-                        cell.mSpawnableTiles.setBit(y * FISH_CELL_TILE_WIDTH + x);
-                        ++cell.mTotalSpawnableTiles;
-                    }
-                }
-            }
+    newFishChunk->mSpawnableTiles.resizeAndZero(CHUNK_SIZE);
+    newFishChunk->mTotalSpawnableTiles = 0;
+    for (TileIndex tileIndex = 0; tileIndex < CHUNK_SIZE; ++tileIndex) {
+        if (tiles[tileIndex].getGroundZOffset() <= MAX_ZPOS_FISH_SPAWN) {
+            newFishChunk->mSpawnableTiles.setBit(tileIndex);
+            ++newFishChunk->mTotalSpawnableTiles;
         }
     }
 
@@ -155,13 +215,11 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
         // Fresh spawning
         const FishDef& codFish = mFishRepository.getFish("cod");
         const FishDef& rareFish = mFishRepository.getFish("rarefish");
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 20; ++j) {
-                trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], codFish);
-            }
-            for (int j = 0; j < 3; ++j) {
-                trySpawnFish(*chunk.getTileContainer(), newFishChunk->mCells[i], rareFish);
-            }
+        for (int j = 0; j < 70; ++j) {
+            trySpawnFish(*chunk.getTileContainer(), *newFishChunk, codFish);
+        }
+        for (int j = 0; j < 15; ++j) {
+            trySpawnFish(*chunk.getTileContainer(), *newFishChunk, rareFish);
         }
     }
 
@@ -198,32 +256,35 @@ void FishEcosystem::disposeChunkFish(Chunk& chunk) {
 
 void FishEcosystem::makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk) {
     dormantChunk.mUnloadedTime = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < FISH_CELLS_PER_CHUNK; ++i) {
-        FishCell& activeCell = chunk.mCells[i];
-        DormantFishCell& dormantCell = dormantChunk.mCells[i];
-        dormantCell.mPopulations = std::move(activeCell.mPopulations);
-    }
+    dormantChunk.mPopulations = std::move(chunk.mPopulations);
 }
 
 void FishEcosystem::makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk) {
-    for (int i = 0; i < FISH_CELLS_PER_CHUNK; ++i) {
-        chunk.mCells[i].mPopulations = std::move(dormantChunk.mCells[i].mPopulations);
-    }
+    chunk.mPopulations = std::move(dormantChunk.mPopulations);
 }
 
-bool FishEcosystem::trySpawnFish(const TileContainer& container, FishCell& cell, const FishDef& fishDef) {
-    int randomTile = Random::getCachedRandom() % FISH_CELL_TILE_SIZE;
-    if (cell.mSpawnableTiles.getBit(randomTile)) {
-        TileIndex tileIndex = cell.mCellXY.y * FISH_CELL_ROW_STRIDE_TILES + cell.mCellXY.x * FISH_CELL_TILE_WIDTH;
-        tileIndex += randomTile % FISH_CELL_TILE_WIDTH + (randomTile / FISH_CELL_TILE_WIDTH) * CHUNK_WIDTH;
-        ActiveFish newFish;
+bool FishEcosystem::trySpawnFish(const TileContainer& container, FishChunk& chunk, const FishDef& fishDef) {
+    TileIndex randomTile = Random::getCachedRandom() % CHUNK_SIZE;
+    if (chunk.mSpawnableTiles.getBit(randomTile)) {
+
+        entt::registry& registry = mWorld.getECS().mRegistry;
+        const entt::entity newEntity = registry.create();
+        assert(newEntity != INVALID_ENTITY);
+
+        FishComponent& newFish = registry.emplace<FishComponent>(newEntity);
+        PositionComponent& positionComponent = registry.emplace<PositionComponent>(newEntity);
+        registry.emplace<VelocityComponent>(newEntity);
+        registry.emplace<YawPitchComponent>(newEntity);
+        registry.emplace<FishAIComponent>(newEntity);
+
         newFish.mFishId = fishDef.mId;
-        const f32 groundZ = container.getTileAt(tileIndex).getGroundZOffset();
+        newFish.mResidingChunk = chunk.mChunkID;
+        const f32 groundZ = container.getTileAt(randomTile).getGroundZOffset();
         // Make sure this is actually underwater
         if (groundZ >= -FISH_COLLIDE_RADIUS) return false;
         const f32 randZPos = -FISH_COLLIDE_RADIUS + (groundZ + FISH_COLLIDE_RADIUS) * Random::xorshf96f();
-        newFish.mPosition = f32v3(cell.mWorldPos.x + randomTile % FISH_CELL_TILE_WIDTH, cell.mWorldPos.y + randomTile / FISH_CELL_TILE_WIDTH, randZPos);
-        cell.mFish.emplace_back(newFish);
+        positionComponent.mPosition = f32v3(chunk.mWorldPos.x + randomTile % CHUNK_WIDTH, chunk.mWorldPos.y + randomTile / CHUNK_WIDTH, randZPos);
+        chunk.mFish.emplace_back(newEntity);
     }
     return false;
 }
@@ -235,26 +296,42 @@ void FishEcosystem::updateActiveFish() {
     const f32v2 loadCenter = mWorld.getLoadCenter();
 
     if (mRenderStateManager) {
-        FishRenderState& renderState = mRenderStateManager->getRenderStateForUpdate();
-        renderState.mActiveCells.resize(mActiveFishChunks.size() * 4);
-        size_t renderStateCellIndex = 0;
-        for (auto&& activeFishChunk : mActiveFishChunks) {
-            TileContainer& container = *mWorld.getChunkGrid().getChunk(activeFishChunk.first).getTileContainer();
-            for (int i = 0; i < 4; ++i) {
-                // Update render state
-                FishCell& activeCell = activeFishChunk.second->mCells[i];
-                if (glm::distance2(loadCenter, activeCell.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
-                    FishRenderStateCell& renderStateCell = renderState.mActiveCells[renderStateCellIndex++];
-                    renderStateCell.mFish.resize(activeCell.mFish.size());
-                    renderStateCell.mCellCenter = f32v2(activeCell.mWorldPos) + f32v2(FISH_CELL_HALF_TILE_WIDTH);
-                    for (size_t j = 0; j < activeCell.mFish.size(); ++j) {
-                        ActiveFish& fish = activeCell.mFish[j];
-                        updateFish(container, activeCell, fish);
-                        renderStateCell.mFish[j] = fish;
-                    }
+
+        entt::registry& registry = mWorld.getECS().mRegistry;
+
+        FishChunkRenderStateMap& chunkMap = mRenderStateManager->getRenderStateForUpdate();
+        chunkMap.clear();
+        chunkMap.reserve(mActiveFishChunks.size());
+        // Update fish chunks and cells
+        for (auto&& activeFishChunkIter : mActiveFishChunks) {
+            FishChunk& fishChunk = *activeFishChunkIter.second;
+            if (glm::distance2(loadCenter, fishChunk.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
+                const ChunkID chunkId = activeFishChunkIter.first;
+                TileContainer& container = *mWorld.getChunkGrid().getChunk(chunkId).getTileContainer();
+                FishRenderState& renderState = chunkMap[container.getId()];
+                // Update render state and update fish
+                fishChunk.mInUpdateRange = true;
+                renderState.mFish.resize(fishChunk.mFish.size());
+                renderState.mChunkCenter = f32v2(fishChunk.mWorldPos) + f32v2(HALF_CHUNK_WIDTH);
+                for (size_t j = 0; j < fishChunk.mFish.size(); ++j) {
+                    entt::entity fishEntity = fishChunk.mFish[j];
+                    FishRenderData& fishData = renderState.mFish[j];
+                    FishComponent& fishCmp = registry.get<FishComponent>(fishEntity);
+                    PositionComponent& positionCmp = registry.get<PositionComponent>(fishEntity);
+                    YawPitchComponent& yawPitchCmp = registry.get<YawPitchComponent>(fishEntity);
+                    fishData.mFishId = fishCmp.mFishId;
+                    fishData.pos = positionCmp.mPosition;
+                    fishData.yawPitch = yawPitchCmp.mYawPitch;
+
+                    // Update fish
+                    updateFish(registry, fishEntity, container, fishChunk, fishCmp, positionCmp, yawPitchCmp);
                 }
             }
+            else {
+                fishChunk.mInUpdateRange = false;
+            }
         }
+
         mRenderStateManager->finishUpdating();
     }
     else {
@@ -263,14 +340,17 @@ void FishEcosystem::updateActiveFish() {
     }
 }
 
-void FishEcosystem::updateFish(const TileContainer& container, FishCell& cell, ActiveFish& fish) {
+void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch) {
 
     constexpr f32 PATH_SUCCESS_DISTANCE_SQ = SQ(0.1f);
 
-    // Update motion
-    fish.mPosition += fish.mVelocity;
+    FishAIComponent& ai = registry.get<FishAIComponent>(entity);
+    VelocityComponent& velocity = registry.get<VelocityComponent>(entity);
 
-    constexpr auto getNewMovePosition = [](const TileContainer& container, FishCell& cell, ActiveFish& fish) {
+    // Update motion
+    position.mPosition += velocity.mVelocity;
+
+    constexpr auto getNewMovePosition = [](const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, const PositionComponent& position, FishAIComponent& ai) {
         constexpr int MOVE_OFFSETS[8][2] = {
            {-1, -1},
            { 0, -1},
@@ -283,31 +363,31 @@ void FishEcosystem::updateFish(const TileContainer& container, FishCell& cell, A
         };
 
         // New move position
-        i32v2 cellOffset = i32v2(fish.mPosition) - cell.mWorldPos;
-        cellOffset = glm::clamp(cellOffset, 0, FISH_CELL_TILE_WIDTH - 1);
+        i32v2 chunkOffset = i32v2(position.mPosition) - fishChunk.mWorldPos;
+        chunkOffset = glm::clamp(chunkOffset, 0, CHUNK_WIDTH - 1);
         int randomDir = Random::getCachedRandom() % 8;
-        cellOffset.x += MOVE_OFFSETS[randomDir][0];
-        cellOffset.y += MOVE_OFFSETS[randomDir][1];
-        if (cellOffset.x >= 0 && cellOffset.y >= 0 &&
-            cellOffset.x < FISH_CELL_TILE_WIDTH && cellOffset.y < FISH_CELL_TILE_WIDTH) {
-            const f32v2 targetXY((f32)cell.mWorldPos.x + (f32)cellOffset.x + 0.5f, (f32)cell.mWorldPos.y + (f32)cellOffset.y + 0.5f);
-            f32 targetZ = fish.mPosition.z + Random::xorshf96f() * 2.0f - 1.0f;
+        chunkOffset.x += MOVE_OFFSETS[randomDir][0];
+        chunkOffset.y += MOVE_OFFSETS[randomDir][1];
+        if (chunkOffset.x >= 0 && chunkOffset.y >= 0 &&
+            chunkOffset.x < CHUNK_WIDTH && chunkOffset.y < CHUNK_WIDTH) {
+            const f32v2 targetXY((f32)fishChunk.mWorldPos.x + (f32)chunkOffset.x + 0.5f, (f32)fishChunk.mWorldPos.y + (f32)chunkOffset.y + 0.5f);
+            f32 targetZ = position.mPosition.z + Random::xorshf96f() * 2.0f - 1.0f;
             // Clamp to water
-            const f32 groundZ = container.getTileAt(getTileIndexFromCellOffset(cell, cellOffset)).getGroundZOffset();
+            const f32 groundZ = container.getTileAt(chunkOffset.y * CHUNK_WIDTH + chunkOffset.x).getGroundZOffset();
             if (groundZ <= -FISH_COLLIDE_RADIUS) {
                 targetZ = glm::clamp(targetZ, groundZ + FISH_COLLIDE_RADIUS, -FISH_COLLIDE_RADIUS);
-                fish.mTargetPosition = f32v3(targetXY.x, targetXY.y, targetZ);
-                fish.mAIState = FishAIState::MovingToPoint;
+                ai.mTargetPosition = f32v3(targetXY.x, targetXY.y, targetZ);
+                ai.mAIState = FishAIState::MovingToPoint;
             }
         }
     };
 
-    switch (fish.mAIState) {
+    switch (ai.mAIState) {
         case FishAIState::Idle: {
             // Drag
-            fish.mVelocity *= 0.9f;
+            velocity.mVelocity *= 0.9f;
             if (Random::getCachedRandomf() <= 0.01f) {
-                getNewMovePosition(container, cell, fish);
+                getNewMovePosition(container, fishChunk, fish, position, ai);
             }
             
             break;
@@ -316,28 +396,59 @@ void FishEcosystem::updateFish(const TileContainer& container, FishCell& cell, A
 
             // Continue move chance
             if (Random::getCachedRandomf() <= 0.005f) {
-                getNewMovePosition(container, cell, fish);
+                getNewMovePosition(container, fishChunk, fish, position, ai);
             }
 
-            const f32v3 offsetToTarget = fish.mTargetPosition - fish.mPosition;
+            const f32v3 offsetToTarget = ai.mTargetPosition - position.mPosition;
             const f32 distSq = glm::length2(offsetToTarget);
             if (distSq <= PATH_SUCCESS_DISTANCE_SQ) {
-                fish.mAIState = FishAIState::Idle;
+                ai.mAIState = FishAIState::Idle;
             }
             else {
                 constexpr f32 ACCELERATION = 0.1f; //[0,1]
                 constexpr f32 ROTATION_SPEED = 0.05f;
                 const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * 0.01f;
-                fish.mVelocity = lerp(fish.mVelocity, targetVelocity, ACCELERATION);
-                fish.mRotation = rotateYaw(fish.mRotation, -std::atan2(fish.mVelocity.y, fish.mVelocity.x) - M_PI_2f, ROTATION_SPEED);
+                velocity.mVelocity = lerp(velocity.mVelocity, targetVelocity, ACCELERATION);
+                YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
+                yawPitch.mYaw = rotateYaw(yawPitch.mYaw, -std::atan2(velocity.mVelocity.y, velocity.mVelocity.x) - M_PI_2f, ROTATION_SPEED);
             }
+            break;
+        }
+        case FishAIState::FollowBobber: {
+            FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
+            ai.mTargetPosition = followFishingCmp.mBobberPosition;
+            const f32v3 offsetToTarget = ai.mTargetPosition - position.mPosition;
+            const f32 distSq = glm::length2(offsetToTarget);
+            if (distSq <= PATH_SUCCESS_DISTANCE_SQ) {
+                ai.mAIState = FishAIState::GrabBobber;
+            }
+            else {
+                constexpr f32 ACCELERATION = 0.1f; //[0,1]
+                constexpr f32 ROTATION_SPEED = 0.05f;
+                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * 0.01f;
+                velocity.mVelocity = lerp(velocity.mVelocity, targetVelocity, ACCELERATION);
+                YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
+                yawPitch.mYaw = rotateYaw(yawPitch.mYaw, -std::atan2(velocity.mVelocity.y, velocity.mVelocity.x) - M_PI_2f, ROTATION_SPEED);
+            }
+            break;
+        }
+        case FishAIState::GrabBobber: {
+            FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
+            ai.mTargetPosition = followFishingCmp.mBobberPosition;
+            position.mPosition = ai.mTargetPosition;
+            break;
+        }
+        case FishAIState::OnFishingLine: {
+            FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
+            ai.mTargetPosition = followFishingCmp.mBobberPosition;
+            position.mPosition = ai.mTargetPosition;
             break;
         }
         default:
             assert(false);
         
     }
-    static_assert(e_count(FishAIState) == 2);
+    static_assert(e_count(FishAIState) == 5);
     //fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
     //fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
 }

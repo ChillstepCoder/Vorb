@@ -177,11 +177,14 @@ void main() {
     oColor.a = 1.0; // AO
     
     // Wet Soil (Shifted warmer)
-    oColor.rgb = mix(oColor.rgb, oColor.rgb * 0.6 * vec3(1.2, 1.1, 1.0), clamp(-fHeight * 10.0 + 0.01, 0.0, 1.0));
+    float wetnessMult = clamp(-fHeight * 10.0 + 0.01, 0.0, 1.0);
+    oColor.rgb = mix(oColor.rgb, oColor.rgb * 0.6 * vec3(1.2, 1.1, 1.0), wetnessMult);
     
     //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
     
     // === Roughness + metallic ===
     oMetallicRoughness.r = 0.0; // Metallic
 	oMetallicRoughness.g = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3; // Roughness
+    // TODO: Cosine curve so only shore is wet?
+    oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
 }

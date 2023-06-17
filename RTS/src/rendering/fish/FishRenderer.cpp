@@ -70,7 +70,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
 
 
     BoundingSphere boundingSphere;
-    boundingSphere.radius = sqrt(pow(FISH_CELL_TILE_WIDTH * 0.5f, 2.0f) * 3.0f);
+    boundingSphere.radius = CHUNK_DIAGONAL_RADIUS + 1.0f;
     boundingSphere.center.z = 0.0f;
 
     // Wait for the GPU to finish with this section of the buffer
@@ -84,14 +84,15 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
     mInstanceCountsThisFrame.resize(mFishInstanceData.size());
     std::fill(mInstanceCountsThisFrame.begin(), mInstanceCountsThisFrame.end(), 0);
 
-    const FishRenderState& renderState = srvWorldInterface->getFishEcosystem().getRenderStateManager().getRenderStateForRender();
-    for (auto&& cell : renderState.mActiveCells) {
+    const FishChunkRenderStateMap& renderState = srvWorldInterface->getFishEcosystem().getRenderStateManager().getRenderStateForRender();
+    for (auto&& fishChunkIter : renderState) {
         // Draw active fish
-        boundingSphere.center.x = cell.mCellCenter.x;
-        boundingSphere.center.y = cell.mCellCenter.y;
+        const FishRenderState& chunkRenderState = fishChunkIter.second;
+        boundingSphere.center.x = chunkRenderState.mChunkCenter.x;
+        boundingSphere.center.y = chunkRenderState.mChunkCenter.y;
         if (camera.sphereIsVisible(boundingSphere)) {
-            for (auto&& fish : cell.mFish) {
-                addFishInstance(fish.mFishId, fish.mPosition, fish.mRotation);
+            for (auto&& fish : chunkRenderState.mFish) {
+                addFishInstance(fish.mFishId, fish.pos, fish.yawPitch);
                 //DebugRenderer::drawFilledQuad(f32v3(fish.mPosition.x - 0.3f, fish.mPosition.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
             }
         }
@@ -137,25 +138,22 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
                 ChunkID id = it.first;
                 const FishChunk& fishChunk = *it.second;
                 const Chunk& chunk = world.getChunkGrid().getChunk(id);
-                DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::LightGray, DEBUG_LIFETIME);
-                DebugRenderer::drawLineBetweenPoints(
-                    f32v3(chunk.getWorldPos3D()) + f32v3(HALF_CHUNK_WIDTH, 0.0f, 0.0f),
-                    f32v3(chunk.getWorldPos3D()) + f32v3(HALF_CHUNK_WIDTH, CHUNK_WIDTH, 0.0f),
-                    color::LightPink, DEBUG_LIFETIME);
-                DebugRenderer::drawLineBetweenPoints(
-                    f32v3(chunk.getWorldPos3D()) + f32v3(0.0f, HALF_CHUNK_WIDTH, 0.0f),
-                    f32v3(chunk.getWorldPos3D()) + f32v3(CHUNK_WIDTH, HALF_CHUNK_WIDTH, 0.0f),
-                    color::LightPink, DEBUG_LIFETIME);
-
-                // Draw active fish
-
-                for (int i = 0; i < 4; ++i) {
-                    if (glm::distance2(world.getLoadCenter(), fishChunk.mCells[i].getWorldCenterF()) < RENDER_DISTANCE_SQ) {
-                        for (auto&& fish : fishChunk.mCells[i].mFish) {
-                            DebugRenderer::drawFilledQuad(f32v3(fish.mPosition.x - 0.3f, fish.mPosition.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
-                        }
-                    }
+                if (fishChunk.mInUpdateRange) {
+                    DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Cyan, DEBUG_LIFETIME);
                 }
+                else {
+                    DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::OrangeRed, DEBUG_LIFETIME);
+                }
+
+                //// Draw active fish
+
+                //for (int i = 0; i < 4; ++i) {
+                //    if (glm::distance2(world.getLoadCenter(), fishChunk.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
+                //        for (auto&& fish : fishChunk.mFish) {
+                //            DebugRenderer::drawFilledQuad(f32v3(fish.pos.x - 0.3f, fish.pos.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
+                //        }
+                //    }
+                //}
 
 #if DRAW_WATER_CELLS == 1
                 const int CELL_ROW_STRIDE = FISH_CELLS_WIDTH * FISH_CELL_TILE_SIZE;
@@ -189,7 +187,7 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
     }
 }
 
-void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32 yaw) {
+void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32v2 yawPitch) {
     if (mInstanceCountsThisFrame[fish] >= MAX_INSTANCES_PER_FRAME) {
         return;
     }
@@ -197,7 +195,8 @@ void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32 yaw) {
 
     FishInstanceData& instanceData = mFishInstanceData[fish];
     instanceData.mMappedTransformBuffer[transformBufferOffset].mPosition = pos;
-    instanceData.mMappedTransformBuffer[transformBufferOffset].mYaw = yaw;
+    instanceData.mMappedTransformBuffer[transformBufferOffset].mYaw = yawPitch.x;
+    // TODO: Pitch as well
 
     ++mInstanceCountsThisFrame[fish];
 }

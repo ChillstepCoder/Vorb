@@ -107,6 +107,43 @@ const Chunk& IChunkGrid::getChunkAtPosition(const f32v2& worldPos) const {
     return getChunk(getChunkIDFromWorldPos(worldPos));
 }
 
+void IChunkGrid::getClosestChunksAtPosition(const f32v2& worldPos, OUT const Chunk* chunks[4]) const {
+    const i32v2 worldPosInt(worldPos);
+    ChunkID chunkId = getChunkIDFromWorldPos(worldPosInt);
+    chunks[0] = &getChunk(chunkId);
+    int i = 1;
+    if (worldPosInt.x % CHUNK_WIDTH < HALF_CHUNK_WIDTH) {
+        // West
+        if (worldPosInt.y % CHUNK_WIDTH < HALF_CHUNK_WIDTH) {
+            // South
+            chunks[i++] = &getChunk(chunkId - mWidthChunks - 1);
+            chunks[i++] = &getChunk(chunkId - mWidthChunks);
+            chunks[i++] = &getChunk(chunkId - 1);
+        }
+        else {
+            // North
+            chunks[i++] = &getChunk(chunkId + mWidthChunks - 1);
+            chunks[i++] = &getChunk(chunkId + mWidthChunks);
+            chunks[i++] = &getChunk(chunkId - 1);
+        }
+    }
+    else {
+        // East
+        if (worldPosInt.y % CHUNK_WIDTH < HALF_CHUNK_WIDTH) {
+            // South
+            chunks[i++] = &getChunk(chunkId - mWidthChunks + 1);
+            chunks[i++] = &getChunk(chunkId - mWidthChunks);
+            chunks[i++] = &getChunk(chunkId + 1);
+        }
+        else {
+            // North
+            chunks[i++] = &getChunk(chunkId + mWidthChunks + 1);
+            chunks[i++] = &getChunk(chunkId + mWidthChunks);
+            chunks[i++] = &getChunk(chunkId + 1);
+        }
+    }
+}
+
 Chunk& IChunkGrid::getChunkAtPosition(const i32v2& worldPos) {
     return getChunk(getChunkIDFromWorldPos(worldPos));
 }
@@ -507,15 +544,16 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
     memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
     Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
         chunk.getWorld().getWorldGenerator().generateChunk(chunk, heightData);
-        chunk.setState(ChunkState::TILE_LOAD_FINISHED);
+        delete heightData;
         // Generate fish if needed
+    }, [&chunk]() {
         SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&chunk.getWorld());
         if (srvWorld) {
             srvWorld->getFishEcosystem().initChunkFish(chunk);
         }
+        chunk.setState(ChunkState::TILE_LOAD_FINISHED);
         chunk.decRef();
-        delete heightData;
-    }, nullptr);
+    });
 
 }
 

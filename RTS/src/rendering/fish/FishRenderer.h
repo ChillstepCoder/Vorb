@@ -27,7 +27,7 @@ public:
     void debugRenderFishEcosystem(const IWorld& world);
 
 private:
-    void addFishInstance(FishID fish, f32v3 pos, f32 yaw);
+    void addFishInstance(FishID fish, f32v3 pos, f32v2 yawPitch);
     int mDebugTickCounter = 0;
 
     // TODO: Can we guarentee all fish exist in one VBO?

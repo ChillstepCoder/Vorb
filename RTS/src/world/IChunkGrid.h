@@ -30,6 +30,7 @@ public:
 
     Chunk& getChunkAtPosition(const f32v2& worldPos);
     const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
+    void getClosestChunksAtPosition(const f32v2& worldPos, OUT const Chunk* chunks[4]) const;
     Chunk& getChunkAtPosition(const i32v2& worldPos);
     const Chunk& getChunkAtPosition(const i32v2& worldPos) const;
     Chunk& getChunkAtChunkOffset(const i32v2& chunkOffset);

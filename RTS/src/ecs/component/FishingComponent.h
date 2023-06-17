@@ -24,6 +24,7 @@ struct FishingComponent {
     f32v3 mBobberVelocity = f32v3(0.0f);
     f32 mCastCharge = 0.0f;
     bool mIsCastInputPressed = false;
+    entt::entity mTargetFish = INVALID_ENTITY;
 
     bool isDone() const { return mState >= FishingComponentState::Success; }
 };
@@ -32,7 +33,7 @@ class FishingComponentSystem {
 public:
     void update(IWorld& world, entt::registry& registry);
 private:
-    void updateFishing(IWorld& world, entt::registry& registry, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp);
+    void updateFishing(IWorld& world, entt::registry& registry, entt::entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp);
 
     f32 mTimeStep = 0.0f;
 };

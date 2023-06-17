@@ -62,7 +62,7 @@ public:
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
     CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
-    IEntityComponentSystem& getECS() const { return *mEcs; }
+    IEntityComponentSystem& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
     StructureManager& getStructureManager() const { return *mStructureManager; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
