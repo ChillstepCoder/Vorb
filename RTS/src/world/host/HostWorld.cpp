@@ -52,7 +52,7 @@ void HostWorld::tick(f32 elapsedSec) {
 
     // TODO: Figure out best order
     tickShared(elapsedSec);
-    tickSrv();
+    tickSrv(elapsedSec);
 
     //if (sWorldGen.mIsDirty) {
     //    sWorldGen.mIsDirty = false;

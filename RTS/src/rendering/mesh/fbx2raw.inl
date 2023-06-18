@@ -89,16 +89,17 @@ namespace fbx2raw {
 
         // Get the mesh node's transformation matrix
         FbxAMatrix transformMatrix = fbxMesh->GetNode()->EvaluateGlobalTransform();
-        // Convert to Z up
         ozz::math::Float4x4 coordinateSystemTransform;
         if (shouldRotateZUp) {
+            // Convert to +Z up +Y forward
             coordinateSystemTransform =
             { {ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
               ozz::math::simd_float4::Load(0.f, 0.f, 1.f, 0.f),
-              ozz::math::simd_float4::Load(0.f, -1.f, 0.f, 0.f),
+              ozz::math::simd_float4::Load(0.f, 1.f, 0.f, 0.f),
               ozz::math::simd_float4::Load(0.f, 0.f, 0.f, 1.f)} };
         }
         else {
+            // +Y forward
             coordinateSystemTransform =
             { {ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
               ozz::math::simd_float4::Load(0.f, 1.f, 0.f, 0.f),
@@ -179,16 +180,19 @@ namespace fbx2raw {
 
 
         // Iterate all polygons and stores ctrl point to polygon mappings.
-        int vertexId = 0;
+        int vertexIdBase = 0;
         for (int p = 0; p < polygonCount; ++p) {
             if (fbxMesh->GetPolygonSize(p) != 3) {
                 LOG_CRITICAL("ERROR: Mesh {} must have been triangulated before import", fbxMesh->GetName());
                 assert(false && "Mesh must have been triangulated.");
             }
 
-            for (int v = 0; v < 3; ++v, ++vertexId) {
+            for (int v = 0; v < 3; ++v) {
+                // When doing Z up we must flip vertex winding
+                const int vertexIndex = shouldRotateZUp ? 2 - v : v;
+                const int vertexId = vertexIdBase + vertexIndex;
                 // Get control point.
-                const int controlPoint = fbxMesh->GetPolygonVertex(p, v);
+                const int controlPoint = fbxMesh->GetPolygonVertex(p, vertexIndex);
                 assert(controlPoint >= 0);
                 ControlPointRemap& remap = controlPointsRemap->at(controlPoint);
 
@@ -314,6 +318,7 @@ namespace fbx2raw {
                     remap.push_back(vertexIndex);
                 }
             }
+            vertexIdBase += 3;
         }
 
         return true;

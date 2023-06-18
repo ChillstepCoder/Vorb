@@ -158,6 +158,43 @@ namespace MathUtil {
     inline f32 dragForceWithDeltaTime(f32 dragForce, f32 elapsedSec) {
         return pow(1.0f - dragForce, elapsedSec);
     }
+
+
+    // Normalizes the angle to be between -PI and PI
+    inline float normalizeAngle(float angle) {
+        while (angle > M_PIf) angle -= 2 * M_PIf;
+        while (angle < -M_PIf) angle += 2 * M_PIf;
+        return angle;
+    }
+    inline float rotateYawToTarget(float currentYaw, float targetYaw, float rotationSpeed) {
+        currentYaw = normalizeAngle(currentYaw);
+        targetYaw = normalizeAngle(targetYaw);
+
+        float deltaYaw = targetYaw - currentYaw;
+
+        // Select the direction of rotation to take the shortest path.
+        if (deltaYaw > M_PIf)
+            deltaYaw -= 2 * M_PIf;
+        else if (deltaYaw < -M_PIf)
+            deltaYaw += 2 * M_PIf;
+
+        // Apply the rotation speed.
+        deltaYaw = std::clamp(deltaYaw, -rotationSpeed, rotationSpeed);
+
+        // Compute the new yaw value.
+        float newYaw = currentYaw + deltaYaw;
+
+        return normalizeAngle(newYaw);
+    }
+    inline f32v2 directionFromYaw2D(f32 yaw) {
+        return f32v2(cos(yaw), sin(yaw));
+    }
+
+    // +Y is forward
+    inline f32v3 directionFromYaw3D(f32 yaw) {
+        //yaw += M_PI_2f;
+        return f32v3(sin(yaw), cos(yaw), 0.0f);
+    }
 }
 
 #define DECL_VEC2_LESS(T) \

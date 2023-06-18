@@ -166,7 +166,7 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
                 entt::entity closestFish = fishEcosystem.getClosestIdleFishToPoint(fishCmp.mBobberPosition, FISH_ATTRACT_DISTANCE);
                 if (closestFish != INVALID_ENTITY) {
                     fishCmp.mTargetFish = closestFish;
-                    fishEcosystem.setFishFollowTarget(closestFish, entity);
+                    fishEcosystem.setFishFollowBobber(closestFish, entity);
                 }
                 LOG_WARN("CLOSEST FOUND IN {} ms", timer.stop());
                 return;

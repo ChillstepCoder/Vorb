@@ -28,7 +28,8 @@ struct FishPopulation {
 enum class FishAIState : ui8 {
     Idle,
     MovingToPoint,
-    FollowBobber,
+    PeckBobber,
+    PeckCooldown,
     GrabBobber,
     OnFishingLine,
     COUNT
@@ -37,12 +38,12 @@ enum class FishAIState : ui8 {
 struct FishAIComponent {
     union {
         TimePoint mTimeTargetReached = TimePoint::max();
-        TimePoint mTimeLastPeck;
+        f32 mPeckCooldownRemaining;
     };
     f32v3 mTargetPosition = f32v3(0.0f);
     FishAIState mAIState = FishAIState::Idle;
     entt::entity mFollowTarget = INVALID_ENTITY; // TODO: Listen for destruction of this entity
-    int mPeckCount = 0;
+    int mPeckCountRemaining = 0;
 };
 
 struct FishComponent {
@@ -91,7 +92,7 @@ public:
     FishEcosystem(IWorld& world);
     ~FishEcosystem();
 
-    void tickGameThread();
+    void tickGameThread(f32 elapsedSec);
 
     void initChunkFish(Chunk& chunk);
 
@@ -99,7 +100,7 @@ public:
 
     entt::entity getClosestIdleFishToPoint(f32v3 point, f32 maxRange) const;
     void removeFish(entt::entity fishEntity);
-    void setFishFollowTarget(entt::entity fishEntity, entt::entity followTarget);
+    void setFishFollowBobber(entt::entity fishEntity, entt::entity followTarget);
     void clearFishFollowTarget(entt::entity fishEntity);
 private:
     void initEventHandlers();
@@ -125,6 +126,7 @@ private:
 
     // Very slow ticking for dormancy updates
     TickingTimer mDormancyUpdateTicker = TickingTimer(1000.0f);
+    f32 mElapsedSec = 0.0f;
 
     std::unique_ptr<RenderStateManager<FishChunkRenderStateMap>> mRenderStateManager;
 };

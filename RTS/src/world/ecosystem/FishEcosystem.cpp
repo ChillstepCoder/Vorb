@@ -10,6 +10,7 @@
 #include "ecs/component/YawPitchComponent.h"
 
 #include "rendering/renderstate/RenderStateManager.h"
+#include "debugging/DebugRenderer.h"
 
 #include "options/DebugOptions.h"
 
@@ -19,35 +20,9 @@
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
 constexpr f32 MAX_DORMANCY_DURATION_SEC = 120.0f;
 constexpr f32 FISH_COLLIDE_RADIUS = 0.3f; // TODO: Config
-
-// Normalizes the angle to be between -PI and PI
-float normalizeAngle(float angle) {
-    while (angle > M_PIf) angle -= 2 * M_PIf;
-    while (angle < -M_PIf) angle += 2 * M_PIf;
-    return angle;
-}
-
-// Rotate currentYaw towards targetYaw with given rotation speed.
-float rotateYaw(float currentYaw, float targetYaw, float rotationSpeed) {
-    currentYaw = normalizeAngle(currentYaw);
-    targetYaw = normalizeAngle(targetYaw);
-
-    float deltaYaw = targetYaw - currentYaw;
-
-    // Select the direction of rotation to take the shortest path.
-    if (deltaYaw > M_PIf)
-        deltaYaw -= 2 * M_PIf;
-    else if (deltaYaw < -M_PIf)
-        deltaYaw += 2 * M_PIf;
-
-    // Apply the rotation speed.
-    deltaYaw = std::clamp(deltaYaw, -rotationSpeed, rotationSpeed);
-
-    // Compute the new yaw value.
-    float newYaw = currentYaw + deltaYaw;
-
-    return normalizeAngle(newYaw);
-}
+constexpr int MAX_PECK_COUNT = 4;
+constexpr f32 MIN_PECK_COOLDOWN_TIME = 0.5f;
+constexpr f32 MAX_PECK_COOLDOWN_TIME = 2.0f;
 
 FishEcosystem::FishEcosystem(IWorld& world) :
     mWorld(world),
@@ -63,10 +38,13 @@ FishEcosystem::~FishEcosystem() {
 
 }
 
-void FishEcosystem::tickGameThread() {
+void FishEcosystem::tickGameThread(f32 elapsedSec) {
     PROFILE_FUNCTION();
+    mElapsedSec = elapsedSec;
+
     mDormancyUpdateTicker.startFrame();
     const f32v2 loadCenter = mWorld.getLoadCenter();
+
 
     // Copy generated chunks to active list
     {
@@ -147,14 +125,15 @@ void FishEcosystem::removeFish(entt::entity fishEntity) {
     assert(false);
 }
 
-void FishEcosystem::setFishFollowTarget(entt::entity fishEntity, entt::entity followTarget) {
+void FishEcosystem::setFishFollowBobber(entt::entity fishEntity, entt::entity followTarget) {
     assert(fishEntity != INVALID_ENTITY);
     assert(followTarget != INVALID_ENTITY);
 
     entt::registry& registry = mWorld.getECS().mRegistry;
     FishAIComponent& ai = registry.get<FishAIComponent>(fishEntity);
-    ai.mAIState = FishAIState::FollowBobber;
+    ai.mAIState = FishAIState::PeckBobber;
     ai.mFollowTarget = followTarget;
+    ai.mPeckCountRemaining = Random::xorshf96() % (MAX_PECK_COUNT + 1);
 }
 
 void FishEcosystem::clearFishFollowTarget(entt::entity fishEntity) {
@@ -348,7 +327,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
     VelocityComponent& velocity = registry.get<VelocityComponent>(entity);
 
     // Update motion
-    position.mPosition += velocity.mVelocity;
+    position.mPosition += velocity.mVelocity * mElapsedSec;
 
     constexpr auto getNewMovePosition = [](const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, const PositionComponent& position, FishAIComponent& ai) {
         constexpr int MOVE_OFFSETS[8][2] = {
@@ -385,7 +364,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
     switch (ai.mAIState) {
         case FishAIState::Idle: {
             // Drag
-            velocity.mVelocity *= 0.9f;
+            velocity.mVelocity *= MathUtil::dragForceWithDeltaTime(0.7f, mElapsedSec);
             if (Random::getCachedRandomf() <= 0.01f) {
                 getNewMovePosition(container, fishChunk, fish, position, ai);
             }
@@ -405,30 +384,53 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 ai.mAIState = FishAIState::Idle;
             }
             else {
-                constexpr f32 ACCELERATION = 0.1f; //[0,1]
-                constexpr f32 ROTATION_SPEED = 0.05f;
-                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * 0.01f;
-                velocity.mVelocity = lerp(velocity.mVelocity, targetVelocity, ACCELERATION);
+                constexpr f32 ROTATION_SPEED = 3.0f;
+                constexpr f32 MAX_SPEED = 1.0f;
+                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * MAX_SPEED;
+                velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
-                yawPitch.mYaw = rotateYaw(yawPitch.mYaw, -std::atan2(velocity.mVelocity.y, velocity.mVelocity.x) - M_PI_2f, ROTATION_SPEED);
+                yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, std::atan2(velocity.mVelocity.x, velocity.mVelocity.y), ROTATION_SPEED * mElapsedSec);
             }
             break;
         }
-        case FishAIState::FollowBobber: {
+        case FishAIState::PeckBobber: {
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mTargetPosition = followFishingCmp.mBobberPosition;
             const f32v3 offsetToTarget = ai.mTargetPosition - position.mPosition;
             const f32 distSq = glm::length2(offsetToTarget);
             if (distSq <= PATH_SUCCESS_DISTANCE_SQ) {
-                ai.mAIState = FishAIState::GrabBobber;
+                if (ai.mPeckCountRemaining == 0) {
+                    ai.mAIState = FishAIState::GrabBobber;
+                    DebugRenderer::drawWireQuadThreadSafe(position.mPosition, f32v2(0.5f), color::Green, 60);
+                }
+                else {
+                    DebugRenderer::drawWireQuadThreadSafe(position.mPosition, f32v2(0.5f), color::Red, 60);
+                    ai.mAIState = FishAIState::PeckCooldown;
+                    ai.mPeckCooldownRemaining = Random::xorshf96f() * (MAX_PECK_COOLDOWN_TIME - MIN_PECK_COOLDOWN_TIME) + MIN_PECK_COOLDOWN_TIME;
+                    --ai.mPeckCountRemaining;
+                }
             }
             else {
-                constexpr f32 ACCELERATION = 0.1f; //[0,1]
-                constexpr f32 ROTATION_SPEED = 0.05f;
-                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * 0.01f;
-                velocity.mVelocity = lerp(velocity.mVelocity, targetVelocity, ACCELERATION);
+                constexpr f32 ROTATION_SPEED = 3.0f;
+                constexpr f32 MAX_SPEED = 1.3f;
+                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * MAX_SPEED;
+                velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
-                yawPitch.mYaw = rotateYaw(yawPitch.mYaw, -std::atan2(velocity.mVelocity.y, velocity.mVelocity.x) - M_PI_2f, ROTATION_SPEED);
+                yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, -std::atan2(velocity.mVelocity.y, velocity.mVelocity.x) - M_PI_2f, ROTATION_SPEED * mElapsedSec);
+            }
+            break;
+        }
+        case FishAIState::PeckCooldown: {
+            FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
+            ai.mPeckCooldownRemaining -= mElapsedSec;
+            if (ai.mPeckCooldownRemaining < 0.0f) {
+                ai.mAIState = FishAIState::PeckBobber;
+            }
+            else {
+                // Float away slowly
+                constexpr f32 MAX_SPEED = 1.0f;
+                const f32v3 backwardsDir = MathUtil::directionFromYaw3D(yawPitch.mYaw);
+                velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, backwardsDir * MAX_SPEED, 0.95f, mElapsedSec);
             }
             break;
         }
@@ -448,7 +450,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             assert(false);
         
     }
-    static_assert(e_count(FishAIState) == 5);
+    static_assert(e_count(FishAIState) == 6);
     //fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
     //fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
 }

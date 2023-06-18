@@ -25,9 +25,9 @@ void SrvWorldInterface::initSrv(IWorld& world) {
     mFishEcosystem = std::make_unique<FishEcosystem>(world);
 }
 
-void SrvWorldInterface::tickSrv() {
+void SrvWorldInterface::tickSrv(f32 elapsedSec) {
     mNavWorld->tickGameThread();
-    mFishEcosystem->tickGameThread();
+    mFishEcosystem->tickGameThread(elapsedSec);
 }
 
 

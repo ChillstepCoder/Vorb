@@ -11,7 +11,7 @@ public:
     SrvWorldInterface();
     virtual ~SrvWorldInterface();
 
-    void tickSrv();
+    void tickSrv(f32 elapsedSec);
 
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     NavWorld& getNavWorld() const { return *mNavWorld; }
