@@ -24,6 +24,8 @@ constexpr int MAX_PECK_COUNT = 4;
 constexpr f32 MIN_PECK_COOLDOWN_TIME = 0.5f;
 constexpr f32 MAX_PECK_COOLDOWN_TIME = 2.0f;
 
+constexpr f32 MAX_FISH_ANGULAR_SPEED = 2.0f;
+
 FishEcosystem::FishEcosystem(IWorld& world) :
     mWorld(world),
     mFishRepository(Services::ResourceManager::ref().getFishRepository()) {
@@ -302,7 +304,7 @@ void FishEcosystem::updateActiveFish() {
                     fishData.pos = positionCmp.mPosition;
                     fishData.yawPitch = yawPitchCmp.mYawPitch;
                     fishData.scale = 1.0f; // TODO: Vary
-                    fishData.turn = fishCmp.mAngularSpeed; // TODO: Turn
+                    fishData.turn = fishCmp.mAngularSpeed / MAX_FISH_ANGULAR_SPEED;
                     fishData.time = fishCmp.mAnimationTime; // TODO: Animate
 
                     // Update fish
@@ -331,6 +333,14 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
 
     // Update motion
     position.mPosition += velocity.mVelocity * mElapsedSec;
+
+    // Update rotation
+    yawPitch.mYaw += fish.mAngularSpeed * mElapsedSec;
+    yawPitch.mYaw = MathUtil::normalizeAngle(yawPitch.mYaw);
+
+    constexpr auto decayAngularSpeed = [](f32& angularSpeed, f32 elapsedSec) {
+        angularSpeed *= MathUtil::dragForceWithDeltaTime(0.98f, elapsedSec);
+    };
 
     constexpr auto getNewMovePosition = [](const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, const PositionComponent& position, FishAIComponent& ai) {
         constexpr int MOVE_OFFSETS[8][2] = {
@@ -368,6 +378,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
     switch (ai.mAIState) {
         case FishAIState::Idle: {
             // Drag
+            decayAngularSpeed(fish.mAngularSpeed, mElapsedSec);
             velocity.mVelocity *= MathUtil::dragForceWithDeltaTime(0.7f, mElapsedSec);
             if (Random::getCachedRandomf() <= 0.01f) {
                 getNewMovePosition(container, fishChunk, fish, position, ai);
@@ -388,21 +399,48 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 ai.mAIState = FishAIState::Idle;
             }
             else {
-                constexpr f32 ROTATION_SPEED = 3.0f;
                 constexpr f32 MAX_SPEED = 1.0f;
                 const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * MAX_SPEED;
                 velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
-                f32 prevYaw = yawPitch.mYaw;
-                yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, std::atan2(velocity.mVelocity.x, velocity.mVelocity.y), ROTATION_SPEED * mElapsedSec);
-                fish.mAngularSpeed = glm::clamp((yawPitch.mYaw - prevYaw) * 100.0f, -1.0f, 1.0f);
 
+                // NEW YAW ACCELERATION
+                constexpr f32 maxAngularSpeed = MAX_FISH_ANGULAR_SPEED;//M_PIF;
+                constexpr f32 angularAcceleration = 3.0f;
+                const f32 targetYaw = std::atan2(velocity.mVelocity.x, velocity.mVelocity.y);
+                float yawDifference = yawPitch.mYaw - targetYaw;
+                yawDifference = MathUtil::normalizeAngle(yawDifference);
+
+                f32 desiredAngularSpeed = (fabs(yawDifference) < (maxAngularSpeed * maxAngularSpeed / (2.0f * angularAcceleration))) ?
+                    sqrt(fabs(yawDifference) * 2.0f * angularAcceleration) : maxAngularSpeed;
+                // Pick sign
+                desiredAngularSpeed *= (yawDifference < 0) - (yawDifference > 0);
+                if (fish.mAngularSpeed < desiredAngularSpeed) {
+                    fish.mAngularSpeed += angularAcceleration * mElapsedSec;
+                    if (fish.mAngularSpeed > desiredAngularSpeed) {
+                        fish.mAngularSpeed = desiredAngularSpeed;
+                    }
+                }
+                else if (fish.mAngularSpeed > desiredAngularSpeed) {
+                    fish.mAngularSpeed -= angularAcceleration * mElapsedSec;
+                    if (fish.mAngularSpeed < desiredAngularSpeed) {
+                        fish.mAngularSpeed = desiredAngularSpeed;
+                    }
+                }
+
+                // OLD YAW
+                //f32 prevYaw = yawPitch.mYaw;
+                //yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, std::atan2(velocity.mVelocity.x, velocity.mVelocity.y), ROTATION_SPEED * mElapsedSec);
+                //fish.mAngularSpeed = glm::clamp((yawPitch.mYaw - prevYaw) * 100.0f, -1.0f, 1.0f);
+
+                // TODO: Smooth pitch
                 const f32 speed = sqrt(glm::dot(velocity.mVelocity, velocity.mVelocity));
                 yawPitch.mPitch = (velocity.mVelocity.z / speed) * M_PI_2F * 0.75f;
             }
             break;
         }
         case FishAIState::PeckBobber: {
+            decayAngularSpeed(fish.mAngularSpeed, mElapsedSec);
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mTargetPosition = followFishingCmp.mBobberPosition;
             const f32v3 offsetToTarget = ai.mTargetPosition - position.mPosition;
@@ -430,6 +468,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             break;
         }
         case FishAIState::PeckCooldown: {
+            decayAngularSpeed(fish.mAngularSpeed, mElapsedSec);
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mPeckCooldownRemaining -= mElapsedSec;
             if (ai.mPeckCooldownRemaining < 0.0f) {
@@ -444,6 +483,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             break;
         }
         case FishAIState::GrabBobber: {
+            decayAngularSpeed(fish.mAngularSpeed, mElapsedSec);
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mTargetPosition = followFishingCmp.mBobberPosition;
             position.mPosition = ai.mTargetPosition;

@@ -173,10 +173,7 @@ namespace MathUtil {
         float deltaYaw = targetYaw - currentYaw;
 
         // Select the direction of rotation to take the shortest path.
-        if (deltaYaw > M_PIf)
-            deltaYaw -= 2 * M_PIf;
-        else if (deltaYaw < -M_PIf)
-            deltaYaw += 2 * M_PIf;
+        deltaYaw = normalizeAngle(deltaYaw);
 
         // Apply the rotation speed.
         deltaYaw = std::clamp(deltaYaw, -rotationSpeed, rotationSpeed);
