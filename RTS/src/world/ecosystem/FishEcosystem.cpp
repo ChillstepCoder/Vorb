@@ -301,6 +301,9 @@ void FishEcosystem::updateActiveFish() {
                     fishData.mFishId = fishCmp.mFishId;
                     fishData.pos = positionCmp.mPosition;
                     fishData.yawPitch = yawPitchCmp.mYawPitch;
+                    fishData.scale = 1.0f; // TODO: Vary
+                    fishData.turn = fishCmp.mAngularSpeed; // TODO: Turn
+                    fishData.time = fishCmp.mAnimationTime; // TODO: Animate
 
                     // Update fish
                     updateFish(registry, fishEntity, container, fishChunk, fishCmp, positionCmp, yawPitchCmp);
@@ -353,8 +356,9 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             f32 targetZ = position.mPosition.z + Random::xorshf96f() * 2.0f - 1.0f;
             // Clamp to water
             const f32 groundZ = container.getTileAt(chunkOffset.y * CHUNK_WIDTH + chunkOffset.x).getGroundZOffset();
-            if (groundZ <= -FISH_COLLIDE_RADIUS) {
-                targetZ = glm::clamp(targetZ, groundZ + FISH_COLLIDE_RADIUS, -FISH_COLLIDE_RADIUS);
+            constexpr f32 MAX_FISH_DISTANCE_FROM_SURFACE = FISH_COLLIDE_RADIUS * 1.6f;
+            if (groundZ < -MAX_FISH_DISTANCE_FROM_SURFACE) {
+                targetZ = glm::clamp(targetZ, groundZ + MAX_FISH_DISTANCE_FROM_SURFACE, -MAX_FISH_DISTANCE_FROM_SURFACE);
                 ai.mTargetPosition = f32v3(targetXY.x, targetXY.y, targetZ);
                 ai.mAIState = FishAIState::MovingToPoint;
             }
@@ -389,7 +393,12 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * MAX_SPEED;
                 velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
+                f32 prevYaw = yawPitch.mYaw;
                 yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, std::atan2(velocity.mVelocity.x, velocity.mVelocity.y), ROTATION_SPEED * mElapsedSec);
+                fish.mAngularSpeed = glm::clamp((yawPitch.mYaw - prevYaw) * 100.0f, -1.0f, 1.0f);
+
+                const f32 speed = sqrt(glm::dot(velocity.mVelocity, velocity.mVelocity));
+                yawPitch.mPitch = (velocity.mVelocity.z / speed) * M_PI_2F * 0.75f;
             }
             break;
         }

@@ -49,6 +49,8 @@ struct FishAIComponent {
 struct FishComponent {
     FishID mFishId = INVALID_FISH_ID; // TODO: Compress FishID?
     ChunkID mResidingChunk = INVALID_CHUNK_ID;
+    f32 mAngularSpeed = 0.0f;
+    f32 mAnimationTime = 0.0f;
 };
 
 struct FishChunk {
@@ -75,6 +77,9 @@ struct FishRenderData {
     FishID mFishId;
     f32v3 pos;
     f32v2 yawPitch;
+    f32 scale;
+    f32 turn;
+    f32 time;
 };
 
 // TODO: Rename  FishChunkRenderState

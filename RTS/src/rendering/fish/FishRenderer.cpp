@@ -26,7 +26,7 @@
 #include "rendering/gl/GLObjects.h"
 
 constexpr int MAX_INSTANCES_PER_FRAME = 2000;
-constexpr int INSTANCE_TRANSFORM_DATA_SIZE = sizeof(FishInstanceTransform);
+constexpr int INSTANCE_TRANSFORM_DATA_SIZE = sizeof(FishGPUData);
 constexpr int INSTANCE_TRANSFORM_BUFFER_SIZE = INSTANCE_TRANSFORM_DATA_SIZE * MAX_INSTANCES_PER_FRAME * 3; // 3x our maximum size
 
 #define DRAW_WATER_CELLS 0
@@ -44,9 +44,9 @@ FishRenderer::FishRenderer() {
         const FishDef& fishDef = allFish[i];
         instanceData.mMesh = &resourceManager.getModelRepository().getModelDef(fishDef.mModel).getMesh(0);
 
-        glCreateBuffers(1, &instanceData.mInstanceTransformBuffer);
-        glNamedBufferStorage(instanceData.mInstanceTransformBuffer, INSTANCE_TRANSFORM_BUFFER_SIZE, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-        instanceData.mMappedTransformBuffer = (FishInstanceTransform*)glMapNamedBufferRange(instanceData.mInstanceTransformBuffer, 0, INSTANCE_TRANSFORM_BUFFER_SIZE,
+        glCreateBuffers(1, &instanceData.mInstanceDataBuffer);
+        glNamedBufferStorage(instanceData.mInstanceDataBuffer, INSTANCE_TRANSFORM_BUFFER_SIZE, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+        instanceData.mMappedInstanceDataBuffer = (FishGPUData*)glMapNamedBufferRange(instanceData.mInstanceDataBuffer, 0, INSTANCE_TRANSFORM_BUFFER_SIZE,
             GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
     }
 }
@@ -55,8 +55,8 @@ FishRenderer::~FishRenderer()
 {
     for (int i = 0; i < mFishInstanceData.size(); ++i) {
         FishInstanceData& instanceData = mFishInstanceData[i];
-        glUnmapBuffer(instanceData.mInstanceTransformBuffer);
-        glDeleteBuffers(1, &instanceData.mInstanceTransformBuffer);
+        glUnmapBuffer(instanceData.mInstanceDataBuffer);
+        glDeleteBuffers(1, &instanceData.mInstanceDataBuffer);
     }
 }
 
@@ -92,7 +92,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         boundingSphere.center.y = chunkRenderState.mChunkCenter.y;
         if (camera.sphereIsVisible(boundingSphere)) {
             for (auto&& fish : chunkRenderState.mFish) {
-                addFishInstance(fish.mFishId, fish.pos, fish.yawPitch);
+                addFishInstance(fish.mFishId, fish.pos, fish.yawPitch, fish.scale, fish.turn, fish.time);
                 //DebugRenderer::drawFilledQuad(f32v3(fish.mPosition.x - 0.3f, fish.mPosition.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
             }
         }
@@ -105,8 +105,8 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         const ui32 instanceCount = mInstanceCountsThisFrame[i];
         if (instanceCount) {
             FishInstanceData& instanceData = mFishInstanceData[i];
-            glFlushMappedNamedBufferRange(instanceData.mInstanceTransformBuffer, transformIndexStart * INSTANCE_TRANSFORM_DATA_SIZE, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, instanceData.mInstanceTransformBuffer);
+            glFlushMappedNamedBufferRange(instanceData.mInstanceDataBuffer, transformIndexStart * INSTANCE_TRANSFORM_DATA_SIZE, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, instanceData.mInstanceDataBuffer);
             MeshDrawer::drawInstanced(instanceData.mMesh->mMainMesh, MeshLODLevel::Highest, instanceCount);
         }
     }
@@ -187,16 +187,19 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
     }
 }
 
-void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32v2 yawPitch) {
+void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32v2 yawPitch, f32 scale, f32 turn, f32 time) {
     if (mInstanceCountsThisFrame[fish] >= MAX_INSTANCES_PER_FRAME) {
         return;
     }
     const int transformBufferOffset = mFrameIndex * MAX_INSTANCES_PER_FRAME + mInstanceCountsThisFrame[fish];
 
     FishInstanceData& instanceData = mFishInstanceData[fish];
-    instanceData.mMappedTransformBuffer[transformBufferOffset].mPosition = pos;
-    instanceData.mMappedTransformBuffer[transformBufferOffset].mYaw = yawPitch.x;
-    // TODO: Pitch as well
+    instanceData.mMappedInstanceDataBuffer[transformBufferOffset].mPosition = pos;
+    instanceData.mMappedInstanceDataBuffer[transformBufferOffset].mYaw = yawPitch.x;
+    instanceData.mMappedInstanceDataBuffer[transformBufferOffset].mPitch = yawPitch.y;
+    instanceData.mMappedInstanceDataBuffer[transformBufferOffset].mScale = scale;
+    instanceData.mMappedInstanceDataBuffer[transformBufferOffset].mTurn = turn;
+    instanceData.mMappedInstanceDataBuffer[transformBufferOffset].mTime = time;
 
     ++mInstanceCountsThisFrame[fish];
 }

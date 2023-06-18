@@ -11,15 +11,17 @@ layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 
 uniform int unBufferOffset;
+uniform float DebugFloat1;
 uniform float DebugFloat4;
 
-struct FishTransformData {
-    vec4 posYaw;
+struct FishData {
+    vec4 posTurn;
+    vec4 yawPitchScaleTime;
 };
 
-layout (std430, binding=3) buffer TransformData
+layout (std430, binding=3) buffer FishDataBuffer
 {
-    FishTransformData transformData[];
+    FishData fishDataArray[];
 };
 
 out vec2 fUV;
@@ -29,25 +31,36 @@ out mat3 fTBN;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 
+
 mat4 createTransformMatrix(vec3 position, float yaw, float pitch, float scale) {
     // Calculate the cos and sin of the yaw and pitch
     float cy = cos(yaw);
     float sy = sin(yaw);
-    float cr = cos(pitch);
-    float sr = sin(pitch);
-    
-    // Manually create the rotation matrix for yaw and pitch
-    mat3 rotation = mat3(cy, -sy*cr, sy*sr,
-                         sy, cy*cr, -cy*sr,
-                         0, sr, cr);
-    
-    // Apply scale to the rotation matrix
+    float cp = cos(pitch);
+    float sp = sin(pitch);
+
+    // Create the rotation matrix for the yaw (around the Z-axis)
+    mat3 yawRotation = mat3(
+        cy, -sy, 0,
+        sy, cy, 0,
+        0, 0, 1
+    );
+
+    // Create the rotation matrix for the pitch (around the X-axis)
+    mat3 pitchRotation = mat3(
+        1, 0, 0,
+        0, cp, -sp,
+        0, sp, cp
+    );
+
+    // Combine the two rotations and scale the result
+    mat3 rotation = yawRotation * pitchRotation;
     rotation *= scale;
-    
+
     // Create transformation matrix from rotation and translation
     mat4 transformation = mat4(rotation);
     transformation[3] = vec4(position, 1.0);
-    
+
     return transformation;
 }
 
@@ -60,21 +73,39 @@ mat4 buildTranslation(vec3 delta)
         vec4(delta, 1.0));
 }
 
+vec2 rotateVector(vec2 xy, float angle) {
+    const float cs = cos(angle);
+    const float sn = sin(angle);
+
+    vec2 rv;
+    rv.x = xy.x * cs - xy.y * sn;
+    rv.y = xy.x * sn + xy.y * cs;
+    return rv;
+}
+
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
     fMaterialIndex = vMaterialIndex;
     
-    FishTransformData transform = transformData[gl_InstanceID + unBufferOffset];
+    vec3 vertexPosition = vPosition.xyz;
     
-    vec3 rootPosWorld = transform.posYaw.xyz;
+    FishData fishData = fishDataArray[gl_InstanceID + unBufferOffset];
     
+    vec3 rootPosWorld = fishData.posTurn.xyz;
+    
+    // Movement wiggle
     float intensityMult = 0.1 + DebugFloat4 * 0.1;
     float timeValue = (Time - (rootPosWorld.x - rootPosWorld.y + rootPosWorld.z));
-    rootPosWorld.x += cos(timeValue + vPosition.y * 3.0) * (vPosition.y + 0.5) * intensityMult;
+    vertexPosition.x += cos(-timeValue + -vertexPosition.y * 3.0) * (-vertexPosition.y + 0.5) * intensityMult;
     rootPosWorld.z += sin(timeValue) * 0.05;
     
-    mat4 modelMatrix = createTransformMatrix(rootPosWorld, transform.posYaw.w, 0.0, 1.0);
+    // Turning rotation
+    float turning = -fishData.posTurn.w;
+    vertexPosition.xy = rotateVector(vertexPosition.xy, turning * vPosition.y);
+    
+    
+    mat4 modelMatrix = createTransformMatrix(rootPosWorld, fishData.yawPitchScaleTime.x, -fishData.yawPitchScaleTime.y, fishData.yawPitchScaleTime.z);
     //mat4 modelMatrix = buildTranslation(transform.posYaw.xyz);
 	
 	vec3 normal = normalize(vNormal);
@@ -88,7 +119,7 @@ void main() {
 	fTBN = mat3(tangent, bitangent, normal);
     
     
-    vec4 worldPos = (modelMatrix * vPosition) - vec4(CameraPos, 0.0);
+    vec4 worldPos = (modelMatrix * vec4(vertexPosition, 1.0)) - vec4(CameraPos, 0.0);
     gl_Position = VP * worldPos;
     
     // For displacement, get our world space -> tangent space
