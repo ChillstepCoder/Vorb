@@ -49,8 +49,8 @@ struct FishAIComponent {
 struct FishComponent {
     FishID mFishId = INVALID_FISH_ID; // TODO: Compress FishID?
     ChunkID mResidingChunk = INVALID_CHUNK_ID;
-    f32 mAngularSpeed = 0.0f;
-    f32 mAnimationTime = 0.0f;
+    f32v2 mAngularSpeed = f32v2(0.0f); // TODO: Quantized to i16?
+    f32 mAnimationTime = 0.0f; // TODO: Quantized to i16?
 };
 
 struct FishChunk {
@@ -107,6 +107,7 @@ public:
     void removeFish(entt::entity fishEntity);
     void setFishFollowBobber(entt::entity fishEntity, entt::entity followTarget);
     void clearFishFollowTarget(entt::entity fishEntity);
+    void setFishHooked(entt::entity fishEntity, entt::entity followTarget);
 private:
     void initEventHandlers();
     void disposeChunkFish(Chunk& chunk);

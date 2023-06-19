@@ -183,6 +183,30 @@ namespace MathUtil {
 
         return normalizeAngle(newYaw);
     }
+    // Returns new angular speed
+    inline float getNewAngularSpeedToTargetYawSmooth(f32 currentAngularSpeed, f32 currentYaw, f32 targetYaw, f32 maxAngularSpeed, f32 elapsedSec) {
+        constexpr f32 angularAcceleration = 3.0f;
+        float yawDifference = currentYaw - targetYaw;
+        yawDifference = MathUtil::normalizeAngle(yawDifference);
+
+        f32 desiredAngularSpeed = (fabs(yawDifference) < (maxAngularSpeed * maxAngularSpeed / (2.0f * angularAcceleration))) ?
+            sqrt(fabs(yawDifference) * 2.0f * angularAcceleration) : maxAngularSpeed;
+        // Pick sign
+        desiredAngularSpeed *= (yawDifference < 0) - (yawDifference > 0);
+        if (currentAngularSpeed < desiredAngularSpeed) {
+            currentAngularSpeed += angularAcceleration * elapsedSec;
+            if (currentAngularSpeed > desiredAngularSpeed) {
+                currentAngularSpeed = desiredAngularSpeed;
+            }
+        }
+        else if (currentAngularSpeed > desiredAngularSpeed) {
+            currentAngularSpeed -= angularAcceleration * elapsedSec;
+            if (currentAngularSpeed < desiredAngularSpeed) {
+                currentAngularSpeed = desiredAngularSpeed;
+            }
+        }
+        return currentAngularSpeed;
+    }
     inline f32v2 directionFromYaw2D(f32 yaw) {
         return f32v2(cos(yaw), sin(yaw));
     }

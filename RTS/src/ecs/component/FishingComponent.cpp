@@ -14,8 +14,23 @@
 
 #include "physics/PhysicsConst.h"
 
+#include <Vorb/ui/InputDispatcher.h>
+
 // Initialize launch position
 constexpr f32 BOBBER_GRAVITY = GRAVITY_Z;
+
+FishingComponentSystem::FishingComponentSystem() {
+    vui::InputDispatcher::mouse.addButtonDownListener([this](const vui::MouseButtonEvent& buttonEvent) {
+        // TODO: See header, an input queue which we fill is probably better than managing atomic state
+        if (buttonEvent.button == vui::MouseButton::LEFT) {
+            mWasButtonPressed = true;
+        }
+    });
+}
+
+FishingComponentSystem::~FishingComponentSystem() {
+
+}
 
 void FishingComponentSystem::update(IWorld& world, entt::registry& registry) {
 
@@ -77,48 +92,52 @@ void castLine(FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterCon
     fishCmp.mState = FishingComponentState::Casted;
 }
 
-void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, entt::entity entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp) {
+void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, entt::entity entity, FishingComponent& fishingCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp) {
     ASSERT_GAME_THREAD();
     // TODO: Configurable
     constexpr f32 RETICLE_DIMS = 0.5f;
     constexpr f32 CASTING_POWER = 0.1f;
     constexpr f32 MIN_CAST_DISTANCE = 1.0f;
     constexpr f32 MAX_CAST_DISTANCE = 10.0f;
-    switch (fishCmp.mState) {
+
+    // TODO: SEPARATE FROM PLAYER SO NPC CAN DO IT
+    bool wasMousePressed = mWasButtonPressed;
+    mWasButtonPressed = false;
+    switch (fishingCmp.mState) {
         case FishingComponentState::Initializing:
-            fishCmp.mState = FishingComponentState::Casting;
+            fishingCmp.mState = FishingComponentState::Casting;
             [[fallthrough]];
         case FishingComponentState::Casting: {
-            if (fishCmp.mIsCastInputPressed) {
-                fishCmp.mCastCharge += CASTING_POWER;
-                fishCmp.mCastCharge = glm::min(fishCmp.mCastCharge, MAX_CAST_DISTANCE);
+            if (fishingCmp.mIsCastInputPressed) {
+                fishingCmp.mCastCharge += CASTING_POWER;
+                fishingCmp.mCastCharge = glm::min(fishingCmp.mCastCharge, MAX_CAST_DISTANCE);
             }
-            else if (fishCmp.mCastCharge > MIN_CAST_DISTANCE) {
-                castLine(fishCmp, physCmp, controlCmp);
+            else if (fishingCmp.mCastCharge > MIN_CAST_DISTANCE) {
+                castLine(fishingCmp, physCmp, controlCmp);
                 return;
             } else {
-                fishCmp.mState = FishingComponentState::Fail;
+                fishingCmp.mState = FishingComponentState::Fail;
                 return;
             }
 
-            fishCmp.mTargetPosition = getCastTarget(fishCmp, physCmp, controlCmp);
-            DebugRenderer::drawWireQuadThreadSafe(fishCmp.mTargetPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishCmp.mCastCharge / MAX_CAST_DISTANCE, fishCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            fishingCmp.mTargetPosition = getCastTarget(fishingCmp, physCmp, controlCmp);
+            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mTargetPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
             break;
         }
         case FishingComponentState::Casted: {
-            fishCmp.mBobberVelocity.z += BOBBER_GRAVITY * mTimeStep;
-            fishCmp.mBobberPosition += fishCmp.mBobberVelocity * mTimeStep;
-            DebugRenderer::drawWireQuadThreadSafe(fishCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishCmp.mCastCharge / MAX_CAST_DISTANCE, fishCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            fishingCmp.mBobberVelocity.z += BOBBER_GRAVITY * mTimeStep;
+            fishingCmp.mBobberPosition += fishingCmp.mBobberVelocity * mTimeStep;
+            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
             // Water impact
             // TODO: True water plane position
-            if (fishCmp.mBobberPosition.z <= 0.0f) {
-                fishCmp.mBobberPosition.z = 0.0f;
-                fishCmp.mBobberVelocity = f32v3(0.0f);
-                fishCmp.mState = FishingComponentState::Fishing;
+            if (fishingCmp.mBobberPosition.z <= 0.0f) {
+                fishingCmp.mBobberPosition.z = 0.0f;
+                fishingCmp.mBobberVelocity = f32v3(0.0f);
+                fishingCmp.mState = FishingComponentState::Fishing;
             }
-            else if (fishCmp.mBobberPosition.z <= world.getHeightmapGrid().tryComputeHeightAtPoint(f32v2(fishCmp.mBobberPosition))) {
+            else if (fishingCmp.mBobberPosition.z <= world.getHeightmapGrid().tryComputeHeightAtPoint(f32v2(fishingCmp.mBobberPosition))) {
                 // Terrain collision is failure
-                fishCmp.mState = FishingComponentState::Fail;
+                fishingCmp.mState = FishingComponentState::Fail;
                 return;
             }
             break;
@@ -129,50 +148,65 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             constexpr f32 BOBBER_DRAG = 0.95f;
             constexpr f32 FISH_ATTRACT_DISTANCE = 10.0f;
             // Bobber physics
-            fishCmp.mBobberPosition += fishCmp.mBobberVelocity * mTimeStep;
-            fishCmp.mBobberVelocity *= BOBBER_DRAG;
+            fishingCmp.mBobberPosition += fishingCmp.mBobberVelocity * mTimeStep;
+            fishingCmp.mBobberVelocity *= BOBBER_DRAG;
             // Reeling
-            if (fishCmp.mIsCastInputPressed) {
-                f32v2 distanceVec = physCmp.getPosition() - fishCmp.mBobberPosition;
+            if (fishingCmp.mIsCastInputPressed) {
+                f32v2 distanceVec = physCmp.getPosition() - fishingCmp.mBobberPosition;
                 f32v2 pullNormal = glm::normalize(distanceVec);
-                fishCmp.mBobberVelocity += f32v3(pullNormal.x, pullNormal.y, 0.0f) * PULL_ACCELLERATION * mTimeStep;
-                const f32 bobberSpeed = glm::length(fishCmp.mBobberVelocity);
+                fishingCmp.mBobberVelocity += f32v3(pullNormal.x, pullNormal.y, 0.0f) * PULL_ACCELLERATION * mTimeStep;
+                const f32 bobberSpeed = glm::length(fishingCmp.mBobberVelocity);
                 if (bobberSpeed > MAX_PULL_SPEED) {
-                    fishCmp.mBobberVelocity == (fishCmp.mBobberVelocity / bobberSpeed) * MAX_PULL_SPEED;
+                    fishingCmp.mBobberVelocity == (fishingCmp.mBobberVelocity / bobberSpeed) * MAX_PULL_SPEED;
                 }
                 // Check for getting too close to the player
                 if (glm::length2(distanceVec) <= SQ(MIN_CAST_DISTANCE)) {
-                    fishCmp.mState = FishingComponentState::Fail;
+                    fishingCmp.mState = FishingComponentState::Fail;
                     return;
                 }
                 // Check for beaching the bobber
-                const f32 terrainHeight = world.getHeightmapGrid().tryComputeHeightAtPoint(f32v2(fishCmp.mBobberPosition));
+                const f32 terrainHeight = world.getHeightmapGrid().tryComputeHeightAtPoint(f32v2(fishingCmp.mBobberPosition));
                 // TODO: If tile handle is invalid, switch to LOD?
                 if (terrainHeight == FLT_MAX) {
-                    fishCmp.mState = FishingComponentState::Fail;
+                    fishingCmp.mState = FishingComponentState::Fail;
                     return;
                 }
                 if (terrainHeight >= -0.01f) {
-                    fishCmp.mState = FishingComponentState::Fail;
+                    fishingCmp.mState = FishingComponentState::Fail;
                     return;
                 }
             }
 
             // TODO Server version
             SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-            if (srvWorld && fishCmp.mTargetFish == INVALID_ENTITY) {
+            if (srvWorld && fishingCmp.mTargetFish == INVALID_ENTITY) {
                 FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
                 PreciseTimer timer;
-                entt::entity closestFish = fishEcosystem.getClosestIdleFishToPoint(fishCmp.mBobberPosition, FISH_ATTRACT_DISTANCE);
+                entt::entity closestFish = fishEcosystem.getClosestIdleFishToPoint(fishingCmp.mBobberPosition, FISH_ATTRACT_DISTANCE);
                 if (closestFish != INVALID_ENTITY) {
-                    fishCmp.mTargetFish = closestFish;
+                    fishingCmp.mTargetFish = closestFish;
                     fishEcosystem.setFishFollowBobber(closestFish, entity);
                 }
                 LOG_WARN("CLOSEST FOUND IN {} ms", timer.stop());
                 return;
             }
 
-            DebugRenderer::drawWireQuadThreadSafe(fishCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishCmp.mCastCharge / MAX_CAST_DISTANCE, fishCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            break;
+        }
+        case FishingComponentState::FishGrabbed: {
+            assert(fishingCmp.mTargetFish != INVALID_ENTITY);
+            if (wasMousePressed) {
+                // Grab fish!
+                // TODO Server version
+                SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
+                if (srvWorld) {
+                    FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
+                    fishEcosystem.setFishHooked(fishingCmp.mTargetFish, entity);
+                    // TODO: Handle NPC and multiplayer as well
+                    fishingCmp.mState = FishingComponentState::LocalPlayerMinigame;
+                }
+            }
             break;
         }
         case FishingComponentState::NPCMinigame: {
@@ -191,5 +225,19 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             break;
 
     }
-    static_assert(e_count(FishingComponentState) == 9);
+    static_assert(e_count(FishingComponentState) == 10);
+
+    if (wasMousePressed) {
+        fishingCmp.mState = FishingComponentState::Fail;
+    }
+}
+
+void FishingComponent::onBobberGrabbed(entt::entity fishEntity) {
+    assert(fishEntity == mTargetFish);
+    mState = FishingComponentState::FishGrabbed;
+}
+
+void FishingComponent::onFishLost() {
+    mState = FishingComponentState::Fail;
+    mTargetFish = INVALID_ENTITY;
 }
