@@ -189,12 +189,8 @@ void FishingMinigame::render(f32 elapsedSec) {
         materialRepository.getMaterialDesc("particle_v6").id,
     };
     // TODO: REMOVE
-    if (minigameData.mParticleMaterial == 0) {
-        mPlayerParticleSystem->setGlobalParticleScale(f32v2(5.0f, 10.0f) * f32v2(minigameData.mParticleScale));
-    }
-    else {
-        mPlayerParticleSystem->setGlobalParticleScale(5.0f * f32v2(minigameData.mParticleScale));
-    }
+
+    mPlayerParticleSystem->setGlobalParticleScale(f32v2(5.0f, 10.0f)* f32v2(minigameData.mParticleScale));
     mPlayerParticleSystem->setGlobalMaterialID(materials[minigameData.mParticleMaterial]);
     mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0f));
     mUIParticleSystem->setParticlePosition(mPlayerParticleID, f32v3(mPlayerPosition.x, mPlayerPosition.y, 0.0f));
