@@ -15,9 +15,9 @@ flat out vec4 fColor;
 
 const vec2 pos[4] = vec2[4](
 	vec2(-0.5, -0.5),
-	vec2( 0.5, -0.5),
+	vec2(-0.5, 0.5),
 	vec2( 0.5, 0.5),
-	vec2(-0.5, 0.5)
+	vec2( 0.5, -0.5)
 );
 
 const int indices[6] = int[6](
@@ -62,6 +62,7 @@ void main() {
 	vec2 offset = pos[idx];
 
     fUV = (offset.xy + 0.5);
+    fUV.y = 1.0 - fUV.y; // Flip
     
     vec2 position = offset.xy * unGlobalScale;
     

@@ -45,10 +45,11 @@ f32 getAngleOffset(const f32v2 normalizedPos, const f32v2 normal) {
     return glm::acos(glm::dot(normalizedPos, normal));
 }
 
-FishingMinigame::FishingMinigame(const FishDef& fishData) :
+FishingMinigame::FishingMinigame(const FishDef& fishData, std::function<void(FishingMinigameResult& result)> onFinished) :
     mFishDef(fishData),
     mPlayerRadius(BOUNDARY_RADIUS * 0.15f),
-    mFishRadius(getFishRadius(fishData))
+    mFishRadius(getFishRadius(fishData)),
+    mOnFinished(onFinished)
 
 {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
@@ -71,7 +72,8 @@ FishingMinigame::~FishingMinigame()
 {
 }
 
-FishingMinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolution, f32 elapsedSec) {
+MinigameResultType FishingMinigame::updateAndRender(const f32v2 screenResolution, f32 elapsedSec) {
+    ASSERT_RENDER_THREAD();
     mCurrentScreenResolution = screenResolution;
 
     mFishRadius = getFishRadius(mFishDef);
@@ -79,13 +81,29 @@ FishingMinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolut
     FishingMinigameResult result;
     result.result = update();
     render(elapsedSec);
+
+    if (result.result != MinigameResultType::InProgress && mOnFinished) {
+        mOnFinished(result);
+        mOnFinished = nullptr;
+    }
     /*if (result.result == MinigameResultType::Success) {
         assert(false);
     }
     if (result.result == MinigameResultType::Fail) {
         assert(false);
     }*/
-    return result;
+    return result.result;
+}
+
+void FishingMinigame::abort() {
+    mStatus = MinigameResultType::Fail;
+
+    if (mOnFinished) {
+        FishingMinigameResult result;
+        result.result = MinigameResultType::Fail;
+        mOnFinished(result);
+        mOnFinished = nullptr;
+    }
 }
 
 MinigameResultType FishingMinigame::update() {
@@ -126,6 +144,8 @@ void FishingMinigame::render(f32 elapsedSec) {
     constexpr f32 BOUNDARY_RADIUS_SIZE_RATIO = 1.0f / 0.527f; ////(sDebugOptions.mDebugFloat02 ? sDebugOptions.mDebugFloat02 : 1.0f);
     const f32v2 arenaSize = f32v2(BOUNDARY_RADIUS * 2.0f * BOUNDARY_RADIUS_SIZE_RATIO);
 
+    const f32 aspectRatio = mCurrentScreenResolution.x / mCurrentScreenResolution.y;
+
     // Scaled transform
     const f32v2 boundarySize = getBoundarySize(mCurrentScreenResolution);
     const f32 screenScale = boundarySize.y / arenaSize.y;
@@ -133,7 +153,7 @@ void FishingMinigame::render(f32 elapsedSec) {
         screenScale * (2.0f / mCurrentScreenResolution.x), 0, 0, 0,
         0, screenScale * (-2.0f / mCurrentScreenResolution.y), 0, 0,
         0, 0, 1.0f, 0,
-        0, 0, 0, 1.0f
+        -0.5f, 0, 0, 1.0f
     );
 
     MaterialRenderer::bindMaterialForRender(*mUIShader);
@@ -141,6 +161,7 @@ void FishingMinigame::render(f32 elapsedSec) {
 
     // Arena
     mUIParticleSystem->setParticleScale(mArenaParticleID, arenaSize);
+    mUIParticleSystem->setParticleScale(mBackgroundParticleID, arenaSize * 0.6f);
 
     // Player
     mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0f));
@@ -169,18 +190,24 @@ void FishingMinigame::initUIParticles() {
         )
     );
 
+    const char* possibleTokens[4] = {
+        "fish_token_01",
+        "fish_token_02",
+        "fish_token_03",
+        "fish_token_04",
+    };
+
     mBackgroundParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_circle").id);
-    mUIParticleSystem->setParticleScale(mBackgroundParticleID, f32v2(10000.0f));
-    mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::Black);
+    mUIParticleSystem->setParticleMaterial(mBackgroundParticleID, materialRepository.getMaterialDesc("fishing_bg").id);
+    mUIParticleSystem->setParticleColor(mBackgroundParticleID, color::White);
 
     mArenaParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mArenaParticleID, materialRepository.getMaterialDesc("fishing_border").id);
     mUIParticleSystem->setParticleColor(mArenaParticleID, color::White);
 
     mFishParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc("hard_particle").id);
-    mUIParticleSystem->setParticleColor(mFishParticleID, color::Red);
+    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc(possibleTokens[Random::xorshf96() % 4]).id);
+    mUIParticleSystem->setParticleColor(mFishParticleID, color::White);
 
     mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
     mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fish_player").id);
@@ -345,7 +372,7 @@ void FishingMinigame::initBlockerParticles() {
     const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
 
     // Blocker particles
-    constexpr int BLOCKER_PARTICLE_COUNT = 3;
+    constexpr int BLOCKER_PARTICLE_COUNT = 30;
     if (BLOCKER_PARTICLE_COUNT) {
         mBlockerParticleSystem = std::make_unique<CPUParticleSystem2D>(
             [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
@@ -439,7 +466,7 @@ void FishingMinigame::initBlockerParticles() {
         );
         mBlockerParticles.resize(BLOCKER_PARTICLE_COUNT);
         for (int i = 0; i < BLOCKER_PARTICLE_COUNT; ++i) {
-            constexpr f32 PARTICLE_SCALE = 30.0f;
+            constexpr f32 PARTICLE_SCALE = 5.0f;
             f32v2 randomPos(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf()); // Spawn on bottom half always
             randomPos = glm::normalize(randomPos) * (Random::getCachedRandomf() * BOUNDARY_RADIUS + mFishRadius + PARTICLE_SCALE * 0.5f);
             mBlockerParticles[i] = mBlockerParticleSystem->tryAddParticle(f32v3(
@@ -447,14 +474,14 @@ void FishingMinigame::initBlockerParticles() {
                 randomPos.y,
                 0.0f)
             );
-            constexpr f32 RANDOM_VEL_FORCE = 15.0f;
+            constexpr f32 RANDOM_VEL_FORCE = 30.0f;
             mBlockerParticleSystem->setParticleVelocity(
                 mBlockerParticles[i],
                 f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
             );
             mBlockerParticleSystem->setParticleScale(mBlockerParticles[i], f32v2(PARTICLE_SCALE));
         }
-        mBlockerParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("hard_particle").id);
+        mBlockerParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("fish_bubble").id);
         mBlockerParticleSystem->setGlobalParticleColor(color::White);
     }
 }

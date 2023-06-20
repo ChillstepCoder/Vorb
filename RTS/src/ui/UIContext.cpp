@@ -9,6 +9,7 @@
 #include "world/IWorld.h"
 #include "ui/editor/EditorRoot.h"
 #include "ui/editor/IEditorViewportPanel.h"
+#include "ui/minigame/LocalMinigameContext.h"
 
 #include "screens/ScreenState.h"
 
@@ -16,6 +17,7 @@ UIContext* UIContext::sInstance = nullptr;
 
 UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScreenResolution(screenResolution), mWindow(window) {
     mEditorRoot = std::make_unique<EditorRoot>();
+    mMinigameContext = std::make_unique<LocalMinigameContext>();
 }
 
 UIContext::~UIContext() {
@@ -26,7 +28,7 @@ void UIContext::updateEditors(IWorld* world, const Camera3D& camera, const f32v3
     mEditorRoot->updateEditors(world, camera, mousePickRay);
 }
 
-void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
+void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
     
     mEditorRoot->updateAndRenderUI(activeGBuffer);
     
@@ -53,6 +55,8 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
             mPauseMenuPanel.reset();
         }
     }
+
+    mMinigameContext->updateAndRender(mScreenResolution, elapsedSec);
 }
 
 void UIContext::renderEditorBrushDecals(const Camera3D& camera) {

@@ -3,18 +3,13 @@
 // TODO: REMOVE
 #include <Vorb/graphics/SpriteBatch.h>
 
+#include "ui/minigame/ILocalMinigame.h"
 #include "definitions/FishDef.h"
 
 class MaterialShader;
 class CPUParticleSystem2D;
 struct MeshGpuData;
 
-enum class MinigameResultType {
-    InProgress,
-    Fail,
-    Success,
-    COUNT
-};
 
 struct FishingMinigameResult {
     MinigameResultType result = MinigameResultType::InProgress;
@@ -29,12 +24,15 @@ struct MinigameDebugTextFloater {
     const char* mText;
 };
 
-class FishingMinigame {
+class FishingMinigame : public ILocalMinigame {
 public:
-    FishingMinigame(const FishDef& fishData);
+    FishingMinigame(const FishDef& fishData, std::function<void(FishingMinigameResult& result)> onFinished);
     ~FishingMinigame();
 
-    FishingMinigameResult updateAndRender(const f32v2 screenResolution, f32 elapsedSec);
+    VORB_NON_COPYABLE_BUT_MOVABLE(FishingMinigame);
+
+    MinigameResultType updateAndRender(const f32v2 screenResolution, f32 elapsedSec) override;
+    void abort() override;
 
 private:
     MinigameResultType update();
@@ -89,6 +87,8 @@ private:
     bool mDidPlayerImpactBottom = false;
     int mTugOfWarValue = 0; // Positive is winning
     MinigameResultType mStatus = MinigameResultType::InProgress;
+
+    std::function<void(FishingMinigameResult& result)> mOnFinished;
 
     TimePoint mEndTransitionTimeStart = TimePoint::max();
 

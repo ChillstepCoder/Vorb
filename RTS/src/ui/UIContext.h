@@ -8,6 +8,7 @@ class TileInspectionPanel;
 struct TileHandle;
 class PauseMenuPanel;
 class EditorRoot;
+class LocalMinigameContext;
 
 DECL_VG(class GBuffer);
 
@@ -22,7 +23,7 @@ public:
     void operator=(const UIContext&) = delete;
     
     void updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay);
-    void updateAndRenderUI(const vg::GBuffer* activeGBuffer);
+    void updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec);
     void renderEditorBrushDecals(const Camera3D& camera);
 
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
@@ -37,6 +38,8 @@ public:
 
     bool shouldPauseGameRendering() const;
 
+    LocalMinigameContext& getMinigameContext() const { return *mMinigameContext; }
+
     EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:
 
@@ -45,6 +48,7 @@ private:
     std::unique_ptr<EditorRoot> mEditorRoot;
     std::unique_ptr<TileInspectionPanel> mTileInspectionPanel;
     std::unique_ptr<PauseMenuPanel> mPauseMenuPanel;
+    std::unique_ptr<LocalMinigameContext> mMinigameContext;
 
     SDL_Window* mWindow;
     f32v2 mScreenResolution;

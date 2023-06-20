@@ -8,13 +8,26 @@
 #include "world/srv/SrvWorldInterface.h"
 #include "debugging/DebugRenderer.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
 #include "time/GameTimeManager.h"
 
+#include "ui/UIContext.h"
+#include "ui/minigame/FishingMinigame.h"
+#include "ui/minigame/LocalMinigameContext.h"
+
 #include "physics/PhysicsConst.h"
 
+#include "resources/ResourceManager.h"
+#include "resources/FishRepository.h"
+
 #include <Vorb/ui/InputDispatcher.h>
+
+struct LocalPlayerFishingMinigameComponent {
+    std::unique_ptr<FishingMinigame> mMinigame;
+};
 
 // Initialize launch position
 constexpr f32 BOBBER_GRAVITY = GRAVITY_Z;
@@ -46,6 +59,9 @@ void FishingComponentSystem::update(IWorld& world, entt::registry& registry) {
         auto& controlCmp = view.get<CharacterControlComponent>(entity);
         updateFishing(world, registry, entity, fishCmp, physCmp, controlCmp);
         if (fishCmp.isDone()) {
+            if (fishCmp.mIsLocalPlayer) {
+                registry.remove<LocalPlayerFishingMinigameComponent>(entity);
+            }
             // TODO: Notify inventory of caught fish and such? minigame result?
             // Tell fish we are done
             if (fishCmp.mTargetFish != INVALID_ENTITY) {
@@ -203,8 +219,16 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
                 if (srvWorld) {
                     FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
                     fishEcosystem.setFishHooked(fishingCmp.mTargetFish, entity);
+                    FishComponent& fish = registry.get<FishComponent>(fishingCmp.mTargetFish);
                     // TODO: Handle NPC and multiplayer as well
                     fishingCmp.mState = FishingComponentState::LocalPlayerMinigame;
+                    const FishDef& fishDef = Services::ResourceManager::ref().getFishRepository().getFish(fish.mFishId);
+                    UIContext::getInstance().getMinigameContext().beginFishingMinigame(fishDef, [this](const FishingMinigameResult& result) {
+                        GameThreadTasks::getInstance().addGenericTaskWithCapture([this](GameThread&, void*) {
+                            LOG_CRITICAL("WHOAAAAA");
+                        }, nullptr);
+                    });
+                    wasMousePressed = false;
                 }
             }
             break;
@@ -218,6 +242,9 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             break;
         }
         case FishingComponentState::LocalPlayerMinigame: {
+            // Only one of these can happen at once as there is only one local player
+            //LocalPlayerFishingMinigameComponent& minigameCmp = registry.get<LocalPlayerFishingMinigameComponent>(entity);
+            //minigameCmp.mMinigame->updateAndRender()
             break;
         }
         default:

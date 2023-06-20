@@ -18,6 +18,7 @@ enum class FishingComponentState {
     COUNT
 };
 
+// TODO: Does it make sense to separate out player data?
 struct FishingComponent {
     FishingComponentState mState = FishingComponentState::Casting;
     f32v3 mBobberPosition = f32v3(0.0f);
@@ -25,6 +26,7 @@ struct FishingComponent {
     f32v3 mBobberVelocity = f32v3(0.0f);
     f32 mCastCharge = 0.0f;
     bool mIsCastInputPressed = false;
+    bool mIsLocalPlayer = false;
     entt::entity mTargetFish = INVALID_ENTITY;
 
     void onBobberGrabbed(entt::entity fishEntity);

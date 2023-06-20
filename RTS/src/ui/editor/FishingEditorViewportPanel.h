@@ -13,7 +13,7 @@ public:
 
     void renderMesh() override;
 
-    void setFishDef(FishDef& fishDef) { mFishDef = &fishDef; mCurrentFishingMinigame = nullptr; }
+    void setFishDef(FishDef& fishDef);
 
 private:
     const MaterialShader* getShader() override;

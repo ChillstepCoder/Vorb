@@ -20,6 +20,7 @@
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
 constexpr f32 MAX_DORMANCY_DURATION_SEC = 120.0f;
 constexpr f32 FISH_COLLIDE_RADIUS = 0.3f; // TODO: Config
+constexpr f32 MAX_FISH_DISTANCE_FROM_SURFACE = FISH_COLLIDE_RADIUS * 1.6f;
 constexpr int MAX_PECK_COUNT = 4;
 constexpr f32 MIN_PECK_COOLDOWN_TIME = 0.5f;
 constexpr f32 MAX_PECK_COOLDOWN_TIME = 2.0f;
@@ -333,7 +334,6 @@ void FishEcosystem::updateActiveFish() {
 
 void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch) {
 
-    constexpr f32 MAX_FISH_DISTANCE_FROM_SURFACE = FISH_COLLIDE_RADIUS * 1.6f;
     constexpr f32 PATH_SUCCESS_DISTANCE_SQ = SQ(0.1f);
 
     FishAIComponent& ai = registry.get<FishAIComponent>(entity);
@@ -414,7 +414,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
         case FishAIState::MovingToPoint: {
 
             // Continue move chance
-            if (Random::getCachedRandomf() <= 0.005f) {
+            if (Random::getCachedRandomf() <= 0.0025f) {
                 getNewMovePosition(container, fishChunk, fish, position, ai);
             }
 
@@ -465,7 +465,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * MAX_SPEED;
                 velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
-                yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, -std::atan2(velocity.mVelocity.y, velocity.mVelocity.x) - M_PI_2f, ROTATION_SPEED * mElapsedSec);
+                yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, std::atan2(velocity.mVelocity.x, velocity.mVelocity.y), ROTATION_SPEED * mElapsedSec);
             }
             break;
         }

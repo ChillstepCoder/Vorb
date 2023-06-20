@@ -450,6 +450,7 @@
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
     <ClCompile Include="src\ui\minigame\FishingMinigame.cpp" />
+    <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp" />
     <ClCompile Include="src\ui\PauseMenuPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
     <ClCompile Include="src\ui\UIContext.cpp" />
@@ -795,6 +796,8 @@
     <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\minigame\FishingMinigame.h" />
+    <ClInclude Include="src\ui\minigame\ILocalMinigame.h" />
+    <ClInclude Include="src\ui\minigame\LocalMinigameContext.h" />
     <ClInclude Include="src\ui\PauseMenuPanel.h" />
     <ClInclude Include="src\ui\TileInspectionPanel.h" />
     <ClInclude Include="src\ui\UIContext.h" />

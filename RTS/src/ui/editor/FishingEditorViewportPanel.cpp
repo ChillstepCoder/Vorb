@@ -54,14 +54,14 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
         }
     } else {
         if (ImGui::Button("Start Minigame")) {
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr);
         }
     }
     FishingMinigameFishData& minigameData = mFishDef->mMinigameData;
     ImGui::Text("Test Minigame Data");
     ImGui::Separator();
-    ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 2500.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-    ImGui::SliderFloat("Fish Drag", &minigameData.mFishDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 4000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Fish Drag", &minigameData.mFishDrag, 0.0f, 1.0f);
     ImGui::SliderFloat("Fish Damage Rate", &minigameData.mFishDamageRate, 0.0f, 1.0f);
     ImGui::SliderFloat("Center Magnitism", &minigameData.mCenterMagnitism, 0.0f, 200.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Gravity", &minigameData.mGravity, 0.0f, 1000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -83,8 +83,8 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     // Player Data
     // TODO: Shared struct for physics and motion info
     ImGui::SliderFloat("Player Max Speed", &minigameData.mPlayerMaxSpeed, 0.0f, 600.0f);
-    ImGui::SliderFloat("Player Acceleration", &minigameData.mPlayerAcceleration, 0.0f, 2500.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-    ImGui::SliderFloat("Player Drag", &minigameData.mPlayerDrag, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Player Acceleration", &minigameData.mPlayerAcceleration, 0.0f, 4000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Player Drag", &minigameData.mPlayerDrag, 0.0f, 1.0f);
     ImGui::SliderFloat("Player Wall Bouncyness", &minigameData.mPlayerWallBouncyness, 0.0f, 1.0f);
     ImGui::SliderFloat2("Player Stickyness", &minigameData.mPlayerStickyness.x, 0.0f, 1.0f);
     ImGui::SliderFloat("Player Strength", &minigameData.mPlayerStrength, 0.0f, 2000.0f);
@@ -104,18 +104,23 @@ const MaterialShader* FishingEditorViewportPanel::getShader() {
 
 void FishingEditorViewportPanel::renderMesh() {
     if (mCurrentFishingMinigame) {
-        FishingMinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
-        if (result.result == MinigameResultType::Fail) {
+        MinigameResultType result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
+        if (result == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);
-        } else if (result.result == MinigameResultType::Success) {
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr);
+        } else if (result == MinigameResultType::Success) {
             LOG_INFO("Fishing success!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr);
         }
     }
     else {
         renderFishModel();
     }
+}
+
+void FishingEditorViewportPanel::setFishDef(FishDef& fishDef) {
+    mCurrentFishingMinigame.reset();
+    mFishDef = &fishDef;
 }
 
 void FishingEditorViewportPanel::renderFishModel() {
