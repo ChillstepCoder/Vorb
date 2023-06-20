@@ -145,15 +145,17 @@ void FishingMinigame::render(f32 elapsedSec) {
     const f32v2 arenaSize = f32v2(BOUNDARY_RADIUS * 2.0f * BOUNDARY_RADIUS_SIZE_RATIO);
 
     const f32 aspectRatio = mCurrentScreenResolution.x / mCurrentScreenResolution.y;
-
     // Scaled transform
     const f32v2 boundarySize = getBoundarySize(mCurrentScreenResolution);
     const f32 screenScale = boundarySize.y / arenaSize.y;
+    // This should get us about where we want on the screen :)
+    constexpr f32 XOFFSET_MAX_DISTANCE = 0.5f;
+    const f32 xOffset = (aspectRatio - 1.0f) * XOFFSET_MAX_DISTANCE;
     f32m4 camera(
         screenScale * (2.0f / mCurrentScreenResolution.x), 0, 0, 0,
         0, screenScale * (-2.0f / mCurrentScreenResolution.y), 0, 0,
         0, 0, 1.0f, 0,
-        -0.5f, 0, 0, 1.0f
+        -xOffset, 0, 0, 1.0f
     );
 
     MaterialRenderer::bindMaterialForRender(*mUIShader);
