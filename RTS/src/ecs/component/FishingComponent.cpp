@@ -3,6 +3,7 @@
 
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/CharacterControlComponent.h"
+#include "ecs/component/PlayerControlComponent.h"
 
 #include "world/ecosystem/FishEcosystem.h"
 #include "world/srv/SrvWorldInterface.h"
@@ -25,10 +26,6 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-struct LocalPlayerFishingMinigameComponent {
-    std::unique_ptr<FishingMinigame> mMinigame;
-};
-
 // Initialize launch position
 constexpr f32 BOBBER_GRAVITY = GRAVITY_Z;
 
@@ -39,13 +36,15 @@ FishingComponentSystem::FishingComponentSystem() {
             mWasButtonPressed = true;
         }
     });
+
+    mLocalPlayerMinigameGameThreadData = std::make_unique<FishingMinigameGameThreadData>();
 }
 
 FishingComponentSystem::~FishingComponentSystem() {
 
 }
 
-void FishingComponentSystem::update(IWorld& world, entt::registry& registry) {
+void FishingComponentSystem::update(IWorld& world, entt::registry& registry, f32 elapsedSec) {
 
     mTimeStep = Services::GameTimeManager::ref().getTimestep();
 
@@ -57,18 +56,26 @@ void FishingComponentSystem::update(IWorld& world, entt::registry& registry) {
         auto& fishCmp = view.get<FishingComponent>(entity);
         auto& physCmp = view.get<PhysicsComponent>(entity);
         auto& controlCmp = view.get<CharacterControlComponent>(entity);
-        updateFishing(world, registry, entity, fishCmp, physCmp, controlCmp);
+        updateFishing(world, registry, entity, fishCmp, physCmp, controlCmp, elapsedSec);
         if (fishCmp.isDone()) {
             if (fishCmp.mIsLocalPlayer) {
-                registry.remove<LocalPlayerFishingMinigameComponent>(entity);
+                if (mLocalPlayerControlLocked) {
+                    --registry.get<PlayerControlComponent>(entity).mInputLockCount;
+                    mLocalPlayerControlLocked = false;
+                }
             }
             // TODO: Notify inventory of caught fish and such? minigame result?
             // Tell fish we are done
             if (fishCmp.mTargetFish != INVALID_ENTITY) {
                 SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-                if (srvWorld ) {
+                if (srvWorld) {
                     FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
-                    fishEcosystem.clearFishFollowTarget(fishCmp.mTargetFish);
+                    if (fishCmp.mState == FishingComponentState::Success) {
+                        fishEcosystem.setFishCaught(fishCmp.mTargetFish, entity);
+                    }
+                    else {
+                        fishEcosystem.clearFishFollowTarget(fishCmp.mTargetFish);
+                    }
                 }
             }
             componentsToRemove.emplace_back(entity);
@@ -100,15 +107,11 @@ void castLine(FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterCon
     fishCmp.mBobberPosition = physCmp.getPosition() + f32v3(playerDir.x, playerDir.y, 1.1f);
 
     // Compute initial velocities using equation of motion
-    fishCmp.mBobberVelocity.x = (castTargetPosition.x - fishCmp.mBobberPosition.x) / totalCastTimeSec;
-    fishCmp.mBobberVelocity.y = (castTargetPosition.y - fishCmp.mBobberPosition.y) / totalCastTimeSec;
-    // z = z0 + v0*t - 0.5*g*t^2
-    fishCmp.mBobberVelocity.z = (castTargetPosition.z - fishCmp.mBobberPosition.z - 0.5 * BOBBER_GRAVITY * SQ(totalCastTimeSec)) / totalCastTimeSec;
-
+    fishCmp.mBobberVelocity = MathUtil::computeInitialProjectileVelocityToTarget(fishCmp.mBobberPosition, castTargetPosition, totalCastTimeSec, BOBBER_GRAVITY);
     fishCmp.mState = FishingComponentState::Casted;
 }
 
-void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, entt::entity entity, FishingComponent& fishingCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp) {
+void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, entt::entity entity, FishingComponent& fishingCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp, f32 elapsedSec) {
     ASSERT_GAME_THREAD();
     // TODO: Configurable
     constexpr f32 RETICLE_DIMS = 0.5f;
@@ -214,6 +217,8 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             assert(fishingCmp.mTargetFish != INVALID_ENTITY);
             if (wasMousePressed) {
                 // Grab fish!
+                fishingCmp.mTargetPosition = fishingCmp.mBobberPosition;
+               
                 // TODO Server version
                 SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
                 if (srvWorld) {
@@ -221,11 +226,26 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
                     fishEcosystem.setFishHooked(fishingCmp.mTargetFish, entity);
                     FishComponent& fish = registry.get<FishComponent>(fishingCmp.mTargetFish);
                     // TODO: Handle NPC and multiplayer as well
+                    fishingCmp.mIsLocalPlayer = true;
                     fishingCmp.mState = FishingComponentState::LocalPlayerMinigame;
                     const FishDef& fishDef = Services::ResourceManager::ref().getFishRepository().getFish(fish.mFishId);
-                    UIContext::getInstance().getMinigameContext().beginFishingMinigame(fishDef, [this](const FishingMinigameResult& result) {
-                        GameThreadTasks::getInstance().addGenericTaskWithCapture([this](GameThread&, void*) {
-                            LOG_CRITICAL("WHOAAAAA");
+
+                    // Lock player control
+                    ++registry.get<PlayerControlComponent>(entity).mInputLockCount;
+                    mLocalPlayerControlLocked = true;
+
+                    UIContext::getInstance().getMinigameContext().beginFishingMinigame(fishDef, mLocalPlayerMinigameGameThreadData.get(), [this, entity, &registry, &world](const FishingMinigameResult& result) {
+                        GameThreadTasks::getInstance().addGenericTaskWithCapture([this, entity, result, &registry, &world](GameThread&, void*) {
+                            SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
+                            assert(srvWorld && "local minigame currently requires srvWorld");
+                            FishingComponent& fishingCmp = registry.get<FishingComponent>(entity);
+                            if (result.result == MinigameResultType::Success) {
+                                fishingCmp.mState = FishingComponentState::Success;
+                            }
+                            else {
+                                fishingCmp.mState = FishingComponentState::Fail;
+                            }
+                            static_assert(e_count(MinigameResultType) == 3);
                         }, nullptr);
                     });
                     wasMousePressed = false;
@@ -242,9 +262,26 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             break;
         }
         case FishingComponentState::LocalPlayerMinigame: {
-            // Only one of these can happen at once as there is only one local player
-            //LocalPlayerFishingMinigameComponent& minigameCmp = registry.get<LocalPlayerFishingMinigameComponent>(entity);
-            //minigameCmp.mMinigame->updateAndRender()
+            wasMousePressed = false; // Never accidentally abort minigame
+            f32v2 bobberOffset;
+            int tugOfWarValue;
+            { // Copy data with minimal critical section
+                std::lock_guard lock(mLocalPlayerMinigameGameThreadData->mMutex);
+                bobberOffset = mLocalPlayerMinigameGameThreadData->mBobberOffset;
+                tugOfWarValue = mLocalPlayerMinigameGameThreadData->mTugOfWarValue;
+            }
+            const f32 playerAngle = controlCmp.mControllerAngle;
+            bobberOffset = MathUtil::rotateVector2DRad(bobberOffset, -playerAngle) * 2.5f;
+            // TODO: Ground collision
+            const f32 zPos = (-2 + tugOfWarValue) * 0.3f;
+            fishingCmp.mBobberPosition = MathUtil::lerpWithDeltaTime(fishingCmp.mBobberPosition, f32v3(fishingCmp.mTargetPosition.x + bobberOffset.x, fishingCmp.mTargetPosition.y + bobberOffset.y, zPos), 0.99, elapsedSec);
+            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color::White, 2);
+            break;
+        }
+        case FishingComponentState::Success: {
+            break;
+        }
+        case FishingComponentState::Fail: {
             break;
         }
         default:

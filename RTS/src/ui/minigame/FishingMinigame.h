@@ -24,9 +24,15 @@ struct MinigameDebugTextFloater {
     const char* mText;
 };
 
+struct FishingMinigameGameThreadData {
+    std::mutex mMutex;
+    f32v2 mBobberOffset = f32v2(0.0f);
+    int mTugOfWarValue = 0;
+};
+
 class FishingMinigame : public ILocalMinigame {
 public:
-    FishingMinigame(const FishDef& fishData, std::function<void(FishingMinigameResult& result)> onFinished);
+    FishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(FishingMinigameResult& result)> onFinished);
     ~FishingMinigame();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(FishingMinigame);
@@ -87,6 +93,9 @@ private:
     bool mDidPlayerImpactBottom = false;
     int mTugOfWarValue = 0; // Positive is winning
     MinigameResultType mStatus = MinigameResultType::InProgress;
+
+    // Optional, used to position bobber and fish in world
+    FishingMinigameGameThreadData* mGameThreadData = nullptr;
 
     std::function<void(FishingMinigameResult& result)> mOnFinished;
 

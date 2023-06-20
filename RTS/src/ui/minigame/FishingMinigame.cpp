@@ -45,11 +45,12 @@ f32 getAngleOffset(const f32v2 normalizedPos, const f32v2 normal) {
     return glm::acos(glm::dot(normalizedPos, normal));
 }
 
-FishingMinigame::FishingMinigame(const FishDef& fishData, std::function<void(FishingMinigameResult& result)> onFinished) :
+FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(FishingMinigameResult& result)> onFinished) :
     mFishDef(fishData),
     mPlayerRadius(BOUNDARY_RADIUS * 0.15f),
     mFishRadius(getFishRadius(fishData)),
-    mOnFinished(onFinished)
+    mOnFinished(onFinished),
+    mGameThreadData(gameThreadData)
 
 {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
@@ -80,6 +81,14 @@ MinigameResultType FishingMinigame::updateAndRender(const f32v2 screenResolution
 
     FishingMinigameResult result;
     result.result = update();
+
+    // Optionally update game thread data
+    if (mGameThreadData) {
+        std::lock_guard lock(mGameThreadData->mMutex);
+        mGameThreadData->mTugOfWarValue = mTugOfWarValue;
+        mGameThreadData->mBobberOffset = f32v2(mFishPosition.x, mFishPosition.y) / BOUNDARY_RADIUS;
+    }
+
     render(elapsedSec);
 
     if (result.result != MinigameResultType::InProgress && mOnFinished) {
@@ -166,6 +175,27 @@ void FishingMinigame::render(f32 elapsedSec) {
     mUIParticleSystem->setParticleScale(mBackgroundParticleID, arenaSize * 0.6f);
 
     // Player
+    // TODO: Replace
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    MaterialID materials[8] = {
+        materialRepository.getMaterialDesc("soft_particle").id,
+        materialRepository.getMaterialDesc("particle_v0").id,
+        materialRepository.getMaterialDesc("particle_v1").id,
+        materialRepository.getMaterialDesc("particle_v2").id,
+        materialRepository.getMaterialDesc("particle_v3").id,
+        materialRepository.getMaterialDesc("particle_v4").id,
+        materialRepository.getMaterialDesc("particle_v5").id,
+        materialRepository.getMaterialDesc("particle_v6").id,
+    };
+    // TODO: REMOVE
+    if (minigameData.mParticleMaterial == 0) {
+        mPlayerParticleSystem->setGlobalParticleScale(f32v2(5.0f, 10.0f) * f32v2(minigameData.mParticleScale));
+    }
+    else {
+        mPlayerParticleSystem->setGlobalParticleScale(5.0f * f32v2(minigameData.mParticleScale));
+    }
+    mPlayerParticleSystem->setGlobalMaterialID(materials[minigameData.mParticleMaterial]);
     mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0f));
     mUIParticleSystem->setParticlePosition(mPlayerParticleID, f32v3(mPlayerPosition.x, mPlayerPosition.y, 0.0f));
 
@@ -274,7 +304,7 @@ void FishingMinigame::initPlayerParticles() {
                     const f32 pushAlpha = pow(glm::clamp(1.0f - (fishOffsetDist - mFishRadius) / additionalFishMagnetismDist, 0.0f, 1.0f), 8.0f);
 
                     equilibriumOffset *= 1.0f + pushAlpha;
-                    particleData.mScales[i].y = 1.0f + pushAlpha;
+                    //particleData.mScales[i].y = 1.0f + pushAlpha;
 
                     // coalesce more on the edge
                     const f32v2 offsetFromFishCenter = (mPlayerPosition + equilibriumOffset) - mFishPosition;
@@ -294,7 +324,7 @@ void FishingMinigame::initPlayerParticles() {
                     }
 
                     const f32 pushColorIntensity = pow(pushAlpha, 0.1f) * glm::clamp(velocity.y * -0.05f, 0.0f, 1.0f);
-                    particleData.mColors[i] = lerp(particleData.mColors[i], color4(0, 255, 0, 255), pushColorIntensity);
+                    particleData.mColors[i] = lerp(particleData.mColors[i], color::White, pushColorIntensity); // TODO: Used to be green
                 }
             }
 

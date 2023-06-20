@@ -77,6 +77,8 @@ extern bool IS_SHUTTING_DOWN;
 
 #include "instrumentation/instrumentor.h"
 
+// Const
+#include "physics/PhysicsConst.h"
 #include "world/ChunkConst.h"
 
 // Corner winding
@@ -87,6 +89,7 @@ extern bool IS_SHUTTING_DOWN;
 
 // Items
 #include "item/ItemConst.h"
+
 
 // **************** Constexpr vectors *****************
 #include "math/ConstVectors.h"

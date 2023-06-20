@@ -7,7 +7,7 @@ class SrvEntityComponentSystem : public IEntityComponentSystem
 public:
     SrvEntityComponentSystem(IWorld& world) : IEntityComponentSystem(world) {};
 
-    void tick() override;
+    void tick(f32 elapsedSec) override;
 
     // Begin IEntityComponentSystem interface
 	entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) override;

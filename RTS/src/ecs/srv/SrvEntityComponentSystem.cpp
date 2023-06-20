@@ -8,10 +8,10 @@
 #include "network/srv/GameServer.h"
 #include "network/srv/SrvMessage.h"
 
-void SrvEntityComponentSystem::tick()
+void SrvEntityComponentSystem::tick(f32 elapsedSec)
 {
     PROFILE_FUNCTION();
-    IEntityComponentSystem::tick();
+    IEntityComponentSystem::tick(elapsedSec);
     mBusinessSystem.update(mRegistry);
     mPersonAISystem.update(mWorld, mRegistry);
     mNavigationSystem.update(mWorld, mRegistry);

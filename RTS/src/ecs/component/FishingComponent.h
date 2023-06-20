@@ -2,6 +2,7 @@
 
 class IWorld;
 class PhysicsComponent;
+struct FishingMinigameGameThreadData;
 struct CharacterControlComponent;
 
 enum class FishingComponentState {
@@ -39,9 +40,9 @@ public:
     FishingComponentSystem();
     ~FishingComponentSystem();
 
-    void update(IWorld& world, entt::registry& registry);
+    void update(IWorld& world, entt::registry& registry, f32 elapsedSec);
 private:
-    void updateFishing(IWorld& world, entt::registry& registry, entt::entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp);
+    void updateFishing(IWorld& world, entt::registry& registry, entt::entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp, f32 elapsedSec);
 
     f32 mTimeStep = 0.0f;
 
@@ -49,4 +50,7 @@ private:
     // thread, so the input thread can process at 144fps even when game thread and render thread are ticking slower.
     // - What does this give us? it is equivalent to checking an atomic bool, just cleaner
     std::atomic_bool mWasButtonPressed;
+
+    std::unique_ptr<FishingMinigameGameThreadData> mLocalPlayerMinigameGameThreadData;
+    bool mLocalPlayerControlLocked = false;
 };

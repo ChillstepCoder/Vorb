@@ -60,8 +60,7 @@ namespace MathUtil {
         rv.z = in.z;
         return rv;
     }
-    inline f32v2 rotateVector2D(const f32v2& in, float angleDeg) {
-        const float angleRad = DEG_TO_RAD(angleDeg);
+    inline f32v2 rotateVector2DRad(const f32v2& in, float angleRad) {
         const float cs = cosf(angleRad);
         const float sn = sinf(angleRad);
 
@@ -69,6 +68,17 @@ namespace MathUtil {
         rv.x = in.x * cs - in.y * sn;
         rv.y = in.x * sn + in.y * cs;
         return rv;
+    }
+    inline f32v2 rotateVector2D(const f32v2& in, float angleDeg) {
+        return rotateVector2DRad(in, DEG_TO_RAD(angleDeg));
+    }
+    inline f32v3 computeInitialProjectileVelocityToTarget(f32v3 projectileStart, f32v3 target, f32 arrivalTime, f32 gravity) {
+        f32v3 velocity;
+        velocity.x = (target.x - projectileStart.x) / arrivalTime;
+        velocity.y = (target.y - projectileStart.y) / arrivalTime;
+        // z = z0 + v0*t - 0.5*g*t^2
+        velocity.z = (target.z - projectileStart.z - 0.5 * gravity * SQ(arrivalTime)) / arrivalTime;
+        return velocity;
     }
 
     namespace Easing {
@@ -184,8 +194,7 @@ namespace MathUtil {
         return normalizeAngle(newYaw);
     }
     // Returns new angular speed
-    inline float getNewAngularSpeedToTargetYawSmooth(f32 currentAngularSpeed, f32 currentYaw, f32 targetYaw, f32 maxAngularSpeed, f32 elapsedSec) {
-        constexpr f32 angularAcceleration = 3.0f;
+    inline float getNewAngularSpeedToTargetYawSmooth(f32 currentAngularSpeed, f32 currentYaw, f32 targetYaw, f32 maxAngularSpeed, f32 angularAcceleration, f32 elapsedSec) {
         float yawDifference = currentYaw - targetYaw;
         yawDifference = MathUtil::normalizeAngle(yawDifference);
 
@@ -208,12 +217,11 @@ namespace MathUtil {
         return currentAngularSpeed;
     }
     inline f32v2 directionFromYaw2D(f32 yaw) {
-        return f32v2(cos(yaw), sin(yaw));
+        return f32v2(sin(yaw), cos(yaw));
     }
 
     // +Y is forward
     inline f32v3 directionFromYaw3D(f32 yaw) {
-        //yaw += M_PI_2f;
         return f32v3(sin(yaw), cos(yaw), 0.0f);
     }
 }

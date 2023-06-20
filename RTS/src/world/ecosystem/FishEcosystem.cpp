@@ -20,11 +20,15 @@
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
 constexpr f32 MAX_DORMANCY_DURATION_SEC = 120.0f;
 constexpr f32 FISH_COLLIDE_RADIUS = 0.3f; // TODO: Config
+constexpr f32 FISH_HALF_LENGTH = FISH_COLLIDE_RADIUS;
 constexpr f32 MAX_FISH_DISTANCE_FROM_SURFACE = FISH_COLLIDE_RADIUS * 1.6f;
-constexpr int MAX_PECK_COUNT = 4;
-constexpr f32 MIN_PECK_COOLDOWN_TIME = 0.5f;
-constexpr f32 MAX_PECK_COOLDOWN_TIME = 2.0f;
+constexpr int MAX_PECK_COUNT = 5;
+constexpr f32 MIN_PECK_COOLDOWN_TIME = 0.75f;
+constexpr f32 MAX_PECK_COOLDOWN_TIME = 3.0f;
+constexpr f32 FISH_DRAG_FORCE = 0.7f;
 
+constexpr f32 PATH_SUCCESS_DISTANCE_SQ = SQ(0.1f);
+constexpr f32 FISH_ANGULAR_ACCELERATION = 3.0f;
 constexpr f32 MAX_FISH_ANGULAR_SPEED = 2.0f;
 
 FishEcosystem::FishEcosystem(IWorld& world) :
@@ -151,6 +155,16 @@ void FishEcosystem::setFishHooked(entt::entity fishEntity, entt::entity followTa
     FishAIComponent& ai = registry.get<FishAIComponent>(fishEntity);
     assert(ai.mFollowTarget == followTarget);
     ai.mAIState = FishAIState::OnFishingLine;
+}
+
+void FishEcosystem::setFishCaught(entt::entity fishEntity, entt::entity catcher) {
+    constexpr f32 CATCH_TIME_SEC = 0.6f;
+    entt::registry& registry = mWorld.getECS().mRegistry;
+    FishAIComponent& ai = registry.get<FishAIComponent>(fishEntity);
+    assert(ai.mFollowTarget == catcher);
+    ai.mAIState = FishAIState::Caught;
+    ai.mTimeUntilCaughtFinished = CATCH_TIME_SEC;
+    registry.get<VelocityComponent>(fishEntity).mVelocity = MathUtil::computeInitialProjectileVelocityToTarget(registry.get<PositionComponent>(fishEntity).mPosition, registry.get<PositionComponent>(catcher).mPosition, CATCH_TIME_SEC, GRAVITY_Z);
 }
 
 void FishEcosystem::initEventHandlers() {
@@ -302,7 +316,7 @@ void FishEcosystem::updateActiveFish() {
                 fishChunk.mInUpdateRange = true;
                 renderState.mFish.resize(fishChunk.mFish.size());
                 renderState.mChunkCenter = f32v2(fishChunk.mWorldPos) + f32v2(HALF_CHUNK_WIDTH);
-                for (size_t j = 0; j < fishChunk.mFish.size(); ++j) {
+                for (size_t j = 0; j < fishChunk.mFish.size();) {
                     entt::entity fishEntity = fishChunk.mFish[j];
                     FishRenderData& fishData = renderState.mFish[j];
                     FishComponent& fishCmp = registry.get<FishComponent>(fishEntity);
@@ -316,7 +330,15 @@ void FishEcosystem::updateActiveFish() {
                     fishData.time = fishCmp.mAnimationTime; // TODO: Animate
 
                     // Update fish
-                    updateFish(registry, fishEntity, container, fishChunk, fishCmp, positionCmp, yawPitchCmp);
+                    if (updateFish(registry, fishEntity, container, fishChunk, fishCmp, positionCmp, yawPitchCmp)) {
+                        // Fish is gone
+                        registry.destroy(fishEntity);
+                        fishChunk.mFish[j] = fishChunk.mFish.back();
+                        fishChunk.mFish.pop_back();
+                    }
+                    else {
+                        ++j;
+                    }
                 }
             }
             else {
@@ -332,9 +354,7 @@ void FishEcosystem::updateActiveFish() {
     }
 }
 
-void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch) {
-
-    constexpr f32 PATH_SUCCESS_DISTANCE_SQ = SQ(0.1f);
+bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch) {
 
     FishAIComponent& ai = registry.get<FishAIComponent>(entity);
     VelocityComponent& velocity = registry.get<VelocityComponent>(entity);
@@ -350,11 +370,12 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
     yawPitch.mYaw = MathUtil::normalizeAngle(yawPitch.mYaw);
     yawPitch.mPitch += fish.mAngularSpeed.y * mElapsedSec;
     yawPitch.mPitch = MathUtil::normalizeAngle(yawPitch.mPitch);
-    if (position.mPosition.z >= -MAX_FISH_DISTANCE_FROM_SURFACE - FISH_COLLIDE_RADIUS) {
-        const f32 lerpAlpha = glm::max(position.mPosition.z - (-MAX_FISH_DISTANCE_FROM_SURFACE - FISH_COLLIDE_RADIUS), 1.0f);
+    // Clamp pitch on surface
+    if (ai.mAIState == FishAIState::PeckBobber && position.mPosition.z >= -MAX_FISH_DISTANCE_FROM_SURFACE - FISH_COLLIDE_RADIUS) {
+        const f32 lerpAlpha = glm::min(position.mPosition.z - (-MAX_FISH_DISTANCE_FROM_SURFACE - FISH_COLLIDE_RADIUS), 1.0f);
         const f32 maxPitch = lerp(M_PI_2F, M_PI_4F * 0.5f, lerpAlpha);
         if (yawPitch.mPitch > maxPitch) {
-            yawPitch.mPitch = maxPitch;
+            yawPitch.mPitch = MathUtil::lerpWithDeltaTime(yawPitch.mPitch, maxPitch, 0.99f, mElapsedSec);
         }
     }
     
@@ -400,11 +421,32 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
         }
     };
 
+    constexpr auto updateAngularSpeedToTargetRotation = [](f32v2& angularSpeed, f32v2 currentYawPitch, f32 yawTarget, f32 pitchTarget, f32 elapsedSec) {
+        // Yaw rotation with acceleration
+        angularSpeed.x = MathUtil::getNewAngularSpeedToTargetYawSmooth(angularSpeed.x, currentYawPitch.x, yawTarget, MAX_FISH_ANGULAR_SPEED, FISH_ANGULAR_ACCELERATION, elapsedSec);
+
+        // Pitch rotation with acceleration
+        angularSpeed.y = MathUtil::getNewAngularSpeedToTargetYawSmooth(angularSpeed.y, currentYawPitch.y, pitchTarget, MAX_FISH_ANGULAR_SPEED, FISH_ANGULAR_ACCELERATION, elapsedSec);
+    };
+
+    constexpr auto attachFishToBobber = [](f32v3& position, f32v2& angularSpeed, f32v3& velocity, f32v2& yawPitch, f32v3 bobberPos, f32 elapsedSec) {
+        constexpr f32 MAX_ANGULAR_SPEED = MAX_FISH_ANGULAR_SPEED * 3.0f;
+        constexpr f32 ANGULAR_ACCELERATION = FISH_ANGULAR_ACCELERATION * 3.0f;
+        f32v3 offsetToBobber = bobberPos - position;
+        if (offsetToBobber == f32v3(0.0f)) {
+            offsetToBobber = f32v3(1.0f, 0.0f, 0.0f);
+        }
+        const f32v3 normalToBobber = glm::normalize(offsetToBobber);
+        const f32 desiredYaw = atan2(offsetToBobber.x, offsetToBobber.y);
+        position = MathUtil::lerpWithDeltaTime(position, bobberPos - normalToBobber * FISH_HALF_LENGTH, 0.999f, elapsedSec);
+        angularSpeed.x = MathUtil::getNewAngularSpeedToTargetYawSmooth(angularSpeed.x, yawPitch.x, desiredYaw, MAX_ANGULAR_SPEED, ANGULAR_ACCELERATION, elapsedSec);
+    };
+
     switch (ai.mAIState) {
         case FishAIState::Idle: {
             // Drag
             decayAngularSpeed(fish.mAngularSpeed, mElapsedSec, rotateDragForce);
-            velocity.mVelocity *= MathUtil::dragForceWithDeltaTime(0.7f, mElapsedSec);
+            velocity.mVelocity *= MathUtil::dragForceWithDeltaTime(FISH_DRAG_FORCE, mElapsedSec);
             if (Random::getCachedRandomf() <= 0.01f) {
                 getNewMovePosition(container, fishChunk, fish, position, ai);
             }
@@ -429,14 +471,11 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
 
-                // Yaw rotation with acceleration
+                // Yaw + pitch rotation with acceleration
                 const f32 targetYaw = std::atan2(velocity.mVelocity.x, velocity.mVelocity.y);
-                fish.mAngularSpeed.x = MathUtil::getNewAngularSpeedToTargetYawSmooth(fish.mAngularSpeed.x, yawPitch.mYaw, targetYaw, MAX_FISH_ANGULAR_SPEED, mElapsedSec);
-
-                // Pitch rotation with acceleration
                 const f32 currentSpeed = sqrt(glm::dot(velocity.mVelocity, velocity.mVelocity));
                 const f32 targetPitch = (velocity.mVelocity.z / currentSpeed) * M_PI_2F * 0.75f;
-                fish.mAngularSpeed.y = MathUtil::getNewAngularSpeedToTargetYawSmooth(fish.mAngularSpeed.y, yawPitch.mPitch, targetPitch, MAX_FISH_ANGULAR_SPEED, mElapsedSec);
+                updateAngularSpeedToTargetRotation(fish.mAngularSpeed, yawPitch.mYawPitch, targetYaw, targetPitch, mElapsedSec);
             }
             break;
         }
@@ -446,7 +485,7 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             ai.mTargetPosition = followFishingCmp.mBobberPosition;
             const f32v3 offsetToTarget = ai.mTargetPosition - position.mPosition;
             const f32 distSq = glm::length2(offsetToTarget);
-            if (distSq <= PATH_SUCCESS_DISTANCE_SQ) {
+            if (distSq <= SQ(FISH_HALF_LENGTH)) {
                 if (ai.mPeckCountRemaining == 0) {
                     ai.mAIState = FishAIState::GrabBobber;
                     followFishingCmp.onBobberGrabbed(entity);
@@ -457,30 +496,35 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                     ai.mAIState = FishAIState::PeckCooldown;
                     ai.mPeckCooldownRemaining = Random::xorshf96f() * (MAX_PECK_COOLDOWN_TIME - MIN_PECK_COOLDOWN_TIME) + MIN_PECK_COOLDOWN_TIME;
                     --ai.mPeckCountRemaining;
+
+                    constexpr f32 BACKWARDS_IMPULSE = 1.4f;
+                    const f32v3 backwardsNormal = -glm::normalize(velocity.mVelocity);
+                    velocity.mVelocity = backwardsNormal * BACKWARDS_IMPULSE;
                 }
             }
             else {
                 constexpr f32 ROTATION_SPEED = 3.0f;
                 constexpr f32 MAX_SPEED = 1.3f;
-                const f32v3 targetVelocity = (offsetToTarget / sqrt(distSq)) * MAX_SPEED;
+                const f32v3 normalToTarget = offsetToTarget / sqrt(distSq);
+                const f32v3 targetVelocity = normalToTarget * MAX_SPEED;
                 velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, targetVelocity, 0.9f, mElapsedSec);
+
+                // Always face bobber
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
-                yawPitch.mYaw = MathUtil::rotateYawToTarget(yawPitch.mYaw, std::atan2(velocity.mVelocity.x, velocity.mVelocity.y), ROTATION_SPEED * mElapsedSec);
+                // Yaw + pitch rotation with acceleration
+                const f32 targetYaw = std::atan2(normalToTarget.x, normalToTarget.y);
+                const f32 targetPitch = (normalToTarget.z) * M_PI_2F * 0.75f;
+                updateAngularSpeedToTargetRotation(fish.mAngularSpeed, yawPitch.mYawPitch, targetYaw, targetPitch, mElapsedSec);
             }
             break;
         }
         case FishAIState::PeckCooldown: {
+            velocity.mVelocity *= MathUtil::dragForceWithDeltaTime(FISH_DRAG_FORCE, mElapsedSec);
             decayAngularSpeed(fish.mAngularSpeed, mElapsedSec, rotateDragForce);
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mPeckCooldownRemaining -= mElapsedSec;
             if (ai.mPeckCooldownRemaining < 0.0f) {
                 ai.mAIState = FishAIState::PeckBobber;
-            }
-            else {
-                // Float away slowly
-                constexpr f32 MAX_SPEED = 1.0f;
-                const f32v3 backwardsDir = MathUtil::directionFromYaw3D(yawPitch.mYaw);
-                velocity.mVelocity = MathUtil::lerpWithDeltaTime(velocity.mVelocity, backwardsDir * MAX_SPEED, 0.95f, mElapsedSec);
             }
             break;
         }
@@ -488,20 +532,31 @@ void FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             decayAngularSpeed(fish.mAngularSpeed, mElapsedSec, rotateDragForce);
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mTargetPosition = followFishingCmp.mBobberPosition;
-            position.mPosition = ai.mTargetPosition;
+            attachFishToBobber(position.mPosition, fish.mAngularSpeed, velocity.mVelocity, yawPitch.mYawPitch, ai.mTargetPosition, mElapsedSec);
             break;
         }
         case FishAIState::OnFishingLine: {
+            decayAngularSpeed(fish.mAngularSpeed, mElapsedSec, rotateDragForce);
             FishingComponent& followFishingCmp = registry.get<FishingComponent>(ai.mFollowTarget);
             ai.mTargetPosition = followFishingCmp.mBobberPosition;
-            position.mPosition = ai.mTargetPosition;
+            attachFishToBobber(position.mPosition, fish.mAngularSpeed, velocity.mVelocity, yawPitch.mYawPitch, ai.mTargetPosition, mElapsedSec);
+            break;
+        }
+        case FishAIState::Caught: {
+            velocity.mVelocity.z += GRAVITY_Z * mElapsedSec;
+            ai.mTimeUntilCaughtFinished -= mElapsedSec;
+            if (ai.mTimeUntilCaughtFinished <= 0) {
+                return true;
+            }
             break;
         }
         default:
             assert(false);
         
     }
-    static_assert(e_count(FishAIState) == 6);
+    static_assert(e_count(FishAIState) == 7);
+
+    return false;
     //fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
     //fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
 }

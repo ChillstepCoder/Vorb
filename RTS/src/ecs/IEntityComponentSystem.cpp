@@ -17,7 +17,7 @@ IEntityComponentSystem::~IEntityComponentSystem() {
 
 }
 
-void IEntityComponentSystem::tick() {
+void IEntityComponentSystem::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 	
@@ -26,7 +26,7 @@ void IEntityComponentSystem::tick() {
   
 	mTimedTileInteractSystem.update(mRegistry);
 
-	mFishingSystem.update(mWorld, mRegistry);
+	mFishingSystem.update(mWorld, mRegistry, elapsedSec);
 
     //mCorpseTable.update();
     
@@ -39,7 +39,7 @@ void IEntityComponentSystem::tick() {
 	}
 }
 
-void IEntityComponentSystem::tickPhysics() {
+void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
 	mPhysicsSystem.update(mWorld, mRegistry);
 	mCharacterControlSystem.update(mRegistry);
 }

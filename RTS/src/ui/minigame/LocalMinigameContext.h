@@ -15,7 +15,7 @@ public:
     void abortCurrentMinigame();
 
     // TODO: Functor? https://stackoverflow.com/questions/18365532/should-i-pass-an-stdfunction-by-const-reference
-    void beginFishingMinigame(const FishDef& fishData, std::function<void(const FishingMinigameResult& result)> onFinished);
+    void beginFishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(const FishingMinigameResult& result)> onFinished);
     FishingMinigame* tryGetActiveFishingMinigame() const;
 private:
     std::unique_ptr<ILocalMinigame> mCurrentMinigame = nullptr;

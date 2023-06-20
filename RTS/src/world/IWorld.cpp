@@ -78,7 +78,7 @@ void IWorld::tickShared(f32 elapsedSec) {
 
     // Update ECS
     // TODO: Move out?
-    mEcs->tick();
+    mEcs->tick(elapsedSec);
 
     mTimeOfDayManager->updateTimeOfDay(0.0f /*TIME IS FROZEN*/);
 
@@ -87,7 +87,7 @@ void IWorld::tickShared(f32 elapsedSec) {
 
     // We dont update for every step, we dont need to
     if (stepCount) {
-        mEcs->tickPhysics();
+        mEcs->tickPhysics(elapsedSec);
     }
 
     mCities->update();

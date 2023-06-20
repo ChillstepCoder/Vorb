@@ -54,7 +54,7 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
         }
     } else {
         if (ImGui::Button("Start Minigame")) {
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
         }
     }
     FishingMinigameFishData& minigameData = mFishDef->mMinigameData;
@@ -78,6 +78,9 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
     ImGui::SliderFloat("Wall Bouncyness", &minigameData.mWallBouncyness, 0.0f, 1.0f);
     ImGui::SliderFloat("Success Angle", &minigameData.mSuccessAngle, 1.0f, 90.0f);
     ImGui::SliderFloat("Fail Angle", &minigameData.mFailAngle, 1.0f, 90.0f);
+    // TMP CONFIG
+    ImGui::SliderInt("Particle Material", &minigameData.mParticleMaterial, 0, 7);
+    ImGui::SliderFloat("Particle Scale", &minigameData.mParticleScale, 0.0f, 3.0f);
     ImGui::Separator();
     ImGui::Text("Player");
     // Player Data
@@ -107,10 +110,10 @@ void FishingEditorViewportPanel::renderMesh() {
         MinigameResultType result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
         if (result == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
         } else if (result == MinigameResultType::Success) {
             LOG_INFO("Fishing success!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
         }
     }
     else {

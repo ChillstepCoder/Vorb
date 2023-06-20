@@ -32,10 +32,16 @@ void LocalMinigameContext::abortCurrentMinigame() {
     }
 }
 
-void LocalMinigameContext::beginFishingMinigame(const FishDef& fishData, std::function<void(const FishingMinigameResult& result)> onFinished) {
+void LocalMinigameContext::beginFishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(const FishingMinigameResult& result)> onFinished) {
+    // Initialize to default state
+    if (gameThreadData) {
+        gameThreadData->mBobberOffset = f32v2(0.0f);
+        gameThreadData->mTugOfWarValue = 0;
+    }
+
     std::lock_guard lock(mQueuedMingameLock);
-    mQueuedMinigameInit = [this, &fishData, onFinished]() {
-        mCurrentMinigame = std::make_unique<FishingMinigame>(fishData, onFinished);
+    mQueuedMinigameInit = [this, &fishData, gameThreadData, onFinished]() {
+        mCurrentMinigame = std::make_unique<FishingMinigame>(fishData, gameThreadData, onFinished);
     };
 
 }

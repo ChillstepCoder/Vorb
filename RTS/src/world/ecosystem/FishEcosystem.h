@@ -32,6 +32,7 @@ enum class FishAIState : ui8 {
     PeckCooldown,
     GrabBobber,
     OnFishingLine,
+    Caught,
     COUNT
 };
 
@@ -39,6 +40,7 @@ struct FishAIComponent {
     union {
         TimePoint mTimeTargetReached = TimePoint::max();
         f32 mPeckCooldownRemaining;
+        f32 mTimeUntilCaughtFinished;
     };
     f32v3 mTargetPosition = f32v3(0.0f);
     FishAIState mAIState = FishAIState::Idle;
@@ -108,6 +110,7 @@ public:
     void setFishFollowBobber(entt::entity fishEntity, entt::entity followTarget);
     void clearFishFollowTarget(entt::entity fishEntity);
     void setFishHooked(entt::entity fishEntity, entt::entity followTarget);
+    void setFishCaught(entt::entity fishEntity, entt::entity catcher);
 private:
     void initEventHandlers();
     void disposeChunkFish(Chunk& chunk);
@@ -115,7 +118,7 @@ private:
     void makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
     bool trySpawnFish(const TileContainer& container, FishChunk& fishChunk, const FishDef& fishDef);
     void updateActiveFish();
-    void updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch);
+    bool updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch);
 
     boost::container::flat_map<ChunkID, FishChunkPtr> mActiveFishChunks;
 

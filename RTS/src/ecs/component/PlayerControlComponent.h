@@ -2,8 +2,12 @@
 
 struct CharacterControlComponent;
 
+enum class PlayerControlFlags : ui8 {
+};
+
 struct PlayerControlComponent {
-	ui16 mPlayerControlFlags = 0;
+	BitFlags<PlayerControlFlags> mPlayerControlFlags;
+	ui8 mInputLockCount = 0; // TODO: LockHandle RAII so we never leak locks
 };
 
 class PlayerControlSystem {
