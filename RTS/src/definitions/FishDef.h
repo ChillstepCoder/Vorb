@@ -14,7 +14,7 @@ struct FishingMinigameFishData {
     f32 mCenterMagnitism = 50.0f; // Gravity to the center of the circle
     f32 mFailAngle = 45.0f;
     int mParticleMaterial = 0;
-    f32 mParticleScale = 1.0f;
+    f32 mParticleScale = 0.56f;
     // TODO:
     f32 mStaminaDepleteRate = 1.0f; // How quickly its stamina bar depletes
     f32 mStaminaRechargeRate = 1.0f; // How quickly its stamina bar refills

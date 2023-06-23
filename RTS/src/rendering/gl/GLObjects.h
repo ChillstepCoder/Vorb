@@ -7,7 +7,8 @@ constexpr GLuint BUFFER_BASE_MESH_SSBO = 3;
 constexpr GLuint BUFFER_BASE_POSITIONS_SSBO = 4;
 constexpr GLuint BUFFER_BASE_SCALES_SSBO = 5;
 constexpr GLuint BUFFER_BASE_COLORS_SSBO = 6;
-constexpr GLuint BUFFER_BASE_MATERIALS_SSBO = 7;
+constexpr GLuint BUFFER_BASE_HDR_COLORS_SSBO = 7;
+constexpr GLuint BUFFER_BASE_MATERIALS_SSBO = 8;
 constexpr GLuint BUFFER_BASE_GRASS_UBO = 9;
 constexpr GLuint BUFFER_BASE_CAMERA_UBO = 10;
 

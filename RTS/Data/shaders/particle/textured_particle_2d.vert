@@ -1,11 +1,13 @@
 uniform mat4 unVP;
 
+uniform vec4 unGlobalOverlayColor = vec4(0.0);
 uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
 uniform uint unBaseInstanceOffset = 0;
 
 uniform uint unIsUsingColor = 0;
+uniform uint unIsUsingHDRColor = 0;
 uniform uint unIsUsingMaterial = 0;
 uniform uint unIsUsingScale = 0;
 
@@ -39,7 +41,12 @@ layout(std430, binding = 6) readonly buffer ParticleColor
     uint ParticleColors[];
 };
 
-layout(std430, binding = 7) readonly buffer ParticleMaterial
+layout(std430, binding = 7) readonly buffer ParticleHDRColor
+{
+    vec4 ParticleHDRColors[];
+};
+
+layout(std430, binding = 8) readonly buffer ParticleMaterial
 {
     uint ParticleMaterials[];
 };
@@ -76,7 +83,9 @@ void main() {
     
     // Color
     fColor = unGlobalColor;
-    if (unIsUsingColor == 1) {
+    if (unIsUsingHDRColor == 1) {
+        fColor *= ParticleHDRColors[particleId];
+    } else if (unIsUsingColor == 1) {
         fColor *= getColor(particleId);
     }
     

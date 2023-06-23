@@ -47,6 +47,7 @@ private:
     void initUIParticles();
     void initPlayerParticles();
     void initBlockerParticles();
+    void initBubbleParticles();
 
     void updateFishPosition(f32 elapsedSec);
     void updatePlayerPosition(f32 elapsedSec);
@@ -66,12 +67,14 @@ private:
 
     // UI Data
     std::unique_ptr<CPUParticleSystem2D> mUIParticleSystem;
+    std::unique_ptr<CPUParticleSystem2D> mBackgroundParticleSystem;
     std::unique_ptr<CPUParticleSystem2D> mPlayerParticleSystem;
     std::unique_ptr<CPUParticleSystem2D> mBlockerParticleSystem;
+    std::unique_ptr<CPUParticleSystem2D> mBubbleParticleSystem;
     ParticleID mArenaParticleID;
     ParticleID mPlayerParticleID;
     ParticleID mFishParticleID;
-    ParticleID mBackgroundParticleID;
+    ParticleID mChestParticleID;
     std::vector<ParticleID> mBlockerParticles;
 
 

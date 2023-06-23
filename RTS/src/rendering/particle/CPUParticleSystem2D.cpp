@@ -32,7 +32,10 @@ CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFun
         mGpuData.mScalesBuffer = std::make_unique<GpuStreamingDataBuffer>(maxParticles, sizeof(f32v2));
         std::fill_n(mParticleData.mScales.get(), mMaxParticles, f32v2(1.0f)); // Default values
     }
-    if (mComponents.isBitSet(ParticleComponentType::Color)) {
+    if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
+        mParticleData.mHDRColors = std::unique_ptr<f32v4[]>(new f32v4[mMaxParticles]);
+        mGpuData.mColorsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxParticles, sizeof(f32v4));
+    } else if (mComponents.isBitSet(ParticleComponentType::Color)) {
         mParticleData.mColors = std::unique_ptr<color4[]>(new color4[mMaxParticles]);
         mGpuData.mColorsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxParticles, sizeof(color4));
     }
@@ -50,7 +53,7 @@ CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFun
         // Rotations are packed into mPositionsAndRotationsBuffer which is always allocated
     }
 
-    static_assert(e_cast(ParticleComponentType::TERM) == 33);
+    static_assert(e_cast(ParticleComponentType::TERM) == 65);
 }
 
 void CPUParticleSystem2D::updateAndRender(const vg::GLProgram& program, f32 elapsedSec) {
@@ -130,7 +133,14 @@ void CPUParticleSystem2D::setParticleVelocity(ParticleID id, f32v3 velocity) {
 }
 
 void CPUParticleSystem2D::setParticleColor(ParticleID id, color4 color) {
+    assert(mComponents.isBitSet(ParticleComponentType::Color));
     mParticleData.mColors[id] = color;
+    mDataChanged = true;
+}
+
+void CPUParticleSystem2D::setParticleHDRColor(ParticleID id, f32v4 color) {
+    assert(mComponents.isBitSet(ParticleComponentType::HDRColor));
+    mParticleData.mHDRColors[id] = color;
     mDataChanged = true;
 }
 
@@ -147,6 +157,7 @@ void CPUParticleSystem2D::render(const vg::GLProgram& program) {
 
     // TODO: UBO?
     const VGUniform unIsUsingColor = program.getUniform("unIsUsingColor");
+    const VGUniform unIsUsingHDRColor = program.getUniform("unIsUsingHDRColor");
     const VGUniform unIsUsingMaterial = program.getUniform("unIsUsingMaterial");
     const VGUniform unIsUsingScale = program.getUniform("unIsUsingScale");
 
@@ -217,14 +228,26 @@ void CPUParticleSystem2D::render(const vg::GLProgram& program) {
 
         // Colors
         if (mGpuData.mColorsBuffer) {
-            color4* colors = (color4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
-            memcpy(colors, &mParticleData.mColors[mFirstActiveParticle], sizeof(color4) * particlesToRender);
-            assert(mBaseInstance == mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender));
-            mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
-            glUniform1ui(unIsUsingColor, 1u);
+            if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
+                f32v4* colors = (f32v4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
+                memcpy(colors, &mParticleData.mHDRColors[mFirstActiveParticle], sizeof(f32v4) * particlesToRender);
+                assert(mBaseInstance == mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender));
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_HDR_COLORS_SSBO);
+                glUniform1ui(unIsUsingHDRColor, 1u);
+                glUniform1ui(unIsUsingColor, 0u);
+            }
+            else {
+                color4* colors = (color4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
+                memcpy(colors, &mParticleData.mColors[mFirstActiveParticle], sizeof(color4) * particlesToRender);
+                assert(mBaseInstance == mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender));
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
+                glUniform1ui(unIsUsingHDRColor, 0u);
+                glUniform1ui(unIsUsingColor, 1u);
+            }
         }
         else {
             glUniform1ui(unIsUsingColor, 0u);
+            glUniform1ui(unIsUsingHDRColor, 0u);
         }
 
         // Materials
@@ -252,11 +275,20 @@ void CPUParticleSystem2D::render(const vg::GLProgram& program) {
 
         // Colors
         if (mGpuData.mColorsBuffer) {
-            mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
-            glUniform1ui(unIsUsingColor, 1u);
+            if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_HDR_COLORS_SSBO);
+                glUniform1ui(unIsUsingHDRColor, 1u);
+                glUniform1ui(unIsUsingColor, 0u);
+            }
+            else {
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
+                glUniform1ui(unIsUsingHDRColor, 0u);
+                glUniform1ui(unIsUsingColor, 1u);
+            }
         }
         else {
             glUniform1ui(unIsUsingColor, 0u);
+            glUniform1ui(unIsUsingHDRColor, 0u);
         }
         
         // Materials
@@ -269,7 +301,7 @@ void CPUParticleSystem2D::render(const vg::GLProgram& program) {
             glUniform1ui(unIsUsingMaterial, 0u);
         }
     }
-    static_assert(e_cast(ParticleComponentType::TERM) == 33);
+    static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
     glUniform1ui(program.getUniform("unBaseInstanceOffset"), mBaseInstance);
 

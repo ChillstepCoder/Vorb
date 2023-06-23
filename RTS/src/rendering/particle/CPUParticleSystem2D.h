@@ -9,9 +9,10 @@ enum class ParticleComponentType : ui8 {
     Velocity = BIT(0),
     Scale = BIT(1),
     Color = BIT(2),
-    Lifespan = BIT(3),
-    MaterialID = BIT(4),
-    Rotation = BIT(5),
+    HDRColor = BIT(3),
+    Lifespan = BIT(4),
+    MaterialID = BIT(5),
+    Rotation = BIT(6),
     // TODO: SortDepth?
     TERM
 };
@@ -22,20 +23,21 @@ struct CPUParticleSystemData2D {
     std::unique_ptr<f32v3[]> mVelocities;
     std::unique_ptr<f32v2[]> mScales;
     std::unique_ptr<color4[]> mColors;
+    std::unique_ptr<f32v4[]> mHDRColors;
     std::unique_ptr<f32[]> mLifespans;
     std::unique_ptr<ui32[]> mMaterials;
 };
-static_assert(e_cast(ParticleComponentType::TERM) == 33);
+static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
 struct CpuParticleSystemGpuData2D {
     std::unique_ptr<GpuStreamingDataBuffer> mPositionsAndRotationsBuffer;
     //std::unique_ptr<GpuStreamingDataBuffer> mVelocitiesBuffer; // Velocities are not needed on the GPU
     std::unique_ptr<GpuStreamingDataBuffer> mScalesBuffer;
-    std::unique_ptr<GpuStreamingDataBuffer> mColorsBuffer;
+    std::unique_ptr<GpuStreamingDataBuffer> mColorsBuffer; // Shared as HDR or non HDR
     //std::unique_ptr<GpuStreamingDataBuffer> mLifespansBuffer; // Lifespans are not needed on the GPU
     std::unique_ptr<GpuStreamingDataBuffer> mMaterialsBuffer;
 };
-static_assert(e_cast(ParticleComponentType::TERM) == 33);
+static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
 typedef std::function<void(class CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec)> ParticleUpdateFunction;
 
@@ -53,11 +55,20 @@ public:
     // Particles
     ParticleID tryAddParticle(f32v3 position);
     void removeParticle(ParticleID id);
+    // Mutators
     void setParticlePosition(ParticleID id, f32v3 position);
     void setParticleScale(ParticleID id, f32v2 scale);
     void setParticleVelocity(ParticleID id, f32v3 velocity);
     void setParticleColor(ParticleID id, color4 color);
+    void setParticleHDRColor(ParticleID id, f32v4 color);
     void setParticleMaterial(ParticleID id, MaterialID material);
+    // Accessors
+    f32v3 getParticlePosition(ParticleID id) const { return mParticleData.mPositions[id]; }
+    f32v2 getParticleScale(ParticleID id) const { return mParticleData.mScales[id]; }
+    f32v3 getParticleVelocity(ParticleID id) const { return mParticleData.mVelocities[id]; }
+    color4 getParticleColor(ParticleID id) const { return mParticleData.mColors[id]; }
+    f32v4 getParticleHDRColor(ParticleID id) const { return mParticleData.mHDRColors[id]; }
+    MaterialID getParticleMaterial(ParticleID id) const { return mParticleData.mMaterials[id]; }
     CPUParticleSystemData2D& getParticleData() { return mParticleData; }
     
     void markDataChanged() { mDataChanged = true; }
