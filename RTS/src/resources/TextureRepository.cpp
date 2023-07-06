@@ -101,7 +101,7 @@ const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg:
                 fs::path directoryPath = ddsPath;
                 directoryPath._Remove_filename_and_separator();
                 if (!std::filesystem::exists(directoryPath) && !std::filesystem::create_directories(directoryPath)) {
-                    LOG_CRITICAL("  Failed to create directories for {}", directoryPath);
+                    LOG_CRITICAL("  Failed to create directories for {}", directoryPath.string());
                 }
 
                 if (gli::save(ddsTexture, ddsPath.string())) {

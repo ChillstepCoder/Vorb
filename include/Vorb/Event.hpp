@@ -57,7 +57,7 @@ private:
 
 // Create add/remove functions for a specific event
 #define EVENT_LISTENER_FUNCS(name, eventName, eventType, paramType) \
-[[nodiscard]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
+[[nodiscard("event handle leak")]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
     return m##name##EventDispatcher.appendListener(eventType, callback); \
 } \
 bool add##eventName##Listener(name##Listeners& remover, const name##EventDispatcher::Callback& callback) { \
@@ -72,7 +72,7 @@ void dispatch##eventName##(paramType p) { \
 
 // Create add/remove functions no param
 #define EVENT_LISTENER_FUNCS_VOID(name, eventName, eventType) \
-[[nodiscard]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
+[[nodiscard("event handle leak")]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
     return m##name##EventDispatcher.appendListener(eventType, callback); \
 } \
 bool add##eventName##Listener(name##Listeners& remover, const std::function<void()>& callback) { \
@@ -87,7 +87,7 @@ void dispatch##eventName##() { \
 
 // Create add/remove functions for a specific event
 #define EVENT_LISTENER_FUNCS_ADAPTOR(name, eventName, eventType, paramType) \
-[[nodiscard]] name##EventDispatcher::Handle add##eventName##Listener(const std::function<void(paramType)>& callback) { \
+[[nodiscard("event handle leak")]] name##EventDispatcher::Handle add##eventName##Listener(const std::function<void(paramType)>& callback) { \
     return m##name##EventDispatcher.appendListener(eventType, eventpp::argumentAdapter<void(paramType)>(callback)); \
 } \
 bool add##eventName##Listener(name##Listeners& remover, const std::function<void(paramType)>& callback) { \
@@ -102,7 +102,7 @@ void dispatch##eventName##(paramType p) { \
 
 // Create add/remove functions for a specific event
 #define STATIC_EVENT_LISTENER_FUNCS(name, eventName, eventType, paramType) \
-static [[nodiscard]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
+static [[nodiscard("event handle leak")]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
     return s##name##EventDispatcher.appendListener(eventType, callback); \
 } \
 static bool add##eventName##Listener(name##Listeners& remover, const name##EventDispatcher::Callback& callback) { \

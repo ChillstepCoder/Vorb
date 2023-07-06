@@ -34,7 +34,7 @@ namespace TextureHelpers
                 info.textureFormat = vg::TextureFormat::RGBA;
                 break;
             default:
-                LOG_CRITICAL("Unhandled texture format {} in getTextureUploadInfo", texture.format());
+                LOG_CRITICAL("Unhandled texture format {} in getTextureUploadInfo", (int)texture.format());
                 throw std::exception("Invalid texture format");
         }
         return info;

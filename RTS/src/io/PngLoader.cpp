@@ -52,7 +52,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     if (errno_t err = fopen_s(&rawFilePtr, path.string().c_str(), "rb")) {
         char errBuff[256];
         strerror_s(errBuff, err);
-        LOG_CRITICAL("loadPng Unable to open file - {} with error {}", path, errBuff);
+        LOG_CRITICAL("loadPng Unable to open file - {} with error {}", path.string(), errBuff);
         return res;
     }
     // Transfer ownership to RAII file handle
@@ -63,7 +63,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (png_sig_cmp((png_const_bytep)header, 0, 8))
     {
-        LOG_CRITICAL("loadPng File type not recognized - {}", path);
+        LOG_CRITICAL("loadPng File type not recognized - {}", path.string());
         return res;
     }
 
@@ -74,7 +74,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (!png_ptr)
     {
-        LOG_CRITICAL("loadPng Format not recognized - {}", path);
+        LOG_CRITICAL("loadPng Format not recognized - {}", path.string());
         return res;
     }
 
@@ -84,13 +84,13 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (!info_ptr)
     {
-        LOG_CRITICAL("loadPng Unable to retrieve image information - {}", path);
+        LOG_CRITICAL("loadPng Unable to retrieve image information - {}", path.string());
         return res;
     }
 
     if (setjmp(png_jmpbuf(png_ptr)))
     {
-        LOG_CRITICAL("loadPng File corrupt - {}", path);
+        LOG_CRITICAL("loadPng File corrupt - {}", path.string());
         return res;
     }
 
@@ -113,11 +113,11 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     color_type = png_get_color_type(png_ptr, info_ptr);
 
     if (width > MAX_TEXTURE_DIMENSION || height > MAX_TEXTURE_DIMENSION) {
-        LOG_CRITICAL("Texture {} dimensions <{},{}> greater than max of {}", path, width, height, MAX_TEXTURE_DIMENSION);
+        LOG_CRITICAL("Texture {} dimensions <{},{}> greater than max of {}", path.string(), width, height, MAX_TEXTURE_DIMENSION);
         assert(false);
     }
     if (width % 4 != 0 || height % 4 != 0) {
-        LOG_CRITICAL("Texture {} dimensions <{},{}> are not divisible by 4", path, width, height);
+        LOG_CRITICAL("Texture {} dimensions <{},{}> are not divisible by 4", path.string(), width, height);
         assert(false);
     }
 
@@ -127,7 +127,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         png_set_palette_to_rgb(png_ptr);
         color_type = png_get_color_type(png_ptr, info_ptr);
-        LOG_WARN("PNG {} is palettized, make sure it works", path);
+        LOG_WARN("PNG {} is palettized, make sure it works", path.string());
     }
 
     png_read_update_info(png_ptr, info_ptr);
@@ -135,7 +135,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (setjmp(png_jmpbuf(png_ptr)))
     {
-        LOG_CRITICAL("loadPng File corrupt - {}", path);
+        LOG_CRITICAL("loadPng File corrupt - {}", path.string());
         return res;
     }
 
@@ -151,7 +151,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     else if(color_type==PNG_COLOR_TYPE_RGB_ALPHA)
         channels=4;
     else {
-        LOG_CRITICAL("Unsupported channels of {} in {}", channels, path);
+        LOG_CRITICAL("Unsupported channels of {} in {}", channels, path.string());
         assert("false");
     }
     
@@ -160,7 +160,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     else if(bit_depth==16)
         byteDepth = 2;
     else {
-        LOG_CRITICAL("Unsupported bit depth of {} in {}", bit_depth, path);
+        LOG_CRITICAL("Unsupported bit depth of {} in {}", bit_depth, path.string());
         assert("false");
     }
 

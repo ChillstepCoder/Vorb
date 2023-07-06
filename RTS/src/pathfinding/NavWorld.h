@@ -114,6 +114,12 @@ typedef std::map<LiteChunkID, StructureExternalEdgeList> StructureExternalEdgeLi
 // TODO: Vector of Vector may be better here for memory footprint + iteration?
 typedef std::unordered_map<TileContainerID, StructureExternalEdgeList> ContainerTerrainDependentEdges;
 struct ContainerNavData {
+    ContainerNavData() = default;
+    ContainerNavData(
+        CoarseNavGraph&& coarseNavGraph, std::vector<TileFineNavData>&& fineNavGraph, i32v3 worldPos, i32v3 containerDims, i32 floorHeight, TileContainerID containerId)
+        : coarseNavGraph(std::move(coarseNavGraph)), fineNavGraph(std::move(fineNavGraph)), worldPos(worldPos), containerDims(containerDims), floorHeight(floorHeight), containerId(containerId)
+    { }
+
     VORB_NON_COPYABLE_BUT_MOVABLE(ContainerNavData);
 
     CoarseNavGraph coarseNavGraph;

@@ -115,11 +115,11 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
             // Path failed, lets try again
             ++mErrorCount;
             if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
-                LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT FAILURE");
+                LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT FAILURE", mErrorCount);
                 mState = TaskState::FAIL;
             }
             else {
-                LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT RETRY");
+                LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT RETRY", mErrorCount);
                 mState = TaskState::SELECT_TILE_TO_FILL;
                 mPlaceTilesTarget.reset();
             }
@@ -170,11 +170,11 @@ bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entit
             // Path failed, lets try again
             ++mErrorCount;
             if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
-                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT FAILURE");
+                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT FAILURE", mErrorCount);
                 mState = TaskState::FAIL;
             }
             else {
-                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT RETRY");
+                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT RETRY", mErrorCount);
                 mState = TaskState::SELECT_TILE_TO_BUILD;
                 mPlaceTilesTarget.reset();
             }

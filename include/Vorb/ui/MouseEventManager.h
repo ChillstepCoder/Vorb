@@ -50,7 +50,7 @@ namespace vorb {
         /// Common mouse event data
         struct MouseEvent {
         public:
-            MouseEvent() = default;
+            //MouseEvent() = default;
             i32 x; ///< Mouse location on X axis (in pixels)
             i32 y; ///< Mouse location on Y axis (in pixels)
         };
@@ -60,7 +60,7 @@ namespace vorb {
         public:
             MouseButtonEvent() = default;
             constexpr MouseButtonEvent(i32 x_, i32 y_, MouseButton button_, ui8 clicks_) :
-                MouseEvent{x_, y_},
+                MouseEvent{ .x=x_, .y=y_ },
                 button(button_),
                 clicks(clicks_)
             { /* Empty */ }

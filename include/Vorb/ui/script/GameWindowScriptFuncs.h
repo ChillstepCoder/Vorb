@@ -49,7 +49,7 @@ namespace vui = vorb::ui;
 
 template <typename ScriptEnvironmentImpl>
 void vui::GameWindowScriptFuncs::registerFuncs(vscript::IEnvironment<ScriptEnvironmentImpl>* env, const GameWindow* window) {
-    env->setNamespaces("UI", "GameWindow");
+   /* env->setNamespaces("UI", "GameWindow");
     env->addCDelegate("getNumSupportedResolutions", makeFunctor([window] () {
         return impl::getNumSupportedResolutions(window);
     }));
@@ -81,7 +81,7 @@ void vui::GameWindowScriptFuncs::registerFuncs(vscript::IEnvironment<ScriptEnvir
     env->addCDelegate("unsubscribe",  makeFunctor([=](nString name) {
         vui::InputDispatcher::window.onClose.remove(env->template getScriptDelegate<void, Sender>(name, false));
     }));
-    env->setNamespaces();
+    env->setNamespaces();*/
 }
 
 template <typename ScriptEnvironmentImpl>

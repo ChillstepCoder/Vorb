@@ -728,7 +728,11 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     bool isNewContainer = (navGraphIt == mNavGraphs.end());
     const TileSpatialGrid& spatialGrid = taskData.container->getTileSpatialGrid();
     if (isNewContainer) {
-        mNavGraphs.insert(std::make_pair(containerId, ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), spatialGrid.getWorldPos3D(), spatialGrid.getDims(), spatialGrid.getFloorHeight(), taskData.container->getId() }));
+        mNavGraphs.insert(
+            std::make_pair(
+                containerId,
+                ContainerNavData(std::move(taskData.navGraph), std::move(taskData.fineNavData), spatialGrid.getWorldPos3D(), spatialGrid.getDims(), spatialGrid.getFloorHeight(), taskData.container->getId())
+            ));
     }
     else {
         navGraphIt->second = ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), spatialGrid.getWorldPos3D(), spatialGrid.getDims(), spatialGrid.getFloorHeight(), taskData.container->getId() };

@@ -27,63 +27,39 @@ namespace vorb {
 
 #if ENABLE_LOGGING == 1
 
-        template<typename... Args>
-        static void log(LoggingLevel level, const char* format, Args &&... args) {
-            appLogger->log(spdlog::level::level_enum(level), format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void logTrace(const char* format, Args &&... args) {
-            appLogger->trace(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void logDebug(const char* format, Args &&... args) {
-            appLogger->debug(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void logInfo(const char* format, Args &&... args) {
-            appLogger->info(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void logWarn(const char* format, Args &&... args) {
-            appLogger->warn(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void logError(const char* format, Args &&... args) {
-            appLogger->error(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void logCritical(const char* format, Args &&... args) {
-            appLogger->critical(format, std::forward<Args>(args)...);
-        };
+#define LOG_DEF(CFUNC, FUNC) \
+    template<typename... Args> \
+    inline static void log##CFUNC(spdlog::format_string_t<Args...> format, Args &&... args) { \
+        appLogger->FUNC(format, std::forward<Args>(args)...); \
+    };
+
+#define VORB_LOG_DEF(CFUNC, FUNC) \
+    template<typename... Args> \
+    inline static void vorbLog##CFUNC(spdlog::format_string_t<Args...> format, Args &&... args) { \
+        vorbLogger->FUNC(format, std::forward<Args>(args)...); \
+    };
 
         template<typename... Args>
-        static void vorbLog(LoggingLevel level, const char* format, Args &&... args) {
+        inline static void log(LoggingLevel level, spdlog::format_string_t<Args...> format, Args &&... args) {
+            appLogger->log(spdlog::level::level_enum(level), format, std::forward<Args>(args)...);
+        };
+        LOG_DEF(Trace, trace);
+        LOG_DEF(Debug, debug);
+        LOG_DEF(Info, info);
+        LOG_DEF(Warn, warn);
+        LOG_DEF(Error, error);
+        LOG_DEF(Critical, critical);
+
+        template<typename... Args>
+        inline static void vorbLog(LoggingLevel level, spdlog::format_string_t<Args...> format, Args &&... args) {
             vorbLogger->log(spdlog::level::level_enum(level), format, std::forward<Args>(args)...);
         };
-        template<typename... Args>
-        static void vorbLogTrace(const char* format, Args &&... args) {
-            vorbLogger->trace(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void vorbLogDebug(const char* format, Args &&... args) {
-            vorbLogger->debug(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void vorbLogInfo(const char* format, Args &&... args) {
-            vorbLogger->info(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void vorbLogWarn(const char* format, Args &&... args) {
-            vorbLogger->warn(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void vorbLogError(const char* format, Args &&... args) {
-            vorbLogger->error(format, std::forward<Args>(args)...);
-        };
-        template<typename... Args>
-        static void vorbLogCritical(const char* format, Args &&... args) {
-            vorbLogger->critical(format, std::forward<Args>(args)...);
-        };
+        VORB_LOG_DEF(Trace, trace);
+        VORB_LOG_DEF(Debug, debug);
+        VORB_LOG_DEF(Info, info);
+        VORB_LOG_DEF(Warn, warn);
+        VORB_LOG_DEF(Error, error);
+        VORB_LOG_DEF(Critical, critical);
 
 #else
         static void logTrace(const char*, ...) {};
