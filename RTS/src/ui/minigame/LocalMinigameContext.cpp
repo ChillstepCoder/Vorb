@@ -18,7 +18,7 @@ void LocalMinigameContext::updateAndRender(const f32v2 screenResolution, f32 ela
     }
 
     if (mCurrentMinigame) {
-        if (mCurrentMinigame->updateAndRender(screenResolution, elapsedSec) != MinigameResultType::InProgress) {
+        if (mCurrentMinigame->updateAndRender(screenResolution, elapsedSec).mType != MinigameResultType::InProgress) {
             mCurrentMinigame.reset();
         }
     }

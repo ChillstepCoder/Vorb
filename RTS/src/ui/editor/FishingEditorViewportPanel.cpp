@@ -107,11 +107,11 @@ const MaterialShader* FishingEditorViewportPanel::getShader() {
 
 void FishingEditorViewportPanel::renderMesh() {
     if (mCurrentFishingMinigame) {
-        MinigameResultType result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
-        if (result == MinigameResultType::Fail) {
+        MinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
+        if (result.mType == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
             mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
-        } else if (result == MinigameResultType::Success) {
+        } else if (result.mType == MinigameResultType::Success) {
             LOG_INFO("Fishing success!");
             mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
         }
