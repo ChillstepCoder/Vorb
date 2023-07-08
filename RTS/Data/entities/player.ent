@@ -11,5 +11,5 @@ character_details:
   name: Player
 skills:
   skill_names: [
-    sword_slash_1
+    player_basic_attack
   ]

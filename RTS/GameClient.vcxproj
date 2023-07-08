@@ -241,6 +241,8 @@
     <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\city\contracts\ContractManager.cpp" />
     <ClCompile Include="src\city\contracts\IContract.cpp" />
+    <ClCompile Include="src\combat\Attack.cpp" />
+    <ClCompile Include="src\combat\CombatContext.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\debugging\DebugMesh.cpp" />
@@ -521,6 +523,8 @@
     <ClInclude Include="src\city\contracts\IContract.h" />
     <ClInclude Include="src\city\contracts\ItemShipmentContract.h" />
     <ClInclude Include="src\city\RoomNode.h" />
+    <ClInclude Include="src\combat\Attack.h" />
+    <ClInclude Include="src\combat\CombatContext.h" />
     <ClInclude Include="src\crafting\CraftingConst.h" />
     <ClInclude Include="src\crafting\CraftingRepository.h" />
     <ClInclude Include="src\data_structure\FlatQuadtree.h" />
@@ -580,6 +584,7 @@
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditorPanel.h" />
+    <ClInclude Include="src\events\SkillEvent.h" />
     <ClInclude Include="src\extern\bc7enc\bc7decomp.h" />
     <ClInclude Include="src\extern\bc7enc\bc7enc.h" />
     <ClInclude Include="src\extern\bc7enc\dds_defs.h" />
@@ -762,6 +767,7 @@
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />
     <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\skill\SkillSlot.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\structure\Structure.h" />
     <ClInclude Include="src\structure\StructureManager.h" />

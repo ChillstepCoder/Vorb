@@ -34,9 +34,12 @@ void IEntityComponentSystem::tick(f32 elapsedSec) {
 	if (RenderContext::exists()) {
 		const Camera3D* camera = RenderContext::getInstance().getCamera();
 		if (camera) {
-			mPlayerControlSystem.update(mRegistry, camera->getYaw());
+			mPlayerControlSystem.update(mWorld, mRegistry, camera->getYaw());
 		}
 	}
+
+    mSkillsSystem.update(mWorld, mRegistry, elapsedSec);
+
 }
 
 void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {

@@ -2,6 +2,8 @@
 
 #include "world/WorldType.h"
 
+#include "events/SkillEvent.h"
+
 class AmbientOcclusionPostProcess;
 class Camera3D;
 class CharacterRenderer;
@@ -71,6 +73,8 @@ private:
 
     void buildHorizonMesh();
 
+    void setActiveWorld(IWorld* world);
+
     // Renderers
     // TODO: Remove mutable?
     mutable std::unique_ptr<TileContainerRenderer> mTileContainerRenderer;
@@ -112,5 +116,10 @@ private:
     const MaterialShader* mPassthroughMaterial = nullptr;
     const MaterialShader* mSceneLightingMaterial = nullptr;
     const MaterialShader* mCopyDepthMaterial = nullptr;
+
+    // Event handles
+    struct WorldRendererEventHandles {
+        SkillsComponentSystemListeners mSkillsComponentListeners;
+    } mEventHandles;
 };
 

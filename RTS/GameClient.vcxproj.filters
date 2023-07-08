@@ -807,6 +807,12 @@
     <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\combat\CombatContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\combat\Attack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1920,6 +1926,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\minigame\ILocalMinigame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\events\SkillEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\skill\SkillSlot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\combat\CombatContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\combat\Attack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

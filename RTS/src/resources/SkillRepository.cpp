@@ -34,12 +34,36 @@ bool SkillRepository::loadSkillFile(const vio::Path& filePath, const AnimationRe
     def.mDuration = fileData.mDuration;
     def.mCost = fileData.mCost;
 
-    assert(fileData.mAttackTriggers.size() <= MAX_SKILL_ATTACK_TRIGGERS);
     // Copy skill triggers
-    def.mNumAttackTriggers = fileData.mAttackTriggers.size();
-    for (ui32 i = 0; i < fileData.mAttackTriggers.size(); ++i) {
-        def.mAttackTriggers[i] = fileData.mAttackTriggers[i];
+    def.mNumTriggers = fileData.mAttackTriggers.size() + fileData.mSimpleTriggers.size();
+    def.mTriggers = std::unique_ptr<SkillTrigger[]>(new SkillTrigger[def.mNumTriggers]);
+
+    // Build sortable triggers array
+    std::vector<SkillTrigger> triggers;
+    triggers.reserve(fileData.mAttackTriggers.size() + fileData.mSimpleTriggers.size());
+    for (ui32 i = 0; i < fileData.mSimpleTriggers.size(); ++i) {
+        const SkillSimpleTriggerFileData& simpleData = fileData.mSimpleTriggers[i];
+        SkillTrigger newTrigger;
+        newTrigger.mTime = simpleData.mTime;
+        newTrigger.mType = SkillTriggerType::Simple;
+        newTrigger.mSimpleTrigger = simpleData.mId;
+        triggers.emplace_back(std::move(newTrigger));
     }
+    for (ui32 i = 0; i < fileData.mAttackTriggers.size(); ++i) {
+        const SkillAttackTriggerFileData& attackData = fileData.mAttackTriggers[i];
+        SkillTrigger newTrigger;
+        newTrigger.mTime = attackData.mTime;
+        newTrigger.mType = SkillTriggerType::Attack;
+        newTrigger.mAttackTrigger = attackData.mData;
+        triggers.emplace_back(std::move(newTrigger));
+    }
+    std::sort(triggers.begin(), triggers.end(), [](const SkillTrigger& lhs, const SkillTrigger& rhs) -> bool {
+        return lhs.mTime < rhs.mTime;
+    });
+
+    // Copy sorted triggers
+    assert(triggers.size() == def.mNumTriggers);
+    memcpy(def.mTriggers.get(), triggers.data(), sizeof(SkillTrigger) * triggers.size());
 
     const nString skillName = filePath.getFileNameNoExtension();
     assert(mSkillIdLookup.find(skillName) == mSkillIdLookup.end());

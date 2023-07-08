@@ -4,6 +4,8 @@
 #include "world/Chunk.h"
 #include "pathfinding/NavThread.h"
 
+#include "combat/CombatContext.h"
+
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
@@ -49,6 +51,9 @@ IWorld::IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmap
 
     // Generation
     mWorldGenerator = WorldGeneratorFactory::makeWorldGenerator(generatorType, *this);
+
+    // Combat
+    mCombatContext = std::make_unique<CombatContext>(*this);
 
 }
 

@@ -3,6 +3,10 @@
 
 #include <Vorb/graphics/DepthState.h>
 
+#include "ecs/IEntityComponentSystem.h"
+#include "ecs/component/SkillsComponent.h"
+
+#include "rendering/RenderThreadTasks.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/StencilBufferIDs.h"
 #include "rendering/CharacterRenderer.h"
@@ -135,8 +139,9 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, f32v3 playerPos
         return;
     }
     if (mActiveWorld != renderState->getWorld()) {
-        mActiveWorld = renderState->getWorld();
+        setActiveWorld(renderState->getWorld());
     }
+
     // Allocate render data if needed
     {
         auto&& it = mRenderDataManagers.find(mActiveWorld);
@@ -603,4 +608,17 @@ void WorldRenderer::buildHorizonMesh() {
     constexpr float QUAD_WIDTH = 140000.0f;
     meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, MaterialDesc(), f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
     meshBuilder.finishMesh(mHorizonQuad, f32v3(0.0f));
+}
+
+void WorldRenderer::setActiveWorld(IWorld* world) {
+    mActiveWorld = world;
+
+    // Skill events
+    SkillsComponentSystem& skillsSystem = mActiveWorld->getECS().mSkillsSystem;
+    skillsSystem.registerSkillsComponentSystemListeners(mEventHandles.mSkillsComponentListeners);
+    skillsSystem.addActivateListener(mEventHandles.mSkillsComponentListeners, [world](SkillEvent skillEvent) {
+        ASSERT_GAME_THREAD();
+        SkillsComponent& skillsCmp = world->getECS().mRegistry.get<SkillsComponent>(skillEvent.mEntity);
+        RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->mAnimID);
+    });
 }

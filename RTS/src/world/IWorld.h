@@ -19,6 +19,7 @@ class StructureManager;
 class TimeOfDayManager;
 class TileContainerRepository;
 class IWorldGenerator;
+class CombatContext;
 
 
 // Shared world interface
@@ -67,6 +68,7 @@ public:
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     IWorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
+    CombatContext& getCombatContext() const { return *mCombatContext; }
 
     f32v3 getDefaultSpawn() const { return f32v3(mWidthTiles * 0.5f, mWidthTiles * 0.5f, 20.0f); }
     f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
@@ -103,5 +105,7 @@ protected:
     std::unique_ptr<CityGraph> mCities;
     // Generation
     std::unique_ptr<IWorldGenerator> mWorldGenerator;
+    // Combat
+    std::unique_ptr<CombatContext> mCombatContext;
 
 };

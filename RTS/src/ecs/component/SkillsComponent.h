@@ -1,6 +1,9 @@
 #pragma once
 
+#include <Vorb/Event.hpp>
 #include "definitions/SkillDef.h"
+
+#include "events/SkillEvent.h"
 
 class IWorld;
 
@@ -8,13 +11,6 @@ struct SkillsComponentFileData {
     Array<nString> mSkillNames;
 };
 KEG_TYPE_DECL(SkillsComponentFileData);
-
-enum class SkillSlot {
-    Primary,
-    Secondary,
-    NONE,
-    COUNT = NONE
-};
 
 struct ActiveSkillComponent {
     f32 mElapsed = 0.0f;
@@ -32,6 +28,14 @@ public:
     void update(IWorld& world, entt::registry& registry, f32 elapsedSec);
 
     bool tryActivateSkillSlot(entt::entity entity, entt::registry& registry, SkillSlot slot);
-}
-//static_assert(sizeof(SkillsComponent) == 32, "Shrink this later");
 
+    // Events
+    EVENT_LISTENER_FUNCS(SkillsComponentSystem, Activate, SkillEventType::Activate, SkillEvent);
+    EVENT_LISTENER_FUNCS(SkillsComponentSystem, Interrupt, SkillEventType::Interrupt, SkillEvent);
+    EVENT_LISTENER_FUNCS(SkillsComponentSystem, End, SkillEventType::End, SkillEvent);
+
+protected:
+    void handleSkillTrigger(IWorld& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger);
+
+    EVENT_DISPATCHER_DEF(SkillsComponentSystem);
+};

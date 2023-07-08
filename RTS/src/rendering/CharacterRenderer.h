@@ -1,6 +1,8 @@
 #pragma once
 #include "rendering/CharacterModel.h"
 
+#include "events/SkillEvent.h"
+
 class MaterialShader;
 class Camera3D;
 struct CharacterRenderState;
@@ -19,6 +21,7 @@ private:
 
     const MaterialShader* mMaterial;
     std::unordered_map<entt::entity, std::unique_ptr<AnimState>> mEntityCharacterModels;
+
 };
 
 //  TODO: This is temp af

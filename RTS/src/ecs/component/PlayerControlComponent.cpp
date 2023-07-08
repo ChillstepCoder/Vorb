@@ -64,7 +64,7 @@ f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 }
 
 
-void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw) {
+void PlayerControlSystem::updateComponent(IWorld& world, entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw) {
 
     PlayerInputs inputs;
     if (playerControlCmp.mInputLockCount == 0) {
@@ -109,9 +109,7 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
     if (inputs.primaryAction) {
         // TODO: Move this to some kind of combat manager/context
         SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
-        // TODO: Better
-        const SkillDef& skillToUse = *skillsCmp.mSkills[0];
-        RenderThreadTasks::getInstance().playOneShotAnimation(entity, skillToUse.mAnimID);
+        world.getECS().mSkillsSystem.tryActivateSkillSlot(entity, registry, SkillSlot::Primary);
     }
 
 	//  Update movement
@@ -135,7 +133,7 @@ PlayerControlSystem::PlayerControlSystem() {
 
 }
 
-void PlayerControlSystem::update(entt::registry& registry, f32 cameraYaw) {
+void PlayerControlSystem::update(IWorld& world, entt::registry& registry, f32 cameraYaw) {
     ASSERT_GAME_THREAD();
     // Don't update while in free fly
     if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }
@@ -144,6 +142,6 @@ void PlayerControlSystem::update(entt::registry& registry, f32 cameraYaw) {
     for (auto entity : view) {
 		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
 		CharacterControlComponent& motionCmp = view.get<CharacterControlComponent>(entity);
-		updateComponent(entity, controlCmp, motionCmp, registry, cameraYaw);
+		updateComponent(world, entity, controlCmp, motionCmp, registry, cameraYaw);
 	};
 }
