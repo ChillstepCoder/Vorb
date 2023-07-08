@@ -5,4 +5,4 @@ attacks:
   -  time: 1.0
      shape: cone
      angle: 90.0
-     radius: 1.0
+     radius: 2.0

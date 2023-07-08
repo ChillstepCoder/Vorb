@@ -29,6 +29,7 @@ public:
     PhysicsSystem mPhysicsSystem;
     CameraAttachSystem mCameraAttachSystem;
     FishingComponentSystem mFishingSystem;
+    SkillsComponentSystem mSkillsSystem;
 
 	// Classes with World access
 	friend class PhysicsComponent;
