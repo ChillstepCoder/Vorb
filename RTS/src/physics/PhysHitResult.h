@@ -1,7 +1,21 @@
 #pragma once
 
+#include <variant>
+
+#include "tile/TileHandle.h"
+
+class btCollisionObject;
+
+enum class PhysicsHitObjectType : ui8 {
+    Tile,
+    Entity,
+    Terrain,
+    Invalid,
+    COUNT
+};
+
 struct PhysHitResult {
-    const class btCollisionObject* mCollisionObject = nullptr;
+    const btCollisionObject* mCollisionObject = nullptr;
     f32v3 mPosition;
     f32v3 mNormal;
     f32 mTime;
@@ -16,8 +30,13 @@ enum class PhysicsPickQueryFlags : ui8 {
     QUERY_TILE_INFO = BIT(0)
 };
 
+struct PhysicsQueryResult {
+    const btCollisionObject* mCollisionObject = nullptr;
+    std::variant<entt::entity, LiteTileHandle> mObject;
+};
+
 // Allows thread to request the physics engine to perform a pick that will be populated eventually.
-// Intended for things like editor tile picking where we dont need instant response
+// Intended for things like editor tile picking where we don't need instant response
 class DeferredPhysicsPick {
 public:
 

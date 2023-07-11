@@ -105,6 +105,8 @@ DebugOptions::DebugOptions() :
     mDebugFishEcosystem(false),
     mShowFish(true),
     mShowEntityQueries(false),
+    mShowPhysicsQueries(false),
+    mShowCombatQueries(false),
     mEnableVisualLogs(true),
     mShowDevHud(true),
     mHideModels(false),

@@ -34,6 +34,8 @@
 const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);
 const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
+const color4 DEBUG_COLOR_QUERIES = color4(0, 255, 0, 255);
+constexpr int DEBUG_LIFETIME_QUERIES = 100;
 
 constexpr int COLLISION_FILTER_ALL = 0xffffffff;
 constexpr int COLLISION_FILTER_DYNAMIC = BIT_CAST(CollisionGroup::QUERY) | BIT_CAST(CollisionGroup::CHARACTER);
@@ -660,6 +662,57 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
 void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) {
     deferredPick->setQueryFlags(queryFlags);
     mDeferredPicks.enqueue(std::pair<PickParams, DeferredPhysicsPick*>(PickParams{rayStart, rayEnd, pickTypes}, deferredPick));
+}
+
+int PhysicsWorld::queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* outResults, int maxResults) {
+    ASSERT_GAME_THREAD();
+
+    assert(maxResults > 0);
+
+    struct AabbCallback : public btBroadphaseAabbCallback {
+
+        AabbCallback(IWorld& world, PhysicsQueryResult* results, int maxResults) : world(world), results(results), maxResults(maxResults) {}
+
+        bool process(const btBroadphaseProxy* proxy) override {
+
+            PhysicsQueryResult& rs = results[numResults];
+            rs.mCollisionObject = static_cast<btCollisionObject*>(proxy->m_clientObject);
+
+            // Entity
+            if (rs.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
+                rs.mObject = entt::entity(rs.mCollisionObject->getUserIndex());
+                ++numResults;
+            }
+            else {
+                // Tile
+                TileContainerID containerId = rs.mCollisionObject->getUserIndex2();
+                if (containerId != INVALID_PHYSICS_USER_INDEX) {
+                    TileIndex index = rs.mCollisionObject->getUserIndex3();
+                    if (index != INVALID_PHYSICS_USER_INDEX) {
+                        rs.mObject = LiteTileHandle(containerId, index);
+                        ++numResults;
+                    }
+                }
+                // Terrain ignored here
+            }
+
+            if (numResults >= maxResults) return false;
+            return true;
+        }
+
+        IWorld& world;
+        PhysicsQueryResult* results;
+        int maxResults;
+        int numResults = 0;
+    };
+
+    if (sDebugOptions.mShowPhysicsQueries) {
+        DebugRenderer::drawAABBThreadSafe(f32AABB3(min, max - min), DEBUG_COLOR_QUERIES, DEBUG_LIFETIME_QUERIES);
+    }
+
+    AabbCallback callback(mWorld, outResults, maxResults);
+    mDynamicsWorld->getBroadphase()->aabbTest(btVector3(min.x, min.y, min.z), btVector3(max.x, max.y, max.z), callback);
+    return callback.numResults;
 }
 
 void PhysicsWorld::startB3Profiling() {

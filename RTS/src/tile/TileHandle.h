@@ -69,7 +69,6 @@ struct std::less<LiteTileHandle>
     }
 };
 
-
 class LiteTileHandleHash {
 public:
     size_t operator()(const LiteTileHandle& v) const {

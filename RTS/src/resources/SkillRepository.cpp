@@ -55,6 +55,8 @@ bool SkillRepository::loadSkillFile(const vio::Path& filePath, const AnimationRe
         newTrigger.mTime = attackData.mTime;
         newTrigger.mType = SkillTriggerType::Attack;
         newTrigger.mAttackTrigger = attackData.mData;
+        // Degrees
+        newTrigger.mAttackTrigger.mAngle = DEG_TO_RAD(newTrigger.mAttackTrigger.mAngle);
         triggers.emplace_back(std::move(newTrigger));
     }
     std::sort(triggers.begin(), triggers.end(), [](const SkillTrigger& lhs, const SkillTrigger& rhs) -> bool {

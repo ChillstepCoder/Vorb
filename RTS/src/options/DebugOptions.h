@@ -108,6 +108,8 @@ struct DebugOptions {
     bool mDebugFishEcosystem;
     bool mShowFish;
     bool mShowEntityQueries;
+    bool mShowPhysicsQueries;
+    bool mShowCombatQueries;
     bool mEnableVisualLogs;
     bool mShowDevHud;
     bool mHideModels;

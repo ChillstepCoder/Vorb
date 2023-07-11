@@ -2,7 +2,7 @@ anim: sword_shield_attack_1
 duration: 2.0
 cost: 0.0
 attack_triggers:
-  -  time: 1.0
+  -  time: 0.65
      shape: cone
-     angle: 90.0
-     radius: 2.0
+     angle: 15.0
+     radius: 1.5

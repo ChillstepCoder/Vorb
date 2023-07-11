@@ -11,7 +11,7 @@ enum class SkillTriggerType {
 
 struct SkillAttackTrigger {
     f32 mRadius;
-    f32 mAngle; // Only used for sphere
+    f32 mAngle;
     AttackShape mShape;
 };
 

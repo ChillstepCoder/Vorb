@@ -82,6 +82,7 @@ struct f32AABB3 {
     f32AABB3() = default;
     f32AABB3(f32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};
     f32AABB3(f32 x, f32 y, f32 z, f32 width, f32 depth, f32 height) : x(x), y(y), z(z), width(width), depth(depth), height(height) {};
+    f32AABB3(f32v3 pos, f32v3 dims) : pos(pos), dims(dims) {};
 
     f32& operator[](int i) { return data[i]; }
 

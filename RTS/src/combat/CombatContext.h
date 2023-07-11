@@ -14,9 +14,12 @@ class CombatContext {
 public:
     CombatContext(IWorld& world);
 
-    void performMeleeAttack(entt::entity source, AttackShape shape, f32 radius, f32 angleRad, f32 forwardOffset, BitFlags<AttackFlags> flags);
+    void performMeleeAttack(entt::entity source, AttackShape shape, f32 radius, f32 arcAngleRad, f32 forwardOffset, BitFlags<AttackFlags> flags);
 
 private:
+    void performConeAttack(entt::entity source, AttackShape shape, f32 radius, f32 arcAngleRad, f32 height, f32 forwardOffset, BitFlags<AttackFlags> flags);
+    // void performSphereAttack
+
     IWorld& mWorld;
 };
 

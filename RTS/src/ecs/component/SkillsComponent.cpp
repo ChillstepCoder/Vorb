@@ -22,8 +22,6 @@ void SkillsComponentSystem::update(IWorld& world, entt::registry& registry, f32 
 			if (activeCmp.mElapsed >= nextTrigger.mTime) {
 				++activeCmp.mNextTrigger;
 				handleSkillTrigger(world, entity, skillsCmp, activeCmp, nextTrigger);
-				// FIRE SKILL TRIGGER
-				assert(false);
 			}
 			else {
 				// Not ready to trigger

@@ -367,7 +367,12 @@ void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* active
         ImGui::Checkbox("Terrain Physics (Toggle to refresh)", &sDebugOptions.mShowTerrainPhysics);
         ImGui::Checkbox("Dynamic Physics", &sDebugOptions.mShowDynamicPhysics);
         ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
+        ImGui::Checkbox("Physics Queries", &sDebugOptions.mShowPhysicsQueries);
         ImGui::Separator();
+    }
+
+    if (ImGui::CollapsingHeader("Combat")) {
+        ImGui::Checkbox("Show Combat Queries", &sDebugOptions.mShowCombatQueries);
     }
 
     if (ImGui::CollapsingHeader("Toggles")) {

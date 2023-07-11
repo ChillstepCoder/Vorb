@@ -95,6 +95,11 @@ public:
     // Returns false if the physics is currently locked by the game thread
     bool tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const;
 
+    // Queries
+    // Returns result count
+    int queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* outResults, int maxResults);
+
+
     CollisionShapeRepository& getShapeRepository() { return mShapeRepository; }
 
     ui32 getNumStaticCollisionObjects() const { return mNumStaticCollisionObjects; }
