@@ -41,16 +41,16 @@ mat4 createTransformMatrix(vec3 position, float yaw, float pitch, float scale) {
 
     // Create the rotation matrix for the yaw (around the Z-axis)
     mat3 yawRotation = mat3(
-        cy, -sy, 0,
-        sy, cy, 0,
+        cy, sy, 0,
+        -sy, cy, 0,
         0, 0, 1
     );
 
-    // Create the rotation matrix for the pitch (around the X-axis)
+    // Create the rotation matrix for the pitch (around the Y-axis)
     mat3 pitchRotation = mat3(
-        1, 0, 0,
-        0, cp, -sp,
-        0, sp, cp
+        cp, 0, -sp,
+        0, 1, 0,
+        sp, 0, cp
     );
 
     // Combine the two rotations and scale the result
@@ -97,12 +97,12 @@ void main() {
     // Movement wiggle
     float intensityMult = 0.1 + DebugFloat4 * 0.1;
     float timeValue = (Time - (rootPosWorld.x - rootPosWorld.y + rootPosWorld.z));
-    vertexPosition.x += cos(-timeValue + -vertexPosition.y * 3.0) * (-vertexPosition.y + 0.5) * intensityMult;
+    vertexPosition.y += cos(-timeValue + -vertexPosition.x * 3.0) * (-vertexPosition.x + 0.5) * intensityMult;
     rootPosWorld.z += sin(timeValue) * 0.05;
     
     // Turning rotation
-    float turning = -fishData.posTurn.w;
-    vertexPosition.xy = rotateVector(vertexPosition.xy, turning * vPosition.y);
+    float turning = fishData.posTurn.w;
+    vertexPosition.xy = rotateVector(vertexPosition.xy, turning * vPosition.x);
     
     
     mat4 modelMatrix = createTransformMatrix(rootPosWorld, fishData.yawPitchScaleTime.x, -fishData.yawPitchScaleTime.y, fishData.yawPitchScaleTime.z);
