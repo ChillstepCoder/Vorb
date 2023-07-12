@@ -82,12 +82,12 @@ void Camera3D::applyRotation(const f32 pitch, const f32 yaw) {
 
     mPitch = glm::clamp(mPitch, -M_PI_2F + 0.01f, M_PI_2F - 0.01f);
 
-    mDirection.x = sin(mYaw) * cos(mPitch);
-    mDirection.y = cos(mYaw) * cos(mPitch);
+    mDirection.x = cos(mYaw) * cos(mPitch);
+    mDirection.y = sin(mYaw) * cos(mPitch);
     mDirection.z = -sin(mPitch);
 
-    mRight.x = cos(mYaw);
-    mRight.y = -sin(mYaw);
+    mRight.x = sin(mYaw);
+    mRight.y = -cos(mYaw);
     mRight.z = 0.0;
 
     mDirection = glm::normalize(mDirection);
@@ -117,7 +117,7 @@ void Camera3D::lookAt(const f32v3& pos) {
     assert(abs(mRight.z) <= MATH_EPSILON);
 
     mPitch = asin(-mDirection.z);
-    mYaw = atan2(mDirection.x, mDirection.y);
+    mYaw = atan2(mDirection.y, mDirection.x);
 
     mViewChanged = true;
 }
@@ -139,7 +139,7 @@ void Camera3D::setOrientation(const f32q& orientation) {
     mUp = orientation * f32v3(0.0, 1.0, 0.0);
 
     mPitch = asin(-mDirection.z);
-    mYaw = atan2(mDirection.x, mDirection.y);
+    mYaw = atan2(mDirection.y, mDirection.x);
 
     mViewChanged = true;
 }

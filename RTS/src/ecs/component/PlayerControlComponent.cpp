@@ -40,17 +40,17 @@ f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 
 	// WSAD inputs
     if (inputs.forward) {
-        moveDir.y = 1.0f;
+        moveDir.x = 1.0f;
     }
     else if (inputs.back) {
-        moveDir.y = -1.0f;
+        moveDir.x = -1.0f;
     }
 
     if (inputs.left) {
-        moveDir.x = -1.0f;
+        moveDir.y = 1.0f;
     }
     else if (inputs.right) {
-        moveDir.x = 1.0f;
+        moveDir.y = -1.0f;
     }
 
 	// Normalize or return 0
@@ -58,7 +58,7 @@ f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 		return moveDir;
 	}
 	
-	moveDir = glm::rotate(moveDir, -cameraYaw);
+	moveDir = glm::rotate(moveDir, cameraYaw);
 
 	return glm::normalize(moveDir);
 }

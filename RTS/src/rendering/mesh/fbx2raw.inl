@@ -91,15 +91,16 @@ namespace fbx2raw {
         FbxAMatrix transformMatrix = fbxMesh->GetNode()->EvaluateGlobalTransform();
         ozz::math::Float4x4 coordinateSystemTransform;
         if (shouldRotateZUp) {
-            // Convert to +Z up +Y forward
+            // Convert to +Z up +X forward
             coordinateSystemTransform =
-            { {ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
+            { {ozz::math::simd_float4::Load(0.f, 1.f, 0.f, 0.f),
               ozz::math::simd_float4::Load(0.f, 0.f, 1.f, 0.f),
-              ozz::math::simd_float4::Load(0.f, 1.f, 0.f, 0.f),
+              ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
               ozz::math::simd_float4::Load(0.f, 0.f, 0.f, 1.f)} };
         }
         else {
-            // +Y forward
+            // +Y forward (Thanks ozz)
+            //TODO: Fix
             coordinateSystemTransform =
             { {ozz::math::simd_float4::Load(1.f, 0.f, 0.f, 0.f),
               ozz::math::simd_float4::Load(0.f, 1.f, 0.f, 0.f),
@@ -189,7 +190,7 @@ namespace fbx2raw {
 
             for (int v = 0; v < 3; ++v) {
                 // When doing Z up we must flip vertex winding
-                const int vertexIndex = shouldRotateZUp ? 2 - v : v;
+                const int vertexIndex = v;
                 const int vertexId = vertexIdBase + vertexIndex;
                 // Get control point.
                 const int controlPoint = fbxMesh->GetPolygonVertex(p, vertexIndex);

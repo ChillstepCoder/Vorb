@@ -131,13 +131,13 @@ void DebugRenderer::drawAABBThreadSafe(const f32AABB3& aabb, color4 color, int l
     // Bottom 4
     const f32v3 v0(aabb.x, aabb.y, aabb.z);
     const f32v3 v1(aabb.x + aabb.dims.x, aabb.y, aabb.z);
-    const f32v3 v2(aabb.x + aabb.dims.x, aabb.y + aabb.dims.x, aabb.z);
-    const f32v3 v3(aabb.x, aabb.y + aabb.dims.x, aabb.z);
+    const f32v3 v2(aabb.x + aabb.dims.x, aabb.y + aabb.dims.y, aabb.z);
+    const f32v3 v3(aabb.x, aabb.y + aabb.dims.y, aabb.z);
     // Top 4
     const f32v3 v4(aabb.x, aabb.y, aabb.z + aabb.dims.z);
     const f32v3 v5(aabb.x + aabb.dims.x, aabb.y, aabb.z + aabb.dims.z);
-    const f32v3 v6(aabb.x + aabb.dims.x, aabb.y + aabb.dims.x, aabb.z + aabb.dims.z);
-    const f32v3 v7(aabb.x, aabb.y + aabb.dims.x, aabb.z + aabb.dims.z);
+    const f32v3 v6(aabb.x + aabb.dims.x, aabb.y + aabb.dims.y, aabb.z + aabb.dims.z);
+    const f32v3 v7(aabb.x, aabb.y + aabb.dims.y, aabb.z + aabb.dims.z);
     // Bottom
     std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];

@@ -437,7 +437,7 @@ bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
             offsetToBobber = f32v3(1.0f, 0.0f, 0.0f);
         }
         const f32v3 normalToBobber = glm::normalize(offsetToBobber);
-        const f32 desiredYaw = atan2(offsetToBobber.x, offsetToBobber.y);
+        const f32 desiredYaw = atan2(offsetToBobber.y, offsetToBobber.x);
         position = MathUtil::lerpWithDeltaTime(position, bobberPos - normalToBobber * FISH_HALF_LENGTH, 0.999f, elapsedSec);
         angularSpeed.x = MathUtil::getNewAngularSpeedToTargetYawSmooth(angularSpeed.x, yawPitch.x, desiredYaw, MAX_ANGULAR_SPEED, ANGULAR_ACCELERATION, elapsedSec);
     };
@@ -472,7 +472,7 @@ bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
 
                 // Yaw + pitch rotation with acceleration
-                const f32 targetYaw = std::atan2(velocity.mVelocity.x, velocity.mVelocity.y);
+                const f32 targetYaw = std::atan2(velocity.mVelocity.y, velocity.mVelocity.x);
                 const f32 currentSpeed = sqrt(glm::dot(velocity.mVelocity, velocity.mVelocity));
                 const f32 targetPitch = (velocity.mVelocity.z / currentSpeed) * M_PI_2F * 0.75f;
                 updateAngularSpeedToTargetRotation(fish.mAngularSpeed, yawPitch.mYawPitch, targetYaw, targetPitch, mElapsedSec);
@@ -512,7 +512,7 @@ bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 // Always face bobber
                 YawPitchComponent& yawPitch = registry.get<YawPitchComponent>(entity);
                 // Yaw + pitch rotation with acceleration
-                const f32 targetYaw = std::atan2(normalToTarget.x, normalToTarget.y);
+                const f32 targetYaw = std::atan2(normalToTarget.y, normalToTarget.x);
                 const f32 targetPitch = (normalToTarget.z) * M_PI_2F * 0.75f;
                 updateAngularSpeedToTargetRotation(fish.mAngularSpeed, yawPitch.mYawPitch, targetYaw, targetPitch, mElapsedSec);
             }

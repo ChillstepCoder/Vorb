@@ -141,7 +141,7 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
     // Orient rotation to movement
     if (controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT)) {
         constexpr f32 YAW_SPEED = 0.12f;
-        controlCmp.mControllerAngle = interpolateYaw(controlCmp.mControllerAngle, M_PI_2 - atan2(newLinearVelocity2D.y, newLinearVelocity2D.x), YAW_SPEED);
+        controlCmp.mControllerAngle = interpolateYaw(controlCmp.mControllerAngle, atan2(newLinearVelocity2D.y, newLinearVelocity2D.x), YAW_SPEED);
     }
 
     // If we have no desired motion, do nothing and let physics system add friction

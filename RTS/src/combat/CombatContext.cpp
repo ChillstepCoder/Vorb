@@ -8,6 +8,9 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/CharacterControlComponent.h"
 
+// For testing
+#include "debugging/DebugRenderer.h"
+
 bool anglesInClockwiseSequence(double x, double y, double z) {
     double diff = fmod(y - x, M_2_PI) + fmod(z - y, M_2_PI);
     return diff < M_2_PI;
@@ -25,115 +28,59 @@ double angularDiffSigned(double theta1, double theta2) {
 f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationRad, f32 arcHeight) {
     f32AABB3 rv;
 
+    // Note that +y is forward so 0 degrees is
+
     // Always treat arc as centered around the rotation
     arcRotationRad -= arcAngleRad * 0.5f;
 
-    // Normalize the arc rotation (Fails if more than 2PI off)
+    // Normalize the arc rotation
+    arcRotationRad = std::fmod(arcRotationRad, M_2_PIF);
     if (arcRotationRad < 0) {
         arcRotationRad += M_2_PIF;
     }
-    else if (arcRotationRad > M_2_PIF) {
-        arcRotationRad -= M_2_PIF;
-    }
 
-    const f32v2 arcOrigin2D(arcOrigin);
-    f32v2 E = arcOrigin2D + f32v2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
-    f32v2 F = arcOrigin2D + f32v2(radius * std::cos(arcRotationRad + arcAngleRad), radius * std::sin(arcRotationRad + arcAngleRad));
+    // Compute start and end points of the arc
+    const f32v2 origin2D(arcOrigin);
+    f32v2 start = origin2D + glm::vec2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
+    f32v2 end = origin2D + glm::vec2(radius * std::cos(arcRotationRad + arcAngleRad), radius * std::sin(arcRotationRad + arcAngleRad));
 
-    double x1 = E.x, y1 = E.y, x2 = E.x, y2 = E.y;
+    DebugRenderer::drawWireQuadThreadSafe(arcOrigin, f32v2(0.5f), color::Red, 200);
+    DebugRenderer::drawWireQuadThreadSafe(f32v3(start.x, start.y, arcOrigin.z), f32v2(0.5f), color::Red, 200);
+    DebugRenderer::drawWireQuadThreadSafe(f32v3(end.x, end.y, arcOrigin.z), f32v2(0.5f), color::Red, 200);
 
-    if (F.x < x1)
-        x1 = F.x;
-    if (F.x > x2)
-        x2 = F.x;
-    if (F.y < y1)
-        y1 = F.y;
-    if (F.y > y2)
-        y2 = F.y;
+    // Initialize min and max points of AABB
+    f32v2 min = glm::min(glm::min(start, end), origin2D);
+    f32v2 max = glm::max(glm::max(start, end), origin2D);
 
-    double thetaE = atan2(E.y - arcOrigin.y, E.x - arcOrigin.x);
-    double thetaF = atan2(F.y - arcOrigin.y, F.x - arcOrigin.x);
+    //// Update the AABB according to the cardinal directions covered by the arc
+    //if ((arcRotationRad <= M_PI_2F && arcRotationRad + arcAngleRad >= M_PI_2F)) {
+    //    max.y = arcOrigin.y + radius;
+    //}
+    //if ((arcRotationRad <= M_PIF && arcRotationRad + arcAngleRad >= M_PIF)) {
+    //    max.x = arcOrigin.x + radius;
+    //}
+    //if ((arcRotationRad <= M_PI_2F * 3.0f && arcRotationRad + arcAngleRad >= M_PI_2F * 3.0f)) {
+    //    min.y = arcOrigin.y - radius;
+    //}
+    //if ((arcRotationRad <= M_2_PIF && arcRotationRad + arcAngleRad >= M_2_PIF) || (arcRotationRad <= 0 && arcRotationRad + arcAngleRad >= 0)) {
+    //    min.x = arcOrigin.x - radius;
+    //}
 
-    if (anglesInClockwiseSequence(thetaE, 0, thetaF)) {
-        double x = (arcOrigin.x + radius);
-        if (x > x2)
-            x2 = x;
-    }
+    //  Check +X edge
+    //if ()
 
-    if (anglesInClockwiseSequence(thetaE, M_PI_2, thetaF)) {
-        double y = (arcOrigin.y + radius);
-        if (y > y2)
-            y2 = y;
-    }
-
-    if (anglesInClockwiseSequence(thetaE, M_PI, thetaF)) {
-        double x = (arcOrigin.x - radius);
-        if (x < x1)
-            x1 = x;
-    }
-
-    if (anglesInClockwiseSequence(thetaE, 3 * M_PI_2, thetaF)) {
-        double y = (arcOrigin.y - radius);
-        if (y < y1)
-            y1 = y;
-    }
-
-    rv.pos.x = x1;
-    rv.pos.y = y1;
+    rv.pos.x = min.x;
+    rv.pos.y = min.y;
     rv.pos.z = arcOrigin.z;
-    rv.dims.x = x2 - x1;
-    rv.dims.y = y2 - y1;
+    rv.dims.x = max.x - min.x;
+    rv.dims.y = max.y - min.y;
     rv.dims.z = arcHeight;
+
+    DebugRenderer::drawWireQuadThreadSafe(f32v3(min.x, min.y, arcOrigin.z), f32v2(0.5f), color::LightBlue, 200);
+    DebugRenderer::drawWireQuadThreadSafe(f32v3(max.x, max.y, arcOrigin.z), f32v2(0.5f), color::Green, 200);
 
     return rv;
 }
-
-//f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationRad, f32 arcHeight) {
-//    f32AABB3 rv;
-//
-//    // Always treat arc as centered around the rotation
-//    arcRotationRad -= arcAngleRad * 0.5f;
-//
-//    // Normalize the arc rotation (Fails if more than 2PI off)
-//    if (arcRotationRad < 0) {
-//        arcRotationRad += M_2_PIF;
-//    }
-//    else if (arcRotationRad > M_2_PIF) {
-//        arcRotationRad -= M_2_PIF;
-//    }
-//
-//    // Compute start and end points of the arc
-//    const f32v2 origin2D(arcOrigin);
-//    f32v2 start = origin2D + glm::vec2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
-//    f32v2 end = origin2D + glm::vec2(radius * std::cos(arcRotationRad + arcAngleRad), radius * std::sin(arcRotationRad + arcAngleRad));
-//
-//    // Initialize min and max points of AABB to start and end points of arc
-//    f32v2 min = glm::min(start, end);
-//    f32v2 max = glm::max(start, end);
-//
-//    // If arc covers the 90 or 270 degrees points of circle, update AABB accordingly
-//    if ((arcRotationRad <= M_PI_2F && arcRotationRad + arcAngleRad >= M_PI_2F) || (arcRotationRad <= M_PI_2F * 3.0f && arcRotationRad + arcAngleRad >= M_PI_2F * 3.0f)) {
-//        max.y = arcOrigin.y + radius;
-//    }
-//    if ((arcRotationRad <= M_PIF && arcRotationRad + arcAngleRad >= M_PIF) || (arcRotationRad <= M_2_PIF && arcRotationRad + arcAngleRad >= M_2_PIF)) {
-//        min.x = arcOrigin.x - radius;
-//    }
-//    if ((arcRotationRad <= 0 && arcRotationRad + arcAngleRad >= 0) || (arcRotationRad <= M_PIF && arcRotationRad + arcAngleRad >= M_PIF)) {
-//        max.x = arcOrigin.x + radius;
-//    }
-//    if ((arcRotationRad <= M_PI_2F * 3.0f && arcRotationRad + arcAngleRad >= M_PI_2F * 3.0f) || (arcRotationRad <= M_PI_2 && arcRotationRad + arcAngleRad >= M_PI_2)) {
-//        min.y = arcOrigin.y - radius;
-//    }
-//
-//    rv.pos.x = min.x;
-//    rv.pos.y = min.y;
-//    rv.pos.z = arcOrigin.z;
-//    rv.dims.x = max.x - min.x;
-//    rv.dims.y = max.y - min.y;
-//    rv.dims.z = arcHeight;
-//
-//    return rv;
-//}
 
 CombatContext::CombatContext(IWorld& world) : mWorld(world) {
 

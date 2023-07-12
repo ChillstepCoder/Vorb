@@ -369,7 +369,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
             // TODO: Optimize
             f32m4 transform(1.0f);
-            transform = glm::rotate(transform, DEG_TO_RAD(180.0f) -angle, f32v3(0.0f, 0.0f, 1.0f));
+            transform = glm::rotate(transform, DEG_TO_RAD(90.0f) + angle, f32v3(0.0f, 0.0f, 1.0f));
             transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
 
             const f32v3 offset = position - camera.getPosition();

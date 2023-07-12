@@ -217,12 +217,12 @@ namespace MathUtil {
         return currentAngularSpeed;
     }
     inline f32v2 directionFromYaw2D(f32 yaw) {
-        return f32v2(sin(yaw), cos(yaw));
+        return f32v2(cos(yaw), sin(yaw));
     }
 
-    // +Y is forward
+    // +X is forward
     inline f32v3 directionFromYaw3D(f32 yaw) {
-        return f32v3(sin(yaw), cos(yaw), 0.0f);
+        return f32v3(cos(yaw), sin(yaw), 0.0f);
     }
 }
 

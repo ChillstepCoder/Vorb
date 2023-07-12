@@ -268,21 +268,21 @@ void CameraController::updateMouseWheelInputMMOMode(const vui::MouseWheelEvent& 
 void CameraController::updateMouseMotionInputFreeLookMode(const vui::MouseMotionEvent& evnt) {
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
         constexpr f32 ROTATE_SPEED = 0.002f;
-        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
+        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, -evnt.dx * ROTATE_SPEED);
     }
 }
 
 void CameraController::updateMouseMotionInputMMOMode(const vui::MouseMotionEvent& evnt) {
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
         constexpr f32 ROTATE_SPEED = 0.002f;
-        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
+        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, -evnt.dx * ROTATE_SPEED);
     }
 }
 
 void CameraController::updateMouseMotionInputFirstPersonMode(const vui::MouseMotionEvent& evnt) {
     if (mIsMouseHidden) {
         constexpr f32 ROTATE_SPEED = 0.002f;
-        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
+        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, -evnt.dx * ROTATE_SPEED);
     }
 }
 
