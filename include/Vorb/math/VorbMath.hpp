@@ -38,6 +38,9 @@
 #ifndef M_2_PIF
 #define M_2_PIF 6.283185307179586476925286766559F /* 2 * pi */
 #endif
+#ifndef M_3_PI_2F
+#define M_3_PI_2F 4.7123889803846898576939650749193   /* 3 * (pi / 2) */
+#endif
 #ifndef M_4_PI
 #define M_4_PI 12.566370614359172953850573533118 /* 4 * pi */
 #endif

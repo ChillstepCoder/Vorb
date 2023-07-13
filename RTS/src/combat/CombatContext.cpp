@@ -8,27 +8,16 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/CharacterControlComponent.h"
 
+#include "btBulletCollisionCommon.h"
+#include "BulletCollision/CollisionShapes/btCylinderShape.h"
 // For testing
 #include "debugging/DebugRenderer.h"
 
-bool anglesInClockwiseSequence(double x, double y, double z) {
-    double diff = fmod(y - x, M_2_PI) + fmod(z - y, M_2_PI);
-    return diff < M_2_PI;
-}
-
-double angularDiffSigned(double theta1, double theta2) {
-    double diff = theta2 - theta1;
-    while (diff >= M_2_PIF)
-        diff -= M_2_PIF;
-    while (diff <= 0)
-        diff += M_2_PIF;
-    return diff;
-}
-
 f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationRad, f32 arcHeight) {
     f32AABB3 rv;
-
-    // Note that +y is forward so 0 degrees is
+    
+    // We check center point, the two ray extrema, and then potentially the 4 extreme points on each axis
+    // depending on the covered angle
 
     // Always treat arc as centered around the rotation
     arcRotationRad -= arcAngleRad * 0.5f;
@@ -39,10 +28,12 @@ f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 a
         arcRotationRad += M_2_PIF;
     }
 
+    const f32 arcRotationEndRad = arcRotationRad + arcAngleRad;
+
     // Compute start and end points of the arc
     const f32v2 origin2D(arcOrigin);
     f32v2 start = origin2D + glm::vec2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
-    f32v2 end = origin2D + glm::vec2(radius * std::cos(arcRotationRad + arcAngleRad), radius * std::sin(arcRotationRad + arcAngleRad));
+    f32v2 end = origin2D + glm::vec2(radius * std::cos(arcRotationEndRad), radius * std::sin(arcRotationEndRad));
 
     DebugRenderer::drawWireQuadThreadSafe(arcOrigin, f32v2(0.5f), color::Red, 200);
     DebugRenderer::drawWireQuadThreadSafe(f32v3(start.x, start.y, arcOrigin.z), f32v2(0.5f), color::Red, 200);
@@ -52,22 +43,38 @@ f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 a
     f32v2 min = glm::min(glm::min(start, end), origin2D);
     f32v2 max = glm::max(glm::max(start, end), origin2D);
 
-    //// Update the AABB according to the cardinal directions covered by the arc
-    //if ((arcRotationRad <= M_PI_2F && arcRotationRad + arcAngleRad >= M_PI_2F)) {
-    //    max.y = arcOrigin.y + radius;
-    //}
-    //if ((arcRotationRad <= M_PIF && arcRotationRad + arcAngleRad >= M_PIF)) {
-    //    max.x = arcOrigin.x + radius;
-    //}
-    //if ((arcRotationRad <= M_PI_2F * 3.0f && arcRotationRad + arcAngleRad >= M_PI_2F * 3.0f)) {
-    //    min.y = arcOrigin.y - radius;
-    //}
-    //if ((arcRotationRad <= M_2_PIF && arcRotationRad + arcAngleRad >= M_2_PIF) || (arcRotationRad <= 0 && arcRotationRad + arcAngleRad >= 0)) {
-    //    min.x = arcOrigin.x - radius;
-    //}
-
-    //  Check +X edge
-    //if ()
+    // Two base cases, either we overlap the X, or not.
+    // When we overlap X, arcRotationEnd will be greater than 2PI
+    // +x
+    if (arcRotationEndRad > M_2_PIF) {
+        max.x = origin2D.x + radius;
+        // +Y case
+        if (arcRotationEndRad > M_2_PIF + M_PI_2F || arcRotationRad < M_PI_2F) {
+            max.y = origin2D.y + radius;
+        }
+        // -X case
+        if (arcRotationEndRad > M_2_PIF + M_PI || arcRotationRad < M_PI) {
+            min.x = origin2D.x - radius;
+        }
+        // -Y case
+        if (arcRotationEndRad > M_2_PIF + M_3_PI_2F || arcRotationRad < M_3_PI_2F) {
+            min.y = origin2D.y - radius;
+        }
+    }
+    else {
+        // +Y case
+        if (arcRotationRad < M_PI_2F && arcRotationEndRad > M_PI_2F) {
+            max.y = origin2D.y + radius;
+        }
+        // -X case
+        if (arcRotationRad < M_PIF && arcRotationEndRad > M_PIF) {
+            min.x = origin2D.x - radius;
+        }
+        // -Y case
+        if (arcRotationRad < M_3_PI_2F && arcRotationEndRad > M_3_PI_2F) {
+            min.y = origin2D.y - radius;
+        }
+    }
 
     rv.pos.x = min.x;
     rv.pos.y = min.y;
@@ -112,15 +119,58 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
     PhysicsQueryResult results[MAX_RESULTS];
 
     // TODO: WorldQueryContext?
-    f32AABB3 aabb = getAABBEnclosingArc(ecs.mRegistry.get<PositionComponent>(source).mPosition, radius, arcAngleRad, sourceRotation, height);
+    // TODO: Offset
+    const f32v3 attackStartPos = ecs.mRegistry.get<PositionComponent>(source).mPosition;
+    const f32v2 forwardNormal = f32v2(cos(sourceRotation), sin(sourceRotation));
+    const f32AABB3 aabb = getAABBEnclosingArc(attackStartPos, radius, arcAngleRad, sourceRotation, height);
     const int resultCount = mWorld.getPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, results, MAX_RESULTS);
 
+    
     // DELETE ALL TILES!!!
     for (int i = 0; i < resultCount; ++i) {
+        const btCollisionShape* shape = results[i].mCollisionObject->getCollisionShape();
+        if (shape == nullptr) {
+            return;
+        }
+
+        const f32v2 centerPoint2D = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
+        const f32v2 offsetToTarget = centerPoint2D - f32v2(attackStartPos);
+        const f32 distanceFromTarget2 = glm::length2(offsetToTarget);
+
+        // Tile handle
         if (std::holds_alternative<LiteTileHandle>(results[i].mObject)) {
-            LiteTileHandle liteHandle = std::get<LiteTileHandle>(results[i].mObject);
-            TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
-            tileHandle.getMutableContainer()->setTileLayer(tileHandle.tileIndex, TileLayer::Main, TILE_ID_NONE);
+
+            bool intersectsArc = false;
+            const int shapeType = shape->getShapeType();
+            switch (shapeType) {
+                case CYLINDER_SHAPE_PROXYTYPE: {
+                    const btCylinderShape* cylinder = static_cast<const btCylinderShape*>(shape);
+                    const btVector3 halfExtents = cylinder->getHalfExtentsWithoutMargin();
+                    assert(halfExtents.x() == halfExtents.y());
+
+                    const f32 totalRadius = radius + halfExtents.x();
+                    if (distanceFromTarget2 <= SQ(totalRadius)) {
+                        const f32v2 normalToTarget = offsetToTarget / sqrt(distanceFromTarget2);
+                        // TODO: add rotation padding based on the radius?
+                        if (acosf(glm::dot(normalToTarget, forwardNormal)) < arcAngleRad * 0.5f) {
+                            intersectsArc = true;
+                        }
+                    }
+                    break;
+                    // ... (add other cases as needed)
+                }
+                default:
+                    assert(false && "Unhandled shape type");
+            }
+
+            if (intersectsArc) {
+                LiteTileHandle liteHandle = std::get<LiteTileHandle>(results[i].mObject);
+                TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
+                tileHandle.getMutableContainer()->setTileLayer(tileHandle.tileIndex, TileLayer::Main, TILE_ID_NONE);
+            }
+        }
+        else {
+            // TODO: ENTITY
         }
     }
 }
