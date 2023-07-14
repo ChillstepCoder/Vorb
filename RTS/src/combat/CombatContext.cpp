@@ -10,12 +10,67 @@
 
 #include "btBulletCollisionCommon.h"
 #include "BulletCollision/CollisionShapes/btCylinderShape.h"
+
+#include "options/DebugOptions.h"
+
 // For testing
 #include "debugging/DebugRenderer.h"
+
+constexpr int DEBUG_LIFETIME_QUERIES = 100;
+
+void debugDrawArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationRad, f32 arcHeight, color4 color, int lifeTime) {
+
+    if (!sDebugOptions.mShowCombatQueries) {
+        return;
+    }
+
+    // Always treat arc as centered around the rotation
+    arcRotationRad -= arcAngleRad * 0.5f;
+
+    // Normalize the arc rotation
+    arcRotationRad = std::fmod(arcRotationRad, M_2_PIF);
+    if (arcRotationRad < 0) {
+        arcRotationRad += M_2_PIF;
+    }
+
+    const f32 arcRotationEndRad = arcRotationRad + arcAngleRad;
+
+    // Compute start and end points of the arc
+    const f32v2 origin2D(arcOrigin);
+    const f32v2 start2D = origin2D + glm::vec2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
+    const f32v2 end2D = origin2D + glm::vec2(radius * std::cos(arcRotationEndRad), radius * std::sin(arcRotationEndRad));
+
+    const f32v3 start3D(start2D.x, start2D.y, arcOrigin.z);
+    const f32v3 end3D(end2D.x, end2D.y, arcOrigin.z);
+    const f32v3 arcHeight3D(0.0f, 0.0f, arcHeight);
+
+    // Sides
+    DebugRenderer::drawFilledQuadThreadSafe(arcOrigin, start3D, start3D + arcHeight3D, arcOrigin + arcHeight3D, color, lifeTime);
+    DebugRenderer::drawFilledQuadThreadSafe(arcOrigin, end3D, end3D + arcHeight3D, arcOrigin + arcHeight3D, color, lifeTime);
+
+    constexpr f32 STEP = DEG_TO_RAD(5.0f);
+
+    // Arc
+    f32v3 point = start3D;
+    f32 angle = glm::min(STEP, arcAngleRad);
+    for (; angle <= arcAngleRad; angle += STEP) {
+        const f32v2 next2D = origin2D + glm::vec2(radius * std::cos(arcRotationRad + angle), radius * std::sin(arcRotationRad + angle));
+        const f32v3 next3D(next2D.x, next2D.y, arcOrigin.z);
+        DebugRenderer::drawFilledQuadThreadSafe(point, next3D, next3D + arcHeight3D, point + arcHeight3D, color, lifeTime);
+        point = next3D;
+    }
+    // Last quad if we didnt evenly end up there
+    if (angle != arcAngleRad) {
+        DebugRenderer::drawFilledQuadThreadSafe(point, end3D, end3D + arcHeight3D, point + arcHeight3D, color, lifeTime);
+    }
+
+}
 
 f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationRad, f32 arcHeight) {
     f32AABB3 rv;
     
+    debugDrawArc(arcOrigin, radius, arcAngleRad, arcRotationRad, arcHeight, color4(255, 255, 0, 95), DEBUG_LIFETIME_QUERIES);
+
     // We check center point, the two ray extrema, and then potentially the 4 extreme points on each axis
     // depending on the covered angle
 
@@ -32,12 +87,8 @@ f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 a
 
     // Compute start and end points of the arc
     const f32v2 origin2D(arcOrigin);
-    f32v2 start = origin2D + glm::vec2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
-    f32v2 end = origin2D + glm::vec2(radius * std::cos(arcRotationEndRad), radius * std::sin(arcRotationEndRad));
-
-    DebugRenderer::drawWireQuadThreadSafe(arcOrigin, f32v2(0.5f), color::Red, 200);
-    DebugRenderer::drawWireQuadThreadSafe(f32v3(start.x, start.y, arcOrigin.z), f32v2(0.5f), color::Red, 200);
-    DebugRenderer::drawWireQuadThreadSafe(f32v3(end.x, end.y, arcOrigin.z), f32v2(0.5f), color::Red, 200);
+    const f32v2 start = origin2D + glm::vec2(radius * std::cos(arcRotationRad), radius * std::sin(arcRotationRad));
+    const f32v2 end = origin2D + glm::vec2(radius * std::cos(arcRotationEndRad), radius * std::sin(arcRotationEndRad));
 
     // Initialize min and max points of AABB
     f32v2 min = glm::min(glm::min(start, end), origin2D);
@@ -83,9 +134,6 @@ f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 a
     rv.dims.y = max.y - min.y;
     rv.dims.z = arcHeight;
 
-    DebugRenderer::drawWireQuadThreadSafe(f32v3(min.x, min.y, arcOrigin.z), f32v2(0.5f), color::LightBlue, 200);
-    DebugRenderer::drawWireQuadThreadSafe(f32v3(max.x, max.y, arcOrigin.z), f32v2(0.5f), color::Green, 200);
-
     return rv;
 }
 
@@ -121,10 +169,15 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
     // TODO: WorldQueryContext?
     // TODO: Offset
     const f32v3 attackStartPos = ecs.mRegistry.get<PositionComponent>(source).mPosition;
+    const f32v2 attackStartPos2D(attackStartPos);
     const f32v2 forwardNormal = f32v2(cos(sourceRotation), sin(sourceRotation));
     const f32AABB3 aabb = getAABBEnclosingArc(attackStartPos, radius, arcAngleRad, sourceRotation, height);
+    const f32 halfArcAngleRad = arcAngleRad * 0.5f;
     const int resultCount = mWorld.getPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, results, MAX_RESULTS);
 
+    const f32v2 origin2D(attackStartPos);
+    const f32v2 start2D = origin2D + glm::vec2(radius * std::cos(sourceRotation - halfArcAngleRad), radius * std::sin(sourceRotation - halfArcAngleRad));
+    const f32v2 end2D = origin2D + glm::vec2(radius * std::cos(sourceRotation + halfArcAngleRad), radius * std::sin(sourceRotation + halfArcAngleRad));
     
     // DELETE ALL TILES!!!
     for (int i = 0; i < resultCount; ++i) {
@@ -133,8 +186,8 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
             return;
         }
 
-        const f32v2 centerPoint2D = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
-        const f32v2 offsetToTarget = centerPoint2D - f32v2(attackStartPos);
+        const f32v2 targetCenterPoint2D = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
+        const f32v2 offsetToTarget = targetCenterPoint2D - f32v2(attackStartPos);
         const f32 distanceFromTarget2 = glm::length2(offsetToTarget);
 
         // Tile handle
@@ -146,14 +199,28 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
                 case CYLINDER_SHAPE_PROXYTYPE: {
                     const btCylinderShape* cylinder = static_cast<const btCylinderShape*>(shape);
                     const btVector3 halfExtents = cylinder->getHalfExtentsWithoutMargin();
+                    const f32 targetRadiusSQ = SQ(halfExtents.x());
                     assert(halfExtents.x() == halfExtents.y());
 
                     const f32 totalRadius = radius + halfExtents.x();
-                    if (distanceFromTarget2 <= SQ(totalRadius)) {
+                    if (distanceFromTarget2 <= targetRadiusSQ) {
+                        // If attack origin intersects the cylinder
+                        intersectsArc = true;
+                    }
+                    else if (distanceFromTarget2 <= SQ(totalRadius)) {
                         const f32v2 normalToTarget = offsetToTarget / sqrt(distanceFromTarget2);
-                        // TODO: add rotation padding based on the radius?
+                        // If target center is within the front arc
                         if (acosf(glm::dot(normalToTarget, forwardNormal)) < arcAngleRad * 0.5f) {
                             intersectsArc = true;
+                        }
+                        else {
+                            // Check intersect with both segments
+                            if (MathUtil::computePointToLineSegmentDistanceSQ(targetCenterPoint2D, start2D, attackStartPos2D) < targetRadiusSQ) {
+                                intersectsArc = true;
+                            }
+                            else if (MathUtil::computePointToLineSegmentDistanceSQ(targetCenterPoint2D, end2D, attackStartPos2D) < targetRadiusSQ) {
+                                intersectsArc = true;
+                            }
                         }
                     }
                     break;

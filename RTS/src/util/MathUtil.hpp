@@ -81,6 +81,32 @@ namespace MathUtil {
         return velocity;
     }
 
+    inline float computePointToLineSegmentDistanceSQ(f32v2 p, f32v2 p1, f32v2 p2) {
+        f32v2 diff = p2 - p1;
+
+        // Check if the line segment is a point
+        if (diff.x == 0 && diff.y == 0)
+            return glm::length(p - p1);
+
+        // Calculate the t that minimizes the distance
+        float t = glm::dot(p - p1, diff) / glm::dot(diff, diff);
+
+        // If the t is outside the segment use the endpoint
+        if (t < 0) {
+            diff = p - p1;
+        }
+        else if (t > 1) {
+            diff = p - p2;
+        }
+        else {
+            // Project to the point to the line to get the minimum distance
+            f32v2 projection = p1 + t * diff;
+            diff = p - projection;
+        }
+
+        return glm::length2(diff);
+    }
+
     namespace Easing {
         inline float easeInOutCubic(float x) {
             return x < 0.5f ? 4.0f * x * x * x : 1 - powf(-2 * x + 2, 3) / 2;

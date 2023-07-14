@@ -59,6 +59,9 @@ std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugCircle>
 std::mutex sNewLinesThreadSafeMutex;
 std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher> sNewLinesThreadSafe;
 
+std::mutex sNew3DQuadsThreadSafeMutex;
+std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad3D>, IntPairHasher> sNew3DQuadsThreadSafe;
+
 
 const float rotVal = glm::radians(30.0f);
 void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
@@ -106,6 +109,12 @@ void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end,
     ASSERT_RENDER_THREAD();
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
+}
+
+void DebugRenderer::drawFilledQuadThreadSafe(const f32v3& p1, const f32v3& p2, const f32v3& p3, const f32v3& p4, color4 color, int lifeTime, int id) {
+    assert(!IS_RENDER_THREAD());
+    std::lock_guard<std::mutex> lockGuard(sNew3DQuadsThreadSafeMutex);
+    sNew3DQuadsThreadSafe[std::make_pair(lifeTime, id)].emplace_back(p1, p2, p3, p4, color);
 }
 
 void DebugRenderer::drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
@@ -430,6 +439,48 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         sDebugMeshes.emplace_back(std::move(newMesh));
     }
     sNewQuads.clear();
+
+    // Thread safe 3D
+    {
+
+        std::lock_guard<std::mutex> lockGuard(sNew3DQuadsThreadSafeMutex);
+        for (auto&& quadIt : sNew3DQuadsThreadSafe) {
+            SimpleMesh newMesh;
+            GL.glCreateVertexArrays(1, &newMesh.vao);
+            GL.glCreateBuffers(1, &newMesh.vbo);
+            auto&& quads = quadIt.second;
+
+            newMesh.lifetime = quadIt.first.first;
+            newMesh.id = quadIt.first.second;
+            newMesh.numVerts = quads.size() * 4;
+            newMesh.type = DebugMeshType::QUADS;
+
+            std::vector<SimpleMeshVertex> quadVertices(quads.size() * 4);
+            if (!quadVertices.size()) {
+                continue;
+            }
+
+            int index = 0;
+            for (size_t i = 0; i < quads.size(); ++i) {
+                auto&& q = quads[i];
+                // TODO: Time instead of frames
+                quadVertices[index].position = q.p1;
+                quadVertices[index].color = q.color;
+                quadVertices[index + 1].position = q.p2;
+                quadVertices[index + 1].color = q.color;
+                quadVertices[index + 2].position = q.p3;
+                quadVertices[index + 2].color = q.color;
+                quadVertices[index + 3].position = q.p4;
+                quadVertices[index + 3].color = q.color;
+                index += 4;
+            }
+            GL.glNamedBufferStorage(newMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data(), 0);
+            GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
+            bindSimpleMeshVertexAttribs(newMesh.vao);
+            sDebugMeshes.emplace_back(std::move(newMesh));
+        }
+        sNew3DQuadsThreadSafe.clear();
+    }
 
     glDepthFunc((VGEnum)vg::DepthFunction::ALWAYS);
 

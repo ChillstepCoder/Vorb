@@ -49,6 +49,21 @@ struct DebugQuad {
     color4 color;
 };
 
+struct DebugQuad3D {
+    DebugQuad3D(const f32v3 p1, const f32v3 p2, const f32v3 p3, const f32v3 p4, const color4& colr)
+        : p1(p1)
+        , p2(p2)
+        , p3(p3)
+        , p4(p4)
+        , color(colr) {
+    }
+    f32v3 p1;
+    f32v3 p2;
+    f32v3 p3;
+    f32v3 p4;
+    color4 color;
+};
+
 struct DebugCircle {
     DebugCircle(const f32v3& position, const f32 radius, const color4& colr)
         : position(position)

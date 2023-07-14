@@ -28,6 +28,7 @@ public:
     static void drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime = 0, int id = 0);
 
     // =============== Thread safe functions ===============
+    static void drawFilledQuadThreadSafe(const f32v3& p1, const f32v3& p2, const f32v3& p3, const f32v3& p4, color4 color, int lifeTime = 0, int id = 0);
     static void drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime = 0, int id = 0);
     static void drawWireQuadThreadSafe(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
     static void drawAABBThreadSafe(const f32AABB3& aabb, color4 color, int lifeTime = 0, int id = 0);
