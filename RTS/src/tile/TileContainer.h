@@ -201,6 +201,9 @@ private:
     TileWallContainer mTileWallsContainer;
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
+
+    boost::container::flat_set<TileIndex, ui16> mDamagedTiles;
+
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;
     mutable std::atomic_uint32_t mRefCount = 0u;
