@@ -789,7 +789,10 @@ void NavWorld::initEventHandlers() {
         static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
         ASSERT_GAME_THREAD();
-        if (e_cast(containerEvent.edit.type) & EDIT_TYPES_MASK) {
+
+        const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(containerEvent.varEvent);
+
+        if (e_cast(editEvent.type) & EDIT_TYPES_MASK) {
             markContainerNavDirty(containerEvent.container);
         }
     });

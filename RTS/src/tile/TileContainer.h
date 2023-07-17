@@ -11,6 +11,8 @@
 #include "physics/StaticPhysicsMesh.h"
 #include <shared_mutex>
 
+#include <boost/container/flat_set.hpp>
+
 class Chunk;
 class Building;
 class IWorld;
@@ -79,6 +81,9 @@ public:
     void setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer);
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
     void setWallsAt(TileIndex index, TileWall walls[4]);
+
+    // Returns true if tile was destroyed by this adjust (i.e. health becomes <= 0)
+    bool adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust);
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
     const TileContainerHarvestableRegistry& getHarvestables() const { return mHarvestableRegistry; }
@@ -172,8 +177,9 @@ public:
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
     EVENT_LISTENER_FUNCS(TileContainer, EditTiles, TileContainerEventType::EditTiles, const TileContainerEvent&);
+    EVENT_LISTENER_FUNCS(TileContainer, TileDamaged, TileContainerEventType::TileDamaged, const TileContainerEvent&);
+    EVENT_LISTENER_FUNCS(TileContainer, TileDestroyed, TileContainerEventType::TileDestroyed, const TileContainerEvent&);
     EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
-
 
     // =========== World  ===========
     IWorld& getWorld() const { return mWorld; }
@@ -202,7 +208,7 @@ private:
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
 
-    boost::container::flat_set<TileIndex, ui16> mDamagedTiles;
+    boost::container::flat_map<TileIndex, ui16> mDamagedTiles;
 
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;

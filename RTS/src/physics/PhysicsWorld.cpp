@@ -322,8 +322,9 @@ void PhysicsWorld::initEventHandlers() {
     });
     tileContainerRepository.addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
         ASSERT_GAME_THREAD();
-        const TileContainerEditEvent& editEvent = event.edit;
-        switch (event.edit.type) {
+
+        const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(event.varEvent);
+        switch (editEvent.type) {
             case TileContainerEditEventType::ChangeFlags:
                 break;
             case TileContainerEditEventType::ChangeLayer: {

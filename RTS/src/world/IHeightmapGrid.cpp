@@ -745,7 +745,7 @@ void IHeightmapGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2&
     aabb.pos.x = position.x;
     aabb.pos.y = position.y;
     f32 minZ = FLT_MAX;
-    f32 maxZ = FLT_MIN;
+    f32 maxZ = -FLT_MAX;
     IWorldGenerator& worldGenerator = mWorld->getWorldGenerator();
     for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
         for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {

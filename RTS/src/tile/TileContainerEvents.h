@@ -2,12 +2,16 @@
 
 #include "tile/Tile.h"
 
+#include <variant>
+
 class TileContainer;
 
 enum class TileContainerEventType {
     LoadFinished,
     Ready,
     EditTiles,
+    TileDamaged,
+    TileDestroyed,
     Destroy,
 };
 
@@ -61,9 +65,18 @@ struct TileContainerEditEvent {
     TileContainerEditEventType type;
 };
 
+struct TileDamagedEvent {
+    TileIndex tileIndex = INVALID_TILE_INDEX;
+    TileID tileId = TILE_ID_NONE;
+    ui16 damageAmount = 0;
+    f32v3 impactPosition = f32v3(FLT_MAX);
+    f32v3 impactNormal = {};
+    bool wasDestroyed = false;
+};
+
 struct TileContainerEvent {
     TileContainer* container = nullptr;
-    TileContainerEditEvent edit = {}; // TODO: Union
+    std::variant<TileContainerEditEvent, TileDamagedEvent> varEvent;
 };
 EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);
 

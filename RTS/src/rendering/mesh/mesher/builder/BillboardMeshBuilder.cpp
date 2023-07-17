@@ -30,7 +30,7 @@ void BillboardMeshBuilder::reserveBillboardCount(ui32 count) {
 void BillboardMeshBuilder::computeBoundingSphere() {
     PROFILE_FUNCTION();
 
-    f32v2 minMax[3] = { {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN} };
+    f32v2 minMax[3] = { {FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX} };
 
     for (auto& v : mBillboards) {
         const f32v3& pos = v.mPos;

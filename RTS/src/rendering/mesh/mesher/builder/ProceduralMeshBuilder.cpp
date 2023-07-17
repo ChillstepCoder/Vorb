@@ -432,7 +432,7 @@ void ProceduralMeshBuilder::computeBoundingSphere() {
     PROFILE_FUNCTION();
     mDidComputeBoundingSphere = true;
 
-    f32v2 minMax[3] = { {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN} };
+    f32v2 minMax[3] = { {FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX} };
 
     for (auto& subMesh : mSubMeshesData) {
         for (auto& v : subMesh.mVerts) {

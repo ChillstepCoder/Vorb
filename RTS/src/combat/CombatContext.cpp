@@ -13,10 +13,18 @@
 
 #include "options/DebugOptions.h"
 
+#include "math/Random.h"
+
 // For testing
 #include "debugging/DebugRenderer.h"
 
 constexpr int DEBUG_LIFETIME_QUERIES = 100;
+
+// Returns negative number
+int getRandomDamageValue(ui16v2 range) {
+    assert(range.x >= 0 && range.y >= range.x);
+    return -(int)roundf(Random::getCachedRandomf() * ((f32)range.y - (f32)range.x) + (f32)range.x);
+}
 
 void debugDrawArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationRad, f32 arcHeight, color4 color, int lifeTime) {
 
@@ -141,14 +149,13 @@ CombatContext::CombatContext(IWorld& world) : mWorld(world) {
 
 }
 
-void CombatContext::performMeleeAttack(entt::entity source, AttackShape shape, f32 radius, f32 arcAngleRad, f32 forwardOffset, BitFlags<AttackFlags> flags) {
-    switch (shape) {
-        case AttackShape::CONE:
-            // TODO: HEIGHT CONFIG
-            performConeAttack(source, shape, radius, arcAngleRad, 1.5f, forwardOffset, flags);
-            break;
+void CombatContext::performAttack(entt::entity source, const AttackData& attackData) {
+    switch (attackData.shapeType) {
         case AttackShape::SPHERE:
             assert(false);
+            break;
+        case AttackShape::CONE:
+            performConeAttack(source, attackData);
             break;
         default:
             assert(false);
@@ -158,7 +165,10 @@ void CombatContext::performMeleeAttack(entt::entity source, AttackShape shape, f
     static_assert(e_count(AttackShape) == 2);
 }
 
-void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f32 radius, f32 arcAngleRad, f32 height, f32 forwardOffset, BitFlags<AttackFlags> flags) {
+void CombatContext::performConeAttack(entt::entity source, const AttackData& attackData) {
+    assert(attackData.shapeType == AttackShape::CONE);
+
+    const AttackShapeCone& coneData = std::get<AttackShapeCone>(attackData.varAttackShape);
 
     IEntityComponentSystem& ecs = mWorld.getECS();
     const f32 sourceRotation = ecs.mRegistry.get<CharacterControlComponent>(source).mControllerAngle;
@@ -171,15 +181,15 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
     const f32v3 attackStartPos = ecs.mRegistry.get<PositionComponent>(source).mPosition;
     const f32v2 attackStartPos2D(attackStartPos);
     const f32v2 forwardNormal = f32v2(cos(sourceRotation), sin(sourceRotation));
-    const f32AABB3 aabb = getAABBEnclosingArc(attackStartPos, radius, arcAngleRad, sourceRotation, height);
-    const f32 halfArcAngleRad = arcAngleRad * 0.5f;
+    const f32AABB3 aabb = getAABBEnclosingArc(attackStartPos, coneData.radius, coneData.arcAngleRad, sourceRotation, coneData.height);
+    const f32 halfArcAngleRad = coneData.arcAngleRad * 0.5f;
     const int resultCount = mWorld.getPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, results, MAX_RESULTS);
 
     const f32v2 origin2D(attackStartPos);
-    const f32v2 start2D = origin2D + glm::vec2(radius * std::cos(sourceRotation - halfArcAngleRad), radius * std::sin(sourceRotation - halfArcAngleRad));
-    const f32v2 end2D = origin2D + glm::vec2(radius * std::cos(sourceRotation + halfArcAngleRad), radius * std::sin(sourceRotation + halfArcAngleRad));
+    const f32v2 start2D = origin2D + glm::vec2(coneData.radius * std::cos(sourceRotation - halfArcAngleRad), coneData.radius * std::sin(sourceRotation - halfArcAngleRad));
+    const f32v2 end2D = origin2D + glm::vec2(coneData.radius * std::cos(sourceRotation + halfArcAngleRad), coneData.radius * std::sin(sourceRotation + halfArcAngleRad));
     
-    // DELETE ALL TILES!!!
+    // Damage tile
     for (int i = 0; i < resultCount; ++i) {
         const btCollisionShape* shape = results[i].mCollisionObject->getCollisionShape();
         if (shape == nullptr) {
@@ -202,7 +212,7 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
                     const f32 targetRadiusSQ = SQ(halfExtents.x());
                     assert(halfExtents.x() == halfExtents.y());
 
-                    const f32 totalRadius = radius + halfExtents.x();
+                    const f32 totalRadius = coneData.radius + halfExtents.x();
                     if (distanceFromTarget2 <= targetRadiusSQ) {
                         // If attack origin intersects the cylinder
                         intersectsArc = true;
@@ -210,7 +220,7 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
                     else if (distanceFromTarget2 <= SQ(totalRadius)) {
                         const f32v2 normalToTarget = offsetToTarget / sqrt(distanceFromTarget2);
                         // If target center is within the front arc
-                        if (acosf(glm::dot(normalToTarget, forwardNormal)) < arcAngleRad * 0.5f) {
+                        if (acosf(glm::dot(normalToTarget, forwardNormal)) < coneData.arcAngleRad * 0.5f) {
                             intersectsArc = true;
                         }
                         else {
@@ -231,13 +241,22 @@ void CombatContext::performConeAttack(entt::entity source, AttackShape shape, f3
             }
 
             if (intersectsArc) {
-                LiteTileHandle liteHandle = std::get<LiteTileHandle>(results[i].mObject);
-                TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
-                tileHandle.getMutableContainer()->setTileLayer(tileHandle.tileIndex, TileLayer::Main, TILE_ID_NONE);
+                hitTile(std::get<LiteTileHandle>(results[i].mObject), attackData.damageRange);
             }
         }
         else {
+            const entt::entity hitEntity = std::get<entt::entity>(results[i].mObject);
+            // No self hit
+            if (hitEntity == source) {
+                continue;
+            }
             // TODO: ENTITY
+            assert(false);
         }
     }
+}
+
+void CombatContext::hitTile(LiteTileHandle liteHandle, ui16v2 damageRange) {
+    TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
+    tileHandle.getMutableContainer()->adjustTileHealth(tileHandle.tileIndex, TileLayer::Main, getRandomDamageValue(damageRange));
 }

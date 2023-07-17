@@ -66,13 +66,16 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
             container->addEditTilesListener([this](const TileContainerEvent& evnt) {
                 PROFILE_SCOPE("GrassEdit Dirty");
                 ASSERT_GAME_THREAD();
-                if (evnt.edit.type == TileContainerEditEventType::ChangeZPos) {
+
+                const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
+
+                if (editEvent.type == TileContainerEditEventType::ChangeZPos) {
                     const Chunk* owner = evnt.container->getOwnerChunk();
                     auto& quadtreePtr = mChunkGrassQuadtrees[owner];
                     if (quadtreePtr) {
-                        for (ui32 i = 0; i < evnt.edit.editCount; ++i) {
+                        for (ui32 i = 0; i < editEvent.editCount; ++i) {
                             assert(owner);
-                            TileContainerEditZPosEventData& data = evnt.edit.changeZPosArray[i];
+                            TileContainerEditZPosEventData& data = editEvent.changeZPosArray[i];
                             quadtreePtr->markDirty(f32v2(data.worldPosition));
                         }
                     }

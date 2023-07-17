@@ -137,7 +137,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& corne
     aabb.pos.x = cornerPos.x;
     aabb.pos.y = cornerPos.y;
     f32 minZ = FLT_MAX;
-    f32 maxZ = FLT_MIN;
+    f32 maxZ = -FLT_MAX;
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
 

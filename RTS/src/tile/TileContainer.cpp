@@ -128,9 +128,13 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     // Build notify
     TileContainerEvent evnt;
     TileContainerEditLayerEventData eventData;
+
+    TileContainerEditEvent editEvent;
+    editEvent.type = TileContainerEditEventType::ChangeLayer;
+    editEvent.changeLayerArray = &eventData;
+
+    evnt.varEvent = editEvent;
     evnt.container = this;
-    evnt.edit.type = TileContainerEditEventType::ChangeLayer;
-    evnt.edit.changeLayerArray = &eventData;
     eventData.worldPosition = getTileCenterWorldPosition(i);
     eventData.tileIndex = i;
     eventData.prevId = prevId;
@@ -142,7 +146,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
         tile.layers[e_cast(layer)] = id;
     }
     // Dispatch notify
-    mHarvestableRegistry.onTileLayerChanged(evnt.edit);
+    mHarvestableRegistry.onTileLayerChanged(editEvent);
     mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
     dispatchEditTiles(evnt);
 
@@ -153,12 +157,16 @@ void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
     // Build notify
-    TileContainerEvent evnt;
-    TileContainerEditFlagsEventData eventData;
     if (!tile.hasFlag(flag)) {
+        TileContainerEvent evnt;
+        TileContainerEditFlagsEventData eventData;
+
+        TileContainerEditEvent editEvent;
+        editEvent.type = TileContainerEditEventType::ChangeFlags;
+        editEvent.changeFlagsArray = &eventData;
+
         evnt.container = this;
-        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.changeFlagsArray = &eventData;
+        evnt.varEvent = editEvent;
         eventData.prevFlags = tile.tileFlags;
         {
             std::lock_guard lock(mSharedMutex);
@@ -178,12 +186,16 @@ void TileContainer::overwriteTileFlags(TileIndex i, TileFlags flags) {
     Tile& tile = mTiles[i];
 
     // Build notify
-    TileContainerEvent evnt;
-    TileContainerEditFlagsEventData eventData;
     if (tile.tileFlags.getBits() != e_cast(flags)) {
+        TileContainerEvent evnt;
+        TileContainerEditFlagsEventData eventData;
+
+        TileContainerEditEvent editEvent;
+        editEvent.type = TileContainerEditEventType::ChangeFlags;
+        editEvent.changeFlagsArray = &eventData;
+
         evnt.container = this;
-        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.changeFlagsArray = &eventData;
+        evnt.varEvent = editEvent;
         eventData.prevFlags = tile.tileFlags;
         {
             std::lock_guard lock(mSharedMutex);
@@ -202,12 +214,18 @@ void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
 
-    TileContainerEvent evnt;
-    TileContainerEditFlagsEventData eventData;
     if (tile.hasFlag(flag)) {
+
+        TileContainerEvent evnt;
+        TileContainerEditFlagsEventData eventData;
+
+        TileContainerEditEvent editEvent;
+        editEvent.type = TileContainerEditEventType::ChangeFlags;
+        editEvent.changeFlagsArray = &eventData;
+
         evnt.container = this;
-        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.changeFlagsArray = &eventData;
+        evnt.varEvent = editEvent;
+
         eventData.prevFlags = tile.tileFlags;
         {
             std::lock_guard lock(mSharedMutex);
@@ -227,12 +245,16 @@ void TileContainer::clearTileFlags(TileIndex i) {
     Tile& tile = mTiles[i];
 
     // Build notify
-    TileContainerEvent evnt;
-    TileContainerEditFlagsEventData eventData;
     if (tile.tileFlags.getBits()) {
+        TileContainerEvent evnt;
+        TileContainerEditFlagsEventData eventData;
+
+        TileContainerEditEvent editEvent;
+        editEvent.type = TileContainerEditEventType::ChangeFlags;
+        editEvent.changeFlagsArray = &eventData;
+
         evnt.container = this;
-        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.changeFlagsArray = &eventData;
+        evnt.varEvent = editEvent;
         eventData.prevFlags = tile.tileFlags;
         {
             std::lock_guard lock(mSharedMutex);
@@ -250,12 +272,18 @@ void TileContainer::clearTileFlags(TileIndex i) {
 void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    TileContainerEvent evnt;
-    TileContainerEditZPosEventData eventData;
     if (tile.getGroundZOffset() != groundZPosition) {
+
+        TileContainerEvent evnt;
+        TileContainerEditZPosEventData eventData;
+
+        TileContainerEditEvent editEvent;
+        editEvent.type = TileContainerEditEventType::ChangeZPos;
+        editEvent.changeZPosArray = &eventData;
+
         evnt.container = this;
-        evnt.edit.type = TileContainerEditEventType::ChangeZPos;
-        evnt.edit.changeZPosArray = &eventData;
+        evnt.varEvent = editEvent;
+
         eventData.prevGroundZOffset = tile.getGroundZOffset();
         {
             std::lock_guard lock(mSharedMutex);
@@ -276,10 +304,14 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
     assert(count <= MAX_BULK_EDIT_EVENT_COUNT);
     TileContainerEvent evnt;
     static TileContainerEditZPosEventData sEventData[MAX_BULK_EDIT_EVENT_COUNT];
+
+    TileContainerEditEvent editEvent;
+    editEvent.type = TileContainerEditEventType::ChangeZPos;
+    editEvent.changeZPosArray = sEventData;
+    editEvent.editCount = count;
+
     evnt.container = this;
-    evnt.edit.editCount = count;
-    evnt.edit.type = TileContainerEditEventType::ChangeZPos;
-    evnt.edit.changeZPosArray = sEventData;
+    evnt.varEvent = editEvent;
     { // Critical section
         std::lock_guard lock(mSharedMutex);
         for (size_t i = 0; i < count; ++i) {
@@ -308,14 +340,20 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
 
 void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {
     assert(isReady());
+    assert(i < mTiles.size());
     Tile& tile = mTiles[i];
 
-    TileContainerEvent evnt;
-    TileContainerEditOrientationEventData eventData;
     if (tile.getOrientation(layer) != dir) {
+
+        TileContainerEvent evnt;
+        TileContainerEditOrientationEventData eventData;
+
+        TileContainerEditEvent editEvent;
+        editEvent.type = TileContainerEditEventType::ChangeOrientation;
+        editEvent.changeOrientationArray = &eventData;
+
         evnt.container = this;
-        evnt.edit.type = TileContainerEditEventType::ChangeOrientation;
-        evnt.edit.changeOrientationArray = &eventData;
+        evnt.varEvent = editEvent;
         eventData.prevOrientation = tile.orientation;
         {
             std::lock_guard lock(mSharedMutex);
@@ -332,6 +370,7 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer lay
 
 void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     assert(isReady());
+    assert(index < mTiles.size());
     ASSERT_GAME_THREAD();
     TileWalls prevTileWalls;
     mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
@@ -358,6 +397,7 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
 
 void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
     assert(isReady());
+    assert(index < mTiles.size());
     ASSERT_GAME_THREAD();
     TileWalls prevTileWalls;
     mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
@@ -379,6 +419,98 @@ void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
         mTileWallsContainer.setWallsAtTile(index, walls);
     }
     onTileChanged(index);
+}
+
+bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust) {
+
+    healthAdjust = glm::clamp(healthAdjust , -(int)UINT16_MAX, (int)UINT16_MAX);
+
+    assert(layer == TileLayer::Main && "Only main damage currently supported"); // TODO: Support other damage layers
+
+    assert(isReady());
+    assert(index < mTiles.size());
+    ASSERT_GAME_THREAD();
+    if (healthAdjust == 0) {
+        return false;
+    }
+
+    TileID tileId = mTiles[index].layers[e_cast(layer)];
+    assert(tileId != INVALID_TILE_INDEX && "Tried to damage empty tile");
+
+    auto destroyTile = [&](TileContainerEvent evnt) {
+        std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;
+        // Destroy tile
+        setTileLayer(index, TileLayer::Main, TILE_ID_NONE);
+        // Damage + Death event
+        dispatchTileDamaged(evnt);
+        mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
+        dispatchTileDestroyed(evnt);
+        mWorld.getTileContainerRepository().dispatchTileDestroyed(evnt);
+    };
+
+    // Check if already damaged
+    ui16* healthPtr = nullptr;
+    auto&& it = mDamagedTiles.find(index);
+    if (it == mDamagedTiles.end()) {
+        // Tile is not damaged yet
+        if (healthAdjust < 0) {
+            const ui16 maxHealth = TileRepository::getTileData(tileId).maxHealth;
+            if (healthAdjust <= -(int)maxHealth) {
+                // Instant death
+                TileContainerEvent evnt;
+                evnt.container = this;
+                evnt.varEvent = TileDamagedEvent{
+                    .tileIndex = index,
+                    .tileId = mTiles[index].mainLayer,
+                    .damageAmount = (ui16)-healthAdjust
+                };
+                destroyTile(evnt);
+                return true;
+            }
+            else {
+                healthPtr = &mDamagedTiles.insert(std::make_pair(index, maxHealth)).first->second;
+            }
+        }
+        else {
+            // Healing an already fully healed tile
+            return false;
+        }
+    }
+    else {
+        // Tile already damaged, get current health
+        healthPtr = &it->second;
+    }
+
+    const int currentHealth = (int)*healthPtr;
+    assert(currentHealth != 0);
+    if (healthAdjust < 0) {
+        // Event data
+        TileContainerEvent evnt;
+        evnt.container = this;
+        evnt.varEvent = TileDamagedEvent{
+            .tileIndex = index,
+            .tileId = mTiles[index].mainLayer,
+            .damageAmount = (ui16)-healthAdjust
+        };
+
+        if (healthAdjust <= -currentHealth) {
+            assert(it != mDamagedTiles.end());
+            mDamagedTiles.erase(it);
+            destroyTile(evnt);
+            return true;
+        }
+        else {
+            // Damage event
+            *healthPtr = (ui16)((int)*healthPtr + healthAdjust);
+            dispatchTileDamaged(evnt);
+            mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
+        }
+    }
+    else {
+        assert(false); // handle healing!
+    }
+
+    return false;
 }
 
 TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) const {
@@ -468,10 +600,15 @@ bool TileContainer::tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType)
     constexpr int EDIT_COUNT = 9;
     TileContainerEvent flagsEvent;
     TileContainerEditFlagsEventData eventData[EDIT_COUNT];
+
+    TileContainerEditEvent editEvent;
+    editEvent.type = TileContainerEditEventType::ChangeFlags;
+    editEvent.changeFlagsArray = eventData;
+    editEvent.editCount = EDIT_COUNT;
+
     flagsEvent.container = this;
-    flagsEvent.edit.editCount = EDIT_COUNT;
-    flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
-    flagsEvent.edit.changeFlagsArray = eventData;
+    flagsEvent.varEvent = editEvent;
+
     const i32v3& dims = mTileSpatialGrid.getDims();
     const TileIndex tileIndices[EDIT_COUNT] = {
         i - dims.x - 1 /*SW*/,
@@ -583,10 +720,15 @@ void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNa
     constexpr int EDIT_COUNT = 9;
     TileContainerEvent flagsEvent;
     TileContainerEditFlagsEventData eventData[EDIT_COUNT];
+
+    TileContainerEditEvent editEvent;
+    editEvent.editCount = EDIT_COUNT;
+    editEvent.type = TileContainerEditEventType::ChangeFlags;
+    editEvent.changeFlagsArray = eventData;
+
     flagsEvent.container = this;
-    flagsEvent.edit.editCount = EDIT_COUNT;
-    flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
-    flagsEvent.edit.changeFlagsArray = eventData;
+    flagsEvent.varEvent = editEvent;
+
     const i32v3& dims = mTileSpatialGrid.getDims();
     const TileIndex tileIndices[EDIT_COUNT] = {
         i - dims.x - 1 /*SW*/,

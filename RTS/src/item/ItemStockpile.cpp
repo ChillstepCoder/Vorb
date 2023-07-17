@@ -25,7 +25,7 @@ ItemStockpile::ItemStockpile(IWorld& world, ItemStockpileID id, const i32AABB2& 
 
     mFirstFreeSlot = UINT32_MAX;
 
-    f32 maxZPos = FLT_MIN;
+    f32 maxZPos = -FLT_MAX;
     // Set stockpile flags
 
     const IHeightmapGrid& heightmapGrid = mWorld.getHeightmapGrid();

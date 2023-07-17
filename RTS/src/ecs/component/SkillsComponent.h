@@ -36,6 +36,7 @@ public:
 
 protected:
     void handleSkillTrigger(IWorld& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger);
+    void handleAttackTrigger(IWorld& world, entt::entity entity, const SkillAttackTrigger& attackTrigger);
 
     EVENT_DISPATCHER_DEF(SkillsComponentSystem);
 };

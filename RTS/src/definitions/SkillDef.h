@@ -10,12 +10,16 @@ enum class SkillTriggerType {
 };
 
 struct SkillAttackTrigger {
-    f32 mRadius;
-    f32 mAngle;
+    f32 mRadius = 1.0f;
+    f32 mAngle = 120.0f;
+    f32 mHeight = 1.5f;
     AttackShape mShape;
+    ui16v2 mDamageRange = ui16v2(35ui16, 50ui16);
 };
 
 struct SkillTrigger {
+    SkillTrigger() : mAttackTrigger() {};
+
     union {
         int mSimpleTrigger;
         SkillAttackTrigger mAttackTrigger;

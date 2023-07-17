@@ -77,7 +77,7 @@ void SkillsComponentSystem::handleSkillTrigger(IWorld& world, entt::entity entit
 			assert(false);
 			break;
 		case SkillTriggerType::Attack: {
-			world.getCombatContext().performMeleeAttack(entity, trigger.mAttackTrigger.mShape, trigger.mAttackTrigger.mRadius, trigger.mAttackTrigger.mAngle, 0.0f, 0);
+			handleAttackTrigger(world, entity, trigger.mAttackTrigger);
             break;
         }
 		default:
@@ -85,5 +85,21 @@ void SkillsComponentSystem::handleSkillTrigger(IWorld& world, entt::entity entit
 			break;
 
 	}
+}
+
+void SkillsComponentSystem::handleAttackTrigger(IWorld& world, entt::entity entity, const SkillAttackTrigger& attackTrigger) {
+	AttackData attackData;
+	switch (attackTrigger.mShape) {
+		case AttackShape::SPHERE:
+			assert(false);
+		case AttackShape::CONE:
+			// TODO: Forward offset
+			attackData.initAsCone(attackTrigger.mRadius, attackTrigger.mAngle, 0.0f, attackTrigger.mHeight, attackTrigger.mDamageRange);
+			break;
+		default:
+			assert(false);
+	}
+	static_assert(e_count(AttackShape) == 2);
+	world.getCombatContext().performAttack(entity, attackData);
 }
 

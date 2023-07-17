@@ -408,11 +408,12 @@ ui32 InstancedStaticModelManager::getNumModels() const
     return numModels;
 }
 
-void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent& evnt)
-{
+void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent& evnt) {
     ASSERT_GAME_THREAD();
 
-    if ((e_cast(evnt.edit.type) & MODEL_EDIT_HANDLE_MASK) == 0) {
+    const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
+
+    if ((e_cast(editEvent.type) & MODEL_EDIT_HANDLE_MASK) == 0) {
         return;
     }
 
@@ -432,12 +433,12 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
     editEvents.manager = this;
     editEvents.containerId = evnt.container->getId();
 
-    switch (evnt.edit.type) {
+    switch (editEvent.type) {
         case TileContainerEditEventType::ChangeFlags:
             break;
         case TileContainerEditEventType::ChangeLayer: {
-            for (ui32 i = 0; i < evnt.edit.editCount; ++i) {
-                TileContainerEditLayerEventData& edit = evnt.edit.changeLayerArray[i];
+            for (ui32 i = 0; i < editEvent.editCount; ++i) {
+                TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                 const TileID prevId = edit.prevId;
                 if (prevId != TILE_ID_NONE) {
                     const TileData& prevTileData = TileRepository::getTileData(edit.prevId);

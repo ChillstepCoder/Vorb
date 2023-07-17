@@ -84,7 +84,8 @@ struct TileData {
     MaterialDesc materialData[MAX_TILE_MATERIAL_SLOTS];
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
-    ui8 layer = 2;
+    ui16 maxHealth = 100;
+    ui8 layer = e_cast(TileLayer::Main);
     TileShape shape = TileShape::BLOCK;
     ui8 pathWeight = 255;
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation

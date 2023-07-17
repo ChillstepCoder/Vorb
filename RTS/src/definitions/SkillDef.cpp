@@ -5,7 +5,9 @@ KEG_TYPE_DEF_SAME_NAME(SkillAttackTriggerFileData, kt) {
     kt.addValue("time", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mTime), keg::BasicType::F32));
     kt.addValue("radius", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mRadius), keg::BasicType::F32));
     kt.addValue("angle", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mAngle), keg::BasicType::F32));
+    kt.addValue("height", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mHeight), keg::BasicType::F32));
     kt.addValue("shape", keg::Value::custom(offsetof(SkillAttackTriggerFileData, mData.mShape), "AttackShape", true));
+    kt.addValue("damage_range", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mDamageRange), keg::BasicType::UI16_V2));
 }
 
 KEG_TYPE_DEF_SAME_NAME(SkillSimpleTriggerFileData, kt) {

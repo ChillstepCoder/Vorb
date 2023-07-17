@@ -17,6 +17,7 @@ struct TileFileData {
     TileShape tileShape = TileShape::BLOCK;
     TileTextureMethod textureMethod = TileTextureMethod::SIMPLE;
     TileHarvestable resource = TileHarvestable::NONE;
+    ui16 maxHealth = 100;
     ui8 pathWeight = 255;
     ui8 layer = 1;
     nString material0;

@@ -21,6 +21,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
     kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
     kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
+    kt.addValue("max_health", keg::Value::basic(offsetof(TileFileData, maxHealth), keg::BasicType::UI16));
     kt.addValue("path_weight", keg::Value::basic(offsetof(TileFileData, pathWeight), keg::BasicType::UI8));
     kt.addValue("layer", keg::Value::basic(offsetof(TileFileData, layer), keg::BasicType::UI8));
     kt.addValue("col_shape", keg::Value::custom(offsetof(TileFileData, colliderShape), "CollisionShapes", true));
@@ -47,6 +48,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         // Copy all data
         tileData.layer = fileData.layer;
         assert(tileData.layer < TILE_LAYER_COUNT);
+        tileData.maxHealth = fileData.maxHealth;
         tileData.pathWeight = fileData.pathWeight;
         tileData.harvestable = fileData.resource;
         tileData.textureMethod = fileData.textureMethod;
