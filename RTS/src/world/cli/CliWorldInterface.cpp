@@ -8,7 +8,6 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "resources/ResourceManager.h"
-#include "particles/ParticleSystemManager.h"
 #include "weather/CloudMeshManager.h"
 #include "options/DebugOptions.h"
 
@@ -51,12 +50,6 @@ void CliWorldInterface::tickClient(IWorld& world) {
     RenderContext::getInstance().tickGameThread(world);
 
     updateRenderState(world);
-}
-
-void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
-    // Update particles (TODO: Ecs?)
-    // TODO: eww why is a resource updating?
-    Services::ResourceManager::ref().getParticleSystemManager().update(playerPos);
 }
 
 void CliWorldInterface::onWorldBeginClient(IWorld& world) {

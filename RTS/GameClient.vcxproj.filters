@@ -90,18 +90,6 @@
     <ClCompile Include="src\rendering\LightData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\particles\ParticleSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\particles\ParticleSystemManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\particles\ParticleSystemData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\services\Services.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -795,7 +783,7 @@
     <ClCompile Include="src\ecs\component\FishingComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\particle\CPUParticleSystem2D.cpp">
+    <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\gl\GpuStreamingDataBuffer.cpp">
@@ -897,18 +885,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\LightData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\particles\ParticleSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\particles\ParticleSystemManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\particles\ParticleSystemData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\ParticleSystemRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\services\Services.h">
@@ -1907,7 +1883,7 @@
     <ClInclude Include="src\ecs\component\PositionComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\particle\CPUParticleSystem2D.h">
+    <ClInclude Include="src\rendering\particle\CPUParticleSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\gl\GpuStreamingDataBuffer.h">

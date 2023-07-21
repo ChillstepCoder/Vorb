@@ -39,15 +39,15 @@ struct CpuParticleSystemGpuData2D {
 };
 static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
-typedef std::function<void(class CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec)> ParticleUpdateFunction;
+typedef std::function<void(class CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec)> ParticleUpdateFunction;
 
-// Versatile 2D quad rendering system used for both particles and simple UI
-class CPUParticleSystem2D
+// Versatile quad rendering system used for both particles and simple UI
+class CPUParticleSystem
 {
 public:
-    CPUParticleSystem2D(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components);
+    CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components);
 
-    VORB_NON_COPYABLE(CPUParticleSystem2D);
+    VORB_NON_COPYABLE(CPUParticleSystem);
 
     // Bind shader before calling this
     void updateAndRender(const vg::GLProgram& program, f32 elapsedSec);

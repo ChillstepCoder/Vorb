@@ -318,9 +318,6 @@
     <ClCompile Include="src\network\srv\SrvMessage.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
     <ClCompile Include="src\options\LightingOptions.cpp" />
-    <ClCompile Include="src\particles\ParticleSystem.cpp" />
-    <ClCompile Include="src\particles\ParticleSystemData.cpp" />
-    <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
     <ClCompile Include="src\pathfinding\NavWorld.cpp" />
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
@@ -379,9 +376,8 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
     <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp" />
-    <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
-    <ClCompile Include="src\rendering\particle\CPUParticleSystem2D.cpp" />
+    <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowLodDetail.cpp" />
@@ -713,9 +709,8 @@
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />
-    <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
-    <ClInclude Include="src\rendering\particle\CPUParticleSystem2D.h" />
+    <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />

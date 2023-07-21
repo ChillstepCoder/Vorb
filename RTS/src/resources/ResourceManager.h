@@ -17,7 +17,6 @@ class FishRepository;
 class MaterialRepository;
 class MaterialShaderManager;
 class ModelRepository;
-class ParticleSystemManager;
 class RigRepository;
 class SkillRepository;
 class TextureRepository;
@@ -37,7 +36,6 @@ public:
 
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
     MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
-    ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
@@ -92,7 +90,6 @@ private:
 
     std::unique_ptr<MaterialShaderManager> mMaterialManager;
     std::unique_ptr<MaterialRepository> mMaterialRepository;
-    std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<ItemRepository> mItemRepository;

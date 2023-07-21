@@ -3,7 +3,6 @@
 
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/ShaderLoader.h"
-#include "particles/ParticleSystemManager.h"
 #include "city/Building.h"
 #include "city/BuildingDescriptionRepository.h"
 #include "ecs/EntityDefinitionRepository.h"
@@ -47,7 +46,6 @@ ResourceManager::ResourceManager() {
     mTextureRepository = std::make_unique<TextureRepository>(*mIoManager);
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository);
     mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
-    mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
@@ -246,9 +244,9 @@ void ResourceManager::loadFiles() {
     // Load particle Systems
     {
         ScopedTimer timer("Particle load");
-        for (auto&& entry : mParticleSystemFiles) {
+     /*   for (auto&& entry : mParticleSystemFiles) {
             mParticleSystemManager->loadParticleSystemData(entry);
-        };
+        };*/
     }
 
     // Load Rooms

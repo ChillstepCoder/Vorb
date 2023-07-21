@@ -7,7 +7,7 @@
 #include "definitions/FishDef.h"
 
 class MaterialShader;
-class CPUParticleSystem2D;
+class CPUParticleSystem;
 struct MeshGpuData;
 
 
@@ -69,11 +69,11 @@ private:
     const FishDef& mFishDef;
 
     // UI Data
-    std::unique_ptr<CPUParticleSystem2D> mUIParticleSystem;
-    std::unique_ptr<CPUParticleSystem2D> mBackgroundParticleSystem;
-    std::unique_ptr<CPUParticleSystem2D> mPlayerParticleSystem;
-    std::unique_ptr<CPUParticleSystem2D> mBlockerParticleSystem;
-    std::unique_ptr<CPUParticleSystem2D> mBubbleParticleSystem;
+    std::unique_ptr<CPUParticleSystem> mUIParticleSystem;
+    std::unique_ptr<CPUParticleSystem> mBackgroundParticleSystem;
+    std::unique_ptr<CPUParticleSystem> mPlayerParticleSystem;
+    std::unique_ptr<CPUParticleSystem> mBlockerParticleSystem;
+    std::unique_ptr<CPUParticleSystem> mBubbleParticleSystem;
     ParticleID mArenaParticleID;
     ParticleID mPlayerParticleID;
     ParticleID mFishParticleID;

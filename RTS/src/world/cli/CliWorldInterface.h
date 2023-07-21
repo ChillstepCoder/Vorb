@@ -20,7 +20,6 @@ public:
 protected:
     void initClient(IWorld& world);
 
-    void updateParticleSystems(const f32v2& playerPos);
     void onWorldBeginClient(IWorld& world);
 
     void updateRenderState(IWorld& world);

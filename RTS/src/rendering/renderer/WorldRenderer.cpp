@@ -2,6 +2,7 @@
 #include "WorldRenderer.h"
 
 #include <Vorb/graphics/DepthState.h>
+#include <Vorb/graphics/GBuffer.h>
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/SkillsComponent.h"
@@ -16,7 +17,6 @@
 #include "rendering/ItemRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
-#include "rendering/ParticleSystemRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/post_process/ShadowRenderer.h"
@@ -79,7 +79,6 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
     mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
-    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(screenResolution);
     mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
     mItemRenderer = std::make_unique<ItemRenderer>();
     mCloudRenderer = std::make_unique<CloudRenderer>(screenResolution);

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "CPUParticleSystem2D.h"
+#include "CPUParticleSystem.h"
 
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/GLProgram.h>
@@ -7,7 +7,7 @@
 // Arbitrary for estimated perf reasons
 constexpr ui32 MAX_PARTICLES = 20000;
 
-CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components) :
+CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components) :
     mUpdateFunction(updateFunction),
     mMaxParticles(maxParticles),
     mComponents(components)
@@ -56,7 +56,7 @@ CPUParticleSystem2D::CPUParticleSystem2D(const ParticleUpdateFunction& updateFun
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
 }
 
-void CPUParticleSystem2D::updateAndRender(const vg::GLProgram& program, f32 elapsedSec) {
+void CPUParticleSystem::updateAndRender(const vg::GLProgram& program, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
 
     mTotalElapsedSec = elapsedSec;
@@ -71,7 +71,7 @@ void CPUParticleSystem2D::updateAndRender(const vg::GLProgram& program, f32 elap
     render(program);
 }
 
-ParticleID CPUParticleSystem2D::tryAddParticle(f32v3 position) {
+ParticleID CPUParticleSystem::tryAddParticle(f32v3 position) {
     if (mActiveParticles >= mMaxParticles) {
         return INVALID_PARTICLE_ID;
     }
@@ -90,7 +90,7 @@ ParticleID CPUParticleSystem2D::tryAddParticle(f32v3 position) {
     return mActiveParticles - 1;
 }
 
-void CPUParticleSystem2D::removeParticle(ParticleID id) {
+void CPUParticleSystem::removeParticle(ParticleID id) {
     mDataChanged = true;
     assert(mActiveParticles > 0);
 
@@ -117,39 +117,39 @@ void CPUParticleSystem2D::removeParticle(ParticleID id) {
     mFreeParticleIDs.emplace_back(id);
 }
 
-void CPUParticleSystem2D::setParticlePosition(ParticleID id, f32v3 position) {
+void CPUParticleSystem::setParticlePosition(ParticleID id, f32v3 position) {
     mParticleData.mPositions[id] = position;
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::setParticleScale(ParticleID id, f32v2 scale) {
+void CPUParticleSystem::setParticleScale(ParticleID id, f32v2 scale) {
     mParticleData.mScales[id] = scale;
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::setParticleVelocity(ParticleID id, f32v3 velocity) {
+void CPUParticleSystem::setParticleVelocity(ParticleID id, f32v3 velocity) {
     mParticleData.mVelocities[id] = velocity;
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::setParticleColor(ParticleID id, color4 color) {
+void CPUParticleSystem::setParticleColor(ParticleID id, color4 color) {
     assert(mComponents.isBitSet(ParticleComponentType::Color));
     mParticleData.mColors[id] = color;
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::setParticleHDRColor(ParticleID id, f32v4 color) {
+void CPUParticleSystem::setParticleHDRColor(ParticleID id, f32v4 color) {
     assert(mComponents.isBitSet(ParticleComponentType::HDRColor));
     mParticleData.mHDRColors[id] = color;
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::setParticleMaterial(ParticleID id, MaterialID material) {
+void CPUParticleSystem::setParticleMaterial(ParticleID id, MaterialID material) {
     mParticleData.mMaterials[id] = (ui32)material;
     mDataChanged = true;
 }
 
-void CPUParticleSystem2D::render(const vg::GLProgram& program) {
+void CPUParticleSystem::render(const vg::GLProgram& program) {
 
     if (mActiveParticles == 0) {
         return;
@@ -309,7 +309,7 @@ void CPUParticleSystem2D::render(const vg::GLProgram& program) {
     sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
 }
 
-void CPUParticleSystem2D::onNewParticleAdded(ParticleID id) {
+void CPUParticleSystem::onNewParticleAdded(ParticleID id) {
     ++mActiveParticles;
     if (mActiveParticles == 1) {
         mFirstActiveParticle = mLastActiveParticle = id;

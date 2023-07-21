@@ -13,7 +13,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include "rendering/RenderContext.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/particle/CPUParticleSystem2D.h"
+#include "rendering/particle/CPUParticleSystem.h"
 
 #include "options/DebugOptions.h"
 
@@ -231,9 +231,9 @@ void FishingMinigame::initUIParticles() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
 
-    mBackgroundParticleSystem = std::make_unique<CPUParticleSystem2D>(nullptr, 1, BitFlags<ParticleComponentType>());
+    mBackgroundParticleSystem = std::make_unique<CPUParticleSystem>(nullptr, 1, BitFlags<ParticleComponentType>());
 
-    mUIParticleSystem = std::make_unique<CPUParticleSystem2D>(nullptr, MAX_UI_ELEMENTS,
+    mUIParticleSystem = std::make_unique<CPUParticleSystem>(nullptr, MAX_UI_ELEMENTS,
         BitFlags<ParticleComponentType>(
             ParticleComponentType::Scale,
             ParticleComponentType::MaterialID,
@@ -289,8 +289,8 @@ void FishingMinigame::initPlayerParticles() {
     const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
 
     // Player particles
-    mPlayerParticleSystem = std::make_unique<CPUParticleSystem2D>(
-        [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+    mPlayerParticleSystem = std::make_unique<CPUParticleSystem>(
+        [this](CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
 
         const color4 baseColor = color4(255, 150, 92, 5);
         constexpr f32 baseScale = 0.5f;
@@ -475,8 +475,8 @@ void FishingMinigame::initBlockerParticles() {
     // Blocker particles
     constexpr int BLOCKER_PARTICLE_COUNT = 1;
     if (BLOCKER_PARTICLE_COUNT) {
-        mBlockerParticleSystem = std::make_unique<CPUParticleSystem2D>(
-            [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+        mBlockerParticleSystem = std::make_unique<CPUParticleSystem>(
+            [this](CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
 
             for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
                 if (particleData.mPositions[i].x == FLT_MAX) {
@@ -595,8 +595,8 @@ void FishingMinigame::initBubbleParticles()
     // Blocker particles
     constexpr int BUBBLE_PARTICLE_COUNT = 40;
     if (BUBBLE_PARTICLE_COUNT) {
-        mBubbleParticleSystem = std::make_unique<CPUParticleSystem2D>(
-            [this](CPUParticleSystem2D& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+        mBubbleParticleSystem = std::make_unique<CPUParticleSystem>(
+            [this](CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
 
             constexpr f32 MAX_XVEL = 1.6f;
             constexpr f32 RANDOM_MOVE_POWER = 7.5f;

@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "CpuParticleEmitter.h"
 
-#include "rendering/particle/CPUParticleSystem2D.h"
+#include "rendering/particle/CPUParticleSystem.h"
 
-CpuParticleEmitter::CpuParticleEmitter(CPUParticleSystem2D& system) : mSystem(system) {
+CpuParticleEmitter::CpuParticleEmitter(CPUParticleSystem& system) : mSystem(system) {
 }
 
 CpuParticleEmitter::~CpuParticleEmitter() {

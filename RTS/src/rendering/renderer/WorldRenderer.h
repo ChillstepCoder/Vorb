@@ -80,7 +80,6 @@ private:
     mutable std::unique_ptr<TileContainerRenderer> mTileContainerRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
-    mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
     mutable std::unique_ptr<ItemRenderer> mItemRenderer;
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;

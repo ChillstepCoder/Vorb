@@ -28,7 +28,6 @@
 #include "rendering/LightRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/ParticleSystemRenderer.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/post_process/TonemapRenderer.h"
@@ -45,7 +44,7 @@
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/UboHelpers.h"
-#include "rendering/particle/CPUParticleSystem2D.h"
+#include "rendering/particle/CPUParticleSystem.h"
 #include "weather/CloudMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -76,6 +75,7 @@
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
+#include <Vorb/graphics/GBuffer.h>
 #include <Vorb/colors.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
