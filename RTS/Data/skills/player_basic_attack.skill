@@ -1,5 +1,5 @@
 anim: sword_shield_attack_1
-duration: 2.0
+duration: 1.45
 cost: 0.0
 attack_triggers:
   -  time: 0.65

@@ -83,7 +83,7 @@ protected:
     int mPrecomputedLOD = 1;
     bool mRenderGrid = true;
     f32 mYaw = 0.0f;
-    bool mRotate90 = true;
+    bool mRotate90 = false;
     bool mDisableBackfaceCulling = true;
 
     // Blend test

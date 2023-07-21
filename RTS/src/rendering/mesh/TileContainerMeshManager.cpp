@@ -140,6 +140,10 @@ void TileContainerMeshManager::initEventHandlers(IWorld& world) {
         //mInstancedStaticModelRenderer.onContainerEditEvent(containerEvent);
     });
 
+    tileContainerRepository.addTileDamagedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
+        mInstancedStaticModelManager.onTileDamagedEvent(containerEvent);
+    });
+
     tileContainerRepository.addDestroyListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
         assert(containerEvent.container->getRefCount() == 0); // It must not be in a mesher task
         mTileContainersToRemove.enqueue(containerEvent.container->getId());

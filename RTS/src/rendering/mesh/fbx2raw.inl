@@ -14,7 +14,7 @@ ozz::math::Float3 convertPointToZUp(ozz::math::Float3 position, const ozz::math:
 }
 
 ozz::math::Float3 convertVectorToZUp(ozz::math::Float3 position, const ozz::math::Float4x4& coordinateSystemTransform) {
-    ozz::math::SimdFloat4 posVector = ozz::math::simd_float4::Load(position.x, position.y, position.z, 1.0f);
+    ozz::math::SimdFloat4 posVector = ozz::math::simd_float4::Load(position.x, position.y, position.z, 0.0f);
     posVector = ozz::math::TransformVector(coordinateSystemTransform, posVector);
     position.x = ozz::math::GetX(posVector);
     position.y = ozz::math::GetY(posVector);
@@ -88,7 +88,17 @@ namespace fbx2raw {
         controlPointsRemap->resize(controlPointCount);
 
         // Get the mesh node's transformation matrix
-        FbxAMatrix transformMatrix = fbxMesh->GetNode()->EvaluateGlobalTransform();
+        fbxsdk::FbxAMatrix transformMatrix = fbxMesh->GetNode()->EvaluateGlobalTransform();
+       
+        // Extract the 3x3 rotation matrix
+        fbxsdk::FbxVector4 rotationEuler = transformMatrix.GetR();
+        fbxsdk::FbxAMatrix rotationMatrix;
+        rotationMatrix.SetIdentity();
+        rotationMatrix.SetR(rotationEuler);
+
+        // Compute its inverse transpose
+        fbxsdk::FbxAMatrix inverseTransposeRotationMatrix = rotationMatrix.Inverse().Transpose();
+        
         ozz::math::Float4x4 coordinateSystemTransform;
         if (shouldRotateZUp) {
             // Convert to +Z up +X forward
@@ -209,9 +219,8 @@ namespace fbx2raw {
                 if (!GetElement(*element_normals, vertexId, controlPoint, &src_normal)) {
                     return false;
                 }
-                src_normal = transformMatrix.MultT(src_normal);
-                ozz::math::Float3 normal = NormalizeSafe(
-                    _converter->ConvertVector(src_normal), ozz::math::Float3::y_axis());
+                src_normal = inverseTransposeRotationMatrix.MultT(src_normal);
+                ozz::math::Float3 normal = NormalizeSafe( _converter->ConvertVector(src_normal), ozz::math::Float3::y_axis());
                 normal = convertVectorToZUp(normal, coordinateSystemTransform);
 
                 // Get vertex tangent.
@@ -221,7 +230,7 @@ namespace fbx2raw {
                         &src_tangent)) {
                         return false;
                     }
-                    src_tangent = transformMatrix.MultT(src_tangent);
+                    src_tangent = inverseTransposeRotationMatrix.MultT(src_tangent);
                 }
                 ozz::math::Float3 tangent3 = NormalizeSafe(
                     _converter->ConvertVector(src_tangent), ozz::math::Float3::x_axis());
@@ -278,7 +287,7 @@ namespace fbx2raw {
                 if (element_tangents) {
                     vertex.tangent = f32v3(tangent.x, tangent.y, tangent.z);
                     // Right or left handed
-                    if (tangent.w <= 0.0f) {
+                    if (tangent.w > 0.0f) {
                         vertex.tangent = -vertex.tangent;
                     }
                 }

@@ -83,7 +83,7 @@ public:
     void setWallsAt(TileIndex index, TileWall walls[4]);
 
     // Returns true if tile was destroyed by this adjust (i.e. health becomes <= 0)
-    bool adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust);
+    bool adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal);
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
     const TileContainerHarvestableRegistry& getHarvestables() const { return mHarvestableRegistry; }
@@ -173,6 +173,8 @@ public:
     size_t getNumTiles() const { return mTiles.size(); }
     TileContainerHarvestableRegistry& getHarvestableRegistry() { return mHarvestableRegistry; }
 
+    bool isPendingDestroy() const { return mPendingDestroy; }
+
     void copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const;
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
@@ -219,6 +221,7 @@ private:
 
     mutable std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
     bool mDirtyData = false;
+    bool mPendingDestroy = false;
     std::variant<Chunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
     IWorld& mWorld;

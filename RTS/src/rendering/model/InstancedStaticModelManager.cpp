@@ -87,7 +87,7 @@ InstancedStaticModelManager::~InstancedStaticModelManager() {
     }
 }
 
-void InstancedStaticModelManager::frameUpdate(const Camera3D& camera)
+void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapsedSec)
 {
     ASSERT_RENDER_THREAD();
     if (sDebugOptions.mHideModels)
@@ -290,6 +290,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera)
 
         }
     }
+
+    updateAnimatedModels(elapsedSec);
 }
 
 void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation)
@@ -335,6 +337,43 @@ void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID conta
             }
         }
     }
+}
+
+bool InstancedStaticModelManager::getInstancesAtPosition(LiteTileHandle tileHandle, OUT TileModelInstance* outInstances[e_cast(MaterialRenderPassType::COUNT)]) {
+    ASSERT_RENDER_THREAD();
+    bool has = false;
+    for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
+        outInstances[renderPassIndex] = nullptr;
+        auto&& it = mTileContainerModels[renderPassIndex].find(tileHandle.containerId);
+        if (it != mTileContainerModels[renderPassIndex].end()) {
+            TileModelPositionKey key{ tileHandle.index };
+            SpatialInstanceDataMap& spatialMap = it->second;
+            auto&& spit = spatialMap.find(key);
+
+            if (spit != spatialMap.end()) {
+                outInstances[renderPassIndex] = &spit->second;
+                has = true;
+            }
+        }
+    }
+    return has;
+}
+
+bool InstancedStaticModelManager::hasInstanceAtPosition(LiteTileHandle tileHandle)
+{
+    for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
+        auto&& it = mTileContainerModels[renderPassIndex].find(tileHandle.containerId);
+        if (it != mTileContainerModels[renderPassIndex].end()) {
+            TileModelPositionKey key{ tileHandle.index };
+            SpatialInstanceDataMap& spatialMap = it->second;
+            auto&& spit = spatialMap.find(key);
+
+            if (spit != spatialMap.end()) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer)
@@ -406,6 +445,19 @@ ui32 InstancedStaticModelManager::getNumModels() const
         }
     }
     return numModels;
+}
+
+void InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction) {
+    // Ensure tile exists as static model
+    if (!hasInstanceAtPosition(targetTile)) {
+        return;
+    }
+
+    // Overwrite existing animation if any
+    StaticMeshAnimation& anim = mAnimatedInstances[targetTile];
+    anim.animType = animType;
+    anim.currentTimeSec = 0.0f;
+    anim.direction = direction;
 }
 
 void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent& evnt) {
@@ -484,6 +536,117 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             delete editPtr;
         }, editPtr);
     }
+}
+
+void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& evnt) {
+    const TileDamagedEvent& damageEvent = std::get<TileDamagedEvent>(evnt.varEvent);
+    // TODO: Instead of handling onTileDamagedEvent here, we should have a WorldVFXContext or something
+    // which calls into the appropriate functions, this would ge replaced with onModelDamaged or something
+
+    if (damageEvent.wasDestroyed) {
+        return;
+    }
+
+    const TileData& tileData = TileRepository::getTileData(damageEvent.tileId);
+    if (tileData.shape != TileShape::MODEL) {
+        return;
+    }
+
+    if (evnt.container->isPendingDestroy()) {
+        return;
+    }
+
+    struct TaskData {
+        InstancedStaticModelManager* modelManager;
+        TileContainer* container;
+        const TileData& tileData;
+        TileDamagedEvent damageEvent;
+    };
+
+    TaskData* taskData = new TaskData{ .modelManager = this, .container = evnt.container, .tileData = tileData, .damageEvent = damageEvent };
+
+    evnt.container->incRef();
+
+    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskDataPtr) {
+        const TaskData* taskData = static_cast<const TaskData*>(vTaskDataPtr);
+        TileDamagedEvent evnt = taskData->damageEvent;
+
+        f32v2 hitNormal = evnt.impactNormal;
+        hitNormal = MathUtil::rotateVector2D(hitNormal, 90.0f);
+
+        const LiteTileHandle handle(taskData->container->getId(), evnt.tileIndex);
+        taskData->modelManager->playAnimationOnInstanceAtPosition(handle, StaticModelAnimationTypes::HitWiggle, hitNormal);
+
+        taskData->container->decRef();
+        delete taskData;
+    }, taskData);
+}
+
+void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
+{
+    std::vector<LiteTileHandle> animsToErase;
+
+    for (auto&& it = mAnimatedInstances.begin(); it != mAnimatedInstances.end(); ++it) {
+
+        StaticMeshAnimation& animation = it->second;
+        const f32 animDuration = STATIC_MODEL_ANIM_DURATIONS_SEC[e_cast(animation.animType)];
+        animation.currentTimeSec += elapsedSec;
+        if (animation.currentTimeSec >= animDuration) {
+            animsToErase.emplace_back(it->first);
+            // TODO: Restore revious transform on GPU
+        }
+        else {
+
+            TileModelInstance* instances[e_count(MaterialRenderPassType)];
+            if (!getInstancesAtPosition(it->first, instances)) {
+                return;
+            }
+            for (int rp = 0; rp < e_count(MaterialRenderPassType); ++rp) {
+                TileModelInstance* instance = instances[rp];
+                if (!instance) {
+                    continue;
+                }
+                StaticMeshInstanceData& instanceData = mModelsToInstances[rp][instance->mModelID];
+                const f32m4& baseTransform = instanceData.mInstanceTransforms[instance->mInstanceIndex];
+
+
+                f32m4 newTransform;
+                switch (animation.animType) {
+                    case StaticModelAnimationTypes::HitWiggle: {
+                        // https://www.wolframalpha.com/input?i=sin%28x%29+*+pow%28%288+*+PI+-+x%29+%2F+%288+*+pi%29%2C+2.0%29+from+0+to+8+*+pi
+                        const f32 animAlpha = animation.currentTimeSec / animDuration;
+                        constexpr f32 AMPLITUDE = 0.035f;
+                        constexpr f32 PERIOD = 8.0f * M_PIF;
+                        const f32 x = animAlpha * PERIOD;
+                        const f32 rotationVal = sin(x) * powf((PERIOD - x) / PERIOD, 2.0f);
+
+                        // Get axis of rotation relative to already rotated model
+                        f32v3 rotateAxis = glm::inverse(baseTransform) * f32v4(animation.direction.x, animation.direction.y, 0.0f, 0.0f);
+                        const f32m4 rotationMatrix = glm::rotate(f32m4(1.0f), rotationVal * AMPLITUDE, f32v3(rotateAxis.x, rotateAxis.y, rotateAxis.z));
+                        newTransform = baseTransform * rotationMatrix;
+                        break;
+                    }
+                    default:
+                        assert(false);
+                }
+                static_assert(e_count(StaticModelAnimationTypes) == 1);
+
+                // Override transform on gpu
+                // TODO: MapUnmap will be faster maybe
+                glNamedBufferSubData(
+                    instanceData.mTransformsVbo,
+                    instance->mInstanceIndex * sizeof(f32m4),
+                    sizeof(f32m4),
+                    &newTransform[0][0]
+                );
+            }
+        }
+    }
+
+    for (auto&& h : animsToErase) {
+        mAnimatedInstances.erase(h);
+    }
+   
 }
 
 void InstancedStaticModelManager::removeTileModelInstanceInternal(int renderPassIndex, TileModelInstance& instance)

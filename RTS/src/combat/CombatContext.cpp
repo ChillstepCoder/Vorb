@@ -196,7 +196,8 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
             return;
         }
 
-        const f32v2 targetCenterPoint2D = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
+        const f32v3 targetRootPosition = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
+        const f32v2 targetCenterPoint2D = targetRootPosition;
         const f32v2 offsetToTarget = targetCenterPoint2D - f32v2(attackStartPos);
         const f32 distanceFromTarget2 = glm::length2(offsetToTarget);
 
@@ -241,7 +242,9 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
             }
 
             if (intersectsArc) {
-                hitTile(std::get<LiteTileHandle>(results[i].mObject), attackData.damageRange);
+                // TODO: Better impact pos
+                f32v2 impactNormal2D = offsetToTarget / sqrt(distanceFromTarget2);
+                hitTile(std::get<LiteTileHandle>(results[i].mObject), attackData.damageRange, targetRootPosition, f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f));
             }
         }
         else {
@@ -256,7 +259,13 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
     }
 }
 
-void CombatContext::hitTile(LiteTileHandle liteHandle, ui16v2 damageRange) {
+void CombatContext::hitTile(LiteTileHandle liteHandle, ui16v2 damageRange, f32v3 impactPosition, f32v3 impactNormal) {
     TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
-    tileHandle.getMutableContainer()->adjustTileHealth(tileHandle.tileIndex, TileLayer::Main, getRandomDamageValue(damageRange));
+    tileHandle.getMutableContainer()->adjustTileHealth(
+        tileHandle.tileIndex,
+        TileLayer::Main,
+        getRandomDamageValue(damageRange),
+        impactPosition,
+        impactNormal
+    );
 }

@@ -4,21 +4,16 @@
 #include "rendering/model/StaticMeshInstanceData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
+#include <boost/container/flat_map.hpp>
+
+#include "tile/TileHandle.h"
+
 struct TileContainerEvent;
 class Camera3D;
 class InstancedStaticModelGatherer;
 class ModelRepository;
 
 DECL_VG(class GLProgram);
-
-// TODO: Allow chunks to reference each of their tiles part of a mesh buffer. Allow removing and compacting the mesh buffer instead of full rebuild
-// Use TileIndex as key to reference their mesh data so we can dynamically update it.
-//   Queue tile mesh updates, then do them all in a single pass then do a compaction pass on the buffer
-struct TileModelInstance {
-    ModelID mModelID = 0;
-    ui32 mInstanceIndex = 0; // Index into the transforms array
-};
-static_assert(sizeof(TileModelInstance) == 8, "Keep tiny");
 
 struct TileModelPositionKey {
     bool operator<(const TileModelPositionKey& rhs) const { return tileIndex < rhs.tileIndex; }
@@ -35,23 +30,32 @@ public:
     InstancedStaticModelManager();
     ~InstancedStaticModelManager();
 
-    void frameUpdate(const Camera3D& camera);
+    void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
     void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
+    bool getInstancesAtPosition(LiteTileHandle tileHandle, OUT TileModelInstance* outInstances[e_cast(MaterialRenderPassType::COUNT)]);
+    bool hasInstanceAtPosition(LiteTileHandle tileHandle);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
 
+    void playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction);
+
+    // UNUSED
     void onContainerEditEvent(const TileContainerEvent& evnt);
+
+    void onTileDamagedEvent(const TileContainerEvent& evnt);
 
     const ModelInstanceMap& getModelInstanceMapForRenderPass(MaterialRenderPassType renderPassType) const { return mModelsToInstances[e_cast(renderPassType)]; }
     const ModelInstanceMap* getAllModelInstanceMaps() const { return mModelsToInstances; }
 private:
+    void updateAnimatedModels(f32 elapsedSec);
     void removeTileModelInstanceInternal(int renderPassIndex, TileModelInstance& instance);
 
-    ModelInstanceMap mModelsToInstances[e_cast(MaterialRenderPassType::COUNT)];
-    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels[e_cast(MaterialRenderPassType::COUNT)];
+    boost::container::flat_map<LiteTileHandle, StaticMeshAnimation> mAnimatedInstances;
+    ModelInstanceMap mModelsToInstances[e_count(MaterialRenderPassType)];
+    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels[e_count(MaterialRenderPassType)];
     GLBuffer mGpuCullingUniformBuffer;
     const ModelRepository& mModelRepository;
 

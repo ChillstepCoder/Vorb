@@ -34,9 +34,9 @@ void WorldRenderDataManager::tickGameThread() {
     mGrassMeshManager->tickGameThread(loadCenter);
 }
 
-void WorldRenderDataManager::frameUpdate(const Camera3D& camera) {
+void WorldRenderDataManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
-    mInstancedStaticModelManager->frameUpdate(camera);
+    mInstancedStaticModelManager->frameUpdate(camera, elapsedSec);
 
     const f32v2 loadCenter = mWorld.getLoadCenter();
     mCloudManager->frameUpdate(loadCenter);

@@ -167,7 +167,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mCamera = camera;
 
     // Any per frame world render data
-    mCurrentWorldRenderDataManager->frameUpdate(*camera);
+    mCurrentWorldRenderDataManager->frameUpdate(*camera, elapsedSec);
 
     // Sun
     const f32v3& sun = mActiveWorld->getTimeOfDayManager().getSunPosition();

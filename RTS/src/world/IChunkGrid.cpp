@@ -452,6 +452,9 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
 
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
     chunk.mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
+    if (chunk.mTileContainer) {
+        chunk.mTileContainer->mPendingDestroy = true;
+    }
     mDestroyingChunks.emplace_back(id);
 }
 
@@ -469,6 +472,9 @@ void IChunkGrid::removeChunkFromDestroyList(Chunk& chunk) {
     }
     // Make sure we removed
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
+    if (chunk.mTileContainer) {
+        chunk.mTileContainer->mPendingDestroy = false;
+    }
 }
 
 void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {

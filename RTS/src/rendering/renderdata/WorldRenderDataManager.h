@@ -15,7 +15,7 @@ public:
     ~WorldRenderDataManager();
 
     void tickGameThread();
-    void frameUpdate(const Camera3D& camera);
+    void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
     // Accessors
     InstancedStaticModelManager& getInstancedStaticModelManager() const { return *mInstancedStaticModelManager; }

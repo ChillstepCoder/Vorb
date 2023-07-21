@@ -421,7 +421,7 @@ void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
     onTileChanged(index);
 }
 
-bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust) {
+bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal) {
 
     healthAdjust = glm::clamp(healthAdjust , -(int)UINT16_MAX, (int)UINT16_MAX);
 
@@ -462,7 +462,9 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
                 evnt.varEvent = TileDamagedEvent{
                     .tileIndex = index,
                     .tileId = mTiles[index].mainLayer,
-                    .damageAmount = (ui16)-healthAdjust
+                    .damageAmount = (ui16)-healthAdjust,
+                    .impactPosition = impactPosition,
+                    .impactNormal = impactNormal
                 };
                 destroyTile(evnt);
                 return true;
@@ -490,7 +492,9 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         evnt.varEvent = TileDamagedEvent{
             .tileIndex = index,
             .tileId = mTiles[index].mainLayer,
-            .damageAmount = (ui16)-healthAdjust
+            .damageAmount = (ui16)-healthAdjust,
+            .impactPosition = impactPosition,
+            .impactNormal = impactNormal
         };
 
         if (healthAdjust <= -currentHealth) {

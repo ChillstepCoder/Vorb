@@ -1,5 +1,6 @@
 #pragma once
 
+// We enforce no std::function so that we can avoid heap allocations and use singleton_pool for task allocations
 typedef void(*RenderFunction)(class RenderContext& context, void*);
 
 // Singleton class that manages passing render tasks so we don't need to include RenderContext in every object
