@@ -1,118 +1,29 @@
 #pragma once
 
-#include "rendering/gl/GpuStreamingDataBuffer.h"
+#include "rendering/particle/CpuParticleEmitter.h"
 
-DECL_VG(class GLProgram);
+class MaterialShader;
 
-// Position is implicit
-enum class ParticleComponentType : ui8 {
-    Velocity = BIT(0),
-    Scale = BIT(1),
-    Color = BIT(2),
-    HDRColor = BIT(3),
-    Lifespan = BIT(4),
-    MaterialID = BIT(5),
-    Rotation = BIT(6),
-    // TODO: SortDepth?
-    TERM
-};
-
-struct CPUParticleSystemData2D {
-    std::unique_ptr<f32v3[]> mPositions; // If position.x == FLT_MAX, then particle is inactive
-    std::unique_ptr<f32[]> mRotations;
-    std::unique_ptr<f32v3[]> mVelocities;
-    std::unique_ptr<f32v2[]> mScales;
-    std::unique_ptr<color4[]> mColors;
-    std::unique_ptr<f32v4[]> mHDRColors;
-    std::unique_ptr<f32[]> mLifespans;
-    std::unique_ptr<ui32[]> mMaterials;
-};
-static_assert(e_cast(ParticleComponentType::TERM) == 65);
-
-struct CpuParticleSystemGpuData2D {
-    std::unique_ptr<GpuStreamingDataBuffer> mPositionsAndRotationsBuffer;
-    //std::unique_ptr<GpuStreamingDataBuffer> mVelocitiesBuffer; // Velocities are not needed on the GPU
-    std::unique_ptr<GpuStreamingDataBuffer> mScalesBuffer;
-    std::unique_ptr<GpuStreamingDataBuffer> mColorsBuffer; // Shared as HDR or non HDR
-    //std::unique_ptr<GpuStreamingDataBuffer> mLifespansBuffer; // Lifespans are not needed on the GPU
-    std::unique_ptr<GpuStreamingDataBuffer> mMaterialsBuffer;
-};
-static_assert(e_cast(ParticleComponentType::TERM) == 65);
-
-typedef std::function<void(class CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec)> ParticleUpdateFunction;
+typedef std::unique_ptr<CpuParticleEmitter> CpuParticleEmitterPtr;
 
 // Versatile quad rendering system used for both particles and simple UI
 class CPUParticleSystem
 {
 public:
-    CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components);
+    CPUParticleSystem(size_t reserveEmitterCount);
+    CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader);
 
     VORB_NON_COPYABLE(CPUParticleSystem);
 
     // Bind shader before calling this
-    void updateAndRender(const vg::GLProgram& program, f32 elapsedSec);
+    void updateAndRender(f32 elapsedSec);
 
-    // Particles
-    ParticleID tryAddParticle(f32v3 position);
-    void removeParticle(ParticleID id);
-    // Mutators
-    void setParticlePosition(ParticleID id, f32v3 position);
-    void setParticleScale(ParticleID id, f32v2 scale);
-    void setParticleVelocity(ParticleID id, f32v3 velocity);
-    void setParticleColor(ParticleID id, color4 color);
-    void setParticleHDRColor(ParticleID id, f32v4 color);
-    void setParticleMaterial(ParticleID id, MaterialID material);
-    // Accessors
-    f32v3 getParticlePosition(ParticleID id) const { return mParticleData.mPositions[id]; }
-    f32v2 getParticleScale(ParticleID id) const { return mParticleData.mScales[id]; }
-    f32v3 getParticleVelocity(ParticleID id) const { return mParticleData.mVelocities[id]; }
-    color4 getParticleColor(ParticleID id) const { return mParticleData.mColors[id]; }
-    f32v4 getParticleHDRColor(ParticleID id) const { return mParticleData.mHDRColors[id]; }
-    MaterialID getParticleMaterial(ParticleID id) const { return mParticleData.mMaterials[id]; }
-    CPUParticleSystemData2D& getParticleData() { return mParticleData; }
-    
-    void markDataChanged() { mDataChanged = true; }
+    CpuParticleEmitter& addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader);
 
-    // Global state
-    void setGlobalParticleScale(f32v2 scale) { mGlobalParticleScale = scale; }
-    f32v2 getGlobalParticleScale() const { return mGlobalParticleScale; }
-    void setGlobalParticleColor(color4 color) { mGlobalParticleColor = color; }
-    color4 getGlobalParticleColor() const { return mGlobalParticleColor; }
-    void setGlobalMaterialID(MaterialID materialID) { assert(!mParticleData.mMaterials); mGlobalMaterialID = materialID; }
-    MaterialID getGlobalMaterialID() const { assert(!mParticleData.mMaterials); return mGlobalMaterialID; }
-
-    ui32 getFirstActiveParticle() const { return mFirstActiveParticle; }
-    ui32 getLastActiveParticle() const { return mLastActiveParticle; }
-
-    f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
+    size_t getNumEmitters() const { return mEmitters.size(); }
+    CpuParticleEmitter& getEmitter(int index) { return *mEmitters.at(index); }
+    const std::vector<CpuParticleEmitterPtr>& getEmitters() const { return mEmitters; }
 
 private:
-    void render(const vg::GLProgram& program);
-    void onNewParticleAdded(ParticleID id);
-
-    // Updates the whole system with custom logic.
-    // Can be null which implies static system, such as for UI
-    ParticleUpdateFunction mUpdateFunction;
-
-    CPUParticleSystemData2D mParticleData;
-    CpuParticleSystemGpuData2D mGpuData;
-    std::vector<ParticleID> mFreeParticleIDs;
-
-    // Global data
-    f32v2 mGlobalParticleScale = f32v2(1.0f);
-    color4 mGlobalParticleColor = color::White;
-    MaterialID mGlobalMaterialID = 0;
-    ui32 mFirstActiveParticle = 0;
-    ui32 mLastActiveParticle = 0;
-    ui32 mActiveParticles = 0;
-    ui32 mMaxParticles;
-    int mBaseInstance = 0;
-    bool mDataChanged = false;
-    bool mNeedsFindFirstParticle = false;
-    bool mNeedsFindLastParticle = false;
-
-    f32 mTotalElapsedSec = 0.0f;
-
-    // Determines which data streams we will use
-    BitFlags<ParticleComponentType> mComponents;
+    std::vector<CpuParticleEmitterPtr> mEmitters;
 };

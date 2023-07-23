@@ -41,7 +41,7 @@ void LocalMinigameContext::beginFishingMinigame(const FishDef& fishData, OPT Fis
 
     std::lock_guard lock(mQueuedMingameLock);
     mQueuedMinigameInit = [this, &fishData, gameThreadData, onFinished]() {
-        mCurrentMinigame = std::make_unique<FishingMinigame>(fishData, gameThreadData, onFinished);
+        mCurrentMinigame = std::make_unique<FishingMinigame>(fishData, gameThreadData, onFinished, BitFlags<FishingMinigameFlags>());
     };
 
 }

@@ -31,9 +31,14 @@ struct FishingMinigameGameThreadData {
     int mTugOfWarValue = 0;
 };
 
+enum class FishingMinigameFlags : ui8 {
+    DISABLE_DEBRIS = BIT(0),
+    DISABLE_CHESTS = BIT(1)
+};
+
 class FishingMinigame : public ILocalMinigame {
 public:
-    FishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(FishingMinigameResult& result)> onFinished);
+    FishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(FishingMinigameResult& result)> onFinished, BitFlags<FishingMinigameFlags> flags);
     ~FishingMinigame();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(FishingMinigame);
@@ -103,6 +108,8 @@ private:
     bool mDidPlayerImpactBottom = false;
     int mTugOfWarValue = 0; // Positive is winning
     MinigameResultType mStatus = MinigameResultType::InProgress;
+
+    BitFlags<FishingMinigameFlags> mFlags;
 
     // Optional, used to position bobber and fish in world
     FishingMinigameGameThreadData* mGameThreadData = nullptr;

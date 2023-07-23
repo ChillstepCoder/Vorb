@@ -46,12 +46,13 @@ f32 getAngleOffset(const f32v2 normalizedPos, const f32v2 normal) {
     return glm::acos(glm::dot(normalizedPos, normal));
 }
 
-FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(FishingMinigameResult& result)> onFinished) :
+FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGameThreadData* gameThreadData, std::function<void(FishingMinigameResult& result)> onFinished, BitFlags<FishingMinigameFlags> flags) :
     mFishDef(fishData),
     mPlayerRadius(BOUNDARY_RADIUS * 0.15f),
     mFishRadius(getFishRadius(fishData)),
     mOnFinished(onFinished),
-    mGameThreadData(gameThreadData)
+    mGameThreadData(gameThreadData),
+    mFlags(flags)
 
 {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
@@ -68,7 +69,9 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
 
     initPlayerParticles();
     
-    initBlockerParticles();
+    if (!mFlags.isBitSet(FishingMinigameFlags::DISABLE_DEBRIS)) {
+        initBlockerParticles();
+    }
 
     initBubbleParticles();
 }
@@ -182,8 +185,8 @@ void FishingMinigame::render(f32 elapsedSec) {
     glUniformMatrix4fv(mUIShader->getUniform("unVP"), 1, false, &camera[0][0]);
 
     // Arena
-    mUIParticleSystem->setParticleScale(mArenaParticleID, arenaSize);
-    mBackgroundParticleSystem->setGlobalParticleScale(arenaSize * 0.6f);
+    mUIParticleSystem->getEmitter(0).setParticleScale(mArenaParticleID, arenaSize);
+    mBackgroundParticleSystem->getEmitter(0).setGlobalParticleScale(arenaSize * 0.6f);
 
     // Player
     // TODO: Replace
@@ -201,28 +204,28 @@ void FishingMinigame::render(f32 elapsedSec) {
     };
     // TODO: REMOVE
 
-    mPlayerParticleSystem->setGlobalParticleScale(f32v2(5.0f, 10.0f)* f32v2(minigameData.mParticleScale));
-    mUIParticleSystem->setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0f));
-    mUIParticleSystem->setParticlePosition(mPlayerParticleID, f32v3(mPlayerPosition.x, mPlayerPosition.y, 0.0f));
+    mPlayerParticleSystem->getEmitter(0).setGlobalParticleScale(f32v2(5.0f, 10.0f)* f32v2(minigameData.mParticleScale));
+    mUIParticleSystem->getEmitter(0).setParticleScale(mPlayerParticleID, f32v2(mPlayerRadius * 2.0f));
+    mUIParticleSystem->getEmitter(0).setParticlePosition(mPlayerParticleID, f32v3(mPlayerPosition.x, mPlayerPosition.y, 0.0f));
 
     // Fish
-    f32v4 newColor = MathUtil::lerpWithDeltaTime(mUIParticleSystem->getParticleHDRColor(mFishParticleID), f32v4(1.0f), 0.99f, elapsedSec);
-    mUIParticleSystem->setParticleHDRColor(mFishParticleID, newColor);
-    mUIParticleSystem->setParticleScale(mFishParticleID, f32v2(mFishRadius * 2.0f));
-    mUIParticleSystem->setParticlePosition(mFishParticleID, f32v3(mFishPosition.x, mFishPosition.y, 0.0f));
+    f32v4 newColor = MathUtil::lerpWithDeltaTime(mUIParticleSystem->getEmitter(0).getParticleHDRColor(mFishParticleID), f32v4(1.0f), 0.99f, elapsedSec);
+    mUIParticleSystem->getEmitter(0).setParticleHDRColor(mFishParticleID, newColor);
+    mUIParticleSystem->getEmitter(0).setParticleScale(mFishParticleID, f32v2(mFishRadius * 2.0f));
+    mUIParticleSystem->getEmitter(0).setParticlePosition(mFishParticleID, f32v3(mFishPosition.x, mFishPosition.y, 0.0f));
     
     // Chest
     if (mChestParticleID != INVALID_PARTICLE_ID) {
-        mUIParticleSystem->setParticlePosition(mChestParticleID, f32v3(mChestPosition.x, mChestPosition.y, 0.0f));
+        mUIParticleSystem->getEmitter(0).setParticlePosition(mChestParticleID, f32v3(mChestPosition.x, mChestPosition.y, 0.0f));
     }
 
-    mBackgroundParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
-    mBubbleParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
-    mUIParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
+    mBackgroundParticleSystem->updateAndRender(elapsedSec);
+    mBubbleParticleSystem->updateAndRender(elapsedSec);
+    mUIParticleSystem->updateAndRender(elapsedSec);
     if (mBlockerParticleSystem) {
-        mBlockerParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
+        mBlockerParticleSystem->updateAndRender(elapsedSec);
     }
-    mPlayerParticleSystem->updateAndRender(mUIShader->mProgram, elapsedSec);
+    mPlayerParticleSystem->updateAndRender(elapsedSec);
 
     vg::DepthState::restorePrevious();
 }
@@ -231,14 +234,15 @@ void FishingMinigame::initUIParticles() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
 
-    mBackgroundParticleSystem = std::make_unique<CPUParticleSystem>(nullptr, 1, BitFlags<ParticleComponentType>());
+    mBackgroundParticleSystem = std::make_unique<CPUParticleSystem>(nullptr, 1, BitFlags<ParticleComponentType>(), *mUIShader);
 
     mUIParticleSystem = std::make_unique<CPUParticleSystem>(nullptr, MAX_UI_ELEMENTS,
         BitFlags<ParticleComponentType>(
             ParticleComponentType::Scale,
             ParticleComponentType::MaterialID,
             ParticleComponentType::HDRColor
-        )
+        ),
+        *mUIShader
     );
 
     constexpr const char* const possibleFishTokens[4] = {
@@ -248,25 +252,25 @@ void FishingMinigame::initUIParticles() {
         "fish_token_04",
     };
 
-    mBackgroundParticleSystem->tryAddParticle(f32v3(0.0f));
-    mBackgroundParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("fishing_bg").id);
+    mBackgroundParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
+    mBackgroundParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialDesc("fishing_bg").id);
 
-    mArenaParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mArenaParticleID, materialRepository.getMaterialDesc("fishing_border").id);
-    mUIParticleSystem->setParticleHDRColor(mArenaParticleID, f32v4(1.0f));
+    mArenaParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
+    mUIParticleSystem->getEmitter(0).setParticleMaterial(mArenaParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+    mUIParticleSystem->getEmitter(0).setParticleHDRColor(mArenaParticleID, f32v4(1.0f));
 
-    mFishParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
+    mFishParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
     const ui32 fishTier = Random::xorshf96() % 4;
-    mUIParticleSystem->setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc(possibleFishTokens[fishTier]).id);
-    mUIParticleSystem->setParticleHDRColor(mFishParticleID, f32v4(1.0f));
+    mUIParticleSystem->getEmitter(0).setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc(possibleFishTokens[fishTier]).id);
+    mUIParticleSystem->getEmitter(0).setParticleHDRColor(mFishParticleID, f32v4(1.0f));
 
-    mPlayerParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fish_player").id);
-    mUIParticleSystem->setParticleHDRColor(mPlayerParticleID, f32v4(0.0f, 33.5f, 0.0f, 1.0f));
+    mPlayerParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
+    mUIParticleSystem->getEmitter(0).setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fish_player").id);
+    mUIParticleSystem->getEmitter(0).setParticleHDRColor(mPlayerParticleID, f32v4(0.0f, 33.5f, 0.0f, 1.0f));
 
     // One in 15 chance
     constexpr ui32 CHEST_FREQUENCY = 1; // 15
-    const bool hasChest = (Random::getCachedRandom() % CHEST_FREQUENCY) == 0;
+    const bool hasChest = (Random::getCachedRandom() % CHEST_FREQUENCY) == 0 && !mFlags.isBitSet(FishingMinigameFlags::DISABLE_CHESTS);
     if (hasChest) {
         constexpr const char* const possibleChestTokens[4] = {
             "chest_token_01",
@@ -276,10 +280,10 @@ void FishingMinigame::initUIParticles() {
         };
 
         const ui32 chestTier = Random::xorshf96() % 4;
-        mChestParticleID = mUIParticleSystem->tryAddParticle(f32v3(0.0f));
-        mUIParticleSystem->setParticleScale(mChestParticleID, f32v2(CHEST_RADIUS * 2.0f));
-        mUIParticleSystem->setParticleMaterial(mChestParticleID, materialRepository.getMaterialDesc(possibleChestTokens[chestTier]).id);
-        mUIParticleSystem->setParticleHDRColor(mChestParticleID, f32v4(1.0f));
+        mChestParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
+        mUIParticleSystem->getEmitter(0).setParticleScale(mChestParticleID, f32v2(CHEST_RADIUS * 2.0f));
+        mUIParticleSystem->getEmitter(0).setParticleMaterial(mChestParticleID, materialRepository.getMaterialDesc(possibleChestTokens[chestTier]).id);
+        mUIParticleSystem->getEmitter(0).setParticleHDRColor(mChestParticleID, f32v4(1.0f));
     }
 }
 
@@ -290,14 +294,14 @@ void FishingMinigame::initPlayerParticles() {
 
     // Player particles
     mPlayerParticleSystem = std::make_unique<CPUParticleSystem>(
-        [this](CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+        [this](CpuParticleEmitter& emitter, CPUParticlesData& particleData, f32 elapsedSec) {
 
         const color4 baseColor = color4(255, 150, 92, 5);
         constexpr f32 baseScale = 0.5f;
 
         // Additional explosion when hitting bottom
         if (mDidPlayerImpactBottom) {
-            for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
+            for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
                 constexpr f32 EXPLODE_IMPULSE = 300.0f;
                 f32v2 explodeDir(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f);
                 explodeDir = glm::normalize(explodeDir) * Random::getCachedRandomf();
@@ -308,7 +312,7 @@ void FishingMinigame::initPlayerParticles() {
             mDidPlayerImpactBottom = false;
         }
 
-        for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
+        for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
             // Check for dead particle
             if (particleData.mPositions[i].x == FLT_MAX) {
                 continue;
@@ -431,8 +435,9 @@ void FishingMinigame::initPlayerParticles() {
         ParticleComponentType::Velocity,
         ParticleComponentType::Scale,
         ParticleComponentType::MaterialID
-    ));
-    mPlayerParticleSystem->setGlobalParticleScale(f32v2(5.0f));
+    ),
+    *mUIShader);
+    mPlayerParticleSystem->getEmitter(0).setGlobalParticleScale(f32v2(5.0f));
 
     constexpr int MATERIAL_COUNT = 9;
     MaterialID materials[MATERIAL_COUNT] = {
@@ -454,17 +459,17 @@ void FishingMinigame::initPlayerParticles() {
         randomPos = glm::normalize(randomPos) * Random::getCachedRandomf() * BALL_RADIUS;
         randomPos.x += mPlayerPosition.x;
         randomPos.y += mPlayerPosition.y;
-        ParticleID newParticle = mPlayerParticleSystem->tryAddParticle(f32v3(
+        ParticleID newParticle = mPlayerParticleSystem->getEmitter(0).tryAddParticle(f32v3(
             randomPos.x,
             randomPos.y,
             0.0f)
         );
         constexpr f32 RANDOM_VEL_FORCE = 30.0f;
-        mPlayerParticleSystem->setParticleVelocity(
+        mPlayerParticleSystem->getEmitter(0).setParticleVelocity(
             newParticle,
             f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
         );
-        mPlayerParticleSystem->setParticleMaterial(newParticle, materials[Random::xorshf96() % MATERIAL_COUNT]);
+        mPlayerParticleSystem->getEmitter(0).setParticleMaterial(newParticle, materials[Random::xorshf96() % MATERIAL_COUNT]);
     }
 }
 
@@ -476,9 +481,9 @@ void FishingMinigame::initBlockerParticles() {
     constexpr int BLOCKER_PARTICLE_COUNT = 1;
     if (BLOCKER_PARTICLE_COUNT) {
         mBlockerParticleSystem = std::make_unique<CPUParticleSystem>(
-            [this](CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+            [this](CpuParticleEmitter& emitter, CPUParticlesData& particleData, f32 elapsedSec) {
 
-            for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
+            for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
                 if (particleData.mPositions[i].x == FLT_MAX) {
                     continue;
                 }
@@ -542,7 +547,7 @@ void FishingMinigame::initBlockerParticles() {
                 };
 
                 // Collide with other particles
-                for (int j = i + 1; j <= system.getLastActiveParticle(); ++j) {
+                for (int j = i + 1; j <= emitter.getLastActiveParticle(); ++j) {
                     if (particleData.mPositions[j].x == FLT_MAX) {
                         continue;
                     }
@@ -563,27 +568,28 @@ void FishingMinigame::initBlockerParticles() {
             BitFlags<ParticleComponentType>(
                 ParticleComponentType::Velocity,
                 ParticleComponentType::Scale
-            )
+            ),
+            *mUIShader
         );
         mBlockerParticles.resize(BLOCKER_PARTICLE_COUNT);
         for (int i = 0; i < BLOCKER_PARTICLE_COUNT; ++i) {
             constexpr f32 PARTICLE_SCALE = 25.0f;
             f32v2 randomPos(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf()); // Spawn on bottom half always
             randomPos = glm::normalize(randomPos) * (Random::getCachedRandomf() * BOUNDARY_RADIUS + mFishRadius + PARTICLE_SCALE * 0.5f);
-            mBlockerParticles[i] = mBlockerParticleSystem->tryAddParticle(f32v3(
+            mBlockerParticles[i] = mBlockerParticleSystem->getEmitter(0).tryAddParticle(f32v3(
                 randomPos.x,
                 randomPos.y,
                 0.0f)
             );
             constexpr f32 RANDOM_VEL_FORCE = 30.0f;
-            mBlockerParticleSystem->setParticleVelocity(
+            mBlockerParticleSystem->getEmitter(0).setParticleVelocity(
                 mBlockerParticles[i],
                 f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
             );
-            mBlockerParticleSystem->setParticleScale(mBlockerParticles[i], f32v2(PARTICLE_SCALE));
+            mBlockerParticleSystem->getEmitter(0).setParticleScale(mBlockerParticles[i], f32v2(PARTICLE_SCALE));
         }
-        mBlockerParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("weed_token_01").id);
-        mBlockerParticleSystem->setGlobalParticleColor(color::White);
+        mBlockerParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialDesc("weed_token_01").id);
+        mBlockerParticleSystem->getEmitter(0).setGlobalParticleColor(color::White);
     }
 }
 
@@ -596,11 +602,11 @@ void FishingMinigame::initBubbleParticles()
     constexpr int BUBBLE_PARTICLE_COUNT = 40;
     if (BUBBLE_PARTICLE_COUNT) {
         mBubbleParticleSystem = std::make_unique<CPUParticleSystem>(
-            [this](CPUParticleSystem& system, CPUParticleSystemData2D& particleData, f32 elapsedSec) {
+            [this](CpuParticleEmitter& emitter, CPUParticlesData& particleData, f32 elapsedSec) {
 
             constexpr f32 MAX_XVEL = 1.6f;
             constexpr f32 RANDOM_MOVE_POWER = 7.5f;
-            for (ui32 i = system.getFirstActiveParticle(); i <= system.getLastActiveParticle(); ++i) {
+            for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
                 if (particleData.mPositions[i].x == FLT_MAX) {
                     continue;
                 }
@@ -645,30 +651,31 @@ void FishingMinigame::initBubbleParticles()
             BitFlags<ParticleComponentType>(
                 ParticleComponentType::Velocity,
                 ParticleComponentType::Scale
-                )
+                ),
+            *mUIShader
             );
         constexpr f32 PARTICLE_SCALE_MIN = 2.0f;
         constexpr f32 PARTICLE_SCALE_MAX = 10.0f;
         for (int i = 0; i < BUBBLE_PARTICLE_COUNT; ++i) {
             f32v2 randomPos(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f);
             randomPos = glm::normalize(randomPos) * (Random::getCachedRandomf() * BOUNDARY_RADIUS);
-            ParticleID newParticle = mBubbleParticleSystem->tryAddParticle(f32v3(
+            ParticleID newParticle = mBubbleParticleSystem->getEmitter(0).tryAddParticle(f32v3(
                 randomPos.x,
                 randomPos.y,
                 0.0f)
             );
             constexpr f32 RANDOM_VEL_FORCE = 30.0f;
-            mBubbleParticleSystem->setParticleVelocity(
+            mBubbleParticleSystem->getEmitter(0).setParticleVelocity(
                 newParticle,
                 f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
             );
             f32 scale = Random::getCachedRandomf();
             scale = pow(scale, 8.0f); // Favor smaller bubbles
             scale = scale * (PARTICLE_SCALE_MAX - PARTICLE_SCALE_MIN) + PARTICLE_SCALE_MIN;
-            mBubbleParticleSystem->setParticleScale(newParticle, f32v2(scale));
+            mBubbleParticleSystem->getEmitter(0).setParticleScale(newParticle, f32v2(scale));
         }
-        mBubbleParticleSystem->setGlobalMaterialID(materialRepository.getMaterialDesc("fish_bubble").id);
-        mBubbleParticleSystem->setGlobalParticleColor(color::White);
+        mBubbleParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialDesc("fish_bubble").id);
+        mBubbleParticleSystem->getEmitter(0).setGlobalParticleColor(color::White);
     }
 }
 
@@ -861,7 +868,7 @@ void FishingMinigame::fishLifeLost() {
     mLastFishLifeLostTime = mTickingTimer.getCurrTime();
 
     // HDR Coloring
-    mUIParticleSystem->setParticleHDRColor(mFishParticleID, f32v4(1.27f, 1.725f, 1.514f, 1.0f));
+    mUIParticleSystem->getEmitter(0).setParticleHDRColor(mFishParticleID, f32v4(1.27f, 1.725f, 1.514f, 1.0f));
 }
 
 void FishingMinigame::playerLifeLost() {
@@ -874,13 +881,13 @@ void FishingMinigame::playerLifeLost() {
     mFishVelocity.y = -FISH_LAUNCH_VEL;
 
     // HDR Coloring
-    mUIParticleSystem->setParticleHDRColor(mFishParticleID, f32v4(1.0f, 0.404f, 0.063, 1.0f));
+    mUIParticleSystem->getEmitter(0).setParticleHDRColor(mFishParticleID, f32v4(1.0f, 0.404f, 0.063, 1.0f));
 }
 
 void FishingMinigame::catchChest() {
     mCaughtChest = true;
     // TODO: VFX
-    mUIParticleSystem->removeParticle(mChestParticleID);
+    mUIParticleSystem->getEmitter(0).removeParticle(mChestParticleID);
     mChestParticleID = INVALID_PARTICLE_ID;
 }
 

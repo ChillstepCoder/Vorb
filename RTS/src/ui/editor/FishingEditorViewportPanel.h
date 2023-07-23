@@ -18,9 +18,13 @@ public:
 private:
     const MaterialShader* getShader() override;
     void renderFishModel();
+    BitFlags<FishingMinigameFlags> getMinigameFlags();
 
     FishDef* mFishDef = nullptr;
     std::unique_ptr<FishingMinigame> mCurrentFishingMinigame;
     f32v2 mViewportDims;
+
+    bool mDisableDebris = true;
+    bool mDisableChests = true;
 };
 

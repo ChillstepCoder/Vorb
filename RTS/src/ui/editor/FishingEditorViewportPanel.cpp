@@ -54,9 +54,11 @@ void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
         }
     } else {
         if (ImGui::Button("Start Minigame")) {
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr, getMinigameFlags());
         }
     }
+    ImGui::Checkbox("Disable chests", &mDisableChests);
+    ImGui::Checkbox("Disable debris", &mDisableDebris);
     FishingMinigameFishData& minigameData = mFishDef->mMinigameData;
     ImGui::Text("Test Minigame Data");
     ImGui::Separator();
@@ -107,13 +109,14 @@ const MaterialShader* FishingEditorViewportPanel::getShader() {
 
 void FishingEditorViewportPanel::renderMesh() {
     if (mCurrentFishingMinigame) {
+
         MinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
         if (result.mType == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr, getMinigameFlags());
         } else if (result.mType == MinigameResultType::Success) {
             LOG_INFO("Fishing success!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr);
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr, getMinigameFlags());
         }
     }
     else {
@@ -134,4 +137,15 @@ void FishingEditorViewportPanel::renderFishModel() {
             MeshDrawer::draw(model.getMesh(i).mMainMesh, MeshLODLevel::Highest);
         }
     }
+}
+
+BitFlags<FishingMinigameFlags> FishingEditorViewportPanel::getMinigameFlags() {
+    BitFlags<FishingMinigameFlags> flags;
+    if (mDisableChests) {
+        flags.setBit(FishingMinigameFlags::DISABLE_CHESTS);
+    }
+    if (mDisableDebris) {
+        flags.setBit(FishingMinigameFlags::DISABLE_DEBRIS);
+    }
+    return flags;
 }
