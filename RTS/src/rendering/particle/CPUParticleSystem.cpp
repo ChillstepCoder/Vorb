@@ -13,13 +13,19 @@ CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunctio
 
 void CPUParticleSystem::updateAndRender(f32 elapsedSec) {
     const MaterialShader* boundShader = nullptr;
-    for (auto& emitter : mEmitters) {
-        const MaterialShader* nextShader = &emitter->getMaterialShader();
+    for (auto&& iter = mEmitters.begin(); iter != mEmitters.end();) {
+        CpuParticleEmitter& emitter = **iter;
+        const MaterialShader* nextShader = &emitter.getMaterialShader();
         if (nextShader != boundShader) {
             MaterialRenderer::bindMaterialForRender(*nextShader);
             boundShader = nextShader;
         }
-        emitter->updateAndRender(elapsedSec);
+        if (emitter.updateAndRender(elapsedSec)) {
+            iter = mEmitters.erase(iter);
+        }
+        else {
+            ++iter;
+        }
     }
 }
 

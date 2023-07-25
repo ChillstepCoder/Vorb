@@ -1,22 +1,14 @@
 #pragma once
 
 #include "rendering/gl/GpuStreamingDataBuffer.h"
+#include "util/ArbitraryObjectArray.h"
+
+#include "CPUParticleEmitterModule.h"
+#include "ParticleComponentType.h"
 
 class CPUParticleSystem;
 class MaterialShader;
 
-// Position is implicit
-enum class ParticleComponentType : ui8 {
-    Velocity = BIT(0),
-    Scale = BIT(1),
-    Color = BIT(2),
-    HDRColor = BIT(3),
-    Lifespan = BIT(4),
-    MaterialID = BIT(5),
-    Rotation = BIT(6),
-    // TODO: SortDepth?
-    TERM
-};
 
 struct CpuParticlesGpuData {
     std::unique_ptr<GpuStreamingDataBuffer> mPositionsAndRotationsBuffer;
@@ -48,18 +40,20 @@ struct EmitterSpawnBurst {
 
 struct EmitterSpawnPeriodic {
     f32v2 mEmitRateRangeSec = f32v2(0.0f, 0.2f);
+    f32 mNextEmitTime = 0.0f;
     ui32v2 mEmitCountRange = ui32v2(1, 1);
 };
 
 class CpuParticleEmitter {
 public:
-    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader);
+    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 lifetime = FLT_MAX);
     ~CpuParticleEmitter();
 
     VORB_NON_COPYABLE(CpuParticleEmitter);
 
-    // Bind shader before calling this
-    void updateAndRender(f32 elapsedSec);
+    // Bind shader before calling this.
+    // Returns true once lifetime has expired
+    bool updateAndRender(f32 elapsedSec);
 
     // Particles
     ParticleID tryAddParticle(f32v3 position);
@@ -97,16 +91,30 @@ public:
 
     const MaterialShader& getMaterialShader() const { return mShader; }
 
+    // Modules
+    template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
+    void addInitModule(const T& module) {
+        module.addModuleDataToArray(mParticleModuleData);
+        mEmitterModuleMethods.emplace_back(module.getMethod())
+    }
+
 
 protected:
+    void updateSpawning();
+    void emitParticles(ui32v2 countRange);
     void render();
     void onNewParticleAdded(ParticleID id);
 
     const MaterialShader& mShader;
 
-    // Updates the whole system with custom logic.
-   // Can be null which implies static system, such as for UI
-    ParticleUpdateFunction mUpdateFunction;
+    // Updates the whole emitter with custom logic.
+    // Can be null which implies static system, such as for UI
+    ParticleUpdateFunction mNativeUpdateFunction;
+
+    // Contiguous storage of particle module data for efficient iteration
+    ArbitraryObjectArray mParticleModuleData;
+    std::vector<CPUParticleEmitterModuleMethod> mEmitterModuleMethods;
+    int mNumParticleInitMethods = 0;
 
     CPUParticlesData mParticleData;
     CpuParticlesGpuData mGpuData;
@@ -126,6 +134,7 @@ protected:
     bool mNeedsFindLastParticle = false;
 
     f32 mTotalElapsedSec = 0.0f;
+    f32 mLifetimeSec;
 
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;

@@ -7,14 +7,17 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/GLProgram.h>
 
+#include "math/Random.h"
+
 // Arbitrary for estimated perf reasons
 constexpr ui32 MAX_PARTICLES = 20000;
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader) :
+CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 lifetime /*= FLT_MAX*/) :
     mShader(shader),
-    mUpdateFunction(updateFunction),
+    mNativeUpdateFunction(updateFunction),
     mMaxParticles(maxParticles),
-    mComponents(components)
+    mComponents(components),
+    mLifetimeSec(lifetime)
 {
     ASSERT_RENDER_THREAD();
     assert(mMaxParticles <= MAX_PARTICLES);
@@ -59,25 +62,43 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
     }
 
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
+
+    // Burst spawning
+    if (std::holds_alternative<EmitterSpawnBurst>(mSpawnData)) {
+        emitParticles(std::get<EmitterSpawnBurst>(mSpawnData).mEmitCountRange);
+    }
 }
 
 CpuParticleEmitter::~CpuParticleEmitter() {
 }
 
-
-void CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
+bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
 
-    mTotalElapsedSec = elapsedSec;
+    mTotalElapsedSec += elapsedSec;
 
     // If we dont have an update function, we are a static system or manually updated system
     // which only needs to update GPU data on particle add or remove or manual flag dirty
-    if (mUpdateFunction) {
+    if (mNativeUpdateFunction) {
         mDataChanged = true;
-        mUpdateFunction(*this, mParticleData, elapsedSec);
+        mNativeUpdateFunction(*this, mParticleData, elapsedSec);
+    }
+
+    // Run every particle through the modules
+    // TODO: Multithreaded with triple buffer state?
+    for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+        // TODO: Profile probability?
+        if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+            continue;
+        }
+        for (size_t j = mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
+            mEmitterModuleMethods[j](*this, i, mParticleModuleData[j]);
+        }
     }
 
     render();
+
+    return mTotalElapsedSec >= mLifetimeSec;
 }
 
 ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
@@ -156,6 +177,40 @@ void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) {
 void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) {
     mParticleData.mMaterials[id] = (ui32)material;
     mDataChanged = true;
+}
+
+void CpuParticleEmitter::updateSpawning() {
+    if (std::holds_alternative<EmitterSpawnPeriodic>(mSpawnData)) {
+        EmitterSpawnPeriodic& spawnData = std::get<EmitterSpawnPeriodic>(mSpawnData);
+        const f32 timeDiff = mTotalElapsedSec - spawnData.mNextEmitTime;
+        if (timeDiff >= 0.0f) {
+            emitParticles(spawnData.mEmitCountRange);
+            spawnData.mNextEmitTime = mTotalElapsedSec + Random::getCachedRandomf() * (spawnData.mEmitRateRangeSec.y - spawnData.mEmitRateRangeSec.x) + spawnData.mEmitRateRangeSec.x - timeDiff;
+        }
+    }
+}
+
+void CpuParticleEmitter::emitParticles(ui32v2 countRange) {
+
+    assert(mActiveParticles <= mMaxParticles);
+
+    ui32 emitCount = ((ui32)Random::getCachedRandom() % (countRange.y - countRange.x)) + countRange.x;
+    emitCount = glm::min(emitCount, mActiveParticles - mMaxParticles);
+    if (emitCount == 0) {
+        return;
+    }
+
+    mDataChanged = true;
+    for (ui32 i = 0; i < emitCount; ++i) {
+        if (mFreeParticleIDs.size()) {
+            ParticleID recycledId = mFreeParticleIDs.back();
+            mParticleData.mPositions[recycledId] = f32v3(0.0f);
+            mFreeParticleIDs.pop_back();
+            onNewParticleAdded(recycledId);
+        }
+        mParticleData.mPositions[mActiveParticles] = f32v3(0.0f);
+        onNewParticleAdded(mActiveParticles);
+    }
 }
 
 void CpuParticleEmitter::render() {
@@ -321,6 +376,12 @@ void CpuParticleEmitter::render() {
 }
 
 void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
+
+    // Init particle
+    for (int i = 0; i < mNumParticleInitMethods; ++i) {
+        mEmitterModuleMethods[i](*this, id, mParticleModuleData[i]);
+    }
+
     ++mActiveParticles;
     if (mActiveParticles == 1) {
         mFirstActiveParticle = mLastActiveParticle = id;
