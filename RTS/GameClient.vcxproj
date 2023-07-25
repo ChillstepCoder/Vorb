@@ -376,7 +376,9 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
     <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp" />
+    <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
+    <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
@@ -453,6 +455,7 @@
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
     <ClCompile Include="src\ui\UIContext.cpp" />
     <ClCompile Include="src\ui\TileInteractPanel.cpp" />
+    <ClCompile Include="src\util\ArbitraryObjectArray.cpp" />
     <ClCompile Include="src\util\b3ChromeTraceUtil.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
@@ -631,9 +634,6 @@
     <ClInclude Include="src\network\WorldNetMode.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\options\LightingOptions.h" />
-    <ClInclude Include="src\particles\ParticleSystem.h" />
-    <ClInclude Include="src\particles\ParticleSystemData.h" />
-    <ClInclude Include="src\particles\ParticleSystemManager.h" />
     <ClInclude Include="src\pathfinding\CoarseNavGraph.h" />
     <ClInclude Include="src\pathfinding\NavThread.h" />
     <ClInclude Include="src\pathfinding\NavPath.h" />
@@ -709,8 +709,11 @@
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />
+    <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />
     <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
+    <ClInclude Include="src\rendering\particle\CPUParticleEmitterModule.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
+    <ClInclude Include="src\rendering\particle\ParticleComponentType.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />
@@ -805,6 +808,7 @@
     <ClInclude Include="src\ui\TileInteractPanel.h" />
     <ClInclude Include="src\ui\UIContextEvents.h" />
     <ClInclude Include="src\util\AABB.hpp" />
+    <ClInclude Include="src\util\ArbitraryObjectArray.h" />
     <ClInclude Include="src\util\b3ChromeTraceUtil.h" />
     <ClInclude Include="src\util\BitArray.h" />
     <ClInclude Include="src\util\BitFlags.h" />
