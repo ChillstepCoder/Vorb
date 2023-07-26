@@ -379,6 +379,7 @@
     <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
+    <ClCompile Include="src\rendering\particle\CPUParticleEmitterOperation.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />

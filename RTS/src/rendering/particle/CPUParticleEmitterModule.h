@@ -12,10 +12,11 @@ class CPUParticleEmitterModule
 {
 public:
 
-    CPUParticleEmitterModule() = default;
+    CPUParticleEmitterModule() { refresh(); }
     virtual ~CPUParticleEmitterModule() = default;
 
     virtual void addModuleDataToArray(ArbitraryObjectArray& arry) = 0;
+    virtual void refresh() = 0;
 
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();

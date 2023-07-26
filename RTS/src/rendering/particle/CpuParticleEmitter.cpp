@@ -179,6 +179,36 @@ void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material)
     mDataChanged = true;
 }
 
+void CpuParticleEmitter::fillVariableFromType(CPUParticleEmitterVariable& variable, ParticleID id, CPUParticleEmitterVariableType type) {
+    assert(type >= CPUParticleEmitterVariableType::BUILTINS_BEGIN);
+    
+    switch (type) {
+        case CPUParticleEmitterVariableType::Position:
+            variable.mVarData = mParticleData.mPositions.get()[id];
+            break;
+        case CPUParticleEmitterVariableType::Velocity:
+            variable.mVarData = mParticleData.mVelocities.get()[id];
+            break;
+        case CPUParticleEmitterVariableType::Scale:
+            variable.mVarData = mParticleData.mScales.get()[id];
+            break;
+        case CPUParticleEmitterVariableType::Color:
+            variable.mVarData = mParticleData.mColors.get()[id];
+            break;
+        case CPUParticleEmitterVariableType::HDRColor:
+            variable.mVarData = mParticleData.mHDRColors.get()[id];
+            break;
+        case CPUParticleEmitterVariableType::Lifespan:
+            variable.mVarData = mParticleData.mLifespans.get()[id];
+            break;
+        case CPUParticleEmitterVariableType::Rotation:
+            variable.mVarData = mParticleData.mRotations.get()[id];
+            break;
+    }
+
+    static_assert(e_count(CPUParticleEmitterVariableType) == 10);
+}
+
 void CpuParticleEmitter::updateSpawning() {
     if (std::holds_alternative<EmitterSpawnPeriodic>(mSpawnData)) {
         EmitterSpawnPeriodic& spawnData = std::get<EmitterSpawnPeriodic>(mSpawnData);

@@ -12,7 +12,7 @@ void addModuleDataToArray(ArbitraryObjectArray& arry) { \
 // Set Position
 class CPUPEM_SetPosition : CPUParticleEmitterModule {
 public:
-    CPUPEM_SetPosition();
+    void refresh() override;
 
 private:
     MODULE_DEF(
@@ -23,7 +23,7 @@ private:
 // Set Velocity
 class CPUPEM_SetVelocity : CPUParticleEmitterModule {
 public:
-    CPUPEM_SetVelocity();
+    void refresh() override;
 
 private:
     MODULE_DEF(
@@ -33,7 +33,7 @@ private:
 
 class CPUPEM_SetColor : CPUParticleEmitterModule {
 public:
-    CPUPEM_SetColor();
+    void refresh() override;
 
 private:
     MODULE_DEF(

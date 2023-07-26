@@ -106,6 +106,8 @@ public:
         mEmitterModuleMethods.emplace_back(module.getMethod());
     }
 
+    void fillVariableFromType(CPUParticleEmitterVariable& variable, ParticleID id, CPUParticleEmitterVariableType type);
+
 
 protected:
     void updateSpawning();

@@ -5,19 +5,19 @@
 
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
-CPUPEM_SetPosition::CPUPEM_SetPosition() {
+void CPUPEM_SetPosition::refresh() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         emitter.setParticlePosition(particleID, MODULE_DATA->mPosition);
     };
 }
 
-CPUPEM_SetVelocity::CPUPEM_SetVelocity() {
+void CPUPEM_SetVelocity::refresh() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         emitter.setParticleVelocity(particleID, MODULE_DATA->mVelocity);
     };
 }
 
-CPUPEM_SetColor::CPUPEM_SetColor() {
+void CPUPEM_SetColor::refresh() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         emitter.setParticleColor(particleID, MODULE_DATA->mColor);
     };
