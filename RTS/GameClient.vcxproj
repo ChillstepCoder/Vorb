@@ -712,6 +712,7 @@
     <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />
     <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterModule.h" />
+    <ClInclude Include="src\rendering\particle\CPUParticleEmitterOperation.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
     <ClInclude Include="src\rendering\particle\ParticleComponentType.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />

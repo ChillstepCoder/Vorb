@@ -1,10 +1,12 @@
 #pragma once
 
 #include "ParticleComponentType.h"
+#include "CPUParticleEmitterOperation.h"
 
 class ArbitraryObjectArray;
 
 typedef void(*CPUParticleEmitterModuleMethod)(class CpuParticleEmitter& emitter, int particleID, void* data);
+
 
 class CPUParticleEmitterModule
 {

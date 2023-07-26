@@ -29,7 +29,8 @@ public:
     T* addObject(const T& object) {
         size_t alignment = alignof(T);
         std::size_t space = BLOCK_SIZE - mCurrentSizeBytes;
-        void* alignedPtr = std::align(alignment, sizeof(T), reinterpret_cast<char*>(mData.back().get()) + mCurrentSizeBytes, space);
+        void* p = (void*)(reinterpret_cast<char*>(mData.back().get() + mCurrentSizeBytes));
+        void* alignedPtr = std::align(alignment, sizeof(T), p, space);
 
         // Check if alignment pushed us past the current buffer, or if there wasn't enough space to begin with
         if (alignedPtr == nullptr || space < sizeof(T)) {
@@ -37,7 +38,8 @@ public:
 
             // Try again with the new buffer
             space = BLOCK_SIZE - mCurrentSizeBytes;
-            alignedPtr = std::align(alignment, sizeof(T), reinterpret_cast<char*>(mData.back().get()) + mCurrentSizeBytes, space);
+            p = (void*)(reinterpret_cast<char*>(mData.back().get() + mCurrentSizeBytes));
+            alignedPtr = std::align(alignment, sizeof(T), p, space);
         }
 
         assert(alignedPtr);

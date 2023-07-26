@@ -3,8 +3,6 @@
 
 #include "CpuParticleEmitter.h"
 
-#include "util/ArbitraryObjectArray.h"
-
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
 CPUPEM_SetPosition::CPUPEM_SetPosition() {

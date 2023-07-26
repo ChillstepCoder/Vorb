@@ -93,9 +93,17 @@ public:
 
     // Modules
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
-    void addInitModule(const T& module) {
+    void addParticleInitModule(const T& module) {
+        assert(mNumParticleInitMethods == mEmitterModuleMethods.size() && "All init methods must be added first");
         module.addModuleDataToArray(mParticleModuleData);
-        mEmitterModuleMethods.emplace_back(module.getMethod())
+        mEmitterModuleMethods.emplace_back(module.getMethod());
+        ++mNumParticleInitMethods;
+    }
+
+    template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
+    void addParticleUpdateModule(const T& module) {
+        module.addModuleDataToArray(mParticleModuleData);
+        mEmitterModuleMethods.emplace_back(module.getMethod());
     }
 
 
