@@ -46,6 +46,7 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
         updateAndRenderFoliageTab(returnValue);
         updateAndRenderBiomeTab(returnValue);
         updateAndRenderFishingTab(returnValue);
+        updateAndRenderParticlesTab(returnValue);
 
         ImGui::EndTabBar();
     }
@@ -371,6 +372,16 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
             vg::DepthState::restorePrevious();
 
             ImGui::EndTable();
+        }
+        ImGui::EndTabItem();
+    }
+}
+
+void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result) {
+    if (ImGui::BeginTabItem("Particles")) {
+        ImGui::Text("Particle Systems");
+        if (ImGui::Button("Open Editor")) {
+            result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
         }
         ImGui::EndTabItem();
     }

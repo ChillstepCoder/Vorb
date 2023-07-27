@@ -1,8 +1,7 @@
 #pragma once
 
-typedef void(*CPUParticleEmitterOperationMethod)(class CpuParticleEmitter& emitter, int particleID, CPUParticleEmitterVariable* p0, CPUParticleEmitterVariable* p1);
-
 class CPUParticleEmitterOperation;
+class CpuParticleEmitter;
 
 enum class CPUParticleEmitterVariableType : ui8 {
     Constant,
@@ -19,14 +18,22 @@ enum class CPUParticleEmitterVariableType : ui8 {
     COUNT
 };
 
+typedef std::variant<color4, f32v4, f32v3, f32v2, f32> CPUParticleEmitterVariantData;
+
 class CPUParticleEmitterVariable {
 public:
+    CPUParticleEmitterVariable() = default;
+    CPUParticleEmitterVariable(CPUParticleEmitterVariantData data) : mVarData(data) {}
+
     void evaluate(CpuParticleEmitter& emitter, ParticleID id);
 
     CPUParticleEmitterOperation* mOperation = nullptr;
-    std::variant<color4, f32v4, f32v3, f32v2, f32> mVarData;
+    CPUParticleEmitterVariantData mVarData;
     CPUParticleEmitterVariableType mType = CPUParticleEmitterVariableType::Constant;
 };
+
+// TODO: test perf vs virtual func
+//typedef void(*CPUParticleEmitterOperationMethod)(class CpuParticleEmitter& emitter, int particleID, CPUParticleEmitterVariable* p0, CPUParticleEmitterVariable* p1);
 
 class CPUParticleEmitterOperation {
 public:
@@ -34,6 +41,8 @@ public:
 
     CPUParticleEmitterVariable* mParam0 = nullptr;
     CPUParticleEmitterVariable* mParam1 = nullptr;
+
+    virtual constexpr const char* getDisplayName() const = 0;
 
     virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) = 0;
 protected:
@@ -45,20 +54,42 @@ protected:
         mParam1->evaluate(emitter, id);
         return true;
     }
-
 };
 
-// TODO: AddVec3, addVec3ToFloat, ect
 class CPUPEO_AddVec3 : CPUParticleEmitterOperation {
+    constexpr const char* getDisplayName() const override { return "Add Vec3"; }
+
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override {
+
         if (!evaluateParams(emitter, id)) return;
         output->mVarData = std::get<f32v3>(mParam0->mVarData) + std::get<f32v3>(mParam1->mVarData);
     }
 };
 
+class CPUPEO_MultiplyVec3 : CPUParticleEmitterOperation {
+    constexpr const char* getDisplayName() const override { return "Multiply Vec3"; }
+
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override {
+
+        if (!evaluateParams(emitter, id)) return;
+        output->mVarData = std::get<f32v3>(mParam0->mVarData) * std::get<f32v3>(mParam1->mVarData);
+    }
+};
+
 class CPUPEO_AddFloatToVec3 : CPUParticleEmitterOperation {
+    constexpr const char* getDisplayName() const override { return "Add Float To Vec3"; }
+
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override {
         if (!evaluateParams(emitter, id)) return;
         output->mVarData = std::get<f32>(mParam0->mVarData) + std::get<f32v3>(mParam1->mVarData);
+    }
+};
+
+class CPUPEO_MultiplyFloatToVec3 : CPUParticleEmitterOperation {
+    constexpr const char* getDisplayName() const override { return "Multiply Float To Vec3"; }
+
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override {
+        if (!evaluateParams(emitter, id)) return;
+        output->mVarData = std::get<f32>(mParam0->mVarData) * std::get<f32v3>(mParam1->mVarData);
     }
 };

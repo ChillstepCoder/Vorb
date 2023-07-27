@@ -7,6 +7,7 @@ struct MaterialHandle;
 struct TileGrassData;
 struct FishDef;
 class MaterialShader;
+class ParticleSystemDef;
 
 DECL_VG(class GBuffer);
 
@@ -17,10 +18,11 @@ enum class TileEditorPanelResultCode {
     EDIT_FOLIAGE,
     EDIT_BIOME,
     EDIT_FISH,
+    EDIT_PARTICLE,
     COUNT
 };
 
-typedef std::variant<ModelDef*, std::unique_ptr<MaterialHandle>, TileGrassData*, FishDef*> TileEditorPanelResultVariant;
+typedef std::variant<ModelDef*, std::unique_ptr<MaterialHandle>, TileGrassData*, FishDef*, ParticleSystemDef*> TileEditorPanelResultVariant;
 
 typedef std::pair<TileEditorPanelResultCode, TileEditorPanelResultVariant> TileEditorPanelResult;
 
@@ -38,6 +40,7 @@ private:
     void updateAndRenderFoliageTab(TileEditorPanelResult& result);
     void updateAndRenderBiomeTab(TileEditorPanelResult& result);
     void updateAndRenderFishingTab(TileEditorPanelResult& result);
+    void updateAndRenderParticlesTab(TileEditorPanelResult& result);
     VGTexture renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData);
 
     // Material preview

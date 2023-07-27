@@ -9,6 +9,7 @@
 #include "ui/editor/BiomeEditorViewportPanel.h"
 #include "ui/editor/FoliageEditorViewportPanel.h"
 #include "ui/editor/FishingEditorViewportPanel.h"
+#include "ui/editor/ParticleSystemEditorViewportPanel.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -149,11 +150,14 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                     // TODO: Fich
                     openFishForEdit(*std::get<FishDef*>(result.second));
                     break;
+                case TileEditorPanelResultCode::EDIT_PARTICLE:
+                    openParticleSystemForEdit(*std::get<ParticleSystemDef*>(result.second));
+                    break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_count(TileEditorPanelResultCode) == 6);
+            static_assert(e_count(TileEditorPanelResultCode) == 7);
 
         }
 
@@ -199,6 +203,11 @@ void EditorRoot::openBiomeForEdit() {
 void EditorRoot::openFishForEdit(FishDef& fishDef) {
     mFishingEditorViewportPanel->setFishDef(fishDef);
     setActiveCenterPanel(mFishingEditorViewportPanel.get());
+}
+
+void EditorRoot::openParticleSystemForEdit(ParticleSystemDef& systemDef) {
+    mParticleSystemEditorViewportPanel->setParticleSystemDef(systemDef);
+    setActiveCenterPanel(mParticleSystemEditorViewportPanel.get());
 }
 
 void EditorRoot::setActiveCenterPanel(IEditorViewportPanel* newCenterPanel)

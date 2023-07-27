@@ -3,7 +3,7 @@
 
 #include "CpuParticleEmitter.h"
 
-inline void CPUParticleEmitterVariable::evaluate(CpuParticleEmitter& emitter, ParticleID id) {
+void CPUParticleEmitterVariable::evaluate(CpuParticleEmitter& emitter, ParticleID id) {
     // Constants do not evaluate
     if (mType > CPUParticleEmitterVariableType::Constant) {
         if (mType == CPUParticleEmitterVariableType::Operation) {

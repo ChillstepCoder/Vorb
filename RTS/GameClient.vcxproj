@@ -449,6 +449,7 @@
     <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
     <ClCompile Include="src\ui\minigame\FishingMinigame.cpp" />
     <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp" />
@@ -799,6 +800,7 @@
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\minigame\FishingMinigame.h" />

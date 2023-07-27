@@ -12,31 +12,31 @@ void addModuleDataToArray(ArbitraryObjectArray& arry) { \
 // Set Position
 class CPUPEM_SetPosition : CPUParticleEmitterModule {
 public:
-    void refresh() override;
+    void init() override;
 
 private:
     MODULE_DEF(
-        f32v3 mPosition = f32v3(0.0f);
+        CPUParticleEmitterVariable mPositionVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
 };
 
 // Set Velocity
 class CPUPEM_SetVelocity : CPUParticleEmitterModule {
 public:
-    void refresh() override;
+    void init() override;
 
 private:
     MODULE_DEF(
-        f32v3 mVelocity = f32v3(0.0f);
+        CPUParticleEmitterVariable mVelocityVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
 };
 
 class CPUPEM_SetColor : CPUParticleEmitterModule {
 public:
-    void refresh() override;
+    void init() override;
 
 private:
     MODULE_DEF(
-        color4 mColor = color4(255, 255, 255, 255);
+        CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
     );
 };
