@@ -24,7 +24,7 @@ public:
     virtual void init() = 0;
     virtual bool updateAndRenderEditorControls() = 0;
     virtual BitFlags<ParticleEmitterModuleStage> getStages() const = 0;
-    virtual const char* const getName() = 0;
+    virtual const char* const getName() const = 0;
 
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();

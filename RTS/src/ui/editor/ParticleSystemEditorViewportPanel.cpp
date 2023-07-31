@@ -154,17 +154,21 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
 bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
     ImGui::BeginChild("Particle Emitter Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
-    auto displayModuleSelectorCombo = [&](ParticleEmitterModuleStage stageBit) -> int {
+    auto displayModuleSelectorCombo = [&](ParticleEmitterModuleStage stageBit) -> const CPUParticleEmitterModule* {
         int itemCount = 0;
         const char* items[256];
+        const CPUParticleEmitterModule* modulesCopy[256];
         static int itemSelected = -1; // If the selection isn't within 0..count, Combo won't display a preview
-        for (auto&& module : Services::ResourceManager::ref().getParticleSystemRepository().getEmitterModules()) {
+        const auto& modules = Services::ResourceManager::ref().getParticleSystemRepository().getEmitterModules();
+        for (auto&& module : modules) {
             if (module->getStages().isBitSet(stageBit)) {
+                modulesCopy[itemCount] = module.get();
                 items[itemCount++] = module->getName();
             }
         }
-        ImGui::Combo("Select", &itemSelected, items, itemCount);
-        return itemSelected;
+        itemSelected = ImGui::Combo("Select", &itemSelected, items, itemCount);
+        if (itemSelected == -1) return nullptr;
+        return modulesCopy[itemSelected];
     };
 
     if (mSelectedEmitter) {
@@ -185,25 +189,13 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         }
         if (ImGui::BeginPopupModal("UpdateModules"))
         {
-            if (displayModuleSelectorCombo(ParticleEmitterModuleStage::EmitterUpdate)) {
+            if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(ParticleEmitterModuleStage::EmitterUpdate)) {
+                mSelectedModule = mSelectedEmitter->mEmitterUpdateModules.emplace_back(std::make_unique<CPUParticleEmitterModule>(displayModule)).get();
                 ImGui::CloseCurrentPopup();
             }
-
-            // Your popup content here
-           /* if (ImGui::Button("Create")) {
+            if (ImGui::Button("Cancel")) {
                 ImGui::CloseCurrentPopup();
-                ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
-                newEmitterDef.mEmitterName = mTextInputBuffer;
-                mTextInputBuffer[0] = '\0';
-
             }
-            else {
-                ImGui::SameLine();
-                if (ImGui::Button("Cancel")) {
-                    ImGui::CloseCurrentPopup();
-                    mTextInputBuffer[0] = '\0';
-                }
-            }*/
             ImGui::EndPopup();
         }
 

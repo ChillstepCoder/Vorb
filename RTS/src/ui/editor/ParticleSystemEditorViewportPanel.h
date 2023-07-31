@@ -20,7 +20,7 @@ private:
 
     ParticleSystemDef* mSystemDef = nullptr;
     ParticleEmitterDef* mSelectedEmitter = nullptr;
-    CPUParticleEmitterModule* mSelectedModule = nullptr;
+    const CPUParticleEmitterModule* mSelectedModule = nullptr;
 
     static constexpr size_t TEXT_INPUT_SIZE = 64;
     char mTextInputBuffer[TEXT_INPUT_SIZE];

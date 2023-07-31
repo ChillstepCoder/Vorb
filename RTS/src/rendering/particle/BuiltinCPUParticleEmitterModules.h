@@ -26,7 +26,7 @@ public:
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::EmitterUpdate);
     }
-    const char* const getName() override { "Spawn Burst"; }
+    const char* const getName() const override { "Spawn Burst"; }
 
 private:
     MODULE_DEF(
@@ -44,7 +44,7 @@ public:
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::EmitterUpdate);
     }
-    const char* const getName() override { "Spawn Rate"; }
+    const char* const getName() const override { "Spawn Rate"; }
 
 private:
     MODULE_DEF(
@@ -62,7 +62,7 @@ public:
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
     }
-    const char* const getName() override { "Set Position"; }
+    const char* const getName() const override { "Set Position"; }
 
 private:
     MODULE_DEF(
@@ -78,7 +78,7 @@ public:
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
     }
-    const char* const getName() override { "Set Velocity"; }
+    const char* const getName() const override { "Set Velocity"; }
 private:
     MODULE_DEF(
         CPUParticleEmitterVariable mVelocityVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
@@ -92,7 +92,7 @@ public:
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
     }
-    const char* const getName() override { "Set Color"; }
+    const char* const getName() const override { "Set Color"; }
 private:
     MODULE_DEF(
         CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
