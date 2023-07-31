@@ -14,6 +14,7 @@ class EntityDefinitionRepository;
 class FontRepository;
 class ItemRepository;
 class FishRepository;
+class ParticleSystemRepository;
 class MaterialRepository;
 class MaterialShaderManager;
 class ModelRepository;
@@ -40,6 +41,7 @@ public:
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     FishRepository& getFishRepository() const { return *mFishRepository; }
+    ParticleSystemRepository& getParticleSystemRepository() const { return *mParticleSystemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     AnimationRepository& getAnimationRepository() const { return *mAnimationRepository; }
     RigRepository& getRigRepository() const { return *mRigRepository; }
@@ -94,6 +96,7 @@ private:
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<ItemRepository> mItemRepository;
     std::unique_ptr<FishRepository> mFishRepository;
+    std::unique_ptr<ParticleSystemRepository> mParticleSystemRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<AnimationRepository> mAnimationRepository;

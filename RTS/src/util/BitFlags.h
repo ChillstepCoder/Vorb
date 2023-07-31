@@ -1,5 +1,6 @@
 #pragma once
 // T should be an unsigned enum or enum class where each flag is a bit (not a sequential integer)
+// TODO: Constexpr?
 template<typename T>
 class BitFlags
 {
@@ -11,6 +12,11 @@ public:
     BitFlags(T b1, T b2) : mBits(e_cast(b1) | e_cast(b2)) {};
     BitFlags(T b1, T b2, T b3) : mBits(e_cast(b1) | e_cast(b2) | e_cast(b3)) {};
     BitFlags(T b1, T b2, T b3, T b4) : mBits(e_cast(b1) | e_cast(b2) | e_cast(b3) | e_cast(b4)) {};
+
+    BitFlags<T>& operator|=(const BitFlags<T>& other) {
+        mBits |= other.mBits;
+        return *this;
+    }
 
     // ============== Mutators ==============
 

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "CPUParticleSystem.h"
 
+#include "definitions/ParticleSystemDef.h"
+
 #include "rendering/MaterialRenderer.h"
 
 CPUParticleSystem::CPUParticleSystem(size_t reserveEmitterCount) {
@@ -9,6 +11,15 @@ CPUParticleSystem::CPUParticleSystem(size_t reserveEmitterCount) {
 
 CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader) {
     addEmitter(updateFunction, maxParticles, components, shader);
+}
+
+CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def)
+{
+    mSystemID = def.mID;
+    mEmitters.reserve(def.mEmitters.size());
+    for (auto&& emitterDef : def.mEmitters) {
+        mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef));
+    }
 }
 
 void CPUParticleSystem::updateAndRender(f32 elapsedSec) {

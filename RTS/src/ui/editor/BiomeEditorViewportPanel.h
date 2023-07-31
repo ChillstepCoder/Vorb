@@ -13,7 +13,7 @@ public:
 	BiomeEditorViewportPanel();
 	~BiomeEditorViewportPanel();
 	bool updateAndRender() override;
-	void updateAndRenderControls(f32 ySize) override;
+	void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void onEnter() override;
     void onExit() override;

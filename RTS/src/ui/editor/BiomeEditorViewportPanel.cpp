@@ -122,7 +122,7 @@ bool BiomeEditorViewportPanel::updateAndRender() {
     return isOpen;
 }
 
-void BiomeEditorViewportPanel::updateAndRenderControls(f32 ySize) {
+void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Biome Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Biome Editor Controls");
     ImGui::Separator();

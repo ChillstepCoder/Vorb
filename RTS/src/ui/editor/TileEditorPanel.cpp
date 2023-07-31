@@ -9,6 +9,7 @@
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/TileRepository.h"
+#include "resources/ParticleSystemRepository.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
@@ -334,12 +335,6 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
 
             ImGui::TableHeadersRow();
 
-
-            // Rendering
-            const MaterialShader* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
-            vg::DepthState::NONE.set();
-            MaterialRenderer::bindMaterialForRender(*previewShader);
-
             ui32 ID = 250;
             ui32 previewIndex = 0;
 
@@ -369,8 +364,6 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
 
             }
 
-            vg::DepthState::restorePrevious();
-
             ImGui::EndTable();
         }
         ImGui::EndTabItem();
@@ -382,6 +375,64 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
         ImGui::Text("Particle Systems");
         if (ImGui::Button("Open Editor")) {
             result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
+            result.second = (ParticleSystemDef*)nullptr;
+        }
+
+        ParticleSystemRepository& particleSystemRepository = Services::ResourceManager::ref().getParticleSystemRepository();
+
+        // Submit table
+        constexpr f32 FIXED_WIDTH = 50.0f;
+        if (ImGui::BeginTable("particleSystemTable", 4, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+
+            // TODO: Sortable table https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
+            /*ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs();
+            if (sortSpecs && sortSpecs->SpecsDirty) {
+                for (int i = 0; i < sortSpecs->SpecsCount; ++i) {
+                    const ImGuiTableColumnSortSpecs& spec = sortSpecs->Specs[i];
+                    spec.
+                }
+            }*/
+
+            // Declare columns
+            // We use the "user_id" parameter of TableSetupColumn() to specify a user id that will be stored in the sort specifications.
+            // This is so our sort function can identify a column given our own identifier. We could also identify them based on their index!
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH * 2.0f);
+            ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH);
+            ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH);
+            ImGui::TableSetupScrollFreeze(1, 1);
+
+            ImGui::TableHeadersRow();
+
+            ui32 ID = 2998;
+            ui32 previewIndex = 0;
+
+            for (auto&& it : particleSystemRepository.getParticleSystemNames()) {
+                ParticleSystemDef& def = particleSystemRepository.mParticleSystems[it.second];
+                ImGui::PushID(++ID);
+                ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
+
+                // Name
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text(it.first.c_str());
+
+                // ID
+                ImGui::TableSetColumnIndex(1);
+                char label[32];
+                sprintf_s(label, "%04d", def.mID);
+                ImGui::Text(label);
+
+                // Action
+                ImGui::TableSetColumnIndex(2);
+                if (ImGui::Button("Edit")) {
+                    result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
+                    result.second = &def;
+                }
+
+                ImGui::PopID();
+
+            }
+
+            ImGui::EndTable();
         }
         ImGui::EndTabItem();
     }

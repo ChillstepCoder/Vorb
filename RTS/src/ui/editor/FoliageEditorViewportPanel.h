@@ -13,7 +13,7 @@ public:
     ~FoliageEditorViewportPanel();
 
     bool updateAndRender() override;
-    void updateAndRenderControls(f32 ySize) override;
+    void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void setGrassData(TileGrassData& grassData) { mGrassData = &grassData; mDirtyFoliageMesh = true; }
 

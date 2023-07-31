@@ -3,6 +3,7 @@
 #include "rendering/particle/CpuParticleEmitter.h"
 
 class MaterialShader;
+struct ParticleSystemDef;
 
 typedef std::unique_ptr<CpuParticleEmitter> CpuParticleEmitterPtr;
 
@@ -12,6 +13,7 @@ class CPUParticleSystem
 public:
     CPUParticleSystem(size_t reserveEmitterCount);
     CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader);
+    CPUParticleSystem(const ParticleSystemDef& def);
 
     VORB_NON_COPYABLE(CPUParticleSystem);
 
@@ -26,4 +28,5 @@ public:
 
 private:
     std::vector<CpuParticleEmitterPtr> mEmitters;
+    ParticleSystemID mSystemID = INVALID_PARTICLE_SYSTEM_ID;
 };

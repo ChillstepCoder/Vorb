@@ -816,6 +816,9 @@
     <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\ParticleSystemRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1947,6 +1950,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\ParticleSystemRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\ParticleSystemDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

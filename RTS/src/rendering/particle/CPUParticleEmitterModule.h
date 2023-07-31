@@ -7,6 +7,12 @@ class ArbitraryObjectArray;
 
 typedef void(*CPUParticleEmitterModuleMethod)(class CpuParticleEmitter& emitter, int particleID, void* data);
 
+enum class ParticleEmitterModuleStage : ui8 {
+    EmitterUpdate = BIT(0),
+    ParticleInit = BIT(1),
+    ParticleUpdate = BIT(2),
+};
+
 class CPUParticleEmitterModule
 {
 public:
@@ -14,14 +20,18 @@ public:
     CPUParticleEmitterModule() { init(); }
     virtual ~CPUParticleEmitterModule() = default;
 
-    virtual void addModuleDataToArray(ArbitraryObjectArray& arry) = 0;
+    virtual void addModuleDataToArray(ArbitraryObjectArray& arry) const = 0;
     virtual void init() = 0;
+    virtual bool updateAndRenderEditorControls() = 0;
+    virtual BitFlags<ParticleEmitterModuleStage> getStages() const = 0;
+    virtual const char* const getName() = 0;
 
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();
     }
 
     CPUParticleEmitterModuleMethod getMethod() const { return mMethod; }
+    BitFlags<ParticleComponentType> getRequiredComponents() const { return mRequiredComponents; }
 
 protected:
     CPUParticleEmitterModuleMethod mMethod;

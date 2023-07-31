@@ -413,6 +413,7 @@
     <ClCompile Include="src\resources\FontRepository.cpp" />
     <ClCompile Include="src\resources\MaterialRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
+    <ClCompile Include="src\resources\ParticleSystemRepository.cpp" />
     <ClCompile Include="src\resources\ResourceManager.cpp" />
     <ClCompile Include="src\resources\ResourceOperations.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
@@ -541,6 +542,7 @@
     <ClInclude Include="src\definitions\BusinessDef.h" />
     <ClInclude Include="src\definitions\FishDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
+    <ClInclude Include="src\definitions\ParticleSystemDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
     <ClInclude Include="src\definitions\SkillDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
@@ -757,6 +759,7 @@
     <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\MaterialRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
+    <ClInclude Include="src\resources\ParticleSystemRepository.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\resources\ResourceOperations.h" />
     <ClInclude Include="src\resources\RigRepository.h" />

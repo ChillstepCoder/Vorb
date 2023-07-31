@@ -20,6 +20,7 @@
 #include "resources/TileGrassRepository.h"
 #include "resources/FontRepository.h"
 #include "resources/FishRepository.h"
+#include "resources/ParticleSystemRepository.h"
 #include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
 
@@ -50,6 +51,7 @@ ResourceManager::ResourceManager() {
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mFishRepository = std::make_unique<FishRepository>(*mIoManager);
+    mParticleSystemRepository = std::make_unique<ParticleSystemRepository>(*mIoManager, *mMaterialRepository);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mAnimationRepository = std::make_unique<AnimationRepository>();

@@ -12,7 +12,7 @@ public:
     ~MaterialEditorViewportPanel();
 
     bool updateAndRender() override;
-    void updateAndRenderControls(f32 ySize) override;
+    void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void setMaterial(MaterialHandle& materialData) { mCurrentMaterial = materialData; }
 

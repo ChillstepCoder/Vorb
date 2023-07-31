@@ -58,7 +58,7 @@ bool ModelEditorViewportPanel::updateAndRender() {
     return isOpen;
 }
 
-void ModelEditorViewportPanel::updateAndRenderControls(f32 ySize)
+void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 {
     ImGui::BeginChild("Model Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Model Editor Controls");

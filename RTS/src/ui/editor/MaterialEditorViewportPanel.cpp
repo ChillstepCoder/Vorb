@@ -57,7 +57,7 @@ bool MaterialEditorViewportPanel::updateAndRender()
     return isOpen;
 }
 
-void MaterialEditorViewportPanel::updateAndRenderControls(f32 ySize) {
+void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Material Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Material Editor Controls");
     ImGui::Separator();

@@ -9,7 +9,7 @@ class FishingMinigame;
 class FishingEditorViewportPanel :  public IEditorViewportPanel {
 public:
     bool updateAndRender() override;
-    void updateAndRenderControls(f32 ySize) override;
+    void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void renderMesh() override;
 

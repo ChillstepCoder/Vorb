@@ -45,7 +45,7 @@ bool FishingEditorViewportPanel::updateAndRender()
     return isOpen;
 }
 
-void FishingEditorViewportPanel::updateAndRenderControls(f32 ySize) {
+void FishingEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Fishing Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Fishing Editor Controls");
     if (mCurrentFishingMinigame) {

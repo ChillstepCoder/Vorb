@@ -11,7 +11,7 @@ class ModelDef;
 struct MaterialHandle;
 struct TileGrassData;
 struct FishDef;
-class ParticleSystemDef;
+struct ParticleSystemDef;
 class ModelEditorViewportPanel;
 class MaterialEditorViewportPanel;
 class BiomeEditorViewportPanel;
@@ -39,7 +39,7 @@ private:
     void openFoliageForEdit(TileGrassData& grassData);
     void openBiomeForEdit();
     void openFishForEdit(FishDef& fishDef);
-    void openParticleSystemForEdit(ParticleSystemDef& systemDef);
+    void openParticleSystemForEdit(ParticleSystemDef* systemDef);
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 
     // Center panel display

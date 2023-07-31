@@ -8,6 +8,7 @@
 
 class CPUParticleSystem;
 class MaterialShader;
+struct ParticleEmitterDef;
 
 
 struct CpuParticlesGpuData {
@@ -34,19 +35,10 @@ static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
 typedef std::function<void(class CpuParticleEmitter& emitter, CPUParticlesData& particleData, f32 elapsedSec)> ParticleUpdateFunction;
 
-struct EmitterSpawnBurst {
-    ui32v2 mEmitCountRange = ui32v2(1, 1);
-};
-
-struct EmitterSpawnPeriodic {
-    f32v2 mEmitRateRangeSec = f32v2(0.0f, 0.2f);
-    f32 mNextEmitTime = 0.0f;
-    ui32v2 mEmitCountRange = ui32v2(1, 1);
-};
-
 class CpuParticleEmitter {
 public:
     CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 lifetime = FLT_MAX);
+    CpuParticleEmitter(const ParticleEmitterDef& def);
     ~CpuParticleEmitter();
 
     VORB_NON_COPYABLE(CpuParticleEmitter);
@@ -88,13 +80,24 @@ public:
     ui32 getLastActiveParticle() const { return mLastActiveParticle; }
 
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
+    bool isLooping() const { return mLooping; }
 
     const MaterialShader& getMaterialShader() const { return mShader; }
 
     // Modules
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
+    void addEmitterUpdateModule(const T& module) {
+        assert(module.getStages().isBitSet(ParticleEmitterModuleStage::EmitterUpdate));
+        assert(mNumEmitterUpdateMethods == mEmitterModuleMethods.size() && "All emitter update methods must be added second");
+        module.addModuleDataToArray(mParticleModuleData);
+        mEmitterModuleMethods.emplace_back(module.getMethod());
+        ++mNumEmitterUpdateMethods;
+    }
+
+    template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
     void addParticleInitModule(const T& module) {
-        assert(mNumParticleInitMethods == mEmitterModuleMethods.size() && "All init methods must be added first");
+        assert(module.getStages().isBitSet(ParticleEmitterModuleStage::ParticleInit));
+        assert(mNumParticleInitMethods + mNumEmitterUpdateMethods == mEmitterModuleMethods.size() && "All particle init methods must be added second");
         module.addModuleDataToArray(mParticleModuleData);
         mEmitterModuleMethods.emplace_back(module.getMethod());
         ++mNumParticleInitMethods;
@@ -102,16 +105,17 @@ public:
 
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
     void addParticleUpdateModule(const T& module) {
+        assert(module.getStages().isBitSet(ParticleEmitterModuleStage::ParticleUpdate));
         module.addModuleDataToArray(mParticleModuleData);
         mEmitterModuleMethods.emplace_back(module.getMethod());
     }
 
     void fillVariableFromType(CPUParticleEmitterVariable& variable, ParticleID id, CPUParticleEmitterVariableType type);
 
-
-protected:
-    void updateSpawning();
     void emitParticles(ui32v2 countRange);
+    void emitParticles(ui32 count);
+protected:
+    void allocateParticleData();
     void render();
     void onNewParticleAdded(ParticleID id);
 
@@ -124,6 +128,7 @@ protected:
     // Contiguous storage of particle module data for efficient iteration
     ArbitraryObjectArray mParticleModuleData;
     std::vector<CPUParticleEmitterModuleMethod> mEmitterModuleMethods;
+    int mNumEmitterUpdateMethods = 0;
     int mNumParticleInitMethods = 0;
 
     CPUParticlesData mParticleData;
@@ -139,6 +144,7 @@ protected:
     ui32 mActiveParticles = 0;
     ui32 mMaxParticles;
     int mBaseInstance = 0;
+    bool mLooping = false;
     bool mDataChanged = false;
     bool mNeedsFindFirstParticle = false;
     bool mNeedsFindLastParticle = false;
@@ -148,7 +154,4 @@ protected:
 
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;
-
-    std::variant<EmitterSpawnBurst, EmitterSpawnPeriodic> mSpawnData;
-    TimePoint mLastEmittedParticleTime = TimePoint::min();
 };

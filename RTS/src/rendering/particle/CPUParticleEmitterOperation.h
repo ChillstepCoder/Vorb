@@ -18,7 +18,7 @@ enum class CPUParticleEmitterVariableType : ui8 {
     COUNT
 };
 
-typedef std::variant<color4, f32v4, f32v3, f32v2, f32> CPUParticleEmitterVariantData;
+typedef std::variant<color4, f32v4, f32v3, f32v2, f32, ui32> CPUParticleEmitterVariantData;
 
 class CPUParticleEmitterVariable {
 public:
@@ -26,6 +26,7 @@ public:
     CPUParticleEmitterVariable(CPUParticleEmitterVariantData data) : mVarData(data) {}
 
     void evaluate(CpuParticleEmitter& emitter, ParticleID id);
+    bool updateAndRenderTweaker(const char*const label);
 
     CPUParticleEmitterOperation* mOperation = nullptr;
     CPUParticleEmitterVariantData mVarData;

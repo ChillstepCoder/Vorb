@@ -45,6 +45,7 @@ EditorRoot::EditorRoot() {
     mFoliageEditorViewportPanel = std::make_unique<FoliageEditorViewportPanel>();
     mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
     mFishingEditorViewportPanel = std::make_unique<FishingEditorViewportPanel>();
+    mParticleSystemEditorViewportPanel = std::make_unique<ParticleSystemEditorViewportPanel>();
 
     // Initialize inputs
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
@@ -98,9 +99,16 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
             static f32 ySize2 = ySize1;
             Splitter(false, 10.0f, &ySize1, &ySize2, 8, 8, ImGui::GetContentRegionAvail().x);
 
-            mWorldEditorPanel->renderUI(ySize1);
-            if (world) {
-                mDebugTweakerPanel->updateAndRender(*world, activeGBuffer, ySize2, vui::InputDispatcher::window.getCurrentAspectRatio());
+            // If active center panel wants to render over world editor UI, let it
+            if (!mActiveCenterPanel || !mActiveCenterPanel->updateAndRenderSecondaryControls(ySize1)) {
+                mWorldEditorPanel->renderUI(ySize1);
+            }
+
+            // If active center panel wants to render over tweaker UI, let it
+            if (!mActiveCenterPanel || !mActiveCenterPanel->updateAndRenderTertiaryControls(ySize1)) {
+                if (world) {
+                    mDebugTweakerPanel->updateAndRender(*world, activeGBuffer, ySize2, vui::InputDispatcher::window.getCurrentAspectRatio());
+                }
             }
 
             ImGui::End();
@@ -121,7 +129,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                 result = mTileEditorPanel->updateAndRender(ySize1);
 
                 // Controls
-                mActiveCenterPanel->updateAndRenderControls(ySize2);
+                mActiveCenterPanel->updateAndRenderPrimaryControls(ySize2);
             }
             else {
                 result = mTileEditorPanel->updateAndRender(ImGui::GetContentRegionAvail().y);
@@ -151,7 +159,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                     openFishForEdit(*std::get<FishDef*>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_PARTICLE:
-                    openParticleSystemForEdit(*std::get<ParticleSystemDef*>(result.second));
+                    openParticleSystemForEdit(std::get<ParticleSystemDef*>(result.second));
                     break;
                 default:
                     assert(false);
@@ -205,7 +213,7 @@ void EditorRoot::openFishForEdit(FishDef& fishDef) {
     setActiveCenterPanel(mFishingEditorViewportPanel.get());
 }
 
-void EditorRoot::openParticleSystemForEdit(ParticleSystemDef& systemDef) {
+void EditorRoot::openParticleSystemForEdit(ParticleSystemDef* systemDef) {
     mParticleSystemEditorViewportPanel->setParticleSystemDef(systemDef);
     setActiveCenterPanel(mParticleSystemEditorViewportPanel.get());
 }

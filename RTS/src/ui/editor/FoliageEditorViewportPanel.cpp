@@ -68,7 +68,7 @@ bool FoliageEditorViewportPanel::updateAndRender()
     return isOpen;
 }
 
-void FoliageEditorViewportPanel::updateAndRenderControls(f32 ySize)
+void FoliageEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 {
     ImGui::BeginChild("Foliage Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Foliage Editor Controls");
