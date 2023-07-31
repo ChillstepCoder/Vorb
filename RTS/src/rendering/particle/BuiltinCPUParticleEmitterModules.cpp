@@ -10,7 +10,16 @@
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
 
-void CPUPEM_SpawnBurst::init() {
+bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* const label) {
+    bool changed = variable.updateAndRenderTweaker(label);
+    // Separator after operations
+    if (variable.mOperation) {
+        ImGui::Separator();
+    }
+    return changed;
+}
+
+CPUPEM_SpawnBurst::CPUPEM_SpawnBurst() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         ModuleData* moduleData = MODULE_DATA;
         if (moduleData->mFired) return;
@@ -28,12 +37,12 @@ void CPUPEM_SpawnBurst::init() {
 
 bool CPUPEM_SpawnBurst::updateAndRenderEditorControls() {
     bool changed = false;
-    changed |= mModuleData.mDelay.updateAndRenderTweaker("Delay");
-    changed |= mModuleData.mSpawnCount.updateAndRenderTweaker("Spawn Count");
+    changed |= updateAndRenderVariable(mModuleData.mDelay, "Delay Sec");
+    changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count");
     return changed;
 }
 
-void CPUPEM_SpawnRate::init() {
+CPUPEM_SpawnRate::CPUPEM_SpawnRate() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         ModuleData* moduleData = MODULE_DATA;
 
@@ -51,13 +60,13 @@ void CPUPEM_SpawnRate::init() {
 
 bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
     bool changed = false;
-    changed |= mModuleData.mEmitRateSec.updateAndRenderTweaker("Spawn Rate");
-    changed |= mModuleData.mNextEmitTime.updateAndRenderTweaker("Initial Delay");
-    changed |= mModuleData.mSpawnCount.updateAndRenderTweaker("Spawn Count");
+    changed |= updateAndRenderVariable(mModuleData.mEmitRateSec, "Spawn Rate Sec");
+    changed |= updateAndRenderVariable(mModuleData.mNextEmitTime, "Initial Delay Sec");
+    changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count");
     return changed;
 }
 
-void CPUPEM_SetPosition::init() {
+CPUPEM_SetPosition::CPUPEM_SetPosition() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         MODULE_DATA->mPositionVec3.evaluate(emitter, particleID);
         emitter.setParticlePosition(particleID, std::get<f32v3>(MODULE_DATA->mPositionVec3.mVarData));
@@ -65,10 +74,10 @@ void CPUPEM_SetPosition::init() {
 }
 
 bool CPUPEM_SetPosition::updateAndRenderEditorControls() {
-    return mModuleData.mPositionVec3.updateAndRenderTweaker("Position");
+    return updateAndRenderVariable(mModuleData.mPositionVec3, "Position");
 }
 
-void CPUPEM_SetVelocity::init() {
+CPUPEM_SetVelocity::CPUPEM_SetVelocity() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         MODULE_DATA->mVelocityVec3.evaluate(emitter, particleID);
         emitter.setParticleVelocity(particleID, std::get<f32v3>(MODULE_DATA->mVelocityVec3.mVarData));
@@ -76,10 +85,10 @@ void CPUPEM_SetVelocity::init() {
 }
 
 bool CPUPEM_SetVelocity::updateAndRenderEditorControls() {
-    return mModuleData.mVelocityVec3.updateAndRenderTweaker("Velocity");
+    return updateAndRenderVariable(mModuleData.mVelocityVec3, "Velocity");
 }
 
-void CPUPEM_SetColor::init() {
+CPUPEM_SetColor::CPUPEM_SetColor() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
         MODULE_DATA->mColor.evaluate(emitter, particleID);
         emitter.setParticleColor(particleID, std::get<color4>(MODULE_DATA->mColor.mVarData));
@@ -87,5 +96,5 @@ void CPUPEM_SetColor::init() {
 }
 
 bool CPUPEM_SetColor::updateAndRenderEditorControls() {
-    return mModuleData.mColor.updateAndRenderTweaker("Color");
+    return updateAndRenderVariable(mModuleData.mColor, "Color");
 }

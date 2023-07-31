@@ -20,6 +20,7 @@ public:
     const std::vector<ParticleSystemDef>& getAllParticleSystems() const { return mParticleSystems; }
     const std::map<nString, ParticleSystemID>& getParticleSystemNames() const { return mParticleSystemLookup; }
     const std::vector<std::unique_ptr<CPUParticleEmitterModule>>& getEmitterModules() const { return mEmitterModules; }
+    const std::vector<std::unique_ptr<CPUParticleEmitterOperation>>& getEmitterOperations() const { return mEmitterOperations; }
 
     ParticleSystemDef* tryAddNewParticleSystem(const nString& name);
 
@@ -31,5 +32,6 @@ private:
     std::vector<ParticleSystemDef> mParticleSystems;
     std::vector<ParticleEmitterDef> mParticleEmitters;
     std::vector<std::unique_ptr<CPUParticleEmitterModule>> mEmitterModules;
+    std::vector<std::unique_ptr<CPUParticleEmitterOperation>> mEmitterOperations;
 };
 

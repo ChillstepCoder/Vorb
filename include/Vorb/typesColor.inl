@@ -112,6 +112,11 @@ typedef ColorRGB8 color3; ///< Shortened name for ColorRGB8
  */
 struct ColorRGBA8 {
 public:
+    ColorRGBA8(ui8 v) :
+        r(v), g(v), b(v), a(0xffu) {
+        // Empty
+    }
+
     /*! @brief Construct a color with 8-bit RGB elements.
      *
      * @param r: Red value

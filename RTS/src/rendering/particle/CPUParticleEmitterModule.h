@@ -16,15 +16,14 @@ enum class ParticleEmitterModuleStage : ui8 {
 class CPUParticleEmitterModule
 {
 public:
-
-    CPUParticleEmitterModule() { init(); }
+    CPUParticleEmitterModule() = default;
     virtual ~CPUParticleEmitterModule() = default;
 
     virtual void addModuleDataToArray(ArbitraryObjectArray& arry) const = 0;
-    virtual void init() = 0;
     virtual bool updateAndRenderEditorControls() = 0;
     virtual BitFlags<ParticleEmitterModuleStage> getStages() const = 0;
     virtual const char* const getName() const = 0;
+    virtual std::unique_ptr<CPUParticleEmitterModule> clone() const = 0;
 
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();

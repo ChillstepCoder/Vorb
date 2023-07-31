@@ -8,15 +8,32 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mMaterialRepository(materialRepo) {
 
 
-    mEmitterModules.resize(e_count(BuiltinCPUParticleEditorModules));
+    mEmitterModules.reserve(e_count(BuiltinCPUParticleEditorModules));
 
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SpawnBurst));
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SpawnRate));
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetPosition));
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetVelocity));
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetColor));
-
     static_assert(e_count(BuiltinCPUParticleEditorModules) == 5);
+
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddFloatToVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyFloatToVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddFloat>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyFloat>());
+
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetColor>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec4>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec2>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetFloat>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetUInt>());
+
+    mEmitterOperations.shrink_to_fit();
+
+    static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
 }
 
 ParticleSystemRepository::~ParticleSystemRepository() {

@@ -80,6 +80,9 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
             mSystemDef->mSystemName = mTextInputBuffer;
+            ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
+            defaultEmitter.mEmitterName = "DefaultEmitter";
+            mSelectedEmitter = &defaultEmitter;
             mTextInputBuffer[0] = '\0';
 
         } else {
@@ -111,6 +114,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ImGui::CloseCurrentPopup();
                 ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = mTextInputBuffer;
+                mSelectedEmitter = &newEmitterDef;
                 mTextInputBuffer[0] = '\0';
 
             }
@@ -166,9 +170,10 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
                 items[itemCount++] = module->getName();
             }
         }
-        itemSelected = ImGui::Combo("Select", &itemSelected, items, itemCount);
-        if (itemSelected == -1) return nullptr;
-        return modulesCopy[itemSelected];
+        if (ImGui::Combo("Select", &itemSelected, items, itemCount)) {
+            return modulesCopy[itemSelected];
+        }
+        return nullptr;
     };
 
     if (mSelectedEmitter) {
@@ -185,18 +190,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         COLOR_BUTTON_START(0.0f, 0.8f, 0.0f, "Emitter Update");
         COLOR_BUTTON_END();
         if (ImGui::Button("+", ImVec2(size, size))) {
-            ImGui::OpenPopup("Emitter Update Module");
-        }
-        if (ImGui::BeginPopupModal("UpdateModules"))
-        {
-            if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(ParticleEmitterModuleStage::EmitterUpdate)) {
-                mSelectedModule = mSelectedEmitter->mEmitterUpdateModules.emplace_back(std::make_unique<CPUParticleEmitterModule>(displayModule)).get();
-                ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
+            ImGui::OpenPopup("UpdateModules");
         }
 
         for (auto&& module : mSelectedEmitter->mEmitterUpdateModules) {
@@ -207,21 +201,18 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         ImGui::PopStyleVar(4);
 
-        ImGui::Spacing();
-        int height = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y;
-        ImGui::Button("Emitter UpdateTest", ImVec2(contentAvail.x - height, height));
-        ImGui::SameLine();
-        ImGui::Button("+", ImVec2(height, height));
-        if (ImGui::CollapsingHeader("Particle Init", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::SameLine();
-            ImGui::Button("+");
-
+        if (ImGui::BeginPopupModal("UpdateModules", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(ParticleEmitterModuleStage::EmitterUpdate)) {
+                mSelectedModule = mSelectedEmitter->mEmitterUpdateModules.emplace_back(displayModule->clone()).get();
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
-        if (ImGui::CollapsingHeader("Particle Update", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::SameLine();
-            ImGui::Button("+");
 
-        }
     }
     else {
         ImGui::Text("Select a Particle Emitter");
@@ -234,6 +225,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
     ImGui::BeginChild("Particle Module Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     if (mSelectedModule) {
         ImGui::Text("Module: %s", mSelectedModule->getName());
+        mSelectedModule->updateAndRenderEditorControls();
     }
     else {
         ImGui::Text("Select a Module");

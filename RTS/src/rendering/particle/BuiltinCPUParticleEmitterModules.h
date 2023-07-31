@@ -21,12 +21,13 @@ enum class BuiltinCPUParticleEditorModules {
 // Spawn Burst
 class CPUPEM_SpawnBurst : public CPUParticleEmitterModule {
 public:
-    void init() override;
+    CPUPEM_SpawnBurst();
     bool updateAndRenderEditorControls() override;
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::EmitterUpdate);
     }
-    const char* const getName() const override { "Spawn Burst"; }
+    const char* const getName() const override { return "Spawn Burst"; }
+    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SpawnBurst>(*this); };
 
 private:
     MODULE_DEF(
@@ -39,12 +40,13 @@ private:
 // Spawn Rate
 class CPUPEM_SpawnRate : public CPUParticleEmitterModule {
 public:
-    void init() override;
+    CPUPEM_SpawnRate();
     bool updateAndRenderEditorControls() override;
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::EmitterUpdate);
     }
-    const char* const getName() const override { "Spawn Rate"; }
+    const char* const getName() const override { return "Spawn Rate"; }
+    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SpawnRate>(*this); };
 
 private:
     MODULE_DEF(
@@ -57,12 +59,13 @@ private:
 // Set Position
 class CPUPEM_SetPosition : public CPUParticleEmitterModule {
 public:
-    void init() override;
+    CPUPEM_SetPosition();
     bool updateAndRenderEditorControls() override;
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
     }
-    const char* const getName() const override { "Set Position"; }
+    const char* const getName() const override { return "Set Position"; }
+    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SetPosition>(*this); };
 
 private:
     MODULE_DEF(
@@ -73,12 +76,13 @@ private:
 // Set Velocity
 class CPUPEM_SetVelocity : public CPUParticleEmitterModule {
 public:
-    void init() override;
+    CPUPEM_SetVelocity();
     bool updateAndRenderEditorControls() override;
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
     }
-    const char* const getName() const override { "Set Velocity"; }
+    const char* const getName() const override { return "Set Velocity"; }
+    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SetVelocity>(*this); };
 private:
     MODULE_DEF(
         CPUParticleEmitterVariable mVelocityVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
@@ -87,12 +91,13 @@ private:
 
 class CPUPEM_SetColor : public CPUParticleEmitterModule {
 public:
-    void init() override;
+    CPUPEM_SetColor();
     bool updateAndRenderEditorControls() override;
     BitFlags<ParticleEmitterModuleStage> getStages() const override {
         return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
     }
-    const char* const getName() const override { "Set Color"; }
+    const char* const getName() const override { return "Set Color"; }
+    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SetColor>(*this); };
 private:
     MODULE_DEF(
         CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
@@ -113,4 +118,6 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
             return std::make_unique<CPUPEM_SetColor>();
     }
     static_assert(e_count(BuiltinCPUParticleEditorModules) == 5);
+
+    return nullptr;
 }
