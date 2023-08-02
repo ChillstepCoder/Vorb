@@ -15,7 +15,12 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetPosition));
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetVelocity));
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetColor));
-    static_assert(e_count(BuiltinCPUParticleEditorModules) == 5);
+    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetScale));
+    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetPositionFromShape));
+    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::ApplyForce));
+    static_assert(e_count(BuiltinCPUParticleEditorModules) == 8);
+
+    mEmitterOperations.reserve(20);
 
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddVec3>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyVec3>());
@@ -30,6 +35,12 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec2>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetFloat>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetUInt>());
+
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec4>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec2>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToUInt>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertUIntToFloat>());
 
     mEmitterOperations.shrink_to_fit();
 

@@ -3,21 +3,6 @@
 class CPUParticleEmitterOperation;
 class CpuParticleEmitter;
 
-enum class CPUParticleEmitterVariableType : ui8 {
-    Constant,
-    Operation,
-    BUILTINS_BEGIN,
-    Position = BUILTINS_BEGIN, // Builtins beyond here
-    Velocity,
-    Scale,
-    Color,
-    HDRColor,
-    Lifespan,
-    Rotation,
-    Custom,
-    COUNT
-};
-
 enum class CPUparticleEmitterVariableVariantType : ui8{
     None,
     color4,
@@ -45,7 +30,6 @@ public:
     // TODO: pool allocate?
     std::unique_ptr<CPUParticleEmitterOperation> mOperation = nullptr;
     CPUParticleEmitterVariantData mVarData;
-    CPUParticleEmitterVariableType mType = CPUParticleEmitterVariableType::Constant;
 };
 
 // TODO: test perf vs virtual func
@@ -60,6 +44,7 @@ public:
     CPUParticleEmitterVariable mParam1;
 
     virtual constexpr const char* getDisplayName() const = 0;
+    virtual color4 getDisplayColor() const = 0;
     virtual CPUParticleEmitterVariableVariantTypePair getVariantInput() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterOperation> clone() const = 0;
 
@@ -80,24 +65,26 @@ protected:
     }
 
 
-#define DEFINE_CPUPEO_BINARY(NAME, DISP_NAME, TYPE1, TYPE2, OP) \
+#define DEFINE_CPUPEO_BINARY(NAME, DISP_NAME, DISP_COLOR, TYPE1, TYPE2, OP) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable(TYPE2(0))) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable(other.mParam1)) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
+    color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::TYPE2); } \
     std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
     SIMPLE_EXECUTE_OP(TYPE1, TYPE2, OP); \
 };
 
-#define DEFINE_CPUPEO_SET(NAME, DISP_NAME, TYPE1) \
+#define DEFINE_CPUPEO_SET(NAME, DISP_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
+    color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
     std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
@@ -107,18 +94,48 @@ public: \
     } \
 };
 
-DEFINE_CPUPEO_BINARY(CPUPEO_AddVec3, "Add Vec3", f32v3, f32v3, +)
-DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyVec3, "Multiply Vec3", f32v3, f32v3, *)
-DEFINE_CPUPEO_BINARY(CPUPEO_AddFloatToVec3, "Add Float To Vec3", f32v3, f32, +)
-DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloatToVec3, "Multiply Float To Vec3", f32v3, f32, *)
-DEFINE_CPUPEO_BINARY(CPUPEO_AddFloat, "Add Float", f32, f32, +)
-DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloat, "Multiply Float", f32, f32, *)
+#define DEFINE_CPUPEO_CONVERT(NAME, DISP_NAME, DISP_COLOR, TYPE1, CONVERT) \
+class NAME : public CPUParticleEmitterOperation { \
+public: \
+    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
+    NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
+    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
+    color4 getDisplayColor() const override { return DISP_COLOR; } \
+    CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
+        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
+       mParam0.evaluate(emitter, id); \
+       output->mVarData = CONVERT(std::get<TYPE1>(mParam0.mVarData)); \
+    } \
+};
 
-DEFINE_CPUPEO_SET(CPUPEO_SetColor, "Set Color", color4)
-DEFINE_CPUPEO_SET(CPUPEO_SetVec4, "Set Vec4", f32v4)
-DEFINE_CPUPEO_SET(CPUPEO_SetVec3, "Set Vec3", f32v3)
-DEFINE_CPUPEO_SET(CPUPEO_SetVec2, "Set Vec2", f32v2)
-DEFINE_CPUPEO_SET(CPUPEO_SetFloat, "Set Float", f32)
-DEFINE_CPUPEO_SET(CPUPEO_SetUInt, "Set UInt", ui32)
+#define COLOR_STANDARD color4(0.3f, 0.3f, 0.7f, 1.0f)
+#define COLOR_CONVERT color4(0.6f, 0.6f, 0.25f, 1.0f)
+#define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)
+
+DEFINE_CPUPEO_BINARY(CPUPEO_AddVec3, "Add Vec3", COLOR_STANDARD, f32v3, f32v3, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyVec3, "Multiply Vec3", COLOR_STANDARD, f32v3, f32v3, *)
+DEFINE_CPUPEO_BINARY(CPUPEO_AddFloatToVec3, "Add Float To Vec3", COLOR_STANDARD, f32v3, f32, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloatToVec3, "Multiply Float To Vec3", COLOR_STANDARD, f32v3, f32, *)
+DEFINE_CPUPEO_BINARY(CPUPEO_AddFloat, "Add Float", COLOR_STANDARD, f32, f32, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloat, "Multiply Float", COLOR_STANDARD, f32, f32, *)
+
+DEFINE_CPUPEO_SET(CPUPEO_SetColor, "Set Color", COLOR_STANDARD, color4)
+DEFINE_CPUPEO_SET(CPUPEO_SetVec4, "Set Vec4", COLOR_STANDARD, f32v4)
+DEFINE_CPUPEO_SET(CPUPEO_SetVec3, "Set Vec3", COLOR_STANDARD, f32v3)
+DEFINE_CPUPEO_SET(CPUPEO_SetVec2, "Set Vec2", COLOR_STANDARD, f32v2)
+DEFINE_CPUPEO_SET(CPUPEO_SetFloat, "Set Float", COLOR_STANDARD, f32)
+DEFINE_CPUPEO_SET(CPUPEO_SetUInt, "Set UInt", COLOR_STANDARD, ui32)
+
+DEFINE_CPUPEO_SET(CPUPEO_ConvertFloatToVec4, "Convert Float To Vec4", COLOR_CONVERT, f32v4, f32)
+DEFINE_CPUPEO_SET(CPUPEO_ConvertFloatToVec3, "Convert Float To Vec3", COLOR_CONVERT, f32v3, f32)
+DEFINE_CPUPEO_SET(CPUPEO_ConvertFloatToVec2, "Convert Float To Vec2", COLOR_CONVERT, f32v2, f32)
+DEFINE_CPUPEO_SET(CPUPEO_ConvertFloatToUInt, "Convert Float To UInt", COLOR_CONVERT, f32, ui32)
+DEFINE_CPUPEO_SET(CPUPEO_ConvertUIntToFloat, "Convert UInt To Float", COLOR_CONVERT, ui32, f32)
+
+#undef COLOR_STANDARD
+#undef COLOR_CONVERT
+#undef COLOR_QUERY
 
 static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);

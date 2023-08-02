@@ -110,8 +110,6 @@ public:
         mEmitterModuleMethods.emplace_back(module.getMethod());
     }
 
-    void fillVariableFromType(CPUParticleEmitterVariable& variable, ParticleID id, CPUParticleEmitterVariableType type);
-
     void emitParticles(ui32v2 countRange);
     void emitParticles(ui32 count);
 protected:
@@ -151,6 +149,7 @@ protected:
 
     f32 mTotalElapsedSec = 0.0f;
     f32 mLifetimeSec;
+    f32 mLastElapsedSec = 0.0f;
 
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;

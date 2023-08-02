@@ -5,7 +5,7 @@
 
 class ArbitraryObjectArray;
 
-typedef void(*CPUParticleEmitterModuleMethod)(class CpuParticleEmitter& emitter, int particleID, void* data);
+typedef void(*CPUParticleEmitterModuleMethod)(class CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec);
 
 enum class ParticleEmitterModuleStage : ui8 {
     EmitterUpdate = BIT(0),
@@ -19,6 +19,7 @@ public:
     CPUParticleEmitterModule() = default;
     virtual ~CPUParticleEmitterModule() = default;
 
+    virtual void refresh() = 0;
     virtual void addModuleDataToArray(ArbitraryObjectArray& arry) const = 0;
     virtual bool updateAndRenderEditorControls() = 0;
     virtual BitFlags<ParticleEmitterModuleStage> getStages() const = 0;

@@ -10,7 +10,7 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
-CPUParticleEmitterVariable::CPUParticleEmitterVariable(const CPUParticleEmitterVariable& other) : mVarData(other.mVarData), mType(other.mType) {
+CPUParticleEmitterVariable::CPUParticleEmitterVariable(const CPUParticleEmitterVariable& other) : mVarData(other.mVarData) {
     if (other.mOperation) {
         mOperation = other.mOperation->clone();
     }
@@ -18,13 +18,8 @@ CPUParticleEmitterVariable::CPUParticleEmitterVariable(const CPUParticleEmitterV
 
 void CPUParticleEmitterVariable::evaluate(CpuParticleEmitter& emitter, ParticleID id) {
     // Constants do not evaluate
-    if (mType > CPUParticleEmitterVariableType::Constant) {
-        if (mType == CPUParticleEmitterVariableType::Operation) {
-            mOperation->execute(emitter, id, this);
-        }
-        else {
-            emitter.fillVariableFromType(*this, id, mType);
-        }
+    if (mOperation) {
+        mOperation->execute(emitter, id, this);
     }
 }
 
@@ -74,17 +69,13 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
         }
         else if (std::holds_alternative<color4>(mVarData)) {
             color4& color = std::get<color4>(mVarData);
-            float colorf[4] = { color.r, color.g, color.b, color.a };
+            float colorf[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
             changed |= ImGui::ColorPicker4(label, colorf, ImGuiColorEditFlags_Uint8);
-            color = color4((ui8)colorf[0], (ui8)colorf[1], (ui8)colorf[2], (ui8)colorf[3]);
+            color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
     }
 
     auto displayOperationsSelectorCombo = [&]() -> const CPUParticleEmitterOperation* {
-        int itemCount = 0;
-        const char* items[256];
-        const CPUParticleEmitterOperation* operationsCopy[256];
-        static int itemSelected = -1; // If the selection isn't within 0..count, Combo won't display a preview
         const auto& operations = Services::ResourceManager::ref().getParticleSystemRepository().getEmitterOperations();
         for (auto&& operation : operations) {
             bool matches = false;
@@ -112,12 +103,14 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
             }
             static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
             if (matches) {
-                operationsCopy[itemCount] = operation.get();
-                items[itemCount++] = operation->getDisplayName();
+                const color4 color = operation->getDisplayColor();
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
+                if (ImGui::Button(operation->getDisplayName(), ImVec2(300.f, 0.f))) {
+                    ImGui::PopStyleColor(1);
+                    return operation.get();
+                }
+                ImGui::PopStyleColor(1);
             }
-        }
-        if (ImGui::Combo("Select", &itemSelected, items, itemCount)) {
-            return operationsCopy[itemSelected];
         }
         return nullptr;
     };
@@ -155,5 +148,6 @@ void CPUParticleEmitterOperation::updateAndRenderControls() {
     ImGui::EndGroup();
     ImVec2 frameMax = ImGui::GetItemRectMax(); // Bottom right of frame
     // Draw a border around the group
-    ImGui::GetWindowDrawList()->AddRect(frameMin, frameMax, IM_COL32(255, 255, 255, 100));
+    const color4 color = getDisplayColor();
+    ImGui::GetWindowDrawList()->AddRect(frameMin, frameMax, IM_COL32(color.r, color.g, color.b, 128));
 }

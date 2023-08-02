@@ -7,6 +7,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
+#include "math/Random.h"
+
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
 
@@ -20,7 +22,11 @@ bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* c
 }
 
 CPUPEM_SpawnBurst::CPUPEM_SpawnBurst() {
-    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
+    refresh();
+}
+
+void CPUPEM_SpawnBurst::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         ModuleData* moduleData = MODULE_DATA;
         if (moduleData->mFired) return;
 
@@ -30,7 +36,7 @@ CPUPEM_SpawnBurst::CPUPEM_SpawnBurst() {
             moduleData->mFired = true;
             moduleData->mSpawnCount.evaluate(emitter, particleID);
             ui32 spawnCount = std::get<ui32>(moduleData->mSpawnCount.mVarData);
-            emitter.emitParticles(spawnCount);
+emitter.emitParticles(spawnCount);
         }
     };
 }
@@ -43,7 +49,11 @@ bool CPUPEM_SpawnBurst::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SpawnRate::CPUPEM_SpawnRate() {
-    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
+    refresh();
+}
+
+void CPUPEM_SpawnRate::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         ModuleData* moduleData = MODULE_DATA;
 
         moduleData->mNextEmitTime.evaluate(emitter, particleID);
@@ -67,7 +77,11 @@ bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SetPosition::CPUPEM_SetPosition() {
-    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
+    refresh();
+}
+
+void CPUPEM_SetPosition::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         MODULE_DATA->mPositionVec3.evaluate(emitter, particleID);
         emitter.setParticlePosition(particleID, std::get<f32v3>(MODULE_DATA->mPositionVec3.mVarData));
     };
@@ -78,7 +92,11 @@ bool CPUPEM_SetPosition::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SetVelocity::CPUPEM_SetVelocity() {
-    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
+    refresh();
+}
+
+void CPUPEM_SetVelocity::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         MODULE_DATA->mVelocityVec3.evaluate(emitter, particleID);
         emitter.setParticleVelocity(particleID, std::get<f32v3>(MODULE_DATA->mVelocityVec3.mVarData));
     };
@@ -89,7 +107,11 @@ bool CPUPEM_SetVelocity::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SetColor::CPUPEM_SetColor() {
-    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data) {
+    refresh();
+}
+
+void CPUPEM_SetColor::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         MODULE_DATA->mColor.evaluate(emitter, particleID);
         emitter.setParticleColor(particleID, std::get<color4>(MODULE_DATA->mColor.mVarData));
     };
@@ -97,4 +119,84 @@ CPUPEM_SetColor::CPUPEM_SetColor() {
 
 bool CPUPEM_SetColor::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mColor, "Color");
+}
+
+CPUPEM_SetScale::CPUPEM_SetScale() {
+    refresh();
+}
+
+void CPUPEM_SetScale::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mScale.evaluate(emitter, particleID);
+        emitter.setParticleScale(particleID, std::get<f32v2>(MODULE_DATA->mScale.mVarData));
+    };
+}
+
+bool CPUPEM_SetScale::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mScale, "Scale");
+}
+
+CPUPEM_SetPositionFromShape::CPUPEM_SetPositionFromShape() {
+    refresh();
+}
+
+void CPUPEM_SetPositionFromShape::refresh() {
+
+    switch (mModuleData.mShapeType) {
+        case ShapeType::Sphere:
+            mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+                MODULE_DATA->mRadius.evaluate(emitter, particleID);
+                f32 theta = 2.f * M_PIF * Random::getCachedRandomf(); // azimuthal angle
+                f32 phi = acosf(2.f * Random::getCachedRandomf() - 1.f); // polar angle
+                f32 r = std::get<f32>(MODULE_DATA->mRadius.mVarData) * Random::getCachedRandomf(); // cube root to ensure points are uniformly distributed
+
+                f32v3 point;
+                point.x = r * sin(phi) * cos(theta);
+                point.y = r * sin(phi) * sin(theta);
+                point.z = r * cos(phi);
+                emitter.setParticlePosition(particleID, point);
+            };
+            break;
+        case ShapeType::Box:
+            mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+                assert(false);
+            };
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    static_assert(e_count(ShapeType) == 2);
+}
+
+bool CPUPEM_SetPositionFromShape::updateAndRenderEditorControls() {
+    bool changed = false;
+    changed |= updateAndRenderVariable(mModuleData.mRadius, "Radius");
+
+    const char* itemNames[e_count(ShapeType)] = {
+        "Sphere",
+        "Box"
+    };
+    static_assert(e_count(ShapeType) == 2);
+
+    changed |= ImGui::Combo("Shape", (int*)&mModuleData.mShapeType, itemNames, e_count(ShapeType));
+
+    return changed;
+}
+
+CPUPEM_ApplyForce::CPUPEM_ApplyForce() {
+    refresh();
+}
+
+void CPUPEM_ApplyForce::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mForce.evaluate(emitter, particleID);
+        f32v3 velocity = emitter.getParticleVelocity(particleID);
+        velocity += elapsedSec * std::get<f32v3>(MODULE_DATA->mForce.mVarData);
+        emitter.setParticleVelocity(particleID, velocity);
+    };
+}
+
+bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mForce, "Force");
 }

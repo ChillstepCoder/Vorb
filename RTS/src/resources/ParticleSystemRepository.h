@@ -24,6 +24,9 @@ public:
 
     ParticleSystemDef* tryAddNewParticleSystem(const nString& name);
 
+    MaterialID getDefaultMaterialID() const { return mDefaultMaterial; }
+    void setDefaultMaterialID(MaterialID id) { mDefaultMaterial = id; }
+
 private:
     vio::IOManager& mIoManager;
     MaterialRepository& mMaterialRepository;
@@ -33,5 +36,7 @@ private:
     std::vector<ParticleEmitterDef> mParticleEmitters;
     std::vector<std::unique_ptr<CPUParticleEmitterModule>> mEmitterModules;
     std::vector<std::unique_ptr<CPUParticleEmitterOperation>> mEmitterOperations;
+
+    MaterialID mDefaultMaterial = INVALID_MATERIAL_ID;
 };
 

@@ -4,13 +4,15 @@
 
 class MaterialShader;
 
+typedef std::vector<std::unique_ptr<CPUParticleEmitterModule>> CPUParticleEmitterModuleVector;
+
 struct ParticleEmitterDef {
 
     bool isValid() { return mShader != nullptr; }
 
-    std::vector<std::unique_ptr<CPUParticleEmitterModule>> mEmitterUpdateModules;
-    std::vector<std::unique_ptr<CPUParticleEmitterModule>> mParticleInitModules;
-    std::vector<std::unique_ptr<CPUParticleEmitterModule>> mParticleUpdateModules;
+    CPUParticleEmitterModuleVector mEmitterUpdateModules;
+    CPUParticleEmitterModuleVector mParticleInitModules;
+    CPUParticleEmitterModuleVector mParticleUpdateModules;
     MaterialShader* mShader = nullptr;
 
     nString mEmitterName;

@@ -64,6 +64,7 @@ CpuParticleEmitter::~CpuParticleEmitter() {
 bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
 
+    mLastElapsedSec = elapsedSec;
     mTotalElapsedSec += elapsedSec;
 
     if (mNativeUpdateFunction) {
@@ -73,7 +74,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
 
     // Update emitter
     for (size_t i = 0; i < mNumEmitterUpdateMethods; ++i) {
-        mEmitterModuleMethods[i](*this, INVALID_PARTICLE_ID, mParticleModuleData[i]);
+        mEmitterModuleMethods[i](*this, INVALID_PARTICLE_ID, mParticleModuleData[i], elapsedSec);
     }
 
     // Run every particle through the modules
@@ -84,7 +85,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
             continue;
         }
         for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
-            mEmitterModuleMethods[j](*this, i, mParticleModuleData[j]);
+            mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec);
         }
     }
 
@@ -169,36 +170,6 @@ void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) {
 void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) {
     mParticleData.mMaterials[id] = (ui32)material;
     mDataChanged = true;
-}
-
-void CpuParticleEmitter::fillVariableFromType(CPUParticleEmitterVariable& variable, ParticleID id, CPUParticleEmitterVariableType type) {
-    assert(type >= CPUParticleEmitterVariableType::BUILTINS_BEGIN);
-    
-    switch (type) {
-        case CPUParticleEmitterVariableType::Position:
-            variable.mVarData = mParticleData.mPositions.get()[id];
-            break;
-        case CPUParticleEmitterVariableType::Velocity:
-            variable.mVarData = mParticleData.mVelocities.get()[id];
-            break;
-        case CPUParticleEmitterVariableType::Scale:
-            variable.mVarData = mParticleData.mScales.get()[id];
-            break;
-        case CPUParticleEmitterVariableType::Color:
-            variable.mVarData = mParticleData.mColors.get()[id];
-            break;
-        case CPUParticleEmitterVariableType::HDRColor:
-            variable.mVarData = mParticleData.mHDRColors.get()[id];
-            break;
-        case CPUParticleEmitterVariableType::Lifespan:
-            variable.mVarData = mParticleData.mLifespans.get()[id];
-            break;
-        case CPUParticleEmitterVariableType::Rotation:
-            variable.mVarData = mParticleData.mRotations.get()[id];
-            break;
-    }
-
-    static_assert(e_count(CPUParticleEmitterVariableType) == 10);
 }
 
 void CpuParticleEmitter::emitParticles(ui32v2 countRange) {
@@ -440,7 +411,7 @@ void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
 
     // Init particle
     for (int i = 0; i < mNumParticleInitMethods; ++i) {
-        mEmitterModuleMethods[i](*this, id, mParticleModuleData[i]);
+        mEmitterModuleMethods[i](*this, id, mParticleModuleData[i], mLastElapsedSec);
     }
 
     ++mActiveParticles;

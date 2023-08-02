@@ -15,21 +15,29 @@ enum class BuiltinCPUParticleEditorModules {
     SetPosition,
     SetVelocity,
     SetColor,
+    SetScale,
+    SetPositionFromShape,
+    ApplyForce,
     COUNT
 };
 
-// Spawn Burst
-class CPUPEM_SpawnBurst : public CPUParticleEmitterModule {
-public:
-    CPUPEM_SpawnBurst();
-    bool updateAndRenderEditorControls() override;
-    BitFlags<ParticleEmitterModuleStage> getStages() const override {
-        return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::EmitterUpdate);
-    }
-    const char* const getName() const override { return "Spawn Burst"; }
-    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SpawnBurst>(*this); };
+#define COMMON_METHODS(ModuleType) \
+public: \
+    ModuleType(); \
+    bool updateAndRenderEditorControls() override; \
+    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<ModuleType>(*this); };
 
+#define BUILTIN_CPU_PARTICLE_MODULE(ModuleType, Stage, ModuleName) \
+class ModuleType : public CPUParticleEmitterModule { \
+    COMMON_METHODS(ModuleType) \
+    void refresh() override; \
+    BitFlags<ParticleEmitterModuleStage> getStages() const override { \
+        return BitFlags<ParticleEmitterModuleStage>(Stage); \
+    } \
+    const char* const getName() const override { return ModuleName; } \
 private:
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Burst")
     MODULE_DEF(
         CPUParticleEmitterVariable mDelay = CPUParticleEmitterVariable(f32(0.0f));
         CPUParticleEmitterVariable mSpawnCount = CPUParticleEmitterVariable(ui32(10));
@@ -37,18 +45,7 @@ private:
     );
 };
 
-// Spawn Rate
-class CPUPEM_SpawnRate : public CPUParticleEmitterModule {
-public:
-    CPUPEM_SpawnRate();
-    bool updateAndRenderEditorControls() override;
-    BitFlags<ParticleEmitterModuleStage> getStages() const override {
-        return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::EmitterUpdate);
-    }
-    const char* const getName() const override { return "Spawn Rate"; }
-    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SpawnRate>(*this); };
-
-private:
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Rate")
     MODULE_DEF(
         CPUParticleEmitterVariable mEmitRateSec = CPUParticleEmitterVariable(0.0f);
         CPUParticleEmitterVariable mNextEmitTime = CPUParticleEmitterVariable(0.0f); // Initial delay
@@ -56,51 +53,45 @@ private:
     );
 };
 
-// Set Position
-class CPUPEM_SetPosition : public CPUParticleEmitterModule {
-public:
-    CPUPEM_SetPosition();
-    bool updateAndRenderEditorControls() override;
-    BitFlags<ParticleEmitterModuleStage> getStages() const override {
-        return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
-    }
-    const char* const getName() const override { return "Set Position"; }
-    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SetPosition>(*this); };
-
-private:
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPosition, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Position")
     MODULE_DEF(
         CPUParticleEmitterVariable mPositionVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
 };
 
-// Set Velocity
-class CPUPEM_SetVelocity : public CPUParticleEmitterModule {
-public:
-    CPUPEM_SetVelocity();
-    bool updateAndRenderEditorControls() override;
-    BitFlags<ParticleEmitterModuleStage> getStages() const override {
-        return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
-    }
-    const char* const getName() const override { return "Set Velocity"; }
-    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SetVelocity>(*this); };
-private:
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Velocity")
     MODULE_DEF(
         CPUParticleEmitterVariable mVelocityVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
 };
 
-class CPUPEM_SetColor : public CPUParticleEmitterModule {
-public:
-    CPUPEM_SetColor();
-    bool updateAndRenderEditorControls() override;
-    BitFlags<ParticleEmitterModuleStage> getStages() const override {
-        return BitFlags<ParticleEmitterModuleStage>(ParticleEmitterModuleStage::ParticleInit, ParticleEmitterModuleStage::ParticleUpdate);
-    }
-    const char* const getName() const override { return "Set Color"; }
-    std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<CPUPEM_SetColor>(*this); };
-private:
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Color")
     MODULE_DEF(
         CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
+    );
+};
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale")
+    MODULE_DEF(
+        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
+    );
+};
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleStage::ParticleInit, "Set Position From Shape")
+    enum class ShapeType : int {
+       Sphere,
+       Box,
+       COUNT
+    };
+    MODULE_DEF(
+        CPUParticleEmitterVariable mRadius = CPUParticleEmitterVariable(10.0f);
+        ShapeType mShapeType = ShapeType::Sphere;
+    );
+};
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ApplyForce, ParticleEmitterModuleStage::ParticleUpdate, "Apply Force")
+    MODULE_DEF(
+        CPUParticleEmitterVariable mForce = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, GRAVITY_Z));
     );
 };
 
@@ -116,8 +107,14 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
             return std::make_unique<CPUPEM_SetVelocity>();
         case BuiltinCPUParticleEditorModules::SetColor:
             return std::make_unique<CPUPEM_SetColor>();
+        case BuiltinCPUParticleEditorModules::SetScale:
+            return std::make_unique<CPUPEM_SetScale>();
+        case BuiltinCPUParticleEditorModules::SetPositionFromShape:
+            return std::make_unique<CPUPEM_SetPositionFromShape>();
+        case BuiltinCPUParticleEditorModules::ApplyForce:
+            return std::make_unique<CPUPEM_ApplyForce>();
     }
-    static_assert(e_count(BuiltinCPUParticleEditorModules) == 5);
+    static_assert(e_count(BuiltinCPUParticleEditorModules) == 8);
 
     return nullptr;
 }

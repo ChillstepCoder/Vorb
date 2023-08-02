@@ -82,6 +82,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             mSystemDef->mSystemName = mTextInputBuffer;
             ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
             defaultEmitter.mEmitterName = "DefaultEmitter";
+            defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
             mSelectedEmitter = &defaultEmitter;
             mTextInputBuffer[0] = '\0';
 
@@ -114,6 +115,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ImGui::CloseCurrentPopup();
                 ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = mTextInputBuffer;
+                newEmitterDef.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
                 mSelectedEmitter = &newEmitterDef;
                 mTextInputBuffer[0] = '\0';
 
@@ -159,22 +161,19 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
     ImGui::BeginChild("Particle Emitter Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
     auto displayModuleSelectorCombo = [&](ParticleEmitterModuleStage stageBit) -> const CPUParticleEmitterModule* {
-        int itemCount = 0;
-        const char* items[256];
-        const CPUParticleEmitterModule* modulesCopy[256];
-        static int itemSelected = -1; // If the selection isn't within 0..count, Combo won't display a preview
         const auto& modules = Services::ResourceManager::ref().getParticleSystemRepository().getEmitterModules();
         for (auto&& module : modules) {
             if (module->getStages().isBitSet(stageBit)) {
-                modulesCopy[itemCount] = module.get();
-                items[itemCount++] = module->getName();
+                if (ImGui::Button(module->getName(), ImVec2(300, 0.0f))) {
+                    return module.get();
+                }
             }
         }
-        if (ImGui::Combo("Select", &itemSelected, items, itemCount)) {
-            return modulesCopy[itemSelected];
-        }
+        ImGui::Spacing();
         return nullptr;
     };
+
+ 
 
     if (mSelectedEmitter) {
         ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.c_str());
@@ -182,36 +181,46 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         ImGui::Text("Modules");
         const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
         constexpr int size = 17;
+
+        auto displayCategory = [&](const char* popupName, const char* categoryName, ParticleEmitterModuleStage stage, CPUParticleEmitterModuleVector& modules, f32 r, f32 g, f32 b) {
+            ImGui::PushID(categoryName);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
+            COLOR_BUTTON_START(r, g, b, categoryName);
+            COLOR_BUTTON_END();
+            if (ImGui::Button("+", ImVec2(size, size))) {
+                ImGui::OpenPopup(popupName);
+            }
+
+            for (auto&& module : modules) {
+                if (ImGui::Button(module->getName(), ImVec2(ImGui::GetContentRegionAvail().x, size))) {
+                    mSelectedModule = module.get();
+                }
+            }
+
+            ImGui::PopStyleVar(4);
+
+            if (ImGui::BeginPopupModal(popupName, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(stage)) {
+                    mSelectedModule = modules.emplace_back(displayModule->clone()).get();
+                    ImGui::CloseCurrentPopup();
+                }
+                if (ImGui::Button("Cancel")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::PopID();
+        };
         
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
-        COLOR_BUTTON_START(0.0f, 0.8f, 0.0f, "Emitter Update");
-        COLOR_BUTTON_END();
-        if (ImGui::Button("+", ImVec2(size, size))) {
-            ImGui::OpenPopup("UpdateModules");
-        }
-
-        for (auto&& module : mSelectedEmitter->mEmitterUpdateModules) {
-            if (ImGui::Button(module->getName(), ImVec2(ImGui::GetContentRegionAvail().x, size))) {
-                mSelectedModule = module.get();
-            }
-        }
-
-        ImGui::PopStyleVar(4);
-
-        if (ImGui::BeginPopupModal("UpdateModules", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-        {
-            if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(ParticleEmitterModuleStage::EmitterUpdate)) {
-                mSelectedModule = mSelectedEmitter->mEmitterUpdateModules.emplace_back(displayModule->clone()).get();
-                ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
+        displayCategory("Emitter Update Modules", "Emitter Update", ParticleEmitterModuleStage::EmitterUpdate, mSelectedEmitter->mEmitterUpdateModules, 0.0f, 0.8f, 0.0f);
+        ImGui::Spacing();
+        displayCategory("Particle Init Modules", "Particle Init", ParticleEmitterModuleStage::ParticleInit, mSelectedEmitter->mParticleInitModules, 0.7f, 0.7f, 0.0f);
+        ImGui::Spacing();
+        displayCategory("Particle Update Modules", "Particle Update", ParticleEmitterModuleStage::ParticleUpdate, mSelectedEmitter->mParticleUpdateModules, 0.8f, 0.0f, 0.0f);
 
     }
     else {
