@@ -12,6 +12,7 @@ void addModuleDataToArray(ArbitraryObjectArray& arry) const { \
 enum class BuiltinCPUParticleEditorModules {
     SpawnBurst,
     SpawnRate,
+    RingBurst,
     SetPosition,
     SetVelocity,
     SetColor,
@@ -50,6 +51,14 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::Emitte
         CPUParticleEmitterVariable mEmitRateSec = CPUParticleEmitterVariable(0.0f);
         CPUParticleEmitterVariable mNextEmitTime = CPUParticleEmitterVariable(0.0f); // Initial delay
         CPUParticleEmitterVariable mSpawnCount = CPUParticleEmitterVariable(ui32(3));
+    );
+};
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::ParticleInit, "Ring Burst")
+    MODULE_DEF(
+        CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
+        CPUParticleEmitterVariable mMaxAngleFromRingRad = CPUParticleEmitterVariable(f32(M_PI_4F));
+        bool mFired = false;
     );
 };
 
@@ -101,6 +110,8 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
             return std::make_unique<CPUPEM_SpawnBurst>();
         case BuiltinCPUParticleEditorModules::SpawnRate:
             return std::make_unique<CPUPEM_SpawnRate>();
+        case BuiltinCPUParticleEditorModules::RingBurst:
+            return std::make_unique<CPUPEM_RingBurst>();
         case BuiltinCPUParticleEditorModules::SetPosition:
             return std::make_unique<CPUPEM_SetPosition>();
         case BuiltinCPUParticleEditorModules::SetVelocity:
