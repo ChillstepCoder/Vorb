@@ -76,6 +76,92 @@ bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
     return changed;
 }
 
+CPUPEM_RingBurst::CPUPEM_RingBurst() {
+    refresh();
+}
+
+void CPUPEM_RingBurst::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mSpeedRange.evaluate(emitter, particleID);
+        MODULE_DATA->mMaxAngleFromRingRad.evaluate(emitter, particleID);
+        MODULE_DATA->mRingNormal.evaluate(emitter, particleID);
+
+        const f32v3 ringNormal = glm::normalize(std::get<f32v3>(MODULE_DATA->mRingNormal.mVarData));
+        const f32v2 randomSpeedRange = std::get<f32v2>(MODULE_DATA->mSpeedRange.mVarData);
+        const f32 maxAngleFromEquator = std::get<f32>(MODULE_DATA->mMaxAngleFromRingRad.mVarData);
+
+        // Create an arbitrary axis not parallel to the ringNormal.
+        const f32v3 axis = (std::abs(ringNormal.x) < 0.5f) ? f32v3(1, 0, 0) : f32v3(0, 1, 0);
+
+        // Calculate two tangent vectors to the ringNormal.
+        const f32v3 tangent1 = glm::cross(ringNormal, axis);
+        const f32v3 tangent2 = glm::cross(ringNormal, tangent1);
+
+        // Create a random direction in the equatorial plane.
+        float randomAngle = (Random::getCachedRandomf() * 2.0f - 1.0f) * maxAngleFromEquator;
+        f32v3 equatorialDirection = std::cos(randomAngle) * tangent1 + std::sin(randomAngle) * tangent2;
+
+        // Calculate final direction by interpolating between equatorialDirection and ringNormal.
+        float lerpFactor = Random::getCachedRandomf();
+        f32v3 direction = glm::normalize((1.0f - lerpFactor) * equatorialDirection + lerpFactor * ringNormal);
+
+        // Randomly scale the direction to get a velocity in the required speed range.
+        const float speed = Random::getCachedRandomf() * (randomSpeedRange.y - randomSpeedRange.x) + randomSpeedRange.x;
+        emitter.addParticleVelocity(particleID, direction * speed);
+    };
+}
+
+bool CPUPEM_RingBurst::updateAndRenderEditorControls() {
+    bool changed = false;
+    changed |= updateAndRenderVariable(mModuleData.mSpeedRange, "Speed");
+    changed |= updateAndRenderVariable(mModuleData.mMaxAngleFromRingRad, "Max Angle From Ring");
+    changed |= updateAndRenderVariable(mModuleData.mRingNormal, "Ring Normal");
+    return changed;
+}
+
+CPUPEM_ConeBurst::CPUPEM_ConeBurst() {
+    refresh();
+}
+
+void CPUPEM_ConeBurst::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mSpeedRange.evaluate(emitter, particleID);
+        MODULE_DATA->mAngleRange.evaluate(emitter, particleID);
+        MODULE_DATA->mDirection.evaluate(emitter, particleID);
+
+        f32v3 direction = glm::normalize(std::get<f32v3>(MODULE_DATA->mDirection.mVarData));
+        const f32v2 randomSpeedRange = std::get<f32v2>(MODULE_DATA->mSpeedRange.mVarData);
+        const f32v2 randomAngleRange = std::get<f32v2>(MODULE_DATA->mAngleRange.mVarData);
+
+        const f32 speed = Random::getCachedRandomf() * (randomSpeedRange.y - randomSpeedRange.x) + randomSpeedRange.x;
+        const f32 angle = Random::getCachedRandomf() * (randomAngleRange.y - randomAngleRange.x) + randomAngleRange.x;
+
+        // Create an arbitrary axis not parallel to the direction.
+        const f32v3 axis = (std::abs(direction.x) < 0.5f) ? f32v3(1, 0, 0) : f32v3(0, 1, 0);
+
+        // Calculate two tangent vectors to the ringNormal.
+        const f32v3 tangent1 = glm::cross(direction, axis);
+        const f32v3 tangent2 = glm::cross(direction, tangent1);
+
+        // Create a random direction in the equatorial plane.
+        f32v3 equatorialDirection = std::cos(angle) * tangent1 + std::sin(angle) * tangent2;
+
+        // Calculate final direction by interpolating between equatorialDirection and ringNormal.
+        float lerpFactor = Random::getCachedRandomf();
+        direction = glm::normalize((1.0f - lerpFactor) * equatorialDirection + lerpFactor * direction);
+
+        emitter.addParticleVelocity(particleID, direction * speed);
+    };
+}
+
+bool CPUPEM_ConeBurst::updateAndRenderEditorControls() {
+    bool changed = false;
+    changed |= updateAndRenderVariable(mModuleData.mSpeedRange, "Speed");
+    changed |= updateAndRenderVariable(mModuleData.mAngleRange, "Angle Range");
+    changed |= updateAndRenderVariable(mModuleData.mDirection, "Direction");
+    return changed;
+}
+
 CPUPEM_SetPosition::CPUPEM_SetPosition() {
     refresh();
 }
@@ -199,4 +285,21 @@ void CPUPEM_ApplyForce::refresh() {
 
 bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mForce, "Force");
+}
+
+CPUPEM_DragForce::CPUPEM_DragForce() {
+    refresh();
+}
+
+void CPUPEM_DragForce::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mDragFactor.evaluate(emitter, particleID);
+        f32v3 velocity = emitter.getParticleVelocity(particleID);
+        velocity *= MathUtil::dragForceWithDeltaTime(std::get<f32>(MODULE_DATA->mDragFactor.mVarData), elapsedSec);
+        emitter.setParticleVelocity(particleID, velocity);
+    };
+}
+
+bool CPUPEM_DragForce::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor");
 }

@@ -11,7 +11,7 @@ public:
     MaterialEditorViewportPanel();
     ~MaterialEditorViewportPanel();
 
-    bool updateAndRender() override;
+    bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void setMaterial(MaterialHandle& materialData) { mCurrentMaterial = materialData; }

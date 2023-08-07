@@ -13,12 +13,14 @@ enum class BuiltinCPUParticleEditorModules {
     SpawnBurst,
     SpawnRate,
     RingBurst,
+    ConeBurst,
     SetPosition,
     SetVelocity,
     SetColor,
     SetScale,
     SetPositionFromShape,
     ApplyForce,
+    DragForce,
     COUNT
 };
 
@@ -58,7 +60,15 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::Partic
     MODULE_DEF(
         CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
         CPUParticleEmitterVariable mMaxAngleFromRingRad = CPUParticleEmitterVariable(f32(M_PI_4F));
-        bool mFired = false;
+        CPUParticleEmitterVariable mRingNormal = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, 1.0f));
+    );
+};
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ConeBurst, ParticleEmitterModuleStage::ParticleInit, "Cone Burst")
+    MODULE_DEF(
+        CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
+        CPUParticleEmitterVariable mAngleRange = CPUParticleEmitterVariable(f32v2(0.0f, M_PI_4F));
+        CPUParticleEmitterVariable mDirection = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, 1.0f));
     );
 };
 
@@ -104,6 +114,12 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ApplyForce, ParticleEmitterModuleStage::Parti
     );
 };
 
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::ParticleUpdate, "Drag Force")
+    MODULE_DEF(
+        CPUParticleEmitterVariable mDragFactor = CPUParticleEmitterVariable(f32(0.75f));
+    );
+};
+
 inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules type) {
     switch (type) {
         case BuiltinCPUParticleEditorModules::SpawnBurst:
@@ -112,6 +128,8 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
             return std::make_unique<CPUPEM_SpawnRate>();
         case BuiltinCPUParticleEditorModules::RingBurst:
             return std::make_unique<CPUPEM_RingBurst>();
+        case BuiltinCPUParticleEditorModules::ConeBurst:
+            return std::make_unique<CPUPEM_ConeBurst>();
         case BuiltinCPUParticleEditorModules::SetPosition:
             return std::make_unique<CPUPEM_SetPosition>();
         case BuiltinCPUParticleEditorModules::SetVelocity:
@@ -124,8 +142,10 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
             return std::make_unique<CPUPEM_SetPositionFromShape>();
         case BuiltinCPUParticleEditorModules::ApplyForce:
             return std::make_unique<CPUPEM_ApplyForce>();
+        case BuiltinCPUParticleEditorModules::DragForce:
+            return std::make_unique<CPUPEM_DragForce>();
     }
-    static_assert(e_count(BuiltinCPUParticleEditorModules) == 8);
+    static_assert(e_count(BuiltinCPUParticleEditorModules) == 11);
 
     return nullptr;
 }

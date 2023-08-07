@@ -80,7 +80,7 @@ void EditorRoot::updateEditors(IWorld* world, const Camera3D& camera, const f32v
     }
 }
 
-void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
+void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
     if (sDebugOptions.mShowEditor) {
         IWorld* world = mWorldEditorPanel->getActiveWorld();
         const ui32v2& dims = vui::InputDispatcher::window.getCurrentWindowDims();
@@ -175,7 +175,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
             if (width >= 2.0f) {
                 ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
                 ImGui::SetNextWindowSize(ImVec2(width, dims.y));
-                if (!mActiveCenterPanel->updateAndRender()) {
+                if (!mActiveCenterPanel->updateAndRender(elapsedSec)) {
                     setActiveCenterPanel(nullptr);
                 }
             }

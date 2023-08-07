@@ -36,7 +36,7 @@ FoliageEditorViewportPanel::~FoliageEditorViewportPanel()
 
 }
 
-bool FoliageEditorViewportPanel::updateAndRender()
+bool FoliageEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
     if (!mGrassRenderer) {
         mGrassRenderer = std::make_unique<GrassRenderer>();

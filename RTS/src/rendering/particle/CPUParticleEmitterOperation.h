@@ -110,6 +110,19 @@ public: \
     } \
 };
 
+#define DEFINE_CPUPEO_CUSTOM_BEGIN(NAME, DISP_NAME, DISP_COLOR, TYPE1, CONVERT) \
+class NAME : public CPUParticleEmitterOperation { \
+public: \
+    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
+    NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
+    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
+    color4 getDisplayColor() const override { return DISP_COLOR; } \
+    CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
+        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } 
+    //  Implement execute()
+#define DEFINE_CPUPEO_CUSTOM_END };
+
 #define COLOR_STANDARD color4(0.3f, 0.3f, 0.7f, 1.0f)
 #define COLOR_CONVERT color4(0.6f, 0.6f, 0.25f, 1.0f)
 #define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)

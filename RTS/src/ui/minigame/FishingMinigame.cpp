@@ -182,7 +182,6 @@ void FishingMinigame::render(f32 elapsedSec) {
     );
 
     MaterialRenderer::bindMaterialForRender(*mUIShader);
-    glUniformMatrix4fv(mUIShader->getUniform("unVP"), 1, false, &camera[0][0]);
 
     // Arena
     mUIParticleSystem->getEmitter(0).setParticleScale(mArenaParticleID, arenaSize);
@@ -219,13 +218,14 @@ void FishingMinigame::render(f32 elapsedSec) {
         mUIParticleSystem->getEmitter(0).setParticlePosition(mChestParticleID, f32v3(mChestPosition.x, mChestPosition.y, 0.0f));
     }
 
-    mBackgroundParticleSystem->updateAndRender(elapsedSec);
-    mBubbleParticleSystem->updateAndRender(elapsedSec);
-    mUIParticleSystem->updateAndRender(elapsedSec);
+    // TODO: Each its own emitter???
+    mBackgroundParticleSystem->updateAndRender(elapsedSec, camera);
+    mBubbleParticleSystem->updateAndRender(elapsedSec, camera);
+    mUIParticleSystem->updateAndRender(elapsedSec, camera);
     if (mBlockerParticleSystem) {
-        mBlockerParticleSystem->updateAndRender(elapsedSec);
+        mBlockerParticleSystem->updateAndRender(elapsedSec, camera);
     }
-    mPlayerParticleSystem->updateAndRender(elapsedSec);
+    mPlayerParticleSystem->updateAndRender(elapsedSec, camera);
 
     vg::DepthState::restorePrevious();
 }

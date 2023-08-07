@@ -2,6 +2,7 @@
 #include "CPUParticleSystem.h"
 
 #include "definitions/ParticleSystemDef.h"
+#include "rendering/MaterialShader.h"
 
 #include "rendering/MaterialRenderer.h"
 
@@ -22,13 +23,14 @@ CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def)
     }
 }
 
-void CPUParticleSystem::updateAndRender(f32 elapsedSec) {
+void CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
     const MaterialShader* boundShader = nullptr;
     for (auto&& iter = mEmitters.begin(); iter != mEmitters.end();) {
         CpuParticleEmitter& emitter = **iter;
         const MaterialShader* nextShader = &emitter.getMaterialShader();
         if (nextShader != boundShader) {
             MaterialRenderer::bindMaterialForRender(*nextShader);
+            glUniformMatrix4fv(nextShader->getUniform("unVP"), 1, false, &VP[0][0]);
             boundShader = nextShader;
         }
         if (emitter.updateAndRender(elapsedSec)) {

@@ -12,7 +12,7 @@ class BiomeEditorViewportPanel : public IEditorViewportPanel
 public:
 	BiomeEditorViewportPanel();
 	~BiomeEditorViewportPanel();
-	bool updateAndRender() override;
+	bool updateAndRender(f32 elapsedSec) override;
 	void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void onEnter() override;

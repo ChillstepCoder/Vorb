@@ -54,6 +54,7 @@ public:
     void setParticlePosition(ParticleID id, f32v3 position);
     void setParticleScale(ParticleID id, f32v2 scale);
     void setParticleVelocity(ParticleID id, f32v3 velocity);
+    void addParticleVelocity(ParticleID id, f32v3 velocity);
     void setParticleColor(ParticleID id, color4 color);
     void setParticleHDRColor(ParticleID id, f32v4 color);
     void setParticleMaterial(ParticleID id, MaterialID material);

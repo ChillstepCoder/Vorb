@@ -18,7 +18,7 @@ public:
     VORB_NON_COPYABLE(CPUParticleSystem);
 
     // Bind shader before calling this
-    void updateAndRender(f32 elapsedSec);
+    void updateAndRender(f32 elapsedSec, const f32m4& VP);
 
     CpuParticleEmitter& addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader);
 

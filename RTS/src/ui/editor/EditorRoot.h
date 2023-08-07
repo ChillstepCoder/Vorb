@@ -27,7 +27,7 @@ public:
     EditorRoot();
     ~EditorRoot();
     void updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay);
-    void updateAndRenderUI(const vg::GBuffer* activeGBuffer);
+    void updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec);
     void renderEditorBrushDecals(const Camera3D& camera);
 
     bool hasActiveCenterPanel() const { return mActiveCenterPanel != nullptr; }

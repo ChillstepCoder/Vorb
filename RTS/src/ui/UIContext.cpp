@@ -30,7 +30,7 @@ void UIContext::updateEditors(IWorld* world, const Camera3D& camera, const f32v3
 
 void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
     
-    mEditorRoot->updateAndRenderUI(activeGBuffer);
+    mEditorRoot->updateAndRenderUI(activeGBuffer, elapsedSec);
     
     if (mTileInspectionPanel) {
         mTileInspectionPanel->updateAndRender();

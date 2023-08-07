@@ -13,7 +13,7 @@ struct ParticleEmitterDef {
     CPUParticleEmitterModuleVector mEmitterUpdateModules;
     CPUParticleEmitterModuleVector mParticleInitModules;
     CPUParticleEmitterModuleVector mParticleUpdateModules;
-    MaterialShader* mShader = nullptr;
+    const MaterialShader* mShader = nullptr;
 
     nString mEmitterName;
     f32v2 mDefaultScaleRange = f32v2(1.0f);

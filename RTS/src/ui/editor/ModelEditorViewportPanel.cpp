@@ -29,7 +29,7 @@ ModelEditorViewportPanel::~ModelEditorViewportPanel()
 {
 }
 
-bool ModelEditorViewportPanel::updateAndRender() {
+bool ModelEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     bool isOpen = true;
     ImGui::Begin("Model Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);

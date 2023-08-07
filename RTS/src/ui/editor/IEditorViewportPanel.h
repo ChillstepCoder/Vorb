@@ -30,7 +30,7 @@ public:
     IEditorViewportPanel();
     virtual ~IEditorViewportPanel();
 
-    virtual bool updateAndRender() = 0;
+    virtual bool updateAndRender(f32 elapsedSec) = 0;
     virtual void updateAndRenderPrimaryControls(f32 ySize) = 0;
     // Optional
     virtual bool updateAndRenderSecondaryControls(f32 ySize) { return false; }

@@ -10,7 +10,7 @@ public:
     ModelEditorViewportPanel();
     ~ModelEditorViewportPanel();
 
-    bool updateAndRender() override;
+    bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void setModel(ModelDef& model) { mCurrentModel = &model; }

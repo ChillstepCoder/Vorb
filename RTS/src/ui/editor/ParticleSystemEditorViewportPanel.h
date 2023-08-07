@@ -4,10 +4,14 @@
 struct ParticleSystemDef;
 struct ParticleEmitterDef;
 class CPUParticleEmitterModule;
+class CPUParticleSystem;
 
 class ParticleSystemEditorViewportPanel : public IEditorViewportPanel {
 public:
-    bool updateAndRender() override;
+    ParticleSystemEditorViewportPanel();
+    ~ParticleSystemEditorViewportPanel();
+
+    bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
     bool updateAndRenderSecondaryControls(f32 ySize) override;
     bool updateAndRenderTertiaryControls(f32 ySize) override;
@@ -17,10 +21,16 @@ public:
     void setParticleSystemDef(ParticleSystemDef* systemDef);
 
 private:
+    void createPreviewSystem();
 
     ParticleSystemDef* mSystemDef = nullptr;
     ParticleEmitterDef* mSelectedEmitter = nullptr;
     CPUParticleEmitterModule* mSelectedModule = nullptr;
+
+    std::unique_ptr<CPUParticleSystem> mPreviewSystem;
+    f32 mTimelineEnd = 3.0f;
+    f32 mCurrentTime = 0.0f;
+    f32 mCurrentElapsedSec = 0.0f;
 
     static constexpr size_t TEXT_INPUT_SIZE = 64;
     char mTextInputBuffer[TEXT_INPUT_SIZE];

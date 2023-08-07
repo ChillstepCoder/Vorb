@@ -2,7 +2,11 @@
 #include "ParticleSystemEditorViewportPanel.h"
 
 #include "resources/ResourceManager.h"
+#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialRenderer.h"
 #include "resources/ParticleSystemRepository.h"
+
+#include "rendering/particle/CPUParticleSystem.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -10,8 +14,21 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
-bool ParticleSystemEditorViewportPanel::updateAndRender()
-{
+ParticleSystemEditorViewportPanel::ParticleSystemEditorViewportPanel() : IEditorViewportPanel() {
+
+}
+
+ParticleSystemEditorViewportPanel::~ParticleSystemEditorViewportPanel() {
+
+}
+
+bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
+    mCurrentElapsedSec = elapsedSec;
+
+    mCurrentTime += elapsedSec;
+    if (mCurrentTime >= mTimelineEnd) {
+        createPreviewSystem();
+    }
 
     bool isOpen = true;
     ImGui::Begin("Fishing Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -83,6 +100,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
             defaultEmitter.mEmitterName = "DefaultEmitter";
             defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
+            defaultEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
             mSelectedEmitter = &defaultEmitter;
             mTextInputBuffer[0] = '\0';
 
@@ -116,6 +134,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = mTextInputBuffer;
                 newEmitterDef.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
+                newEmitterDef.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
                 mSelectedEmitter = &newEmitterDef;
                 mTextInputBuffer[0] = '\0';
 
@@ -245,8 +264,19 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
 
 void ParticleSystemEditorViewportPanel::renderMesh() {
     renderGrid(camera->getViewProjectionMatrix());
+
+    // Render preview system
+    if (mPreviewSystem) {
+        mPreviewSystem->updateAndRender(mCurrentElapsedSec, camera->getViewProjectionMatrix());
+    }
 }
 
 void ParticleSystemEditorViewportPanel::setParticleSystemDef(ParticleSystemDef* systemDef) {
     mSystemDef = systemDef;
+}
+
+void ParticleSystemEditorViewportPanel::createPreviewSystem() {
+    if (!mSystemDef) return;
+
+    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mSystemDef);
 }

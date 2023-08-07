@@ -15,7 +15,7 @@
 
 #include <Vorb/ui/GameWindow.h>
 
-bool FishingEditorViewportPanel::updateAndRender()
+bool FishingEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
  
     bool isOpen = true;

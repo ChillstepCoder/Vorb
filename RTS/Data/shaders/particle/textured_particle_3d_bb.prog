@@ -1,0 +1,3 @@
+textured_particle_3d_bb:
+  vert: textured_particle_3d_bb.vert
+  frag: textured_particle_3d.frag

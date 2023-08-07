@@ -155,6 +155,11 @@ void CpuParticleEmitter::setParticleVelocity(ParticleID id, f32v3 velocity) {
     mDataChanged = true;
 }
 
+void CpuParticleEmitter::addParticleVelocity(ParticleID id, f32v3 velocity) {
+    mParticleData.mVelocities[id] += velocity;
+    mDataChanged = true;
+}
+
 void CpuParticleEmitter::setParticleColor(ParticleID id, color4 color) {
     assert(mComponents.isBitSet(ParticleComponentType::Color));
     mParticleData.mColors[id] = color;

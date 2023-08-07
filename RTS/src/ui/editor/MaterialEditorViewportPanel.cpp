@@ -26,7 +26,7 @@ MaterialEditorViewportPanel::~MaterialEditorViewportPanel()
 {
 }
 
-bool MaterialEditorViewportPanel::updateAndRender()
+bool MaterialEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
     bool isOpen = true;
     ImGui::Begin("Material Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
