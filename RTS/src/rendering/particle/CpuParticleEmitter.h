@@ -89,7 +89,7 @@ public:
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
     void addEmitterUpdateModule(const T& module) {
         assert(module.getStages().isBitSet(ParticleEmitterModuleStage::EmitterUpdate));
-        assert(mNumEmitterUpdateMethods == mEmitterModuleMethods.size() && "All emitter update methods must be added second");
+        assert(mNumEmitterUpdateMethods == mEmitterModuleMethods.size() && "All emitter update methods must be added first");
         module.addModuleDataToArray(mParticleModuleData);
         mEmitterModuleMethods.emplace_back(module.getMethod());
         ++mNumEmitterUpdateMethods;
@@ -108,6 +108,7 @@ public:
     void addParticleUpdateModule(const T& module) {
         assert(module.getStages().isBitSet(ParticleEmitterModuleStage::ParticleUpdate));
         module.addModuleDataToArray(mParticleModuleData);
+        // Add last
         mEmitterModuleMethods.emplace_back(module.getMethod());
     }
 

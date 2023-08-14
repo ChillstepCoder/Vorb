@@ -77,6 +77,7 @@ bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
 }
 
 CPUPEM_RingBurst::CPUPEM_RingBurst() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
 }
 
@@ -120,10 +121,12 @@ bool CPUPEM_RingBurst::updateAndRenderEditorControls() {
 }
 
 CPUPEM_ConeBurst::CPUPEM_ConeBurst() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
 }
 
 void CPUPEM_ConeBurst::refresh() {
+    // https://gamedev.stackexchange.com/questions/26789/random-vector-within-a-cone
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         MODULE_DATA->mSpeedRange.evaluate(emitter, particleID);
         MODULE_DATA->mAngleRange.evaluate(emitter, particleID);
@@ -134,24 +137,33 @@ void CPUPEM_ConeBurst::refresh() {
         const f32v2 randomAngleRange = std::get<f32v2>(MODULE_DATA->mAngleRange.mVarData);
 
         const f32 speed = Random::getCachedRandomf() * (randomSpeedRange.y - randomSpeedRange.x) + randomSpeedRange.x;
-        const f32 angle = Random::getCachedRandomf() * (randomAngleRange.y - randomAngleRange.x) + randomAngleRange.x;
+        const f32 maxAngle = Random::getCachedRandomf() * (randomAngleRange.y - randomAngleRange.x) + randomAngleRange.x;
 
-        // Create an arbitrary axis not parallel to the direction.
-        const f32v3 axis = (std::abs(direction.x) < 0.5f) ? f32v3(1, 0, 0) : f32v3(0, 1, 0);
+        // Improved distribution  (apparently? looks bad still)
+        float theta = std::acos(1.0f - Random::getCachedRandomf() * (1.0f - std::cos(maxAngle)));
+        float phi = Random::getCachedRandomf() * 2.0f * glm::pi<float>();
+        
+        f32 sinTheta = sin(theta);
+        // Convert (theta, phi) to a direction vector in spherical coordinates
+        f32v3 sample(cos(phi) * sinTheta, sin(phi) * sinTheta, cos(theta));
 
-        // Calculate two tangent vectors to the ringNormal.
-        const f32v3 tangent1 = glm::cross(direction, axis);
-        const f32v3 tangent2 = glm::cross(direction, tangent1);
+        f32v3 up(0.0f, 0.0f, 1.0f);
 
-        // Create a random direction in the equatorial plane.
-        f32v3 equatorialDirection = std::cos(angle) * tangent1 + std::sin(angle) * tangent2;
+        // Check if direction is nearly parallel to the "up" vector
+        f32 d = glm::dot(direction, up);
+        if (abs(d) > 0.9999f) {
+            up = f32v3(-1.0f, 0.0f, 0.0f);
+        }
 
-        // Calculate final direction by interpolating between equatorialDirection and ringNormal.
-        float lerpFactor = Random::getCachedRandomf();
-        direction = glm::normalize((1.0f - lerpFactor) * equatorialDirection + lerpFactor * direction);
+        f32v3 right = glm::normalize(glm::cross(direction, up));
+        up = glm::cross(right, direction);
+        glm::mat3 rotation(right, up, direction);
+        direction = rotation * sample;
 
         emitter.addParticleVelocity(particleID, direction * speed);
     };
+
+
 }
 
 bool CPUPEM_ConeBurst::updateAndRenderEditorControls() {

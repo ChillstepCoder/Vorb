@@ -1958,6 +1958,9 @@
     <ClInclude Include="src\definitions\ParticleSystemDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ai\gpt\GptApi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

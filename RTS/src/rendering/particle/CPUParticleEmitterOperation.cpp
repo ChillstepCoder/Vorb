@@ -79,7 +79,7 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
         const auto& operations = Services::ResourceManager::ref().getParticleSystemRepository().getEmitterOperations();
         for (auto&& operation : operations) {
             bool matches = false;
-            switch (operation->getVariantInput().first) {
+            switch (operation->getOutputType()) {
                 case CPUparticleEmitterVariableVariantType::color4:
                     matches = std::holds_alternative<color4>(mVarData);
                     break;

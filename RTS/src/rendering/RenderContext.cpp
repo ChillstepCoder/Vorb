@@ -389,12 +389,10 @@ WorldRenderDataManager* RenderContext::tryGetRenderDataManagerForWorld(IWorld& w
 void RenderContext::updateCamera(f32 frameAlpha) {
     // Update camera
     f32v3 cameraPos = mCurrentRenderState->getCameraOwningEntityPos();
-    if (!mCurrentRenderState->isCameraOwned()) {
+    if (!mCurrentRenderState->isCameraOwned() || UIContext::getInstance().isEditorCameraActive()) {
         cameraPos = UIContext::getInstance().getEditorCameraPosition();
         mCameraController->setEditorMode(true);
         mCameraController->setCameraDirection(UIContext::getInstance().getEditorCameraDirection());
-        mCameraController->setCameraRight(UIContext::getInstance().getEditorCameraRight());
-        mCameraController->setCameraUp(UIContext::getInstance().getEditorCameraUp());
     }
     else {
         mCameraController->setEditorMode(false);

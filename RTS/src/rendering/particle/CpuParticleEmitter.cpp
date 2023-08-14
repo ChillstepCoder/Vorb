@@ -81,6 +81,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     // TODO: Multithreaded with triple buffer state?
 
     if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
+        mDataChanged = true;
         for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
             // TODO: Profile probability?
             if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
@@ -204,7 +205,7 @@ void CpuParticleEmitter::emitParticles(ui32 count) {
         return;
     }
     assert(mActiveParticles <= mMaxParticles);
-
+    count = glm::min(count, mMaxParticles - mActiveParticles);
     mDataChanged = true;
     for (ui32 i = 0; i < count; ++i) {
         if (mFreeParticleIDs.size()) {
@@ -430,7 +431,7 @@ void CpuParticleEmitter::render() {
 void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
 
     // Init particle
-    for (int i = 0; i < mNumParticleInitMethods; ++i) {
+    for (int i = mNumEmitterUpdateMethods; i < mNumEmitterUpdateMethods + mNumParticleInitMethods; ++i) {
         mEmitterModuleMethods[i](*this, id, mParticleModuleData[i], mLastElapsedSec);
     }
 

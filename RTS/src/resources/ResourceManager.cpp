@@ -137,7 +137,7 @@ void ResourceManager::loadFiles() {
         mMaterialRepository->uploadMaterialData();
         
         // Set default materials
-        mParticleSystemRepository->setDefaultMaterialID(mMaterialRepository->getMaterialId("soft_particle"));
+        mParticleSystemRepository->setDefaultMaterialID(mMaterialRepository->getMaterialId("hard_particle"));
     }
 
     // Load item definitions

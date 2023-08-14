@@ -29,6 +29,7 @@ public:
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
     void closeTileInspectionPanel();
 
+    bool isEditorCameraActive();
     f32v3 getEditorCameraPosition();
     f32v3 getEditorCameraDirection();
     f32v3 getEditorCameraRight();

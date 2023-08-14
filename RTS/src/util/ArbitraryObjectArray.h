@@ -19,7 +19,7 @@ public:
         }
     }
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(ArbitraryObjectArray);
+    VORB_NON_COPYABLE(ArbitraryObjectArray);
 
     void* operator[](size_t i) {
         return mDataPtrs[i];
@@ -28,33 +28,40 @@ public:
     template<typename T> requires std::copy_constructible<T>
     T* addObject(const T& object) {
         size_t alignment = alignof(T);
-        std::size_t space = BLOCK_SIZE - mCurrentSizeBytes;
-        void* p = (void*)(reinterpret_cast<char*>(mData.back().get() + mCurrentSizeBytes));
-        void* alignedPtr = std::align(alignment, sizeof(T), p, space);
 
-        // Check if alignment pushed us past the current buffer, or if there wasn't enough space to begin with
-        if (alignedPtr == nullptr || space < sizeof(T)) {
+        // Function to check and potentially get an aligned pointer
+        auto getAlignedPtr = [&]() -> void* {
+            std::size_t space = BLOCK_SIZE - mCurrentSizeBytes;
+            void* p = reinterpret_cast<char*>(mData.back().get()) + mCurrentSizeBytes;
+            return std::align(alignment, sizeof(T), p, space);
+        };
+
+        void* alignedPtr = getAlignedPtr();
+
+        // Check if alignment pushed us past the current buffer or if there wasn't enough space to begin with
+        if (!alignedPtr || (BLOCK_SIZE - mCurrentSizeBytes < sizeof(T))) {
             addBlock(); // add new buffer
 
-            // Try again with the new buffer
-            space = BLOCK_SIZE - mCurrentSizeBytes;
-            p = (void*)(reinterpret_cast<char*>(mData.back().get() + mCurrentSizeBytes));
-            alignedPtr = std::align(alignment, sizeof(T), p, space);
-        }
+            mCurrentSizeBytes = 0; // Reset, since we're now working with a fresh buffer
 
-        assert(alignedPtr);
+            alignedPtr = getAlignedPtr();
+
+            // At this point, after adding a new block, if we still can't align, something's really wrong.
+            assert(alignedPtr);
+        }
 
         T* newObject = new (alignedPtr) T(object); // placement new
 
         mCurrentSizeBytes = reinterpret_cast<char*>(alignedPtr) - reinterpret_cast<char*>(mData.back().get()) + sizeof(T);
 
         // Save a lambda that will destroy the object
-        mDestructors.push_back([=]() { newObject->~T(); });
+        mDestructors.push_back([newObject]() { newObject->~T(); });
 
         mDataPtrs.emplace_back(newObject);
 
         return newObject;
     }
+
 
 protected:
     void addBlock() {

@@ -73,6 +73,10 @@ void UIContext::closeTileInspectionPanel() {
     mTileInspectionPanel.reset();
 }
 
+bool UIContext::isEditorCameraActive() {
+    return sDebugOptions.mShowEditor && mEditorRoot->hasActiveCenterPanel();
+}
+
 f32v3 UIContext::getEditorCameraPosition() {
     IEditorViewportPanel* centerPanel = mEditorRoot->getActiveCenterPanel();
     if (centerPanel) {

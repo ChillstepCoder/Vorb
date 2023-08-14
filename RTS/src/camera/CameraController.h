@@ -41,8 +41,6 @@ public:
     void setCameraMode(CameraMode cameraMode);
 
     void setCameraDirection(const f32v3& dir);
-    void setCameraRight(const f32v3& right);
-    void setCameraUp(const f32v3& up);
     void setEditorMode(bool editorMode) { mEditorMode = editorMode; }
 private:
     // Mode updates

@@ -73,6 +73,11 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
 #define POP_COLOR() ImGui::PopStyleColor(3);
 #define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_COLOR();
 
+    // Add FPS for convenience
+    char buffer[64];
+    sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
+    ImGui::Text(buffer);
+
     ImGui::Spacing();
     // somewhere in your main window
     if (ImGui::Button("Add New System"))
@@ -96,13 +101,15 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             if (!mSystemDef) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
-            mSystemDef->mSystemName = mTextInputBuffer;
-            ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
-            defaultEmitter.mEmitterName = "DefaultEmitter";
-            defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
-            defaultEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
-            mSelectedEmitter = &defaultEmitter;
-            mTextInputBuffer[0] = '\0';
+            else {
+                mSystemDef->mSystemName = mTextInputBuffer;
+                ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
+                defaultEmitter.mEmitterName = "DefaultEmitter";
+                defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
+                defaultEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
+                mSelectedEmitter = &defaultEmitter;
+                mTextInputBuffer[0] = '\0';
+            }
 
         } else {
             ImGui::SameLine();
@@ -214,10 +221,13 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
                 ImGui::OpenPopup(popupName);
             }
 
+            int mid = 0;
             for (auto&& module : modules) {
+                ImGui::PushID(++mid);
                 if (ImGui::Button(module->getName(), ImVec2(ImGui::GetContentRegionAvail().x, size))) {
                     mSelectedModule = module.get();
                 }
+                ImGui::PopID();
             }
 
             ImGui::PopStyleVar(4);
