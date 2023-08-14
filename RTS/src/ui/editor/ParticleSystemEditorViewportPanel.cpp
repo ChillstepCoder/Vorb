@@ -201,7 +201,8 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
         constexpr int size = 17;
 
-        auto displayCategory = [&](const char* popupName, const char* categoryName, ParticleEmitterModuleStage stage, CPUParticleEmitterModuleVector& modules, f32 r, f32 g, f32 b) {
+        auto displayCategory = [&](const char* popupName, const char* categoryName, ParticleEmitterModuleStage stage, CPUParticleEmitterModuleVector& modules, f32 r, f32 g, f32 b) -> bool {
+            bool selected = false;
             ImGui::PushID(categoryName);
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
@@ -225,6 +226,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
             {
                 if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(stage)) {
                     mSelectedModule = modules.emplace_back(displayModule->clone()).get();
+                    selected = true;
                     ImGui::CloseCurrentPopup();
                 }
                 if (ImGui::Button("Cancel")) {
@@ -233,13 +235,20 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
                 ImGui::EndPopup();
             }
             ImGui::PopID();
+            return selected;
         };
         
-        displayCategory("Emitter Update Modules", "Emitter Update", ParticleEmitterModuleStage::EmitterUpdate, mSelectedEmitter->mEmitterUpdateModules, 0.0f, 0.8f, 0.0f);
+        if (displayCategory("Emitter Update Modules", "Emitter Update", ParticleEmitterModuleStage::EmitterUpdate, mSelectedEmitter->mEmitterUpdateModules, 0.0f, 0.8f, 0.0f)) {
+            createPreviewSystem();
+        }
         ImGui::Spacing();
-        displayCategory("Particle Init Modules", "Particle Init", ParticleEmitterModuleStage::ParticleInit, mSelectedEmitter->mParticleInitModules, 0.7f, 0.7f, 0.0f);
+        if (displayCategory("Particle Init Modules", "Particle Init", ParticleEmitterModuleStage::ParticleInit, mSelectedEmitter->mParticleInitModules, 0.7f, 0.7f, 0.0f)) {
+            createPreviewSystem();
+        }
         ImGui::Spacing();
-        displayCategory("Particle Update Modules", "Particle Update", ParticleEmitterModuleStage::ParticleUpdate, mSelectedEmitter->mParticleUpdateModules, 0.8f, 0.0f, 0.0f);
+        if (displayCategory("Particle Update Modules", "Particle Update", ParticleEmitterModuleStage::ParticleUpdate, mSelectedEmitter->mParticleUpdateModules, 0.8f, 0.0f, 0.0f)) {
+            createPreviewSystem();
+        }
 
     }
     else {
@@ -253,7 +262,9 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
     ImGui::BeginChild("Particle Module Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     if (mSelectedModule) {
         ImGui::Text("Module: %s", mSelectedModule->getName());
-        mSelectedModule->updateAndRenderEditorControls();
+        if (mSelectedModule->updateAndRenderEditorControls()) {
+            createPreviewSystem();
+        }
     }
     else {
         ImGui::Text("Select a Module");
@@ -277,6 +288,6 @@ void ParticleSystemEditorViewportPanel::setParticleSystemDef(ParticleSystemDef* 
 
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {
     if (!mSystemDef) return;
-
+    mCurrentTime = 0.0f;
     mPreviewSystem = std::make_unique<CPUParticleSystem>(*mSystemDef);
 }

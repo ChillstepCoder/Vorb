@@ -79,13 +79,28 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
 
     // Run every particle through the modules
     // TODO: Multithreaded with triple buffer state?
-    for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
-        // TODO: Profile probability?
-        if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
-            continue;
+
+    if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
+        for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+            // TODO: Profile probability?
+            if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+                continue;
+            }
+            for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
+                mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec);
+            }
+            mParticleData.mPositions[i] += elapsedSec * mParticleData.mVelocities[i];
         }
-        for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
-            mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec);
+    }
+    else {
+        for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+            // TODO: Profile probability?
+            if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+                continue;
+            }
+            for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
+                mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec);
+            }
         }
     }
 

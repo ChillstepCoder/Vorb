@@ -178,6 +178,7 @@ bool CPUPEM_SetPosition::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SetVelocity::CPUPEM_SetVelocity() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
 }
 
@@ -193,6 +194,7 @@ bool CPUPEM_SetVelocity::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SetColor::CPUPEM_SetColor() {
+    mRequiredComponents |= ParticleComponentType::Color;
     refresh();
 }
 
@@ -208,6 +210,7 @@ bool CPUPEM_SetColor::updateAndRenderEditorControls() {
 }
 
 CPUPEM_SetScale::CPUPEM_SetScale() {
+    mRequiredComponents |= ParticleComponentType::Scale;
     refresh();
 }
 
@@ -271,6 +274,7 @@ bool CPUPEM_SetPositionFromShape::updateAndRenderEditorControls() {
 }
 
 CPUPEM_ApplyForce::CPUPEM_ApplyForce() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
 }
 
@@ -288,6 +292,7 @@ bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
 }
 
 CPUPEM_DragForce::CPUPEM_DragForce() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
 }
 

@@ -74,16 +74,16 @@ void main() {
     fUV = (offset.xy + 0.5);
     fUV.y = 1.0 - fUV.y; // Flip
     
-    vec2 position = ParticlePositionsAndRotations[particleId].xyz + unRootOffset;
+    vec3 position = ParticlePositionsAndRotations[particleId].xyz + unRootOffset;
     
     // Scale
     if (unIsUsingScale == 1) {
-        float scale = ParticleScales[particleId];
-        position += offset.x * unGlobalScale * CameraRight * scale;
-        position += offset.y * unGlobalScale * CameraUp * scale;
+        vec2 scale = ParticleScales[particleId];
+        position += offset.x * unGlobalScale.x * CameraRight * scale.x;
+        position += offset.y * unGlobalScale.y * CameraUp * scale.y;
     } else {
-        position += offset.x * unGlobalScale * CameraRight;
-        position += offset.y * unGlobalScale * CameraUp;
+        position += offset.x * unGlobalScale.x * CameraRight;
+        position += offset.y * unGlobalScale.y * CameraUp;
     }
     
     // Color

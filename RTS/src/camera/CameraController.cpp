@@ -116,6 +116,16 @@ void CameraController::setCameraDirection(const f32v3& dir) {
     mCameraDirectionTweener.mTarget = dir;
 }
 
+void CameraController::setCameraRight(const f32v3& right)
+{
+    xxx ? ;
+}
+
+void CameraController::setCameraUp(const f32v3& up)
+{
+    xxx ? ;
+}
+
 void CameraController::updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos) {
 
     // TODO: Delta time dependent?

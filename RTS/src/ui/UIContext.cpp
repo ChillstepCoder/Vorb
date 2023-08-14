@@ -89,6 +89,26 @@ f32v3 UIContext::getEditorCameraDirection() {
     return f32v3(1.0f, 0.0f, 0.0f);
 }
 
+f32v3 UIContext::getEditorCameraRight()
+{
+    IEditorViewportPanel* centerPanel = mEditorRoot->getActiveCenterPanel();
+    if (centerPanel) {
+        return centerPanel->getCameraRight();
+    }
+    return f32v3(0.0f, 1.0f, 0.0f);
+
+}
+
+f32v3 UIContext::getEditorCameraUp()
+{
+    IEditorViewportPanel* centerPanel = mEditorRoot->getActiveCenterPanel();
+    if (centerPanel) {
+        return centerPanel->getCameraUp();
+    }
+    return f32v3(0.0f, 0.0f, 1.0f);
+
+}
+
 void UIContext::toggleMainMenu() {
     if (mPauseMenuPanel) {
         mPauseMenuPanel.reset();

@@ -18,6 +18,11 @@ public:
         return *this;
     }
 
+    BitFlags<T>& operator|=(const T other) {
+        mBits |= e_cast(other);
+        return *this;
+    }
+
     // ============== Mutators ==============
 
     void setBit(T bit) { mBits |= e_cast(bit); }

@@ -42,6 +42,8 @@ public:
 
     f32v3 getCameraPosition() const;
     f32v3 getCameraDirection() const;
+    f32v3 getCameraRight() const;
+    f32v3 getCameraUp() const;
 
 protected:
     virtual void renderCenterPanel(i32AABB2* outImageRect);

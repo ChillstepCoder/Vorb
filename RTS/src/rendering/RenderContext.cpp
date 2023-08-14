@@ -393,6 +393,8 @@ void RenderContext::updateCamera(f32 frameAlpha) {
         cameraPos = UIContext::getInstance().getEditorCameraPosition();
         mCameraController->setEditorMode(true);
         mCameraController->setCameraDirection(UIContext::getInstance().getEditorCameraDirection());
+        mCameraController->setCameraRight(UIContext::getInstance().getEditorCameraRight());
+        mCameraController->setCameraUp(UIContext::getInstance().getEditorCameraUp());
     }
     else {
         mCameraController->setEditorMode(false);

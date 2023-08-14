@@ -94,7 +94,7 @@ void IEditorViewportPanel::clearFramebuffers() {
     assert(sGBuffers[0]);
     // Clear framebuffers
     for (int i = 0; i < 3; ++i) {
-        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 1.0f));
+        sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, mClearColor);
         sGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
         sGBuffers[i]->clearDepth();
     }
@@ -365,6 +365,14 @@ f32v3 IEditorViewportPanel::getCameraPosition() const {
 
 f32v3 IEditorViewportPanel::getCameraDirection() const {
     return camera->getDirection();
+}
+
+f32v3 IEditorViewportPanel::getCameraRight() const {
+    return camera->getRight();
+}
+
+f32v3 IEditorViewportPanel::getCameraUp() const {
+    return camera->getUp();
 }
 
 void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {

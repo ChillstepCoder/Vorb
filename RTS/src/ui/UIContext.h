@@ -31,6 +31,8 @@ public:
 
     f32v3 getEditorCameraPosition();
     f32v3 getEditorCameraDirection();
+    f32v3 getEditorCameraRight();
+    f32v3 getEditorCameraUp();
     void toggleMainMenu();
 
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
