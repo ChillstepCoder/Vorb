@@ -42,6 +42,8 @@ public:
     CPUParticleEmitterOperation() = default;
     CPUParticleEmitterOperation(CPUParticleEmitterVariable p0, CPUParticleEmitterVariable p1) : mParam0(p0.mVarData), mParam1(p1.mVarData) {}
 
+    CPUParticleEmitterOperation(const CPUParticleEmitterOperation* other);
+
     CPUParticleEmitterVariable mParam0;
     CPUParticleEmitterVariable mParam1;
 
@@ -74,12 +76,13 @@ class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable(TYPE2(0))) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable(other.mParam1)) {} \
+    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::TYPE2); } \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     SIMPLE_EXECUTE_OP(TYPE1, TYPE2, OP); \
 };
 
@@ -88,12 +91,13 @@ class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
+    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
        mParam0.evaluate(emitter, id); \
        output->mVarData = std::get<TYPE1>(mParam0.mVarData); \
@@ -105,12 +109,13 @@ class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
+    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::CONVERT; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
        mParam0.evaluate(emitter, id); \
        output->mVarData = CONVERT(std::get<TYPE1>(mParam0.mVarData)); \
@@ -122,12 +127,13 @@ class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
+    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::None, CPUparticleEmitterVariableVariantType::None); } \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override;
     //  Implement execute() in cpp
 

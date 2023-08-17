@@ -133,6 +133,11 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     return changed;
 }
 
+CPUParticleEmitterOperation::CPUParticleEmitterOperation(const CPUParticleEmitterOperation* other) {
+    // TODO: DEEP COPY
+    assert(false);
+}
+
 bool CPUParticleEmitterOperation::updateAndRenderControls() {
     ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
     ImGui::BeginGroup();
