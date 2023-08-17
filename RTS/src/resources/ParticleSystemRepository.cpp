@@ -22,7 +22,7 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::DragForce));
     static_assert(e_count(BuiltinCPUParticleEditorModules) == 11);
 
-    mEmitterOperations.reserve(20);
+    mEmitterOperations.reserve(22);
 
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddVec3>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyVec3>());
@@ -43,6 +43,12 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec2>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToUInt>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertUIntToFloat>());
+
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryPosition>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryVelocity>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryScale>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryRotation>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryNormalizedLifetime>());
 
     mEmitterOperations.shrink_to_fit();
 

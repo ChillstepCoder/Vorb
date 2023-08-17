@@ -270,6 +270,44 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
 bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize) {
     ImGui::BeginChild("Particle Module Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+
+    if (!mSystemDef) {
+        ImGui::Text("Select a Particle System");
+        ImGui::EndChild();
+        return true;
+    }
+
+    ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
+    ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
+    f32 time = mCurrentTime;
+    ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
+    ImGui::Spacing(); ImGui::Separator();
+
+    if (mSelectedEmitter) {
+        ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.c_str());
+        bool changed = false;
+        changed |= ImGui::SliderFloat2("Default Scale", &mSelectedEmitter->mDefaultScale.x, 0.01f, 5.0f, "%.2f");
+
+        color4& color = mSelectedEmitter->mDefaultColor;
+        float colorf[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
+        changed |= ImGui::ColorPicker4("Default Color", colorf, ImGuiColorEditFlags_Uint8);
+        color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
+
+        int maxParticles = mSelectedEmitter->mMaxParticles;
+        changed |= ImGui::SliderInt("Max Particles", &maxParticles, 1, 20000);
+        mSelectedEmitter->mMaxParticles = maxParticles;
+
+        changed |= ImGui::SliderFloat("Lifetime Sec", &mSelectedEmitter->mLifetimeSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+        changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
+
+        if (changed) {
+            createPreviewSystem();
+        }
+
+        //MaterialID mDefaultMaterialID = 0;
+
+    }
+    ImGui::Spacing(); ImGui::Separator();
     if (mSelectedModule) {
         ImGui::Text("Module: %s", mSelectedModule->getName());
         if (mSelectedModule->updateAndRenderEditorControls()) {

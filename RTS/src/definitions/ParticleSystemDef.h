@@ -16,7 +16,7 @@ struct ParticleEmitterDef {
     const MaterialShader* mShader = nullptr;
 
     nString mEmitterName;
-    f32v2 mDefaultScaleRange = f32v2(1.0f);
+    f32v2 mDefaultScale = f32v2(0.1f);
     color4 mDefaultColor = color::White;
     ui32 mMaxParticles = 2000;
     MaterialID mDefaultMaterialID = 0;

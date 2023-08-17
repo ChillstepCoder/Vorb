@@ -151,3 +151,24 @@ void CPUParticleEmitterOperation::updateAndRenderControls() {
     const color4 color = getDisplayColor();
     ImGui::GetWindowDrawList()->AddRect(frameMin, frameMax, IM_COL32(color.r, color.g, color.b, 128));
 }
+
+
+void CPUPEO_QueryPosition::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getParticlePosition(id);
+}
+
+void CPUPEO_QueryVelocity::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getParticleVelocity(id);
+}
+
+void CPUPEO_QueryScale::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getParticleScale(id);
+}
+
+void CPUPEO_QueryRotation::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getParticleRotation(id);
+}
+
+void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getParticleNormalizedLifetime(id);
+}

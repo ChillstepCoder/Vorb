@@ -3,6 +3,8 @@
 class CPUParticleEmitterOperation;
 class CpuParticleEmitter;
 
+#include "rendering/particle/ParticleComponentType.h"
+
 enum class CPUparticleEmitterVariableVariantType : ui8{
     None,
     color4,
@@ -48,6 +50,7 @@ public:
     virtual CPUParticleEmitterVariableVariantTypePair getVariantInput() const = 0;
     virtual CPUparticleEmitterVariableVariantType getOutputType() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterOperation> clone() const = 0;
+    virtual BitFlags<ParticleComponentType> getRequiredComponents() const { return BitFlags<ParticleComponentType>(); }
 
     void updateAndRenderControls();
 
@@ -114,7 +117,7 @@ public: \
     } \
 };
 
-#define DEFINE_CPUPEO_CUSTOM_BEGIN(NAME, DISP_NAME, DISP_COLOR, TYPE1, CONVERT) \
+#define DEFINE_CPUPEO_QUERY_DECL(NAME, DISP_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
@@ -122,11 +125,11 @@ public: \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
-        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
+        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::None, CPUparticleEmitterVariableVariantType::None); } \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } 
-    //  Implement execute()
-#define DEFINE_CPUPEO_CUSTOM_END };
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override;
+    //  Implement execute() in cpp
 
 #define COLOR_STANDARD color4(0.3f, 0.3f, 0.7f, 1.0f)
 #define COLOR_CONVERT color4(0.6f, 0.6f, 0.25f, 1.0f)
@@ -151,6 +154,21 @@ DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToVec3, "Convert Float To Vec3", COLOR_
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToVec2, "Convert Float To Vec2", COLOR_CONVERT, f32, f32v2)
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToUInt, "Convert Float To UInt", COLOR_CONVERT, ui32, f32)
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertUIntToFloat, "Convert UInt To Float", COLOR_CONVERT, f32, ui32)
+
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryPosition, "Particle Position", COLOR_QUERY, f32v3)
+};
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryVelocity, "Particle Velocity", COLOR_QUERY, f32v3)
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
+};
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryScale, "Particle Scale", COLOR_QUERY, f32v2)
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Scale; }
+};
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", COLOR_QUERY, f32)
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Rotation; }
+};
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", COLOR_QUERY, f32)
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return {}; }
+};
 
 #undef COLOR_STANDARD
 #undef COLOR_CONVERT

@@ -28,6 +28,7 @@ struct CPUParticlesData {
     std::unique_ptr<f32v2[]> mScales;
     std::unique_ptr<color4[]> mColors;
     std::unique_ptr<f32v4[]> mHDRColors;
+    std::unique_ptr<f32[]> mLifetimes;
     std::unique_ptr<f32[]> mLifespans;
     std::unique_ptr<ui32[]> mMaterials;
 };
@@ -64,6 +65,8 @@ public:
     f32v3 getParticleVelocity(ParticleID id) const { return mParticleData.mVelocities[id]; }
     color4 getParticleColor(ParticleID id) const { return mParticleData.mColors[id]; }
     f32v4 getParticleHDRColor(ParticleID id) const { return mParticleData.mHDRColors[id]; }
+    f32 getParticleRotation(ParticleID id) const { return mParticleData.mRotations[id]; }
+    f32 getParticleNormalizedLifetime(ParticleID id) const;
     MaterialID getParticleMaterial(ParticleID id) const { return mParticleData.mMaterials[id]; }
     CPUParticlesData& getParticleData() { return mParticleData; }
 
@@ -137,6 +140,7 @@ protected:
 
     // Global data
     f32v2 mGlobalParticleScale = f32v2(1.0f);
+    f32 mGlobalParticleLifespan = 5.0f;
     color4 mGlobalParticleColor = color::White;
     MaterialID mGlobalMaterialID = 0;
     ui32 mFirstActiveParticle = 0;

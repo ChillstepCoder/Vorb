@@ -28,7 +28,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
 CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def) : mShader(*def.mShader) {
 
     mMaxParticles = def.mMaxParticles;
-    mGlobalParticleScale = def.mDefaultScaleRange;
+    mGlobalParticleScale = def.mDefaultScale;
     mGlobalParticleColor = def.mDefaultColor;
     mGlobalMaterialID = def.mDefaultMaterialID;
     mLifetimeSec = def.mLifetimeSec;
@@ -80,27 +80,66 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     // Run every particle through the modules
     // TODO: Multithreaded with triple buffer state?
 
-    if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
-        mDataChanged = true;
-        for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
-            // TODO: Profile probability?
-            if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
-                continue;
+#define UPDATE_LOGIC \
+    if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] { \
+        continue; \
+    } \
+    for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) { \
+        mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec); \
+    }
+
+    // Split out to avoid branching in critical path
+    if (mComponents.isBitSet(ParticleComponentType::Lifespan)) {
+        if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
+            mDataChanged = true;
+
+            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                mParticleData.mLifetimes[i] += elapsedSec;
+                if (mParticleData.mLifetimes[i] >= mParticleData.mLifespans[i]) {
+                    removeParticle(i);
+                }
+                else {
+                    UPDATE_LOGIC;
+                    mParticleData.mPositions[i] += elapsedSec * mParticleData.mVelocities[i];
+                }
             }
-            for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
-                mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec);
+        }
+        else {
+            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                mParticleData.mLifetimes[i] += elapsedSec;
+                if (mParticleData.mLifetimes[i] >= mParticleData.mLifespans[i]) {
+                    removeParticle(i);
+                }
+                else {
+                    UPDATE_LOGIC;
+                }
             }
-            mParticleData.mPositions[i] += elapsedSec * mParticleData.mVelocities[i];
         }
     }
     else {
-        for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
-            // TODO: Profile probability?
-            if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
-                continue;
+        if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
+            mDataChanged = true;
+
+            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                mParticleData.mLifetimes[i] += elapsedSec;
+                if (mParticleData.mLifetimes[i] >= mGlobalParticleLifespan) {
+                    removeParticle(i);
+                }
+                else {
+                    UPDATE_LOGIC;
+                    mParticleData.mPositions[i] += elapsedSec * mParticleData.mVelocities[i];
+                }
             }
-            for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) {
-                mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec);
+        }
+        else {
+            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                mParticleData.mLifetimes[i] += elapsedSec;
+                if (mParticleData.mLifetimes[i] >= mGlobalParticleLifespan) {
+                    removeParticle(i);
+                }
+                else {
+                    UPDATE_LOGIC;
+                }
             }
         }
     }
@@ -193,6 +232,13 @@ void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material)
     mDataChanged = true;
 }
 
+f32 CpuParticleEmitter::getParticleNormalizedLifetime(ParticleID id) const {
+    if (mParticleData.mLifespans) {
+        return glm::min(mParticleData.mLifetimes[id] / mParticleData.mLifespans[id], 1.0f);
+    }
+    return glm::min(mParticleData.mLifetimes[id] / mGlobalParticleLifespan, 1.0f);
+}
+
 void CpuParticleEmitter::emitParticles(ui32v2 countRange) {
     
     ui32 emitCount = ((ui32)Random::getCachedRandom() % (countRange.y - countRange.x)) + countRange.x;
@@ -225,6 +271,7 @@ void CpuParticleEmitter::allocateParticleData()
     assert(mMaxParticles <= MAX_PARTICLES);
 
     mParticleData.mPositions = std::unique_ptr<f32v3[]>(new f32v3[mMaxParticles]);
+    mParticleData.mLifetimes = std::unique_ptr<f32[]>(new f32[mMaxParticles]);
     // These must be f32v4 to match std430 layout, so we always have rotation allocated on GPU even
     // if we arent using it (rotation is w component)
     mGpuData.mPositionsAndRotationsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4));
