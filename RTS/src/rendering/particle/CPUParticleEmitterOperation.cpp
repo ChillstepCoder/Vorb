@@ -39,12 +39,13 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
         ImGui::Text(label);
         ImGui::SameLine();
         if (ImGui::Button("X")) {
+            changed = true;
             mOperation.reset();
         }
         else {
             constexpr f32 INDENT_WIDTH = 25.0f;
             ImGui::Indent(INDENT_WIDTH);
-            mOperation->updateAndRenderControls();
+            changed |= mOperation->updateAndRenderControls();
             ImGui::Unindent(INDENT_WIDTH);
         }
     }
@@ -118,6 +119,7 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     if (ImGui::BeginPopupModal("OperationPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         if (const CPUParticleEmitterOperation* operation = displayOperationsSelectorCombo()) {
+            changed = true;
             mOperation = operation->clone();
             ImGui::CloseCurrentPopup();
         }
@@ -131,25 +133,26 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     return changed;
 }
 
-void CPUParticleEmitterOperation::updateAndRenderControls() {
+bool CPUParticleEmitterOperation::updateAndRenderControls() {
     ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
     ImGui::BeginGroup();
     ImGui::Text(getDisplayName());
 
     CPUParticleEmitterVariableVariantTypePair inputTypes = getVariantInput();
-
+    bool changed = false;
     if (inputTypes.second != CPUparticleEmitterVariableVariantType::None) {
-        mParam0.updateAndRenderTweaker("A");
-        mParam1.updateAndRenderTweaker("B");
+        changed |= mParam0.updateAndRenderTweaker("A");
+        changed |= mParam1.updateAndRenderTweaker("B");
     }
-    else {
-        mParam0.updateAndRenderTweaker("Value");
+    else if (inputTypes.first != CPUparticleEmitterVariableVariantType::None) {
+        changed |= mParam0.updateAndRenderTweaker("Value");
     }
     ImGui::EndGroup();
     ImVec2 frameMax = ImGui::GetItemRectMax(); // Bottom right of frame
     // Draw a border around the group
     const color4 color = getDisplayColor();
     ImGui::GetWindowDrawList()->AddRect(frameMin, frameMax, IM_COL32(color.r, color.g, color.b, 128));
+    return changed;
 }
 
 

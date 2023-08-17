@@ -270,42 +270,40 @@ void CpuParticleEmitter::allocateParticleData()
     ASSERT_RENDER_THREAD();
     assert(mMaxParticles <= MAX_PARTICLES);
 
-    mParticleData.mPositions = std::unique_ptr<f32v3[]>(new f32v3[mMaxParticles]);
-    mParticleData.mLifetimes = std::unique_ptr<f32[]>(new f32[mMaxParticles]);
+    mParticleData.mPositions = std::make_unique<f32v3[]>(mMaxParticles);
+    mParticleData.mLifetimes = std::make_unique<f32[]>(mMaxParticles);
     // These must be f32v4 to match std430 layout, so we always have rotation allocated on GPU even
     // if we arent using it (rotation is w component)
     mGpuData.mPositionsAndRotationsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4));
 
-
     if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
-        mParticleData.mVelocities = std::unique_ptr<f32v3[]>(new f32v3[mMaxParticles]);
-        std::memset(mParticleData.mVelocities.get(), 0, mMaxParticles * sizeof(f32v3)); // Default values
+        mParticleData.mVelocities = std::make_unique<f32v3[]>(mMaxParticles);
         // No GPU data for velocities
         // TODO: VelocityCPU vs VelocityGPU
     }
     if (mComponents.isBitSet(ParticleComponentType::Scale)) {
-        mParticleData.mScales = std::unique_ptr<f32v2[]>(new f32v2[mMaxParticles]);
+        mParticleData.mScales = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
         mGpuData.mScalesBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v2));
         std::fill_n(mParticleData.mScales.get(), mMaxParticles, f32v2(1.0f)); // Default values
     }
     if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
-        mParticleData.mHDRColors = std::unique_ptr<f32v4[]>(new f32v4[mMaxParticles]);
+        mParticleData.mHDRColors = std::make_unique<f32v4[]>(mMaxParticles);
         mGpuData.mColorsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4));
     }
     else if (mComponents.isBitSet(ParticleComponentType::Color)) {
-        mParticleData.mColors = std::unique_ptr<color4[]>(new color4[mMaxParticles]);
+        mParticleData.mColors = std::make_unique<color4[]>(mMaxParticles);
         mGpuData.mColorsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(color4));
     }
     if (mComponents.isBitSet(ParticleComponentType::Lifespan)) {
-        mParticleData.mLifespans = std::unique_ptr<f32[]>(new f32[mMaxParticles]);
+        mParticleData.mLifespans = std::make_unique<f32[]>(mMaxParticles);
         // No GPU data for lifespans
     }
     if (mComponents.isBitSet(ParticleComponentType::MaterialID)) {
-        mParticleData.mMaterials = std::unique_ptr<ui32[]>(new ui32[mMaxParticles]);
+        mParticleData.mMaterials = std::make_unique<ui32[]>(mMaxParticles);
         mGpuData.mMaterialsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32));
     }
     if (mComponents.isBitSet(ParticleComponentType::Rotation)) {
-        mParticleData.mRotations = std::unique_ptr<f32[]>(new f32[mMaxParticles]);
+        mParticleData.mRotations = std::make_unique<f32[]>(mMaxParticles);
         std::memset(mParticleData.mRotations.get(), 0, mMaxParticles * sizeof(f32)); // Default values
         // Rotations are packed into mPositionsAndRotationsBuffer which is always allocated
     }

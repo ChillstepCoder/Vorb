@@ -52,7 +52,7 @@ public:
     virtual std::unique_ptr<CPUParticleEmitterOperation> clone() const = 0;
     virtual BitFlags<ParticleComponentType> getRequiredComponents() const { return BitFlags<ParticleComponentType>(); }
 
-    void updateAndRenderControls();
+    bool updateAndRenderControls();
 
     virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) = 0;
 protected:
@@ -103,7 +103,7 @@ public: \
 #define DEFINE_CPUPEO_CONVERT(NAME, DISP_NAME, DISP_COLOR, TYPE1, CONVERT) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(CONVERT(0)), CPUParticleEmitterVariable()) {} \
+    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     constexpr const char* getDisplayName() const override { return DISP_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
