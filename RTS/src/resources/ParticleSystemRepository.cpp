@@ -1,7 +1,18 @@
 #include "stdafx.h"
 #include "ParticleSystemRepository.h"
 
+#include <Vorb/io/IOManager.h>
+
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
+
+
+struct ParticleSystemFileData {
+    Array<nString> emitterNames;
+};
+KEG_TYPE_DEF_SAME_NAME(ParticleSystemFileData, kt) {
+    kt.addValue("emitters", keg::Value::array(offsetof(ParticleSystemFileData, emitterNames), keg::BasicType::STRING));
+}
+
 
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
     mIoManager(ioManager),
@@ -22,7 +33,7 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::DragForce));
     static_assert(e_count(BuiltinCPUParticleEditorModules) == 11);
 
-    mEmitterOperations.reserve(22);
+    mEmitterOperations.reserve(25);
 
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddVec3>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyVec3>());
@@ -38,6 +49,10 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetFloat>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetUInt>());
 
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_NegateVec3>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_NegateVec2>());
+    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_NegateFloat>());
+
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec4>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec3>());
     mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec2>());
@@ -52,6 +67,14 @@ ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, Ma
 
     mEmitterOperations.shrink_to_fit();
 
+    // Init lookups for serialization
+    for (auto&& module : mEmitterModules) {
+        mModulesYmlLookup[module->getYmlName()] = module.get();
+    }
+    for (auto&& operation : mEmitterOperations) {
+        mOperationsYmlLookup[operation->getYmlName()] = operation.get();
+    }
+
     static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
 }
 
@@ -61,7 +84,31 @@ ParticleSystemRepository::~ParticleSystemRepository() {
 
 void ParticleSystemRepository::loadParticleEmitterFile(const vio::Path& filePath)
 {
-    assert(false);
+    nString data;
+    mIoManager.readFileToString(filePath.getCString(), data);
+
+    keg::ReadContext context;
+    context.env = keg::getGlobalEnvironment();
+    context.reader.init(data.c_str());
+    keg::Node node = context.reader.getFirst();
+    if (keg::getType(node) != keg::NodeType::MAP) {
+        LOG_CRITICAL("Failed to load {}", filePath.getCString());
+        context.reader.dispose();
+        return;
+    }
+
+    auto f = makeFunctor([&](Sender, const nString& type, keg::Node value) {
+        // Parse modules
+        auto&& it = mModulesYmlLookup.find(type);
+        if (it == mModulesYmlLookup.end()) {
+            LOG_CRITICAL("Invalid module token {} in {}", type, filePath.getCString());
+            return;
+        }
+        CPUParticleEmitterModule* module = it->second;
+        module->loadFromYml(context, value);
+    });
+
+    context.reader.forAllInMap(node, &f);
 }
 
 void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)

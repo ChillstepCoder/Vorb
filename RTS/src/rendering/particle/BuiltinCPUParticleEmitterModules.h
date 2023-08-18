@@ -30,7 +30,7 @@ public: \
     bool updateAndRenderEditorControls() override; \
     std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<ModuleType>(*this); };
 
-#define BUILTIN_CPU_PARTICLE_MODULE(ModuleType, Stage, ModuleName) \
+#define BUILTIN_CPU_PARTICLE_MODULE(ModuleType, Stage, ModuleName, YmlName) \
 class ModuleType : public CPUParticleEmitterModule { \
     COMMON_METHODS(ModuleType) \
     void refresh() override; \
@@ -38,9 +38,12 @@ class ModuleType : public CPUParticleEmitterModule { \
         return BitFlags<ParticleEmitterModuleStage>(Stage); \
     } \
     const char* const getName() const override { return ModuleName; } \
+    const char* const getYmlName() const override { return YmlName; } \
+    std::unique_ptr<CPUParticleEmitterModule> loadFromYml(keg::ReadContext& context, keg::Node node) const override; \
+    void saveYmlData(keg::YAMLWriter& writer) const override; \
 private:
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Burst")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Burst", "spawn_burst")
     MODULE_DEF(
         CPUParticleEmitterVariable mDelay = CPUParticleEmitterVariable(f32(0.0f));
         CPUParticleEmitterVariable mSpawnCount = CPUParticleEmitterVariable(ui32(10));
@@ -48,7 +51,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::Emitt
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Rate")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Rate", "spawn_rate")
     MODULE_DEF(
         CPUParticleEmitterVariable mEmitRateSec = CPUParticleEmitterVariable(0.0f);
         CPUParticleEmitterVariable mNextEmitTime = CPUParticleEmitterVariable(0.0f); // Initial delay
@@ -56,7 +59,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::Emitte
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::ParticleInit, "Ring Burst")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::ParticleInit, "Ring Burst", "ring_burst")
     MODULE_DEF(
         CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
         CPUParticleEmitterVariable mMaxAngleFromRingRad = CPUParticleEmitterVariable(f32(M_PI_4F));
@@ -64,7 +67,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::Partic
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ConeBurst, ParticleEmitterModuleStage::ParticleInit, "Cone Burst")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ConeBurst, ParticleEmitterModuleStage::ParticleInit, "Cone Burst", "cone_burst")
     MODULE_DEF(
         CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
         CPUParticleEmitterVariable mAngleRange = CPUParticleEmitterVariable(f32v2(0.0f, M_PI_4F));
@@ -72,31 +75,31 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ConeBurst, ParticleEmitterModuleStage::Partic
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPosition, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Position")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPosition, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Position", "set_position")
     MODULE_DEF(
         CPUParticleEmitterVariable mPositionVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Velocity")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Velocity", "set_velocity")
     MODULE_DEF(
         CPUParticleEmitterVariable mVelocityVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Color")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Color", "set_color")
     MODULE_DEF(
         CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale", "set_scale")
     MODULE_DEF(
         CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleStage::ParticleInit, "Set Position From Shape")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleStage::ParticleInit, "Set Position From Shape", "set_position_shape")
     enum class ShapeType : int {
        Sphere,
        Box,
@@ -108,13 +111,13 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleSt
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ApplyForce, ParticleEmitterModuleStage::ParticleUpdate, "Apply Force")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ApplyForce, ParticleEmitterModuleStage::ParticleUpdate, "Apply Force", "apply_force")
     MODULE_DEF(
         CPUParticleEmitterVariable mForce = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, GRAVITY_Z));
     );
 };
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::ParticleUpdate, "Drag Force")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::ParticleUpdate, "Drag Force", "drag_force")
     MODULE_DEF(
         CPUParticleEmitterVariable mDragFactor = CPUParticleEmitterVariable(f32(0.75f));
     );

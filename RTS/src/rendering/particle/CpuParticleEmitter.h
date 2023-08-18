@@ -140,7 +140,7 @@ protected:
 
     // Global data
     f32v2 mGlobalParticleScale = f32v2(1.0f);
-    f32 mGlobalParticleLifespan = 5.0f;
+    f32 mGlobalParticleLifespan = 3.0f;
     color4 mGlobalParticleColor = color::White;
     MaterialID mGlobalMaterialID = 0;
     ui32 mFirstActiveParticle = 0;

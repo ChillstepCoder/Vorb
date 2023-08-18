@@ -81,9 +81,6 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     // TODO: Multithreaded with triple buffer state?
 
 #define UPDATE_LOGIC \
-    if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] { \
-        continue; \
-    } \
     for (size_t j = mNumEmitterUpdateMethods + mNumParticleInitMethods; j < mEmitterModuleMethods.size(); ++j) { \
         mEmitterModuleMethods[j](*this, i, mParticleModuleData[j], elapsedSec); \
     }
@@ -94,6 +91,9 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
             mDataChanged = true;
 
             for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+                    continue;
+                }
                 mParticleData.mLifetimes[i] += elapsedSec;
                 if (mParticleData.mLifetimes[i] >= mParticleData.mLifespans[i]) {
                     removeParticle(i);
@@ -106,6 +106,9 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         }
         else {
             for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+                    continue;
+                }
                 mParticleData.mLifetimes[i] += elapsedSec;
                 if (mParticleData.mLifetimes[i] >= mParticleData.mLifespans[i]) {
                     removeParticle(i);
@@ -121,6 +124,9 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
             mDataChanged = true;
 
             for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+                    continue;
+                }
                 mParticleData.mLifetimes[i] += elapsedSec;
                 if (mParticleData.mLifetimes[i] >= mGlobalParticleLifespan) {
                     removeParticle(i);
@@ -133,6 +139,9 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         }
         else {
             for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+                if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
+                    continue;
+                }
                 mParticleData.mLifetimes[i] += elapsedSec;
                 if (mParticleData.mLifetimes[i] >= mGlobalParticleLifespan) {
                     removeParticle(i);

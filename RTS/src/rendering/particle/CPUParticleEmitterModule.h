@@ -24,7 +24,17 @@ public:
     virtual bool updateAndRenderEditorControls() = 0;
     virtual BitFlags<ParticleEmitterModuleStage> getStages() const = 0;
     virtual const char* const getName() const = 0;
+    virtual const char* const getYmlName() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterModule> clone() const = 0;
+    virtual std::unique_ptr<CPUParticleEmitterModule> loadFromYml(keg::ReadContext& context, keg::Node node) const = 0;
+    void saveToYml(keg::YAMLWriter& writer) const {
+        writer.push(keg::WriterParam::BEGIN_MAP);
+        writer.push(keg::WriterParam::KEY);
+        writer << getYmlName();
+        writer.push(keg::WriterParam::VALUE);
+        saveYmlData(writer);
+        writer.push(keg::WriterParam::END_MAP);
+    }
 
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();
@@ -34,6 +44,8 @@ public:
     BitFlags<ParticleComponentType> getRequiredComponents() const { return mRequiredComponents; }
 
 protected:
+    virtual void saveYmlData(keg::YAMLWriter& writer) const = 0;
+
     CPUParticleEmitterModuleMethod mMethod;
     BitFlags<ParticleComponentType> mRequiredComponents;
 

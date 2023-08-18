@@ -37,6 +37,9 @@ private:
     std::vector<std::unique_ptr<CPUParticleEmitterModule>> mEmitterModules;
     std::vector<std::unique_ptr<CPUParticleEmitterOperation>> mEmitterOperations;
 
+    std::map<nString, CPUParticleEmitterModule*> mModulesYmlLookup;
+    std::map<nString, CPUParticleEmitterOperation*> mOperationsYmlLookup;
+
     MaterialID mDefaultMaterial = INVALID_MATERIAL_ID;
 };
 

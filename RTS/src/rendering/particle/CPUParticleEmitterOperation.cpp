@@ -133,11 +133,6 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     return changed;
 }
 
-CPUParticleEmitterOperation::CPUParticleEmitterOperation(const CPUParticleEmitterOperation* other) {
-    // TODO: DEEP COPY
-    assert(false);
-}
-
 bool CPUParticleEmitterOperation::updateAndRenderControls() {
     ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
     ImGui::BeginGroup();
@@ -178,5 +173,6 @@ void CPUPEO_QueryRotation::execute(CpuParticleEmitter& emitter, ParticleID id, C
 }
 
 void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
-    output->mVarData = emitter.getParticleNormalizedLifetime(id);
+    f32 l = emitter.getParticleNormalizedLifetime(id);
+    output->mVarData = l;
 }
