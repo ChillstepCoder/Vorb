@@ -12,27 +12,17 @@
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
 #define SAVE_TWO_VAR(var1, name1, var2, name2) \
-writer.push(keg::WriterParam::BEGIN_MAP); \
-writer.push(keg::WriterParam::KEY); writer << name1; \
-writer.push(keg::WriterParam::VALUE); \
-mModuleData.var1.saveYmlData(writer); \
-writer.push(keg::WriterParam::KEY); writer << name2; \
-writer.push(keg::WriterParam::VALUE); \
-mModuleData.var2.saveYmlData(writer); \
-writer.push(keg::WriterParam::END_MAP); \
+beginMap(writer); \
+saveNested(writer, name1, mModuleData.var1); \
+saveNested(writer, name2, mModuleData.var2); \
+endMap(writer); \
 
 #define SAVE_THREE_VAR(var1, name1, var2, name2, var3, name3) \
-writer.push(keg::WriterParam::BEGIN_MAP); \
-writer.push(keg::WriterParam::KEY); writer << name1; \
-writer.push(keg::WriterParam::VALUE); \
-mModuleData.var1.saveYmlData(writer); \
-writer.push(keg::WriterParam::KEY); writer << name2; \
-writer.push(keg::WriterParam::VALUE); \
-mModuleData.var2.saveYmlData(writer); \
-writer.push(keg::WriterParam::KEY); writer << name3; \
-writer.push(keg::WriterParam::VALUE); \
-mModuleData.var3.saveYmlData(writer); \
-writer.push(keg::WriterParam::END_MAP); \
+beginMap(writer); \
+saveNested(writer, name1, mModuleData.var1); \
+saveNested(writer, name2, mModuleData.var2); \
+saveNested(writer, name3, mModuleData.var3); \
+endMap(writer); \
 
 
 bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* const label) {

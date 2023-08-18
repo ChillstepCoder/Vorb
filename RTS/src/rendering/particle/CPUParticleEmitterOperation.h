@@ -5,6 +5,8 @@ class CpuParticleEmitter;
 
 #include "rendering/particle/ParticleComponentType.h"
 
+#include "serialization/YmlSerializable.h"
+
 enum class CPUparticleEmitterVariableVariantType : ui8{
     None,
     color4,
