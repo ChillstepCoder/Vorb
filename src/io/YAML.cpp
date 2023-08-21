@@ -7,7 +7,7 @@ void keg::YAMLReader::init(const cString data) {
     m_first = new YAMLNode;
     m_allocated.insert(m_first);
     try {
-        m_first->data = YAML::Load(data);
+        *m_first = YAML::Load(data);
     }
     catch (YAML::ParserException e) {
         printf("Parser exception %s at line %d column %d pos %d\n", e.msg.c_str(), e.mark.line, e.mark.column, e.mark.pos);
@@ -30,22 +30,18 @@ void keg::YAMLReader::free(Node& node) {
 }
 
 void keg::YAMLReader::forAllInMap(Node node, Delegate<void, Sender, const nString&, Node>* f) {
-    for (auto iter : node->data) {
-        Node value = new YAMLNode;
-        m_allocated.insert(value);
-
-        value->data = iter.second;
-        f->invoke(this, iter.first.as<nString>(), value);
+    for (auto iter : *node) {
+        YAMLNode value;
+        value = iter.second;
+        f->invoke(this, iter.first.as<nString>(), &value);
     }
 }
 void keg::YAMLReader::forAllInSequence(Node node, Delegate<void, Sender, size_t, Node>* f) {
-    size_t l = node->data.size();
+    size_t l = node->size();
     for (size_t i = 0; i < l; i++) {
-        Node value = new YAMLNode;
-        m_allocated.insert(value);
-
-        value->data = node->data[i];
-        f->invoke(this, i, value);
+        YAMLNode value;
+        value = node->operator[](i);
+        f->invoke(this, i, &value);
     }
 }
 
@@ -53,12 +49,12 @@ CALLEE_DELETE keg::Node keg::YAMLReader::getInterior(Node node, const cString va
     Node interior = new YAMLNode;
     m_allocated.insert(interior);
 
-    interior->data = node->data[value];
+    *interior = node->operator[](value);
     return interior;
 }
 
 keg::NodeType keg::getType(Node node) {
-    switch (node->data.Type()) {
+    switch (node->Type()) {
     case YAML::NodeType::Scalar:
         return NodeType::VALUE;
     case YAML::NodeType::Map:
@@ -70,10 +66,10 @@ keg::NodeType keg::getType(Node node) {
     }
 }
 bool keg::hasInterior(Node node, const cString value) {
-    return static_cast<YAML::detail::unspecified_bool_type>(node->data[value]) == &YAML::detail::unspecified_bool::true_value;
+    return static_cast<YAML::detail::unspecified_bool_type>(node->operator[](value)) == &YAML::detail::unspecified_bool::true_value;
 }
 size_t keg::getSequenceSize(Node node) {
-    return node->data.size();
+    return node->size();
 }
 
 keg::YAMLWriter::YAMLWriter() :

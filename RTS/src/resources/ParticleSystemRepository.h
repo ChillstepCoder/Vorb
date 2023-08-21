@@ -12,11 +12,8 @@ public:
     ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo);
     ~ParticleSystemRepository();
 
-    void loadParticleEmitterFile(const vio::Path& filePath);
     void loadParticleSystemFile(const vio::Path& filePath);
-
     bool saveParticleSystem(const ParticleSystemDef& particleSystem);
-    bool saveParticleEmitter(const ParticleEmitterDef& particleEmitter);
 
     const ParticleSystemDef& getParticleSystem(ParticleSystemID id) const { return mParticleSystems[id]; }
     const ParticleSystemDef& getParticleSystem(const nString& itemName) const;
@@ -31,6 +28,8 @@ public:
     void setDefaultMaterialID(MaterialID id) { mDefaultMaterial = id; }
 
 private:
+    void saveParticleEmitter(keg::YAMLWriter& writer, const ParticleEmitterDef& particleEmitter);
+
     MaterialRepository& mMaterialRepository;
 
     std::map<nString, ParticleSystemID> mParticleSystemLookup; // TODO: StrToken?

@@ -301,7 +301,7 @@ void FishingMinigame::initPlayerParticles() {
 
         // Additional explosion when hitting bottom
         if (mDidPlayerImpactBottom) {
-            for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
+            for (int i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
                 constexpr f32 EXPLODE_IMPULSE = 300.0f;
                 f32v2 explodeDir(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f);
                 explodeDir = glm::normalize(explodeDir) * Random::getCachedRandomf();
@@ -312,7 +312,7 @@ void FishingMinigame::initPlayerParticles() {
             mDidPlayerImpactBottom = false;
         }
 
-        for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
+        for (int i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
             // Check for dead particle
             if (particleData.mPositions[i].x == FLT_MAX) {
                 continue;
@@ -483,7 +483,7 @@ void FishingMinigame::initBlockerParticles() {
         mBlockerParticleSystem = std::make_unique<CPUParticleSystem>(
             [this](CpuParticleEmitter& emitter, CPUParticlesData& particleData, f32 elapsedSec) {
 
-            for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
+            for (int i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
                 if (particleData.mPositions[i].x == FLT_MAX) {
                     continue;
                 }
@@ -606,7 +606,7 @@ void FishingMinigame::initBubbleParticles()
 
             constexpr f32 MAX_XVEL = 1.6f;
             constexpr f32 RANDOM_MOVE_POWER = 7.5f;
-            for (ui32 i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
+            for (int i = emitter.getFirstActiveParticle(); i <= emitter.getLastActiveParticle(); ++i) {
                 if (particleData.mPositions[i].x == FLT_MAX) {
                     continue;
                 }

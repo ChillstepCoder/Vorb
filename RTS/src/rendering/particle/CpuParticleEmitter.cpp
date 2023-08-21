@@ -90,7 +90,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
             mDataChanged = true;
 
-            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+            for (int i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
                 if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
                     continue;
                 }
@@ -105,7 +105,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
             }
         }
         else {
-            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+            for (int i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
                 if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
                     continue;
                 }
@@ -123,7 +123,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
             mDataChanged = true;
 
-            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+            for (int i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
                 if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
                     continue;
                 }
@@ -165,16 +165,18 @@ ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
 
     mDataChanged = true;
 
+    ParticleID newId;
     if (mFreeParticleIDs.size()) {
-        ParticleID recycledId = mFreeParticleIDs.back();
-        mParticleData.mPositions[recycledId] = position;
+        newId = mFreeParticleIDs.back();
         mFreeParticleIDs.pop_back();
-        onNewParticleAdded(recycledId);
-        return recycledId;
     }
-    mParticleData.mPositions[mActiveParticles] = position;
-    onNewParticleAdded(mActiveParticles);
-    return mActiveParticles - 1;
+    else {
+        newId = mActiveParticles;
+    }
+    onNewParticleAdded(newId);
+    // This function always overrides position TODO: IS this what we always want? It will ignore modules
+    mParticleData.mPositions[newId] = position;
+    return newId;
 }
 
 void CpuParticleEmitter::removeParticle(ParticleID id) {
@@ -270,8 +272,9 @@ void CpuParticleEmitter::emitParticles(int count) {
             mFreeParticleIDs.pop_back();
             onNewParticleAdded(recycledId);
         }
-        mParticleData.mPositions[mActiveParticles] = f32v3(0.0f);
-        onNewParticleAdded(mActiveParticles);
+        else {
+            onNewParticleAdded(mActiveParticles);
+        }
     }
 }
 
@@ -294,26 +297,25 @@ void CpuParticleEmitter::allocateParticleData()
     if (mComponents.isBitSet(ParticleComponentType::Scale)) {
         mParticleData.mScales = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
         mGpuData.mScalesBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v2));
-        std::fill_n(mParticleData.mScales.get(), mMaxParticles, f32v2(1.0f)); // Default values
     }
     if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
-        mParticleData.mHDRColors = std::make_unique<f32v4[]>(mMaxParticles);
+        mParticleData.mHDRColors = std::make_unique_for_overwrite<f32v4[]>(mMaxParticles);
         mGpuData.mColorsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4));
     }
     else if (mComponents.isBitSet(ParticleComponentType::Color)) {
-        mParticleData.mColors = std::make_unique<color4[]>(mMaxParticles);
+        mParticleData.mColors = std::make_unique_for_overwrite<color4[]>(mMaxParticles);
         mGpuData.mColorsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(color4));
     }
     if (mComponents.isBitSet(ParticleComponentType::Lifespan)) {
-        mParticleData.mLifespans = std::make_unique<f32[]>(mMaxParticles);
+        mParticleData.mLifespans = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
         // No GPU data for lifespans
     }
     if (mComponents.isBitSet(ParticleComponentType::MaterialID)) {
-        mParticleData.mMaterials = std::make_unique<ui32[]>(mMaxParticles);
+        mParticleData.mMaterials = std::make_unique_for_overwrite<ui32[]>(mMaxParticles);
         mGpuData.mMaterialsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32));
     }
     if (mComponents.isBitSet(ParticleComponentType::Rotation)) {
-        mParticleData.mRotations = std::make_unique<f32[]>(mMaxParticles);
+        mParticleData.mRotations = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
         std::memset(mParticleData.mRotations.get(), 0, mMaxParticles * sizeof(f32)); // Default values
         // Rotations are packed into mPositionsAndRotationsBuffer which is always allocated
     }
@@ -484,6 +486,31 @@ void CpuParticleEmitter::render() {
 }
 
 void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
+
+    // Zero data
+    mParticleData.mPositions[id] = f32v3(0.0f);
+    mParticleData.mLifetimes[id] = 0.0f;
+    if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
+        mParticleData.mVelocities[id] = f32v3(0.0f);
+    }
+    if (mComponents.isBitSet(ParticleComponentType::Scale)) {
+        mParticleData.mScales[id] = f32v2(1.0f);
+    }
+    if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
+        mParticleData.mHDRColors[id] = f32v4(1.0f);
+    }
+    else if (mComponents.isBitSet(ParticleComponentType::Color)) {
+        mParticleData.mColors[id] = color::White;
+    }
+    if (mComponents.isBitSet(ParticleComponentType::Lifespan)) {
+        mParticleData.mLifespans[id] = 1.0f;
+    }
+    if (mComponents.isBitSet(ParticleComponentType::MaterialID)) {
+        mParticleData.mMaterials[id] = 0;
+    }
+    if (mComponents.isBitSet(ParticleComponentType::Rotation)) {
+        mParticleData.mRotations[id] = 0.0f;
+    }
 
     // Init particle
     for (int i = mNumEmitterUpdateMethods; i < mNumEmitterUpdateMethods + mNumParticleInitMethods; ++i) {

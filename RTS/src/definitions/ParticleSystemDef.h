@@ -8,7 +8,7 @@ class MaterialShader;
 
 typedef std::vector<std::unique_ptr<CPUParticleEmitterModule>> CPUParticleEmitterModuleVector;
 
-class ParticleEmitterDef : public IAsset {
+class ParticleEmitterDef {
 public:
 
     bool isValid() { return mShader != nullptr; }

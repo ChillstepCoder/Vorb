@@ -27,10 +27,13 @@
 #include "FileStream.h"
 #include "Path.h"
 
+namespace YAML {
+    class Node;
+}
+
 namespace keg {
     class Type;
-    struct YAMLNode;
-    typedef YAMLNode* Node;
+    typedef YAML::Node* Node;
 }
 
 namespace vorb {

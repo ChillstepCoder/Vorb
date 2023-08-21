@@ -154,7 +154,7 @@ namespace keg {
     bool writeArray(ArrayBase, keg::YAMLWriter& e, Environment*, Type*) {
         // TODO: This is not done yet
         e.push(keg::WriterParam::BEGIN_SEQUENCE);
-
+        assert(false);
         e.push(keg::WriterParam::END_SEQUENCE);
         return true;
     }

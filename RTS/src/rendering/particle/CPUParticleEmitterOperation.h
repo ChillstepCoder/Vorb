@@ -154,7 +154,7 @@ public: \
 #define DEFINE_CPUPEO_QUERY_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
+    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) { mSerializeNameOnly = true; } \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
@@ -186,9 +186,9 @@ DEFINE_CPUPEO_SET(CPUPEO_SetVec2, "Set Vec2", "set_vec2", COLOR_STANDARD, f32v2)
 DEFINE_CPUPEO_SET(CPUPEO_SetFloat, "Set Float", "set_f32", COLOR_STANDARD, f32)
 DEFINE_CPUPEO_SET(CPUPEO_SetUInt, "Set UInt", "set_uint", COLOR_STANDARD, ui32)
 
-DEFINE_CPUPEO_SET(CPUPEO_NegateVec3, "Negate Vec3", "negate_vec3", COLOR_STANDARD, f32v3)
-DEFINE_CPUPEO_SET(CPUPEO_NegateVec2, "Negate Vec2", "negate_vec2", COLOR_STANDARD, f32v2)
-DEFINE_CPUPEO_SET(CPUPEO_NegateFloat, "Negate Float", "negate_f32", COLOR_STANDARD, f32)
+DEFINE_CPUPEO_NEGATE(CPUPEO_NegateVec3, "Negate Vec3", "negate_vec3", COLOR_STANDARD, f32v3)
+DEFINE_CPUPEO_NEGATE(CPUPEO_NegateVec2, "Negate Vec2", "negate_vec2", COLOR_STANDARD, f32v2)
+DEFINE_CPUPEO_NEGATE(CPUPEO_NegateFloat, "Negate Float", "negate_f32", COLOR_STANDARD, f32)
 
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToVec4, "Float To Vec4", "f32_to_vec4", COLOR_CONVERT, f32, f32v4)
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToVec3, "Float To Vec3", "f32_to_vec3", COLOR_CONVERT, f32, f32v3)

@@ -18,10 +18,7 @@
 #include <yaml-cpp/yaml.h>
 
 namespace keg {
-    struct YAMLNode {
-    public:
-        YAML::Node data;
-    };
+    typedef YAML::Node YAMLNode;
     class YAMLEmitter {
     public:
         YAML::Emitter emitter;

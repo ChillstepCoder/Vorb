@@ -28,7 +28,7 @@ private:
     CPUParticleEmitterModule* mSelectedModule = nullptr;
 
     std::unique_ptr<CPUParticleSystem> mPreviewSystem;
-    f32 mTimelineEnd = 3.0f;
+    f32 mTimelineEnd = 5.0f;
     f32 mCurrentTime = 0.0f;
     f32 mCurrentElapsedSec = 0.0f;
 

@@ -1,2 +1,23 @@
 emitters:
-  []
+  - DefaultEmitter:
+      e_update:
+        - spawn_rate:
+            emit_rate: 0
+            initial_delay: 0
+            spawn_count: 3
+      p_init:
+        - cone_burst:
+            speed: [1, 1]
+            angle_range: [0, 0.7853982]
+            dir: [0, 0, 1]
+      p_update:
+        - drag_force:
+            drag: 0.75
+        - set_scale:
+            scale:
+              f32_to_vec2:
+                add_f32:
+                  p0: 1
+                  p1:
+                    negate_f32:
+                      p_norm_life

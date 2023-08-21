@@ -206,7 +206,6 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
     };
 
  
-
     if (mSelectedEmitter) {
         ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.c_str());
         ImGui::Separator();
@@ -228,10 +227,23 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
             }
 
             int mid = 0;
-            for (auto&& module : modules) {
+            for (auto&& it = modules.begin(); it != modules.end();) {
                 ImGui::PushID(++mid);
-                if (ImGui::Button(module->getName(), ImVec2(ImGui::GetContentRegionAvail().x, size))) {
+                auto& module = *it;
+                if (ImGui::Button(module->getName(), ImVec2(contentAvail.x - size, size))) {
                     mSelectedModule = module.get();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("-", ImVec2(size, size))) {
+                    if (mSelectedModule == module.get()) {
+                        mSelectedModule = nullptr;
+                    }
+                    it = modules.erase(it);
+                    // Refresh
+                    createPreviewSystem();
+                }
+                else {
+                    ++it;
                 }
                 ImGui::PopID();
             }

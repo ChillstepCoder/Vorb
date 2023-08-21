@@ -141,7 +141,7 @@ void CPUParticleEmitterVariable::saveYmlData(keg::YAMLWriter& writer) const
     }
     else {
         std::visit([&](auto&& arg) {
-            YmlSerializable::saveKeyValue(writer, "val", arg);
+            YmlSerializable::saveValue(writer, arg);
         }, mVarData);
         static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
     }
@@ -177,11 +177,17 @@ bool CPUParticleEmitterOperation::loadFromYml(keg::ReadContext& context, keg::No
 void CPUParticleEmitterOperation::saveYmlData(keg::YAMLWriter& writer) const
 {
     CPUParticleEmitterVariableVariantTypePair input = getVariantInput();
-    if (input.first != CPUparticleEmitterVariableVariantType::None) {
-        mParam0.saveYmlData(writer);
-    }
     if (input.second != CPUparticleEmitterVariableVariantType::None) {
+        assert(input.first != CPUparticleEmitterVariableVariantType::None);
+        beginMap(writer);
+        pushKeyValue(writer, "p0");
+        mParam0.saveYmlData(writer);
+        pushKeyValue(writer, "p1");
         mParam1.saveYmlData(writer);
+        endMap(writer);
+    }
+    else if (input.first != CPUparticleEmitterVariableVariantType::None) {
+        mParam0.saveYmlData(writer);
     }
 }
 

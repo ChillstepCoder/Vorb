@@ -249,9 +249,9 @@ void ResourceManager::loadFiles() {
     // Load particle Systems
     {
         ScopedTimer timer("Particle load");
-     /*   for (auto&& entry : mParticleSystemFiles) {
-            mParticleSystemManager->loadParticleSystemData(entry);
-        };*/
+        for (auto&& entry : mParticleSystemFiles) {
+            mParticleSystemRepository->loadParticleSystemFile(entry);
+        };
     }
 
     // Load Rooms
@@ -374,7 +374,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         else if (fileHasExtension(entry, ".tes")) {
             ShaderLoader::registerTessEvalShaderPath(entry.getLeaf(), entry);
         }
-        else if (fileHasExtension(entry, ".part")) {
+        else if (fileHasExtension(entry, ".psys")) {
             mParticleSystemFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".ent")) {

@@ -22,9 +22,12 @@
 #include "../types.h"
 #endif // !VORB_USING_PCH
 
+namespace YAML {
+    class Node;
+}
+
 namespace keg {
-    struct YAMLNode; ///< A node in a YAML document (hidden)
-    typedef YAMLNode* Node; ///< A usable YAML node
+    typedef YAML::Node* Node; ///< A usable YAML node
     template<typename T> struct NodeValueConverter; ///< Converts nodes to and from values
 
     class YAMLEmitter; ///< A YAML node emitter implementation

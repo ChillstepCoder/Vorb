@@ -10,8 +10,8 @@ CPUParticleSystem::CPUParticleSystem(size_t reserveEmitterCount) {
     mEmitters.reserve(reserveEmitterCount);
 }
 
-CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader) {
-    addEmitter(updateFunction, maxParticles, components, shader);
+CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 particleLifespanSec /*= FLT_MAX*/, f32 emitterLifespanSec /*= FLT_MAX*/) {
+    addEmitter(updateFunction, maxParticles, components, shader, particleLifespanSec, emitterLifespanSec);
 }
 
 CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def)
@@ -42,7 +42,7 @@ void CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
     }
 }
 
-CpuParticleEmitter& CPUParticleSystem::addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader) {
-    mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(updateFunction, maxParticles, components, shader));
+CpuParticleEmitter& CPUParticleSystem::addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 particleLifespanSec /*= FLT_MAX*/, f32 emitterLifespanSec /*= FLT_MAX*/) {
+    mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(updateFunction, maxParticles, components, shader, emitterLifespanSec))->setGlobalParticleLifespan(particleLifespanSec);
     return *mEmitters.back();
 }

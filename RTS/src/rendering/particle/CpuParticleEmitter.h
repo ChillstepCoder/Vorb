@@ -79,9 +79,11 @@ public:
     color4 getGlobalParticleColor() const { return mGlobalParticleColor; }
     void setGlobalMaterialID(MaterialID materialID) { assert(!mParticleData.mMaterials); mGlobalMaterialID = materialID; }
     MaterialID getGlobalMaterialID() const { assert(!mParticleData.mMaterials); return mGlobalMaterialID; }
+    void setGlobalParticleLifespan(f32 lifespan) { mGlobalParticleLifespan = lifespan; }
+    f32 getGlobalParticleLifespan() const { return mGlobalParticleLifespan; }
 
-    ui32 getFirstActiveParticle() const { return mFirstActiveParticle; }
-    ui32 getLastActiveParticle() const { return mLastActiveParticle; }
+    int getFirstActiveParticle() const { return mFirstActiveParticle; }
+    int getLastActiveParticle() const { return mLastActiveParticle; }
 
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
     bool isLooping() const { return mLooping; }

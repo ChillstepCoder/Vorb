@@ -6,7 +6,7 @@
 
 #define KEG_CONVERT_YAML_AS(TYPE) \
     TYPE keg::NodeValueConverter<TYPE>::convert(Node node) { \
-        return node->data.as<TYPE>(); \
+        return node->as<TYPE>(); \
     } \
     void keg::NodeValueConverter<TYPE>::write(YAMLEmitter* emitter, TYPE value) { \
             emitter->emitter << value; \
@@ -44,7 +44,7 @@ KEG_CONVERT_YAML_AS(f64v3)
 KEG_CONVERT_YAML_AS(f64v4)
 
 color4 keg::NodeValueConverter<color4>::convert(Node node) {
-    return node->data.as<color4>();
+    return node->as<color4>();
 }
 void keg::NodeValueConverter<color4>::write(YAMLEmitter* emitter, color4 value) {
     emitter->emitter << "[" << value.r << ", " << value.g << ", " << value.b << ", " << value.a << "]";

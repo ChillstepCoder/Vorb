@@ -14,10 +14,15 @@ public:
     // End pure virtual interface
 
     void saveYml(keg::YAMLWriter& writer) const {
-        beginMap(writer);
-        pushKeyValue(writer, getYmlName());
-        saveYmlData(writer);
-        endMap(writer);
+        if (mSerializeNameOnly) {
+            writer.operator<<((char*)getYmlName());
+        }
+        else {
+            beginMap(writer);
+            pushKeyValue(writer, getYmlName());
+            saveYmlData(writer);
+            endMap(writer);
+        }
     }
 
     static void beginMap(keg::YAMLWriter& writer) {
@@ -31,6 +36,9 @@ public:
     }
     static void endSequence(keg::YAMLWriter& writer) {
         writer.push(keg::WriterParam::END_SEQUENCE);
+    }
+    static void pushValue(keg::YAMLWriter& writer) {
+        writer.push(keg::WriterParam::VALUE);
     }
     static void pushKeyValue(keg::YAMLWriter& writer, const char* key){
         writer.push(keg::WriterParam::KEY);
@@ -50,10 +58,17 @@ public:
         pushKeyValue(writer, key);
         writer.operator<<(value);
     }
+    template<typename T>
+    static void saveValue(keg::YAMLWriter& writer, const T& value) {
+        writer.push(keg::WriterParam::VALUE);
+        writer.operator<<(value);
+    }
 
 protected:
 
     // Pure virtual interface
     virtual void saveYmlData(keg::YAMLWriter& writer) const = 0;
     // End pure virtual interface
+
+    bool mSerializeNameOnly = false;
 };

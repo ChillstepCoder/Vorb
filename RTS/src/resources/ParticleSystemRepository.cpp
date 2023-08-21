@@ -86,7 +86,7 @@ ParticleSystemRepository::~ParticleSystemRepository() {
 
 }
 
-void ParticleSystemRepository::loadParticleEmitterFile(const vio::Path& filePath)
+void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
 {
     nString data;
     mIoManager.readFileToString(filePath.getCString(), data);
@@ -96,28 +96,49 @@ void ParticleSystemRepository::loadParticleEmitterFile(const vio::Path& filePath
     context.reader.init(data.c_str());
     keg::Node node = context.reader.getFirst();
     if (keg::getType(node) != keg::NodeType::MAP) {
-        LOG_CRITICAL("Failed to load {}", filePath.getCString());
+        LOG_CRITICAL("Failed to load {}, not a map", filePath.getCString());
         context.reader.dispose();
         return;
     }
 
-    auto f = makeFunctor([&](Sender, const nString& type, keg::Node value) {
+    ParticleSystemDef* newDef = tryAddNewParticleSystem(filePath.getFileNameNoExtension());
+    if (!newDef) {
+        LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
+        pError("Failed to load " + filePath.getString() + " already exists");
+        return;
+    }
+
+    auto modulesFunc = makeFunctor([&](Sender, size_t i, keg::Node value) {
         // Parse modules
-        auto&& it = mModulesYmlLookup.find(type);
-        if (it == mModulesYmlLookup.end()) {
-            LOG_CRITICAL("Invalid module token {} in {}", type, filePath.getCString());
-            return;
-        }
-        CPUParticleEmitterModule* module = it->second;
-        module->loadFromYml(context, value);
+        assert(keg::getType(node) == keg::NodeType::MAP);
+        /* for (auto iter : node->data) {
+             Node value = new YAMLNode;
+             m_allocated.insert(value);
+
+             value->data = iter.second;
+             f->invoke(this, iter.first.as<nString>(), value);
+         }*/
+
+        LOG_CRITICAL("{}", i);
+       // value->as<nString>();
+        /* auto&& it = mModulesYmlLookup.find(type);
+         if (it == mModulesYmlLookup.end()) {
+             LOG_CRITICAL("Invalid module token {} in {}", type, filePath.getCString());
+             return;
+         }
+         newDef->mEmitters.emplace_back();
+         CPUParticleEmitterModule* module = it->second;
+         module->loadFromYml(context, value);*/
     });
 
-    context.reader.forAllInMap(node, &f);
-}
+    auto topLevelFunc = makeFunctor([&](Sender, const nString& type, keg::Node value) {
+        if (type == "emitters") {
+            context.reader.forAllInSequence(value, &modulesFunc);
+        }
+    });
 
-void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
-{
-    assert(false);
+    context.reader.forAllInMap(node, &topLevelFunc);
+    LOG_CRITICAL("DONE");
 }
 
 bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {
@@ -130,19 +151,17 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
         }*/
     }
 
-    // First save all emitters
-    for (auto&& emitter : particleSystem.mEmitters) {
-        if (!saveParticleEmitter(emitter)) {
-            pError("Failed to save particle emitter " + emitter.mEmitterName);
-            return false;
-        }
-    }
-
     keg::YAMLWriter writer;
     YmlSerializable::beginMap(writer);
     YmlSerializable::pushKeyValue(writer, "emitters");
     YmlSerializable::beginSequence(writer);
 
+    for (auto&& emitter : particleSystem.mEmitters) {
+        YmlSerializable::beginMap(writer);
+        YmlSerializable::pushKeyValue(writer, emitter.mEmitterName.c_str());
+        saveParticleEmitter(writer, emitter);
+        YmlSerializable::endMap(writer);
+    }
 
     YmlSerializable::endSequence(writer);
     YmlSerializable::endMap(writer);
@@ -150,14 +169,8 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     return saveAssetContents(particleSystem, writer.c_str(), writer.size());
 }
 
-bool ParticleSystemRepository::saveParticleEmitter(const ParticleEmitterDef& particleEmitter)
+void ParticleSystemRepository::saveParticleEmitter(keg::YAMLWriter& writer, const ParticleEmitterDef& particleEmitter)
 {
-    // TODO: DIALOG
-    if (!particleEmitter.getDiskLocation().isValid()) {
-        particleEmitter.setDiskLocation(PARTICLE_SYSTEM_PATH / particleEmitter.mEmitterName + vio::Path(".pemit"));
-    }
-
-    keg::YAMLWriter writer;
     YmlSerializable::beginMap(writer);
 
     YmlSerializable::pushKeyValue(writer, "e_update");
@@ -179,8 +192,6 @@ bool ParticleSystemRepository::saveParticleEmitter(const ParticleEmitterDef& par
     }
     YmlSerializable::endSequence(writer);
     YmlSerializable::endMap(writer);
-
-    return saveAssetContents(particleEmitter, writer.c_str(), writer.size());
 }
 
 const ParticleSystemDef& ParticleSystemRepository::getParticleSystem(const nString& itemName) const {
