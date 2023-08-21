@@ -1,11 +1,11 @@
 #pragma once
 
 #include "definitions/ParticleSystemDef.h"
+#include "resources/IAssetRepository.h"
 
 class MaterialRepository;
-DECL_VIO(class IOManager);
 
-class ParticleSystemRepository
+class ParticleSystemRepository : public IAssetRepository
 {
     friend class TileEditorPanel; //  TODO: REMOVE 
 public:
@@ -14,6 +14,9 @@ public:
 
     void loadParticleEmitterFile(const vio::Path& filePath);
     void loadParticleSystemFile(const vio::Path& filePath);
+
+    bool saveParticleSystem(const ParticleSystemDef& particleSystem);
+    bool saveParticleEmitter(const ParticleEmitterDef& particleEmitter);
 
     const ParticleSystemDef& getParticleSystem(ParticleSystemID id) const { return mParticleSystems[id]; }
     const ParticleSystemDef& getParticleSystem(const nString& itemName) const;
@@ -28,7 +31,6 @@ public:
     void setDefaultMaterialID(MaterialID id) { mDefaultMaterial = id; }
 
 private:
-    vio::IOManager& mIoManager;
     MaterialRepository& mMaterialRepository;
 
     std::map<nString, ParticleSystemID> mParticleSystemLookup; // TODO: StrToken?

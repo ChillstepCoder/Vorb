@@ -1,10 +1,15 @@
 #include "stdafx.h"
 #include "ParticleSystemRepository.h"
 
+#include "serialization/YmlSerializable.h"
+
+#include <fstream>
 #include <Vorb/io/IOManager.h>
 
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
+
+const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
 struct ParticleSystemFileData {
     Array<nString> emitterNames;
@@ -13,9 +18,8 @@ KEG_TYPE_DEF_SAME_NAME(ParticleSystemFileData, kt) {
     kt.addValue("emitters", keg::Value::array(offsetof(ParticleSystemFileData, emitterNames), keg::BasicType::STRING));
 }
 
-
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
-    mIoManager(ioManager),
+    IAssetRepository(ioManager),
     mMaterialRepository(materialRepo) {
 
     mEmitterModules.reserve(e_count(BuiltinCPUParticleEditorModules));
@@ -114,6 +118,69 @@ void ParticleSystemRepository::loadParticleEmitterFile(const vio::Path& filePath
 void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
 {
     assert(false);
+}
+
+bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {
+    // TODO: DIALOG
+    if (!particleSystem.getDiskLocation().isValid()) {
+        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.mSystemName + vio::Path(".psys"));
+        // TODO: Save unshared emitters near this one
+        /*for (auto&& emitter : particleSystem.mEmitters) {
+
+        }*/
+    }
+
+    // First save all emitters
+    for (auto&& emitter : particleSystem.mEmitters) {
+        if (!saveParticleEmitter(emitter)) {
+            pError("Failed to save particle emitter " + emitter.mEmitterName);
+            return false;
+        }
+    }
+
+    keg::YAMLWriter writer;
+    YmlSerializable::beginMap(writer);
+    YmlSerializable::pushKeyValue(writer, "emitters");
+    YmlSerializable::beginSequence(writer);
+
+
+    YmlSerializable::endSequence(writer);
+    YmlSerializable::endMap(writer);
+
+    return saveAssetContents(particleSystem, writer.c_str(), writer.size());
+}
+
+bool ParticleSystemRepository::saveParticleEmitter(const ParticleEmitterDef& particleEmitter)
+{
+    // TODO: DIALOG
+    if (!particleEmitter.getDiskLocation().isValid()) {
+        particleEmitter.setDiskLocation(PARTICLE_SYSTEM_PATH / particleEmitter.mEmitterName + vio::Path(".pemit"));
+    }
+
+    keg::YAMLWriter writer;
+    YmlSerializable::beginMap(writer);
+
+    YmlSerializable::pushKeyValue(writer, "e_update");
+    YmlSerializable::beginSequence(writer);
+    for (auto& module : particleEmitter.mEmitterUpdateModules) {
+        module->saveYml(writer);
+    }
+    YmlSerializable::endSequence(writer);
+    YmlSerializable::pushKeyValue(writer, "p_init");
+    YmlSerializable::beginSequence(writer);
+    for (auto& module : particleEmitter.mParticleInitModules) {
+        module->saveYml(writer);
+    }
+    YmlSerializable::endSequence(writer);
+    YmlSerializable::pushKeyValue(writer, "p_update");
+    YmlSerializable::beginSequence(writer);
+    for (auto& module : particleEmitter.mParticleUpdateModules) {
+        module->saveYml(writer);
+    }
+    YmlSerializable::endSequence(writer);
+    YmlSerializable::endMap(writer);
+
+    return saveAssetContents(particleEmitter, writer.c_str(), writer.size());
 }
 
 const ParticleSystemDef& ParticleSystemRepository::getParticleSystem(const nString& itemName) const {

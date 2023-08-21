@@ -30,6 +30,7 @@ public:
 
     void evaluate(CpuParticleEmitter& emitter, ParticleID id);
     bool updateAndRenderTweaker(const char*const label);
+    void saveYmlData(keg::YAMLWriter& writer) const;
 
     // TODO: pool allocate?
     std::unique_ptr<CPUParticleEmitterOperation> mOperation = nullptr;
@@ -39,7 +40,7 @@ public:
 // TODO: test perf vs virtual func
 //typedef void(*CPUParticleEmitterOperationMethod)(class CpuParticleEmitter& emitter, int particleID, CPUParticleEmitterVariable* p0, CPUParticleEmitterVariable* p1);
 
-class CPUParticleEmitterOperation {
+class CPUParticleEmitterOperation : public YmlSerializable {
 public:
     CPUParticleEmitterOperation() = default;
     CPUParticleEmitterOperation(CPUParticleEmitterVariable p0, CPUParticleEmitterVariable p1) : mParam0(p0.mVarData), mParam1(p1.mVarData) {}
@@ -48,8 +49,7 @@ public:
     CPUParticleEmitterVariable mParam0;
     CPUParticleEmitterVariable mParam1;
 
-    virtual constexpr const char* getDisplayName() const = 0;
-    virtual constexpr const char* getYmlName() const = 0;
+    virtual constexpr const char* const getDisplayName() const = 0;
     virtual color4 getDisplayColor() const = 0;
     virtual CPUParticleEmitterVariableVariantTypePair getVariantInput() const = 0;
     virtual CPUparticleEmitterVariableVariantType getOutputType() const = 0;
@@ -59,11 +59,17 @@ public:
     bool updateAndRenderControls();
 
     virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) = 0;
+
+    bool loadFromYml(keg::ReadContext& context, keg::Node node) const override;
+
 protected:
     void evaluateParams(CpuParticleEmitter& emitter, ParticleID id) {
         mParam0.evaluate(emitter, id);
         mParam1.evaluate(emitter, id);
     }
+
+    void saveYmlData(keg::YAMLWriter& writer) const override;
+
 };
 
 #define SIMPLE_EXECUTE_OP(T1, T2, OP) \
@@ -72,15 +78,14 @@ protected:
        output->mVarData = std::get<T1>(mParam0.mVarData) OP std::get<T2>(mParam1.mVarData); \
     }
 
-
 #define DEFINE_CPUPEO_BINARY(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, OP) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable(TYPE2(0))) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable(other.mParam1)) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* getYmlName() const override { return YML_NAME; } \
+    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
+    constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::TYPE2); } \
@@ -95,8 +100,8 @@ public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* getYmlName() const override { return YML_NAME; } \
+    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
+    constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
@@ -114,8 +119,8 @@ public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* getYmlName() const override { return YML_NAME; } \
+    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
+    constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
@@ -133,8 +138,8 @@ public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* getYmlName() const override { return YML_NAME; } \
+    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
+    constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
@@ -152,8 +157,8 @@ public: \
     NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* getYmlName() const override { return YML_NAME; } \
+    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
+    constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::None, CPUparticleEmitterVariableVariantType::None); } \

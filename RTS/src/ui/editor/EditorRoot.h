@@ -11,7 +11,7 @@ class ModelDef;
 struct MaterialHandle;
 struct TileGrassData;
 struct FishDef;
-struct ParticleSystemDef;
+class ParticleSystemDef;
 class ModelEditorViewportPanel;
 class MaterialEditorViewportPanel;
 class BiomeEditorViewportPanel;

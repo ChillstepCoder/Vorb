@@ -127,6 +127,12 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         ImGui::Separator();
         ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
 
+        if (ImGui::Button("Save System")) {
+            if (!Services::ResourceManager::ref().getParticleSystemRepository().saveParticleSystem(*mSystemDef)) {
+                pError("FAILED TO SAVE PARTICLE SYSTEM!");
+            }
+        }
+
         if (ImGui::Button("Add Emitter")) {
             ImGui::OpenPopup("EmitterModal");
             strcpy_s(mTextInputBuffer, "Emitter");
@@ -264,19 +270,14 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
     else {
         ImGui::Text("Select a Particle Emitter");
     }
-    ImGui::EndChild();
-    return true;
-}
-
-bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize) {
-    ImGui::BeginChild("Particle Module Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
     if (!mSystemDef) {
         ImGui::Text("Select a Particle System");
         ImGui::EndChild();
         return true;
     }
-
+    ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+    ImGui::Spacing(); ImGui::Separator();
     ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
     ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
     f32 time = mCurrentTime;
@@ -307,6 +308,20 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
         //MaterialID mDefaultMaterialID = 0;
 
     }
+    ImGui::EndChild();
+
+    return true;
+}
+
+bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize) {
+    ImGui::BeginChild("Particle Module Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+
+    if (!mSystemDef) {
+        ImGui::Text("Select a Particle System");
+        ImGui::EndChild();
+        return true;
+    }
+
     ImGui::Spacing(); ImGui::Separator();
     if (mSelectedModule) {
         ImGui::Text("Module: %s", mSelectedModule->getName());

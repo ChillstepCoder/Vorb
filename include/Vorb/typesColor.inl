@@ -226,6 +226,15 @@ public:
 };
 typedef ColorRGBA8 color4; ///< Shortened name for ColorRGBA8
 
+#include <ostream>
+inline std::ostream& operator<<(std::ostream& out, const color4& c) {
+    out << "[" << static_cast<int>(c.r) << ", "
+        << static_cast<int>(c.g) << ", "
+        << static_cast<int>(c.b) << ", "
+        << static_cast<int>(c.a) << "]";
+    return out;
+}
+
 // TODO: Constexpr?
 const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
 #define COLOR_WHITE_ALPHA(a) color4(1.0f, 1.0f, 1.0f, a)

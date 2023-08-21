@@ -111,3 +111,7 @@ keg::YAMLWriter& keg::YAMLWriter::push(const WriterParam& param) {
 const cString keg::YAMLWriter::c_str() const {
     return m_emitter->emitter.c_str();
 }
+
+size_t keg::YAMLWriter::size() const {
+    return m_emitter->emitter.size();
+}

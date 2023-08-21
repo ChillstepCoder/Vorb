@@ -11,18 +11,23 @@
 
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
+#define SAVE_ONE_VAR(var1, name1) \
+beginMap(writer); \
+saveNested(writer, name1, YML_SAVE_LAMBDA(mModuleData.var1));\
+endMap(writer);
+
 #define SAVE_TWO_VAR(var1, name1, var2, name2) \
 beginMap(writer); \
-saveNested(writer, name1, mModuleData.var1); \
-saveNested(writer, name2, mModuleData.var2); \
-endMap(writer); \
+saveNested(writer, name1, YML_SAVE_LAMBDA(mModuleData.var1));\
+saveNested(writer, name2, YML_SAVE_LAMBDA(mModuleData.var2)); \
+endMap(writer);
 
 #define SAVE_THREE_VAR(var1, name1, var2, name2, var3, name3) \
 beginMap(writer); \
-saveNested(writer, name1, mModuleData.var1); \
-saveNested(writer, name2, mModuleData.var2); \
-saveNested(writer, name3, mModuleData.var3); \
-endMap(writer); \
+saveNested(writer, name1, YML_SAVE_LAMBDA(mModuleData.var1)); \
+saveNested(writer, name2, YML_SAVE_LAMBDA(mModuleData.var2)); \
+saveNested(writer, name3, YML_SAVE_LAMBDA(mModuleData.var3)); \
+endMap(writer);
 
 
 bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* const label) {
@@ -61,8 +66,9 @@ bool CPUPEM_SpawnBurst::updateAndRenderEditorControls() {
     return changed;
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SpawnBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SpawnBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SpawnBurst::saveYmlData(keg::YAMLWriter& writer) const {
@@ -74,17 +80,21 @@ CPUPEM_SpawnRate::CPUPEM_SpawnRate() {
 }
 
 void CPUPEM_SpawnRate::refresh() {
+    
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         ModuleData* moduleData = MODULE_DATA;
 
-        moduleData->mNextEmitTime.evaluate(emitter, particleID);
+        if (moduleData->mNextEmitTime == -1.0f) {
+            moduleData->mInitialDelay.evaluate(emitter, particleID);
+            moduleData->mNextEmitTime = std::get<f32>(moduleData->mInitialDelay.mVarData);
+        }
 
-        const f32 timeDiff = emitter.getTotalElapsedSec() - std::get<f32>(moduleData->mNextEmitTime.mVarData);
+        const f32 timeDiff = emitter.getTotalElapsedSec() - moduleData->mNextEmitTime;
         if (timeDiff >= 0.0f) {
             moduleData->mSpawnCount.evaluate(emitter, particleID);
             moduleData->mEmitRateSec.evaluate(emitter, particleID);
             emitter.emitParticles(std::get<ui32>(moduleData->mSpawnCount.mVarData));
-            moduleData->mNextEmitTime.mVarData = emitter.getTotalElapsedSec() + std::get<f32>(moduleData->mEmitRateSec.mVarData) - timeDiff;
+            moduleData->mNextEmitTime = emitter.getTotalElapsedSec() + std::get<f32>(moduleData->mEmitRateSec.mVarData) - timeDiff;
         }
     };
 }
@@ -92,18 +102,18 @@ void CPUPEM_SpawnRate::refresh() {
 bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
     bool changed = false;
     changed |= updateAndRenderVariable(mModuleData.mEmitRateSec, "Spawn Rate Sec");
-    changed |= updateAndRenderVariable(mModuleData.mNextEmitTime, "Initial Delay Sec");
+    changed |= updateAndRenderVariable(mModuleData.mInitialDelay, "Initial Delay Sec");
     changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count");
     return changed;
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SpawnRate::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SpawnRate::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SpawnRate::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    SAVE_THREE_VAR(mEmitRateSec, "emit_rate", mInitialDelay, "initial_delay", mSpawnCount, "spawn_count");
 }
 
 CPUPEM_RingBurst::CPUPEM_RingBurst() {
@@ -150,13 +160,13 @@ bool CPUPEM_RingBurst::updateAndRenderEditorControls() {
     return changed;
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_RingBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_RingBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_RingBurst::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    SAVE_THREE_VAR(mSpeedRange, "speed_range", mMaxAngleFromRingRad, "max_angle", mRingNormal, "ring_normal");
 }
 
 CPUPEM_ConeBurst::CPUPEM_ConeBurst() {
@@ -213,13 +223,13 @@ bool CPUPEM_ConeBurst::updateAndRenderEditorControls() {
     return changed;
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_ConeBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_ConeBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_ConeBurst::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    SAVE_THREE_VAR(mSpeedRange, "speed", mAngleRange, "angle_range", mDirection, "dir");
 }
 
 CPUPEM_SetPosition::CPUPEM_SetPosition() {
@@ -237,8 +247,9 @@ bool CPUPEM_SetPosition::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mPositionVec3, "Position");
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SetPosition::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SetPosition::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SetPosition::saveYmlData(keg::YAMLWriter& writer) const {
@@ -262,8 +273,9 @@ bool CPUPEM_SetVelocity::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mVelocityVec3, "Velocity");
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SetVelocity::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SetVelocity::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SetVelocity::saveYmlData(keg::YAMLWriter& writer) const {
@@ -287,8 +299,9 @@ bool CPUPEM_SetColor::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mColor, "Color");
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SetColor::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SetColor::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SetColor::saveYmlData(keg::YAMLWriter& writer) const {
@@ -312,13 +325,13 @@ bool CPUPEM_SetScale::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mScale, "Scale");
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SetScale::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SetScale::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SetScale::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    SAVE_ONE_VAR(mScale, "scale");
 }
 
 CPUPEM_SetPositionFromShape::CPUPEM_SetPositionFromShape() {
@@ -369,13 +382,17 @@ bool CPUPEM_SetPositionFromShape::updateAndRenderEditorControls() {
     return changed;
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_SetPositionFromShape::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SetPositionFromShape::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_SetPositionFromShape::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    beginMap(writer);
+    saveNested(writer, "radius", YML_SAVE_LAMBDA(mModuleData.mRadius));
+    pushKeyValue(writer, "shape");
+    writer.operator<<((int)mModuleData.mShapeType);
+    endMap(writer);
 }
 
 CPUPEM_ApplyForce::CPUPEM_ApplyForce() {
@@ -396,13 +413,13 @@ bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mForce, "Force");
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_ApplyForce::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_ApplyForce::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_ApplyForce::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    SAVE_ONE_VAR(mForce, "force");
 }
 
 CPUPEM_DragForce::CPUPEM_DragForce() {
@@ -423,11 +440,11 @@ bool CPUPEM_DragForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor");
 }
 
-std::unique_ptr<CPUParticleEmitterModule> CPUPEM_DragForce::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_DragForce::loadFromYml(keg::ReadContext& context, keg::Node node) const {
     assert(false);
+    return true;
 }
 
 void CPUPEM_DragForce::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+    SAVE_ONE_VAR(mDragFactor, "drag");
 }

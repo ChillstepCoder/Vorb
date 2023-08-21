@@ -7,7 +7,7 @@ struct MaterialHandle;
 struct TileGrassData;
 struct FishDef;
 class MaterialShader;
-struct ParticleSystemDef;
+class ParticleSystemDef;
 
 DECL_VG(class GBuffer);
 

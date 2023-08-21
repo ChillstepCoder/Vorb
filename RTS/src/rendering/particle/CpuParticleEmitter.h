@@ -8,7 +8,7 @@
 
 class CPUParticleSystem;
 class MaterialShader;
-struct ParticleEmitterDef;
+class ParticleEmitterDef;
 
 
 struct CpuParticlesGpuData {
@@ -116,7 +116,7 @@ public:
     }
 
     void emitParticles(ui32v2 countRange);
-    void emitParticles(ui32 count);
+    void emitParticles(int count);
 protected:
     void allocateParticleData();
     void render();
@@ -143,10 +143,10 @@ protected:
     f32 mGlobalParticleLifespan = 3.0f;
     color4 mGlobalParticleColor = color::White;
     MaterialID mGlobalMaterialID = 0;
-    ui32 mFirstActiveParticle = 0;
-    ui32 mLastActiveParticle = 0;
-    ui32 mActiveParticles = 0;
-    ui32 mMaxParticles;
+    int mFirstActiveParticle = 0;
+    int mLastActiveParticle = -1;
+    int mActiveParticles = 0;
+    int mMaxParticles;
     int mBaseInstance = 0;
     bool mLooping = false;
     bool mDataChanged = false;

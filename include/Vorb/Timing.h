@@ -64,7 +64,7 @@ public:
     TimePoint getCurrTime() const { return mCurrTime; }
 
     f64 getMsPerTick() const { return mMsPerTick; }
-    f32 getSecPerTick() const { return mMsPerTick / 1000.0; }
+    f64 getSecPerTick() const { return mMsPerTick / 1000.0; }
 
 protected:
     TimePoint mCurrTime = {};

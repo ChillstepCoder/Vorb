@@ -3,7 +3,7 @@
 #include "rendering/particle/CpuParticleEmitter.h"
 
 class MaterialShader;
-struct ParticleSystemDef;
+class ParticleSystemDef;
 
 typedef std::unique_ptr<CpuParticleEmitter> CpuParticleEmitterPtr;
 

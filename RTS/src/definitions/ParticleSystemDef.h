@@ -2,11 +2,14 @@
 
 #include "rendering/particle/CPUParticleEmitterModule.h"
 
+#include "resources/IAsset.h"
+
 class MaterialShader;
 
 typedef std::vector<std::unique_ptr<CPUParticleEmitterModule>> CPUParticleEmitterModuleVector;
 
-struct ParticleEmitterDef {
+class ParticleEmitterDef : public IAsset {
+public:
 
     bool isValid() { return mShader != nullptr; }
 
@@ -24,7 +27,8 @@ struct ParticleEmitterDef {
     bool mLooping = true;
 };
 
-struct ParticleSystemDef {
+class ParticleSystemDef : public IAsset {
+public:
     nString mSystemName;
     ParticleSystemID mID;
     std::vector<ParticleEmitterDef> mEmitters;

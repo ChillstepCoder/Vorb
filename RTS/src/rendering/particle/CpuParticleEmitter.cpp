@@ -138,7 +138,7 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
             }
         }
         else {
-            for (ui32 i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
+            for (int i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
                 if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
                     continue;
                 }
@@ -182,7 +182,8 @@ void CpuParticleEmitter::removeParticle(ParticleID id) {
     assert(mActiveParticles > 0);
 
     if (--mActiveParticles == 0) {
-        mFirstActiveParticle = mLastActiveParticle = 0;
+        mFirstActiveParticle = 0;
+        mLastActiveParticle = -1;
     }
     else {
         if (id == mFirstActiveParticle) {
@@ -250,19 +251,19 @@ f32 CpuParticleEmitter::getParticleNormalizedLifetime(ParticleID id) const {
 
 void CpuParticleEmitter::emitParticles(ui32v2 countRange) {
     
-    ui32 emitCount = ((ui32)Random::getCachedRandom() % (countRange.y - countRange.x)) + countRange.x;
+    int emitCount = (int)(Random::getCachedRandom() % (countRange.y - countRange.x)) + countRange.x;
     emitCount = glm::min(emitCount, mActiveParticles - mMaxParticles);
     emitParticles(emitCount);
 }
 
-void CpuParticleEmitter::emitParticles(ui32 count) {
+void CpuParticleEmitter::emitParticles(int count) {
     if (count == 0) {
         return;
     }
     assert(mActiveParticles <= mMaxParticles);
     count = glm::min(count, mMaxParticles - mActiveParticles);
     mDataChanged = true;
-    for (ui32 i = 0; i < count; ++i) {
+    for (int i = 0; i < count; ++i) {
         if (mFreeParticleIDs.size()) {
             ParticleID recycledId = mFreeParticleIDs.back();
             mParticleData.mPositions[recycledId] = f32v3(0.0f);

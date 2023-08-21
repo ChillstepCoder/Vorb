@@ -74,6 +74,7 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
             changed |= ImGui::ColorPicker4(label, colorf, ImGuiColorEditFlags_Uint8);
             color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
+        static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
     }
 
     auto displayOperationsSelectorCombo = [&]() -> const CPUParticleEmitterOperation* {
@@ -133,6 +134,19 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     return changed;
 }
 
+void CPUParticleEmitterVariable::saveYmlData(keg::YAMLWriter& writer) const
+{
+    if (mOperation) {
+        mOperation->saveYml(writer);
+    }
+    else {
+        std::visit([&](auto&& arg) {
+            YmlSerializable::saveKeyValue(writer, "val", arg);
+        }, mVarData);
+        static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
+    }
+}
+
 bool CPUParticleEmitterOperation::updateAndRenderControls() {
     ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
     ImGui::BeginGroup();
@@ -155,6 +169,21 @@ bool CPUParticleEmitterOperation::updateAndRenderControls() {
     return changed;
 }
 
+bool CPUParticleEmitterOperation::loadFromYml(keg::ReadContext& context, keg::Node node) const
+{
+    throw std::logic_error("The method or operation is not implemented.");
+}
+
+void CPUParticleEmitterOperation::saveYmlData(keg::YAMLWriter& writer) const
+{
+    CPUParticleEmitterVariableVariantTypePair input = getVariantInput();
+    if (input.first != CPUparticleEmitterVariableVariantType::None) {
+        mParam0.saveYmlData(writer);
+    }
+    if (input.second != CPUparticleEmitterVariableVariantType::None) {
+        mParam1.saveYmlData(writer);
+    }
+}
 
 void CPUPEO_QueryPosition::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
     output->mVarData = emitter.getParticlePosition(id);

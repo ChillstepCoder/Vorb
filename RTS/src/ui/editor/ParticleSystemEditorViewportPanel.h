@@ -1,8 +1,8 @@
 #pragma once
 #include "IEditorViewportPanel.h"
 
-struct ParticleSystemDef;
-struct ParticleEmitterDef;
+class ParticleSystemDef;
+class ParticleEmitterDef;
 class CPUParticleEmitterModule;
 class CPUParticleSystem;
 

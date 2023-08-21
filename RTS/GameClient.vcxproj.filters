@@ -819,6 +819,9 @@
     <ClCompile Include="src\resources\ParticleSystemRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\IAssetRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1959,6 +1962,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\gpt\GptApi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\serialization\YmlSerializable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\IAsset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\IAssetRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

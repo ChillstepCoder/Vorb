@@ -411,6 +411,7 @@
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\FishRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
+    <ClCompile Include="src\resources\IAssetRepository.cpp" />
     <ClCompile Include="src\resources\MaterialRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\ParticleSystemRepository.cpp" />
@@ -492,6 +493,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
+    <ClInclude Include="src\ai\gpt\GptApi.h" />
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
@@ -757,6 +759,8 @@
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
+    <ClInclude Include="src\resources\IAsset.h" />
+    <ClInclude Include="src\resources\IAssetRepository.h" />
     <ClInclude Include="src\resources\MaterialRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\ParticleSystemRepository.h" />
@@ -770,6 +774,7 @@
     <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />
+    <ClInclude Include="src\serialization\YmlSerializable.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\skill\SkillSlot.h" />
     <ClInclude Include="src\stdafx.h" />

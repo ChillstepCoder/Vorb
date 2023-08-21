@@ -37,9 +37,9 @@ class ModuleType : public CPUParticleEmitterModule { \
     BitFlags<ParticleEmitterModuleStage> getStages() const override { \
         return BitFlags<ParticleEmitterModuleStage>(Stage); \
     } \
-    const char* const getName() const override { return ModuleName; } \
-    const char* const getYmlName() const override { return YmlName; } \
-    std::unique_ptr<CPUParticleEmitterModule> loadFromYml(keg::ReadContext& context, keg::Node node) const override; \
+    constexpr const char* const getName() const override { return ModuleName; } \
+    constexpr const char* const getYmlName() const override { return YmlName; } \
+    bool loadFromYml(keg::ReadContext& context, keg::Node node) const override; \
     void saveYmlData(keg::YAMLWriter& writer) const override; \
 private:
 
@@ -54,8 +54,9 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::Emitt
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Rate", "spawn_rate")
     MODULE_DEF(
         CPUParticleEmitterVariable mEmitRateSec = CPUParticleEmitterVariable(0.0f);
-        CPUParticleEmitterVariable mNextEmitTime = CPUParticleEmitterVariable(0.0f); // Initial delay
+        CPUParticleEmitterVariable mInitialDelay = CPUParticleEmitterVariable(0.0f);
         CPUParticleEmitterVariable mSpawnCount = CPUParticleEmitterVariable(ui32(3));
+        f32 mNextEmitTime = -1.0f;
     );
 };
 

@@ -60,9 +60,11 @@ namespace keg {
 
         /// @return The YAML data constructed up to this point
         const cString c_str() const;
+        size_t size() const;
     private:
         YAMLEmitter* m_emitter; ///< Pointer to emitter implementation
     };
+
 }
 
 #endif // !Vorb_YAMLWriter_h__
