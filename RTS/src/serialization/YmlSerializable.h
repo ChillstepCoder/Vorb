@@ -3,6 +3,8 @@
 #define YML_SAVE_LAMBDA(obj) \
   [inobj = &obj](keg::YAMLWriter& writer) { inobj->saveYmlData(writer); }
 
+#include <ryml.hpp>
+
 // Simple interface to turn anything into a yml node
 class YmlSerializable {
 public:
@@ -12,6 +14,17 @@ public:
     virtual constexpr const char* const getYmlName() const = 0;
     virtual bool loadFromYml(keg::ReadContext& context, keg::Node node) const = 0;
     // End pure virtual interface
+
+    virtual void saveYmlNew(ryml::Tree& tree, ryml::NodeRef parentNode) const {
+        ryml::NodeRef thisNode = parentNode[getYmlName()];
+
+          //if (!mSerializeNameOnly) {
+          //    beginMap(writer);
+          //    pushKeyValue(writer, getYmlName());
+          //    saveYmlData(writer);
+          //    endMap(writer);
+          //}
+    }
 
     void saveYml(keg::YAMLWriter& writer) const {
         if (mSerializeNameOnly) {
@@ -68,6 +81,7 @@ protected:
 
     // Pure virtual interface
     virtual void saveYmlData(keg::YAMLWriter& writer) const = 0;
+   // virtual void saveYmlDataNew(keg::YAMLWriter& writer) const = 0;
     // End pure virtual interface
 
     bool mSerializeNameOnly = false;

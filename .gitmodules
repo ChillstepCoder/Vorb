@@ -22,4 +22,6 @@
 [submodule "RTS/dependencies/meshoptimizer"]
 	path = RTS/dependencies/meshoptimizer
 	url = https://github.com/zeux/meshoptimizer.git
-
+[submodule "RTS/dependencies/rapidyaml"]
+	path = RTS/dependencies/rapidyaml
+	url = https://github.com/biojppm/rapidyaml.git

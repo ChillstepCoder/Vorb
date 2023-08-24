@@ -174,8 +174,7 @@ private:
 #define PROFILE_END_SESSION(name) Instrumentor::get().endSession()
 
 #define CONCAT(x, y) x ## y
-#define C(x, y) CONCAT(x, y)
-#define PROFILE_SCOPE(name) InstrumentationTimer C(timer, __LINE__)(name)
+#define PROFILE_SCOPE(name) InstrumentationTimer CONCAT(timer, __LINE__)(name)
 //#define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCSIG__)
 #define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCTION__)
 #else

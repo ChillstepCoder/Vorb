@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "ParticleSystemRepository.h"
 
-#include "serialization/YmlSerializable.h"
+#include "serialization/YmlSerializer.h"
 
 #include <fstream>
 #include <Vorb/io/IOManager.h>
 
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
+
 
 
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
@@ -151,7 +152,21 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
         }*/
     }
 
-    keg::YAMLWriter writer;
+    
+    //tree.root_id();
+    ryml::Tree tree;
+    ryml::NodeRef root = tree.rootref();
+    root |= ryml::MAP;
+    ryml::NodeRef child = root.append_child() << ryml::key("test2");
+    child |= ryml::MAP;
+    child.append_child() << ryml::key("test3") << "GOODBYE";
+    child.append_child() << ryml::key("test4") << "WORLD";
+    root["pi"] << ryml::fmt::real(3.141592654, 5);
+    root["xmas"] << ryml::fmt::boolalpha(true);
+    root["thiswork"];
+
+    // OLD
+    /*keg::YAMLWriter writer;
     YmlSerializable::beginMap(writer);
     YmlSerializable::pushKeyValue(writer, "emitters");
     YmlSerializable::beginSequence(writer);
@@ -167,6 +182,12 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     YmlSerializable::endMap(writer);
 
     return saveAssetContents(particleSystem, writer.c_str(), writer.size());
+    */
+    std::stringstream ss;
+    ss << tree;
+    nString str = ss.str();
+    return saveAssetContents(particleSystem, str.c_str(), str.size());
+    return true;
 }
 
 void ParticleSystemRepository::saveParticleEmitter(keg::YAMLWriter& writer, const ParticleEmitterDef& particleEmitter)
@@ -208,6 +229,7 @@ ParticleSystemDef* ParticleSystemRepository::tryAddNewParticleSystem(const nStri
     ParticleSystemID id = mParticleSystems.size();
     mParticleSystemLookup[name] = id;
     ParticleSystemDef& newDef = mParticleSystems.emplace_back();
+    newDef.mSystemName = name;
     newDef.mID = id;
     return &newDef;
 }

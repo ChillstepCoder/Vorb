@@ -2,6 +2,8 @@
 #include "MaterialRepository.h"
 #include "resources/TextureRepository.h"
 
+#include "serialization/YmlSerializer.h"
+
 #include <Vorb/graphics/SamplerState.h>
 
 #include "Vorb/io/YAML.h"
@@ -41,6 +43,26 @@ struct MaterialFileData {
     bool flipV = false;
 
 };
+
+SERIALIZABLE_SIMPLE(MaterialFileData,
+    o.albedoTexture, "albedo",
+    o.normalTexture, "normal",
+    o.ambientOcclusionTexture, "ao",
+    o.displacementTexture, "disp",
+    o.roughnessTexture, "rough",
+    o.metalTexture, "metal",
+    /*o.renderPass, "render_pass",*/
+    /*o.samplerState, "sampler_state",*/
+    o.emissiveColor, "emissive_color",
+    o.albedoColor, "albedo_color",
+    o.roughness, "roughness",
+    o.transparencyFactor, "transparency",
+    o.alphaTest, "alpha_test",
+    o.metallicFactor, "metallic",
+    o.castsShadow, "cast_shadow",
+    o.receivesShadow, "receive_shadow",
+    o.flipV, "flipv"
+)
 KEG_TYPE_DEF_SAME_NAME(MaterialFileData, kt) {
     kt.addValue("albedo", keg::Value::basic(offsetof(MaterialFileData, albedoTexture), keg::BasicType::STRING));
     kt.addValue("normal", keg::Value::basic(offsetof(MaterialFileData, normalTexture), keg::BasicType::STRING));
