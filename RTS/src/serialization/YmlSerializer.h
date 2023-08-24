@@ -65,3 +65,41 @@ namespace c4 {
         }
     }
 }
+
+// TODO: UTILS
+// https://xuhuisun.com/post/c++-weekly-2-constexpr-map/
+template <typename Key, typename Value, std::size_t Size>
+struct ConstexprMap {
+    std::array<std::pair<Key, Value>, Size> data;
+
+    [[nodiscard]] constexpr Value at(const Key& key) const {
+        const auto itr =
+            std::find_if(begin(data), end(data),
+                [&key](const auto& v) { return v.first == key; });
+        if (itr != end(data)) {
+            return itr->second;
+        }
+        else {
+            throw std::range_error("Not Found");
+        }
+    }
+};
+x;
+// Usage: 
+#define SERIALIZABLE_ENUM(Type, ...) \
+namespace c4 { \
+namespace yml { \
+ConstexprMap \
+inline static std::map< const char* const s##Type##ToStr[] = { \
+    __VA_ARGS__ \
+} \
+ void write(c4::yml::NodeRef* n, glm::vec<N, T, glm::defaultp> const& v) \
+{ \
+ \
+} \
+bool read(c4::yml::ConstNodeRef const& n, glm::vec<N, T, glm::defaultp>* v) \
+{ \
+} \
+ \
+} \
+} 
