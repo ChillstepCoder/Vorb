@@ -84,6 +84,49 @@ struct ConstexprMap {
         }
     }
 };
+
+// Chatgpt deduce size:
+template <typename Key, typename Value, std::size_t Size>
+struct Map2 {
+    std::array<std::pair<Key, Value>, Size> data;
+
+    [[nodiscard]] constexpr Value at(const Key& key) const {
+        const auto itr = std::find_if(begin(data), end(data),
+            [&key](const auto& v) { return v.first == key; });
+
+        if (itr != end(data)) {
+            return itr->second;
+        }
+        else {
+            throw std::range_error("Not Found");
+        }
+    }
+};
+//The Map class remains largely unchanged.The change is in the addition of a deduction guide after the Map class definition.This tells the compiler how to deduce
+// the template arguments for a class template based on the constructor arguments.In this case, it says that when you create a Map from an std::array with a known size Size, 
+// the compiler should use that size as the Size template parameter for the Map class.
+//Here's how you can use this new version of the Map class:
+template <typename Key, typename Value, std::size_t Size>
+Map2(const std::array<std::pair<Key, Value>, Size>&) -> Map2<Key, Value, Size>;
+
+int lookup_value(const std::string_view sv) {
+    using namespace std::literals::string_view_literals;
+
+    static constexpr auto map = Map{
+        {{"black"sv, 7},
+         {"blue"sv, 3},
+         {"cyan"sv, 5},
+         {"green"sv, 2},
+         {"magenta"sv, 6},
+         {"red"sv, 1},
+         {"white"sv, 8},
+         {"yellow"sv, 4}}
+    };
+
+    return map.at(sv);
+}
+
+
 x;
 // Usage: 
 #define SERIALIZABLE_ENUM(Type, ...) \
