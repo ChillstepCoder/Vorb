@@ -827,6 +827,7 @@
     <ClInclude Include="src\util\BitFlags.h" />
     <ClInclude Include="src\util\Cartesian.h" />
     <ClInclude Include="src\util\CommonUtil.h" />
+    <ClInclude Include="src\util\ConstexprMap.h" />
     <ClInclude Include="src\util\CubeFacing.h" />
     <ClInclude Include="src\util\GridEdge.h" />
     <ClInclude Include="src\util\GridEdgeFinder.h" />

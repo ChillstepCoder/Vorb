@@ -26,6 +26,7 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
 }
 static_assert(e_cast(TileShape::COUNT) == 8);
 
+
 KEG_TYPE_DEF_SAME_NAME(ItemInputDef, kt) {
     kt.addValue("item", keg::Value::basic(offsetof(ItemInputDef, itemName), keg::BasicType::STRING));
     kt.addValue("count", keg::Value::basic(offsetof(ItemInputDef, count), keg::BasicType::UI32));

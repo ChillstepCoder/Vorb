@@ -2,7 +2,10 @@
 
 #include <ryml.hpp>
 #include <c4/format.hpp>
+#include <c4/std/string_view.hpp>
 #include <ryml_std.hpp> // optional header, provided for std:: interop
+
+#include "util/ConstexprMap.h"
 
 namespace YmlSerializer {
     template<typename T>
@@ -66,83 +69,31 @@ namespace c4 {
     }
 }
 
-// TODO: UTILS
-// https://xuhuisun.com/post/c++-weekly-2-constexpr-map/
-template <typename Key, typename Value, std::size_t Size>
-struct ConstexprMap {
-    std::array<std::pair<Key, Value>, Size> data;
-
-    [[nodiscard]] constexpr Value at(const Key& key) const {
-        const auto itr =
-            std::find_if(begin(data), end(data),
-                [&key](const auto& v) { return v.first == key; });
-        if (itr != end(data)) {
-            return itr->second;
-        }
-        else {
-            throw std::range_error("Not Found");
-        }
-    }
-};
-
-// Chatgpt deduce size:
-template <typename Key, typename Value, std::size_t Size>
-struct Map2 {
-    std::array<std::pair<Key, Value>, Size> data;
-
-    [[nodiscard]] constexpr Value at(const Key& key) const {
-        const auto itr = std::find_if(begin(data), end(data),
-            [&key](const auto& v) { return v.first == key; });
-
-        if (itr != end(data)) {
-            return itr->second;
-        }
-        else {
-            throw std::range_error("Not Found");
-        }
-    }
-};
-//The Map class remains largely unchanged.The change is in the addition of a deduction guide after the Map class definition.This tells the compiler how to deduce
-// the template arguments for a class template based on the constructor arguments.In this case, it says that when you create a Map from an std::array with a known size Size, 
-// the compiler should use that size as the Size template parameter for the Map class.
-//Here's how you can use this new version of the Map class:
-template <typename Key, typename Value, std::size_t Size>
-Map2(const std::array<std::pair<Key, Value>, Size>&) -> Map2<Key, Value, Size>;
-
-int lookup_value(const std::string_view sv) {
-    using namespace std::literals::string_view_literals;
-
-    static constexpr auto map = Map{
-        {{"black"sv, 7},
-         {"blue"sv, 3},
-         {"cyan"sv, 5},
-         {"green"sv, 2},
-         {"magenta"sv, 6},
-         {"red"sv, 1},
-         {"white"sv, 8},
-         {"yellow"sv, 4}}
-    };
-
-    return map.at(sv);
-}
-
-
-x;
-// Usage: 
+// Usage: pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
 #define SERIALIZABLE_ENUM(Type, ...) \
 namespace c4 { \
 namespace yml { \
-ConstexprMap \
-inline static std::map< const char* const s##Type##ToStr[] = { \
-    __VA_ARGS__ \
-} \
- void write(c4::yml::NodeRef* n, glm::vec<N, T, glm::defaultp> const& v) \
-{ \
- \
-} \
-bool read(c4::yml::ConstNodeRef const& n, glm::vec<N, T, glm::defaultp>* v) \
-{ \
-} \
- \
+   namespace { \
+   using namespace std; \
+   using namespace std::literals; \
+   using enum Type; \
+    constexpr auto s##Type##NameLookup = ConstexprMap( \
+        std::array{ \
+        __VA_ARGS__ \
+        } \
+    ); \
+    void write(c4::yml::NodeRef* n, Type const& v) \
+    { \
+        const c4::csubstr substr = c4::to_csubstr(s##Type##NameLookup[v]); \
+        *n << substr;\
+    } \
+    bool read(c4::yml::ConstNodeRef const& n, Type* v) \
+    { \
+        c4::csubstr s; \
+        n >> s; \
+        *v = s##Type##NameLookup.getKeyForValue(std::string_view(s.data(), s.size())); \
+        return true; \
+    } \
+    } \
 } \
 } 
