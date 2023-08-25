@@ -3,47 +3,63 @@
 #include <ryml.hpp>
 #include <c4/format.hpp>
 #include <c4/std/string_view.hpp>
-#include <ryml_std.hpp> // optional header, provided for std:: interop
+#include <ryml_std.hpp>
 
 #include "util/ConstexprMap.h"
 
 namespace YmlSerializer {
     template<typename T>
-    void SerializeYmlFields(ryml::Tree& s) {}
+    void serializeYmlFields(ryml::NodeRef& s) {}
 
     template<typename T>
-    void DeserializeYmlFields(ryml::Tree& s) {}
+    void deserializeYmlFields(const ryml::ConstNodeRef& s) {}
 
     // Recursive serialize/deserialize field for variadic templates
     template<typename T, typename First, typename... Rest>
-    void SerializeYmlFields(ryml::Tree& s, const First& first, const char* firstName, const Rest&... rest) {
-        s[firstName] << first;
-        SerializeYmlFields<T>(s, rest...);
+    void serializeYmlFields(ryml::NodeRef& s, const First& first, std::string_view firstName, const Rest&... rest) {
+        // TODO: Dont serialize if default?
+        s[ryml::to_csubstr(firstName)] << first;
+        serializeYmlFields<T>(s, rest...);
     }
 
     template<typename T, typename First, typename... Rest>
-    void DeserializeYmlFields(ryml::Tree& s, First& first, const char* firstName, Rest&... rest) {
-        s[firstName] >> first;
-        DeserializeYmlFields<T>(s, rest...);
+    void deserializeYmlFields(const ryml::ConstNodeRef& s, First& first, std::string_view firstName, Rest... rest) {
+        c4::csubstr nameSubstr = ryml::to_csubstr(firstName);
+        LOG_CRITICAL(" {} ", (int)s.type());
+        if (s.has_child(nameSubstr)) {
+            s[nameSubstr] >> first;
+        }
+        deserializeYmlFields<T>(s, rest...);
     }
 
     // The serialize and deserialize functions
     template<typename T>
-    void SerializeYml(ryml::Tree& s, const T& o) { assert(false && "SERIALIZABLE not provided for this type"); }
+    void serializeYml(ryml::NodeRef& s, const T& o) { assert(false && "SERIALIZABLE not provided for this type"); }
 
     template<typename T, typename... Fields>
-    void DeserializeYml(ryml::Tree& s, T& o) { assert(false && "SERIALIZABLE not provided for this type"); }
+    void deserializeYml(const ryml::ConstNodeRef& s, T& o) { assert(false && "SERIALIZABLE not provided for this type"); }
+
+    template<typename T>
+    void deserializeYml(const nString& ymlFileData, T& o) {
+        ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(ymlFileData));
+        assert((int)tree.crootref().type() > 1);
+        deserializeYml(tree.crootref(), o);
+    }
+
+    ryml::Tree parseFileData(const nString& ymlFileData) {
+        return ryml::parse_in_arena(ryml::to_csubstr(ymlFileData));
+    }
 }
 
-// Usage: SERIALIZABLE_SIMPLE(Type, o.Value, "value_name", ...)
+// Usage: SERIALIZABLE_SIMPLE(Type, o.Value, "value_name"sv, ...)
 #define SERIALIZABLE_SIMPLE(Type, ...) \
     template <> \
-    void YmlSerializer::SerializeYml(ryml::Tree& s, const Type& o) { \
-        SerializeYmlFields<Type>(s, __VA_ARGS__); \
+    void YmlSerializer::serializeYml(ryml::NodeRef& s, const Type& o) { \
+        serializeYmlFields<Type>(s, __VA_ARGS__); \
     } \
     template <> \
-    void YmlSerializer::DeserializeYml(ryml::Tree& s, Type& o) { \
-        DeserializeYmlFields<Type>(s, __VA_ARGS__); \
+    void YmlSerializer::deserializeYml(const ryml::ConstNodeRef& s, Type& o) { \
+        deserializeYmlFields<Type>(s, __VA_ARGS__); \
     }
 
 // Custom types
@@ -69,31 +85,34 @@ namespace c4 {
     }
 }
 
-// Usage: pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
-#define SERIALIZABLE_ENUM(Type, ...) \
-namespace c4 { \
-namespace yml { \
-   namespace { \
-   using namespace std; \
-   using namespace std::literals; \
-   using enum Type; \
-    constexpr auto s##Type##NameLookup = ConstexprMap( \
-        std::array{ \
-        __VA_ARGS__ \
+
+// Usage: ns::MyType, MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
+#define SERIALIZABLE_ENUM(Type, TypeNoNamespace, ...) \
+namespace c4::yml { \
+   namespace impl { \
+       using namespace std; \
+        inline constexpr auto s##TypeNoNamespace##NameLookup = ConstexprMap( \
+            std::array{ \
+            __VA_ARGS__ \
+            } \
+        ); \
+        inline void write(c4::yml::NodeRef* n, Type const& v) { \
+            const c4::csubstr substr = c4::to_csubstr(s##TypeNoNamespace##NameLookup[v]); \
+            *n << substr;\
         } \
-    ); \
-    void write(c4::yml::NodeRef* n, Type const& v) \
-    { \
-        const c4::csubstr substr = c4::to_csubstr(s##Type##NameLookup[v]); \
-        *n << substr;\
+        inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
+            c4::csubstr s; \
+            n >> s; \
+            *v = s##TypeNoNamespace##NameLookup.getKeyForValue(std::string_view(s.data(), s.size())); \
+            return true; \
+        } \
     } \
-    bool read(c4::yml::ConstNodeRef const& n, Type* v) \
-    { \
-        c4::csubstr s; \
-        n >> s; \
-        *v = s##Type##NameLookup.getKeyForValue(std::string_view(s.data(), s.size())); \
-        return true; \
+    inline void write(c4::yml::NodeRef* n, Type const& v) { \
+        impl::write(n, v); \
     } \
+    inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
+        return impl::read(n, v); \
     } \
-} \
 } 
+
+#define SERIALIZABLE_ENUM_SAME_NAME(Type, ...) SERIALIZABLE_ENUM(Type, Type, __VA_ARGS__)

@@ -2,9 +2,8 @@
 #include "MaterialRepository.h"
 #include "resources/TextureRepository.h"
 
-#include "serialization/YmlSerializer.h"
-
 #include <Vorb/graphics/SamplerState.h>
+#include "serialization/VorbSerializableDefs.h"
 
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
@@ -45,43 +44,24 @@ struct MaterialFileData {
 };
 
 SERIALIZABLE_SIMPLE(MaterialFileData,
-    o.albedoTexture, "albedo",
-    o.normalTexture, "normal",
-    o.ambientOcclusionTexture, "ao",
-    o.displacementTexture, "disp",
-    o.roughnessTexture, "rough",
-    o.metalTexture, "metal",
-    /*o.renderPass, "render_pass",*/
-    /*o.samplerState, "sampler_state",*/
-    o.emissiveColor, "emissive_color",
-    o.albedoColor, "albedo_color",
-    o.roughness, "roughness",
-    o.transparencyFactor, "transparency",
-    o.alphaTest, "alpha_test",
-    o.metallicFactor, "metallic",
-    o.castsShadow, "cast_shadow",
-    o.receivesShadow, "receive_shadow",
-    o.flipV, "flipv"
+    o.albedoTexture, "albedo"sv,
+    o.normalTexture, "normal"sv,
+    o.ambientOcclusionTexture, "ao"sv,
+    o.displacementTexture, "disp"sv,
+    o.roughnessTexture, "rough"sv,
+    o.metalTexture, "metal"sv,
+    o.renderPass, "render_pass"sv,
+    o.samplerState, "sampler_state"sv,
+    o.emissiveColor, "emissive_color"sv,
+    o.albedoColor, "albedo_color"sv,
+    o.roughness, "roughness"sv,
+    o.transparencyFactor, "transparency"sv,
+    o.alphaTest, "alpha_test"sv,
+    o.metallicFactor, "metallic"sv,
+    o.castsShadow, "cast_shadow"sv,
+    o.receivesShadow, "receive_shadow"sv,
+    o.flipV, "flipv"sv
 )
-KEG_TYPE_DEF_SAME_NAME(MaterialFileData, kt) {
-    kt.addValue("albedo", keg::Value::basic(offsetof(MaterialFileData, albedoTexture), keg::BasicType::STRING));
-    kt.addValue("normal", keg::Value::basic(offsetof(MaterialFileData, normalTexture), keg::BasicType::STRING));
-    kt.addValue("ao", keg::Value::basic(offsetof(MaterialFileData, ambientOcclusionTexture), keg::BasicType::STRING));
-    kt.addValue("disp", keg::Value::basic(offsetof(MaterialFileData, displacementTexture), keg::BasicType::STRING));
-    kt.addValue("rough", keg::Value::basic(offsetof(MaterialFileData, roughnessTexture), keg::BasicType::STRING));
-    kt.addValue("metal", keg::Value::basic(offsetof(MaterialFileData, metalTexture), keg::BasicType::STRING));
-    kt.addValue("sampler_state", keg::Value::custom(offsetof(MaterialFileData, samplerState), "SamplerStateType", true));
-    kt.addValue("emissive_color", keg::Value::basic(offsetof(MaterialFileData, emissiveColor), keg::BasicType::F32_V4));
-    kt.addValue("albedo_color", keg::Value::basic(offsetof(MaterialFileData, albedoColor), keg::BasicType::F32_V4));
-    kt.addValue("roughness", keg::Value::basic(offsetof(MaterialFileData, roughness), keg::BasicType::F32_V2));
-    kt.addValue("transparency", keg::Value::basic(offsetof(MaterialFileData, transparencyFactor), keg::BasicType::F32));
-    kt.addValue("alpha_test", keg::Value::basic(offsetof(MaterialFileData, alphaTest), keg::BasicType::F32));
-    kt.addValue("metallic", keg::Value::basic(offsetof(MaterialFileData, metallicFactor), keg::BasicType::F32));
-    kt.addValue("cast_shadow", keg::Value::basic(offsetof(MaterialFileData, castsShadow), keg::BasicType::BOOL));
-    kt.addValue("receive_shadow", keg::Value::basic(offsetof(MaterialFileData, receivesShadow), keg::BasicType::BOOL));
-    kt.addValue("flipv", keg::Value::basic(offsetof(MaterialFileData, flipV), keg::BasicType::BOOL));
-    kt.addValue("render_pass", keg::Value::custom(offsetof(MaterialFileData, renderPass), "MaterialRenderPassType", true));
-}
 
 MaterialRepository::MaterialRepository(vio::IOManager& ioManager) : mIoManager(ioManager)
 {
@@ -104,14 +84,14 @@ nString getImplicitNormalPath(const vio::Path& materialPath) {
 
 bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureRepository& textureRepository) {
     MaterialFileData fileData;
-    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(MaterialFileData), true /*allowEmpty*/)) {
-        LOG_CRITICAL("Failed to parse material {}", filePath.getString());
-        return false;
+
+    const nString fileStr = mIoManager.readFileToString(filePath);
+    if (fileStr.size()) {
+        YmlSerializer::deserializeYml(fileStr, fileData);
     }
 
     // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Handle weird texture dimensions
-
 
     assert(mMaterialGpuData.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
     const MaterialID materialId = mMaterialGpuData.size();

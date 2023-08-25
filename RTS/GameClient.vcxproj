@@ -774,6 +774,7 @@
     <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />
+    <ClInclude Include="src\serialization\VorbSerializableDefs.h" />
     <ClInclude Include="src\serialization\YmlSerializable.h" />
     <ClInclude Include="src\serialization\YmlSerializer.h" />
     <ClInclude Include="src\services\Services.h" />

@@ -90,6 +90,8 @@ extern bool IS_SHUTTING_DOWN;
 // Items
 #include "item/ItemConst.h"
 
+// Serialization
+#include "serialization/YmlSerializer.h"
 
 // **************** Constexpr vectors *****************
 #include "math/ConstVectors.h"
@@ -127,6 +129,9 @@ inline void setThreadPriorityToMax() {
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
 #endif
 }
+
+// Literals
+using namespace std::literals::string_view_literals;
 
 // **************** NEW GRAPHICS API *****************
 #include "rendering/gl/GLObjects.h"

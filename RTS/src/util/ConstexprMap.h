@@ -27,7 +27,7 @@ struct ConstexprMap {
             return itr->first;
         }
         else {
-            assert(false && "Constexpr map is missing a key");
+            assert(false && "Wrong key name found in file");
             return Key();
         }
     }

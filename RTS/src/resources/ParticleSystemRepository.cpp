@@ -1,23 +1,16 @@
 #include "stdafx.h"
 #include "ParticleSystemRepository.h"
 
-#include "serialization/YmlSerializer.h"
-
 #include <fstream>
 #include <Vorb/io/IOManager.h>
 
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
-
-
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
-struct ParticleSystemFileData {
-    Array<nString> emitterNames;
-};
-KEG_TYPE_DEF_SAME_NAME(ParticleSystemFileData, kt) {
-    kt.addValue("emitters", keg::Value::array(offsetof(ParticleSystemFileData, emitterNames), keg::BasicType::STRING));
-}
+SERIALIZABLE_SIMPLE(ParticleSystemDef,
+    o.mSystemName, "name"sv
+)
 
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
     IAssetRepository(ioManager),
@@ -91,55 +84,11 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
 {
     nString data;
     mIoManager.readFileToString(filePath.getCString(), data);
+    ryml::Tree tree = YmlSerializer::parseFileData(data);
 
-    keg::ReadContext context;
-    context.env = keg::getGlobalEnvironment();
-    context.reader.init(data.c_str());
-    keg::Node node = context.reader.getFirst();
-    if (keg::getType(node) != keg::NodeType::MAP) {
-        LOG_CRITICAL("Failed to load {}, not a map", filePath.getCString());
-        context.reader.dispose();
-        return;
+    for (const ryml::ConstNodeRef n : tree.rootref().children()) {
+        assert(false); // TODO:
     }
-
-    ParticleSystemDef* newDef = tryAddNewParticleSystem(filePath.getFileNameNoExtension());
-    if (!newDef) {
-        LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
-        pError("Failed to load " + filePath.getString() + " already exists");
-        return;
-    }
-
-    auto modulesFunc = makeFunctor([&](Sender, size_t i, keg::Node value) {
-        // Parse modules
-        assert(keg::getType(node) == keg::NodeType::MAP);
-        /* for (auto iter : node->data) {
-             Node value = new YAMLNode;
-             m_allocated.insert(value);
-
-             value->data = iter.second;
-             f->invoke(this, iter.first.as<nString>(), value);
-         }*/
-
-        LOG_CRITICAL("{}", i);
-       // value->as<nString>();
-        /* auto&& it = mModulesYmlLookup.find(type);
-         if (it == mModulesYmlLookup.end()) {
-             LOG_CRITICAL("Invalid module token {} in {}", type, filePath.getCString());
-             return;
-         }
-         newDef->mEmitters.emplace_back();
-         CPUParticleEmitterModule* module = it->second;
-         module->loadFromYml(context, value);*/
-    });
-
-    auto topLevelFunc = makeFunctor([&](Sender, const nString& type, keg::Node value) {
-        if (type == "emitters") {
-            context.reader.forAllInSequence(value, &modulesFunc);
-        }
-    });
-
-    context.reader.forAllInMap(node, &topLevelFunc);
-    LOG_CRITICAL("DONE");
 }
 
 bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {

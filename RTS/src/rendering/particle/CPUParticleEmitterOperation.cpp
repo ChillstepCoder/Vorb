@@ -6,8 +6,6 @@
 #include "Resources/ResourceManager.h"
 #include "Resources/ParticleSystemRepository.h"
 
-#include "serialization/YmlSerializer.h"
-
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
