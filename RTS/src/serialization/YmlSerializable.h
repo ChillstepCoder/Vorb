@@ -12,77 +12,64 @@ public:
 
     // Pure virtual interface
     virtual constexpr const char* const getYmlName() const = 0;
-    virtual bool loadFromYml(keg::ReadContext& context, keg::Node node) const = 0;
+    virtual bool loadFromYml(ryml::ConstNodeRef node) = 0;
     // End pure virtual interface
 
-    virtual void saveYmlNew(ryml::Tree& tree, ryml::NodeRef parentNode) const {
+    virtual void saveYml(ryml::NodeRef parentNode) const {
         ryml::NodeRef thisNode = parentNode[getYmlName()];
-
-          //if (!mSerializeNameOnly) {
-          //    beginMap(writer);
-          //    pushKeyValue(writer, getYmlName());
-          //    saveYmlData(writer);
-          //    endMap(writer);
-          //}
+        thisNode |= ryml::MAP;
+        saveYmlData(thisNode);
     }
 
-    void saveYml(keg::YAMLWriter& writer) const {
-        if (mSerializeNameOnly) {
-            writer.operator<<((char*)getYmlName());
-        }
-        else {
-            beginMap(writer);
-            pushKeyValue(writer, getYmlName());
-            saveYmlData(writer);
-            endMap(writer);
-        }
-    }
-
-    static void beginMap(keg::YAMLWriter& writer) {
-        writer.push(keg::WriterParam::BEGIN_MAP);
-    }
-    static void endMap(keg::YAMLWriter& writer) {
-        writer.push(keg::WriterParam::END_MAP);
-    }
-    static void beginSequence(keg::YAMLWriter& writer) {
-        writer.push(keg::WriterParam::BEGIN_SEQUENCE);
-    }
-    static void endSequence(keg::YAMLWriter& writer) {
-        writer.push(keg::WriterParam::END_SEQUENCE);
-    }
-    static void pushValue(keg::YAMLWriter& writer) {
-        writer.push(keg::WriterParam::VALUE);
-    }
-    static void pushKeyValue(keg::YAMLWriter& writer, const char* key){
-        writer.push(keg::WriterParam::KEY);
-        writer << const_cast<char*>(key);
-        writer.push(keg::WriterParam::VALUE);
-    }
-    static void saveNested(keg::YAMLWriter& writer, const char* key, const YmlSerializable& nested) {
-        pushKeyValue(writer, key);
-        nested.saveYml(writer);
-    }
-    static void saveNested(keg::YAMLWriter& writer, const char* key, std::function<void(keg::YAMLWriter&)> nestedFunc) {
-        pushKeyValue(writer, key);
-        nestedFunc(writer);
-    }
-    template<typename T>
-    static void saveKeyValue(keg::YAMLWriter& writer, const char* key, const T& value) {
-        pushKeyValue(writer, key);
-        writer.operator<<(value);
-    }
-    template<typename T>
-    static void saveValue(keg::YAMLWriter& writer, const T& value) {
-        writer.push(keg::WriterParam::VALUE);
-        writer.operator<<(value);
+    static void saveWithLambda(ryml::NodeRef parentNode, std::string_view key, std::function<void(ryml::NodeRef)> saveFunc) {
+        ryml::NodeRef newNode = parentNode[c4::to_csubstr(key)];
+        saveFunc(newNode);
     }
 
 protected:
-
-    // Pure virtual interface
-    virtual void saveYmlData(keg::YAMLWriter& writer) const = 0;
-   // virtual void saveYmlDataNew(keg::YAMLWriter& writer) const = 0;
-    // End pure virtual interface
-
-    bool mSerializeNameOnly = false;
+    virtual void saveYmlData(ryml::NodeRef node) const {};
 };
+
+template<typename T>
+struct GlobalYmlMap {
+    std::mutex mMutex;
+    std::unordered_map<nString, std::unique_ptr<T>> mMap;
+};
+
+namespace yml {
+    template<typename T>
+    inline GlobalYmlMap<T>& objectMap() {
+        static GlobalYmlMap<T> globalMap;
+        return globalMap;
+    }
+
+    template<typename T>
+    inline std::unique_ptr<T> cloneYmlObject(c4::csubstr name) {
+        std::string_view sv(name.data(), name.size());
+        nString name(sv);
+        GlobalYmlMap<T>& globalMap = objectMap<T>().mMap;
+        std::lock_guard lock(globalMap.mMutex);
+        globalMap.mMap[name] = obj.clone();
+        return
+    }
+};
+
+template<typename T, typename Base>
+concept HasCloneMethod = requires(T a) {
+    { a.clone() } -> std::same_as<std::unique_ptr<Base>>; // Must have clone function which returns unique_ptr
+};
+
+template<typename Base, HasCloneMethod<Base> T>
+class RegisterInYmlObjectMap {
+public:
+    RegisterInYmlObjectMap(const std::string& key) {
+        GlobalYmlMap<Base>& globalMap = yml::objectMap<Base>();
+        std::lock_guard lock(globalMap.mMutex);
+        globalMap.mMap[key] = std::make_unique<T>();
+    }
+};
+
+// Make sure baseClass is the first class above YmlSerializable. All objects will be returned
+// with that type.
+#define REGISTER_YML_OBJECT(key, object, baseClass) \
+    inline static RegisterInYmlObjectMap<baseClass, object> register_##object(key)

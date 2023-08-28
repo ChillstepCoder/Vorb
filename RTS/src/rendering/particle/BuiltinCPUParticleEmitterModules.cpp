@@ -11,6 +11,12 @@
 
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
+#define SAVE_VAR(var, name) \
+mModuleData.var.saveYmlData(node, name)
+
+#define LOAD_VAR(var, name) \
+node[c4::to_csubstr(name)] >> mModuleData.var
+
 #define SAVE_ONE_VAR(var1, name1) \
 beginMap(writer); \
 saveNested(writer, name1, YML_SAVE_LAMBDA(mModuleData.var1));\
@@ -54,7 +60,7 @@ void CPUPEM_SpawnBurst::refresh() {
             moduleData->mFired = true;
             moduleData->mSpawnCount.evaluate(emitter, particleID);
             ui32 spawnCount = std::get<ui32>(moduleData->mSpawnCount.mVarData);
-emitter.emitParticles(spawnCount);
+            emitter.emitParticles(spawnCount);
         }
     };
 }
@@ -66,13 +72,15 @@ bool CPUPEM_SpawnBurst::updateAndRenderEditorControls() {
     return changed;
 }
 
-bool CPUPEM_SpawnBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_SpawnBurst::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mDelay, "delay"sv);
+    LOAD_VAR(mSpawnCount, "spawn_count"sv);
     return true;
 }
 
-void CPUPEM_SpawnBurst::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_TWO_VAR(mDelay, "delay", mSpawnCount, "spawn_count");
+void CPUPEM_SpawnBurst::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mDelay, "delay"sv);
+    SAVE_VAR(mSpawnCount, "spawn_count"sv);
 }
 
 CPUPEM_SpawnRate::CPUPEM_SpawnRate() {
@@ -107,13 +115,17 @@ bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
     return changed;
 }
 
-bool CPUPEM_SpawnRate::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_SpawnRate::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mEmitRateSec, "emit_rate"sv);
+    LOAD_VAR(mInitialDelay, "initial_delay"sv);
+    LOAD_VAR(mSpawnCount, "spawn_count"sv);
     return true;
 }
 
-void CPUPEM_SpawnRate::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_THREE_VAR(mEmitRateSec, "emit_rate", mInitialDelay, "initial_delay", mSpawnCount, "spawn_count");
+void CPUPEM_SpawnRate::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mEmitRateSec, "emit_rate"sv);
+    SAVE_VAR(mInitialDelay, "initial_delay"sv);
+    SAVE_VAR(mSpawnCount, "spawn_count"sv);
 }
 
 CPUPEM_RingBurst::CPUPEM_RingBurst() {
@@ -160,13 +172,17 @@ bool CPUPEM_RingBurst::updateAndRenderEditorControls() {
     return changed;
 }
 
-bool CPUPEM_RingBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_RingBurst::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mSpeedRange, "speed_range"sv);
+    LOAD_VAR(mMaxAngleFromRingRad, "max_angle"sv);
+    LOAD_VAR(mRingNormal, "ring_normal"sv);
     return true;
 }
 
-void CPUPEM_RingBurst::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_THREE_VAR(mSpeedRange, "speed_range", mMaxAngleFromRingRad, "max_angle", mRingNormal, "ring_normal");
+void CPUPEM_RingBurst::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mSpeedRange, "speed_range"sv);
+    SAVE_VAR(mMaxAngleFromRingRad, "max_angle"sv);
+    SAVE_VAR(mRingNormal, "ring_normal"sv);
 }
 
 CPUPEM_ConeBurst::CPUPEM_ConeBurst() {
@@ -223,13 +239,17 @@ bool CPUPEM_ConeBurst::updateAndRenderEditorControls() {
     return changed;
 }
 
-bool CPUPEM_ConeBurst::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_ConeBurst::loadFromYml(ryml::ConstNodeRef node)  {
+    LOAD_VAR(mSpeedRange, "speed_range"sv);
+    LOAD_VAR(mAngleRange, "angle_range"sv);
+    LOAD_VAR(mDirection, "dir"sv);
     return true;
 }
 
-void CPUPEM_ConeBurst::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_THREE_VAR(mSpeedRange, "speed", mAngleRange, "angle_range", mDirection, "dir");
+void CPUPEM_ConeBurst::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mSpeedRange, "speed_range"sv);
+    SAVE_VAR(mAngleRange, "angle_range"sv);
+    SAVE_VAR(mDirection, "dir"sv);
 }
 
 CPUPEM_SetPosition::CPUPEM_SetPosition() {
@@ -247,14 +267,13 @@ bool CPUPEM_SetPosition::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mPositionVec3, "Position");
 }
 
-bool CPUPEM_SetPosition::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_SetPosition::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mPositionVec3, "pos"sv);
     return true;
 }
 
-void CPUPEM_SetPosition::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+void CPUPEM_SetPosition::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mPositionVec3, "pos"sv);
 }
 
 CPUPEM_SetVelocity::CPUPEM_SetVelocity() {
@@ -273,14 +292,13 @@ bool CPUPEM_SetVelocity::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mVelocityVec3, "Velocity");
 }
 
-bool CPUPEM_SetVelocity::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_SetVelocity::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mVelocityVec3, "vel"sv);
     return true;
 }
 
-void CPUPEM_SetVelocity::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+void CPUPEM_SetVelocity::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mVelocityVec3, "vel"sv);
 }
 
 CPUPEM_SetColor::CPUPEM_SetColor() {
@@ -299,14 +317,13 @@ bool CPUPEM_SetColor::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mColor, "Color");
 }
 
-bool CPUPEM_SetColor::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_SetColor::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mColor, "color"sv);
     return true;
 }
 
-void CPUPEM_SetColor::saveYmlData(keg::YAMLWriter& writer) const {
-    // TODO: Implement
-    assert(false);
+void CPUPEM_SetColor::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mColor, "color"sv);
 }
 
 CPUPEM_SetScale::CPUPEM_SetScale() {
@@ -325,13 +342,13 @@ bool CPUPEM_SetScale::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mScale, "Scale");
 }
 
-bool CPUPEM_SetScale::loadFromYml(keg::ReadContext& context, keg::Node node) const {
-    assert(false);
+bool CPUPEM_SetScale::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mScale, "scale"sv);
     return true;
 }
 
-void CPUPEM_SetScale::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_ONE_VAR(mScale, "scale");
+void CPUPEM_SetScale::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mScale, "scale"sv);
 }
 
 CPUPEM_SetPositionFromShape::CPUPEM_SetPositionFromShape() {
@@ -382,17 +399,14 @@ bool CPUPEM_SetPositionFromShape::updateAndRenderEditorControls() {
     return changed;
 }
 
-bool CPUPEM_SetPositionFromShape::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_SetPositionFromShape::loadFromYml(ryml::ConstNodeRef node) const {
     assert(false);
     return true;
 }
 
-void CPUPEM_SetPositionFromShape::saveYmlData(keg::YAMLWriter& writer) const {
-    beginMap(writer);
-    saveNested(writer, "radius", YML_SAVE_LAMBDA(mModuleData.mRadius));
-    pushKeyValue(writer, "shape");
-    writer.operator<<((int)mModuleData.mShapeType);
-    endMap(writer);
+void CPUPEM_SetPositionFromShape::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mRadius, "radius"sv);
+    node["shape"] << (int)mModuleData.mShapeType;
 }
 
 CPUPEM_ApplyForce::CPUPEM_ApplyForce() {
@@ -413,13 +427,13 @@ bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mForce, "Force");
 }
 
-bool CPUPEM_ApplyForce::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_ApplyForce::loadFromYml(ryml::ConstNodeRef node) const {
     assert(false);
     return true;
 }
 
-void CPUPEM_ApplyForce::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_ONE_VAR(mForce, "force");
+void CPUPEM_ApplyForce::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mForce, "force"sv);
 }
 
 CPUPEM_DragForce::CPUPEM_DragForce() {
@@ -440,11 +454,11 @@ bool CPUPEM_DragForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor");
 }
 
-bool CPUPEM_DragForce::loadFromYml(keg::ReadContext& context, keg::Node node) const {
+bool CPUPEM_DragForce::loadFromYml(ryml::ConstNodeRef node) const {
     assert(false);
     return true;
 }
 
-void CPUPEM_DragForce::saveYmlData(keg::YAMLWriter& writer) const {
-    SAVE_ONE_VAR(mDragFactor, "drag");
+void CPUPEM_DragForce::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mDragFactor, "drag"sv);
 }

@@ -30,7 +30,8 @@ public:
 
     void evaluate(CpuParticleEmitter& emitter, ParticleID id);
     bool updateAndRenderTweaker(const char*const label);
-    void saveYmlData(keg::YAMLWriter& writer) const;
+    bool loadFromYml(ryml::ConstNodeRef node, std::string_view name);
+    void saveYmlData(ryml::NodeRef node, std::string_view name) const;
 
     // TODO: pool allocate?
     std::unique_ptr<CPUParticleEmitterOperation> mOperation = nullptr;
@@ -60,7 +61,7 @@ public:
 
     virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) = 0;
 
-    bool loadFromYml(keg::ReadContext& context, keg::Node node) const override;
+    bool loadFromYml(ryml::ConstNodeRef node) override;
 
 protected:
     void evaluateParams(CpuParticleEmitter& emitter, ParticleID id) {
@@ -68,8 +69,7 @@ protected:
         mParam1.evaluate(emitter, id);
     }
 
-    void saveYmlData(keg::YAMLWriter& writer) const override;
-
+    virtual void saveYmlData(ryml::NodeRef node) const override;
 };
 
 #define SIMPLE_EXECUTE_OP(T1, T2, OP) \
@@ -92,7 +92,8 @@ public: \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
     std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     SIMPLE_EXECUTE_OP(TYPE1, TYPE2, OP); \
-};
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_SET(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
@@ -111,7 +112,8 @@ public: \
        mParam0.evaluate(emitter, id); \
        output->mVarData = std::get<TYPE1>(mParam0.mVarData); \
     } \
-};
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_NEGATE(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
@@ -130,7 +132,8 @@ public: \
        mParam0.evaluate(emitter, id); \
        output->mVarData = -std::get<TYPE1>(mParam0.mVarData); \
     } \
-};
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_CONVERT(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, CONVERT) \
 class NAME : public CPUParticleEmitterOperation { \
@@ -149,23 +152,27 @@ public: \
        mParam0.evaluate(emitter, id); \
        output->mVarData = CONVERT(std::get<TYPE1>(mParam0.mVarData)); \
     } \
-};
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
-#define DEFINE_CPUPEO_QUERY_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
+#define DEFINE_CPUPEO_QUERY_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, ...) \
 class NAME : public CPUParticleEmitterOperation { \
 public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) { mSerializeNameOnly = true; } \
+    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
     constexpr const char* const getYmlName() const override { return YML_NAME; } \
+    void saveYmlData(ryml::NodeRef node) const  override { } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
         return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::None, CPUparticleEmitterVariableVariantType::None); } \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
     std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
-    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override;
-    //  Implement execute() in cpp
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override; \
+    __VA_ARGS__ \
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define COLOR_STANDARD color4(0.3f, 0.3f, 0.7f, 1.0f)
 #define COLOR_CONVERT color4(0.6f, 0.6f, 0.25f, 1.0f)
@@ -197,19 +204,18 @@ DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToUInt, "Float To UInt", "f32_to_uint",
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertUIntToFloat, "UInt To Float", "uint_to_f32", COLOR_CONVERT, f32, ui32)
 
 DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryPosition, "Particle Position", "p_pos", COLOR_QUERY, f32v3)
-};
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_vel", COLOR_QUERY, f32v3)
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_vel", COLOR_QUERY, f32v3,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
-};
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryScale, "Particle Scale", "p_scale", COLOR_QUERY, f32v2)
+)
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryScale, "Particle Scale", "p_scale", COLOR_QUERY, f32v2,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Scale; }
-};
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COLOR_QUERY, f32)
+)
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COLOR_QUERY, f32,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Rotation; }
-};
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32)
+)
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return {}; }
-};
+)
 
 #undef COLOR_STANDARD
 #undef COLOR_CONVERT

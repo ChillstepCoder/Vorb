@@ -39,8 +39,8 @@ class ModuleType : public CPUParticleEmitterModule { \
     } \
     constexpr const char* const getName() const override { return ModuleName; } \
     constexpr const char* const getYmlName() const override { return YmlName; } \
-    bool loadFromYml(keg::ReadContext& context, keg::Node node) const override; \
-    void saveYmlData(keg::YAMLWriter& writer) const override; \
+    bool loadFromYml(ryml::ConstNodeRef node) override; \
+    void saveYmlData(ryml::NodeRef node) const override; \
 private:
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Burst", "spawn_burst")

@@ -28,7 +28,7 @@ public:
     void setDefaultMaterialID(MaterialID id) { mDefaultMaterial = id; }
 
 private:
-    void saveParticleEmitter(keg::YAMLWriter& writer, const ParticleEmitterDef& particleEmitter);
+    void saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter);
 
     MaterialRepository& mMaterialRepository;
 

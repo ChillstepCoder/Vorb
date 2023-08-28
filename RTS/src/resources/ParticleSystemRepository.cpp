@@ -9,7 +9,7 @@
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
 SERIALIZABLE_SIMPLE(ParticleSystemDef,
-    o.mSystemName, "name"sv
+    make_field(o.mSystemName, "name"sv)
 )
 
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
@@ -86,8 +86,16 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
     mIoManager.readFileToString(filePath.getCString(), data);
     ryml::Tree tree = YmlSerializer::parseFileData(data);
 
+    ParticleSystemDef* newDef = tryAddNewParticleSystem(filePath.getFileNameNoExtension());
+    if (!newDef) {
+        LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
+        pError("Failed to load " + filePath.getString() + " already exists");
+        return;
+    }
+
+    // Loop through emitters
     for (const ryml::ConstNodeRef n : tree.rootref().children()) {
-        assert(false); // TODO:
+        
     }
 }
 
@@ -106,13 +114,22 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     ryml::Tree tree;
     ryml::NodeRef root = tree.rootref();
     root |= ryml::MAP;
-    ryml::NodeRef child = root.append_child() << ryml::key("test2");
-    child |= ryml::MAP;
-    child.append_child() << ryml::key("test3") << "GOODBYE";
-    child.append_child() << ryml::key("test4") << "WORLD";
-    root["pi"] << ryml::fmt::real(3.141592654, 5);
-    root["xmas"] << ryml::fmt::boolalpha(true);
-    root["thiswork"];
+    ryml::NodeRef emittersNode = root.append_child() << ryml::key("emitters");
+    emittersNode |= ryml::SEQ;
+
+    for (auto&& emitter : particleSystem.mEmitters) {
+        ryml::NodeRef newNode = emittersNode.append_child();
+        newNode |= ryml::MAP;
+        saveParticleEmitter(newNode, emitter);
+    }
+
+    /* ryml::NodeRef child = root.append_child() << ryml::key("test2");
+     child |= ryml::MAP;
+     child.append_child() << ryml::key("test3") << "GOODBYE";
+     child.append_child() << ryml::key("test4") << "WORLD";
+     root["pi"] << ryml::fmt::real(3.141592654, 5);
+     root["xmas"] << ryml::fmt::boolalpha(true);
+     root["thiswork"];*/
 
     // OLD
     /*keg::YAMLWriter writer;
@@ -136,33 +153,43 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     ss << tree;
     nString str = ss.str();
     return saveAssetContents(particleSystem, str.c_str(), str.size());
-    return true;
 }
 
-void ParticleSystemRepository::saveParticleEmitter(keg::YAMLWriter& writer, const ParticleEmitterDef& particleEmitter)
-{
-    YmlSerializable::beginMap(writer);
+void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter) {
+    ryml::NodeRef innerNode = node[c4::to_csubstr(particleEmitter.mEmitterName)];
+    innerNode |= ryml::MAP;
 
-    YmlSerializable::pushKeyValue(writer, "e_update");
-    YmlSerializable::beginSequence(writer);
-    for (auto& module : particleEmitter.mEmitterUpdateModules) {
-        module->saveYml(writer);
+    { // Emitter Update
+        ryml::NodeRef updateNode = innerNode["e_update"];
+        updateNode |= ryml::SEQ;
+        for (auto& module : particleEmitter.mEmitterUpdateModules) {
+            ryml::NodeRef innerNode = updateNode.append_child();
+            innerNode |= ryml::MAP;
+            module->saveYml(innerNode);
+        }
     }
-    YmlSerializable::endSequence(writer);
-    YmlSerializable::pushKeyValue(writer, "p_init");
-    YmlSerializable::beginSequence(writer);
-    for (auto& module : particleEmitter.mParticleInitModules) {
-        module->saveYml(writer);
+
+    { // Particle Init
+        ryml::NodeRef initNode = innerNode["p_init"];
+        initNode |= ryml::SEQ;
+        for (auto& module : particleEmitter.mParticleInitModules) {
+            ryml::NodeRef innerNode = initNode.append_child();
+            innerNode |= ryml::MAP;
+            module->saveYml(innerNode);
+        }
     }
-    YmlSerializable::endSequence(writer);
-    YmlSerializable::pushKeyValue(writer, "p_update");
-    YmlSerializable::beginSequence(writer);
-    for (auto& module : particleEmitter.mParticleUpdateModules) {
-        module->saveYml(writer);
+
+    { // Particle Update
+        ryml::NodeRef updateNode = innerNode["p_update"];
+        updateNode |= ryml::SEQ;
+        for (auto& module : particleEmitter.mParticleUpdateModules) {
+            ryml::NodeRef innerNode = updateNode.append_child();
+            innerNode |= ryml::MAP;
+            module->saveYml(innerNode);
+        }
     }
-    YmlSerializable::endSequence(writer);
-    YmlSerializable::endMap(writer);
 }
+
 
 const ParticleSystemDef& ParticleSystemRepository::getParticleSystem(const nString& itemName) const {
     auto&& it = mParticleSystemLookup.find(itemName);

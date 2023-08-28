@@ -134,17 +134,34 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     return changed;
 }
 
-void CPUParticleEmitterVariable::saveYmlData(keg::YAMLWriter& writer) const
-{
-    if (mOperation) {
-        mOperation->saveYml(writer);
+bool CPUParticleEmitterVariable::loadFromYml(ryml::ConstNodeRef node, std::string_view name) {
+    ryml::ConstNodeRef thisNode = node[c4::to_csubstr(name)];
+    if (!thisNode.valid()) return false;
+
+    if (thisNode.type() == ryml::MAP) {
+        ryml::ConstNodeRef objNode = thisNode.child(0);
+        c4::csubstr str = objNode.key();
+        mOperation = yml::cloneYmlObject<CPUParticleEmitterOperation>(str);
+        return mOperation->loadFromYml(objNode);
     }
     else {
-        std::visit([&](auto&& arg) {
-            YmlSerializable::saveValue(writer, arg);
-        }, mVarData);
-        static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
+        thisNode.operator>>(mVarData);
     }
+    return true;
+}
+
+void CPUParticleEmitterVariable::saveYmlData(ryml::NodeRef node, std::string_view name) const {
+    YmlSerializable::saveWithLambda(node, name, [this](ryml::NodeRef node) {
+        if (mOperation) {
+            node |= ryml::MAP;
+            mOperation->saveYml(node);
+        }
+        else {
+            std::visit([&](auto&& arg) {
+                node.operator<<(arg);
+            }, mVarData);
+        }
+    });
 }
 
 bool CPUParticleEmitterOperation::updateAndRenderControls() {
@@ -169,25 +186,29 @@ bool CPUParticleEmitterOperation::updateAndRenderControls() {
     return changed;
 }
 
-bool CPUParticleEmitterOperation::loadFromYml(keg::ReadContext& context, keg::Node node) const
-{
-    throw std::logic_error("The method or operation is not implemented.");
-}
-
-void CPUParticleEmitterOperation::saveYmlData(keg::YAMLWriter& writer) const
+bool CPUParticleEmitterOperation::loadFromYml(ryml::ConstNodeRef node)
 {
     CPUParticleEmitterVariableVariantTypePair input = getVariantInput();
     if (input.second != CPUparticleEmitterVariableVariantType::None) {
         assert(input.first != CPUparticleEmitterVariableVariantType::None);
-        beginMap(writer);
-        pushKeyValue(writer, "p0");
-        mParam0.saveYmlData(writer);
-        pushKeyValue(writer, "p1");
-        mParam1.saveYmlData(writer);
-        endMap(writer);
+        if (!mParam0.loadFromYml(node, "p0"sv)) return false;
+        if (!mParam1.loadFromYml(node, "p1"sv)) return false;
     }
     else if (input.first != CPUparticleEmitterVariableVariantType::None) {
-        mParam0.saveYmlData(writer);
+        if (!mParam0.loadFromYml(node, "p0"sv)) return false;
+    }
+    return true;
+}
+
+void CPUParticleEmitterOperation::saveYmlData(ryml::NodeRef node) const {
+    CPUParticleEmitterVariableVariantTypePair input = getVariantInput();
+    if (input.second != CPUparticleEmitterVariableVariantType::None) {
+        assert(input.first != CPUparticleEmitterVariableVariantType::None);
+        mParam0.saveYmlData(node, "p0"sv);
+        mParam1.saveYmlData(node, "p1"sv);
+    }
+    else if (input.first != CPUparticleEmitterVariableVariantType::None) {
+        mParam0.saveYmlData(node, "p0"sv);
     }
 }
 

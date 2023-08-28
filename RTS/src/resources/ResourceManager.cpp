@@ -289,7 +289,7 @@ void ResourceManager::loadFiles() {
     }
 
     mHasLoadedResources = true;
-    LOG_INFO("Loaded resources in {:.4} ms", totalTimer.stop());
+    LOG_INFO("Loaded resources in {} s", totalTimer.stop() / 1000.0);
 }
 
 void ResourceManager::reloadMaterials() {

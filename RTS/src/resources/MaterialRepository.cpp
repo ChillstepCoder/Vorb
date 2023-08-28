@@ -44,23 +44,23 @@ struct MaterialFileData {
 };
 
 SERIALIZABLE_SIMPLE(MaterialFileData,
-    o.albedoTexture, "albedo"sv,
-    o.normalTexture, "normal"sv,
-    o.ambientOcclusionTexture, "ao"sv,
-    o.displacementTexture, "disp"sv,
-    o.roughnessTexture, "rough"sv,
-    o.metalTexture, "metal"sv,
-    o.renderPass, "render_pass"sv,
-    o.samplerState, "sampler_state"sv,
-    o.emissiveColor, "emissive_color"sv,
-    o.albedoColor, "albedo_color"sv,
-    o.roughness, "roughness"sv,
-    o.transparencyFactor, "transparency"sv,
-    o.alphaTest, "alpha_test"sv,
-    o.metallicFactor, "metallic"sv,
-    o.castsShadow, "cast_shadow"sv,
-    o.receivesShadow, "receive_shadow"sv,
-    o.flipV, "flipv"sv
+    make_field(o.albedoTexture, "albedo"sv),
+    make_field(o.normalTexture, "normal"sv),
+    make_field(o.ambientOcclusionTexture, "ao"sv),
+    make_field(o.displacementTexture, "disp"sv),
+    make_field(o.roughnessTexture, "rough"sv),
+    make_field(o.metalTexture, "metal"sv),
+    make_field(o.renderPass, "render_pass"sv),
+    make_field(o.samplerState, "sampler_state"sv),
+    make_field(o.emissiveColor, "emissive_color"sv),
+    make_field(o.albedoColor, "albedo_color"sv),
+    make_field(o.roughness, "roughness"sv),
+    make_field(o.transparencyFactor, "transparency"sv),
+    make_field(o.alphaTest, "alpha_test"sv),
+    make_field(o.metallicFactor, "metallic"sv),
+    make_field(o.castsShadow, "cast_shadow"sv),
+    make_field(o.receivesShadow, "receive_shadow"sv),
+    make_field(o.flipV, "flipv"sv)
 )
 
 MaterialRepository::MaterialRepository(vio::IOManager& ioManager) : mIoManager(ioManager)
@@ -87,7 +87,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
 
     const nString fileStr = mIoManager.readFileToString(filePath);
     if (fileStr.size()) {
-        YmlSerializer::deserializeYml(fileStr, fileData);
+        YmlSerializer::readFileData(fileStr, fileData);
     }
 
     // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
