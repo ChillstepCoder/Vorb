@@ -11,6 +11,14 @@
 
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
+// Yml keys
+constexpr const char* const EMITTER_SCALE_KEY("scale");
+constexpr const char* const EMITTER_COLOR_KEY("color");
+constexpr const char* const EMITTER_MAX_PARTICLES_KEY("max_particles");
+constexpr const char* const EMITTER_LIFETIME_KEY("lifetime");
+constexpr const char* const EMITTER_LOOPING_KEY("looping");
+constexpr const char* const EMITTER_BLEND_KEY("blend");
+
 SERIALIZABLE_SIMPLE(ParticleSystemDef,
     make_field(o.mSystemName, "name"sv)
 )
@@ -61,6 +69,8 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     ryml::Tree tree;
     ryml::NodeRef root = tree.rootref();
     root |= ryml::MAP;
+
+    // Emitters
     ryml::NodeRef emittersNode = root.append_child() << ryml::key("emitters");
     emittersNode |= ryml::SEQ;
 
@@ -80,6 +90,14 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     ryml::NodeRef innerNode = node[c4::to_csubstr(particleEmitter.mEmitterName)];
     innerNode |= ryml::MAP;
 
+    // Serialize config
+    innerNode[EMITTER_SCALE_KEY] << particleEmitter.mDefaultScale;
+    innerNode[EMITTER_COLOR_KEY] << particleEmitter.mDefaultColor;
+    innerNode[EMITTER_MAX_PARTICLES_KEY] << particleEmitter.mMaxParticles;
+    //innerNode["default_mat"] << particleEmitter.; // NEEDS STRING
+    innerNode[EMITTER_LIFETIME_KEY] << particleEmitter.mLifetimeSec;
+    innerNode[EMITTER_LOOPING_KEY] << particleEmitter.mLooping;
+    innerNode[EMITTER_BLEND_KEY] << particleEmitter.mBlendMode;
     { // Emitter Update
         ryml::NodeRef updateNode = innerNode["e_update"];
         updateNode |= ryml::SEQ;
@@ -116,6 +134,14 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
     // TODO: Material and shader
     particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
     particleEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
+    
+    // Deserialize config
+    yml::tryReadValue(node, EMITTER_SCALE_KEY, particleEmitter.mDefaultScale);
+    yml::tryReadValue(node, EMITTER_COLOR_KEY, particleEmitter.mDefaultColor);
+    yml::tryReadValue(node, EMITTER_MAX_PARTICLES_KEY, particleEmitter.mMaxParticles);
+    yml::tryReadValue(node, EMITTER_LIFETIME_KEY, particleEmitter.mLifetimeSec);
+    yml::tryReadValue(node, EMITTER_LOOPING_KEY, particleEmitter.mLooping);
+    yml::tryReadValue(node, EMITTER_BLEND_KEY, particleEmitter.mBlendMode);
 
     { // Emitter Update
         ryml::ConstNodeRef updateNode = node["e_update"];

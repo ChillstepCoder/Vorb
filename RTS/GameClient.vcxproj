@@ -720,7 +720,7 @@
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterModule.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterOperation.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
-    <ClInclude Include="src\rendering\particle\ParticleComponentType.h" />
+    <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />

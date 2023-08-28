@@ -11,5 +11,5 @@ out vec4 oColor;
 void main() {
     MaterialData mtl = inMaterials[fParticleMaterial];
     oColor = sampleMaterialAlbedo(mtl, fUV) * fColor;
-    tryDiscardTransparentPixel(oColor.a);
+    //tryDiscardTransparentPixel(oColor.a);
 }

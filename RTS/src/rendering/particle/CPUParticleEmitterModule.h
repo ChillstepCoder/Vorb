@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ParticleComponentType.h"
+#include "ParticleEnumTypes.h"
 #include "CPUParticleEmitterOperation.h"
 
 #include "serialization/YmlSerializable.h"

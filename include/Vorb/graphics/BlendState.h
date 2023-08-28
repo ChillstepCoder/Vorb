@@ -33,6 +33,7 @@ namespace vorb {
             ALPHA,
             ALPHA_PREMULTIPLIED,
             ADDITIVE,
+            SUBTRACTIVE,
             REPLACE,
             MULTIPLY,
             COUNT
@@ -42,7 +43,7 @@ namespace vorb {
         class BlendState
         {
         public:
-            BlendState(GLenum srcFactor, GLenum dstFactor);
+            BlendState(GLenum srcFactor, GLenum dstFactor, GLint blendEquation = GL_FUNC_ADD);
 
             void set() const;
             static void set(const BlendStateType state);
@@ -51,6 +52,7 @@ namespace vorb {
 
             GLenum srcFactor;
             GLenum dstFactor;
+            GLint blendEquation;
 
             static BlendState CURR;
             static BlendState PREV;
@@ -69,6 +71,9 @@ namespace vorb {
                 // SRC_ALPHA, ONE
                 const vg::BlendState ADDITIVE;
 
+                // ONE, ONE + GL_FUNC_REVERSE_SUBTRACT
+                const vg::BlendState SUBTRACTIVE;
+
                 // ONE, ZERO
                 const vg::BlendState REPLACE;
 
@@ -76,7 +81,7 @@ namespace vorb {
                 const vg::BlendState MULTIPLY;
             };
         };
-        static_assert((int)vg::BlendStateType::COUNT == 5, "Add new blend states above");
+        static_assert((int)vg::BlendStateType::COUNT == 6, "Add new blend states above");
         extern BlendStates sBlendStates;
 
     }

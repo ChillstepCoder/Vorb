@@ -8,6 +8,8 @@
 
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/GLProgram.h>
+#include <Vorb/graphics/BlendState.h>
+#include <Vorb/graphics/DepthState.h>
 
 #include "math/Random.h"
 
@@ -33,6 +35,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def) : mShader(
     mGlobalMaterialID = def.mDefaultMaterialID;
     mLifetimeSec = def.mLifetimeSec;
     mLooping = def.mLooping;
+    mBlendMode = def.mBlendMode;
 
     const size_t totalModuleCount =
         def.mEmitterUpdateModules.size() +
@@ -481,8 +484,27 @@ void CpuParticleEmitter::render() {
 
     glUniform1ui(program.getUniform("unBaseInstanceOffset"), mBaseInstance);
 
+    vg::DepthState::READ.set();
+    switch (mBlendMode) {
+        case ParticleBlendMode::Additive:
+            vg::BlendState::set(vorb::graphics::BlendStateType::ADDITIVE);
+            break;
+        case ParticleBlendMode::Subtractive:
+            vg::BlendState::set(vorb::graphics::BlendStateType::SUBTRACTIVE);
+            break;
+        case ParticleBlendMode::Alpha:
+            vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
+            break;
+        default:
+            break;
+    }
+    static_assert(e_count(ParticleBlendMode) == 3);
+
     // Render two triangles per particle with no vertex data
     sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
+
+    vg::DepthState::restorePrevious();
+    vg::BlendState::restorePrevious();
 }
 
 void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {

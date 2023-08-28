@@ -71,14 +71,12 @@ namespace YmlSerializer {
 YML_WRITE_DEF(color4) {
     ryml::NodeRef& nr = *n;
     nr |= ryml::SEQ;
+    nr |= ryml::_WIP_STYLE_FLOW_SL;
     for (int i = 0; i < 4; ++i) {
-        nr << o[i];
+        nr.append_child() << o[i];
     }
 }
 YML_READ_DEF(color4) {
-    if (n.type() != ryml::SEQ) {
-        return false;
-    }
     if (n.num_children() != 4) return false;
     int i = 0;
     for (auto const ch : n)

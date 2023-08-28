@@ -31,7 +31,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     }
 
     bool isOpen = true;
-    ImGui::Begin("Fishing Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
+    ImGui::Begin("Particle System Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
     ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
@@ -349,6 +349,11 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
     return true;
 }
 
+bool ParticleSystemEditorViewportPanel::updateAndRenderBottomControls(f32 ySize)
+{
+    ImGui::Text("Hello world");
+}
+
 void ParticleSystemEditorViewportPanel::renderMesh() {
     renderGrid(camera->getViewProjectionMatrix());
 
@@ -360,6 +365,7 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 
 void ParticleSystemEditorViewportPanel::setParticleSystemDef(ParticleSystemDef* systemDef) {
     mSystemDef = systemDef;
+    createPreviewSystem();
 }
 
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {

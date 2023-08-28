@@ -57,6 +57,16 @@ namespace yml {
     inline const boost::container::flat_map<nString, std::unique_ptr<T>>& getAllObjects() {
         return objectMap<T>().mMap;
     }
+
+    template<typename T>
+    inline const bool tryReadValue(ryml::ConstNodeRef node, std::string_view key, T& value) {
+        c4::csubstr ckey = c4::to_csubstr(key);
+        if (node.has_child(ckey)) {
+            node[ckey].operator>>(value);
+            return true;
+        }
+        return false;
+    }
 };
 
 template<typename T, typename Base>

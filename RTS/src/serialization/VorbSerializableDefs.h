@@ -23,10 +23,11 @@ SERIALIZABLE_ENUM(vg::BlendStateType, BlendStateType,
     pair{ vg::BlendStateType::ALPHA, "alpha"sv },
     pair{ vg::BlendStateType::ALPHA_PREMULTIPLIED, "alpha_premult"sv },
     pair{ vg::BlendStateType::ADDITIVE, "add"sv },
+    pair{ vg::BlendStateType::SUBTRACTIVE, "subtract"sv },
     pair{ vg::BlendStateType::REPLACE, "replace"sv },
     pair{ vg::BlendStateType::MULTIPLY, "multiply"sv }
 )
-static_assert(e_count(vg::BlendStateType) == 5, "Update with new");
+static_assert(e_count(vg::BlendStateType) == 6, "Update with new");
 
 SERIALIZABLE_ENUM(vui::GameSwapInterval, GameSwapInterval,
     pair{ vui::GameSwapInterval::UNLIMITED_FPS, "Unlimited"sv },

@@ -3,7 +3,7 @@
 class CPUParticleEmitterOperation;
 class CpuParticleEmitter;
 
-#include "rendering/particle/ParticleComponentType.h"
+#include "rendering/particle/ParticleEnumTypes.h"
 
 #include "serialization/YmlSerializable.h"
 

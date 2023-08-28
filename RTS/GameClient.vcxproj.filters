@@ -1943,7 +1943,7 @@
     <ClInclude Include="src\util\ArbitraryObjectArray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\particle\ParticleComponentType.h">
+    <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h">

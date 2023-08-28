@@ -168,11 +168,18 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             static_assert(e_count(TileEditorPanelResultCode) == 7);
 
         }
-
-        // Center panel
         if (mActiveCenterPanel) {
-            f32 width = dims.x - (rightPanelWidth + leftPanelWidth);
+            const f32 width = dims.x - (rightPanelWidth + leftPanelWidth);
             if (width >= 2.0f) {
+                // Optional bottom panel
+                if (mActiveCenterPanel->hasBottomControls()) {
+                    Splitter(false, 10.0f, &ySize1, &ySize2, 8, 8, ImGui::GetContentRegionAvail().x);
+                    ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
+                    ImGui::SetNextWindowSize(ImVec2(width, dims.y * 0.3f));
+                    mActiveCenterPanel->updateAndRenderBottomControls(dims.y * 0.3f);
+                }
+
+                // Center panel
                 ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
                 ImGui::SetNextWindowSize(ImVec2(width, dims.y));
                 if (!mActiveCenterPanel->updateAndRender(elapsedSec)) {

@@ -4,7 +4,7 @@
 #include "util/ArbitraryObjectArray.h"
 
 #include "CPUParticleEmitterModule.h"
-#include "ParticleComponentType.h"
+#include "ParticleEnumTypes.h"
 
 class CPUParticleSystem;
 class MaterialShader;
@@ -154,6 +154,7 @@ protected:
     bool mDataChanged = false;
     bool mNeedsFindFirstParticle = false;
     bool mNeedsFindLastParticle = false;
+    ParticleBlendMode mBlendMode = ParticleBlendMode::Additive;
 
     f32 mTotalElapsedSec = 0.0f;
     f32 mLifetimeSec;

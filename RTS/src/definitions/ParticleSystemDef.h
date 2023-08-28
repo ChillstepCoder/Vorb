@@ -4,6 +4,8 @@
 
 #include "resources/IAsset.h"
 
+#include "rendering/particle/ParticleEnumTypes.h"
+
 class MaterialShader;
 
 typedef std::vector<std::unique_ptr<CPUParticleEmitterModule>> CPUParticleEmitterModuleVector;
@@ -25,6 +27,7 @@ public:
     MaterialID mDefaultMaterialID = 0;
     f32 mLifetimeSec = 5.0f;
     bool mLooping = true;
+    ParticleBlendMode mBlendMode = ParticleBlendMode::Additive;
 };
 
 class ParticleSystemDef : public IAsset {

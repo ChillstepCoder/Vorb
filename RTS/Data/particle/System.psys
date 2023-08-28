@@ -1,5 +1,11 @@
 emitters:
   - Emitter:
+      scale: [0.1,0.1]
+      color: [255,255,255,255]
+      max_particles: 2000
+      lifetime: 5
+      looping: 1
+      blend: additive
       e_update:
         - spawn_rate:
             emit_rate: 0
@@ -10,6 +16,8 @@ emitters:
             speed_range: [1,1]
             angle_range: [0,0.7853982]
             dir: [0,0,1]
+        - set_color:
+            color: [255,0,0,175]
       p_update:
         - drag_force:
             drag: 0.75
