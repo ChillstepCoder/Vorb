@@ -210,6 +210,13 @@ public:
         return (r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a);
     }
 
+    bool operator<(const ColorRGBA8& other) const {
+        if (r != other.r) return r < other.r;
+        if (g != other.g) return g < other.g;
+        if (b != other.b) return b < other.b;
+        return a < other.a;
+    }
+
     union {
         struct{
             ColorRGB8 rgb; ///< RGB value

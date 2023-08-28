@@ -37,6 +37,18 @@ public:
     std::unique_ptr<CPUParticleEmitterOperation> mOperation = nullptr;
     CPUParticleEmitterVariantData mVarData;
 };
+YML_WRITE_DEF(CPUParticleEmitterVariantData) {
+    std::visit([&](auto&& arg) {
+        n->operator<<(arg);
+    }, o);
+}
+YML_READ_DEF(CPUParticleEmitterVariantData) {
+    std::visit([&](auto&& arg) {
+        n.operator>>(arg);
+    }, *target);
+    return true;
+}
+
 
 // TODO: test perf vs virtual func
 //typedef void(*CPUParticleEmitterOperationMethod)(class CpuParticleEmitter& emitter, int particleID, CPUParticleEmitterVariable* p0, CPUParticleEmitterVariable* p1);

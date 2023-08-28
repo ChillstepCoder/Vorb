@@ -7,22 +7,19 @@ emitters:
             spawn_count: 3
       p_init:
         - cone_burst:
-            speed_range:
-              - 1
-              - 1
-            angle_range:
-              - 0
-              - 0.7853982
-            dir:
-              - 0
-              - 0
-              - 1
+            speed_range: [1,1]
+            angle_range: [0,0.7853982]
+            dir: [0,0,1]
       p_update:
         - drag_force:
             drag: 0.75
         - set_scale:
-            f32_to_vec2:
-              add_f32:
-                p0: 1
-                negate_f32:
-                  p_norm_life: {}
+            scale:
+              f32_to_vec2:
+                p0:
+                  add_f32:
+                    p0: 1
+                    p1:
+                      negate_f32:
+                        p0:
+                          p_norm_life: {}

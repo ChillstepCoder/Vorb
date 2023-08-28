@@ -3,6 +3,8 @@
 
 #include "util/ArbitraryObjectArray.h"
 
+#include "serialization/YmlSerializer.h"
+
 // Common module impl
 #define MODULE_DEF(x) struct ModuleData { x } mModuleData; \
 void addModuleDataToArray(ArbitraryObjectArray& arry) const { \
@@ -30,7 +32,7 @@ public: \
     bool updateAndRenderEditorControls() override; \
     std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<ModuleType>(*this); };
 
-#define BUILTIN_CPU_PARTICLE_MODULE(ModuleType, Stage, ModuleName, YmlName) \
+#define BUILTIN_CPU_PARTICLE_MODULE(ModuleType, Stage, ModuleName, YmlName, ...) \
 class ModuleType : public CPUParticleEmitterModule { \
     COMMON_METHODS(ModuleType) \
     void refresh() override; \
@@ -41,66 +43,69 @@ class ModuleType : public CPUParticleEmitterModule { \
     constexpr const char* const getYmlName() const override { return YmlName; } \
     bool loadFromYml(ryml::ConstNodeRef node) override; \
     void saveYmlData(ryml::NodeRef node) const override; \
-private:
+private: \
+   __VA_ARGS__ \
+}; \
+REGISTER_YML_OBJECT(YmlName, ModuleType, CPUParticleEmitterModule);
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Burst", "spawn_burst")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnBurst, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Burst", "spawn_burst",
     MODULE_DEF(
         CPUParticleEmitterVariable mDelay = CPUParticleEmitterVariable(f32(0.0f));
         CPUParticleEmitterVariable mSpawnCount = CPUParticleEmitterVariable(ui32(10));
         bool mFired = false;
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Rate", "spawn_rate")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::EmitterUpdate, "Spawn Rate", "spawn_rate",
     MODULE_DEF(
         CPUParticleEmitterVariable mEmitRateSec = CPUParticleEmitterVariable(0.0f);
         CPUParticleEmitterVariable mInitialDelay = CPUParticleEmitterVariable(0.0f);
         CPUParticleEmitterVariable mSpawnCount = CPUParticleEmitterVariable(ui32(3));
         f32 mNextEmitTime = -1.0f;
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::ParticleInit, "Ring Burst", "ring_burst")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_RingBurst, ParticleEmitterModuleStage::ParticleInit, "Ring Burst", "ring_burst",
     MODULE_DEF(
         CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
         CPUParticleEmitterVariable mMaxAngleFromRingRad = CPUParticleEmitterVariable(f32(M_PI_4F));
         CPUParticleEmitterVariable mRingNormal = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, 1.0f));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ConeBurst, ParticleEmitterModuleStage::ParticleInit, "Cone Burst", "cone_burst")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ConeBurst, ParticleEmitterModuleStage::ParticleInit, "Cone Burst", "cone_burst",
     MODULE_DEF(
         CPUParticleEmitterVariable mSpeedRange = CPUParticleEmitterVariable(f32v2(1.0f));
         CPUParticleEmitterVariable mAngleRange = CPUParticleEmitterVariable(f32v2(0.0f, M_PI_4F));
         CPUParticleEmitterVariable mDirection = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, 1.0f));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPosition, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Position", "set_position")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPosition, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Position", "set_position",
     MODULE_DEF(
         CPUParticleEmitterVariable mPositionVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Velocity", "set_velocity")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Velocity", "set_velocity",
     MODULE_DEF(
         CPUParticleEmitterVariable mVelocityVec3 = CPUParticleEmitterVariable(f32v3(0.0f));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Color", "set_color")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Color", "set_color",
     MODULE_DEF(
         CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale", "set_scale")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale", "set_scale",
     MODULE_DEF(
         CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleStage::ParticleInit, "Set Position From Shape", "set_position_shape")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleStage::ParticleInit, "Set Position From Shape", "set_position_shape",
     enum class ShapeType : int {
        Sphere,
        Box,
@@ -110,19 +115,19 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetPositionFromShape, ParticleEmitterModuleSt
         CPUParticleEmitterVariable mRadius = CPUParticleEmitterVariable(10.0f);
         ShapeType mShapeType = ShapeType::Sphere;
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ApplyForce, ParticleEmitterModuleStage::ParticleUpdate, "Apply Force", "apply_force")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_ApplyForce, ParticleEmitterModuleStage::ParticleUpdate, "Apply Force", "apply_force",
     MODULE_DEF(
         CPUParticleEmitterVariable mForce = CPUParticleEmitterVariable(f32v3(0.0f, 0.0f, GRAVITY_Z));
     );
-};
+)
 
-BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::ParticleUpdate, "Drag Force", "drag_force")
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::ParticleUpdate, "Drag Force", "drag_force",
     MODULE_DEF(
         CPUParticleEmitterVariable mDragFactor = CPUParticleEmitterVariable(f32(0.75f));
     );
-};
+)
 
 inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules type) {
     switch (type) {

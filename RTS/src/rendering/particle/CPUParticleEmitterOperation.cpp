@@ -78,8 +78,10 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     }
 
     auto displayOperationsSelectorCombo = [&]() -> const CPUParticleEmitterOperation* {
-        const auto& operations = Services::ResourceManager::ref().getParticleSystemRepository().getEmitterOperations();
-        for (auto&& operation : operations) {
+        const auto& operations = yml::getAllObjects<CPUParticleEmitterOperation>();
+        std::vector<const CPUParticleEmitterOperation*> operationsList;
+        for (auto&& iter : operations) {
+            const std::unique_ptr< CPUParticleEmitterOperation>& operation = iter.second;
             bool matches = false;
             switch (operation->getOutputType()) {
                 case CPUparticleEmitterVariableVariantType::color4:
@@ -105,15 +107,26 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
             }
             static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
             if (matches) {
-                const color4 color = operation->getDisplayColor();
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
-                if (ImGui::Button(operation->getDisplayName(), ImVec2(300.f, 0.f))) {
-                    ImGui::PopStyleColor(1);
-                    return operation.get();
-                }
-                ImGui::PopStyleColor(1);
+                operationsList.emplace_back(operation.get());
             }
         }
+        // Sort based on color and then name
+        std::sort(operationsList.begin(), operationsList.end(), [](const CPUParticleEmitterOperation* a, const CPUParticleEmitterOperation* b) -> bool {
+            if (a->getDisplayColor() < b->getDisplayColor()) return true;
+            if (a->getDisplayColor() != b->getDisplayColor()) return false; // B > A
+            return strcmp(a->getDisplayName(), b->getDisplayName()) < 0;
+        });
+
+        for (auto&& op : operationsList) {
+            const color4 color = op->getDisplayColor();
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
+            if (ImGui::Button(op->getDisplayName(), ImVec2(300.f, 0.f))) {
+                ImGui::PopStyleColor(1);
+                return op;
+            }
+            ImGui::PopStyleColor(1);
+        }
+
         return nullptr;
     };
 
@@ -136,9 +149,11 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
 
 bool CPUParticleEmitterVariable::loadFromYml(ryml::ConstNodeRef node, std::string_view name) {
     ryml::ConstNodeRef thisNode = node[c4::to_csubstr(name)];
-    if (!thisNode.valid()) return false;
+    if (!thisNode.valid()) {
+        return false;
+    }
 
-    if (thisNode.type() == ryml::MAP) {
+    if (thisNode.is_map()) {
         ryml::ConstNodeRef objNode = thisNode.child(0);
         c4::csubstr str = objNode.key();
         mOperation = yml::cloneYmlObject<CPUParticleEmitterOperation>(str);
@@ -157,9 +172,7 @@ void CPUParticleEmitterVariable::saveYmlData(ryml::NodeRef node, std::string_vie
             mOperation->saveYml(node);
         }
         else {
-            std::visit([&](auto&& arg) {
-                node.operator<<(arg);
-            }, mVarData);
+            node.operator<<(mVarData);
         }
     });
 }

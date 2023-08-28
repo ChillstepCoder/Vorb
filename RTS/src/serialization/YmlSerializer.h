@@ -95,6 +95,7 @@ namespace c4 {
         void write(c4::yml::NodeRef* n, glm::vec<N, T, glm::defaultp> const& v)
         {
             *n |= c4::yml::SEQ;
+            *n |= ryml::_WIP_STYLE_FLOW_SL;
             for (int i = 0; i < N; ++i)
                 n->append_child() << v[i];
         }

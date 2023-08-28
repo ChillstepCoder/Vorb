@@ -4,6 +4,7 @@
   [inobj = &obj](keg::YAMLWriter& writer) { inobj->saveYmlData(writer); }
 
 #include <ryml.hpp>
+#include <boost/container/flat_map.hpp>
 
 // Simple interface to turn anything into a yml node
 class YmlSerializable {
@@ -33,7 +34,7 @@ protected:
 template<typename T>
 struct GlobalYmlMap {
     std::mutex mMutex;
-    std::unordered_map<nString, std::unique_ptr<T>> mMap;
+    boost::container::flat_map<nString, std::unique_ptr<T>> mMap;
 };
 
 namespace yml {
@@ -46,11 +47,15 @@ namespace yml {
     template<typename T>
     inline std::unique_ptr<T> cloneYmlObject(c4::csubstr name) {
         std::string_view sv(name.data(), name.size());
-        nString name(sv);
-        GlobalYmlMap<T>& globalMap = objectMap<T>().mMap;
+        nString key(sv);
+        GlobalYmlMap<T>& globalMap = objectMap<T>();
         std::lock_guard lock(globalMap.mMutex);
-        globalMap.mMap[name] = obj.clone();
-        return
+        return globalMap.mMap.at(key)->clone();
+    }
+
+    template<typename T>
+    inline const boost::container::flat_map<nString, std::unique_ptr<T>>& getAllObjects() {
+        return objectMap<T>().mMap;
     }
 };
 

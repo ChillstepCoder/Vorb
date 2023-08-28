@@ -15,7 +15,7 @@
 mModuleData.var.saveYmlData(node, name)
 
 #define LOAD_VAR(var, name) \
-node[c4::to_csubstr(name)] >> mModuleData.var
+mModuleData.var.loadFromYml(node, name)
 
 #define SAVE_ONE_VAR(var1, name1) \
 beginMap(writer); \
@@ -399,8 +399,11 @@ bool CPUPEM_SetPositionFromShape::updateAndRenderEditorControls() {
     return changed;
 }
 
-bool CPUPEM_SetPositionFromShape::loadFromYml(ryml::ConstNodeRef node) const {
-    assert(false);
+bool CPUPEM_SetPositionFromShape::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mRadius, "radius"sv);
+    int result;
+    node["shape"] >> result;
+    mModuleData.mShapeType = (ShapeType)result;
     return true;
 }
 
@@ -427,8 +430,8 @@ bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mForce, "Force");
 }
 
-bool CPUPEM_ApplyForce::loadFromYml(ryml::ConstNodeRef node) const {
-    assert(false);
+bool CPUPEM_ApplyForce::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mForce, "force"sv);
     return true;
 }
 
@@ -454,8 +457,8 @@ bool CPUPEM_DragForce::updateAndRenderEditorControls() {
     return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor");
 }
 
-bool CPUPEM_DragForce::loadFromYml(ryml::ConstNodeRef node) const {
-    assert(false);
+bool CPUPEM_DragForce::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mDragFactor, "drag"sv);
     return true;
 }
 

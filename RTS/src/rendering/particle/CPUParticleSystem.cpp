@@ -28,6 +28,10 @@ void CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
     for (auto&& iter = mEmitters.begin(); iter != mEmitters.end();) {
         CpuParticleEmitter& emitter = **iter;
         const MaterialShader* nextShader = &emitter.getMaterialShader();
+        if (!nextShader) {
+            ++iter;
+            continue;
+        }
         if (nextShader != boundShader) {
             MaterialRenderer::bindMaterialForRender(*nextShader);
             glUniformMatrix4fv(nextShader->getUniform("unVP"), 1, false, &VP[0][0]);

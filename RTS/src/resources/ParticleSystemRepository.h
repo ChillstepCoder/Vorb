@@ -19,8 +19,6 @@ public:
     const ParticleSystemDef& getParticleSystem(const nString& itemName) const;
     const std::vector<ParticleSystemDef>& getAllParticleSystems() const { return mParticleSystems; }
     const std::map<nString, ParticleSystemID>& getParticleSystemNames() const { return mParticleSystemLookup; }
-    const std::vector<std::unique_ptr<CPUParticleEmitterModule>>& getEmitterModules() const { return mEmitterModules; }
-    const std::vector<std::unique_ptr<CPUParticleEmitterOperation>>& getEmitterOperations() const { return mEmitterOperations; }
 
     ParticleSystemDef* tryAddNewParticleSystem(const nString& name);
 
@@ -29,17 +27,13 @@ public:
 
 private:
     void saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter);
+    bool loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter);
 
     MaterialRepository& mMaterialRepository;
 
     std::map<nString, ParticleSystemID> mParticleSystemLookup; // TODO: StrToken?
     std::vector<ParticleSystemDef> mParticleSystems;
     std::vector<ParticleEmitterDef> mParticleEmitters;
-    std::vector<std::unique_ptr<CPUParticleEmitterModule>> mEmitterModules;
-    std::vector<std::unique_ptr<CPUParticleEmitterOperation>> mEmitterOperations;
-
-    std::map<nString, CPUParticleEmitterModule*> mModulesYmlLookup;
-    std::map<nString, CPUParticleEmitterOperation*> mOperationsYmlLookup;
 
     MaterialID mDefaultMaterial = INVALID_MATERIAL_ID;
 };

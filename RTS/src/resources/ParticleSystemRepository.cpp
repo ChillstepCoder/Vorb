@@ -6,6 +6,9 @@
 
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
+#include "resources/ResourceManager.h"
+#include "rendering/MaterialShaderManager.h"
+
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
 SERIALIZABLE_SIMPLE(ParticleSystemDef,
@@ -15,63 +18,6 @@ SERIALIZABLE_SIMPLE(ParticleSystemDef,
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
     IAssetRepository(ioManager),
     mMaterialRepository(materialRepo) {
-
-    mEmitterModules.reserve(e_count(BuiltinCPUParticleEditorModules));
-
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SpawnBurst));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SpawnRate));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::RingBurst));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::ConeBurst));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetPosition));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetVelocity));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetColor));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetScale));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::SetPositionFromShape));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::ApplyForce));
-    mEmitterModules.emplace_back(createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules::DragForce));
-    static_assert(e_count(BuiltinCPUParticleEditorModules) == 11);
-
-    mEmitterOperations.reserve(25);
-
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddFloatToVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyFloatToVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_AddFloat>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_MultiplyFloat>());
-
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetColor>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec4>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetVec2>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetFloat>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_SetUInt>());
-
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_NegateVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_NegateVec2>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_NegateFloat>());
-
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec4>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec3>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToVec2>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertFloatToUInt>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_ConvertUIntToFloat>());
-
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryPosition>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryVelocity>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryScale>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryRotation>());
-    mEmitterOperations.emplace_back(std::make_unique<CPUPEO_QueryNormalizedLifetime>());
-
-    mEmitterOperations.shrink_to_fit();
-
-    // Init lookups for serialization
-    for (auto&& module : mEmitterModules) {
-        mModulesYmlLookup[module->getYmlName()] = module.get();
-    }
-    for (auto&& operation : mEmitterOperations) {
-        mOperationsYmlLookup[operation->getYmlName()] = operation.get();
-    }
 
     static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
 }
@@ -94,8 +40,15 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
     }
 
     // Loop through emitters
-    for (const ryml::ConstNodeRef n : tree.rootref().children()) {
-        
+    ryml::ConstNodeRef emittersNode = tree.rootref()["emitters"];
+    for (ryml::ConstNodeRef seqNode : emittersNode.children()) {
+        ryml::ConstNodeRef innerNode = seqNode.first_child();
+        ParticleEmitterDef& newEmitter = newDef->mEmitters.emplace_back();
+        newEmitter.mEmitterName = nString(std::string_view(innerNode.key().data(), innerNode.key().size()));
+        if (!loadParticleEmitter(innerNode, newEmitter)) {
+            assert(false);
+            return;
+        }
     }
 }
 
@@ -103,14 +56,8 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     // TODO: DIALOG
     if (!particleSystem.getDiskLocation().isValid()) {
         particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.mSystemName + vio::Path(".psys"));
-        // TODO: Save unshared emitters near this one
-        /*for (auto&& emitter : particleSystem.mEmitters) {
-
-        }*/
     }
 
-    
-    //tree.root_id();
     ryml::Tree tree;
     ryml::NodeRef root = tree.rootref();
     root |= ryml::MAP;
@@ -123,32 +70,6 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
         saveParticleEmitter(newNode, emitter);
     }
 
-    /* ryml::NodeRef child = root.append_child() << ryml::key("test2");
-     child |= ryml::MAP;
-     child.append_child() << ryml::key("test3") << "GOODBYE";
-     child.append_child() << ryml::key("test4") << "WORLD";
-     root["pi"] << ryml::fmt::real(3.141592654, 5);
-     root["xmas"] << ryml::fmt::boolalpha(true);
-     root["thiswork"];*/
-
-    // OLD
-    /*keg::YAMLWriter writer;
-    YmlSerializable::beginMap(writer);
-    YmlSerializable::pushKeyValue(writer, "emitters");
-    YmlSerializable::beginSequence(writer);
-
-    for (auto&& emitter : particleSystem.mEmitters) {
-        YmlSerializable::beginMap(writer);
-        YmlSerializable::pushKeyValue(writer, emitter.mEmitterName.c_str());
-        saveParticleEmitter(writer, emitter);
-        YmlSerializable::endMap(writer);
-    }
-
-    YmlSerializable::endSequence(writer);
-    YmlSerializable::endMap(writer);
-
-    return saveAssetContents(particleSystem, writer.c_str(), writer.size());
-    */
     std::stringstream ss;
     ss << tree;
     nString str = ss.str();
@@ -190,6 +111,46 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     }
 }
 
+bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter) {
+
+    // TODO: Material and shader
+    particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
+    particleEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
+
+    { // Emitter Update
+        ryml::ConstNodeRef updateNode = node["e_update"];
+        if (updateNode.is_seq()) {
+            for (ryml::ConstNodeRef seqNode : updateNode.children()) {
+                ryml::ConstNodeRef innerNode = seqNode.first_child();
+                CPUParticleEmitterModule& newModule = *particleEmitter.mEmitterUpdateModules.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
+                if (!newModule.loadFromYml(innerNode)) return false;
+            }
+        }
+    }
+
+    { // Particle Init
+        ryml::ConstNodeRef initNode = node["p_init"];
+        if (initNode.is_seq()) {
+            for (ryml::ConstNodeRef seqNode : initNode.children()) {
+                ryml::ConstNodeRef innerNode = seqNode.first_child();
+                CPUParticleEmitterModule& newModule = *particleEmitter.mParticleInitModules.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
+                if (!newModule.loadFromYml(innerNode)) return false;
+            }
+        }
+    }
+
+    { // Particle Update
+        ryml::ConstNodeRef updateNode = node["p_update"];
+        if (updateNode.is_seq()) {
+            for (ryml::ConstNodeRef seqNode : updateNode.children()) {
+                ryml::ConstNodeRef innerNode = seqNode.first_child();
+                CPUParticleEmitterModule& newModule = *particleEmitter.mParticleUpdateModules.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
+                if (!newModule.loadFromYml(innerNode)) return false;
+            }
+        }
+    }
+    return true;
+}
 
 const ParticleSystemDef& ParticleSystemRepository::getParticleSystem(const nString& itemName) const {
     auto&& it = mParticleSystemLookup.find(itemName);

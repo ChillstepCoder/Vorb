@@ -193,8 +193,9 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
     ImGui::BeginChild("Particle Emitter Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
     auto displayModuleSelectorCombo = [&](ParticleEmitterModuleStage stageBit) -> const CPUParticleEmitterModule* {
-        const auto& modules = Services::ResourceManager::ref().getParticleSystemRepository().getEmitterModules();
-        for (auto&& module : modules) {
+        const auto& modules = yml::getAllObjects<CPUParticleEmitterModule>();
+        for (auto&& iter : modules) {
+            const std::unique_ptr<CPUParticleEmitterModule>& module = iter.second;
             if (module->getStages().isBitSet(stageBit)) {
                 if (ImGui::Button(module->getName(), ImVec2(300, 0.0f))) {
                     return module.get();
