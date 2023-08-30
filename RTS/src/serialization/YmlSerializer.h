@@ -54,8 +54,8 @@ namespace YmlSerializer {
     }
 }
 
-#define YML_WRITE_DEF(Type) inline void write(c4::yml::NodeRef* n, Type const& o)
-#define YML_READ_DEF(Type) inline bool read(c4::yml::ConstNodeRef const& n, Type* target)
+#define YML_WRITE_DEF(...) inline void write(c4::yml::NodeRef* n, __VA_ARGS__ const& o)
+#define YML_READ_DEF(...) inline bool read(c4::yml::ConstNodeRef const& n, __VA_ARGS__* target)
 
 // Usage: SERIALIZABLE_SIMPLE(Type, make_field(o.Value1, "value_name1"sv), make_field(o.Value2, ...)
 #define SERIALIZABLE_SIMPLE(Type, ...) \
@@ -104,6 +104,33 @@ namespace c4 {
             int i = 0;
             for (auto const ch : n)
                 ch >> (*v)[i++];
+            return true;
+        }
+
+        // Simple pair types
+        template <typename K, typename T>
+        void write(c4::yml::NodeRef* n, std::pair<K, T> const& v) {
+            ryml::NodeRef& nr = *n;
+            nr |= ryml::SEQ;
+            nr |= ryml::_WIP_STYLE_FLOW_SL;
+            nr.append_child() << v.first;
+            nr.append_child() << v.second;
+        }
+
+        template <typename K, typename T>
+        bool read(c4::yml::ConstNodeRef const& n, std::pair<K, T>* v) {
+            if (n.num_children() != 2) return false;
+
+            int i = 0;
+            for (auto const ch : n) {
+                if (i == 0) {
+                    ch >> (*v).first;
+                }
+                else {
+                    ch >> (*v).second;
+                }
+                ++i;
+            }
             return true;
         }
     }

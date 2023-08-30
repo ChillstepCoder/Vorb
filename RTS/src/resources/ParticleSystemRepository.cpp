@@ -26,8 +26,6 @@ SERIALIZABLE_SIMPLE(ParticleSystemDef,
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
     IAssetRepository(ioManager),
     mMaterialRepository(materialRepo) {
-
-    static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
 }
 
 ParticleSystemRepository::~ParticleSystemRepository() {

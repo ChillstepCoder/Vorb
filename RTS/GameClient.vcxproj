@@ -804,6 +804,7 @@
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\EditorCurve.hpp" />
     <ClInclude Include="src\ui\editor\EditorRoot.h" />
     <ClInclude Include="src\ui\editor\FishingEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\FoliageEditorViewportPanel.h" />

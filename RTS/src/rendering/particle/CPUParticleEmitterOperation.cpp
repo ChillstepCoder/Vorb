@@ -12,6 +12,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
+#include "ui/editor/EditorCurve.hpp"
+
 CPUParticleEmitterVariable::CPUParticleEmitterVariable(const CPUParticleEmitterVariable& other) : mVarData(other.mVarData) {
     if (other.mOperation) {
         mOperation = other.mOperation->clone();
@@ -74,9 +76,13 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
             color4& color = std::get<color4>(mVarData);
             float colorf[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
             changed |= ImGui::ColorPicker4(label, colorf, ImGuiColorEditFlags_Uint8);
+            ImGui::SameLine();
+            if (ImGui::Button("V")) {
+                ImGui::OpenPopup("OperationPopup");
+            }
             color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
-        static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
+        static_assert(e_count(CPUparticleEmitterVariableVariantType) == 6);
     }
 
     auto displayOperationsSelectorCombo = [&]() -> const CPUParticleEmitterOperation* {
@@ -107,7 +113,7 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
                 default:
                     assert(false);
             }
-            static_assert(e_count(CPUparticleEmitterVariableVariantType) == 7);
+            static_assert(e_count(CPUparticleEmitterVariableVariantType) == 6);
             if (matches) {
                 operationsList.emplace_back(operation.get());
             }
@@ -184,15 +190,12 @@ bool CPUParticleEmitterOperation::updateAndRenderControls() {
     ImGui::BeginGroup();
     ImGui::Text(getDisplayName());
 
-    CPUParticleEmitterVariableVariantTypePair inputTypes = getVariantInput();
     bool changed = false;
-    if (inputTypes.second != CPUparticleEmitterVariableVariantType::None) {
-        changed |= mParam0.updateAndRenderTweaker("A");
-        changed |= mParam1.updateAndRenderTweaker("B");
+    for (size_t i = 0; i < mParams.size(); ++i) {
+        changed |= mParams[i].updateAndRenderTweaker(getParamName(i));
     }
-    else if (inputTypes.first != CPUparticleEmitterVariableVariantType::None) {
-        changed |= mParam0.updateAndRenderTweaker("Value");
-    }
+    changed |= updateAndRenderExtraControls();
+   
     ImGui::EndGroup();
     ImVec2 frameMax = ImGui::GetItemRectMax(); // Bottom right of frame
     // Draw a border around the group
@@ -201,29 +204,17 @@ bool CPUParticleEmitterOperation::updateAndRenderControls() {
     return changed;
 }
 
-bool CPUParticleEmitterOperation::loadFromYml(ryml::ConstNodeRef node)
-{
-    CPUParticleEmitterVariableVariantTypePair input = getVariantInput();
-    if (input.second != CPUparticleEmitterVariableVariantType::None) {
-        assert(input.first != CPUparticleEmitterVariableVariantType::None);
-        if (!mParam0.loadFromYml(node, "p0"sv)) return false;
-        if (!mParam1.loadFromYml(node, "p1"sv)) return false;
+bool CPUParticleEmitterOperation::loadFromYml(ryml::ConstNodeRef node) {
+    for (size_t i = 0; i < mParams.size(); ++i) {
+        if (!mParams[i].loadFromYml(node, getParamName(i))) return false;
     }
-    else if (input.first != CPUparticleEmitterVariableVariantType::None) {
-        if (!mParam0.loadFromYml(node, "p0"sv)) return false;
-    }
+ 
     return true;
 }
 
 void CPUParticleEmitterOperation::saveYmlData(ryml::NodeRef node) const {
-    CPUParticleEmitterVariableVariantTypePair input = getVariantInput();
-    if (input.second != CPUparticleEmitterVariableVariantType::None) {
-        assert(input.first != CPUparticleEmitterVariableVariantType::None);
-        mParam0.saveYmlData(node, "p0"sv);
-        mParam1.saveYmlData(node, "p1"sv);
-    }
-    else if (input.first != CPUparticleEmitterVariableVariantType::None) {
-        mParam0.saveYmlData(node, "p0"sv);
+    for (size_t i = 0; i < mParams.size(); ++i) {
+        mParams[i].saveYmlData(node, getParamName(i));
     }
 }
 
@@ -250,7 +241,136 @@ void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, Partic
 
 void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
     evaluateParams(emitter, id);
-    const f32 p0 = std::get<f32>(mParam0.mVarData);
-    const f32 p1 = std::get<f32>(mParam1.mVarData);
-    output->mVarData = (f32)lerp(p0, p1, Random::getCachedRandomf());
+    const f32 p0 = std::get<f32>(mParams[0].mVarData);
+    const f32 p1 = std::get<f32>(mParams[1].mVarData);
+    output->mVarData = (f32)lerp(p0, p1, mSeedByParticleID ? Random::getCachedRandomfSpecific((ui32)id) : Random::getCachedRandomf());
+}
+bool CPUPEO_RandomFloatInRange::updateAndRenderExtraControls() {
+    return ImGui::Checkbox("Seed By Particle ID", &mSeedByParticleID);
+}
+bool CPUPEO_RandomFloatInRange::loadFromYml(ryml::ConstNodeRef node) {
+    CPUParticleEmitterOperation::loadFromYml(node);
+    node["seed_by_p"] >> mSeedByParticleID;
+    return true;
+}
+void CPUPEO_RandomFloatInRange::saveYmlData(ryml::NodeRef node) const {
+    CPUParticleEmitterOperation::saveYmlData(node);
+    node["seed_by_p"] << mSeedByParticleID;
+}
+
+void CPUPEO_ColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
+    output->mVarData = EditorUtil::evaluateCurve<color4>(mKeys, normalizedValue);
+}
+bool CPUPEO_ColorCurve::updateAndRenderExtraControls() {
+    return EditorUtil::updateAndRenderCurve<color4>(mKeys, [](color4& val) {
+        f32v4 color = val.toVec4();
+        bool changed = ImGui::ColorEdit4("Color Edit", &color.x);
+        val = color4(color);
+        return changed;
+    });
+}
+
+YML_WRITE_DEF(std::pair<f32, color4>) {
+    ryml::NodeRef& nr = *n;
+    nr |= ryml::SEQ;
+    nr |= ryml::_WIP_STYLE_FLOW_SL;
+    nr.append_child() << o.first;
+    for (int i = 0; i < 4; ++i) {
+        nr.append_child() << o.second[i];
+    }
+}
+YML_READ_DEF(std::pair<f32, color4>) {
+    if (n.num_children() != 5) return false;
+    int i = 0;
+    
+    for (auto const ch : n) {
+        if (i == 0) {
+            ch >> (*target).first;
+            ++i;
+        }
+        else {
+            ch >> (*target).second[i++ - 1];
+        }
+    }
+    return true;
+}
+
+bool CPUPEO_ColorCurve::loadFromYml(ryml::ConstNodeRef node) {
+    CPUParticleEmitterOperation::loadFromYml(node);
+    node["keys"] >> mKeys;
+    return true;
+}
+void CPUPEO_ColorCurve::saveYmlData(ryml::NodeRef node) const {
+    CPUParticleEmitterOperation::saveYmlData(node);
+    node["keys"] << mKeys;
+}
+
+
+void CPUPEO_HdrColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
+    output->mVarData = EditorUtil::evaluateCurve<f32v4>(mKeys, normalizedValue);
+}
+bool CPUPEO_HdrColorCurve::updateAndRenderExtraControls() {
+    return EditorUtil::updateAndRenderCurve<f32v4>(mKeys, [](f32v4& val) {
+        return ImGui::ColorEdit4("Color Edit", &val.x, ImGuiColorEditFlags_HDR);
+    });
+}
+
+YML_WRITE_DEF(std::pair<f32, f32v4>) {
+    ryml::NodeRef& nr = *n;
+    nr |= ryml::SEQ;
+    nr |= ryml::_WIP_STYLE_FLOW_SL;
+    nr.append_child() << o.first;
+    for (int i = 0; i < 4; ++i) {
+        nr.append_child() << o.second[i];
+    }
+}
+YML_READ_DEF(std::pair<f32, f32v4>) {
+    if (n.num_children() != 5) return false;
+    int i = 0;
+
+    for (auto const ch : n) {
+        if (i == 0) {
+            ch >> (*target).first;
+            ++i;
+        }
+        else {
+            ch >> (*target).second[i++ - 1];
+        }
+    }
+    return true;
+}
+
+bool CPUPEO_HdrColorCurve::loadFromYml(ryml::ConstNodeRef node) {
+    CPUParticleEmitterOperation::loadFromYml(node);
+    node["keys"] >> mKeys;
+    return true;
+}
+void CPUPEO_HdrColorCurve::saveYmlData(ryml::NodeRef node) const {
+    CPUParticleEmitterOperation::saveYmlData(node);
+    node["keys"] << mKeys;
+}
+
+
+void CPUPEO_FloatCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
+    output->mVarData = EditorUtil::evaluateCurve<f32>(mKeys, normalizedValue);
+}
+bool CPUPEO_FloatCurve::updateAndRenderExtraControls() {
+    return EditorUtil::updateAndRenderCurve<f32>(mKeys, [](f32& val) {
+        return ImGui::InputFloat("Value", &val);
+    });
+}
+bool CPUPEO_FloatCurve::loadFromYml(ryml::ConstNodeRef node) {
+    CPUParticleEmitterOperation::loadFromYml(node);
+    node["keys"] >> mKeys;
+    return true;
+}
+void CPUPEO_FloatCurve::saveYmlData(ryml::NodeRef node) const {
+    CPUParticleEmitterOperation::saveYmlData(node);
+    node["keys"] << mKeys;
 }

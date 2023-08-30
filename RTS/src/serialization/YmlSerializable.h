@@ -5,6 +5,7 @@
 
 #include <ryml.hpp>
 #include <boost/container/flat_map.hpp>
+#include "serialization/YmlSerializer.h"
 
 // Simple interface to turn anything into a yml node
 class YmlSerializable {

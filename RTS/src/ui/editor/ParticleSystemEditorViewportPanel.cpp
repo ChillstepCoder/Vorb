@@ -299,7 +299,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         color4& color = mSelectedEmitter->mDefaultColor;
         float colorf[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
-        changed |= ImGui::ColorPicker4("Color", colorf, ImGuiColorEditFlags_Uint8);
+        changed |= ImGui::ColorEdit4("Color", colorf, ImGuiColorEditFlags_Uint8);
         color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
 
         int maxParticles = mSelectedEmitter->mMaxParticles;

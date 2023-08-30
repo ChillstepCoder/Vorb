@@ -11,6 +11,7 @@ void addModuleDataToArray(ArbitraryObjectArray& arry) const { \
     arry.addObject(mModuleData); \
 }
 
+// TODO: Clone pattern?
 enum class BuiltinCPUParticleEditorModules {
     SpawnBurst,
     SpawnRate,
@@ -19,6 +20,7 @@ enum class BuiltinCPUParticleEditorModules {
     SetPosition,
     SetVelocity,
     SetColor,
+    SetHdrColor,
     SetScale,
     SetPositionFromShape,
     ApplyForce,
@@ -99,6 +101,12 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::
     );
 )
 
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetHdrColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set HDR Color", "set_hdr_color",
+    MODULE_DEF(
+        CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(f32v4(1.0f));
+    );
+)
+
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale", "set_scale",
     MODULE_DEF(
         CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
@@ -129,6 +137,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::Partic
     );
 )
 
+// TODO: Clone pattern?
 inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(BuiltinCPUParticleEditorModules type) {
     switch (type) {
         case BuiltinCPUParticleEditorModules::SpawnBurst:
@@ -145,6 +154,8 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
             return std::make_unique<CPUPEM_SetVelocity>();
         case BuiltinCPUParticleEditorModules::SetColor:
             return std::make_unique<CPUPEM_SetColor>();
+        case BuiltinCPUParticleEditorModules::SetHdrColor:
+            return std::make_unique<CPUPEM_SetHdrColor>();
         case BuiltinCPUParticleEditorModules::SetScale:
             return std::make_unique<CPUPEM_SetScale>();
         case BuiltinCPUParticleEditorModules::SetPositionFromShape:
@@ -154,7 +165,7 @@ inline std::unique_ptr<CPUParticleEmitterModule> createCPUParticleEmitterModule(
         case BuiltinCPUParticleEditorModules::DragForce:
             return std::make_unique<CPUPEM_DragForce>();
     }
-    static_assert(e_count(BuiltinCPUParticleEditorModules) == 11);
+    static_assert(e_count(BuiltinCPUParticleEditorModules) == 12);
 
     return nullptr;
 }

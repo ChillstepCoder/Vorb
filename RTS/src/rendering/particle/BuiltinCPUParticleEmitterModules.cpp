@@ -326,6 +326,32 @@ void CPUPEM_SetColor::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mColor, "color"sv);
 }
 
+CPUPEM_SetHdrColor::CPUPEM_SetHdrColor() {
+    mRequiredComponents |= ParticleComponentType::HDRColor;
+    refresh();
+}
+
+void CPUPEM_SetHdrColor::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mColor.evaluate(emitter, particleID);
+        emitter.setParticleHDRColor(particleID, std::get<f32v4>(MODULE_DATA->mColor.mVarData));
+    };
+}
+
+bool CPUPEM_SetHdrColor::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mColor, "HDR Color");
+}
+
+bool CPUPEM_SetHdrColor::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mColor, "color"sv);
+    return true;
+}
+
+void CPUPEM_SetHdrColor::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mColor, "color"sv);
+}
+
+
 CPUPEM_SetScale::CPUPEM_SetScale() {
     mRequiredComponents |= ParticleComponentType::Scale;
     refresh();
