@@ -58,7 +58,7 @@ public:
     CPUParticleEmitterOperation() = default;
     CPUParticleEmitterOperation(CPUParticleEmitterVariable p0, CPUParticleEmitterVariable p1) : mParam0(p0.mVarData), mParam1(p1.mVarData) {}
     CPUParticleEmitterOperation(const CPUParticleEmitterOperation* other) : mParam0(other->mParam0), mParam1(other->mParam1) {}
-
+    x;
     CPUParticleEmitterVariable mParam0;
     CPUParticleEmitterVariable mParam1;
 
@@ -89,37 +89,32 @@ protected:
        evaluateParams(emitter, id); \
        output->mVarData = std::get<T1>(mParam0.mVarData) OP std::get<T2>(mParam1.mVarData); \
     }
-
-#define DEFINE_CPUPEO_BINARY(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, OP) \
-class NAME : public CPUParticleEmitterOperation { \
+#define DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, INPUT_1, DEFAULT_1, INPUT_2, DEFAULT_2) \
 public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable(TYPE2(0))) {} \
+    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(DEFAULT_1)), CPUParticleEmitterVariable(TYPE2(DEFAULT_2))) {} \
     NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable(other.mParam1)) {} \
     NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
     constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
     constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
-        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::TYPE2); } \
+        return CPUParticleEmitterVariableVariantTypePair(INPUT_1, INPUT_2); } \
+    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); }
+
+#define DEFINE_CPUPEO_BINARY(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, OP) \
+class NAME : public CPUParticleEmitterOperation { \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, \
+        CPUparticleEmitterVariableVariantType::TYPE1, 0, CPUparticleEmitterVariableVariantType::TYPE2, 0) \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     SIMPLE_EXECUTE_OP(TYPE1, TYPE2, OP); \
 }; \
 REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_SET(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
-public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* const getYmlName() const override { return YML_NAME; } \
-    color4 getDisplayColor() const override { return DISP_COLOR; } \
-    CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
-        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, CPUParticleEmitterVariable, \
+        CPUparticleEmitterVariableVariantType::TYPE1, 0, CPUparticleEmitterVariableVariantType::None, 0) \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
        mParam0.evaluate(emitter, id); \
        output->mVarData = std::get<TYPE1>(mParam0.mVarData); \
@@ -129,17 +124,9 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_NEGATE(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
-public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* const getYmlName() const override { return YML_NAME; } \
-    color4 getDisplayColor() const override { return DISP_COLOR; } \
-    CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
-        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, CPUParticleEmitterVariable, \
+        CPUparticleEmitterVariableVariantType::TYPE1, 0, CPUparticleEmitterVariableVariantType::None, 0) \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
        mParam0.evaluate(emitter, id); \
        output->mVarData = -std::get<TYPE1>(mParam0.mVarData); \
@@ -149,17 +136,9 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_CONVERT(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, CONVERT) \
 class NAME : public CPUParticleEmitterOperation { \
-public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* const getYmlName() const override { return YML_NAME; } \
-    color4 getDisplayColor() const override { return DISP_COLOR; } \
-    CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
-        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::TYPE1, CPUparticleEmitterVariableVariantType::None); } \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, CPUParticleEmitterVariable, \
+        CPUparticleEmitterVariableVariantType::TYPE1, 0, CPUparticleEmitterVariableVariantType::None, 0) \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::CONVERT; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
        mParam0.evaluate(emitter, id); \
        output->mVarData = CONVERT(std::get<TYPE1>(mParam0.mVarData)); \
@@ -169,18 +148,20 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
 #define DEFINE_CPUPEO_QUERY_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, ...) \
 class NAME : public CPUParticleEmitterOperation { \
-public: \
-    NAME() : CPUParticleEmitterOperation(CPUParticleEmitterVariable(TYPE1(0)), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME& other) : CPUParticleEmitterOperation(CPUParticleEmitterVariable(other.mParam0), CPUParticleEmitterVariable()) {} \
-    NAME(const NAME* other) : CPUParticleEmitterOperation(other) {} \
-    constexpr const char* const getDisplayName() const override { return DISP_NAME; } \
-    constexpr const char* const getYmlName() const override { return YML_NAME; } \
-    void saveYmlData(ryml::NodeRef node) const  override { } \
-    color4 getDisplayColor() const override { return DISP_COLOR; } \
-    CPUParticleEmitterVariableVariantTypePair getVariantInput() const override { \
-        return CPUParticleEmitterVariableVariantTypePair(CPUparticleEmitterVariableVariantType::None, CPUparticleEmitterVariableVariantType::None); } \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, CPUParticleEmitterVariable, \
+        CPUparticleEmitterVariableVariantType::None, 0, CPUparticleEmitterVariableVariantType::None, 0) \
     CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::TYPE1; } \
-    std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(this); } \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override; \
+    __VA_ARGS__ \
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
+
+// Returns type1 always
+#define DEFINE_CPUPEO_CUSTOM_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE, TYPE1, TYPE2, DEFAULT_1, DEFAULT_2, ...) \
+class NAME : public CPUParticleEmitterOperation { \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, \
+        CPUparticleEmitterVariableVariantType::TYPE1, DEFAULT_1, CPUparticleEmitterVariableVariantType::TYPE2, DEFAULT_2) \
+    CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::OUTPUT_TYPE; } \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override; \
     __VA_ARGS__ \
 }; \
@@ -189,6 +170,7 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 #define COLOR_STANDARD color4(0.3f, 0.3f, 0.7f, 1.0f)
 #define COLOR_CONVERT color4(0.6f, 0.6f, 0.25f, 1.0f)
 #define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)
+#define COLOR_CUSTOM color4(0.3f, 0.7f, 0.7f, 1.0f)
 
 DEFINE_CPUPEO_BINARY(CPUPEO_AddVec3, "Add Vec3", "add_vec3", COLOR_STANDARD, f32v3, f32v3, +)
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyVec3, "Multiply Vec3", "mult_vec3", COLOR_STANDARD, f32v3, f32v3, *)
@@ -201,7 +183,6 @@ DEFINE_CPUPEO_SET(CPUPEO_SetColor, "Set Color", "set_color", COLOR_STANDARD, col
 DEFINE_CPUPEO_SET(CPUPEO_SetVec4, "Set Vec4", "set_vec4", COLOR_STANDARD, f32v4)
 DEFINE_CPUPEO_SET(CPUPEO_SetVec3, "Set Vec3", "set_vec3", COLOR_STANDARD, f32v3)
 DEFINE_CPUPEO_SET(CPUPEO_SetVec2, "Set Vec2", "set_vec2", COLOR_STANDARD, f32v2)
-// CONTINUE HERE
 DEFINE_CPUPEO_SET(CPUPEO_SetFloat, "Set Float", "set_f32", COLOR_STANDARD, f32)
 DEFINE_CPUPEO_SET(CPUPEO_SetUInt, "Set UInt", "set_uint", COLOR_STANDARD, ui32)
 
@@ -228,6 +209,15 @@ DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COL
 DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return {}; }
 )
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_CUSTOM, f32, f32, f32, 0, 1,
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return {}; }
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR_CUSTOM, color4, none, none, 0, 1,
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return {}; }
+)
+    
 
 #undef COLOR_STANDARD
 #undef COLOR_CONVERT

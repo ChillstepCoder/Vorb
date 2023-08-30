@@ -6,6 +6,8 @@
 #include "Resources/ResourceManager.h"
 #include "Resources/ParticleSystemRepository.h"
 
+#include "math/Random.h"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
@@ -244,4 +246,11 @@ void CPUPEO_QueryRotation::execute(CpuParticleEmitter& emitter, ParticleID id, C
 void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
     f32 l = emitter.getParticleNormalizedLifetime(id);
     output->mVarData = l;
+}
+
+void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32 p0 = std::get<f32>(mParam0.mVarData);
+    const f32 p1 = std::get<f32>(mParam1.mVarData);
+    output->mVarData = (f32)lerp(p0, p1, Random::getCachedRandomf());
 }

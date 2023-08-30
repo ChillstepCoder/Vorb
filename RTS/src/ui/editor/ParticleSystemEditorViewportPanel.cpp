@@ -32,7 +32,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
 
     bool isOpen = true;
     ImGui::Begin("Particle System Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings);
 
     ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
@@ -190,7 +190,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
     ImGui::SameLine();
 
 bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
-    ImGui::BeginChild("Particle Emitter Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+    ImGui::BeginChild("Particle Emitter Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings/* | ImGuiWindowFlags_NoScrollbar*/);
 
     auto displayModuleSelectorCombo = [&](ParticleEmitterModuleStage stageBit) -> const CPUParticleEmitterModule* {
         const auto& modules = yml::getAllObjects<CPUParticleEmitterModule>();
@@ -291,20 +291,15 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
     }
     ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
     ImGui::Spacing(); ImGui::Separator();
-    ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
-    ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
-    f32 time = mCurrentTime;
-    ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
-    ImGui::Spacing(); ImGui::Separator();
 
     if (mSelectedEmitter) {
         ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.c_str());
         bool changed = false;
-        changed |= ImGui::SliderFloat2("Default Scale", &mSelectedEmitter->mDefaultScale.x, 0.01f, 5.0f, "%.2f");
+        changed |= ImGui::SliderFloat2("Scale", &mSelectedEmitter->mDefaultScale.x, 0.01f, 5.0f, "%.2f");
 
         color4& color = mSelectedEmitter->mDefaultColor;
         float colorf[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
-        changed |= ImGui::ColorPicker4("Default Color", colorf, ImGuiColorEditFlags_Uint8);
+        changed |= ImGui::ColorPicker4("Color", colorf, ImGuiColorEditFlags_Uint8);
         color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
 
         int maxParticles = mSelectedEmitter->mMaxParticles;
@@ -349,9 +344,21 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
     return true;
 }
 
-bool ParticleSystemEditorViewportPanel::updateAndRenderBottomControls(f32 ySize)
-{
-    ImGui::Text("Hello world");
+void ParticleSystemEditorViewportPanel::updateAndRenderBottomControls() {
+
+    ImGui::Begin("Particle Bottom Panel", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar);
+
+    if (mSystemDef) {
+        ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
+        ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
+        f32 time = mCurrentTime;
+        ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
+        ImGui::Spacing(); ImGui::Separator();
+    }
+
+    mBottomHeight = ImGui::GetWindowSize().y;
+    ImGui::End();
 }
 
 void ParticleSystemEditorViewportPanel::renderMesh() {

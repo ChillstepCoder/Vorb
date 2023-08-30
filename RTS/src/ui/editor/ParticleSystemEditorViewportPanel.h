@@ -16,7 +16,8 @@ public:
     bool updateAndRenderSecondaryControls(f32 ySize) override;
     bool updateAndRenderTertiaryControls(f32 ySize) override;
     bool hasBottomControls() const override { return true; }
-    bool updateAndRenderBottomControls(f32 ySize) override;
+    f32 getBottomHeight() const override { return mBottomHeight; }
+    void updateAndRenderBottomControls() override;
 
     void renderMesh() override;
 
@@ -33,6 +34,8 @@ private:
     f32 mTimelineEnd = 5.0f;
     f32 mCurrentTime = 0.0f;
     f32 mCurrentElapsedSec = 0.0f;
+
+    f32 mBottomHeight = 120.0f;
 
     static constexpr size_t TEXT_INPUT_SIZE = 64;
     char mTextInputBuffer[TEXT_INPUT_SIZE];

@@ -38,7 +38,8 @@ public:
     virtual bool updateAndRenderTertiaryControls(f32 ySize) { return false; }
     // Optional
     virtual bool hasBottomControls() const { return false; }
-    virtual bool updateAndRenderBottomControls(f32 ySize) { return false; }
+    virtual f32 getBottomHeight() const { return 0.0f; }
+    virtual void updateAndRenderBottomControls() {  }
 
     virtual void onEnter() {};
     virtual void onExit() {};

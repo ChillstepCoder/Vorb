@@ -309,7 +309,7 @@ void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
     positioner->movement_.left_ = vui::InputDispatcher::key.isKeyPressed(VKEY_A);
     positioner->movement_.right_ = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
     positioner->movement_.up_ = vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE);
-    positioner->movement_.down_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL);
+    positioner->movement_.down_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LALT);
     positioner->movement_.fastSpeed_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT);
 
     // TODO: Deltatime

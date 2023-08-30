@@ -106,12 +106,12 @@ inline const std::wstring convertMBToWString(const cString s) {
 /* Interpolation Utilities                                              */
 /************************************************************************/
 template<typename T, typename R>
-inline T lerp(const T& v0, const T& v1, const R& r) {
+inline T lerp(const T& v0, const T& v1, const R& r) noexcept {
     return (T)((v1 - v0) * r + v0);
 }
 
 template<>
-inline color4 lerp(const color4& v0, const color4& v1, const f32& r) {
+inline color4 lerp(const color4& v0, const color4& v1, const f32& r) noexcept {
     color4 newColor;
     newColor.r = ui8((v1.r - v0.r) * r + (f32)v0.r);
     newColor.g = ui8((v1.g - v0.g) * r + (f32)v0.g);
@@ -121,13 +121,13 @@ inline color4 lerp(const color4& v0, const color4& v1, const f32& r) {
 }
 
 template<typename T, typename R>
-inline T bilerp(const T& v00, const T& v01, const T& v10, const T& v11, const R& r1, const R& r2) {
+inline T bilerp(const T& v00, const T& v01, const T& v10, const T& v11, const R& r1, const R& r2) noexcept {
     T v0 = lerp(v00, v01, r2);
     T v1 = lerp(v10, v11, r2);
     return lerp(v0, v1, r1);
 }
 template<typename T, typename R>
-inline T trilerp(const T& v000, const T& v001, const T& v010, const T& v011, const T& v100, const T& v101, const T& v110, const T& v111, const R& r1, const R& r2, const R& r3) {
+inline T trilerp(const T& v000, const T& v001, const T& v010, const T& v011, const T& v100, const T& v101, const T& v110, const T& v111, const R& r1, const R& r2, const R& r3) noexcept {
     T v0 = bilerp(v000, v001, v010, v011, r2, r3);
     T v1 = bilerp(v100, v101, v110, v111, r2, r3);
     return lerp(v0, v1, r1);
@@ -175,7 +175,7 @@ inline T upSampleArray(size_t i1, size_t i2, size_t i3, T (&data)[N1][N2][N3]) {
 
 /// Simple hermite interpolater for smoothing the range 0-1
 template<typename T>
-inline T hermite(const T& v) { return static_cast<T>(3.0) * (v * v) - static_cast<T>(2.0) * (v * v * v); }
+inline T hermite(const T& v) noexcept { return static_cast<T>(3.0) * (v * v) - static_cast<T>(2.0) * (v * v * v); }
 
 /************************************************************************/
 /* Quaternion Utilities                                                 */
