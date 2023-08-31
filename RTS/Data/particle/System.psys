@@ -7,27 +7,47 @@ emitters:
       looping: 1
       blend: additive
       e_update:
-        - spawn_rate:
-            emit_rate: 0
-            initial_delay: 0
-            spawn_count: 3
+        - spawn_burst:
+            delay: 0
+            spawn_count: 1333
       p_init:
         - cone_burst:
-            speed_range: [1,1]
-            angle_range: [0,0.7853982]
-            dir: [0,0,1]
-        - set_color:
-            color: [255,0,0,175]
+            speed_range: [1,5]
+            angle_range: [0,4]
+            dir: [0,1,0]
       p_update:
         - drag_force:
             drag: 0.75
         - set_scale:
             scale:
               f32_to_vec2:
-                p0:
-                  add_f32:
-                    p0: 1
+                v:
+                  mult_f32:
+                    p0:
+                      rand_float:
+                        min: 0.1
+                        max: 1
+                        seed_by_p: 1
                     p1:
-                      negate_f32:
-                        p0:
-                          p_norm_life: {}
+                      add_f32:
+                        p0: 1
+                        p1:
+                          negate_f32:
+                            v:
+                              p_norm_life: {}
+        - set_hdr_color:
+            color:
+              hdr_curve:
+                norm_input:
+                  p_norm_life: {}
+                keys:
+                  - [0,[1,0,0,1]]
+                  - [1,[0.03431374,1,0.3159721,1]]
+        - apply_force:
+            force:
+              f32_to_vec3:
+                v:
+                  rand_float:
+                    min: -5
+                    max: 5
+                    seed_by_p: 0
