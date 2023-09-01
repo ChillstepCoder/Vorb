@@ -3,7 +3,7 @@
 
 #include <Vorb/io/IOManager.h>
 
-bool IAssetRepository::saveAssetContents(const IAsset& asset, const char* fileContents, size_t sizeBytes) {
+bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const char* fileContents, size_t sizeBytes) {
     assert(!asset.getDiskLocation().isNull());
 
     assert(fileContents);

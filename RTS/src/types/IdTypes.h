@@ -22,8 +22,8 @@ constexpr FishID INVALID_FISH_ID = UINT32_MAX;
 typedef ui32 ParticleID;
 constexpr ParticleID INVALID_PARTICLE_ID = UINT32_MAX;
 
-typedef ui32 ParticleSystemID;
-constexpr ParticleSystemID INVALID_PARTICLE_SYSTEM_ID = UINT32_MAX;
-
 typedef ui32 ParticleEmitterID;
 constexpr ParticleEmitterID INVALID_PARTICLE_EMITTER_ID = UINT32_MAX;
+
+typedef ui32 AssetID;
+constexpr AssetID INVALID_ASSET_ID = UINT32_MAX;

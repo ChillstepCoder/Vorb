@@ -7,6 +7,12 @@ class CameraPositioner_FirstPerson;
 class MaterialShader;
 class Skybox;
 
+// Helper forward declare
+namespace ImguiUtil {
+    class RenameAssetPopup;
+    class ConfirmDeletePopup;
+}
+
 enum class EditorViewportDrawMode {
     Lit = 0,
     Unlit = 1,

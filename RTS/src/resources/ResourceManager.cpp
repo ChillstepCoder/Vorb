@@ -136,8 +136,6 @@ void ResourceManager::loadFiles() {
         };
         mMaterialRepository->uploadMaterialData();
         
-        // Set default materials
-        mParticleSystemRepository->setDefaultMaterialID(mMaterialRepository->getMaterialId("hard_particle"));
     }
 
     // Load item definitions
@@ -248,6 +246,9 @@ void ResourceManager::loadFiles() {
 
     // Load particle Systems
     {
+        // Set default material
+        mParticleSystemRepository->setDefaultMaterialID(mMaterialRepository->getMaterialId("particle_v0"/*"soft_particle"*/));
+
         ScopedTimer timer("Particle load");
         for (auto&& entry : mParticleSystemFiles) {
             mParticleSystemRepository->loadParticleSystemFile(entry);

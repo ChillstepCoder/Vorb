@@ -10,9 +10,24 @@
 
 #include "camera/SimpleCamera.h"
 
+#include "ui/ImguiUtil.hpp"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+
+// TODO: UI Utilities
+    // Helper for selected button styling
+#define PUSH_COLOR(button, hover, active) \
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)button); \
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)hover); \
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)active);
+#define PUSH_SELECTED_STYLE() \
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.6f, 0.9f, 0.7f)); \
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.75f, 0.9f, 0.7f)); \
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.8f, 0.9f, 0.8f));
+#define POP_COLOR() ImGui::PopStyleColor(3);
+#define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_COLOR();
 
 ParticleSystemEditorViewportPanel::ParticleSystemEditorViewportPanel() : IEditorViewportPanel() {
 
@@ -40,7 +55,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     f32v2 viewportDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
     updateCamera(viewportDims.x / viewportDims.y);
 
-    mClearColor = f32v4(0.0f);
+    mClearColor = f32v4(0.3f, 0.3f, 0.3f, 1.0f);
 
     //updateFramebufferAndLazyInit(imageDims);
 
@@ -60,18 +75,6 @@ bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
 
 void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 
-    // TODO: UI Utilities
-        // Helper for selected button styling
-#define PUSH_COLOR(button, hover, active) \
-    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)button); \
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)hover); \
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)active);
-#define PUSH_SELECTED_STYLE() \
-    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f)); \
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f)); \
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-#define POP_COLOR() ImGui::PopStyleColor(3);
-#define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_COLOR();
 
     // Add FPS for convenience
     char buffer[64];
@@ -97,12 +100,12 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Create"))
         {
             ImGui::CloseCurrentPopup();
-            mSystemDef = Services::ResourceManager::ref().getParticleSystemRepository().tryAddNewParticleSystem(nString(mTextInputBuffer));
+            mSystemDef = Services::ResourceManager::ref().getParticleSystemRepository().tryAddNewAsset(nString(mTextInputBuffer));
             if (!mSystemDef) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
             else {
-                mSystemDef->mSystemName = mTextInputBuffer;
+                mSystemDef->setName(mTextInputBuffer);
                 ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = "DefaultEmitter";
                 defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
@@ -125,14 +128,22 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         bool changed = false;
 
         ImGui::Separator();
-        ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
-
-        if (ImGui::Button("Save System")) {
+        ImGui::Text("System: %s", mSystemDef->getName().c_str());
+        if (ImGui::Button("Rename")) {
+            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mSystemDef->getName(), (void*)mSystemDef);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Save")) {
             if (!Services::ResourceManager::ref().getParticleSystemRepository().saveParticleSystem(*mSystemDef)) {
                 pError("FAILED TO SAVE PARTICLE SYSTEM!");
             }
         }
-
+        ImGui::SameLine();
+        if (ImGui::Button("Delete")) {
+            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mSystemDef->getName(), (void*)mSystemDef);
+        }
+        ImGui::Separator();
+        ImGui::Spacing();
         if (ImGui::Button("Add Emitter")) {
             ImGui::OpenPopup("EmitterModal");
             strcpy_s(mTextInputBuffer, "Emitter");
@@ -162,22 +173,47 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             ImGui::EndPopup();
         }
         
+        // Make sure we have emitter visibility
+        if (mShowEmitters.size() != mSystemDef->mEmitters.size()) {
+            mShowEmitters.resize(mSystemDef->mEmitters.size(), true);
+        }
+
         // Show all emitters
         ImGui::Separator();
         ImGui::Text("Emitters:");
         int i = 0;
         for (auto&& emitter : mSystemDef->mEmitters) {
-            ImGui::PushID(i++);
+            ImGui::PushID(i);
+            constexpr int VISIBILITY_SIZE = 32;
             if (mSelectedEmitter == &emitter) {
-                SELECTED_BUTTON(ImGui::Button(emitter.mEmitterName.c_str(), ImVec2(contentAvail.x, 0)));
+                SELECTED_BUTTON(ImGui::Button(emitter.mEmitterName.c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0)));
             }
             else {
-                if (ImGui::Button(emitter.mEmitterName.c_str(), ImVec2(contentAvail.x, 0))) {
+                if (ImGui::Button(emitter.mEmitterName.c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0))) {
                     mSelectedEmitter = &emitter;
                 }
             }
+            ImGui::SameLine();
+            if (mShowEmitters[i]) {
+                PUSH_SELECTED_STYLE();
+                if (ImGui::Button("O")) {
+                    mShowEmitters[i] = false;
+                }
+                POP_COLOR();
+            }
+            else {
+                PUSH_COLOR(ImColor::HSV(1.0f, 0.7f, 0.6f), ImColor::HSV(1.0f, 0.7f, 0.8f), ImColor::HSV(1.0f, 0.7f, 1.0f));
+                if (ImGui::Button("x")) {
+                    mShowEmitters[i] = true;
+                }
+                POP_COLOR();
+            }
             ImGui::PopID();
+            ++i;
         }
+
+        // Popups are opened in this panel
+        updatePopups();
     }
 }
 
@@ -231,8 +267,13 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
             for (auto&& it = modules.begin(); it != modules.end();) {
                 ImGui::PushID(++mid);
                 auto& module = *it;
-                if (ImGui::Button(module->getName(), ImVec2(contentAvail.x - size, size))) {
-                    mSelectedModule = module.get();
+                if (mSelectedModule == module.get()) {
+                    SELECTED_BUTTON(ImGui::Button(module->getName(), ImVec2(contentAvail.x - size, size)));
+                }
+                else {
+                    if (ImGui::Button(module->getName(), ImVec2(contentAvail.x - size, size))) {
+                        mSelectedModule = module.get();
+                    }
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("-", ImVec2(size, size))) {
@@ -350,7 +391,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderBottomControls() {
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar);
 
     if (mSystemDef) {
-        ImGui::Text("System: %s", mSystemDef->mSystemName.c_str());
+        ImGui::Text("System: %s", mSystemDef->getName().c_str());
         ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
         f32 time = mCurrentTime;
         ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
@@ -366,7 +407,7 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 
     // Render preview system
     if (mPreviewSystem) {
-        mPreviewSystem->updateAndRender(mCurrentElapsedSec, camera->getViewProjectionMatrix());
+        mPreviewSystem->updateAndRenderEditor(mCurrentElapsedSec, camera->getViewProjectionMatrix(), mShowEmitters);
     }
 }
 
@@ -379,4 +420,21 @@ void ParticleSystemEditorViewportPanel::createPreviewSystem() {
     if (!mSystemDef) return;
     mCurrentTime = 0.0f;
     mPreviewSystem = std::make_unique<CPUParticleSystem>(*mSystemDef);
+}
+
+void ParticleSystemEditorViewportPanel::updatePopups() {
+    if (mRenamePopup) {
+        if (mRenamePopup->updateAndRender()) {
+            const nString& result = mRenamePopup->getResult();
+
+            mRenamePopup.reset();
+        }
+    }
+    else if (mConfirmDeletePopup) {
+        if (mConfirmDeletePopup->updateAndRender()) {
+            bool result = mConfirmDeletePopup->getResult();
+
+            mConfirmDeletePopup.reset();
+        }
+    }
 }

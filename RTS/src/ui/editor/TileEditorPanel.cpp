@@ -406,8 +406,9 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
             ui32 ID = 2998;
             ui32 previewIndex = 0;
 
-            for (auto&& it : particleSystemRepository.getParticleSystemNames()) {
-                ParticleSystemDef& def = particleSystemRepository.mParticleSystems[it.second];
+            std::vector<ParticleSystemDef>& particleSystems = particleSystemRepository.getAllAssetsMutable();
+            for (auto&& it : particleSystemRepository.getAssetNames()) {
+                ParticleSystemDef& def = particleSystems[it.second];
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
@@ -418,7 +419,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", def.mID);
+                sprintf_s(label, "%04d", def.getID());
                 ImGui::Text(label);
 
                 // Action

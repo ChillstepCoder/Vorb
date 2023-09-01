@@ -19,6 +19,7 @@ public:
 
     // Bind shader before calling this
     void updateAndRender(f32 elapsedSec, const f32m4& VP);
+    void updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, const std::vector<bool>& emitterVisibility);
 
     CpuParticleEmitter& addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 particleLifespanSec = FLT_MAX, f32 emitterLifespanSec = FLT_MAX);
 
@@ -28,5 +29,5 @@ public:
 
 private:
     std::vector<CpuParticleEmitterPtr> mEmitters;
-    ParticleSystemID mSystemID = INVALID_PARTICLE_SYSTEM_ID;
+    AssetID mSystemID = INVALID_ASSET_ID;
 };

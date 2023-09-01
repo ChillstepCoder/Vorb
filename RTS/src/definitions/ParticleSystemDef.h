@@ -32,7 +32,7 @@ public:
 
 class ParticleSystemDef : public IAsset {
 public:
-    nString mSystemName;
-    ParticleSystemID mID;
+    DEFAULT_ASSET_CONSTRUCTOR(ParticleSystemDef);
+
     std::vector<ParticleEmitterDef> mEmitters;
 };

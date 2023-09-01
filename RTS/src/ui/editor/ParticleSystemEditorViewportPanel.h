@@ -25,10 +25,16 @@ public:
 
 private:
     void createPreviewSystem();
+    void updatePopups();
 
     ParticleSystemDef* mSystemDef = nullptr;
     ParticleEmitterDef* mSelectedEmitter = nullptr;
     CPUParticleEmitterModule* mSelectedModule = nullptr;
+    std::vector<bool> mShowEmitters; // One for each emitter in the system
+
+    //Popups
+    std::unique_ptr<ImguiUtil::RenameAssetPopup> mRenamePopup;
+    std::unique_ptr<ImguiUtil::ConfirmDeletePopup> mConfirmDeletePopup;
 
     std::unique_ptr<CPUParticleSystem> mPreviewSystem;
     f32 mTimelineEnd = 5.0f;

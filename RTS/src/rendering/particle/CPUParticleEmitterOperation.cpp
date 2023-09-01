@@ -374,3 +374,34 @@ void CPUPEO_FloatCurve::saveYmlData(ryml::NodeRef node) const {
     CPUParticleEmitterOperation::saveYmlData(node);
     node["keys"] << mKeys;
 }
+
+void CPUPEO_NormalizeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32v3 v = std::get<f32v3>(mParams[0].mVarData);
+    if (v != f32v3(0.0f)) [[likely]] {
+        output->mVarData = glm::normalize(std::get<f32v3>(mParams[0].mVarData));
+    }
+    else {
+        output->mVarData = f32v3(0.0f);
+    }
+}
+
+void CPUPEO_RandomPointInShape::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    assert(false);
+    X;
+}
+bool CPUPEO_RandomPointInShape::updateAndRenderExtraControls() {
+    bool changed = false;
+    assert(false);
+    return changed;
+}
+bool CPUPEO_RandomPointInShape::loadFromYml(ryml::ConstNodeRef node) {
+    CPUParticleEmitterOperation::loadFromYml(node);
+    assert(false);
+    return true;
+}
+void CPUPEO_RandomPointInShape::saveYmlData(ryml::NodeRef node) const {
+    CPUParticleEmitterOperation::saveYmlData(node);
+    assert(false);
+}

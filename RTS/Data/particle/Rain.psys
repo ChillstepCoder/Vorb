@@ -1,0 +1,26 @@
+emitters:
+  - DefaultEmitter:
+      scale: [0.1,0.1]
+      color: [255,255,255,255]
+      max_particles: 2000
+      lifetime: 5
+      looping: 1
+      blend: additive
+      e_update:
+        - spawn_rate:
+            emit_rate: 0
+            initial_delay: 0
+            spawn_count: 3
+      p_init:
+        - set_velocity:
+            vel: [1.5,0,-16]
+        - set_position:
+            pos:
+              add_vec3:
+                p0: [0,0,10]
+                p1: [0,0,0]
+        - set_scale:
+            scale: [1,5]
+        - set_hdr_color:
+            color: [0,1,1,0.1]
+      p_update: []

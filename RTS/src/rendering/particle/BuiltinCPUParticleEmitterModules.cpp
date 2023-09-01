@@ -35,7 +35,7 @@ saveNested(writer, name2, YML_SAVE_LAMBDA(mModuleData.var2)); \
 saveNested(writer, name3, YML_SAVE_LAMBDA(mModuleData.var3)); \
 endMap(writer);
 
-
+// Helper
 bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* const label) {
     bool changed = variable.updateAndRenderTweaker(label);
     // Separator after operations
@@ -45,6 +45,10 @@ bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* c
     return changed;
 }
 
+// ====================================================================================================
+// CPUPEM_SpawnBurst
+// ====================================================================================================
+#pragma region CPUPEM_SpawnBurst
 CPUPEM_SpawnBurst::CPUPEM_SpawnBurst() {
     refresh();
 }
@@ -82,7 +86,13 @@ void CPUPEM_SpawnBurst::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mDelay, "delay"sv);
     SAVE_VAR(mSpawnCount, "spawn_count"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_SpawnRate
+// ====================================================================================================
+#pragma region CPUPEM_SpawnRate
 CPUPEM_SpawnRate::CPUPEM_SpawnRate() {
     refresh();
 }
@@ -127,7 +137,13 @@ void CPUPEM_SpawnRate::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mInitialDelay, "initial_delay"sv);
     SAVE_VAR(mSpawnCount, "spawn_count"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_RingBurst
+// ====================================================================================================
+#pragma region CPUPEM_RingBurst
 CPUPEM_RingBurst::CPUPEM_RingBurst() {
     mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
@@ -184,7 +200,13 @@ void CPUPEM_RingBurst::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mMaxAngleFromRingRad, "max_angle"sv);
     SAVE_VAR(mRingNormal, "ring_normal"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_ConeBurst
+// ====================================================================================================
+#pragma region CPUPEM_ConeBurst
 CPUPEM_ConeBurst::CPUPEM_ConeBurst() {
     mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
@@ -227,8 +249,6 @@ void CPUPEM_ConeBurst::refresh() {
 
         emitter.addParticleVelocity(particleID, direction * speed);
     };
-
-
 }
 
 bool CPUPEM_ConeBurst::updateAndRenderEditorControls() {
@@ -251,7 +271,13 @@ void CPUPEM_ConeBurst::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mAngleRange, "angle_range"sv);
     SAVE_VAR(mDirection, "dir"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_SetPosition
+// ====================================================================================================
+#pragma region CPUPEM_SetPosition
 CPUPEM_SetPosition::CPUPEM_SetPosition() {
     refresh();
 }
@@ -275,7 +301,13 @@ bool CPUPEM_SetPosition::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_SetPosition::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mPositionVec3, "pos"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_SetVelocity
+// ====================================================================================================
+#pragma region CPUPEM_SetVelocity
 CPUPEM_SetVelocity::CPUPEM_SetVelocity() {
     mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
@@ -300,7 +332,13 @@ bool CPUPEM_SetVelocity::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_SetVelocity::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mVelocityVec3, "vel"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_SetColor
+// ====================================================================================================
+#pragma region CPUPEM_SetColor
 CPUPEM_SetColor::CPUPEM_SetColor() {
     mRequiredComponents |= ParticleComponentType::Color;
     refresh();
@@ -325,7 +363,13 @@ bool CPUPEM_SetColor::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_SetColor::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mColor, "color"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_SetHdrColor
+// ====================================================================================================
+#pragma region CPUPEM_SetHdrColor
 CPUPEM_SetHdrColor::CPUPEM_SetHdrColor() {
     mRequiredComponents |= ParticleComponentType::HDRColor;
     refresh();
@@ -350,8 +394,13 @@ bool CPUPEM_SetHdrColor::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_SetHdrColor::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mColor, "color"sv);
 }
+#pragma endregion
 
 
+// ====================================================================================================
+// CPUPEM_SetScale
+// ====================================================================================================
+#pragma region CPUPEM_SetScale
 CPUPEM_SetScale::CPUPEM_SetScale() {
     mRequiredComponents |= ParticleComponentType::Scale;
     refresh();
@@ -376,68 +425,13 @@ bool CPUPEM_SetScale::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_SetScale::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScale, "scale"sv);
 }
+#pragma endregion
 
-CPUPEM_SetPositionFromShape::CPUPEM_SetPositionFromShape() {
-    refresh();
-}
 
-void CPUPEM_SetPositionFromShape::refresh() {
-
-    switch (mModuleData.mShapeType) {
-        case ShapeType::Sphere:
-            mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
-                MODULE_DATA->mRadius.evaluate(emitter, particleID);
-                f32 theta = 2.f * M_PIF * Random::getCachedRandomf(); // azimuthal angle
-                f32 phi = acosf(2.f * Random::getCachedRandomf() - 1.f); // polar angle
-                f32 r = std::get<f32>(MODULE_DATA->mRadius.mVarData) * Random::getCachedRandomf(); // cube root to ensure points are uniformly distributed
-
-                f32v3 point;
-                point.x = r * sin(phi) * cos(theta);
-                point.y = r * sin(phi) * sin(theta);
-                point.z = r * cos(phi);
-                emitter.setParticlePosition(particleID, point);
-            };
-            break;
-        case ShapeType::Box:
-            mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
-                assert(false);
-            };
-            break;
-        default:
-            assert(false);
-            break;
-    }
-    static_assert(e_count(ShapeType) == 2);
-}
-
-bool CPUPEM_SetPositionFromShape::updateAndRenderEditorControls() {
-    bool changed = false;
-    changed |= updateAndRenderVariable(mModuleData.mRadius, "Radius");
-
-    const char* itemNames[e_count(ShapeType)] = {
-        "Sphere",
-        "Box"
-    };
-    static_assert(e_count(ShapeType) == 2);
-
-    changed |= ImGui::Combo("Shape", (int*)&mModuleData.mShapeType, itemNames, e_count(ShapeType));
-
-    return changed;
-}
-
-bool CPUPEM_SetPositionFromShape::loadFromYml(ryml::ConstNodeRef node) {
-    LOAD_VAR(mRadius, "radius"sv);
-    int result;
-    node["shape"] >> result;
-    mModuleData.mShapeType = (ShapeType)result;
-    return true;
-}
-
-void CPUPEM_SetPositionFromShape::saveYmlData(ryml::NodeRef node) const {
-    SAVE_VAR(mRadius, "radius"sv);
-    node["shape"] << (int)mModuleData.mShapeType;
-}
-
+// ====================================================================================================
+// CPUPEM_ApplyForce
+// ====================================================================================================
+#pragma region CPUPEM_ApplyForce
 CPUPEM_ApplyForce::CPUPEM_ApplyForce() {
     mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
@@ -464,7 +458,13 @@ bool CPUPEM_ApplyForce::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_ApplyForce::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mForce, "force"sv);
 }
+#pragma endregion
 
+
+// ====================================================================================================
+// CPUPEM_DragForce
+// ====================================================================================================
+#pragma region CPUPEM_DragForce
 CPUPEM_DragForce::CPUPEM_DragForce() {
     mRequiredComponents |= ParticleComponentType::Velocity;
     refresh();
@@ -491,3 +491,4 @@ bool CPUPEM_DragForce::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_DragForce::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mDragFactor, "drag"sv);
 }
+#pragma endregion

@@ -19,9 +19,6 @@ constexpr const char* const EMITTER_LIFETIME_KEY("lifetime");
 constexpr const char* const EMITTER_LOOPING_KEY("looping");
 constexpr const char* const EMITTER_BLEND_KEY("blend");
 
-SERIALIZABLE_SIMPLE(ParticleSystemDef,
-    make_field(o.mSystemName, "name"sv)
-)
 
 ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
     IAssetRepository(ioManager),
@@ -32,13 +29,12 @@ ParticleSystemRepository::~ParticleSystemRepository() {
 
 }
 
-void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
-{
+void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath) {
     nString data;
     mIoManager.readFileToString(filePath.getCString(), data);
     ryml::Tree tree = YmlSerializer::parseFileData(data);
 
-    ParticleSystemDef* newDef = tryAddNewParticleSystem(filePath.getFileNameNoExtension());
+    ParticleSystemDef* newDef = tryAddNewAsset(filePath.getFileNameNoExtension());
     if (!newDef) {
         LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
         pError("Failed to load " + filePath.getString() + " already exists");
@@ -61,7 +57,7 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
 bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {
     // TODO: DIALOG
     if (!particleSystem.getDiskLocation().isValid()) {
-        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.mSystemName + vio::Path(".psys"));
+        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.getName() + vio::Path(".psys"));
     }
 
     ryml::Tree tree;
@@ -174,23 +170,4 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
         }
     }
     return true;
-}
-
-const ParticleSystemDef& ParticleSystemRepository::getParticleSystem(const nString& itemName) const {
-    auto&& it = mParticleSystemLookup.find(itemName);
-    assert(it != mParticleSystemLookup.end());
-    return mParticleSystems[it->second];
-}
-
-ParticleSystemDef* ParticleSystemRepository::tryAddNewParticleSystem(const nString& name) {
-    if (mParticleSystemLookup.find(name) != mParticleSystemLookup.end()) {
-        return nullptr;
-    }
-
-    ParticleSystemID id = mParticleSystems.size();
-    mParticleSystemLookup[name] = id;
-    ParticleSystemDef& newDef = mParticleSystems.emplace_back();
-    newDef.mSystemName = name;
-    newDef.mID = id;
-    return &newDef;
 }

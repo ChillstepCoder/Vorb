@@ -7,6 +7,8 @@ class CpuParticleEmitter;
 
 #include "serialization/YmlSerializable.h"
 
+#include "util/RandomPointFromShape.h"
+
 enum class CPUparticleEmitterVariableVariantType : ui8{
     color4,
     f32v4,
@@ -141,18 +143,6 @@ class NAME : public CPUParticleEmitterOperation { \
 }; \
 REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
-#define DEFINE_CPUPEO_SET(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
-class NAME : public CPUParticleEmitterOperation { \
-    OPERATION_PARAMS(NAME, E_VAR(TYPE1(0))) \
-    OPERATION_PARAM_NAMES("v") \
-    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
-    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
-       evaluateParams(emitter, id); \
-       output->mVarData = std::get<TYPE1>(mParams[0].mVarData); \
-    } \
-}; \
-REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
-
 #define DEFINE_CPUPEO_NEGATE(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
 class NAME : public CPUParticleEmitterOperation { \
     OPERATION_PARAMS(NAME, E_VAR(TYPE1(0))) \
@@ -198,7 +188,8 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 #define COLOR_STANDARD color4(0.3f, 0.3f, 0.7f, 1.0f)
 #define COLOR_CONVERT color4(0.6f, 0.6f, 0.25f, 1.0f)
 #define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)
-#define COLOR_CUSTOM color4(0.3f, 0.7f, 0.7f, 1.0f)
+#define COLOR_CURVE color4(0.3f, 0.7f, 0.7f, 1.0f)
+#define COLOR_COMPLEX color4(1.0f, 0.3f, 0.3f, 1.0f)
 
 DEFINE_CPUPEO_BINARY(CPUPEO_AddVec3, "Add Vec3", "add_vec3", COLOR_STANDARD, f32v3, f32v3, +)
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyVec3, "Multiply Vec3", "mult_vec3", COLOR_STANDARD, f32v3, f32v3, *)
@@ -206,13 +197,6 @@ DEFINE_CPUPEO_BINARY(CPUPEO_AddFloatToVec3, "Add Float To Vec3", "add_f32_vec3",
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloatToVec3, "Multiply Float To Vec3", "mult_f32_vec3", COLOR_STANDARD, f32v3, f32, *)
 DEFINE_CPUPEO_BINARY(CPUPEO_AddFloat, "Add Float", "add_f32", COLOR_STANDARD, f32, f32, +)
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloat, "Multiply Float", "mult_f32", COLOR_STANDARD, f32, f32, *)
-
-DEFINE_CPUPEO_SET(CPUPEO_SetColor, "Set Color", "set_color", COLOR_STANDARD, color4)
-DEFINE_CPUPEO_SET(CPUPEO_SetVec4, "Set Vec4", "set_vec4", COLOR_STANDARD, f32v4)
-DEFINE_CPUPEO_SET(CPUPEO_SetVec3, "Set Vec3", "set_vec3", COLOR_STANDARD, f32v3)
-DEFINE_CPUPEO_SET(CPUPEO_SetVec2, "Set Vec2", "set_vec2", COLOR_STANDARD, f32v2)
-DEFINE_CPUPEO_SET(CPUPEO_SetFloat, "Set Float", "set_f32", COLOR_STANDARD, f32)
-DEFINE_CPUPEO_SET(CPUPEO_SetUInt, "Set UInt", "set_uint", COLOR_STANDARD, ui32)
 
 DEFINE_CPUPEO_NEGATE(CPUPEO_NegateVec3, "Negate Vec3", "negate_vec3", COLOR_STANDARD, f32v3)
 DEFINE_CPUPEO_NEGATE(CPUPEO_NegateVec2, "Negate Vec2", "negate_vec2", COLOR_STANDARD, f32v2)
@@ -236,7 +220,7 @@ DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COL
 )
 DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32)
 
-DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_CUSTOM, f32,
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_STANDARD, f32,
     OPERATION_PARAMS(CPUPEO_RandomFloatInRange, E_VAR(f32(0.f)), E_VAR(f32(1.f)))
     OPERATION_PARAM_NAMES("min", "max")
     virtual bool updateAndRenderExtraControls() override;
@@ -246,7 +230,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "r
     void saveYmlData(ryml::NodeRef node) const override;
 )
 
-DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR_CUSTOM, color4,
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR_CURVE, color4,
     OPERATION_PARAMS(CPUPEO_ColorCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
     virtual bool updateAndRenderExtraControls() override;
@@ -256,7 +240,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR
     void saveYmlData(ryml::NodeRef node) const override;
 )
 
-DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_HdrColorCurve, "HDR Color Curve", "hdr_curve", COLOR_CUSTOM, f32v4,
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_HdrColorCurve, "HDR Color Curve", "hdr_curve", COLOR_CURVE, f32v4,
     OPERATION_PARAMS(CPUPEO_HdrColorCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
     virtual bool updateAndRenderExtraControls() override;
@@ -266,7 +250,7 @@ protected:
     void saveYmlData(ryml::NodeRef node) const override;
 )
 
-DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_FloatCurve, "Float Curve", "float_curve", COLOR_CUSTOM, f32,
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_FloatCurve, "Float Curve", "float_curve", COLOR_CURVE, f32,
     OPERATION_PARAMS(CPUPEO_FloatCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
     virtual bool updateAndRenderExtraControls() override;
@@ -274,6 +258,20 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_FloatCurve, "Float Curve", "float_curve", COLOR
 protected:
     std::vector<std::pair<f32, f32>> mKeys = { {0.f, f32(0.0f)}, {1.f, f32(1.0f)} };
     void saveYmlData(ryml::NodeRef node) const override;
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_NormalizeVec3, "Normalize Vec3", "norm_vec3", COLOR_STANDARD, f32v3,
+    OPERATION_PARAMS(CPUPEO_NormalizeVec3, E_VAR(f32v3(0.0f)))
+    OPERATION_PARAM_NAMES("v")
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomPointInShape, "Random Point In Shape", "rnd_point_shape", COLOR_COMPLEX, f32v3,
+    OPERATION_NO_PARAMS()
+    virtual bool updateAndRenderExtraControls() override;
+    bool loadFromYml(ryml::ConstNodeRef node) override;
+protected:
+    void saveYmlData(ryml::NodeRef node) const override;
+    PointFromShapeQueryDataVariant mShapeData = SphereShapePointQueryData();
 )
 
 #undef COLOR_STANDARD
