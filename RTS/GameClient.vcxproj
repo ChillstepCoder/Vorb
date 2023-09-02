@@ -464,6 +464,7 @@
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\RandomPointFromShape.cpp" />
     <ClCompile Include="src\util\SpatialGrid2D.cpp" />
     <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
@@ -838,6 +839,7 @@
     <ClInclude Include="src\util\MathDefines.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\NativeFileBrowser.h" />
+    <ClInclude Include="src\util\RandomPointFromShape.h" />
     <ClInclude Include="src\util\SpatialGrid2D.h" />
     <ClInclude Include="src\util\StringHash.h" />
     <ClInclude Include="src\util\StrToken.h" />

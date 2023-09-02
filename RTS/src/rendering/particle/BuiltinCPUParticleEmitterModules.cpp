@@ -492,3 +492,45 @@ void CPUPEM_DragForce::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mDragFactor, "drag"sv);
 }
 #pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_Turbulence
+// ====================================================================================================
+#pragma region CPUPEM_Turbulence
+CPUPEM_Turbulence::CPUPEM_Turbulence() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
+    refresh();
+}
+
+void CPUPEM_Turbulence::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mScaleFactor.evaluate(emitter, particleID);
+        MODULE_DATA->mDirOffset.evaluate(emitter, particleID);
+        f32v3 velocity = emitter.getParticleVelocity(particleID);
+        // Experiment with all 3 values the same
+        const f32v3 rndVec = f32v3(Random::getCachedRandomf() * 2.0f - 1.0f);
+        const f32v3 dirVec = std::get<f32v3>(MODULE_DATA->mDirOffset.mVarData);
+        f32v3 scaledVec = (rndVec + dirVec) * std::get<f32v3>(MODULE_DATA->mScaleFactor.mVarData);
+        emitter.setParticleVelocity(particleID, velocity + scaledVec * elapsedSec);
+    };
+}
+
+bool CPUPEM_Turbulence::updateAndRenderEditorControls() {
+    bool changed = false;
+    changed |= updateAndRenderVariable(mModuleData.mScaleFactor, "Scale Factor");
+    changed |= updateAndRenderVariable(mModuleData.mDirOffset, "Dir Offset");
+    return changed;
+}
+
+bool CPUPEM_Turbulence::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mScaleFactor, "scale_fac"sv);
+    LOAD_VAR(mDirOffset, "dir_off"sv);
+    return true;
+}
+
+void CPUPEM_Turbulence::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mScaleFactor, "scale_fac"sv);
+    SAVE_VAR(mDirOffset, "dir_off"sv);
+}
+#pragma endregion

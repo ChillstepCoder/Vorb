@@ -822,6 +822,9 @@
     <ClCompile Include="src\resources\IAssetRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\RandomPointFromShape.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1983,6 +1986,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\EditorCurve.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\RandomPointFromShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

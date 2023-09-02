@@ -26,7 +26,7 @@ typedef std::function<f32v3(PointFromShapeQueryDataVariant)> RandomPointFromShap
 
 namespace util {
     // MAX seed = random seed
-    f32v3 queryRandomPointFromShape(PointFromShapeQueryDataVariant data, ui32 seed = UINT32_MAX);
+    extern f32v3 queryRandomPointFromSphere(f32 radius, ui32 seed = UINT32_MAX);
     // MAX seed = random seed
-    RandomPointFromShapeFunction getQueryRandomPointFromShapeFunction(PointFromShapeQueryDataVariant data, ui32 seed = UINT32_MAX);
+    extern f32v3 queryRandomPointFromBox(f32v3 halfExtents, ui32 seed = UINT32_MAX);
 }

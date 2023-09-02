@@ -66,13 +66,14 @@ public:
     virtual BitFlags<ParticleComponentType> getRequiredComponents() const { return {}; }
 
     virtual bool updateAndRenderControls();
-    virtual bool updateAndRenderExtraControls() { return false; }
+    virtual bool updateAndRenderExtraPreControls() { return false; }
+    virtual bool updateAndRenderExtraPostControls() { return false; }
 
     virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) = 0;
 
     virtual bool loadFromYml(ryml::ConstNodeRef node) override;
     virtual const char* const getParamName(size_t paramIndex) const = 0;
-    virtual size_t getParamIndex(const char* const paramName) const = 0;
+    virtual size_t getParamIndex(const char* const paramName) const { assert(false); return UINT32_MAX; };
 
 protected:
     std::vector<CPUParticleEmitterVariable> mParams;
@@ -95,13 +96,13 @@ public: \
 
 // Usage: "paramName1", "paramName2", ...
 #define OPERATION_PARAM_NAMES(...) \
+protected: \
+static constexpr const char* const paramNames[] = { __VA_ARGS__ }; \
 public: \
     const char* const getParamName(size_t paramIndex) const override { \
-        static constexpr const char* const paramNames[] = { __VA_ARGS__ }; \
         return paramNames[paramIndex]; \
     } \
     size_t getParamIndex(const char* const paramName) const override { \
-        static constexpr const char* const paramNames[] = { __VA_ARGS__ }; \
         for (size_t i = 0; i < std::size(paramNames); ++i) { \
             if (strcmp(paramName, paramNames[i]) == 0) { \
                 return i; \
@@ -223,7 +224,7 @@ DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Li
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_STANDARD, f32,
     OPERATION_PARAMS(CPUPEO_RandomFloatInRange, E_VAR(f32(0.f)), E_VAR(f32(1.f)))
     OPERATION_PARAM_NAMES("min", "max")
-    virtual bool updateAndRenderExtraControls() override;
+    virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
  protected:
     bool mSeedByParticleID = true;
@@ -233,7 +234,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "r
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR_CURVE, color4,
     OPERATION_PARAMS(CPUPEO_ColorCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
-    virtual bool updateAndRenderExtraControls() override;
+    virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
  protected:
     std::vector<std::pair<f32, color4>> mKeys = { {0.f, color4(255, 255, 255, 255)}, {1.f, color4(255, 255, 255, 255)} };
@@ -243,7 +244,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_HdrColorCurve, "HDR Color Curve", "hdr_curve", COLOR_CURVE, f32v4,
     OPERATION_PARAMS(CPUPEO_HdrColorCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
-    virtual bool updateAndRenderExtraControls() override;
+    virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
 protected:
     std::vector<std::pair<f32, f32v4>> mKeys = { {0.f, f32v4(1.0f)}, {1.f, f32v4(1.0f)} };
@@ -253,7 +254,7 @@ protected:
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_FloatCurve, "Float Curve", "float_curve", COLOR_CURVE, f32,
     OPERATION_PARAMS(CPUPEO_FloatCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
-    virtual bool updateAndRenderExtraControls() override;
+    virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
 protected:
     std::vector<std::pair<f32, f32>> mKeys = { {0.f, f32(0.0f)}, {1.f, f32(1.0f)} };
@@ -261,17 +262,20 @@ protected:
 )
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_NormalizeVec3, "Normalize Vec3", "norm_vec3", COLOR_STANDARD, f32v3,
-    OPERATION_PARAMS(CPUPEO_NormalizeVec3, E_VAR(f32v3(0.0f)))
+    OPERATION_PARAMS(CPUPEO_NormalizeVec3, E_VAR(f32v3(1.0f, 0.0f, 0.0f)))
     OPERATION_PARAM_NAMES("v")
 )
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomPointInShape, "Random Point In Shape", "rnd_point_shape", COLOR_COMPLEX, f32v3,
-    OPERATION_NO_PARAMS()
-    virtual bool updateAndRenderExtraControls() override;
+    OPERATION_PARAMS(CPUPEO_RandomPointInShape, E_VAR(f32(1.0f)))
+public:
+    const char* const getParamName(size_t paramIndex) const override;
+    virtual bool updateAndRenderExtraPreControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
 protected:
     void saveYmlData(ryml::NodeRef node) const override;
-    PointFromShapeQueryDataVariant mShapeData = SphereShapePointQueryData();
+    QueryPointFromShapeType mShapeType = QueryPointFromShapeType::Sphere;
+    void onShapeTypeUpdated();
 )
 
 #undef COLOR_STANDARD

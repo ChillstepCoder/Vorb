@@ -107,3 +107,11 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_DragForce, ParticleEmitterModuleStage::Partic
         CPUParticleEmitterVariable mDragFactor = CPUParticleEmitterVariable(f32(0.75f));
     );
 )
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_Turbulence, ParticleEmitterModuleStage::ParticleUpdate, "Turbulence", "turbulence",
+    MODULE_DEF(
+        CPUParticleEmitterVariable mScaleFactor = CPUParticleEmitterVariable(f32v3(1.0f));
+        // Applied to pre scaled value
+        CPUParticleEmitterVariable mDirOffset = CPUParticleEmitterVariable(f32v3(0.0f));
+    );
+)

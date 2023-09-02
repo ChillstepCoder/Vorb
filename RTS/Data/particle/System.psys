@@ -42,7 +42,8 @@ emitters:
                   p_norm_life: {}
                 keys:
                   - [0,[1,0,0,1]]
-                  - [1,[0.03431374,1,0.3159721,1]]
+                  - [0.375,[0.03431374,1,0.3159721,1]]
+                  - [0.693,[0.03431374,0.09111887,1,1]]
         - apply_force:
             force:
               f32_to_vec3:
@@ -51,3 +52,6 @@ emitters:
                     min: -5
                     max: 5
                     seed_by_p: 0
+        - turbulence:
+            scale_fac: [1,1,1]
+            dir_off: [0,0,0]

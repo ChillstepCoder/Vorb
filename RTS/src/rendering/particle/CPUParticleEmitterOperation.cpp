@@ -191,10 +191,12 @@ bool CPUParticleEmitterOperation::updateAndRenderControls() {
     ImGui::Text(getDisplayName());
 
     bool changed = false;
+
+    changed |= updateAndRenderExtraPreControls();
     for (size_t i = 0; i < mParams.size(); ++i) {
         changed |= mParams[i].updateAndRenderTweaker(getParamName(i));
     }
-    changed |= updateAndRenderExtraControls();
+    changed |= updateAndRenderExtraPostControls();
    
     ImGui::EndGroup();
     ImVec2 frameMax = ImGui::GetItemRectMax(); // Bottom right of frame
@@ -245,7 +247,7 @@ void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID 
     const f32 p1 = std::get<f32>(mParams[1].mVarData);
     output->mVarData = (f32)lerp(p0, p1, mSeedByParticleID ? Random::getCachedRandomfSpecific((ui32)id) : Random::getCachedRandomf());
 }
-bool CPUPEO_RandomFloatInRange::updateAndRenderExtraControls() {
+bool CPUPEO_RandomFloatInRange::updateAndRenderExtraPostControls() {
     return ImGui::Checkbox("Seed By Particle ID", &mSeedByParticleID);
 }
 bool CPUPEO_RandomFloatInRange::loadFromYml(ryml::ConstNodeRef node) {
@@ -263,7 +265,7 @@ void CPUPEO_ColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUP
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<color4>(mKeys, normalizedValue);
 }
-bool CPUPEO_ColorCurve::updateAndRenderExtraControls() {
+bool CPUPEO_ColorCurve::updateAndRenderExtraPostControls() {
     return EditorUtil::updateAndRenderCurve<color4>(mKeys, [](color4& val) {
         f32v4 color = val.toVec4();
         bool changed = ImGui::ColorEdit4("Color Edit", &color.x);
@@ -313,7 +315,7 @@ void CPUPEO_HdrColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, C
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<f32v4>(mKeys, normalizedValue);
 }
-bool CPUPEO_HdrColorCurve::updateAndRenderExtraControls() {
+bool CPUPEO_HdrColorCurve::updateAndRenderExtraPostControls() {
     return EditorUtil::updateAndRenderCurve<f32v4>(mKeys, [](f32v4& val) {
         return ImGui::ColorEdit4("Color Edit", &val.x, ImGuiColorEditFlags_HDR);
     });
@@ -360,7 +362,7 @@ void CPUPEO_FloatCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUP
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<f32>(mKeys, normalizedValue);
 }
-bool CPUPEO_FloatCurve::updateAndRenderExtraControls() {
+bool CPUPEO_FloatCurve::updateAndRenderExtraPostControls() {
     return EditorUtil::updateAndRenderCurve<f32>(mKeys, [](f32& val) {
         return ImGui::InputFloat("Value", &val);
     });
@@ -388,20 +390,79 @@ void CPUPEO_NormalizeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, C
 
 void CPUPEO_RandomPointInShape::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
     evaluateParams(emitter, id);
-    assert(false);
-    X;
+
+    switch (mShapeType) {
+        case QueryPointFromShapeType::Sphere: {
+            f32 radius = std::get<f32>(mParams[0].mVarData);
+            output->mVarData = util::queryRandomPointFromSphere(radius);
+            break;
+        }
+        case QueryPointFromShapeType::Box: {
+            f32v3 halfExtents = std::get<f32v3>(mParams[0].mVarData);
+            output->mVarData = util::queryRandomPointFromBox(halfExtents);
+            break;
+        }
+        default:
+            assert(false);
+            break;
+
+    }
+    static_assert(e_count(QueryPointFromShapeType) == 2);
 }
-bool CPUPEO_RandomPointInShape::updateAndRenderExtraControls() {
+const char* const CPUPEO_RandomPointInShape::getParamName(size_t paramIndex) const {
+    switch (mShapeType) {
+        case QueryPointFromShapeType::Sphere:
+            assert(paramIndex == 0);
+            return "radius";
+        case QueryPointFromShapeType::Box:
+            assert(paramIndex == 0);
+            return "half_extents";
+        default:
+            assert(false);
+            break;
+    }
+    static_assert(e_count(QueryPointFromShapeType) == 2);
+}
+bool CPUPEO_RandomPointInShape::updateAndRenderExtraPreControls() {
     bool changed = false;
-    assert(false);
+    
+    static constexpr const char* shapeNames[e_count(QueryPointFromShapeType)] = {
+        "Sphere",
+        "Box"
+    };
+    static_assert(e_count(QueryPointFromShapeType) == 2);
+
+    if (ImGui::Combo("Shape", (int*)&mShapeType, shapeNames, e_count(QueryPointFromShapeType))) {
+        changed = true;
+        onShapeTypeUpdated();
+        static_assert(e_count(QueryPointFromShapeType) == 2);
+    }
+    ImGui::Spacing();
+
     return changed;
 }
 bool CPUPEO_RandomPointInShape::loadFromYml(ryml::ConstNodeRef node) {
+    node["type"] >> mShapeType;
+    onShapeTypeUpdated();
     CPUParticleEmitterOperation::loadFromYml(node);
-    assert(false);
     return true;
 }
 void CPUPEO_RandomPointInShape::saveYmlData(ryml::NodeRef node) const {
+    node["type"] << mShapeType;
     CPUParticleEmitterOperation::saveYmlData(node);
-    assert(false);
+}
+
+void CPUPEO_RandomPointInShape::onShapeTypeUpdated() {
+    switch (mShapeType) {
+        case QueryPointFromShapeType::Sphere:
+            mParams = std::vector<CPUParticleEmitterVariable>{ CPUParticleEmitterVariantData(f32(1.0f)) };
+            break;
+        case QueryPointFromShapeType::Box:
+            mParams = std::vector<CPUParticleEmitterVariable>{ CPUParticleEmitterVariantData(f32v3(1.0f)) };
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    static_assert(e_count(QueryPointFromShapeType) == 2);
 }

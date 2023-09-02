@@ -18,9 +18,15 @@ emitters:
             pos:
               add_vec3:
                 p0: [0,0,10]
-                p1: [0,0,0]
+                p1:
+                  rnd_point_shape:
+                    type: box
+                    half_extents: [3,3,1]
         - set_scale:
             scale: [1,5]
         - set_hdr_color:
-            color: [0,1,1,0.1]
-      p_update: []
+            color: [0,1,1,0.2]
+      p_update:
+        - turbulence:
+            scale_fac: [1,1,1]
+            dir_off: [0,0,0]
