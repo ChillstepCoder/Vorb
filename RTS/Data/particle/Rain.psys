@@ -13,11 +13,11 @@ emitters:
             spawn_count: 3
       p_init:
         - set_velocity:
-            vel: [1.5,0,-16]
+            vel: [3,0,-3]
         - set_position:
             pos:
               add_vec3:
-                p0: [0,0,10]
+                p0: [0,0,2.4]
                 p1:
                   rnd_point_shape:
                     type: box
@@ -27,6 +27,9 @@ emitters:
         - set_hdr_color:
             color: [0,1,1,0.2]
       p_update:
+        - orient_vel: {}
+        - drag_force:
+            drag: 0.75
         - turbulence:
             scale_fac: [1,1,1]
             dir_off: [0,0,0]

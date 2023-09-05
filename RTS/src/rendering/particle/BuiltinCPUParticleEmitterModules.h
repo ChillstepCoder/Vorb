@@ -78,6 +78,12 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVelocity, e_cast(ParticleEmitterModuleStag
     );
 )
 
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetRotation, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Rotation", "set_rotation",
+    MODULE_DEF(
+        CPUParticleEmitterVariable mRotationVec2 = CPUParticleEmitterVariable(f32v2(0.0f));
+);
+)
+
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetColor, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Color", "set_color",
     MODULE_DEF(
         CPUParticleEmitterVariable mColor = CPUParticleEmitterVariable(color4(255, 255, 255, 255));
@@ -91,6 +97,12 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetHdrColor, e_cast(ParticleEmitterModuleStag
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale", "set_scale",
+    MODULE_DEF(
+        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
+    );
+)
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MultiplyScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Multiply Scale", "mult_scale",
     MODULE_DEF(
         CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
     );
@@ -113,5 +125,11 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_Turbulence, ParticleEmitterModuleStage::Parti
         CPUParticleEmitterVariable mScaleFactor = CPUParticleEmitterVariable(f32v3(1.0f));
         // Applied to pre scaled value
         CPUParticleEmitterVariable mDirOffset = CPUParticleEmitterVariable(f32v3(0.0f));
+    );
+)
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_OrientToVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Orient To Velocity", "orient_vel",
+    MODULE_DEF(
+        //CPUParticleEmitterVariable mStretchFactor = CPUParticleEmitterVariable(f32v2(1.0f, 0.0f));
     );
 )

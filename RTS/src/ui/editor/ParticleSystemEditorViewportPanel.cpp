@@ -413,6 +413,12 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 
 void ParticleSystemEditorViewportPanel::setParticleSystemDef(ParticleSystemDef* systemDef) {
     mSystemDef = systemDef;
+    if (mSystemDef && mSystemDef->mEmitters.size()) {
+        mSelectedEmitter = &mSystemDef->mEmitters[0];
+    }
+    else {
+        mSelectedEmitter = nullptr;
+    }
     createPreviewSystem();
 }
 

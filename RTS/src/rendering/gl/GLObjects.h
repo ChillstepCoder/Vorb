@@ -11,6 +11,7 @@ constexpr GLuint BUFFER_BASE_HDR_COLORS_SSBO = 7;
 constexpr GLuint BUFFER_BASE_MATERIALS_SSBO = 8;
 constexpr GLuint BUFFER_BASE_GRASS_UBO = 9;
 constexpr GLuint BUFFER_BASE_CAMERA_UBO = 10;
+constexpr GLuint BUFFER_BASE_ROTATIONS_SSBO = 11;
 
 struct DrawElementsIndirectCommand
 {

@@ -216,16 +216,25 @@ void CpuParticleEmitter::setParticlePosition(ParticleID id, f32v3 position) {
 }
 
 void CpuParticleEmitter::setParticleScale(ParticleID id, f32v2 scale) {
+    assert(mComponents.isBitSet(ParticleComponentType::Scale));
     mParticleData.mScales[id] = scale;
     mDataChanged = true;
 }
 
+void CpuParticleEmitter::multiplyParticleScale(ParticleID id, f32v2 scale) {
+    assert(mComponents.isBitSet(ParticleComponentType::Scale));
+    mParticleData.mScales[id] *= scale;
+    mDataChanged = true;
+}
+
 void CpuParticleEmitter::setParticleVelocity(ParticleID id, f32v3 velocity) {
+    assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] = velocity;
     mDataChanged = true;
 }
 
 void CpuParticleEmitter::addParticleVelocity(ParticleID id, f32v3 velocity) {
+    assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] += velocity;
     mDataChanged = true;
 }
@@ -243,7 +252,15 @@ void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) {
 }
 
 void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) {
+    assert(mComponents.isBitSet(ParticleComponentType::MaterialID));
     mParticleData.mMaterials[id] = (ui32)material;
+    mDataChanged = true;
+}
+
+void CpuParticleEmitter::setParticleRotation(ParticleID id, f32v2 rollPitch) {
+    assert(mComponents.isBitSet(ParticleComponentType::Rotation));
+    mParticleData.mRotations[id].x = rollPitch.x;
+    mParticleData.mRotations[id].y = rollPitch.y;
     mDataChanged = true;
 }
 
@@ -286,16 +303,19 @@ void CpuParticleEmitter::allocateParticleData()
     ASSERT_RENDER_THREAD();
     assert(mMaxParticles <= MAX_PARTICLES);
 
-    mParticleData.mPositions = std::make_unique<f32v3[]>(mMaxParticles);
-    mParticleData.mLifetimes = std::make_unique<f32[]>(mMaxParticles);
-    // These must be f32v4 to match std430 layout, so we always have rotation allocated on GPU even
-    // if we arent using it (rotation is w component)
-    mGpuData.mPositionsAndRotationsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4));
+    mParticleData.mPositions = std::make_unique_for_overwrite<f32v3[]>(mMaxParticles);
+    mParticleData.mLifetimes = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
+    // These must be f32v4 to match std430 layout, so we have a padding float right now
+    mGpuData.mPositionsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4));
 
     if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
-        mParticleData.mVelocities = std::make_unique<f32v3[]>(mMaxParticles);
+        mParticleData.mVelocities = std::make_unique_for_overwrite<f32v3[]>(mMaxParticles);
         // No GPU data for velocities
         // TODO: VelocityCPU vs VelocityGPU
+    }
+    if (mComponents.isBitSet(ParticleComponentType::Rotation)) {
+        mParticleData.mRotations = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
+        mGpuData.mRotationsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v2));
     }
     if (mComponents.isBitSet(ParticleComponentType::Scale)) {
         mParticleData.mScales = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
@@ -317,11 +337,6 @@ void CpuParticleEmitter::allocateParticleData()
         mParticleData.mMaterials = std::make_unique_for_overwrite<ui32[]>(mMaxParticles);
         mGpuData.mMaterialsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32));
     }
-    if (mComponents.isBitSet(ParticleComponentType::Rotation)) {
-        mParticleData.mRotations = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
-        std::memset(mParticleData.mRotations.get(), 0, mMaxParticles * sizeof(f32)); // Default values
-        // Rotations are packed into mPositionsAndRotationsBuffer which is always allocated
-    }
 
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
 }
@@ -339,6 +354,7 @@ void CpuParticleEmitter::render() {
     const VGUniform unIsUsingHDRColor = program.getUniform("unIsUsingHDRColor");
     const VGUniform unIsUsingMaterial = program.getUniform("unIsUsingMaterial");
     const VGUniform unIsUsingScale = program.getUniform("unIsUsingScale");
+    const VGUniform unIsUsingRotation = program.getUniform("unIsUsingRotation");
 
     // Upload globals
     glUniform4f(program.getUniform("unGlobalColor"),
@@ -372,26 +388,30 @@ void CpuParticleEmitter::render() {
     const ui32 particlesToRender = (mLastActiveParticle - mFirstActiveParticle) + 1;
 
     // Always bind positions
-    mGpuData.mPositionsAndRotationsBuffer->bindBufferAsSSBO(BUFFER_BASE_POSITIONS_SSBO);
+    mGpuData.mPositionsBuffer->bindBufferAsSSBO(BUFFER_BASE_POSITIONS_SSBO);
 
     if (mDataChanged) {
         mDataChanged = false;
-        // Positions
-        f32v4* positionsAndRotations = (f32v4*)mGpuData.mPositionsAndRotationsBuffer->frameBeginAndGetDataForUpdate();
+        // Positions + padding float
+        f32v4* positions = (f32v4*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
+        for (ui32 i = 0; i < particlesToRender; ++i) {
+            const ui32 particleIndex = mFirstActiveParticle + i;
+            const f32v3& sourcePos = mParticleData.mPositions[particleIndex];
+            positions[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, 0.0f /*Rotation??*/);
+        }
+        mBaseInstance = mGpuData.mPositionsBuffer->flushDataAndIncrementFrame(particlesToRender);
+
+        // Rotations
         if (mParticleData.mRotations) {
-            for (ui32 i = 0; i < particlesToRender; ++i) {
-                const ui32 particleIndex = mFirstActiveParticle + i;
-                const f32v3& sourcePos = mParticleData.mPositions[particleIndex];
-                positionsAndRotations[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, mParticleData.mRotations[particleIndex]);
-            }
+            f32v2* rotations = (f32v2*)mGpuData.mRotationsBuffer->frameBeginAndGetDataForUpdate();
+            memcpy(rotations, &mParticleData.mRotations[mFirstActiveParticle], particlesToRender * sizeof(f32v2));
+            assert(mBaseInstance == mGpuData.mRotationsBuffer->flushDataAndIncrementFrame(particlesToRender));
+            mGpuData.mRotationsBuffer->bindBufferAsSSBO(BUFFER_BASE_ROTATIONS_SSBO);
+            glUniform1ui(unIsUsingRotation, 1u);
         }
         else {
-            for (ui32 i = 0; i < particlesToRender; ++i) {
-                const f32v3& sourcePos = mParticleData.mPositions[mFirstActiveParticle + i];
-                positionsAndRotations[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, 0.0f);
-            }
+            glUniform1ui(unIsUsingRotation, 0u);
         }
-        mBaseInstance = mGpuData.mPositionsAndRotationsBuffer->flushDataAndIncrementFrame(particlesToRender);
 
         // Scales
         if (mGpuData.mScalesBuffer) {
@@ -531,7 +551,7 @@ void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
         mParticleData.mMaterials[id] = 0;
     }
     if (mComponents.isBitSet(ParticleComponentType::Rotation)) {
-        mParticleData.mRotations[id] = 0.0f;
+        mParticleData.mRotations[id] = f32v2(0.0f);
     }
 
     // Init particle

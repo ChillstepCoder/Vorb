@@ -32,6 +32,7 @@ out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 
 
+//  Z up (yaw), X forward (roll), Y left (Pitch)
 mat4 createTransformMatrix(vec3 position, float yaw, float pitch, float scale) {
     // Calculate the cos and sin of the yaw and pitch
     float cy = cos(yaw);

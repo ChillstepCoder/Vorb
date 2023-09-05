@@ -228,6 +228,10 @@ void CPUPEO_QueryVelocity::execute(CpuParticleEmitter& emitter, ParticleID id, C
     output->mVarData = emitter.getParticleVelocity(id);
 }
 
+void CPUPEO_QuerySpeed::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = glm::length(emitter.getParticleVelocity(id));
+}
+
 void CPUPEO_QueryScale::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
     output->mVarData = emitter.getParticleScale(id);
 }
@@ -465,4 +469,40 @@ void CPUPEO_RandomPointInShape::onShapeTypeUpdated() {
             break;
     }
     static_assert(e_count(QueryPointFromShapeType) == 2);
+}
+
+void CPUPEO_ClampFloat::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32 val = std::get<f32>(mParams[0].mVarData);
+    const f32v2 range = std::get<f32v2>(mParams[1].mVarData);
+    output->mVarData = glm::clamp(val, range.x, range.y);
+}
+
+void CPUPEO_ClampVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32v2 val = std::get<f32v2>(mParams[0].mVarData);
+    const f32v2 range = std::get<f32v2>(mParams[1].mVarData);
+    output->mVarData = glm::clamp(val, range.x, range.y);
+}
+
+void CPUPEO_ClampVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32v3 val = std::get<f32v3>(mParams[0].mVarData);
+    const f32v2 range = std::get<f32v2>(mParams[1].mVarData);
+    output->mVarData = glm::clamp(val, range.x, range.y);
+}
+
+void CPUPEO_MakeVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32 x = std::get<f32>(mParams[0].mVarData);
+    const f32 y = std::get<f32>(mParams[1].mVarData);
+    output->mVarData = f32v2(x, y);
+}
+
+void CPUPEO_MakeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    evaluateParams(emitter, id);
+    const f32 x = std::get<f32>(mParams[0].mVarData);
+    const f32 y = std::get<f32>(mParams[1].mVarData);
+    const f32 z = std::get<f32>(mParams[2].mVarData);
+    output->mVarData = f32v3(x, y, z);
 }

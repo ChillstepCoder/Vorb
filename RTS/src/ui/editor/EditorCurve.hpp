@@ -4,11 +4,14 @@ namespace EditorUtil {
     template <typename T>
     T evaluateCurve(const std::vector<std::pair<f32, T>>& keys, f32 alpha) {
         // TODO: Blend mode
-        int leftIndex = 0;
-        int rightIndex = 0;
+        int leftIndex;
+        int rightIndex;
+
+        bool found = false;
 
         for (int i = 0; i < keys.size(); ++i) {
             if (keys[i].first >= alpha) {
+                found = true;
                 rightIndex = i;
 
                 // If exact match, set leftIndex to the same as rightIndex
@@ -25,6 +28,13 @@ namespace EditorUtil {
                 break;
             }
         }
+
+        if (!found) {
+            rightIndex = keys.size() - 1;
+            leftIndex = rightIndex - 1;
+            if (leftIndex < 0) leftIndex = 0;
+        }
+
         f32 diff = keys[rightIndex].first - keys[leftIndex].first;
         if (diff == 0.0f) {
             return keys[leftIndex].second;

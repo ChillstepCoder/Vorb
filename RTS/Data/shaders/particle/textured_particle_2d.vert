@@ -10,6 +10,7 @@ uniform uint unIsUsingColor = 0;
 uniform uint unIsUsingHDRColor = 0;
 uniform uint unIsUsingMaterial = 0;
 uniform uint unIsUsingScale = 0;
+uniform uint unIsUsingRotation = 0;
 
 out vec2 fUV;
 flat out uint fParticleMaterial;
@@ -26,9 +27,10 @@ const int indices[6] = int[6](
 	0, 1, 2, 2, 3, 0
 );
 
-layout(std430, binding = 4) readonly buffer ParticlePositionAndRotation
+// Includes a padding float that we can use later
+layout(std430, binding = 4) readonly buffer ParticlePosition
 {
-    vec4 ParticlePositionsAndRotations[]; // w is rotation
+    vec3 ParticlePositions[];
 };
 
 layout(std430, binding = 5) readonly buffer ParticleScale
@@ -51,6 +53,11 @@ layout(std430, binding = 8) readonly buffer ParticleMaterial
     uint ParticleMaterials[];
 };
 
+layout(std430, binding = 11) readonly buffer ParticleXYOrient
+{
+    vec2 ParticleXYOrients[];
+};
+
 vec4 getColor(uint particleId) {
     uint packedColor = ParticleColors[particleId];
     vec4 color;
@@ -59,6 +66,16 @@ vec4 getColor(uint particleId) {
     color.g = float((packedColor >> 8) & 0xFF);
     color.r = float(packedColor & 0xFF);
     return (color / 255.0);
+}
+
+vec2 rotateVector(vec2 pos, float angleRad) {
+    const float cs = cos(angleRad);
+    const float sn = sin(angleRad);
+
+    vec2 rv;
+    rv.x = pos.x * cs - pos.y * sn;
+    rv.y = pos.x * sn + pos.y * cs;
+    return rv;
 }
 
 
@@ -73,13 +90,18 @@ void main() {
     
     vec2 position = offset.xy * unGlobalScale;
     
+    // Rotation
+    if (unIsUsingRotation == 1) {
+        position = rotateVector(position, ParticleXYOrients[particleId].x);
+    }
+    
     // Scale
     if (unIsUsingScale == 1) {
         position *= ParticleScales[particleId];
     }
     
     // Translation
-    position += ParticlePositionsAndRotations[particleId].xy;
+    position += ParticlePositions[particleId].xy;
     
     // Color
     fColor = unGlobalColor;

@@ -13,6 +13,7 @@ uniform uint unIsUsingColor = 0;
 uniform uint unIsUsingHDRColor = 0;
 uniform uint unIsUsingMaterial = 0;
 uniform uint unIsUsingScale = 0;
+uniform uint unIsUsingRotation = 0;
 
 out vec2 fUV;
 flat out uint fParticleMaterial;
@@ -29,9 +30,9 @@ const int indices[6] = int[6](
 	0, 1, 2, 2, 3, 0
 );
 
-layout(std430, binding = 4) readonly buffer ParticlePositionAndRotation
+layout(std430, binding = 4) readonly buffer ParticlePosition
 {
-    vec4 ParticlePositionsAndRotations[]; // w is rotation
+    vec3 ParticlePositions[];
 };
 
 layout(std430, binding = 5) readonly buffer ParticleScale
@@ -54,6 +55,11 @@ layout(std430, binding = 8) readonly buffer ParticleMaterial
     uint ParticleMaterials[];
 };
 
+layout(std430, binding = 11) readonly buffer ParticleXYOrient
+{
+    vec2 ParticleXYOrients[];
+};
+
 vec4 getColor(uint particleId) {
     uint packedColor = ParticleColors[particleId];
     vec4 color;
@@ -64,6 +70,68 @@ vec4 getColor(uint particleId) {
     return (color / 255.0);
 }
 
+// Function to convert a normalized vec3 into Euler angles (yaw, pitch)
+vec2 normalToEulerAngles(vec3 normal) {
+    float yaw, pitch;
+
+    // Yaw is the angle between the vector's projection on the XZ-plane and the X-axis
+    yaw = atan(normal.z, normal.x);
+
+    // Pitch is the angle between the vector and the XZ-plane
+    pitch = atan(normal.y, length(normal.xz));
+
+    return vec2(yaw, pitch);
+}
+
+mat3 getRotationMatrix(float yaw, float pitch, float roll) {
+    float cy = cos(yaw);
+    float sy = sin(yaw);
+    float cp = cos(pitch);
+    float sp = sin(pitch);
+    float cr = cos(roll);
+    float sr = sin(roll);
+    
+    // Construct the rotation matrix directly from Euler angles
+    return mat3(
+        cy * cr + sy * sp * sr,   -cy * sr + sy * sp * cr,   sy * cp,
+        sr * cp,                   cr * cp,                  -sp,
+       -sy * cr + cy * sp * sr,    sy * sr + cy * sp * cr,   cy * cp
+    );
+}
+
+mat3 createTransformMatrix(float yaw, float pitch, float roll) {
+    // Calculate the cos and sin of the yaw, pitch, and roll
+    float cy = cos(yaw);
+    float sy = sin(yaw);
+    float cp = cos(pitch);
+    float sp = sin(pitch);
+    float cr = cos(roll);
+    float sr = sin(roll);
+
+    // Create the rotation matrix for the yaw (around the Z-axis)
+    mat3 yawRotation = mat3(
+        cy, sy, 0,
+        -sy, cy, 0,
+        0, 0, 1
+    );
+
+    // Create the rotation matrix for the pitch (around the Y-axis)
+    mat3 pitchRotation = mat3(
+        cp, 0, -sp,
+        0, 1, 0,
+        sp, 0, cp
+    );
+
+    // Create the rotation matrix for the roll (around the X-axis)
+    mat3 rollRotation = mat3(
+        1, 0, 0,
+        0, cr, sr,
+        0, -sr, cr
+    );
+
+    // Combine the rotations and scale the result
+    return yawRotation * pitchRotation * rollRotation;
+}
 
 void main() {
     const uint particleId = unBaseInstanceOffset + gl_VertexID / 6;
@@ -73,18 +141,11 @@ void main() {
 
     fUV = (offset.xy + 0.5);
     fUV.y = 1.0 - fUV.y; // Flip
+    vec3 position = ParticlePositions[particleId].xyz + unRootOffset;
     
-    vec3 position = ParticlePositionsAndRotations[particleId].xyz + unRootOffset;
+    vec3 upOrient = CameraUp;
+    vec3 rightOrient = CameraRight;
     
-    // Scale
-    if (unIsUsingScale == 1) {
-        vec2 scale = ParticleScales[particleId];
-        position += offset.x * unGlobalScale.x * CameraRight * scale.x;
-        position += offset.y * unGlobalScale.y * CameraUp * scale.y;
-    } else {
-        position += offset.x * unGlobalScale.x * CameraRight;
-        position += offset.y * unGlobalScale.y * CameraUp;
-    }
     
     // Color
     fColor = unGlobalColor;
@@ -92,6 +153,38 @@ void main() {
         fColor *= ParticleHDRColors[particleId];
     } else if (unIsUsingColor == 1) {
         fColor *= getColor(particleId);
+    }
+    
+    // Rotation
+    if (unIsUsingRotation == 1) {
+        // TODO: 3d
+        vec2 rotationxy = ParticleXYOrients[particleId].xy;
+        
+        // NOTE: Each of these components is correct on their own but together they seem to break when
+        // velocity is < 0 (for orient to velocity module)
+       // mat3 rotation = createTransformMatrix(rotationxy.y, rotationxy.x, 0.0);
+        mat3 rotation;
+        if (position.z < 0.0) {
+        
+        rotation   = createTransformMatrix(0.0, rotationxy.y, rotationxy.x);
+        }else {
+        
+        rotation   = createTransformMatrix(0.0, rotationxy.y, - rotationxy.x);
+        }
+        fColor = 0.0001 * fColor + vec4((rotationxy.x + 3.14) / (3.14 * 2.0), (rotationxy.y + 3.14) / (3.14 * 2.0), 0.0, 1.0);
+        
+        // TODO: can this be optimized since we always multiply by 0,0,1?
+        upOrient = rotation * vec3(0.0, 0.0, 1.0);
+    }
+    
+    // Scale
+    if (unIsUsingScale == 1) {
+        vec2 scale = ParticleScales[particleId];
+        position += offset.x * unGlobalScale.x * rightOrient * scale.x;
+        position += offset.y * unGlobalScale.y * upOrient * scale.y;
+    } else {
+        position += offset.x * unGlobalScale.x * rightOrient;
+        position += offset.y * unGlobalScale.y * upOrient;
     }
     
     // Material

@@ -1,0 +1,31 @@
+emitters:
+  - DefaultEmitter:
+      scale: [0.1,0.1]
+      color: [255,255,255,255]
+      max_particles: 2000
+      lifetime: 3
+      looping: 1
+      blend: additive
+      e_update:
+        - spawn_burst:
+            delay: 0
+            spawn_count: 30
+      p_init:
+        - cone_burst:
+            speed_range: [0.1,0.1]
+            angle_range: [0,6.5]
+            dir: [0,0,1]
+      p_update:
+        - set_scale:
+            scale:
+              make_vec2:
+                x: 1
+                y:
+                  add_f32:
+                    p0: 1
+                    p1:
+                      mult_f32:
+                        p0:
+                          p_vel: {}
+                        p1: 15
+        - orient_vel: {}

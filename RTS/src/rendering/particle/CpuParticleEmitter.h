@@ -12,7 +12,8 @@ class ParticleEmitterDef;
 
 
 struct CpuParticlesGpuData {
-    std::unique_ptr<GpuStreamingDataBuffer> mPositionsAndRotationsBuffer;
+    std::unique_ptr<GpuStreamingDataBuffer> mPositionsBuffer;
+    std::unique_ptr<GpuStreamingDataBuffer> mRotationsBuffer;
     //std::unique_ptr<GpuStreamingDataBuffer> mVelocitiesBuffer; // Velocities are not needed on the GPU
     std::unique_ptr<GpuStreamingDataBuffer> mScalesBuffer;
     std::unique_ptr<GpuStreamingDataBuffer> mColorsBuffer; // Shared as HDR or non HDR
@@ -23,7 +24,7 @@ static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
 struct CPUParticlesData {
     std::unique_ptr<f32v3[]> mPositions; // If position.x == FLT_MAX, then particle is inactive
-    std::unique_ptr<f32[]> mRotations;
+    std::unique_ptr<f32v2[]> mRotations;
     std::unique_ptr<f32v3[]> mVelocities;
     std::unique_ptr<f32v2[]> mScales;
     std::unique_ptr<color4[]> mColors;
@@ -54,18 +55,20 @@ public:
     // Mutators
     void setParticlePosition(ParticleID id, f32v3 position);
     void setParticleScale(ParticleID id, f32v2 scale);
+    void multiplyParticleScale(ParticleID id, f32v2 scale);
     void setParticleVelocity(ParticleID id, f32v3 velocity);
     void addParticleVelocity(ParticleID id, f32v3 velocity);
     void setParticleColor(ParticleID id, color4 color);
     void setParticleHDRColor(ParticleID id, f32v4 color);
     void setParticleMaterial(ParticleID id, MaterialID material);
+    void setParticleRotation(ParticleID id, f32v2 rollPitch);
     // Accessors
     f32v3 getParticlePosition(ParticleID id) const { return mParticleData.mPositions[id]; }
     f32v2 getParticleScale(ParticleID id) const { return mParticleData.mScales[id]; }
     f32v3 getParticleVelocity(ParticleID id) const { return mParticleData.mVelocities[id]; }
     color4 getParticleColor(ParticleID id) const { return mParticleData.mColors[id]; }
     f32v4 getParticleHDRColor(ParticleID id) const { return mParticleData.mHDRColors[id]; }
-    f32 getParticleRotation(ParticleID id) const { return mParticleData.mRotations[id]; }
+    f32v2 getParticleRotation(ParticleID id) const { return mParticleData.mRotations[id]; }
     f32 getParticleNormalizedLifetime(ParticleID id) const;
     MaterialID getParticleMaterial(ParticleID id) const { return mParticleData.mMaterials[id]; }
     CPUParticlesData& getParticleData() { return mParticleData; }

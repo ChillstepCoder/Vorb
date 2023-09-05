@@ -78,7 +78,7 @@ public:
 protected:
     std::vector<CPUParticleEmitterVariable> mParams;
 
-    void evaluateParams(CpuParticleEmitter& emitter, ParticleID id) {
+    inline void evaluateParams(CpuParticleEmitter& emitter, ParticleID id) {
         for (auto&& p : mParams) {
             p.evaluate(emitter, id);
         }
@@ -213,6 +213,9 @@ DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryPosition, "Particle Position", "p_pos", COL
 DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_vel", COLOR_QUERY, f32v3,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
 )
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QuerySpeed, "Particle Speed", "p_vel", COLOR_QUERY, f32,
+    BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
+)
 DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryScale, "Particle Scale", "p_scale", COLOR_QUERY, f32v2,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Scale; }
 )
@@ -276,6 +279,27 @@ protected:
     void saveYmlData(ryml::NodeRef node) const override;
     QueryPointFromShapeType mShapeType = QueryPointFromShapeType::Sphere;
     void onShapeTypeUpdated();
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ClampFloat, "Clamp Float", "clamp_float", COLOR_STANDARD, f32,
+    OPERATION_PARAMS(CPUPEO_ClampFloat, E_VAR(f32(0.f)), E_VAR(f32v2(0.f, 1.0f)))
+    OPERATION_PARAM_NAMES("val", "clampRange")
+)
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ClampVec2, "Clamp Vec2", "clamp_vec2", COLOR_STANDARD, f32v2,
+    OPERATION_PARAMS(CPUPEO_ClampVec2, E_VAR(f32v2(0.f)), E_VAR(f32v2(0.f, 1.0f)))
+    OPERATION_PARAM_NAMES("val", "clampRange")
+)
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ClampVec3, "Clamp Vec3", "clamp_vec3", COLOR_STANDARD, f32v2,
+    OPERATION_PARAMS(CPUPEO_ClampVec3, E_VAR(f32v3(0.f)), E_VAR(f32v2(0.f, 1.0f)))
+    OPERATION_PARAM_NAMES("val", "clampRange")
+)
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_MakeVec2, "Make Vec2", "make_vec2", COLOR_STANDARD, f32v2,
+    OPERATION_PARAMS(CPUPEO_MakeVec2, E_VAR(f32(0.f)), E_VAR(f32(0.f)))
+    OPERATION_PARAM_NAMES("x", "y")
+)
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_MakeVec3, "Make Vec3", "make_vec3", COLOR_STANDARD, f32v3,
+    OPERATION_PARAMS(CPUPEO_MakeVec3, E_VAR(f32(0.f)), E_VAR(f32(0.f)), E_VAR(f32(0.f)))
+    OPERATION_PARAM_NAMES("x", "y", "z")
 )
 
 #undef COLOR_STANDARD

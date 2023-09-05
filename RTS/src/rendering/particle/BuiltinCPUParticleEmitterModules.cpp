@@ -336,6 +336,37 @@ void CPUPEM_SetVelocity::saveYmlData(ryml::NodeRef node) const {
 
 
 // ====================================================================================================
+// CPUPEM_SetRotation
+// ====================================================================================================
+#pragma region CPUPEM_SetRotation
+CPUPEM_SetRotation::CPUPEM_SetRotation() {
+    mRequiredComponents |= ParticleComponentType::Rotation;
+    refresh();
+}
+
+void CPUPEM_SetRotation::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mRotationVec2.evaluate(emitter, particleID);
+        emitter.setParticleRotation(particleID, std::get<f32v2>(MODULE_DATA->mRotationVec2.mVarData));
+    };
+}
+
+bool CPUPEM_SetRotation::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mRotationVec2, "Rotation");
+}
+
+bool CPUPEM_SetRotation::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mRotationVec2, "rot"sv);
+    return true;
+}
+
+void CPUPEM_SetRotation::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mRotationVec2, "rot"sv);
+}
+#pragma endregion
+
+
+// ====================================================================================================
 // CPUPEM_SetColor
 // ====================================================================================================
 #pragma region CPUPEM_SetColor
@@ -423,6 +454,37 @@ bool CPUPEM_SetScale::loadFromYml(ryml::ConstNodeRef node) {
 }
 
 void CPUPEM_SetScale::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mScale, "scale"sv);
+}
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_MultiplyScale
+// ====================================================================================================
+#pragma region CPUPEM_MultiplyScale
+CPUPEM_MultiplyScale::CPUPEM_MultiplyScale() {
+    mRequiredComponents |= ParticleComponentType::Scale;
+    refresh();
+}
+
+void CPUPEM_MultiplyScale::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mScale.evaluate(emitter, particleID);
+        emitter.multiplyParticleScale(particleID, std::get<f32v2>(MODULE_DATA->mScale.mVarData));
+    };
+}
+
+bool CPUPEM_MultiplyScale::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mScale, "Scale");
+}
+
+bool CPUPEM_MultiplyScale::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mScale, "scale"sv);
+    return true;
+}
+
+void CPUPEM_MultiplyScale::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScale, "scale"sv);
 }
 #pragma endregion
@@ -532,5 +594,62 @@ bool CPUPEM_Turbulence::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_Turbulence::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScaleFactor, "scale_fac"sv);
     SAVE_VAR(mDirOffset, "dir_off"sv);
+}
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_OrientToVelocity
+// ====================================================================================================
+#pragma region CPUPEM_OrientToVelocity
+CPUPEM_OrientToVelocity::CPUPEM_OrientToVelocity() {
+    mRequiredComponents |= ParticleComponentType::Velocity;
+    mRequiredComponents |= ParticleComponentType::Rotation;
+    refresh();
+}
+
+void CPUPEM_OrientToVelocity::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        const f32v3 velocity = emitter.getParticleVelocity(particleID);
+        // No velocity means leave the rotation the same
+        if (glm::length2(velocity) < 0.0001f) {
+            return;
+        }
+        f32 roll;
+        if (velocity.z == 0.0f && velocity.y == 0.0f) {
+            roll = 0.0f;
+        } else {
+            roll = atan2(velocity.y, velocity.z);
+        }
+        f32 pitch;
+        if (velocity.z == 0.0f && velocity.x == 0.0f) {
+            pitch = 0.0f;
+        }
+        else {
+            pitch = atan2(velocity.x, velocity.z);
+        }
+//         if (velocity.z < 0.0f) {
+//             roll = -roll;
+//         }
+        emitter.setParticleRotation(particleID, f32v2(roll, pitch));
+    };
+}
+
+bool CPUPEM_OrientToVelocity::updateAndRenderEditorControls() {
+    bool changed = false;
+   
+    //  TODO
+    return changed;
+}
+
+bool CPUPEM_OrientToVelocity::loadFromYml(ryml::ConstNodeRef node) {
+   // LOAD_VAR(mScaleFactor, "scale_fac"sv);
+   // LOAD_VAR(mDirOffset, "dir_off"sv);
+    return true;
+}
+
+void CPUPEM_OrientToVelocity::saveYmlData(ryml::NodeRef node) const {
+  //  SAVE_VAR(mScaleFactor, "scale_fac"sv);
+  //  SAVE_VAR(mDirOffset, "dir_off"sv);
 }
 #pragma endregion
