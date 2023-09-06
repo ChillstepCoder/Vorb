@@ -11,6 +11,7 @@ class Skybox;
 namespace ImguiUtil {
     class RenameAssetPopup;
     class ConfirmDeletePopup;
+    class CustomSelectorPopup;
 }
 
 enum class EditorViewportDrawMode {

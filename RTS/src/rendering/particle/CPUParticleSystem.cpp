@@ -47,6 +47,7 @@ void CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
 }
 
 void CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, const std::vector<bool>& emitterVisibility) {
+    PROFILE_FUNCTION();
     int i = 0;
     const MaterialShader* boundShader = nullptr;
     if (emitterVisibility.size() != mEmitters.size()) return; // Happens first time
@@ -73,4 +74,24 @@ void CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, c
 CpuParticleEmitter& CPUParticleSystem::addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 particleLifespanSec /*= FLT_MAX*/, f32 emitterLifespanSec /*= FLT_MAX*/) {
     mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(updateFunction, maxParticles, components, shader, emitterLifespanSec))->setGlobalParticleLifespan(particleLifespanSec);
     return *mEmitters.back();
+}
+
+int CPUParticleSystem::getNumParticles() const {
+    int total = 0;
+    for (auto&& emitter : mEmitters) {
+        if (emitter) {
+            total += emitter->getNumActiveParticles();
+        }
+    }
+    return total;
+}
+
+int CPUParticleSystem::getFragmentation() const {
+    int total = 0;
+    for (auto&& emitter : mEmitters) {
+        if (emitter) {
+            total += emitter->getFragmentation();
+        }
+    }
+    return total;
 }

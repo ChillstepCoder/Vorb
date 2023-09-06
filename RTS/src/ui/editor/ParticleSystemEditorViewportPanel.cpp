@@ -148,7 +148,10 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             ImGui::OpenPopup("EmitterModal");
             strcpy_s(mTextInputBuffer, "Emitter");
         }
-
+        ImGui::SameLine();
+        if (ImGui::Button("Duplicate Existing Emitter")) {
+            openDuplicateEmitterPopup();
+        }
         if (ImGui::BeginPopupModal("EmitterModal", &is_open))
         {
             ImGui::InputText("Name", mTextInputBuffer, TEXT_INPUT_SIZE);
@@ -308,15 +311,15 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
             return selected;
         };
         
-        if (displayCategory("Emitter Update Modules", "Emitter Update", ParticleEmitterModuleStage::EmitterUpdate, mSelectedEmitter->mEmitterUpdateModules, 0.0f, 0.8f, 0.0f)) {
+        if (displayCategory("Emitter Update Modules", "Emitter Update", ParticleEmitterModuleStage::EmitterUpdate, mSelectedEmitter->mModules.mEmitterUpdate, 0.0f, 0.8f, 0.0f)) {
             createPreviewSystem();
         }
         ImGui::Spacing();
-        if (displayCategory("Particle Init Modules", "Particle Init", ParticleEmitterModuleStage::ParticleInit, mSelectedEmitter->mParticleInitModules, 0.7f, 0.7f, 0.0f)) {
+        if (displayCategory("Particle Init Modules", "Particle Init", ParticleEmitterModuleStage::ParticleInit, mSelectedEmitter->mModules.mParticleInit, 0.7f, 0.7f, 0.0f)) {
             createPreviewSystem();
         }
         ImGui::Spacing();
-        if (displayCategory("Particle Update Modules", "Particle Update", ParticleEmitterModuleStage::ParticleUpdate, mSelectedEmitter->mParticleUpdateModules, 0.8f, 0.0f, 0.0f)) {
+        if (displayCategory("Particle Update Modules", "Particle Update", ParticleEmitterModuleStage::ParticleUpdate, mSelectedEmitter->mModules.mParticleUpdate, 0.8f, 0.0f, 0.0f)) {
             createPreviewSystem();
         }
 
@@ -347,7 +350,8 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         changed |= ImGui::SliderInt("Max Particles", &maxParticles, 1, 20000);
         mSelectedEmitter->mMaxParticles = maxParticles;
 
-        changed |= ImGui::SliderFloat("Lifetime Sec", &mSelectedEmitter->mLifetimeSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+        changed |= ImGui::SliderFloat("Emitter Lifetime Sec", &mSelectedEmitter->mLifetimeSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+        changed |= ImGui::SliderFloat("Particle Lifespan Sec", &mSelectedEmitter->mDefaultParticleLifespanSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
 
         if (changed) {
@@ -391,7 +395,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderBottomControls() {
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar);
 
     if (mSystemDef) {
-        ImGui::Text("System: %s", mSystemDef->getName().c_str());
+        ImGui::Text("System: %s Particles (Fragmentation): %d (%d)", mSystemDef->getName().c_str(), mPreviewSystem ? mPreviewSystem->getNumParticles() : 0, mPreviewSystem ? mPreviewSystem->getFragmentation() : 0);
         ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
         f32 time = mCurrentTime;
         ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
@@ -432,15 +436,57 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
     if (mRenamePopup) {
         if (mRenamePopup->updateAndRender()) {
             const nString& result = mRenamePopup->getResult();
-
+            assert(false);
             mRenamePopup.reset();
         }
     }
     else if (mConfirmDeletePopup) {
         if (mConfirmDeletePopup->updateAndRender()) {
             bool result = mConfirmDeletePopup->getResult();
-
             mConfirmDeletePopup.reset();
+            if (result && mSystemDef) {
+                Services::ResourceManager::ref().getParticleSystemRepository().deleteAsset(mSystemDef->getID());
+                mSystemDef = nullptr;
+                mSelectedEmitter = nullptr;
+            }
+        }
+    }
+    else if (mDuplicateObjectPopup) {
+        if (mDuplicateObjectPopup->updateAndRender()) {
+            size_t result = mDuplicateObjectPopup->getResult();
+            mDuplicateObjectPopup.reset();
+            duplicateGlobalEmitter(result);
+        }
+    }
+}
+
+void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
+    std::vector<nString> emitterNames;
+    auto& assets = Services::ResourceManager::ref().getParticleSystemRepository().getAllAssets();
+    for (auto& def : assets) {
+        nString name = def.getName();
+        for (auto& emitter : def.mEmitters) {
+            emitterNames.push_back(name + "." + emitter.mEmitterName);
+        }
+    }
+    mDuplicateObjectPopup = std::make_unique<ImguiUtil::CustomSelectorPopup>(emitterNames);
+}
+
+void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(size_t emitterIndex) {
+    if (emitterIndex == UINT32_MAX) return;
+    if (mSystemDef == nullptr) return;
+
+    auto& assets = Services::ResourceManager::ref().getParticleSystemRepository().getAllAssets();
+    size_t i = 0;
+    for (auto& def : assets) {
+        for (auto& emitter : def.mEmitters) {
+            if (i == emitterIndex) {
+                mSystemDef->mEmitters.emplace_back(emitter);
+                mSelectedEmitter = &mSystemDef->mEmitters.back();
+                createPreviewSystem();
+                return;
+            }
+            ++i;
         }
     }
 }

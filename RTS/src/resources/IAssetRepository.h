@@ -34,16 +34,37 @@ public:
         if (mAssetLookup.find(name) != mAssetLookup.end()) {
             return nullptr;
         }
-
-        AssetID id = mAssets.size();
-        mAssetLookup[name] = id;
-        T& newAsset = mAssets.emplace_back(name, id);
-        return &newAsset;
+        AssetID id;
+        if (mFreeIDs.size()) {
+            AssetID id = mFreeIDs.back();
+            mFreeIDs.pop_back();
+            mAssetLookup[name] = id;
+            mAssets[id] = T(name, id);
+            return &mAssets[id];
+        }
+        else {
+            AssetID id = mAssets.size();
+            mAssetLookup[name] = id;
+            T& newAsset = mAssets.emplace_back(name, id);
+            return &newAsset;
+        }
     }
-
+    
+    void deleteAsset(AssetID id) {
+        // No double free
+        for (AssetID freeId : mFreeIDs) {
+            if (freeId == id) {
+                return;
+            }
+        }
+        mFreeIDs.emplace_back(id);
+        mAssetLookup.erase(mAssets[id].getName());
+        // TODO: Remove file
+    }
 
 protected:
     std::map<nString, AssetID> mAssetLookup; // TODO: StrToken?
     std::vector<T> mAssets;
+    std::vector<AssetID> mFreeIDs;
 };
 

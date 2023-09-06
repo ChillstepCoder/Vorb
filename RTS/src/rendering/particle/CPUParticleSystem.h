@@ -26,6 +26,9 @@ public:
     size_t getNumEmitters() const { return mEmitters.size(); }
     CpuParticleEmitter& getEmitter(int index) { return *mEmitters.at(index); }
     const std::vector<CpuParticleEmitterPtr>& getEmitters() const { return mEmitters; }
+    int getNumParticles() const;
+    // Returns number of iterations over dead particles each frame
+    int getFragmentation() const;
 
 private:
     std::vector<CpuParticleEmitterPtr> mEmitters;

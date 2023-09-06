@@ -27,6 +27,9 @@ private:
     void createPreviewSystem();
     void updatePopups();
 
+    void openDuplicateEmitterPopup();
+    void duplicateGlobalEmitter(size_t emitterIndex);
+
     ParticleSystemDef* mSystemDef = nullptr;
     ParticleEmitterDef* mSelectedEmitter = nullptr;
     CPUParticleEmitterModule* mSelectedModule = nullptr;
@@ -35,9 +38,10 @@ private:
     //Popups
     std::unique_ptr<ImguiUtil::RenameAssetPopup> mRenamePopup;
     std::unique_ptr<ImguiUtil::ConfirmDeletePopup> mConfirmDeletePopup;
+    std::unique_ptr<ImguiUtil::CustomSelectorPopup> mDuplicateObjectPopup;
 
     std::unique_ptr<CPUParticleSystem> mPreviewSystem;
-    f32 mTimelineEnd = 5.0f;
+    f32 mTimelineEnd = 3.0f;
     f32 mCurrentTime = 0.0f;
     f32 mCurrentElapsedSec = 0.0f;
 

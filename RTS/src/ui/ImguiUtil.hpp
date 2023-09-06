@@ -7,7 +7,7 @@ namespace ImguiUtil {
 
     // https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
     template <typename T>
-    std::vector<size_t> sortIndexes(const std::vector<T>& v, std::function<void(size_t, size_t)> sortFunction) {
+    std::vector<size_t> sortIndexes(const std::vector<T>& v, std::function<bool(size_t, size_t)> sortFunction) {
 
         // initialize original index locations
         std::vector<size_t> idx(v.size());
@@ -17,10 +17,52 @@ namespace ImguiUtil {
         // using std::stable_sort instead of std::sort
         // to avoid unnecessary index re-orderings
         // when v contains elements of equal values 
-        stable_sort(idx.begin(), idx.end(), sortFunction);
+        std::stable_sort(idx.begin(), idx.end(), sortFunction);
 
         return idx;
     }
+
+    class PopupFilterInterface {
+    protected:
+        void updateAndRenderFilter() {
+            mFilterStatus.resize(mFilterNames.size(), true);
+            if (ImGui::InputText("Filter", mFilterBuf, 64)) {
+                nString lowerFilter = mFilterBuf;
+                std::transform(lowerFilter.begin(), lowerFilter.end(), lowerFilter.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+
+                std::string_view filterView(lowerFilter);
+                if (lowerFilter[0] == '\0') {
+                    for (size_t i = 0; i < mFilterStatus.size(); ++i) {
+                        mFilterStatus[i] = true;
+                    }
+                }
+                else {
+                    // TODO: Separate by whitespace like unreal
+                    for (size_t i = 0; i < mFilterStatus.size(); ++i) {
+                        if (mFilterNames[i].find(filterView) == mFilterNames[i].npos) {
+                            mFilterStatus[i] = false;
+                        }
+                        else {
+                            mFilterStatus[i] = true;
+                        }
+                    }
+                }
+            }
+        }
+        void setFilter(const std::vector<nString>& filters) {
+            mFilterNames = filters;
+            for (auto&& filter : mFilterNames) {
+                std::transform(filter.begin(), filter.end(), filter.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+            }
+        }
+
+        std::vector<bool> mFilterStatus;
+    private:
+        std::vector<nString> mFilterNames;
+        char mFilterBuf[64] = {};
+    };
 
     class AssetPopup {
     public:
@@ -49,6 +91,7 @@ namespace ImguiUtil {
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
                 ImGui::Text(("Delete " + assetName + "?").c_str());
+                ImGui::Text("This CANNOT be undone!");
                 // Your popup content here
                 if (ImGui::Button("Yes")) {
                     result = true;
@@ -107,30 +150,33 @@ namespace ImguiUtil {
         char buffer[128];
     };
 
-    template <IsAssetType T>
-    class AssetSelectorPopup : public AssetPopup {
+    class CustomSelectorPopup : public AssetPopup, public PopupFilterInterface {
     public:
-        AssetSelectorPopup(const std::vector<T>& assets) : mAssets(assets), AssetPopup("Asset Selector", "", nullptr) {
-            mSortedIndices = sortIndexes<T>(assets, [](size_t i1, size_t i2) { 
-                const nString& n1 = assets[i1].getName();
-                const nString& n2 = assets[i2].getName();
+        CustomSelectorPopup(const std::vector<nString>& names) : mNames(names), AssetPopup("Select", "", nullptr) {
+            mSortedIndices = sortIndexes<nString>(names, [&names](size_t i1, size_t i2) -> bool {
+                const nString& n1 = names[i1];
+                const nString& n2 = names[i2];
                 return std::lexicographical_compare(n1.begin(), n1.end(), n2.begin(), n2.end());
             });
+            setFilter(names);
         };
         // Return true when closed
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
+                ImGui::Text("Select ");
+                updateAndRenderFilter();
                 for (size_t i : mSortedIndices) {
-                    if (ImGui::Button("X")) {
-                        result = std::make_pair<T*, AssetID>(const_cast<T*>(&mAssets[i]), mAssets[i].getId());
-                        ImGui::EndPopup();
-                        return true;
+                    if (mFilterStatus[i]) {
+                        if (ImGui::Button("X")) {
+                            result = i;
+                            ImGui::EndPopup();
+                            return true;
+                        }
+                        ImGui::SameLine();
+                        ImGui::Text(mNames[i].c_str());
                     }
-                    ImGui::SameLine();
-                    ImGui::Text(mAssets[i].getName() + " " + nString(mAssets[i].getId()));
                 }
-                
-                ImGui::SameLine();
+
                 if (ImGui::Button("Cancel")) {
                     ImGui::EndPopup();
                     return true;
@@ -139,7 +185,54 @@ namespace ImguiUtil {
             ImGui::EndPopup();
             return false;
         }
+        size_t getResult() const {
+            return result;
+        }
+    protected:
+        std::vector<nString> mNames;
+        std::vector<size_t> mSortedIndices;
+        size_t result = UINT32_MAX;
+    };
 
+    template <IsAssetType T>
+    class AssetSelectorPopup : public AssetPopup, public PopupFilterInterface {
+    public:
+        AssetSelectorPopup(const std::vector<T>& assets) : mAssets(assets), AssetPopup("Asset Selector", "", nullptr) {
+            mSortedIndices = sortIndexes<T>(assets, [&assets](size_t i1, size_t i2) -> bool {
+                const nString& n1 = assets[i1].getName();
+                const nString& n2 = assets[i2].getName();
+                return std::lexicographical_compare(n1.begin(), n1.end(), n2.begin(), n2.end());
+            });
+            std::vector<nString> filterNames(mAssets.size());
+            for (size_t i = 0; i < mAssets.size(); ++i) {
+                filterNames[i] = mAssets[i].getName();
+            }
+            setFilter(filterNames);
+        };
+        // Return true when closed
+        bool updateAndRender() {
+            if (ImGui::BeginPopupModal(id, nullptr)) {
+                updateAndRenderFilter();
+                for (size_t i : mSortedIndices) {
+                    if (mFilterStatus[i]) {
+                        if (ImGui::Button("X")) {
+                            result = std::make_pair<T*, AssetID>(const_cast<T*>(&mAssets[i]), mAssets[i].getId());
+                            ImGui::EndPopup();
+                            return true;
+                        }
+                        ImGui::SameLine();
+                        ImGui::Text(mAssets[i].getName() + " " + nString(mAssets[i].getId()));
+                    }
+                }
+                
+                if (ImGui::Button("Cancel")) {
+                    ImGui::EndPopup();
+                    return true;
+                }
+            }
+            ImGui::EndPopup();
+            return false;
+        }
         std::pair<T*, AssetID> getResult() const {
             return result;
         }

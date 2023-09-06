@@ -87,6 +87,8 @@ public:
 
     int getFirstActiveParticle() const { return mFirstActiveParticle; }
     int getLastActiveParticle() const { return mLastActiveParticle; }
+    int getNumActiveParticles() const { return mActiveParticles; }
+    int getFragmentation() const { return mActiveParticles ? ((mLastActiveParticle - mFirstActiveParticle) / mActiveParticles) : 0; }
 
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
     bool isLooping() const { return mLooping; }

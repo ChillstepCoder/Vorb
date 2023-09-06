@@ -615,22 +615,13 @@ void CPUPEM_OrientToVelocity::refresh() {
         if (glm::length2(velocity) < 0.0001f) {
             return;
         }
-        f32 roll;
-        if (velocity.z == 0.0f && velocity.y == 0.0f) {
-            roll = 0.0f;
-        } else {
-            roll = atan2(velocity.y, velocity.z);
-        }
-        f32 pitch;
-        if (velocity.z == 0.0f && velocity.x == 0.0f) {
-            pitch = 0.0f;
-        }
-        else {
-            pitch = atan2(velocity.x, velocity.z);
-        }
-//         if (velocity.z < 0.0f) {
-//             roll = -roll;
-//         }
+        // Calculate Pitch: The rotation needed to align the particle with the world Z-axis
+        const f32 pitch = atan2(velocity.x, velocity.z);
+
+        // Calculate Roll: The rotation about the world's X-axis
+        // Essentially, this would be the angle the velocity vector makes with the XZ plane.
+        const f32 roll = -atan2(velocity.y, sqrt(velocity.x * velocity.x + velocity.z * velocity.z));
+
         emitter.setParticleRotation(particleID, f32v2(roll, pitch));
     };
 }

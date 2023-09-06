@@ -32,4 +32,5 @@ bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const char* fi
     }
 
     asset.setDirty(false);
+    return true;
 }

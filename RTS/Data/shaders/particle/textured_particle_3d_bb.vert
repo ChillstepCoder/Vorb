@@ -99,21 +99,12 @@ mat3 getRotationMatrix(float yaw, float pitch, float roll) {
     );
 }
 
-mat3 createTransformMatrix(float yaw, float pitch, float roll) {
-    // Calculate the cos and sin of the yaw, pitch, and roll
-    float cy = cos(yaw);
-    float sy = sin(yaw);
+mat3 createTransformMatrix(float pitch, float roll) {
+    // Calculate the cos and sin of the pitch, and roll
     float cp = cos(pitch);
     float sp = sin(pitch);
     float cr = cos(roll);
     float sr = sin(roll);
-
-    // Create the rotation matrix for the yaw (around the Z-axis)
-    mat3 yawRotation = mat3(
-        cy, sy, 0,
-        -sy, cy, 0,
-        0, 0, 1
-    );
 
     // Create the rotation matrix for the pitch (around the Y-axis)
     mat3 pitchRotation = mat3(
@@ -129,8 +120,7 @@ mat3 createTransformMatrix(float yaw, float pitch, float roll) {
         0, -sr, cr
     );
 
-    // Combine the rotations and scale the result
-    return yawRotation * pitchRotation * rollRotation;
+    return pitchRotation * rollRotation;
 }
 
 void main() {
@@ -145,7 +135,6 @@ void main() {
     
     vec3 upOrient = CameraUp;
     vec3 rightOrient = CameraRight;
-    
     
     // Color
     fColor = unGlobalColor;
@@ -162,16 +151,8 @@ void main() {
         
         // NOTE: Each of these components is correct on their own but together they seem to break when
         // velocity is < 0 (for orient to velocity module)
-       // mat3 rotation = createTransformMatrix(rotationxy.y, rotationxy.x, 0.0);
-        mat3 rotation;
-        if (position.z < 0.0) {
-        
-        rotation   = createTransformMatrix(0.0, rotationxy.y, rotationxy.x);
-        }else {
-        
-        rotation   = createTransformMatrix(0.0, rotationxy.y, - rotationxy.x);
-        }
-        fColor = 0.0001 * fColor + vec4((rotationxy.x + 3.14) / (3.14 * 2.0), (rotationxy.y + 3.14) / (3.14 * 2.0), 0.0, 1.0);
+       // mat3 rotation = createTransformMatrix(rotationxy.x, 0.0, 0.0);
+        mat3 rotation = createTransformMatrix(rotationxy.y, rotationxy.x);
         
         // TODO: can this be optimized since we always multiply by 0,0,1?
         upOrient = rotation * vec3(0.0, 0.0, 1.0);

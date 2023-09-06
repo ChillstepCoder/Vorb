@@ -16,6 +16,7 @@ constexpr const char* const EMITTER_SCALE_KEY("scale");
 constexpr const char* const EMITTER_COLOR_KEY("color");
 constexpr const char* const EMITTER_MAX_PARTICLES_KEY("max_particles");
 constexpr const char* const EMITTER_LIFETIME_KEY("lifetime");
+constexpr const char* const EMITTER_PARTICLE_LIFESPAN_KEY("p_lifespan");
 constexpr const char* const EMITTER_LOOPING_KEY("looping");
 constexpr const char* const EMITTER_BLEND_KEY("blend");
 
@@ -90,12 +91,13 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     innerNode[EMITTER_MAX_PARTICLES_KEY] << particleEmitter.mMaxParticles;
     //innerNode["default_mat"] << particleEmitter.; // NEEDS STRING
     innerNode[EMITTER_LIFETIME_KEY] << particleEmitter.mLifetimeSec;
+    innerNode[EMITTER_PARTICLE_LIFESPAN_KEY] << particleEmitter.mDefaultParticleLifespanSec;
     innerNode[EMITTER_LOOPING_KEY] << particleEmitter.mLooping;
     innerNode[EMITTER_BLEND_KEY] << particleEmitter.mBlendMode;
     { // Emitter Update
         ryml::NodeRef updateNode = innerNode["e_update"];
         updateNode |= ryml::SEQ;
-        for (auto& module : particleEmitter.mEmitterUpdateModules) {
+        for (auto& module : particleEmitter.mModules.mEmitterUpdate) {
             ryml::NodeRef innerNode = updateNode.append_child();
             innerNode |= ryml::MAP;
             module->saveYml(innerNode);
@@ -105,7 +107,7 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     { // Particle Init
         ryml::NodeRef initNode = innerNode["p_init"];
         initNode |= ryml::SEQ;
-        for (auto& module : particleEmitter.mParticleInitModules) {
+        for (auto& module : particleEmitter.mModules.mParticleInit) {
             ryml::NodeRef innerNode = initNode.append_child();
             innerNode |= ryml::MAP;
             module->saveYml(innerNode);
@@ -115,7 +117,7 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     { // Particle Update
         ryml::NodeRef updateNode = innerNode["p_update"];
         updateNode |= ryml::SEQ;
-        for (auto& module : particleEmitter.mParticleUpdateModules) {
+        for (auto& module : particleEmitter.mModules.mParticleUpdate) {
             ryml::NodeRef innerNode = updateNode.append_child();
             innerNode |= ryml::MAP;
             module->saveYml(innerNode);
@@ -134,6 +136,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
     yml::tryReadValue(node, EMITTER_COLOR_KEY, particleEmitter.mDefaultColor);
     yml::tryReadValue(node, EMITTER_MAX_PARTICLES_KEY, particleEmitter.mMaxParticles);
     yml::tryReadValue(node, EMITTER_LIFETIME_KEY, particleEmitter.mLifetimeSec);
+    yml::tryReadValue(node, EMITTER_PARTICLE_LIFESPAN_KEY, particleEmitter.mDefaultParticleLifespanSec);
     yml::tryReadValue(node, EMITTER_LOOPING_KEY, particleEmitter.mLooping);
     yml::tryReadValue(node, EMITTER_BLEND_KEY, particleEmitter.mBlendMode);
 
@@ -142,7 +145,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
         if (updateNode.is_seq()) {
             for (ryml::ConstNodeRef seqNode : updateNode.children()) {
                 ryml::ConstNodeRef innerNode = seqNode.first_child();
-                CPUParticleEmitterModule& newModule = *particleEmitter.mEmitterUpdateModules.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
+                CPUParticleEmitterModule& newModule = *particleEmitter.mModules.mEmitterUpdate.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
                 if (!newModule.loadFromYml(innerNode)) return false;
             }
         }
@@ -153,7 +156,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
         if (initNode.is_seq()) {
             for (ryml::ConstNodeRef seqNode : initNode.children()) {
                 ryml::ConstNodeRef innerNode = seqNode.first_child();
-                CPUParticleEmitterModule& newModule = *particleEmitter.mParticleInitModules.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
+                CPUParticleEmitterModule& newModule = *particleEmitter.mModules.mParticleInit.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
                 if (!newModule.loadFromYml(innerNode)) return false;
             }
         }
@@ -164,7 +167,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
         if (updateNode.is_seq()) {
             for (ryml::ConstNodeRef seqNode : updateNode.children()) {
                 ryml::ConstNodeRef innerNode = seqNode.first_child();
-                CPUParticleEmitterModule& newModule = *particleEmitter.mParticleUpdateModules.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
+                CPUParticleEmitterModule& newModule = *particleEmitter.mModules.mParticleUpdate.emplace_back(yml::cloneYmlObject<CPUParticleEmitterModule>(innerNode.key()));
                 if (!newModule.loadFromYml(innerNode)) return false;
             }
         }
