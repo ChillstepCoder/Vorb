@@ -78,7 +78,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         TileID nextId = (TileID)sTileData.size();
         tileData.id = nextId;
         assert(nextId < UINT16_MAX); // Make sure we dont roll over
-        assert(sTileIdMapping.find(key) == sTileIdMapping.end()); // Duplicate name
+        assert(sTileIdMapping.find(StrToken(key)) == sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
         if (fileData.modelName.size()) {
             tileData.modelId = modelRepository.getModelID(fileData.modelName);
@@ -150,7 +150,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             tileData.heightOffsetNorth = 0.0f;
         }
 
-        sTileIdMapping[key] = nextId;
+        sTileIdMapping[StrToken(key)] = nextId;
         // TODO: Serialize the string > ID mapping
         sTileData.emplace_back(std::move(tileData));
     }));

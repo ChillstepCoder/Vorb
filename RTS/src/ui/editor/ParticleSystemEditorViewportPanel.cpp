@@ -100,12 +100,12 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Create"))
         {
             ImGui::CloseCurrentPopup();
-            mSystemDef = Services::ResourceManager::ref().getParticleSystemRepository().tryAddNewAsset(nString(mTextInputBuffer));
+            mSystemDef = Services::ResourceManager::ref().getParticleSystemRepository().tryAddNewAsset(StrToken(mTextInputBuffer));
             if (!mSystemDef) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
             else {
-                mSystemDef->setName(mTextInputBuffer);
+                mSystemDef->setName(StrToken(mTextInputBuffer));
                 ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = "DefaultEmitter";
                 defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
@@ -128,9 +128,9 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         bool changed = false;
 
         ImGui::Separator();
-        ImGui::Text("System: %s", mSystemDef->getName().c_str());
+        ImGui::Text("System: %s", mSystemDef->getName().toString().c_str());
         if (ImGui::Button("Rename")) {
-            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mSystemDef->getName(), (void*)mSystemDef);
+            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mSystemDef->getName().toString(), (void*)mSystemDef);
         }
         ImGui::SameLine();
         if (ImGui::Button("Save")) {
@@ -140,7 +140,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         }
         ImGui::SameLine();
         if (ImGui::Button("Delete")) {
-            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mSystemDef->getName(), (void*)mSystemDef);
+            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mSystemDef->getName().toString(), (void*)mSystemDef);
         }
         ImGui::Separator();
         ImGui::Spacing();
@@ -395,7 +395,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderBottomControls() {
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar);
 
     if (mSystemDef) {
-        ImGui::Text("System: %s Particles (Fragmentation): %d (%d)", mSystemDef->getName().c_str(), mPreviewSystem ? mPreviewSystem->getNumParticles() : 0, mPreviewSystem ? mPreviewSystem->getFragmentation() : 0);
+        ImGui::Text("System: %s Particles (Fragmentation): %d (%d)", mSystemDef->getName().toString().c_str(), mPreviewSystem ? mPreviewSystem->getNumParticles() : 0, mPreviewSystem ? mPreviewSystem->getFragmentation() : 0);
         ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
         f32 time = mCurrentTime;
         ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
@@ -464,7 +464,7 @@ void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
     std::vector<nString> emitterNames;
     auto& assets = Services::ResourceManager::ref().getParticleSystemRepository().getAllAssets();
     for (auto& def : assets) {
-        nString name = def.getName();
+        nString name = def.getName().toString();
         for (auto& emitter : def.mEmitters) {
             emitterNames.push_back(name + "." + emitter.mEmitterName);
         }

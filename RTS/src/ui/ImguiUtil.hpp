@@ -120,13 +120,13 @@ namespace ImguiUtil {
         RenameAssetPopup(const nString& assetName, void* assetPtr) : AssetPopup("Rename Asset", assetName, assetPtr) {};
         // Return true when closed
         bool updateAndRender() {
-            static char buffer[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
             if (ImGui::BeginPopupModal(id, nullptr)) {
                 ImGui::Text(("Rename " + assetName).c_str());
-                if (ImGui::InputText("Name", buffer, MAX_CHARS_IN_STRTOKEN_WITH_INDEX)) {
+                if (ImGui::InputText("Name", buffer, MAX_CHARS_IN_STRTOKEN_WITH_INDEX + 1)) {
                     // Enforce strtoken
                     nString tokenStr = StrToken(nString(buffer)).toString();
-                    memcpy(buffer, tokenStr.data(), tokenStr.size() + 1);
+                    memcpy(buffer, tokenStr.data(), tokenStr.size());
+                    buffer[tokenStr.size()] = '\0';
                 }
                 // Your popup content here
                 if (ImGui::Button("Confirm")) {
@@ -152,7 +152,7 @@ namespace ImguiUtil {
         }
     protected:
         nString result = "";
-        char buffer[128];
+        char buffer[MAX_CHARS_IN_STRTOKEN_WITH_INDEX + 1];
     };
 
     class CustomSelectorPopup : public AssetPopup, public PopupFilterInterface {

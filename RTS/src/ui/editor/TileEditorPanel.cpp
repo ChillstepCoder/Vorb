@@ -414,7 +414,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
 
                 // Name
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text(it.first.c_str());
+                ImGui::Text(it.first.toString().c_str());
 
                 // ID
                 ImGui::TableSetColumnIndex(1);

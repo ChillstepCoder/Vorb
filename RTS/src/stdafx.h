@@ -99,6 +99,10 @@ extern bool IS_SHUTTING_DOWN;
 // **************** FPS *****************
 extern float sFps;
 
+// **************** Networking *****************
+#define NET_SERIALIZE_DECL() \
+template <typename Stream> bool netSerialize(Stream& stream);
+
 // **************** LOGGING *****************
 #include <Vorb/logging/Logger.h>
 #include "logging/ErrorLogging.h"

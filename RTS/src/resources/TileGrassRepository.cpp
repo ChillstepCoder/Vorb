@@ -61,7 +61,7 @@ bool TileGrassRepository::loadGrassFile(vio::IOManager& ioManager, const vio::Pa
         tileGrassData.mDensity = fileData.density;
         assert(tileGrassData.mDensity <= MAX_GRASS_DETAIL);
         
-        mTileGrassIdMapping[key] = nextId;
+        mTileGrassIdMapping[StrToken(key)] = nextId;
         // TODO: Serialize the string > ID mapping
         mTileGrassData.emplace_back(std::move(tileGrassData));
     }));

@@ -35,7 +35,7 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
     mIoManager.readFileToString(filePath.getCString(), data);
     ryml::Tree tree = YmlSerializer::parseFileData(data);
 
-    ParticleSystemDef* newDef = tryAddNewAsset(filePath.getFileNameNoExtension());
+    ParticleSystemDef* newDef = tryAddNewAsset(StrToken(filePath.getFileNameNoExtension()));
     if (!newDef) {
         LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
         pError("Failed to load " + filePath.getString() + " already exists");
@@ -58,7 +58,7 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
 bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {
     // TODO: DIALOG
     if (!particleSystem.getDiskLocation().isValid()) {
-        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.getName() + vio::Path(".psys"));
+        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.getName().toString() + vio::Path(".psys"));
     }
 
     ryml::Tree tree;

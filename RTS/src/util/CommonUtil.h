@@ -43,4 +43,5 @@ constexpr float SECONDS_PER_DAY = 1440.0f;
 constexpr float HOURS_PER_DAY = 24.0f;
 constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 
+// Autoinit on startup
 #define RUNTIME_INIT_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()

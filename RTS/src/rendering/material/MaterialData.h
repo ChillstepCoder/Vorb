@@ -35,7 +35,6 @@ static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded 
 struct MaterialDesc {
     MaterialID id = INVALID_MATERIAL_ID;
     MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
-    VGTexture albedoTexture = 0;
 };
 
 struct MaterialHandle {

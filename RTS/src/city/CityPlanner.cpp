@@ -45,7 +45,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
 
     // Generate floorplan size
     // TODO: Dont just spam lumbermill
-    const BuildingDef& desc = buildingRepo.getBuildingDef(buildingDescriptionName);
+    const BuildingDef& desc = buildingRepo.getBuildingDef(StrToken(buildingDescriptionName));
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.dims);
     // TODO:  aspect ratio

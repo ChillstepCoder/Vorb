@@ -1,14 +1,13 @@
 #pragma once
 
 #define DEFAULT_ASSET_CONSTRUCTOR(Type) \
-    Type(const nString& name, AssetID id) : IAsset(name, id) {};
+    Type(StrToken name, AssetID id) : IAsset(name, id) {};
 
 #include "util/StrToken.h"
 
 class IAsset {
 public:
-    IAsset(const nString& name, AssetID id) : mName(name), mID(id) {};
-    IAsset(nString&& name, AssetID id) : mName(std::move(name)), mID(id) {};
+    IAsset(StrToken name, AssetID id) : mName(name), mID(id) {};
     virtual ~IAsset() = default;
 
     VORB_MOVABLE(IAsset);
@@ -16,9 +15,8 @@ public:
     vio::Path getDiskLocation() const { return mDiskLocation; }
     void setDiskLocation(vio::Path val) const { mDiskLocation = val; }
 
-    const nString& getName() const { return mName; }
-    void setName(const nString& name) { mName = name; }
-    void setName(nString&& name) { mName = std::move(name); }
+    StrToken getName() const { return mName; }
+    void setName(StrToken name) { mName = name; }
 
     AssetID getID() const { return mID; }
 
@@ -30,7 +28,7 @@ public:
     int getRefCount() const { ASSERT_GAME_THREAD(); return mRefCount; }
 
 protected:
-    nString mName;
+    StrToken mName;
     AssetID mID = INVALID_ASSET_ID;
     mutable vio::Path mDiskLocation;
     mutable int mRefCount = 0;
@@ -39,3 +37,27 @@ protected:
 
 template <typename T>
 concept IsAssetType = std::derived_from<T, IAsset>;
+
+template <IsAssetType T>
+class AssetHandle {
+public:
+    AssetHandle() = default;
+    AssetHandle(StrToken assetName) : mAssetName(assetName) {};
+    ~AssetHandle() {
+       if (mResolvedAsset) {
+           mResolvedAsset->decRef();
+       }
+    }
+
+    bool isValid() const { return mAssetName.isValid(); }
+    bool isResolved() const { return mResolvedAsset != nullptr; }
+
+    T* resolveAssetSynchonous();
+    void resolveAssetAsynchonous();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(AssetHandle);
+
+protected:
+    T* mResolvedAsset = nullptr;
+    StrToken mAssetName;
+};

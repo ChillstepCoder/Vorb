@@ -21,16 +21,16 @@ public:
     virtual ~IAssetRepository() = default;
 
     const T& getAsset(AssetID id) const { return mAssets[id]; }
-    const T& getAsset(const nString& itemName) const {
+    const T& getAsset(StrToken itemName) const {
         auto&& it = mAssetLookup.find(itemName);
         assert(it != mAssetLookup.end());
         return mAssets[it->second];
     }
     const std::vector<T>& getAllAssets() const { return mAssets; }
     std::vector<T>& getAllAssetsMutable() { return mAssets; }
-    const std::map<nString, AssetID>& getAssetNames() const { return mAssetLookup; }
+    const std::map<StrToken, AssetID>& getAssetNames() const { return mAssetLookup; }
 
-    T* tryAddNewAsset(const nString& name) {
+    T* tryAddNewAsset(StrToken name) {
         if (mAssetLookup.find(name) != mAssetLookup.end()) {
             return nullptr;
         }
@@ -63,7 +63,7 @@ public:
     }
 
 protected:
-    std::map<nString, AssetID> mAssetLookup; // TODO: StrToken?
+    std::map<StrToken, AssetID> mAssetLookup;
     std::vector<T> mAssets;
     std::vector<AssetID> mFreeIDs;
 };

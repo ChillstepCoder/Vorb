@@ -91,8 +91,7 @@ struct EntityCreateMessage : public MessageBase {
         serialize_float(stream, mPosition.y);
         serialize_float(stream, mPosition.z);
         serialize_float(stream, mRotation);
-        serialize_uint64(stream, mEntityToken.mTokenLow);
-        serialize_uint64(stream, mEntityToken.mTokenHigh);
+        mEntityToken.netSerialize(stream);
         return true;
     }
 

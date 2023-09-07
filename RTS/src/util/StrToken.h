@@ -1,13 +1,9 @@
 #pragma once
 
+#include "util/StrtokenEncodeTable.h"
+
 constexpr ui64 strTokenEncodeChar(const char c) {
-    if (c >= 'a' && c <= 'z') {
-        return ui64(c) - 'a' + 1ull;
-    }
-    else if (c >= 'A' && c <= 'Z') {
-        return ui64(c) - 'A' + 1ull;
-    }
-    return ui64(0); // Underscores, whitespace, ect
+    return (ui64)sStrtokenEncodeTable[c];
 }
 
 constexpr ui64 STRTOKEN_INDEX_BITS = 0x1ff; // 9 bits
@@ -25,7 +21,7 @@ public:
     constexpr StrToken() : mTokenLow(0u), mTokenHigh(0u) {}
 
     template<size_t N>
-    explicit constexpr StrToken(const char(&str)[N], ui64 index = 0) :
+    explicit constexpr StrToken(const char(&str)[N], ui64 index) :
         mTokenLow(
             ((N > 0 ? strTokenEncodeChar(str[0]) : 0ull)) |
             ((N > 1 ? strTokenEncodeChar(str[1]) : 0ull) << 5) |
@@ -56,7 +52,8 @@ public:
 
         ) { static_assert(N <= MAX_CHARS_IN_STRTOKEN); }
 
-    StrToken(const nString& str);
+    explicit StrToken(const nString& str);
+    explicit StrToken(const char* str);
 
     bool operator==(const StrToken& rhs) const {
         return mTokenLow == rhs.mTokenLow && mTokenHigh == rhs.mTokenHigh;
@@ -80,8 +77,15 @@ public:
 
     bool isValid() { return mTokenLow != 0ull || mTokenHigh != 0ull; }
 
+    NET_SERIALIZE_DECL();
+
+protected:
     ui64 mTokenLow;  // Lower 64 bits
     ui64 mTokenHigh; // Upper 64 bits
+    friend struct std::hash<StrToken>;
+
+    void initFromStrInternal(const char* str, size_t sz);
+
 };
 
 static_assert(sizeof(StrToken) == 16);
