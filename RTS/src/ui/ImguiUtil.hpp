@@ -3,6 +3,7 @@
 #include <Vorb/ui/imgui/imgui.h>
 #include <numeric>  // std::iota
 #include "resources/IAsset.h"
+
 namespace ImguiUtil {
 
     // https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
@@ -119,10 +120,14 @@ namespace ImguiUtil {
         RenameAssetPopup(const nString& assetName, void* assetPtr) : AssetPopup("Rename Asset", assetName, assetPtr) {};
         // Return true when closed
         bool updateAndRender() {
-            static char buffer[128];
+            static char buffer[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
             if (ImGui::BeginPopupModal(id, nullptr)) {
                 ImGui::Text(("Rename " + assetName).c_str());
-                ImGui::InputText("Name", buffer, 128);
+                if (ImGui::InputText("Name", buffer, MAX_CHARS_IN_STRTOKEN_WITH_INDEX)) {
+                    // Enforce strtoken
+                    nString tokenStr = StrToken(nString(buffer)).toString();
+                    memcpy(buffer, tokenStr.data(), tokenStr.size() + 1);
+                }
                 // Your popup content here
                 if (ImGui::Button("Confirm")) {
                     result = buffer;

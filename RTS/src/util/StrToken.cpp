@@ -1,40 +1,71 @@
 #include "stdafx.h"
 #include "StrToken.h"
 
-StrToken::StrToken(const nString& str) : mToken(0ull) {
+
+StrToken::StrToken(const nString& str) : mTokenHigh(0ull), mTokenLow(0ull) {
     size_t sz = str.size();
     assert(sz <= MAX_CHARS_IN_STRTOKEN_WITH_INDEX);
+    size_t charIterMax = glm::min(sz, (ui64)MAX_CHARS_IN_STRTOKEN);
     size_t i = 0;
-    for (; i < sz - 1; ++i) {
-        mToken |= strTokenEncodeChar(str[i]) << (i * 5ull);
+    // Encode low bytes
+    for (; i < charIterMax && i < 12; ++i) {
+        char c = str[i];
+        if (c >= '0' && c <= '9') {
+            break;
+        }
+        mTokenLow |= strTokenEncodeChar(c) << (i * 5ull);
     }
-    // Last can be either a char or an index
-    ui64 c = strTokenEncodeChar(str[i]);
-    if (c != 0) {
-        mToken |= c << (i * 5ull);
+    // Encode high bytes
+    for (; i < charIterMax; ++i) {
+        char c = str[i];
+        if (c >= '0' && c <= '9') {
+            break;
+        }
+        mTokenHigh |= strTokenEncodeChar(c) << ((i - 12) * 5ull);
     }
-    else {
-        // Try index
-        mToken |= strTokenEncodeIndex(str[i]) << 60;
+    // Encode index
+    ui64 index = 0;
+    if (str[i] != '\0') {
+        index = _atoi64(&str[i]);
     }
+    
+    assert(index <= STRTOKEN_MAX_INDEX);
+    index = glm::min(index, STRTOKEN_MAX_INDEX);
+    setIndex(index);
 }
 
 void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
     // Remove index
-    ui64 val = mToken & (~TOKEN_INDEX_MASK);
+    ui64 valHigh = (mTokenHigh & (~STRTOKEN_INDEX_MASK));
+    ui64 valLow = mTokenLow;
     
     ui32 i = 0;
-    for (; val != 0; ++i) {
-        char c = char(val & 0x1full);
+    for (; valLow != 0; ++i) {
+        char c = char(valLow & 0x1full);
         outStr[i] = (c != 0 ? ('a' + c - 1) : '_');
-        val >>= 5;
+        valLow >>= 5;
+    }
+    for (; valHigh != 0; ++i) {
+        char c = char(valHigh & 0x1full);
+        outStr[i] = (c != 0 ? ('a' + c - 1) : '_');
+        valHigh >>= 5;
     }
 
-    // Encode optional index between 0-15 always as 2 digits so it sorts properly
+    // Trim trailing underscores
+    while (i > 0 && outStr[i - 1] == '_') {
+        --i;
+    }
+
+    // Include all zeroes 
     const ui32 index = getIndex();
     if (index) {
-        outStr[i++] = char('0' + (index / 10));
-        outStr[i++] = char('0' + (index % 10));
+        char indexBuf[16];
+        _itoa_s(index, indexBuf, 16, 10);
+        int j = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (indexBuf[j] == '\0') break;
+            outStr[i++] = indexBuf[j];
+        }
     }
 
     if (outLength) {
@@ -45,7 +76,7 @@ void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
 
 nString StrToken::toString() const {
     nString buffer;
-    buffer.resize(14);
+    buffer.resize(MAX_CHARS_IN_STRTOKEN_WITH_INDEX);
     ui32 tmpLength;
     toString(buffer.data(), &tmpLength);
     buffer.resize(tmpLength);

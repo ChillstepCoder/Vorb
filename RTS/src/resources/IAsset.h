@@ -3,6 +3,8 @@
 #define DEFAULT_ASSET_CONSTRUCTOR(Type) \
     Type(const nString& name, AssetID id) : IAsset(name, id) {};
 
+#include "util/StrToken.h"
+
 class IAsset {
 public:
     IAsset(const nString& name, AssetID id) : mName(name), mID(id) {};

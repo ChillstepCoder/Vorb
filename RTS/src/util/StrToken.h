@@ -7,49 +7,26 @@ constexpr ui64 strTokenEncodeChar(const char c) {
     else if (c >= 'A' && c <= 'Z') {
         return ui64(c) - 'A' + 1ull;
     }
-    return ui64(0); // Underscores, ect 
+    return ui64(0); // Underscores, whitespace, ect
 }
 
-constexpr ui64 strTokenEncodeIndex(const char c) {
-    if (c >= '0' && c <= '9') {
-        return ui64(c) - '0';
-    }
-    return ui64(0);
-}
+constexpr ui64 STRTOKEN_INDEX_BITS = 0x1ff; // 9 bits
+constexpr ui64 STRTOKEN_MAX_INDEX = STRTOKEN_INDEX_BITS;
+constexpr ui64 STRTOKEN_INDEX_SHIFT = 55ull;
+constexpr ui64 STRTOKEN_INDEX_MASK = STRTOKEN_INDEX_BITS << STRTOKEN_INDEX_SHIFT;
+constexpr int MAX_CHARS_IN_STRTOKEN = 23; // Does not include index
+constexpr int MAX_CHARS_IN_STRTOKEN_WITH_INDEX = 26;
 
-constexpr ui64 TOKEN_INDEX_MASK = ui64(0xf) << 60ull;
-constexpr int MAX_CHARS_IN_STRTOKEN = 12; // Does not include index
-constexpr int MAX_CHARS_IN_STRTOKEN_WITH_INDEX = 13;
-
-// Constexpr 64 bit compressed lower case 12 character string with optional integer at end
+// Constexpr 64 bit compressed lower case 22 character string with optional 4 digit integer at end
 // For fast comparison and serialization
 class StrToken
 {
 public:
-    constexpr StrToken() : mToken(0u) {}
-    constexpr StrToken(ui64 token) : mToken(token) {}
+    constexpr StrToken() : mTokenLow(0u), mTokenHigh(0u) {}
 
     template<size_t N>
-    explicit constexpr StrToken(const char(&str)[N]) :
-        mToken(
-            ((N > 0 ? strTokenEncodeChar(str[0]) : 0ull))         |
-            ((N > 1 ? strTokenEncodeChar(str[1]) : 0ull)  << 5)   |
-            ((N > 2 ? strTokenEncodeChar(str[2]) : 0ull)  << 10)  |
-            ((N > 3 ? strTokenEncodeChar(str[3]) : 0ull)  << 15)  |
-            ((N > 4 ? strTokenEncodeChar(str[4]) : 0ull)  << 20)  |
-            ((N > 5 ? strTokenEncodeChar(str[5]) : 0ull)  << 25)  |
-            ((N > 6 ? strTokenEncodeChar(str[6]) : 0ull)  << 30)  |
-            ((N > 7 ? strTokenEncodeChar(str[7]) : 0ull)  << 35)  |
-            ((N > 8 ? strTokenEncodeChar(str[8]) : 0ull)  << 40)  |
-            ((N > 9 ? strTokenEncodeChar(str[9]) : 0ull)  << 45)  |
-            ((N > 10 ? strTokenEncodeChar(str[10]) : 0ull) << 50)  |
-            ((N > 11 ? strTokenEncodeChar(str[11]) : 0ull) << 55)  |
-            ((N > 12 ? strTokenEncodeIndex(str[12]) : 0ull) << 60)
-        ) {}
-
-    template<size_t N>
-    explicit constexpr StrToken(const char(&str)[N], ui64 index) :
-        mToken(
+    explicit constexpr StrToken(const char(&str)[N], ui64 index = 0) :
+        mTokenLow(
             ((N > 0 ? strTokenEncodeChar(str[0]) : 0ull)) |
             ((N > 1 ? strTokenEncodeChar(str[1]) : 0ull) << 5) |
             ((N > 2 ? strTokenEncodeChar(str[2]) : 0ull) << 10) |
@@ -61,31 +38,59 @@ public:
             ((N > 8 ? strTokenEncodeChar(str[8]) : 0ull) << 40) |
             ((N > 9 ? strTokenEncodeChar(str[9]) : 0ull) << 45) |
             ((N > 10 ? strTokenEncodeChar(str[10]) : 0ull) << 50) |
-            ((N > 11 ? strTokenEncodeChar(str[11]) : 0ull) << 55) |
-            (index << 60)
-        ) {}
+            ((N > 11 ? strTokenEncodeChar(str[11]) : 0ull) << 55)
+        ),
+        mTokenHigh(
+            ((N > 12 ? strTokenEncodeChar(str[12]) : 0ull)) |
+            ((N > 13 ? strTokenEncodeChar(str[13]) : 0ull) << 5) |
+            ((N > 14 ? strTokenEncodeChar(str[14]) : 0ull) << 10) |
+            ((N > 15 ? strTokenEncodeChar(str[15]) : 0ull) << 15) |
+            ((N > 16 ? strTokenEncodeChar(str[16]) : 0ull) << 20) |
+            ((N > 17 ? strTokenEncodeChar(str[17]) : 0ull) << 25) |
+            ((N > 18 ? strTokenEncodeChar(str[18]) : 0ull) << 30) |
+            ((N > 19 ? strTokenEncodeChar(str[19]) : 0ull) << 35) |
+            ((N > 20 ? strTokenEncodeChar(str[20]) : 0ull) << 40) |
+            ((N > 21 ? strTokenEncodeChar(str[21]) : 0ull) << 45) |
+            ((N > 22 ? strTokenEncodeChar(str[22]) : 0ull) << 50) |
+            ((index & STRTOKEN_INDEX_BITS) << STRTOKEN_INDEX_SHIFT)
+
+        ) { static_assert(N <= MAX_CHARS_IN_STRTOKEN); }
 
     StrToken(const nString& str);
 
-    constexpr operator ui64() const { return mToken; }
+    bool operator==(const StrToken& rhs) const {
+        return mTokenLow == rhs.mTokenLow && mTokenHigh == rhs.mTokenHigh;
+    }
+    bool operator<(const StrToken& rhs) const {
+        return mTokenLow < rhs.mTokenLow || (mTokenLow == rhs.mTokenLow && mTokenHigh < rhs.mTokenHigh);
+    }
 
     // Buffer length must be at least 14
     void toString(OUT char* outStr, OUT ui32* outLength) const;
     nString toString() const;
 
-    // Index can be 0-15
-    ui32 getIndex() const { return (ui32)(mToken >> 60); }
-    void setIndex(ui32 index) { assert(index <= 0xfu); mToken = (mToken & (~TOKEN_INDEX_MASK)) | ((ui64)index << 60ull); }
+    ui32 getIndex() const {
+        return static_cast<ui32>((mTokenHigh & STRTOKEN_INDEX_MASK) >> STRTOKEN_INDEX_SHIFT);
+    }
 
-    ui64 mToken;
+    void setIndex(ui32 index) {
+        assert(index <= STRTOKEN_MAX_INDEX);
+        mTokenHigh = (mTokenHigh & (~STRTOKEN_INDEX_MASK)) | ((ui64)index << STRTOKEN_INDEX_SHIFT);
+    }
+
+    bool isValid() { return mTokenLow != 0ull || mTokenHigh != 0ull; }
+
+    ui64 mTokenLow;  // Lower 64 bits
+    ui64 mTokenHigh; // Upper 64 bits
 };
-static_assert(sizeof(StrToken) == 8);
+
+static_assert(sizeof(StrToken) == 16);
 
 namespace std {
     template <>
     struct hash<StrToken> {
         auto operator()(const StrToken& token) const -> size_t {
-            return hash<ui64>{}(token.mToken);
+            return hash<ui64>{}(token.mTokenLow) ^ (hash<ui64>{}(token.mTokenHigh));
         }
     };
-}  // namespace std
+}

@@ -600,7 +600,7 @@ void WorldEditorPanel::updateTileEdit() {
 }
 
 void WorldEditorPanel::updateEntityEdit() {
-    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && mSelectedEntity) {
+    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && mSelectedEntity.isValid()) {
         GameThreadTasks::getInstance().addEntityCreateTask(mHitResult.mPosition, mSelectedEntity, true);
     }
 }

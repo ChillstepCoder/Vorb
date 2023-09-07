@@ -68,7 +68,7 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
         keg::parse((ui8*)&description, value, readContext, &KEG_GLOBAL_TYPE(RoomDef));
 
         if (key.size() >= MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
-            pError("Room description " + filePath.getString() + " key " + key + " was too long, must be <= 12 characters");
+            pError("Room description " + filePath.getString() + " key " + key + " was too long, must be <= 25 characters");
         }
         StrToken nameToken(key);
 
@@ -93,7 +93,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(BuildingDescriptionFileData));
 
         if (key.size() >= MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
-            pError("Building description " + filePath.getString() + " key " + key + " was too long, must be <= 12 characters");
+            pError("Building description " + filePath.getString() + " key " + key + " was too long, must be <= 25 characters");
         }
         StrToken nameToken(key);
 

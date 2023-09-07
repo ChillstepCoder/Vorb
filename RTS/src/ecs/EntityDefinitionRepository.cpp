@@ -104,6 +104,13 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
 const EntityDefinition& EntityDefinitionRepository::getDefinition(StrToken typeToken)
 {
     auto&& it = mEntityDefinitions.find(typeToken);
-    assert(it != mEntityDefinitions.end());
+    if (it == mEntityDefinitions.end()) {
+        LOG_CRITICAL("Failed to find entity {}", typeToken.toString().c_str());
+        LOG_CRITICAL("  Available entities:");
+        for (auto&& it2 : mEntityDefinitions) {
+            LOG_CRITICAL("  {}", it2.first.toString().c_str());
+        }
+        abort();
+    }
     return *it->second;
 }
