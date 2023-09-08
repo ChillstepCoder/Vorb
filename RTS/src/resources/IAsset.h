@@ -38,7 +38,7 @@ protected:
 template <typename T>
 concept IsAssetType = std::derived_from<T, IAsset>;
 
-template <IsAssetType T>
+template <typename T>
 class AssetHandle {
 public:
     AssetHandle() = default;
@@ -49,15 +49,17 @@ public:
        }
     }
 
+    VORB_NON_COPYABLE_BUT_MOVABLE(AssetHandle);
+
     bool isValid() const { return mAssetName.isValid(); }
     bool isResolved() const { return mResolvedAsset != nullptr; }
+    T* getResolvedAsset() const { return mResolvedAsset; }
+    AssetID getResolvedAssetID() const { return mResolvedAsset ? mResolvedAsset->getID() : INVALID_ASSET_ID; }
 
     T* resolveAssetSynchonous();
     void resolveAssetAsynchonous();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(AssetHandle);
-
 protected:
-    T* mResolvedAsset = nullptr;
     StrToken mAssetName;
+    T* mResolvedAsset = nullptr;
 };
