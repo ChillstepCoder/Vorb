@@ -843,6 +843,7 @@
     <ClInclude Include="src\util\MathDefines.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\NativeFileBrowser.h" />
+    <ClInclude Include="src\util\panic.h" />
     <ClInclude Include="src\util\RandomPointFromShape.h" />
     <ClInclude Include="src\util\SpatialGrid2D.h" />
     <ClInclude Include="src\util\StringHash.h" />

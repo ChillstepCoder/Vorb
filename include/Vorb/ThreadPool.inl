@@ -35,8 +35,8 @@ vcore::ThreadPool<T>::~ThreadPool() {
 template<typename T>
 void vcore::ThreadPool<T>::clearTasks() {
     // Dequeue all tasks
-    ThreadPoolTaskProcs<T> task;
-    while (mTasks.try_dequeue(task));
+    ThreadPoolTaskProcs<T> task[64];
+    while (mTasks.try_dequeue_bulk(task, 64));
 }
 
 template<typename T>

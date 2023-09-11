@@ -51,7 +51,7 @@ ResourceManager::ResourceManager() {
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mFishRepository = std::make_unique<FishRepository>(*mIoManager);
-    mParticleSystemRepository = std::make_unique<ParticleSystemRepository>(*mIoManager, *mMaterialRepository);
+    ParticleSystemRepository::initInstance(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mAnimationRepository = std::make_unique<AnimationRepository>();
@@ -93,7 +93,7 @@ void ResourceManager::gatherFiles() {
     mMaterialFiles.clear();
     mTileFiles.clear();
     mTileGrassFiles.clear();
-    mParticleSystemFiles.clear();
+    
     mRoomFiles.clear();
     mBuildingFiles.clear();
     mEntityFiles.clear();
@@ -247,12 +247,8 @@ void ResourceManager::loadFiles() {
     // Load particle Systems
     {
         // Set default material
-        mParticleSystemRepository->setDefaultMaterialID(mMaterialRepository->getMaterialId("particle_v0"/*"soft_particle"*/));
-
-        ScopedTimer timer("Particle load");
-        for (auto&& entry : mParticleSystemFiles) {
-            mParticleSystemRepository->loadParticleSystemFile(entry);
-        };
+        ParticleSystemRepository& repo = ParticleSystemRepository::get();
+        repo.setDefaultMaterialID(mMaterialRepository->getMaterialId("particle_v0"/*"soft_particle"*/));
     }
 
     // Load Rooms
@@ -376,7 +372,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             ShaderLoader::registerTessEvalShaderPath(entry.getLeaf(), entry);
         }
         else if (fileHasExtension(entry, ".psys")) {
-            mParticleSystemFiles.emplace_back(entry);
+            ParticleSystemRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".ent")) {
             mEntityFiles.emplace_back(entry);

@@ -7,8 +7,12 @@ class MaterialRepository;
 
 class ParticleSystemRepository : public IAssetRepository<ParticleSystemDef> {
 public:
-    void initInstance(vio::IOManager& ioManager) override {
+    static void initInstance(vio::IOManager& ioManager) {
         sInstance = std::make_unique<ParticleSystemRepository>(ioManager);
+    }
+    inline static ParticleSystemRepository& get() {
+        assert(sInstance);
+        return (ParticleSystemRepository&)*sInstance;
     }
 
     MaterialID getDefaultMaterialID() const { return mDefaultMaterial; }

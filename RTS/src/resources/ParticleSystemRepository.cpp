@@ -19,72 +19,57 @@ constexpr const char* const EMITTER_LIFETIME_KEY("lifetime");
 constexpr const char* const EMITTER_PARTICLE_LIFESPAN_KEY("p_lifespan");
 constexpr const char* const EMITTER_LOOPING_KEY("looping");
 constexpr const char* const EMITTER_BLEND_KEY("blend");
-
-
-ParticleSystemRepository::ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo) :
-    IAssetRepository(ioManager),
-    mMaterialRepository(materialRepo) {
-}
-
-ParticleSystemRepository::~ParticleSystemRepository() {
-
-}
-
-void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath) {
-    nString data;
-    mIoManager.readFileToString(filePath.getCString(), data);
-    ryml::Tree tree = YmlSerializer::parseFileData(data);
-
-    ParticleSystemDef* newDef = editorTryAddNewAsset(StrToken(filePath.getFileNameNoExtension()));
-    if (!newDef) {
-        LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
-        pError("Failed to load " + filePath.getString() + " already exists");
-        return;
-    }
-
-    // Loop through emitters
-    ryml::ConstNodeRef emittersNode = tree.rootref()["emitters"];
-    for (ryml::ConstNodeRef seqNode : emittersNode.children()) {
-        ryml::ConstNodeRef innerNode = seqNode.first_child();
-        ParticleEmitterDef& newEmitter = newDef->mEmitters.emplace_back();
-        newEmitter.mEmitterName = nString(std::string_view(innerNode.key().data(), innerNode.key().size()));
-        if (!loadParticleEmitter(innerNode, newEmitter)) {
-            assert(false);
-            return;
-        }
-    }
-}
-
-bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {
-    // TODO: DIALOG
-    if (!particleSystem.getDiskLocation().isValid()) {
-        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.getName().toString() + vio::Path(".psys"));
-    }
-
-    ryml::Tree tree;
-    ryml::NodeRef root = tree.rootref();
-    root |= ryml::MAP;
-
-    // Emitters
-    ryml::NodeRef emittersNode = root.append_child() << ryml::key("emitters");
-    emittersNode |= ryml::SEQ;
-
-    for (auto&& emitter : particleSystem.mEmitters) {
-        ryml::NodeRef newNode = emittersNode.append_child();
-        newNode |= ryml::MAP;
-        saveParticleEmitter(newNode, emitter);
-    }
-
-    std::stringstream ss;
-    ss << tree;
-    nString str = ss.str();
-    return saveAssetContents(particleSystem, str.c_str(), str.size());
-}
-
-void ParticleSystemRepository::initInstance(vio::IOManager& ioManager)
-{
-    throw std::logic_error("The method or operation is not implemented.");
-}
+//
+//void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath) {
+//    nString data;
+//    mIoManager.readFileToString(filePath.getCString(), data);
+//    ryml::Tree tree = YmlSerializer::parseFileData(data);
+//
+//    ParticleSystemDef* newDef = editorTryAddNewAsset(StrToken(filePath.getFileNameNoExtension()));
+//    if (!newDef) {
+//        LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
+//        pError("Failed to load " + filePath.getString() + " already exists");
+//        return;
+//    }
+//
+//    // Loop through emitters
+//    ryml::ConstNodeRef emittersNode = tree.rootref()["emitters"];
+//    for (ryml::ConstNodeRef seqNode : emittersNode.children()) {
+//        ryml::ConstNodeRef innerNode = seqNode.first_child();
+//        ParticleEmitterDef& newEmitter = newDef->mEmitters.emplace_back();
+//        newEmitter.mEmitterName = nString(std::string_view(innerNode.key().data(), innerNode.key().size()));
+//        if (!loadParticleEmitter(innerNode, newEmitter)) {
+//            assert(false);
+//            return;
+//        }
+//    }
+//}
+//
+//bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& particleSystem) {
+//    // TODO: DIALOG
+//    if (!particleSystem.getDiskLocation().isValid()) {
+//        particleSystem.setDiskLocation(PARTICLE_SYSTEM_PATH / particleSystem.getName().toString() + vio::Path(".psys"));
+//    }
+//
+//    ryml::Tree tree;
+//    ryml::NodeRef root = tree.rootref();
+//    root |= ryml::MAP;
+//
+//    // Emitters
+//    ryml::NodeRef emittersNode = root.append_child() << ryml::key("emitters");
+//    emittersNode |= ryml::SEQ;
+//
+//    for (auto&& emitter : particleSystem.mEmitters) {
+//        ryml::NodeRef newNode = emittersNode.append_child();
+//        newNode |= ryml::MAP;
+//        saveParticleEmitter(newNode, emitter);
+//    }
+//
+//    std::stringstream ss;
+//    ss << tree;
+//    nString str = ss.str();
+//    return saveAssetContents(particleSystem, str.c_str(), str.size());
+//}
 
 void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter) {
     ryml::NodeRef innerNode = node[c4::to_csubstr(particleEmitter.mEmitterName)];

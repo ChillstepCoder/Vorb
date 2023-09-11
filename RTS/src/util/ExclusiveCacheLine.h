@@ -6,6 +6,6 @@
  // Prevent false sharing
 template <typename T>
 class alignas(std::hardware_destructive_interference_size) ExclusiveCacheLine : public T {
-    public;
+public:
     using T::T;
 };

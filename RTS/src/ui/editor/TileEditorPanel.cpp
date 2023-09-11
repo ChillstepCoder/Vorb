@@ -378,7 +378,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
             result.second = (ParticleSystemDef*)nullptr;
         }
 
-        ParticleSystemRepository& particleSystemRepository = Services::ResourceManager::ref().getParticleSystemRepository();
+        ParticleSystemRepository& particleSystemRepository = ParticleSystemRepository::get();
 
         // Submit table
         constexpr f32 FIXED_WIDTH = 50.0f;
@@ -406,9 +406,9 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
             ui32 ID = 2998;
             ui32 previewIndex = 0;
 
-            std::vector<ParticleSystemDef>& particleSystems = particleSystemRepository.getAllAssetsMutable();
+            std::vector<std::unique_ptr<ParticleSystemDef>>& particleSystems = particleSystemRepository.getAllAssetsMutable();
             for (auto&& it : particleSystemRepository.getAssetNames()) {
-                ParticleSystemDef& def = particleSystems[it.second];
+                ParticleSystemDef& def = *particleSystems[it.second];
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 

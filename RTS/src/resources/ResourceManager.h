@@ -3,6 +3,8 @@
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 
+#include "IAssetRepository.h"
+
 class AnimationRepository;
 class AnimMachineRepository;
 class BrushRepository;
@@ -35,13 +37,13 @@ public:
     void gatherFiles();
     void loadFiles();
 
+    // TODO: These are all obsolete? Since each is a singleton?
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
     MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
     BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     FishRepository& getFishRepository() const { return *mFishRepository; }
-    ParticleSystemRepository& getParticleSystemRepository() const { return *mParticleSystemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     AnimationRepository& getAnimationRepository() const { return *mAnimationRepository; }
     RigRepository& getRigRepository() const { return *mRigRepository; }
@@ -75,7 +77,6 @@ private:
     std::vector<vio::Path> mComputeFiles;
     std::vector<vio::Path> mTileFiles;
     std::vector<vio::Path> mTileGrassFiles;
-    std::vector<vio::Path> mParticleSystemFiles;
     std::vector<vio::Path> mRoomFiles;
     std::vector<vio::Path> mBuildingFiles;
     std::vector<vio::Path> mEntityFiles;
@@ -96,7 +97,6 @@ private:
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<ItemRepository> mItemRepository;
     std::unique_ptr<FishRepository> mFishRepository;
-    std::unique_ptr<ParticleSystemRepository> mParticleSystemRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<AnimationRepository> mAnimationRepository;

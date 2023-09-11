@@ -134,6 +134,8 @@ inline void setThreadPriorityToMax() {
 #endif
 }
 
+#include "util/panic.h"
+
 // Literals
 using namespace std::literals::string_view_literals;
 

@@ -3,15 +3,15 @@
 
 #include <Vorb/io/IOManager.h>
 
-bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const char* fileContents, size_t sizeBytes) {
-    assert(!asset.getDiskLocation().isNull());
+bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const vio::Path& path, const char* fileContents, size_t sizeBytes) {
+    assert(!path.isNull());
 
     assert(fileContents);
 
     vio::Path absolutePath;
 
-    if (!mIoManager.assurePath(asset.getDiskLocation(), absolutePath, vio::IOManagerDirectory::CURRENT_WORKING, true)) {
-        LOG_CRITICAL("Failed to evaluate file path in IAssetRepository::saveAssetContents: {}", asset.getDiskLocation().getString());
+    if (!mIoManager.assurePath(path, absolutePath, vio::IOManagerDirectory::CURRENT_WORKING, true)) {
+        LOG_CRITICAL("Failed to evaluate file path in IAssetRepository::saveAssetContents: {}", path.getString());
     }
 
     const nString& filePath = absolutePath.getString();

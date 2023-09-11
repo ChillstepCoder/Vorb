@@ -3,6 +3,8 @@
 #include "resources/IAsset.h"
 #include "util/ExclusiveCacheLine.h"
 
+#include <shared_mutex>
+
 class AssetLoader;
 
 template <IsAssetType T>
@@ -15,16 +17,15 @@ public:
     virtual ~IAssetRepositoryBase() = default;
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
-    virtual ~IAssetRepositoryBase() = default;
 
     vio::IOManager& mIoManager;
-    bool saveAssetContents(const IAsset& asset, const char* fileContents, size_t sizeBytes);
+    bool saveAssetContents(const IAsset& asset, const vio::Path& path, const char* fileContents, size_t sizeBytes);
 };
 
 struct AssetRegistryEntry {
     StrToken mName;
     vio::Path mFilePath;
-    std::atomic_int mRefCount = 0;
+    AssetID mID = INVALID_ASSET_ID; // TODO: unneeded
     bool mRequestedLoad = false;
     //bool mFinishedLoading = false; // Or refcount needed to ensure we dont destroy this while
     // it is being loaded once we implement deallocation of assets
@@ -33,35 +34,48 @@ struct AssetRegistryEntry {
 template <IsAssetType T>
 class IAssetRepository : public IAssetRepositoryBase {
 public:
-    virtual ~IAssetRepositoryBase() = default;
+    friend class AssetHandle<T>;
 
-    virtual void initInstance(vio::IOManager& ioManager) = 0;
-    IAssetRepository<T>& getInstance() {
+    virtual ~IAssetRepository() = default;
+
+    inline static IAssetRepository<T>& getInstance() {
         assert(sInstance);
         return *sInstance;
     }
 
-    const std::vector<T>& getAllAssets() const { return mAssets; }
-    std::vector<T>& getAllAssetsMutable() { return mAssets; }
-    const std::map<StrToken, AssetID>& getAssetNames() const { return mAssetRegistry; }
+    // Not thread safe if if editor adds an asset during usage. Shouldnt happen
+    const std::vector<std::unique_ptr<T>>& getAllAssets() const { return mAssets; }
+    // Not thread safe if if editor adds an asset during usage. Shouldnt happen
+    std::vector<std::unique_ptr<T>>& getAllAssetsMutable() { return mAssets; }
+    const std::map<StrToken, AssetID>& getAssetNames() const { return mAssetLookup; }
+
+    vio::Path getAssetFilePath(AssetID id) const { return mAssetRegistry[id].mFilePath; }
+    // TODO: Handle deleting old file?
+    void changeAssetFilePath(AssetID id, const vio::Path& newPath) { mAssetRegistry[id].mFilePath = newPath; }
 
     // Will begin a lazy async load if asset is not loaded
     AssetHandle<T> getAssetHandle(AssetID id);
     AssetHandle<T> getAssetHandle(StrToken assetName);
     AssetID getAssetID(StrToken assetName) { return mAssetRegistry[assetName].mAssetID; }
+    AssetID registerAsset(const vio::Path& filePath) {
+        // TODO remove string copy
+        return registerAsset(StrToken(filePath.getFileNameNoExtension()), filePath);
+    }
 
+    // ALL assets must be registered before any are loaded, else we will have race conditions
     AssetID registerAsset(StrToken name, const vio::Path& filePath) {
         AssetID id = mAssets.size();
-        assert(mAssetRegistry.find(name) == mAssetRegistry.end());
+        assert(mAssetLookup.find(name) == mAssetLookup.end());
         mAssetLookup[name] = id;
-        mAssetRegistry[id] = AssetRegistryEntry{ .mFilePath(filePath) };
-        mAssets.emplace_back(name, id);
+        mAssetRegistry.emplace_back(AssetRegistryEntry{ .mName=name, .mFilePath=filePath, .mID=id});
+        mAssetRefCounts.emplace_back();
+        mAssets.emplace_back(std::make_unique<T>(name, id));
         return id;
     }
 
     // Editor function which will register and create a default asset of this type
     T* editorTryAddNewAsset(StrToken name) {
-        if (mAssetRegistry.find(name) != mAssetRegistry.end()) {
+        if (mAssetLookup.find(name) != mAssetLookup.end()) {
             return nullptr;
         }
         AssetID id;
@@ -69,15 +83,18 @@ public:
             AssetID id = mFreeIDs.back();
             mFreeIDs.pop_back();
             mAssetLookup[name] = id;
-            mAssetRegistry[id] = AssetRegistryEntry{ .mRequestedLoad(true) /*Already loaded*/};
-            mAssets[id] = T(name, id);
-            return &mAssets[id];
+            mAssetRegistry[id] = AssetRegistryEntry{ .mID=id, .mRequestedLoad=true /*Already loaded*/};
+            mAssetRefCounts[id] = 0;
+            // Retain pointer stability by replacing previous asset directly
+            *mAssets[id] = T(name, id);
+            return mAssets[id].get();
         }
         else {
             AssetID id = mAssets.size();
             mAssetLookup[name] = id;
-            mAssetRegistry[id] = AssetRegistryEntry{ .mRequestedLoad(true) /*Already loaded*/ };
-            T& newAsset = mAssets.emplace_back(name, id);
+            mAssetRegistry.emplace_back(AssetRegistryEntry{ .mID=id, .mRequestedLoad=true /*Already loaded*/});
+            mAssetRefCounts.emplace_back();
+            T& newAsset = *mAssets.emplace_back(std::make_unique<T>(name, id));
             return &newAsset;
         }
     }
@@ -89,28 +106,40 @@ public:
                 return;
             }
         }
+        if (mAssetRefCounts[id] != 0) {
+            LOG_WARN("Deleted an asset that still had refs: {}", mAssetRegistry[id].mName.toString());
+        }
         mFreeIDs.emplace_back(id);
-        mAssetRegistry.erase(mAssets[id].getName());
+        mAssetLookup.erase(mAssets[id]->getName());
         // TODO: Remove file
     }
-    void aquireAssetHandle(StrToken assetName, AssetHandle<T>& handle) {
-        assert(!handle.isValid());
-        aquireAssetHandle(mAssetRegistry[assetName].mAssetID, handle);
-    }
-    void pollAsset();
+
+    virtual bool saveAsset(AssetID assetId) = 0;
+
+protected:
+    IAssetRepository(vio::IOManager& ioManager) : IAssetRepositoryBase(ioManager) {}
+
+    virtual void loadAsset(AssetLoader& assetLoader, const vio::Path& filePath) = 0;
+
+    // ==================================================================
+    // Asset friend functions
+    // ==================================================================
     void aquireAssetHandle(AssetID id, AssetHandle<T>& handle) {
         assert(!handle.isValid());
         handle.mAssetID = id;
-        handle.mAssetName = mAssets[id].getName();
         mAssetRegistry[handle.mAssetID].mRefCount++;
-        if (mAssetRegistry[handle.mAssetID].mRequestedLoad) {
-            if (mLoadedAssets[handle.mAssetID].load()) {
-                handle.mLoadedAsset = &mAssets[handle.mAssetID];
-            }
+        if (mLoadedAssets[handle.mAssetID].load()) {
+            handle.mAssetName = mAssets[id].getName();
+            handle.mLoadedAsset = mAssets[id].get();
+            return;
         }
-        else {
-            mAssetRegistry[handle.mAssetID].mRequestedLoad = true;
-            loadAsset(AssetLoader(*this), mAssetRegistry[handle.mAssetID].mFilePath);
+        { // This should be fairly rare
+            std::lock_guard lock(mBeginLoadAssetMutex);
+            if (!mAssetRegistry[handle.mAssetID].mRequestedLoad) {
+                mAssetRegistry[handle.mAssetID].mRequestedLoad = true;
+                lock.unlock();
+                loadAsset(AssetLoader(*this), mAssetRegistry[handle.mAssetID].mFilePath);
+            }
         }
     }
     void releaseAssetHandle(AssetHandle<T>& handle) {
@@ -121,25 +150,23 @@ public:
             handle.mLoadedAsset = nullptr;
         }
     }
+    void pollAsset(AssetHandle<T>& handle) {
+        if (mLoadedAssets[handle.mAssetID]) {
+            handle.mLoadedAsset = mAssets[handle.mAssetID];
+        }
+    }
 
-protected:
-    IAssetRepository(vio::IOManager& ioManager) : IAssetRepositoryBase(ioManager) {}
-    virtual ~IAssetRepository() = default;
-
-    virtual void loadAsset(AssetLoader& assetLoader, const vio::Path& filePath) = 0;
-    virtual bool saveAsset(AssetID assetId) = 0;
-
-    //virtual void loadAssetInternalFromData(const nString& data) = 0;
-
-    vio::Path getAssetFilePath(AssetID id) const { return mAssetRegistry[id].mFilePath; }
-    // TODO: Handle deleting old file?
-    void changeAssetFilePath(const vio::Path& newPath) { mAssetRegistry[id].mFilePath = newPath; }
-
+    // ==================================================================
+    // Data
+    // ==================================================================
     std::map<StrToken, AssetID> mAssetLookup;
     std::vector<AssetRegistryEntry> mAssetRegistry;
-    std::vector<T> mAssets;
+    std::vector<std::atomic_int> mAssetRefCounts;
+    std::vector<std::unique_ptr<T>> mAssets;
     std::vector<ExclusiveCacheLine<std::atomic_bool>> mLoadedAssets;
     std::vector<AssetID> mFreeIDs;
+
+    std::mutex mBeginLoadAssetMutex;
 
     inline static std::unique_ptr<IAssetRepository<T>> sInstance;
     // mDirtyAssets?
@@ -149,11 +176,24 @@ template <IsAssetType T>
 class AssetHandle {
 public:
     friend class IAssetRepository<T>;
+
+    AssetHandle() = default;
     ~AssetHandle() {
-        IAssetRepository<T>::getInstance().releaseAssetHandle(*this);
+        release();
     }
 
     VORB_NON_COPYABLE(AssetHandle);
+
+
+    void aquire(AssetID id) {
+        IAssetRepository<T>::getInstance().aquireAssetHandle(id, *this);
+    }
+    void aquire(StrToken name) {
+        IAssetRepository<T>::getInstance().aquireAssetHandle(name, *this);
+    }
+    void release() {
+        IAssetRepository<T>::getInstance().releaseAssetHandle(*this);
+    }
 
     bool isValid() const { return mAssetName.isValid(); }
     bool isLoaded() const { return mLoadedAsset != nullptr; }
@@ -161,20 +201,14 @@ public:
     const T* tryGetAsset() const {
         assert(isValid());
         if (mLoadedAsset) return mLoadedAsset;
-        // Query if its done loading
+        IAssetRepository<T>::getInstance().pollAsset(*this);
         return mLoadedAsset;
     }
     AssetID getAssetID() const { return mAssetID; }
 
-    T* editorTryGetMutableAsset() const { return const_cast<T*>(mLoadedAsset); }
+    T* editorTryGetMutableAsset() const { return const_cast<T*>(tryGetAsset()); }
 
 protected:
-    // Called by IAssetRepository<T>
-    AssetHandle(StrToken assetName, AssetID id, const T* asset) : mAssetName(assetName), mAssetID(id), mLoadedAsset(asset) {
-        if (mLoadedAsset) {
-            mLoadedAsset->incRef();
-        }
-    };
 
     StrToken mAssetName;
     const T* mLoadedAsset = nullptr;
@@ -185,11 +219,14 @@ protected:
 template <IsAssetType T>
 AssetHandle<T> IAssetRepository<T>::getAssetHandle(StrToken assetName)
 {
-    AssetRegistryEntry& entry = mAssetRegistry.at(assetName)
+    AssetRegistryEntry& entry = mAssetRegistry.at(assetName);
 }
 
 template <IsAssetType T>
 AssetHandle<T> IAssetRepository<T>::getAssetHandle(AssetID id)
 {
-    g;
+    AssetHandle<T> handle;
+    aquireAssetHandle(id, handle);
+    return handle;
 }
+

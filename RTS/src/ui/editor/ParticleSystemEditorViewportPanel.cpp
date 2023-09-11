@@ -100,7 +100,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Create"))
         {
             ImGui::CloseCurrentPopup();
-            mSystemDef = Services::ResourceManager::ref().getParticleSystemRepository().tryAddNewAsset(StrToken(mTextInputBuffer));
+            mSystemDef = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken(mTextInputBuffer));
             if (!mSystemDef) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
@@ -108,7 +108,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 mSystemDef->setName(StrToken(mTextInputBuffer));
                 ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = "DefaultEmitter";
-                defaultEmitter.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
+                defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 defaultEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
                 mSelectedEmitter = &defaultEmitter;
                 mTextInputBuffer[0] = '\0';
@@ -134,7 +134,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         }
         ImGui::SameLine();
         if (ImGui::Button("Save")) {
-            if (!Services::ResourceManager::ref().getParticleSystemRepository().saveParticleSystem(*mSystemDef)) {
+            if (!ParticleSystemRepository::get().saveAsset(mSystemDef->getID())) {
                 pError("FAILED TO SAVE PARTICLE SYSTEM!");
             }
         }
@@ -152,15 +152,14 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Duplicate Existing Emitter")) {
             openDuplicateEmitterPopup();
         }
-        if (ImGui::BeginPopupModal("EmitterModal", &is_open))
-        {
+        if (ImGui::BeginPopupModal("EmitterModal", &is_open)) {
             ImGui::InputText("Name", mTextInputBuffer, TEXT_INPUT_SIZE);
             // Your popup content here
             if (ImGui::Button("Create")) {
                 ImGui::CloseCurrentPopup();
                 ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = mTextInputBuffer;
-                newEmitterDef.mDefaultMaterialID = Services::ResourceManager::ref().getParticleSystemRepository().getDefaultMaterialID();
+                newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 newEmitterDef.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
                 mSelectedEmitter = &newEmitterDef;
                 mTextInputBuffer[0] = '\0';
@@ -445,7 +444,7 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
             bool result = mConfirmDeletePopup->getResult();
             mConfirmDeletePopup.reset();
             if (result && mSystemDef) {
-                Services::ResourceManager::ref().getParticleSystemRepository().deleteAsset(mSystemDef->getID());
+                ParticleSystemRepository::get().deleteAsset(mSystemDef->getID());
                 mSystemDef = nullptr;
                 mSelectedEmitter = nullptr;
             }
@@ -462,10 +461,10 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
 
 void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
     std::vector<nString> emitterNames;
-    auto& assets = Services::ResourceManager::ref().getParticleSystemRepository().getAllAssets();
-    for (auto& def : assets) {
-        nString name = def.getName().toString();
-        for (auto& emitter : def.mEmitters) {
+    auto& assets = ParticleSystemRepository::get().getAllAssets();
+    for (const auto& def : assets) {
+        nString name = def->getName().toString();
+        for (auto& emitter : def->mEmitters) {
             emitterNames.push_back(name + "." + emitter.mEmitterName);
         }
     }
@@ -476,10 +475,10 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(size_t emitterInd
     if (emitterIndex == UINT32_MAX) return;
     if (mSystemDef == nullptr) return;
 
-    auto& assets = Services::ResourceManager::ref().getParticleSystemRepository().getAllAssets();
+    auto& assets = ParticleSystemRepository::get().getAllAssets();
     size_t i = 0;
-    for (auto& def : assets) {
-        for (auto& emitter : def.mEmitters) {
+    for (const auto& def : assets) {
+        for (auto& emitter : def->mEmitters) {
             if (i == emitterIndex) {
                 mSystemDef->mEmitters.emplace_back(emitter);
                 mSelectedEmitter = &mSystemDef->mEmitters.back();

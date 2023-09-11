@@ -2006,6 +2006,9 @@
     <ClInclude Include="src\util\ExclusiveCacheLine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\panic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
