@@ -409,6 +409,7 @@
     <ClCompile Include="src\rendering\UboHelpers.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
+    <ClCompile Include="src\resources\AssetLoader.cpp" />
     <ClCompile Include="src\resources\FishRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
     <ClCompile Include="src\resources\IAssetRepository.cpp" />
@@ -758,6 +759,7 @@
     <ClInclude Include="src\rendering\UboHelpers.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
+    <ClInclude Include="src\resources\AssetLoader.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\IAsset.h" />
@@ -833,6 +835,7 @@
     <ClInclude Include="src\util\CommonUtil.h" />
     <ClInclude Include="src\util\ConstexprMap.h" />
     <ClInclude Include="src\util\CubeFacing.h" />
+    <ClInclude Include="src\util\ExclusiveCacheLine.h" />
     <ClInclude Include="src\util\GridEdge.h" />
     <ClInclude Include="src\util\GridEdgeFinder.h" />
     <ClInclude Include="src\util\IntersectionHit.h" />

@@ -35,7 +35,7 @@ void ParticleSystemRepository::loadParticleSystemFile(const vio::Path& filePath)
     mIoManager.readFileToString(filePath.getCString(), data);
     ryml::Tree tree = YmlSerializer::parseFileData(data);
 
-    ParticleSystemDef* newDef = tryAddNewAsset(StrToken(filePath.getFileNameNoExtension()));
+    ParticleSystemDef* newDef = editorTryAddNewAsset(StrToken(filePath.getFileNameNoExtension()));
     if (!newDef) {
         LOG_CRITICAL("Failed to load {} from {} already exists", filePath.getFileNameNoExtension(), filePath.getString());
         pError("Failed to load " + filePath.getString() + " already exists");
@@ -79,6 +79,11 @@ bool ParticleSystemRepository::saveParticleSystem(const ParticleSystemDef& parti
     ss << tree;
     nString str = ss.str();
     return saveAssetContents(particleSystem, str.c_str(), str.size());
+}
+
+void ParticleSystemRepository::initInstance(vio::IOManager& ioManager)
+{
+    throw std::logic_error("The method or operation is not implemented.");
 }
 
 void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter) {

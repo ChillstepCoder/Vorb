@@ -7,11 +7,9 @@ class MaterialRepository;
 
 class ParticleSystemRepository : public IAssetRepository<ParticleSystemDef> {
 public:
-    ParticleSystemRepository(vio::IOManager& ioManager, MaterialRepository& materialRepo);
-    ~ParticleSystemRepository();
-
-    void loadParticleSystemFile(const vio::Path& filePath);
-    bool saveParticleSystem(const ParticleSystemDef& particleSystem);
+    void initInstance(vio::IOManager& ioManager) override {
+        sInstance = std::make_unique<ParticleSystemRepository>(ioManager);
+    }
 
     MaterialID getDefaultMaterialID() const { return mDefaultMaterial; }
     void setDefaultMaterialID(MaterialID id) { mDefaultMaterial = id; }
@@ -19,8 +17,6 @@ public:
 private:
     void saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter);
     bool loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter);
-
-    MaterialRepository& mMaterialRepository;
 
     MaterialID mDefaultMaterial = INVALID_MATERIAL_ID;
 };
