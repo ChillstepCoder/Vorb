@@ -760,6 +760,7 @@
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\AssetLoader.h" />
+    <ClInclude Include="src\resources\AssetLoadTask.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\IAsset.h" />

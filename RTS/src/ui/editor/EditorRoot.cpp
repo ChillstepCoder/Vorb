@@ -159,7 +159,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                     openFishForEdit(*std::get<FishDef*>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_PARTICLE:
-                    openParticleSystemForEdit(std::get<ParticleSystemDef*>(result.second));
+                    openParticleSystemForEdit(std::get<AssetID>(result.second));
                     break;
                 default:
                     assert(false);
@@ -240,8 +240,8 @@ void EditorRoot::openFishForEdit(FishDef& fishDef) {
     setActiveCenterPanel(mFishingEditorViewportPanel.get());
 }
 
-void EditorRoot::openParticleSystemForEdit(ParticleSystemDef* systemDef) {
-    mParticleSystemEditorViewportPanel->setParticleSystemDef(systemDef);
+void EditorRoot::openParticleSystemForEdit(AssetID systemId) {
+    mParticleSystemEditorViewportPanel->setParticleSystemDef(systemId);
     setActiveCenterPanel(mParticleSystemEditorViewportPanel.get());
 }
 

@@ -39,7 +39,7 @@ private:
     void openFoliageForEdit(TileGrassData& grassData);
     void openBiomeForEdit();
     void openFishForEdit(FishDef& fishDef);
-    void openParticleSystemForEdit(ParticleSystemDef* systemDef);
+    void openParticleSystemForEdit(AssetID systemId);
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 
     // Center panel display

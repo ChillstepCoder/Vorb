@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "resources/ResourceManager.h"
+#include "resources/AssetLoader.h"
 
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/ShaderLoader.h"
@@ -43,6 +44,7 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
 ResourceManager::ResourceManager() {
     
     mIoManager = std::make_unique<vio::IOManager>();
+    AssetLoader::initInstance(*mIoManager);
 
     mTextureRepository = std::make_unique<TextureRepository>(*mIoManager);
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository);

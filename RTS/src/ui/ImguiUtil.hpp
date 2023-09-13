@@ -193,6 +193,14 @@ namespace ImguiUtil {
         size_t getResult() const {
             return result;
         }
+        nString getResultName() const {
+            if (result == UINT32_MAX) return "";
+            return mNames[result];
+        }
+
+        const std::vector<nString>& getNames() const {
+            return mNames;
+        }
     protected:
         std::vector<nString> mNames;
         std::vector<size_t> mSortedIndices;

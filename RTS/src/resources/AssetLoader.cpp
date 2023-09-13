@@ -21,9 +21,8 @@ AssetLoader::~AssetLoader() {
     while (mLoadQueue.try_dequeue_bulk(task, 64));
 
     // Tell all threads to wake up and close, as they are currently hanging on a semaphore
-    std::atomic_bool dummy;
     for (size_t i = 0; i < mWorkers.size(); i++) {
-        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mLoadFunc = [](AssetID, const vio::Path&, std::string_view, void*) { return; } , .mIsFinishedFlagPtr = &dummy }));
+        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mLoadFunc = [](AssetID, const vio::Path&, std::string_view, void*) { return; }}));
     }
 
     // Join all threads
@@ -43,7 +42,9 @@ void AssetLoader::workerThreadFunc() {
             panic("Asset loader thread failed to read file {}", task->mFilePath.getCString());
         }
         task->mLoadFunc(task->mAssetID, task->mFilePath, std::string_view(dataStr.data(), dataStr.length()), task->mAssetDataPtr);
-        *task->mIsFinishedFlagPtr = true;
+        if (task->mIsFinishedFlagPtr) {
+            *task->mIsFinishedFlagPtr = true;
+        }
         task.reset();
         dataStr.clear();
     }

@@ -40,6 +40,11 @@ ParticleSystemEditorViewportPanel::~ParticleSystemEditorViewportPanel() {
 bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     mCurrentElapsedSec = elapsedSec;
 
+    // Refresh asset every frame in case awaiting load
+    if (mSystemDefHandle) {
+        mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
+    }
+
     mCurrentTime += elapsedSec;
     if (mCurrentTime >= mTimelineEnd) {
         createPreviewSystem();
@@ -100,11 +105,12 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Create"))
         {
             ImGui::CloseCurrentPopup();
-            mSystemDef = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken(mTextInputBuffer));
-            if (!mSystemDef) {
+            mSystemDefHandle = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken(mTextInputBuffer));
+            if (!mSystemDefHandle) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
             else {
+                mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
                 mSystemDef->setName(StrToken(mTextInputBuffer));
                 ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = "DefaultEmitter";
@@ -414,9 +420,10 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
     }
 }
 
-void ParticleSystemEditorViewportPanel::setParticleSystemDef(ParticleSystemDef* systemDef) {
-    mSystemDef = systemDef;
-    if (mSystemDef && mSystemDef->mEmitters.size()) {
+void ParticleSystemEditorViewportPanel::setParticleSystemDef(AssetID systemId) {
+    mSystemDefHandle = ParticleSystemRepository::get().getAssetHandle(systemId);
+    if (systemIsLoaded()) {
+        mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
         mSelectedEmitter = &mSystemDef->mEmitters[0];
     }
     else {
@@ -452,40 +459,48 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
     }
     else if (mDuplicateObjectPopup) {
         if (mDuplicateObjectPopup->updateAndRender()) {
-            size_t result = mDuplicateObjectPopup->getResult();
+            duplicateGlobalEmitter(mDuplicateObjectPopup->getResultName());
             mDuplicateObjectPopup.reset();
-            duplicateGlobalEmitter(result);
         }
     }
 }
 
 void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
     std::vector<nString> emitterNames;
-    auto& assets = ParticleSystemRepository::get().getAllAssets();
-    for (const auto& def : assets) {
-        nString name = def->getName().toString();
-        for (auto& emitter : def->mEmitters) {
-            emitterNames.push_back(name + "." + emitter.mEmitterName);
+    nString name; // Share memory
+    ParticleSystemRepository::get().forEachRegisteredAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef* def, const AssetRegistryEntry& entry) {
+        if (def) {
+            name = def->getName().toString();
+            for (auto& emitter : def->mEmitters) {
+                emitterNames.push_back(name + "." + emitter.mEmitterName);
+            }
         }
-    }
+        else {
+            // Request asset load if needed
+            if (!mAssetHandleBundle.hasAssetHandle(entry.mID, repo.getAssetType())) {
+                mAssetHandleBundle.addAssetHandle(repo.getAssetHandle(entry.mID));
+            }
+        }
+        return false;
+    });
     mDuplicateObjectPopup = std::make_unique<ImguiUtil::CustomSelectorPopup>(emitterNames);
 }
 
-void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(size_t emitterIndex) {
-    if (emitterIndex == UINT32_MAX) return;
+void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& emitterName) {
+    if (emitterName.empty()) return;
     if (mSystemDef == nullptr) return;
 
-    auto& assets = ParticleSystemRepository::get().getAllAssets();
-    size_t i = 0;
-    for (const auto& def : assets) {
-        for (auto& emitter : def->mEmitters) {
-            if (i == emitterIndex) {
+    nString name; // Share memory
+    ParticleSystemRepository::get().forEachLoadedAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef& def) {
+        name = def.getName().toString();
+        for (auto& emitter : def.mEmitters) {
+            if (emitterName == name + "." + emitter.mEmitterName) {
                 mSystemDef->mEmitters.emplace_back(emitter);
                 mSelectedEmitter = &mSystemDef->mEmitters.back();
                 createPreviewSystem();
-                return;
+                return true;
             }
-            ++i;
         }
-    }
+        return false;
+    });
 }

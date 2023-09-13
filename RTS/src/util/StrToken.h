@@ -75,7 +75,7 @@ public:
         mTokenHigh = (mTokenHigh & (~STRTOKEN_INDEX_MASK)) | ((ui64)index << STRTOKEN_INDEX_SHIFT);
     }
 
-    bool isValid() { return mTokenLow != 0ull || mTokenHigh != 0ull; }
+    bool isValid() const { return mTokenLow != 0ull || mTokenHigh != 0ull; }
 
     NET_SERIALIZE_DECL();
 

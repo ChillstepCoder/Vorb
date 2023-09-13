@@ -45,6 +45,12 @@ namespace YmlSerializer {
     inline ryml::Tree parseFileData(const nString& ymlFileData) {
         return ryml::parse_in_arena(ryml::to_csubstr(ymlFileData));
     }
+    inline ryml::Tree parseFileData(std::string_view ymlFileData) {
+        return ryml::parse_in_arena(ryml::to_csubstr(ymlFileData));
+    }
+    inline ryml::Tree parseFileData(c4::csubstr ymlFileData) {
+        return ryml::parse_in_arena(ymlFileData);
+    }
 
     template<typename T>
     void readFileData(const nString& ymlFileData, T& o) {

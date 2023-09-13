@@ -1,15 +1,6 @@
 #pragma once
 
-typedef std::function<void(AssetID, const vio::Path&, std::string_view, void*)> AssetLoadFunc;
-
-struct AssetLoadTask {
-    AssetID mAssetID = INVALID_ASSET_ID;
-    void* mAssetDataPtr = nullptr;
-    vio::Path mFilePath;
-    AssetLoadFunc mLoadFunc;
-    std::atomic_bool* mIsFinishedFlagPtr = nullptr;
-};
-typedef std::unique_ptr<AssetLoadTask> AssetLoadTaskPtr;
+#include "resources/AssetLoadTask.h"
 
 DECL_VIO(class IOManager);
 
@@ -20,17 +11,17 @@ public:
     ~AssetLoader();
     VORB_NON_COPYABLE(AssetLoader);
 
-    void initInstance(vio::IOManager& ioManager) {
-        sInstance = std::make_unique<AssetLoader>(mIOManager);
+    static void initInstance(vio::IOManager& ioManager) {
         assert(!sInstance);
+        sInstance = std::make_unique<AssetLoader>(ioManager);
     }
-    AssetLoader& getInstance() {
+    static AssetLoader& getInstance() {
         return *sInstance;
     }
 
     void requestAssetLoad(AssetLoadFunc loadFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr) {
         // TODO: Singleton pool
-        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{.mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath = filePath, .mLoadFunc = loadFunc}));
+        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{.mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath = filePath, .mLoadFunc = loadFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr }));
     }
 
 protected:

@@ -22,7 +22,7 @@ enum class TileEditorPanelResultCode {
     COUNT
 };
 
-typedef std::variant<ModelDef*, std::unique_ptr<MaterialHandle>, TileGrassData*, FishDef*, ParticleSystemDef*> TileEditorPanelResultVariant;
+typedef std::variant<ModelDef*, std::unique_ptr<MaterialHandle>, TileGrassData*, FishDef*, AssetID> TileEditorPanelResultVariant;
 
 typedef std::pair<TileEditorPanelResultCode, TileEditorPanelResultVariant> TileEditorPanelResult;
 

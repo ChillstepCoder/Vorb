@@ -401,7 +401,7 @@ void WorldRenderer::renderDebug()
 
             // Count refs
             constexpr f32 REF_BOX_WIDTH = 1.0f;
-            constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
+            constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / (ui32)REF_BOX_WIDTH;
             for (int i = 0; i < chunkDebugState.mRefCount; ++i) {
                 DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
             }

@@ -1,7 +1,9 @@
 #pragma once
 #include "IEditorViewportPanel.h"
 
-class ParticleSystemDef;
+#include "resources/IAssetRepository.h"
+#include "definitions/ParticleSystemDef.h"
+
 class ParticleEmitterDef;
 class CPUParticleEmitterModule;
 class CPUParticleSystem;
@@ -21,19 +23,26 @@ public:
 
     void renderMesh() override;
 
-    void setParticleSystemDef(ParticleSystemDef* systemDef);
+    void setParticleSystemDef(AssetID systemId);
 
 private:
     void createPreviewSystem();
     void updatePopups();
 
     void openDuplicateEmitterPopup();
-    void duplicateGlobalEmitter(size_t emitterIndex);
+    void duplicateGlobalEmitter(const nString& emitterName);
 
+    bool systemIsLoaded() const { return mSystemDefHandle != nullptr && mSystemDefHandle->isLoaded(); }
+
+    AssetHandlePtr<ParticleSystemDef> mSystemDefHandle = nullptr;
     ParticleSystemDef* mSystemDef = nullptr;
+
     ParticleEmitterDef* mSelectedEmitter = nullptr;
     CPUParticleEmitterModule* mSelectedModule = nullptr;
     std::vector<bool> mShowEmitters; // One for each emitter in the system
+
+    // Assets requested to load
+    AssetHandleBundle mAssetHandleBundle;
 
     //Popups
     std::unique_ptr<ImguiUtil::RenameAssetPopup> mRenamePopup;

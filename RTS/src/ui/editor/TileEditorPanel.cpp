@@ -375,7 +375,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
         ImGui::Text("Particle Systems");
         if (ImGui::Button("Open Editor")) {
             result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
-            result.second = (ParticleSystemDef*)nullptr;
+            result.second = INVALID_ASSET_ID;
         }
 
         ParticleSystemRepository& particleSystemRepository = ParticleSystemRepository::get();
@@ -406,32 +406,30 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
             ui32 ID = 2998;
             ui32 previewIndex = 0;
 
-            std::vector<std::unique_ptr<ParticleSystemDef>>& particleSystems = particleSystemRepository.getAllAssetsMutable();
-            for (auto&& it : particleSystemRepository.getAssetNames()) {
-                ParticleSystemDef& def = *particleSystems[it.second];
+            particleSystemRepository.forEachRegisteredAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef* asset, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text(it.first.toString().c_str());
+                ImGui::Text(entry.mName.toString().c_str());
 
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", def.getID());
+                sprintf_s(label, "%04d", entry.mID);
                 ImGui::Text(label);
 
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
-                    result.second = &def;
+                    result.second = entry.mID;
                 }
 
                 ImGui::PopID();
-
-            }
+                return false;
+            });
 
             ImGui::EndTable();
         }
