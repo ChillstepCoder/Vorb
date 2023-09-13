@@ -158,28 +158,32 @@ namespace ImguiUtil {
     class CustomSelectorPopup : public AssetPopup, public PopupFilterInterface {
     public:
         CustomSelectorPopup(const std::vector<nString>& names) : mNames(names), AssetPopup("Select", "", nullptr) {
-            mSortedIndices = sortIndexes<nString>(names, [&names](size_t i1, size_t i2) -> bool {
-                const nString& n1 = names[i1];
-                const nString& n2 = names[i2];
-                return std::lexicographical_compare(n1.begin(), n1.end(), n2.begin(), n2.end());
-            });
-            setFilter(names);
+            runSort();
+            setFilter(mNames);
         };
+        void setNames(const std::vector<nString>& names) {
+            mNames = names;
+            runSort();
+            setFilter(mNames);
+        }
         // Return true when closed
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
                 ImGui::Text("Select ");
                 updateAndRenderFilter();
                 for (size_t i : mSortedIndices) {
+                    ImGui::PushID(i);
                     if (mFilterStatus[i]) {
                         if (ImGui::Button("X")) {
                             result = i;
+                            ImGui::PopID();
                             ImGui::EndPopup();
                             return true;
                         }
                         ImGui::SameLine();
                         ImGui::Text(mNames[i].c_str());
                     }
+                    ImGui::PopID();
                 }
 
                 if (ImGui::Button("Cancel")) {
@@ -202,6 +206,14 @@ namespace ImguiUtil {
             return mNames;
         }
     protected:
+        void runSort() {
+            mSortedIndices = sortIndexes<nString>(mNames, [&](size_t i1, size_t i2) -> bool {
+                const nString& n1 = mNames[i1];
+                const nString& n2 = mNames[i2];
+                return std::lexicographical_compare(n1.begin(), n1.end(), n2.begin(), n2.end());
+            });
+        }
+
         std::vector<nString> mNames;
         std::vector<size_t> mSortedIndices;
         size_t result = UINT32_MAX;

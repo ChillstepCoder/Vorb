@@ -458,6 +458,7 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
         }
     }
     else if (mDuplicateObjectPopup) {
+        mDuplicateObjectPopup->setNames(getGlobalEmitterNames());
         if (mDuplicateObjectPopup->updateAndRender()) {
             duplicateGlobalEmitter(mDuplicateObjectPopup->getResultName());
             mDuplicateObjectPopup.reset();
@@ -466,24 +467,7 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
 }
 
 void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
-    std::vector<nString> emitterNames;
-    nString name; // Share memory
-    ParticleSystemRepository::get().forEachRegisteredAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef* def, const AssetRegistryEntry& entry) {
-        if (def) {
-            name = def->getName().toString();
-            for (auto& emitter : def->mEmitters) {
-                emitterNames.push_back(name + "." + emitter.mEmitterName);
-            }
-        }
-        else {
-            // Request asset load if needed
-            if (!mAssetHandleBundle.hasAssetHandle(entry.mID, repo.getAssetType())) {
-                mAssetHandleBundle.addAssetHandle(repo.getAssetHandle(entry.mID));
-            }
-        }
-        return false;
-    });
-    mDuplicateObjectPopup = std::make_unique<ImguiUtil::CustomSelectorPopup>(emitterNames);
+    mDuplicateObjectPopup = std::make_unique<ImguiUtil::CustomSelectorPopup>(getGlobalEmitterNames());
 }
 
 void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& emitterName) {
@@ -503,4 +487,25 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& em
         }
         return false;
     });
+}
+
+std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() {
+    std::vector<nString> emitterNames;
+    nString name; // Share memory
+    ParticleSystemRepository::get().forEachRegisteredAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef* def, const AssetRegistryEntry& entry) {
+        if (def) {
+            name = def->getName().toString();
+            for (auto& emitter : def->mEmitters) {
+                emitterNames.push_back(name + "." + emitter.mEmitterName);
+            }
+        }
+        else {
+            // Request asset load if needed
+            if (!mAssetHandleBundle.hasAssetHandle(entry.mID, repo.getAssetType())) {
+                mAssetHandleBundle.addAssetHandle(repo.getAssetHandle(entry.mID));
+            }
+        }
+        return false;
+    });
+    return emitterNames;
 }

@@ -150,9 +150,9 @@ protected:
         assert(!handle.isValid());
         handle.mAssetID = id;
         handle.mAssetType = getAssetType();
+        handle.mAssetName = mAssetRegistry[id].mName;
         ++(*mAssetRefCounts[handle.mAssetID]);
         if (mLoadedAssets[handle.mAssetID]->load()) {
-            handle.mAssetName = mAssets[id]->getName();
             handle.mLoadedAsset = mAssets[id].get();
             return;
         }

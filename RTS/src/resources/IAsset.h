@@ -40,6 +40,7 @@ struct AssetDescriptor {
     AssetType assetType = AssetType::COUNT;
 
     bool operator<(const AssetDescriptor& other) const {
-        return id < other.id && (assetType < other.assetType || id == other.id);
+        if (id != other.id) return id < other.id;
+        return assetType < other.assetType;
     }
 };

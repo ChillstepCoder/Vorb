@@ -32,6 +32,8 @@ private:
     void openDuplicateEmitterPopup();
     void duplicateGlobalEmitter(const nString& emitterName);
 
+    std::vector<nString> getGlobalEmitterNames();
+
     bool systemIsLoaded() const { return mSystemDefHandle != nullptr && mSystemDefHandle->isLoaded(); }
 
     AssetHandlePtr<ParticleSystemDef> mSystemDefHandle = nullptr;
