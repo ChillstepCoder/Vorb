@@ -242,8 +242,8 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 }
 
 
-AssetLoadRenderProcessFunc TextureRepository::getAssetLoadRenderProcessFunc() {
-    return ASSET_LOAD_RENDER_PROCESS_LAMBDA(assetID, assetDataPtr) {
+AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
 
         if (textureDef.ddsRs) {

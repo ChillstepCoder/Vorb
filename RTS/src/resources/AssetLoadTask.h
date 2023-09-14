@@ -1,20 +1,20 @@
 #pragma once
 
 class RenderContext;
+class AssetLoader;
 
-typedef std::function<void(AssetID, const vio::Path&, void*)> AssetLoadFunc;
-typedef std::function<void(RenderContext& renderContext, AssetID, void*)> AssetLoadRenderProcessFunc;
+typedef std::function<bool(AssetLoader&, AssetID, const vio::Path&, void*)> AssetLoadFunc;
 
-#define ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) [&](AssetID assetID, const vio::Path& filePath, void* assetDataPtr)
-#define ASSET_LOAD_RENDER_PROCESS_LAMBDA(assetID, assetDataPtr) [&](RenderContext& renderContext, AssetID assetID, void* assetDataPtr)
+// Return a new AssetHandleBundle if we are awaiting dependencies
+#define ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) [&](AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr) -> bool
 
 // TODO: Task pool?
 struct AssetLoadTask {
     AssetID mAssetID = INVALID_ASSET_ID;
     void* mAssetDataPtr = nullptr;
     vio::Path mFilePath;
-    AssetLoadFunc mLoadFunc;
-    AssetLoadRenderProcessFunc mRenderPostFunc = nullptr;
+    AssetLoadFunc mLoadFunc = nullptr;
+    AssetLoadFunc mRenderPostFunc = nullptr;
     std::atomic_bool* mIsFinishedFlagPtr = nullptr;
 };
 typedef std::unique_ptr<AssetLoadTask> AssetLoadTaskPtr;

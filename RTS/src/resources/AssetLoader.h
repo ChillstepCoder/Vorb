@@ -2,7 +2,11 @@
 
 #include "resources/AssetLoadTask.h"
 
+#include <boost/container/flat_map.hpp>
+
 DECL_VIO(class IOManager);
+
+class AssetHandleBundle;
 
 class AssetLoader
 {
@@ -10,6 +14,13 @@ public:
     AssetLoader();
     ~AssetLoader();
     VORB_NON_COPYABLE(AssetLoader);
+
+    void update();
+
+    void requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::unique_ptr<AssetHandleBundle>&& dependencies) {
+        std::lock_guard lock(mDependencyMapMutex);
+        mTasksWaitingDependencies.emplace(std::move(dependencies), std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath=filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr }));
+    }
 
     static void initInstance() {
         assert(!sInstance);
@@ -19,9 +30,14 @@ public:
         return *sInstance;
     }
 
-    void requestAssetLoad(AssetLoadFunc loadFunc, AssetLoadRenderProcessFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr) {
+    void requestAssetLoad(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr) {
         // TODO: Singleton pool
         mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{.mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath = filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr }));
+    }
+
+    void requestAssetLoad(std::unique_ptr<AssetLoadTask>&& task) {
+        // TODO: Singleton pool
+        mLoadQueue.enqueue(std::move(task));
     }
 
 protected:
@@ -33,8 +49,8 @@ protected:
     public:
         /// Creates the thread
         /// @param func: The function the thread should execute
-        WorkerThread(workerFunc func, AssetLoader* threadPool) {
-            thread = std::make_unique<std::thread>(func, threadPool);
+        WorkerThread(workerFunc func, AssetLoader* loader) {
+            thread = std::make_unique<std::thread>(func, loader);
         }
 
         ~WorkerThread() {
@@ -48,11 +64,14 @@ protected:
         std::unique_ptr<std::thread> thread; ///< The thread handle
     };
 
-    void workerThreadFunc();
+    void workerThreadFunc(AssetLoader* loader);
 
     std::atomic_bool mStop = false;
     moodycamel::BlockingConcurrentQueue<AssetLoadTaskPtr> mLoadQueue;
     std::vector<std::unique_ptr<WorkerThread>> mWorkers; ///< All the worker threads
+
+    std::mutex mDependencyMapMutex;
+    boost::container::flat_map<std::unique_ptr<AssetHandleBundle>, AssetLoadTaskPtr> mTasksWaitingDependencies;
 
     inline static std::unique_ptr<AssetLoader> sInstance = nullptr;
 };

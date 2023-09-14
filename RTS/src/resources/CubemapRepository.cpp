@@ -83,8 +83,8 @@ AssetLoadFunc CubemapRepository::getAssetLoadFunc() {
 }
 
 
-AssetLoadRenderProcessFunc CubemapRepository::getAssetLoadRenderProcessFunc() {
-    return ASSET_LOAD_RENDER_PROCESS_LAMBDA(assetID, assetDataPtr) {
+AssetLoadFunc CubemapRepository::getAssetLoadRenderProcessFunc() {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         CubemapDef& cubemapDef = *static_cast<CubemapDef*>(assetDataPtr);
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &cubemapDef.mTexture);
         for (int i = 0; i < 6; ++i) {

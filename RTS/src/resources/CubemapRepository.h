@@ -8,7 +8,7 @@ class CubemapRepository : public IAssetRepository<CubemapDef> {
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
-    AssetLoadRenderProcessFunc getAssetLoadRenderProcessFunc() override;
+    AssetLoadFunc getAssetLoadRenderProcessFunc() override;
 
     // Must be called sequentially 0-6
     bool initFace(CubemapDef& def, int face, const gli::texture2d& rs);
