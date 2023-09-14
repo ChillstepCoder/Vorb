@@ -3,7 +3,6 @@
 
 #include "world/ChunkID.h"
 #include "physics/PhysHitResult.h"
-#include "util/StrToken.h"
 #include "tile/TileGrass.h"
 
 class Camera3D;

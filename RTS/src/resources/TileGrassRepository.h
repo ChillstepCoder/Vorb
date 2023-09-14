@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tile/TileGrass.h"
-#include "util/StrToken.h"
 
 #include "rendering/material/MaterialData.h"
 

@@ -831,6 +831,9 @@
     <ClCompile Include="src\resources\CubemapRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\IAsset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2019,6 +2022,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\CubemapRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\asset\AssetHandleBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\asset\AssetHandleBundle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

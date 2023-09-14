@@ -23,6 +23,8 @@
 #include "rendering/material/BrdfLUT.h"
 #include "rendering/model/ModelUtil.h"
 
+#include "definitions/rendering/CubemapDef.h"
+
 #include "camera/SimpleCamera.h"
 
 std::unique_ptr<vg::GBuffer> IEditorViewportPanel::sGBuffers[3];

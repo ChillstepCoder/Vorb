@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tile/Tile.h"
-#include "util/StrToken.h"
 
 DECL_VIO(class IOManager);
 

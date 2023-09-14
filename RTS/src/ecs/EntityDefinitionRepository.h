@@ -1,7 +1,6 @@
 #pragma once
 
 #include "component/ComponentTypes.h"
-#include "util/StrToken.h"
 
 DECL_VIO(class IOManager);
 

@@ -2,7 +2,6 @@
 
 #include "city/CityConst.h"
 #include "city/BuildingGrammar.h"
-#include "util/StrToken.h"
 
 // TODO: Move to data?
 enum class BuildingFunction : ui16 {

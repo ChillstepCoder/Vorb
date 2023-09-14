@@ -10,5 +10,5 @@ public:
     using T::T;
 };
 
-template <IsAssetType T>
+template <typename T>
 using ExclusiveCacheLinePtr = std::unique_ptr<ExclusiveCacheLine<T>>;

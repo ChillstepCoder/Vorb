@@ -2,7 +2,6 @@
 
 #include "tile/TileHandle.h"
 #include "world/WorldType.h"
-#include "util/StrToken.h"
 #include "network/WorldNetMode.h"
 
 #include "generation/WorldGeneratorType.h"

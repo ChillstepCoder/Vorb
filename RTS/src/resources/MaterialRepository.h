@@ -1,5 +1,6 @@
 #pragma once
 
+#include "resources/IAssetRepository.h"
 #include "rendering/material/MaterialData.h"
 #include "rendering/texture/GLTexture.h"
 
@@ -8,38 +9,38 @@ DECL_VIO(class IOManager);
 class TextureRepository;
 class MaterialTextureGenerator;
 
-class MaterialRepository
-{
+class MaterialRepository : public IAssetRepository<MaterialDef> {
     friend class TileEditorPanel;
 public:
-    MaterialRepository(vio::IOManager& ioManager);
+    ASSET_REPOSITORY_COMMON_CODE(MaterialRepository, MaterialDef, AssetType::Material)
     ~MaterialRepository();
-
-    bool loadMaterial(const vio::Path& filePath, TextureRepository& textureRepository);
 
     const MaterialGpuData& getMaterialGpuData(MaterialID materialId) const;
     MaterialGpuData& getMutableMaterialGpuData(MaterialID materialId);
-    const MaterialGpuData& getMaterialGpuData(const nString& materialName) const;
-    MaterialGpuData& getMutableMaterialGpuData(const nString& materialName);
-    MaterialID getMaterialId(const nString& materialName) const;
-    MaterialHandle getMutableMaterialHandle(const nString& materialName);
-    const MaterialDesc& getMaterialDesc(const nString& materialName) const;
+    const MaterialGpuData& getMaterialGpuData(StrToken materialName) const;
+    MaterialGpuData& getMutableMaterialGpuData(StrToken materialName);
+    MaterialID getMaterialId(StrToken materialName) const;
+    MaterialHandle getMutableMaterialHandle(StrToken materialName);
+    const MaterialDesc& getMaterialDesc(StrToken materialName) const;
     const MaterialDesc& getMaterialDesc(MaterialID materialId) const;
 
-    void uploadMaterialData();
+    void uploadMaterialData(); // TODO: DO this lazily as new things are added
     void bindMaterialBuffer() const;
 
+protected:
+    virtual void initInternal() override;
+    AssetLoadFunc getAssetLoadFunc() override;
+    AssetLoadFunc getAssetLoadRenderProcessFunc() override;
+    void onRegisteredAsset(AssetID id) override;
 private:
 
     std::vector<MaterialDesc> mMaterialDescs;
     std::vector<MaterialGpuData> mMaterialGpuData;
-    std::map<nString, GLTexture> mGeneratedNormalTextures;
-    std::map<nString, GLTexture> mGeneratedAOMetallicRoughnessTextures;
-    std::map<nString, MaterialID> mMaterialIDLookup;
+    std::map<StrToken, GLTexture> mGeneratedNormalTextures;
+    std::map<StrToken, GLTexture> mGeneratedAOMetallicRoughnessTextures;
+    std::map<StrToken, MaterialID> mMaterialIDLookup;
 
-    vio::IOManager& mIoManager;
     std::unique_ptr<MaterialTextureGenerator> mMaterialTextureGenerator;
-
     GLBuffer mMaterialDataBuffer;
 };
 

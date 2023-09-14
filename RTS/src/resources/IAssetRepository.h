@@ -1,13 +1,13 @@
 #pragma once
 
-#include "resources/IAsset.h"
 #include "util/ExclusiveCacheLine.h"
 
 #include "resources/AssetLoadTask.h"
 #include "resources/AssetLoader.h"
 
-class AssetLoader;
+#include "resources/asset/AssetHandleBundle.h"
 
+class AssetLoader;
 
 template <IsAssetType T>
 class AssetHandle;
@@ -25,27 +25,6 @@ struct AssetRegistryEntry {
     //bool mFinishedLoading = false; // Or refcount needed to ensure we dont destroy this while
     // it is being loaded once we implement deallocation of assets
 };
-
-class AssetHandleBase {
-public:
-    friend class IAssetRepositoryBase;
-
-    AssetHandleBase() = default;
-    virtual ~AssetHandleBase() = default;
-
-    AssetID getAssetID() const { return mAssetID; }
-
-    bool isValid() const { return mAssetName.isValid(); }
-    virtual bool isLoaded() = 0;
-
-    AssetDescriptor getDescriptor() const { return AssetDescriptor{ .id = mAssetID, .assetType = mAssetType }; }
-
-protected:
-    StrToken mAssetName;
-    AssetID mAssetID = INVALID_ASSET_ID;
-    AssetType mAssetType = AssetType::COUNT;
-};
-using AssetHandleBasePtr = std::shared_ptr<AssetHandleBase>;
 
 class IAssetRepositoryBase {
 public:
@@ -179,6 +158,7 @@ public:
         mAssetRefCounts.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_int>>(0));
         mAssets.emplace_back(std::make_unique<T>(name, id));
         mLoadedAssets.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_bool>>(false));
+        onRegisteredAsset(id);
         return id;
     }
 
@@ -223,19 +203,27 @@ public:
 
 private:
     void loadAssetAsync(const AssetRegistryEntry& assetEntry) override {
-        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get());
+        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get());
     }
 
 protected:
+    void loadAssetDependencies(AssetID id, AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc) {
+        const AssetRegistryEntry& assetEntry = mAssetRegistry[id];
+        AssetHandleBundle* dependencies = mAssets[id]->getDependencies();
+        if (!dependencies) panic("Tried to add null dependencies to loadAssetDependencies");
+        AssetLoader::getInstance().requestAssetLoadWithDependencies(loadFunc, renderPostFunc, id, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), dependencies);
+    }
+
     virtual void initInternal() {};
     virtual AssetLoadFunc getAssetLoadFunc() = 0;
-    virtual AssetLoadRenderProcessFunc getAssetLoadRenderProcessFunc() {
+    virtual AssetLoadFunc getAssetLoadRenderProcessFunc() {
         return nullptr;
     }
+    virtual void onRegisteredAsset(AssetID id) {};
 
     void fillAsset(AssetHandleBase& handle) override {
         AssetHandle<T>& typedHandle = (AssetHandle<T>&)handle;
-        typedHandle.mLoadedAsset = mAssets[handle.mAssetID].get();
+        typedHandle.mLoadedAsset = mAssets[typedHandle.mAssetID].get();
     }
     AssetHandleBasePtr makeAssetHandle() {
         return std::make_shared<AssetHandle<T>>();
@@ -315,42 +303,3 @@ AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(AssetID id) {
     aquireAssetHandle(id, *handle);
     return handle;
 }
-
-class AssetHandleBundle {
-public:
-    inline bool hasAssetHandle(AssetDescriptor desc) const {
-        return mContainedAssetDescriptors.find(desc) != mContainedAssetDescriptors.end();
-    }
-    inline bool hasAssetHandle(AssetID id, AssetType assetType) const {
-        return mContainedAssetDescriptors.find(AssetDescriptor{ .id = id, .assetType = assetType }) != mContainedAssetDescriptors.end();
-    }
-    void addAssetHandle(std::shared_ptr<AssetHandleBase> handle) {
-        assert(!hasAssetHandle(handle->getDescriptor()));
-        mContainedAssetDescriptors.emplace(handle->getDescriptor());
-        if (handle->isLoaded()) {
-            ++mLoadedCount;
-            mHandles.emplace_back(std::make_pair(true, std::move(handle)));
-        }
-        else {
-            mHandles.emplace_back(std::make_pair(false, std::move(handle)));
-        }
-    }
-
-    bool areAllAssetsLoaded() {
-        if (mLoadedCount == mHandles.size()) return true;
-        for (auto&& it : mHandles) {
-            if (!it.first) {
-                if (it.second->isLoaded()) {
-                    it.first = true;
-                    ++mLoadedCount;
-                }
-            }
-        };
-        return mLoadedCount == mHandles.size();
-    }
-
-protected:
-    std::set<AssetDescriptor> mContainedAssetDescriptors;
-    std::vector<std::pair<bool /*loaded*/, std::shared_ptr<AssetHandleBase>>> mHandles;
-    int mLoadedCount = 0;
-};

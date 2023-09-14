@@ -2,6 +2,7 @@
 
 constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
 
+#include "resources/IAsset.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
 enum MaterialFlags {
@@ -35,6 +36,28 @@ static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded 
 struct MaterialDesc {
     MaterialID id = INVALID_MATERIAL_ID;
     MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
+};
+
+class MaterialDef : public IAsset {
+public:
+    StrToken albedoTexture;
+    StrToken normalTexture;
+    StrToken ambientOcclusionTexture;
+    StrToken displacementTexture;
+    StrToken roughnessTexture;
+    StrToken metalTexture;
+    MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
+    vg::SamplerStateType samplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
+    f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+    f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    // UV anisotropic roughness (isotropic lighting models use only the first value). ZW values are ignored
+    f32v2 roughness = { 1.0f, 1.0f };
+    f32 transparencyFactor = 1.0f; // UNUSED
+    f32 alphaTest = 0.01f;
+    f32 metallicFactor = 0.0f;
+    bool castsShadow = true;
+    bool receivesShadow = true;
+    bool flipV = false;
 };
 
 struct MaterialHandle {

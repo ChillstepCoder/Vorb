@@ -1,7 +1,6 @@
 #pragma once
 
 #include "network/NetworkConst.h"
-#include "util/StrToken.h"
 
 // ==============================================
 // =           MESSAGE TYPES                    =

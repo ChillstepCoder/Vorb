@@ -6,6 +6,8 @@
 #include "rendering/RenderThreadTasks.h"
 #include <Vorb/io/IOManager.h>
 
+#include "resources/asset/AssetHandleBundle.h"
+
 AssetLoader::AssetLoader() {
     size_t numWorkerThreads = 2;
     /// Allocate all threads
@@ -25,7 +27,7 @@ AssetLoader::~AssetLoader() {
 
     // Tell all threads to wake up and close, as they are currently hanging on a semaphore
     for (size_t i = 0; i < mWorkers.size(); i++) {
-        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mLoadFunc = [](AssetID, const vio::Path&, void*) { return; }}));
+        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mLoadFunc = [](AssetLoader&, AssetID, const vio::Path&, void*) { return false; }}));
     }
 
     // Join all threads
@@ -40,12 +42,19 @@ void AssetLoader::update() {
     for (auto&& it = mTasksWaitingDependencies.begin(); it != mTasksWaitingDependencies.end();) {
         if (it->first->areAllAssetsLoaded()) {
             requestAssetLoad(std::move(it->second));
+            it->first->setLockedByAssetLoader(false);
             it = mTasksWaitingDependencies.erase(it);
         }
         else {
             ++it;
         }
     }
+}
+
+void AssetLoader::requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, AssetHandleBundle* dependencies) {
+    dependencies->setLockedByAssetLoader(true);
+    std::lock_guard lock(mDependencyMapMutex);
+    mTasksWaitingDependencies.emplace(dependencies, std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID = assetId, .mAssetDataPtr = assetData, .mFilePath = filePath, .mLoadFunc = loadFunc, .mRenderPostFunc = renderPostFunc, .mIsFinishedFlagPtr = isFinishedFlagPtr }));
 }
 
 void processRenderFunc(AssetLoadTaskPtr& task) {

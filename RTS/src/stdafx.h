@@ -65,6 +65,10 @@ typedef f64 TimeSpanSec;
 
 extern bool IS_SHUTTING_DOWN;
 
+// **************** Networking *****************
+#define NET_SERIALIZE_DECL() \
+template <typename Stream> bool netSerialize(Stream& stream);
+
 // Utils
 #include "util/CommonUtil.h"
 #include "util/MathDefines.h"
@@ -74,6 +78,7 @@ extern bool IS_SHUTTING_DOWN;
 #include "util/Cartesian.h"
 #include "util/CubeFacing.h"
 #include "util/ThreadIDs.h"
+#include "util/StrToken.h"
 
 #include "instrumentation/instrumentor.h"
 
@@ -98,10 +103,6 @@ extern bool IS_SHUTTING_DOWN;
 
 // **************** FPS *****************
 extern float sFps;
-
-// **************** Networking *****************
-#define NET_SERIALIZE_DECL() \
-template <typename Stream> bool netSerialize(Stream& stream);
 
 // **************** LOGGING *****************
 #include <Vorb/logging/Logger.h>

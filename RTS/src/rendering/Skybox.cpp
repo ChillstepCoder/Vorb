@@ -12,6 +12,8 @@
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 
+#include "definitions/rendering/CubemapDef.h"
+
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
@@ -19,7 +21,7 @@ Skybox::~Skybox() {
 
 }
 
-void Skybox::init(const MaterialShader* material, const Cubemap* skyTexture) {
+void Skybox::init(const MaterialShader* material, const CubemapDef* skyTexture) {
     constexpr unsigned NUM_VERTS = 4 * 6;
     constexpr float RADIUS = 1.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
@@ -177,6 +179,6 @@ void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel)
     glDisable(GL_DEPTH_CLAMP);
 }
 
-void Skybox::setCubemap(const Cubemap* skyTexture) {
+void Skybox::setCubemap(const CubemapDef* skyTexture) {
     mSkyTexture = skyTexture;
 }

@@ -39,7 +39,6 @@ public:
 
     // TODO: These are all obsolete? Since each is a singleton?
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
-    MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
     BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
@@ -72,7 +71,6 @@ private:
 
     // Tasks
     // TODO: ResourceLoader?
-    std::vector<vio::Path> mMaterialFiles;
     std::vector<vio::Path> mMaterialShaderFiles;
     std::vector<vio::Path> mComputeFiles;
     std::vector<vio::Path> mTileFiles;
@@ -92,7 +90,6 @@ private:
     std::vector<vio::Path> mFontFiles;
 
     std::unique_ptr<MaterialShaderManager> mMaterialManager;
-    std::unique_ptr<MaterialRepository> mMaterialRepository;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<ItemRepository> mItemRepository;

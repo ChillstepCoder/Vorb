@@ -56,6 +56,7 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
     REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
     REGISTER_ASSET_REPO(BrushRepository, AssetType::Brush);
+    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Material);
 
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager);
     mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
@@ -440,7 +441,11 @@ void ResourceManager::preloadFiles() {
     }
 
     LOG_INFO("Preloading assets...");
-    while (!mPreloadAssetsBundle.areAllAssetsLoaded()) Sleep(10);
+    AssetLoader& loader = AssetLoader::getInstance();
+    while (!mPreloadAssetsBundle.areAllAssetsLoaded()) {
+        loader.update();
+        Sleep(10);
+    }
     LOG_INFO("Done");
 
     // TODO: Post startup!

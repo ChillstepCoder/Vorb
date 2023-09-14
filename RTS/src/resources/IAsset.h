@@ -6,27 +6,30 @@
 #define DEFAULT_ASSET_CONSTRUCTOR(Type) \
     Type(StrToken name, AssetID id) : IAsset(name, id) {};
 
-#include "util/StrToken.h"
-
 enum class AssetType : ui8 {
     ParticleSystem,
     Texture,
     Cubemap,
     Brush,
+    Material,
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::ParticleSystem, "particle_system"sv },
     pair{ AssetType::Texture, "texture"sv },
     pair{ AssetType::Cubemap, "cubemap"sv },
-    pair{ AssetType::Brush, "brush"sv }
+    pair{ AssetType::Brush, "brush"sv },
+    pair{ AssetType::Material, "material"sv }
 )
-static_assert(e_count(AssetType) == 4);
+static_assert(e_count(AssetType) == 5);
+
+class AssetHandleBundle;
+class AssetHandleBase;
 
 class IAsset {
 public:
-    IAsset(StrToken name, AssetID id) : mName(name), mID(id) {};
-    virtual ~IAsset() = default;
+    IAsset(StrToken name, AssetID id);;
+    virtual ~IAsset();
 
     VORB_MOVABLE(IAsset);
 
@@ -37,8 +40,11 @@ public:
 
     bool isDirty() const { return mDirty; }
     void setDirty(bool val) const { mDirty = val; }
+    AssetHandleBundle* getDependencies() const { return mDependencies.get(); }
+    void addDependency(std::shared_ptr<AssetHandleBase> handle);
 
 protected:
+    std::unique_ptr<AssetHandleBundle> mDependencies;
     StrToken mName;
     AssetID mID = INVALID_ASSET_ID;
     mutable bool mDirty = false;

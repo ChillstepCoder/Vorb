@@ -413,6 +413,7 @@
     <ClCompile Include="src\resources\CubemapRepository.cpp" />
     <ClCompile Include="src\resources\FishRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
+    <ClCompile Include="src\resources\IAsset.cpp" />
     <ClCompile Include="src\resources\IAssetRepository.cpp" />
     <ClCompile Include="src\resources\MaterialRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
@@ -763,6 +764,8 @@
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\AssetLoader.h" />
     <ClInclude Include="src\resources\AssetLoadTask.h" />
+    <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
+    <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />

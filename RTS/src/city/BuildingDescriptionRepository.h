@@ -2,7 +2,6 @@
 
 #include "Building.h"
 #include "definitions/BuildingDef.h"
-#include "util/StrToken.h"
 
 DECL_VIO(class IOManager);
 

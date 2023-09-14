@@ -20,19 +20,19 @@ class TextureRepository : public IAssetRepository<TextureDef> {
         const gli::texture2d& textureData,
         vg::TextureTarget textureTarget,
         const vg::SamplerState& samplerState,
-        i32 maxMipLevels);
+        i32 maxMipLevels = INT_MAX);
     GLTexture uploadDDSTexture(
         const gli::texture2d& textureData,
         vg::TextureTarget textureTarget,
         const vg::SamplerState& samplerState,
-        i32 maxMipLevels);
+        i32 maxMipLevels = INT_MAX);
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save textures yet"); }
 
 protected:
     void initInternal() override;
     AssetLoadFunc getAssetLoadFunc() override;
-    AssetLoadRenderProcessFunc getAssetLoadRenderProcessFunc() override;
+    AssetLoadFunc getAssetLoadRenderProcessFunc() override;
 private:
     std::unique_ptr<MaterialTextureGenerator> mNormalMapGenerator;
     nString mDataBuffer;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "util/StrToken.h"
-
 class StaticPhysicsMeshBuilder;
 class TileContainer;
 class IWorld;

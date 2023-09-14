@@ -1,6 +1,5 @@
 #pragma once
 #include "ecs/component/ComponentDefinition.h"
-#include "util/StrToken.h"
 
 #include "ecs/component/FishingComponent.h"
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ecs/factory/EntityType.h"
-#include "util/StrToken.h"
 
 class IEntityComponentSystem;
 class ResourceManager;

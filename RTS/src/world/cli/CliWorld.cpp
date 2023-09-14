@@ -8,6 +8,8 @@
 
 #include "physics/PhysicsWorld.h"
 
+#include "resources/AssetLoader.h"
+
 CliWorld::CliWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType) : IWorld(widthTiles, chunkGrid, heightmapGrid, generatorType) {
     mEcs = std::make_unique<CliEntityComponentSystem>(*this);
 }
@@ -24,6 +26,9 @@ void CliWorld::tick(f32 elapsedSec) {
 
     // Update services
     Services::Threadpool::ref().mainThreadUpdate();
+
+    // Update pending assets
+    AssetLoader::getInstance().update();
 
     // Update any pending updates if pathfinding is idle
     // TODO: REMOVE

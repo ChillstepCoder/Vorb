@@ -17,10 +17,7 @@ public:
 
     void update();
 
-    void requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::unique_ptr<AssetHandleBundle>&& dependencies) {
-        std::lock_guard lock(mDependencyMapMutex);
-        mTasksWaitingDependencies.emplace(std::move(dependencies), std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath=filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr }));
-    }
+    void requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, AssetHandleBundle* dependencies);
 
     static void initInstance() {
         assert(!sInstance);
@@ -71,7 +68,7 @@ protected:
     std::vector<std::unique_ptr<WorkerThread>> mWorkers; ///< All the worker threads
 
     std::mutex mDependencyMapMutex;
-    boost::container::flat_map<std::unique_ptr<AssetHandleBundle>, AssetLoadTaskPtr> mTasksWaitingDependencies;
+    boost::container::flat_map<AssetHandleBundle*, AssetLoadTaskPtr> mTasksWaitingDependencies;
 
     inline static std::unique_ptr<AssetLoader> sInstance = nullptr;
 };
