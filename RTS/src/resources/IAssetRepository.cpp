@@ -34,3 +34,11 @@ bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const vio::Pat
     asset.setDirty(false);
     return true;
 }
+
+nString IAssetRepositoryBase::readFileToString(const vio::Path& path) {
+    nString fileData;
+    if (!mIoManager.readFileToString(path, fileData)) {
+        panic("Asset repository failed to read file {}", path.getCString());
+    }
+    return fileData;
+}

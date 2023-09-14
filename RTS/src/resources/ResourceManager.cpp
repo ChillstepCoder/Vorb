@@ -17,6 +17,7 @@
 #include "resources/AnimMachineRepository.h"
 #include "resources/SkillRepository.h"
 #include "resources/TextureRepository.h"
+#include "resources/CubemapRepository.h"
 #include "resources/TileRepository.h"
 #include "resources/TileGrassRepository.h"
 #include "resources/FontRepository.h"
@@ -41,26 +42,33 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
     kt.addValue("frag", keg::Value::basic(offsetof(ShaderData, frag), keg::BasicType::STRING));
 }
 
+#define REGISTER_ASSET_REPO(RepoClass, AType) \
+    if (mAssetRepositories.size() < (size_t)AType) mAssetRepositories.resize((size_t)AType); \
+    RepoClass::initInstance(*mIoManager); \
+    mAssetRepositories[(size_t)AType] = &RepoClass::get();
+
 ResourceManager::ResourceManager() {
     
     mIoManager = std::make_unique<vio::IOManager>();
-    AssetLoader::initInstance(*mIoManager);
+    AssetLoader::initInstance();
 
-    mTextureRepository = std::make_unique<TextureRepository>(*mIoManager);
-    mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository);
+    REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
+    REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
+    REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
+    REGISTER_ASSET_REPO(BrushRepository, AssetType::Brush);
+
+    mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager);
     mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mFishRepository = std::make_unique<FishRepository>(*mIoManager);
-    ParticleSystemRepository::initInstance(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mAnimationRepository = std::make_unique<AnimationRepository>();
     mRigRepository = std::make_unique<RigRepository>(*mIoManager);
     mAnimMachineRepository = std::make_unique<AnimMachineRepository>(*mIoManager, *mRigRepository);
     mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mRigRepository);
-    mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
     mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
     mFontRepository = std::make_unique<FontRepository>();
     mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
@@ -90,7 +98,6 @@ void ResourceManager::gatherFiles() {
     PreciseTimer timer;
 
     // Make sure we clear all vectors each gather
-    mBrushFiles.clear();
     mMaterialShaderFiles.clear();
     mMaterialFiles.clear();
     mTileFiles.clear();
@@ -113,6 +120,9 @@ void ResourceManager::gatherFiles() {
     assert(mResourceRoot.isValid());
 
     gatherRecursive(mResourceRoot);
+
+    preloadFiles();
+
     mHasGathered = true;
 
     LOG_INFO("Gathered files in {:.4} ms", timer.stop());
@@ -123,18 +133,11 @@ void ResourceManager::loadFiles() {
 
     PreciseTimer totalTimer;
 
-    { // Brushes
-        ScopedTimer timer("Brush load");
-        for (auto&& entry : mBrushFiles) {
-             mBrushRepository->loadBrush(entry, *mTextureRepository);
-        }
-    }
-
     // Load Materials
     {
         ScopedTimer timer("Material load");
         for (auto&& entry : mMaterialFiles) {
-            mMaterialRepository->loadMaterial(entry, *mTextureRepository);
+            mMaterialRepository->loadMaterial(entry);
         };
         mMaterialRepository->uploadMaterialData();
         
@@ -144,7 +147,7 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("Item load");
         for (auto&& entry : mItemFiles) {
-            mItemRepository->loadItemFile(entry, *mTextureRepository);
+            mItemRepository->loadItemFile(entry);
         }
     }
 
@@ -171,13 +174,6 @@ void ResourceManager::loadFiles() {
             mMaterialManager->loadComputeShader(entry);
         };
     }
-
-    { // Load cubemaps
-        for (auto&& entry : mCubemapFiles) {
-            mTextureRepository->loadCubemap(entry);
-        }
-    }
-
 
     // Load Animations
     {
@@ -215,7 +211,7 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("Fish load");
         for (auto&& entry : mFishFiles) {
-            mFishRepository->loadFishFile(entry, *mModelRepository, *mItemRepository, *mTextureRepository);
+            mFishRepository->loadFishFile(entry, *mModelRepository, *mItemRepository);
         }
     }
 
@@ -311,6 +307,10 @@ void ResourceManager::generateNormalMaps() {
     glTextureBarrier();
 }
 
+void ResourceManager::addAssetToBundle(AssetHandleBundle& bundle, StrToken assetName, AssetType assetType) {
+    bundle.addAssetHandle(mAssetRepositories[e_cast(assetType)]->getAssetHandleBase(assetName));
+}
+
 void ResourceManager::gatherRecursive(const vio::Path& folderPath)
 {
     vio::Directory directory;
@@ -334,11 +334,14 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".png")) {
             if (vio::containsSubpath(entry, "_brushes")) {
-                mBrushFiles.emplace_back(entry);
+                BrushRepository::get().registerAsset(entry);
+            }
+            else {
+                TextureRepository::get().registerAsset(entry);
             }
         }
         else if (fileHasExtension(entry, ".cube")) {
-            mCubemapFiles.emplace_back(entry);
+            CubemapRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".room")) {
             mRoomFiles.emplace_back(entry);
@@ -413,4 +416,32 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mTileGrassFiles.emplace_back(entry);
         }
     }
+}
+
+void ResourceManager::preloadFiles() {
+    vio::Path preloadPath = mResourceRoot / vio::Path("assets.preload");
+    nString data;
+    if (!mIoManager->readFileToString(preloadPath, data)) {
+        panic("assets.preload does not exist");
+    }
+    ryml::Tree tree = YmlSerializer::parseFileData(data);
+    ryml::ConstNodeRef root = tree.crootref();
+    ryml::ConstNodeRef startupSeq = root["startup"];
+
+    StrToken assetName;
+    AssetType assetType;
+    for (ryml::ConstNodeRef child : startupSeq.children()) {
+        if (child.num_children() != 2) {
+            panic("Malformed entry in assets.preload::startup");
+        }
+        child.child(0) >> assetName;
+        child.child(1) >> assetType;
+        addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
+    }
+
+    LOG_INFO("Preloading assets...");
+    while (!mPreloadAssetsBundle.areAllAssetsLoaded()) Sleep(10);
+    LOG_INFO("Done");
+
+    // TODO: Post startup!
 }

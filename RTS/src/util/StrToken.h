@@ -2,6 +2,8 @@
 
 #include "util/StrtokenEncodeTable.h"
 
+#include "serialization/YmlSerializer.h"
+
 constexpr ui64 strTokenEncodeChar(const char c) {
     return (ui64)sStrtokenEncodeTable[c];
 }
@@ -97,4 +99,18 @@ namespace std {
             return hash<ui64>{}(token.mTokenLow) ^ (hash<ui64>{}(token.mTokenHigh));
         }
     };
+}
+
+YML_WRITE_DEF(StrToken) {
+    ryml::NodeRef& nr = *n;
+    nr << o.toString();
+}
+YML_READ_DEF(StrToken) {
+    nString str;
+    if (str.length() > MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
+        return false;
+    };
+    n >> str;
+    *target = StrToken(str);
+    return true;
 }

@@ -290,11 +290,11 @@ void WorldEditorPanel::renderMenuBar() const {
 void WorldEditorPanel::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
     if (mCurrentBrushSettings) {
         if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
-            const std::vector<Brush>& brushes = brushRepo.getBrushes();
+            const std::vector<BrushDef>& brushes = brushRepo.getBrushes();
             ImGui::Indent();
             ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
             for (size_t i = 0; i < brushes.size(); ++i) {
-                const Brush& brush = brushes[i];
+                const BrushDef& brush = brushes[i];
                 ImGui::TableNextColumn();
                 ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
                 if (ImGui::RadioButton(brush.name.c_str(), mCurrentBrushSettings->brushId == i)) {

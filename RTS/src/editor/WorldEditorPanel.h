@@ -7,7 +7,7 @@
 #include "tile/TileGrass.h"
 
 class Camera3D;
-class Brush;
+class BrushDef;
 class BrushRepository;
 class IWorld;
 
@@ -48,7 +48,7 @@ enum class BuildingEditState {
 };
 
 struct BrushSettings {
-    const Brush* activeBrush;
+    const BrushDef* activeBrush;
     ui32 brushId;
     f32 brushSize;
     f32 brushStrength;

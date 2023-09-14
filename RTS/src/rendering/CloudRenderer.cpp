@@ -11,7 +11,7 @@
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/StencilBufferIDs.h"
-#include "rendering/texture/Cubemap.h"
+#include "definitions/rendering/CubemapDef.h"
 #include "rendering/material/BrdfLUT.h"
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -40,7 +40,7 @@ CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
     checkGlError("CloudRenderer GBuffer init");
 }
 
-void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const Cubemap& skyCubeMap) {
+void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const CubemapDef& skyCubeMap) {
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::CLOUD_OR_WATER), 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -127,7 +127,7 @@ void CloudRenderer::blurNormals() {
     }
 }
 
-void CloudRenderer::renderToOutput(const Cubemap& skyCubeMap)
+void CloudRenderer::renderToOutput(const CubemapDef& skyCubeMap)
 {
     //vg::sBlendStates.REPLACE.set();
     ui32 textureUnit = 0;

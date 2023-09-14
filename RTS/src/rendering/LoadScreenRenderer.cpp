@@ -94,7 +94,7 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
 }
 
 void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, bool setActive) {
-    TextureRepository& textureRepo = Services::ResourceManager::ref().getTextureRepository();
+    TextureRepository& textureRepo = TextureRepository::get();
     mBackgroundTextures.push_back(textureRepo.loadTexture(path, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP, false)->texture.getHandle());
     if (setActive) {
         mCurrentBackgroundTexture = mBackgroundTextures.size() - 1;

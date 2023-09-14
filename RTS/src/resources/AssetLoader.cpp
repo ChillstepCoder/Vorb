@@ -2,8 +2,9 @@
 #include "AssetLoader.h"
 
 #include <Vorb/io/IOManager.h>
+#include "rendering/RenderThreadTasks.h"
 
-AssetLoader::AssetLoader(vio::IOManager& ioManager) : mIOManager(ioManager) {
+AssetLoader::AssetLoader() {
     size_t numWorkerThreads = 2;
     /// Allocate all threads
     mWorkers.resize(numWorkerThreads);
@@ -38,12 +39,33 @@ void AssetLoader::workerThreadFunc() {
     while (!mStop.load()) {
         // Note that threads will be stuck waiting here until the process ends
         mLoadQueue.wait_dequeue(task);
-        if (!mIOManager.readFileToString(task->mFilePath, dataStr)) {
-            panic("Asset loader thread failed to read file {}", task->mFilePath.getCString());
+        task->mLoadFunc(task->mAssetID, task->mFilePath, task->mAssetDataPtr);
+        if (task->mRenderPostFunc) {
+            // TODO: Singleton pool?
+            struct PostData {
+                AssetID mAssetID = INVALID_ASSET_ID;
+                void* mAssetDataPtr = nullptr;
+                AssetLoadRenderProcessFunc mRenderPostFunc = nullptr;
+                std::atomic_bool* mIsFinishedFlagPtr = nullptr;
+            };
+            PostData* postData = new PostData();
+            postData->mAssetID = task->mAssetID;
+            postData->mAssetDataPtr = task->mAssetDataPtr;
+            postData->mRenderPostFunc = std::move(task->mRenderPostFunc);
+            postData->mIsFinishedFlagPtr = task->mIsFinishedFlagPtr;
+            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& renderContext, void* vPathHandle) {
+                PostData* postData = static_cast<PostData*>(vPathHandle);
+                postData->mRenderPostFunc(renderContext, postData->mAssetID, postData->mAssetDataPtr);
+                if (postData->mIsFinishedFlagPtr) {
+                    *postData->mIsFinishedFlagPtr = true;
+                }
+                delete postData;
+            }, postData);
         }
-        task->mLoadFunc(task->mAssetID, task->mFilePath, std::string_view(dataStr.data(), dataStr.length()), task->mAssetDataPtr);
-        if (task->mIsFinishedFlagPtr) {
-            *task->mIsFinishedFlagPtr = true;
+        else {
+            if (task->mIsFinishedFlagPtr) {
+                *task->mIsFinishedFlagPtr = true;
+            }
         }
         task.reset();
         dataStr.clear();

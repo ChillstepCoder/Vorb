@@ -254,6 +254,7 @@
     <ClCompile Include="src\definitions\BuildingDef.cpp" />
     <ClCompile Include="src\definitions\BusinessDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
+    <ClCompile Include="src\definitions\rendering\CubemapDef.cpp" />
     <ClCompile Include="src\definitions\RigDef.cpp" />
     <ClCompile Include="src\definitions\SkillDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
@@ -394,7 +395,6 @@
     <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\GameRenderStateManager.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
-    <ClCompile Include="src\rendering\texture\Cubemap.cpp" />
     <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
     <ClCompile Include="src\rendering\texture\TextureConvert.cpp" />
     <ClCompile Include="src\rendering\TileContainerMeshData.cpp" />
@@ -410,6 +410,7 @@
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\AssetLoader.cpp" />
+    <ClCompile Include="src\resources\CubemapRepository.cpp" />
     <ClCompile Include="src\resources\FishRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
     <ClCompile Include="src\resources\IAssetRepository.cpp" />
@@ -547,6 +548,8 @@
     <ClInclude Include="src\definitions\FishDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
     <ClInclude Include="src\definitions\ParticleSystemDef.h" />
+    <ClInclude Include="src\definitions\rendering\CubemapDef.h" />
+    <ClInclude Include="src\definitions\rendering\TextureDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
     <ClInclude Include="src\definitions\SkillDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
@@ -741,7 +744,6 @@
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\StencilBufferIDs.h" />
     <ClInclude Include="src\rendering\tasks\MeshTask.inl" />
-    <ClInclude Include="src\rendering\texture\Cubemap.h" />
     <ClInclude Include="src\rendering\texture\GLTexture.h" />
     <ClInclude Include="src\rendering\texture\TextureConvert.h" />
     <ClInclude Include="src\rendering\texture\TextureHelpers.h" />
@@ -761,6 +763,7 @@
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\AssetLoader.h" />
     <ClInclude Include="src\resources\AssetLoadTask.h" />
+    <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\IAsset.h" />

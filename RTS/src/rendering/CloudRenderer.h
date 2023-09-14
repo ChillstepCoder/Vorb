@@ -3,7 +3,7 @@
 class CloudMeshManager;
 class MaterialShader;
 class Camera3D;
-class Cubemap;
+class CubemapDef;
 struct ShadowPassShaderData;
 
 DECL_VG(class GBuffer);
@@ -14,12 +14,12 @@ class CloudRenderer
 public:
     CloudRenderer(const ui32v2& gbufferDims);
 
-    void renderClouds(const CloudMeshManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const Cubemap& skyCubeMap);
+    void renderClouds(const CloudMeshManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const CubemapDef& skyCubeMap);
     void renderCloudShadows(const ShadowPassShaderData& shaderData, const CloudMeshManager& cloudManager, const Camera3D& camera, f32 maxDistance);
 
 private:
     void blurNormals();
-    void renderToOutput(const Cubemap& skyCubeMap);
+    void renderToOutput(const CubemapDef& skyCubeMap);
 
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
 

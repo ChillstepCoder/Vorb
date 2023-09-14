@@ -1,5 +1,8 @@
 #pragma once
 
+// TODO: Stdafx?
+#include "serialization/YmlSerializer.h"
+
 #define DEFAULT_ASSET_CONSTRUCTOR(Type) \
     Type(StrToken name, AssetID id) : IAsset(name, id) {};
 
@@ -7,9 +10,18 @@
 
 enum class AssetType : ui8 {
     ParticleSystem,
+    Texture,
+    Cubemap,
+    Brush,
     COUNT
 };
-
+SERIALIZABLE_ENUM_SAME_NAME(AssetType,
+    pair{ AssetType::ParticleSystem, "particle_system"sv },
+    pair{ AssetType::Texture, "texture"sv },
+    pair{ AssetType::Cubemap, "cubemap"sv },
+    pair{ AssetType::Brush, "brush"sv }
+)
+static_assert(e_count(AssetType) == 4);
 
 class IAsset {
 public:

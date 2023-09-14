@@ -615,9 +615,6 @@
     <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\texture\Cubemap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -826,6 +823,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resources\AssetLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\definitions\rendering\CubemapDef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\CubemapRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1667,9 +1670,6 @@
     <ClInclude Include="src\rendering\StencilBufferIDs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\texture\Cubemap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\util\TextureUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2010,6 +2010,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\AssetLoadTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\rendering\CubemapDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\rendering\TextureDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\CubemapRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

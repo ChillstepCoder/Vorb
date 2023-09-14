@@ -8,7 +8,7 @@
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialUtils.h"
 
-#include "rendering/texture/Cubemap.h"
+#include "definitions/rendering/CubemapDef.h"
 #include "rendering/material/BrdfLUT.h"
 #include "rendering/StencilBufferIDs.h"
 
@@ -34,7 +34,7 @@ LightRenderer::~LightRenderer() {
    
 }
 
-void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const Cubemap& skyCubeMap) const {
+void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const CubemapDef& skyCubeMap) const {
     vg::sBlendStates.REPLACE.set();
     ui32 textureUnit = 0;
 

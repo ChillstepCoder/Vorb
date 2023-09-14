@@ -21,219 +21,6 @@
 #include <gli/gli.hpp>
 #include <gli/texture.hpp>
 
-TextureRepository::TextureRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
-    mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
-    mNormalMapGenerator->init();
-    TextureConvert::initConverters();
-}
-
-TextureRepository::~TextureRepository() {
-
-}
-
-const TextureData* TextureRepository::loadTexture(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV, gli::texture2d* outRs/* = nullptr*/) {
-    // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
-    const nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
-    LOG_INFO("Loading texture {}", filePath.getString());
-
-    // Check if the texture is already cached.
-    /*Texture texture = findTexture(textureName);
-    if (texture.id) return texture;*/
-    // Allow caller to optionally hold data
-    gli::texture2d rs;
-    gli::texture2d* rsPtr = &rs;
-    if (outRs) {
-        rsPtr = outRs;
-    }
-
-    // Get absolute path of texture.
-    vio::Path texPath;
-    mIoManager.resolvePath(filePath, texPath);
-
-    const fs::path resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
-
-    fs::path stdPath(texPath.getString());
-    const nString extension = stdPath.extension().string();
-
-    const time_t fileLastWriteTime = FileSystem::getLastFileWriteTime(stdPath);
-
-    // NOTES
-    // 1. Load with lodepng-turbo
-    // 2. Compress at run time with richgel999/bc7enc
-    // BC1 = DXT1 = RGB
-    // BC3 = DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
-    // BC4 = Grayscale
-    // BC5 = RG = Tangent space normal maps
-    GLTexture texture;
-    // .dds files will be created from PNG on the fly and cached to make future loading faster
-    if (extension == ".png") {
-        bool needsGenerateDDS = true;
-        // Check if there is a .dds already
-        // TODO: GET CACHE PATH TARGET
-        fs::path ddsPath = stdPath;
-        ddsPath.replace_extension(".dds"); // TODO: DETECT DDS CORRUPTION
-
-        // Get relative to resource root
-        ddsPath = ddsPath.lexically_relative(resourceRoot);
-        ddsPath = resourceRoot / "_cache" / ddsPath;
-
-        if (fs::is_regular_file(ddsPath)) {
-            if (FileSystem::getLastFileWriteTime(ddsPath) >= fileLastWriteTime) {
-                needsGenerateDDS = false;
-            }
-        }
-
-        if (needsGenerateDDS || outRs) {
-            *rsPtr = PngLoader::loadPng(stdPath, flipV);
-
-            if (outRs) {
-                // If caller requires full data, we wont ever generate dds
-                texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
-            } else {
-                // Compression
-                gli::texture2d ddsTexture = TextureConvert::convertToDDS(*rsPtr);
-                texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
-
-                // Cache to disk
-                LOG_TRACE("  Saving to disk - {}", ddsPath.string());
-
-                // Ensure directories exist
-                fs::path directoryPath = ddsPath;
-                directoryPath._Remove_filename_and_separator();
-                if (!std::filesystem::exists(directoryPath) && !std::filesystem::create_directories(directoryPath)) {
-                    LOG_CRITICAL("  Failed to create directories for {}", directoryPath.string());
-                }
-
-                if (gli::save(ddsTexture, ddsPath.string())) {
-                    LOG_TRACE("  Done");
-                }
-                else {
-                    LOG_CRITICAL("  FAILED! Ensure directory exists or ensure program has permission to create folders");
-                }
-            }
-            
-        }
-        else {
-            // Assume 2d texture (potentially unsafe?)
-            LOG_INFO("  Loading cached dds");
-            gli::texture2d ddsTexture(gli::load(ddsPath.string()));
-            texture = uploadDDSTexture(ddsTexture, type, *samplerState, INT_MAX);
-        }
-    }
-    else {
-        assert(false);
-    }
-
-    //texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
-    assert(texture.isValid());
-
-    TextureData* textureData;
-    TextureID textureId;
-    auto&& it = mTextureIdLookup.find(textureName);
-    if (it != mTextureIdLookup.end()) {
-        // Replace existing
-        LOG_CRITICAL("  Replacing existing texture {}", filePath.getString());
-        assert(false); // No reason for this right now.
-        textureId = it->second;
-        textureData = &mTextures[textureId];
-        textureData->texture.destroy();
-    }
-    else {
-        textureId = mTextures.size();
-        textureData = &mTextures.emplace_back();
-        mTextureIdLookup[textureName] = textureId;
-    }
-
-    textureData->texture = std::move(texture);
-    textureData->type = type;
-    textureData->textureId = textureId;
-    textureData->texturePath = filePath;
-    textureData->samplerState = samplerState;
-    textureData->flipV = flipV;
-    return textureData;
-    // TODO: dirty buffer bit?
-}
-
-const TextureData& TextureRepository::getTexture(const nString& textureName) const {
-    auto&& it = mTextureIdLookup.find(textureName);
-    if (it == mTextureIdLookup.end()) {
-        LOG_CRITICAL("Failed to find texture {} make sure there is a .material for it", textureName);
-        assert(false);
-    }
-    return mTextures[it->second];
-}
-
-const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath) {
-    CubemapFileData fileData;
-    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, cubeFilePath, &KEG_GLOBAL_TYPE(CubemapFileData), false /*allowEmpty*/)) {
-        LOG_CRITICAL("Failed to parse cubemap {}", cubeFilePath.getString());
-        return nullptr;
-    }
-    const nString* facePaths[6] = {
-        &fileData.mTexPosX,
-        &fileData.mTexNegX,
-        &fileData.mTexPosY,
-        &fileData.mTexNegY,
-        &fileData.mTexPosZ,
-        &fileData.mTexNegZ
-    };
-
-    vio::Path directory = cubeFilePath;
-    directory.trimEnd();
-
-    CubemapID id = mCubemaps.size();
-    Cubemap& cubemap = *mCubemaps.emplace_back(std::make_unique<Cubemap>(id));
-    mCubemapIdLookup[cubeFilePath.getFileNameNoExtension()] = id;
-
-    VGTexture texture = cubemap.getTexture();
-
-    for (int i = 0; i < 6; ++i) {
-
-        const nString& str = *facePaths[i];
-        if (!str.empty()) {
-
-            // Get absolute path of texture.
-            vio::Path resultPath;
-            vio::Path texPath = directory / str;
-            if (mIoManager.resolvePath(texPath, resultPath)) {
-                fs::path stdPath(resultPath.getString());
-                // Load the pixel data.
-                gli::texture2d texture = PngLoader::loadPng(stdPath, false /*flipV*/);
-                if (!texture.size()) {
-                    LOG_CRITICAL("Empty cubemap texture {} for {}", str, cubeFilePath.getString());
-                    return nullptr;
-                }
-
-                if (!cubemap.initFace(i, texture)) {
-                    LOG_CRITICAL("Failed to init cubemap face {} for {}", str, cubeFilePath.getString());
-                }
-            }
-            else {
-                LOG_CRITICAL("Failed to find cubemap texture {} for {}", str, cubeFilePath.getString());
-                return nullptr;
-            }
-        }
-    }
-
-    // TODO: on demand? Cached?
-    cubemap.computePBRMaps();
-
-    return &cubemap;
-}
-
-const Cubemap& TextureRepository::getCubemap(const nString& cubemapName) const {
-    auto&& it = mCubemapIdLookup.find(cubemapName);
-    if (it == mCubemapIdLookup.end()) {
-        LOG_CRITICAL("Failed to find cubemap {} make sure there is a .cube for it", cubemapName);
-        assert(false);
-    }
-    return *mCubemaps[it->second];
-}
-
-const Cubemap& TextureRepository::getCubemap(CubemapID cubemapId) const {
-    return *mCubemaps[cubemapId];
-}
-
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
 
     // Get absolute path of texture.
@@ -344,4 +131,128 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
     }
 
     return GLTexture(handle, textureTarget, dims);
+}
+
+void TextureRepository::initInternal() {
+    mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
+    mNormalMapGenerator->init();
+    TextureConvert::initConverters();
+}
+
+AssetLoadFunc TextureRepository::getAssetLoadFunc() {
+
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+
+        TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
+
+        // Default properties
+        textureDef.samplerState = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP;
+        textureDef.type = vg::TextureTarget::TEXTURE_2D;
+        textureDef.flipV = true;
+
+        LOG_INFO("Loading texture {}", textureDef.getName().toString().c_str());
+        // TODO: asset .meta???
+        textureDef.rs = std::make_unique<gli::texture2d>();
+        gli::texture2d* rsPtr = textureDef.rs.get();
+
+        // Get absolute path of texture.
+        vio::Path texPath;
+        mIoManager.resolvePath(filePath, texPath);
+        const fs::path resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
+
+        fs::path stdPath(texPath.getString());
+        const nString extension = stdPath.extension().string();
+
+        const time_t fileLastWriteTime = FileSystem::getLastFileWriteTime(stdPath);
+
+        // NOTES
+        // 1. Load with lodepng-turbo
+        // 2. Compress at run time with richgel999/bc7enc
+        // BC1 = DXT1 = RGB
+        // BC3 = DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+        // BC4 = Grayscale
+        // BC5 = RG = Tangent space normal maps
+        GLTexture texture;
+        // .dds files will be created from PNG on the fly and cached to make future loading faster
+        if (extension == ".png") {
+            bool needsGenerateDDS = true;
+            // Check if there is a .dds already
+            // TODO: GET CACHE PATH TARGET
+            fs::path ddsPath = stdPath;
+            ddsPath.replace_extension(".dds"); // TODO: DETECT DDS CORRUPTION
+
+            // Get relative to resource root
+            ddsPath = ddsPath.lexically_relative(resourceRoot);
+            ddsPath = resourceRoot / "_cache" / ddsPath;
+
+            if (fs::is_regular_file(ddsPath)) {
+                if (FileSystem::getLastFileWriteTime(ddsPath) >= fileLastWriteTime) {
+                    needsGenerateDDS = false;
+                }
+            }
+
+            if (needsGenerateDDS/* || outRs*/) {
+                *rsPtr = PngLoader::loadPng(stdPath, textureDef.flipV);
+
+                //if (outRs) {
+                //    // If caller requires full data, we wont ever generate dds
+                //    texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
+                //}
+                //else {
+                    // Compression
+                textureDef.ddsRs = std::make_unique<gli::texture2d>(TextureConvert::convertToDDS(*rsPtr));
+
+                // Cache to disk
+                LOG_TRACE("  Saving to disk - {}", ddsPath.string());
+
+                // Ensure directories exist
+                fs::path directoryPath = ddsPath;
+                directoryPath._Remove_filename_and_separator();
+
+
+                if (!std::filesystem::exists(directoryPath)) {
+                    static std::mutex createDirMutex;
+                    std::lock_guard lock(createDirMutex);
+                    if (!std::filesystem::create_directories(directoryPath)) {
+                        // Maybe another thread succeeded?
+                        if (!std::filesystem::exists(directoryPath)) {
+                            panic("  Failed to create directories for {}", directoryPath.string());
+                        }
+                    }
+                }
+
+                if (gli::save(*textureDef.ddsRs, ddsPath.string())) {
+                    LOG_TRACE("  Done");
+                }
+                else {
+                    panic("  FAILED! Ensure {} directory exists or ensure program has permission to create folders", ddsPath.string().c_str());
+                }
+
+            }
+            else {
+                // Assume 2d texture (potentially unsafe?)
+                LOG_INFO("  Loading cached dds");
+                textureDef.ddsRs = std::make_unique<gli::texture2d>(gli::load(ddsPath.string()));
+            }
+        }
+        else {
+            assert(false);
+        }
+    };
+}
+
+
+AssetLoadRenderProcessFunc TextureRepository::getAssetLoadRenderProcessFunc() {
+    return ASSET_LOAD_RENDER_PROCESS_LAMBDA(assetID, assetDataPtr) {
+        TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
+
+        if (textureDef.ddsRs) {
+            textureDef.gpuTexture = uploadDDSTexture(*textureDef.ddsRs, textureDef.type, *textureDef.samplerState, INT_MAX);
+            textureDef.rs.reset();
+        }
+        else if (textureDef.rs) {
+            textureDef.gpuTexture = uploadTexture(*textureDef.rs, textureDef.type, *textureDef.samplerState, INT_MAX);
+            // Don't discard rs
+        }
+    };
 }

@@ -49,9 +49,7 @@ public:
     RigRepository& getRigRepository() const { return *mRigRepository; }
     AnimMachineRepository& getAnimMachineRepository() const { return *mAnimMachineRepository; }
     ModelRepository& getModelRepository() const { return *mModelRepository; }
-    BrushRepository& getBrushRepository() const { return *mBrushRepository; }
     SkillRepository& getSkillRepository() const { return *mSkillRepository; }
-    TextureRepository& getTextureRepository() const { return *mTextureRepository; }
     FontRepository& getFontRepository() const { return *mFontRepository; }
     CollisionShapeRepository& getCollisionShapeRepository() const { return *mCollisionShapeRepository; }
     TileGrassRepository& getTileGrassRepository() const { return *mTileGrassRepository; }
@@ -65,13 +63,15 @@ public:
     void generateNormalMaps();
     
     const vio::Path& getResourceRoot() const { return mResourceRoot; }
+
+    void addAssetToBundle(AssetHandleBundle& bundle, StrToken assetName, AssetType assetType);
+
 private:
     void gatherRecursive(const vio::Path& folderPath);
+    void preloadFiles();
 
     // Tasks
     // TODO: ResourceLoader?
-    std::vector<vio::Path> mBrushFiles;
-    std::vector<vio::Path> mCubemapFiles;
     std::vector<vio::Path> mMaterialFiles;
     std::vector<vio::Path> mMaterialShaderFiles;
     std::vector<vio::Path> mComputeFiles;
@@ -103,12 +103,13 @@ private:
     std::unique_ptr<RigRepository> mRigRepository;
     std::unique_ptr<AnimMachineRepository> mAnimMachineRepository;
     std::unique_ptr<ModelRepository> mModelRepository;
-    std::unique_ptr<BrushRepository> mBrushRepository;
     std::unique_ptr<SkillRepository> mSkillRepository;
-    std::unique_ptr<TextureRepository> mTextureRepository;
     std::unique_ptr<FontRepository> mFontRepository;
     std::unique_ptr<CollisionShapeRepository> mCollisionShapeRepository;
     std::unique_ptr<TileGrassRepository> mTileGrassRepository;
+
+    std::vector<IAssetRepositoryBase*> mAssetRepositories;
+    AssetHandleBundle mPreloadAssetsBundle;
 
     // TODO: Replace with std::filesystem?
     std::unique_ptr<vio::IOManager> mIoManager;

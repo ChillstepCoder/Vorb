@@ -144,7 +144,10 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
 }
 
 AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, fileData, assetDataPtr) {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+
+        nString fileData = readFileToString(filePath);
+
         ryml::Tree tree = YmlSerializer::parseFileData(fileData);
 
         ParticleSystemDef* newDef = static_cast<ParticleSystemDef*>(assetDataPtr);

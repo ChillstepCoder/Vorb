@@ -1,29 +1,20 @@
 #pragma once
 
-DECL_VIO(class IOManager);
 
-class TextureRepository;
+#include "resources/IAssetRepository.h"
 
-#include <Vorb/graphics/BitmapResource.h>
-
-class Brush {
+class BrushDef : public IAsset {
 public:
     std::vector<ui8> data; // A8 alpha only
     ui32v2 dims;
-    VGTexture texture;
-    nString name;
+    VGTexture texture; // TODO: Remove?
 };
 
-class BrushRepository {
+class BrushRepository : public IAssetRepository<BrushDef> {
 public:
-    BrushRepository(vio::IOManager& ioManager);
-    ~BrushRepository();
+    ASSET_REPOSITORY_COMMON_CODE(BrushRepository, BrushDef, AssetType::Brush)
 
-    void loadBrush(const vio::Path& filePath, TextureRepository& textureRepository);
-    const std::vector<Brush>& getBrushes() const { return mBrushes; }
-
-private:
-    vio::IOManager& mIomanager;
-    std::vector<Brush> mBrushes;
+protected:
+    AssetLoadFunc getAssetLoadFunc() override;
 };
 

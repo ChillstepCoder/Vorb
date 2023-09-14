@@ -2,7 +2,7 @@
 #include "LightData.h"
 
 class MaterialShader;
-class Cubemap;
+class CubemapDef;
 
 DECL_VG(class GBuffer);
 
@@ -13,7 +13,7 @@ public:
     LightRenderer();
     ~LightRenderer();
 
-    void renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const Cubemap& skyCubeMap) const;
+    void renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const CubemapDef& skyCubeMap) const;
 
 private:
     const MaterialShader* mSunlightMaterial = nullptr;

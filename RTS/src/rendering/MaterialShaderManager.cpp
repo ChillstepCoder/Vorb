@@ -7,8 +7,8 @@
 #include <Vorb/io/IOManager.h>
 #include <Vorb/graphics/GLProgram.h>
 
-MaterialShaderManager::MaterialShaderManager(vio::IOManager& ioManager, TextureRepository& textureRepository) :
-    mIoManager(ioManager), mTextureRepository(textureRepository) {
+MaterialShaderManager::MaterialShaderManager(vio::IOManager& ioManager) :
+    mIoManager(ioManager) {
 
 }
 

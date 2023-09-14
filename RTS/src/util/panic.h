@@ -44,6 +44,7 @@ struct panic_format {
 //--------------------------------------------------------------------------------------------------
 [[noreturn]] inline void panic_impl(const char* s) noexcept {
     LOG_CRITICAL("CRITICAL ERROR: {}", s);
+    pError(s);
     abort();
 }
 

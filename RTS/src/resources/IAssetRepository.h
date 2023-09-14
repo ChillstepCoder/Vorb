@@ -8,6 +8,7 @@
 
 class AssetLoader;
 
+
 template <IsAssetType T>
 class AssetHandle;
 
@@ -15,16 +16,6 @@ template <IsAssetType T>
 using AssetHandlePtr = std::shared_ptr<AssetHandle<T>>;
 
 DECL_VIO(class IOManager);
-
-class IAssetRepositoryBase {
-public:
-    virtual ~IAssetRepositoryBase() = default;
-protected:
-    IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
-
-    vio::IOManager& mIoManager;
-    bool saveAssetContents(const IAsset& asset, const vio::Path& path, const char* fileContents, size_t sizeBytes);
-};
 
 struct AssetRegistryEntry {
     StrToken mName;
@@ -35,12 +26,102 @@ struct AssetRegistryEntry {
     // it is being loaded once we implement deallocation of assets
 };
 
+class AssetHandleBase {
+public:
+    friend class IAssetRepositoryBase;
+
+    AssetHandleBase() = default;
+    virtual ~AssetHandleBase() = default;
+
+    AssetID getAssetID() const { return mAssetID; }
+
+    bool isValid() const { return mAssetName.isValid(); }
+    virtual bool isLoaded() = 0;
+
+    AssetDescriptor getDescriptor() const { return AssetDescriptor{ .id = mAssetID, .assetType = mAssetType }; }
+
+protected:
+    StrToken mAssetName;
+    AssetID mAssetID = INVALID_ASSET_ID;
+    AssetType mAssetType = AssetType::COUNT;
+};
+using AssetHandleBasePtr = std::shared_ptr<AssetHandleBase>;
+
+class IAssetRepositoryBase {
+public:
+    virtual ~IAssetRepositoryBase() = default;
+
+    AssetHandleBasePtr getAssetHandleBase(AssetID id);
+    AssetHandleBasePtr getAssetHandleBase(StrToken assetName);
+
+    virtual AssetType getAssetType() const = 0;
+protected:
+    IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
+
+    // Virtual interfaces
+    virtual void loadAssetAsync(const AssetRegistryEntry& assetEntry) = 0;
+    virtual void fillAsset(AssetHandleBase& handle) = 0;
+    virtual AssetHandleBasePtr makeAssetHandle() = 0;
+
+    // ==================================================================
+    // Asset friend functions
+    // ==================================================================
+    void aquireAssetHandle(AssetID id, AssetHandleBase& handle) {
+        assert(!handle.isValid());
+        handle.mAssetID = id;
+        handle.mAssetType = getAssetType();
+        handle.mAssetName = mAssetRegistry[id].mName;
+        ++(*mAssetRefCounts[handle.mAssetID]);
+        if (mLoadedAssets[handle.mAssetID]->load()) {
+            fillAsset(handle);
+            return;
+        }
+        { // This should be fairly rare
+            mBeginLoadAssetMutex.lock(); // LOCK
+            if (!mAssetRegistry[handle.mAssetID].mRequestedLoad) {
+                mAssetRegistry[handle.mAssetID].mRequestedLoad = true;
+                mBeginLoadAssetMutex.unlock(); // UNLOCK
+                loadAssetAsync(mAssetRegistry[handle.mAssetID]);
+            }
+            else {
+                mBeginLoadAssetMutex.unlock(); // UNLOCK
+            }
+        }
+    }
+    void releaseAssetHandle(AssetHandleBase& handle) {
+        if (handle.isValid()) {
+            --(*mAssetRefCounts[handle.mAssetID]);
+            handle.mAssetName = {};
+            handle.mAssetID = INVALID_ASSET_ID;
+            // handle.mLoadedAsset = nullptr; // Not needed just let it dangle
+        }
+    }
+    void pollAsset(AssetHandleBase& handle) {
+        if (mLoadedAssets[handle.mAssetID]->load()) {
+            fillAsset(handle);
+        }
+    }
+
+    bool saveAssetContents(const IAsset& asset, const vio::Path& path, const char* fileContents, size_t sizeBytes);
+    // TODO: We could use a threadlocal global string so we dont realloc?
+    nString readFileToString(const vio::Path& path);
+
+    vio::IOManager& mIoManager;
+    std::map<StrToken, AssetID> mAssetLookup;
+    std::vector<AssetRegistryEntry> mAssetRegistry;
+    std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_int>>> mAssetRefCounts;
+    std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_bool>>> mLoadedAssets;
+    std::vector<AssetID> mFreeIDs;
+
+    std::mutex mBeginLoadAssetMutex;
+};
+
 template <IsAssetType T>
 class IAssetRepository : public IAssetRepositoryBase {
 public:
     friend class AssetHandle<T>;
 
-    IAssetRepository(vio::IOManager& ioManager) : IAssetRepositoryBase(ioManager) {}
+    IAssetRepository(vio::IOManager& ioManager) : IAssetRepositoryBase(ioManager) { initInternal(); }
     virtual ~IAssetRepository() = default;
 
     inline static IAssetRepository<T>& getInstance() {
@@ -51,7 +132,6 @@ public:
     // ==================================================================
     // Public interface
     // ==================================================================
-
     void forEachLoadedAsset(std::function<bool(IAssetRepository<T>&, T&)> func) {
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             if (mLoadedAssets[id]->load()) {
@@ -75,8 +155,13 @@ public:
     void changeAssetFilePath(AssetID id, const vio::Path& newPath) { mAssetRegistry[id].mFilePath = newPath; }
 
     // Will begin a lazy async load if asset is not loaded
-    AssetHandlePtr<T> getAssetHandle(AssetID id);
-    AssetHandlePtr<T> getAssetHandle(StrToken assetName);
+    AssetHandlePtr<T> getAssetHandle(StrToken assetName) {
+        return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(assetName));
+    }
+    AssetHandlePtr<T> getAssetHandle(AssetID id) {
+        return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(id));
+    }
+
     AssetID getAssetID(StrToken assetName) { return mAssetRegistry[assetName].mAssetID; }
     AssetID registerAsset(const vio::Path& filePath) {
         // TODO remove string copy
@@ -86,7 +171,9 @@ public:
     // ALL assets must be registered before any are loaded, else we will have race conditions
     AssetID registerAsset(StrToken name, const vio::Path& filePath) {
         AssetID id = mAssets.size();
-        assert(mAssetLookup.find(name) == mAssetLookup.end());
+        if (mAssetLookup.find(name) != mAssetLookup.end()) {
+            panic("Asset name {} already registered - {}", name.toString().c_str(), filePath.getCString());
+        }
         mAssetLookup[name] = id;
         mAssetRegistry.emplace_back(AssetRegistryEntry{ .mName=name, .mFilePath=filePath, .mID=id});
         mAssetRefCounts.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_int>>(0));
@@ -132,67 +219,32 @@ public:
         // TODO: Remove file
     }
 
-    virtual AssetType getAssetType() const = 0;
     virtual bool saveAsset(AssetID assetId) = 0;
 
 private:
-    void loadAssetAsync(const AssetRegistryEntry& assetEntry) {
+    void loadAssetAsync(const AssetRegistryEntry& assetEntry) override {
         AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get());
     }
 
 protected:
+    virtual void initInternal() {};
     virtual AssetLoadFunc getAssetLoadFunc() = 0;
+    virtual AssetLoadRenderProcessFunc getAssetLoadRenderProcessFunc() {
+        return nullptr;
+    }
 
-    // ==================================================================
-    // Asset friend functions
-    // ==================================================================
-    void aquireAssetHandle(AssetID id, AssetHandle<T>& handle) {
-        assert(!handle.isValid());
-        handle.mAssetID = id;
-        handle.mAssetType = getAssetType();
-        handle.mAssetName = mAssetRegistry[id].mName;
-        ++(*mAssetRefCounts[handle.mAssetID]);
-        if (mLoadedAssets[handle.mAssetID]->load()) {
-            handle.mLoadedAsset = mAssets[id].get();
-            return;
-        }
-        { // This should be fairly rare
-            mBeginLoadAssetMutex.lock(); // LOCK
-            if (!mAssetRegistry[handle.mAssetID].mRequestedLoad) {
-                mAssetRegistry[handle.mAssetID].mRequestedLoad = true;
-                mBeginLoadAssetMutex.unlock(); // UNLOCK
-                loadAssetAsync(mAssetRegistry[handle.mAssetID]);
-            }
-            else {
-                mBeginLoadAssetMutex.unlock(); // UNLOCK
-            }
-        }
+    void fillAsset(AssetHandleBase& handle) override {
+        AssetHandle<T>& typedHandle = (AssetHandle<T>&)handle;
+        typedHandle.mLoadedAsset = mAssets[handle.mAssetID].get();
     }
-    void releaseAssetHandle(AssetHandle<T>& handle) {
-        if (handle.isValid()) {
-            --(*mAssetRefCounts[handle.mAssetID]);
-            handle.mAssetName = {};
-            handle.mAssetID = INVALID_ASSET_ID;
-            handle.mLoadedAsset = nullptr;
-        }
-    }
-    void pollAsset(AssetHandle<T>& handle) {
-        if (mLoadedAssets[handle.mAssetID]->load()) {
-            handle.mLoadedAsset = mAssets[handle.mAssetID].get();
-        }
+    AssetHandleBasePtr makeAssetHandle() {
+        return std::make_shared<AssetHandle<T>>();
     }
 
     // ==================================================================
-    // Data
+    // Asset Data
     // ==================================================================
-    std::map<StrToken, AssetID> mAssetLookup;
-    std::vector<AssetRegistryEntry> mAssetRegistry;
     std::vector<std::unique_ptr<T>> mAssets;
-    std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_int>>> mAssetRefCounts;
-    std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_bool>>> mLoadedAssets;
-    std::vector<AssetID> mFreeIDs;
-
-    std::mutex mBeginLoadAssetMutex;
 
     inline static std::unique_ptr<IAssetRepository<T>> sInstance;
     // mDirtyAssets?
@@ -211,25 +263,6 @@ public: \
     } \
     AssetType getAssetType() const override { return assetType; }
 
-
-class AssetHandleBase {
-public:
-    AssetHandleBase() = default;
-    virtual ~AssetHandleBase() = default;
-
-    AssetID getAssetID() const { return mAssetID; }
-
-    bool isValid() const { return mAssetName.isValid(); }
-    virtual bool isLoaded() = 0;
-
-    AssetDescriptor getDescriptor() const { return AssetDescriptor{.id=mAssetID, .assetType=mAssetType}; }
-
-protected:
-    StrToken mAssetName;
-    AssetID mAssetID = INVALID_ASSET_ID;
-    AssetType mAssetType = AssetType::COUNT;
-};
-
 template <IsAssetType T>
 class AssetHandle : public AssetHandleBase {
 public:
@@ -241,7 +274,6 @@ public:
     }
 
     VORB_NON_COPYABLE(AssetHandle);
-
 
     void aquire(AssetID id) {
         IAssetRepository<T>::getInstance().aquireAssetHandle(id, *this);
@@ -274,14 +306,12 @@ protected:
     const T* mLoadedAsset = nullptr;
 };
 
-template <IsAssetType T>
-AssetHandlePtr<T> IAssetRepository<T>::getAssetHandle(StrToken assetName) {
-    return getAssetHandle(mAssetLookup.at(assetName));
+AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(StrToken assetName) {
+    return getAssetHandleBase(mAssetLookup.at(assetName));
 }
 
-template <IsAssetType T>
-AssetHandlePtr<T> IAssetRepository<T>::getAssetHandle(AssetID id) {
-    AssetHandlePtr<T> handle = std::make_shared<AssetHandle<T>>();
+AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(AssetID id) {
+    AssetHandleBasePtr handle = makeAssetHandle();
     aquireAssetHandle(id, *handle);
     return handle;
 }
