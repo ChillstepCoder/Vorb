@@ -36,9 +36,10 @@ private:
 
     std::vector<MaterialDesc> mMaterialDescs;
     std::vector<MaterialGpuData> mMaterialGpuData;
+
+    std::mutex mGeneratedStorageMutex;
     std::map<StrToken, GLTexture> mGeneratedNormalTextures;
     std::map<StrToken, GLTexture> mGeneratedAOMetallicRoughnessTextures;
-    std::map<StrToken, MaterialID> mMaterialIDLookup;
 
     std::unique_ptr<MaterialTextureGenerator> mMaterialTextureGenerator;
     GLBuffer mMaterialDataBuffer;

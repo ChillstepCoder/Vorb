@@ -220,6 +220,7 @@ protected:
         return nullptr;
     }
     virtual void onRegisteredAsset(AssetID id) {};
+    virtual void* getAssetLoadScratchData(AssetID id) { return nullptr; }
 
     void fillAsset(AssetHandleBase& handle) override {
         AssetHandle<T>& typedHandle = (AssetHandle<T>&)handle;
