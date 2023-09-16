@@ -26,6 +26,5 @@ private:
     VGTexture mIrradianceMap = 0;
     VGTexture mPrefilterMap = 0;
     ui32v2 mDims;
-    std::unique_ptr<gli::texture2d[]> mFacesRs;
 };
 

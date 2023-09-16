@@ -33,6 +33,7 @@ protected:
     void initInternal() override;
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;
+    std::any getUserData(AssetID id) override;
 private:
     std::unique_ptr<MaterialTextureGenerator> mNormalMapGenerator;
     nString mDataBuffer;

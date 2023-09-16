@@ -21,7 +21,7 @@
 #include <gli/gli.hpp>
 #include <gli/texture.hpp>
 
-struct LoadUserData {
+struct TextureLoadUserData {
     gli::texture2d rs; // Optional cached CPU resource data for if we want to query the pixels
     gli::texture2d ddsRs;
 };
@@ -149,6 +149,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
     return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
 
         TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
+        TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
 
         // Default properties
         textureDef.samplerState = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP;
@@ -156,9 +157,6 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
         textureDef.flipV = true;
 
         LOG_INFO("Loading texture {}", textureDef.getName().toString().c_str());
-        // TODO: asset .meta???
-        textureDef.rs = std::make_unique<gli::texture2d>();
-        gli::texture2d* rsPtr = textureDef.rs.get();
 
         // Get absolute path of texture.
         vio::Path texPath;
@@ -197,7 +195,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
             }
 
             if (needsGenerateDDS/* || outRs*/) {
-                *rsPtr = PngLoader::loadPng(stdPath, textureDef.flipV);
+                loadUserData.rs = PngLoader::loadPng(stdPath, textureDef.flipV);
 
                 //if (outRs) {
                 //    // If caller requires full data, we wont ever generate dds
@@ -205,7 +203,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
                 //}
                 //else {
                     // Compression
-                textureDef.ddsRs = std::make_unique<gli::texture2d>(TextureConvert::convertToDDS(*rsPtr));
+                loadUserData.ddsRs = TextureConvert::convertToDDS(loadUserData.rs);
 
                 // Cache to disk
                 LOG_TRACE("  Saving to disk - {}", ddsPath.string());
@@ -226,7 +224,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
                     }
                 }
 
-                if (gli::save(*textureDef.ddsRs, ddsPath.string())) {
+                if (gli::save(loadUserData.ddsRs, ddsPath.string())) {
                     LOG_TRACE("  Done");
                 }
                 else {
@@ -237,7 +235,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
             else {
                 // Assume 2d texture (potentially unsafe?)
                 LOG_INFO("  Loading cached dds");
-                textureDef.ddsRs = std::make_unique<gli::texture2d>(gli::load(ddsPath.string()));
+                loadUserData.ddsRs = static_cast<gli::texture2d>(gli::load(ddsPath.string()));
             }
         }
         else {
@@ -248,16 +246,21 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 
 
 AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
-        TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
 
-        if (textureDef.ddsRs) {
-            textureDef.gpuTexture = uploadDDSTexture(*textureDef.ddsRs, textureDef.type, *textureDef.samplerState, INT_MAX);
-            textureDef.rs.reset();
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+        TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
+        TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
+
+        // Prefer dds
+        if (loadUserData.ddsRs.size()) {
+            textureDef.gpuTexture = uploadDDSTexture(loadUserData.ddsRs, textureDef.type, *textureDef.samplerState, INT_MAX);
         }
-        else if (textureDef.rs) {
-            textureDef.gpuTexture = uploadTexture(*textureDef.rs, textureDef.type, *textureDef.samplerState, INT_MAX);
-            // Don't discard rs
+        else if (loadUserData.rs.size()) {
+            textureDef.gpuTexture = uploadTexture(loadUserData.rs, textureDef.type, *textureDef.samplerState, INT_MAX);
         }
     };
+}
+
+std::any TextureRepository::getUserData(AssetID) {
+    return TextureLoadUserData();
 }

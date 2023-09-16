@@ -16,6 +16,10 @@
 // Match the shader TODO: profile 32?
 constexpr GLuint WORK_GROUP_SIZE = 16;
 
+struct LoadCubemapUserData {
+    gli::texture2d mFacesRs[6];
+};
+
 struct CubemapFileData {
     nString mTexPosX;
     nString mTexNegX;
@@ -36,15 +40,15 @@ SERIALIZABLE_SIMPLE(CubemapFileData,
 );
 
 AssetLoadFunc CubemapRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         nString fileData = readFileToString(filePath);
+        LoadCubemapUserData& loadData = std::any_cast<LoadCubemapUserData &>(userData);
 
         CubemapFileData cubeData;
         ryml::Tree tree = YmlSerializer::parseFileData(fileData);
         tree.crootref() >> cubeData;
 
         CubemapDef& cubemapDef = *static_cast<CubemapDef*>(assetDataPtr);
-        cubemapDef.mFacesRs = std::make_unique<gli::texture2d[]>(6);
 
         const nString* facePaths[6] = {
             &cubeData.mTexPosX,
@@ -69,8 +73,8 @@ AssetLoadFunc CubemapRepository::getAssetLoadFunc() {
                 if (mIoManager.resolvePath(texPath, resultPath)) {
                     fs::path stdPath(resultPath.getString());
                     // Load the pixel data.
-                    cubemapDef.mFacesRs[i] = PngLoader::loadPng(stdPath, false /*flipV*/);
-                    if (!cubemapDef.mFacesRs[i].size()) {
+                    loadData.mFacesRs[i] = PngLoader::loadPng(stdPath, false /*flipV*/);
+                    if (!loadData.mFacesRs[i].size()) {
                         panic("Empty cubemap texture {} for {}", str, filePath.getString());
                     }
                 }
@@ -84,15 +88,17 @@ AssetLoadFunc CubemapRepository::getAssetLoadFunc() {
 
 
 AssetLoadFunc CubemapRepository::getAssetLoadRenderProcessFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         CubemapDef& cubemapDef = *static_cast<CubemapDef*>(assetDataPtr);
+        LoadCubemapUserData& loadData = std::any_cast<LoadCubemapUserData&>(userData);
+
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &cubemapDef.mTexture);
         for (int i = 0; i < 6; ++i) {
-            if (!initFace(cubemapDef, i, cubemapDef.mFacesRs[i])) {
+            if (!initFace(cubemapDef, i, loadData.mFacesRs[i])) {
                 panic("Failed to init cubemap face {} for {}", i, cubemapDef.getName().toString().c_str());
             }
         }
-        cubemapDef.mFacesRs.reset();
 
         // TODO: on demand? Cached?
         computePBRMaps(cubemapDef);
@@ -237,4 +243,8 @@ void CubemapRepository::computePrefilterMap(CubemapDef& def) {
         }
     }
     glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+}
+
+std::any CubemapRepository::getUserData(AssetID) {
+    return LoadCubemapUserData();
 }

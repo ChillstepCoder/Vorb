@@ -8,7 +8,6 @@
 class BrushDef : public IAsset {
 public:
     std::vector<ui8> data; // A8 alpha only
-    std::unique_ptr<gli::texture2d> rs;
     ui32v2 dims;
     VGTexture texture; // TODO: Remove?
 };
@@ -20,5 +19,6 @@ public:
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;
+    std::any getUserData(AssetID id) override;
 };
 

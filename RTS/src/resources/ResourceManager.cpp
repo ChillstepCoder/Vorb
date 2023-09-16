@@ -43,7 +43,6 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
 }
 
 #define REGISTER_ASSET_REPO(RepoClass, AType) \
-    if (mAssetRepositories.size() < (size_t)AType) mAssetRepositories.resize((size_t)AType); \
     RepoClass::initInstance(*mIoManager); \
     mAssetRepositories[(size_t)AType] = &RepoClass::get();
 
@@ -51,7 +50,8 @@ ResourceManager::ResourceManager() {
     
     mIoManager = std::make_unique<vio::IOManager>();
     AssetLoader::initInstance();
-
+    
+    mAssetRepositories.resize(e_count(AssetType));
     REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
     REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
     REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
@@ -59,7 +59,6 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(MaterialRepository, AssetType::Material);
 
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager);
-    mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
@@ -134,15 +133,6 @@ void ResourceManager::loadFiles() {
 
     PreciseTimer totalTimer;
 
-    // Load Materials
-    {
-        ScopedTimer timer("Material load");
-        for (auto&& entry : mMaterialFiles) {
-            mMaterialRepository->loadMaterial(entry);
-        };
-        mMaterialRepository->uploadMaterialData();
-        
-    }
 
     // Load item definitions
     {
@@ -204,7 +194,7 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("Model load");
         for (auto&& entry : mModelFiles) {
-            mModelRepository->loadModelFile(entry, *mMaterialRepository, *mAnimMachineRepository);
+            mModelRepository->loadModelFile(entry, *mAnimMachineRepository);
         }
     }
 
@@ -357,7 +347,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mMaterialShaderFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".material")) {
-            mMaterialFiles.emplace_back(entry);
+            MaterialRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".comp")) {
             mComputeFiles.emplace_back(entry);

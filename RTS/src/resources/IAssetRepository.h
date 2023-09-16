@@ -203,7 +203,7 @@ public:
 
 private:
     void loadAssetAsync(const AssetRegistryEntry& assetEntry) override {
-        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get());
+        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), getUserData());
     }
 
 protected:
@@ -211,7 +211,7 @@ protected:
         const AssetRegistryEntry& assetEntry = mAssetRegistry[id];
         AssetHandleBundle* dependencies = mAssets[id]->getDependencies();
         if (!dependencies) panic("Tried to add null dependencies to loadAssetDependencies");
-        AssetLoader::getInstance().requestAssetLoadWithDependencies(loadFunc, renderPostFunc, id, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), dependencies);
+        AssetLoader::getInstance().requestAssetLoadWithDependencies(loadFunc, renderPostFunc, id, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), getUserData(), dependencies);
     }
 
     virtual void initInternal() {};
@@ -220,7 +220,7 @@ protected:
         return nullptr;
     }
     virtual void onRegisteredAsset(AssetID id) {};
-    virtual void* getAssetLoadScratchData(AssetID id) { return nullptr; }
+    virtual std::any getUserData(AssetID id) { return nullptr; }
 
     void fillAsset(AssetHandleBase& handle) override {
         AssetHandle<T>& typedHandle = (AssetHandle<T>&)handle;
