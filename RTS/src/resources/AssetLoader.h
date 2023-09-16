@@ -17,7 +17,7 @@ public:
 
     void update();
 
-    void requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, AssetHandleBundle* dependencies);
+    void requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::any userData, AssetHandleBundle* dependencies);
 
     static void initInstance() {
         assert(!sInstance);
@@ -27,9 +27,9 @@ public:
         return *sInstance;
     }
 
-    void requestAssetLoad(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr) {
+    void requestAssetLoad(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::any userData) {
         // TODO: Singleton pool
-        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{.mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath = filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr }));
+        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{.mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath = filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr, .mUserData=std::move(userData) }));
     }
 
     void requestAssetLoad(std::unique_ptr<AssetLoadTask>&& task) {

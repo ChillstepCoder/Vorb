@@ -16,6 +16,5 @@ public:
     vg::TextureTarget type;
     const vg::SamplerState* samplerState;
     bool flipV; // TODO: Flags
-    std::unique_ptr<gli::texture2d> rs; // Optional cached CPU resource data for if we want to query the pixels
-    std::unique_ptr<gli::texture2d> ddsRs;
+
 };

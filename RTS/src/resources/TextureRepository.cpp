@@ -21,6 +21,11 @@
 #include <gli/gli.hpp>
 #include <gli/texture.hpp>
 
+struct LoadUserData {
+    gli::texture2d rs; // Optional cached CPU resource data for if we want to query the pixels
+    gli::texture2d ddsRs;
+};
+
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
 
     // Get absolute path of texture.
@@ -141,7 +146,7 @@ void TextureRepository::initInternal() {
 
 AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
 
         TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
 

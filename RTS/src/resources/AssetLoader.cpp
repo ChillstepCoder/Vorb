@@ -51,10 +51,10 @@ void AssetLoader::update() {
     }
 }
 
-void AssetLoader::requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, AssetHandleBundle* dependencies) {
+void AssetLoader::requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::any userData, AssetHandleBundle* dependencies) {
     dependencies->setLockedByAssetLoader(true);
     std::lock_guard lock(mDependencyMapMutex);
-    mTasksWaitingDependencies.emplace(dependencies, std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID = assetId, .mAssetDataPtr = assetData, .mFilePath = filePath, .mLoadFunc = loadFunc, .mRenderPostFunc = renderPostFunc, .mIsFinishedFlagPtr = isFinishedFlagPtr }));
+    mTasksWaitingDependencies.emplace(dependencies, std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath=filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr, .mUserData=std::move(userData)}));
 }
 
 void processRenderFunc(AssetLoadTaskPtr& task) {
@@ -65,6 +65,7 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
         void* mAssetDataPtr = nullptr;
         AssetLoadFunc mRenderPostFunc = nullptr;
         std::atomic_bool* mIsFinishedFlagPtr = nullptr;
+        std::any mUserData;
     };
     PostData* postData = new PostData();
     postData->mAssetID = task->mAssetID;
@@ -72,9 +73,10 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
     postData->mAssetDataPtr = task->mAssetDataPtr;
     postData->mRenderPostFunc = std::move(task->mRenderPostFunc);
     postData->mIsFinishedFlagPtr = task->mIsFinishedFlagPtr;
+    postData->mUserData = std::move(task->mUserData);
     RenderThreadTasks::getInstance().addGenericTask([](RenderContext& renderContext, void* vPathHandle) {
         PostData* postData = static_cast<PostData*>(vPathHandle);
-        postData->mRenderPostFunc(AssetLoader::getInstance(), postData->mAssetID, postData->mPath, postData->mAssetDataPtr);
+        postData->mRenderPostFunc(AssetLoader::getInstance(), postData->mAssetID, postData->mPath, postData->mAssetDataPtr, postData->mUserData);
         if (postData->mIsFinishedFlagPtr) {
             *postData->mIsFinishedFlagPtr = true;
         }
@@ -92,7 +94,7 @@ void AssetLoader::workerThreadFunc(AssetLoader* loader) {
         mLoadQueue.wait_dequeue(task);
         // We may only have a render func
         if (task->mLoadFunc) {
-            if (task->mLoadFunc(*loader, task->mAssetID, task->mFilePath, task->mAssetDataPtr)) {
+            if (task->mLoadFunc(*loader, task->mAssetID, task->mFilePath, task->mAssetDataPtr, task->mUserData)) {
                 if (task->mRenderPostFunc) {
                     processRenderFunc(task);
                 }
