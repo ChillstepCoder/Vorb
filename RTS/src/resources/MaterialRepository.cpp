@@ -19,7 +19,7 @@
 #include <gli/convert.hpp>
 #include <gli/gli.hpp>
 
-const char* GENERATE_TEXT = "GENERATE";
+constexpr StrToken GENERATE_TEXT("generate", 0);
 
 SERIALIZABLE_SIMPLE(MaterialDef,
     make_field(o.albedoTexture, "albedo"sv),
@@ -41,25 +41,21 @@ SERIALIZABLE_SIMPLE(MaterialDef,
     make_field(o.flipV, "flipv"sv)
 )
 
+struct MaterialLoadUserData {
+    gli::texture2d aoMetalRoughData;
+};
+
 MaterialRepository::~MaterialRepository() = default;
 
-nString getImplicitAlbedoPath(const vio::Path& materialPath) {
-    return materialPath.getFileNameNoExtension() + ".png";
-}
-
-nString getImplicitNormalPath(const vio::Path& materialPath) {
-    return materialPath.getFileNameNoExtension() + "_norm.png";
-}
-
 const MaterialGpuData& MaterialRepository::getMaterialGpuData(StrToken materialName) const {
-    auto&& it = mMaterialIDLookup.find(materialName);
-    assert(it != mMaterialIDLookup.end());
+    auto&& it = mAssetLookup.find(materialName);
+    assert(it != mAssetLookup.end());
     return mMaterialGpuData[it->second];
 }
 
 MaterialGpuData& MaterialRepository::getMutableMaterialGpuData(StrToken materialName) {
-    auto&& it = mMaterialIDLookup.find(materialName);
-    assert(it != mMaterialIDLookup.end());
+    auto&& it = mAssetLookup.find(materialName);
+    assert(it != mAssetLookup.end());
     return mMaterialGpuData[it->second];
 }
 
@@ -73,14 +69,8 @@ MaterialGpuData& MaterialRepository::getMutableMaterialGpuData(MaterialID materi
     return mMaterialGpuData[materialId];
 }
 
-MaterialID MaterialRepository::getMaterialId(StrToken materialName) const {
-    auto&& it = mMaterialIDLookup.find(materialName);
-    assert(it != mMaterialIDLookup.end());
-    return it->second;
-}
-
-MaterialHandle MaterialRepository::getMutableMaterialHandle(StrToken materialName) {
-    MaterialHandle handle;
+EditorMaterialHandle MaterialRepository::getMutableMaterialHandle(StrToken materialName) {
+    EditorMaterialHandle handle;
     handle.materialId = getMaterialId(materialName);
     handle.data = &getMutableMaterialGpuData(handle.materialId);
     handle.name = materialName;
@@ -88,18 +78,14 @@ MaterialHandle MaterialRepository::getMutableMaterialHandle(StrToken materialNam
 }
 
 const MaterialDesc& MaterialRepository::getMaterialDesc(StrToken materialName) const {
-    auto&& it = mMaterialIDLookup.find(materialName);
-    assert(it != mMaterialIDLookup.end());
+    auto&& it = mAssetLookup.find(materialName);
+    assert(it != mAssetLookup.end());
     return mMaterialDescs[it->second];
 }
 
 const MaterialDesc& MaterialRepository::getMaterialDesc(MaterialID materialId) const {
     assert(materialId < mMaterialDescs.size());
     return mMaterialDescs[materialId];
-}
-
-void MaterialRepository::uploadMaterialData() {
-    mMaterialDataBuffer.allocate(sizeof(MaterialGpuData) * mMaterialGpuData.size(), mMaterialGpuData.data(), 0);
 }
 
 void MaterialRepository::bindMaterialBuffer() const {
@@ -112,115 +98,88 @@ void MaterialRepository::initInternal() {
 }
 
 AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
+        TextureRepository& textureRepo = TextureRepository::get();
+        MaterialLoadUserData& loadData = std::any_cast<MaterialLoadUserData&>(userData);
 
         const nString fileStr = mIoManager.readFileToString(filePath);
         if (fileStr.size()) {
             YmlSerializer::readFileData(fileStr, materialDef);
         }
 
-        // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
-        // TODO: MOVE
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Handle weird texture dimensions
+        if (assetID > UINT16_MAX) panic("Too many materials detected in getAssetLoadFunc. Max UINT16_MAX");
 
-        const MaterialID materialId = mMaterialGpuData.size();
+        const MaterialID materialId = assetID;
         MaterialDesc& materialData = mMaterialDescs.at(assetID);
         materialData.id = materialId;
         materialData.renderPass = materialDef.renderPass;
         MaterialGpuData& materialGpuData = mMaterialGpuData.at(assetID);
         const nString materialName = filePath.getFileNameNoExtension();
-        assert(StrToken(materialName) == materialDef.getName());
-
-        vio::Path folderPath = filePath;
-        --folderPath;
+        StrToken tokenName(materialName);
+        assert(tokenName == materialDef.getName());
 
         LOG_INFO("LOADING MATERIAL {} {}", filePath.getString(), materialId);
 
         // Filepath Fallbacks
         if (!materialDef.albedoTexture.isValid()) {
-            // Fall back to using the file name as the albedo, so we can just specify an empty .material file
-            materialDef.albedoTexture = StrToken(materialName);
+            if (textureRepo.isAssetRegistered(tokenName)) {
+                materialDef.albedoTexture = tokenName;
+            } else {
+                panic("Material {} does not have an albedo texture", materialName);
+            }
         }
-        const vio::Path albedoTexturePath = folderPath / materialDef.albedoTexture.toString();
         if (!materialDef.normalTexture.isValid()) {
-            // Fall back to using the file name as the normal, so we can just specify an empty .material file
-            materialDef.normalTexture = StrToken(materialName + "_norm");
+            StrToken name(materialName + "_norm");
+            if (textureRepo.isAssetRegistered(name)) {
+                materialDef.normalTexture = name;
+            }
         }
-        const vio::Path normalTexturePath = folderPath / materialDef.normalTexture.toString();
-        if (!materialDef.ambientOcclusionTexture.isValid()) {
-            // Fall back to using the file name as the normal, so we can just specify an empty .material file
-            materialDef.ambientOcclusionTexture = StrToken(materialName + "_ao");
-        }
-        const vio::Path ambientOcclusionTexturePath = folderPath / materialDef.ambientOcclusionTexture.toString();
         if (!materialDef.displacementTexture.isValid()) {
-            // Fall back to using the file name as the normal, so we can just specify an empty .material file
-            materialDef.displacementTexture = StrToken(materialName + "_disp");
+            StrToken name(materialName + "_disp");
+            if (textureRepo.isAssetRegistered(name)) {
+                materialDef.displacementTexture = name;
+            }
         }
-        const vio::Path displacementTexturePath = folderPath / materialDef.displacementTexture.toString();
-        if (!materialDef.roughnessTexture.isValid()) {
-            // Fall back to using the file name as the normal, so we can just specify an empty .material file
-            materialDef.roughnessTexture = StrToken(materialName + "_rough");
-        }
-        const vio::Path roughnessTexturePath = folderPath / materialDef.roughnessTexture.toString();
-        if (!materialDef.metalTexture.isValid()) {
-            // Fall back to using the file name as the normal, so we can just specify an empty .material file
-            materialDef.metalTexture = StrToken(materialName + "_metal");
-        }
-        const vio::Path metalTexturePath = folderPath / materialDef.metalTexture.toString();
 
-        const vg::SamplerState* samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(materialDef.samplerState)];
-        // TODO: Texture Compression
-        const TextureData* albedoTextureData = textureRepository.loadTexture(albedoTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
-        if (!albedoTextureData) {
-            LOG_CRITICAL("Failed to load albedo texture {} for material {}", fileData.albedoTexture, filePath.getString());
-            return false;
-        }
-        const ui32v2 textureDims = albedoTextureData->texture.getDims();
-        materialGpuData.albedoMap = albedoTextureData->texture.getHandleBindless();
+        materialDef.addDependency(TextureRepository::get().getAssetHandle(materialDef.albedoTexture));
 
         // Normal
         // Generated vs loaded normals
         // TODO RGTC compression https://www.reddit.com/r/opengl/comments/dyedbv/when_to_use_compressed_textures/
-        if (fileData.normalTexture == GENERATE_TEXT) {
-            VGTexture normalTexture = mMaterialTextureGenerator->generateNormalTexture(albedoTextureData->texture.getHandle(), albedoTextureData->texture.getDims(), *samplerState);
-            GLTexture& normalGLTexture = mGeneratedNormalTextures[materialName];
-            normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
-            materialGpuData.normalMap = normalGLTexture.getHandleBindless();
-        }
-        else if (mIoManager.fileExists(normalTexturePath)) {
-            const TextureData* normalTextureData = textureRepository.loadTexture(normalTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
-            if (!normalTextureData) {
-                LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
-                return false;
+        if (materialDef.normalTexture.isValid()) {
+            if (materialDef.normalTexture != GENERATE_TEXT) {
+                materialDef.addDependency(TextureRepository::get().getAssetHandle(materialDef.normalTexture));
             }
-            if (normalTextureData->texture.getDims() != textureDims) {
-                LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
-                return false;
-            }
-            materialGpuData.normalMap = normalTextureData->texture.getHandleBindless();
         }
 
         // Displacement
-        if (mIoManager.fileExists(displacementTexturePath)) {
-            const TextureData* displacementTextureData = textureRepository.loadTexture(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
-            if (!displacementTextureData) {
-                LOG_CRITICAL("Failed to load displacement texture {} for material {}", fileData.displacementTexture, filePath.getString());
-                return false;
-            }
-            if (displacementTextureData->texture.getDims() != textureDims) {
-                LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
-                return false;
-            }
-            materialGpuData.displacementMap = displacementTextureData->texture.getHandleBindless();
+        if (materialDef.displacementTexture.isValid()) {
+            materialDef.addDependency(TextureRepository::get().getAssetHandle(materialDef.displacementTexture));
         }
 
         // Ambient Occlusion, Metallic, Roughness
         {
-            gli::texture2d aoData;
-            gli::texture2d roughnessData;
-            gli::texture2d metalData;
-            fs::path ddsPath(albedoTexturePath.getString());
+            if (!materialDef.ambientOcclusionTexture.isValid()) {
+                // Fall back to using the file name as the normal, so we can just specify an empty .material file
+                materialDef.ambientOcclusionTexture = StrToken(materialName + "_ao");
+            }
+            if (!materialDef.roughnessTexture.isValid()) {
+                // Fall back to using the file name as the normal, so we can just specify an empty .material file
+                materialDef.roughnessTexture = StrToken(materialName + "_rough");
+            }
+            if (!materialDef.metalTexture.isValid()) {
+                // Fall back to using the file name as the normal, so we can just specify an empty .material file
+                materialDef.metalTexture = StrToken(materialName + "_metal");
+            }
+
+            vio::Path folderPath = filePath;
+            --folderPath;
+            const vio::Path ambientOcclusionTexturePath = folderPath / materialDef.ambientOcclusionTexture.toString();
+            const vio::Path roughnessTexturePath = folderPath / materialDef.roughnessTexture.toString();
+            const vio::Path metalTexturePath = folderPath / materialDef.metalTexture.toString();
+
+            fs::path ddsPath(textureRepo.getAssetFilePath(materialDef.albedoTexture).getCString());
             const fs::path& resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
             ddsPath.replace_extension("_AMR.dds");
             ddsPath = ddsPath.lexically_relative(resourceRoot);
@@ -250,19 +209,18 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
                 needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdMetalPath) >= fileLastWriteTime;
             }
 
+            gli::texture2d aoData;
+            gli::texture2d roughnessData;
+            gli::texture2d metalData;
+
             if (needsGenerateDDS) {
                 // TODO: Free maps
                 bool hasTexture = false;
                 // AO
                 if (mIoManager.fileExists(ambientOcclusionTexturePath)) {
-                    aoData = textureRepository.loadRawPngData(ambientOcclusionTexturePath, fileData.flipV);
+                    aoData = textureRepo.loadRawPngData(ambientOcclusionTexturePath, materialDef.flipV);
                     if (!aoData.size()) {
-                        LOG_CRITICAL("Failed to load AO texture {} for material {}", fileData.ambientOcclusionTexture, filePath.getString());
-                        return false;
-                    }
-                    if (ui32v2(aoData.extent().x, aoData.extent().y) != textureDims) {
-                        LOG_CRITICAL("AO texture {} for material {} doesn't match albedo dims", fileData.ambientOcclusionTexture, filePath.getString());
-                        return false;
+                        panic("Failed to load AO texture {} for material {}", materialDef.ambientOcclusionTexture.toString(), filePath.getString());
                     }
                     if (aoData.format() != gli::FORMAT_R8_UNORM_PACK8) {
                         LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", ambientOcclusionTexturePath.getString());
@@ -273,14 +231,9 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
                 // Roughness
                 if (mIoManager.fileExists(roughnessTexturePath)) {
-                    roughnessData = textureRepository.loadRawPngData(roughnessTexturePath, fileData.flipV);
+                    roughnessData = textureRepo.loadRawPngData(roughnessTexturePath, materialDef.flipV);
                     if (!roughnessData.size()) {
-                        LOG_CRITICAL("Failed to load roughness texture {} for material {}", fileData.roughnessTexture, filePath.getString());
-                        return false;
-                    }
-                    if (ui32v2(roughnessData.extent().x, roughnessData.extent().y) != textureDims) {
-                        LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
-                        return false;
+                        panic("Failed to load roughness texture {} for material {}", materialDef.roughnessTexture.toString(), filePath.getString());
                     }
                     if (roughnessData.format() != gli::FORMAT_R8_UNORM_PACK8) {
                         LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", roughnessTexturePath.getString());
@@ -291,14 +244,9 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
                 // Metallic
                 if (mIoManager.fileExists(metalTexturePath)) {
-                    metalData = textureRepository.loadRawPngData(metalTexturePath, fileData.flipV);
+                    metalData = textureRepo.loadRawPngData(metalTexturePath, materialDef.flipV);
                     if (!metalData.size()) {
-                        LOG_CRITICAL("Failed to load Metallic texture {} for material {}", fileData.metalTexture, filePath.getString());
-                        return false;
-                    }
-                    if (ui32v2(metalData.extent().x, metalData.extent().y) != textureDims) {
-                        LOG_CRITICAL("Metallic texture {} for material {} doesn't match albedo dims", fileData.metalTexture, filePath.getString());
-                        return false;
+                        panic("Failed to load Metallic texture {} for material {}", materialDef.metalTexture.toString(), filePath.getString());
                     }
                     if (metalData.format() != gli::FORMAT_R8_UNORM_PACK8) {
                         LOG_WARN("Converting {} to 8 bit depth. Consider re-exporting file to 8 bits", metalTexturePath.getString());
@@ -309,14 +257,10 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
                 if (hasTexture) {
                     LOG_WARN("Generating AoRoughnessMetallicTexture");
-                    gli::texture2d generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData, roughnessData, metalData, textureDims, *samplerState);
+                    gli::texture2d generatedTexture = mMaterialTextureGenerator->combineAoRoughnessMetallicTextureData(aoData, roughnessData, metalData);
                     // DDS convert
-                    gli::texture2d ddsTexture = TextureConvert::convertToDDS(generatedTexture);
-                    GLTexture uploadedTexture = textureRepository.uploadDDSTexture(ddsTexture, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
-                    gli::save(ddsTexture, ddsPath.string());
-
-                    materialGpuData.aoMetallicRoughnessMap = uploadedTexture.getHandleBindless();
-                    mGeneratedAOMetallicRoughnessTextures[materialName] = std::move(uploadedTexture);
+                    loadData.aoMetalRoughData = TextureConvert::convertToDDS(generatedTexture);
+                    gli::save(loadData.aoMetalRoughData, ddsPath.string());
                 }
 
             }
@@ -324,38 +268,103 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
                 // LOAD FROM FILE
                   // Assume 2d texture (potentially unsafe?)
                 LOG_INFO("Loading cached dds...");
-                gli::texture2d ddsTexture(gli::load(ddsPath.string()));
-                textureRepository.uploadDDSTexture(ddsTexture, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
+                loadData.aoMetalRoughData = static_cast<gli::texture2d>(gli::load(ddsPath.string()));
             }
         }
 
         // Copy properties
-        materialGpuData.emissiveColor = fileData.emissiveColor;
-        materialGpuData.albedoColor = fileData.albedoColor;
-        materialGpuData.roughness.x = fileData.roughness.x;
-        materialGpuData.roughness.y = fileData.roughness.y;
-        materialGpuData.transparencyFactor = fileData.transparencyFactor;
-        materialGpuData.alphaTest = fileData.alphaTest;
-        materialGpuData.metallicFactor = fileData.metallicFactor;
-        materialGpuData.flags = (MaterialFlags_CastShadow * (int)fileData.castsShadow) | (MaterialFlags_ReceiveShadow * (int)fileData.receivesShadow);
+        materialGpuData.emissiveColor = materialDef.emissiveColor;
+        materialGpuData.albedoColor = materialDef.albedoColor;
+        materialGpuData.roughness.x = materialDef.roughness.x;
+        materialGpuData.roughness.y = materialDef.roughness.y;
+        materialGpuData.transparencyFactor = materialDef.transparencyFactor;
+        materialGpuData.alphaTest = materialDef.alphaTest;
+        materialGpuData.metallicFactor = materialDef.metallicFactor;
+        materialGpuData.flags = (MaterialFlags_CastShadow * (int)materialDef.castsShadow) | (MaterialFlags_ReceiveShadow * (int)materialDef.receivesShadow);
 
-        mMaterialIDLookup[materialName] = materialId;
-        return true;
+        // Finish with GPU lambda after dependant textures loaded
+        assetLoader.requestAssetLoadWithDependencies(nullptr, ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+            MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
+            MaterialLoadUserData& loadData = std::any_cast<MaterialLoadUserData&>(userData);
+            // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
+           // TODO: MOVE
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Handle weird texture dimensions
+
+            const vg::SamplerState* samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(materialDef.samplerState)];
+
+            // Grab dependencies
+            AssetHandleBundle& dependencies = *materialDef.getDependencies();
+            const TextureDef& albedo = dependencies.getLoadedAsset<TextureDef>(materialDef.albedoTexture);
+            
+
+            const ui32v2 textureDims = albedo.gpuTexture.getDims();
+            materialGpuData.albedoMap = albedo.gpuTexture.getHandleBindless();
+
+            if (materialDef.normalTexture.isValid()) {
+                if (materialDef.normalTexture == GENERATE_TEXT) {
+                    VGTexture normalTexture = mMaterialTextureGenerator->generateNormalTexture(albedo.gpuTexture.getHandle(), textureDims, *samplerState);
+                    GLTexture& normalGLTexture = mGeneratedNormalTextures[tokenName];
+                    normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, textureDims);
+                    materialGpuData.normalMap = normalGLTexture.getHandleBindless();
+                }
+                else {
+                    const TextureDef& normal = dependencies.getLoadedAsset<TextureDef>(materialDef.normalTexture);
+                    materialGpuData.normalMap = normal.gpuTexture.getHandleBindless();
+                    if (normal.gpuTexture.getDims() != textureDims) {
+                        panic("Normal texture {} for material {} doesn't match albedo dims", materialDef.normalTexture.toString(), filePath.getString());
+                    }
+                }
+            }
+            else {
+                // TODO
+                LOG_WARN("Missing normal texture for {}", filePath.getString());
+            }
+
+            if (materialDef.displacementTexture.isValid()) {
+                const TextureDef& disp = dependencies.getLoadedAsset<TextureDef>(materialDef.displacementTexture);
+
+                if (disp.gpuTexture.getDims() != textureDims) {
+                    panic("Disp texture {} for material {} doesn't match albedo dims", materialDef.displacementTexture.toString(), filePath.getString());
+                }
+                materialGpuData.displacementMap = disp.gpuTexture.getHandleBindless();
+            }
+
+            // Upload roughness metallic spec
+            if (!loadData.aoMetalRoughData.empty()) {
+                GLTexture& uploadedTexture = mGeneratedAOMetallicRoughnessTextures[tokenName];
+                uploadedTexture = textureRepo.uploadDDSTexture(loadData.aoMetalRoughData, vg::TextureTarget::TEXTURE_2D, *samplerState, INT_MAX);
+                materialGpuData.aoMetallicRoughnessMap = uploadedTexture.getHandleBindless();
+            }
+
+            // Update material data
+            const size_t bufferCapacity = sizeof(MaterialGpuData) * mMaterialGpuData.size();
+            if (mMaterialDataBuffer.getCapacity() != bufferCapacity) {
+                mMaterialDataBuffer.allocate(bufferCapacity, mMaterialGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
+            }
+            else {
+                mMaterialDataBuffer.updateSubData(materialId * sizeof(MaterialGpuData), sizeof(MaterialGpuData), &materialGpuData);
+            }
+
+            return true;
+        },
+            assetID,
+            assetDataPtr,
+            filePath,
+            mLoadedAssets[assetID].get(),
+            std::move(userData),
+            materialDef.getDependencies()
+        );
+
+        return false;
     };
 }
-
-AssetLoadFunc MaterialRepository::getAssetLoadRenderProcessFunc() {
-
-
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
-        MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
-
-
-    };
-};
 
 void MaterialRepository::onRegisteredAsset(AssetID id) {
     assert(mMaterialGpuData.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
     mMaterialDescs.emplace_back();
     mMaterialGpuData.emplace_back();
+}
+
+std::any MaterialRepository::getUserData(AssetID id) {
+    return MaterialLoadUserData();
 }

@@ -12,6 +12,7 @@ enum class AssetType : ui8 {
     Cubemap,
     Brush,
     Material,
+    Rig,
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
@@ -19,16 +20,17 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::Texture, "texture"sv },
     pair{ AssetType::Cubemap, "cubemap"sv },
     pair{ AssetType::Brush, "brush"sv },
-    pair{ AssetType::Material, "material"sv }
+    pair{ AssetType::Material, "material"sv },
+    pair{ AssetType::Rig, "rig"sv }
 )
-static_assert(e_count(AssetType) == 5);
+static_assert(e_count(AssetType) == 6);
 
 class AssetHandleBundle;
 class AssetHandleBase;
 
 class IAsset {
 public:
-    IAsset(StrToken name, AssetID id);;
+    IAsset(StrToken name, AssetID id);
     virtual ~IAsset();
 
     VORB_MOVABLE(IAsset);

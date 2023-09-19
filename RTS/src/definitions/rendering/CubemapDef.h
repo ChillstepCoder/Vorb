@@ -1,7 +1,5 @@
 #pragma once
 
-#include "resources/IAsset.h"
-
 #include <Vorb/graphics/SamplerState.h>
 #include <gli/gli.hpp>
 #include <gli/texture.hpp>

@@ -127,7 +127,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 
         constexpr f32 FIXED_WIDTH = 75.0f;
         ImGui::Text("Materials");
-        MaterialRepository& materialRepository = Services::ResourceManager::ref().getMaterialRepository();
+        MaterialRepository& materialRepository = MaterialRepository::get();
 
         // Submit table
         if (ImGui::BeginTable("materialTable", 4, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
@@ -160,19 +160,21 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 
             ui32 ID = 250;
             ui32 previewIndex = 0;
-            for (auto&& it : materialRepository.mMaterialIDLookup) {
-                MaterialGpuData& material = materialRepository.mMaterialGpuData[it.second];
+            materialRepository.forEachRegisteredAsset([&](IAssetRepository<MaterialDef>& repo, MaterialDef* def, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text(it.first.c_str());
+                ui32 strSize = 0;
+                char nameBuf[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
+                entry.mName.toString(nameBuf, &strSize);
+                ImGui::Text(nameBuf);
 
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", it.second);
+                sprintf_s(label, "%04d", entry.mID);
                 ImGui::Text(label);
 
                 // Preview
@@ -181,7 +183,8 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 const ImVec2 uv1(1, 0);
                 const ImVec2 dims(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x);
                 const bool visibleImage = ImGui::IsRectVisible(dims);
-                if (visibleImage) {
+                if (visibleImage && def) {
+                    const MaterialGpuData& material = materialRepository.getMaterialGpuData(entry.mID);
                     const VGTexture texture = renderMaterialPreview(previewShader, previewIndex++, material);
                     ImGui::Image((ImTextureID)texture, dims, uv0, uv1);
                 }
@@ -191,14 +194,19 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 
                 // Action
                 ImGui::TableSetColumnIndex(3);
-                if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
-                    result.second = std::make_unique<MaterialHandle>(materialRepository.getMutableMaterialHandle(it.first));
+                if (def) {
+                    if (ImGui::Button("Edit")) {
+                        result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
+                        result.second = std::make_unique<EditorMaterialHandle>(materialRepository.getMutableMaterialHandle(entry.mName));
+                    }
+                }
+                else {
+                    ImGui::Button("LOADING");
                 }
 
                 ImGui::PopID();
-
-            }
+                return false;
+            });
 
             vg::DepthState::restorePrevious();
 
@@ -214,7 +222,7 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
         constexpr f32 FIXED_WIDTH = 75.0f;
         ImGui::Text("Foliage");
         TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
-        MaterialRepository& materialRepository = Services::ResourceManager::ref().getMaterialRepository();
+        MaterialRepository& materialRepository = MaterialRepository::get();
 
         // Submit table
         if (ImGui::BeginTable("foliageTable", 4, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {

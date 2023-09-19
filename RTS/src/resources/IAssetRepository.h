@@ -9,12 +9,6 @@
 
 class AssetLoader;
 
-template <IsAssetType T>
-class AssetHandle;
-
-template <IsAssetType T>
-using AssetHandlePtr = std::shared_ptr<AssetHandle<T>>;
-
 DECL_VIO(class IOManager);
 
 struct AssetRegistryEntry {
@@ -47,6 +41,7 @@ protected:
     // ==================================================================
     void aquireAssetHandle(AssetID id, AssetHandleBase& handle) {
         assert(!handle.isValid());
+        assert(id < mAssetRegistry.size());
         handle.mAssetID = id;
         handle.mAssetType = getAssetType();
         handle.mAssetName = mAssetRegistry[id].mName;
@@ -111,6 +106,7 @@ public:
     // ==================================================================
     // Public interface
     // ==================================================================
+    // If return true, break
     void forEachLoadedAsset(std::function<bool(IAssetRepository<T>&, T&)> func) {
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             if (mLoadedAssets[id]->load()) {
@@ -118,6 +114,7 @@ public:
             }
         };
     }
+    // If return true, break
     void forEachRegisteredAsset(std::function<bool(IAssetRepository<T>&, T*, const AssetRegistryEntry& entry)> func) {
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             if (mLoadedAssets[id]->load()) {
@@ -130,10 +127,14 @@ public:
     }
 
     vio::Path getAssetFilePath(AssetID id) const { return mAssetRegistry[id].mFilePath; }
+    vio::Path getAssetFilePath(StrToken name) const { return mAssetRegistry[mAssetLookup.at(name)].mFilePath; }
     // TODO: Handle deleting old file?
     void changeAssetFilePath(AssetID id, const vio::Path& newPath) { mAssetRegistry[id].mFilePath = newPath; }
 
     // Will begin a lazy async load if asset is not loaded
+    AssetDescriptor getAssetDescriptor(StrToken assetName) {
+        return AssetDescriptor{ .assetType = getAssetType(), .id = getAssetID(assetName) };
+    }
     AssetHandlePtr<T> getAssetHandle(StrToken assetName) {
         return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(assetName));
     }
@@ -141,7 +142,7 @@ public:
         return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(id));
     }
 
-    AssetID getAssetID(StrToken assetName) { return mAssetRegistry[assetName].mAssetID; }
+    AssetID getAssetID(StrToken assetName) const { return mAssetRegistry[assetName].mAssetID; }
     AssetID registerAsset(const vio::Path& filePath) {
         // TODO remove string copy
         return registerAsset(StrToken(filePath.getFileNameNoExtension()), filePath);
@@ -150,7 +151,7 @@ public:
     // ALL assets must be registered before any are loaded, else we will have race conditions
     AssetID registerAsset(StrToken name, const vio::Path& filePath) {
         AssetID id = mAssets.size();
-        if (mAssetLookup.find(name) != mAssetLookup.end()) {
+        if (isAssetRegistered(name)) {
             panic("Asset name {} already registered - {}", name.toString().c_str(), filePath.getCString());
         }
         mAssetLookup[name] = id;
@@ -161,6 +162,10 @@ public:
         onRegisteredAsset(id);
         return id;
     }
+    inline bool isAssetRegistered(StrToken name) const {
+        return mAssetLookup.find(name) != mAssetLookup.end();
+    }
+    size_t getNumRegisteredAssets() const { return mAssets.size(); }
 
     // Editor function which will register and create a default asset of this type
     AssetHandlePtr<T> editorTryAddNewAsset(StrToken name) {
@@ -203,7 +208,7 @@ public:
 
 private:
     void loadAssetAsync(const AssetRegistryEntry& assetEntry) override {
-        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), getUserData());
+        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), getUserData(assetEntry.mID));
     }
 
 protected:
@@ -303,4 +308,9 @@ AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(AssetID id) {
     AssetHandleBasePtr handle = makeAssetHandle();
     aquireAssetHandle(id, *handle);
     return handle;
+}
+
+template<typename T>
+const T& AssetHandleBundle::getLoadedAsset(StrToken assetName) {
+    return *static_cast<AssetHandle<T>*>(tryGetAssetHandle(IAssetRepository<T>::getInstance().getAssetDescriptor(assetName)))->tryGetAsset();
 }

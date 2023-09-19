@@ -145,7 +145,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                     openModelForEdit(*std::get<ModelDef*>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_MATERIAL:
-                    openMaterialForEdit(*std::get<std::unique_ptr<MaterialHandle>>(result.second));
+                    openMaterialForEdit(*std::get<std::unique_ptr<EditorMaterialHandle>>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_FOLIAGE:
                     openFoliageForEdit(*std::get<TileGrassData*>(result.second));
@@ -221,7 +221,7 @@ void EditorRoot::openModelForEdit(ModelDef& model) {
     setActiveCenterPanel(mModelEditorViewportPanel.get());
 }
 
-void EditorRoot::openMaterialForEdit(MaterialHandle& materialHandle) {
+void EditorRoot::openMaterialForEdit(EditorMaterialHandle& materialHandle) {
     mMaterialEditorViewportPanel->setMaterial(materialHandle);
     setActiveCenterPanel(mMaterialEditorViewportPanel.get());
 }

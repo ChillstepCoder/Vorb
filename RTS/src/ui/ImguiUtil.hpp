@@ -2,7 +2,6 @@
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <numeric>  // std::iota
-#include "resources/IAsset.h"
 
 namespace ImguiUtil {
 

@@ -544,6 +544,7 @@
     <ClInclude Include="src\debugging\SimpleMesh.h" />
     <ClInclude Include="src\debugging\VisualLogger.h" />
     <ClInclude Include="src\definitions\AnimMachineDef.h" />
+    <ClInclude Include="src\definitions\BrushDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
     <ClInclude Include="src\definitions\BusinessDef.h" />
     <ClInclude Include="src\definitions\FishDef.h" />

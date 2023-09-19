@@ -64,7 +64,7 @@ public:
         return mTokenLow < rhs.mTokenLow || (mTokenLow == rhs.mTokenLow && mTokenHigh < rhs.mTokenHigh);
     }
 
-    // Buffer length must be at least 14
+    // Buffer length must be at least MAX_CHARS_IN_STRTOKEN_WITH_INDEX
     void toString(OUT char* outStr, OUT ui32* outLength) const;
     nString toString() const;
 

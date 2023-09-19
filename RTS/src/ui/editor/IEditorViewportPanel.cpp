@@ -14,6 +14,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include "resources/ResourceManager.h"
+#include "resources/CubemapRepository.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/TextureRepository.h"
@@ -203,19 +204,25 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
 
     // Skybox
     // TODO: Cache this?
-    TextureRepository& textureRepository = Services::ResourceManager::ref().getTextureRepository();
-    const std::map<nString, CubemapID>& cubemapIds = textureRepository.getCubemapIDs();
-    std::vector<nString> cubemapNames;
-    cubemapNames.reserve(cubemapIds.size() + 1);
+    std::vector<StrToken> cubemapNames;
+    CubemapRepository& cubemapRepo = CubemapRepository::get();
+    cubemapNames.reserve(cubemapRepo.getNumRegisteredAssets() + 1);
     cubemapNames.emplace_back("NONE");
-    for (auto&& it : cubemapIds) {
-        cubemapNames.emplace_back(it.first);
-    }
+    cubemapRepo.forEachRegisteredAsset([&](IAssetRepository<CubemapDef>& repo, CubemapDef* def, const AssetRegistryEntry& entry) {
+        cubemapNames.emplace_back(entry.mName);
+        return false;
+    });
+    
     if (mSkybox) {
-        if (ImGui::BeginCombo("Skybox", cubemapNames[mSelectedSkyboxIndex].c_str())) {
+        ui32 nameSize = 0;
+        char nameBuffer[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
+        cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
+        if (ImGui::BeginCombo("Skybox", nameBuffer)) {
             for (size_t i = 0; i < cubemapNames.size(); ++i) {
                 bool isSelected = mSelectedSkyboxIndex == i;
-                ImGui::Selectable(cubemapNames[i].c_str(), &isSelected);
+
+                cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
+                ImGui::Selectable(nameBuffer, &isSelected);
 
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();
@@ -224,9 +231,7 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
                         mSkybox->setCubemap(nullptr);
                     }
                     else {
-                        auto&& it = cubemapIds.find(cubemapNames[i]);
-                        assert(it != cubemapIds.end());
-                        mSkybox->setCubemap(&textureRepository.getCubemap(it->second));
+                        mSkybox->setCubemap(cubemapRepo.getAssetHandle(cubemapNames[i]));
                     }
                 }
             }

@@ -6,6 +6,8 @@ class IWorldGenerator;
 #include "world/ChunkID.h"
 #include "util/SpatialGrid2D.h"
 
+#include "resources/asset/AssetHandleBundle.h"
+
 struct CloudBatch {
     CloudBatch() = default;
     ~CloudBatch();
@@ -51,6 +53,8 @@ private:
     ui32 mTickCount = 0;
     ui32 mGeneratingIndexLast = 0;
     //void addCloudAt(const f32v3& pos, f32 size);
+
+    AssetHandleBundle mAssets;
 
     //mutable std::unique_ptr<TBOBillboardMesh> mCloudMesh;
     //std::vector<Cloud> mClouds;

@@ -39,7 +39,7 @@ bool MaterialEditorViewportPanel::updateAndRender(f32 elapsedSec)
     updateCamera(imageDims.x / imageDims.y);
 
     if (mCurrentMaterial.isValid()) {
-        ImGui::Text(mCurrentMaterial.name.c_str());
+        ImGui::Text(mCurrentMaterial.name.toString().c_str());
     }
     else {
         ImGui::Text("NO MATERIAL");

@@ -40,10 +40,9 @@ struct ModelDrawInfo {
 
 // Modeldef contains all information about a 3D model including its location
 // in a ModelBatch
-class ModelDef {
+class ModelDef : public IAsset {
 public:
-    ModelDef() = default;
-    ~ModelDef() = default;
+    DEFAULT_ASSET_CONSTRUCTOR(ModelDef);
 
     VORB_NON_COPYABLE_BUT_MOVABLE(ModelDef);
 
@@ -53,12 +52,12 @@ public:
     const Mesh& getMesh(ui32 meshIndex) const { return *mMeshes[meshIndex]; }
     void addMesh(std::unique_ptr<Mesh>&& mesh);
 
+    // TODO: AssetHandle
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
+    // TODO: single unique_ptr?
     std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
     ui32 mNumMeshes = 0;
-    ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
-    const char* mName = nullptr;
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };

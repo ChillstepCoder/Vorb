@@ -3,6 +3,8 @@
 #include "definitions/ModelDef.h"
 #include "rendering/mesh/RawMesh.h"
 
+#include "resources/IAssetRepository.h"
+
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
@@ -18,15 +20,14 @@ namespace ozz::animation {
 // TODO: MOVE
 constexpr GLuint MODEL_TRANSFORMS_BINDING_POINT = 2;
 
-class ModelRepository
-{
+class ModelRepository : public IAssetRepository<ModelDef> {
     friend class TileEditorPanel;
 public:
     ModelRepository(vio::IOManager& ioManager, const RigRepository& rigRepository);
     ~ModelRepository();
 
-    bool loadModelFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository);
-    bool loadFbxFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository);
+    bool loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository);
+    bool loadFbxFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository);
 
     const ModelDef& getModelDef(ModelID modelId) const { return *mModelDefs[modelId]; }
     const ModelDef& getModelDef(const nString& name) const;
@@ -35,8 +36,8 @@ public:
     void buildModelBatches();
 
 private:
-    bool loadModelInternal(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath);
-    RawMesh* loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton, const MaterialRepository& materialRepo);
+    bool loadModelInternal(ModelDefFileData& fileData, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath);
+    RawMesh* loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
 
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;

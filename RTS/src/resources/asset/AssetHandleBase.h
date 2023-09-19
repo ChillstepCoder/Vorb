@@ -1,7 +1,5 @@
 #pragma once
 
-#include "resources/IAsset.h"
-
 class AssetHandleBase {
 public:
     friend class IAssetRepositoryBase;

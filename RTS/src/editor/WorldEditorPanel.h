@@ -5,8 +5,9 @@
 #include "physics/PhysHitResult.h"
 #include "tile/TileGrass.h"
 
+#include "definitions/BrushDef.h"
+
 class Camera3D;
-class BrushDef;
 class BrushRepository;
 class IWorld;
 
@@ -47,8 +48,8 @@ enum class BuildingEditState {
 };
 
 struct BrushSettings {
-    const BrushDef* activeBrush;
-    ui32 brushId;
+    AssetHandlePtr<BrushDef> activeBrush;
+    AssetID brushId;
     f32 brushSize;
     f32 brushStrength;
 };
@@ -68,7 +69,7 @@ public:
 
 private:
     void renderMenuBar() const;
-    void tryRenderBrushSelect(const BrushRepository& brushRepo) const;
+    void tryRenderBrushSelect() const;
     void renderTerrainEditUI() const;
     void renderGrassEditUI() const;
     void renderTileEditUI() const;

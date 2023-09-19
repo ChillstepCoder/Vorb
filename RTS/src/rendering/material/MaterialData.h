@@ -2,7 +2,8 @@
 
 constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
 
-#include "resources/IAsset.h"
+#include "Vorb/graphics/SamplerStateType.h"
+
 #include "rendering/model/MaterialRenderPassType.h"
 
 enum MaterialFlags {
@@ -36,6 +37,7 @@ static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded 
 struct MaterialDesc {
     MaterialID id = INVALID_MATERIAL_ID;
     MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
+    // ui8 pad?
 };
 
 class MaterialDef : public IAsset {
@@ -60,10 +62,10 @@ public:
     bool flipV = false;
 };
 
-struct MaterialHandle {
+struct EditorMaterialHandle {
     bool isValid() const { return data != nullptr; }
 
-    MaterialID materialId = INVALID_MATERIAL_ID;
+    AssetID materialId = INVALID_MATERIAL_ID;
     MaterialGpuData* data = nullptr;
-    nString name;
+    StrToken name;
 };

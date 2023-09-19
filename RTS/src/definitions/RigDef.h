@@ -7,16 +7,23 @@
 #include <ozz/base/maths/simd_math.h>
 
 struct RigDefFileData {
-    Array<nString> mAnimationNames;
-    nString mSkeletonFileName;
-    nString mUpperRootJointName;
+    std::vector<StrToken> mAnimationNames;
+    StrToken mSkeletonFileName;
+    StrToken mUpperRootJointName;
 };
-KEG_TYPE_DECL(RigDefFileData);
+SERIALIZABLE_SIMPLE(RigDefFileData,
+    make_field(o.mAnimationNames, "anims"sv),
+    make_field(o.mSkeletonFileName, "skeleton"sv),
+    make_field(o.mUpperRootJointName, "upper_root"sv)
+);
 
 typedef const ozz::animation::Animation* ConstOzzAnimationPtr;
 
-struct RigDef {
-    std::map<nString, ui32> mNameToAnimationIndex;
+class RigDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(RigDef);
+
+    std::map<StrToken, ui32> mNameToAnimationIndex;
     std::unique_ptr<ConstOzzAnimationPtr[]> mAnimations;
     ozz::animation::Skeleton mSkeleton;
     ozz::vector<ozz::math::SimdFloat4> mUpperBodyJointWeights;

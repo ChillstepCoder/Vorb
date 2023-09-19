@@ -39,7 +39,7 @@ public:
 
 protected:
     // Typedef for func ptr
-    typedef void (AssetLoader::* workerFunc)();
+    typedef void (AssetLoader::* workerFunc)(AssetLoader*);
 
 
     class WorkerThread {

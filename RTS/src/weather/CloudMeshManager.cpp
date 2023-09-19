@@ -35,6 +35,8 @@ constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
 
+constexpr StrToken CLOUD_SIL_TOKEN("cloud_sil", 0);
+
 // TODO: Singleton pool?
 struct CloudBatchTaskData {
     BillboardMeshBuilder meshBuilder;
@@ -43,9 +45,9 @@ struct CloudBatchTaskData {
     ui32 index;
 };
 
-CloudMeshManager::CloudMeshManager(IWorldGenerator& worldGenerator) : mWorldGenerator(worldGenerator)
-{
-
+CloudMeshManager::CloudMeshManager(IWorldGenerator& worldGenerator) : mWorldGenerator(worldGenerator) {
+    MaterialRepository& materialRepo = MaterialRepository::get();
+    mAssets.addAssetHandle(materialRepo.getAssetHandle(CLOUD_SIL_TOKEN));
 }
 
 CloudMeshManager::~CloudMeshManager()
@@ -54,7 +56,6 @@ CloudMeshManager::~CloudMeshManager()
 }
 
 void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
-
 
     mWorldWidthCloudBatches = worldWidthChunks / CHUNK_STRIDE_PER_CLOUD_BATCH;
     const ui32 WORLD_SIZE_CLOUD_BATCHES = SQ(mWorldWidthCloudBatches);
@@ -210,7 +211,8 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
 
     const f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
 
-    const MaterialID& cloudMaterialId = Services::ResourceManager::ref().getMaterialRepository().getMaterialId("cloud_sil");
+    // TODO: Cache this?
+    const MaterialID& cloudMaterialId = MaterialRepository::get().getAssetID(CLOUD_SIL_TOKEN);
 
     CloudBatchTaskData* data = new CloudBatchTaskData{ {}, this, &newBatch, index };
 

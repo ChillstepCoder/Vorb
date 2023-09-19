@@ -2,8 +2,6 @@
 
 #include "rendering/particle/CPUParticleEmitterModule.h"
 
-#include "resources/IAsset.h"
-
 #include "rendering/particle/ParticleEnumTypes.h"
 
 class MaterialShader;

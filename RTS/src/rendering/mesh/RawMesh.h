@@ -16,10 +16,10 @@ struct alignas(16) RawMeshVertex {
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
 };
 
-// Not intended to be uploaded to GPU except for editor render
-struct RawMaterialData {
+// Loaded from a model Not intended to be uploaded to GPU except for editor render
+struct FBXRawMaterialData {
     nString materialName;
-    const MaterialDesc* materialDescPtr = nullptr;
+    AssetHandlePtr<MaterialDef> materialHandle;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     f32v4 specularColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -53,7 +53,7 @@ struct RawSubMesh {
 // can be exported or converted into proper GPU meshes.
 class RawMesh {
 public:
-    std::vector<RawMaterialData> mMaterials;
+    std::vector<FBXRawMaterialData> mMaterials;
     std::vector<RawSubMesh> mSubMeshes;
     RawSubMesh mCombinedMeshData[e_count(MaterialRenderPassType)];
 };

@@ -75,7 +75,7 @@ namespace fbx2raw {
         ozz::animation::offline::fbx::FbxSystemConverter* _converter,
         ControlPointsRemap* controlPointsRemap,
         RawSubMesh& subMesh,
-        const std::vector<RawMaterialData>& materials,
+        const std::vector<FBXRawMaterialData>& materials,
         bool shouldRotateZUp
     ) {
         // This function treat all layers like if they were using mapping mode
@@ -373,8 +373,8 @@ namespace fbx2raw {
         }
     }
 
-    RawMaterialData readFbxMaterial(FbxSurfaceMaterial& fbxMaterial) {
-        RawMaterialData rv;
+    FBXRawMaterialData readFbxMaterial(FbxSurfaceMaterial& fbxMaterial) {
+        FBXRawMaterialData rv;
         rv.materialName = fbxMaterial.GetName();
 
         //LOG_DEBUG("Material name {} ",fbxMaterial.GetName());

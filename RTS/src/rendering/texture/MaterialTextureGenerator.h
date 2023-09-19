@@ -12,7 +12,7 @@ public:
     ~MaterialTextureGenerator();
     void init();
     VGTexture generateNormalTexture(VGTexture input, const ui32v2& dims, const vg::SamplerState& samplerState);
-    gli::texture2d generateAoRoughnessMetallicTexture(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic, const ui32v2& dims, const vg::SamplerState& samplerState);
+    gli::texture2d combineAoRoughnessMetallicTextureData(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic);
 
 private:
     VGUniform mUvRectUniform;

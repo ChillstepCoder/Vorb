@@ -6,6 +6,8 @@
 #include "ui/minigame/ILocalMinigame.h"
 #include "definitions/FishDef.h"
 
+#include "resources/asset/AssetHandleBundle.h"
+
 class MaterialShader;
 class CPUParticleSystem;
 struct MeshGpuData;
@@ -123,5 +125,6 @@ private:
     const MaterialShader* mArenaShader = nullptr;
     const MaterialShader* mUIShader = nullptr;
 
+    AssetHandleBundle mAssetHandles;
 };
 

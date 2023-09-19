@@ -2,27 +2,28 @@
 
 class Mesh;
 class MaterialShader;
-class CubemapDef;
+
+#include "definitions/rendering/CubemapDef.h"
 
 class Skybox {
 public:
     Skybox() = default;
     ~Skybox();
 
-    void init(const MaterialShader* material, const CubemapDef* skyTexture);
+    void init(const MaterialShader* material, AssetHandlePtr<CubemapDef>&& skyCubemap);
     void render(const f32m4& cameraMatrix);
     void renderPbr(const f32m4& cameraMatrix);
     void renderIrradianceDebug(const f32m4& cameraMatrix);
     void renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel);
 
-    void setCubemap(const CubemapDef* skyTexture);
-    bool hasTexture() const { return mSkyTexture != nullptr; }
-    const CubemapDef* getCubemap() const { return mSkyTexture; }
+    void setCubemap(AssetHandlePtr<CubemapDef>&& skyCubemap);
+    bool hasTexture() const { return mSkyCubemap != nullptr; }
+    const CubemapDef* getCubemap() const { return mSkyCubemap ? mSkyCubemap->tryGetAsset() : nullptr; }
 
 private:
     std::unique_ptr<Mesh> mSkyboxMesh;
     const MaterialShader* mMaterial = nullptr;
     const MaterialShader* mMaterialPbr = nullptr;
-    const CubemapDef* mSkyTexture = nullptr;
+    AssetHandlePtr<CubemapDef> mSkyCubemap;
 };
 

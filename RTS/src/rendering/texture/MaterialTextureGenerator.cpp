@@ -199,12 +199,29 @@ VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const
    return normalTexture;
 }
 
-gli::texture2d MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic, const ui32v2& dims, const vg::SamplerState& samplerState) {
+gli::texture2d MaterialTextureGenerator::combineAoRoughnessMetallicTextureData(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic) {
 
     assert(ao.empty() || ao.format() == gli::format::FORMAT_R8_UNORM_PACK8);
     assert(roughness.empty() || roughness.format() == gli::format::FORMAT_R8_UNORM_PACK8);
     assert(metallic.empty() || metallic.format() == gli::format::FORMAT_R8_UNORM_PACK8);
 
+    ui32v2 dims;
+    if (!ao.empty()) {
+        dims = ui32v2(ao.extent().x, ao.extent().y);
+    }
+    else if (!roughness.empty()) {
+        dims = ui32v2(ao.extent().x, ao.extent().y);
+    }
+    else if (!metallic.empty()) {
+        dims = ui32v2(metallic.extent().x, metallic.extent().y);
+    }
+    else {
+        dims = ui32v2(1);
+    }
+    if (!ao.empty() && (ao.extent().x != dims.x || ao.extent().y != dims.y)) panic("Mismatched texture dimensions for AO. Must match other metal + rough");
+    if (!roughness.empty() && (roughness.extent().x != dims.x || roughness.extent().y != dims.y)) panic("Mismatched texture dimensions for roughess. Must match other metal + AO");
+    if (!metallic.empty() && (metallic.extent().x != dims.x || metallic.extent().y != dims.y)) panic("Mismatched texture dimensions for metallic. Must match other AO + rough");
+    
     const ui32 pixelCount = dims.x * dims.y;
     gli::texture2d resultTexture(gli::FORMAT_RGB8_UNORM_PACK8, gli::texture2d::extent_type(dims.x, dims.y), 1);
     // These are separated into every possible case so we move all comparisons out of the critical

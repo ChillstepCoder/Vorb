@@ -9,14 +9,6 @@
 #include <ozz/animation/runtime/skeleton.h>
 #include <ozz/animation/runtime/skeleton_utils.h>
 
-RigRepository::RigRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
-
-}
-
-RigRepository::~RigRepository() {
-
-}
-
 // Helper functor used to set weights while traversing joints hierarchy.
 struct WeightSetupIterator {
     WeightSetupIterator(ozz::vector<ozz::math::SimdFloat4>* _weights,
@@ -32,101 +24,84 @@ struct WeightSetupIterator {
     float weight_setting;
 };
 
-bool RigRepository::loadRigFile(const vio::Path& filePath, const AnimationRepository& animRepo) {
-    RigDef& def = mRigDefs.emplace_back();
-    def.mRigId = mRigDefs.size() - 1u;
 
-    RigDefFileData fileData;
-    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(RigDefFileData))) {
-        pError("Failed to load rig file " + filePath.getString());
-        return false;
-    }
+AssetLoadFunc RigRepository::getAssetLoadFunc() {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+        RigDef& def = *static_cast<RigDef*>(assetDataPtr);
 
-    if (fileData.mSkeletonFileName.empty()) {
-        pError("Rig file missing skeleton path " + filePath.getString());
-        return false;
-    }
+        ryml::Tree tree = YmlSerializer::parseFileData(readFileToString(filePath));
 
-    vio::Path rootDir = filePath;
-    rootDir.trimEnd();
-    assert(rootDir.isDirectory());
+        RigDefFileData fileData;
+        tree.crootref() >> fileData;
 
-    // Load skeleton
-    {
-        vio::Path skeletonPath = rootDir + nString("\\") + fileData.mSkeletonFileName;
-        ozz::io::File file(skeletonPath.getCString(), "rb");
-
-        if (!file.opened()) {
-            pError("Skeleton import failure - " + skeletonPath.getString());
-            assert(false);
+        if (!fileData.mSkeletonFileName.isValid()) {
+            pError("Rig file missing skeleton path " + filePath.getString());
+            return false;
         }
 
-        ozz::io::IArchive archive(&file);
-        if (!archive.TestTag<ozz::animation::Skeleton>()) {
-            pError("Skeleton file is not a skeleton - " + skeletonPath.getString());
-            assert(false);
+        vio::Path rootDir = filePath;
+        rootDir.trimEnd();
+        assert(rootDir.isDirectory());
+
+        // Load skeleton
+        {
+            vio::Path skeletonPath = rootDir + nString("\\") + fileData.mSkeletonFileName.toString();
+            ozz::io::File file(skeletonPath.getCString(), "rb");
+
+            if (!file.opened()) {
+                panic("Skeleton import failure - {}. Ensure that it matches a valid StrToken", skeletonPath.getString());
+            }
+
+            ozz::io::IArchive archive(&file);
+            if (!archive.TestTag<ozz::animation::Skeleton>()) {
+                panic("Skeleton file is not a skeleton - {}", skeletonPath.getString());
+            }
+
+            archive >> def.mSkeleton;
         }
 
-        archive >> def.mSkeleton;
-    }
+        // Set upper body weight mask
+        def.mUpperBodyJointWeights.resize(def.mSkeleton.num_soa_joints());
+        def.mLowerBodyJointWeights.resize(def.mSkeleton.num_soa_joints());
+        if (!fileData.mUpperRootJointName.isValid()) {
+            // Zero out all joints
+            for (int i = 0; i < def.mSkeleton.num_soa_joints(); ++i) {
+                def.mUpperBodyJointWeights[i] = ozz::math::simd_float4::zero();
+                def.mLowerBodyJointWeights[i] = ozz::math::simd_float4::one();
+            }
+            // Find the upper root joint
+            const int upperBodyRootJointIndex = ozz::animation::FindJoint(def.mSkeleton, fileData.mUpperRootJointName.toString().c_str());
+            if (upperBodyRootJointIndex < 0) {
+                panic("Rig upper_root {} is not found in the skeleton {}. Ensure it is a valid strtoken ", fileData.mUpperRootJointName.toString(), filePath.getString());
+            }
+            // DFS iterate joints from the upper body root and set to 1.0f for upper
+            WeightSetupIterator upper_it(&def.mUpperBodyJointWeights, 1.0f);
+            ozz::animation::IterateJointsDF(def.mSkeleton, upper_it, upperBodyRootJointIndex);
 
-    // Set upper body weight mask
-    def.mUpperBodyJointWeights.resize(def.mSkeleton.num_soa_joints());
-    def.mLowerBodyJointWeights.resize(def.mSkeleton.num_soa_joints());
-    if (fileData.mUpperRootJointName.size()) {
-        // Zero out all joints
-        for (int i = 0; i < def.mSkeleton.num_soa_joints(); ++i) {
-            def.mUpperBodyJointWeights[i] = ozz::math::simd_float4::zero();
-            def.mLowerBodyJointWeights[i] = ozz::math::simd_float4::one();
+            // DFS iterate joints from the upper body root and set to 0.0f for lower
+            WeightSetupIterator lower_it(&def.mLowerBodyJointWeights, 0.0f);
+            ozz::animation::IterateJointsDF(def.mSkeleton, lower_it, upperBodyRootJointIndex);
+
         }
-        // Find the upper root joint
-        const int upperBodyRootJointIndex = ozz::animation::FindJoint(def.mSkeleton, fileData.mUpperRootJointName.c_str());
-        if (upperBodyRootJointIndex < 0) {
-            pError("Rig upper_root is not found in the skeleton " + filePath.getString());
+        else {
+            // We have no upper body so just set it all to one
+            for (int i = 0; i < def.mSkeleton.num_soa_joints(); ++i) {
+                def.mUpperBodyJointWeights[i] = ozz::math::simd_float4::one();
+                def.mLowerBodyJointWeights[i] = ozz::math::simd_float4::one();
+            }
         }
-        // DFS iterate joints from the upper body root and set to 1.0f for upper
-        WeightSetupIterator upper_it(&def.mUpperBodyJointWeights, 1.0f);
-        ozz::animation::IterateJointsDF(def.mSkeleton, upper_it, upperBodyRootJointIndex);
-        
-        // DFS iterate joints from the upper body root and set to 0.0f for lower
-        WeightSetupIterator lower_it(&def.mLowerBodyJointWeights, 0.0f);
-        ozz::animation::IterateJointsDF(def.mSkeleton, lower_it, upperBodyRootJointIndex);
 
-    }
-    else {
-        // We have no upper body so just set it all to one
-        for (int i = 0; i < def.mSkeleton.num_soa_joints(); ++i) {
-            def.mUpperBodyJointWeights[i] = ozz::math::simd_float4::one();
-            def.mLowerBodyJointWeights[i] = ozz::math::simd_float4::one();
+        // Hook up animations
+        def.mNumAnimations = fileData.mAnimationNames.size();
+        if (def.mNumAnimations) {
+            def.mAnimations = std::unique_ptr<ConstOzzAnimationPtr[]>(new ConstOzzAnimationPtr[def.mNumAnimations]);
+            for (ui32 i = 0; i < def.mNumAnimations; ++i) {
+                // DEPENDENCIES!!!
+                def.mAnimations[i] = &animRepo.getAnimation(fileData.mAnimationNames[i]);
+                def.mNameToAnimationIndex[fileData.mAnimationNames[i]] = i;
+            }
         }
-    }
 
-    // Hook up animations
-    def.mNumAnimations = fileData.mAnimationNames.size();
-    if (def.mNumAnimations) {
-        def.mAnimations = std::unique_ptr<ConstOzzAnimationPtr[]>(new ConstOzzAnimationPtr[def.mNumAnimations]);
-        for (ui32 i = 0; i < def.mNumAnimations; ++i) {
-            def.mAnimations[i] = &animRepo.getAnimation(fileData.mAnimationNames[i]);
-            def.mNameToAnimationIndex[fileData.mAnimationNames[i]] = i;
-        }
-    }
-
-    const nString rigFileNameNoExtension = filePath.getFileNameNoExtension();
-    assert(mRigIdLookup.find(rigFileNameNoExtension) == mRigIdLookup.end());
-    mRigIdLookup[rigFileNameNoExtension] = def.mRigId;
-    return true;
-}
-
-const RigDef& RigRepository::getRigDef(const nString& name) const {
-    auto&& it = mRigIdLookup.find(name);
-    assert(it != mRigIdLookup.end());
-    return mRigDefs[it->second];
-}
-
-const RigDef* RigRepository::tryGetRigDef(const nString& name) const {
-    auto&& it = mRigIdLookup.find(name);
-    if (it == mRigIdLookup.end()) {
-        return nullptr;
-    }
-    return &mRigDefs[it->second];
+        return true;
+    };
 }

@@ -69,6 +69,7 @@ extern bool IS_SHUTTING_DOWN;
 #define NET_SERIALIZE_DECL() \
 template <typename Stream> bool netSerialize(Stream& stream);
 
+
 // Utils
 #include "util/CommonUtil.h"
 #include "util/MathDefines.h"
@@ -95,8 +96,14 @@ template <typename Stream> bool netSerialize(Stream& stream);
 // Items
 #include "item/ItemConst.h"
 
-// Serialization
-#include "serialization/YmlSerializer.h"
+// Asset (includes serializer)
+#include "resources/IAsset.h"
+
+template <IsAssetType T>
+class AssetHandle;
+
+template <IsAssetType T>
+using AssetHandlePtr = std::shared_ptr<AssetHandle<T>>;
 
 // **************** Constexpr vectors *****************
 #include "math/ConstVectors.h"

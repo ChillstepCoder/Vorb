@@ -56,7 +56,29 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
 
 {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    MaterialRepository& materialRepo = MaterialRepository::get();
+
+    mAssetHandles.reserveCount(20);
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("soft_particle", 0)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 0)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 1)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 2)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 3)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 4)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 5)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 6)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fishing_bg", 0)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fishing_border", 0)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fish_player", 0)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("chest_token", 1)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("chest_token", 2)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("chest_token", 3)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("chest_token", 4)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fish_token", 1)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fish_token", 2)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fish_token", 3)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("fish_token", 4)));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("weed_token", 1)));
 
     mPlayerPosition = f32v2(0.0f, -BOUNDARY_RADIUS + mPlayerRadius + 1);
     mChestPosition = f32v2(0.0f, BOUNDARY_RADIUS - CHEST_RADIUS - 1);
@@ -82,6 +104,8 @@ FishingMinigame::~FishingMinigame()
 
 MinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolution, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
+    if (!mAssetHandles.areAllAssetsLoaded()) return MinigameResult();
+
     mCurrentScreenResolution = screenResolution;
 
     mFishRadius = getFishRadius(mFishDef);
@@ -190,16 +214,16 @@ void FishingMinigame::render(f32 elapsedSec) {
     // Player
     // TODO: Replace
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    MaterialRepository& materialRepo = MaterialRepository::get();
     MaterialID materials[8] = {
-        materialRepository.getMaterialDesc("soft_particle").id,
-        materialRepository.getMaterialDesc("particle_v0").id,
-        materialRepository.getMaterialDesc("particle_v1").id,
-        materialRepository.getMaterialDesc("particle_v2").id,
-        materialRepository.getMaterialDesc("particle_v3").id,
-        materialRepository.getMaterialDesc("particle_v4").id,
-        materialRepository.getMaterialDesc("particle_v5").id,
-        materialRepository.getMaterialDesc("particle_v6").id,
+        materialRepo.getAssetID(StrToken("soft_particle", 0)),
+        materialRepo.getAssetID(StrToken("particle_v", 0)),
+        materialRepo.getAssetID(StrToken("particle_v", 1)),
+        materialRepo.getAssetID(StrToken("particle_v", 2)),
+        materialRepo.getAssetID(StrToken("particle_v", 3)),
+        materialRepo.getAssetID(StrToken("particle_v", 4)),
+        materialRepo.getAssetID(StrToken("particle_v", 5)),
+        materialRepo.getAssetID(StrToken("particle_v", 6)),
     };
     // TODO: REMOVE
 
@@ -232,7 +256,7 @@ void FishingMinigame::render(f32 elapsedSec) {
 
 void FishingMinigame::initUIParticles() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    const MaterialRepository& materialRepo = MaterialRepository::get();
 
     mBackgroundParticleSystem = std::make_unique<CPUParticleSystem>(nullptr, 1, BitFlags<ParticleComponentType>(), *mUIShader);
 
@@ -253,19 +277,19 @@ void FishingMinigame::initUIParticles() {
     };
 
     mBackgroundParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
-    mBackgroundParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialDesc("fishing_bg").id);
+    mBackgroundParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepo.getAssetID(StrToken("fishing_bg")));
 
     mArenaParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->getEmitter(0).setParticleMaterial(mArenaParticleID, materialRepository.getMaterialDesc("fishing_border").id);
+    mUIParticleSystem->getEmitter(0).setParticleMaterial(mArenaParticleID, materialRepo.getAssetID(StrToken("fishing_border")));
     mUIParticleSystem->getEmitter(0).setParticleHDRColor(mArenaParticleID, f32v4(1.0f));
 
     mFishParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
     const ui32 fishTier = Random::xorshf96() % 4;
-    mUIParticleSystem->getEmitter(0).setParticleMaterial(mFishParticleID, materialRepository.getMaterialDesc(possibleFishTokens[fishTier]).id);
+    mUIParticleSystem->getEmitter(0).setParticleMaterial(mFishParticleID, materialRepo.getAssetID(StrToken(possibleFishTokens[fishTier])));
     mUIParticleSystem->getEmitter(0).setParticleHDRColor(mFishParticleID, f32v4(1.0f));
 
     mPlayerParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
-    mUIParticleSystem->getEmitter(0).setParticleMaterial(mPlayerParticleID, materialRepository.getMaterialDesc("fish_player").id);
+    mUIParticleSystem->getEmitter(0).setParticleMaterial(mPlayerParticleID, materialRepo.getAssetID(StrToken("fish_player")));
     mUIParticleSystem->getEmitter(0).setParticleHDRColor(mPlayerParticleID, f32v4(0.0f, 33.5f, 0.0f, 1.0f));
 
     // One in 15 chance
@@ -282,15 +306,14 @@ void FishingMinigame::initUIParticles() {
         const ui32 chestTier = Random::xorshf96() % 4;
         mChestParticleID = mUIParticleSystem->getEmitter(0).tryAddParticle(f32v3(0.0f));
         mUIParticleSystem->getEmitter(0).setParticleScale(mChestParticleID, f32v2(CHEST_RADIUS * 2.0f));
-        mUIParticleSystem->getEmitter(0).setParticleMaterial(mChestParticleID, materialRepository.getMaterialDesc(possibleChestTokens[chestTier]).id);
+        mUIParticleSystem->getEmitter(0).setParticleMaterial(mChestParticleID, materialRepo.getAssetID(StrToken(possibleChestTokens[chestTier])));
         mUIParticleSystem->getEmitter(0).setParticleHDRColor(mChestParticleID, f32v4(1.0f));
     }
 }
 
 void FishingMinigame::initPlayerParticles() {
 
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    MaterialRepository& materialRepository = MaterialRepository::get();
 
     // Player particles
     mPlayerParticleSystem = std::make_unique<CPUParticleSystem>(
@@ -441,16 +464,16 @@ void FishingMinigame::initPlayerParticles() {
 
     constexpr int MATERIAL_COUNT = 9;
     MaterialID materials[MATERIAL_COUNT] = {
-        materialRepository.getMaterialDesc("particle_v0").id,
-        materialRepository.getMaterialDesc("particle_v1").id,
-        materialRepository.getMaterialDesc("particle_v2").id,
-        materialRepository.getMaterialDesc("particle_v3").id,
-        materialRepository.getMaterialDesc("particle_v4").id,
+        materialRepository.getAssetID(StrToken("particle_v0", 0)),
+        materialRepository.getAssetID(StrToken("particle_v1", 1)),
+        materialRepository.getAssetID(StrToken("particle_v2", 2)),
+        materialRepository.getAssetID(StrToken("particle_v3", 3)),
+        materialRepository.getAssetID(StrToken("particle_v4", 4)),
         // Dominant proportion on purpose:
-        materialRepository.getMaterialDesc("particle_v2").id,
-        materialRepository.getMaterialDesc("particle_v2").id,
-        materialRepository.getMaterialDesc("particle_v2").id,
-        materialRepository.getMaterialDesc("particle_v2").id,
+        materialRepository.getAssetID(StrToken("particle_v2", 2)),
+        materialRepository.getAssetID(StrToken("particle_v2", 2)),
+        materialRepository.getAssetID(StrToken("particle_v2", 2)),
+        materialRepository.getAssetID(StrToken("particle_v2", 2)),
     };
 
     const f32 BALL_RADIUS = mPlayerRadius;
@@ -474,8 +497,7 @@ void FishingMinigame::initPlayerParticles() {
 }
 
 void FishingMinigame::initBlockerParticles() {
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    MaterialRepository& materialRepository = MaterialRepository::get();
 
     // Blocker particles
     constexpr int BLOCKER_PARTICLE_COUNT = 1;
@@ -588,15 +610,14 @@ void FishingMinigame::initBlockerParticles() {
             );
             mBlockerParticleSystem->getEmitter(0).setParticleScale(mBlockerParticles[i], f32v2(PARTICLE_SCALE));
         }
-        mBlockerParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialDesc("weed_token_01").id);
+        mBlockerParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialId(StrToken("weed_token", 1)));
         mBlockerParticleSystem->getEmitter(0).setGlobalParticleColor(color::White);
     }
 }
 
 void FishingMinigame::initBubbleParticles()
 {
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialRepository& materialRepository = resourceManager.getMaterialRepository();
+    MaterialRepository& materialRepository = MaterialRepository::get();
 
     // Blocker particles
     constexpr int BUBBLE_PARTICLE_COUNT = 40;
@@ -674,7 +695,7 @@ void FishingMinigame::initBubbleParticles()
             scale = scale * (PARTICLE_SCALE_MAX - PARTICLE_SCALE_MIN) + PARTICLE_SCALE_MIN;
             mBubbleParticleSystem->getEmitter(0).setParticleScale(newParticle, f32v2(scale));
         }
-        mBubbleParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialDesc("fish_bubble").id);
+        mBubbleParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getAssetID(StrToken("fish_bubble")));
         mBubbleParticleSystem->getEmitter(0).setGlobalParticleColor(color::White);
     }
 }

@@ -251,6 +251,10 @@ AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
         TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
         TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
 
+        // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
+       // TODO: MOVE
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Handle weird texture dimensions
+
         // Prefer dds
         if (loadUserData.ddsRs.size()) {
             textureDef.gpuTexture = uploadDDSTexture(loadUserData.ddsRs, textureDef.type, *textureDef.samplerState, INT_MAX);

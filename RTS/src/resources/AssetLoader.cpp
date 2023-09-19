@@ -27,7 +27,7 @@ AssetLoader::~AssetLoader() {
 
     // Tell all threads to wake up and close, as they are currently hanging on a semaphore
     for (size_t i = 0; i < mWorkers.size(); i++) {
-        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mLoadFunc = [](AssetLoader&, AssetID, const vio::Path&, void*) { return false; }}));
+        mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mLoadFunc = [](AssetLoader&, AssetID, const vio::Path&, void*, std::any&) { return false; }}));
     }
 
     // Join all threads

@@ -144,7 +144,6 @@ void WorldEditorPanel::renderBrushDecals (const Camera3D& camera) const {
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void WorldEditorPanel::renderUI(f32 ySize) const {
-    const BrushRepository& brushRepo = Services::ResourceManager::ref().getBrushRepository();
 
     ImGui::BeginChild("World Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
@@ -196,7 +195,7 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
     }
 
     ImGui::NewLine();
-    tryRenderBrushSelect(brushRepo);
+    tryRenderBrushSelect();
 
     ImGui::EndChild();
     checkGlError("WorldEditor::renderUI()");
@@ -287,23 +286,31 @@ void WorldEditorPanel::renderMenuBar() const {
 //    static_assert((int)WorldEditorEditMode::COUNT == 6);
 //}
 
-void WorldEditorPanel::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
+void WorldEditorPanel::tryRenderBrushSelect() const {
     if (mCurrentBrushSettings) {
+        BrushRepository& brushRepo = BrushRepository::get();
         if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
-            const std::vector<BrushDef>& brushes = brushRepo.getBrushes();
             ImGui::Indent();
             ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-            for (size_t i = 0; i < brushes.size(); ++i) {
-                const BrushDef& brush = brushes[i];
+            brushRepo.forEachRegisteredAsset([&](IAssetRepository<BrushDef>& repo, BrushDef* brush, const AssetRegistryEntry& entry) {
                 ImGui::TableNextColumn();
                 ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-                if (ImGui::RadioButton(brush.name.c_str(), mCurrentBrushSettings->brushId == i)) {
-                    mCurrentBrushSettings->brushId = (ui32)i;
-                    mCurrentBrushSettings->activeBrush = &brush;
+                ui32 strSize = 0;
+                char nameBuf[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
+                entry.mName.toString(nameBuf, &strSize);
+                if (ImGui::RadioButton(nameBuf, mCurrentBrushSettings->brushId == entry.mID)) {
+                    mCurrentBrushSettings->brushId = entry.mID;
+                    mCurrentBrushSettings->activeBrush = repo.getAssetHandle(entry.mID);
                 }
                 ImGui::TableNextColumn();
-                ImGui::Image((ImTextureID)brush.texture, ImVec2(50.0f, 50.0f));
-            }
+                if (brush) {
+                    ImGui::Image((ImTextureID)brush->texture, ImVec2(50.0f, 50.0f));
+                }
+                else {
+                    ImGui::Spacing();
+                }
+                return false;
+            });
             ImGui::EndTable();
             ImGui::Unindent();
         }
@@ -713,15 +720,18 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
 }
 
 f32 WorldEditorPanel::getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint) {
+    const BrushDef* brushDef = brush.activeBrush->tryGetAsset();
+    if (!brushDef) return 0.0f;
+
     f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(brush.brushSize)) / f32v2(brush.brushSize * 2.0f);
     if (offsetToCornerNormalized.x < 0.0f || offsetToCornerNormalized.y < 0.0f) {
         return 0.0f;
     }
-    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(brush.activeBrush->dims.x, brush.activeBrush->dims.y);
-    if (pixelPos.x >= brush.activeBrush->dims.x || pixelPos.y >= brush.activeBrush->dims.y) {
+    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(brushDef->dims.x, brushDef->dims.y);
+    if (pixelPos.x >= brushDef->dims.x || pixelPos.y >= brushDef->dims.y) {
         return 0.0f;
     }
-    ui8 brushIntensity = brush.activeBrush->data[pixelPos.y * brush.activeBrush->dims.x + pixelPos.x];
+    ui8 brushIntensity = brushDef->data[pixelPos.y * brushDef->dims.x + pixelPos.x];
     return (f32)brushIntensity / 255.0f;
 }
 

@@ -27,7 +27,7 @@ ModelRepository::~ModelRepository() {
 }
 
 // TODO: Cache model files in binary
-bool ModelRepository::loadModelFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository) {
+bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository) {
 
     PROFILE_FUNCTION();
 
@@ -49,10 +49,10 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const MaterialRep
     assert(rootDir.isDirectory());
 
     const vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName;
-    return loadModelInternal(fileData, materialRepository, animMachineRepository, filePath.getFileNameNoExtension(), modelPath);
+    return loadModelInternal(fileData, animMachineRepository, filePath.getFileNameNoExtension(), modelPath);
 }
 
-bool ModelRepository::loadFbxFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository) {
+bool ModelRepository::loadFbxFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository) {
     PROFILE_FUNCTION();
 
     LOG_TRACE("Loading FBX {}", filePath.getCString());
@@ -62,10 +62,10 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath, const MaterialRepos
     assert(rootDir.isDirectory());
 
     ModelDefFileData fileData;
-    return loadModelInternal(fileData, materialRepository, animMachineRepository, filePath.getFileNameNoExtension(), filePath);
+    return loadModelInternal(fileData, animMachineRepository, filePath.getFileNameNoExtension(), filePath);
 }
 
-bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath) {
+bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath) {
     // Create the modeldef
     ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
@@ -86,7 +86,7 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     }
 
     // Load model to raw
-    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, def.mRig ? &def.mRig->mSkeleton : nullptr, materialRepository);
+    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
     if (rawMesh) {
         if (fileData.mForceNormalsUp) {
             MeshOperations::setAllNormals(*rawMesh, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
@@ -142,7 +142,8 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     return false;
 }
 
-RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton, const MaterialRepository& materialRepo) {
+RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
+    MaterialRepository& materialRepo = MaterialRepository::get();
 
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
     ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
@@ -170,7 +171,7 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
         FbxSurfaceMaterial* fbxMaterial = sceneLoader.scene()->GetMaterial(i);
         assert(fbxMaterial);
         rawFbxMesh->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
-        rawFbxMesh->mMaterials[i].materialDescPtr = &materialRepo.getMaterialDesc(rawFbxMesh->mMaterials[i].materialName);
+        rawFbxMesh->mMaterials[i].materialDescPtr = &materialRepo.getMaterialDesc(StrToken(rawFbxMesh->mMaterials[i].materialName));
     }
 
     // Meshes

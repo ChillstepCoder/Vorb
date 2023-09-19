@@ -6,6 +6,9 @@
 class CubemapRepository : public IAssetRepository<CubemapDef> {
     ASSET_REPOSITORY_COMMON_CODE(CubemapRepository, CubemapDef, AssetType::Cubemap)
 
+
+   bool saveAsset(AssetID assetId) override { panic("Cannot save Cubemaps yet"); }
+
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;

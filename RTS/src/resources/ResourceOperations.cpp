@@ -10,5 +10,5 @@ bool ResourceOperations::importFbxModel(const vio::Path& path) {
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     ModelRepository& modelRepo = resourceManager.getModelRepository();
-    return modelRepo.loadFbxFile(path, resourceManager.getMaterialRepository(), resourceManager.getAnimMachineRepository());
+    return modelRepo.loadFbxFile(path, resourceManager.getAnimMachineRepository());
 }

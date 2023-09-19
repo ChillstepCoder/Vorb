@@ -19,25 +19,26 @@ public:
     MaterialGpuData& getMutableMaterialGpuData(MaterialID materialId);
     const MaterialGpuData& getMaterialGpuData(StrToken materialName) const;
     MaterialGpuData& getMutableMaterialGpuData(StrToken materialName);
-    MaterialID getMaterialId(StrToken materialName) const;
-    MaterialHandle getMutableMaterialHandle(StrToken materialName);
+    MaterialID getMaterialId(StrToken materialName) const { return getAssetID(materialName); }
+    EditorMaterialHandle getMutableMaterialHandle(StrToken materialName);
     const MaterialDesc& getMaterialDesc(StrToken materialName) const;
     const MaterialDesc& getMaterialDesc(MaterialID materialId) const;
 
-    void uploadMaterialData(); // TODO: DO this lazily as new things are added
     void bindMaterialBuffer() const;
 
+    bool saveAsset(AssetID assetId) override { panic("Cannot save materials yet"); }
+
 protected:
+
     virtual void initInternal() override;
     AssetLoadFunc getAssetLoadFunc() override;
-    AssetLoadFunc getAssetLoadRenderProcessFunc() override;
     void onRegisteredAsset(AssetID id) override;
+    std::any getUserData(AssetID id) override;
 private:
 
     std::vector<MaterialDesc> mMaterialDescs;
     std::vector<MaterialGpuData> mMaterialGpuData;
 
-    std::mutex mGeneratedStorageMutex;
     std::map<StrToken, GLTexture> mGeneratedNormalTextures;
     std::map<StrToken, GLTexture> mGeneratedAOMetallicRoughnessTextures;
 

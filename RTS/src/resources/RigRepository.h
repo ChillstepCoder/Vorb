@@ -1,26 +1,17 @@
 #pragma once
 
 #include "definitions/RigDef.h"
+#include "resources/IAssetRepository.h"
 
 class AnimationRepository;
 DECL_VIO(class IOManager);
 
-class RigRepository
-{
+class RigRepository : public IAssetRepository<RigDef> {
 public:
-    RigRepository(vio::IOManager& ioManager);
-    ~RigRepository();
+    ASSET_REPOSITORY_COMMON_CODE(RigRepository, RigDef, AssetType::Rig)
 
-    bool loadRigFile(const vio::Path& filePath, const AnimationRepository& animRepo);
-
-    const RigDef& getRigDef(ui32 rigId) const { return mRigDefs[rigId]; }
-    const RigDef& getRigDef(const nString& name) const;
-    const RigDef* tryGetRigDef(const nString& name) const;
-
-private:
-
-    vio::IOManager& mIoManager;
-    std::unordered_map<nString, ui32> mRigIdLookup;
-    std::vector<RigDef> mRigDefs;
+    bool saveAsset(AssetID assetId) override { panic("Cannot save rigs yet"); }
+protected:
+    AssetLoadFunc getAssetLoadFunc() override;
 };
 

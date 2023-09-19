@@ -8,7 +8,7 @@ class WorldEditorPanel;
 class Camera3D;
 class TileEditorPanel;
 class ModelDef;
-struct MaterialHandle;
+struct EditorMaterialHandle;
 struct TileGrassData;
 struct FishDef;
 class ParticleSystemDef;
@@ -35,7 +35,7 @@ public:
 
 private:
     void openModelForEdit(ModelDef& model);
-    void openMaterialForEdit(MaterialHandle& materialHandle);
+    void openMaterialForEdit(EditorMaterialHandle& materialHandle);
     void openFoliageForEdit(TileGrassData& grassData);
     void openBiomeForEdit();
     void openFishForEdit(FishDef& fishDef);

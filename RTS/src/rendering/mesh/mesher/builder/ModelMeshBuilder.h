@@ -7,7 +7,7 @@
 #include <ozz/animation/offline/fbx/fbx.h>
 
 struct RawSubMesh;
-struct RawMaterialData;
+struct FBXRawMaterialData;
 class MaterialRepository;
 typedef ozz::animation::offline::fbx::FbxSceneLoader OzzFbxSceneLoader;
 
@@ -24,7 +24,7 @@ public:
 
     static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
         RawSubMesh& subMesh,
-        const std::vector<RawMaterialData>& rawMaterials,
+        const std::vector<FBXRawMaterialData>& rawMaterials,
         const MaterialRepository& materialRepo
     );
 

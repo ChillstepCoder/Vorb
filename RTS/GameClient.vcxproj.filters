@@ -2030,6 +2030,9 @@
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\definitions\BrushDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

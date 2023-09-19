@@ -22,6 +22,7 @@ struct DrawElementsIndirectCommand
     GLuint baseInstance_;
 };
 
+// TODO: Optimize via mapped buffer
 class GLBuffer
 {
 public:
