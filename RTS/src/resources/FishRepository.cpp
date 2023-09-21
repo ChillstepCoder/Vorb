@@ -2,62 +2,34 @@
 #include "FishRepository.h"
 
 #include "item/ItemRepository.h"
-#include "item/ItemFileData.h"
-
 #include "resources/ModelRepository.h"
 
-#include <Vorb/io/IOManager.h>
+AssetLoadFunc FishRepository::getAssetLoadFunc() {
 
-struct FishFileData {
-    ItemFileData itemData;
-    nString modelName;
-};
-KEG_TYPE_DEF_SAME_NAME(FishFileData, kt) {
-    kt.addValue("item", keg::Value::custom(offsetof(FishFileData, itemData), "ItemFileData", false));
-    kt.addValue("model", keg::Value::basic(offsetof(FishFileData, modelName), keg::BasicType::STRING));
-}
+    return ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr) {
+        FishDef& def = *static_cast<FishDef*>(assetDataPtr);
+        YmlSerializer::readFileData(readFileToString(filePath), def);
 
-FishRepository::FishRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
+        if (def.mItemName.isValid()) panic("FishDef {} mising item name", filePath.getString());
+        def.addDependency(ItemRepository::get().getAssetHandle(def.mItemName));
 
-}
+        if (def.mModelName.isValid()) panic("FishDef {} mising model name", filePath.getString());
+        def.addDependency(ModelRepository::get().getAssetHandle(def.mModelName));
 
-FishRepository::~FishRepository() {
-
-}
-
-void FishRepository::loadFishFile(const vio::Path& filePath, ModelRepository& modelRepo, ItemRepository& itemRepo, TextureRepository& textureRepo)
-{
-    if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
-        keg::ReadContext& readContext = *((keg::ReadContext*)s);
-
-        FishFileData fileData;
-        keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(FishFileData));
-
-        FishDef& newFish = mFishDefinitions.emplace_back();
-        newFish.mId = mFishDefinitions.size() - 1;
-        newFish.mItem = itemRepo.addItem(key, fileData.itemData);
-        if (fileData.modelName.empty()) {
-            LOG_CRITICAL("Missing model name for {}", filePath.getString());
-            assert(false);
-        }
-        newFish.mModel = modelRepo.getModelID(fileData.modelName);
-
-        // TODO: MinigameData
-
-        // TODO: Check for mod conflicts
-        mFishIdLookup[key] = newFish.mId;
-
-    }))) {
-        // Do nothing on success
-    }
-    else {
-        // Failure case
-        pError("Failed to parse fish file " + filePath.getString());
-    }
-}
-
-const FishDef& FishRepository::getFish(const nString& itemName) const {
-    auto&& it = mFishIdLookup.find(itemName);
-    assert(it != mFishIdLookup.end());
-    return mFishDefinitions[it->second];
+        assetLoader.requestAssetLoadWithDependencies(ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr) {
+            FishDef& def = *static_cast<FishDef*>(assetDataPtr);
+            def.mItemId = ItemRepository::get().getAssetID(def.mItemName);
+            def.mModelId = ModelRepository::get().getAssetID(def.mModelName);
+            return true;
+        },  nullptr,
+            assetId,
+            assetDataPtr,
+            filePath,
+            mLoadedAssets[assetId].get(),
+            nullptr,
+            def.getDependencies()
+        );
+        
+        return false;
+    };
 }

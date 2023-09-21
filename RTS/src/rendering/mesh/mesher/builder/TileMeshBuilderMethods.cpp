@@ -159,7 +159,7 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     return rv;
 }
 
-void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContainer& tileWalls, const std::vector<Tile>& tiles, i32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh) {
+void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContainer& tileWalls, const std::vector<Tile>& tiles, i32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, std::unordered_set<MaterialID>& materialDependencies, StaticPhysicsMeshBuilder& physMesh) {
     PROFILE_FUNCTION();
     TileIndex tileIndex = 0;
     i32v3 xyz;
@@ -173,7 +173,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
                 for (int i = 0; i < 2; ++i) {
                     if (southAndWestWalls[i].isValid()) {
                         const TileData& tileData = TileRepository::getTileData(southAndWestWalls[i].wallID);
-                        ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tiles, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, physMesh);
+                        ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tiles, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, materialDependencies, physMesh);
                     }
                 }
             }
@@ -184,8 +184,6 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 // TODO: Dual grid meshing? https://www.youtube.com/watch?v=buKQjkad2I0
 void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
     PROFILE_FUNCTION();
-
-
 
     const TileContainer& tileContainer = builders.container;
     const ContainerMeshDataCopy& tiles = builders.tileData;
@@ -217,13 +215,16 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
+                        builders.addMaterial(tileData.materialData[0].id);
                         builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
+                        // TODO: Handle other materials?
+                        builders.addMaterial(tileData.materialData[0].id);
                         TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), TileHandle(&tileContainer, index), tileData, physics);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
-
+                        builders.addMaterial(tileData.materialData[0].id);
                         // Adjacent shapes are for culling (ONLY WORKS ON STRUCTURE WITH UNIFORM FLOOR POSITIONS)
                         TileShape adjacentShapes[4] = { TileShape::NONE, TileShape::NONE, TileShape::NONE, TileShape::NONE };
                         if (xyz.y > 0) {
@@ -254,6 +255,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         TileMeshBuilderMethods::addFloor(builders.staticBuilder, adjacentShapes, floorHeight, xyz, tileData.materialData[0], physics);
                     }
                     else if (tileData.shape == TileShape::STAIRS) {
+                        builders.addMaterial(tileData.materialData[0].id);
                         TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation((TileLayer)layerIndex), tileData, physics);
                     }
                     else if (tileData.shape == TileShape::MODEL) {
@@ -273,7 +275,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
             }
         }
     }
-    meshWallsDefault(spatialGrid, tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, physics);
+    meshWallsDefault(spatialGrid, tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, builders.materialDependencies, physics);
 
     // Dynamics
     //for (auto&& dynamicTile : tileContainer.getDynamicTiles()) {

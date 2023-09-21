@@ -56,20 +56,19 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
     REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
     REGISTER_ASSET_REPO(BrushRepository, AssetType::Brush);
-    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Material);
+    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Rig);
+    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Animation);
+    REGISTER_ASSET_REPO(MaterialRepository, AssetType::AnimMachine);
+    REGISTER_ASSET_REPO(ModelRepository, AssetType::Model);
+    REGISTER_ASSET_REPO(SkillRepository, AssetType::Skill);
+    REGISTER_ASSET_REPO(ItemRepository, AssetType::Item);
+    REGISTER_ASSET_REPO(FishRepository, AssetType::Fish);
 
     mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
-    mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
-    mFishRepository = std::make_unique<FishRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
-    mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
-    mAnimationRepository = std::make_unique<AnimationRepository>();
-    mRigRepository = std::make_unique<RigRepository>(*mIoManager);
-    mAnimMachineRepository = std::make_unique<AnimMachineRepository>(*mIoManager, *mRigRepository);
-    mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mRigRepository);
-    mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
+    mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager);
     mFontRepository = std::make_unique<FontRepository>();
     mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
     mTileGrassRepository = std::make_unique<TileGrassRepository>();
@@ -99,7 +98,6 @@ void ResourceManager::gatherFiles() {
 
     // Make sure we clear all vectors each gather
     mMaterialShaderFiles.clear();
-    mMaterialFiles.clear();
     mTileFiles.clear();
     mTileGrassFiles.clear();
     
@@ -111,9 +109,6 @@ void ResourceManager::gatherFiles() {
     mRecipeFiles.clear();
     mBusinessFiles.clear();
     mModelFiles.clear();
-    mAnimFiles.clear();
-    mRigFiles.clear();
-    mAnimMachineFiles.clear();
     mSkillFiles.clear();
     mFontFiles.clear();
 
@@ -164,38 +159,6 @@ void ResourceManager::loadFiles() {
         for (auto&& entry : mComputeFiles) {
             mMaterialManager->loadComputeShader(entry);
         };
-    }
-
-    // Load Animations
-    {
-        ScopedTimer timer("Animation load");
-        for (auto&& entry : mAnimFiles) {
-            mAnimationRepository->loadAnimFile(entry);
-        }
-    }
-
-    // Load Rigs
-    {
-        ScopedTimer timer("Rig load");
-        for (auto&& entry : mRigFiles) {
-            mRigRepository->loadRigFile(entry, *mAnimationRepository);
-        }
-    }
-
-    // Load Animation Machines
-    {
-        ScopedTimer timer("Animation Machine load");
-        for (auto&& entry : mAnimMachineFiles) {
-            mAnimMachineRepository->loadMachineFile(entry);
-        }
-    }
-
-    // Load Models
-    {
-        ScopedTimer timer("Model load");
-        for (auto&& entry : mModelFiles) {
-            mModelRepository->loadModelFile(entry, *mAnimMachineRepository);
-        }
     }
 
     // Load Fish
@@ -386,19 +349,19 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mBusinessFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".model")) {
-            mModelFiles.emplace_back(entry);
+            ModelRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".rig")) {
-            mRigFiles.emplace_back(entry);
+            RigRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".machine")) {
-            mAnimMachineFiles.emplace_back(entry);
+            AnimMachineRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".skill")) {
             mSkillFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".anim")) {
-            mAnimFiles.emplace_back(entry);
+            AnimationRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".ttf")) {
             mFontFiles.emplace_back(entry);

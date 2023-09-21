@@ -72,8 +72,7 @@ static_assert(sizeof(GpuCullUniformData) == 132);
 static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 
 InstancedStaticModelManager::InstancedStaticModelManager() :
-    mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT),
-    mModelRepository(Services::ResourceManager::ref().getModelRepository())
+    mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
@@ -95,6 +94,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
     PROFILE_FUNCTION();
 
+    updatePendingModelDefs();
+
+    // Build GPU data and cull
     for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             StaticMeshInstanceData& instanceData = it.second;
@@ -294,33 +296,68 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
     updateAnimatedModels(elapsedSec);
 }
 
-void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation)
-{
+void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation) {
     ASSERT_RENDER_THREAD();
-    const ModelDef& modelDef = mModelRepository.getModelDef(modelId);
-    for (int m = 0; m < modelDef.getNumMeshes(); ++m) {
-        const Mesh& mesh = modelDef.getMesh(m);
-        const int renderPassIndex = e_cast(mesh.getRenderPass());
-        StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][modelId];
 
-        const size_t instanceIndex = instanceData.mInstanceTransforms.size();
-        if (instanceIndex < instanceData.mFirstDirtyInstance) {
-            instanceData.mFirstDirtyInstance = instanceIndex;
-        }
-        // Store per tile references
-        instanceData.mInstanceTransforms.emplace_back(ModelUtil::computeTransformMatrixForModel(position, rotation));
-        instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
-        TileModelPositionKey positionKey{ tileIndex };
-
-        SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[renderPassIndex][containerId];
-        assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
-        tileContainerModels[positionKey] = { modelId, (ui32)instanceIndex };
+    AssetHandle<ModelDef>* assetHandle;
+    auto&& mit = mModelDefRefs.find(modelId);
+    if (mit == mModelDefRefs.end()) {
+        ModelDefRef newRef;
+        newRef.handle = ModelRepository::get().getAssetHandle(modelId);
+        assetHandle = newRef.handle.get();
+        mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
     }
+    else {
+        assetHandle = mit->second.handle.get();
+        ++mit->second.refCount;
+    }
+    
+    if (!assetHandle->isLoaded()) {
+        mPendingInstances[modelId].emplace_back(PendingModelInstance{ containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation) });
+        mPendingInstanceForContainer[containerId].emplace(modelId);
+        return;
+    }
+    const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
+    assert(modelDefPtr);
+
+    addInstanceAtPositionInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation));
 }
 
-void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex)
-{
+void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
     ASSERT_RENDER_THREAD();
+
+    // If it is pending, just remove here
+    // Remove any asset pending instances
+    auto&& pit = mPendingInstanceForContainer.find(containerId);
+    if (pit != mPendingInstanceForContainer.end()) {
+        for (ModelID id : pit->second) {
+            auto&& mit = mPendingInstances.find(id);
+            if (mit != mPendingInstances.end()) {
+                std::vector<PendingModelInstance>& instances = mit->second;
+                // Linear removal, should be rare so its fine
+                for (size_t i = 0; i < instances.size();) {
+                    if (instances[i].containerId == containerId && instances[i].tileIndex == tileIndex) {
+                        instances[i] = instances.back();
+                        instances.pop_back();
+                        decrefModelDef(id, 1);
+                        if (instances.empty()) {
+                            mPendingInstances.erase(mit);
+                        }
+                        // We will not try to erase from mPendingInstanceForContainer here because there may be
+                        // other models pending for this container. That is OK
+
+                        // There can only be one
+                        return;
+                    }
+                    else {
+                        ++i;
+                    }
+                }
+            }
+        }
+        mPendingInstanceForContainer.erase(pit);
+    }
+
     for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
         auto&& it = mTileContainerModels[renderPassIndex].find(containerId);
         if (it != mTileContainerModels[renderPassIndex].end()) {
@@ -387,14 +424,44 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
     removeInstancesFromContainer(gatherer.mContainerID);
 
     for (auto&& it : gatherer.mInstances) {
-        // Insert all instance transforms ordered into the transforms array
+
+        ModelID modelId = it.first;
         const std::vector<StaticModelInstance>& sourceInstances = it.second;
-        const ModelDef& modelDef = mModelRepository.getModelDef(it.first);
-        for (int m = 0; m < modelDef.getNumMeshes(); ++m) {
-            const Mesh& mesh = modelDef.getMesh(m);
+
+        AssetHandle<ModelDef>* assetHandle;
+        auto&& mit = mModelDefRefs.find(modelId);
+        if (mit == mModelDefRefs.end()) {
+            ModelDefRef newRef;
+            newRef.handle = ModelRepository::get().getAssetHandle(modelId);
+            newRef.refCount = sourceInstances.size();
+            assetHandle = newRef.handle.get();
+            mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
+        }
+        else {
+            assetHandle = mit->second.handle.get();
+            mit->second.refCount += sourceInstances.size();
+        }
+
+        if (!assetHandle->isLoaded()) {
+            std::vector<PendingModelInstance>& pending = mPendingInstances[modelId];
+            pending.reserve(pending.size() + sourceInstances.size());
+            for (size_t i = 0; i < sourceInstances.size(); ++i) {
+                const StaticModelInstance& modelInstance = sourceInstances[i];
+                pending.emplace_back(PendingModelInstance{ gatherer.mContainerID, modelInstance.tileIndex, modelInstance.matrix });
+            }
+            mPendingInstanceForContainer[gatherer.mContainerID].emplace(modelId);
+
+            return;
+        }
+
+        // Insert all instance transforms ordered into the transforms array
+        const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
+        assert(modelDefPtr);
+        for (int m = 0; m < modelDefPtr->getNumMeshes(); ++m) {
+            const Mesh& mesh = modelDefPtr->getMesh(m);
             const int renderPassIndex = e_cast(mesh.getRenderPass());
             SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[renderPassIndex][gatherer.mContainerID];
-            StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][it.first];
+            StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][modelId];
             const size_t startIndex = instanceData.mInstanceTransforms.size();
             // Track where our buffer is dirty
             if (startIndex < instanceData.mFirstDirtyInstance) {
@@ -422,6 +489,35 @@ void InstancedStaticModelManager::removeInstancesFromContainer(TileContainerID c
     // TODO: There is a race condition if the tile container is being meshed. Make sure we only destroy tile containers once they are done
     // being meshed?
     ASSERT_RENDER_THREAD();
+
+    // Remove any asset pending instances
+    auto&& pit = mPendingInstanceForContainer.find(containerId);
+    if (pit != mPendingInstanceForContainer.end()) {
+        for (ModelID id : pit->second) {
+            auto&& mit = mPendingInstances.find(id);
+            if (mit != mPendingInstances.end()) {
+                int removedCount = 0;
+                std::vector<PendingModelInstance>& instances = mit->second;
+                // Linear removal, should be rare so its fine
+                for (size_t i = 0; i < instances.size();) {
+                    if (instances[i].containerId == containerId) {
+                        instances[i] = instances.back();
+                        instances.pop_back();
+                        ++removedCount;
+                    }
+                    else {
+                        ++i;
+                    }
+                }
+                decrefModelDef(id, removedCount);
+                if (instances.empty()) {
+                    mPendingInstances.erase(mit);
+                }
+            }
+        }
+        mPendingInstanceForContainer.erase(pit);
+    }
+
     for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
         auto&& it = mTileContainerModels[renderPassIndex].find(containerId);
         if (it == mTileContainerModels[renderPassIndex].end()) {
@@ -582,6 +678,43 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
     }, taskData);
 }
 
+void InstancedStaticModelManager::updatePendingModelDefs() {
+    PROFILE_FUNCTION();
+    ModelRepository& modelRepo = ModelRepository::get();
+    for (auto&& it = mPendingInstances.begin(); it != mPendingInstances.end();) {
+        if (ModelDef* def = modelRepo.tryGetLoadedAsset(it->first)) {
+            for (PendingModelInstance& pendingInstance : it->second) {
+                addInstanceAtPositionInternal(*def, pendingInstance.containerId, pendingInstance.tileIndex, pendingInstance.transform);
+            }
+            it = mPendingInstances.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
+void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform) {
+    for (int m = 0; m < modelDef.getNumMeshes(); ++m) {
+        const Mesh& mesh = modelDef.getMesh(m);
+        const int renderPassIndex = e_cast(mesh.getRenderPass());
+        StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][modelDef.getID()];
+
+        const size_t instanceIndex = instanceData.mInstanceTransforms.size();
+        if (instanceIndex < instanceData.mFirstDirtyInstance) {
+            instanceData.mFirstDirtyInstance = instanceIndex;
+        }
+        // Store per tile references
+        instanceData.mInstanceTransforms.emplace_back(transform);
+        instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
+        TileModelPositionKey positionKey{ tileIndex };
+
+        SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[renderPassIndex][containerId];
+        assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
+        tileContainerModels[positionKey] = { modelDef.getID(), (ui32)instanceIndex };
+    }
+}
+
 void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
 {
     std::vector<LiteTileHandle> animsToErase;
@@ -678,5 +811,16 @@ void InstancedStaticModelManager::removeTileModelInstanceInternal(int renderPass
     // If we are empty now, remove from the model map
     if (instanceData.mInstanceTransforms.empty()) {
         mModelsToInstances[renderPassIndex].erase(it);
+    }
+}
+
+void InstancedStaticModelManager::decrefModelDef(ModelID modelId, int decCount) {
+    assert(decCount > 0);
+    auto&& mdrit = mModelDefRefs.find(modelId);
+    assert(mdrit != mModelDefRefs.end());
+    assert(mdrit->second.refCount >= decCount);
+    mdrit->second.refCount -= decCount;
+    if (mdrit->second.refCount == 0) {
+        mModelDefRefs.erase(mdrit);
     }
 }

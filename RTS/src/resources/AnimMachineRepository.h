@@ -2,26 +2,17 @@
 
 #include "definitions/AnimMachineDef.h"
 
+#include "resources/IAssetRepository.h"
+
 DECL_VIO(class IOManager);
 class RigRepository;
 
-class AnimMachineRepository
-{
+class AnimMachineRepository : public IAssetRepository<AnimMachineDef> {
 public:
-    AnimMachineRepository(vio::IOManager& ioManager, const RigRepository& rigRepository);
-    ~AnimMachineRepository();
+    ASSET_REPOSITORY_COMMON_CODE(AnimMachineRepository, AnimMachineDef, AssetType::AnimMachine)
 
-    bool loadMachineFile(const vio::Path& filePath);
-
-    const AnimMachineDef& getAnimMachineDef(ui32 rigId) const { return mAnimMachineDefs[rigId]; }
-    const AnimMachineDef& getAnimMachineDef(const nString& name) const;
-    const AnimMachineDef* tryGetAnimMachineDef(const nString& name) const;
-
-private:
-
-    const RigRepository& mRigRepository;
-    vio::IOManager& mIoManager;
-    std::map<nString, ui32> mAnimMachineIdLookup;
-    std::vector<AnimMachineDef> mAnimMachineDefs;
+    bool saveAsset(AssetID assetId) override { panic("Cannot save anim machines yet"); }
+protected:
+    AssetLoadFunc getAssetLoadFunc() override;
 };
 

@@ -42,7 +42,7 @@ FishRenderer::FishRenderer() {
     for (int i = 0; i < mFishInstanceData.size(); ++i) {
         FishInstanceData& instanceData = mFishInstanceData[i];
         const FishDef& fishDef = allFish[i];
-        instanceData.mMesh = &resourceManager.getModelRepository().getModelDef(fishDef.mModel).getMesh(0);
+        instanceData.mMesh = &resourceManager.getModelRepository().getModelDef(fishDef.mModelId).getMesh(0);
 
         glCreateBuffers(1, &instanceData.mInstanceDataBuffer);
         glNamedBufferStorage(instanceData.mInstanceDataBuffer, INSTANCE_TRANSFORM_BUFFER_SIZE, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
@@ -51,12 +51,13 @@ FishRenderer::FishRenderer() {
     }
 }
 
-FishRenderer::~FishRenderer()
-{
-    for (int i = 0; i < mFishInstanceData.size(); ++i) {
-        FishInstanceData& instanceData = mFishInstanceData[i];
-        glUnmapBuffer(instanceData.mInstanceDataBuffer);
-        glDeleteBuffers(1, &instanceData.mInstanceDataBuffer);
+FishRenderer::~FishRenderer() {
+    for (auto&& it : mFishInstanceData) {
+        FishInstanceData& instanceData = it.second;
+        if (instanceData.mInstanceDataBuffer) {
+            glUnmapBuffer(instanceData.mInstanceDataBuffer);
+            glDeleteBuffers(1, &instanceData.mInstanceDataBuffer);
+        }
     }
 }
 
@@ -67,7 +68,6 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
     if (!srvWorldInterface) {
         return;
     }
-
 
     BoundingSphere boundingSphere;
     boundingSphere.radius = CHUNK_DIAGONAL_RADIUS + 1.0f;
@@ -80,8 +80,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         }
         glDeleteSync(mFence[mFrameIndex]);
     }
-
-    mInstanceCountsThisFrame.resize(mFishInstanceData.size());
+    mInstanceCountsThisFrame.reserve(mFishInstanceData.size());
     std::fill(mInstanceCountsThisFrame.begin(), mInstanceCountsThisFrame.end(), 0);
 
     const FishChunkRenderStateMap& renderState = srvWorldInterface->getFishEcosystem().getRenderStateManager().getRenderStateForRender();
@@ -187,7 +186,7 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
     }
 }
 
-void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32v2 yawPitch, f32 scale, f32 turn, f32 time) {
+void FishRenderer::addFishInstance(AssetID fish, f32v3 pos, f32v2 yawPitch, f32 scale, f32 turn, f32 time) {
     if (mInstanceCountsThisFrame[fish] >= MAX_INSTANCES_PER_FRAME) {
         return;
     }
@@ -203,3 +202,6 @@ void FishRenderer::addFishInstance(FishID fish, f32v3 pos, f32v2 yawPitch, f32 s
 
     ++mInstanceCountsThisFrame[fish];
 }
+
+FishInstanceData::FishInstanceData() = default;
+FishInstanceData::~FishInstanceData() = default;

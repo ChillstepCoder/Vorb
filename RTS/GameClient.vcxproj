@@ -366,7 +366,7 @@
     <ClCompile Include="src\rendering\mesh\mesher\ITileContainerMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp" />
-    <ClCompile Include="src\rendering\mesh\RawMesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\FBXRawMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
@@ -543,6 +543,7 @@
     <ClInclude Include="src\debugging\ValueTweaker.h" />
     <ClInclude Include="src\debugging\SimpleMesh.h" />
     <ClInclude Include="src\debugging\VisualLogger.h" />
+    <ClInclude Include="src\definitions\AnimationDef.h" />
     <ClInclude Include="src\definitions\AnimMachineDef.h" />
     <ClInclude Include="src\definitions\BrushDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
@@ -618,7 +619,6 @@
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\ItemDef.h" />
     <ClInclude Include="src\item\ItemConst.h" />
-    <ClInclude Include="src\item\ItemFileData.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
     <ClInclude Include="src\item\ItemReservation.h" />
@@ -705,7 +705,7 @@
     <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
     <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h" />
     <ClInclude Include="src\rendering\mesh\PrimitiveShapeMeshes.h" />
-    <ClInclude Include="src\rendering\mesh\RawMesh.h" />
+    <ClInclude Include="src\rendering\mesh\FBXRawMesh.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />

@@ -2,7 +2,7 @@
 
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/Vertex.h"
-#include "rendering/mesh/RawMesh.h"
+#include "rendering/mesh/FBXRawMesh.h"
 
 struct RawMeshVertex;
 

@@ -7,7 +7,6 @@
 
 #include "resources/ModelRepository.h"
 #include "resources/SkillRepository.h"
-
 #include "resources/ResourceManager.h"
 
 #include <ozz/animation/runtime/animation.h>
@@ -23,6 +22,7 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
     const entt::entity newEntity = registry.create();
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();
+    todo_use_ryml; // TODO: USE RYML
     const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeToken);
 
     // Char control needs further initialization post physics load
@@ -114,9 +114,10 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
             case ComponentTypes::Skills: {
                 // TODO: We shouldnt have to do this every single time we create a new entity!
                 auto& skillsCmp = registry.emplace<SkillsComponent>(newEntity);
-                const SkillRepository& skillRepo = resourceManager.getSkillRepository();
+                SkillRepository& skillRepo = SkillRepository::get();
+                skillsCmp.mSkills.reserve(cdef.skillsFileData.mSkillNames.size());
                 for (size_t i = 0; i < cdef.skillsFileData.mSkillNames.size(); ++i) {
-                    skillsCmp.mSkills.emplace_back(&skillRepo.getSkillDef(cdef.skillsFileData.mSkillNames[i]));
+                    skillsCmp.mSkills.emplace_back(skillRepo.getAssetHandle(StrToken(cdef.skillsFileData.mSkillNames[i])));
                 }   
                 break;
             }

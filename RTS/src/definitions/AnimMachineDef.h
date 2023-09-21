@@ -10,8 +10,10 @@ namespace ozz {
 
 
 // Make sure order and contents of the animation machine name and animation arrays are the same
-struct AnimMachineDef {
-    ui32 mAnimMachineId;
+class AnimMachineDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(AnimMachineDef);
+
     union {
         struct {
             const ozz::animation::Animation* mWalkLeftAnim;
@@ -34,23 +36,40 @@ struct AnimMachineDef {
 static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update AnimMachineDef and FileData below");
 
 struct AnimMachineDefFileData {
-    nString mRigName;
+    StrToken mRigName;
 
     // We will iterate these like an array, make sure they are correct
-    nString mWalkLeftName; //< This must remain the first element in the list of animation, see AnimationMachineRepository.cpp (loadMachineFile)
-    nString mWalkRightName;
-    nString mWalkFrontName;
-    nString mWalkBackName;
-    nString mRunLeftName;
-    nString mRunRightName;
-    nString mRunFrontName;
-    nString mRunBackName;
-    nString mSprintFrontName;
-    nString mIdleName;
-    nString mIdleCombatName;
-    nString mFallingName;
-    nString mJumpName;
-    nString mLandingName;
+    StrToken mWalkLeftName; //< This must remain the first element in the list of animation, see AnimationMachineRepository.cpp (loadMachineFile)
+    StrToken mWalkRightName;
+    StrToken mWalkFrontName;
+    StrToken mWalkBackName;
+    StrToken mRunLeftName;
+    StrToken mRunRightName;
+    StrToken mRunFrontName;
+    StrToken mRunBackName;
+    StrToken mSprintFrontName;
+    StrToken mIdleName;
+    StrToken mIdleCombatName;
+    StrToken mFallingName;
+    StrToken mJumpName;
+    StrToken mLandingName;
 };
-KEG_TYPE_DECL(AnimMachineDefFileData);
 static_assert(e_cast(AnimMachineState::COUNT) == 14, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");
+
+SERIALIZABLE_SIMPLE(AnimMachineDefFileData,
+    make_field(o.mRigName, "rig"sv),
+    make_field(o.mWalkLeftName, "walk_left"sv),
+    make_field(o.mWalkRightName, "walk_right"sv),
+    make_field(o.mWalkFrontName, "walk_front"sv),
+    make_field(o.mWalkBackName, "walk_back"sv),
+    make_field(o.mRunLeftName, "run_left"sv),
+    make_field(o.mRunRightName, "run_right"sv),
+    make_field(o.mRunFrontName, "run_front"sv),
+    make_field(o.mRunBackName, "run_back"sv),
+    make_field(o.mSprintFrontName, "sprint_front"sv),
+    make_field(o.mIdleName, "idle"sv),
+    make_field(o.mIdleCombatName, "idle_combat"sv),
+    make_field(o.mFallingName, "fall"sv),
+    make_field(o.mJumpName, "jump"sv),
+    make_field(o.mLandingName, "land"sv)
+);

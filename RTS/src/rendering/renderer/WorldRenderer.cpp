@@ -52,6 +52,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 #include "resources/MaterialRepository.h"
+#include "resources/CubemapRepository.h"
 #include "rendering/MaterialShaderManager.h"
 
 #include "weather/CloudMeshManager.h"
@@ -111,7 +112,7 @@ void WorldRenderer::initPostLoad() {
         ScopedTimer timer("Skybox init", 2);
         buildHorizonMesh();
         mSkyBox = std::make_unique<Skybox>();
-        mSkyBox->init(materialManager.getMaterialShader("sky"), &resourceManager.getTextureRepository().getCubemap("graycloud"));
+        mSkyBox->init(materialManager.getMaterialShader("sky"), CubemapRepository::get().getAssetHandle(StrToken("graycloud", 0)));
     }
 
     // Init all passthrough materials
@@ -186,7 +187,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     }
 
     // Instanced models
-    Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
+    MaterialRepository::get().bindMaterialBuffer();
     mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
 
     // Fish
@@ -543,7 +544,7 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
             }
 
             // Instanced models
-            Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
+            MaterialRepository::get().bindMaterialBuffer();
             if (!sDebugOptions.mHideModels) {
                 mStaticModelRenderer->renderModelShadows(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getAllModelInstanceMaps(), mShadowRenderer->getShaderData(), *mCamera);
             }

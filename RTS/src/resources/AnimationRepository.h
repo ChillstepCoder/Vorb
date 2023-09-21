@@ -1,23 +1,17 @@
 #pragma once
-#include <ozz/animation/runtime/animation.h>
 
+#include "definitions/AnimationDef.h"
+#include "resources/IAssetRepository.h"
 #include "rendering/model/AnimationConst.h"
 
-class AnimationRepository
+class AnimationRepository : public IAssetRepository<AnimationDef>
 {
 public:
-    AnimationRepository();
-    ~AnimationRepository();
+    ASSET_REPOSITORY_COMMON_CODE(AnimationRepository, AnimationDef, AssetType::Animation);
 
-    bool loadAnimFile(const vio::Path& filePath);
-
-    const Animation& getAnimation(AnimationID animId) const { return mAnimations[animId]; }
-    const Animation& getAnimation(const nString& name) const;
-    const Animation* tryGetAnimation(const nString& name) const;
-    const AnimationID& getAnimationID(const nString& name) const;
+    bool saveAsset(AssetID assetId) override { panic("Cannot save animations yet"); }
 
 private:
-    std::unordered_map<nString, AnimationID> mAnimIdLookups;
-    std::vector<ozz::animation::Animation> mAnimations;
+    AssetLoadFunc getAssetLoadFunc() override;
 
 };

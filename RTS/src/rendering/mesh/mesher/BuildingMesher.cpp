@@ -378,9 +378,11 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
 
     // Materials
     RoofStyle roofStyle = RoofStyle{
-        Services::ResourceManager::ref().getMaterialRepository().getMaterialDesc("roof"),
-        Services::ResourceManager::ref().getMaterialRepository().getMaterialDesc("big_beam_0")
+        .shinglesMaterial=MaterialRepository::get().getMaterialDesc(StrToken("roof", 0)),
+        .primaryBoardMaterial=MaterialRepository::get().getMaterialDesc(StrToken("big_beam_", 0))
     };
+    meshBuilders.addMaterial(roofStyle.shinglesMaterial.id);
+    meshBuilders.addMaterial(roofStyle.primaryBoardMaterial.id);
 
     // TODO: Not right
     sHeightMap.reserve(100);

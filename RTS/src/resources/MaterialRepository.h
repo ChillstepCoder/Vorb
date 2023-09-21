@@ -19,7 +19,7 @@ public:
     MaterialGpuData& getMutableMaterialGpuData(MaterialID materialId);
     const MaterialGpuData& getMaterialGpuData(StrToken materialName) const;
     MaterialGpuData& getMutableMaterialGpuData(StrToken materialName);
-    MaterialID getMaterialId(StrToken materialName) const { return getAssetID(materialName); }
+    MaterialID getMaterialId(StrToken materialName) const { return (MaterialID)getAssetID(materialName); }
     EditorMaterialHandle getMutableMaterialHandle(StrToken materialName);
     const MaterialDesc& getMaterialDesc(StrToken materialName) const;
     const MaterialDesc& getMaterialDesc(MaterialID materialId) const;

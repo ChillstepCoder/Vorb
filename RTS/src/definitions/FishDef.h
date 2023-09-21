@@ -32,9 +32,17 @@ struct FishingMinigameFishData {
     f32 mPlayerStrength = 150.0f;
 };
 
-struct FishDef {
-    ItemID mItem;
-    ModelID mModel;
-    FishID mId;
-    FishingMinigameFishData mMinigameData;
+class FishDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(FishDef);
+
+    StrToken mItemName;
+    StrToken mModelName;
+    ItemID mItemId;
+    ModelID mModelId;
+    FishingMinigameFishData mMinigameData; // TODO: Yml
 };
+SERIALIZABLE_SIMPLE(FishDef,
+    make_field(o.mItemName, "item"sv),
+    make_field(o.mModelName, "model"sv)
+);

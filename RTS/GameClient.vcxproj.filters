@@ -594,7 +594,7 @@
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\RawMesh.cpp">
+    <ClCompile Include="src\rendering\mesh\FBXRawMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp">
@@ -1646,7 +1646,7 @@
     <ClInclude Include="src\rendering\mesh\VertexType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\RawMesh.h">
+    <ClInclude Include="src\rendering\mesh\FBXRawMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h">
@@ -1892,9 +1892,6 @@
     <ClInclude Include="src\resources\FishRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\item\ItemFileData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\definitions\FishDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2031,6 +2028,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\BrushDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\AnimationDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

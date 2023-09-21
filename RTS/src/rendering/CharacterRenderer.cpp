@@ -95,8 +95,10 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, ui32 animati
     // TODO: Ensure
     assert(it != mEntityCharacterModels.end());
     if (it != mEntityCharacterModels.end()) {
-        const ozz::animation::Animation& anim = Services::ResourceManager::ref().getAnimationRepository().getAnimation(animationId);
-        it->second->playOneShotAnimation(&anim);
+        // TODO: Allow lazy load anim? hmmm prob not?
+        AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
+        if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
+        it->second->playOneShotAnimation(&animDef->mAnimation);
     }
 }
 

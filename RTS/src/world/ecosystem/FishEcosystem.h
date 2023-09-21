@@ -2,9 +2,6 @@
 
 class IWorld;
 
-// TODO: MOVE TO FISHREPOSITORY
-typedef ui32 FishID;
-
 #include <boost/container/flat_map.hpp>
 
 #include "world/IChunkGrid.h"
@@ -21,7 +18,7 @@ struct PositionComponent;
 struct YawPitchComponent;
 
 struct FishPopulation {
-    FishID mFishId;
+    AssetID mFishId;
     int mNumFish;
 };
 
@@ -49,7 +46,7 @@ struct FishAIComponent {
 };
 
 struct FishComponent {
-    FishID mFishId = INVALID_FISH_ID; // TODO: Compress FishID?
+    AssetID mFishId = INVALID_ASSET_ID; // TODO: Compress FishID?
     ChunkID mResidingChunk = INVALID_CHUNK_ID;
     f32v2 mAngularSpeed = f32v2(0.0f); // TODO: Quantized to i16?
     f32 mAnimationTime = 0.0f; // TODO: Quantized to i16?
@@ -76,7 +73,7 @@ struct DormantFishChunk {
 
 // TODO: Rename FishRenderState
 struct FishRenderData {
-    FishID mFishId;
+    AssetID mFishId;
     f32v3 pos;
     f32v2 yawPitch;
     f32 scale;

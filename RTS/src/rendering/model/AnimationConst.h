@@ -8,7 +8,6 @@ namespace ozz {
 };
 
 using Animation = ozz::animation::Animation;
-typedef ui32 AnimationID;
 
 // Make sure this matches AnimMachineDef
 enum class AnimMachineState : ui16 {

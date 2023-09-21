@@ -2,30 +2,18 @@
 
 #include "item/ItemDef.h"
 
-DECL_VIO(class IOManager);
+#include "resources/IAssetRepository.h"
 
 class TextureRepository;
 struct ItemFileData;
 
-class ItemRepository
-{
+class ItemRepository : public IAssetRepository<ItemDef> {
 public:
-    ItemRepository(vio::IOManager& ioManager);
-    ~ItemRepository();
+    ASSET_REPOSITORY_COMMON_CODE(ItemRepository, ItemDef, AssetType::Item)
 
-    void loadItemFile(const vio::Path& filePath, TextureRepository& textureRepo);
-    ItemID addItem(const nString& itemName, const ItemFileData& fileData);
-
-    const ItemDef& getItem(ItemID id) const { assert(itemExists(id)); return mItems[id]; }
-    const ItemDef& getItem(const nString& itemName) const;
-
-    bool itemExists(ItemID id) const { return id < mItems.size(); }
+    ItemID getItemId(StrToken itemName) const { return (ItemID)getAssetID(itemName); }
     
 private:
-    vio::IOManager& mIoManager;
-
-    std::map<nString, ItemID> mItemIdLookup;
-    std::vector<ItemDef> mItems;
+    AssetLoadFunc getAssetLoadFunc() override;
 };
 
-extern ItemRepository* sItemRepository;

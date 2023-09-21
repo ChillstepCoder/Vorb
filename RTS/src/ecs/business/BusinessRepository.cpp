@@ -10,9 +10,8 @@
 
 #include <Vorb/io/IOManager.h>
 
-BusinessRepository::BusinessRepository(vio::IOManager& ioManager, ItemRepository& itemRepository) :
-    mIoManager(ioManager),
-    mItemRepository(itemRepository) {
+BusinessRepository::BusinessRepository(vio::IOManager& ioManager) :
+    mIoManager(ioManager) {
 
 }
 

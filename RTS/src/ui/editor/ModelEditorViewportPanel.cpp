@@ -40,7 +40,7 @@ bool ModelEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     updateCamera(imageDims.x / imageDims.y);
 
     if (mCurrentModel) {
-        ImGui::Text(mCurrentModel->mName);
+        ImGui::Text(mCurrentModel->getName().toString().c_str());
     }
     else {
         ImGui::Text("NO MODEL");
@@ -67,12 +67,12 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::Separator();
 
     if (mCurrentModel) {
-        ImGui::Text("Name: %s", mCurrentModel->mName);
-        if (ImGui::BeginCombo("Shadow detail", KEG_ENUM_STR(ShadowLodDetail, mCurrentModel->mShadowDetail))) {
+        ImGui::Text("Name: %s", mCurrentModel->getName().toString().c_str());
+        if (ImGui::BeginCombo("Shadow detail", ENUM_CSTR(ShadowLodDetail, mCurrentModel->mShadowDetail))) {
 
             for (int i = e_cast(ShadowLodDetail::None); i <= e_cast(ShadowLodDetail::Highest); ++i) {
                 bool isSelected = e_cast(mCurrentModel->mShadowDetail) == i;
-                ImGui::Selectable(KEG_ENUM_STR(ShadowLodDetail, i), &isSelected);
+                ImGui::Selectable(ENUM_CSTR(ShadowLodDetail, (ShadowLodDetail)i), &isSelected);
 
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();

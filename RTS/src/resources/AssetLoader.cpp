@@ -106,8 +106,14 @@ void AssetLoader::workerThreadFunc(AssetLoader* loader) {
             }
         }
         else {
-            assert(task->mRenderPostFunc);
-            processRenderFunc(task);
+            if (task->mRenderPostFunc) {
+                processRenderFunc(task);
+            }
+            else if (task->mIsFinishedFlagPtr) {
+                // If we get here, we just passed a task with no methods,
+                // which means it was probably just pending dependencies
+                *task->mIsFinishedFlagPtr = true;
+            }
         }
         task.reset();
         dataStr.clear();

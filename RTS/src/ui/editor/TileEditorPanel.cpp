@@ -65,7 +65,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
         constexpr f32 FIXED_WIDTH = 75.0f;
 
         ImGui::PushID(123);
-        ModelRepository& modelRepository = Services::ResourceManager::ref().getModelRepository();
+        ModelRepository& modelRepository = ModelRepository::get();
         // Submit table
         if (ImGui::BeginTable("modelTable", 4, TABLE_FLAGS, ImVec2(0, 0), 0.0f))
         {
@@ -81,36 +81,41 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
             ImGui::TableHeadersRow();
 
             ui32 ID = 250;
-            for (auto&& it : modelRepository.mModelIdLookup) {
-                ModelDef& def = *modelRepository.mModelDefs[it.second];
+            modelRepository.forEachRegisteredAsset([&](IAssetRepository<ModelDef>& repo, ModelDef* def, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
                 // Name
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text(it.first.c_str());
+                ImGui::Text(entry.mName.toString().c_str());
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", def.mModelId);
+                sprintf_s(label, "%04d", entry.mID);
                 ImGui::Text(label);
                 // Type
                 ImGui::TableSetColumnIndex(2);
-                if (def.mRig) {
-                    ImGui::Text("Skinned");
+                if (def) {
+                    if (def->mRig) {
+                        ImGui::Text("Skinned");
+                    }
+                    else {
+                        ImGui::Text("Static");
+                    }
                 }
-                else {
-                    ImGui::Text("Static");
+                else
+                {
+                    ImGui::Text("UNLOADED");
                 }
                 // Action
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_MODEL;
-                    result.second = &def;
+                    result.second = entry.mID;
                 }
 
                 ImGui::PopID();
-
-            }
+                return false;
+            });
             ImGui::EndTable();
         }
         ImGui::PopID();

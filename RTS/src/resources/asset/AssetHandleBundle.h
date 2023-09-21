@@ -45,6 +45,9 @@ public:
         mHandles.reserve(count);
         mContainedAssetDescriptors.reserve(count);
     }
+    size_t getCount() const {
+        return mHandles.size();
+    }
 
     bool areAllAssetsLoaded() {
         if (mLoadedCount == mHandles.size()) return true;
@@ -62,6 +65,10 @@ public:
         };
         assert(mLoadedCount == mHandles.size());
         return true;
+    }
+
+    std::vector<AssetHandleBasePtr>& getAllAssets() {
+        return mHandles;
     }
 
     // Must include IAssetRepository.h or this will not link

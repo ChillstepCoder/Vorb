@@ -4,7 +4,7 @@
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 #include "rendering/model/StaticModelInstance.h"
 
-#include "rendering/mesh/RawMesh.h"
+#include "rendering/mesh/FBXRawMesh.h"
 #include "rendering/mesh/Mesh.h"
 
 #include <ozz/base/io/archive.h>
@@ -16,9 +16,10 @@
 #include <fbxsdk/core/base/fbxstring.h>
 #include <fbxsdk/scene/geometry/fbxlayer.h>
 
-MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials, const MaterialRepository& materialRepo) {
+MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials) {
 
     MeshCpuData rv;
+    MaterialRepository& materialRepo = MaterialRepository::get();
 
     // Optimize + LOD
     OptimizedCpuMeshData meshData = MeshBuilderCommon::optimizeMeshAndGenerateLODs(subMesh.mIndices, subMesh.mVertices);
@@ -28,9 +29,9 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
     std::vector<MaterialID> materialIds;
     materialIds.resize(rawMaterials.size());
     for (int i = 0; i < rawMaterials.size(); ++i) {
-        const nString materialName = rawMaterials[i].materialName;
-        if (rawMaterials[i].materialDescPtr) {
-            materialIds[i] = rawMaterials[i].materialDescPtr->id;
+        const StrToken materialName = StrToken(rawMaterials[i].materialName);
+        if (rawMaterials[i].materialDef) {
+            materialIds[i] = (MaterialID)rawMaterials[i].materialDef->getID();
         }
         else {
             materialIds[i] = materialRepo.getMaterialId(materialName);

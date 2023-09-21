@@ -18,41 +18,18 @@
 
 #include "rendering/mesh/fbx2raw.inl"
 
-ModelRepository::ModelRepository(vio::IOManager& ioManager, const RigRepository& rigRepository) : mIoManager(ioManager), mRigRepository(rigRepository) {
+class FBXLoadContext {
+public:
+    FBXLoadContext(const char* filePath) : fbxManager(), settings(fbxManager), sceneLoader(filePath, "", fbxManager, settings) {}
+    ~FBXLoadContext() {};
 
-}
+    ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
+    ozz::animation::offline::fbx::FbxDefaultIOSettings settings;
+    ozz::animation::offline::fbx::FbxSceneLoader sceneLoader;
+    MeshCpuData meshData[e_count(MaterialRenderPassType)];
+};
 
-ModelRepository::~ModelRepository() {
-
-}
-
-// TODO: Cache model files in binary
-bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository) {
-
-    PROFILE_FUNCTION();
-
-    LOG_TRACE("Loading model {}", filePath.getCString());
-
-    ModelDefFileData fileData;
-    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(ModelDefFileData))) {
-        pError("Failed to load model file " + filePath.getString());
-        return false;
-    }
-
-    if (fileData.mModelName.empty()) {
-        pError("Model file missing model name " + filePath.getString());
-        return false;
-    }
-
-    vio::Path rootDir = filePath;
-    rootDir.trimEnd();
-    assert(rootDir.isDirectory());
-
-    const vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName;
-    return loadModelInternal(fileData, animMachineRepository, filePath.getFileNameNoExtension(), modelPath);
-}
-
-bool ModelRepository::loadFbxFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository) {
+bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
     PROFILE_FUNCTION();
 
     LOG_TRACE("Loading FBX {}", filePath.getCString());
@@ -61,50 +38,108 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath, const AnimMachineRe
     rootDir.trimEnd();
     assert(rootDir.isDirectory());
 
+    StrToken newName(filePath.getFileNameNoExtension());
+    AssetID newId = registerAsset(newName, filePath);
+
+    ModelDef& def = *mAssets[newId];
+
+    panic("Need to finish ModelRepository::loadFbxFile");
     ModelDefFileData fileData;
-    return loadModelInternal(fileData, animMachineRepository, filePath.getFileNameNoExtension(), filePath);
+    loadModelInternal(def, fileData, newName, filePath);
 }
 
-bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath) {
-    // Create the modeldef
-    ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
-    def.mModelId = (ui32)(mModelDefs.size() - 1u);
+AssetLoadFunc ModelRepository::getAssetLoadFunc() {
+    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+
+        ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
+        //TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
+
+        LOG_TRACE("Loading model {}", filePath.getCString());
+
+        ModelDefFileData fileData;
+        YmlSerializer::readFileData(readFileToString(filePath), fileData);
+
+        if (!fileData.mModelName.isValid()) {
+            panic("Model file missing model name - {}", filePath.getString());
+        }
+
+        vio::Path rootDir = filePath;
+        rootDir.trimEnd();
+        assert(rootDir.isDirectory());
+
+        const vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName.toString();
+        loadModelInternal(def, fileData, def.getName(), modelPath);
+
+        return false;
+    };
+}
+
+void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileData, StrToken modelName, const vio::Path& modelPath) {
+    
+    MaterialRepository& materialRepo = MaterialRepository::get();
+    // Allocate raw FBX
+    std::unique_ptr<FBXRawMesh> rawFbxMesh = std::make_unique<FBXRawMesh>();
+    FBXRawMesh* rawMeshPtr = rawFbxMesh.get();
+    {
+        std::lock_guard lock(mRawModelsMutex);
+        mRawModels[std::move(modelName)] = std::move(rawFbxMesh);
+    }
+
     def.mShadowDetail = fileData.mShadowDetail;
 
     // If has rig, we need to load animation and skeleton info
-    if (fileData.mRigName.size()) {
-        def.mRig = &mRigRepository.getRigDef(fileData.mRigName);
-
-        if (fileData.mMachineName.size()) {
-            const AnimMachineDef* animMachineDef = animMachineRepository.tryGetAnimMachineDef(fileData.mMachineName);
-            if (!animMachineDef) {
-                pError("Failed to find anim machine " + fileData.mMachineName + " for: " + modelPath.getString());
-                return false;
-            }
-            def.mAnimMachine = animMachineDef;
+    if (fileData.mRigName.isValid()) {
+        def.addDependency(RigRepository::get().getAssetHandle(fileData.mRigName));
+        if (fileData.mMachineName.isValid()) {
+            def.addDependency(AnimMachineRepository::get().getAssetHandle(fileData.mMachineName));
         }
     }
 
-    // Load model to raw
-    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
-    if (rawMesh) {
+    // Material dependencies
+    std::shared_ptr<FBXLoadContext> loadContextPtr = std::make_shared<FBXLoadContext>(modelPath.getCString());
+    const int materialCount = loadContextPtr->sceneLoader.scene()->GetMaterialCount();
+    rawFbxMesh->mMaterials.resize(materialCount);
+    for (int i = 0; i < materialCount; ++i) {
+        FbxSurfaceMaterial* fbxMaterial = loadContextPtr->sceneLoader.scene()->GetMaterial(i);
+        assert(fbxMaterial);
+        rawFbxMesh->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
+        def.addDependency(materialRepo.getAssetHandle(StrToken(rawFbxMesh->mMaterials[i].materialName)));
+    }
+
+    AssetLoader::getInstance().requestAssetLoadWithDependencies([&, fileData, rawMeshPtr]ASSET_LOAD_LAMBDA_CUSTOMCAP(assetId, filePath, assetDataPtr, userData) {
+        FBXLoadContext& loadContext = *std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
+
+        // Rig + animation
+        if (fileData.mRigName.isValid()) {
+            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(fileData.mRigName);
+            if (fileData.mMachineName.isValid()) {
+                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(fileData.mMachineName);
+            }
+        }
+
+        // Materials
+        for (int i = 0; i < materialCount; ++i) {
+            rawMeshPtr->mMaterials[i].materialDef = &def.getDependencies()->getLoadedAsset<MaterialDef>(StrToken(rawMeshPtr->mMaterials[i].materialName));
+        }
+
+        // Load model to raw
+        loadRawModelFromFBX(loadContext, *rawMeshPtr, modelPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
         if (fileData.mForceNormalsUp) {
-            MeshOperations::setAllNormals(*rawMesh, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
+            MeshOperations::setAllNormals(*rawMeshPtr, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
         }
 
         // TODO: Handle other submeshes?
         for (int renderPassType = 0; renderPassType < e_count(MaterialRenderPassType); ++renderPassType) {
-            RawSubMesh& combinedMeshData = rawMesh->mCombinedMeshData[renderPassType];
+            RawSubMesh& combinedMeshData = rawMeshPtr->mCombinedMeshData[renderPassType];
             if (combinedMeshData.mVertices.empty()) {
                 continue;
             }
-            MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMesh->mMaterials, materialRepository);
+            loadContext.meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials);
             // Apply scale if needed
             if (fileData.mScale != 1.0f) {
-                MeshOperations::applyScale(meshData, fileData.mScale);
+                MeshOperations::applyScale(loadContext.meshData[def.mNumMeshes], fileData.mScale);
             }
             RawMeshSkeletonData& rawSkeletonData = combinedMeshData.mSkeletonData;
-
 
             // Allocate and fill skeleton data
             if (rawSkeletonData.mNumJoints) {
@@ -124,71 +159,56 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const AnimMa
 
             Mesh& newMesh = *def.mMeshes[def.mNumMeshes - 1];
             newMesh.setRenderPass((MaterialRenderPassType)renderPassType);
-            ModelMeshBuilder::uploadCpuMeshToGpu(meshData, newMesh.mMainMesh);
         }
 
-        // Store lookup
-        if (mModelIdLookup.find(modelName) != mModelIdLookup.end()) {
-            LOG_INFO("Replacing model {}", modelName);
-        }
-        mModelIdLookup[modelName] = def.mModelId;
-        // TODO: Don't use extra lookup to copy the name?
-        def.mName = mModelIdLookup.find(modelName)->first.c_str();
         return true;
-    }
 
-    // Failure
-    mModelDefs.pop_back();
-    return false;
+    }, ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+        FBXLoadContext& loadContext = *std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
+        for (ui32 i = 0; i < def.mNumMeshes; ++i) {
+            if (loadContext.meshData[i].mVertsCount) {
+                ModelMeshBuilder::uploadCpuMeshToGpu(loadContext.meshData[i], def.mMeshes[i]->mMainMesh);
+            }
+        }
+    },
+        def.getID(),
+        &def,
+        modelPath,
+        mLoadedAssets[def.getID()].get(),
+        std::move(loadContextPtr),
+        def.getDependencies()
+    );
+
+    
 }
 
-RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
+void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
     MaterialRepository& materialRepo = MaterialRepository::get();
-
-    ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
-    ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
-    ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)filePath.getCString(), "", fbxManager, settings);
-    if (!sceneLoader.scene()) {
-        pError("Failed to import fbx scene: " + filePath.getString());
-        return nullptr;
+    
+    if (!loadContext.sceneLoader.scene()) {
+        panic("Failed to import fbx scene: {}", filePath.getString());
     }
 
-    const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
+    const int numMeshes = loadContext.sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
-        pError("No mesh to process in this file: " + filePath.getString());
-        return nullptr;
+        panic("No mesh to process in this file: {}", filePath.getString());
     }
-
-    std::unique_ptr<RawMesh> rawFbxMesh = std::make_unique<RawMesh>();
-    RawMesh* rv = rawFbxMesh.get();
 
     const nString modelName = filePath.getFileNameNoExtension();
-
-    // Materials
-    const int materialCount = sceneLoader.scene()->GetMaterialCount();
-    rawFbxMesh->mMaterials.resize(materialCount);
-    for (int i = 0; i < materialCount; ++i) {
-        FbxSurfaceMaterial* fbxMaterial = sceneLoader.scene()->GetMaterial(i);
-        assert(fbxMaterial);
-        rawFbxMesh->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
-        rawFbxMesh->mMaterials[i].materialDescPtr = &materialRepo.getMaterialDesc(StrToken(rawFbxMesh->mMaterials[i].materialName));
-    }
 
     // Meshes
     ui32 totalVertices[e_count(MaterialRenderPassType)] = {};
     ui32 totalIndices[e_count(MaterialRenderPassType)] = {};
     int hasSkin = INT32_MAX;
-    rawFbxMesh->mSubMeshes.reserve(numMeshes);
+    rawFbxMesh.mSubMeshes.reserve(numMeshes);
     for (int m = 0; m < numMeshes; ++m) {
 
-        FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
-        RawSubMesh& subMesh = rawFbxMesh->mSubMeshes.emplace_back();
+        FbxMesh* fbxMesh = loadContext.sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
+        RawSubMesh& subMesh = rawFbxMesh.mSubMeshes.emplace_back();
 
         ControlPointsRemap remap;
-        if (!fbx2raw::buildRawSubmesh(fbxMesh, sceneLoader.converter(), &remap, subMesh, rawFbxMesh->mMaterials, skeleton == nullptr)) {
-            LOG_CRITICAL("Failed to build submesh {} for {}", m, filePath.getString());
-            pError("Failed to read submesh for: " + filePath.getString());
-            return nullptr;
+        if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.sceneLoader.converter(), &remap, subMesh, rawFbxMesh.mMaterials, skeleton == nullptr)) {
+            panic("Failed to read submesh for: {}", filePath.getString());
         }
 
         if (fbxMesh->GetDeformerCount(FbxDeformer::eSkin) > 0) {
@@ -196,10 +216,8 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
             subMesh.mHasSkin = true;
             hasSkin = true;
             assert(skeleton && "Needs to have skeleton explicitly passed in");
-            if (!fbx2raw::buildSkin(fbxMesh, sceneLoader.converter(), remap, *skeleton, subMesh)) {
-                LOG_CRITICAL("Failed to read skinning data {} for {}", m, filePath.getString());
-                pError("Failed to read skinning data: " + filePath.getString());
-                return nullptr;
+            if (!fbx2raw::buildSkin(fbxMesh, loadContext.sceneLoader.converter(), remap, *skeleton, subMesh)) {
+                panic("Failed to read skinning data: {}", filePath.getString());
             }
         }
         else {
@@ -210,7 +228,8 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
 
         if (subMesh.mVertices.size()) {
             const int materialIndex = subMesh.mVertices[0].materialIndex;
-            MaterialRenderPassType renderPass = rawFbxMesh->mMaterials[materialIndex].materialDescPtr->renderPass;
+            assert(rawFbxMesh.mMaterials[materialIndex].materialDef);
+            const MaterialRenderPassType renderPass = rawFbxMesh.mMaterials[materialIndex].materialDef->renderPass;
             totalVertices[e_cast(renderPass)] += subMesh.mVertices.size();
             totalIndices[e_cast(renderPass)] += subMesh.mIndices.size();
         }
@@ -220,52 +239,30 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const o
     // Skin data
     if (hasSkin) {
         assert(numMeshes == 1 && "Currently skinned meshes must be a single submesh only");
-        const RawSubMesh& baseSubMesh = rawFbxMesh->mSubMeshes[0];
+        const RawSubMesh& baseSubMesh = rawFbxMesh.mSubMeshes[0];
         const int baseMaterialIndex = baseSubMesh.mVertices[0].materialIndex;
-        const MaterialRenderPassType baseRenderPass = rawFbxMesh->mMaterials[baseMaterialIndex].materialDescPtr->renderPass;
-        rv->mCombinedMeshData[e_cast(baseRenderPass)].mHasSkin = hasSkin;
-        rv->mCombinedMeshData[e_cast(baseRenderPass)].mSkeletonData = std::move(rawFbxMesh->mSubMeshes[0].mSkeletonData);
+        const MaterialRenderPassType baseRenderPass = rawFbxMesh.mMaterials[baseMaterialIndex].materialDef->renderPass;
+        rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mHasSkin = hasSkin;
+        rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mSkeletonData = std::move(rawFbxMesh.mSubMeshes[0].mSkeletonData);
     }
     for (int i = 0; i < e_count(MaterialRenderPassType); ++i) {
-        rv->mCombinedMeshData[i].mVertices.resize(totalVertices[i]);
-        rv->mCombinedMeshData[i].mIndices.resize(totalIndices[i]);
+        rawFbxMesh.mCombinedMeshData[i].mVertices.resize(totalVertices[i]);
+        rawFbxMesh.mCombinedMeshData[i].mIndices.resize(totalIndices[i]);
     }
     // Combine all submeshes by render pass
     int v[e_count(MaterialRenderPassType)] = {};
     int i[e_count(MaterialRenderPassType)] = {};
     int iStart[e_count(MaterialRenderPassType)] = {};
     for (int m = 0; m < numMeshes; ++m) {
-        const RawSubMesh& subMesh = rawFbxMesh->mSubMeshes[m];
+        const RawSubMesh& subMesh = rawFbxMesh.mSubMeshes[m];
         const int materialIndex = subMesh.mVertices[0].materialIndex;
-        const int renderPassIndex = e_cast(rawFbxMesh->mMaterials[materialIndex].materialDescPtr->renderPass);
+        const int renderPassIndex = e_cast(rawFbxMesh.mMaterials[materialIndex].materialDef->renderPass);
         for (int j = 0; j < subMesh.mVertices.size(); ++j) {
-            rv->mCombinedMeshData[renderPassIndex].mVertices[v[renderPassIndex]++] = subMesh.mVertices[j];
+            rawFbxMesh.mCombinedMeshData[renderPassIndex].mVertices[v[renderPassIndex]++] = subMesh.mVertices[j];
         }
         for (int j = 0; j < subMesh.mIndices.size(); ++j) {
-            rv->mCombinedMeshData[renderPassIndex].mIndices[i[renderPassIndex]++] = subMesh.mIndices[j] + iStart[renderPassIndex];
+            rawFbxMesh.mCombinedMeshData[renderPassIndex].mIndices[i[renderPassIndex]++] = subMesh.mIndices[j] + iStart[renderPassIndex];
         }
         iStart[renderPassIndex] += subMesh.mVertices.size();
     }
-
-    mRawModels[std::move(modelName)] = std::move(rawFbxMesh);
-    return rv;
-}
-
-const ModelDef& ModelRepository::getModelDef(const nString& name) const {
-    auto&& it = mModelIdLookup.find(name);
-    assert(it != mModelIdLookup.end());
-    return *mModelDefs[it->second];
-}
-
-ModelID ModelRepository::getModelID(const nString& name) const {
-    auto&& it = mModelIdLookup.find(name);
-    if (it == mModelIdLookup.end()) {
-        LOG_CRITICAL("Model {} not found", name);
-        return INVALID_MODEL_ID;
-    }
-    return it->second;
-}
-
-void ModelRepository::buildModelBatches() {
-    assert(false);
 }

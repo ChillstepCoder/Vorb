@@ -3,6 +3,8 @@
 
 #include "rendering/mesh/Mesh.h"
 
+#include "resources/asset/AssetHandleBundle.h"
+
 TileContainerMeshData::~TileContainerMeshData()
 {
 

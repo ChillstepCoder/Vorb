@@ -4,7 +4,10 @@
 #include "rendering/model/StaticMeshInstanceData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
+#include "definitions/ModelDef.h"
+
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 
 #include "tile/TileHandle.h"
 
@@ -23,6 +26,17 @@ struct TileModelPositionKey {
 // Allows us to look up the specific model at a position for a tile container
 typedef std::map<TileModelPositionKey, TileModelInstance> SpatialInstanceDataMap;
 
+struct ModelDefRef {
+    AssetHandlePtr<ModelDef> handle;
+    int refCount = 1;
+};
+
+struct PendingModelInstance {
+    TileContainerID containerId;
+    TileIndex tileIndex;
+    f32m4 transform;
+};
+
 // TODO: RENAME InstancedStaticMeshManager
 class InstancedStaticModelManager
 {
@@ -32,7 +46,7 @@ public:
 
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
-    void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
+    void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
     bool getInstancesAtPosition(LiteTileHandle tileHandle, OUT TileModelInstance* outInstances[e_cast(MaterialRenderPassType::COUNT)]);
     bool hasInstanceAtPosition(LiteTileHandle tileHandle);
@@ -50,14 +64,24 @@ public:
     const ModelInstanceMap& getModelInstanceMapForRenderPass(MaterialRenderPassType renderPassType) const { return mModelsToInstances[e_cast(renderPassType)]; }
     const ModelInstanceMap* getAllModelInstanceMaps() const { return mModelsToInstances; }
 private:
+    void updatePendingModelDefs();
+    void addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform);
+
     void updateAnimatedModels(f32 elapsedSec);
     void removeTileModelInstanceInternal(int renderPassIndex, TileModelInstance& instance);
+    void decrefModelDef(ModelID modelId, int decCount);
 
     boost::container::flat_map<LiteTileHandle, StaticMeshAnimation> mAnimatedInstances;
     ModelInstanceMap mModelsToInstances[e_count(MaterialRenderPassType)];
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels[e_count(MaterialRenderPassType)];
     GLBuffer mGpuCullingUniformBuffer;
-    const ModelRepository& mModelRepository;
+
+    // Refcount ModelDefs
+    std::unordered_map<ModelID, ModelDefRef> mModelDefRefs;
+    // Tracks models that are awaiting ModelDef load
+    boost::container::flat_map<ModelID, std::vector<PendingModelInstance>> mPendingInstances;
+    // Used to track removal of instances from containers while we wait for ModelDef load
+    boost::container::flat_map<TileContainerID, boost::container::flat_set<ModelID>> mPendingInstanceForContainer;
 
     const vg::GLProgram* mCullingComputeShader = nullptr;
 };

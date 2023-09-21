@@ -24,8 +24,7 @@ public:
 
     static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
         RawSubMesh& subMesh,
-        const std::vector<FBXRawMaterialData>& rawMaterials,
-        const MaterialRepository& materialRepo
+        const std::vector<FBXRawMaterialData>& rawMaterials
     );
 
     static void uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh);

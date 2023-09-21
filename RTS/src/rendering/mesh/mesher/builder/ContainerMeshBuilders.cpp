@@ -10,6 +10,7 @@ ContainerMeshBuilders::ContainerMeshBuilders(const TileContainer& container, boo
     modelGatherer(container.getId(), f32v3(container.getTileSpatialGrid().getWorldPos3D()))
 {
     container.copyDataWorkerThread(tileData);
+    materialDependencies.reserve(32); // Arbitrary
 }
 
 void ContainerMeshBuilders::computeBoundingSpheres() {

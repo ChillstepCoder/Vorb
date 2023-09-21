@@ -27,6 +27,7 @@ namespace ProceduralMeshHelpers
         const i32v3& tilePos,
         f32 wallHeight,
         ProceduralMeshBuilder& meshBuilder,
+        std::unordered_set<MaterialID>& materialDependencies,
         StaticPhysicsMeshBuilder& physMesh
     );
 };

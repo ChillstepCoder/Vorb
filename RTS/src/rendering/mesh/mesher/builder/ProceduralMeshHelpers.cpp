@@ -125,6 +125,7 @@ void ProceduralMeshHelpers::addTileWallMesh(
     const i32v3& tilePos,
     f32 wallHeight,
     ProceduralMeshBuilder& meshBuilder,
+    std::unordered_set<MaterialID>& materialDependencies,
     StaticPhysicsMeshBuilder& physMesh
 ) {
 
@@ -266,6 +267,8 @@ void ProceduralMeshHelpers::addTileWallMesh(
     // Build specific mesh data
     switch (tileData.shape) {
         case TileShape::WALL: {
+            materialDependencies.emplace(tileData.materialData[0].id);
+
             f32v4 uvRectNorth(0.0f, 0.0f, 0.0f, 1.0f);
             f32v4 uvRectSouth(0.0f, 0.0f, 0.0f, 1.0f);
             computeTilingUVX(uvRectSouth, tilePosF[e_cast(dir)] + southFaceOffset[e_cast(dir)], southFaceDims.x);
@@ -279,6 +282,12 @@ void ProceduralMeshHelpers::addTileWallMesh(
             break;
         }
         case TileShape::WINDOW: {
+            // TODO: Store in some kind of static array?s
+            materialDependencies.emplace(tileData.materialData[0].id);
+            materialDependencies.emplace(tileData.materialData[1].id);
+            materialDependencies.emplace(tileData.materialData[2].id);
+            materialDependencies.emplace(tileData.materialData[3].id);
+
             f32v4 uvRectSouth;
             f32v4 uvRectNorth;
             constexpr f32 WINDOW_HEIGHT = 1.2f;
@@ -460,6 +469,10 @@ void ProceduralMeshHelpers::addTileWallMesh(
             break;
         }
         case TileShape::DOOR: {
+            materialDependencies.emplace(tileData.materialData[0].id);
+            materialDependencies.emplace(tileData.materialData[1].id);
+            materialDependencies.emplace(tileData.materialData[2].id);
+
             f32v4 uvRectSouth;
             f32v4 uvRectNorth;
             constexpr f32 DOOR_HEIGHT = 2.0f;

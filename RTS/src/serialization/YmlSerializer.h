@@ -54,6 +54,7 @@ namespace YmlSerializer {
 
     template<typename T>
     void readFileData(const nString& ymlFileData, T& o) {
+        if (ymlFileData.empty()) return;
         ryml::Tree tree = parseFileData(ymlFileData);
         assert((int)tree.crootref().type() > 1);
         read(tree.crootref(), &o);
@@ -170,7 +171,14 @@ namespace c4::yml { \
     inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
         return impl::read(n, v); \
     } \
-} 
+}
+
+// Usage: ENUM_STR(MyType, MyType::Val)
+#define ENUM_STRV(TypeNoNamespace, val) \
+   c4::yml::impl::s##TypeNoNamespace##NameLookup[val]
+
+#define ENUM_CSTR(TypeNoNamespace, val) \
+   c4::yml::impl::s##TypeNoNamespace##NameLookup[val].data()
 
 // Usage: MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
 #define SERIALIZABLE_ENUM_SAME_NAME(Type, ...) SERIALIZABLE_ENUM(Type, Type, __VA_ARGS__)

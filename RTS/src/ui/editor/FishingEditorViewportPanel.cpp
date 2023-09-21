@@ -130,9 +130,9 @@ void FishingEditorViewportPanel::setFishDef(FishDef& fishDef) {
 }
 
 void FishingEditorViewportPanel::renderFishModel() {
-    ModelRepository& modelRepo = Services::ResourceManager::ref().getModelRepository();
+    ModelRepository& modelRepo = ModelRepository::get();
     if (mFishDef) {
-        const ModelDef& model = modelRepo.getModelDef(mFishDef->mModel);
+        const ModelDef& model = modelRepo.getModelDef(mFishDef->mModelId);
         for (int i = 0; i < model.getNumMeshes(); ++i) {
             MeshDrawer::draw(model.getMesh(i).mMainMesh, MeshLODLevel::Highest);
         }

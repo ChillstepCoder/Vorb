@@ -13,6 +13,12 @@ enum class AssetType : ui8 {
     Brush,
     Material,
     Rig,
+    Animation,
+    AnimMachine,
+    Model,
+    Skill,
+    Item,
+    Fish,
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
@@ -21,9 +27,15 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::Cubemap, "cubemap"sv },
     pair{ AssetType::Brush, "brush"sv },
     pair{ AssetType::Material, "material"sv },
-    pair{ AssetType::Rig, "rig"sv }
+    pair{ AssetType::Rig, "rig"sv },
+    pair{ AssetType::Animation, "animation"sv },
+    pair{ AssetType::AnimMachine, "anim_machine"sv },
+    pair{ AssetType::Model, "model"sv },
+    pair{ AssetType::Skill, "skill"sv },
+    pair{ AssetType::Item, "item"sv },
+    pair{ AssetType::Fish, "fish"sv },
 )
-static_assert(e_count(AssetType) == 6);
+static_assert(e_count(AssetType) == 12);
 
 class AssetHandleBundle;
 class AssetHandleBase;

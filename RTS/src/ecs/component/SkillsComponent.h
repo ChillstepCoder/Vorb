@@ -19,7 +19,7 @@ struct ActiveSkillComponent {
 
 struct SkillsComponent {
     // TODO: Not vector
-    std::vector<const SkillDef*> mSkills;
+    std::vector<AssetHandlePtr<SkillDef>> mSkills;
     SkillSlot mActiveSlot = SkillSlot::NONE;
 };
 

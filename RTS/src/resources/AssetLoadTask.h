@@ -9,7 +9,9 @@ typedef std::function<bool(AssetLoader&, AssetID, const vio::Path&, void*, std::
 
 
 // Return a new AssetHandleBundle if we are awaiting dependencies
-#define ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) [&](AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr, std::any&) -> bool
+//#define ASSET_LOAD_LAMBDA_CUSTOMCAP(assetID, filePath, assetDataPtr) (AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr, std::any&) -> bool
+#define ASSET_LOAD_LAMBDA_CUSTOMCAP(assetID, filePath, assetDataPtr, userData) (AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr, std::any& userData) -> bool
+//#define ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) [&](AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr, std::any&) -> bool
 #define ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) [&](AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr, std::any& userData) -> bool
 // TODO: Task pool?
 struct AssetLoadTask {

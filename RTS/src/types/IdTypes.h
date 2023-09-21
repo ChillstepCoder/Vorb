@@ -16,9 +16,6 @@ constexpr ItemStockpileID INVALID_ITEM_STOCKPILE_ID = UINT32_MAX;
 typedef ui32 ContractID;
 constexpr ContractID INVALID_CONTRACT_ID = UINT32_MAX;
 
-typedef ui32 FishID;
-constexpr FishID INVALID_FISH_ID = UINT32_MAX;
-
 typedef ui32 ParticleID;
 constexpr ParticleID INVALID_PARTICLE_ID = UINT32_MAX;
 

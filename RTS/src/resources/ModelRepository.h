@@ -1,7 +1,7 @@
 #pragma once
 
 #include "definitions/ModelDef.h"
-#include "rendering/mesh/RawMesh.h"
+#include "rendering/mesh/FBXRawMesh.h"
 
 #include "resources/IAssetRepository.h"
 
@@ -9,9 +9,6 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
 
-class MaterialRepository;
-class RigRepository;
-class AnimMachineRepository;
 
 namespace ozz::animation {
     class Skeleton;
@@ -21,29 +18,23 @@ namespace ozz::animation {
 constexpr GLuint MODEL_TRANSFORMS_BINDING_POINT = 2;
 
 class ModelRepository : public IAssetRepository<ModelDef> {
-    friend class TileEditorPanel;
+    friend class TileEditorPanel; // TODO: Remove?
 public:
-    ModelRepository(vio::IOManager& ioManager, const RigRepository& rigRepository);
-    ~ModelRepository();
+    ASSET_REPOSITORY_COMMON_CODE(ModelRepository, ModelDef, AssetType::Model)
 
-    bool loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository);
-    bool loadFbxFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository);
+    bool loadFbxFile(const vio::Path& filePath);
 
-    const ModelDef& getModelDef(ModelID modelId) const { return *mModelDefs[modelId]; }
-    const ModelDef& getModelDef(const nString& name) const;
-    ModelID getModelID(const nString& name) const;
-
-    void buildModelBatches();
+    // TODO:?
+    //void buildModelBatches();
 
 private:
-    bool loadModelInternal(ModelDefFileData& fileData, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath);
-    RawMesh* loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
+    AssetLoadFunc getAssetLoadFunc() override;
 
-    const RigRepository& mRigRepository;
-    vio::IOManager& mIoManager;
-    std::map<nString, ModelID> mModelIdLookup;
-    std::vector<std::unique_ptr<ModelDef>> mModelDefs;
-    std::map<nString, std::unique_ptr<RawMesh>> mRawModels;
+    void loadModelInternal(ModelDef& def, ModelDefFileData& fileData, StrToken modelName, const vio::Path& modelPath);
+    void loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
+
+    std::mutex mRawModelsMutex;
+    std::map<StrToken, std::unique_ptr<FBXRawMesh>> mRawModels;
 
     // TODO: Pooled allocate
     std::vector<std::unique_ptr<ModelBatch>> mModelBatches;

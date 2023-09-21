@@ -47,7 +47,7 @@ protected:
         /// Creates the thread
         /// @param func: The function the thread should execute
         WorkerThread(workerFunc func, AssetLoader* loader) {
-            thread = std::make_unique<std::thread>(func, loader);
+            thread = std::make_unique<std::thread>(func, loader, loader); // TODO: Why double loader?
         }
 
         ~WorkerThread() {

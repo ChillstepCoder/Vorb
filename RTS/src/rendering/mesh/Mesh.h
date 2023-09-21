@@ -117,7 +117,6 @@ static_assert(sizeof(MeshMinimumRenderData) == 20, "Keep tiny");
 //};
 
 
-// TODO: Indirect https://cpp-rendering.io/indirect-rendering/
 class Mesh {
     friend class ProceduralMeshBuilder;
     friend class BillboardMeshBuilder;
@@ -138,6 +137,7 @@ public:
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mBoundingSphere = boundingSphere; }
     MaterialRenderPassType getRenderPass() const { return mRenderPassType; }
     void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
+    AssetHandleBundle& getDependencies() { return mAssetDependencies; }
 
     // Override allocation to use boost::singleton_pool DOESNT WORK WITH POLYMORPHISM
     //static void* operator new(size_t count);
@@ -149,11 +149,6 @@ protected:
     f32v3                  mPosition = f32v3(0.0f);
     BoundingSphere         mBoundingSphere;  ///< Optional
     MaterialRenderPassType mRenderPassType = MaterialRenderPassType::Default;
-    // Make sure to update move constructor on new members
-    // TODO: Pool allocate?
-    // TODO: We dont need dynamic vector, just use a C array
-   // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
-
 };
 
 class SkeletalMesh : public Mesh {

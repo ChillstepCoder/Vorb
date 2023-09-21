@@ -29,23 +29,22 @@ enum class ItemStorageShape {
 };
 KEG_ENUM_DECL(ItemStorageShape);
 
-class ItemDef
-{
+class ItemDef : public IAsset {
     friend class ItemRepository;
     friend class ItemRenderer;
     friend class ItemStockpile;
 public:
-    const nString& getName() const { return mName; }
-    ItemID getID() const { return mId; }
+    DEFAULT_ASSET_CONSTRUCTOR(ItemDef);
+
+    // TODO: Remove accessors
     f32 getValue() const { return mValue; }
     f32 getWeight() const { return mWeight; }
     ui32 getMaxStackSize() const { return mStackSize; }
     TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
-protected:
-    nString mName;
+
+    StrToken mTextureName;
     ItemType mType = ItemType::UNKNOWN;
     ItemStorageShape mShape = ItemStorageShape::POINT;
-    ItemID mId;
     TileHarvestable mHarvestableSource = TileHarvestable::NONE;
     // TODO: Model or something?
     f32 mValue = 1.0f;
@@ -53,6 +52,16 @@ protected:
     ui32 mStackSize = 10;
     ui32v3 mStackDims = ui32v3(5, 5, 5);
 };
+SERIALIZABLE_SIMPLE(ItemDef,
+    make_field(o.mTextureName, "texture"sv),
+    make_field(o.mType, "type"sv),
+    make_field(o.mShape, "shape"sv),
+    make_field(o.mHarvestableSource, "harvest"sv),
+    make_field(o.mValue, "value"sv),
+    make_field(o.mWeight, "weight"sv),
+    make_field(o.mStackSize, "stack_size"sv),
+    make_field(o.mStackDims, "stack_dims"sv)
+);
 
 struct StoredItemStack {
     ItemStack stack;

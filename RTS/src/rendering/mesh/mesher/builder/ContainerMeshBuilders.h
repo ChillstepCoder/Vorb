@@ -7,13 +7,14 @@
 
 class TileContainer;
 
-class ContainerMeshBuilders
-{
+class ContainerMeshBuilders {
 public:
     VORB_NON_COPYABLE_BUT_MOVABLE(ContainerMeshBuilders);
 
     ContainerMeshBuilders(const TileContainer& container, bool staticMeshIsOnlyQuads);
     void computeBoundingSpheres();
+
+    void addMaterial(MaterialID id) { materialDependencies.emplace(id); }
 
     const TileContainer& container;
     ContainerMeshDataCopy tileData;
@@ -21,5 +22,6 @@ public:
     ProceduralMeshBuilder dynamicBuilder;
     BillboardMeshBuilder billboardBuilder;
     InstancedStaticModelGatherer modelGatherer;
+    std::unordered_set<MaterialID> materialDependencies;
 };
 

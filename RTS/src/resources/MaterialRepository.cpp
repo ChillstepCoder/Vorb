@@ -3,7 +3,6 @@
 #include "resources/TextureRepository.h"
 
 #include <Vorb/graphics/SamplerState.h>
-#include "serialization/VorbSerializableDefs.h"
 
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
@@ -102,11 +101,6 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
         MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
         TextureRepository& textureRepo = TextureRepository::get();
         MaterialLoadUserData& loadData = std::any_cast<MaterialLoadUserData&>(userData);
-
-        const nString fileStr = mIoManager.readFileToString(filePath);
-        if (fileStr.size()) {
-            YmlSerializer::readFileData(fileStr, materialDef);
-        }
 
         if (assetID > UINT16_MAX) panic("Too many materials detected in getAssetLoadFunc. Max UINT16_MAX");
 
@@ -361,7 +355,13 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
 void MaterialRepository::onRegisteredAsset(AssetID id) {
     assert(mMaterialGpuData.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
-    mMaterialDescs.emplace_back();
+
+    // Load file data immediately so we can build material desc
+    MaterialDef& materialDef = *mAssets[id];
+    YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), materialDef);
+
+    // Material desc is always available
+    mMaterialDescs.emplace_back(MaterialDesc{.id=(MaterialID)id, .renderPass=materialDef.renderPass });
     mMaterialGpuData.emplace_back();
 }
 

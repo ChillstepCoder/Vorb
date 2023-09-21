@@ -160,6 +160,9 @@ using namespace std::literals::string_view_literals;
 // We get texture warnings if we bind a null texture. TODO: Why? (Used to bind 0 in shadow mapping)
 //#define glBindTexture(x, y) assert(y); glBindTexture(x, y)
 
+// TODO: Remove this by making ryml exist in vorb or removing vorb
+#include "serialization/VorbSerializableDefs.h"
+
 
 // Runs automatically at program startup
 

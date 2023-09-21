@@ -8,6 +8,9 @@
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/RenderContext.h"
 
+#include "resources/MaterialRepository.h"
+#include "resources/asset/AssetHandleBundle.h"
+
 #include "world/IWorld.h"
 
 #include "tile/TileContainerRepository.h"
@@ -56,6 +59,8 @@ void TileContainerMeshManager::frameUpdate()
 void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders) {
     assert(!IS_RENDER_THREAD());
 
+    // Dependencies
+
     MeshTaskData* taskData =
         new MeshTaskData(
             std::move(builders)
@@ -74,6 +79,15 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         TileContainerMeshManager& meshManager = renderDataManager.getTileContainerMeshManager();
         TileContainerMeshData& meshData = meshManager.getMeshDataForTileContainer(id);
         InstancedStaticModelManager& instancedModelManager = renderDataManager.getInstancedStaticModelManager();
+
+        // Load dependencies
+        std::unique_ptr<AssetHandleBundle> dependencies;
+        if (taskData->builders.materialDependencies.size()) {
+            dependencies = std::make_unique<AssetHandleBundle>();
+            for (MaterialID id : taskData->builders.materialDependencies) {
+                dependencies->addAssetHandle(MaterialRepository::get().getAssetHandle((AssetID)id));
+            }
+        }
 
         // Remove existing meshes
         meshManager.removeMeshesForData(meshData);
@@ -101,6 +115,9 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
 
         // Model instances
         instancedModelManager.addInstancesFromGatherer(taskData->builders.modelGatherer);
+
+        // Release old dependencies and store new
+        meshData.mAssetDependencies.swap(dependencies);
 
         // Release
         tileContainer.setDidInitMesh();

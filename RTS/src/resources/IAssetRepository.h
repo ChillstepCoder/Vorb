@@ -141,8 +141,15 @@ public:
     AssetHandlePtr<T> getAssetHandle(AssetID id) {
         return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(id));
     }
+    T* tryGetLoadedAsset(AssetID id) {
+        if (mLoadedAssets[id]) {
+            return mAssets[id].get();
+        }
+        return nullptr;
+    }
+    inline bool isAssetLoaded(AssetID id) { return mLoadedAssets[id]; }
 
-    AssetID getAssetID(StrToken assetName) const { return mAssetRegistry[assetName].mAssetID; }
+    AssetID getAssetID(StrToken assetName) const { return mAssetLookup.at(assetName); }
     AssetID registerAsset(const vio::Path& filePath) {
         // TODO remove string copy
         return registerAsset(StrToken(filePath.getFileNameNoExtension()), filePath);

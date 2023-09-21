@@ -19,7 +19,7 @@ struct alignas(16) RawMeshVertex {
 // Loaded from a model Not intended to be uploaded to GPU except for editor render
 struct FBXRawMaterialData {
     nString materialName;
-    AssetHandlePtr<MaterialDef> materialHandle;
+    const MaterialDef* materialDef = nullptr;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     f32v4 specularColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -51,7 +51,7 @@ struct RawSubMesh {
 
 // Contains everything that a mesh could need, skeleton, vertex data, vertex types,
 // can be exported or converted into proper GPU meshes.
-class RawMesh {
+class FBXRawMesh {
 public:
     std::vector<FBXRawMaterialData> mMaterials;
     std::vector<RawSubMesh> mSubMeshes;

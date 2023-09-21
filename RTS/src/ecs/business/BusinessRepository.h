@@ -12,7 +12,7 @@ class BusinessRepository
 {
 public:
 public:
-    BusinessRepository(vio::IOManager& ioManager, ItemRepository& itemRepository);
+    BusinessRepository(vio::IOManager& ioManager);
     ~BusinessRepository();
 
     void loadBusinessFile(const vio::Path& filePath);
@@ -20,7 +20,6 @@ public:
 
 private:
     vio::IOManager& mIoManager;
-    ItemRepository& mItemRepository;
 
     std::vector<std::unique_ptr<BusinessDef>> mBusinesses;
     std::map<nString, BusinessTypeID> mBusinessesFromName;
