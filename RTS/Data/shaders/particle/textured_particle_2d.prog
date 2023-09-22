@@ -1,3 +1,2 @@
-textured_particle_2d:
-  vert: textured_particle_2d.vert
-  frag: textured_particle_2d.frag
+vert: textured_particle_2d.vert
+frag: textured_particle_2d.frag

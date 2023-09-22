@@ -1,3 +1,2 @@
-ssao:
-  vert: pass_through.vert
-  frag: ssao.frag
+vert: pass_through.vert
+frag: ssao.frag

@@ -1,6 +1,5 @@
-paint_noise:
-  vert: pass_through.vert
-  frag: paint_noise.frag
-  textures:
-    - name: perlin_noise
-      uniform: PerlinNoise
+vert: pass_through.vert
+frag: paint_noise.frag
+textures:
+  - name: perlin_noise
+    uniform: PerlinNoise

@@ -1,12 +1,11 @@
-grass:
-  vert: grass.vert
-  frag: grass.frag
-  tcs: grass.tcs
-  tes: grass.tes
-  textures:
-    - name: grey_noise
-      uniform: GreyNoise
-    - name: grass_gradients
-      uniform: GrassGradients
-    - name: cell_noise
-      uniform: CellNoise
+vert: grass.vert
+frag: grass.frag
+tcs: grass.tcs
+tes: grass.tes
+textures:
+  - name: grey_noise
+    uniform: GreyNoise
+  - name: grass_gradients
+    uniform: GrassGradients
+  - name: cell_noise
+    uniform: CellNoise

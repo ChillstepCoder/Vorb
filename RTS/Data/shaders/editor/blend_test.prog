@@ -1,3 +1,2 @@
-blend_test:
-  vert: pass_through.vert
-  frag: blend_test.frag
+vert: pass_through.vert
+frag: blend_test.frag

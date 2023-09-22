@@ -1,3 +1,2 @@
-material_preview:
-  vert: fullscreen_quad.vert
-  frag: material_preview.frag
+vert: fullscreen_quad.vert
+frag: material_preview.frag

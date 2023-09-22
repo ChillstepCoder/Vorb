@@ -1,3 +1,2 @@
-editor_model:
-  vert: editor_model.vert
-  frag: editor_model.frag
+vert: editor_model.vert
+frag: editor_model.frag

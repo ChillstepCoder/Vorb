@@ -1,14 +1,13 @@
-terrain:
-  vert: terrain.vert
-  frag: terrain.frag
-  textures:
-    - name: grey_noise
-      uniform: GreyNoise
-    - name: grass_terrain
-      uniform: GrassTexture
-    - name: grass_gradients
-      uniform: GrassGradients
-    - name: cell_noise
-      uniform: CellNoise
-    - name: terrain_gradients
-      uniform: TerrainGradients
+vert: terrain.vert
+frag: terrain.frag
+textures:
+  - name: grey_noise
+    uniform: GreyNoise
+  - name: grass_terrain
+    uniform: GrassTexture
+  - name: grass_gradients
+    uniform: GrassGradients
+  - name: cell_noise
+    uniform: CellNoise
+  - name: terrain_gradients
+    uniform: TerrainGradients

@@ -1,3 +1,2 @@
-chunk_lod:
-  vert: chunk_lod.vert
-  frag: chunk_lod.frag
+vert: chunk_lod.vert
+frag: chunk_lod.frag

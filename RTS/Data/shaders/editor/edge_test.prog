@@ -1,3 +1,2 @@
-edge_test:
-  vert: pass_through.vert
-  frag: edge_test.frag
+vert: pass_through.vert
+frag: edge_test.frag

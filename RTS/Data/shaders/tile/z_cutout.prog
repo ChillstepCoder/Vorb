@@ -1,3 +1,2 @@
-z_cutout:
-  vert: z_cutout.vert
-  frag: z_cutout.frag
+vert: z_cutout.vert
+frag: z_cutout.frag

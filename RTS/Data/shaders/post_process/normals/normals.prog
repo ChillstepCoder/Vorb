@@ -1,3 +1,2 @@
-normals:
-  vert: pass_through.vert
-  frag: normals.frag
+vert: pass_through.vert
+frag: normals.frag

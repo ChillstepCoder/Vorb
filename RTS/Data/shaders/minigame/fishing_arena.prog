@@ -1,3 +1,2 @@
-fishing_arena:
-  vert: fishing_arena.vert
-  frag: fishing_arena.frag
+vert: fishing_arena.vert
+frag: fishing_arena.frag

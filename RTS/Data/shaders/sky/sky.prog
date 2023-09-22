@@ -1,6 +1,5 @@
-sky:
-  vert: sky.vert
-  frag: sky.frag
-  textures:
-    - name: starfield
-      uniform: StarfieldTexture
+vert: sky.vert
+frag: sky.frag
+textures:
+  - name: starfield
+    uniform: StarfieldTexture

@@ -1,3 +1,2 @@
-gaussian_blur_shadows:
-  vert: pass_through.vert
-  frag: gaussian_blur_shadows.frag
+vert: pass_through.vert
+frag: gaussian_blur_shadows.frag

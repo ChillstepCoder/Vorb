@@ -1,10 +1,9 @@
-grass_plane:
-  vert: grass_plane.vert
-  frag: grass.frag
-  textures:
-    - name: grey_noise
-      uniform: GreyNoise
-    - name: grass_gradients
-      uniform: GrassGradients
-    - name: cell_noise
-      uniform: CellNoise
+vert: grass_plane.vert
+frag: grass.frag
+textures:
+  - name: grey_noise
+    uniform: GreyNoise
+  - name: grass_gradients
+    uniform: GrassGradients
+  - name: cell_noise
+    uniform: CellNoise

@@ -1,3 +1,2 @@
-character:
-  vert: character.vert
-  frag: character.frag
+vert: character.vert
+frag: character.frag

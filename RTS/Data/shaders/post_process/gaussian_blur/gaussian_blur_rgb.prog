@@ -1,3 +1,2 @@
-gaussian_blur_rgb:
-  vert: pass_through.vert
-  frag: gaussian_blur_rgb.frag
+vert: pass_through.vert
+frag: gaussian_blur_rgb.frag

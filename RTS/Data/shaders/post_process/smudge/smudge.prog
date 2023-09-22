@@ -1,3 +1,2 @@
-smudge:
-  vert: pass_through.vert
-  frag: smudge.frag
+vert: pass_through.vert
+frag: smudge.frag

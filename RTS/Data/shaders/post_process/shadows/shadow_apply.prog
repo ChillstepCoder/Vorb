@@ -1,3 +1,2 @@
-shadow_apply:
-  vert: pass_through.vert
-  frag: shadow_apply.frag
+vert: pass_through.vert
+frag: shadow_apply.frag

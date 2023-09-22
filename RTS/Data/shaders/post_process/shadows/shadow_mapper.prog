@@ -1,4 +1,3 @@
-shadow_mapper:
-  vert: shadow_mapper.vert
-  frag: shadow_mapper.frag
-  geom: shadow_mapper.geom
+vert: shadow_mapper.vert
+frag: shadow_mapper.frag
+geom: shadow_mapper.geom

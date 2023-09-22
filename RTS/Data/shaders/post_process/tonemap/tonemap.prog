@@ -1,3 +1,2 @@
-tonemap:
-  vert: pass_through.vert
-  frag: tonemap.frag
+vert: pass_through.vert
+frag: tonemap.frag

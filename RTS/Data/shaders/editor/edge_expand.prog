@@ -1,3 +1,2 @@
-edge_expand:
-  vert: pass_through.vert
-  frag: edge_expand.frag
+vert: pass_through.vert
+frag: edge_expand.frag

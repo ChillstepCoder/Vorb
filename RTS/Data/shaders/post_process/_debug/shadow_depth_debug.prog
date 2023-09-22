@@ -1,3 +1,2 @@
-shadow_depth_debug:
-  vert: pass_through.vert
-  frag: shadow_depth_debug.frag
+vert: pass_through.vert
+frag: shadow_depth_debug.frag

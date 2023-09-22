@@ -1,3 +1,2 @@
-depth_debug:
-  vert: pass_through.vert
-  frag: depth_debug.frag
+vert: pass_through.vert
+frag: depth_debug.frag

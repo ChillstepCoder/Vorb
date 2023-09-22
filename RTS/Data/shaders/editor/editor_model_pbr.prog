@@ -1,3 +1,2 @@
-editor_model_pbr:
-  vert: editor_model.vert
-  frag: editor_model_pbr.frag
+vert: editor_model.vert
+frag: editor_model_pbr.frag

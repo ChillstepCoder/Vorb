@@ -1,3 +1,2 @@
-standard_model:
-  vert: standard_model.vert
-  frag: standard_model.frag
+vert: standard_model.vert
+frag: standard_model.frag

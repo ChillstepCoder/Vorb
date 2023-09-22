@@ -1,3 +1,2 @@
-grid:
-  vert: grid.vert
-  frag: grid.frag
+vert: grid.vert
+frag: grid.frag

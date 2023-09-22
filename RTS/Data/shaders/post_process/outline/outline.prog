@@ -1,3 +1,2 @@
-outline:
-  vert: pass_through.vert
-  frag: outline.frag
+vert: pass_through.vert
+frag: outline.frag

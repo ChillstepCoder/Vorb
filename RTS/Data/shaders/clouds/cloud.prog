@@ -1,3 +1,2 @@
-cloud:
-  vert: cloud.vert
-  frag: cloud.frag
+vert: cloud.vert
+frag: cloud.frag

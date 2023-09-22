@@ -1,3 +1,2 @@
-shadow_mipmap:
-  vert: pass_through.vert
-  frag: shadow_mipmap.frag
+vert: pass_through.vert
+frag: shadow_mipmap.frag

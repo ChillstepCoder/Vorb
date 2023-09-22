@@ -1,12 +1,11 @@
-cloud_post_pbr:
-  vert: pass_through.vert
-  frag: cloud_post_pbr.frag
-  textures:
-    - name: van_gogh_2
-      uniform: PreturbTexture
-    - name: gradient_smoothed
-      uniform: unGradientTexture
-    - name: cloud_color
-      uniform: unCloudColor
-    - name: sky_gradient
-      uniform: GradientTexture
+vert: pass_through.vert
+frag: cloud_post_pbr.frag
+textures:
+  - name: van_gogh_2
+    uniform: PreturbTexture
+  - name: gradient_smoothed
+    uniform: unGradientTexture
+  - name: cloud_color
+    uniform: unCloudColor
+  - name: sky_gradient
+    uniform: GradientTexture

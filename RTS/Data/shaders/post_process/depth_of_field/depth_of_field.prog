@@ -1,3 +1,2 @@
-depth_of_field:
-  vert: pass_through.vert
-  frag: depth_of_field.frag
+vert: pass_through.vert
+frag: depth_of_field.frag
