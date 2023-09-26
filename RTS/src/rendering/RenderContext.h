@@ -18,7 +18,7 @@ class InstancedStaticModelGatherer;
 class IWorld;
 class ItemRenderer;
 class LightRenderer;
-class MaterialShader;
+class MaterialShaderDef;
 class Mesh;
 class ParticleSystemRenderer;
 class RenderState;

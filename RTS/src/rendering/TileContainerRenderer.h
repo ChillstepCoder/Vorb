@@ -1,9 +1,10 @@
 #pragma once
 
 #include <boost/container/flat_set.hpp>
+#include "resources/asset/AssetHandleBundle.h"
 
 class Camera3D;
-class MaterialShader;
+class MaterialShaderDef;
 class TileContainer;
 class Mesh;
 class InstancedStaticModelRenderer;
@@ -20,11 +21,11 @@ public:
 
 private:
 
-    const MaterialShader* mShadowMapperMaterial = nullptr;
-    const MaterialShader* mShadowMapperMaterialBillboard = nullptr;
-    const MaterialShader* mStandardMaterial = nullptr;
-    const MaterialShader* mBillboardMaterial = nullptr;
-
+    const MaterialShaderDef* mShadowMapperMaterial = nullptr;
+    const MaterialShaderDef* mShadowMapperMaterialBillboard = nullptr;
+    const MaterialShaderDef* mStandardMaterial = nullptr;
+    const MaterialShaderDef* mBillboardMaterial = nullptr;
+    AssetHandleBundle mShaderAssets;
 
 };
 

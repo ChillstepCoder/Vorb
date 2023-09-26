@@ -2,7 +2,7 @@
 #include "ParticleSystemEditorViewportPanel.h"
 
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/ParticleSystemRepository.h"
 
@@ -492,7 +492,7 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& em
 std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() {
     std::vector<nString> emitterNames;
     nString name; // Share memory
-    ParticleSystemRepository::get().forEachRegisteredAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef* def, const AssetRegistryEntry& entry) {
+    ParticleSystemRepository::get().forEachRegisteredAsset([&](ParticleSystemDef* def, const AssetRegistryEntry& entry) {
         if (def) {
             name = def->getName().toString();
             for (auto& emitter : def->mEmitters) {
@@ -501,6 +501,7 @@ std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() 
         }
         else {
             // Request asset load if needed
+            ParticleSystemRepository& repo = ParticleSystemRepository::get();
             if (!mAssetHandleBundle.hasAssetHandle(entry.mID, repo.getAssetType())) {
                 mAssetHandleBundle.addAssetHandle(repo.getAssetHandle(entry.mID));
             }

@@ -228,7 +228,8 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
                     // TODO: Handle NPC and multiplayer as well
                     fishingCmp.mIsLocalPlayer = true;
                     fishingCmp.mState = FishingComponentState::LocalPlayerMinigame;
-                    const FishDef& fishDef = Services::ResourceManager::ref().getFishRepository().getFish(fish.mFishId);
+                    // TODO: Do we need an asset handle?
+                    const FishDef& fishDef = FishRepository::get().getLoadedOrUnloadedAsset(fish.mFishId);
 
                     // Lock player control
                     ++registry.get<PlayerControlComponent>(entity).mInputLockCount;

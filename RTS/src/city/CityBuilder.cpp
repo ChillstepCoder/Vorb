@@ -115,7 +115,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                             Tile& tile = tiles[tileIndex];
                             // We dont add to mean height here because tile height is relative to the floor of this tile layer
                             //const f32 height = 0.0f;
-                            const TileData& data = TileRepository::getTileData(tileId);
+                            const TileDef& data = TileRepository::getTileData(tileId);
                             tile.layers[data.layer] = data.id;
                             //tile.groundZOffset = height;
                             //assert(false); // Set building structure pointer

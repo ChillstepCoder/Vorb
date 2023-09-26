@@ -6,7 +6,7 @@ struct MaterialGpuData;
 struct EditorMaterialHandle;
 struct TileGrassData;
 struct FishDef;
-class MaterialShader;
+class MaterialShaderDef;
 class ParticleSystemDef;
 
 DECL_VG(class GBuffer);
@@ -41,7 +41,7 @@ private:
     void updateAndRenderBiomeTab(TileEditorPanelResult& result);
     void updateAndRenderFishingTab(TileEditorPanelResult& result);
     void updateAndRenderParticlesTab(TileEditorPanelResult& result);
-    VGTexture renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData);
+    VGTexture renderMaterialPreview(const MaterialShaderDef* shader, int previewIndex, const MaterialGpuData& materialData);
 
     // Material preview
     std::vector<std::unique_ptr<vg::GBuffer>> mMaterialPreviewGBuffers;

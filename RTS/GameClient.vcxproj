@@ -345,8 +345,8 @@
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\LoadScreenRenderer.cpp" />
-    <ClCompile Include="src\rendering\MaterialShader.cpp" />
-    <ClCompile Include="src\rendering\MaterialShaderManager.cpp" />
+    <ClCompile Include="src\rendering\MaterialShaderDef.cpp" />
+    <ClCompile Include="src\rendering\MaterialShaderRepository.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp" />
@@ -555,6 +555,7 @@
     <ClInclude Include="src\definitions\rendering\TextureDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
     <ClInclude Include="src\definitions\SkillDef.h" />
+    <ClInclude Include="src\definitions\TileGrassDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
@@ -681,8 +682,8 @@
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\LoadScreenRenderer.h" />
-    <ClInclude Include="src\rendering\MaterialShader.h" />
-    <ClInclude Include="src\rendering\MaterialShaderManager.h" />
+    <ClInclude Include="src\rendering\MaterialShaderDef.h" />
+    <ClInclude Include="src\rendering\MaterialShaderRepository.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\material\BrdfLUT.h" />
@@ -765,6 +766,7 @@
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\AssetLoader.h" />
     <ClInclude Include="src\resources\AssetLoadTask.h" />
+    <ClInclude Include="src\resources\asset\AssetHandle.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />

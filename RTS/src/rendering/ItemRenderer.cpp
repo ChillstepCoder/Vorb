@@ -3,24 +3,23 @@
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 
-#include "resources/ResourceManager.h"
 #include "MaterialRenderer.h"
-#include "MaterialShaderManager.h"
+#include "MaterialShaderRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "camera/Camera3D.h"
 
 ItemRenderer::ItemRenderer() {
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mItemMeshMaterial = materialManager.getMaterialShader("standard_tile");
-  //  mItemBillboardMaterial = materialManager.getMaterial("billboard");
+    mItemMeshMaterial.aquire(StrToken("standard_tile", 0));
+    mItemBillboardMaterial.aquire(StrToken("item_billboard", 0));
 
     initEventHandlers();
 
 }
 
 void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) const {
+    // mItemMeshMaterial.trygetasset();
     //ItemStockpileRenderData& renderData = stockpile.mRenderData;
     //// TODO: Multithread?
     //if (!renderData.mBillboardMesh) {
@@ -104,12 +103,15 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
 
 void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
 {
-    const ItemDef& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
+    //const ItemDef& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
     //mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
+    assert(false);
 }
 
 void ItemRenderer::render(const Camera3D& camera) const
 {
+    if (!mItemBillboardMaterial.isLoaded()) return;
+    if (!mItemMeshMaterial.isLoaded()) return;
     updateDirtyStockpileMeshes();
     //assert(false);
     //ItemStockpileRenderData& renderData = stockpile.mRenderData;
@@ -171,12 +173,12 @@ void ItemRenderer::updateDirtyStockpileMeshes() const {
 }
 
 void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const {
-    VGUniform offsetUniform = mItemBillboardMaterial->mProgram.getUniform("unOffset");
+    VGUniform offsetUniform = mItemBillboardMaterial.getLoadedAsset().mProgram.getUniform("unOffset");
     const f32v3 stockpilePos(stockpile.mAABB.pos.x, stockpile.mAABB.pos.y, 0.0f);
     const f32v3 offset = stockpilePos - camera.getPosition();
 
     // TODO: Reduce swaps
-    MaterialRenderer::bindMaterialForRender(*mItemBillboardMaterial, nullptr);
+    MaterialRenderer::bindMaterialShaderForRender(mItemBillboardMaterial.getLoadedAsset(), nullptr);
     glUniform3fv(offsetUniform, 1, &offset.x);
     MeshDrawer::draw(itemMesh.mMainMesh);
 }

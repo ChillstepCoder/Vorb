@@ -4,7 +4,7 @@
 
 #include "rendering/particle/ParticleEnumTypes.h"
 
-class MaterialShader;
+#include "rendering/MaterialShaderDef.h"
 
 typedef std::vector<std::unique_ptr<CPUParticleEmitterModule>> CPUParticleEmitterModuleVector;
 
@@ -42,7 +42,7 @@ public:
 
     ParticleEmitterModuleContainer mModules;
 
-    const MaterialShader* mShader = nullptr;
+    AssetHandlePtr<MaterialShaderDef> mShader;
     nString mEmitterName;
     f32v2 mDefaultScale = f32v2(0.1f);
     color4 mDefaultColor = color::White;

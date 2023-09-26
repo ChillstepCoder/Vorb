@@ -2,10 +2,10 @@
 #include "TerrainRenderer.h"
 
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialUtils.h"
+#include "definitions/rendering/CubemapDef.h"
 
-#include "rendering/texture/Cubemap.h"
 #include "rendering/material/BrdfLUT.h"
 
 #include <Vorb/graphics/GBuffer.h>
@@ -21,19 +21,20 @@
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
-TerrainRenderer::TerrainRenderer()
-{
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mTerrainMaterial = materialManager.getMaterialShader("terrain");
-    mWaterMaterial = materialManager.getMaterialShader("water");
-    mWaterPbrMaterial = materialManager.getMaterialShader("water_pbr");
+TerrainRenderer::TerrainRenderer() {
+    mTerrainMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("terrain"));
+    mWaterMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("water"));
+    mWaterPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("water_pbr"));
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes) {
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
 
     glEnable(GL_CULL_FACE);
 
-    MaterialRenderer::bindMaterialForRender(*mTerrainMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*mTerrainMaterial);
     // Terrain uniforms
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
@@ -69,17 +70,20 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     }
 }
 
-void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const Cubemap& skyCubeMap)
-{
+void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const CubemapDef& skyCubeMap) {
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
+
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();
     vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
 
-    const MaterialShader* shader;
+    const MaterialShaderDef* shader;
     if (sDebugOptions.mUsingPBR) {
         shader = mWaterPbrMaterial;
         ui32 textureUnit;
-        MaterialRenderer::bindMaterialForRender(*shader, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
         glUniform1i(shader->getUniform("unIrradianceMap"), textureUnit);
         glBindTextureUnit(textureUnit++, skyCubeMap.getIrradianceTexture());
         glUniform1i(shader->getUniform("unPrefilterMap"), textureUnit);
@@ -112,7 +116,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
     }
     else {
         shader = mWaterMaterial;
-        MaterialRenderer::bindMaterialForRender(*shader);
+        MaterialRenderer::bindMaterialShaderForRender(*shader);
         MaterialUtils::uploadLightingUniforms(*shader);
     }
 

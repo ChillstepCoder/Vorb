@@ -15,7 +15,7 @@
 
 #include "resources/ResourceManager.h"
 #include "resources/CubemapRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/TextureRepository.h"
 #include "rendering/MaterialUtils.h"
@@ -54,12 +54,12 @@ void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     clearFramebuffers();
     renderSkybox();
 
-    const MaterialShader* shader = getShader();
+    const MaterialShaderDef* shader = getShader();
     if (shader) {
         renderGrid(camera->getViewProjectionMatrix());
 
         ui32 textureUnit;
-        MaterialRenderer::bindMaterialForRender(*shader, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
         uploadShaderUniforms(shader, textureUnit);
 
 
@@ -208,7 +208,7 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
     CubemapRepository& cubemapRepo = CubemapRepository::get();
     cubemapNames.reserve(cubemapRepo.getNumRegisteredAssets() + 1);
     cubemapNames.emplace_back("NONE");
-    cubemapRepo.forEachRegisteredAsset([&](IAssetRepository<CubemapDef>& repo, CubemapDef* def, const AssetRegistryEntry& entry) {
+    cubemapRepo.forEachRegisteredAsset([&](CubemapDef* def, const AssetRegistryEntry& entry) {
         cubemapNames.emplace_back(entry.mName);
         return false;
     });
@@ -353,9 +353,9 @@ void IEditorViewportPanel::renderGrid(const f32m4& VP) {
     vg::sBlendStates.ALPHA.set();
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialShader* gridMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("grid");
+    const MaterialShaderDef* gridMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("grid");
     VGUniform unVP = gridMaterial->getUniform("unVP");
-    MaterialRenderer::bindMaterialForRender(*gridMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*gridMaterial);
     glUniformMatrix4fv(unVP, 1, false, &(VP[0][0]));
 
     glBindVertexArray(mGridVao);
@@ -382,7 +382,7 @@ f32v3 IEditorViewportPanel::getCameraUp() const {
     return camera->getUp();
 }
 
-void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
+void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {
     assert(availableTextureUnit == 0);
 
     if (mRotate90) {
@@ -437,7 +437,7 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
     uploadCustomShaderUniforms(shader, 3);
 }
 
-void IEditorViewportPanel::renderPBRArray(const MaterialShader* shader) {
+void IEditorViewportPanel::renderPBRArray(const MaterialShaderDef* shader) {
 
 
     VGUniform metallicUniform = shader->getUniform("unMetallic");
@@ -468,9 +468,9 @@ void IEditorViewportPanel::renderPBRArray(const MaterialShader* shader) {
 void IEditorViewportPanel::postProcessBlendTest() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
 
-    const MaterialShader* blendShader = resourceManager.getMaterialShaderManager().getMaterialShader("blend_test");
+    const MaterialShaderDef* blendShader = resourceManager.getMaterialShaderManager().getMaterialShader("blend_test");
     ui32 freeTextureIndex;
-    MaterialRenderer::bindMaterialForRender(*blendShader, &freeTextureIndex);
+    MaterialRenderer::bindMaterialShaderForRender(*blendShader, &freeTextureIndex);
 
     const VGUniform& albedoUniform = blendShader->mProgram.getUniform("unAlbedoFbo");
     const VGUniform& normalUniform = blendShader->mProgram.getUniform("unNormalFbo");
@@ -521,8 +521,8 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     vg::DepthState::NONE.set();
     ui32 freeTextureIndex;
     { // Edge test
-        const MaterialShader* edgeShader = resourceManager.getMaterialShaderManager().getMaterialShader("edge_test");
-        MaterialRenderer::bindMaterialForRender(*edgeShader, &freeTextureIndex);
+        const MaterialShaderDef* edgeShader = resourceManager.getMaterialShaderManager().getMaterialShader("edge_test");
+        MaterialRenderer::bindMaterialShaderForRender(*edgeShader, &freeTextureIndex);
 
         glUniform1i(edgeShader->mProgram.getUniform("unNormalFbo"), freeTextureIndex);
         glUniform1i(edgeShader->mProgram.getUniform("unDepthFbo"), freeTextureIndex + 1);
@@ -542,8 +542,8 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     int sourceGBuffer = 1;
     int targetGBuffer = 2;
     { // Edge expand
-        const MaterialShader* expandShader = resourceManager.getMaterialShaderManager().getMaterialShader("edge_expand");
-        MaterialRenderer::bindMaterialForRender(*expandShader, &freeTextureIndex);
+        const MaterialShaderDef* expandShader = resourceManager.getMaterialShaderManager().getMaterialShader("edge_expand");
+        MaterialRenderer::bindMaterialShaderForRender(*expandShader, &freeTextureIndex);
         // TODO: Profile just changing the uniform instead of changing the texture binding!
         glUniform1i(expandShader->mProgram.getUniform("unFbo"), freeTextureIndex);
         glUniform1i(expandShader->mProgram.getUniform("unDepthFbo"), freeTextureIndex + 1);
@@ -568,8 +568,8 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     }
 
     { // Blur edges
-        const MaterialShader* blendShader = resourceManager.getMaterialShaderManager().getMaterialShader("blend_test_v2");
-        MaterialRenderer::bindMaterialForRender(*blendShader, &freeTextureIndex);
+        const MaterialShaderDef* blendShader = resourceManager.getMaterialShaderManager().getMaterialShader("blend_test_v2");
+        MaterialRenderer::bindMaterialShaderForRender(*blendShader, &freeTextureIndex);
         const VGUniform& dirUniform = blendShader->mProgram.getUniform("unDirection");
         glUniform1i(blendShader->mProgram.getUniform("unAlbedoFbo"), freeTextureIndex);
         glUniform1i(blendShader->mProgram.getUniform("unNormalFbo"), freeTextureIndex + 1);

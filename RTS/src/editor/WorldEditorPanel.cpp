@@ -292,7 +292,7 @@ void WorldEditorPanel::tryRenderBrushSelect() const {
         if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Indent();
             ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-            brushRepo.forEachRegisteredAsset([&](IAssetRepository<BrushDef>& repo, BrushDef* brush, const AssetRegistryEntry& entry) {
+            brushRepo.forEachRegisteredAsset([&](BrushDef* brush, const AssetRegistryEntry& entry) {
                 ImGui::TableNextColumn();
                 ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
                 ui32 strSize = 0;
@@ -300,7 +300,7 @@ void WorldEditorPanel::tryRenderBrushSelect() const {
                 entry.mName.toString(nameBuf, &strSize);
                 if (ImGui::RadioButton(nameBuf, mCurrentBrushSettings->brushId == entry.mID)) {
                     mCurrentBrushSettings->brushId = entry.mID;
-                    mCurrentBrushSettings->activeBrush = repo.getAssetHandle(entry.mID);
+                    mCurrentBrushSettings->activeBrush = BrushRepository::get().getAssetHandle(entry.mID);
                 }
                 ImGui::TableNextColumn();
                 if (brush) {
@@ -343,17 +343,17 @@ void WorldEditorPanel::renderGrassEditUI() const {
     }
 
     ImGui::Text("Tile select");
-    const std::vector<TileGrassData>& allData = Services::ResourceManager::ref().getTileGrassRepository().getAllGrassData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    for (size_t i = 0; i < allData.size(); ++i) {
-        const TileGrassData& grassData = allData[i];
+    size_t i = 0;
+    TileGrassRepository::get().forEachRegisteredAsset([this, &i](TileGrassDef* def, const AssetRegistryEntry& entry) {
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(grassData.mName.toString().c_str(), mSelectedGrass == (TileGrassID)i)) {
+        if (ImGui::RadioButton(def->getName().toString().c_str(), mSelectedGrass == (TileGrassID)i++)) {
             mSelectedGrass = (ui32)i;
         }
         ImGui::TableNextColumn();
-        //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
-    }
+        return false;
+    });
+    
     ImGui::EndTable();
     ImGui::SliderFloat("Brush Size", &mGrassBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Brush Strength", &mGrassBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -364,10 +364,10 @@ void WorldEditorPanel::renderTileEditUI() const {
     ImGui::SliderFloat("Ground tile Z offset", &mGroundTileOffset, 0.0f, 10.0f, "%.2f");
     ImGui::Checkbox("Drag to place", &mDragToPlace);
     ImGui::Text("Tile select");
-    const std::vector<TileData>& allData = TileRepository::getAllTileData();
+    const std::vector<TileDef>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     for (size_t i = 0; i < allData.size(); ++i) {
-        const TileData& tileData = allData[i];
+        const TileDef& tileData = allData[i];
         ImGui::TableNextColumn();
         if (ImGui::RadioButton(tileData.name.c_str(), mSelectedTile == (ui32)i)) {
             mSelectedTile = (ui32)i;
@@ -381,7 +381,7 @@ void WorldEditorPanel::renderTileEditUI() const {
 void WorldEditorPanel::renderEntityEditUI() const {
     ImGui::Text("Select entity");
     const EntityDefinitionMap& entityDefs = Services::ResourceManager::ref().getEntityDefinitionRepository().getAllEntityDefinitions();
-    const std::vector<TileData>& allData = TileRepository::getAllTileData();
+    const std::vector<TileDef>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     for (auto&& it : entityDefs) {
         ImGui::TableNextColumn();
@@ -590,7 +590,7 @@ void WorldEditorPanel::updateTileEdit() {
                 Chunk& chunk = std::get<3>(*taskData)->getChunkGrid().getChunk(chunkId);
                 if (chunk.isDataReady()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
-                    const TileData& data = TileRepository::getTileData(std::get<2>(*taskData));
+                    const TileDef& data = TileRepository::getTileData(std::get<2>(*taskData));
                     TileContainer& tileContainer = *chunk.getTileContainer();
                     tileContainer.setTileLayer(tileIndex, data);
                 }

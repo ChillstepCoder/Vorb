@@ -5,7 +5,7 @@
 
 #include "resources/ResourceManager.h"
 //#include "resources/ModelRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/Mesh/MeshDrawer.h"
@@ -105,7 +105,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::EndChild();
 }
 
-const MaterialShader* ModelEditorViewportPanel::getShader() {
+const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     switch (mDrawMode) {
         case EditorViewportDrawMode::PBRTest:
@@ -131,7 +131,7 @@ const MaterialShader* ModelEditorViewportPanel::getShader() {
     return nullptr;
 }
 
-void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
+void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {
     UNUSED(shader, availableTextureUnit);
 }
 

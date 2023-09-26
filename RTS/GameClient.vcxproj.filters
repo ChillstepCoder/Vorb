@@ -66,10 +66,10 @@
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\MaterialShader.cpp">
+    <ClCompile Include="src\rendering\MaterialShaderDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\MaterialShaderManager.cpp">
+    <ClCompile Include="src\rendering\MaterialShaderRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\MaterialRenderer.cpp">
@@ -890,10 +890,10 @@
     <ClInclude Include="src\rendering\GrassBillboardMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\MaterialShader.h">
+    <ClInclude Include="src\rendering\MaterialShaderDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\MaterialShaderManager.h">
+    <ClInclude Include="src\rendering\MaterialShaderRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\MaterialRenderer.h">
@@ -2031,6 +2031,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\AnimationDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\asset\AssetHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\TileGrassDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

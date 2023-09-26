@@ -4,9 +4,10 @@
 #include "rendering/RenderStats.h"
 #include "rendering/mesh/mesher/builder/TextMeshBuilder.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h" // FOR SHARED
 #include "rendering/mesh/MeshDrawer.h"
+#include "rendering/MaterialShaderDef.h"
 
 #include "resources/ResourceManager.h"
 
@@ -23,9 +24,12 @@
 
 std::vector<std::unique_ptr<VisualLog>> VisualLogger::sVisualLogs;
 std::mutex VisualLogger::sMutex;
+AssetHandlePtr<MaterialShaderDef> sMaterialHandle;
 
 VisualLog::VisualLog(const nString& name) : mName(name) {
-
+    if (!sMaterialHandle) {
+        sMaterialHandle = MaterialShaderRepository::get().getAssetHandle(StrToken("text_billboard", 0));
+    }
 }
 
 VisualLog::~VisualLog() {
@@ -163,6 +167,11 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         return;
     }
 
+    const MaterialShaderDef* shaderDef = sMaterialHandle->tryGetAsset();
+    if (!shaderDef) {
+        return;
+    }
+
     // Rebuild if needed
     if (mDirtyRender) {
         buildMesh();
@@ -194,13 +203,11 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
     // Render text
     if (mTextMesh.isValid()) {
         glDisable(GL_CULL_FACE); // TODO: Remove
-        const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-        const MaterialShader* material = materialManager.getMaterialShader("text_billboard");
         ui32 textureUnit;
-        MaterialRenderer::bindMaterialForRender(*material, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*shaderDef, &textureUnit);
         f32v3 offset = mRootPos - cameraPos;
-        glUniform3fv(material->getUniform("unOffset"), 1, &offset.x);
-        glUniform1i(material->getUniform("unFontTexture"), textureUnit);
+        glUniform3fv(shaderDef->getUniform("unOffset"), 1, &offset.x);
+        glUniform1i(shaderDef->getUniform("unFontTexture"), textureUnit);
         glBindTextureUnit(textureUnit, mTextData[0].font->mTexture);
         MeshDrawer::draw(mTextMesh.mMainMesh);
     }

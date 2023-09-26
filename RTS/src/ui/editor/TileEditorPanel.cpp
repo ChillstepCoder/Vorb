@@ -6,7 +6,7 @@
 #include "resources/MaterialRepository.h"
 #include "resources/TileGrassRepository.h"
 #include "resources/FishRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/TileRepository.h"
 #include "resources/ParticleSystemRepository.h"
@@ -81,7 +81,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
             ImGui::TableHeadersRow();
 
             ui32 ID = 250;
-            modelRepository.forEachRegisteredAsset([&](IAssetRepository<ModelDef>& repo, ModelDef* def, const AssetRegistryEntry& entry) {
+            modelRepository.forEachRegisteredAsset([&](ModelDef* def, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
                 // Name
@@ -159,13 +159,13 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 
 
             // Rendering
-            const MaterialShader* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
+            const MaterialShaderDef* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
             vg::DepthState::NONE.set();
-            MaterialRenderer::bindMaterialForRender(*previewShader);
+            MaterialRenderer::bindMaterialShaderForRender(*previewShader);
 
             ui32 ID = 250;
             ui32 previewIndex = 0;
-            materialRepository.forEachRegisteredAsset([&](IAssetRepository<MaterialDef>& repo, MaterialDef* def, const AssetRegistryEntry& entry) {
+            materialRepository.forEachRegisteredAsset([&](MaterialDef* def, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
@@ -254,9 +254,9 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
 
 
             // Rendering
-            const MaterialShader* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
+            const MaterialShaderDef* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
             vg::DepthState::NONE.set();
-            MaterialRenderer::bindMaterialForRender(*previewShader);
+            MaterialRenderer::bindMaterialShaderForRender(*previewShader);
 
             ui32 ID = 250;
             ui32 previewIndex = 0;
@@ -419,7 +419,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
             ui32 ID = 2998;
             ui32 previewIndex = 0;
 
-            particleSystemRepository.forEachRegisteredAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef* asset, const AssetRegistryEntry& entry) {
+            particleSystemRepository.forEachRegisteredAsset([&](ParticleSystemDef* asset, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
@@ -450,7 +450,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
     }
 }
 
-VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData) {
+VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShaderDef* shader, int previewIndex, const MaterialGpuData& materialData) {
     // Allocate new gbuffer if needed
     assert(previewIndex <= (int)mMaterialPreviewGBuffers.size());
     if (previewIndex == (int)mMaterialPreviewGBuffers.size()) {

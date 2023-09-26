@@ -4,16 +4,22 @@
 #include "item/ItemRepository.h"
 #include "resources/ModelRepository.h"
 
+void FishRepository::onRegisteredAsset(AssetID id) {
+    FishDef& def = *mAssets[id];
+    const vio::Path& filePath = mAssetRegistry[id].mFilePath;
+    YmlSerializer::readFileData(readFileToString(filePath), def);
+
+    if (def.mItemName.isValid()) panic("FishDef {} mising item name", filePath.getString());
+    if (def.mModelName.isValid()) panic("FishDef {} mising model name", filePath.getString());
+}
+
 AssetLoadFunc FishRepository::getAssetLoadFunc() {
 
     return ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr) {
         FishDef& def = *static_cast<FishDef*>(assetDataPtr);
-        YmlSerializer::readFileData(readFileToString(filePath), def);
 
-        if (def.mItemName.isValid()) panic("FishDef {} mising item name", filePath.getString());
+        def.getDependencies()->reserveCount(2);
         def.addDependency(ItemRepository::get().getAssetHandle(def.mItemName));
-
-        if (def.mModelName.isValid()) panic("FishDef {} mising model name", filePath.getString());
         def.addDependency(ModelRepository::get().getAssetHandle(def.mModelName));
 
         assetLoader.requestAssetLoadWithDependencies(ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr) {

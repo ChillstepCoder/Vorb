@@ -1,7 +1,8 @@
 #pragma once
 #include "LightData.h"
+#include "resources/asset/AssetHandleBundle.h"
 
-class MaterialShader;
+class MaterialShaderDef;
 class CubemapDef;
 
 DECL_VG(class GBuffer);
@@ -16,7 +17,8 @@ public:
     void renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const CubemapDef& skyCubeMap) const;
 
 private:
-    const MaterialShader* mSunlightMaterial = nullptr;
-    const MaterialShader* mSunlightMaterialPbr = nullptr;
+    AssetHandleBundle mShaderAssets;
+    const MaterialShaderDef* mSunlightMaterial = nullptr;
+    const MaterialShaderDef* mSunlightMaterialPbr = nullptr;
 };
 

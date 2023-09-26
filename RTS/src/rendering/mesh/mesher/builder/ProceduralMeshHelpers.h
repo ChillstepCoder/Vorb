@@ -5,7 +5,7 @@ class StaticPhysicsMeshBuilder;
 class TileWallContainer;
 class TileSpatialGrid;
 class Tile;
-struct TileData;
+class TileDef;
 
 // TODO: This can be improved, we can have a generic "procedural tile" where it is data driven
 // as a model with special parameters
@@ -18,7 +18,7 @@ namespace ProceduralMeshHelpers
 {
     //void addWindowMesh(ui32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, StaticPhysicsMeshBuilder& physMesh);
     void addTileWallMesh(
-        const TileData& tileData,
+        const TileDef& tileData,
         const TileSpatialGrid& spatialGrid,
         const TileWallContainer& tileWalls,
         const std::vector<Tile>& tiles,

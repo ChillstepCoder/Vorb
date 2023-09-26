@@ -3,40 +3,6 @@
 
 #include "resources/TileRepository.h"
 
-KEG_ENUM_DEF(TileTextureMethod, TileTextureMethod, kt) {
-    kt.addValue("simple", TileTextureMethod::SIMPLE);
-    kt.addValue("connected", TileTextureMethod::CONNECTED);
-    kt.addValue("connected_wall", TileTextureMethod::CONNECTED_WALL);
-    kt.addValue("vertical", TileTextureMethod::VERTICAL);
-    kt.addValue("flora", TileTextureMethod::FLORA);
-    kt.addValue("world_tiling", TileTextureMethod::WORLD_TILING);
-}
-static_assert(e_cast(TileTextureMethod::COUNT) == 6);
-
-
-KEG_ENUM_DEF(TileShape, TileShape, kt) {
-    kt.addValue("Thin", TileShape::THIN);
-    kt.addValue("Block", TileShape::BLOCK);
-    kt.addValue("Floor", TileShape::FLOOR);
-    kt.addValue("Wall", TileShape::WALL);
-    kt.addValue("Window", TileShape::WINDOW);
-    kt.addValue("Door", TileShape::DOOR);
-    kt.addValue("Stairs", TileShape::STAIRS);
-    kt.addValue("Model", TileShape::MODEL);
-}
-static_assert(e_cast(TileShape::COUNT) == 8);
-
-
-KEG_TYPE_DEF_SAME_NAME(ItemInputDef, kt) {
-    kt.addValue("item", keg::Value::basic(offsetof(ItemInputDef, itemName), keg::BasicType::STRING));
-    kt.addValue("count", keg::Value::basic(offsetof(ItemInputDef, count), keg::BasicType::UI32));
-}
-
-KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
-    kt.addValue("item", keg::Value::basic(offsetof(ItemDropDef, itemName), keg::BasicType::STRING));
-    kt.addValue("count", keg::Value::basic(offsetof(ItemDropDef, countRange), keg::BasicType::UI32_V2));
-}
-
 void Tile::setTileFlag(TileFlags flag) {
     ASSERT_GAME_THREAD();
     tileFlags.setBit(flag);
@@ -167,7 +133,7 @@ bool Tile::canNavInDirection(Cartesian8 dir) const {
 
 f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
     if (mainLayer == TILE_ID_NONE) return 0.0f;
-    const TileData& tileData = TileRepository::getTileData(mainLayer);
+    const TileDef& tileData = TileRepository::getTileData(mainLayer);
     // TODO: Cut out this check
     Cartesian8 dir8 = CARTESIAN_TO_CARTESIAN8[e_cast(dir)];
     switch (orientation.orientationMain) {
@@ -196,7 +162,7 @@ Cartesian Tile::getOrientation(TileLayer layer) const {
     }
 }
 
-bool Tile::canAddTileData(const TileData& tile) const {
+bool Tile::canAddTileData(const TileDef& tile) const {
     ASSERT_GAME_THREAD();
     return layers[tile.layer] == TILE_ID_NONE;
 }

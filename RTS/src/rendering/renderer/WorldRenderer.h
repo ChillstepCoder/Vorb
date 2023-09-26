@@ -26,7 +26,7 @@ class TerrainRenderer;
 class TileContainerRenderer;
 class TonemapRenderer;
 class RenderState;
-class MaterialShader;
+class MaterialShaderDef;
 class Mesh;
 class TerrainMesh;
 class GrassMesh;
@@ -111,10 +111,10 @@ private:
     IWorld* mActiveWorld = nullptr;
 
     int mPassthroughRenderMode = 0;
-    std::vector<const MaterialShader*> mPassthroughMaterials;
-    const MaterialShader* mPassthroughMaterial = nullptr;
-    const MaterialShader* mSceneLightingMaterial = nullptr;
-    const MaterialShader* mCopyDepthMaterial = nullptr;
+    std::vector<const MaterialShaderDef*> mPassthroughMaterials;
+    const MaterialShaderDef* mPassthroughMaterial = nullptr;
+    const MaterialShaderDef* mSceneLightingMaterial = nullptr;
+    const MaterialShaderDef* mCopyDepthMaterial = nullptr;
 
     // Event handles
     struct WorldRendererEventHandles {

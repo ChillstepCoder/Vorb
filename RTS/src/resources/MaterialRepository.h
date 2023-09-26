@@ -12,7 +12,8 @@ class MaterialTextureGenerator;
 class MaterialRepository : public IAssetRepository<MaterialDef> {
     friend class TileEditorPanel;
 public:
-    ASSET_REPOSITORY_COMMON_CODE(MaterialRepository, MaterialDef, AssetType::Material)
+    ASSET_REPOSITORY_COMMON_CODE_NO_CONSTRUCTOR(MaterialRepository, MaterialDef, AssetType::Material)
+    MaterialRepository(vio::IOManager& ioManager);
     ~MaterialRepository();
 
     const MaterialGpuData& getMaterialGpuData(MaterialID materialId) const;

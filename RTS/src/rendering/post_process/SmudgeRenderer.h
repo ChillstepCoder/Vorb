@@ -1,8 +1,10 @@
 #pragma once
 
 DECL_VG(class GBuffer);
-class MaterialShader;
+class MaterialShaderDef;
 class Camera3D;
+
+#include "resources/asset/AssetHandleBundle.h"
 
 class SmudgeRenderer {
 public:
@@ -15,7 +17,8 @@ public:
 private:
     // Smudge post process
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
-    const MaterialShader* mSmudgeShader = nullptr;
-    const MaterialShader* mPaintNoiseShader = nullptr;
+    const MaterialShaderDef* mSmudgeShader = nullptr;
+    const MaterialShaderDef* mPaintNoiseShader = nullptr;
+    AssetHandleBundle mShaderAssets;
 };
 

@@ -6,7 +6,7 @@
 #include "camera/Camera3D.h"
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialUtils.h"
@@ -26,12 +26,13 @@
 
 CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mCloudMaterial = materialManager.getMaterialShader("cloud");
-    mPostMaterial = materialManager.getMaterialShader("cloud_post");
-    mPostPbrMaterial = materialManager.getMaterialShader("cloud_post_pbr");
-    mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_rgb");
-    mCloudShadowMaterial = materialManager.getMaterialShader("cloud_shadow_mapper");
+    MaterialShaderRepository& materialShaderRepo = MaterialShaderRepository::get();
+
+    mCloudMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud", 0));
+    mPostMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud_post", 0));
+    mPostPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud_post_pbr", 0));
+    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("gaussian_blur_rgb", 0));
+    mCloudShadowMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud_shadow_mapper", 0));
 
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);
@@ -41,6 +42,10 @@ CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
 }
 
 void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const CubemapDef& skyCubeMap) {
+    if (!mShaderAssetHandles.areAllAssetsLoaded()) {
+        return;
+    }
+    
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::CLOUD_OR_WATER), 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -57,7 +62,7 @@ void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture
     mGBuffers[0]->use();
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    MaterialRenderer::bindMaterialForRender(*mCloudMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*mCloudMaterial);
 
     glUniform1f(glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     const GLuint rootPosUniform = glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnRootPos");
@@ -87,7 +92,11 @@ void CloudRenderer::renderClouds(const CloudMeshManager& cloudManager, VGTexture
 }
 
 void CloudRenderer::renderCloudShadows(const ShadowPassShaderData& shaderData, const CloudMeshManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
-    MaterialRenderer::bindMaterialForRender(*mCloudShadowMaterial);
+    if (!mShaderAssetHandles.areAllAssetsLoaded()) {
+        return;
+    }
+    
+    MaterialRenderer::bindMaterialShaderForRender(*mCloudShadowMaterial);
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
     glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     const GLuint rootPosUniform = glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnRootPos");
@@ -103,7 +112,7 @@ void CloudRenderer::renderCloudShadows(const ShadowPassShaderData& shaderData, c
 void CloudRenderer::blurNormals() {
 
     ui32 textureUnit = 0;
-    MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &textureUnit);
+    MaterialRenderer::bindMaterialShaderForRender(*mBlurMaterial, &textureUnit);
 
     vg::DepthState::NONE.set();
 
@@ -133,7 +142,7 @@ void CloudRenderer::renderToOutput(const CubemapDef& skyCubeMap)
     ui32 textureUnit = 0;
 
     if (sDebugOptions.mUsingPBR) {
-        MaterialRenderer::bindMaterialForRender(*mPostPbrMaterial, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*mPostPbrMaterial, &textureUnit);
         LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
         LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
         glUniform1i(mPostPbrMaterial->getUniform("unIrradianceMap"), textureUnit);
@@ -173,7 +182,7 @@ void CloudRenderer::renderToOutput(const CubemapDef& skyCubeMap)
         }
     }
     else {
-        MaterialRenderer::bindMaterialForRender(*mPostMaterial, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*mPostMaterial, &textureUnit);
         MaterialUtils::uploadLightingUniforms(*mPostMaterial);
         if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
             mGBuffers[0]->bindAlbedoTexture(textureUnit);

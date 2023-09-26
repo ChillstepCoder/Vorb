@@ -67,9 +67,9 @@ public:
     void updateActiveDynamicTiles();
 
     // =========== Tile mutators ===========
-    bool canAddTileData(TileIndex i, const TileData& tileData) const;
-    void setTileLayer(TileIndex i, const TileData& tileData);
-    bool tryAddTileLayer(TileIndex i, const TileData& tileData);
+    bool canAddTileData(TileIndex i, const TileDef& tileData) const;
+    void setTileLayer(TileIndex i, const TileDef& tileData);
+    bool tryAddTileLayer(TileIndex i, const TileDef& tileData);
     void setTileLayer(TileIndex i, TileLayer layer, TileID id);
 
     void setTileFlag(TileIndex i, TileFlags flag);

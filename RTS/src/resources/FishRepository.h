@@ -16,7 +16,10 @@ class FishRepository : public IAssetRepository<FishDef>
 public:
     ASSET_REPOSITORY_COMMON_CODE(FishRepository, FishDef, AssetType::Fish)
 
+    bool saveAsset(AssetID assetId) override { panic("Cannot save fish yet"); }
+
 protected:
+    void onRegisteredAsset(AssetID id) override;
     AssetLoadFunc getAssetLoadFunc() override;
 
 };

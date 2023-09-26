@@ -37,7 +37,8 @@ CraftingRepository::CraftingRepository(vio::IOManager& ioManager) : mIoManager(i
     mCraftingRecipes.emplace_back();
 }
 
-void CraftingRepository::loadRecipeFile(const ItemRepository& itemRepo, const vio::Path& filePath) {
+void CraftingRepository::loadRecipeFile(const vio::Path& filePath) {
+    const ItemRepository& itemRepo = ItemRepository::get();
     if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
@@ -51,22 +52,22 @@ void CraftingRepository::loadRecipeFile(const ItemRepository& itemRepo, const vi
         assert(recipe.mNumInputs < MAX_CRAFTING_RECIPE_INPUTS);
         for (size_t i = 0; i < def.inputs.size(); ++i) {
             const ItemStackDef& itemStackDef = def.inputs[i];
-            recipe.mInputItem[i].id = itemRepo.getItem(itemStackDef.itemName).getID();
+            recipe.mInputItem[i].id = itemRepo.getAssetID(StrToken(itemStackDef.itemName));
             recipe.mInputItem[i].quantity = itemStackDef.count;
         }
         // Output
         assert(def.output.itemName.size());
-        recipe.mOutputItem.id = itemRepo.getItem(def.output.itemName).getID();
+        recipe.mOutputItem.id = itemRepo.getAssetID(StrToken(def.output.itemName));
         recipe.mOutputItem.quantity = def.output.count;
 
         // By product
         if (def.byProduct.itemName.size()) {
-            recipe.mByProduct.id = itemRepo.getItem(def.byProduct.itemName).getID();
+            recipe.mByProduct.id = itemRepo.getAssetID(StrToken(def.byProduct.itemName));
             recipe.mByProduct.quantity = def.byProduct.count;
         }
 
         if (def.requiredWorkStation.size()) {
-            recipe.mRequiredWorkStation = itemRepo.getItem(def.requiredWorkStation).getID();
+            recipe.mRequiredWorkStation = itemRepo.getAssetID(StrToken(def.requiredWorkStation));
         }
         recipe.mRequiresWorkbench = def.requiresWorkBench;
         recipe.mWork = def.work;

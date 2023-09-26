@@ -107,19 +107,19 @@ void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
     }
 }
 
-void AnimState::fadeInStateTrack(AnimMachineState state, f32 fadeDuration) {
+void CharacterAnimState::fadeInStateTrack(AnimMachineState state, f32 fadeDuration) {
     ASSERT_RENDER_THREAD();
     mTracks[e_cast(state)].fadeIn(fadeDuration);
     mPrimaryStateTrack = (ui8)state;
 }
 
-void AnimState::setAnimTrackWeight(AnimMachineState currentState, f32 weightScale) {
+void CharacterAnimState::setAnimTrackWeight(AnimMachineState currentState, f32 weightScale) {
     ASSERT_RENDER_THREAD();
     AnimTrack& track = mTracks[e_cast(currentState)];
     track.mWeightScale = weightScale;
 }
 
-void AnimState::updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode) {
+void CharacterAnimState::updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode) {
     ASSERT_RENDER_THREAD();
     // TODO: Allow per model specification
     const f32 cycleDuration = FOOTSTEP_CYCLE_DURATION_SEC[e_cast(currentLocomotionMode)];
@@ -130,7 +130,7 @@ void AnimState::updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode curr
     }
 }
 
-void AnimState::playOneShotAnimation(const ozz::animation::Animation* animation) {
+void CharacterAnimState::playOneShotAnimation(const ozz::animation::Animation* animation) {
     ASSERT_RENDER_THREAD();
 
     mCurrentOneShotTrack.mTime = 0.0f;
@@ -141,15 +141,15 @@ void AnimState::playOneShotAnimation(const ozz::animation::Animation* animation)
 
 // TODO: Don't include in server project
 struct animstate_task_pool {};
-using singleton_task_pool = boost::singleton_pool<animstate_task_pool, sizeof(AnimState), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 256u>;
+using singleton_task_pool = boost::singleton_pool<animstate_task_pool, sizeof(CharacterAnimState), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 256u>;
 
-void* AnimState::operator new(size_t count)
+void* CharacterAnimState::operator new(size_t count)
 {
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
-void AnimState::operator delete(void* pointer, size_t size) {
+void CharacterAnimState::operator delete(void* pointer, size_t size) {
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

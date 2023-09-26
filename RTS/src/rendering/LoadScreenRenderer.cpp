@@ -93,9 +93,9 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     }
 }
 
-void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, bool setActive) {
+void LoadScreenRenderer::appendLoadingTexture(StrToken name, bool setActive) {
     TextureRepository& textureRepo = TextureRepository::get();
-    mBackgroundTextures.push_back(textureRepo.loadTexture(path, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP, false)->texture.getHandle());
+    mBackgroundTextures.push_back(textureRepo.getLoadedAsset(name).gpuTexture.getHandle());
     if (setActive) {
         mCurrentBackgroundTexture = mBackgroundTextures.size() - 1;
     }

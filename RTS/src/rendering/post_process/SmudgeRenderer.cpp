@@ -3,7 +3,7 @@
 
 #include "options/DebugOptions.h"
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/StencilBufferIDs.h"
 #include "camera/Camera3D.h"
@@ -20,8 +20,8 @@ SmudgeRenderer::SmudgeRenderer(const ui32v2& screenResolution) {
         // No depth as we will share the depth texture with the main attachment
     }
 
-    mSmudgeShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("smudge");
-    mPaintNoiseShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("paint_noise");
+    mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("smudge", 0));
+    mPaintNoiseShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("paint_noise", 0));
 }
 
 SmudgeRenderer::~SmudgeRenderer() {
@@ -30,6 +30,9 @@ SmudgeRenderer::~SmudgeRenderer() {
 void SmudgeRenderer::beginSmudgePass(vg::GBuffer* activeGBuffer) {
     assert(activeGBuffer->getSize() == mGBuffers[0]->getSize());
     if (sDebugOptions.mSmudgeTestDisable) {
+        return;
+    }
+    if (!mShaderAssets.areAllAssetsLoaded()) {
         return;
     }
     if (activeGBuffer->hasStencil()) {
@@ -59,7 +62,7 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
     }
 
     ui32 freeTextureIndex;
-    MaterialRenderer::bindMaterialForRender(*mSmudgeShader, &freeTextureIndex);
+    MaterialRenderer::bindMaterialShaderForRender(*mSmudgeShader, &freeTextureIndex);
 
     const VGUniform& albedoUniform = mSmudgeShader->getUniform("unAlbedoFbo");
     const VGUniform& normalUniform = mSmudgeShader->getUniform("unNormalFbo");
@@ -145,7 +148,7 @@ void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D
     }
 
     ui32 freeTextureIndex;
-    MaterialRenderer::bindMaterialForRender(*mPaintNoiseShader, &freeTextureIndex);
+    MaterialRenderer::bindMaterialShaderForRender(*mPaintNoiseShader, &freeTextureIndex);
 
     const VGUniform& albedoUniform = mPaintNoiseShader->getUniform("unAlbedoFbo");
     const VGUniform& normalUniform = mPaintNoiseShader->getUniform("unNormalFbo");

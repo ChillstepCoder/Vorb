@@ -8,7 +8,7 @@
 
 #include "resources/asset/AssetHandleBundle.h"
 
-class MaterialShader;
+class MaterialShaderDef;
 class CPUParticleSystem;
 struct MeshGpuData;
 
@@ -122,9 +122,8 @@ private:
 
     std::vector<MinigameDebugTextFloater> mDebugFloaters;
 
-    const MaterialShader* mArenaShader = nullptr;
-    const MaterialShader* mUIShader = nullptr;
-
+    const MaterialShaderDef* mArenaShader = nullptr;
+    const MaterialShaderDef* mUIShader = nullptr;
     AssetHandleBundle mAssetHandles;
 };
 

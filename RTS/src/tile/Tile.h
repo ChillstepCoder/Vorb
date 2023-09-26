@@ -32,13 +32,25 @@ enum class TileShape {
     COUNT,
     NONE = COUNT
 };
-KEG_ENUM_DECL(TileShape);
+SERIALIZABLE_ENUM_SAME_NAME(TileShape,
+    pair{ TileShape::THIN, "thin"sv},
+    pair{ TileShape::BLOCK, "block"sv},
+    pair{ TileShape::FLOOR, "floor"sv},
+    pair{ TileShape::WALL, "wall" },
+    pair{ TileShape::WINDOW, "window"},
+    pair{ TileShape::DOOR, "door" },
+    pair{ TileShape::STAIRS, "stairs" },
+    pair{ TileShape::MODEL, "model" }
+);
 
 struct ItemInputDef {
-    nString itemName;
+    StrToken itemName;
     ui32 count;
 };
-KEG_TYPE_DECL(ItemInputDef);
+SERIALIZABLE_SIMPLE(ItemInputDef,
+       make_field(o.itemName, "item"sv),
+       make_field(o.count, "count"sv)
+);
 
 struct ItemDrop {
     ItemID id;
@@ -46,10 +58,13 @@ struct ItemDrop {
 };
 
 struct ItemDropDef {
-    nString itemName;
+    StrToken itemName;
     ui32v2 countRange;
 };
-KEG_TYPE_DECL(ItemDropDef);
+SERIALIZABLE_SIMPLE(ItemDropDef,
+    make_field(o.itemName, "item"sv),
+    make_field(o.countRange, "count"sv)
+);
 
 enum class TileTextureMethod : ui8 {
     SIMPLE,
@@ -60,7 +75,14 @@ enum class TileTextureMethod : ui8 {
     WORLD_TILING,
     COUNT
 };
-KEG_ENUM_DECL(TileTextureMethod);
+SERIALIZABLE_ENUM_SAME_NAME(TileTextureMethod,
+    pair{ TileTextureMethod::SIMPLE, "simple"sv },
+    pair{ TileTextureMethod::CONNECTED, "connected"sv },
+    pair{ TileTextureMethod::CONNECTED_WALL, "connected_wall"sv },
+    pair{ TileTextureMethod::VERTICAL, "vertical"sv },
+    pair{ TileTextureMethod::FLORA, "flora"sv },
+    pair{ TileTextureMethod::WORLD_TILING, "world_tiling"sv }
+);
 
 enum class NavBlockerType {
     NONE,
@@ -74,14 +96,18 @@ constexpr int MAX_TILE_MATERIAL_SLOTS = 8;
 
 // TODO: separate certain data into multiple arrays because right now every TileData lookup is a cache miss
 // For example we only look up path weight when constructing the nav  graph, why not  have it in a separate vector?
-struct TileData {
+// Same with materialData. Does it really need to be here?
+// This def is accessed quite commonly
+class TileDef {
+public:
     f32v3 dims = f32v3(1.0f);
     TileID id;
    // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
     CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
     TileHarvestable harvestable = TileHarvestable::NONE;
-    MaterialDesc materialData[MAX_TILE_MATERIAL_SLOTS];
+    // TODO: Could be a giant array of material slots and these defs only store pointers and lengths.
+    std::vector<MaterialDesc> materialData;
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
     ui16 maxHealth = 100;
@@ -102,6 +128,27 @@ struct TileData {
     std::string name;
     std::vector<ItemDrop> itemDrops;
 };
+SERIALIZABLE_SIMPLE(TileDef,
+    make_field(o.dims, "dims"),
+    make_field(o.id, "id"),
+    make_field(o.collisionShapeID, "collision_shape"),
+    make_field(o.harvestable, "harvestable"),
+    make_field(o.materialData, "materials"),
+    make_field(o.textureMethod, "texture_method"),
+    make_field(o.modelId, "model"),
+    make_field(o.maxHealth, "max_health"),
+    make_field(o.layer, "layer"),
+    make_field(o.shape, "shape"),
+    make_field(o.pathWeight, "path_weight"),
+    make_field(o.navMask, "nav_mask"),
+    make_field(o.navBlockerType, "nav_blocker_type"),
+    make_field(o.heightOffsetSouth, "height_offset_south"),
+    make_field(o.heightOffsetEast, "height_offset_east"),
+    make_field(o.heightOffsetWest, "height_offset_west"),
+    make_field(o.heightOffsetNorth, "height_offset_north"),
+    make_field(o.name, "name"),
+    make_field(o.itemDrops, "item_drops")
+);
 
 struct TileOrientation {
     Cartesian orientationBase : 2;
@@ -158,7 +205,7 @@ public:
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
-    bool canAddTileData(const TileData& tile) const;
+    bool canAddTileData(const TileDef& tile) const;
     void setTileFlag(TileFlags flag);
     void overwriteTileFlags(TileFlags flags);
     void setOrientation(Cartesian dir, TileLayer layer);

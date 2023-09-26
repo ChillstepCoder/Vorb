@@ -1,0 +1,4 @@
+model: bush_2
+col: circle
+dims: [1.0, 1.0, 1.0]
+col_dims: [0.1, 0.5, 1.0]

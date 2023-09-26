@@ -52,9 +52,13 @@ void AssetLoader::update() {
 }
 
 void AssetLoader::requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::any userData, AssetHandleBundle* dependencies) {
-    dependencies->setLockedByAssetLoader(true);
-    std::lock_guard lock(mDependencyMapMutex);
-    mTasksWaitingDependencies.emplace(dependencies, std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath=filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr, .mUserData=std::move(userData)}));
+    if (dependencies->getCount()) {
+        dependencies->setLockedByAssetLoader(true);
+        std::lock_guard lock(mDependencyMapMutex);
+        mTasksWaitingDependencies.emplace(dependencies, std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID = assetId, .mAssetDataPtr = assetData, .mFilePath = filePath, .mLoadFunc = loadFunc, .mRenderPostFunc = renderPostFunc, .mIsFinishedFlagPtr = isFinishedFlagPtr, .mUserData = std::move(userData) }));
+    } else {
+        requestAssetLoad(std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID = assetId, .mAssetDataPtr = assetData, .mFilePath = filePath, .mLoadFunc = loadFunc, .mRenderPostFunc = renderPostFunc, .mIsFinishedFlagPtr = isFinishedFlagPtr, .mUserData = std::move(userData) }));
+    }
 }
 
 void processRenderFunc(AssetLoadTaskPtr& task) {

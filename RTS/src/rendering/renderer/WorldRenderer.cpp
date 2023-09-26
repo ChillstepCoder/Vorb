@@ -53,7 +53,7 @@
 #include "resources/TextureRepository.h"
 #include "resources/MaterialRepository.h"
 #include "resources/CubemapRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include "weather/CloudMeshManager.h"
 
@@ -107,7 +107,7 @@ WorldRenderer::~WorldRenderer()
 void WorldRenderer::initPostLoad() {
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    MaterialShaderManager& materialManager = resourceManager.getMaterialShaderManager();
+    MaterialShaderRepository& materialManager = resourceManager.getMaterialShaderManager();
     {
         ScopedTimer timer("Skybox init", 2);
         buildHorizonMesh();
@@ -119,7 +119,7 @@ void WorldRenderer::initPostLoad() {
     {
         ScopedTimer timer("Passthrough init", 2);
         for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-            const MaterialShader* material = materialManager.getMaterialShader(sPassthroughMaterialNames[i]);
+            const MaterialShaderDef* material = materialManager.getMaterialShader(sPassthroughMaterialNames[i]);
             if (material) {
                 mPassthroughMaterials.emplace_back(material);
             }
@@ -273,7 +273,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         // Depth debug
     if (mPassthroughRenderMode == 1) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode];
         assert(postMat);
 
         // TODO: Swap chain for this to work
@@ -328,7 +328,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // TODO: Make this work. When in debug, render tonemap to a new texture
     // FBODebugRenderer?
     if (mPassthroughRenderMode > 1) {
-        const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode];
         assert(postMat);
 
         // TODO: Swap chain for this to work

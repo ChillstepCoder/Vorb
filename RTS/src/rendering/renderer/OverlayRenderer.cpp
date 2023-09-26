@@ -3,14 +3,14 @@
 
 #include "rendering/MaterialRenderer.h"
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include "options/DebugOptions.h"
 
 #include <Vorb/graphics/BlendState.h>
 
 OverlayRenderer::OverlayRenderer() {
-    mColorOverlayShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("color_overlay");
+    mColorOverlayShader = MaterialShaderRepository::get().getAssetHandle(StrToken("color_overlay", 0));
     glCreateVertexArrays(1, &mVao);
 }
 
@@ -22,11 +22,14 @@ void OverlayRenderer::renderUnderwaterOverlay() {
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
-    MaterialRenderer::bindMaterialForRender(*mColorOverlayShader);
-    glUniform4fv(mColorOverlayShader->getUniform("unColor"), 1, &sDebugOptions.mUnderwaterOverlayColor.x);
-    glBindVertexArray(mVao);
-    // Draw one triangle that will cover the entire screen
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    if (const MaterialShaderDef* def = mColorOverlayShader->tryGetAsset()) {
 
+        MaterialRenderer::bindMaterialShaderForRender(*def);
+        glUniform4fv(def->getUniform("unColor"), 1, &sDebugOptions.mUnderwaterOverlayColor.x);
+        glBindVertexArray(mVao);
+        // Draw one triangle that will cover the entire screen
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    }
     vg::BlendState::restorePrevious();
 }

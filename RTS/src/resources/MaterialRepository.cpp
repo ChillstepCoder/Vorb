@@ -44,6 +44,9 @@ struct MaterialLoadUserData {
     gli::texture2d aoMetalRoughData;
 };
 
+MaterialRepository::MaterialRepository(vio::IOManager& ioManager) : IAssetRepository<MaterialDef>(ioManager) {
+}
+
 MaterialRepository::~MaterialRepository() = default;
 
 const MaterialGpuData& MaterialRepository::getMaterialGpuData(StrToken materialName) const {

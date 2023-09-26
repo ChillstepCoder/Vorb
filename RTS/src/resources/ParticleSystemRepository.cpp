@@ -7,7 +7,7 @@
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
@@ -97,7 +97,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
 
     // TODO: Material and shader
     particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
-    particleEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
+    particleEmitter.mShader = MaterialShaderRepository::get().getAssetHandle(StrToken("textured_particle_bb_", 3));
     
     // Deserialize config
     yml::tryReadValue(node, EMITTER_SCALE_KEY, particleEmitter.mDefaultScale);
@@ -152,9 +152,7 @@ AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
 
         ParticleSystemDef* newDef = static_cast<ParticleSystemDef*>(assetDataPtr);
         if (!newDef) {
-            LOG_CRITICAL("Failed to load {} from {} - already exists", filePath.getFileNameNoExtension(), filePath.getString());
-            pError("Failed to load " + filePath.getString() + " already exists");
-            return;
+            panic("Failed to load {} from {} - already exists", filePath.getFileNameNoExtension(), filePath.getString());
         }
 
         // Loop through emitters
@@ -164,9 +162,9 @@ AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
             ParticleEmitterDef& newEmitter = newDef->mEmitters.emplace_back();
             newEmitter.mEmitterName = nString(std::string_view(innerNode.key().data(), innerNode.key().size()));
             if (!loadParticleEmitter(innerNode, newEmitter)) {
-                assert(false);
-                return;
+                panic("Failed to load particle emitter {} {}", filePath.getFileNameNoExtension(), filePath.getString());
             }
         }
+        return true;
     };
 }

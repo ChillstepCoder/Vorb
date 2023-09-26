@@ -2,7 +2,7 @@
 #include "CpuParticleEmitter.h"
 
 #include "rendering/particle/CpuParticleEmitter.h"
-#include "rendering/MaterialShader.h"
+#include "rendering/MaterialShaderDef.h"
 
 #include "definitions/ParticleSystemDef.h"
 
@@ -16,7 +16,7 @@
 // Arbitrary for estimated perf reasons
 constexpr ui32 MAX_PARTICLES = 20000;
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 lifetime /*= FLT_MAX*/) :
+CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, f32 lifetime /*= FLT_MAX*/) :
     mShader(shader),
     mNativeUpdateFunction(updateFunction),
     mMaxParticles(maxParticles),
@@ -27,7 +27,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
 
 }
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def) : mShader(*def.mShader) {
+CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def) : mShader(def.mShader->getLoadedAsset()) {
 
     mMaxParticles = def.mMaxParticles;
     mGlobalParticleScale = def.mDefaultScale;

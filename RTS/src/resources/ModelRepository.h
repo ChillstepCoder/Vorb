@@ -9,6 +9,7 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
 
+class FBXLoadContext;
 
 namespace ozz::animation {
     class Skeleton;
@@ -23,6 +24,8 @@ public:
     ASSET_REPOSITORY_COMMON_CODE(ModelRepository, ModelDef, AssetType::Model)
 
     bool loadFbxFile(const vio::Path& filePath);
+
+    bool saveAsset(AssetID assetId) override { panic("Cannot save models yet"); }
 
     // TODO:?
     //void buildModelBatches();

@@ -1,6 +1,6 @@
 #pragma once
 
-class MaterialShader;
+class MaterialShaderDef;
 
 class TonemapRenderer
 {
@@ -10,6 +10,6 @@ public:
 
     void render(VGTexture lightTextureInput);
 private:
-    const MaterialShader* mShader = nullptr;
+    AssetHandlePtr<MaterialShaderDef> mShaderDef;
 };
 

@@ -1,11 +1,10 @@
 #include "stdafx.h"
 #include "TileContainerRenderer.h"
 #include "camera/Camera3D.h"
-#include "resources/ResourceManager.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/RenderContext.h"
 
 #include "rendering/post_process/ShadowPassShaderData.h"
@@ -18,11 +17,10 @@ static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
 TileContainerRenderer::TileContainerRenderer() {
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mStandardMaterial = materialManager.getMaterialShader("standard_tile");
-    mBillboardMaterial = materialManager.getMaterialShader("billboard_ssbo");
-    mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");
-    mShadowMapperMaterialBillboard = materialManager.getMaterialShader("shadow_mapper");
+    mStandardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("standard_tile", 0));
+    mBillboardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("billboard_ssbo", 0));
+    mShadowMapperMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_mapper", 0));
+    mShadowMapperMaterialBillboard = mShadowMapperMaterial;
 }
 
 TileContainerRenderer::~TileContainerRenderer() {
@@ -30,9 +28,12 @@ TileContainerRenderer::~TileContainerRenderer() {
 }
 
 void TileContainerRenderer::renderStaticMeshes(const boost::container::flat_set<const Mesh*>& meshes, const Camera3D& camera) {
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
     // Tiles
     // TODO: Move this to MaterialRenderer::renderMeshes();
-    MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
     VGUniform unPosition = mStandardMaterial->getUniform("unPosition");
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
@@ -43,9 +44,11 @@ void TileContainerRenderer::renderStaticMeshes(const boost::container::flat_set<
 }
 
 void TileContainerRenderer::renderBillboards(const boost::container::flat_set<const Mesh*>& meshes, const Camera3D& camera) {
-
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
     // TODO: Move this to MaterialRenderer::renderMeshes();
-    MaterialRenderer::bindMaterialForRender(*mBillboardMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*mBillboardMaterial);
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             assert(mesh->isValid());
@@ -56,8 +59,10 @@ void TileContainerRenderer::renderBillboards(const boost::container::flat_set<co
 
 void TileContainerRenderer::renderWorldShadows(const boost::container::flat_set<const Mesh*>& meshes, const ShadowPassShaderData& shaderData, const Camera3D& camera, f32 maxDistance) {
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
-
-    MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
+    MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperMaterial);
     VGUniform unPosition = mShadowMapperMaterial->getUniform("unPosition");
     glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
     for (auto&& mesh : meshes) {

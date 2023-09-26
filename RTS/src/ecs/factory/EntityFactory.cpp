@@ -28,6 +28,7 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
     // Char control needs further initialization post physics load
     CharacterControlComponent* charControlCmp = nullptr;
     // Initialize components
+    // TODO: Use groups
     for (auto&& cdef : edef.components) {
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {

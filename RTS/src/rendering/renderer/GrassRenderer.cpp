@@ -3,9 +3,8 @@
 
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
-#include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/RenderStats.h"
 
@@ -17,10 +16,11 @@
 VGBuffer GrassRenderer::sGrassUniformBuffer = 0;
 
 GrassRenderer::GrassRenderer() {
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mMaterials[e_cast(TileGrassMeshType::DEFAULT)] = materialManager.getMaterialShader("grass");
-    mMaterials[e_cast(TileGrassMeshType::PLANE)] = materialManager.getMaterialShader("grass_plane");
-    mMaterials[e_cast(TileGrassMeshType::BILLBOARD)] = materialManager.getMaterialShader("grass_billboard");
+
+    mMaterials[e_cast(TileGrassMeshType::DEFAULT)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("grass", 0));
+    mMaterials[e_cast(TileGrassMeshType::PLANE)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("grass_plane", 0));
+    mMaterials[e_cast(TileGrassMeshType::BILLBOARD)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("grass_billboard", 0));
+
     static_assert(e_count(TileGrassMeshType) == 3);
 
     constexpr size_t RESERVE_COUNT = 128;
@@ -41,9 +41,12 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
     if (grassMeshes.empty()) {
         return;
     }
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
     
-    const MaterialShader* grassMaterial = mMaterials[e_cast(TileGrassMeshType::DEFAULT)];
-    MaterialRenderer::bindMaterialForRender(*grassMaterial);
+    const MaterialShaderDef* grassMaterial = mMaterials[e_cast(TileGrassMeshType::DEFAULT)];
+    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial);
     const vg::GLProgram& program = grassMaterial->mProgram;
     VGUniform positionUniform = program.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
@@ -98,9 +101,12 @@ void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& player
     if (grassMeshes.empty()) {
         return;
     }
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
 
-    const MaterialShader* grassMaterial = mMaterials[e_cast(TileGrassMeshType::PLANE)];
-    MaterialRenderer::bindMaterialForRender(*grassMaterial);
+    const MaterialShaderDef* grassMaterial = mMaterials[e_cast(TileGrassMeshType::PLANE)];
+    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial);
     const vg::GLProgram& program = grassMaterial->mProgram;
     VGUniform positionUniform = program.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
@@ -152,9 +158,12 @@ void GrassRenderer::renderBillboardGrass(const Camera3D& camera, const f32v3& pl
     if (grassMeshes.empty()) {
         return;
     }
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
 
-    const MaterialShader* grassMaterial = mMaterials[e_cast(TileGrassMeshType::BILLBOARD)];
-    MaterialRenderer::bindMaterialForRender(*grassMaterial);
+    const MaterialShaderDef* grassMaterial = mMaterials[e_cast(TileGrassMeshType::BILLBOARD)];
+    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial);
     const vg::GLProgram& program = grassMaterial->mProgram;
     VGUniform positionUniform = program.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
@@ -207,6 +216,9 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
         mVisibleMeshes[i].clear();
     }
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
 
     // CPU cull and gather
     for (auto&& grassMesh : grassMeshes) {
@@ -245,23 +257,27 @@ void GrassRenderer::updateUniformBuffer() {
     };
 
     const int MAX_GRASS = 32;
-    const std::vector<TileGrassData>& grassData = Services::ResourceManager::ref().getTileGrassRepository().getAllGrassData();
-    assert(grassData.size() < 32);
+    TileGrassRepository& grassRepo = TileGrassRepository::get();
+    size_t count = grassRepo.getNumRegisteredAssets();
+    assert(count < MAX_GRASS);
 
     GrassUniformData uboData[MAX_GRASS];
 
-    for (size_t i = 0; i < grassData.size(); ++i) {
+    size_t i = 0;
+    grassRepo.forEachRegisteredAsset([&](TileGrassDef* def, const AssetRegistryEntry& entry) {
+        assert(def);
         GrassUniformData& data = uboData[i];
-        data.grassScale = grassData[i].mSizeMults;
-        data.material = grassData[i].mMaterialID;
-        data.materialCellCount = grassData[i].mNumTextures;
-        data.shouldUseColorGradient = (int)grassData[i].mUseGradientColor;
-        data.leanVariance = (float)grassData[i].mLeanVariance;
-    }
-
+        data.grassScale = def->mSizeMults;
+        data.material = def->mMaterialID;
+        data.materialCellCount = def->mNumTextures;
+        data.shouldUseColorGradient = (int)def->mUseGradientColor;
+        data.leanVariance = (float)def->mLeanVariance;
+        ++i;
+        return false;
+    });
     if (sGrassUniformBuffer) {
         glDeleteBuffers(1, &sGrassUniformBuffer);
     }
     glCreateBuffers(1, &sGrassUniformBuffer);
-    glNamedBufferStorage(sGrassUniformBuffer, grassData.size() * sizeof(GrassUniformData), uboData, 0);
+    glNamedBufferStorage(sGrassUniformBuffer, count * sizeof(GrassUniformData), uboData, 0);
 }

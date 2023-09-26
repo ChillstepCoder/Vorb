@@ -32,8 +32,7 @@ constexpr f32 FISH_ANGULAR_ACCELERATION = 3.0f;
 constexpr f32 MAX_FISH_ANGULAR_SPEED = 2.0f;
 
 FishEcosystem::FishEcosystem(IWorld& world) :
-    mWorld(world),
-    mFishRepository(Services::ResourceManager::ref().getFishRepository()) {
+    mWorld(world) {
     initEventHandlers();
 
     if (mWorld.getNetMode() != WorldNetMode::DedicatedServer) {
@@ -63,6 +62,7 @@ void FishEcosystem::tickGameThread(f32 elapsedSec) {
     }
 
     if (mDormancyUpdateTicker.tryTick()) {
+        ASSERT_GAME_THREAD();
         std::lock_guard lock(mDormantMutex);
         for (auto&& it = mDormantFishChunks.begin(); it != mDormantFishChunks.end();) {
             // TODO: Distance check too
@@ -123,13 +123,14 @@ void FishEcosystem::removeFish(entt::entity fishEntity) {
         FishChunk& fishChunk = *it->second;
         for (size_t i = 0; i < fishChunk.mFish.size(); ++i) {
             if (fishChunk.mFish[i] == fishEntity) {
+                removeTrackedFishPopulation(fishCmp.mFishId, fishChunk.mChunkID);
                 fishChunk.mFish[i] = fishChunk.mFish.back();
                 registry.destroy(fishEntity);
                 return;
             }
         }
     }
-    assert(false);
+    panic("Failed to find fish for removal");
 }
 
 void FishEcosystem::setFishFollowBobber(entt::entity fishEntity, entt::entity followTarget) {
@@ -191,6 +192,7 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     f32 timeSinceLastSpawned = FLT_MAX;
     // Retrieve dormant data
     {
+        ASSERT_GAME_THREAD();
         std::lock_guard lock(mDormantMutex);
         auto&& it = mDormantFishChunks.find(chunk.getChunkID());
         if (it != mDormantFishChunks.end()) {
@@ -216,8 +218,9 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     }
     else {
         // Fresh spawning
-        const FishDef& codFish = mFishRepository.getFish("cod");
-        const FishDef& rareFish = mFishRepository.getFish("rarefish");
+        // TODO: Data driven biome based spawning
+        const FishDef& codFish = FishRepository::get().getLoadedOrUnloadedAsset(StrToken("cod", 0));
+        const FishDef& rareFish = FishRepository::get().getLoadedOrUnloadedAsset(StrToken("rarefish", 0));
         for (int j = 0; j < 130; ++j) {
             trySpawnFish(*chunk.getTileContainer(), *newFishChunk, codFish);
         }
@@ -227,6 +230,7 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     }
 
     {
+        ASSERT_GAME_THREAD();
         std::lock_guard lock(mGenerationMutex);
         mGeneratedFishChunks[chunk.getChunkID()] = std::move(newFishChunk);
     }
@@ -237,6 +241,7 @@ void FishEcosystem::disposeChunkFish(Chunk& chunk) {
 
     // If we are in generation list, make sure to remove
     {
+        ASSERT_GAME_THREAD();
         std::lock_guard lock(mGenerationMutex);
         auto&& it = mGeneratedFishChunks.find(chunk.getChunkID());
         if (it != mGeneratedFishChunks.end()) {
@@ -248,6 +253,7 @@ void FishEcosystem::disposeChunkFish(Chunk& chunk) {
     if (it != mActiveFishChunks.end()) {
         // Add to dormant list
         {
+            ASSERT_GAME_THREAD();
             std::lock_guard lock(mDormantMutex);
             DormantFishChunk& dormantChunk = mDormantFishChunks[chunk.getChunkID()];
             makeDormant(*it->second, dormantChunk);
@@ -259,11 +265,10 @@ void FishEcosystem::disposeChunkFish(Chunk& chunk) {
 
 void FishEcosystem::makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk) {
     dormantChunk.mUnloadedTime = std::chrono::high_resolution_clock::now();
-    dormantChunk.mPopulations = std::move(chunk.mPopulations);
 }
 
 void FishEcosystem::makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk) {
-    chunk.mPopulations = std::move(dormantChunk.mPopulations);
+
 }
 
 bool FishEcosystem::trySpawnFish(const TileContainer& container, FishChunk& chunk, const FishDef& fishDef) {
@@ -280,7 +285,7 @@ bool FishEcosystem::trySpawnFish(const TileContainer& container, FishChunk& chun
         registry.emplace<YawPitchComponent>(newEntity);
         registry.emplace<FishAIComponent>(newEntity);
 
-        newFish.mFishId = fishDef.mId;
+        newFish.mFishId = fishDef.getID();
         newFish.mResidingChunk = chunk.mChunkID;
         const f32 groundZ = container.getTileAt(randomTile).getGroundZOffset();
         // Make sure this is actually underwater
@@ -288,6 +293,8 @@ bool FishEcosystem::trySpawnFish(const TileContainer& container, FishChunk& chun
         const f32 randZPos = -FISH_COLLIDE_RADIUS + (groundZ + FISH_COLLIDE_RADIUS) * Random::xorshf96f();
         positionComponent.mPosition = f32v3(chunk.mWorldPos.x + randomTile % CHUNK_WIDTH, chunk.mWorldPos.y + randomTile / CHUNK_WIDTH, randZPos);
         chunk.mFish.emplace_back(newEntity);
+
+        addTrackedFishPopulation(newFish.mFishId, chunk.mChunkID);
     }
     return false;
 }
@@ -306,6 +313,10 @@ void FishEcosystem::updateActiveFish() {
         chunkMap.clear();
         chunkMap.reserve(mActiveFishChunks.size());
         // Update fish chunks and cells
+        // TODO: Instead we should iterate the ECS so that it is faster. This iteration
+        // is slower because the cache will not be well organized when fish are added and removed
+        // We can have a ChunkOwnership component which is just a ChunkID, and remove it from the fish
+        // when the fish is deactivated, or use a separate component for deactivation
         for (auto&& activeFishChunkIter : mActiveFishChunks) {
             FishChunk& fishChunk = *activeFishChunkIter.second;
             if (glm::distance2(loadCenter, fishChunk.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
@@ -559,4 +570,56 @@ bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
     return false;
     //fish.mPosition.x += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
     //fish.mPosition.y += (Random::getCachedRandomf() * 2.0f - 1.0f) * 0.1f;
+}
+
+void FishEcosystem::addTrackedFishPopulation(AssetID fishId, ChunkID chunkId) {
+    auto&& it = mChunkFishPopulations.find(chunkId);
+    if (it == mChunkFishPopulations.end()) {
+        mChunkFishPopulations[chunkId].emplace(std::make_pair(fishId, 1));
+    }
+    else {
+        auto&& it2 = it->second.find(fishId);
+        if (it2 == it->second.end()) {
+            it->second.emplace(std::make_pair(fishId, 1));
+        }
+        else {
+            ++it2->second;
+        }
+    }
+
+    // Adjust total population tracker
+    auto&& tit = mTotalFishPopulation.find(fishId);
+    if (tit != mTotalFishPopulation.end()) {
+        ++tit->second;
+    }
+    else {
+        mTotalFishPopulation.emplace(std::make_pair(fishId, 1));
+        // Begin loading full asset data
+        mFishAssetHandles[fishId] = FishRepository::get().getAssetHandle(fishId);
+    }
+}
+
+void FishEcosystem::removeTrackedFishPopulation(AssetID fishId, ChunkID chunkId) {
+    auto&& it = mChunkFishPopulations.find(chunkId);
+    assert(it != mChunkFishPopulations.end());
+    auto&& it2 = it->second.find(fishId);
+    assert(it2 != it->second.end());
+
+    --it2->second;
+    if (it2->second == 0) {
+        it->second.erase(it2);
+        if (it->second.empty()) {
+            mChunkFishPopulations.erase(it);
+        }
+    }
+
+    // Adjust total population tracker
+    auto&& tit = mTotalFishPopulation.find(fishId);
+    assert(tit != mTotalFishPopulation.end());
+    --tit->second;
+    if (tit->second == 0) {
+        mTotalFishPopulation.erase(tit);
+        // Release asset data
+        mFishAssetHandles.erase(fishId);
+    }
 }

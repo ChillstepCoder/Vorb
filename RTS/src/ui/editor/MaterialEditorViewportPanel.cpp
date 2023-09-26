@@ -10,7 +10,7 @@
 
 #include "resources/ResourceManager.h"
 //#include "resources/ModelRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/mesh/MeshDrawer.h"
@@ -100,7 +100,7 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::EndChild();
 }
 
-const MaterialShader* MaterialEditorViewportPanel::getShader()
+const MaterialShaderDef* MaterialEditorViewportPanel::getShader()
 {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     switch (mDrawMode) {
@@ -126,7 +126,7 @@ const MaterialShader* MaterialEditorViewportPanel::getShader()
     return nullptr;
 }
 
-void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
+void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {
     UNUSED(availableTextureUnit);
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
         VGUniform unMaterialIndex = shader->getUniform("unMaterialIndex");

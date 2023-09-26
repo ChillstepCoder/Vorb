@@ -6,7 +6,7 @@
 #include "resources/TileRepository.h"
 #include "tile/TileContainer.h"
 
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/model/ModelUtil.h"
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
@@ -74,8 +74,7 @@ static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 InstancedStaticModelManager::InstancedStaticModelManager() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
+    mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(StrToken("culling_and_lod", 0));
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
@@ -211,23 +210,25 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
                 //*instanceData.mNumVisibleMeshesBufferPtr = 0; // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
 
-                mCullingComputeShader->use();
-                glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-                GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mTransformsVbo);
-                GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inDrawCommands.getHandle());
-                GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, inDrawCommandsShadows.getHandle());
-                GL.glBindBufferBase(GL_UNIFORM_BUFFER, 5, mGpuCullingUniformBuffer.getHandle());
-                //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
-                //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-                if (drawCommandsSize % WORK_GROUP_SIZE == 0) {
-                    glDispatchCompute((GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
+                if (const MaterialShaderDef* def = mCullingComputeShader->tryGetAsset()) {
+                    def->useCompute();
+                    glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+                    GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mTransformsVbo);
+                    GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inDrawCommands.getHandle());
+                    GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, inDrawCommandsShadows.getHandle());
+                    GL.glBindBufferBase(GL_UNIFORM_BUFFER, 5, mGpuCullingUniformBuffer.getHandle());
+                    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
+                    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
+                    if (drawCommandsSize % WORK_GROUP_SIZE == 0) {
+                        glDispatchCompute((GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
+                    }
+                    else {
+                        glDispatchCompute(1 + (GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
+                    }
+                    glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT); // GL_ATOMIC_COUNTER_BARRIER_BIT
+                    // 114 fps
+                    instanceData.mShadowDrawCommandsCount = drawCommandsSize;
                 }
-                else {
-                    glDispatchCompute(1 + (GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
-                }
-                glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT); // GL_ATOMIC_COUNTER_BARRIER_BIT
-                // 114 fps
-                instanceData.mShadowDrawCommandsCount = drawCommandsSize;
             }
             else {
                 assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
@@ -589,7 +590,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                 const TileID prevId = edit.prevId;
                 if (prevId != TILE_ID_NONE) {
-                    const TileData& prevTileData = TileRepository::getTileData(edit.prevId);
+                    const TileDef& prevTileData = TileRepository::getTileData(edit.prevId);
                     if (prevTileData.shape == TileShape::MODEL) {
                         editEvents.removeEvents.emplace_back(edit.tileIndex);
                     }
@@ -597,7 +598,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 const TileID newId = edit.newId;
                 assert(newId != prevId);
                 if (newId != TILE_ID_NONE) {
-                    const TileData& tileData = TileRepository::getTileData(newId);
+                    const TileDef& tileData = TileRepository::getTileData(newId);
                     if (tileData.shape == TileShape::MODEL) {
                         editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId });
                     }
@@ -643,7 +644,7 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
         return;
     }
 
-    const TileData& tileData = TileRepository::getTileData(damageEvent.tileId);
+    const TileDef& tileData = TileRepository::getTileData(damageEvent.tileId);
     if (tileData.shape != TileShape::MODEL) {
         return;
     }
@@ -655,7 +656,7 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
     struct TaskData {
         InstancedStaticModelManager* modelManager;
         TileContainer* container;
-        const TileData& tileData;
+        const TileDef& tileData;
         TileDamagedEvent damageEvent;
     };
 

@@ -5,7 +5,5 @@
 
 #include "resources/asset/AssetHandleBundle.h"
 
-TileContainerMeshData::~TileContainerMeshData()
-{
-
-}
+TileContainerMeshData::TileContainerMeshData() = default;
+TileContainerMeshData::~TileContainerMeshData() = default;

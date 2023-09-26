@@ -112,7 +112,7 @@ void GameplayScreen::build() {
 
     // Show loading screen
     LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
-    loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png");
+    loadScreenRenderer.appendLoadingTexture(StrToken("loading", 0));
     displayLoadScreen("Gathering files...", true);
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());

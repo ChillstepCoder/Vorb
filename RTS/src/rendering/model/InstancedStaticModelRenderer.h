@@ -2,9 +2,10 @@
 
 #include "rendering/model/StaticMeshInstanceData.h"
 #include "rendering/model/MaterialRenderPassType.h"
+#include "resources/asset/AssetHandleBundle.h"
 
 class Camera3D;
-class MaterialShader;
+class MaterialShaderDef;
 struct ShadowPassShaderData;
 
 DECL_VG(class GLProgram);
@@ -19,8 +20,9 @@ public:
 
 private:
 
-    const MaterialShader* mStandardMaterial = nullptr;
-    const MaterialShader* mShadowMapperMaterial = nullptr;
-    const MaterialShader* mSmudgeShader = nullptr;
+    const MaterialShaderDef* mStandardMaterial = nullptr;
+    const MaterialShaderDef* mShadowMapperMaterial = nullptr;
+    const MaterialShaderDef* mSmudgeShader = nullptr;
+    AssetHandleBundle mShaderAssets;
 };
 

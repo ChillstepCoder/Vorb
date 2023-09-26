@@ -116,7 +116,7 @@ RUNTIME_INIT_FUNC(SetupOuterWallVertexOffsetsTable) {
 
 // TODO: This is a prototype - we should instead data drive this
 void ProceduralMeshHelpers::addTileWallMesh(
-    const TileData& tileData,
+    const TileDef& tileData,
     const TileSpatialGrid& spatialGrid,
     const TileWallContainer& tileWalls,
     const std::vector<Tile>& tiles,

@@ -6,14 +6,14 @@ class IWorld;
 
 #include "world/IChunkGrid.h"
 
-typedef boost::container::flat_map<FishID, int> FishPopulationMap;
+#include "definitions/FishDef.h"
+
+typedef boost::container::flat_map<AssetID, int> FishPopulationMap;
 
 template <typename T>
 class RenderStateManager;
 
 class TileContainer;
-struct FishDef;
-class FishRepository;
 struct PositionComponent;
 struct YawPitchComponent;
 
@@ -57,7 +57,6 @@ struct FishChunk {
     i32v2 mWorldPos;
     TileContainerID mContainerID;
     ChunkID mChunkID;
-    FishPopulationMap mPopulations;
     BitArray mSpawnableTiles;
     int mTotalSpawnableTiles = 0; // can derive max population and population pressure from this
     bool mInUpdateRange = false; // When false, we do not need to render fish
@@ -67,7 +66,6 @@ struct FishChunk {
 typedef std::unique_ptr<FishChunk> FishChunkPtr;
 
 struct DormantFishChunk {
-    FishPopulationMap mPopulations;
     TimePoint mUnloadedTime; // TODO: GameTime for load/save
 };
 
@@ -117,16 +115,25 @@ private:
     void updateActiveFish();
     bool updateFish(entt::registry& registry, entt::entity entity, const TileContainer& container, FishChunk& fishChunk, FishComponent& fish, PositionComponent& position, YawPitchComponent& yawPitch);
 
+    void addTrackedFishPopulation(AssetID fishId, ChunkID chunkId);
+    void removeTrackedFishPopulation(AssetID fishId, ChunkID chunkId);
+
     boost::container::flat_map<ChunkID, FishChunkPtr> mActiveFishChunks;
 
-    std::mutex mDormantMutex;
+    std::mutex mDormantMutex; // TODO: Everything is on game thread???
     boost::container::flat_map<ChunkID, DormantFishChunk> mDormantFishChunks;
 
-    std::mutex mGenerationMutex;
+    std::mutex mGenerationMutex; // TODO: Everything is on game thread???
     boost::container::flat_map<ChunkID, FishChunkPtr> mGeneratedFishChunks;
 
+    // Population tracking
+    FishPopulationMap mTotalFishPopulation;
+    boost::container::flat_map<ChunkID, FishPopulationMap> mChunkFishPopulations;
+
+    // Asset handles
+    boost::container::flat_map<AssetID, AssetHandlePtr<FishDef>> mFishAssetHandles;
+
     IWorld& mWorld;
-    FishRepository& mFishRepository;
 
     ChunkGridListeners mChunkGridEventListeners;
 

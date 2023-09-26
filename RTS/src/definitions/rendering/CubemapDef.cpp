@@ -2,7 +2,7 @@
 #include "CubemapDef.h"
 
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/texture/TextureHelpers.h"
 #include "util/TextureUtil.h"
 

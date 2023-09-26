@@ -74,17 +74,17 @@ void TileContainer::updateActiveDynamicTiles() {
     }
 }
 
-bool TileContainer::canAddTileData(TileIndex i, const TileData& tileData) const
+bool TileContainer::canAddTileData(TileIndex i, const TileDef& tileData) const
 {
     return mTiles[i].canAddTileData(tileData);
 }
 
-void TileContainer::setTileLayer(TileIndex i, const TileData& tileData) {
+void TileContainer::setTileLayer(TileIndex i, const TileDef& tileData) {
     assert(isReady());
     setTileLayer(i, (TileLayer)tileData.layer, tileData.id);
 }
 
-bool TileContainer::tryAddTileLayer(TileIndex i, const TileData& tileData) {
+bool TileContainer::tryAddTileLayer(TileIndex i, const TileDef& tileData) {
     assert(isReady());
     Tile& tile = mTiles[i];
     if (!tile.canAddTileData(tileData)) {

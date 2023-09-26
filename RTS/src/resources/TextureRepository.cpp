@@ -26,6 +26,11 @@ struct TextureLoadUserData {
     gli::texture2d ddsRs;
 };
 
+TextureRepository::TextureRepository(vio::IOManager& ioManager) : IAssetRepository<TextureDef>(ioManager) {
+}
+
+TextureRepository::~TextureRepository() = default;
+
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
 
     // Get absolute path of texture.

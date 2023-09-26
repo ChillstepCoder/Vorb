@@ -98,12 +98,7 @@ template <typename Stream> bool netSerialize(Stream& stream);
 
 // Asset (includes serializer)
 #include "resources/IAsset.h"
-
-template <IsAssetType T>
-class AssetHandle;
-
-template <IsAssetType T>
-using AssetHandlePtr = std::shared_ptr<AssetHandle<T>>;
+#include "resources/asset/AssetHandle.h"
 
 // **************** Constexpr vectors *****************
 #include "math/ConstVectors.h"

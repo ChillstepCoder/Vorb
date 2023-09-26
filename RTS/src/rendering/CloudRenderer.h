@@ -1,10 +1,12 @@
 #pragma once
 
 class CloudMeshManager;
-class MaterialShader;
+class MaterialShaderDef;
 class Camera3D;
 class CubemapDef;
 struct ShadowPassShaderData;
+
+#include "resources/asset/AssetHandleBundle.h"
 
 DECL_VG(class GBuffer);
 
@@ -23,10 +25,12 @@ private:
 
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
 
-    const MaterialShader* mCloudMaterial = nullptr;
-    const MaterialShader* mPostMaterial = nullptr;
-    const MaterialShader* mPostPbrMaterial = nullptr;
-    const MaterialShader* mBlurMaterial = nullptr;
-    const MaterialShader* mCloudShadowMaterial = nullptr;
+    const MaterialShaderDef* mCloudMaterial = nullptr;
+    const MaterialShaderDef* mPostMaterial = nullptr;
+    const MaterialShaderDef* mPostPbrMaterial = nullptr;
+    const MaterialShaderDef* mBlurMaterial = nullptr;
+    const MaterialShaderDef* mCloudShadowMaterial = nullptr;
+
+    AssetHandleBundle mShaderAssetHandles;
 };
 

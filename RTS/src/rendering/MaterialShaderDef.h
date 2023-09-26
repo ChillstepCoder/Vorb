@@ -29,42 +29,28 @@ enum class MaterialShaderUniform {
     COUNT
 };
 
-extern MaterialShaderUniform lookupMaterialUniform(const nString& str);
-
-struct MaterialAtlasTextureInputData {
-    nString textureName;
-    nString uniformRectName;
-    nString uniformPageName;
-};
-KEG_TYPE_DECL(MaterialAtlasTextureInputData);
-
 struct MaterialTextureInputData {
-    nString textureName;
-    nString uniformName;
+    StrToken textureName;
+    StrToken uniformName;
 };
-KEG_TYPE_DECL(MaterialTextureInputData);
-
-struct MaterialShaderData {
-    Array<MaterialTextureInputData> textures;
-    nString vertexShaderName;
-    nString fragmentShaderName;
-    nString geometryShaderName;
-    nString tessControlShaderName;
-    nString tessEvalShaderName;
-};
-KEG_TYPE_DECL(MaterialShaderData);
+SERIALIZABLE_SIMPLE(MaterialTextureInputData,
+    make_field(o.textureName, "name"sv),
+    make_field(o.uniformName, "uniform"sv)
+);
 
 struct MaterialTextureInput {
     VGTexture texture;
     VGUniform textureUniform;
 };
 
-class MaterialShader {
+class MaterialShaderDef : public IAsset {
 public:
+    DEFAULT_ASSET_CONSTRUCTOR(MaterialShaderDef);
 
     void use(OUT ui32& nextAvailableTextureIndex) const;
+    void useCompute() const;
     // Doesn't dispose program
-    void dispose();
+    //void dispose();
 
     VGUniform getUniform(const char* name) const {
         return mProgram.getUniform(name);
@@ -76,4 +62,5 @@ public:
     std::vector<std::pair<MaterialShaderUniform, VGUniform> > mUniforms;
     std::vector<MaterialTextureInput> mInputTextures;
     mutable vg::GLProgram mProgram; //  TODO: Handle
+    bool mIsCompute = false;
 };

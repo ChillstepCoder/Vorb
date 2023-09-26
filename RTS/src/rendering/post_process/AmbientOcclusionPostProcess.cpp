@@ -1,9 +1,8 @@
 #include "stdafx.h"
 #include "AmbientOcclusionPostProcess.h"
 
-#include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -26,10 +25,9 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const ui32v2& gbufferDi
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::R8);
     }
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mMaterial = materialManager.getMaterialShader("ssao");
-    mApplyMaterial = materialManager.getMaterialShader("ssao_apply");
-    mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_r");
+    mMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("ssao", 0));
+    mApplyMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("ssao_apply", 0));
+    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("gaussian_blur_r", 0));
 
     //https://learnopengl.com/Advanced-Lighting/SSAO
     // Build kernel
@@ -73,8 +71,11 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const ui32v2& gbufferDi
     checkGlError("init DepthOfFieldPostProcess");
 }
 
-void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
-{
+void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer) {
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
+
     if (sDebugOptions.mSSAODisabled) {
         mGBuffers[0]->use();
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -86,7 +87,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     mGBuffers[0]->use();
 
     ui32 nextTexture;
-    MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &nextTexture);
     vg::DepthState::NONE.set();
 
     const VGUniform& noiseUniform = mMaterial->mProgram.getUniform("unTexNoise");
@@ -116,7 +117,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     glClear(GL_COLOR_BUFFER_BIT);*/
 
     // Blur it
-    MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialShaderForRender(*mBlurMaterial, &nextTexture);
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
     mGBuffers[0]->bindAlbedoTexture(nextTexture);
@@ -142,7 +143,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 
     // Apply to gbuffer
     activeGBuffer->use();
-    MaterialRenderer::bindMaterialForRender(*mApplyMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialShaderForRender(*mApplyMaterial, &nextTexture);
     sGlobalFullTriangleVAO.draw();
 
     vg::DepthState::restorePrevious();

@@ -16,8 +16,8 @@ public:
     void setModel(ModelDef& model) { mCurrentModel = &model; }
 
 private:
-    const MaterialShader* getShader() override;
-    void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) override;
+    const MaterialShaderDef* getShader() override;
+    void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
 
     ModelDef* mCurrentModel = nullptr;

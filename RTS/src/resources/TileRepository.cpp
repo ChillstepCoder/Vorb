@@ -9,38 +9,17 @@
 #include "resources/ModelRepository.h"
 #include "physics/CollisionShapeRepository.h"
 
-KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
-    kt.addValue("mat0", keg::Value::basic(offsetof(TileFileData, material0), keg::BasicType::STRING));
-    kt.addValue("mat1", keg::Value::basic(offsetof(TileFileData, material1), keg::BasicType::STRING));
-    kt.addValue("mat2", keg::Value::basic(offsetof(TileFileData, material2), keg::BasicType::STRING));
-    kt.addValue("mat3", keg::Value::basic(offsetof(TileFileData, material3), keg::BasicType::STRING));
-    kt.addValue("mat4", keg::Value::basic(offsetof(TileFileData, material4), keg::BasicType::STRING));
-    kt.addValue("mat5", keg::Value::basic(offsetof(TileFileData, material5), keg::BasicType::STRING));
-    kt.addValue("mat6", keg::Value::basic(offsetof(TileFileData, material6), keg::BasicType::STRING));
-    kt.addValue("mat7", keg::Value::basic(offsetof(TileFileData, material7), keg::BasicType::STRING));
-    kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
-    kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
-    kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
-    kt.addValue("max_health", keg::Value::basic(offsetof(TileFileData, maxHealth), keg::BasicType::UI16));
-    kt.addValue("path_weight", keg::Value::basic(offsetof(TileFileData, pathWeight), keg::BasicType::UI8));
-    kt.addValue("layer", keg::Value::basic(offsetof(TileFileData, layer), keg::BasicType::UI8));
-    kt.addValue("col_shape", keg::Value::custom(offsetof(TileFileData, colliderShape), "CollisionShapes", true));
-    kt.addValue("col_half_dims", keg::Value::basic(offsetof(TileFileData, colliderHalfExtents.x), keg::BasicType::F32_V3));
-    kt.addValue("shape", keg::Value::custom(offsetof(TileFileData, tileShape), "TileShape", true));
-    kt.addValue("resource", keg::Value::custom(offsetof(TileFileData, resource), "TileHarvestable", true));
-    kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
-    kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
-}
-static_assert(MAX_TILE_MATERIAL_SLOTS == 8, "Update matX");
+bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, CollisionShapeRepository& shapeRepository) {
+    const MaterialRepository& materialRepository = MaterialRepository::get();
+    ItemRepository& itemRepository = ItemRepository::get();
+    ModelRepository& modelRepository = ModelRepository::get();
 
-bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository) {
     // Read file
     return ioManager.parseFileAsKegObjectMap(path, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
-        TileData tileData;
-        TileFileData fileData;
-
+        TileDef tileData;
+        nString data = ioManager.readFileToString(path);
         // Load data
         keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(TileFileData));
         tileData.name = key;
@@ -62,7 +41,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         tileData.itemDrops.resize(fileData.itemDrops.size());
         for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
             tileData.itemDrops[i].countRange = fileData.itemDrops[i].countRange;
-            tileData.itemDrops[i].id = itemRepository.getItem(fileData.itemDrops[i].itemName).getID();
+            tileData.itemDrops[i].id = itemRepository.getAssetID(fileData.itemDrops[i].itemName);
         }
 
         // Recipes
@@ -71,7 +50,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         recipe.mItems = std::unique_ptr<ItemStack[]>(new ItemStack[recipe.mItemCount]);
         for (ui32 i = 0; i < recipe.mItemCount; ++i) {
             recipe.mItems[i].quantity = fileData.recipe[i].count;
-            recipe.mItems[i].id = itemRepository.getItem(fileData.recipe[i].itemName).getID();
+            recipe.mItems[i].id = itemRepository.getAssetID(fileData.recipe[i].itemName);
         }
         sTileRecipes.emplace_back(std::move(recipe));
 
@@ -81,7 +60,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         assert(sTileIdMapping.find(StrToken(key)) == sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
         if (fileData.modelName.size()) {
-            tileData.modelId = modelRepository.getModelID(fileData.modelName);
+            tileData.modelId = modelRepository.getAssetID(fileData.modelName);
             tileData.shape = TileShape::MODEL;
         }
         else {

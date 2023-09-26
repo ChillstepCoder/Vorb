@@ -15,6 +15,7 @@ struct TileContainerEvent;
 class Camera3D;
 class InstancedStaticModelGatherer;
 class ModelRepository;
+class MaterialShaderDef;
 
 DECL_VG(class GLProgram);
 
@@ -83,6 +84,6 @@ private:
     // Used to track removal of instances from containers while we wait for ModelDef load
     boost::container::flat_map<TileContainerID, boost::container::flat_set<ModelID>> mPendingInstanceForContainer;
 
-    const vg::GLProgram* mCullingComputeShader = nullptr;
+    AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
 };
 

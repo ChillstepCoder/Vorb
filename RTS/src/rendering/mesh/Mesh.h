@@ -137,7 +137,6 @@ public:
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mBoundingSphere = boundingSphere; }
     MaterialRenderPassType getRenderPass() const { return mRenderPassType; }
     void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
-    AssetHandleBundle& getDependencies() { return mAssetDependencies; }
 
     // Override allocation to use boost::singleton_pool DOESNT WORK WITH POLYMORPHISM
     //static void* operator new(size_t count);

@@ -1,0 +1,6 @@
+textures: leafy_grass
+num_textures: 2
+size: [20.0, 0.7]
+lean_variance: 0.0
+height_variance: [0.8, 0.8]
+density: 1

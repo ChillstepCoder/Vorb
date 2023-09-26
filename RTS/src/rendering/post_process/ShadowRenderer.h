@@ -1,10 +1,11 @@
 #pragma once
 
 class Camera3D;
-class MaterialShader;
+class MaterialShaderDef;
 
 #include "rendering/post_process/ShadowLodDetail.h"
 #include "ShadowPassShaderData.h"
+#include "resources/asset/AssetHandleBundle.h"
 
 DECL_VG(class GBuffer);
 
@@ -42,11 +43,13 @@ private:
     void generateMipmaps();
     void blurShadowMap();
 
-    const MaterialShader* mShadowMapperMaterial = nullptr;
-    const MaterialShader* mShadowVarianceMaterial = nullptr;
-    const MaterialShader* mShadowApplyMaterial = nullptr;
-    const MaterialShader* mShadowMipMaterial = nullptr;
-    const MaterialShader* mBlurMaterial = nullptr;
+    const MaterialShaderDef* mShadowMapperMaterial = nullptr;
+    const MaterialShaderDef* mShadowVarianceMaterial = nullptr;
+    const MaterialShaderDef* mShadowApplyMaterial = nullptr;
+    const MaterialShaderDef* mShadowMipMaterial = nullptr;
+    const MaterialShaderDef* mBlurMaterial = nullptr;
+    AssetHandleBundle mShaderAssets;
+
     std::unique_ptr<vg::GBuffer> mShadowMipGBuffer; // TODO: Can we combine this with the blur gbuffer?
     std::unique_ptr<vg::GBuffer> mShadowBlurGBuffers[2];
     std::unique_ptr<vg::GBuffer> mShadowMapGBuffer;

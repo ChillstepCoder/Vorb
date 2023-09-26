@@ -4,7 +4,7 @@
 #include <glm/mat3x3.hpp>
 
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialUtils.h"
 
@@ -23,10 +23,9 @@ static_assert((int)LightShape::Count == 1, "Update this file to handle new light
 static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle new attenuation type");
 
 LightRenderer::LightRenderer() {
-    mSunlightMaterial = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sunlight");
-    mSunlightMaterialPbr = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sunlight_pbr");
-    assert(mSunlightMaterial);
-    assert(mSunlightMaterialPbr);
+
+    mSunlightMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("sunlight", 0));
+    mSunlightMaterialPbr = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("sunlight_pbr", 0));
 
 }
 
@@ -35,6 +34,8 @@ LightRenderer::~LightRenderer() {
 }
 
 void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const CubemapDef& skyCubeMap) const {
+    if (!mShaderAssets.areAllAssetsLoaded()) return;
+
     vg::sBlendStates.REPLACE.set();
     ui32 textureUnit = 0;
 
@@ -44,7 +45,7 @@ void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTe
         glStencilFunc(GL_NOTEQUAL, 0/*e_cast(StencilBufferIDs::SKY)*/, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-        MaterialRenderer::bindMaterialForRender(*mSunlightMaterialPbr, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*mSunlightMaterialPbr, &textureUnit);
         assert(textureUnit <= 1);
 
         glUniform1i(mSunlightMaterialPbr->getUniform("unIrradianceMap"), textureUnit);
@@ -87,7 +88,7 @@ void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTe
         }
     }
     else {
-        MaterialRenderer::bindMaterialForRender(*mSunlightMaterial, &textureUnit);
+        MaterialRenderer::bindMaterialShaderForRender(*mSunlightMaterial, &textureUnit);
         // Texture inputs
         glUniform1i(mSunlightMaterial->getUniform("unTextureAlbedo"), textureUnit);
         glBindTextureUnit(textureUnit, inputGBuffer.getAlbedoTexture());

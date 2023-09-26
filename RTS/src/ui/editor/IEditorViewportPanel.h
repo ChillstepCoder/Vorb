@@ -4,7 +4,7 @@ DECL_VG(class GBuffer);
 
 class SimpleCamera;
 class CameraPositioner_FirstPerson;
-class MaterialShader;
+class MaterialShaderDef;
 class Skybox;
 
 // Helper forward declare
@@ -64,8 +64,8 @@ protected:
     void updateFramebufferAndLazyInit(const i32v2& framebufferDims);
 
     // Virtual API
-    virtual const MaterialShader* getShader() { return nullptr; };
-    virtual void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {};
+    virtual const MaterialShaderDef* getShader() { return nullptr; };
+    virtual void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {};
     virtual void renderMesh() {};
 
     virtual VGTexture getFinalOutputTexture();
@@ -75,8 +75,8 @@ protected:
     void initGBuffers(ui32v2 imageDims);
     void renderGrid(const f32m4& VP);
 private:
-    void uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit);
-    void renderPBRArray(const MaterialShader* shader);
+    void uploadShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit);
+    void renderPBRArray(const MaterialShaderDef* shader);
 protected:
 
     // Post processes

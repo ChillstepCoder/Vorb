@@ -1,6 +1,8 @@
 #pragma once
 
-class MaterialShader;
+class MaterialShaderDef;
+
+#include "resources/asset/AssetHandleBundle.h"
 
 DECL_VG(class GBuffer);
 
@@ -21,7 +23,8 @@ private:
     VGTexture mNoiseTexture;
     std::vector<f32v3> mSsaoKernel;
 
-    const MaterialShader* mMaterial = nullptr;
-    const MaterialShader* mApplyMaterial = nullptr;
-    const MaterialShader* mBlurMaterial = nullptr;
+    const MaterialShaderDef* mMaterial = nullptr;
+    const MaterialShaderDef* mApplyMaterial = nullptr;
+    const MaterialShaderDef* mBlurMaterial = nullptr;
+    AssetHandleBundle mShaderAssets;
 };

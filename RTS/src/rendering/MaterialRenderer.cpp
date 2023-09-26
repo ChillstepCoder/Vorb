@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "MaterialRenderer.h"
 
-#include "MaterialShader.h"
+#include "MaterialShaderDef.h"
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshDrawer.h"
@@ -13,23 +13,23 @@
 
 #include "options/DebugOptions.h"
 
-void MaterialRenderer::renderFullScreenQuad(const MaterialShader& material) {
+void MaterialRenderer::renderFullScreenQuad(const MaterialShaderDef& material) {
 
-    bindMaterialForRender(material, nullptr);
+    bindMaterialShaderForRender(material, nullptr);
 
     sGlobalFullTriangleVAO.draw();
 }
 
-void MaterialRenderer::renderMesh(const Mesh& mesh, const MaterialShader& material) {
-    bindMaterialForRender(material, nullptr);
+void MaterialRenderer::renderMesh(const Mesh& mesh, const MaterialShaderDef& material) {
+    bindMaterialShaderForRender(material, nullptr);
 
     MeshDrawer::draw(mesh.mMainMesh);
 }
 
-void MaterialRenderer::renderMaterialToQuadWithTexture(const MaterialShader& material, VGTexture texture, const f32v4& worldSpaceRect) {
+void MaterialRenderer::renderMaterialToQuadWithTexture(const MaterialShaderDef& material, VGTexture texture, const f32v4& worldSpaceRect) {
     assert(texture);
     ui32 textureIndex;
-    bindMaterialForRender(material, &textureIndex);
+    bindMaterialShaderForRender(material, &textureIndex);
 
     // TODO: Uniform buffer object for static uniforms
     VGUniform textureUniform = material.mProgram.getUniform("Texture");
@@ -44,7 +44,7 @@ void MaterialRenderer::renderMaterialToQuadWithTexture(const MaterialShader& mat
     sGlobalFullTriangleVAO.draw();
 }
 
-void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const MaterialShader& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect) {
+void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const MaterialShaderDef& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect) {
     assert(texture);
     // TODO: Uniform buffer object for static uniforms
     VGUniform textureUniform = material.mProgram.getUniform("Texture");
@@ -59,7 +59,7 @@ void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const MaterialSha
     sGlobalFullTriangleVAO.draw();
 }
 
-void MaterialRenderer::bindMaterialForRender(const MaterialShader& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) {
+void MaterialRenderer::bindMaterialShaderForRender(const MaterialShaderDef& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) {
     ui32 availableTextureIndex = 0;
     material.use(availableTextureIndex);
     uploadUniforms(material, availableTextureIndex);
@@ -69,7 +69,7 @@ void MaterialRenderer::bindMaterialForRender(const MaterialShader& material, OUT
 }
 
 // TODO: Batch upload uniforms so we dont do it multiple times redundantly
-void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& nextAvailableTextureIndex) {
+void MaterialRenderer::uploadUniforms(const MaterialShaderDef& material, OUT ui32& nextAvailableTextureIndex) {
     RenderContext& renderContext = RenderContext::getInstance();
     const GlobalRenderData& renderData = renderContext.getRenderData();
     // Bind uniforms

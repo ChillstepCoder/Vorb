@@ -4,6 +4,9 @@
 #include "world/IWorld.h"
 #include "combat/CombatContext.h"
 
+// For asset handle
+#include "resources/IAssetRepository.h"
+
 KEG_TYPE_DEF_SAME_NAME(SkillsComponentFileData, kt) {
     kt.addValue("skill_names", keg::Value::array(offsetof(SkillsComponentFileData, mSkillNames), keg::BasicType::STRING));
 }
@@ -13,7 +16,7 @@ void SkillsComponentSystem::update(IWorld& world, entt::registry& registry, f32 
 
 	const auto updateSkill =
 		[&](entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, f32 elapsedSec) -> bool {
-		const SkillDef* skillDef = skillsCmp.mSkills[e_cast(skillsCmp.mActiveSlot)];
+		const SkillDef* skillDef = skillsCmp.mSkills[e_cast(skillsCmp.mActiveSlot)]->tryGetAsset();
 		assert(skillDef);
 		// Fire all passed triggers
 		activeCmp.mElapsed += elapsedSec;

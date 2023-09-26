@@ -2,7 +2,7 @@
 #include "BrdfLUT.h"
 
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include <Vorb/graphics/SamplerState.h>
 
@@ -29,8 +29,10 @@ void BrdfLUT::loadOrComputeTexture() {
     // Input
     glBindImageTexture(0, sTexture, 0, false, 0, GL_WRITE_ONLY, GL_RG16F);
 
-    const vg::GLProgram* computeShader = Services::ResourceManager::ref().getMaterialShaderManager().getComputeShader("integrate_brdf");
-    computeShader->use();
+    // This is preloaded
+    const MaterialShaderDef* computeShader = MaterialShaderRepository::get().tryGetLoadedAsset(StrToken("integrate_brdf", 0));
+    if (!computeShader) panic("integrate_brdf shader was not preloaded. Make sure it is in .preload");
+    computeShader->useCompute();
 
     const GLuint sz = (GLuint)TEXTURE_SIZE / WORK_GROUP_SIZE;
     glDispatchCompute(sz, sz, 1);

@@ -15,9 +15,20 @@ enum class ItemType {
     BEVERAGE,
     POTION,
     QUEST,
-    TYPES
+    COUNT
 };
-KEG_ENUM_DECL(ItemType);
+SERIALIZABLE_ENUM_SAME_NAME(ItemType,
+    pair{ ItemType::UNKNOWN, "unknown"sv},
+    pair{ ItemType::MATERIAL, "material"sv },
+    pair{ ItemType::WEAPON, "weapon"sv },
+    pair{ ItemType::ARMOR, "armor"sv },
+    pair{ ItemType::TRINKET, "trinket"sv },
+    pair{ ItemType::FOOD, "food"sv },
+    pair{ ItemType::BEVERAGE, "beverage"sv },
+    pair{ ItemType::POTION, "potion"sv },
+    pair{ ItemType::QUEST, "quest"sv }
+);
+static_assert(e_count(ItemType) == 9, "Update def");
 
 enum class ItemStorageShape {
     POINT,
@@ -27,7 +38,13 @@ enum class ItemStorageShape {
     INGOT,
     COUNT
 };
-KEG_ENUM_DECL(ItemStorageShape);
+SERIALIZABLE_ENUM_SAME_NAME(ItemStorageShape,
+    pair{ ItemStorageShape::POINT, "point"sv },
+    pair{ ItemStorageShape::PLANK, "plank"sv },
+    pair{ ItemStorageShape::LOG, "log"sv },
+    pair{ ItemStorageShape::INGOT, "ingot"sv }
+);
+static_assert(e_count(ItemStorageShape) == 4, "Update def");
 
 class ItemDef : public IAsset {
     friend class ItemRepository;

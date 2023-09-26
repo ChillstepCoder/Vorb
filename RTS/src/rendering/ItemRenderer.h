@@ -6,9 +6,11 @@
 #include "item/ItemStockpile.h"
 #include "rendering/mesh/Mesh.h"
 
+#include "rendering/MaterialShaderDef.h"
+
 class ItemRepository;
 struct ItemStack;
-class MaterialShader;
+class MaterialShaderDef;
 class ItemStockpile;
 class ItemDef;
 class Camera3D;
@@ -43,6 +45,6 @@ private:
     std::map<ItemStockpileID, std::unique_ptr<Mesh>> mStaticMeshes;
 
     ItemStockpileListeners mItemStockpileListeners;
-    const MaterialShader* mItemBillboardMaterial;
-    const MaterialShader* mItemMeshMaterial;
+    AssetHandle<MaterialShaderDef> mItemBillboardMaterial;
+    AssetHandle<MaterialShaderDef> mItemMeshMaterial;
 };

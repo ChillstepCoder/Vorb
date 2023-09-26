@@ -7,7 +7,7 @@
 #include "ParticleEnumTypes.h"
 
 class CPUParticleSystem;
-class MaterialShader;
+class MaterialShaderDef;
 class ParticleEmitterDef;
 
 
@@ -39,7 +39,7 @@ typedef std::function<void(class CpuParticleEmitter& emitter, CPUParticlesData& 
 
 class CpuParticleEmitter {
 public:
-    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShader& shader, f32 lifetime = FLT_MAX);
+    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, f32 lifetime = FLT_MAX);
     CpuParticleEmitter(const ParticleEmitterDef& def);
     ~CpuParticleEmitter();
 
@@ -93,7 +93,7 @@ public:
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
     bool isLooping() const { return mLooping; }
 
-    const MaterialShader& getMaterialShader() const { return mShader; }
+    const MaterialShaderDef& getMaterialShader() const { return mShader; }
 
     // Modules
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
@@ -129,7 +129,7 @@ protected:
     void render();
     void onNewParticleAdded(ParticleID id);
 
-    const MaterialShader& mShader;
+    const MaterialShaderDef& mShader;
 
     // Updates the whole emitter with custom logic.
     // Can be null which implies static system, such as for UI

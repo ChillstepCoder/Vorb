@@ -1,26 +1,39 @@
 #pragma once
 #include "rendering/CharacterModel.h"
 
+#include "definitions/ModelDef.h"
 #include "events/SkillEvent.h"
 
-class MaterialShader;
+class MaterialShaderDef;
 class Camera3D;
 struct CharacterRenderState;
+
+class CharacterRenderData {
+public:
+    CharacterRenderData();
+    ~CharacterRenderData();
+
+    CharacterAnimState mAnimState;
+    // TODO: Not ptr, we can just have AssetHandle and aquire
+    AssetHandlePtr<ModelDef> mModelHandle;
+    bool mIsInitialized = false;
+};
 
 class CharacterRenderer {
 public:
 	CharacterRenderer();
 	~CharacterRenderer();
 
-    void addCharacterModel(entt::entity entityId, ui32 modelId);
+    void addCharacterModel(entt::entity entityId, AssetID modelId);
     void removeCharacterModel(entt::entity entityId);
 
-    void playOneShotAnimation(entt::entity entityId, ui32 animationId);
+    void playOneShotAnimation(entt::entity entityId, AssetID animationId);
     void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha);
 private:
+    bool tryInitializeCharacterAnimState(entt::entity entityId);
 
-    const MaterialShader* mMaterial;
-    std::unordered_map<entt::entity, std::unique_ptr<AnimState>> mEntityCharacterModels;
+    AssetHandlePtr<MaterialShaderDef> mShaderHandle;
+    std::unordered_map<entt::entity, std::unique_ptr<CharacterRenderData>> mEntityCharacterModels;
 
 };
 

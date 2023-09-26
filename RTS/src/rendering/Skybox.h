@@ -1,7 +1,7 @@
 #pragma once
 
 class Mesh;
-class MaterialShader;
+class MaterialShaderDef;
 
 #include "definitions/rendering/CubemapDef.h"
 
@@ -10,7 +10,7 @@ public:
     Skybox() = default;
     ~Skybox();
 
-    void init(const MaterialShader* material, AssetHandlePtr<CubemapDef>&& skyCubemap);
+    void init(const MaterialShaderDef* material, AssetHandlePtr<CubemapDef>&& skyCubemap);
     void render(const f32m4& cameraMatrix);
     void renderPbr(const f32m4& cameraMatrix);
     void renderIrradianceDebug(const f32m4& cameraMatrix);
@@ -22,8 +22,8 @@ public:
 
 private:
     std::unique_ptr<Mesh> mSkyboxMesh;
-    const MaterialShader* mMaterial = nullptr;
-    const MaterialShader* mMaterialPbr = nullptr;
+    const MaterialShaderDef* mMaterial = nullptr;
+    const MaterialShaderDef* mMaterialPbr = nullptr;
     AssetHandlePtr<CubemapDef> mSkyCubemap;
 };
 

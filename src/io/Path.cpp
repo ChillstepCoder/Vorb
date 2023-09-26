@@ -129,6 +129,16 @@ nString vorb::io::Path::getFileNameNoExtension() const
     return leaf;
 }
 
+nString vorb::io::Path::getExtension() const {
+    nString leaf = getLeaf();
+    for (int c = leaf.size() - 1; c > 0; --c) {
+        if (leaf[c] == '.') {
+            return leaf.substr(c + 1);
+        }
+    }
+    return "";
+}
+
 bool vio::Path::isValid() const {
     if (isNull()) return false;
     return fs::exists(fs::path(m_path));

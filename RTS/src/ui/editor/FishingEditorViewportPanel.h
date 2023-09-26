@@ -8,6 +8,8 @@ class FishingMinigame;
 
 class FishingEditorViewportPanel :  public IEditorViewportPanel {
 public:
+    FishingEditorViewportPanel();
+
     bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
@@ -16,12 +18,13 @@ public:
     void setFishDef(FishDef& fishDef);
 
 private:
-    const MaterialShader* getShader() override;
+    const MaterialShaderDef* getShader() override;
     void renderFishModel();
     BitFlags<FishingMinigameFlags> getMinigameFlags();
 
     FishDef* mFishDef = nullptr;
     std::unique_ptr<FishingMinigame> mCurrentFishingMinigame;
+    AssetHandlePtr<MaterialShaderDef> mShader;
     f32v2 mViewportDims;
 
     bool mDisableDebris = true;

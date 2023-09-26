@@ -17,8 +17,8 @@ public:
     void setMaterial(EditorMaterialHandle& materialData) { mCurrentMaterial = materialData; }
 
 private:
-    const MaterialShader* getShader() override;
-    void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) override;
+    const MaterialShaderDef* getShader() override;
+    void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
 
     EditorMaterialHandle mCurrentMaterial;

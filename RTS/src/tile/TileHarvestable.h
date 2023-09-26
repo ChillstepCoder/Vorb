@@ -7,4 +7,9 @@ enum class TileHarvestable : ui8 {
     NONE,
     COUNT = NONE
 };
-KEG_ENUM_DECL(TileHarvestable);
+SERIALIZABLE_ENUM_SAME_NAME(TileHarvestable,
+    pair{ TileHarvestable::WOOD, "wood"sv },
+    pair{ TileHarvestable::STONE, "stone"sv },
+    pair{ TileHarvestable::NONE, "none"sv }
+);
+static_assert(e_count(TileHarvestable) == 2);

@@ -2,7 +2,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/AssetLoader.h"
 
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/ShaderLoader.h"
 #include "city/Building.h"
 #include "city/BuildingDescriptionRepository.h"
@@ -63,8 +63,8 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(SkillRepository, AssetType::Skill);
     REGISTER_ASSET_REPO(ItemRepository, AssetType::Item);
     REGISTER_ASSET_REPO(FishRepository, AssetType::Fish);
+    REGISTER_ASSET_REPO(MaterialShaderRepository, AssetType::MaterialShader);
 
-    mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
@@ -97,24 +97,24 @@ void ResourceManager::gatherFiles() {
     PreciseTimer timer;
 
     // Make sure we clear all vectors each gather
-    mMaterialShaderFiles.clear();
     mTileFiles.clear();
     mTileGrassFiles.clear();
     
     mRoomFiles.clear();
     mBuildingFiles.clear();
     mEntityFiles.clear();
-    mItemFiles.clear();
-    mFishFiles.clear();
     mRecipeFiles.clear();
     mBusinessFiles.clear();
-    mModelFiles.clear();
-    mSkillFiles.clear();
     mFontFiles.clear();
 
     assert(mResourceRoot.isValid());
 
     gatherRecursive(mResourceRoot);
+
+    // Any needed post processing
+    for (auto& assetRepo : mAssetRepositories) {
+        assetRepo->onAllAssetTypesRegistered();
+    }
 
     preloadFiles();
 
@@ -129,43 +129,11 @@ void ResourceManager::loadFiles() {
     PreciseTimer totalTimer;
 
 
-    // Load item definitions
-    {
-        ScopedTimer timer("Item load");
-        for (auto&& entry : mItemFiles) {
-            mItemRepository->loadItemFile(entry);
-        }
-    }
-
     // Load recipe definitions
     {
         ScopedTimer timer("Recipe load");
         for (auto&& entry : mRecipeFiles) {
-            mCraftingRepository->loadRecipeFile(*mItemRepository, entry);
-        }
-    }
-
-    // Load Material Shaders
-    {
-        ScopedTimer timer("Material Shader load");
-        for (auto&& entry : mMaterialShaderFiles) {
-            mMaterialManager->loadMaterialShader(entry);
-        };
-    }
-
-    // Load Compute
-    {
-        ScopedTimer timer("Compute load");
-        for (auto&& entry : mComputeFiles) {
-            mMaterialManager->loadComputeShader(entry);
-        };
-    }
-
-    // Load Fish
-    {
-        ScopedTimer timer("Fish load");
-        for (auto&& entry : mFishFiles) {
-            mFishRepository->loadFishFile(entry, *mModelRepository, *mItemRepository);
+            mCraftingRepository->loadRecipeFile(entry);
         }
     }
 
@@ -175,7 +143,7 @@ void ResourceManager::loadFiles() {
         TileRepository::sTileData.reserve(mTileFiles.size() + 10);
         for (auto&& entry : mTileFiles) {
             // TODO: Tilemanager?
-            TileRepository::loadTileFile(*mIoManager, entry, *mMaterialRepository, *mItemRepository, *mModelRepository, *mCollisionShapeRepository);
+            TileRepository::loadTileFile(*mIoManager, entry, *mCollisionShapeRepository);
         }
     }
 
@@ -184,15 +152,7 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Grass load");
         for (auto&& entry : mTileGrassFiles) {
             // TODO: Tilemanager?
-            mTileGrassRepository->loadGrassFile(*mIoManager, entry, *mMaterialRepository);
-        }
-    }
-
-    // Load skills
-    {
-        ScopedTimer timer("Skill load");
-        for (auto&& entry : mSkillFiles) {
-            mSkillRepository->loadSkillFile(entry, *mAnimationRepository);
+            mTileGrassRepository->loadGrassFile(*mIoManager, entry);
         }
     }
 
@@ -200,7 +160,7 @@ void ResourceManager::loadFiles() {
     {
         // Set default material
         ParticleSystemRepository& repo = ParticleSystemRepository::get();
-        repo.setDefaultMaterialID(mMaterialRepository->getMaterialId("particle_v0"/*"soft_particle"*/));
+        repo.setDefaultMaterialID(MaterialRepository::get().getMaterialId(StrToken("particle_v"/*"soft_particle"*/, 0)));
     }
 
     // Load Rooms
@@ -307,13 +267,13 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mTileFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".prog")) {
-            mMaterialShaderFiles.emplace_back(entry);
+            MaterialShaderRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".material")) {
             MaterialRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".comp")) {
-            mComputeFiles.emplace_back(entry);
+            MaterialShaderRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".vert")) {
             ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
@@ -340,10 +300,10 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mRecipeFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".item")) {
-            mItemFiles.emplace_back(entry);
+            ItemRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".fish")) {
-            mFishFiles.emplace_back(entry);
+            FishRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".business")) {
             mBusinessFiles.emplace_back(entry);
@@ -358,7 +318,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             AnimMachineRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".skill")) {
-            mSkillFiles.emplace_back(entry);
+            SkillRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".anim")) {
             AnimationRepository::get().registerAsset(entry);

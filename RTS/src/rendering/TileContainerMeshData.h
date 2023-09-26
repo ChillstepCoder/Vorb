@@ -4,7 +4,7 @@ class Mesh;
 class AssetHandleBundle;
 
 struct TileContainerMeshData {
-    TileContainerMeshData() = default;
+    TileContainerMeshData();
     ~TileContainerMeshData();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerMeshData);

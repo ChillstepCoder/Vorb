@@ -4,7 +4,10 @@
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/CharacterControlComponent.h"
 
-#include "rendering/MaterialShaderManager.h"
+#include "resources/IAssetRepository.h"
+#include "rendering/MaterialShaderDef.h"
+
+#include "rendering/MaterialShaderRepository.h"
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/TileVertex.h"
@@ -49,7 +52,7 @@ constexpr ui16 DEFAULT_ANIM_TRACK_FLAGS[NUM_ANIM_STATE_TRACKS] = {
 static_assert(NUM_ANIM_STATE_TRACKS == 14u, "Update any defaults");
 
 CharacterRenderer::CharacterRenderer() :
-    mMaterial(Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("character")) {
+    mShaderHandle(MaterialShaderRepository::get().getAssetHandle(StrToken("character", 0))) {
     mEntityCharacterModels.reserve(256);
 }
 
@@ -57,30 +60,15 @@ CharacterRenderer::~CharacterRenderer() {
 
 }
 
-void CharacterRenderer::addCharacterModel(entt::entity entityId, ui32 modelId) {
+void CharacterRenderer::addCharacterModel(entt::entity entityId, AssetID modelId) {
     assert(mEntityCharacterModels.find(entityId) == mEntityCharacterModels.end());
     assert(modelId != INVALID_MODEL_ID);
-    std::unique_ptr<AnimState> animState = std::make_unique<AnimState>();
-    const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId);
-    animState->mModelID = modelId;
-    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        AnimTrack& track = animState->mTracks[i];
-        const ozz::animation::Animation* anim = modelDef.mAnimMachine->mAnimsArray[i];
-        if (anim) {
-            track.mDuration = modelDef.mAnimMachine->mAnimsArray[i]->duration();
-        }
-        animState->mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
-        // TODO: Better context allocation
-        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-        track.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
-    }
-    // Init to idle state engaged
-    animState->mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
-    animState->mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
-    // Init one shot anim track
-    animState->mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-    animState->mCurrentOneShotTrack.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
-    mEntityCharacterModels[entityId] = std::move(animState);
+    std::unique_ptr<CharacterRenderData> renderData = std::make_unique<CharacterRenderData>();
+
+    CharacterAnimState& animState = renderData->mAnimState;
+    renderData->mModelHandle = ModelRepository::get().getAssetHandle(modelId);
+
+    mEntityCharacterModels[entityId] = std::move(renderData);
 }
 
 void CharacterRenderer::removeCharacterModel(entt::entity entityId) {
@@ -90,19 +78,27 @@ void CharacterRenderer::removeCharacterModel(entt::entity entityId) {
     mEntityCharacterModels.erase(it);
 }
 
-void CharacterRenderer::playOneShotAnimation(entt::entity entityId, ui32 animationId) {
+void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID animationId) {
     auto&& it = mEntityCharacterModels.find(entityId);
     // TODO: Ensure
     assert(it != mEntityCharacterModels.end());
     if (it != mEntityCharacterModels.end()) {
+
+        if (!it->second->mIsInitialized) {
+            if (!tryInitializeCharacterAnimState(entityId)) {
+                LOG_WARN("Tried to animate {} with animation {} but asset load was still pending", (ui32)entityId, animationId);
+                return;
+            }
+        }
+
         // TODO: Allow lazy load anim? hmmm prob not?
         AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
         if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
-        it->second->playOneShotAnimation(&animDef->mAnimation);
+        it->second->mAnimState.playOneShotAnimation(&animDef->mAnimation);
     }
 }
 
-void updateAnimationStates(AnimState& animState, CharacterLocomotionMode locomotionMode, f32 elapsedSec) {
+void updateAnimationStates(CharacterAnimState& animState, CharacterLocomotionMode locomotionMode, f32 elapsedSec) {
 
     // Update feel
     animState.updateFootstepAlpha(elapsedSec, locomotionMode);
@@ -170,7 +166,7 @@ void updateAnimationStates(AnimState& animState, CharacterLocomotionMode locomot
 
 }
 
-bool updateAnimation(const MeshSkeletonData& skeletonData, AnimState& animState, CharacterLocomotionMode locomotionMode, const ModelDef& modelDef, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
+bool updateAnimation(const MeshSkeletonData& skeletonData, CharacterAnimState& animState, CharacterLocomotionMode locomotionMode, const ModelDef& modelDef, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
 
     // Speed blend, run/walk/sprint
     updateAnimationStates(animState, locomotionMode, elapsedSec);
@@ -353,11 +349,13 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     UNUSED(frameAlpha);
     PROFILE_FUNCTION();
 
+    const MaterialShaderDef* shaderDef = mShaderHandle->tryGetAsset();
+
     // TODO: UBO
-    MaterialRenderer::bindMaterialForRender(*mMaterial);
-    VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
-    VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
-    VGUniform boneUniform = mMaterial->mProgram.getUniform("unBoneTransforms[0]");
+    MaterialRenderer::bindMaterialShaderForRender(*shaderDef);
+    VGUniform offsetUniform = shaderDef->mProgram.getUniform("unOffset");
+    VGUniform modelTransformUniform = shaderDef->mProgram.getUniform("unModelTransform");
+    VGUniform boneUniform = shaderDef->mProgram.getUniform("unBoneTransforms[0]");
 
     for (const auto& character : characters) {
         // Get physics info
@@ -366,8 +364,15 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
         auto&& it = mEntityCharacterModels.find(character.mEntityID);
         if (it != mEntityCharacterModels.end()) {
-            AnimState& animState = *it->second;
-            const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(animState.mModelID);
+
+            if (!it->second->mIsInitialized) {
+                if (!tryInitializeCharacterAnimState(character.mEntityID)) {
+                    continue;
+                }
+            }
+
+            CharacterAnimState& animState = it->second->mAnimState;
+            const ModelDef& modelDef = it->second->mModelHandle->getLoadedAsset();
 
             // TODO: Optimize
             f32m4 transform(1.0f);
@@ -415,6 +420,38 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     }
 }
 
+bool CharacterRenderer::tryInitializeCharacterAnimState(entt::entity entityId) {
+    CharacterRenderData& renderData = *mEntityCharacterModels[entityId];
+    const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetAsset();
+    if (!modelDefPtr) {
+        return false;
+    }
+    const ModelDef& modelDef = *modelDefPtr;
+    CharacterAnimState& animState = renderData.mAnimState;
+    animState.mModelID = modelDef.getID();
+    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
+        AnimTrack& track = animState.mTracks[i];
+        const ozz::animation::Animation* anim = modelDef.mAnimMachine->mAnimsArray[i];
+        if (anim) {
+            track.mDuration = modelDef.mAnimMachine->mAnimsArray[i]->duration();
+        }
+        animState.mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
+        // TODO: Better context allocation
+        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+        track.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
+    }
+    // Init to idle state engaged
+    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
+    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
+    // Init one shot anim track
+    animState.mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+    animState.mCurrentOneShotTrack.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
+    return true;
+}
+
 // Prevent rounding errors, 0.0001 is half a pixel
 constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
+
+CharacterRenderData::CharacterRenderData() = default;
+CharacterRenderData::~CharacterRenderData() = default;

@@ -5,8 +5,8 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "camera/ICamera.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShader.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderDef.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/mesh/MeshDrawer.h"
 
 #include "resources/ResourceManager.h"
@@ -23,7 +23,7 @@ Skybox::~Skybox() {
 
 }
 
-void Skybox::init(const MaterialShader* material, AssetHandlePtr<CubemapDef>&& skyCubemap) {
+void Skybox::init(const MaterialShaderDef* material, AssetHandlePtr<CubemapDef>&& skyCubemap) {
     constexpr unsigned NUM_VERTS = 4 * 6;
     constexpr float RADIUS = 1.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
@@ -105,7 +105,7 @@ void Skybox::render(const f32m4& cameraMatrix) {
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
+    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &textureUnit);
     glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getTexture());
@@ -126,7 +126,7 @@ void Skybox::renderPbr(const f32m4& cameraMatrix) {
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialForRender(*mMaterialPbr, &textureUnit);
+    MaterialRenderer::bindMaterialShaderForRender(*mMaterialPbr, &textureUnit);
     glUniform1i(mMaterialPbr->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(mMaterialPbr->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getTexture());
@@ -159,7 +159,7 @@ void Skybox::renderIrradianceDebug(const f32m4& cameraMatrix) {
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
+    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &textureUnit);
     glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getIrradianceTexture());
@@ -180,7 +180,7 @@ void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel)
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
+    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &textureUnit);
     glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     VGTexture texture = cubemapDef->getPrefilterMap();

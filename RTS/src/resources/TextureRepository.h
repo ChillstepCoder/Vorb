@@ -11,7 +11,9 @@ class MaterialTextureGenerator;
 // TODO: https://github.com/g-truc/gli/blob/master/manual.md
 // STB_DXT
 class TextureRepository : public IAssetRepository<TextureDef> {
-    ASSET_REPOSITORY_COMMON_CODE(TextureRepository, TextureDef, AssetType::Texture)
+    ASSET_REPOSITORY_COMMON_CODE_NO_CONSTRUCTOR(TextureRepository, TextureDef, AssetType::Texture)
+    TextureRepository(vio::IOManager& ioManager);
+    ~TextureRepository();
 
     // Loads in as RGBAUI8
     gli::texture2d loadRawPngData(const vio::Path& filePath, bool flipV);

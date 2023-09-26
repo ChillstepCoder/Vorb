@@ -45,7 +45,7 @@ struct AnimTrack {
 };
 static_assert(sizeof(AnimTrack) == 24, "Keep small");
 
-struct AnimState {
+struct CharacterAnimState {
     void fadeInStateTrack(AnimMachineState state, f32 fadeDuration);
     void setAnimTrackWeight(AnimMachineState currentState, f32 weightScale);
     void updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode);

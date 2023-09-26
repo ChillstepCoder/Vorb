@@ -49,8 +49,8 @@ public:
         return mHandles.size();
     }
 
-    bool areAllAssetsLoaded() {
-        if (mLoadedCount == mHandles.size()) return true;
+    bool areAllAssetsLoaded() const {
+        if (mLoadedCount == mHandles.size()) [[likely]] { return true; }
         for (size_t i = 0; i < mHandles.size(); ++i) {
             if (!mLoaded.getBit(i)) {
                 if (mHandles[i]->isLoaded()) {
@@ -83,7 +83,7 @@ protected:
 
     boost::container::flat_map<AssetDescriptor, int> mContainedAssetDescriptors;
     std::vector<AssetHandleBasePtr> mHandles;
-    int mLoadedCount = 0;
+    mutable ui32 mLoadedCount = 0;
     bool mLockedByAssetLoader = false;
-    BitArray mLoaded;
+    mutable BitArray mLoaded;
 };

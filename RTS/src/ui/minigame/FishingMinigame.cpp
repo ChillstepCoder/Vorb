@@ -3,7 +3,7 @@
 
 #include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
@@ -58,7 +58,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     MaterialRepository& materialRepo = MaterialRepository::get();
 
-    mAssetHandles.reserveCount(20);
+    mAssetHandles.reserveCount(22);
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("soft_particle", 0)));
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 0)));
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(StrToken("particle_v", 1)));
@@ -84,8 +84,9 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
     mChestPosition = f32v2(0.0f, BOUNDARY_RADIUS - CHEST_RADIUS - 1);
 
     mSpriteBatch.init();
-    mArenaShader = resourceManager.getMaterialShaderManager().getMaterialShader("fishing_arena");
-    mUIShader = resourceManager.getMaterialShaderManager().getMaterialShader("textured_particle_2d");
+
+    mArenaShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, StrToken("fishing_arena", 0));
+    mUIShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, StrToken("textured_particle_2d"));
 
     initUIParticles();
 
@@ -205,7 +206,7 @@ void FishingMinigame::render(f32 elapsedSec) {
         -xOffset, 0, 0, 1.0f
     );
 
-    MaterialRenderer::bindMaterialForRender(*mUIShader);
+    MaterialRenderer::bindMaterialShaderForRender(*mUIShader);
 
     // Arena
     mUIParticleSystem->getEmitter(0).setParticleScale(mArenaParticleID, arenaSize);
@@ -463,7 +464,7 @@ void FishingMinigame::initPlayerParticles() {
     mPlayerParticleSystem->getEmitter(0).setGlobalParticleScale(f32v2(5.0f));
 
     constexpr int MATERIAL_COUNT = 9;
-    MaterialID materials[MATERIAL_COUNT] = {
+    AssetID materials[MATERIAL_COUNT] = {
         materialRepository.getAssetID(StrToken("particle_v0", 0)),
         materialRepository.getAssetID(StrToken("particle_v1", 1)),
         materialRepository.getAssetID(StrToken("particle_v2", 2)),
@@ -492,7 +493,7 @@ void FishingMinigame::initPlayerParticles() {
             newParticle,
             f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 0.0f) * RANDOM_VEL_FORCE
         );
-        mPlayerParticleSystem->getEmitter(0).setParticleMaterial(newParticle, materials[Random::xorshf96() % MATERIAL_COUNT]);
+        mPlayerParticleSystem->getEmitter(0).setParticleMaterial(newParticle, (MaterialID)materials[Random::xorshf96() % MATERIAL_COUNT]);
     }
 }
 

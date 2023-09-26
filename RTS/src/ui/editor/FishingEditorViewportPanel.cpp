@@ -5,15 +5,18 @@
 
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/MeshDrawer.h"
-#include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/ui/GameWindow.h>
+
+FishingEditorViewportPanel::FishingEditorViewportPanel() : IEditorViewportPanel() {
+    mShader = MaterialShaderRepository::get().getAssetHandle(StrToken("editor_model_pbr"));
+}
 
 bool FishingEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
@@ -100,11 +103,10 @@ void FishingEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::EndChild();
 }
 
-const MaterialShader* FishingEditorViewportPanel::getShader() {
+const MaterialShaderDef* FishingEditorViewportPanel::getShader() {
     if (mCurrentFishingMinigame) return nullptr;
 
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
-    return resourceManager.getMaterialShaderManager().getMaterialShader("editor_model_pbr");
+    return mShader->tryGetAsset();
 }
 
 void FishingEditorViewportPanel::renderMesh() {
@@ -132,7 +134,7 @@ void FishingEditorViewportPanel::setFishDef(FishDef& fishDef) {
 void FishingEditorViewportPanel::renderFishModel() {
     ModelRepository& modelRepo = ModelRepository::get();
     if (mFishDef) {
-        const ModelDef& model = modelRepo.getModelDef(mFishDef->mModelId);
+        const ModelDef& model = modelRepo.getLoadedAsset(mFishDef->mModelId);
         for (int i = 0; i < model.getNumMeshes(); ++i) {
             MeshDrawer::draw(model.getMesh(i).mMainMesh, MeshLODLevel::Highest);
         }

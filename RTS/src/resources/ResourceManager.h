@@ -15,8 +15,6 @@ class CraftingRepository;
 class EntityDefinitionRepository;
 class FontRepository;
 class ParticleSystemRepository;
-class MaterialRepository;
-class MaterialShaderManager;
 class ModelRepository;
 class RigRepository;
 class SkillRepository;
@@ -35,8 +33,6 @@ public:
     void gatherFiles();
     void loadFiles();
 
-    // TODO: These are all obsolete? Since each is a singleton?
-    MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
     BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
@@ -62,8 +58,6 @@ private:
 
     // Tasks
     // TODO: ResourceLoader?
-    std::vector<vio::Path> mMaterialShaderFiles;
-    std::vector<vio::Path> mComputeFiles;
     std::vector<vio::Path> mTileFiles;
     std::vector<vio::Path> mTileGrassFiles;
     std::vector<vio::Path> mRoomFiles;
@@ -73,7 +67,6 @@ private:
     std::vector<vio::Path> mBusinessFiles;
     std::vector<vio::Path> mFontFiles;
 
-    std::unique_ptr<MaterialShaderManager> mMaterialManager;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;

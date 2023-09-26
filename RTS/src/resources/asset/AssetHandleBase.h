@@ -10,7 +10,7 @@ public:
     AssetID getAssetID() const { return mAssetID; }
 
     bool isValid() const { return mAssetName.isValid(); }
-    virtual bool isLoaded() = 0;
+    virtual bool isLoaded() const = 0;
 
     AssetDescriptor getDescriptor() const { return AssetDescriptor{ .id = mAssetID, .assetType = mAssetType }; }
 

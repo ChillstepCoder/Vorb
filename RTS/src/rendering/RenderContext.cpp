@@ -26,7 +26,7 @@
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/LightRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
@@ -249,7 +249,7 @@ RenderContext& RenderContext::getInstance() {
 void RenderContext::initPostLoad() {
 
     const ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialShaderManager& materialManager = resourceManager.getMaterialShaderManager();
+    const MaterialShaderRepository& materialManager = resourceManager.getMaterialShaderManager();
   
     mWorldRenderer = std::make_unique<WorldRenderer>(mScreenResolution);
     mWorldRenderer->initPostLoad();

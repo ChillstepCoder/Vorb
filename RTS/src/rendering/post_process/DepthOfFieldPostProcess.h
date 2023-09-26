@@ -1,6 +1,6 @@
 #pragma once
 
-class MaterialShader;
+class MaterialShaderDef;
 
 DECL_VG(class GBuffer);
 
@@ -16,6 +16,6 @@ private:
     // TODO: Maybe shared g buffer? :thinkies:
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
 
-    const MaterialShader* mMaterial = nullptr;
+    AssetHandlePtr<MaterialShaderDef> mMaterial;
 };
 

@@ -1,0 +1,8 @@
+model: tree_birch
+col_shape: cylinder
+col_half_dims: [0.6, 0.6, 5.0]
+resource: wood
+path_weight: 0
+drops:
+  - item: wood_raw
+    count: [15, 20]

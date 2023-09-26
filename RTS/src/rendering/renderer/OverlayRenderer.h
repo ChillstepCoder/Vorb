@@ -1,6 +1,6 @@
 #pragma once
 
-class MaterialShader;
+class MaterialShaderDef;
 
 class OverlayRenderer {
 public:
@@ -9,7 +9,7 @@ public:
 
     void renderUnderwaterOverlay();
 private:
-    const MaterialShader* mColorOverlayShader = nullptr;
+    AssetHandlePtr<MaterialShaderDef> mColorOverlayShader;
     VGVertexArray mVao = 0;
 };
 

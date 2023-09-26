@@ -38,8 +38,8 @@ public:
 
     StrToken mItemName;
     StrToken mModelName;
-    ItemID mItemId;
-    ModelID mModelId;
+    ItemID mItemId = INVALID_ASSET_ID;
+    ModelID mModelId = INVALID_ASSET_ID;
     FishingMinigameFishData mMinigameData; // TODO: Yml
 };
 SERIALIZABLE_SIMPLE(FishDef,

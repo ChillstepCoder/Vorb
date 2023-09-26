@@ -3,9 +3,10 @@
 
 #include "camera/Camera3D.h"
 
-#include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
+
+#include "resources/IAssetRepository.h"
 
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/SamplerState.h>
@@ -170,13 +171,11 @@ ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
     }
 
     // Materials
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");
-    mShadowVarianceMaterial = materialManager.getMaterialShader("shadow_variance");
-    mShadowApplyMaterial = materialManager.getMaterialShader("shadow_apply");
-    mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_shadows");
-    mShadowMipMaterial = materialManager.getMaterialShader("shadow_mipmap");
-
+    mShadowMapperMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_mapper", 0));
+    mShadowVarianceMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_variance", 0));
+    mShadowApplyMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_apply", 0));
+    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("gaussian_blur_shadows", 0));
+    mShadowMipMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_mipmap", 0));
 }
 
 constexpr f32 SUN_POSITION_UPDATE_THRESH_SQ = SQ(0.001f);
@@ -358,6 +357,9 @@ void ShadowRenderer::clearShadowTexture() {
 }
 
 void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
 
     // Mip it
     mShadowMapGBuffer->bindAlbedoTexture(0);
@@ -368,7 +370,7 @@ void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
     mShadowMipGBuffer->use();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer->getAlbedoTexture(), 0);
     ui32 nextTextureIndex;
-    MaterialRenderer::bindMaterialForRender(*mShadowVarianceMaterial, &nextTextureIndex);
+    MaterialRenderer::bindMaterialShaderForRender(*mShadowVarianceMaterial, &nextTextureIndex);
     glUniformMatrix4fv(mShadowVarianceMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*getShadowFrustumMatrices())[0][0]);
     glUniform1fv(mShadowVarianceMaterial->getUniform("unShadowCascadePlaneDistances[0]"), MAX_SHADOW_CASCADE_LEVELS, getShadowCascadePlaneDistances());
     glUniform3fv(mShadowVarianceMaterial->getUniform("CameraOffset"), 1, &offset[0]);
@@ -387,7 +389,7 @@ void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
     { // Apply shadows
         mShadowBlurGBuffers[0]->use();
         ui32 nextTextureIndex = 0;
-        MaterialRenderer::bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
+        MaterialRenderer::bindMaterialShaderForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
         mShadowMipGBuffer->bindAlbedoTexture(nextTextureIndex);
         glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
@@ -439,7 +441,7 @@ void ShadowRenderer::generateMipmaps() {
 
     ui32 nextTextureIndex = 0;
 
-    MaterialRenderer::bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
+    MaterialRenderer::bindMaterialShaderForRender(*mShadowMipMaterial, &nextTextureIndex);
     VGUniform inputUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unInputTexture");
     VGUniform levelUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unPreviousLevel");
     VGTexture shadowMipTexture = mShadowMipGBuffer->getAlbedoTexture();
@@ -469,7 +471,7 @@ void ShadowRenderer::generateMipmaps() {
 void ShadowRenderer::blurShadowMap()
 {
     ui32 nextTexture = 0;
-    MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialShaderForRender(*mBlurMaterial, &nextTexture);
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);

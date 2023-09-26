@@ -6,7 +6,7 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 #include "rendering/RenderContext.h"
 #include "rendering/post_process/ShadowPassShaderData.h"
@@ -18,10 +18,10 @@
 
 
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
-    mStandardMaterial = materialManager.getMaterialShader("standard_model");
-    mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper_instanced");
-    mSmudgeShader = materialManager.getMaterialShader("smudge");
+
+    mStandardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("standard_model", 0));
+    mShadowMapperMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_mapper_instd", 0));
+    mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("smudge", 0));
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
@@ -32,13 +32,16 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
     ASSERT_RENDER_THREAD();
     if (sDebugOptions.mHideModels)
         return;
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
 
     PROFILE_FUNCTION();
 
     // TODO: Material specific, we lose 10fps disabling this
     glDisable(GL_CULL_FACE);
 
-    MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
     for (auto& it : modelInstances) {
         const StaticMeshInstanceData& instanceData = it.second;
         if (!instanceData.mDrawCommands) {
@@ -82,12 +85,16 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
 void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* allModelPasses, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
+
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
     // TODO: Material specific
     glDisable(GL_CULL_FACE);
 
     PROFILE_FUNCTION();
 
-    MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
+    MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperMaterial);
     glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
     for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : allModelPasses[ri]) {

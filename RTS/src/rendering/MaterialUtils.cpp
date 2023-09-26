@@ -2,7 +2,7 @@
 #include "MaterialUtils.h"
 
 #include "options/DebugOptions.h"
-#include "MaterialShader.h"
+#include "MaterialShaderDef.h"
 
 #include "options/LightingOptions.h"
 
@@ -10,7 +10,7 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
-void MaterialUtils::uploadLightingUniforms(const MaterialShader& material) {
+void MaterialUtils::uploadLightingUniforms(const MaterialShaderDef& material) {
     ASSERT_RENDER_THREAD();
     LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
     LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
@@ -28,7 +28,7 @@ void MaterialUtils::uploadLightingUniforms(const MaterialShader& material) {
     checkGlError("MaterialUtils::uploadLightingUniforms");
 }
 
-void MaterialUtils::uploadTonemapUniforms(const MaterialShader& material) {
+void MaterialUtils::uploadTonemapUniforms(const MaterialShaderDef& material) {
     LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
     LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
     if (sDebugOptions.mLightPresetSplitView) {

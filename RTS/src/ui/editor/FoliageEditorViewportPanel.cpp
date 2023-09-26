@@ -13,7 +13,7 @@
 
 #include "resources/TileGrassRepository.h"
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/renderer/GrassRenderer.h"
 
 #include "rendering/RenderContext.h"

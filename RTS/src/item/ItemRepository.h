@@ -12,8 +12,11 @@ public:
     ASSET_REPOSITORY_COMMON_CODE(ItemRepository, ItemDef, AssetType::Item)
 
     ItemID getItemId(StrToken itemName) const { return (ItemID)getAssetID(itemName); }
+
+    bool saveAsset(AssetID assetId) override { panic("Cannot save items yet"); }
     
 private:
+    void onRegisteredAsset(AssetID id) override;
     AssetLoadFunc getAssetLoadFunc() override;
 };
 

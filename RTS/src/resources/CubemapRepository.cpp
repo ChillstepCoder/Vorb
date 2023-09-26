@@ -11,7 +11,7 @@
 #include "util/TextureUtil.h"
 
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 // Match the shader TODO: profile 32?
 constexpr GLuint WORK_GROUP_SIZE = 16;

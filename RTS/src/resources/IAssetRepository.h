@@ -28,6 +28,9 @@ public:
     AssetHandleBasePtr getAssetHandleBase(StrToken assetName);
 
     virtual AssetType getAssetType() const = 0;
+
+    // Called after every asset in the game has been registered
+    virtual void onAllAssetTypesRegistered() {};
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 
@@ -35,10 +38,14 @@ protected:
     virtual void loadAssetAsync(const AssetRegistryEntry& assetEntry) = 0;
     virtual void fillAsset(AssetHandleBase& handle) = 0;
     virtual AssetHandleBasePtr makeAssetHandle() = 0;
+    virtual AssetID getAssetID(StrToken assetName) const = 0;
 
     // ==================================================================
     // Asset friend functions
     // ==================================================================
+    void aquireAssetHandle(StrToken name, AssetHandleBase& handle) {
+        aquireAssetHandle(getAssetID(name), handle);
+    }
     void aquireAssetHandle(AssetID id, AssetHandleBase& handle) {
         assert(!handle.isValid());
         assert(id < mAssetRegistry.size());
@@ -115,13 +122,13 @@ public:
         };
     }
     // If return true, break
-    void forEachRegisteredAsset(std::function<bool(IAssetRepository<T>&, T*, const AssetRegistryEntry& entry)> func) {
+    void forEachRegisteredAsset(std::function<bool(T*, const AssetRegistryEntry& entry)> func) {
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             if (mLoadedAssets[id]->load()) {
-                if (func(*this, mAssets[id].get(), mAssetRegistry[id])) return;
+                if (func(mAssets[id].get(), mAssetRegistry[id])) return;
             }
             else {
-                if (func(*this, nullptr, mAssetRegistry[id])) return;
+                if (func(nullptr, mAssetRegistry[id])) return;
             }
         };
     }
@@ -133,13 +140,17 @@ public:
 
     // Will begin a lazy async load if asset is not loaded
     AssetDescriptor getAssetDescriptor(StrToken assetName) {
-        return AssetDescriptor{ .assetType = getAssetType(), .id = getAssetID(assetName) };
+        return AssetDescriptor{ .id = getAssetID(assetName), .assetType = getAssetType() };
     }
     AssetHandlePtr<T> getAssetHandle(StrToken assetName) {
-        return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(assetName));
+        return std::static_pointer_cast<AssetHandle<T>>(getAssetHandleBase(assetName));
     }
     AssetHandlePtr<T> getAssetHandle(AssetID id) {
-        return static_cast<AssetHandlePtr<T>>(getAssetHandleBase(id));
+        return std::static_pointer_cast<AssetHandle<T>>(getAssetHandleBase(id));
+    }
+    // Note that if you do not have a handle, this could become invalid!
+    T* tryGetLoadedAsset(StrToken assetName) {
+        return tryGetLoadedAsset(getAssetID(assetName));
     }
     T* tryGetLoadedAsset(AssetID id) {
         if (mLoadedAssets[id]) {
@@ -147,9 +158,23 @@ public:
         }
         return nullptr;
     }
+    T& getLoadedAsset(StrToken name) {
+        return getLoadedAsset(getAssetID(name));
+    }
+    T& getLoadedAsset(AssetID id) {
+        assert(mLoadedAssets[id]);
+        return *mAssets[id].get();
+    }
+    // Some assets are valid without being loaded as they have minimal definitions that can be loaded on register
+    T& getLoadedOrUnloadedAsset(StrToken name) {
+        return *mAssets[getAssetID(name)];
+    }
+    T& getLoadedOrUnloadedAsset(AssetID id) {
+        return *mAssets[id];
+    }
     inline bool isAssetLoaded(AssetID id) { return mLoadedAssets[id]; }
 
-    AssetID getAssetID(StrToken assetName) const { return mAssetLookup.at(assetName); }
+    AssetID getAssetID(StrToken assetName) const override { return mAssetLookup.at(assetName); }
     AssetID registerAsset(const vio::Path& filePath) {
         // TODO remove string copy
         return registerAsset(StrToken(filePath.getFileNameNoExtension()), filePath);
@@ -251,11 +276,9 @@ protected:
     // mDirtyAssets?
 };
 
-// Helper for derived classes of IAssetRepository
-#define ASSET_REPOSITORY_COMMON_CODE(className, assetDef, assetType) \
+#define ASSET_REPOSITORY_COMMON_CODE_NO_CONSTRUCTOR(className, assetDef, assetType) \
 public: \
-    using IAssetRepository<assetDef>::IAssetRepository; \
-    static void initInstance(vio::IOManager& ioManager) { \
+ static void initInstance(vio::IOManager& ioManager) { \
         sInstance = std::make_unique<className>(ioManager); \
     } \
     inline static className& get() { \
@@ -264,49 +287,12 @@ public: \
     } \
     AssetType getAssetType() const override { return assetType; }
 
-template <IsAssetType T>
-class AssetHandle : public AssetHandleBase {
-public:
-    friend class IAssetRepository<T>;
-
-    AssetHandle() = default;
-    ~AssetHandle() {
-        release();
-    }
-
-    VORB_NON_COPYABLE(AssetHandle);
-
-    void aquire(AssetID id) {
-        IAssetRepository<T>::getInstance().aquireAssetHandle(id, *this);
-    }
-    void aquire(StrToken name) {
-        IAssetRepository<T>::getInstance().aquireAssetHandle(name, *this);
-    }
-    void release() {
-        IAssetRepository<T>::getInstance().releaseAssetHandle(*this);
-    }
-
-    // AssetHandleBase interface
-    bool isLoaded() override {
-        if (mLoadedAsset != nullptr) return true;
-        IAssetRepository<T>::getInstance().pollAsset(*this);
-        return mLoadedAsset != nullptr;
-    }
-
-    // Returns nullptr if the asset is loading
-    const T* tryGetAsset() {
-        assert(isValid());
-        if (mLoadedAsset) return mLoadedAsset;
-        IAssetRepository<T>::getInstance().pollAsset(*this);
-        return mLoadedAsset;
-    }
-
-    T* editorTryGetMutableAsset() { return const_cast<T*>(tryGetAsset()); }
-
-protected:
-    const T* mLoadedAsset = nullptr;
-};
-
+// Helper for derived classes of IAssetRepository
+#define ASSET_REPOSITORY_COMMON_CODE(className, assetDef, assetType) \
+public: \
+    using IAssetRepository<assetDef>::IAssetRepository; \
+    ASSET_REPOSITORY_COMMON_CODE_NO_CONSTRUCTOR(className, assetDef, assetType)
+   
 AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(StrToken assetName) {
     return getAssetHandleBase(mAssetLookup.at(assetName));
 }
@@ -319,5 +305,52 @@ AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(AssetID id) {
 
 template<typename T>
 const T& AssetHandleBundle::getLoadedAsset(StrToken assetName) {
-    return *static_cast<AssetHandle<T>*>(tryGetAssetHandle(IAssetRepository<T>::getInstance().getAssetDescriptor(assetName)))->tryGetAsset();
+    return static_cast<AssetHandle<T>*>(tryGetAssetHandle(IAssetRepository<T>::getInstance().getAssetDescriptor(assetName)))->getLoadedAsset();
+}
+
+template <typename T>
+const T* AssetHandle<T>::tryGetAsset() const {
+    assert(isValid());
+    if (mLoadedAsset) [[likely]] { return mLoadedAsset; }
+    IAssetRepository<T>::getInstance().pollAsset(const_cast<AssetHandle<T>&>(*this));
+    return mLoadedAsset;
+}
+
+template <typename T>
+bool AssetHandle<T>::isLoaded() const {
+    if (mLoadedAsset != nullptr) [[likely]] { return true; }
+    IAssetRepository<T>::getInstance().pollAsset(const_cast<AssetHandle<T>&>(*this));
+    return mLoadedAsset != nullptr;
+}
+
+template <typename T>
+void AssetHandle<T>::release() {
+    IAssetRepository<T>::getInstance().releaseAssetHandle(*this);
+}
+
+template <typename T>
+void AssetHandle<T>::aquire(AssetID id) {
+    IAssetRepository<T>::getInstance().aquireAssetHandle(id, *this);
+}
+
+template <typename T>
+void AssetHandle<T>::aquire(StrToken name) {
+    IAssetRepository<T>::getInstance().aquireAssetHandle(name, *this);
+}
+
+template <typename T>
+const T& AssetHandle<T>::getLoadedAsset() const {
+    assert(mLoadedAsset);
+    return *mLoadedAsset;
+}
+
+namespace AssetUtil {
+    // Useful when you want to put a bunch of assets into a bundle and cache the asset
+    // so once they are all loaded you don't need to query them
+    // MAKE SURE THAT THE BUNDLE IS FULLY LOADED BEFORE USING THE RETURNED ASSET UNLESS YOU KNOW IT IS VALID DEF DATA
+    template <typename T>
+    [[nodiscard]] T* addAssetToBundleAndGetUnloaded(AssetHandleBundle& bundle, StrToken assetName) {
+        bundle.addAssetHandle(IAssetRepository<T>::getInstance().getAssetHandle(assetName));
+        return &IAssetRepository<T>::getInstance().getLoadedOrUnloadedAsset(assetName);
+    }
 }

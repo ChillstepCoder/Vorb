@@ -2,8 +2,7 @@
 #include "TonemapRenderer.h"
 
 #include "options/DebugOptions.h"
-#include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
 
@@ -11,7 +10,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 TonemapRenderer::TonemapRenderer() {
-    mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("tonemap");
+    mShaderDef = MaterialShaderRepository::get().getAssetHandle(StrToken("tonemap", 0));
 }
 
 TonemapRenderer::~TonemapRenderer() {
@@ -19,10 +18,13 @@ TonemapRenderer::~TonemapRenderer() {
 }
 
 void TonemapRenderer::render(VGTexture lightTextureInput) {
-    ui32 textureUnit = 0;
-    MaterialRenderer::bindMaterialForRender(*mShader, &textureUnit);
-    glUniform1i(mShader->getUniform("unLightTexture"), textureUnit);
-    glBindTextureUnit(textureUnit, lightTextureInput);
-    MaterialUtils::uploadTonemapUniforms(*mShader);
-    sGlobalFullTriangleVAO.draw();
+    const MaterialShaderDef* def = mShaderDef->tryGetAsset();
+    if (def) {
+        ui32 textureUnit = 0;
+        MaterialRenderer::bindMaterialShaderForRender(*def, &textureUnit);
+        glUniform1i(def->getUniform("unLightTexture"), textureUnit);
+        glBindTextureUnit(textureUnit, lightTextureInput);
+        MaterialUtils::uploadTonemapUniforms(*def);
+        sGlobalFullTriangleVAO.draw();
+    }
 }

@@ -549,10 +549,12 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
     const f32* srcData = heightGrid.getHeightDataAt(chunk.getHeightmapPatchID())->data;
     memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
     Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
+        // Worker thread
         chunk.getWorld().getWorldGenerator().generateChunk(chunk, heightData);
         delete heightData;
         // Generate fish if needed
     }, [&chunk]() {
+        // Game thread
         SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&chunk.getWorld());
         if (srvWorld) {
             srvWorld->getFishEcosystem().initChunkFish(chunk);

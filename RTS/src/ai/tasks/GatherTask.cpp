@@ -22,7 +22,7 @@ struct gather_pool {};
 using singleton_task_pool = boost::singleton_pool<gather_pool, sizeof(HarvestItemsTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
 HarvestItemsTask::HarvestItemsTask(ItemID itemId, ui16 itemCount, AgentTaskFinishedFunc finishedFunc) : mItemId(itemId), mTargetCount(itemCount), IAgentTask(finishedFunc) {
-    mTargetHarvestable = sItemRepository->getItem(mItemId).getSourceHarvestable();
+    mTargetHarvestable = ItemRepository::get().getLoadedOrUnloadedAsset(mItemId).getSourceHarvestable();
     assert(mTargetHarvestable != TileHarvestable::NONE);
 }
 
@@ -123,7 +123,7 @@ void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt
         auto&& tileRef = cmp.mInteractTile;
         //if (tileHandle.tile.layers[cmp.mTileLayer])
         TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
-        const TileData& tileData = TileRepository::getTileData(tileId);
+        const TileDef& tileData = TileRepository::getTileData(tileId);
         // Destroy tile
         tileRef->container->clearTileFlag(tileRef->index, TileFlags::IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
         tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);

@@ -12,6 +12,8 @@ class SkillRepository : public IAssetRepository<SkillDef>
 public:
     ASSET_REPOSITORY_COMMON_CODE(SkillRepository, SkillDef, AssetType::Skill)
 
+    bool saveAsset(AssetID assetId) override { panic("Cannot save skills yet"); }
+
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 };

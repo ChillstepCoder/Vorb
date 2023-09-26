@@ -22,7 +22,7 @@ class CraftingRepository
 public:
     CraftingRepository(vio::IOManager& ioManager);
 
-    void loadRecipeFile(const ItemRepository& itemRepo, const vio::Path& filePath);
+    void loadRecipeFile(const vio::Path& filePath);
 
     std::vector<CraftingRecipe*> getAllCraftingRecipesWithInputs(std::vector<ItemID> inputs);
     std::vector<CraftingRecipe*> getAllCraftingRecipesWithOutputs(std::vector<ItemID> outputs, bool includeByProduct = true);

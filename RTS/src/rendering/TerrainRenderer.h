@@ -2,10 +2,12 @@
 
 #include <boost/container/flat_set.hpp>
 
-class MaterialShader;
+#include "resources/asset/AssetHandleBundle.h"
+
+class MaterialShaderDef;
 class Camera3D;
 class TerrainMesh;
-class Cubemap;
+class CubemapDef;
 
 
 class TerrainRenderer
@@ -14,11 +16,12 @@ public:
     TerrainRenderer();
 
     void renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes);
-    void renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const Cubemap& skyCubeMap);
+    void renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const CubemapDef& skyCubeMap);
 
 private:
-    const MaterialShader* mWaterMaterial = nullptr;
-    const MaterialShader* mWaterPbrMaterial = nullptr;
-    const MaterialShader* mTerrainMaterial = nullptr;
+    const MaterialShaderDef* mWaterMaterial = nullptr;
+    const MaterialShaderDef* mWaterPbrMaterial = nullptr;
+    const MaterialShaderDef* mTerrainMaterial = nullptr;
+    AssetHandleBundle mShaderAssets;
 };
 

@@ -172,7 +172,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 
                 for (int i = 0; i < 2; ++i) {
                     if (southAndWestWalls[i].isValid()) {
-                        const TileData& tileData = TileRepository::getTileData(southAndWestWalls[i].wallID);
+                        const TileDef& tileData = TileRepository::getTileData(southAndWestWalls[i].wallID);
                         ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tiles, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, materialDependencies, physMesh);
                     }
                 }
@@ -208,7 +208,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     if (isTileNone(layerTile)) {
                         continue;
                     }
-                    const TileData& tileData = TileRepository::getTileData(layerTile);
+                    const TileDef& tileData = TileRepository::getTileData(layerTile);
 
                     // Tile mesh
                     // Flora mesh ONLY
@@ -331,7 +331,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
 }
 
 
-void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
     switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
             meshBuilder.addAxisAlignedQuad(
@@ -367,7 +367,7 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
     static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
-void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
 
     const MaterialDesc& materialData = tileData.materialData[0];
     const Tile& tile = tileHandle.getTile();
@@ -464,7 +464,7 @@ void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder
     }
 }
 
-void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
     const f32 topHeight = tilePos.z + tileHandle.getTile().getGroundZOffset();
 
     const f32v3 botSW(tilePos);
@@ -579,7 +579,7 @@ void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 
     physMesh.addQuadBetweenPoints(positions);
 }
 
-void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileDef& tileData) {
     //const SubTexture& texture = tileData.texture;
 
     //f32 corners[4];
@@ -613,7 +613,7 @@ const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
     f32v2(1, 0.25), // NORTH
 };
 
-void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, float tileGroundZOffset, Cartesian tileOrientation, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh)
+void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, float tileGroundZOffset, Cartesian tileOrientation, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh)
 {
     const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight);
     // Place stair steps

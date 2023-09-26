@@ -1,9 +1,8 @@
 #include "stdafx.h"
 #include "DepthOfFieldPostProcess.h"
 
-#include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialShaderManager.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -20,12 +19,17 @@ DepthOfFieldPostProcess::DepthOfFieldPostProcess(const ui32v2& gbufferDims) {
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
     }
 
-    mMaterial = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("depth_of_field");
+    mMaterial = MaterialShaderRepository::get().getAssetHandle(StrToken("depth_of_field", 0));
 
     checkGlError("init DepthOfFieldPostProcess");
 }
 
 vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
+
+    const MaterialShaderDef* shaderDef = mMaterial->tryGetAsset();
+    if (!shaderDef) {
+        return prevGBuffer;
+    }
 
     if (sDebugOptions.mDepthOfFieldBlurPasses == 0) {
         return prevGBuffer;
@@ -33,15 +37,15 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
     assert(prevGBuffer);
 
     ui32 nextTexture;
-    MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTexture);
-    glUniform2fv(mMaterial->getUniform("unBlurRangeNear"), 1, &sDebugOptions.mDepthOfFieldRangeNear.x);
-    glUniform2fv(mMaterial->getUniform("unBlurRangeFar"), 1, &sDebugOptions.mDepthOfFieldRangeFar.x);
-    glUniform1f(mMaterial->getUniform("unBlurExponent"), sDebugOptions.mDepthOfFieldExponent);
+    MaterialRenderer::bindMaterialShaderForRender(*shaderDef, &nextTexture);
+    glUniform2fv(shaderDef->getUniform("unBlurRangeNear"), 1, &sDebugOptions.mDepthOfFieldRangeNear.x);
+    glUniform2fv(shaderDef->getUniform("unBlurRangeFar"), 1, &sDebugOptions.mDepthOfFieldRangeFar.x);
+    glUniform1f(shaderDef->getUniform("unBlurExponent"), sDebugOptions.mDepthOfFieldExponent);
     if (sDebugOptions.mDepthOfFieldDebugRender) {
-        glUniform1f(mMaterial->getUniform("unDebugRender"), 1.0f);
+        glUniform1f(shaderDef->getUniform("unDebugRender"), 1.0f);
     }
     else {
-        glUniform1f(mMaterial->getUniform("unDebugRender"), 0.0f);
+        glUniform1f(shaderDef->getUniform("unDebugRender"), 0.0f);
     }
 
     vg::DepthState::NONE.set();
@@ -53,8 +57,8 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
     mGBuffers[0]->use();
     glClear(GL_COLOR_BUFFER_BIT);
 
-    const VGUniform& fboUniform = mMaterial->mProgram.getUniform("unInputFbo");
-    const VGUniform& dirUniform = mMaterial->mProgram.getUniform("unDirection");
+    const VGUniform& fboUniform = shaderDef->mProgram.getUniform("unInputFbo");
+    const VGUniform& dirUniform = shaderDef->mProgram.getUniform("unDirection");
     glUniform1i(fboUniform, nextTexture);
     prevGBuffer->bindAlbedoTexture(nextTexture);
     for (int i = 0; i < sDebugOptions.mDepthOfFieldBlurPasses; ++i) {
