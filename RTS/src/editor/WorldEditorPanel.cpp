@@ -296,7 +296,7 @@ void WorldEditorPanel::tryRenderBrushSelect() const {
                 ImGui::TableNextColumn();
                 ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
                 ui32 strSize = 0;
-                char nameBuf[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
+                char nameBuf[MAX_CHARS_IN_STRTOKEN];
                 entry.mName.toString(nameBuf, &strSize);
                 if (ImGui::RadioButton(nameBuf, mCurrentBrushSettings->brushId == entry.mID)) {
                     mCurrentBrushSettings->brushId = entry.mID;
@@ -364,35 +364,35 @@ void WorldEditorPanel::renderTileEditUI() const {
     ImGui::SliderFloat("Ground tile Z offset", &mGroundTileOffset, 0.0f, 10.0f, "%.2f");
     ImGui::Checkbox("Drag to place", &mDragToPlace);
     ImGui::Text("Tile select");
-    const std::vector<TileDef>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    for (size_t i = 0; i < allData.size(); ++i) {
-        const TileDef& tileData = allData[i];
+    size_t i = 0;
+    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetRegistryEntry& entry) {
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(tileData.name.c_str(), mSelectedTile == (ui32)i)) {
+        if (ImGui::RadioButton(entry.mName.toString().c_str(), mSelectedTile == (ui32)i)) {
             mSelectedTile = (ui32)i;
         }
         ImGui::TableNextColumn();
-        //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
-    }
+        ++i;
+        return false;
+    });
     ImGui::EndTable();
 }
 
 void WorldEditorPanel::renderEntityEditUI() const {
     ImGui::Text("Select entity");
     const EntityDefinitionMap& entityDefs = Services::ResourceManager::ref().getEntityDefinitionRepository().getAllEntityDefinitions();
-    const std::vector<TileDef>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    for (auto&& it : entityDefs) {
+    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetRegistryEntry& entry) {
         ImGui::TableNextColumn();
         char buf[64];
-        it.first.toString(buf, nullptr);
-        if (ImGui::RadioButton(buf, mSelectedEntity == it.first)) {
-            mSelectedEntity = it.first;
+        entry.mName.toString(buf, nullptr);
+        if (ImGui::RadioButton(buf, mSelectedEntity == entry.mName)) {
+            mSelectedEntity = entry.mName;
         }
         ImGui::TableNextColumn();
         //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
-    }
+        return false;
+    });
     ImGui::EndTable();
 }
 
@@ -590,7 +590,7 @@ void WorldEditorPanel::updateTileEdit() {
                 Chunk& chunk = std::get<3>(*taskData)->getChunkGrid().getChunk(chunkId);
                 if (chunk.isDataReady()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
-                    const TileDef& data = TileRepository::getTileData(std::get<2>(*taskData));
+                    const TileDef& data = TileRepository::get().getLoadedOrUnloadedAsset(std::get<2>(*taskData));
                     TileContainer& tileContainer = *chunk.getTileContainer();
                     tileContainer.setTileLayer(tileIndex, data);
                 }

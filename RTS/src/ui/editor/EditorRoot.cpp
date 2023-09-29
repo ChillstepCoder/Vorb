@@ -142,13 +142,13 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                 case TileEditorPanelResultCode::NONE:
                     break;
                 case TileEditorPanelResultCode::EDIT_MODEL:
-                    openModelForEdit(*std::get<ModelDef*>(result.second));
+                    openModelForEdit(std::get<AssetID>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_MATERIAL:
-                    openMaterialForEdit(*std::get<std::unique_ptr<EditorMaterialHandle>>(result.second));
+                    openMaterialForEdit(std::get<AssetID>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_FOLIAGE:
-                    openFoliageForEdit(*std::get<TileGrassData*>(result.second));
+                    openFoliageForEdit(std::get<AssetID>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_BIOME:
                     // TODO: Biome
@@ -156,7 +156,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                     break;
                 case TileEditorPanelResultCode::EDIT_FISH:
                     // TODO: Fich
-                    openFishForEdit(*std::get<FishDef*>(result.second));
+                    openFishForEdit(std::get<AssetID>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_PARTICLE:
                     openParticleSystemForEdit(std::get<AssetID>(result.second));
@@ -216,18 +216,18 @@ void EditorRoot::renderEditorBrushDecals(const Camera3D& camera) {
     }
 }
 
-void EditorRoot::openModelForEdit(ModelDef& model) {
-    mModelEditorViewportPanel->setModel(model);
+void EditorRoot::openModelForEdit(AssetID modelId) {
+    mModelEditorViewportPanel->setModel(modelId);
     setActiveCenterPanel(mModelEditorViewportPanel.get());
 }
 
-void EditorRoot::openMaterialForEdit(EditorMaterialHandle& materialHandle) {
-    mMaterialEditorViewportPanel->setMaterial(materialHandle);
+void EditorRoot::openMaterialForEdit(AssetID materialId) {
+    mMaterialEditorViewportPanel->setMaterial(materialId);
     setActiveCenterPanel(mMaterialEditorViewportPanel.get());
 }
 
-void EditorRoot::openFoliageForEdit(TileGrassData& grassData) {
-    mFoliageEditorViewportPanel->setGrassData(grassData);
+void EditorRoot::openFoliageForEdit(AssetID grassId) {
+    mFoliageEditorViewportPanel->setGrassData(grassId);
     setActiveCenterPanel(mFoliageEditorViewportPanel.get());
 }
 
@@ -235,8 +235,8 @@ void EditorRoot::openBiomeForEdit() {
     setActiveCenterPanel(mBiomeEditorViewportPanel.get());
 }
 
-void EditorRoot::openFishForEdit(FishDef& fishDef) {
-    mFishingEditorViewportPanel->setFishDef(fishDef);
+void EditorRoot::openFishForEdit(AssetID fishId) {
+    mFishingEditorViewportPanel->setFishDef(fishId);
     setActiveCenterPanel(mFishingEditorViewportPanel.get());
 }
 

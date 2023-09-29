@@ -32,7 +32,7 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
 
 entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const f32v3& position) {
     ASSERT_GAME_THREAD();
-    entt::entity entity = EntityFactory::createEntity(mWorld, position, StrToken("player"));
+    entt::entity entity = EntityFactory::createEntity(mWorld, position, CStrToken("player"));
 
     if (GameServer::exists()) {
         ReplicationComponent& repCmp = mRegistry.emplace<ReplicationComponent>(entity);
@@ -45,7 +45,7 @@ entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const
 
         // Details are only used for replication right now
         EntityDetailsComponent& detailsCmp = mRegistry.emplace<EntityDetailsComponent>(entity);
-        detailsCmp.mEntityToken = StrToken("player");
+        detailsCmp.mEntityToken = CStrToken("player");
     }
     return entity;
 }

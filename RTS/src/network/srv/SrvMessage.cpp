@@ -66,7 +66,7 @@ void SrvMessage::sendClientBeginMessageToAll(int playerClientIndex, entt::entity
             message->mSrvEntityID = (ui32)srvPlayerEntity;
             message->mPosition = startPos;
             message->mRotation = rotation;
-            message->mEntityToken = StrToken("player");
+            message->mEntityToken = CStrToken("player");
             server.sendMessage(clientIndex, message);
         }
     }

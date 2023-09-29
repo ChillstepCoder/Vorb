@@ -24,8 +24,8 @@ static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle
 
 LightRenderer::LightRenderer() {
 
-    mSunlightMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("sunlight", 0));
-    mSunlightMaterialPbr = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("sunlight_pbr", 0));
+    mSunlightMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("sunlight"));
+    mSunlightMaterialPbr = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("sunlight_pbr"));
 
 }
 

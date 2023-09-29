@@ -332,14 +332,14 @@ void PhysicsWorld::initEventHandlers() {
                     TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                     const TileID prevId = edit.prevId;
                     if (prevId != TILE_ID_NONE) {
-                        const TileDef& prevTileData = TileRepository::getTileData(edit.prevId);
+                        const TileDef& prevTileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.prevId);
                         if (prevTileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
                             removeTrackedStaticCollisionObjectAtPosition(event.container->getId(), edit.tileIndex);
                         }
                     }
                     const TileID newId = edit.newId;
                     if (newId != TILE_ID_NONE) {
-                        const TileDef& tileData = TileRepository::getTileData(newId);
+                        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(newId);
                         if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
                             addTrackedStaticCollisionObjectAtPosition(event.container->getId(), edit.tileIndex, edit.worldPosition, mShapeRepository.getShape(tileData.collisionShapeID));
                         }

@@ -2,6 +2,8 @@
 
 #include "tile/Tile.h"
 
+#include "resources/IAssetRepository.h"
+
 DECL_VIO(class IOManager);
 
 class MaterialRepository;
@@ -10,32 +12,32 @@ class ModelRepository;
 class CollisionShapeRepository;
 
 
-// TODO: non static IAssetRepository
-class TileRepository {
+// TODO: Find all references of TileRepository::get().getLoadedOrUnloadedAsset( and tileRepo.getLoadedOrUnloadedAsset(
+// and replace with flyweight accessors such as getTileShape(AssetID)
+class TileRepository : public IAssetRepository<TileDef> {
     friend class ResourceManager;
 public:
-    static const TileDef& getTileData(TileID tileId) {
-        assert(tileId < sTileData.size());
-        return sTileData[tileId];
+    ASSET_REPOSITORY_COMMON_CODE_CUSTOM_INIT(TileRepository, TileDef, AssetType::Tile);
+    static void initInstance(vio::IOManager& ioManager, CollisionShapeRepository& collisionCache) {
+            sInstance = std::make_unique<TileRepository>(ioManager, collisionCache);
     }
-    static const TileDef& getTileData(StrToken tileToken) {
-        // TOOD: Hashed string and error handling
-        TileID id = sTileIdMapping[tileToken];
-        return sTileData[id];
-    }
-    static TileID getTile(StrToken tileToken) {
-        auto&& it = sTileIdMapping.find(tileToken);
-        assert(it != sTileIdMapping.end());
-        return it->second;
-    }
+    TileRepository(vio::IOManager& ioManager, CollisionShapeRepository& collisionCache);
+    ~TileRepository();
 
-    static const std::vector<TileDef>& getAllTileData() { return sTileData;  }
-    static const Recipe& getRecipeForTile(TileID tileId) { return sTileRecipes[tileId]; }
+    // TODO: Recipe repository
+    const Recipe& getRecipeForTile(TileID tileId) { return mTileRecipes[tileId]; }
 
-    static bool loadTileFile(vio::IOManager& ioManager, const vio::Path& path, CollisionShapeRepository& shapeRepository);
+    TileID getTileID(StrToken name) { return (TileID)getAssetID(name); }
+
+    bool saveAsset(AssetID assetId) override { panic("Cannot save tiles yet"); }
 
 private:
-    inline static std::unordered_map<StrToken, TileID> sTileIdMapping;
-    inline static std::vector<TileDef> sTileData;
-    inline static std::vector<Recipe> sTileRecipes;
+    AssetLoadFunc getAssetLoadFunc() override { return nullptr; } // TODO:?
+    void onRegisteredAsset(AssetID id) override;
+    void onAllAssetTypesRegistered() override;
+
+    CollisionShapeRepository& mCollisionShapeCache;
+
+    // TODO: Recipe repository
+    inline static std::vector<Recipe> mTileRecipes;
 };

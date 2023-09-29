@@ -249,7 +249,6 @@ RenderContext& RenderContext::getInstance() {
 void RenderContext::initPostLoad() {
 
     const ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialShaderRepository& materialManager = resourceManager.getMaterialShaderManager();
   
     mWorldRenderer = std::make_unique<WorldRenderer>(mScreenResolution);
     mWorldRenderer->initPostLoad();
@@ -422,15 +421,20 @@ void RenderContext::updateCamera(f32 frameAlpha) {
 
 void RenderContext::updateRenderThreadProcs() {
     PROFILE_FUNCTION();
-    constexpr ui32 BULK_DEQUEUE_SIZE = 16;
-    std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
+    ASSERT_RENDER_THREAD();
+    constexpr f32 MAX_PROCESS_TIME_MS = 16.0f;
+    std::pair<RenderFunction, void*> proc;
     PreciseTimer timer;
-    // TODO: Use optik for profiling
-    if (const size_t count = RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
-        for (size_t i = 0; i < count; ++i) {
-            procs[i].first(*this, procs[i].second);
+    // TODO: Use optik for profiling?
+    do {
+        if (RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue(proc)) {
+            proc.first(*this, proc.second);
         }
-    }
+        else {
+            break;
+        }
+    } while (timer.stop() < MAX_PROCESS_TIME_MS);
+
     if (timer.stop() > 20.0f) {
         std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
     }
@@ -581,9 +585,9 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;*/
 
-        const nString& passThroughName = mWorldRenderer->getCurrentPassthroughRenderStageName();
-        if (passThroughName.size()) {
-            sprintf_s(buffer, STR_BUFFER_SIZE, "DEBUG FBO: %s", passThroughName.c_str());
+        StrToken passThroughName = mWorldRenderer->getCurrentPassthroughRenderStageName();
+        if (passThroughName.isValid()) {
+            sprintf_s(buffer, STR_BUFFER_SIZE, "DEBUG FBO: %s", passThroughName.toString().c_str());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }

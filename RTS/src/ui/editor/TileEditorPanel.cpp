@@ -128,6 +128,10 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
 // =====================================================================================
 void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 {
+    static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("material_preview"));
+    const MaterialShaderDef* previewShader = shaderDef->tryGetAsset();
+    if (!previewShader) return;
+
     if (ImGui::BeginTabItem("Materials")) {
 
         constexpr f32 FIXED_WIDTH = 75.0f;
@@ -159,7 +163,6 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 
 
             // Rendering
-            const MaterialShaderDef* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
             vg::DepthState::NONE.set();
             MaterialRenderer::bindMaterialShaderForRender(*previewShader);
 
@@ -172,7 +175,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 // Name
                 ImGui::TableSetColumnIndex(0);
                 ui32 strSize = 0;
-                char nameBuf[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
+                char nameBuf[MAX_CHARS_IN_STRTOKEN];
                 entry.mName.toString(nameBuf, &strSize);
                 ImGui::Text(nameBuf);
 
@@ -202,7 +205,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 if (def) {
                     if (ImGui::Button("Edit")) {
                         result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
-                        result.second = std::make_unique<EditorMaterialHandle>(materialRepository.getMutableMaterialHandle(entry.mName));
+                        result.second = entry.mID;
                     }
                 }
                 else {
@@ -222,11 +225,16 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 }
 
 void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
+
+    static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("material_preview"));
+    const MaterialShaderDef* previewShader = shaderDef->tryGetAsset();
+    if (!previewShader) return;
+
     if (ImGui::BeginTabItem("Foliage")) {
 
         constexpr f32 FIXED_WIDTH = 75.0f;
         ImGui::Text("Foliage");
-        TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
+        TileGrassRepository& grassRepository = TileGrassRepository::get();
         MaterialRepository& materialRepository = MaterialRepository::get();
 
         // Submit table
@@ -254,25 +262,23 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
 
 
             // Rendering
-            const MaterialShaderDef* previewShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("material_preview");
             vg::DepthState::NONE.set();
             MaterialRenderer::bindMaterialShaderForRender(*previewShader);
 
             ui32 ID = 250;
             ui32 previewIndex = 0;
-            for (auto&& it : grassRepository.mTileGrassData) {
-                MaterialGpuData& material = materialRepository.mMaterialGpuData[it.mMaterialID];
+            grassRepository.forEachRegisteredAsset([&](TileGrassDef* def, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text(it.mName.toString().c_str());
+                ImGui::Text(entry.mName.toString().c_str());
 
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", it.mId);
+                sprintf_s(label, "%04d", entry.mID);
                 ImGui::Text(label);
 
                 // Preview
@@ -281,7 +287,9 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
                 const ImVec2 uv1(1, 0);
                 const ImVec2 dims(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x);
                 const bool visibleImage = ImGui::IsRectVisible(dims);
-                if (visibleImage) {
+                if (visibleImage && def) {
+                    // TODO: Material ID is valid here even if asset is not loaded
+                    MaterialGpuData& material = materialRepository.mMaterialGpuData[def->mMaterialID];
                     const VGTexture texture = renderMaterialPreview(previewShader, previewIndex++, material);
                     ImGui::Image((ImTextureID)texture, dims, uv0, uv1);
                 }
@@ -293,12 +301,12 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_FOLIAGE;
-                    result.second = &it;
+                    result.second = entry.mID;
                 }
 
                 ImGui::PopID();
-
-            }
+                return false;
+            });
 
             vg::DepthState::restorePrevious();
 
@@ -322,7 +330,7 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
 {
     if (ImGui::BeginTabItem("Fishing")) {
 
-        FishRepository& fishRepository = Services::ResourceManager::ref().getFishRepository();
+        FishRepository& fishRepository = FishRepository::get();
 
         ImGui::Text("Fishing");
         // Submit table
@@ -350,32 +358,29 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
 
             ui32 ID = 250;
             ui32 previewIndex = 0;
-
-            for (auto&& it : fishRepository.getFishIDNames()) {
-                FishDef& fish = fishRepository.mFishDefinitions[it.second];
+            fishRepository.forEachRegisteredAsset([&](FishDef* def, const AssetRegistryEntry& entry) {
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text(it.first.c_str());
+                ImGui::Text(entry.mName.toString().c_str());
 
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", fish.mId);
+                sprintf_s(label, "%04d", entry.mID);
                 ImGui::Text(label);
 
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_FISH;
-                    result.second = &fish;
+                    result.second = entry.mID;
                 }
-
                 ImGui::PopID();
-
-            }
+                return false;
+            });
 
             ImGui::EndTable();
         }

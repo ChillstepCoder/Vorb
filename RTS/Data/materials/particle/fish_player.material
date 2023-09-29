@@ -1,2 +1,2 @@
-albedo: fish_player.png
+albedo: fish_player
 sampler_state: LINEAR_CLAMP_MIPMAP

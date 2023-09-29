@@ -77,7 +77,7 @@ public:
 protected:
     friend class AssetLoader;
     void setLockedByAssetLoader(bool locked) {
-        if (mLockedByAssetLoader) panic("Tried to double add asset bundle to asset loader!");
+        if (mLockedByAssetLoader && locked) panic("Tried to double add asset bundle to asset loader!");
         mLockedByAssetLoader = locked;
     }
 

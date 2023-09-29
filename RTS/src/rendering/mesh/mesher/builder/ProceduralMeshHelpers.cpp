@@ -335,10 +335,10 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 tangentDir = f32v3(1.0f, 0.0f, 0.0f);
                 rotationDir = 1.0f;
                 if (!spatialGrid.isPosAtEastBorder(tilePos)) {
-                    hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.id;
+                    hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getSouthWallAtTile(spatialGrid.getEastTileIndex(index)).wallID == tileData.getID();
                 }
                 if (!spatialGrid.isPosAtWestBorder(tilePos)) {
-                    if (tileWalls.getSouthWallAtTile(spatialGrid.getWestTileIndex(index)).wallID == tileData.id) {
+                    if (tileWalls.getSouthWallAtTile(spatialGrid.getWestTileIndex(index)).wallID == tileData.getID()) {
                         hasAdjacentWindow = true;
                     }
                 }
@@ -360,10 +360,10 @@ void ProceduralMeshHelpers::addTileWallMesh(
                 tangentDir = f32v3(0.0f, 1.0f, 0.0f);
                 rotationDir = -1.0f;
                 if (!spatialGrid.isPosAtNorthBorder(tilePos)) {
-                    hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.id;
+                    hasAdjacentWindow = hasAdjacentRightWindow = tileWalls.getWestWallAtTile(spatialGrid.getNorthTileIndex(index)).wallID == tileData.getID();
                 }
                 if (!spatialGrid.isPosAtSouthBorder(tilePos)) {
-                    if (tileWalls.getWestWallAtTile(spatialGrid.getSouthTileIndex(index)).wallID == tileData.id) {
+                    if (tileWalls.getWestWallAtTile(spatialGrid.getSouthTileIndex(index)).wallID == tileData.getID()) {
                         hasAdjacentWindow = true;
                     }
                 }

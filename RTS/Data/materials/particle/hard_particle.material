@@ -1,2 +1,2 @@
-albedo: hard_particle.png
+albedo: hard_particle
 sampler_state: LINEAR_CLAMP_MIPMAP

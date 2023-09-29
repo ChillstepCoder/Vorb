@@ -26,7 +26,7 @@ struct WeightSetupIterator {
 
 
 AssetLoadFunc RigRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         RigDef& def = *static_cast<RigDef*>(assetDataPtr);
 
         ryml::Tree tree = YmlSerializer::parseFileData(readFileToString(filePath));
@@ -101,7 +101,7 @@ AssetLoadFunc RigRepository::getAssetLoadFunc() {
         }
 
         // TODO: This fileData copy is expensive, use userdata
-        assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA_CUSTOMCAP(AssetID, filePath, assetDataPtr) {
+        assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
             def.mNumAnimations = fileData.mAnimationNames.size();
             if (def.mNumAnimations) {
                 def.mAnimations = std::unique_ptr<ConstOzzAnimationPtr[]>(new ConstOzzAnimationPtr[def.mNumAnimations]);

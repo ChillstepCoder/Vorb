@@ -129,6 +129,19 @@ nString vorb::io::Path::getFileNameNoExtension() const
     return leaf;
 }
 
+nString vorb::io::Path::getFileNameTrimOneExtension() const
+{
+    nString leaf = getLeaf();
+    for (int c = leaf.size() - 1; c > 0; --c) {
+        // Trim extension, keep going for multiple extensions
+        if (leaf[c] == '.') {
+            leaf.resize(c);
+            return leaf;
+        }
+    }
+    return leaf;
+}
+
 nString vorb::io::Path::getExtension() const {
     nString leaf = getLeaf();
     for (int c = leaf.size() - 1; c > 0; --c) {

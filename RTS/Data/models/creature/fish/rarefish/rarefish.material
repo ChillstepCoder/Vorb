@@ -1,5 +1,5 @@
-albedo: rarefish_albedo.png
-normal: rarefish_normal.png
-ao: rarefish_ao.png
+albedo: rarefish_albedo
+normal: rarefish_normal
+ao: rarefish_ao
 sampler_state: LINEAR_CLAMP_MIPMAP
 roughness: [0.2, 0.2]

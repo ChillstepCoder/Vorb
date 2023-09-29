@@ -57,6 +57,7 @@ constexpr entt::entity INVALID_ENTITY = (entt::null);
 #include "types/IdTypes.h"
 #include "util/TypeHash.h"
 
+
 typedef f64 TimeStampSec;
 typedef f64 TimeSpanSec;
 
@@ -69,6 +70,11 @@ extern bool IS_SHUTTING_DOWN;
 #define NET_SERIALIZE_DECL() \
 template <typename Stream> bool netSerialize(Stream& stream);
 
+
+// **************** LOGGING *****************
+#include <Vorb/logging/Logger.h>
+#include "logging/ErrorLogging.h"
+#include "util/panic.h"
 
 // Utils
 #include "util/CommonUtil.h"
@@ -106,10 +112,6 @@ template <typename Stream> bool netSerialize(Stream& stream);
 // **************** FPS *****************
 extern float sFps;
 
-// **************** LOGGING *****************
-#include <Vorb/logging/Logger.h>
-#include "logging/ErrorLogging.h"
-
 // SPDLog definitions
 #include <spdlog/fmt/ostr.h>
 template<typename OStream>
@@ -136,8 +138,6 @@ inline void setThreadPriorityToMax() {
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
 #endif
 }
-
-#include "util/panic.h"
 
 // Literals
 using namespace std::literals::string_view_literals;

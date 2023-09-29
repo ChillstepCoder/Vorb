@@ -9,7 +9,7 @@
 #include "resources/asset/AssetHandleBundle.h"
 
 AssetLoader::AssetLoader() {
-    size_t numWorkerThreads = 2;
+    size_t numWorkerThreads = 1;
     /// Allocate all threads
     mWorkers.resize(numWorkerThreads);
     for (ui32 i = 0; i < numWorkerThreads; i++) {
@@ -52,7 +52,7 @@ void AssetLoader::update() {
 }
 
 void AssetLoader::requestAssetLoadWithDependencies(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::any userData, AssetHandleBundle* dependencies) {
-    if (dependencies->getCount()) {
+    if (dependencies) {
         dependencies->setLockedByAssetLoader(true);
         std::lock_guard lock(mDependencyMapMutex);
         mTasksWaitingDependencies.emplace(dependencies, std::make_unique<AssetLoadTask>(AssetLoadTask{ .mAssetID = assetId, .mAssetDataPtr = assetData, .mFilePath = filePath, .mLoadFunc = loadFunc, .mRenderPostFunc = renderPostFunc, .mIsFinishedFlagPtr = isFinishedFlagPtr, .mUserData = std::move(userData) }));
@@ -82,7 +82,8 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
         PostData* postData = static_cast<PostData*>(vPathHandle);
         postData->mRenderPostFunc(AssetLoader::getInstance(), postData->mAssetID, postData->mPath, postData->mAssetDataPtr, postData->mUserData);
         if (postData->mIsFinishedFlagPtr) {
-            *postData->mIsFinishedFlagPtr = true;
+            LOG_TRACE("    Finished load on render thread {} {}", postData->mAssetID, postData->mPath.getCString());
+            postData->mIsFinishedFlagPtr->store(true);
         }
         delete postData;
     }, postData);
@@ -96,6 +97,7 @@ void AssetLoader::workerThreadFunc(AssetLoader* loader) {
     while (!mStop.load()) {
         // Note that threads will be stuck waiting here until the process ends
         mLoadQueue.wait_dequeue(task);
+        LOG_TRACE("   Asset Loader dequeued task: {} {}", task->mAssetID, task->mFilePath.getCString());
         // We may only have a render func
         if (task->mLoadFunc) {
             if (task->mLoadFunc(*loader, task->mAssetID, task->mFilePath, task->mAssetDataPtr, task->mUserData)) {
@@ -104,6 +106,7 @@ void AssetLoader::workerThreadFunc(AssetLoader* loader) {
                 }
                 else {
                     if (task->mIsFinishedFlagPtr) {
+                        LOG_TRACE("    Finished load {} {}", task->mAssetID, task->mFilePath.getCString());
                         *task->mIsFinishedFlagPtr = true;
                     }
                 }
@@ -116,6 +119,7 @@ void AssetLoader::workerThreadFunc(AssetLoader* loader) {
             else if (task->mIsFinishedFlagPtr) {
                 // If we get here, we just passed a task with no methods,
                 // which means it was probably just pending dependencies
+                LOG_TRACE("    Finished empty load {} {}", task->mAssetID, task->mFilePath.getCString());
                 *task->mIsFinishedFlagPtr = true;
             }
         }

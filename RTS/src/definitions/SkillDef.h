@@ -41,15 +41,14 @@ struct SkillAttackTriggerFileData {
     SkillAttackTrigger mData;
     f32 mTime;
 };
-
-KEG_TYPE_DEF_SAME_NAME(SkillAttackTriggerFileData, kt) {
-    kt.addValue("time", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mTime), keg::BasicType::F32));
-    kt.addValue("radius", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mRadius), keg::BasicType::F32));
-    kt.addValue("angle", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mAngle), keg::BasicType::F32));
-    kt.addValue("height", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mHeight), keg::BasicType::F32));
-    kt.addValue("shape", keg::Value::custom(offsetof(SkillAttackTriggerFileData, mData.mShape), "AttackShape", true));
-    kt.addValue("damage_range", keg::Value::basic(offsetof(SkillAttackTriggerFileData, mData.mDamageRange), keg::BasicType::UI16_V2));
-}
+SERIALIZABLE_SIMPLE(SkillAttackTriggerFileData,
+    make_field(o.mTime, "time"sv),
+    make_field(o.mData.mRadius, "radius"sv),
+    make_field(o.mData.mAngle, "angle"sv),
+    make_field(o.mData.mHeight, "height"sv),
+    make_field(o.mData.mShape, "shape"sv),
+    make_field(o.mData.mDamageRange, "damage_range"sv)
+);
 
 struct SkillDefFileData {
     StrToken mAnimName;
@@ -58,13 +57,13 @@ struct SkillDefFileData {
     std::vector<SkillSimpleTriggerFileData> mSimpleTriggers;
     std::vector<SkillAttackTriggerFileData> mAttackTriggers;
 };
-KEG_TYPE_DEF_SAME_NAME(SkillDefFileData, kt) {
-    kt.addValue("anim", keg::Value::basic(offsetof(SkillDefFileData, mAnimName), keg::BasicType::STRING));
-    kt.addValue("duration", keg::Value::basic(offsetof(SkillDefFileData, mDuration), keg::BasicType::F32));
-    kt.addValue("cost", keg::Value::basic(offsetof(SkillDefFileData, mCost), keg::BasicType::F32));
-    kt.addValue("attack_triggers", keg::Value::array(offsetof(SkillDefFileData, mAttackTriggers), keg::Value::custom(0, "SkillAttackTriggerFileData", false)));
-    kt.addValue("simple_triggers", keg::Value::array(offsetof(SkillDefFileData, mSimpleTriggers), keg::Value::custom(0, "SkillSimpleTriggerFileData", false)));
-}
+SERIALIZABLE_SIMPLE(SkillDefFileData,
+    make_field(o.mAnimName, "anim"sv),
+    make_field(o.mDuration, "duration"sv),
+    make_field(o.mCost, "cost"sv),
+    make_field(o.mSimpleTriggers, "simple_triggers"sv),
+    make_field(o.mAttackTriggers, "attack_triggers"sv)
+);
 
 enum class SkillDefFlags : ui8 {
     INSTANT = 1 << 0,

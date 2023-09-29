@@ -4,7 +4,7 @@
 #include "resources/AnimationRepository.h"
 
 AssetLoadFunc SkillRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         SkillDef& def = *static_cast<SkillDef*>(assetDataPtr);
 
         SkillDefFileData fileData;

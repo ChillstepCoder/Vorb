@@ -89,7 +89,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
     }))) {
         //mTemplateEntities[filePath.getFileNameNoExtension()] = templateEntity;
         nString fileName = filePath.getFileNameNoExtension();
-        if (fileName.size() > MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
+        if (fileName.size() > MAX_CHARS_IN_STRTOKEN) {
             pError("Entity file name " + fileName + " is too long. It must be 12 characters + 1 integer at the end, or less.");
         }
         else {

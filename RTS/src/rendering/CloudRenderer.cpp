@@ -28,11 +28,11 @@ CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
 
     MaterialShaderRepository& materialShaderRepo = MaterialShaderRepository::get();
 
-    mCloudMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud", 0));
-    mPostMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud_post", 0));
-    mPostPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud_post_pbr", 0));
-    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("gaussian_blur_rgb", 0));
-    mCloudShadowMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, StrToken("cloud_shadow_mapper", 0));
+    mCloudMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, CStrToken("cloud"));
+    mPostMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, CStrToken("cloud_post"));
+    mPostPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, CStrToken("cloud_post_pbr"));
+    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, CStrToken("gaussian_blur_rgb"));
+    mCloudShadowMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssetHandles, CStrToken("cloud_shadow_mapper"));
 
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);

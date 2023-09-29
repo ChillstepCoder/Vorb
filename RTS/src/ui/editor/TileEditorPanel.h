@@ -3,8 +3,7 @@
 #include <variant>
 class ModelDef;
 struct MaterialGpuData;
-struct EditorMaterialHandle;
-struct TileGrassData;
+struct TileGrassDef;
 struct FishDef;
 class MaterialShaderDef;
 class ParticleSystemDef;
@@ -22,7 +21,7 @@ enum class TileEditorPanelResultCode {
     COUNT
 };
 
-typedef std::variant<std::unique_ptr<EditorMaterialHandle>, TileGrassData*, FishDef*, AssetID> TileEditorPanelResultVariant;
+typedef std::variant<AssetID> TileEditorPanelResultVariant;
 
 typedef std::pair<TileEditorPanelResultCode, TileEditorPanelResultVariant> TileEditorPanelResult;
 

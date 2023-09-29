@@ -65,19 +65,18 @@ SERIALIZABLE_SIMPLE(MaterialShaderFileData,
 );
 
 AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         MaterialShaderFileData& fileData = std::any_cast<MaterialShaderFileData&>(userData);
         MaterialShaderDef& def = *static_cast<MaterialShaderDef*>(assetDataPtr);
 
-        YmlSerializer::readFileData(readFileToString(filePath), fileData);
 
         // TODO: Can we do any work here? If not, can we have it send directly to the render thread?
-        if (filePath.getExtension() == ".comp") {
+        if (filePath.getExtension() == "comp") {
             def.mIsCompute = true;
         }
         else {
+            YmlSerializer::readFileData(readFileToString(filePath), fileData);
             def.mIsCompute = false;
-
             // Texture dependencies
             for (int i = 0; i < fileData.textures.size(); ++i) {
                 const MaterialTextureInputData& textureData = fileData.textures[i];
@@ -87,7 +86,7 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
 
         assetLoader.requestAssetLoadWithDependencies(
             nullptr,
-            ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+            [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
             MaterialShaderFileData& fileData = std::any_cast<MaterialShaderFileData&>(userData);
             MaterialShaderDef& def = *static_cast<MaterialShaderDef*>(assetDataPtr);
             if (def.mIsCompute) {
@@ -99,14 +98,11 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
                 def.mProgram = ShaderLoader::getOrCreateProgram(fileData.vertexShaderName, fileData.fragmentShaderName, fileData.geometryShaderName, fileData.tessControlShaderName, fileData.tessEvalShaderName);
                 assert(def.mProgram.isLinked());
 
-                ui32 size;
-                char uniformNameBuf[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
 
                 for (int i = 0; i < fileData.textures.size(); ++i) {
                     const MaterialTextureInputData& textureData = fileData.textures[i];
                     MaterialTextureInput& input = def.mInputTextures.emplace_back();
-                    textureData.uniformName.toString(uniformNameBuf, &size);
-                    input.textureUniform = def.mProgram.getUniform(uniformNameBuf);
+                    input.textureUniform = def.mProgram.getUniform(textureData.uniformName.c_str());
                     input.texture = TextureRepository::get().getLoadedOrUnloadedAsset(textureData.textureName).gpuTexture.getHandle();
                     assert(input.texture != 0);
                 }

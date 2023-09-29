@@ -19,7 +19,7 @@ DepthOfFieldPostProcess::DepthOfFieldPostProcess(const ui32v2& gbufferDims) {
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
     }
 
-    mMaterial = MaterialShaderRepository::get().getAssetHandle(StrToken("depth_of_field", 0));
+    mMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("depth_of_field"));
 
     checkGlError("init DepthOfFieldPostProcess");
 }

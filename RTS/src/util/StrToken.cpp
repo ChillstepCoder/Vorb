@@ -4,7 +4,7 @@
 #include "serialization/NetSerialize.h"
 
 // Must match sStrtokenEncodeTable
-inline constexpr const char sStrtokenDecodeTable[32] = {
+inline constexpr const char sStrtokenDecodeTable[64] = {
     '_', // 0 (Invalid mapping)
     'a',  // 1
     'b',  // 2
@@ -36,7 +36,39 @@ inline constexpr const char sStrtokenDecodeTable[32] = {
     '-',  // 28
     '.',  // 29
     '/',  // 30
-    ':'   // 31
+    ':',  // 31
+    ';',  // 32
+    '0',  // 33
+    '1',  // 34
+    '2',  // 35
+    '3',  // 36
+    '4',  // 37
+    '5',  // 38
+    '6',  // 39
+    '7',  // 40
+    '8',  // 41
+    '9',  // 42
+    '#',  // 43
+    '!',  // 44
+    '$',  // 45
+    '%',  // 46
+    '&',  // 47
+    '*',  // 48
+    '+',  // 49
+    '<',  // 50
+    '=',  // 51
+    '>',  // 52
+    '?',  // 53
+    ',',  // 54
+    '~',  // 55
+    '(',  // 56
+    ')',  // 57
+    '[',  // 58
+    ']',  // 59
+    '{',  // 60
+    '}',  // 61
+    '|',  // 62
+    '\"',  // 63
 };
 
 StrToken::StrToken(const nString& str) : mTokenHigh(0ull), mTokenLow(0ull) {
@@ -49,37 +81,24 @@ StrToken::StrToken(const char* str) : mTokenHigh(0ull), mTokenLow(0ull) {
 
 void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
     // Remove index
-    ui64 valHigh = (mTokenHigh & (~STRTOKEN_INDEX_MASK));
+    ui64 valHigh = mTokenHigh;
     ui64 valLow = mTokenLow;
     
     ui32 i = 0;
     for (; valLow != 0; ++i) {
-        char c = char(valLow & 0x1full);
+        char c = char(valLow & 0x3full);
         outStr[i] = sStrtokenDecodeTable[c];
-        valLow >>= 5;
+        valLow >>= 6;
     }
     for (; valHigh != 0; ++i) {
-        char c = char(valHigh & 0x1full);
+        char c = char(valHigh & 0x3full);
         outStr[i] = sStrtokenDecodeTable[c];
-        valHigh >>= 5;
+        valHigh >>= 6;
     }
 
     // Trim trailing underscores
     while (i > 0 && outStr[i - 1] == '_') {
         --i;
-    }
-
-    // Include all zeroes 
-    const ui32 index = getIndex();
-    if (index) {
-        char indexBuf[16];
-        _itoa_s(index, indexBuf, 16, 10);
-        int j = 0;
-        // TODO: Prepend 0s?
-        for (int j = 0; j < 3; ++j) {
-            if (indexBuf[j] == '\0') break;
-            outStr[i++] = indexBuf[j];
-        }
     }
 
     if (outLength) {
@@ -90,7 +109,7 @@ void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
 
 nString StrToken::toString() const {
     nString buffer;
-    buffer.resize(MAX_CHARS_IN_STRTOKEN_WITH_INDEX);
+    buffer.resize(MAX_CHARS_IN_STRTOKEN);
     ui32 tmpLength;
     toString(buffer.data(), &tmpLength);
     buffer.resize(tmpLength);
@@ -103,31 +122,26 @@ NET_SERIALIZE_DEF(StrToken,
 )
 
 void StrToken::initFromStrInternal(const char* str, size_t sz) {
-    assert(sz <= MAX_CHARS_IN_STRTOKEN_WITH_INDEX);
+    assert(sz <= MAX_CHARS_IN_STRTOKEN);
     size_t charIterMax = glm::min(sz, (ui64)MAX_CHARS_IN_STRTOKEN);
     size_t i = 0;
     // Encode low bytes
-    for (; i < charIterMax && i < 12; ++i) {
-        char c = str[i];
-        if (c >= '0' && c <= '9') {
-            break;
-        }
-        mTokenLow |= strTokenEncodeChar(c) << (i * 5ull);
+    for (; i < charIterMax && i < 10; ++i) {
+        mTokenLow |= strTokenEncodeChar(str[i]) << (i * 6ull);
     }
     // Encode high bytes
     for (; i < charIterMax; ++i) {
-        char c = str[i];
-        if (c >= '0' && c <= '9') {
-            break;
-        }
-        mTokenHigh |= strTokenEncodeChar(c) << ((i - 12) * 5ull);
+        mTokenHigh |= strTokenEncodeChar(str[i]) << ((i - 10) * 6ull);
     }
-    // Encode index
-    ui64 index = 0;
-    if (str[i] != '\0') {
-        index = _atoi64(&str[i]);
+#ifdef DEBUG
+    static thread_local std::unordered_map<StrToken, nString> sStrTokenMap;
+    auto&& it = sStrTokenMap.find(*this);
+    if (it != sStrTokenMap.end()) {
+        DEBUG_STR = it->second.data();
     }
-
-    index = glm::min(index, STRTOKEN_MAX_INDEX);
-    setIndex(index);
+    else {
+        sStrTokenMap[*this] = toString();
+        DEBUG_STR = sStrTokenMap[*this].data();
+    }
+#endif
 }

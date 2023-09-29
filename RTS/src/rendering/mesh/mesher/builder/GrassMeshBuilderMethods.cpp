@@ -121,7 +121,7 @@ f32 getRandomOffset(float a, float b, int tileX, int tileY, int bladeX, int blad
     return lerp(a, b, Random::getCachedRandomfSpecific(bladeX - BIG_PRIME1 * bladeY - tileX - tileY * BIG_PRIME2));
 }
 
-void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassData& grassData, const NoiseFunction& grassNoiseFunction, const f32v3& relativePos, const f32v3& normal, float rnd, float detail, float bladeWidth, float densityMult, int tileX, int tileY, int bladeX, int bladeY) {
+void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassDef& grassData, const NoiseFunction& grassNoiseFunction, const f32v3& relativePos, const f32v3& normal, float rnd, float detail, float bladeWidth, float densityMult, int tileX, int tileY, int bladeX, int bladeY) {
    
     float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
     const f32 grassNoise = -grassNoiseFunction.compute((f64)relativePos.x, (f64)relativePos.y);
@@ -135,7 +135,7 @@ void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassData& 
         grassData.mMeshType,
         f32v3(relativePos.x, relativePos.y, relativePos.z + zOffset), // TODO: new height
         f32v2(grassData.mMeshType == TileGrassMeshType::DEFAULT ? bladeWidth : rsize, rsize),
-        (ui8)grassData.mId,
+        (ui8)grassData.getID(),
         rotation,
         normal
     );
@@ -144,7 +144,7 @@ void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassData& 
 void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatchData* heightData)
 {
     PROFILE_FUNCTION();
-    const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
+    TileGrassRepository& grassRepository = TileGrassRepository::get();
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     grassMeshBuilder.reserveQuadCount(TileGrassMeshType::DEFAULT, (size_t)dims.x * dims.y * SQ(MAX_GRASS_DETAIL));
@@ -196,7 +196,7 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                         continue;
                     }
 
-                    const TileGrassData& grassData = grassRepository.getTileGrassData(id);
+                    const TileGrassDef& grassData = grassRepository.getLoadedOrUnloadedAsset((AssetID)id);
                     const NoiseFunction& grassNoiseFunction = grassData.mNoiseFunction;
                     const ui32 detail = GRASS_LOD_DETAIL[grassData.mDensity][lod];
                     const f32 baseDensity = grassVal.densities[i] * DIVIDE_MULT;
@@ -246,7 +246,7 @@ void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& g
 {
     PROFILE_FUNCTION();
     const ui32 lod = GRASS_QUADTREE_MAX_LOD - 1;
-    const TileGrassRepository& grassRepository = Services::ResourceManager::ref().getTileGrassRepository();
+    TileGrassRepository& grassRepository = TileGrassRepository::get();
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     const ui32 totalTiles = SQ(widthTiles);
     grassMeshBuilder.reserveQuadCount(TileGrassMeshType::DEFAULT, (size_t)totalTiles * SQ(MAX_GRASS_DETAIL));
@@ -279,7 +279,7 @@ void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& g
                         continue;
                     }
 
-                    const TileGrassData& grassData = grassRepository.getTileGrassData(id);
+                    const TileGrassDef& grassData = grassRepository.getLoadedOrUnloadedAsset((AssetID)id);
                     const NoiseFunction& grassNoiseFunction = grassData.mNoiseFunction;
                     assert(grassData.mDensity <= MAX_GRASS_DETAIL);
                     const ui32 detail = GRASS_LOD_DETAIL[grassData.mDensity][lod];

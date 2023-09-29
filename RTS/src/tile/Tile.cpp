@@ -60,11 +60,12 @@ Tile::Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags) : tileFlags(fla
 
 bool Tile::hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const {
     ASSERT_GAME_THREAD();
+    TileRepository& tileRepo = TileRepository::get();
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
         // Harvestble resources only exist on ground floor
         TileID tileId = layers[i];
         if (tileId != TILE_ID_NONE) {
-            if (TileRepository::getTileData(tileId).harvestable == resource) {
+            if (tileRepo.getLoadedOrUnloadedAsset(tileId).harvestable == resource) {
                 if (outLayer) {
                     *outLayer = (TileLayer)i;
                 }
@@ -114,7 +115,7 @@ Cartesian8 ORIENTATION_ROTATE_DIR_EAST[8] = {
 bool Tile::canNavInDirection(Cartesian8 dir) const {
     assert(!IS_GAME_THREAD());
     if (mainLayer == TILE_ID_NONE) return true;
-    ui8 navMask = TileRepository::getTileData(mainLayer).navMask;
+    ui8 navMask = TileRepository::get().getLoadedOrUnloadedAsset(mainLayer).navMask;
     // South is base case
     // Rotate dir based on orientation to match the mask
     switch (orientation.orientationMain) {
@@ -133,7 +134,7 @@ bool Tile::canNavInDirection(Cartesian8 dir) const {
 
 f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
     if (mainLayer == TILE_ID_NONE) return 0.0f;
-    const TileDef& tileData = TileRepository::getTileData(mainLayer);
+    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(mainLayer);
     // TODO: Cut out this check
     Cartesian8 dir8 = CARTESIAN_TO_CARTESIAN8[e_cast(dir)];
     switch (orientation.orientationMain) {

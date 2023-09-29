@@ -40,7 +40,7 @@ SERIALIZABLE_SIMPLE(CubemapFileData,
 );
 
 AssetLoadFunc CubemapRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         nString fileData = readFileToString(filePath);
         LoadCubemapUserData& loadData = std::any_cast<LoadCubemapUserData &>(userData);
 
@@ -83,13 +83,14 @@ AssetLoadFunc CubemapRepository::getAssetLoadFunc() {
                 }
             }
         }
+        return true;
     };
 }
 
 
 AssetLoadFunc CubemapRepository::getAssetLoadRenderProcessFunc() {
 
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         CubemapDef& cubemapDef = *static_cast<CubemapDef*>(assetDataPtr);
         LoadCubemapUserData& loadData = std::any_cast<LoadCubemapUserData&>(userData);
 
@@ -102,6 +103,7 @@ AssetLoadFunc CubemapRepository::getAssetLoadRenderProcessFunc() {
 
         // TODO: on demand? Cached?
         computePBRMaps(cubemapDef);
+        return true;
     };
 }
 
@@ -181,12 +183,12 @@ void CubemapRepository::computeIrradianceMap(CubemapDef& def)
     glBindImageTexture(0, def.mTexture, 0, false, 0, GL_READ_ONLY, GL_RGBA8);
     // Output
     glBindImageTexture(1, def.mIrradianceMap, 0, false, 0, GL_WRITE_ONLY, GL_RGBA16F);
-
-    // TODO: Asset dependency
-    const vg::GLProgram* computeShader = Services::ResourceManager::ref().getMaterialShaderManager().getComputeShader("cubemap_irradiance");
-    computeShader->use();
-    glUniform2f(computeShader->getUniform("unOutputDims"), (f32)irradianceWidth, (f32)irradianceWidth);
-    glUniform2f(computeShader->getUniform("unInputDims"), (f32)def.mDims.x, (f32)def.mDims.y);
+    
+    // This should be in assets.preload
+    const MaterialShaderDef& computeShader = MaterialShaderRepository::get().getLoadedAsset(CStrToken("cubemap_irradiance"));
+    computeShader.useCompute();
+    glUniform2f(computeShader.getUniform("unOutputDims"), (f32)irradianceWidth, (f32)irradianceWidth);
+    glUniform2f(computeShader.getUniform("unInputDims"), (f32)def.mDims.x, (f32)def.mDims.y);
     if (irradianceWidth % WORK_GROUP_SIZE == 0) {
         const GLuint sz = (GLuint)irradianceWidth / WORK_GROUP_SIZE;
         glDispatchCompute(sz, sz, 6);
@@ -217,13 +219,14 @@ void CubemapRepository::computePrefilterMap(CubemapDef& def) {
     glTextureParameteri(def.mPrefilterMap, GL_TEXTURE_MAX_LEVEL, numMipMaps);
     glGenerateTextureMipmap(def.mPrefilterMap);
 
-    const vg::GLProgram* computeShader = Services::ResourceManager::ref().getMaterialShaderManager().getComputeShader("prefilter_ggx");
-    computeShader->use();
+    // This should be in assets.preload
+    const MaterialShaderDef& computeShader = MaterialShaderRepository::get().getLoadedAsset(CStrToken("prefilter_ggx"));
+    computeShader.useCompute();
     // Input
     glBindTextureUnit(0, def.mTexture);
-    glUniform2f(computeShader->getUniform("unInputDims"), (f32)def.mDims.x, (f32)def.mDims.y);
-    VGUniform unMipmapDims = computeShader->getUniform("unMipmapDims");
-    VGUniform unRoughness = computeShader->getUniform("unRoughness");
+    glUniform2f(computeShader.getUniform("unInputDims"), (f32)def.mDims.x, (f32)def.mDims.y);
+    VGUniform unMipmapDims = computeShader.getUniform("unMipmapDims");
+    VGUniform unRoughness = computeShader.getUniform("unRoughness");
     for (int mip = 0; mip < numMipMaps; ++mip) {
         const ui32 mipmapSize = precomputedWidth >> mip;
         const float roughness = (float)mip / (float)(numMipMaps - 1);

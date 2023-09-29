@@ -13,3 +13,11 @@ void IAsset::addDependency(std::shared_ptr<AssetHandleBase> handle) {
     }
     mDependencies->addAssetHandle(std::move(handle));
 }
+
+void IAsset::reserveDependencyCount(size_t count)
+{
+    if (!mDependencies) {
+        mDependencies = std::make_unique<AssetHandleBundle>();
+    }
+    mDependencies->reserveCount(count);
+}

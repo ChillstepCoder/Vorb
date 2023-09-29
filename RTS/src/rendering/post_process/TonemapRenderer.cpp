@@ -10,7 +10,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 TonemapRenderer::TonemapRenderer() {
-    mShaderDef = MaterialShaderRepository::get().getAssetHandle(StrToken("tonemap", 0));
+    mShaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("tonemap"));
 }
 
 TonemapRenderer::~TonemapRenderer() {

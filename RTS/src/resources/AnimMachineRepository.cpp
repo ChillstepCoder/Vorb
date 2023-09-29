@@ -4,7 +4,7 @@
 #include "resources/RigRepository.h"
 
 AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
         AnimMachineDef& def = *static_cast<AnimMachineDef*>(assetDataPtr);
 
@@ -13,13 +13,13 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
         AnimMachineDefFileData fileData;
         tree.crootref() >> fileData;
 
-        if (fileData.mRigName.isValid()) {
+        if (!fileData.mRigName.isValid()) {
             panic("Anim machine file does not have a rig: {}", filePath.getString());
         }
 
         def.addDependency(RigRepository::get().getAssetHandle(fileData.mRigName));
 
-        assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA_CUSTOMCAP(AssetID, filePath, assetDataPtr) {
+        assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
             const RigDef* rig = &def.getDependencies()->getLoadedAsset<RigDef>(fileData.mRigName);
             // Hook up all ozz animation references in the animation machine
             const StrToken* animIter = &fileData.mWalkLeftName; //< Must be mWalkLeftName as it is start of the string array

@@ -171,11 +171,11 @@ ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
     }
 
     // Materials
-    mShadowMapperMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_mapper", 0));
-    mShadowVarianceMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_variance", 0));
-    mShadowApplyMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_apply", 0));
-    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("gaussian_blur_shadows", 0));
-    mShadowMipMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("shadow_mipmap", 0));
+    mShadowMapperMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper"));
+    mShadowVarianceMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_variance"));
+    mShadowApplyMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_apply"));
+    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("gaussian_blur_shadow"));
+    mShadowMipMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mipmap"));
 }
 
 constexpr f32 SUN_POSITION_UPDATE_THRESH_SQ = SQ(0.001f);

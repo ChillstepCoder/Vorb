@@ -6,7 +6,7 @@
 #include <ozz/base/io/stream.h>
 
 AssetLoadFunc AnimationRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         AnimationDef& def = *static_cast<AnimationDef*>(assetDataPtr);
 
         ozz::io::File file(filePath.getCString(), "rb");

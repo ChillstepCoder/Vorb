@@ -7,6 +7,7 @@
     Type(StrToken name, AssetID id) : IAsset(name, id) {};
 
 enum class AssetType : ui8 {
+    Tile,
     ParticleSystem,
     Texture,
     Cubemap,
@@ -24,6 +25,7 @@ enum class AssetType : ui8 {
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
+    pair{ AssetType::Tile, "tile"sv },
     pair{ AssetType::ParticleSystem, "particle_system"sv },
     pair{ AssetType::Texture, "texture"sv },
     pair{ AssetType::Cubemap, "cubemap"sv },
@@ -39,7 +41,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::MaterialShader, "material_shader"sv },
     pair{ AssetType::TileGrass, "tile_grass"sv },
 )
-static_assert(e_count(AssetType) == 14);
+static_assert(e_count(AssetType) == 15);
 
 class AssetHandleBundle;
 class AssetHandleBase;
@@ -60,6 +62,7 @@ public:
     void setDirty(bool val) const { mDirty = val; }
     AssetHandleBundle* getDependencies() const { return mDependencies.get(); }
     void addDependency(std::shared_ptr<AssetHandleBase> handle);
+    void reserveDependencyCount(size_t count);
 
 protected:
     std::unique_ptr<AssetHandleBundle> mDependencies;

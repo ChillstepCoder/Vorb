@@ -87,6 +87,7 @@ protected:
     std::unique_ptr<CameraPositioner_FirstPerson> positioner;
     std::unique_ptr<SimpleCamera> camera;
 
+    AssetHandlePtr<MaterialShaderDef> mGridMaterial;
     VGVertexArray mGridVao = 0;
     std::unique_ptr<Skybox> mSkybox;
     EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::PBRTest;

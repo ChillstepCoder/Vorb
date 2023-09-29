@@ -42,3 +42,13 @@ nString IAssetRepositoryBase::readFileToString(const vio::Path& path) {
     }
     return fileData;
 }
+
+AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(StrToken assetName) {
+    return getAssetHandleBase(mAssetLookup.at(assetName));
+}
+
+AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(AssetID id) {
+    AssetHandleBasePtr handle = makeAssetHandle();
+    aquireAssetHandle(id, *handle);
+    return handle;
+}

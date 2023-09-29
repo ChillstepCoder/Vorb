@@ -1,4 +1,4 @@
-anim: sword_shield_attack_1
+anim: swrd_shld_atk_1
 duration: 1.45
 cost: 0.0
 attack_triggers:

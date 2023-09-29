@@ -74,8 +74,6 @@ GameplayScreen::GameplayScreen(App* const app)
 
     mRenderContext = &RenderContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
-    UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
-
     // TODO: Config
     sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
 
@@ -110,14 +108,13 @@ void GameplayScreen::build() {
 
     mResourceManager.setResourceRoot("data");
 
-    // Show loading screen
-    LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
-    loadScreenRenderer.appendLoadingTexture(StrToken("loading", 0));
-    displayLoadScreen("Gathering files...", true);
-
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 
     mResourceManager.gatherFiles();
+
+    // Show loading screen
+    LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
+    loadScreenRenderer.appendLoadingTexture(CStrToken("loading"));
     displayLoadScreen("Loading files...", true);
 	mResourceManager.loadFiles();
 
@@ -131,6 +128,8 @@ void GameplayScreen::build() {
         mResourceManager.writeDebugAtlas();
     }
 #endif
+
+    UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
 }
 

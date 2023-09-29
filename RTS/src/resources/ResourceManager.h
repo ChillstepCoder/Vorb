@@ -19,7 +19,6 @@ class ModelRepository;
 class RigRepository;
 class SkillRepository;
 class TextureRepository;
-class TileGrassRepository;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -38,7 +37,6 @@ public:
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     FontRepository& getFontRepository() const { return *mFontRepository; }
     CollisionShapeRepository& getCollisionShapeRepository() const { return *mCollisionShapeRepository; }
-    TileGrassRepository& getTileGrassRepository() const { return *mTileGrassRepository; }
     vio::IOManager& getIoManager() const { return *mIoManager; }
 
     // Hot reload
@@ -58,8 +56,6 @@ private:
 
     // Tasks
     // TODO: ResourceLoader?
-    std::vector<vio::Path> mTileFiles;
-    std::vector<vio::Path> mTileGrassFiles;
     std::vector<vio::Path> mRoomFiles;
     std::vector<vio::Path> mBuildingFiles;
     std::vector<vio::Path> mEntityFiles;
@@ -73,7 +69,6 @@ private:
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<FontRepository> mFontRepository;
     std::unique_ptr<CollisionShapeRepository> mCollisionShapeRepository;
-    std::unique_ptr<TileGrassRepository> mTileGrassRepository;
 
     std::vector<IAssetRepositoryBase*> mAssetRepositories;
     AssetHandleBundle mPreloadAssetsBundle;

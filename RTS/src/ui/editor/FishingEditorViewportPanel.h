@@ -15,13 +15,14 @@ public:
 
     void renderMesh() override;
 
-    void setFishDef(FishDef& fishDef);
+    void setFishDef(AssetID fishId);
 
 private:
     const MaterialShaderDef* getShader() override;
     void renderFishModel();
     BitFlags<FishingMinigameFlags> getMinigameFlags();
 
+    AssetHandlePtr<FishDef> mFishAsset;
     FishDef* mFishDef = nullptr;
     std::unique_ptr<FishingMinigame> mCurrentFishingMinigame;
     AssetHandlePtr<MaterialShaderDef> mShader;

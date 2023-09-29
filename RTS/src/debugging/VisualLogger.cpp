@@ -28,7 +28,7 @@ AssetHandlePtr<MaterialShaderDef> sMaterialHandle;
 
 VisualLog::VisualLog(const nString& name) : mName(name) {
     if (!sMaterialHandle) {
-        sMaterialHandle = MaterialShaderRepository::get().getAssetHandle(StrToken("text_billboard", 0));
+        sMaterialHandle = MaterialShaderRepository::get().getAssetHandle(CStrToken("text_billboard"));
     }
 }
 

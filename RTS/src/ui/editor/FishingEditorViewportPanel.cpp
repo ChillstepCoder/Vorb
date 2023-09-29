@@ -6,6 +6,7 @@
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "resources/ModelRepository.h"
+#include "resources/FishRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -15,11 +16,17 @@
 #include <Vorb/ui/GameWindow.h>
 
 FishingEditorViewportPanel::FishingEditorViewportPanel() : IEditorViewportPanel() {
-    mShader = MaterialShaderRepository::get().getAssetHandle(StrToken("editor_model_pbr"));
+    mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));
 }
 
-bool FishingEditorViewportPanel::updateAndRender(f32 elapsedSec)
-{
+bool FishingEditorViewportPanel::updateAndRender(f32 elapsedSec) {
+    if (mFishAsset) {
+        // Editor can mutate
+        mFishDef = const_cast<FishDef*>(mFishAsset->tryGetAsset());
+    }
+    else {
+        mFishDef = nullptr;
+    }
  
     bool isOpen = true;
     ImGui::Begin("Fishing Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -126,9 +133,9 @@ void FishingEditorViewportPanel::renderMesh() {
     }
 }
 
-void FishingEditorViewportPanel::setFishDef(FishDef& fishDef) {
+void FishingEditorViewportPanel::setFishDef(AssetID fishId) {
+    mFishAsset = FishRepository::get().getAssetHandle(fishId);
     mCurrentFishingMinigame.reset();
-    mFishDef = &fishDef;
 }
 
 void FishingEditorViewportPanel::renderFishModel() {

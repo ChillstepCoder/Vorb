@@ -20,8 +20,8 @@ SmudgeRenderer::SmudgeRenderer(const ui32v2& screenResolution) {
         // No depth as we will share the depth texture with the main attachment
     }
 
-    mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("smudge", 0));
-    mPaintNoiseShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("paint_noise", 0));
+    mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge"));
+    mPaintNoiseShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("paint_noise"));
 }
 
 SmudgeRenderer::~SmudgeRenderer() {
@@ -33,8 +33,10 @@ void SmudgeRenderer::beginSmudgePass(vg::GBuffer* activeGBuffer) {
         return;
     }
     if (!mShaderAssets.areAllAssetsLoaded()) {
+        mCanRender = false;
         return;
     }
+    mCanRender = true;
     if (activeGBuffer->hasStencil()) {
         // All GBuffers will use same depth/stencil
         mGBuffers[0]->setSharedDepthStencilTexture(activeGBuffer->getDepthTexture());
@@ -57,6 +59,9 @@ void SmudgeRenderer::beginSmudgePass(vg::GBuffer* activeGBuffer) {
 }
 
 void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& camera) {
+    if (!mCanRender) {
+        return;
+    }
     if (sDebugOptions.mSmudgeTestDisable) {
         return;
     }
@@ -135,6 +140,9 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
 
 void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D& camera)
 {
+    if (!mCanRender) {
+        return;
+    }
     assert(activeGBuffer->hasStencil());
     if (sDebugOptions.mSmudgePaintNoiseDisable) {
         return;

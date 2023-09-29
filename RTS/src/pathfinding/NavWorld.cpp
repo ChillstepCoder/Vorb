@@ -240,6 +240,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     assert(!IS_GAME_THREAD());
     PROFILE_FUNCTION();
 
+    TileRepository& tileRepo = TileRepository::get();
     NavGraphBuildTaskData taskData;
     taskData.container = &tileContainer;
     NavGraphTileDataToCopy& navTileData = taskData.navTileData;
@@ -319,11 +320,11 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 const TileID groundId = tile.getGroundID();
                 const TileID mainId = tile.getMainID();
                 if (groundId != TILE_ID_NONE) {
-                    tileFineNavData.pathWeight = TileRepository::getTileData(groundId).pathWeight;
+                    tileFineNavData.pathWeight = tileRepo.getLoadedOrUnloadedAsset(groundId).pathWeight;
                 }
                 if (mainId != TILE_ID_NONE) {
                     // Floating point multiply
-                    tileFineNavData.pathWeight = ui8(((tileFineNavData.pathWeight / 255.0f) * ((f32)TileRepository::getTileData(mainId).pathWeight / 255.0f)) * 255.0f);
+                    tileFineNavData.pathWeight = ui8(((tileFineNavData.pathWeight / 255.0f) * ((f32)tileRepo.getLoadedOrUnloadedAsset(mainId).pathWeight / 255.0f)) * 255.0f);
                 }
 
                 // Zero path weight means this is not navable

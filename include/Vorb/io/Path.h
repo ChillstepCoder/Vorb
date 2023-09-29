@@ -91,6 +91,7 @@ namespace vorb {
             time_t getLastModTime() const;
 
             nString getFileNameNoExtension() const;
+            nString getFileNameTrimOneExtension() const;
             nString getExtension() const;
 
             /// Add a string to the end of this path's value

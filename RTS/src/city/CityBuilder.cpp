@@ -65,6 +65,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     ASSERT_GAME_THREAD();
     assert(bp.world);
 
+    TileRepository& tileRepo = TileRepository::get();
+
     PreciseTimer timer;
     const i32v2& worldPos = bp.mTileSpatialGrid.getWorldPos2D();
 
@@ -115,8 +117,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                             Tile& tile = tiles[tileIndex];
                             // We dont add to mean height here because tile height is relative to the floor of this tile layer
                             //const f32 height = 0.0f;
-                            const TileDef& data = TileRepository::getTileData(tileId);
-                            tile.layers[data.layer] = data.id;
+                            const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileId);
+                            tile.layers[data.layer] = (TileID)data.getID();
                             //tile.groundZOffset = height;
                             //assert(false); // Set building structure pointer
                             // TODO: always set ground position?
@@ -166,7 +168,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
 void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 {
-    static TileID bricksId = TileRepository::getTile(StrToken("bricks", 1));
+    static TileID bricksId = TileRepository::get().getTileID(CStrToken("bricks"));
 
     CityRoad& road = *mCity.mRoads[roadId];
     // TODO: Other types of paths
@@ -176,11 +178,13 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
     }
     TileID tileId = bricksId;
 
+    TileRepository& tileRepo = TileRepository::get();
+
     i32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = mCity.getWorld().getTerrainTileHandleAtWorldPos(xy);
-            handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileRepository::getTileData(tileId));
+            handle.getMutableContainer()->setTileLayer(handle.tileIndex, tileRepo.getLoadedOrUnloadedAsset(tileId));
         }
     }
 }

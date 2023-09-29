@@ -6,7 +6,7 @@
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 constexpr const char TEST_STR[MAX_CHARS_IN_STRTOKEN + 1] = "abcde_ghijkz";
-constexpr const char TEST_STR_INDEX[MAX_CHARS_IN_STRTOKEN_WITH_INDEX + 1] = "abcde_ghijkz9";
+constexpr const char TEST_STR_INDEX[MAX_CHARS_IN_STRTOKEN + 1] = "abcde_ghijkz9";
 constexpr const char TEST_STR_SMALL[MAX_CHARS_IN_STRTOKEN + 1] = "dog";
 
 constexpr StrToken TOKEN_MAX_SIZE(TEST_STR);
@@ -33,12 +33,12 @@ namespace UNITTESTS
             TOKEN_MAX_SIZE_INDEX1.toString(buf, &len);
             Logger::WriteMessage(buf);
             Logger::WriteMessage("\n");
-            Assert::IsTrue(strcmp(buf, "abcde_ghijkz12") == 0 && len == MAX_CHARS_IN_STRTOKEN_WITH_INDEX + 1, L"TOKEN_MAX_SIZE_INDEX1 was not converted properly to string");
+            Assert::IsTrue(strcmp(buf, "abcde_ghijkz12") == 0 && len == MAX_CHARS_IN_STRTOKEN + 1, L"TOKEN_MAX_SIZE_INDEX1 was not converted properly to string");
 
             TOKEN_MAX_SIZE_INDEX2.toString(buf, &len);
             Logger::WriteMessage(buf);
             Logger::WriteMessage("\n");
-            Assert::IsTrue(strcmp(buf, "abcde_ghijkz09") == 0 && len == MAX_CHARS_IN_STRTOKEN_WITH_INDEX + 1, L"TOKEN_MAX_SIZE_INDEX2 was not converted properly to string");
+            Assert::IsTrue(strcmp(buf, "abcde_ghijkz09") == 0 && len == MAX_CHARS_IN_STRTOKEN + 1, L"TOKEN_MAX_SIZE_INDEX2 was not converted properly to string");
 
             TOKEN_SMALL.toString(buf, &len);
             Logger::WriteMessage(buf);

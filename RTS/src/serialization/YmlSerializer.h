@@ -54,7 +54,7 @@ namespace YmlSerializer {
 
     template<typename T>
     void readFileData(const nString& ymlFileData, T& o) {
-        if (ymlFileData.empty()) return;
+        if (ymlFileData.size() <= 1) return;
         ryml::Tree tree = parseFileData(ymlFileData);
         assert((int)tree.crootref().type() > 1);
         read(tree.crootref(), &o);

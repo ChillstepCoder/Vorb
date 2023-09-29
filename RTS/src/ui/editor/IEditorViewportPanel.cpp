@@ -135,7 +135,7 @@ void IEditorViewportPanel::renderCenterPanelImage(i32AABB2* outImageRect, VGText
 void IEditorViewportPanel::updateFramebufferAndLazyInit(const i32v2& framebufferDims) {
     if (!mSkybox) {
         mSkybox = std::make_unique<Skybox>();
-        mSkybox->init(Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sky"), nullptr);
+        mSkybox->init(nullptr);
     }
     if (sGBuffers[0] == nullptr || mCurrentGbufferDims != framebufferDims) {
         initGBuffers(framebufferDims);
@@ -215,7 +215,7 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
     
     if (mSkybox) {
         ui32 nameSize = 0;
-        char nameBuffer[MAX_CHARS_IN_STRTOKEN_WITH_INDEX];
+        char nameBuffer[MAX_CHARS_IN_STRTOKEN];
         cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
         if (ImGui::BeginCombo("Skybox", nameBuffer)) {
             for (size_t i = 0; i < cubemapNames.size(); ++i) {
@@ -348,12 +348,16 @@ void IEditorViewportPanel::renderGrid(const f32m4& VP) {
     if (!mRenderGrid) {
         return;
     }
+    if (!mGridMaterial) mGridMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("grid"));
+    const MaterialShaderDef* gridMaterial = mGridMaterial->tryGetAsset();
+    if (!gridMaterial) {
+        return;
+    }
 
     vg::DepthState::NONE.set();
     vg::sBlendStates.ALPHA.set();
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialShaderDef* gridMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("grid");
     VGUniform unVP = gridMaterial->getUniform("unVP");
     MaterialRenderer::bindMaterialShaderForRender(*gridMaterial);
     glUniformMatrix4fv(unVP, 1, false, &(VP[0][0]));
@@ -468,7 +472,11 @@ void IEditorViewportPanel::renderPBRArray(const MaterialShaderDef* shader) {
 void IEditorViewportPanel::postProcessBlendTest() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
 
-    const MaterialShaderDef* blendShader = resourceManager.getMaterialShaderManager().getMaterialShader("blend_test");
+    static AssetHandlePtr<MaterialShaderDef> blendShaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("blend_test"));
+
+    const MaterialShaderDef* blendShader = blendShaderDef->tryGetAsset();
+    if (!blendShader) return;
+
     ui32 freeTextureIndex;
     MaterialRenderer::bindMaterialShaderForRender(*blendShader, &freeTextureIndex);
 
@@ -521,7 +529,11 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     vg::DepthState::NONE.set();
     ui32 freeTextureIndex;
     { // Edge test
-        const MaterialShaderDef* edgeShader = resourceManager.getMaterialShaderManager().getMaterialShader("edge_test");
+        static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("edge_test"));
+
+        const MaterialShaderDef* edgeShader = shaderDef->tryGetAsset();
+        if (!edgeShader) return;
+
         MaterialRenderer::bindMaterialShaderForRender(*edgeShader, &freeTextureIndex);
 
         glUniform1i(edgeShader->mProgram.getUniform("unNormalFbo"), freeTextureIndex);
@@ -542,7 +554,11 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     int sourceGBuffer = 1;
     int targetGBuffer = 2;
     { // Edge expand
-        const MaterialShaderDef* expandShader = resourceManager.getMaterialShaderManager().getMaterialShader("edge_expand");
+        static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("edge_expand"));
+
+        const MaterialShaderDef* expandShader = shaderDef->tryGetAsset();
+        if (!expandShader) return;
+
         MaterialRenderer::bindMaterialShaderForRender(*expandShader, &freeTextureIndex);
         // TODO: Profile just changing the uniform instead of changing the texture binding!
         glUniform1i(expandShader->mProgram.getUniform("unFbo"), freeTextureIndex);
@@ -568,7 +584,11 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     }
 
     { // Blur edges
-        const MaterialShaderDef* blendShader = resourceManager.getMaterialShaderManager().getMaterialShader("blend_test_v2");
+        static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("blend_test_v2"));
+
+        const MaterialShaderDef* blendShader = shaderDef->tryGetAsset();
+        if (!blendShader) return;
+
         MaterialRenderer::bindMaterialShaderForRender(*blendShader, &freeTextureIndex);
         const VGUniform& dirUniform = blendShader->mProgram.getUniform("unDirection");
         glUniform1i(blendShader->mProgram.getUniform("unAlbedoFbo"), freeTextureIndex);

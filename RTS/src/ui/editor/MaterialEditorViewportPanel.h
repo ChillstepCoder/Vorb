@@ -14,15 +14,20 @@ public:
     bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
-    void setMaterial(EditorMaterialHandle& materialData) { mCurrentMaterial = materialData; }
+    void setMaterial(AssetID assetId);
 
 private:
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
 
-    EditorMaterialHandle mCurrentMaterial;
+    AssetHandlePtr<MaterialDef> mMaterialAsset;
+    MaterialDef* mCurrentMaterial = nullptr;
     PrimitiveShapeType mShapeType = PrimitiveShapeType::Cube;
     float mUvScale = 2.0f;
+
+    AssetHandlePtr<MaterialShaderDef> mPbrMaterial;
+    AssetHandlePtr<MaterialShaderDef> mEditorMaterial;
+    AssetHandlePtr<MaterialShaderDef> mWireframeMaterial;
 };
 

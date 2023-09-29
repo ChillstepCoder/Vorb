@@ -10,7 +10,7 @@ public:
     Skybox() = default;
     ~Skybox();
 
-    void init(const MaterialShaderDef* material, AssetHandlePtr<CubemapDef>&& skyCubemap);
+    void init(AssetHandlePtr<CubemapDef>&& skyCubemap);
     void render(const f32m4& cameraMatrix);
     void renderPbr(const f32m4& cameraMatrix);
     void renderIrradianceDebug(const f32m4& cameraMatrix);
@@ -22,8 +22,8 @@ public:
 
 private:
     std::unique_ptr<Mesh> mSkyboxMesh;
-    const MaterialShaderDef* mMaterial = nullptr;
-    const MaterialShaderDef* mMaterialPbr = nullptr;
+    AssetHandlePtr<MaterialShaderDef> mMaterialShader;
+    AssetHandlePtr<MaterialShaderDef> mMaterialShaderPbr;
     AssetHandlePtr<CubemapDef> mSkyCubemap;
 };
 

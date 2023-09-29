@@ -31,7 +31,7 @@ enum class MaterialShaderUniform {
 
 struct MaterialTextureInputData {
     StrToken textureName;
-    StrToken uniformName;
+    nString uniformName;
 };
 SERIALIZABLE_SIMPLE(MaterialTextureInputData,
     make_field(o.textureName, "name"sv),

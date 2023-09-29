@@ -11,8 +11,9 @@
 
 ItemRenderer::ItemRenderer() {
 
-    mItemMeshMaterial.aquire(StrToken("standard_tile", 0));
-    mItemBillboardMaterial.aquire(StrToken("item_billboard", 0));
+    mItemMeshMaterial.aquire(CStrToken("standard_tile"));
+    // This got deleted
+    mItemBillboardMaterial.aquire(CStrToken("standard_tile"/*, "item_billboard"*/));
 
     initEventHandlers();
 

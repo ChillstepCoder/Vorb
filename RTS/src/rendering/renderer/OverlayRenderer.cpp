@@ -10,7 +10,7 @@
 #include <Vorb/graphics/BlendState.h>
 
 OverlayRenderer::OverlayRenderer() {
-    mColorOverlayShader = MaterialShaderRepository::get().getAssetHandle(StrToken("color_overlay", 0));
+    mColorOverlayShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("color_overlay"));
     glCreateVertexArrays(1, &mVao);
 }
 

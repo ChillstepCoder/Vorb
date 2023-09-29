@@ -31,6 +31,12 @@ TextureRepository::TextureRepository(vio::IOManager& ioManager) : IAssetReposito
 
 TextureRepository::~TextureRepository() = default;
 
+void TextureRepository::init() {
+    mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
+    mNormalMapGenerator->init();
+    TextureConvert::initConverters();
+}
+
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
 
     // Get absolute path of texture.
@@ -143,15 +149,9 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
     return GLTexture(handle, textureTarget, dims);
 }
 
-void TextureRepository::initInternal() {
-    mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
-    mNormalMapGenerator->init();
-    TextureConvert::initConverters();
-}
-
 AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
 
         TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
         TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
@@ -246,13 +246,14 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
         else {
             assert(false);
         }
+        return true;
     };
 }
 
 
 AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
 
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         TextureDef& textureDef = *static_cast<TextureDef*>(assetDataPtr);
         TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
 
@@ -267,6 +268,7 @@ AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
         else if (loadUserData.rs.size()) {
             textureDef.gpuTexture = uploadTexture(loadUserData.rs, textureDef.type, *textureDef.samplerState, INT_MAX);
         }
+        return true;
     };
 }
 

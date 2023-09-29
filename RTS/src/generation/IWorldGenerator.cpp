@@ -26,11 +26,12 @@ IWorldGenerator::~IWorldGenerator() {
 Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass /*= nullptr*/) {
     assert(grass);
     // TODO: This seems wrong
-    static TileID baseTree = TileRepository::getTile(StrToken("tree_a"));
-    static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
-    static TileID birchTree = TileRepository::getTile(StrToken("tree_birch"));
-    static TileID bushMed = TileRepository::getTile(StrToken("bush_med"));
-    static TileID bush2 = TileRepository::getTile(StrToken("bush_g"));
+    TileRepository& tileRepo = TileRepository::get();
+    static TileID baseTree = tileRepo.getTileID(CStrToken("tree_a"));
+    static TileID pineTree = tileRepo.getTileID(CStrToken("tree_pine"));
+    static TileID birchTree = tileRepo.getTileID(CStrToken("tree_birch"));
+    static TileID bushMed = tileRepo.getTileID(CStrToken("bush_med"));
+    static TileID bush2 = tileRepo.getTileID(CStrToken("bush_g"));
     static TileGrassID defaultGrass = 0; // TODO: DIFFERENT
 
     constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
@@ -132,6 +133,8 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
 void IWorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
     PROFILE_FUNCTION();
 
+    TileRepository& tileRepo = TileRepository::get();
+
     // Allocate tiles if needed
     chunk.mTileContainer->allocateData();
     const ChunkID& id = chunk.getChunkID();
@@ -167,7 +170,7 @@ void IWorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
         }
         // TODO: Bit array instead of full tiledata lookup for cache friendlyness
         if (tile.mainLayer != TILE_ID_NONE) {
-            const NavBlockerType navBlockerType = TileRepository::getTileData(tile.mainLayer).navBlockerType;
+            const NavBlockerType navBlockerType = tileRepo.getLoadedOrUnloadedAsset(tile.mainLayer).navBlockerType;
             if (navBlockerType != NavBlockerType::NONE) {
                 // Set blocked flags
                 if (chunk.mTileContainer->tryBlockAdjTilesFromGeneration(i, navBlockerType)) {

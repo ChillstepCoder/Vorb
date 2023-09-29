@@ -39,6 +39,7 @@ private:
     std::mutex mRawModelsMutex;
     std::map<StrToken, std::unique_ptr<FBXRawMesh>> mRawModels;
 
+    std::mutex mFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
     // TODO: Pooled allocate
     std::vector<std::unique_ptr<ModelBatch>> mModelBatches;
 };

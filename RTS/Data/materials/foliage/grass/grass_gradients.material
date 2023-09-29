@@ -1,2 +1,2 @@
-albedo: grass_gradients.png
+albedo: grass_gradients
 sampler_state: POINT_WRAP

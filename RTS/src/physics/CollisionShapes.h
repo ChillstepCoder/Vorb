@@ -11,4 +11,11 @@ enum class CollisionShapes {
     COUNT,
     NONE = COUNT
 };
-KEG_ENUM_DECL(CollisionShapes);
+SERIALIZABLE_ENUM_SAME_NAME(CollisionShapes,
+    pair{CollisionShapes::NONE, "none"sv },
+    pair{ CollisionShapes::CAPSULE, "capsule"sv },
+    pair{ CollisionShapes::CYLINDER, "cylinder"sv },
+    pair{ CollisionShapes::BOX, "box"sv },
+    pair{ CollisionShapes::SPHERE, "sphere"sv }
+);
+static_assert(e_cast(CollisionShapes::COUNT) == 4, "Update def");

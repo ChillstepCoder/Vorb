@@ -1,3 +1,5 @@
 startup:
   - [loading, texture]
   - [integrate_brdf, material_shader]
+  - [cubemap_irradiance, material_shader]
+  - [prefilter_ggx, material_shader]

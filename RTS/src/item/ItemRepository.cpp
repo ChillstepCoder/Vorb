@@ -9,7 +9,7 @@ void ItemRepository::onRegisteredAsset(AssetID id) {
 }
 
 AssetLoadFunc ItemRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         panic("shouldnt be possible yet");
         // TODO: Model and stuff
         return true;

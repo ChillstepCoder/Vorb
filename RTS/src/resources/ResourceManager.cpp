@@ -2,6 +2,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/AssetLoader.h"
 
+#include "rendering/RenderContext.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/ShaderLoader.h"
 #include "city/Building.h"
@@ -42,36 +43,40 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
     kt.addValue("frag", keg::Value::basic(offsetof(ShaderData, frag), keg::BasicType::STRING));
 }
 
-#define REGISTER_ASSET_REPO(RepoClass, AType) \
-    RepoClass::initInstance(*mIoManager); \
-    mAssetRepositories[(size_t)AType] = &RepoClass::get();
+#define REGISTER_ASSET_REPO(RepoClass, AType, ...) \
+    RepoClass::initInstance(*mIoManager, __VA_ARGS__); \
+    mAssetRepositories[(size_t)AType] = &RepoClass::get(); \
+    RepoClass::get().init();
 
 ResourceManager::ResourceManager() {
     
     mIoManager = std::make_unique<vio::IOManager>();
     AssetLoader::initInstance();
+
+    mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
     
     mAssetRepositories.resize(e_count(AssetType));
+    REGISTER_ASSET_REPO(TileRepository, AssetType::Tile, *mCollisionShapeRepository);
     REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
     REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
     REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
     REGISTER_ASSET_REPO(BrushRepository, AssetType::Brush);
-    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Rig);
-    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Animation);
-    REGISTER_ASSET_REPO(MaterialRepository, AssetType::AnimMachine);
+    REGISTER_ASSET_REPO(MaterialRepository, AssetType::Material);
+    REGISTER_ASSET_REPO(RigRepository, AssetType::Rig);
+    REGISTER_ASSET_REPO(AnimationRepository, AssetType::Animation);
+    REGISTER_ASSET_REPO(AnimMachineRepository, AssetType::AnimMachine);
     REGISTER_ASSET_REPO(ModelRepository, AssetType::Model);
     REGISTER_ASSET_REPO(SkillRepository, AssetType::Skill);
     REGISTER_ASSET_REPO(ItemRepository, AssetType::Item);
     REGISTER_ASSET_REPO(FishRepository, AssetType::Fish);
     REGISTER_ASSET_REPO(MaterialShaderRepository, AssetType::MaterialShader);
+    REGISTER_ASSET_REPO(TileGrassRepository, AssetType::TileGrass);
 
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager);
     mFontRepository = std::make_unique<FontRepository>();
-    mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
-    mTileGrassRepository = std::make_unique<TileGrassRepository>();
 }
 
 ResourceManager::~ResourceManager() {
@@ -95,10 +100,6 @@ void ResourceManager::setResourceRoot(const vio::Path& folderPath) {
 void ResourceManager::gatherFiles() {
 
     PreciseTimer timer;
-
-    // Make sure we clear all vectors each gather
-    mTileFiles.clear();
-    mTileGrassFiles.clear();
     
     mRoomFiles.clear();
     mBuildingFiles.clear();
@@ -137,30 +138,11 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Load Tiles (Must be done after texture, item and recipes, models)
-    {
-        ScopedTimer timer("Tile load");
-        TileRepository::sTileData.reserve(mTileFiles.size() + 10);
-        for (auto&& entry : mTileFiles) {
-            // TODO: Tilemanager?
-            TileRepository::loadTileFile(*mIoManager, entry, *mCollisionShapeRepository);
-        }
-    }
-
-    // Load grass
-    {
-        ScopedTimer timer("Grass load");
-        for (auto&& entry : mTileGrassFiles) {
-            // TODO: Tilemanager?
-            mTileGrassRepository->loadGrassFile(*mIoManager, entry);
-        }
-    }
-
     // Load particle Systems
     {
         // Set default material
         ParticleSystemRepository& repo = ParticleSystemRepository::get();
-        repo.setDefaultMaterialID(MaterialRepository::get().getMaterialId(StrToken("particle_v"/*"soft_particle"*/, 0)));
+        repo.setDefaultMaterialID(MaterialRepository::get().getMaterialId(CStrToken("particle_v0"/*"soft_particle"*/)));
     }
 
     // Load Rooms
@@ -206,12 +188,7 @@ void ResourceManager::reloadMaterials() {
 
     ShaderLoader::clearAllCachedPrograms();
     vg::ShaderManager::disposeAllPrograms();
-    for (auto&& entry : mMaterialShaderFiles) {
-        mMaterialManager->loadMaterialShader(entry);
-    };
-    for (auto&& entry : mComputeFiles) {
-        mMaterialManager->loadComputeShader(entry);
-    };
+    MaterialShaderRepository::get().reloadAllLoadedAssets();
 
     LOG_DEBUG("...done");
 }
@@ -264,7 +241,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mBuildingFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".tile")) {
-            mTileFiles.emplace_back(entry);
+            TileRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".prog")) {
             MaterialShaderRepository::get().registerAsset(entry);
@@ -327,7 +304,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mFontFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".grass")) {
-            mTileGrassFiles.emplace_back(entry);
+            TileGrassRepository::get().registerAsset(entry);
         }
     }
 }
@@ -358,6 +335,7 @@ void ResourceManager::preloadFiles() {
     while (!mPreloadAssetsBundle.areAllAssetsLoaded()) {
         loader.update();
         Sleep(10);
+        RenderContext::getInstance().updateRenderThreadProcs();
     }
     LOG_INFO("Done");
 

@@ -15,20 +15,18 @@ BuildingBlueprint::BuildingBlueprint(
     BuildingBlueprintFlags flags
 ) :
     world(&world), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), mOwnerEntity(ownerEntity), flags(flags) {
+    TileRepository& tileRepo = TileRepository::get();
     // We will reinitialize later with the proper Z dimensions
     mTileSpatialGrid.init(worldPosRoot, i32v3(dims.x, dims.y, 1), 3);
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
-    tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile(StrToken("bricks", 1));
-    tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile(StrToken("wd_door_goth"));
-    tileIDs[e_cast(BlueprintTileType::WALL)] = TileRepository::getTile(StrToken("wd_wall_goth"));
-    tileIDs[e_cast(BlueprintTileType::WINDOW)] = TileRepository::getTile(StrToken("wd_wind_goth"));
-    tileIDs[e_cast(BlueprintTileType::STAIRS)] = TileRepository::getTile(StrToken("stairs_wd"));
-    tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)] = TileRepository::getTile(StrToken("stairs_wd_f"));
+    tileIDs[e_cast(BlueprintTileType::FLOOR)] = tileRepo.getTileID(CStrToken("bricks"));
+    tileIDs[e_cast(BlueprintTileType::DOOR)] = tileRepo.getTileID(CStrToken("wd_door_goth"));
+    tileIDs[e_cast(BlueprintTileType::WALL)] = tileRepo.getTileID(CStrToken("wd_wall_goth"));
+    tileIDs[e_cast(BlueprintTileType::WINDOW)] = tileRepo.getTileID(CStrToken("wd_wind_goth"));
+    tileIDs[e_cast(BlueprintTileType::STAIRS)] = tileRepo.getTileID(CStrToken("stairs_wd"));
+    tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)] = tileRepo.getTileID(CStrToken("stairs_wd_f"));
     tileIDs[e_cast(BlueprintTileType::AIR)] = TILE_ID_NONE;
-
-    assert(TileRepository::getTileData(tileIDs[e_cast(BlueprintTileType::WINDOW)]).shape == TileShape::WINDOW);
-
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
 }
@@ -141,7 +139,7 @@ void BuildingBlueprint::endTileToBuild(BuildTileBlueprintHandle& handle) {
         if (type != BlueprintTileType::STAIRS) {
             const TileID tileId = tileIDs[e_cast(type)];
             if (tileId != TILE_ID_NONE) {
-                const TileDef& data = TileRepository::getTileData(tileId);
+                const TileDef& data = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
                 container.setOwnedTile(handle.mTileIndex);
                 container.setTileGroundZPosition(handle.mTileIndex, 0.0f);
                 container.setTileLayer(handle.mTileIndex, data);

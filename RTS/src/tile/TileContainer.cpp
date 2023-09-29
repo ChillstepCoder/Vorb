@@ -81,7 +81,7 @@ bool TileContainer::canAddTileData(TileIndex i, const TileDef& tileData) const
 
 void TileContainer::setTileLayer(TileIndex i, const TileDef& tileData) {
     assert(isReady());
-    setTileLayer(i, (TileLayer)tileData.layer, tileData.id);
+    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID());
 }
 
 bool TileContainer::tryAddTileLayer(TileIndex i, const TileDef& tileData) {
@@ -90,7 +90,7 @@ bool TileContainer::tryAddTileLayer(TileIndex i, const TileDef& tileData) {
     if (!tile.canAddTileData(tileData)) {
         return false;
     }
-    setTileLayer(i, (TileLayer)tileData.layer, tileData.id);
+    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID());
     return true;
 }
 
@@ -107,10 +107,10 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     NavBlockerType navBlockerType = NavBlockerType::NONE; 
     NavBlockerType prevNavBlockerType = NavBlockerType::NONE;
     if (!isTileNone(id)) {
-        navBlockerType = TileRepository::getTileData(id).navBlockerType;
+        navBlockerType = TileRepository::get().getLoadedOrUnloadedAsset(id).navBlockerType;
     }
     if (!isTileNone(prevId)) {
-        prevNavBlockerType = TileRepository::getTileData(prevId).navBlockerType;
+        prevNavBlockerType = TileRepository::get().getLoadedOrUnloadedAsset(prevId).navBlockerType;
     }
 
     if (navBlockerType != prevNavBlockerType) {
@@ -379,12 +379,12 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     // Check for removed or added door (Dynamic object)
     // Old door
     TileID oldId = prevTileWalls.walls[e_cast(dir)].wallID;
-    if (oldId != TILE_ID_NONE && TileRepository::getTileData(oldId).shape == TileShape::DOOR) {
+    if (oldId != TILE_ID_NONE && TileRepository::get().getLoadedOrUnloadedAsset(oldId).shape == TileShape::DOOR) {
         removeDoor(dir, index);
     }
     // New door
     TileID newId = wall.wallID;
-    if (newId != TILE_ID_NONE && TileRepository::getTileData(newId).shape == TileShape::DOOR) {
+    if (newId != TILE_ID_NONE && TileRepository::get().getLoadedOrUnloadedAsset(newId).shape == TileShape::DOOR) {
         addDoor(dir, index);
     }
 
@@ -405,12 +405,12 @@ void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
     for (int i = 0; i < 4; ++i) {
         // Old door
         TileID oldId = prevTileWalls.walls[i].wallID;
-        if (oldId != TILE_ID_NONE && TileRepository::getTileData(oldId).shape == TileShape::DOOR) {
+        if (oldId != TILE_ID_NONE && TileRepository::get().getLoadedOrUnloadedAsset(oldId).shape == TileShape::DOOR) {
             removeDoor(Cartesian(i), index);
         }
         // New door
         TileID newId = walls[i].wallID;
-        if (newId != TILE_ID_NONE && TileRepository::getTileData(newId).shape == TileShape::DOOR) {
+        if (newId != TILE_ID_NONE && TileRepository::get().getLoadedOrUnloadedAsset(newId).shape == TileShape::DOOR) {
             addDoor(Cartesian(i), index);
         }
     }
@@ -454,7 +454,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
     if (it == mDamagedTiles.end()) {
         // Tile is not damaged yet
         if (healthAdjust < 0) {
-            const ui16 maxHealth = TileRepository::getTileData(tileId).maxHealth;
+            const ui16 maxHealth = TileRepository::get().getLoadedOrUnloadedAsset(tileId).maxHealth;
             if (healthAdjust <= -(int)maxHealth) {
                 // Instant death
                 TileContainerEvent evnt;

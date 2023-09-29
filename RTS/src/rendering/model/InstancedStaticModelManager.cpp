@@ -74,7 +74,7 @@ static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 InstancedStaticModelManager::InstancedStaticModelManager() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
-    mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(StrToken("culling_and_lod", 0));
+    mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("culling_and_lod"));
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
@@ -109,6 +109,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 }
                 continue;
             }
+            assert(instanceData.mMesh);
 
             ModelID modelId = it.first;
             const Mesh& mesh = *instanceData.mMesh;
@@ -452,7 +453,7 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
             }
             mPendingInstanceForContainer[gatherer.mContainerID].emplace(modelId);
 
-            return;
+            continue;
         }
 
         // Insert all instance transforms ordered into the transforms array
@@ -522,13 +523,18 @@ void InstancedStaticModelManager::removeInstancesFromContainer(TileContainerID c
     for (int renderPassIndex = 0; renderPassIndex < e_count(MaterialRenderPassType); ++renderPassIndex) {
         auto&& it = mTileContainerModels[renderPassIndex].find(containerId);
         if (it == mTileContainerModels[renderPassIndex].end()) {
-            return;
+            continue;
         }
         SpatialInstanceDataMap& tileContainerModels = it->second;
-        for (auto& it : tileContainerModels) {
-            removeTileModelInstanceInternal(renderPassIndex, it.second);
+        for (auto& it2 : tileContainerModels) {
+            removeTileModelInstanceInternal(renderPassIndex, it2.second);
         }
         mTileContainerModels[renderPassIndex].erase(it);
+    }
+    LOG_CRITICAL("TODO: REMOVE"); //  TODO: REMOVE
+    for (int i = 0; i < 2; ++i) {
+        SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[i][containerId];
+        assert(tileContainerModels.size() == 0);
     }
 }
 
@@ -590,7 +596,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                 const TileID prevId = edit.prevId;
                 if (prevId != TILE_ID_NONE) {
-                    const TileDef& prevTileData = TileRepository::getTileData(edit.prevId);
+                    const TileDef& prevTileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.prevId);
                     if (prevTileData.shape == TileShape::MODEL) {
                         editEvents.removeEvents.emplace_back(edit.tileIndex);
                     }
@@ -598,7 +604,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 const TileID newId = edit.newId;
                 assert(newId != prevId);
                 if (newId != TILE_ID_NONE) {
-                    const TileDef& tileData = TileRepository::getTileData(newId);
+                    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(newId);
                     if (tileData.shape == TileShape::MODEL) {
                         editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId });
                     }
@@ -644,7 +650,7 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
         return;
     }
 
-    const TileDef& tileData = TileRepository::getTileData(damageEvent.tileId);
+    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(damageEvent.tileId);
     if (tileData.shape != TileShape::MODEL) {
         return;
     }
@@ -684,6 +690,14 @@ void InstancedStaticModelManager::updatePendingModelDefs() {
     ModelRepository& modelRepo = ModelRepository::get();
     for (auto&& it = mPendingInstances.begin(); it != mPendingInstances.end();) {
         if (ModelDef* def = modelRepo.tryGetLoadedAsset(it->first)) {
+            // Update data to point at now loaded mesh
+            for (int m = 0; m < def->getNumMeshes(); ++m) {
+                const Mesh& mesh = def->getMesh(m);
+                const int renderPassIndex = e_cast(mesh.getRenderPass());
+                StaticMeshInstanceData& instanceData = mModelsToInstances[renderPassIndex][def->getID()];
+                instanceData.mMesh = &mesh;
+            }
+            // Add all instances
             for (PendingModelInstance& pendingInstance : it->second) {
                 addInstanceAtPositionInternal(*def, pendingInstance.containerId, pendingInstance.tileIndex, pendingInstance.transform);
             }

@@ -38,6 +38,14 @@ FoliageEditorViewportPanel::~FoliageEditorViewportPanel()
 
 bool FoliageEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
+    if (mGrassDataHandle) {
+        // Editor can mutate
+        mGrassData = const_cast<TileGrassDef*>(mGrassDataHandle->tryGetAsset());
+    }
+    else {
+        mGrassData = nullptr;
+    }
+
     if (!mGrassRenderer) {
         mGrassRenderer = std::make_unique<GrassRenderer>();
         mGrassMeshes.emplace_back(std::make_unique<GrassMesh>(0));
@@ -81,6 +89,11 @@ void FoliageEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::EndChild();
 }
 
+void FoliageEditorViewportPanel::setGrassData(AssetID tileGrassId) {
+    mGrassDataHandle = TileGrassRepository::get().getAssetHandle(tileGrassId);
+    mDirtyFoliageMesh = true;
+}
+
 void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     if (!mGrassData) {
         return;
@@ -103,7 +116,7 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
             int x = i % WIDTH_TILES;
             const f32 gradientAlpha = (f32)x / (WIDTH_TILES - 1);
             const int density = round(glm::lerp((f32)mDensityGradient.x, (f32)mDensityGradient.y, gradientAlpha));
-            grassDataArray[i].grassIDs[0] = mGrassData->mId;
+            grassDataArray[i].grassIDs[0] = mGrassData->getID();
             grassDataArray[i].densities[0] = (ui8)glm::clamp(density, 0, 255);
         }
         GrassBillboardMeshBuilder builder(mesh);
@@ -138,7 +151,7 @@ void FoliageEditorViewportPanel::renderGrassControls()
     if (!mGrassData) {
         return;
     }
-    ImGui::Text(mGrassData->mName.toString().c_str());
+    ImGui::Text(mGrassData->getName().toString().c_str());
     if (ImGui::SliderFloat2("Size Mults", &mGrassData->mSizeMults.x, 0.01f, 10.0f)) {
         mDirtyFoliageMesh = true;
     }

@@ -1,4 +1,4 @@
-albedo: wall_0_albedo.png
-normal: wall_0_norm.png
-rough: wall_0_rough.png
-ao: wall_0_ao.png
+albedo: wall_0_albedo
+normal: wall_0_norm
+rough: wall_0_rough
+ao: wall_0_ao

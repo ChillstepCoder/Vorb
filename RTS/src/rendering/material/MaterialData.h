@@ -42,6 +42,8 @@ struct MaterialDesc {
 
 class MaterialDef : public IAsset {
 public:
+    DEFAULT_ASSET_CONSTRUCTOR(MaterialDef);
+
     StrToken albedoTexture;
     StrToken normalTexture;
     StrToken ambientOcclusionTexture;
@@ -60,12 +62,4 @@ public:
     bool castsShadow = true;
     bool receivesShadow = true;
     bool flipV = false;
-};
-
-struct EditorMaterialHandle {
-    bool isValid() const { return data != nullptr; }
-
-    AssetID materialId = INVALID_MATERIAL_ID;
-    MaterialGpuData* data = nullptr;
-    StrToken name;
 };

@@ -14,6 +14,7 @@ class TextureRepository : public IAssetRepository<TextureDef> {
     ASSET_REPOSITORY_COMMON_CODE_NO_CONSTRUCTOR(TextureRepository, TextureDef, AssetType::Texture)
     TextureRepository(vio::IOManager& ioManager);
     ~TextureRepository();
+    void init() override;
 
     // Loads in as RGBAUI8
     gli::texture2d loadRawPngData(const vio::Path& filePath, bool flipV);
@@ -32,7 +33,6 @@ class TextureRepository : public IAssetRepository<TextureDef> {
     bool saveAsset(AssetID assetId) override { panic("Cannot save textures yet"); }
 
 protected:
-    void initInternal() override;
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;
     std::any getUserData(AssetID id) override;

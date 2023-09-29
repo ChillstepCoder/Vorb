@@ -105,17 +105,17 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Create"))
         {
             ImGui::CloseCurrentPopup();
-            mSystemDefHandle = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken(mTextInputBuffer));
+            mSystemDefHandle = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken((const char*)mTextInputBuffer));
             if (!mSystemDefHandle) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
             else {
                 mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
-                mSystemDef->setName(StrToken(mTextInputBuffer));
+                mSystemDef->setName(StrToken((const char*)mTextInputBuffer));
                 ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = "DefaultEmitter";
                 defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                defaultEmitter.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
+                defaultEmitter.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
                 mSelectedEmitter = &defaultEmitter;
                 mTextInputBuffer[0] = '\0';
             }
@@ -166,7 +166,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = mTextInputBuffer;
                 newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                newEmitterDef.mShader = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("textured_particle_3d_bb");
+                newEmitterDef.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
                 mSelectedEmitter = &newEmitterDef;
                 mTextInputBuffer[0] = '\0';
 

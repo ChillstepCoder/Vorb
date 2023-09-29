@@ -1,4 +1,4 @@
-albedo: big_beam_0_albedo.png
-rough: big_beam_0_rough.png
-normal: big_beam_0_norm.png
-ao: big_beam_0_ao.png
+albedo: big_beam_0_alb
+rough: big_beam_0_rough
+normal: big_beam_0_norm
+ao: big_beam_0_ao

@@ -36,11 +36,11 @@ SERIALIZABLE_ENUM_SAME_NAME(TileShape,
     pair{ TileShape::THIN, "thin"sv},
     pair{ TileShape::BLOCK, "block"sv},
     pair{ TileShape::FLOOR, "floor"sv},
-    pair{ TileShape::WALL, "wall" },
-    pair{ TileShape::WINDOW, "window"},
-    pair{ TileShape::DOOR, "door" },
-    pair{ TileShape::STAIRS, "stairs" },
-    pair{ TileShape::MODEL, "model" }
+    pair{ TileShape::WALL, "wall"sv },
+    pair{ TileShape::WINDOW, "window"sv},
+    pair{ TileShape::DOOR, "door"sv },
+    pair{ TileShape::STAIRS, "stairs"sv },
+    pair{ TileShape::MODEL, "model"sv }
 );
 
 struct ItemInputDef {
@@ -53,18 +53,15 @@ SERIALIZABLE_SIMPLE(ItemInputDef,
 );
 
 struct ItemDrop {
-    ItemID id;
-    ui32v2 countRange;
-};
-
-struct ItemDropDef {
     StrToken itemName;
     ui32v2 countRange;
+    ItemID id;
 };
-SERIALIZABLE_SIMPLE(ItemDropDef,
+SERIALIZABLE_SIMPLE(ItemDrop,
     make_field(o.itemName, "item"sv),
     make_field(o.countRange, "count"sv)
 );
+
 
 enum class TileTextureMethod : ui8 {
     SIMPLE,
@@ -98,17 +95,22 @@ constexpr int MAX_TILE_MATERIAL_SLOTS = 8;
 // For example we only look up path weight when constructing the nav  graph, why not  have it in a separate vector?
 // Same with materialData. Does it really need to be here?
 // This def is accessed quite commonly
-class TileDef {
+class TileDef : public IAsset {
 public:
+    DEFAULT_ASSET_CONSTRUCTOR(TileDef);
+
     f32v3 dims = f32v3(1.0f);
-    TileID id;
    // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
+    CollisionShapes collisionShapeType = CollisionShapes::NONE;
+    f32v3 collisionHalfExtents = f32v3(0.5f, 0.5f, 1.0f);
     CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
     TileHarvestable harvestable = TileHarvestable::NONE;
     // TODO: Could be a giant array of material slots and these defs only store pointers and lengths.
+    std::vector<StrToken> materialNames;
     std::vector<MaterialDesc> materialData;
     TileTextureMethod textureMethod;
+    StrToken modelName;
     ModelID modelId = INVALID_MODEL_ID;
     ui16 maxHealth = 100;
     ui8 layer = e_cast(TileLayer::Main);
@@ -127,27 +129,24 @@ public:
     };
     std::string name;
     std::vector<ItemDrop> itemDrops;
+    std::vector<ItemInputDef> recipeData;
 };
 SERIALIZABLE_SIMPLE(TileDef,
     make_field(o.dims, "dims"),
-    make_field(o.id, "id"),
-    make_field(o.collisionShapeID, "collision_shape"),
+    make_field(o.collisionShapeType, "col_shape"),
+    make_field(o.collisionHalfExtents, "col_half_dims"),
     make_field(o.harvestable, "harvestable"),
-    make_field(o.materialData, "materials"),
+    make_field(o.materialNames, "materials"),
     make_field(o.textureMethod, "texture_method"),
-    make_field(o.modelId, "model"),
+    make_field(o.modelName, "model"),
     make_field(o.maxHealth, "max_health"),
     make_field(o.layer, "layer"),
     make_field(o.shape, "shape"),
     make_field(o.pathWeight, "path_weight"),
     make_field(o.navMask, "nav_mask"),
-    make_field(o.navBlockerType, "nav_blocker_type"),
-    make_field(o.heightOffsetSouth, "height_offset_south"),
-    make_field(o.heightOffsetEast, "height_offset_east"),
-    make_field(o.heightOffsetWest, "height_offset_west"),
-    make_field(o.heightOffsetNorth, "height_offset_north"),
     make_field(o.name, "name"),
-    make_field(o.itemDrops, "item_drops")
+    make_field(o.itemDrops, "item_drops"),
+    make_field(o.recipeData, "recipe")
 );
 
 struct TileOrientation {

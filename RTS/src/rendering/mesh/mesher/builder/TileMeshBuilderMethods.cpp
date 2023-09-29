@@ -163,6 +163,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
     PROFILE_FUNCTION();
     TileIndex tileIndex = 0;
     i32v3 xyz;
+    TileRepository& tileRepo = TileRepository::get();
     for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
         for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
             for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++tileIndex) {
@@ -172,7 +173,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 
                 for (int i = 0; i < 2; ++i) {
                     if (southAndWestWalls[i].isValid()) {
-                        const TileDef& tileData = TileRepository::getTileData(southAndWestWalls[i].wallID);
+                        const TileDef& tileData = tileRepo.getLoadedOrUnloadedAsset(southAndWestWalls[i].wallID);
                         ProceduralMeshHelpers::addTileWallMesh(tileData, spatialGrid, tileWalls, tiles, tileIndex, (Cartesian)i, xyz, floorHeight, meshBuilder, materialDependencies, physMesh);
                     }
                 }
@@ -185,6 +186,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
     PROFILE_FUNCTION();
 
+    TileRepository& tileRepo = TileRepository::get();
     const TileContainer& tileContainer = builders.container;
     const ContainerMeshDataCopy& tiles = builders.tileData;
     // TODO: Do we need to handle container resize? Or is resize destroy and remake?
@@ -208,7 +210,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     if (isTileNone(layerTile)) {
                         continue;
                     }
-                    const TileDef& tileData = TileRepository::getTileData(layerTile);
+                    const TileDef& tileData = tileRepo.getLoadedOrUnloadedAsset(layerTile);
 
                     // Tile mesh
                     // Flora mesh ONLY
@@ -230,25 +232,25 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         if (xyz.y > 0) {
                             TileID south = tiles.mTiles[index - tileDims.x].getLayers()[layerIndex];
                             if (!isTileNone(south)) {
-                                adjacentShapes[e_cast(Cartesian::SOUTH)] = TileRepository::getTileData(south).shape;
+                                adjacentShapes[e_cast(Cartesian::SOUTH)] = tileRepo.getLoadedOrUnloadedAsset(south).shape;
                             }
                         }
                         if (xyz.x > 0) {
                             TileID west = tiles.mTiles[index - 1].getLayers()[layerIndex];
                             if (!isTileNone(west)) {
-                                adjacentShapes[e_cast(Cartesian::WEST)] = TileRepository::getTileData(west).shape;
+                                adjacentShapes[e_cast(Cartesian::WEST)] = tileRepo.getLoadedOrUnloadedAsset(west).shape;
                             }
                         }
                         if (xyz.x < tileDims.x - 1) {
                             TileID east = tiles.mTiles[index + 1].getLayers()[layerIndex];
                             if (!isTileNone(east)) {
-                                adjacentShapes[e_cast(Cartesian::EAST)] = TileRepository::getTileData(east).shape;
+                                adjacentShapes[e_cast(Cartesian::EAST)] = tileRepo.getLoadedOrUnloadedAsset(east).shape;
                             }
                         }
                         if (xyz.y < tileDims.y - 1) {
                             TileID north = tiles.mTiles[index + tileDims.x].getLayers()[layerIndex];
                             if (!isTileNone(north)) {
-                                adjacentShapes[e_cast(Cartesian::NORTH)] = TileRepository::getTileData(north).shape;
+                                adjacentShapes[e_cast(Cartesian::NORTH)] = tileRepo.getLoadedOrUnloadedAsset(north).shape;
                             }
                         }
 

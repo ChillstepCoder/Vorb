@@ -17,9 +17,9 @@ VGBuffer GrassRenderer::sGrassUniformBuffer = 0;
 
 GrassRenderer::GrassRenderer() {
 
-    mMaterials[e_cast(TileGrassMeshType::DEFAULT)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("grass", 0));
-    mMaterials[e_cast(TileGrassMeshType::PLANE)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("grass_plane", 0));
-    mMaterials[e_cast(TileGrassMeshType::BILLBOARD)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("grass_billboard", 0));
+    mMaterials[e_cast(TileGrassMeshType::DEFAULT)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("grass"));
+    mMaterials[e_cast(TileGrassMeshType::PLANE)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("grass_plane"));
+    mMaterials[e_cast(TileGrassMeshType::BILLBOARD)] = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("grass_billboard"));
 
     static_assert(e_count(TileGrassMeshType) == 3);
 
@@ -264,14 +264,13 @@ void GrassRenderer::updateUniformBuffer() {
     GrassUniformData uboData[MAX_GRASS];
 
     size_t i = 0;
-    grassRepo.forEachRegisteredAsset([&](TileGrassDef* def, const AssetRegistryEntry& entry) {
-        assert(def);
+    grassRepo.forEachLoadedOrUnloadedAsset([&](TileGrassDef& def, const AssetRegistryEntry& entry) {
         GrassUniformData& data = uboData[i];
-        data.grassScale = def->mSizeMults;
-        data.material = def->mMaterialID;
-        data.materialCellCount = def->mNumTextures;
-        data.shouldUseColorGradient = (int)def->mUseGradientColor;
-        data.leanVariance = (float)def->mLeanVariance;
+        data.grassScale = def.mSizeMults;
+        data.material = def.mMaterialID;
+        data.materialCellCount = def.mNumTextures;
+        data.shouldUseColorGradient = (int)def.mUseGradientColor;
+        data.leanVariance = (float)def.mLeanVariance;
         ++i;
         return false;
     });

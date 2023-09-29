@@ -12,7 +12,7 @@ namespace ImguiView {
     struct Noise {
         static bool view(NoiseFunction& n, ui32& imguiID) {
             bool changed = false;
-            if (ImGui::CollapsingHeader(n.label)) {
+            if (ImGui::CollapsingHeader(n.label.toString().c_str())) {
                 ImGui::PushID(++imguiID);
                 changed |= ImGui::SliderInt("octaves", &n.octaves, 1, 15);
                 changed |= ImGui::SliderScalar("persistence", ImGuiDataType_Double, &n.persistence, &f64_zero, &f64_one);

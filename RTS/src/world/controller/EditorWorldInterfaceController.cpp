@@ -272,7 +272,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("tree_a")));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("tree_a")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -282,7 +282,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("bush_med")));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("bush_med")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -292,7 +292,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("rock1")));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("rock1")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -308,7 +308,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             assert(stockPile);
             ItemStack woodPile;
             // TODO: AssetHandle?
-            woodPile.id = ItemRepository::get().getAssetID(StrToken("wood_raw"));
+            woodPile.id = ItemRepository::get().getAssetID(CStrToken("wood_raw"));
             woodPile.quantity = 25;
             if (std::unique_ptr<ItemReservation> itemPromise = stockPile->tryPromiseItemStack(woodPile, 1)) {
                 while (!itemPromise->isFinished()) {

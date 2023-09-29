@@ -1,5 +1,5 @@
-albedo: window_2_albedo.png
-disp: window_2_disp.png
-ao: window_2_ao.png
-normal: window_2_norm.png
-rough: window_2_rough.png
+albedo: window_2_albedo
+disp: window_2_disp
+ao: window_2_ao
+normal: window_2_norm
+rough: window_2_rough

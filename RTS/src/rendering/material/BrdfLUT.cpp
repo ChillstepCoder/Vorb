@@ -30,7 +30,7 @@ void BrdfLUT::loadOrComputeTexture() {
     glBindImageTexture(0, sTexture, 0, false, 0, GL_WRITE_ONLY, GL_RG16F);
 
     // This is preloaded
-    const MaterialShaderDef* computeShader = MaterialShaderRepository::get().tryGetLoadedAsset(StrToken("integrate_brdf", 0));
+    const MaterialShaderDef* computeShader = MaterialShaderRepository::get().tryGetLoadedAsset(CStrToken("integrate_brdf"));
     if (!computeShader) panic("integrate_brdf shader was not preloaded. Make sure it is in .preload");
     computeShader->useCompute();
 

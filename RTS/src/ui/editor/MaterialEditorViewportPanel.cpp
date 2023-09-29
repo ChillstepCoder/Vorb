@@ -8,8 +8,7 @@
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
 
-#include "resources/ResourceManager.h"
-//#include "resources/ModelRepository.h"
+#include "resources/MaterialRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
@@ -28,6 +27,14 @@ MaterialEditorViewportPanel::~MaterialEditorViewportPanel()
 
 bool MaterialEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
+    if (mMaterialAsset) {
+        // Editor can mutate
+        mCurrentMaterial = const_cast<MaterialDef*>(mMaterialAsset->tryGetAsset());
+    }
+    else {
+        mCurrentMaterial = nullptr;
+    }
+
     bool isOpen = true;
     ImGui::Begin("Material Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -38,8 +45,8 @@ bool MaterialEditorViewportPanel::updateAndRender(f32 elapsedSec)
 
     updateCamera(imageDims.x / imageDims.y);
 
-    if (mCurrentMaterial.isValid()) {
-        ImGui::Text(mCurrentMaterial.name.toString().c_str());
+    if (mCurrentMaterial) {
+        ImGui::Text(mCurrentMaterial->getName().toString().c_str());
     }
     else {
         ImGui::Text("NO MATERIAL");
@@ -92,7 +99,7 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 
     ImGui::SliderFloat("UV Scale", &mUvScale, 0.0f, 4.0f);
 
-    if (mCurrentMaterial.isValid()) {
+    if (mCurrentMaterial) {
         updateAndRenderTweakers();
     }
     ImGui::Separator();
@@ -100,12 +107,17 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::EndChild();
 }
 
+void MaterialEditorViewportPanel::setMaterial(AssetID assetId) {
+    mMaterialAsset = MaterialRepository::get().getAssetHandle(assetId);
+}
+
 const MaterialShaderDef* MaterialEditorViewportPanel::getShader()
 {
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
     switch (mDrawMode) {
-        case EditorViewportDrawMode::PBRTest:
-            return resourceManager.getMaterialShaderManager().getMaterialShader("editor_material_pbr");
+        case EditorViewportDrawMode::PBRTest: {
+            if (!mPbrMaterial) mPbrMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_material_pbr"));
+            return mPbrMaterial->tryGetAsset();
+        }
         case EditorViewportDrawMode::Unlit:
         case EditorViewportDrawMode::Lit:
         case EditorViewportDrawMode::Normals:
@@ -115,10 +127,14 @@ const MaterialShaderDef* MaterialEditorViewportPanel::getShader()
         case EditorViewportDrawMode::Roughness:
         case EditorViewportDrawMode::UVs:
         case EditorViewportDrawMode::BlendTest:
-        case EditorViewportDrawMode::EdgeTest:
-            return resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
-        case EditorViewportDrawMode::Wireframe:
-            return resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
+        case EditorViewportDrawMode::EdgeTest: {
+            if (!mEditorMaterial) mEditorMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_material"));
+            return mEditorMaterial->tryGetAsset();
+        }
+        case EditorViewportDrawMode::Wireframe: {
+            if (!mWireframeMaterial) mWireframeMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("mesh_wireframe"));
+            return mWireframeMaterial->tryGetAsset();
+        }
         default:
             assert(false);
     }
@@ -130,7 +146,7 @@ void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShade
     UNUSED(availableTextureUnit);
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
         VGUniform unMaterialIndex = shader->getUniform("unMaterialIndex");
-        glUniform1i(unMaterialIndex, mCurrentMaterial.materialId);
+        glUniform1i(unMaterialIndex, mCurrentMaterial->getID());
     }
     glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 1.0f, 0.0f);
     if (const VGUniform* uniform = shader->tryGetUniform("unUvScale")) {

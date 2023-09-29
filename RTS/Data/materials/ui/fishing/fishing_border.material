@@ -1,2 +1,2 @@
-albedo: fishing_border.png
+albedo: fishing_border
 sampler_state: LINEAR_CLAMP_MIPMAP

@@ -18,7 +18,7 @@
 #include <gli/convert.hpp>
 #include <gli/gli.hpp>
 
-constexpr StrToken GENERATE_TEXT("generate", 0);
+constexpr StrToken GENERATE_TEXT = CStrToken("generate");
 
 SERIALIZABLE_SIMPLE(MaterialDef,
     make_field(o.albedoTexture, "albedo"sv),
@@ -49,6 +49,11 @@ MaterialRepository::MaterialRepository(vio::IOManager& ioManager) : IAssetReposi
 
 MaterialRepository::~MaterialRepository() = default;
 
+void MaterialRepository::init() {
+    mMaterialTextureGenerator = std::make_unique<MaterialTextureGenerator>();
+    mMaterialTextureGenerator->init();
+}
+
 const MaterialGpuData& MaterialRepository::getMaterialGpuData(StrToken materialName) const {
     auto&& it = mAssetLookup.find(materialName);
     assert(it != mAssetLookup.end());
@@ -71,14 +76,6 @@ MaterialGpuData& MaterialRepository::getMutableMaterialGpuData(MaterialID materi
     return mMaterialGpuData[materialId];
 }
 
-EditorMaterialHandle MaterialRepository::getMutableMaterialHandle(StrToken materialName) {
-    EditorMaterialHandle handle;
-    handle.materialId = getMaterialId(materialName);
-    handle.data = &getMutableMaterialGpuData(handle.materialId);
-    handle.name = materialName;
-    return handle;
-}
-
 const MaterialDesc& MaterialRepository::getMaterialDesc(StrToken materialName) const {
     auto&& it = mAssetLookup.find(materialName);
     assert(it != mAssetLookup.end());
@@ -94,13 +91,8 @@ void MaterialRepository::bindMaterialBuffer() const {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_GLOBAL_MATERIAL_SSBO, mMaterialDataBuffer.getHandle());
 }
 
-void MaterialRepository::initInternal() {
-    mMaterialTextureGenerator = std::make_unique<MaterialTextureGenerator>();
-    mMaterialTextureGenerator->init();
-}
-
 AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
         TextureRepository& textureRepo = TextureRepository::get();
         MaterialLoadUserData& loadData = std::any_cast<MaterialLoadUserData&>(userData);
@@ -163,11 +155,11 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
             }
             if (!materialDef.roughnessTexture.isValid()) {
                 // Fall back to using the file name as the normal, so we can just specify an empty .material file
-                materialDef.roughnessTexture = StrToken(materialName + "_rough");
+                materialDef.roughnessTexture = StrToken(materialName + "_r");
             }
             if (!materialDef.metalTexture.isValid()) {
                 // Fall back to using the file name as the normal, so we can just specify an empty .material file
-                materialDef.metalTexture = StrToken(materialName + "_metal");
+                materialDef.metalTexture = StrToken(materialName + "_m");
             }
 
             vio::Path folderPath = filePath;
@@ -280,7 +272,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
         materialGpuData.flags = (MaterialFlags_CastShadow * (int)materialDef.castsShadow) | (MaterialFlags_ReceiveShadow * (int)materialDef.receivesShadow);
 
         // Finish with GPU lambda after dependant textures loaded
-        assetLoader.requestAssetLoadWithDependencies(nullptr, ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+        assetLoader.requestAssetLoadWithDependencies(nullptr, [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
             MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
             MaterialLoadUserData& loadData = std::any_cast<MaterialLoadUserData&>(userData);
             // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4
@@ -339,7 +331,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
                 mMaterialDataBuffer.allocate(bufferCapacity, mMaterialGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
             }
             else {
-                mMaterialDataBuffer.updateSubData(materialId * sizeof(MaterialGpuData), sizeof(MaterialGpuData), &materialGpuData);
+                mMaterialDataBuffer.updateSubData(assetID * sizeof(MaterialGpuData), sizeof(MaterialGpuData), &materialGpuData);
             }
 
             return true;

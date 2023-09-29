@@ -64,13 +64,13 @@
 #include "world/IWorld.h"
 
 // TODO: Instead of single shader these should be able to be shader chains.
-const std::string sPassthroughMaterialNames[] = {
-    "pass_through",
-    "depth_debug",
+constexpr StrToken sPassthroughMaterialNames[] = {
+    CStrToken("pass_through"),
+    CStrToken("depth_debug"),
     //"motion_blur",
-    "normals",
-    "shadow_depth_debug",
-    "roughness_debug",
+    CStrToken("normals"),
+    CStrToken("shadow_depth_debug"),
+    CStrToken("roughness_debug"),
 };
 
 WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(screenResolution) {
@@ -106,32 +106,25 @@ WorldRenderer::~WorldRenderer()
 
 void WorldRenderer::initPostLoad() {
 
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
-    MaterialShaderRepository& materialManager = resourceManager.getMaterialShaderManager();
+    MaterialShaderRepository& shaderRepo = MaterialShaderRepository::get();
     {
         ScopedTimer timer("Skybox init", 2);
         buildHorizonMesh();
         mSkyBox = std::make_unique<Skybox>();
-        mSkyBox->init(materialManager.getMaterialShader("sky"), CubemapRepository::get().getAssetHandle(StrToken("graycloud", 0)));
+        mSkyBox->init(CubemapRepository::get().getAssetHandle(CStrToken("graycloud")));
     }
 
     // Init all passthrough materials
     {
         ScopedTimer timer("Passthrough init", 2);
         for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-            const MaterialShaderDef* material = materialManager.getMaterialShader(sPassthroughMaterialNames[i]);
-            if (material) {
-                mPassthroughMaterials.emplace_back(material);
-            }
-            else {
-                pError("Missing material for pass through: " + std::string(sPassthroughMaterialNames[i]));
-            }
+            mPassthroughMaterials.emplace_back(shaderRepo.getAssetHandle(sPassthroughMaterialNames[i]));
         }
     }
 
-    mSceneLightingMaterial = materialManager.getMaterialShader("scene_lighting");
-    mCopyDepthMaterial = materialManager.getMaterialShader("copy_depth");
-    mPassthroughMaterial = materialManager.getMaterialShader("pass_through");
+    mSceneLightingMaterial = shaderRepo.getAssetHandle(CStrToken("scene_lighting"));
+    mCopyDepthMaterial = shaderRepo.getAssetHandle(CStrToken("copy_depth"));
+    mPassthroughMaterial = shaderRepo.getAssetHandle(CStrToken("pass_through"));
 }
 
 void WorldRenderer::onBeginFrame(const RenderState* renderState, f32v3 playerPos) {
@@ -273,11 +266,12 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         // Depth debug
     if (mPassthroughRenderMode == 1) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-        assert(postMat);
+        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetAsset();
+        if (postMat) {
 
-        // TODO: Swap chain for this to work
-        MaterialRenderer::renderFullScreenQuad(*postMat);
+            // TODO: Swap chain for this to work
+            MaterialRenderer::renderFullScreenQuad(*postMat);
+        }
     }
 
     // Sky (non PBR version)
@@ -328,11 +322,12 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // TODO: Make this work. When in debug, render tonemap to a new texture
     // FBODebugRenderer?
     if (mPassthroughRenderMode > 1) {
-        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-        assert(postMat);
+        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetAsset();
+        if (postMat) {
 
-        // TODO: Swap chain for this to work
-        MaterialRenderer::renderFullScreenQuad(*postMat);
+            // TODO: Swap chain for this to work
+            MaterialRenderer::renderFullScreenQuad(*postMat);
+        }
     }
 
 }
@@ -505,10 +500,10 @@ void WorldRenderer::selectNextDebugShader() {
     }
 }
 
-const std::string& WorldRenderer::getCurrentPassthroughRenderStageName() const
+StrToken WorldRenderer::getCurrentPassthroughRenderStageName() const
 {
     if (mPassthroughRenderMode == 0) {
-        return std::string();
+        return StrToken();
     }
     return sPassthroughMaterialNames[mPassthroughRenderMode];
 }
@@ -619,6 +614,12 @@ void WorldRenderer::setActiveWorld(IWorld* world) {
     skillsSystem.addActivateListener(mEventHandles.mSkillsComponentListeners, [world](SkillEvent skillEvent) {
         ASSERT_GAME_THREAD();
         SkillsComponent& skillsCmp = world->getECS().mRegistry.get<SkillsComponent>(skillEvent.mEntity);
-        RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->mAnimID);
+        const SkillDef* skill = skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->tryGetAsset();
+        if (skill) {
+            RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skill->mAnimID);
+        }
+        else {
+            LOG_WARN("Tried to play skill animation for skill slot {} but skill was not loaded", (int)skillEvent.mSkillSlot);
+        }
     });
 }

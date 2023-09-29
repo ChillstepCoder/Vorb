@@ -31,7 +31,9 @@ constexpr int INSTANCE_TRANSFORM_BUFFER_SIZE = INSTANCE_TRANSFORM_DATA_SIZE * MA
 
 #define DRAW_WATER_CELLS 0
 
-FishRenderer::FishRenderer() = default;
+FishRenderer::FishRenderer() {
+    mFishShaderHandle = MaterialShaderRepository::get().getAssetHandle(CStrToken("fish"));
+}
 
 FishRenderer::~FishRenderer() {
     for (FishInstanceData& instanceData : mFishInstanceData) {
@@ -45,6 +47,14 @@ FishRenderer::~FishRenderer() {
 void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& world) {
     PROFILE_FUNCTION();
     const SrvWorldInterface* srvWorldInterface = dynamic_cast<const SrvWorldInterface*>(&world);
+
+    if (mFishShaderHandle) {
+        mFishShader = mFishShaderHandle->tryGetAsset();
+    }
+    else {
+        mFishShader = nullptr;
+    }
+    if (!mFishShader) return;
 
     if (!srvWorldInterface) {
         return;

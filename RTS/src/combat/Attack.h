@@ -5,7 +5,11 @@ enum class AttackShape {
     SPHERE,
     COUNT
 };
-KEG_ENUM_DECL(AttackShape);
+SERIALIZABLE_ENUM_SAME_NAME(AttackShape,
+    pair{ AttackShape::CONE, "cone"sv},
+    pair{ AttackShape::SPHERE, "sphere"sv}
+);
+static_assert(e_count(AttackShape) == 2, "Update def");
 
 struct AttackShapeCone {
     f32 radius;

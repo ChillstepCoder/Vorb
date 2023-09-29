@@ -219,8 +219,8 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     else {
         // Fresh spawning
         // TODO: Data driven biome based spawning
-        const FishDef& codFish = FishRepository::get().getLoadedOrUnloadedAsset(StrToken("cod", 0));
-        const FishDef& rareFish = FishRepository::get().getLoadedOrUnloadedAsset(StrToken("rarefish", 0));
+        const FishDef& codFish = FishRepository::get().getLoadedOrUnloadedAsset(CStrToken("cod"));
+        const FishDef& rareFish = FishRepository::get().getLoadedOrUnloadedAsset(CStrToken("rarefish"));
         for (int j = 0; j < 130; ++j) {
             trySpawnFish(*chunk.getTileContainer(), *newFishChunk, codFish);
         }

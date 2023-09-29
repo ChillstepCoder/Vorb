@@ -29,11 +29,13 @@ public:
 
     void requestAssetLoad(AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc, AssetID assetId, void* assetData, const vio::Path& filePath, std::atomic_bool* isFinishedFlagPtr, std::any userData) {
         // TODO: Singleton pool
+        LOG_TRACE("Request load {} {}", assetId, filePath.getCString());
         mLoadQueue.enqueue(std::make_unique<AssetLoadTask>(AssetLoadTask{.mAssetID=assetId, .mAssetDataPtr=assetData, .mFilePath = filePath, .mLoadFunc=loadFunc, .mRenderPostFunc=renderPostFunc, .mIsFinishedFlagPtr=isFinishedFlagPtr, .mUserData=std::move(userData) }));
     }
 
     void requestAssetLoad(std::unique_ptr<AssetLoadTask>&& task) {
         // TODO: Singleton pool
+        LOG_TRACE("Request load {} {}", task->mAssetID, task->mFilePath.getCString());
         mLoadQueue.enqueue(std::move(task));
     }
 

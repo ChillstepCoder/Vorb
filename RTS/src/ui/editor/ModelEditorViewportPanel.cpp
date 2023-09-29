@@ -3,8 +3,7 @@
 
 #include "definitions/ModelDef.h"
 
-#include "resources/ResourceManager.h"
-//#include "resources/ModelRepository.h"
+#include "resources/ModelRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
@@ -30,6 +29,15 @@ ModelEditorViewportPanel::~ModelEditorViewportPanel()
 }
 
 bool ModelEditorViewportPanel::updateAndRender(f32 elapsedSec) {
+
+    if (mModelHandle) {
+        // Editor can mutate the model
+        mCurrentModel = const_cast<ModelDef*>(mModelHandle->tryGetAsset());
+    }
+    else {
+        mCurrentModel = nullptr;
+    }
+
     bool isOpen = true;
     ImGui::Begin("Model Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
@@ -105,11 +113,16 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::EndChild();
 }
 
+void ModelEditorViewportPanel::setModel(ModelID modelId)
+{
+    mModelHandle = ModelRepository::get().getAssetHandle(modelId);
+}
+
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
     switch (mDrawMode) {
         case EditorViewportDrawMode::PBRTest:
-            return resourceManager.getMaterialShaderManager().getMaterialShader("editor_model_pbr");
+            if (!mPbrMaterial) mPbrMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));
+            return mPbrMaterial->tryGetAsset();
         case EditorViewportDrawMode::BlendTest:
         case EditorViewportDrawMode::EdgeTest:
         case EditorViewportDrawMode::Lit:
@@ -120,9 +133,11 @@ const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
         case EditorViewportDrawMode::Metallic:
         case EditorViewportDrawMode::Roughness:
         case EditorViewportDrawMode::UVs:
-            return resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
+            if (!mEditorMaterial) mEditorMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model"));
+            return mEditorMaterial->tryGetAsset();
         case EditorViewportDrawMode::Wireframe:
-            return resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
+            if (!mWireframeMaterial) mWireframeMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("mesh_wireframe"));
+            return mWireframeMaterial->tryGetAsset();
         default:
             assert(false);
             break;

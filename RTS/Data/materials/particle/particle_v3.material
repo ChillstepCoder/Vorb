@@ -1,2 +1,2 @@
-albedo: particle_v3.png
+albedo: particle_v3
 sampler_state: LINEAR_CLAMP_MIPMAP

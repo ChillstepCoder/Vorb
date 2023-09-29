@@ -56,6 +56,7 @@ void TileContainerHarvestableRegistry::destroy() {
 
 void TileContainerHarvestableRegistry::refreshFromOwner() {
     PROFILE_FUNCTION();
+    TileRepository& tileRepo = TileRepository::get();
     assert(mOwner);
     for (int i = 0; i < (int)TileHarvestable::COUNT; ++i) {
         mTotalHarvestables[i] = 0;
@@ -85,7 +86,7 @@ void TileContainerHarvestableRegistry::refreshFromOwner() {
                 if (isTileNone(mainId)) {
                     mHarvestables[tileIndex] = TileHarvestable::NONE;
                 } else {
-                    const TileHarvestable harvestable = TileRepository::getTileData(tile.getMainID()).harvestable;
+                    const TileHarvestable harvestable = tileRepo.getLoadedOrUnloadedAsset(tile.getMainID()).harvestable;
                     mHarvestables[tileIndex] = harvestable;
                     if (harvestable != TileHarvestable::NONE) {
                         ++mTotalHarvestables[e_cast(harvestable)];
@@ -127,6 +128,7 @@ void TileContainerHarvestableRegistry::debugDraw() const {
 
 void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent& evnt) {
     assert(evnt.type == TileContainerEditEventType::ChangeLayer);
+    TileRepository& tileRepo = TileRepository::get();
     for (ui32 i = 0; i < evnt.editCount; ++i) {
         TileContainerEditLayerEventData& editData = evnt.changeLayerArray[i];
         // Only main layer matters
@@ -135,10 +137,10 @@ void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent
             TileHarvestable newHarvestable = TileHarvestable::NONE;
 
             if (!isTileNone(editData.prevId)) {
-                prevHarvestable = TileRepository::getTileData(editData.prevId).harvestable;
+                prevHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.prevId).harvestable;
             }
             if (!isTileNone(editData.newId)) {
-                newHarvestable = TileRepository::getTileData(editData.newId).harvestable;
+                newHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.newId).harvestable;
             }
 
             if (newHarvestable != prevHarvestable) {

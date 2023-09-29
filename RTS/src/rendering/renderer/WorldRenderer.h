@@ -62,7 +62,7 @@ public:
     WorldRenderDataManager& getRenderDataManagerForWorld(const IWorld& world);
 
     void selectNextDebugShader();
-    const std::string& getCurrentPassthroughRenderStageName() const;
+    StrToken getCurrentPassthroughRenderStageName() const;
 
 private:
 
@@ -111,10 +111,10 @@ private:
     IWorld* mActiveWorld = nullptr;
 
     int mPassthroughRenderMode = 0;
-    std::vector<const MaterialShaderDef*> mPassthroughMaterials;
-    const MaterialShaderDef* mPassthroughMaterial = nullptr;
-    const MaterialShaderDef* mSceneLightingMaterial = nullptr;
-    const MaterialShaderDef* mCopyDepthMaterial = nullptr;
+    std::vector< AssetHandlePtr<MaterialShaderDef>> mPassthroughMaterials;
+    AssetHandlePtr<MaterialShaderDef> mPassthroughMaterial;
+    AssetHandlePtr<MaterialShaderDef> mSceneLightingMaterial;
+    AssetHandlePtr<MaterialShaderDef> mCopyDepthMaterial;
 
     // Event handles
     struct WorldRendererEventHandles {

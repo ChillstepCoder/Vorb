@@ -49,7 +49,7 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
 }
 
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
         //TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
@@ -78,9 +78,11 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
     
     MaterialRepository& materialRepo = MaterialRepository::get();
     // Allocate raw FBX
-    std::unique_ptr<FBXRawMesh> rawFbxMesh = std::make_unique<FBXRawMesh>();
-    FBXRawMesh* rawMeshPtr = rawFbxMesh.get();
+    FBXRawMesh* rawMeshPtr;
+
     {
+        std::unique_ptr<FBXRawMesh> rawFbxMesh = std::make_unique<FBXRawMesh>();
+        rawMeshPtr = rawFbxMesh.get();
         std::lock_guard lock(mRawModelsMutex);
         mRawModels[std::move(modelName)] = std::move(rawFbxMesh);
     }
@@ -96,18 +98,22 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
     }
 
     // Material dependencies
+    mFbxSdkMutex.lock();
     std::shared_ptr<FBXLoadContext> loadContextPtr = std::make_shared<FBXLoadContext>(modelPath.getCString());
+    mFbxSdkMutex.unlock();
     const int materialCount = loadContextPtr->sceneLoader.scene()->GetMaterialCount();
-    rawFbxMesh->mMaterials.resize(materialCount);
+    rawMeshPtr->mMaterials.resize(materialCount);
     for (int i = 0; i < materialCount; ++i) {
         FbxSurfaceMaterial* fbxMaterial = loadContextPtr->sceneLoader.scene()->GetMaterial(i);
         assert(fbxMaterial);
-        rawFbxMesh->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
-        def.addDependency(materialRepo.getAssetHandle(StrToken(rawFbxMesh->mMaterials[i].materialName)));
+        rawMeshPtr->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
+        def.addDependency(materialRepo.getAssetHandle(StrToken(rawMeshPtr->mMaterials[i].materialName)));
     }
 
-    AssetLoader::getInstance().requestAssetLoadWithDependencies([&, fileData, rawMeshPtr]ASSET_LOAD_LAMBDA_CUSTOMCAP(assetId, filePath, assetDataPtr, userData) {
+    AssetLoader::getInstance().requestAssetLoadWithDependencies([this, fileData, rawMeshPtr, materialCount]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         FBXLoadContext& loadContext = *std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
+
+        ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
         // Rig + animation
         if (fileData.mRigName.isValid()) {
@@ -123,7 +129,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
         }
 
         // Load model to raw
-        loadRawModelFromFBX(loadContext, *rawMeshPtr, modelPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
+        loadRawModelFromFBX(loadContext, *rawMeshPtr, filePath, def.mRig ? &def.mRig->mSkeleton : nullptr);
         if (fileData.mForceNormalsUp) {
             MeshOperations::setAllNormals(*rawMeshPtr, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
         }
@@ -163,13 +169,15 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
 
         return true;
 
-    }, ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+    }, []ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+        ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
         FBXLoadContext& loadContext = *std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
         for (ui32 i = 0; i < def.mNumMeshes; ++i) {
             if (loadContext.meshData[i].mVertsCount) {
                 ModelMeshBuilder::uploadCpuMeshToGpu(loadContext.meshData[i], def.mMeshes[i]->mMainMesh);
             }
         }
+        return true;
     },
         def.getID(),
         &def,
@@ -193,8 +201,6 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
     if (numMeshes == 0) {
         panic("No mesh to process in this file: {}", filePath.getString());
     }
-
-    const nString modelName = filePath.getFileNameNoExtension();
 
     // Meshes
     ui32 totalVertices[e_count(MaterialRenderPassType)] = {};

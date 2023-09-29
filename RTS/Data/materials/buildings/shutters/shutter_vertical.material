@@ -1,6 +1,0 @@
-sampler_state: LINEAR_WRAP_MIPMAP
-albedo: shutter_vertical.png
-#disp: shutter_vertical_disp.png
-normal: shutter_vertical_norm.png
-rough: shutter_vertical_rough.png
-ao: shutter_vertical_ao.png

@@ -123,7 +123,7 @@ void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt
         auto&& tileRef = cmp.mInteractTile;
         //if (tileHandle.tile.layers[cmp.mTileLayer])
         TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
-        const TileDef& tileData = TileRepository::getTileData(tileId);
+        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
         // Destroy tile
         tileRef->container->clearTileFlag(tileRef->index, TileFlags::IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
         tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);

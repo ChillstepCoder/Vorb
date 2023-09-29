@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "HostWorld.h"
 
+#include "resources/AssetLoader.h"
+
 #include "world/srv/SrvChunkGrid.h"
 #include "world/srv/SrvHeightmapGrid.h"
 
@@ -37,6 +39,9 @@ void HostWorld::tick(f32 elapsedSec) {
     // TODO: Could we use remaining frame time for these?
     Services::Threadpool::ref().mainThreadUpdate();
     Services::NavThread::ref().mainThreadUpdate();
+
+    // Update pending assets
+    AssetLoader::getInstance().update();
 
     // TODO: REMOVE Update any pending updates if pathfinding is idle
   /*  for (auto&& chunk : getActiveChunks()) {
@@ -80,7 +85,7 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginClient(*this);
 
     // TODO: Move
-    mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), StrToken("player"), true));
+    mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
 }
 
 WorldNetMode HostWorld::getNetMode()

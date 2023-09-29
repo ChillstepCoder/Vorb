@@ -8,8 +8,7 @@ class WorldEditorPanel;
 class Camera3D;
 class TileEditorPanel;
 class ModelDef;
-struct EditorMaterialHandle;
-struct TileGrassData;
+struct TileGrassDef;
 struct FishDef;
 class ParticleSystemDef;
 class ModelEditorViewportPanel;
@@ -34,11 +33,11 @@ public:
     IEditorViewportPanel* getActiveCenterPanel() const { return mActiveCenterPanel; }
 
 private:
-    void openModelForEdit(ModelDef& model);
-    void openMaterialForEdit(EditorMaterialHandle& materialHandle);
-    void openFoliageForEdit(TileGrassData& grassData);
+    void openModelForEdit(AssetID modelId);
+    void openMaterialForEdit(AssetID materialId);
+    void openFoliageForEdit(AssetID grassId);
     void openBiomeForEdit();
-    void openFishForEdit(FishDef& fishDef);
+    void openFishForEdit(AssetID fishaid);
     void openParticleSystemForEdit(AssetID systemId);
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 

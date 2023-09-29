@@ -5,7 +5,7 @@
 #include <Vorb/io/IOManager.h>
 
 AssetLoadFunc TileGrassRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         TileGrassDef& def = *static_cast<TileGrassDef*>(assetDataPtr);
         if (def.mAlphaMaskTextureName.isValid()) {
             // We will not block on dependency for materials
@@ -20,6 +20,7 @@ AssetLoadFunc TileGrassRepository::getAssetLoadFunc() {
 }
 
 void TileGrassRepository::onRegisteredAsset(AssetID id) {
+    assert(id < UINT8_MAX); // Currently the tile grass renderer stores the ID in a byte
     TileGrassDef& def = *mAssets[id];
     YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
     assert(def.mAlphaMaskTextureName.isValid() || def.mTextureName.isValid());

@@ -20,5 +20,6 @@ private:
     const MaterialShaderDef* mSmudgeShader = nullptr;
     const MaterialShaderDef* mPaintNoiseShader = nullptr;
     AssetHandleBundle mShaderAssets;
+    bool mCanRender = false;
 };
 

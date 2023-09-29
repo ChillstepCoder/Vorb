@@ -12,7 +12,7 @@
 
 AssetLoadFunc BrushRepository::getAssetLoadFunc() {
 
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
 
         BrushDef& def = *static_cast<BrushDef*>(assetDataPtr);
         gli::texture2d& rs = std::any_cast<gli::texture2d&>(userData);
@@ -38,13 +38,14 @@ AssetLoadFunc BrushRepository::getAssetLoadFunc() {
             const ui8* pixelData = rsData + i * numChannels;
             def.data[i] = pixelData[numChannels - 1];  // Alpha is the last byte in the pixel data
         }
+        return true;
     };
 }
 
 
 AssetLoadFunc BrushRepository::getAssetLoadRenderProcessFunc() {
 
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
 
         gli::texture2d& rs = std::any_cast<gli::texture2d&>(userData);
         BrushDef& def = *static_cast<BrushDef*>(assetDataPtr);
@@ -56,6 +57,7 @@ AssetLoadFunc BrushRepository::getAssetLoadRenderProcessFunc() {
         else {
             panic("Failed to load texture {} for brush", filePath.getString().c_str());
         }
+        return true;
     };
 }
 

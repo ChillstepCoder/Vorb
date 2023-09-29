@@ -1605,7 +1605,7 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
 }
 
 inline bool isDoor(TileID tileId) {
-    return tileId != TILE_ID_NONE && TileRepository::getTileData(tileId).shape == TileShape::DOOR;
+    return tileId != TILE_ID_NONE && TileRepository::get().getLoadedOrUnloadedAsset(tileId).shape == TileShape::DOOR;
 }
 
 bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
@@ -2091,14 +2091,14 @@ void computeOwnedTilesOnFirstFloor(BuildingBlueprint& bp) {
 void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     // Tally required items
     std::map<ItemID, ui32> requiredItems;
-
+    TileRepository& tileRepo = TileRepository::get();
     bp.tileRecipes[e_cast(BlueprintTileType::NONE)] = nullptr;
-    bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]);
-    bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]);
-    bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WALL)]);
-    bp.tileRecipes[e_cast(BlueprintTileType::WINDOW)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WINDOW)]);
-    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS)]);
-    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &TileRepository::getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &tileRepo.getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &tileRepo.getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &tileRepo.getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WALL)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::WINDOW)] = &tileRepo.getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::WINDOW)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &tileRepo.getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS)]);
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &tileRepo.getRecipeForTile(bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]);
     bp.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 

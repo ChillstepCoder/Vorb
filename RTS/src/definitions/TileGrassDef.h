@@ -21,7 +21,7 @@ public:
     ui8 mNumTextures = 1;
     MaterialID mMaterialID = INVALID_MATERIAL_ID;
     bool mUseGradientColor = false;
-    NoiseFunction mNoiseFunction = NoiseFunction(StrToken("Grass", 0), NoiseFunctionType::Standard, 6, 0.7, 0.05, { 1200.0, -1200.0 }, 1.0, 0.0);
+    NoiseFunction mNoiseFunction = NoiseFunction(CStrToken("Grass"), NoiseFunctionType::Standard, 6, 0.7, 0.05, { 1200.0, -1200.0 }, 1.0, 0.0);
 };
 SERIALIZABLE_SIMPLE(TileGrassDef, 
     make_field(o.mAlphaMaskTextureName, "alpha_masks"sv),

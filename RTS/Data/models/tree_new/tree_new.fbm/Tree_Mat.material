@@ -1,5 +1,5 @@
-albedo: DefaultMaterial_Base_color.png
-normal: DefaultMaterial_Normal_OpenGL.png
-ao: DefaultMaterial_Mixed_AO.png
-rough: DefaultMaterial_Roughness.png
+albedo: DM_Base_color
+normal: DM_Normal_OpenGL
+ao: DM_Mixed_AO
+rough: DM_Roughness
 sampler_state: LINEAR_CLAMP_MIPMAP

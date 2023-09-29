@@ -97,7 +97,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
 
     // TODO: Material and shader
     particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
-    particleEmitter.mShader = MaterialShaderRepository::get().getAssetHandle(StrToken("textured_particle_bb_", 3));
+    particleEmitter.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
     
     // Deserialize config
     yml::tryReadValue(node, EMITTER_SCALE_KEY, particleEmitter.mDefaultScale);
@@ -144,7 +144,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
 }
 
 AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
-    return ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+    return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
         nString fileData = readFileToString(filePath);
 

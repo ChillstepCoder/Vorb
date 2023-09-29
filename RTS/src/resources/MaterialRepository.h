@@ -16,12 +16,13 @@ public:
     MaterialRepository(vio::IOManager& ioManager);
     ~MaterialRepository();
 
+    virtual void init() override;
+
     const MaterialGpuData& getMaterialGpuData(MaterialID materialId) const;
     MaterialGpuData& getMutableMaterialGpuData(MaterialID materialId);
     const MaterialGpuData& getMaterialGpuData(StrToken materialName) const;
     MaterialGpuData& getMutableMaterialGpuData(StrToken materialName);
     MaterialID getMaterialId(StrToken materialName) const { return (MaterialID)getAssetID(materialName); }
-    EditorMaterialHandle getMutableMaterialHandle(StrToken materialName);
     const MaterialDesc& getMaterialDesc(StrToken materialName) const;
     const MaterialDesc& getMaterialDesc(MaterialID materialId) const;
 
@@ -31,7 +32,6 @@ public:
 
 protected:
 
-    virtual void initInternal() override;
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;
     std::any getUserData(AssetID id) override;

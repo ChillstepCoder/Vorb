@@ -25,9 +25,9 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const ui32v2& gbufferDi
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::R8);
     }
 
-    mMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("ssao", 0));
-    mApplyMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("ssao_apply", 0));
-    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, StrToken("gaussian_blur_r", 0));
+    mMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("ssao"));
+    mApplyMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("ssao_apply"));
+    mBlurMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("gaussian_blur_r"));
 
     //https://learnopengl.com/Advanced-Lighting/SSAO
     // Build kernel

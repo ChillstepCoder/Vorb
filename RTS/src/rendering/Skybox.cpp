@@ -23,12 +23,12 @@ Skybox::~Skybox() {
 
 }
 
-void Skybox::init(const MaterialShaderDef* material, AssetHandlePtr<CubemapDef>&& skyCubemap) {
+void Skybox::init(AssetHandlePtr<CubemapDef>&& skyCubemap) {
     constexpr unsigned NUM_VERTS = 4 * 6;
     constexpr float RADIUS = 1.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
-    mMaterial = material;
-    mMaterialPbr = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sky_pbr");
+    mMaterialShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("sky"));
+    mMaterialShaderPbr = MaterialShaderRepository::get().getAssetHandle(CStrToken("sky_pbr"));
     mSkyCubemap = std::move(skyCubemap);
     ProceduralMeshBuilder meshBuilder(true);
     // Bottom left
@@ -98,16 +98,17 @@ void Skybox::render(const f32m4& cameraMatrix) {
     if (!mSkyCubemap) return;
     const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
     if (!cubemapDef) return;
+    const MaterialShaderDef* shader = mMaterialShader->tryGetAsset();
+    if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
-    assert(mMaterial);
     vg::DepthState::READ.set();
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &textureUnit);
-    glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
-    glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
+    glUniform1i(shader->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getTexture());
     MeshDrawer::draw(mSkyboxMesh->mMainMesh);
 
@@ -119,28 +120,29 @@ void Skybox::renderPbr(const f32m4& cameraMatrix) {
     if (!mSkyCubemap) return;
     const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
     if (!cubemapDef) return;
+    const MaterialShaderDef* shader = mMaterialShaderPbr->tryGetAsset();
+    if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
-    assert(mMaterialPbr);
     vg::DepthState::READ.set();
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialShaderForRender(*mMaterialPbr, &textureUnit);
-    glUniform1i(mMaterialPbr->getUniform("unSkyboxCube"), textureUnit);
-    glUniformMatrix4fv(mMaterialPbr->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
+    glUniform1i(shader->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getTexture());
 
     LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
     LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
-    glUniform2f(mMaterialPbr->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
-    glUniform2f(mMaterialPbr->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
-    glUniform2f(mMaterialPbr->getUniform("unGamma"), optionsLeft.mGamma, optionsRight.mGamma);
+    glUniform2f(shader->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
+    glUniform2f(shader->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
+    glUniform2f(shader->getUniform("unGamma"), optionsLeft.mGamma, optionsRight.mGamma);
     if (sDebugOptions.mLightPresetSplitView) {
-        glUniform1f(mMaterialPbr->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
+        glUniform1f(shader->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
     }
     else {
-        glUniform1f(mMaterialPbr->getUniform("unLightingSplit"), 1.0f);
+        glUniform1f(shader->getUniform("unLightingSplit"), 1.0f);
     }
     MeshDrawer::draw(mSkyboxMesh->mMainMesh);
 
@@ -152,16 +154,17 @@ void Skybox::renderIrradianceDebug(const f32m4& cameraMatrix) {
     if (!mSkyCubemap) return;
     const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
     if (!cubemapDef) return;
+    const MaterialShaderDef* shader = mMaterialShader->tryGetAsset();
+    if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
-    assert(mMaterial);
     vg::DepthState::READ.set();
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &textureUnit);
-    glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
-    glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
+    glUniform1i(shader->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getIrradianceTexture());
     MeshDrawer::draw(mSkyboxMesh->mMainMesh);
 
@@ -173,16 +176,17 @@ void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel)
     if (!mSkyCubemap) return;
     const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
     if (!cubemapDef) return;
+    const MaterialShaderDef* shader = mMaterialShader->tryGetAsset();
+    if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
-    assert(mMaterial);
     vg::DepthState::READ.set();
     glDepthFunc(GL_LEQUAL);
 
     ui32 textureUnit;
-    MaterialRenderer::bindMaterialShaderForRender(*mMaterial, &textureUnit);
-    glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
-    glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
+    glUniform1i(shader->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     VGTexture texture = cubemapDef->getPrefilterMap();
     glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, baseLevel);
     glBindTextureUnit(textureUnit, texture);

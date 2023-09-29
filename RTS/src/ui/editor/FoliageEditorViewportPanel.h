@@ -5,7 +5,7 @@
 
 class GrassRenderer;
 class GrassMesh;
-struct TileGrassData;
+struct TileGrassDef;
 
 class FoliageEditorViewportPanel : public IEditorViewportPanel {
 public:
@@ -15,7 +15,7 @@ public:
     bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
-    void setGrassData(TileGrassData& grassData) { mGrassData = &grassData; mDirtyFoliageMesh = true; }
+    void setGrassData(AssetID tileGrassId);
 
 private:
     void renderCenterPanel(i32AABB2* outImageRect) override;
@@ -24,7 +24,8 @@ private:
     std::vector<std::unique_ptr<GrassMesh>> mGrassMeshes;
     boost::container::flat_set<const GrassMesh*> mGrassMeshesSet;
     std::unique_ptr<GrassRenderer> mGrassRenderer;
-    TileGrassData* mGrassData = nullptr;
+    AssetHandlePtr<TileGrassDef> mGrassDataHandle;
+    TileGrassDef* mGrassData = nullptr;
     bool mDirtyFoliageMesh = true;
     i32v2 mDensityGradient = i32v2(255, 255);
 };

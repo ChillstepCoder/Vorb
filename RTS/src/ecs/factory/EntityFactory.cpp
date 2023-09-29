@@ -22,7 +22,7 @@ entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, S
     const entt::entity newEntity = registry.create();
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    todo_use_ryml; // TODO: USE RYML
+    //todo_use_ryml; // TODO: USE RYML
     const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeToken);
 
     // Char control needs further initialization post physics load

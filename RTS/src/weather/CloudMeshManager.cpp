@@ -35,7 +35,7 @@ constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
 
-constexpr StrToken CLOUD_SIL_TOKEN("cloud_sil", 0);
+constexpr StrToken CLOUD_SIL_TOKEN = CStrToken("cloud_sil");
 
 // TODO: Singleton pool?
 struct CloudBatchTaskData {
