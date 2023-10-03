@@ -9,6 +9,6 @@ public:
     static gli::texture2d convertToR8(const gli::texture2d& inputTexture);
     // convert to DDS compressed texture using optimal BCX encoding and
     // generate mipmaps. InputTexture is assumed to have no mip levels
-    static gli::texture2d convertToDDS(const gli::texture2d& inputTexture);
+    static gli::texture2d convertToDDS(gli::texture2d& inputTexture, bool shouldGenMipmaps);
 };
 

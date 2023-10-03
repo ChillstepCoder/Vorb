@@ -16,6 +16,7 @@
 #include "ecs/EntityDefinitionRepository.h"
 #include "editor/BrushRepository.h"
 #include "resources/TileRepository.h"
+#include "rendering/texture/GLTexture.h"
 
 #include "city/City.h"
 #include "city/BuildingBlueprintGenerator.h"
@@ -303,8 +304,8 @@ void WorldEditorPanel::tryRenderBrushSelect() const {
                     mCurrentBrushSettings->activeBrush = BrushRepository::get().getAssetHandle(entry.mID);
                 }
                 ImGui::TableNextColumn();
-                if (brush) {
-                    ImGui::Image((ImTextureID)brush->texture, ImVec2(50.0f, 50.0f));
+                if (brush && brush->texture) {
+                    ImGui::Image((ImTextureID)brush->texture->getHandle(), ImVec2(50.0f, 50.0f));
                 }
                 else {
                     ImGui::Spacing();
@@ -344,11 +345,10 @@ void WorldEditorPanel::renderGrassEditUI() const {
 
     ImGui::Text("Tile select");
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    size_t i = 0;
-    TileGrassRepository::get().forEachRegisteredAsset([this, &i](TileGrassDef* def, const AssetRegistryEntry& entry) {
+    TileGrassRepository::get().forEachRegisteredAsset([this](TileGrassDef* def, const AssetRegistryEntry& entry) {
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(def->getName().toString().c_str(), mSelectedGrass == (TileGrassID)i++)) {
-            mSelectedGrass = (ui32)i;
+        if (ImGui::RadioButton(entry.mName.toString().c_str(), mSelectedGrass == entry.mID)) {
+            mSelectedGrass = (ui32)entry.mID;
         }
         ImGui::TableNextColumn();
         return false;

@@ -31,6 +31,8 @@ public:
 
     // Called after every asset in the game has been registered
     virtual void onAllAssetTypesRegistered() {};
+
+    size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 
@@ -157,27 +159,27 @@ public:
         return std::static_pointer_cast<AssetHandle<T>>(getAssetHandleBase(id));
     }
     // Note that if you do not have a handle, this could become invalid!
-    T* tryGetLoadedAsset(StrToken assetName) {
+    const T* tryGetLoadedAsset(StrToken assetName) {
         return tryGetLoadedAsset(getAssetID(assetName));
     }
-    T* tryGetLoadedAsset(AssetID id) {
+    const T* tryGetLoadedAsset(AssetID id) {
         if (mLoadedAssets[id]->load()) {
             return mAssets[id].get();
         }
         return nullptr;
     }
-    T& getLoadedAsset(StrToken name) {
+    const T& getLoadedAsset(StrToken name) {
         return getLoadedAsset(getAssetID(name));
     }
-    T& getLoadedAsset(AssetID id) {
+    const T& getLoadedAsset(AssetID id) {
         assert(mLoadedAssets[id]->load());
         return *mAssets[id].get();
     }
     // Some assets are valid without being loaded as they have minimal definitions that can be loaded on register
-    T& getLoadedOrUnloadedAsset(StrToken name) {
+    const T& getLoadedOrUnloadedAsset(StrToken name) {
         return *mAssets[getAssetID(name)];
     }
-    T& getLoadedOrUnloadedAsset(AssetID id) {
+    const T& getLoadedOrUnloadedAsset(AssetID id) {
         return *mAssets[id];
     }
     inline bool isAssetLoaded(AssetID id) { return mLoadedAssets[id]->load(); }
@@ -192,6 +194,14 @@ public:
     AssetID registerAsset(const vio::Path& filePath) {
         // TODO remove string copy
         return registerAsset(StrToken(filePath.getFileNameTrimOneExtension()), filePath);
+    }
+
+    const T* tryGetLoadedOrUnloadedAsset(StrToken assetName) {
+        auto&& it = mAssetLookup.find(assetName);
+        if (it == mAssetLookup.end()) {
+            return nullptr;
+        }
+        return mAssets[it->second].get();
     }
 
     // ALL assets must be registered before any are loaded, else we will have race conditions
@@ -217,9 +227,9 @@ public:
     inline bool isAssetRegistered(StrToken name) const {
         return mAssetLookup.find(name) != mAssetLookup.end();
     }
-    size_t getNumRegisteredAssets() const { return mAssets.size(); }
 
-    void reloadAllLoadedAssets() {
+    AssetHandleBundle reloadAllLoadedAssets() {
+        AssetHandleBundle assets;
         // TODO: Cleanup first?
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             onRegisteredAsset(id);
@@ -230,12 +240,17 @@ public:
             for (AssetID id = 0; id < mAssets.size(); ++id) {
                 if (mLoadedAssets[id]->load()) {
                     mBeginLoadAssetMutex.lock(); // LOCK
-                    mAssetRegistry[id].mRequestedLoad = true;
+                    mLoadedAssets[id]->store(false);
+                    mAssetRegistry[id].mRequestedLoad = false;
+                    if (mAssets[id]->getDependencies() && mAssets[id]->getDependencies()->isLockedByAssetLoader()) {
+                        panic("Tried to reload asset {} while dependencies still being loaded", mAssetRegistry[id].mName.toString().c_str());
+                    }
                     mBeginLoadAssetMutex.unlock(); // UNLOCK
-                    loadAssetAsync(mAssetRegistry[id]);
+                    assets.addAssetHandle(getAssetHandleBase(id));
                 }
             }
         }
+        return assets;
     }
 
     // Editor function which will register and create a default asset of this type
@@ -381,7 +396,7 @@ namespace AssetUtil {
     // so once they are all loaded you don't need to query them
     // MAKE SURE THAT THE BUNDLE IS FULLY LOADED BEFORE USING THE RETURNED ASSET UNLESS YOU KNOW IT IS VALID DEF DATA
     template <typename T>
-    [[nodiscard]] T* addAssetToBundleAndGetUnloaded(AssetHandleBundle& bundle, StrToken assetName) {
+    [[nodiscard]] const T* addAssetToBundleAndGetUnloaded(AssetHandleBundle& bundle, StrToken assetName) {
         bundle.addAssetHandle(IAssetRepository<T>::getInstance().getAssetHandle(assetName));
         return &IAssetRepository<T>::getInstance().getLoadedOrUnloadedAsset(assetName);
     }

@@ -195,6 +195,7 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                     if (id == INVALID_TILE_GRASS_ID) {
                         continue;
                     }
+                    grassMeshBuilder.addGrassAsset(id);
 
                     const TileGrassDef& grassData = grassRepository.getLoadedOrUnloadedAsset((AssetID)id);
                     const NoiseFunction& grassNoiseFunction = grassData.mNoiseFunction;

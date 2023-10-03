@@ -92,7 +92,7 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
         }
 
         // TODO: Allow lazy load anim? hmmm prob not?
-        AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
+        const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
         if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
         it->second->mAnimState.playOneShotAnimation(&animDef->mAnimation);
     }
@@ -350,6 +350,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     PROFILE_FUNCTION();
 
     const MaterialShaderDef* shaderDef = mShaderHandle->tryGetAsset();
+    if (!shaderDef) return;
 
     // TODO: UBO
     MaterialRenderer::bindMaterialShaderForRender(*shaderDef);

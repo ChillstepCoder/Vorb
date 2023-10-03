@@ -95,6 +95,9 @@ public:
 
     const MaterialShaderDef& getMaterialShader() const { return mShader; }
 
+    void setBlendMode(ParticleBlendMode blendMode) { mBlendMode = blendMode; }
+    ParticleBlendMode getBlendMode() { return mBlendMode; }
+
     // Modules
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>
     void addEmitterUpdateModule(const T& module) {

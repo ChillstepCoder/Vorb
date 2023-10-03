@@ -11,8 +11,7 @@ public:
     DEFAULT_ASSET_CONSTRUCTOR(TextureDef);
 
     GLTexture gpuTexture;
-    vg::TextureTarget type;
-    const vg::SamplerState* samplerState;
-    bool flipV; // TODO: Flags
+    const vg::SamplerState* samplerState = nullptr;
+    bool flipV = false; // TODO: Flags
 
 };

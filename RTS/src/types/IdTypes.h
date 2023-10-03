@@ -21,3 +21,7 @@ constexpr ParticleID INVALID_PARTICLE_ID = UINT32_MAX;
 
 typedef ui32 AssetID;
 constexpr AssetID INVALID_ASSET_ID = UINT32_MAX;
+
+typedef ui8 TileGrassID;
+constexpr TileGrassID INVALID_TILE_GRASS_ID = UINT8_MAX;
+constexpr ui32 MAX_TILE_GRASS_IDS = 0xff;

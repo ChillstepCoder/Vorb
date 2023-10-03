@@ -31,6 +31,7 @@ class TextureRepository : public IAssetRepository<TextureDef> {
         i32 maxMipLevels = INT_MAX);
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save textures yet"); }
+    void setSamplerState(AssetID textureId, const vg::SamplerState& samplerState);
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;

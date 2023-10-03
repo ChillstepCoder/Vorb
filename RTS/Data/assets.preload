@@ -3,3 +3,13 @@ startup:
   - [integrate_brdf, material_shader]
   - [cubemap_irradiance, material_shader]
   - [prefilter_ggx, material_shader]
+preload:
+#  - [*, material] #uncomment to force generate all .dds
+  - [*, material_shader]
+  - [cloud_color, material]
+  - [cloud_sil, material]
+  - [van_gogh_2, material]
+  - [cell_noise, material]
+  - [grass_terrain, material]
+  - [mountain, material]
+  - [*, model] #DEVELOPMENT ONLY

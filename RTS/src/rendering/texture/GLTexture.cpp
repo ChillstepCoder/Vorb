@@ -3,8 +3,7 @@
 
 
 GLTexture::GLTexture(GLuint handle, vg::TextureTarget type, const ui32v2& dims) : mHandle(handle), mType(type), mDims(dims) {
-    mHandleBindless = glGetTextureHandleARB(handle);
-    glMakeTextureHandleResidentARB(mHandleBindless);
+
 }
 
 GLTexture::GLTexture(GLTexture&& o) :
@@ -43,15 +42,23 @@ void GLTexture::init(GLuint handle, vg::TextureTarget type, const ui32v2& dims) 
     mDims = dims;
     mHandle = handle;
     mType = type;
-    mHandleBindless = glGetTextureHandleARB(handle);
-    glMakeTextureHandleResidentARB(mHandleBindless);
 }
 
 void GLTexture::destroy() {
     if (mHandleBindless) {
         glMakeTextureHandleNonResidentARB(mHandleBindless);
         mHandleBindless = 0;
-        glDeleteTextures(1, &mHandle);
-        mHandle = 0;
     }
+    glDeleteTextures(1, &mHandle);
+    mHandle = 0;
+}
+
+GLuint64 GLTexture::getHandleBindless() const {
+    ASSERT_RENDER_THREAD();
+    if (!mHandleBindless) {
+        mHandleBindless = glGetTextureHandleARB(mHandle);
+        // glGetTextureSamplerHandleARB if we want multiple samplers
+        glMakeTextureHandleResidentARB(mHandleBindless);
+    }
+    return mHandleBindless;
 }

@@ -8,6 +8,8 @@ struct FishDef;
 class MaterialShaderDef;
 class ParticleSystemDef;
 
+#include "resources/asset/AssetHandleBundle.h"
+
 DECL_VG(class GBuffer);
 
 enum class TileEditorPanelResultCode {
@@ -44,5 +46,6 @@ private:
 
     // Material preview
     std::vector<std::unique_ptr<vg::GBuffer>> mMaterialPreviewGBuffers;
+    AssetHandleBundle mForceLoadedAssets;
 };
 

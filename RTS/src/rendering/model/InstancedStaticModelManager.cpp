@@ -531,11 +531,6 @@ void InstancedStaticModelManager::removeInstancesFromContainer(TileContainerID c
         }
         mTileContainerModels[renderPassIndex].erase(it);
     }
-    LOG_CRITICAL("TODO: REMOVE"); //  TODO: REMOVE
-    for (int i = 0; i < 2; ++i) {
-        SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[i][containerId];
-        assert(tileContainerModels.size() == 0);
-    }
 }
 
 ui32 InstancedStaticModelManager::getNumModels() const
@@ -689,7 +684,7 @@ void InstancedStaticModelManager::updatePendingModelDefs() {
     PROFILE_FUNCTION();
     ModelRepository& modelRepo = ModelRepository::get();
     for (auto&& it = mPendingInstances.begin(); it != mPendingInstances.end();) {
-        if (ModelDef* def = modelRepo.tryGetLoadedAsset(it->first)) {
+        if (const ModelDef* def = modelRepo.tryGetLoadedAsset(it->first)) {
             // Update data to point at now loaded mesh
             for (int m = 0; m < def->getNumMeshes(); ++m) {
                 const Mesh& mesh = def->getMesh(m);

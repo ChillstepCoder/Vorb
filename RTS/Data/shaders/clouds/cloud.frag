@@ -24,8 +24,8 @@ void main() {
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
     
-    // Replace alpha
-    fNormal.a = sampleMaterialAlbedo(mtl, fUV).a;
+    // Replace alpha (Using GRAYA, so alpha is in G)
+    fNormal.a = sampleMaterialAlbedo(mtl, fUV).g;
     tryDiscardTransparentPixel(fNormal.a);
     
     // TODO: Try uncommenting this line, see if talia likes it

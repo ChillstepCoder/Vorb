@@ -169,14 +169,18 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
 
         return true;
 
-    }, []ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+    }, [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
-        FBXLoadContext& loadContext = *std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
+        std::shared_ptr<FBXLoadContext>& loadContextPtr = std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
+        FBXLoadContext& loadContext = *loadContextPtr;
         for (ui32 i = 0; i < def.mNumMeshes; ++i) {
             if (loadContext.meshData[i].mVertsCount) {
                 ModelMeshBuilder::uploadCpuMeshToGpu(loadContext.meshData[i], def.mMeshes[i]->mMainMesh);
             }
         }
+        mFbxSdkMutex.lock();
+        loadContextPtr.reset();
+        mFbxSdkMutex.unlock();
         return true;
     },
         def.getID(),

@@ -18,7 +18,7 @@ public:
 
     void setCubemap(AssetHandlePtr<CubemapDef>&& skyCubemap);
     bool hasTexture() const { return mSkyCubemap != nullptr; }
-    const CubemapDef* getCubemap() const { return mSkyCubemap ? mSkyCubemap->tryGetAsset() : nullptr; }
+    const CubemapDef* tryGetCubemap() const { return mSkyCubemap ? mSkyCubemap->tryGetAsset() : nullptr; }
 
 private:
     std::unique_ptr<Mesh> mSkyboxMesh;

@@ -49,12 +49,8 @@ AssetLoadFunc BrushRepository::getAssetLoadRenderProcessFunc() {
 
         gli::texture2d& rs = std::any_cast<gli::texture2d&>(userData);
         BrushDef& def = *static_cast<BrushDef*>(assetDataPtr);
-        const GLTexture& texture = TextureRepository::get().uploadTexture(rs, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP);
-        VGTexture textureHandle = texture.getHandle();
-        if (textureHandle) {
-            def.texture = textureHandle;
-        }
-        else {
+        def.texture = std::make_unique<GLTexture>(TextureRepository::get().uploadTexture(rs, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP));
+        if (!def.texture->getHandle()) {
             panic("Failed to load texture {} for brush", filePath.getString().c_str());
         }
         return true;

@@ -119,13 +119,13 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
             }
         }
         if (!materialDef.normalTexture.isValid()) {
-            StrToken name(materialName + "_norm");
+            StrToken name(materialName + "_n");
             if (textureRepo.isAssetRegistered(name)) {
                 materialDef.normalTexture = name;
             }
         }
         if (!materialDef.displacementTexture.isValid()) {
-            StrToken name(materialName + "_disp");
+            StrToken name(materialName + "_d");
             if (textureRepo.isAssetRegistered(name)) {
                 materialDef.displacementTexture = name;
             }
@@ -246,9 +246,9 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
                 if (hasTexture) {
                     LOG_WARN("Generating AoRoughnessMetallicTexture");
-                    gli::texture2d generatedTexture = mMaterialTextureGenerator->combineAoRoughnessMetallicTextureData(aoData, roughnessData, metalData);
+                    gli::texture2d combinedTexture = mMaterialTextureGenerator->combineAoRoughnessMetallicTextureData(aoData, roughnessData, metalData);
                     // DDS convert
-                    loadData.aoMetalRoughData = TextureConvert::convertToDDS(generatedTexture);
+                    loadData.aoMetalRoughData = TextureConvert::convertToDDS(combinedTexture, true /*generateMipmaps*/);
                     gli::save(loadData.aoMetalRoughData, ddsPath.string());
                 }
 
@@ -287,6 +287,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
             
 
             const ui32v2 textureDims = albedo.gpuTexture.getDims();
+            textureRepo.setSamplerState(albedo.getID(), *samplerState);
             materialGpuData.albedoMap = albedo.gpuTexture.getHandleBindless();
 
             if (materialDef.normalTexture.isValid()) {
@@ -298,6 +299,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
                 }
                 else {
                     const TextureDef& normal = dependencies.getLoadedAsset<TextureDef>(materialDef.normalTexture);
+                    textureRepo.setSamplerState(normal.getID(), *samplerState);
                     materialGpuData.normalMap = normal.gpuTexture.getHandleBindless();
                     if (normal.gpuTexture.getDims() != textureDims) {
                         panic("Normal texture {} for material {} doesn't match albedo dims", materialDef.normalTexture.toString(), filePath.getString());
@@ -311,10 +313,10 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
             if (materialDef.displacementTexture.isValid()) {
                 const TextureDef& disp = dependencies.getLoadedAsset<TextureDef>(materialDef.displacementTexture);
-
                 if (disp.gpuTexture.getDims() != textureDims) {
                     panic("Disp texture {} for material {} doesn't match albedo dims", materialDef.displacementTexture.toString(), filePath.getString());
                 }
+                textureRepo.setSamplerState(disp.getID(), *samplerState);
                 materialGpuData.displacementMap = disp.gpuTexture.getHandleBindless();
             }
 

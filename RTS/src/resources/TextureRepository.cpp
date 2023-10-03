@@ -6,6 +6,7 @@
 #include "rendering/texture/MaterialTextureGenerator.h"
 
 #include "resources/ResourceManager.h"
+#include "resources/MaterialRepository.h"
 
 #include "util/TextureUtil.h"
 
@@ -93,10 +94,8 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
     const ui32v2 dims(textureData.extent().x, textureData.extent().y);
     VGTexture handle;
     glCreateTextures((VGEnum)textureTarget, 1, &handle);
-    //const i32 mipmapLevels = glm::min(maxMipLevels, (i32)textureData.levels());
-    // TODO: GLI IS 1 LESS???
-    const i32 mipmapLevels = computeMipmapCount(dims, maxMipLevels);
-
+    const i32 mipmapLevels = maxMipLevels > 0 ? glm::min(maxMipLevels, (i32)textureData.levels()) : (i32)textureData.levels();
+   
     VGEnum internalFormat;
     switch (textureData.format()) {
         case gli::FORMAT_RGB_DXT1_UNORM_BLOCK8:
@@ -107,6 +106,9 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
             break;
         case gli::FORMAT_R_ATI1N_UNORM_BLOCK8:
             internalFormat = GL_COMPRESSED_RED_RGTC1;
+            break;
+        case gli::FORMAT_RG_ATI2N_UNORM_BLOCK16:
+            internalFormat = GL_COMPRESSED_RG_RGTC2;
             break;
         case gli::FORMAT_RGBA_BP_UNORM_BLOCK16:
             internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
@@ -124,29 +126,50 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
         textureData.extent().y
     );
 
-    glCompressedTextureSubImage2D(
-        handle,
-        0, // mipmap level
-        0, 0, // xoffset, yoffset
-        textureData.extent().x,
-        textureData.extent().y,
-        internalFormat,
-        static_cast<GLsizei>(textureData.size(0)),
-        textureData.data()
-    );
+    for (gli::texture2d::size_type level = 0; level < mipmapLevels; ++level) {
+        // Get extent of the current mip level
+        gli::extent2d levelExtent = textureData.extent(level);
+
+        // Upload the compressed texture data for this mip level to OpenGL
+        glCompressedTextureSubImage2D(
+            handle,
+            static_cast<GLint>(level), // mipmap level
+            0, 0, // xoffset, yoffset
+            levelExtent.x,
+            levelExtent.y,
+            internalFormat,
+            static_cast<GLsizei>(textureData.size(level)), // size of this mip level
+            textureData.data(0, 0, level) // data pointer for this mip level
+        );
+    }
 
     checkGlError("TextureRepository::uploadDDSTexture");
     // Setup Texture Sampling Parameters
     samplerState.setForTexture(handle);
 
-    // Create Mipmaps If Necessary
+    // Mipmap LOD
     if (mipmapLevels > 0) {
         glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
         glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
-        glGenerateTextureMipmap(handle);
     }
 
     return GLTexture(handle, textureTarget, dims);
+}
+
+void TextureRepository::setSamplerState(AssetID textureId, const vg::SamplerState& samplerState) {
+    ASSERT_RENDER_THREAD();
+    assert(isAssetLoaded(textureId));
+    TextureDef& def = *mAssets[textureId];
+    if (def.samplerState == &samplerState) {
+        return;
+    }
+    if (def.gpuTexture.isTextureImmutable()) {
+        panic("Tried to change sampler on immutable texture {} {}", textureId, mAssetRegistry[textureId].mName.toString());
+    }
+    def.samplerState = &samplerState;
+    if (def.gpuTexture.hasHandle()) {
+        samplerState.setForTexture(def.gpuTexture.getHandle());
+    }
 }
 
 AssetLoadFunc TextureRepository::getAssetLoadFunc() {
@@ -158,8 +181,12 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 
         // Default properties
         textureDef.samplerState = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP;
-        textureDef.type = vg::TextureTarget::TEXTURE_2D;
-        textureDef.flipV = true;
+        textureDef.flipV = false;
+
+        // If this is registered as a material, use the material sampler state
+        if (const MaterialDef* materialDef = MaterialRepository::get().tryGetLoadedOrUnloadedAsset(textureDef.getName())) {
+            textureDef.samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(materialDef->samplerState)];
+        }
 
         LOG_INFO("Loading texture {}", textureDef.getName().toString().c_str());
 
@@ -202,13 +229,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
             if (needsGenerateDDS/* || outRs*/) {
                 loadUserData.rs = PngLoader::loadPng(stdPath, textureDef.flipV);
 
-                //if (outRs) {
-                //    // If caller requires full data, we wont ever generate dds
-                //    texture = uploadTexture(*rsPtr, type, *samplerState, INT_MAX);
-                //}
-                //else {
-                    // Compression
-                loadUserData.ddsRs = TextureConvert::convertToDDS(loadUserData.rs);
+                loadUserData.ddsRs = TextureConvert::convertToDDS(loadUserData.rs, true /*generateMipmaps*/);
 
                 // Cache to disk
                 LOG_TRACE("  Saving to disk - {}", ddsPath.string());
@@ -216,7 +237,6 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
                 // Ensure directories exist
                 fs::path directoryPath = ddsPath;
                 directoryPath._Remove_filename_and_separator();
-
 
                 if (!std::filesystem::exists(directoryPath)) {
                     static std::mutex createDirMutex;
@@ -263,10 +283,10 @@ AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
 
         // Prefer dds
         if (loadUserData.ddsRs.size()) {
-            textureDef.gpuTexture = uploadDDSTexture(loadUserData.ddsRs, textureDef.type, *textureDef.samplerState, INT_MAX);
+            textureDef.gpuTexture = uploadDDSTexture(loadUserData.ddsRs, vg::TextureTarget::TEXTURE_2D, *textureDef.samplerState, INT_MAX);
         }
         else if (loadUserData.rs.size()) {
-            textureDef.gpuTexture = uploadTexture(loadUserData.rs, textureDef.type, *textureDef.samplerState, INT_MAX);
+            textureDef.gpuTexture = uploadTexture(loadUserData.rs, vg::TextureTarget::TEXTURE_2D, *textureDef.samplerState, INT_MAX);
         }
         return true;
     };

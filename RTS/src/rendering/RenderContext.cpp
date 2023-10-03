@@ -438,6 +438,7 @@ void RenderContext::updateRenderThreadProcs() {
     if (timer.stop() > 20.0f) {
         std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
     }
+    checkGlError("updateRenderThreadProcs");
 }
 
 void RenderContext::renderPassWorldDebug(const Camera3D& camera) const {

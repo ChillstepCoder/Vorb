@@ -58,7 +58,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     MaterialRepository& materialRepo = MaterialRepository::get();
 
-    mAssetHandles.reserveCount(22);
+    mAssetHandles.reserveCount(23);
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("soft_particle")));
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("particle_v0")));
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("particle_v1")));
@@ -79,6 +79,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("fish_token_03")));
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("fish_token_04")));
     mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("weed_token_01")));
+    mAssetHandles.addAssetHandle(materialRepo.getAssetHandle(CStrToken("fish_bubble")));
 
     mPlayerPosition = f32v2(0.0f, -BOUNDARY_RADIUS + mPlayerRadius + 1);
     mChestPosition = f32v2(0.0f, BOUNDARY_RADIUS - CHEST_RADIUS - 1);
@@ -86,7 +87,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
     mSpriteBatch.init();
 
     mArenaShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, CStrToken("fishing_arena"));
-    mUIShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, CStrToken("particle_2d"));
+    mUIShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, CStrToken("particle_bb_2d"));
 
     initUIParticles();
 
@@ -269,6 +270,7 @@ void FishingMinigame::initUIParticles() {
         ),
         *mUIShader
     );
+    mUIParticleSystem->getEmitter(0).setBlendMode(ParticleBlendMode::Alpha);
 
     constexpr StrToken possibleFishTokens[4] = {
         CStrToken("fish_token_01"),
@@ -462,6 +464,7 @@ void FishingMinigame::initPlayerParticles() {
     ),
     *mUIShader);
     mPlayerParticleSystem->getEmitter(0).setGlobalParticleScale(f32v2(5.0f));
+    mPlayerParticleSystem->getEmitter(0).setBlendMode(ParticleBlendMode::Alpha);
 
     constexpr int MATERIAL_COUNT = 9;
     AssetID materials[MATERIAL_COUNT] = {
@@ -611,8 +614,9 @@ void FishingMinigame::initBlockerParticles() {
             );
             mBlockerParticleSystem->getEmitter(0).setParticleScale(mBlockerParticles[i], f32v2(PARTICLE_SCALE));
         }
-        mBlockerParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialId(CStrToken("weed_token")));
+        mBlockerParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getMaterialId(CStrToken("weed_token_01")));
         mBlockerParticleSystem->getEmitter(0).setGlobalParticleColor(color::White);
+        mBlockerParticleSystem->getEmitter(0).setBlendMode(ParticleBlendMode::Alpha);
     }
 }
 
@@ -698,6 +702,7 @@ void FishingMinigame::initBubbleParticles()
         }
         mBubbleParticleSystem->getEmitter(0).setGlobalMaterialID(materialRepository.getAssetID(CStrToken("fish_bubble")));
         mBubbleParticleSystem->getEmitter(0).setGlobalParticleColor(color::White);
+        mBubbleParticleSystem->getEmitter(0).setBlendMode(ParticleBlendMode::Alpha);
     }
 }
 

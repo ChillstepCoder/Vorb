@@ -209,7 +209,10 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                     }
                 }
                 else {
-                    ImGui::Button("LOADING");
+                    // Force load
+                    if (ImGui::Button("UNLOADED")) {
+                        mForceLoadedAssets.addAssetHandle(materialRepository.getAssetHandle(entry.mID));
+                    }
                 }
 
                 ImGui::PopID();

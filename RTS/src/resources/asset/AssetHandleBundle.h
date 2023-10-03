@@ -28,7 +28,8 @@ public:
     void addAssetHandle(std::shared_ptr<AssetHandleBase> handle) {
         if (mLockedByAssetLoader) panic("Tried to add an asset handle to bundle being loaded by the asset loader!");
 
-        assert(!hasAssetHandle(handle->getDescriptor()));
+        // No double add
+        if (hasAssetHandle(handle->getDescriptor())) return;
         mContainedAssetDescriptors.emplace(std::make_pair(handle->getDescriptor(), mHandles.size()));
         mLoaded.resizeAndZero(mContainedAssetDescriptors.size());
         if (handle->isLoaded()) {
@@ -74,6 +75,10 @@ public:
     // Must include IAssetRepository.h or this will not link
     template<typename T>
     const T& getLoadedAsset(StrToken assetName);
+
+    bool isLockedByAssetLoader() const {
+        return mLockedByAssetLoader;
+    }
 protected:
     friend class AssetLoader;
     void setLockedByAssetLoader(bool locked) {

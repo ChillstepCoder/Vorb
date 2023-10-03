@@ -3,6 +3,8 @@
 
 #include "App.h"
 
+#include "resources/AssetLoader.h"
+#include "rendering/RenderContext.h"
 
 #include "ui/ImguiUtil.hpp"
 
@@ -64,9 +66,10 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime)
 
 }
 
-void MainMenuScreen::update(const vui::GameTime& gameTime)
-{
-
+void MainMenuScreen::update(const vui::GameTime& gameTime) {
+    // Keep preloading assets
+    AssetLoader::getInstance().update();
+    RenderContext::getInstance().updateRenderThreadProcs();
 }
 
 const ImVec2 buttonSize(200, 50);

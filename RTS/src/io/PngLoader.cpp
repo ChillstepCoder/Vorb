@@ -3,6 +3,11 @@
 
 #include <png.h>
 
+
+bool isPowerOfTwo(int n) {
+    return n > 0 && (n & (n - 1)) == 0;
+}
+
 constexpr int MAX_TEXTURE_DIMENSION = 4096;
 
 gli::texture2d allocateTexture(const ui32& w, const ui32& h, int byteDepth, int channels) {
@@ -10,17 +15,16 @@ gli::texture2d allocateTexture(const ui32& w, const ui32& h, int byteDepth, int 
     // the shaders.
     gli::extent2d dimensions{ w, h };
     size_t size = 0;
-    constexpr int MAX_LEVEL = 1;
     if (byteDepth == 1) {
         switch (channels) {
             case 1:
-                return gli::texture2d(gli::FORMAT_R8_UNORM_PACK8, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_R8_UNORM_PACK8, dimensions);
             case 2:
-                return gli::texture2d(gli::FORMAT_RG8_UNORM_PACK8, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_RG8_UNORM_PACK8, dimensions);
             case 3:
-                return gli::texture2d(gli::FORMAT_RGB8_UNORM_PACK8, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_RGB8_UNORM_PACK8, dimensions);
             case 4:
-                return gli::texture2d(gli::FORMAT_RGBA8_UNORM_PACK8, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_RGBA8_UNORM_PACK8, dimensions);
             default:
                 throw std::exception("Invalid channel count");
         }
@@ -28,13 +32,13 @@ gli::texture2d allocateTexture(const ui32& w, const ui32& h, int byteDepth, int 
     else if (byteDepth == 2) {
         switch (channels) {
             case 1:
-                return gli::texture2d(gli::FORMAT_R16_UNORM_PACK16, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_R16_UNORM_PACK16, dimensions);
             case 2:
-                return gli::texture2d(gli::FORMAT_RG16_UNORM_PACK16, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_RG16_UNORM_PACK16, dimensions);
             case 3:
-                return gli::texture2d(gli::FORMAT_RGB16_UNORM_PACK16, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_RGB16_UNORM_PACK16, dimensions);
             case 4:
-                return gli::texture2d(gli::FORMAT_RGBA16_UNORM_PACK16, dimensions, MAX_LEVEL);
+                return gli::texture2d(gli::FORMAT_RGBA16_UNORM_PACK16, dimensions);
             default:
                 throw std::exception("Invalid channel count");
         }
@@ -52,8 +56,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     if (errno_t err = fopen_s(&rawFilePtr, path.string().c_str(), "rb")) {
         char errBuff[256];
         strerror_s(errBuff, err);
-        LOG_CRITICAL("loadPng Unable to open file - {} with error {}", path.string(), errBuff);
-        return res;
+        panic("loadPng Unable to open file - {} with error {}", path.string(), errBuff);
     }
     // Transfer ownership to RAII file handle
     std::unique_ptr<FILE, int (*)(FILE*)> file(rawFilePtr, fclose);
@@ -63,8 +66,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (png_sig_cmp((png_const_bytep)header, 0, 8))
     {
-        LOG_CRITICAL("loadPng File type not recognized - {}", path.string());
-        return res;
+        panic("loadPng File type not recognized - {}", path.string());
     }
 
     png_structp png_ptr;
@@ -74,8 +76,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (!png_ptr)
     {
-        LOG_CRITICAL("loadPng Format not recognized - {}", path.string());
-        return res;
+        panic("loadPng Format not recognized - {}", path.string());
     }
 
     png_infop info_ptr;
@@ -84,14 +85,12 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
 
     if (!info_ptr)
     {
-        LOG_CRITICAL("loadPng Unable to retrieve image information - {}", path.string());
-        return res;
+        panic("loadPng Unable to retrieve image information - {}", path.string());
     }
 
     if (setjmp(png_jmpbuf(png_ptr)))
     {
-        LOG_CRITICAL("loadPng File corrupt - {}", path.string());
-        return res;
+        panic("loadPng File corrupt - {}", path.string());
     }
 
     int width, height;
@@ -113,16 +112,15 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     color_type = png_get_color_type(png_ptr, info_ptr);
 
     if (width > MAX_TEXTURE_DIMENSION || height > MAX_TEXTURE_DIMENSION) {
-        LOG_CRITICAL("Texture {} dimensions <{},{}> greater than max of {}", path.string(), width, height, MAX_TEXTURE_DIMENSION);
-        assert(false);
+        panic("Texture {} dimensions <{},{}> greater than max of {}", path.string(), width, height, MAX_TEXTURE_DIMENSION);
     }
-    if (width % 4 != 0 || height % 4 != 0) {
-        LOG_CRITICAL("Texture {} dimensions <{},{}> are not divisible by 4", path.string(), width, height);
-        assert(false);
+    // In your texture dimension check
+    if (!isPowerOfTwo(width) || !isPowerOfTwo(height)) {
+        panic("Texture {} dimensions <{},{}> are not power of two", path.string(), width, height);
     }
 
     //number_of_passes=png_set_interlace_handling(png_ptr);
-    assert(color_type == PNG_COLOR_TYPE_PALETTE || color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA || color_type == PNG_COLOR_TYPE_GRAY);
+    assert(color_type == PNG_COLOR_TYPE_PALETTE || color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA || color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA);
 
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         png_set_palette_to_rgb(png_ptr);

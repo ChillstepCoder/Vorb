@@ -17,7 +17,7 @@ void SkillsComponentSystem::update(IWorld& world, entt::registry& registry, f32 
 	const auto updateSkill =
 		[&](entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, f32 elapsedSec) -> bool {
 		const SkillDef* skillDef = skillsCmp.mSkills[e_cast(skillsCmp.mActiveSlot)]->tryGetAsset();
-		assert(skillDef);
+		if (!skillDef) return false;
 		// Fire all passed triggers
 		activeCmp.mElapsed += elapsedSec;
 		while (activeCmp.mNextTrigger < skillDef->mNumTriggers) {

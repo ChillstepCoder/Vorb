@@ -69,6 +69,9 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
         MaterialShaderFileData& fileData = std::any_cast<MaterialShaderFileData&>(userData);
         MaterialShaderDef& def = *static_cast<MaterialShaderDef*>(assetDataPtr);
 
+        // Clear in case of reload
+        def.mInputTextures.clear();
+        def.mUniforms.clear();
 
         // TODO: Can we do any work here? If not, can we have it send directly to the render thread?
         if (filePath.getExtension() == "comp") {

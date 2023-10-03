@@ -9,7 +9,7 @@
 #include "resources/asset/AssetHandleBundle.h"
 
 AssetLoader::AssetLoader() {
-    size_t numWorkerThreads = 1;
+    size_t numWorkerThreads = 1;// 4;
     /// Allocate all threads
     mWorkers.resize(numWorkerThreads);
     for (ui32 i = 0; i < numWorkerThreads; i++) {
@@ -80,17 +80,17 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
     postData->mUserData = std::move(task->mUserData);
     RenderThreadTasks::getInstance().addGenericTask([](RenderContext& renderContext, void* vPathHandle) {
         PostData* postData = static_cast<PostData*>(vPathHandle);
-        postData->mRenderPostFunc(AssetLoader::getInstance(), postData->mAssetID, postData->mPath, postData->mAssetDataPtr, postData->mUserData);
-        if (postData->mIsFinishedFlagPtr) {
-            LOG_TRACE("    Finished load on render thread {} {}", postData->mAssetID, postData->mPath.getCString());
-            postData->mIsFinishedFlagPtr->store(true);
+        if (postData->mRenderPostFunc(AssetLoader::getInstance(), postData->mAssetID, postData->mPath, postData->mAssetDataPtr, postData->mUserData)) {
+            if (postData->mIsFinishedFlagPtr) {
+                LOG_TRACE("    Finished load on render thread {} {}", postData->mAssetID, postData->mPath.getCString());
+                postData->mIsFinishedFlagPtr->store(true);
+            }
         }
         delete postData;
     }, postData);
 }
 
 void AssetLoader::workerThreadFunc(AssetLoader* loader) {
-    assert(loader == &AssetLoader::getInstance());
 
     AssetLoadTaskPtr task;
     nString dataStr;

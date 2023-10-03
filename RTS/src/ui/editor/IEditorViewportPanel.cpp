@@ -416,9 +416,9 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader,
 
         if (mSkybox->hasTexture()) {
             glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit);
-            glBindTextureUnit(availableTextureUnit++, mSkybox->getCubemap()->getIrradianceTexture());
+            glBindTextureUnit(availableTextureUnit++, mSkybox->tryGetCubemap()->getIrradianceTexture());
             glUniform1i(shader->getUniform("unPrefilterMap"), availableTextureUnit);
-            glBindTextureUnit(availableTextureUnit++, mSkybox->getCubemap()->getPrefilterMap());
+            glBindTextureUnit(availableTextureUnit++, mSkybox->tryGetCubemap()->getPrefilterMap());
         }
         else {
             // TODO: empty textures?

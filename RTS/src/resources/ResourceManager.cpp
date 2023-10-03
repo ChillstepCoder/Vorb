@@ -188,7 +188,13 @@ void ResourceManager::reloadMaterials() {
 
     ShaderLoader::clearAllCachedPrograms();
     vg::ShaderManager::disposeAllPrograms();
-    MaterialShaderRepository::get().reloadAllLoadedAssets();
+    AssetHandleBundle assets = MaterialShaderRepository::get().reloadAllLoadedAssets();
+    AssetLoader& loader = AssetLoader::getInstance();
+    while (!assets.areAllAssetsLoaded()) {
+        loader.update();
+        Sleep(1);
+        RenderContext::getInstance().updateRenderThreadProcs();
+    }
 
     LOG_DEBUG("...done");
 }
@@ -318,6 +324,7 @@ void ResourceManager::preloadFiles() {
     ryml::Tree tree = YmlSerializer::parseFileData(data);
     ryml::ConstNodeRef root = tree.crootref();
     ryml::ConstNodeRef startupSeq = root["startup"];
+    ryml::ConstNodeRef preloadSeq = root["preload"];
 
     StrToken assetName;
     AssetType assetType;
@@ -330,14 +337,31 @@ void ResourceManager::preloadFiles() {
         addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
     }
 
-    LOG_INFO("Preloading assets...");
+    LOG_INFO("Loading startup assets...");
     AssetLoader& loader = AssetLoader::getInstance();
     while (!mPreloadAssetsBundle.areAllAssetsLoaded()) {
         loader.update();
-        Sleep(10);
+        Sleep(1);
         RenderContext::getInstance().updateRenderThreadProcs();
     }
     LOG_INFO("Done");
 
-    // TODO: Post startup!
+    constexpr StrToken wildcard = CStrToken("*");
+    for (ryml::ConstNodeRef child : preloadSeq.children()) {
+        if (child.num_children() != 2) {
+            panic("Malformed entry in assets.preload::startup");
+        }
+        child.child(0) >> assetName;
+        child.child(1) >> assetType;
+        if (assetName == wildcard) {
+            for (size_t i = 0; i < mAssetRepositories[e_cast(assetType)]->getNumRegisteredAssets(); ++i) {
+                if (!mPreloadAssetsBundle.hasAssetHandle(AssetDescriptor{ .id = (AssetID)i,.assetType = assetType })) {
+                    mPreloadAssetsBundle.addAssetHandle(mAssetRepositories[e_cast(assetType)]->getAssetHandleBase(i));
+                }
+            }
+        }
+        else {
+            addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
+        }
+    }
 }

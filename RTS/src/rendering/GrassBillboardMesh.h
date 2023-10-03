@@ -9,6 +9,8 @@
 
 #include "rendering/mesh/TileGrassMeshType.h"
 
+#include "resources/asset/AssetHandleBundle.h"
+
 constexpr int GRASS_TBO_INSTANCE_DATA_BINDING = 9;
 constexpr int GRASS_TBO_POSITION_DATA_BINDING = 10;
 constexpr int GRASS_TBO_NORMAL_DATA_BINDING = 11;
@@ -46,6 +48,7 @@ public:
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 
 private:
+    std::unique_ptr<AssetHandleBundle> mGrassAssets;
     BoundingSphere mBoundingSphere;  ///< Optional AABB to describe the bounds
     GrassBillboardMeshGpuData mData[e_cast(TileGrassMeshType::COUNT)];
     bool mIsValid = false;
@@ -75,6 +78,8 @@ public:
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mMesh.setBoundingSphere(boundingSphere); }
 
     const GrassBillboardMesh& getMesh() const { return mMesh; }
+    void addGrassAsset(TileGrassID id) { mGrassAssets.emplace(id); }
+    const std::unordered_set<TileGrassID>& getGrassAssets() const { return mGrassAssets; }
 private:
     void initBuffers(int bufferIndex);
 
@@ -82,4 +87,5 @@ private:
     std::vector<GrassBillboardInstanceData> mInstanceData[e_count(TileGrassMeshType)]; // TODO: Recycle?
     std::vector<f32v3> mPositionData[e_count(TileGrassMeshType)]; // TODO: Recycle?
     std::vector<ui8v2> mNormalData[e_count(TileGrassMeshType)]; // TODO: Recycle?
+    std::unordered_set<TileGrassID> mGrassAssets;
 };

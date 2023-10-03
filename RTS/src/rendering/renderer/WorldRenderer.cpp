@@ -287,7 +287,10 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mHDRLightGBuffer->setSharedDepthStencilTexture(activeGBuffer->getDepthStencilTexture());
 
     // Sunlight
-    mLightRenderer->renderSunlight(*activeGBuffer, mShadowRenderer->getShadowTexture(), *mSkyBox->getCubemap());
+    const CubemapDef* cubemap = mSkyBox->tryGetCubemap();
+    if (cubemap) {
+        mLightRenderer->renderSunlight(*activeGBuffer, mShadowRenderer->getShadowTexture(), *cubemap);
+    }
 
     // Sky (PBR version)
     if (sDebugOptions.mUsingPBR) {
@@ -581,15 +584,18 @@ void WorldRenderer::renderPassTransparent() {
     if (!mCurrentWorldRenderDataManager) {
         return;
     }
+    if (!mSkyBox->hasTexture()) {
+        return;
+    }
 
     if (!sDebugOptions.mDisableClouds && !sDebugOptions.mWireframe) {
-        mCloudRenderer->renderClouds(mCurrentWorldRenderDataManager->getCloudMeshManager(), mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *mSkyBox->getCubemap());
+        mCloudRenderer->renderClouds(mCurrentWorldRenderDataManager->getCloudMeshManager(), mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *mSkyBox->tryGetCubemap());
     }
 
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
         glEnable(GL_DEPTH_CLAMP);
-        mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *mSkyBox->getCubemap());
+        mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *mSkyBox->tryGetCubemap());
         glDisable(GL_DEPTH_CLAMP);
     }
 

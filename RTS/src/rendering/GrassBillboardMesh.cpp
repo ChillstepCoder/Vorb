@@ -3,6 +3,8 @@
 
 #include "math/Random.h"
 
+#include "resources/TileGrassRepository.h"
+
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -57,6 +59,13 @@ void GrassBillboardMeshBuilder::addBladeQuad(TileGrassMeshType type, const f32v3
 
 void GrassBillboardMeshBuilder::finishMesh() {
     mMesh.mIsValid = false; // Mesh is valid if it has any renderable data
+    if (mGrassAssets.size()) {
+        TileGrassRepository& tileRepo = TileGrassRepository::get();
+        mMesh.mGrassAssets = std::make_unique<AssetHandleBundle>();
+        for (auto&& id : mGrassAssets) {
+            mMesh.mGrassAssets->addAssetHandle(tileRepo.getAssetHandleBase(id));
+        }
+    }
     for (int i = 0; i < e_count(TileGrassMeshType); ++i) {
         if (mInstanceData[i].size()) {
             GrassBillboardMeshGpuData& gpuData = mMesh.mData[i];
