@@ -191,12 +191,20 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 #define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)
 #define COLOR_CURVE color4(0.3f, 0.7f, 0.7f, 1.0f)
 #define COLOR_COMPLEX color4(1.0f, 0.3f, 0.3f, 1.0f)
+#define COLOR_INPUT color4(0.0f, 0.85f, 0.0f, 1.0f)
 
+DEFINE_CPUPEO_BINARY(CPUPEO_AddVec2, "Add Vec2", "add_vec2", COLOR_STANDARD, f32v2, f32v2, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_SubVec2, "Subtract Vec2", "sub_vec2", COLOR_STANDARD, f32v2, f32v2, -)
+DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyVec2, "Multiply Vec2", "mult_vec2", COLOR_STANDARD, f32v2, f32v2, *)
+DEFINE_CPUPEO_BINARY(CPUPEO_AddFloatToVec2, "Add Float To Vec2", "add_f32_vec2", COLOR_STANDARD, f32v2, f32, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloatToVec2, "Multiply Float To Vec2", "mult_f32_vec2", COLOR_STANDARD, f32v2, f32, *)
 DEFINE_CPUPEO_BINARY(CPUPEO_AddVec3, "Add Vec3", "add_vec3", COLOR_STANDARD, f32v3, f32v3, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_SubVec3, "Subtract Vec3", "sub_vec3", COLOR_STANDARD, f32v3, f32v3, -)
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyVec3, "Multiply Vec3", "mult_vec3", COLOR_STANDARD, f32v3, f32v3, *)
 DEFINE_CPUPEO_BINARY(CPUPEO_AddFloatToVec3, "Add Float To Vec3", "add_f32_vec3", COLOR_STANDARD, f32v3, f32, +)
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloatToVec3, "Multiply Float To Vec3", "mult_f32_vec3", COLOR_STANDARD, f32v3, f32, *)
 DEFINE_CPUPEO_BINARY(CPUPEO_AddFloat, "Add Float", "add_f32", COLOR_STANDARD, f32, f32, +)
+DEFINE_CPUPEO_BINARY(CPUPEO_SubFloat, "Subtract Float", "sub_f32", COLOR_STANDARD, f32, f32, -)
 DEFINE_CPUPEO_BINARY(CPUPEO_MultiplyFloat, "Multiply Float", "mult_f32", COLOR_STANDARD, f32, f32, *)
 
 DEFINE_CPUPEO_NEGATE(CPUPEO_NegateVec3, "Negate Vec3", "negate_vec3", COLOR_STANDARD, f32v3)
@@ -223,6 +231,11 @@ DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COL
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Rotation; }
 )
 DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32)
+
+// Inputs
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_InputImpactDirection, "(In) Impact Direction", "i_idir", COLOR_INPUT, f32v3)
+DEFINE_CPUPEO_QUERY_DECL(CPUPEO_InputImpactSurfaceNormal, "(In) Impact Surface Normal", "i_inorm", COLOR_INPUT, f32v3)
+
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_STANDARD, f32,
     OPERATION_PARAMS(CPUPEO_RandomFloatInRange, E_VAR(f32(0.f)), E_VAR(f32(1.f)))

@@ -12,6 +12,7 @@ namespace ImguiUtil {
     class RenameAssetPopup;
     class ConfirmDeletePopup;
     class CustomSelectorPopup;
+    class AssetSelectorPopup;
 }
 
 enum class EditorViewportDrawMode {

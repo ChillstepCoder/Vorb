@@ -20,7 +20,7 @@ BuildingBlueprint::BuildingBlueprint(
     mTileSpatialGrid.init(worldPosRoot, i32v3(dims.x, dims.y, 1), 3);
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
-    tileIDs[e_cast(BlueprintTileType::FLOOR)] = tileRepo.getTileID(CStrToken("bricks"));
+    tileIDs[e_cast(BlueprintTileType::FLOOR)] = tileRepo.getTileID(CStrToken("bricks_01"));
     tileIDs[e_cast(BlueprintTileType::DOOR)] = tileRepo.getTileID(CStrToken("wd_door_goth"));
     tileIDs[e_cast(BlueprintTileType::WALL)] = tileRepo.getTileID(CStrToken("wd_wall_goth"));
     tileIDs[e_cast(BlueprintTileType::WINDOW)] = tileRepo.getTileID(CStrToken("wd_wind_goth"));

@@ -14,6 +14,8 @@ constexpr int SHADOW_FRUSTUM_CORNER_COUNT = 8;
 
 // Cascading shadow maps
 // https://learnopengl.com/Guest-Articles/2021/CSM
+// TODO: read https://alextardif.com/shadowmapping.html
+// TODO: read http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/#light-space-perspective-shadow-maps
 class ShadowRenderer
 {
 public:

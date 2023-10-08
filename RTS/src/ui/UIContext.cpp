@@ -11,6 +11,8 @@
 #include "ui/editor/IEditorViewportPanel.h"
 #include "ui/minigame/LocalMinigameContext.h"
 
+#include <Vorb/ui/GameWindow.h>
+
 #include "screens/ScreenState.h"
 
 UIContext* UIContext::sInstance = nullptr;
@@ -132,6 +134,13 @@ UIContext& UIContext::initInstance(const f32v2& screenResolution, SDL_Window* wi
 UIContext& UIContext::getInstance() {
     assert(sInstance);
     return *sInstance;
+}
+
+ui32v2 UIContext::getWindowDims() {
+    if (sMainGameWindowHandle) {
+        return sMainGameWindowHandle->getViewportDims();
+    }
+    return ui32v2(0);
 }
 
 bool UIContext::shouldPauseGameRendering() const {

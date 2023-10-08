@@ -14,7 +14,7 @@
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/imgui_internal.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 // Panel splitter https://github.com/ocornut/imgui/issues/319

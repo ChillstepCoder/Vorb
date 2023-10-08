@@ -6,6 +6,9 @@
 #include "CPUParticleEmitterModule.h"
 #include "ParticleEnumTypes.h"
 
+#include "rendering/particle/ParticleSystemInputs.h"
+
+
 class CPUParticleSystem;
 class MaterialShaderDef;
 class ParticleEmitterDef;
@@ -39,8 +42,8 @@ typedef std::function<void(class CpuParticleEmitter& emitter, CPUParticlesData& 
 
 class CpuParticleEmitter {
 public:
-    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, f32 lifetime = FLT_MAX);
-    CpuParticleEmitter(const ParticleEmitterDef& def);
+    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime = FLT_MAX);
+    CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSystemInputs* inputs);
     ~CpuParticleEmitter();
 
     VORB_NON_COPYABLE(CpuParticleEmitter);
@@ -58,10 +61,12 @@ public:
     void multiplyParticleScale(ParticleID id, f32v2 scale);
     void setParticleVelocity(ParticleID id, f32v3 velocity);
     void addParticleVelocity(ParticleID id, f32v3 velocity);
+    void multiplyParticleVelocity(ParticleID id, f32v3 scale);
     void setParticleColor(ParticleID id, color4 color);
     void setParticleHDRColor(ParticleID id, f32v4 color);
     void setParticleMaterial(ParticleID id, MaterialID material);
     void setParticleRotation(ParticleID id, f32v2 rollPitch);
+    void setParticleLifespan(ParticleID id, f32 lifespan);
     // Accessors
     f32v3 getParticlePosition(ParticleID id) const { return mParticleData.mPositions[id]; }
     f32v2 getParticleScale(ParticleID id) const { return mParticleData.mScales[id]; }
@@ -73,6 +78,9 @@ public:
     MaterialID getParticleMaterial(ParticleID id) const { return mParticleData.mMaterials[id]; }
     CPUParticlesData& getParticleData() { return mParticleData; }
 
+    // Inputs
+    const ParticleSystemInputs& getInputs() const { return *mInputs; }
+
     void markDataChanged() { mDataChanged = true; }
 
     // Global state
@@ -80,8 +88,8 @@ public:
     f32v2 getGlobalParticleScale() const { return mGlobalParticleScale; }
     void setGlobalParticleColor(color4 color) { mGlobalParticleColor = color; }
     color4 getGlobalParticleColor() const { return mGlobalParticleColor; }
-    void setGlobalMaterialID(MaterialID materialID) { assert(!mParticleData.mMaterials); mGlobalMaterialID = materialID; }
-    MaterialID getGlobalMaterialID() const { assert(!mParticleData.mMaterials); return mGlobalMaterialID; }
+    void setGlobalMaterialID(MaterialID materialID);
+    MaterialID getGlobalMaterialID() const { return mGlobalMaterialID; }
     void setGlobalParticleLifespan(f32 lifespan) { mGlobalParticleLifespan = lifespan; }
     f32 getGlobalParticleLifespan() const { return mGlobalParticleLifespan; }
 
@@ -152,7 +160,8 @@ protected:
     f32v2 mGlobalParticleScale = f32v2(1.0f);
     f32 mGlobalParticleLifespan = 3.0f;
     color4 mGlobalParticleColor = color::White;
-    MaterialID mGlobalMaterialID = 0;
+    MaterialID mGlobalMaterialID = INVALID_MATERIAL_ID;
+    std::unique_ptr<AssetHandleBundle> mMaterialAssetHandles;
     int mFirstActiveParticle = 0;
     int mLastActiveParticle = -1;
     int mActiveParticles = 0;
@@ -163,6 +172,10 @@ protected:
     bool mNeedsFindFirstParticle = false;
     bool mNeedsFindLastParticle = false;
     ParticleBlendMode mBlendMode = ParticleBlendMode::Additive;
+    // Inputs
+    ParticleSystemInputs* mInputs = nullptr;
+
+    std::unordered_set<MaterialID> mContainedMaterials;
 
     f32 mTotalElapsedSec = 0.0f;
     f32 mLifetimeSec;

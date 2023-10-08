@@ -6,7 +6,7 @@
 #include "ecs/component/CharacterDetailsComponent.h"
 
 #include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/ui/GameWindow.h>

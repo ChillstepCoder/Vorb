@@ -379,7 +379,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // Materials
     RoofStyle roofStyle = RoofStyle{
         .shinglesMaterial=MaterialRepository::get().getMaterialDesc(CStrToken("roof")),
-        .primaryBoardMaterial=MaterialRepository::get().getMaterialDesc(CStrToken("big_beam_"))
+        .primaryBoardMaterial=MaterialRepository::get().getMaterialDesc(CStrToken("big_beam_0"))
     };
     meshBuilders.addMaterial(roofStyle.shinglesMaterial.id);
     meshBuilders.addMaterial(roofStyle.primaryBoardMaterial.id);
@@ -747,6 +747,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Build
 
     // Convex partition requires a "simple" polygon, no overlaps, and no 
     if (!concavePoly.is_simple()) {
+        // TODO: This has happened recently, not sure why
         LOG_CRITICAL("Input polygon to CGAL::optimal_convex_partition_2 is not simple: ");
         assert(false);
         bool firstPoint = true;

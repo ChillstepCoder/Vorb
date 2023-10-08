@@ -834,6 +834,12 @@
     <ClCompile Include="src\resources\IAsset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\editor\ImguiAssetThumbnails.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2037,6 +2043,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\TileGrassDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialogConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\asset\AssetRegistryEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

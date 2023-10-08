@@ -3,6 +3,8 @@
 #include <Vorb/ui/imgui/imgui.h>
 #include <numeric>  // std::iota
 
+#include "resources/asset/AssetRegistryEntry.h"
+
 namespace ImguiUtil {
 
     // https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
@@ -86,7 +88,7 @@ namespace ImguiUtil {
 
     class ConfirmDeletePopup : public AssetPopup {
     public:
-        ConfirmDeletePopup(const nString& assetName, void* assetPtr) : AssetPopup("Confirm Delete", assetName, assetPtr) {};
+        ConfirmDeletePopup(const nString& assetName, void* assetPtr) : AssetPopup("ConfirmDelete", assetName, assetPtr) {};
         // Return true when closed
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
@@ -103,9 +105,10 @@ namespace ImguiUtil {
                     ImGui::EndPopup();
                     return true;
                 }
+                ImGui::EndPopup();
+                return false;
             }
-            ImGui::EndPopup();
-            return false;
+            return true;
         }
         bool getResult() const {
             return result;
@@ -114,20 +117,22 @@ namespace ImguiUtil {
         bool result = false;
     };
 
+    inline int textFieldForceStrtoken(ImGuiInputTextCallbackData* data) {
+        char tmpChar = (char)data->EventChar;
+        nString tokenStr = StrToken(nString("") + tmpChar).toString();
+        data->EventChar = (ImWchar)tokenStr[0];
+        return 0;
+    }
+
     class RenameAssetPopup : public AssetPopup {
     public:
-        RenameAssetPopup(const nString& assetName, void* assetPtr) : AssetPopup("Rename Asset", assetName, assetPtr) {};
+        RenameAssetPopup(const nString& assetName, void* assetPtr) : AssetPopup("RenameAsset", assetName, assetPtr) {};
         // Return true when closed
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
                 ImGui::Text(("Rename " + assetName).c_str());
-                if (ImGui::InputText("Name", buffer, MAX_CHARS_IN_STRTOKEN + 1)) {
-                    // Enforce strtoken
-                    nString tokenStr = StrToken(nString(buffer)).toString();
-                    memcpy(buffer, tokenStr.data(), tokenStr.size());
-                    buffer[tokenStr.size()] = '\0';
-                }
-                // Your popup content here
+                ImGui::InputText("Name", buffer, MAX_CHARS_IN_STRTOKEN + 1, ImGuiInputTextFlags_CallbackCharFilter, textFieldForceStrtoken);
+
                 if (ImGui::Button("Confirm")) {
                     result = buffer;
                     ImGui::EndPopup();
@@ -138,12 +143,13 @@ namespace ImguiUtil {
                     ImGui::EndPopup();
                     return true;
                 }
+                ImGui::EndPopup();
+                return false;
             }
             else {
                 buffer[0] = '\0';
             }
-            ImGui::EndPopup();
-            return false;
+            return true;
         }
 
         const nString& getResult() const {
@@ -173,7 +179,7 @@ namespace ImguiUtil {
                 for (size_t i : mSortedIndices) {
                     ImGui::PushID(i);
                     if (mFilterStatus[i]) {
-                        if (ImGui::Button("X")) {
+                        if (ImGui::Button("X")) { // TODO: Checkmark image?
                             result = i;
                             ImGui::PopID();
                             ImGui::EndPopup();
@@ -189,9 +195,10 @@ namespace ImguiUtil {
                     ImGui::EndPopup();
                     return true;
                 }
+                ImGui::EndPopup();
+                return false;
             }
-            ImGui::EndPopup();
-            return false;
+            return true;
         }
         size_t getResult() const {
             return result;
@@ -218,52 +225,105 @@ namespace ImguiUtil {
         size_t result = UINT32_MAX;
     };
 
-    template <IsAssetType T>
     class AssetSelectorPopup : public AssetPopup, public PopupFilterInterface {
     public:
-        AssetSelectorPopup(const std::vector<T>& assets) : mAssets(assets), AssetPopup("Asset Selector", "", nullptr) {
-            mSortedIndices = sortIndexes<T>(assets, [&assets](size_t i1, size_t i2) -> bool {
-                const nString& n1 = assets[i1].getName();
-                const nString& n2 = assets[i2].getName();
+        AssetSelectorPopup(const std::vector<AssetRegistryEntry>& assets) : mAssets(assets), AssetPopup("AssetSelector", "", nullptr) {
+            char nameBuf1[MAX_CHARS_IN_STRTOKEN + 1];
+            char nameBuf2[MAX_CHARS_IN_STRTOKEN + 1];
+            ui32 size1 = 0;
+            ui32 size2 = 0;
+            mSortedIndices = sortIndexes<AssetRegistryEntry>(assets, [&](size_t i1, size_t i2) -> bool {
+                assets[i1].mName.toString(nameBuf1, &size1);
+                assets[i2].mName.toString(nameBuf2, &size2);
+                std::string_view n1(nameBuf1, size1);
+                std::string_view n2(nameBuf2, size2);
                 return std::lexicographical_compare(n1.begin(), n1.end(), n2.begin(), n2.end());
             });
             std::vector<nString> filterNames(mAssets.size());
             for (size_t i = 0; i < mAssets.size(); ++i) {
-                filterNames[i] = mAssets[i].getName();
+                filterNames[i] = mAssets[i].mName.toString();
             }
             setFilter(filterNames);
         };
+        void setThumbnailFunc(std::function<void(AssetID, f32v2)> func, f32v2 thumbnailSize) {
+            mThumbnailSize = thumbnailSize;
+            mThumbnailFunc = func;
+        }
         // Return true when closed
-        bool updateAndRender() {
+        bool updateAndRender(f32 maxHeight) {
+            constexpr ImGuiTableFlags TABLE_FLAGS =
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable
+                | ImGuiTableFlags_Sortable
+                | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBody
+                | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
+                | ImGuiTableFlags_SizingFixedFit;
+
+            ImVec2 maxSize(1000.0f, maxHeight); // Example values, adjust as needed
+            ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), maxSize);
             if (ImGui::BeginPopupModal(id, nullptr)) {
                 updateAndRenderFilter();
-                for (size_t i : mSortedIndices) {
-                    if (mFilterStatus[i]) {
-                        if (ImGui::Button("X")) {
-                            result = std::make_pair<T*, AssetID>(const_cast<T*>(&mAssets[i]), mAssets[i].getId());
-                            ImGui::EndPopup();
-                            return true;
-                        }
-                        ImGui::SameLine();
-                        ImGui::Text(mAssets[i].getName() + " " + nString(mAssets[i].getId()));
+                int colCount = mThumbnailFunc ? 4 : 3;
+                if (ImGui::BeginTable("AssetTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+                    constexpr f32 FIXED_WIDTH = 75.0f;
+                    ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 50.0f);
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH * 2.0f);
+                    ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, FIXED_WIDTH);
+                    if (mThumbnailFunc) {
+                        ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, mThumbnailSize.x);
                     }
+                    ImGui::TableSetupScrollFreeze(1, 1);
+
+                    ImGui::TableHeadersRow();
+
+                    for (size_t i : mSortedIndices) {
+                        if (mFilterStatus[i]) {
+                            ImGui::PushID(i);
+                            ImGui::TableNextRow(ImGuiTableRowFlags_None, mThumbnailSize.y);
+                            // Select
+                            ImGui::TableSetColumnIndex(0);
+                            if (ImGui::Button("Select")) {
+                                result = mAssets[i];
+                                ImGui::PopID();
+                                ImGui::EndTable();
+                                ImGui::EndPopup();
+                                return true;
+                            }
+                            // Name
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::Text(mAssets[i].mName.toString().c_str());
+                            // ID
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text(std::to_string(mAssets[i].mID).c_str());
+                            // Thumbnail
+                            if (mThumbnailFunc) {
+                                ImGui::TableSetColumnIndex(3);
+                                mThumbnailFunc(mAssets[i].mID, mThumbnailSize);
+                            }
+                           
+                            ImGui::PopID();
+                        }
+                    }
+                    ImGui::EndTable();
                 }
                 
                 if (ImGui::Button("Cancel")) {
                     ImGui::EndPopup();
                     return true;
                 }
+                ImGui::EndPopup();
+                return false;
             }
-            ImGui::EndPopup();
-            return false;
+            return true;
         }
-        std::pair<T*, AssetID> getResult() const {
+        AssetRegistryEntry getResult() const {
             return result;
         }
     protected:
-        std::pair<T*, AssetID> result;
-        const std::vector<T>& mAssets;
+        AssetRegistryEntry result;
+        const std::vector<AssetRegistryEntry>& mAssets;
         std::vector<size_t> mSortedIndices;
+        std::function<void(AssetID, f32v2)> mThumbnailFunc = nullptr;
+        f32v2 mThumbnailSize = f32v2(25.0f);
     };
 
     inline bool ButtonCenteredOnLine(const char* label, ImVec2 size) {

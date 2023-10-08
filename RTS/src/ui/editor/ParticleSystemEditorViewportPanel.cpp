@@ -3,6 +3,8 @@
 
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialShaderRepository.h"
+#include "resources/MaterialRepository.h"
+#include "resources/TextureRepository.h"
 #include "rendering/MaterialRenderer.h"
 #include "resources/ParticleSystemRepository.h"
 
@@ -10,11 +12,17 @@
 
 #include "camera/SimpleCamera.h"
 
+#include "ui/UIContext.h"
 #include "ui/ImguiUtil.hpp"
+#include "ui/editor/ImguiAssetThumbnails.h"
 
 #include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+
+#include <extern/ImGuiFileDialog/ImGuiFileDialog.h>
+
+const nString SAVE_DIALOG_NAME = "SaveFileDialog";
 
 // TODO: UI Utilities
     // Helper for selected button styling
@@ -46,6 +54,10 @@ bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     }
 
     mCurrentTime += elapsedSec;
+
+    if (!mSystemDef) {
+        mCurrentTime = mTimelineEnd;
+    }
     if (mCurrentTime >= mTimelineEnd) {
         createPreviewSystem();
     }
@@ -140,8 +152,14 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         }
         ImGui::SameLine();
         if (ImGui::Button("Save")) {
-            if (!ParticleSystemRepository::get().saveAsset(mSystemDef->getID())) {
-                pError("FAILED TO SAVE PARTICLE SYSTEM!");
+            ParticleSystemRepository& repo = ParticleSystemRepository::get();
+            if (repo.getAssetFilePath(mSystemDef->getID()).isNull()) {
+                ImGuiFileDialog::Instance()->OpenDialog(SAVE_DIALOG_NAME, "Save As", ".psys", "./data/particle/" + mSystemDef->getName().toString(), 1, nullptr, ImGuiFileDialogFlags_Modal);
+            }
+            else {
+                if (!ParticleSystemRepository::get().saveAsset(mSystemDef->getID())) {
+                    panic("FAILED TO SAVE PARTICLE SYSTEM {}", repo.getAssetFilePath(mSystemDef->getID()).getCString());
+                }
             }
         }
         ImGui::SameLine();
@@ -168,8 +186,9 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 newEmitterDef.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
                 mSelectedEmitter = &newEmitterDef;
+                mSelectedModule = nullptr;
+                mSelectedModuleVector = nullptr;
                 mTextInputBuffer[0] = '\0';
-
             }
             else {
                 ImGui::SameLine();
@@ -281,12 +300,14 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
                 else {
                     if (ImGui::Button(module->getName(), ImVec2(contentAvail.x - size, size))) {
                         mSelectedModule = module.get();
+                        mSelectedModuleVector = &modules;
                     }
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("-", ImVec2(size, size))) {
                     if (mSelectedModule == module.get()) {
                         mSelectedModule = nullptr;
+                        mSelectedModuleVector = nullptr;
                     }
                     it = modules.erase(it);
                     // Refresh
@@ -304,6 +325,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
             {
                 if (const CPUParticleEmitterModule* displayModule = displayModuleSelectorCombo(stage)) {
                     mSelectedModule = modules.emplace_back(displayModule->clone()).get();
+                    mSelectedModuleVector = &modules;
                     selected = true;
                     ImGui::CloseCurrentPopup();
                 }
@@ -357,6 +379,25 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         changed |= ImGui::SliderFloat("Emitter Lifetime Sec", &mSelectedEmitter->mLifetimeSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
         changed |= ImGui::SliderFloat("Particle Lifespan Sec", &mSelectedEmitter->mDefaultParticleLifespanSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+       
+        if (ImGui::Button("Material")) {
+            mAssetSelectorPopup = std::make_unique<ImguiUtil::AssetSelectorPopup>(MaterialRepository::get().getAssetRegistry());
+            mAssetSelectorPopup->setThumbnailFunc(ImguiAssetThumbnails::getMaterialThumbnailFunction(), f32v2(50.0f));
+        }
+        if (mAssetSelectorPopup) {
+            if (mAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
+                assert(mSelectedEmitter);
+                mSelectedEmitter->mDefaultMaterialID = mAssetSelectorPopup->getResult().mID;
+                mAssetSelectorPopup.reset();
+                changed = true;
+            }
+        }
+
+        ImGui::SameLine();
+        ImGui::Text(mSelectedEmitter->mDefaultMaterialID != INVALID_MATERIAL_ID ? MaterialRepository::get().getAssetName(mSelectedEmitter->mDefaultMaterialID).toString().c_str() : "NONE");
+        ImguiAssetThumbnails::getMaterialThumbnailFunction()(mSelectedEmitter->mDefaultMaterialID, f32v2(60.0f));
+
+
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
 
         if (changed) {
@@ -382,7 +423,28 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
 
     ImGui::Spacing(); ImGui::Separator();
     if (mSelectedModule) {
+        
+        size_t moduleIndex;
+        CPUParticleEmitterModuleVector& moduleVec = *mSelectedModuleVector;
+        for (moduleIndex = 0; moduleIndex < moduleVec.size() &&
+            moduleVec[moduleIndex].get() != mSelectedModule; ++moduleIndex) {}
         ImGui::Text("Module: %s", mSelectedModule->getName());
+        // Up and down arrows
+        if (moduleIndex == moduleVec.size() - 1) {
+            ImGui::Button("x");
+        } else if (ImGui::Button("v")) {
+            std::swap(moduleVec[moduleIndex + 1], moduleVec[moduleIndex]);
+        }
+        ImGui::SameLine();
+        if (moduleIndex == 0) {
+            ImGui::Button("x");
+        }
+        else if (ImGui::Button("^")) {
+            std::swap(moduleVec[moduleIndex - 1], moduleVec[moduleIndex]);
+        }
+        ImGui::Separator();
+        
+
         if (mSelectedModule->updateAndRenderEditorControls()) {
             createPreviewSystem();
         }
@@ -421,6 +483,12 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 }
 
 void ParticleSystemEditorViewportPanel::setParticleSystemDef(AssetID systemId) {
+    if (systemId == INVALID_ASSET_ID) {
+        mSystemDefHandle = nullptr;
+        mSystemDef = nullptr;
+        mSelectedEmitter = nullptr;
+        return;
+    }
     mSystemDefHandle = ParticleSystemRepository::get().getAssetHandle(systemId);
     if (systemIsLoaded()) {
         mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
@@ -442,7 +510,9 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
     if (mRenamePopup) {
         if (mRenamePopup->updateAndRender()) {
             const nString& result = mRenamePopup->getResult();
-            assert(false);
+            if (result.size()) {
+                assert(false);
+            }
             mRenamePopup.reset();
         }
     }
@@ -463,6 +533,18 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
             duplicateGlobalEmitter(mDuplicateObjectPopup->getResultName());
             mDuplicateObjectPopup.reset();
         }
+    } else if (ImGuiFileDialog::Instance()->Display(SAVE_DIALOG_NAME, ImGuiWindowFlags_NoCollapse, ImVec2(200.0f, 150.0f))) {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+            ParticleSystemRepository::get().changeAssetFilePath(mSystemDef->getID(), vio::Path(filePathName));
+            if (!ParticleSystemRepository::get().saveAsset(mSystemDef->getID())) {
+                panic("FAILED TO SAVE PARTICLE SYSTEM {}", filePathName);
+            }
+        }
+
+        ImGuiFileDialog::Instance()->Close();
     }
 }
 

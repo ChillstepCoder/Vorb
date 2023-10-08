@@ -39,6 +39,8 @@ public:
         mLoadQueue.enqueue(std::move(task));
     }
 
+    size_t getQueuedProcsApprox() const { return mLoadQueue.size_approx(); }
+
 protected:
     // Typedef for func ptr
     typedef void (AssetLoader::* workerFunc)(AssetLoader*);

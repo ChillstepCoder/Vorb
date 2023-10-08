@@ -98,13 +98,25 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetHdrColor, e_cast(ParticleEmitterModuleStag
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Scale", "set_scale",
     MODULE_DEF(
-        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
+        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f));
+    );
+)
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetLifespan, e_cast(ParticleEmitterModuleStage::ParticleInit), "Set Lifespan", "set_life",
+    MODULE_DEF(
+        CPUParticleEmitterVariable mLifespan = CPUParticleEmitterVariable(1.0f);
     );
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MultiplyScale, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Multiply Scale", "mult_scale",
     MODULE_DEF(
-        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f, 1.0f));
+        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v2(1.0f));
+    );
+)
+
+BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MultiplyVelocity, e_cast(ParticleEmitterModuleStage::ParticleInit), "Scale Velocity", "mult_vel",
+    MODULE_DEF(
+        CPUParticleEmitterVariable mScale = CPUParticleEmitterVariable(f32v3(1.0f));
     );
 )
 

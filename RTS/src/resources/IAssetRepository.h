@@ -6,19 +6,13 @@
 #include "resources/AssetLoader.h"
 
 #include "resources/asset/AssetHandleBundle.h"
+#include "resources/asset/AssetRegistryEntry.h"
 
 class AssetLoader;
 
 DECL_VIO(class IOManager);
 
-struct AssetRegistryEntry {
-    StrToken mName;
-    vio::Path mFilePath;
-    AssetID mID = INVALID_ASSET_ID; // TODO: unneeded
-    bool mRequestedLoad = false;
-    //bool mFinishedLoading = false; // Or refcount needed to ensure we dont destroy this while
-    // it is being loaded once we implement deallocation of assets
-};
+
 
 class IAssetRepositoryBase {
 public:
@@ -33,6 +27,11 @@ public:
     virtual void onAllAssetTypesRegistered() {};
 
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
+
+    const std::vector<AssetRegistryEntry>& getAssetRegistry() const {
+        return mAssetRegistry;
+    }
+
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 
@@ -191,6 +190,9 @@ public:
         }
         return it->second; 
     }
+    StrToken getAssetName(AssetID id) const {
+        return mAssetRegistry[id].mName;
+    }
     AssetID registerAsset(const vio::Path& filePath) {
         // TODO remove string copy
         return registerAsset(StrToken(filePath.getFileNameTrimOneExtension()), filePath);
@@ -271,7 +273,10 @@ public:
             return getAssetHandle(id);
         }
         else {
-            return getAssetHandle(registerAsset(name, ""));
+            AssetID newId = registerAsset(name, "");
+            mLoadedAssets[newId]->store(true);
+            AssetHandlePtr<T> newHandle = getAssetHandle(newId);
+            return newHandle;
         }
     }
     

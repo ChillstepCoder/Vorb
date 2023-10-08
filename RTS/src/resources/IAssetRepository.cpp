@@ -9,9 +9,13 @@ bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const vio::Pat
     assert(fileContents);
 
     vio::Path absolutePath;
-
-    if (!mIoManager.assurePath(path, absolutePath, vio::IOManagerDirectory::CURRENT_WORKING, true)) {
-        LOG_CRITICAL("Failed to evaluate file path in IAssetRepository::saveAssetContents: {}", path.getString());
+    if (path.isAbsolute()) {
+        absolutePath = path;
+    }
+    else {
+        if (!mIoManager.assurePath(path, absolutePath, vio::IOManagerDirectory::CURRENT_WORKING, true)) {
+            LOG_CRITICAL("Failed to evaluate file path in IAssetRepository::saveAssetContents: {}", path.getString());
+        }
     }
 
     const nString& filePath = absolutePath.getString();

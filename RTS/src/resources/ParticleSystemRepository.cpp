@@ -7,6 +7,7 @@
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
 #include "resources/ResourceManager.h"
+#include "resources/MaterialRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
@@ -20,12 +21,18 @@ constexpr const char* const EMITTER_PARTICLE_LIFESPAN_KEY("p_lifespan");
 constexpr const char* const EMITTER_LOOPING_KEY("looping");
 constexpr const char* const EMITTER_BLEND_KEY("blend");
 
+void ParticleSystemRepository::setDefaultMaterialID(MaterialID id)
+{
+    mDefaultMaterial = id;
+    mDefaultMaterialHandle = MaterialRepository::get().getAssetHandle(id);
+}
+
 bool ParticleSystemRepository::saveAsset(AssetID id) {
     const ParticleSystemDef& particleSystem = *mAssets[id];
 
     vio::Path filePath = getAssetFilePath(id);
     // TODO: DIALOG
-    if (!filePath.isValid()) {
+    if (filePath.isNull()) {
         changeAssetFilePath(id, PARTICLE_SYSTEM_PATH / particleSystem.getName().toString() + vio::Path(".psys"));
     }
 

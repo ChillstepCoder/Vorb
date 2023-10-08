@@ -30,6 +30,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save materials yet"); }
 
+    std::function<void(AssetID)> getImguiThumbnailFunc();
+
 protected:
 
     AssetLoadFunc getAssetLoadFunc() override;

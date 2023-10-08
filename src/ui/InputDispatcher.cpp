@@ -9,7 +9,7 @@
 
 #if defined(VORB_IMPL_IMGUI)
 #include "Vorb/ui/imgui/imgui.h"
-#include "Vorb/ui/imgui/backends/imgui_impl_sdl.h"
+#include "Vorb/ui/imgui/backends/imgui_impl_sdl2.h"
 #endif
 
 #if defined(VORB_IMPL_UI_GLFW) || defined(VORB_IMPL_UI_SFML)

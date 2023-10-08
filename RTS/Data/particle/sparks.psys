@@ -1,0 +1,43 @@
+emitters:
+  - DefaultEmitter:
+      scale: [0.1,0.1]
+      color: [255,255,255,255]
+      max_particles: 9135
+      lifetime: 3
+      p_lifespan: 3
+      looping: 1
+      blend: additive
+      e_update:
+        - spawn_rate:
+            emit_rate: 0
+            initial_delay: 0
+            spawn_count: 10
+      p_init:
+        - cone_burst:
+            speed_range: [2,5]
+            angle_range: [0,0.7853982]
+            dir: [0,0,1]
+      p_update:
+        - set_hdr_color:
+            color:
+              hdr_curve:
+                norm_input:
+                  p_norm_life: {}
+                keys:
+                  - [0,[0.9411765,0.6203949,0.032295283,1]]
+                  - [1,[1,0,0,1]]
+        - set_scale:
+            scale:
+              f32_to_vec2:
+                v:
+                  rand_float:
+                    min: 0
+                    max: 1
+                    seed_by_p: 0
+        - apply_force:
+            force: [0,0,-4]
+        - drag_force:
+            drag: 0.75
+        - orient_vel: {}
+        - mult_scale:
+            scale: [0.5,2]

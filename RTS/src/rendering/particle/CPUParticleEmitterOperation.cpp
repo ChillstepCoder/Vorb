@@ -9,7 +9,7 @@
 #include "math/Random.h"
 
 #include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include "ui/editor/EditorCurve.hpp"
@@ -241,8 +241,15 @@ void CPUPEO_QueryRotation::execute(CpuParticleEmitter& emitter, ParticleID id, C
 }
 
 void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
-    f32 l = emitter.getParticleNormalizedLifetime(id);
-    output->mVarData = l;
+    output->mVarData = emitter.getParticleNormalizedLifetime(id);
+}
+
+void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getInputs().mInputImpactDirection;
+}
+
+void CPUPEO_InputImpactSurfaceNormal::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+    output->mVarData = emitter.getInputs().mInputImpactSurfaceNormal;
 }
 
 void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {

@@ -47,7 +47,7 @@ public:
     f32v2 mDefaultScale = f32v2(0.1f);
     color4 mDefaultColor = color::White;
     ui32 mMaxParticles = 2000;
-    MaterialID mDefaultMaterialID = 0;
+    MaterialID mDefaultMaterialID = INVALID_MATERIAL_ID;
     f32 mLifetimeSec = 3.0f;
     f32 mDefaultParticleLifespanSec = 3.0f;
     bool mLooping = true;

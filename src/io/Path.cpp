@@ -59,6 +59,7 @@ bool isNiceFragment(const nString& fragment) {
     return fragment.size() != 0
             && (fragment == "."
                 || fragment == ".."
+                || fragment ==  "\\"
                 || (isWindowsFragment(fragment)
                     && isPOSIXFragment(fragment)
                     && fragment[0] != '.'
@@ -69,6 +70,7 @@ bool isNiceDirectoryFragment(const nString& fragment)
 {
     return fragment == "."
             || fragment == ".."
+            || fragment.size() > 1 && fragment[1] == ':' // Drive letter
             || (isNiceFragment(fragment)
                 && fragment.find('.') == nString::npos);
 }

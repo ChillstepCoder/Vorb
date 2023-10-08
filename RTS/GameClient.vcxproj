@@ -288,6 +288,7 @@
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7decomp.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7enc.cpp" />
+    <ClCompile Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.cpp" />
     <ClCompile Include="src\filesystem\FileSystem.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
@@ -452,6 +453,7 @@
     <ClCompile Include="src\ui\editor\FishingEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\FoliageEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ImguiAssetThumbnails.cpp" />
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
@@ -604,6 +606,8 @@
     <ClInclude Include="src\extern\bc7enc\dds_defs.h" />
     <ClInclude Include="src\extern\bc7enc\rgbcx.h" />
     <ClInclude Include="src\extern\bc7enc\rgbcx_table4.h" />
+    <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.h" />
+    <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialogConfig.h" />
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\filesystem\FileSystem.h" />
@@ -729,6 +733,7 @@
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterOperation.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
     <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h" />
+    <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />
@@ -769,6 +774,7 @@
     <ClInclude Include="src\resources\asset\AssetHandle.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
+    <ClInclude Include="src\resources\asset\AssetRegistryEntry.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
@@ -823,6 +829,7 @@
     <ClInclude Include="src\ui\editor\FishingEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\FoliageEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h" />
     <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h" />

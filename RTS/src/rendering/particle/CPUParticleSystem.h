@@ -30,7 +30,13 @@ public:
     // Returns number of iterations over dead particles each frame
     int getFragmentation() const;
 
+    // Inputs
+    void setInputs(ParticleSystemInputs inputs) {
+        mInputs = inputs;
+    }
+
 private:
     std::vector<CpuParticleEmitterPtr> mEmitters;
     AssetID mSystemID = INVALID_ASSET_ID;
+    ParticleSystemInputs mInputs;
 };

@@ -4,6 +4,9 @@
 #include "rendering/particle/CpuParticleEmitter.h"
 #include "rendering/MaterialShaderDef.h"
 
+#include "resources/MaterialRepository.h"
+#include "resources/asset/AssetHandleBundle.h"
+
 #include "definitions/ParticleSystemDef.h"
 
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
@@ -16,24 +19,34 @@
 // Arbitrary for estimated perf reasons
 constexpr ui32 MAX_PARTICLES = 20000;
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, f32 lifetime /*= FLT_MAX*/) :
+CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime /*= FLT_MAX*/) :
     mShader(shader),
     mNativeUpdateFunction(updateFunction),
     mMaxParticles(maxParticles),
     mComponents(components),
-    mLifetimeSec(lifetime)
+    mLifetimeSec(lifetime),
+    mInputs(inputs),
+    mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {
+    assert(mInputs);
     allocateParticleData();
-
 }
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def) : mShader(def.mShader->getLoadedAsset()) {
-
+CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSystemInputs* inputs) :
+    mShader(def.mShader->getLoadedAsset()),
+    mInputs(inputs),
+    mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
+{
+    assert(inputs);
     mMaxParticles = def.mMaxParticles;
     mGlobalParticleScale = def.mDefaultScale;
     mGlobalParticleColor = def.mDefaultColor;
     mGlobalParticleLifespan = def.mDefaultParticleLifespanSec;
     mGlobalMaterialID = def.mDefaultMaterialID;
+    if (mGlobalMaterialID != INVALID_MATERIAL_ID) {
+        mContainedMaterials.insert(mGlobalMaterialID);
+        mMaterialAssetHandles->addAssetHandle(MaterialRepository::get().getAssetHandle(mGlobalMaterialID));
+    }
     mLifetimeSec = def.mLifetimeSec;
     mLooping = def.mLooping;
     mBlendMode = def.mBlendMode;
@@ -245,6 +258,12 @@ void CpuParticleEmitter::addParticleVelocity(ParticleID id, f32v3 velocity) {
     mDataChanged = true;
 }
 
+void CpuParticleEmitter::multiplyParticleVelocity(ParticleID id, f32v3 scale) {
+    assert(mComponents.isBitSet(ParticleComponentType::Velocity));
+    mParticleData.mVelocities[id] *= scale;
+    mDataChanged = true;
+}
+
 void CpuParticleEmitter::setParticleColor(ParticleID id, color4 color) {
     assert(mComponents.isBitSet(ParticleComponentType::Color));
     mParticleData.mColors[id] = color;
@@ -260,6 +279,11 @@ void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) {
 void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) {
     assert(mComponents.isBitSet(ParticleComponentType::MaterialID));
     mParticleData.mMaterials[id] = (ui32)material;
+    // TODO: can we preload these instead of doing it here?
+    if (mContainedMaterials.find(material) == mContainedMaterials.end()) {
+        mContainedMaterials.insert(material);
+        mMaterialAssetHandles->addAssetHandle(MaterialRepository::get().getAssetHandle(material));
+    }
     mDataChanged = true;
 }
 
@@ -270,11 +294,26 @@ void CpuParticleEmitter::setParticleRotation(ParticleID id, f32v2 rollPitch) {
     mDataChanged = true;
 }
 
+void CpuParticleEmitter::setParticleLifespan(ParticleID id, f32 lifespan) {
+    assert(mComponents.isBitSet(ParticleComponentType::Lifespan));
+    mParticleData.mLifespans[id] = lifespan;
+    mDataChanged = true;
+}
+
 f32 CpuParticleEmitter::getParticleNormalizedLifetime(ParticleID id) const {
     if (mParticleData.mLifespans) {
         return glm::min(mParticleData.mLifetimes[id] / mParticleData.mLifespans[id], 1.0f);
     }
     return glm::min(mParticleData.mLifetimes[id] / mGlobalParticleLifespan, 1.0f);
+}
+
+void CpuParticleEmitter::setGlobalMaterialID(MaterialID materialID)
+{
+    mGlobalMaterialID = materialID;
+    if (mGlobalMaterialID != INVALID_MATERIAL_ID) {
+        mContainedMaterials.insert(mGlobalMaterialID);
+        mMaterialAssetHandles->addAssetHandle(MaterialRepository::get().getAssetHandle(materialID));
+    }
 }
 
 void CpuParticleEmitter::emitParticles(ui32v2 countRange) {

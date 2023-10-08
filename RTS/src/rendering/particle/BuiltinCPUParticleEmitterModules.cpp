@@ -4,7 +4,7 @@
 #include "CpuParticleEmitter.h"
 
 #include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include "math/Random.h"
@@ -157,26 +157,24 @@ void CPUPEM_RingBurst::refresh() {
 
         const f32v3 ringNormal = glm::normalize(std::get<f32v3>(MODULE_DATA->mRingNormal.mVarData));
         const f32v2 randomSpeedRange = std::get<f32v2>(MODULE_DATA->mSpeedRange.mVarData);
-        const f32 maxAngleFromEquator = std::get<f32>(MODULE_DATA->mMaxAngleFromRingRad.mVarData);
+        const f32 maxAngleFromEquator = DEG_TO_RAD(std::get<f32>(MODULE_DATA->mMaxAngleFromRingRad.mVarData));
 
         // Create an arbitrary axis not parallel to the ringNormal.
         const f32v3 axis = (std::abs(ringNormal.x) < 0.5f) ? f32v3(1, 0, 0) : f32v3(0, 1, 0);
-
-        // Calculate two tangent vectors to the ringNormal.
-        const f32v3 tangent1 = glm::cross(ringNormal, axis);
-        const f32v3 tangent2 = glm::cross(ringNormal, tangent1);
+        f32v3 tangent = glm::cross(ringNormal, axis);
+        f32 randomCircleAngle = Random::getCachedRandomf() * M_2_PIF;
+        glm::quat rotQuat = glm::angleAxis(randomCircleAngle, ringNormal);
+        tangent = rotQuat * tangent;
+        
+        const f32v3 tangent2 = glm::cross(tangent, ringNormal);
 
         // Create a random direction in the equatorial plane.
         float randomAngle = (Random::getCachedRandomf() * 2.0f - 1.0f) * maxAngleFromEquator;
-        f32v3 equatorialDirection = std::cos(randomAngle) * tangent1 + std::sin(randomAngle) * tangent2;
-
-        // Calculate final direction by interpolating between equatorialDirection and ringNormal.
-        float lerpFactor = Random::getCachedRandomf();
-        f32v3 direction = glm::normalize((1.0f - lerpFactor) * equatorialDirection + lerpFactor * ringNormal);
+        f32v3 launchDir = glm::angleAxis(randomAngle, tangent2) * tangent;
 
         // Randomly scale the direction to get a velocity in the required speed range.
         const float speed = Random::getCachedRandomf() * (randomSpeedRange.y - randomSpeedRange.x) + randomSpeedRange.x;
-        emitter.addParticleVelocity(particleID, direction * speed);
+        emitter.addParticleVelocity(particleID, launchDir * speed);
     };
 }
 
@@ -460,6 +458,37 @@ void CPUPEM_SetScale::saveYmlData(ryml::NodeRef node) const {
 
 
 // ====================================================================================================
+// CPUPEM_SetLifespan
+// ====================================================================================================
+#pragma region CPUPEM_SetLifespan
+CPUPEM_SetLifespan::CPUPEM_SetLifespan() {
+    mRequiredComponents |= ParticleComponentType::Lifespan;
+    refresh();
+}
+
+void CPUPEM_SetLifespan::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mLifespan.evaluate(emitter, particleID);
+        emitter.setParticleLifespan(particleID, std::get<f32>(MODULE_DATA->mLifespan.mVarData));
+    };
+}
+
+bool CPUPEM_SetLifespan::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mLifespan, "Lifetime");
+}
+
+bool CPUPEM_SetLifespan::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mLifespan, "life"sv);
+    return true;
+}
+
+void CPUPEM_SetLifespan::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mLifespan, "life"sv);
+}
+#pragma endregion
+
+
+// ====================================================================================================
 // CPUPEM_MultiplyScale
 // ====================================================================================================
 #pragma region CPUPEM_MultiplyScale
@@ -489,6 +518,37 @@ void CPUPEM_MultiplyScale::saveYmlData(ryml::NodeRef node) const {
 }
 #pragma endregion
 
+
+
+// ====================================================================================================
+// CPUPEM_MultiplyVelocity
+// ====================================================================================================
+#pragma region CPUPEM_MultiplyVelocity
+CPUPEM_MultiplyVelocity::CPUPEM_MultiplyVelocity() {
+    mRequiredComponents |= ParticleComponentType::Scale;
+    refresh();
+}
+
+void CPUPEM_MultiplyVelocity::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        MODULE_DATA->mScale.evaluate(emitter, particleID);
+        emitter.multiplyParticleVelocity(particleID, std::get<f32v3>(MODULE_DATA->mScale.mVarData));
+    };
+}
+
+bool CPUPEM_MultiplyVelocity::updateAndRenderEditorControls() {
+    return updateAndRenderVariable(mModuleData.mScale, "Scale");
+}
+
+bool CPUPEM_MultiplyVelocity::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mScale, "scale"sv);
+    return true;
+}
+
+void CPUPEM_MultiplyVelocity::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mScale, "scale"sv);
+}
+#pragma endregion
 
 // ====================================================================================================
 // CPUPEM_ApplyForce

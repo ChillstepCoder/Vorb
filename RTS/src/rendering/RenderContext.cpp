@@ -8,6 +8,7 @@
 #include "world/cli/CliWorldInterface.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
+#include "resources/AssetLoader.h"
 #include "pathfinding/NavWorld.h"
 // Performance counters
 #include "pathfinding/NavThread.h"
@@ -80,7 +81,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/io/IOManager.h>
@@ -495,7 +496,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
             // Game
             drawColor = sprintfThreadStats(GameThread::getInstance().getThreadUtilizationTimer(), "GameThread", buffer);
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
-            yOffset += GAP_SIZE;
+            yOffset += GAP_SIZE * 2.0f;
         }
 
         sprintf_s(buffer, STR_BUFFER_SIZE, "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
@@ -524,6 +525,10 @@ void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& rend
         sprintf_s(buffer, STR_BUFFER_SIZE, "RenderQueue: %d", (int)RenderThreadTasks::getInstance().getQueuedProcsApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, STR_BUFFER_SIZE, "AssetLoadQueue: %d", (int)AssetLoader::getInstance().getQueuedProcsApprox());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE * 2.0f;
 
         sprintf_s(buffer, STR_BUFFER_SIZE, "DrawCalls: %u", RenderStats::sDrawCalls);
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);

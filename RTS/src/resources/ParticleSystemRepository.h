@@ -9,7 +9,7 @@ class ParticleSystemRepository : public IAssetRepository<ParticleSystemDef> {
     ASSET_REPOSITORY_COMMON_CODE(ParticleSystemRepository, ParticleSystemDef, AssetType::ParticleSystem)
 
     MaterialID getDefaultMaterialID() const { return mDefaultMaterial; }
-    void setDefaultMaterialID(MaterialID id) { mDefaultMaterial = id; }
+    void setDefaultMaterialID(MaterialID id);
 
     bool saveAsset(AssetID assetId) override;
 
@@ -18,6 +18,7 @@ private:
     bool loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter);
 
     MaterialID mDefaultMaterial = INVALID_MATERIAL_ID;
+    AssetHandlePtr<MaterialDef> mDefaultMaterialHandle;
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
