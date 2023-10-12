@@ -840,6 +840,18 @@
     <ClCompile Include="src\ui\editor\ImguiAssetThumbnails.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\effect\cli\CliEffectContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\effect\host\HostEffectContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\effect\IEffectContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\WorldContextObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1775,9 +1787,6 @@
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\WorldType.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\time\TimeOfDayManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2058,6 +2067,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\effect\cli\CliEffectContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\effect\host\HostEffectContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\effect\IEffectContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\WorldContextObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

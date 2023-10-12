@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tile/TileHandle.h"
-#include "world/WorldType.h"
 #include "network/WorldNetMode.h"
 
 #include "generation/WorldGeneratorType.h"
@@ -36,8 +35,8 @@ public:
     // Pure virtual interface
     virtual void init() = 0;
     virtual void onWorldBegin(const f32v2& loadCenter) = 0;
-    virtual WorldNetMode getNetMode() = 0;
-    virtual WorldType getWorldType() = 0;
+    virtual WorldNetMode getNetMode() const = 0;
+    bool isEditorWorld() const { return getNetMode() == WorldNetMode::Editor; }
     virtual void tick(f32 elapsedSec) = 0;
 
 

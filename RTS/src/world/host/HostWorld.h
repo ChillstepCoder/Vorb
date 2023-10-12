@@ -17,7 +17,8 @@ public:
 	void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;
 	void onWorldBegin(const f32v2& loadCenter) override;
 
-	WorldNetMode getNetMode() override;
-	WorldType getWorldType() override;
+	WorldNetMode getNetMode() const override {
+		return WorldNetMode::Host;
+	}
 };
 

@@ -286,6 +286,9 @@
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
+    <ClCompile Include="src\effect\cli\CliEffectContext.cpp" />
+    <ClCompile Include="src\effect\host\HostEffectContext.cpp" />
+    <ClCompile Include="src\effect\IEffectContext.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7decomp.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7enc.cpp" />
     <ClCompile Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.cpp" />
@@ -493,6 +496,7 @@
     <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp" />
     <ClCompile Include="src\world\srv\DedicatedSrvWorld.cpp" />
     <ClCompile Include="src\world\srv\SrvWorldInterface.cpp" />
+    <ClCompile Include="src\world\WorldContextObject.cpp" />
     <ClCompile Include="src\world\WorldFactory.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
   </ItemGroup>
@@ -600,6 +604,9 @@
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditorPanel.h" />
+    <ClInclude Include="src\effect\cli\CliEffectContext.h" />
+    <ClInclude Include="src\effect\host\HostEffectContext.h" />
+    <ClInclude Include="src\effect\IEffectContext.h" />
     <ClInclude Include="src\events\SkillEvent.h" />
     <ClInclude Include="src\extern\bc7enc\bc7decomp.h" />
     <ClInclude Include="src\extern\bc7enc\bc7enc.h" />
@@ -899,10 +906,10 @@
     <ClInclude Include="src\world\srv\DedicatedSrvWorld.h" />
     <ClInclude Include="src\world\srv\SrvWorldInterface.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
+    <ClInclude Include="src\world\WorldContextObject.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldFactory.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
-    <ClInclude Include="src\world\WorldType.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

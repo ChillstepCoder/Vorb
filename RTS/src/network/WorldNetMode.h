@@ -1,9 +1,9 @@
 #pragma once
 
-enum class WorldNetMode {
+enum class WorldNetMode : ui8 {
     Client,
     Host,
-    DedicatedServer,
+    //DedicatedServer,
     Editor,
     COUNT
 };

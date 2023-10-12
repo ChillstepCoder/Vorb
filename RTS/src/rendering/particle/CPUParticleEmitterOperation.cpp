@@ -429,7 +429,7 @@ const char* const CPUPEO_RandomPointInShape::getParamName(size_t paramIndex) con
             assert(paramIndex == 0);
             return "half_extents";
         default:
-            assert(false);
+            panic("Unknown param");
             break;
     }
     static_assert(e_count(QueryPointFromShapeType) == 2);

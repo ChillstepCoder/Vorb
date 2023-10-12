@@ -88,12 +88,3 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
 }
 
-WorldNetMode HostWorld::getNetMode()
-{
-    return WorldNetMode::Host;
-}
-
-WorldType HostWorld::getWorldType()
-{
-    return WorldType::Game;
-}

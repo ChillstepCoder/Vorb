@@ -61,12 +61,3 @@ void CliWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginShared(loadCenter);
     onWorldBeginClient(*this);
 }
-
-
-WorldNetMode CliWorld::getNetMode() {
-    return WorldNetMode::Client;
-}
-
-WorldType CliWorld::getWorldType() {
-    return WorldType::Game;
-}

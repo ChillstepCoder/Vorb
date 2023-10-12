@@ -62,6 +62,8 @@
 #include "options/DebugOptions.h"
 
 #include "world/IWorld.h"
+#include "world/srv/SrvWorldInterface.h"
+#include "pathfinding/NavWorld.h"
 
 // TODO: Instead of single shader these should be able to be shader chains.
 constexpr StrToken sPassthroughMaterialNames[] = {
@@ -425,9 +427,11 @@ void WorldRenderer::renderDebug()
                 const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter3D();
                 const f32v3& cameraPos = mCamera->getPosition();
                 if (glm::length2(mCamera->getPosition() - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
-                    // TODO: make this only work on host world
-                    assert(false);
-                    //mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                    
+                    SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mActiveWorld);
+                    if (srvWorldInterface) {
+                        srvWorldInterface->getNavWorld().debugDrawCoarseNavGraphForContainer(*it.second, nullptr, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                    }
                 }
             }
             wasRenderingNavGraph = true;
