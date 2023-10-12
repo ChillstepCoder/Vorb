@@ -20,8 +20,6 @@
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/srv/SrvEntityComponentSystem.h"
-#include "world/cli/CliWorld.h"
-#include "world/host/HostWorld.h"
 #include "world/IHeightmapGrid.h"
 #include "world/WorldObjectQuery.h"
 #include "util/Utils.h"
@@ -53,7 +51,6 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/WorldFactory.h"
 #include "world/controller/EditorWorldInterfaceController.h"
 
 #include "screens/ScreenState.h"
@@ -187,7 +184,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
     IS_SHUTTING_DOWN = true;
     displayLoadScreen("Cleaning up...", true);
-    WorldFactory::destroyWorld();
+    mWorld.reset();
     Services::destroy();
     IS_SHUTTING_DOWN = false;
 }
@@ -211,7 +208,6 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     }
 
     if (mState == GameplayScreenState::RUNNING) {
-
         // Update functions
         switch (mNetMode) {
             case WorldNetMode::Client:
@@ -268,7 +264,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::initWorld() {
-    mWorld = WorldFactory::makeWorld(mNetMode, WorldData::DEFAULT_WORLD_WIDTH_TILES, WorldGeneratorType::Default);
+    mWorld = std::make_unique<IWorld>(mNetMode, WorldData::DEFAULT_WORLD_WIDTH_TILES, WorldGeneratorType::Default);
 }
 
 void GameplayScreen::initCamera() {
@@ -296,29 +292,14 @@ void GameplayScreen::initWorldInterfaceController() {
 }
 
 void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
-
-    CliWorld* cliWorld = static_cast<CliWorld*>(mWorld.get());
-
-    // Update main thread update queues
-    cliWorld->onFrameBegin();
-
     // Update client
     if (!GameClient::getInstance().isConnected()) {
         pError("LOST CONNECTION!");
         assert(false);
     }
-
-    cliWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 }
 
 void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
-
-    HostWorld* hostWorld = static_cast<HostWorld*>(mWorld.get());
-
-    // Update main thread update queues
-    hostWorld->onFrameBegin();
-
-    hostWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 
 }
 

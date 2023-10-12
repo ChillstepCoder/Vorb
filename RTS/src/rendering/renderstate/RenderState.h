@@ -35,7 +35,7 @@ struct DebugChunkRenderState {
 };
 
 class RenderState {
-    friend class CliWorldInterface;
+    friend class IWorld;
     friend class GameRenderStateManager;
 public:
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }

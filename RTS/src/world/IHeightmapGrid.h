@@ -53,7 +53,6 @@ EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGri
 
 class IHeightmapGrid
 {
-    friend class WorldFactory;
 public:
     IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();

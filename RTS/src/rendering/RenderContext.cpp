@@ -5,7 +5,6 @@
 #include "resources/TextureRepository.h"
 #include "resources/FontRepository.h"
 #include "world/IWorld.h"
-#include "world/cli/CliWorldInterface.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
 #include "resources/AssetLoader.h"

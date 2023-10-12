@@ -1,7 +1,5 @@
 #pragma once
 
-#include "world/WorldType.h"
-
 #include "events/SkillEvent.h"
 
 class AmbientOcclusionPostProcess;

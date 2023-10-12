@@ -6,7 +6,6 @@
 #include "ecs/component/PlayerControlComponent.h"
 
 #include "world/ecosystem/FishEcosystem.h"
-#include "world/srv/SrvWorldInterface.h"
 #include "debugging/DebugRenderer.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -67,15 +66,12 @@ void FishingComponentSystem::update(IWorld& world, entt::registry& registry, f32
             // TODO: Notify inventory of caught fish and such? minigame result?
             // Tell fish we are done
             if (fishCmp.mTargetFish != INVALID_ENTITY) {
-                SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-                if (srvWorld) {
-                    FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
-                    if (fishCmp.mState == FishingComponentState::Success) {
-                        fishEcosystem.setFishCaught(fishCmp.mTargetFish, entity);
-                    }
-                    else {
-                        fishEcosystem.clearFishFollowTarget(fishCmp.mTargetFish);
-                    }
+                FishEcosystem& fishEcosystem = world.getFishEcosystem();
+                if (fishCmp.mState == FishingComponentState::Success) {
+                    fishEcosystem.setFishCaught(fishCmp.mTargetFish, entity);
+                }
+                else {
+                    fishEcosystem.clearFishFollowTarget(fishCmp.mTargetFish);
                 }
             }
             componentsToRemove.emplace_back(entity);
@@ -197,9 +193,8 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
             }
 
             // TODO Server version
-            SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-            if (srvWorld && fishingCmp.mTargetFish == INVALID_ENTITY) {
-                FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
+            if (fishingCmp.mTargetFish == INVALID_ENTITY) {
+                FishEcosystem& fishEcosystem = world.getFishEcosystem();
                 PreciseTimer timer;
                 entt::entity closestFish = fishEcosystem.getClosestIdleFishToPoint(fishingCmp.mBobberPosition, FISH_ATTRACT_DISTANCE);
                 if (closestFish != INVALID_ENTITY) {
@@ -219,38 +214,32 @@ void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& regist
                 // Grab fish!
                 fishingCmp.mTargetPosition = fishingCmp.mBobberPosition;
                
-                // TODO Server version
-                SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-                if (srvWorld) {
-                    FishEcosystem& fishEcosystem = srvWorld->getFishEcosystem();
-                    fishEcosystem.setFishHooked(fishingCmp.mTargetFish, entity);
-                    FishComponent& fish = registry.get<FishComponent>(fishingCmp.mTargetFish);
-                    // TODO: Handle NPC and multiplayer as well
-                    fishingCmp.mIsLocalPlayer = true;
-                    fishingCmp.mState = FishingComponentState::LocalPlayerMinigame;
-                    // TODO: Do we need an asset handle?
-                    const FishDef& fishDef = FishRepository::get().getLoadedOrUnloadedAsset(fish.mFishId);
+                FishEcosystem& fishEcosystem = world.getFishEcosystem();
+                fishEcosystem.setFishHooked(fishingCmp.mTargetFish, entity);
+                FishComponent& fish = registry.get<FishComponent>(fishingCmp.mTargetFish);
+                // TODO: Handle NPC and multiplayer as well
+                fishingCmp.mIsLocalPlayer = true;
+                fishingCmp.mState = FishingComponentState::LocalPlayerMinigame;
+                // TODO: Do we need an asset handle?
+                const FishDef& fishDef = FishRepository::get().getLoadedOrUnloadedAsset(fish.mFishId);
 
-                    // Lock player control
-                    ++registry.get<PlayerControlComponent>(entity).mInputLockCount;
-                    mLocalPlayerControlLocked = true;
+                // Lock player control
+                ++registry.get<PlayerControlComponent>(entity).mInputLockCount;
+                mLocalPlayerControlLocked = true;
 
-                    UIContext::getInstance().getMinigameContext().beginFishingMinigame(fishDef, mLocalPlayerMinigameGameThreadData.get(), [this, entity, &registry, &world](const FishingMinigameResult& result) {
-                        GameThreadTasks::getInstance().addGenericTaskWithCapture([this, entity, result, &registry, &world](GameThread&, void*) {
-                            SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&world);
-                            assert(srvWorld && "local minigame currently requires srvWorld");
-                            FishingComponent& fishingCmp = registry.get<FishingComponent>(entity);
-                            if (result.result == MinigameResultType::Success) {
-                                fishingCmp.mState = FishingComponentState::Success;
-                            }
-                            else {
-                                fishingCmp.mState = FishingComponentState::Fail;
-                            }
-                            static_assert(e_count(MinigameResultType) == 3);
-                        }, nullptr);
-                    });
-                    wasMousePressed = false;
-                }
+                UIContext::getInstance().getMinigameContext().beginFishingMinigame(fishDef, mLocalPlayerMinigameGameThreadData.get(), [this, entity, &registry, &world](const FishingMinigameResult& result) {
+                    GameThreadTasks::getInstance().addGenericTaskWithCapture([this, entity, result, &registry, &world](GameThread&, void*) {
+                        FishingComponent& fishingCmp = registry.get<FishingComponent>(entity);
+                        if (result.result == MinigameResultType::Success) {
+                            fishingCmp.mState = FishingComponentState::Success;
+                        }
+                        else {
+                            fishingCmp.mState = FishingComponentState::Fail;
+                        }
+                        static_assert(e_count(MinigameResultType) == 3);
+                    }, nullptr);
+                });
+                wasMousePressed = false;
             }
             break;
         }

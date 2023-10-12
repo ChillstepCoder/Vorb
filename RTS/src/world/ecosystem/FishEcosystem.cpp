@@ -35,9 +35,7 @@ FishEcosystem::FishEcosystem(IWorld& world) :
     mWorld(world) {
     initEventHandlers();
 
-    if (mWorld.getNetMode() != WorldNetMode::DedicatedServer) {
-        mRenderStateManager = std::make_unique<RenderStateManager<FishChunkRenderStateMap>>();
-    }
+    mRenderStateManager = std::make_unique<RenderStateManager<FishChunkRenderStateMap>>();
 }
 
 FishEcosystem::~FishEcosystem() {

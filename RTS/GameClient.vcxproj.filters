@@ -450,9 +450,6 @@
     <ClCompile Include="src\network\NetworkUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\cli\CliWorld.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\world\IChunkGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -465,9 +462,6 @@
     <ClCompile Include="src\world\IWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\cli\CliWorldInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -478,18 +472,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\world\host\HostWorld.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\world\srv\DedicatedSrvWorld.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\world\srv\SrvWorldInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\world\WorldFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\screens\ScreenState.cpp">
@@ -1457,9 +1439,6 @@
     <ClInclude Include="src\network\NetworkUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\cli\CliWorld.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\world\IChunkGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1472,9 +1451,6 @@
     <ClInclude Include="src\world\IWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\cli\CliWorldInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\world\srv\SrvChunkGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1485,18 +1461,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\srv\SrvHeightmapGrid.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\host\HostWorld.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\srv\DedicatedSrvWorld.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\srv\SrvWorldInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\WorldFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\network\WorldNetMode.h">

@@ -3,7 +3,6 @@
 
 #include "generation/IWorldGenerator.h"
 #include "world/IWorld.h"
-#include "world/srv/SrvWorldInterface.h"
 #include "tile/TileContainerRepository.h"
 
 #include "world/ecosystem/FishEcosystem.h"
@@ -225,9 +224,8 @@ void IChunkGrid::updateLoadingChunks() {
                 loadFinishedEvent.container = chunk.mTileContainer;
                 mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
-                SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mWorld);
-                if (srvWorldInterface) {
-                    srvWorldInterface->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
+                if (NavWorld* navWorld = mWorld->tryGetNavWorld()) {
+                    navWorld->markContainerNavDirty(chunk.mTileContainer);
                 }
                 ++i;
                 break;
@@ -555,10 +553,7 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
         // Generate fish if needed
     }, [&chunk]() {
         // Game thread
-        SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(&chunk.getWorld());
-        if (srvWorld) {
-            srvWorld->getFishEcosystem().initChunkFish(chunk);
-        }
+        chunk.getWorld().getFishEcosystem().initChunkFish(chunk);
         chunk.setState(ChunkState::TILE_LOAD_FINISHED);
         chunk.decRef();
     });

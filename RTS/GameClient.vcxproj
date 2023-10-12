@@ -484,20 +484,14 @@
     <ClCompile Include="src\world\controller\EditorWorldInterfaceController.cpp" />
     <ClCompile Include="src\world\controller\IWorldInterfaceController.cpp" />
     <ClCompile Include="src\world\ecosystem\FishEcosystem.cpp" />
-    <ClCompile Include="src\world\host\HostWorld.cpp" />
     <ClCompile Include="src\world\IChunkGrid.cpp" />
-    <ClCompile Include="src\world\cli\CliWorldInterface.cpp" />
-    <ClCompile Include="src\world\cli\CliWorld.cpp" />
     <ClCompile Include="src\world\IHeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\IWorld.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp" />
-    <ClCompile Include="src\world\srv\DedicatedSrvWorld.cpp" />
-    <ClCompile Include="src\world\srv\SrvWorldInterface.cpp" />
     <ClCompile Include="src\world\WorldContextObject.cpp" />
-    <ClCompile Include="src\world\WorldFactory.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -892,23 +886,17 @@
     <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
     <ClInclude Include="src\world\controller\IWorldInterfaceController.h" />
     <ClInclude Include="src\world\ecosystem\FishEcosystem.h" />
-    <ClInclude Include="src\world\host\HostWorld.h" />
     <ClInclude Include="src\world\IChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />
-    <ClInclude Include="src\world\cli\CliWorldInterface.h" />
-    <ClInclude Include="src\world\cli\CliWorld.h" />
     <ClInclude Include="src\world\IHeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\IWorld.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
     <ClInclude Include="src\world\srv\SrvHeightmapGrid.h" />
-    <ClInclude Include="src\world\srv\DedicatedSrvWorld.h" />
-    <ClInclude Include="src\world\srv\SrvWorldInterface.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\WorldContextObject.h" />
     <ClInclude Include="src\world\WorldData.h" />
-    <ClInclude Include="src\world\WorldFactory.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
   </ItemGroup>
   <ItemGroup>

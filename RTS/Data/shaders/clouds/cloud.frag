@@ -4,7 +4,6 @@
 
 uniform vec4 unSphereNormalRect;
 uniform float unSphereNormalPage;
-uniform sampler2D unCloudNormals;
 
 in vec2 fUV;
 flat in uint fMaterialIndex;
@@ -26,6 +25,9 @@ void main() {
     
     // Replace alpha (Using GRAYA, so alpha is in G)
     fNormal.a = sampleMaterialAlbedo(mtl, fUV).g;
+    
+    // TODO: If we use the cloud UV instead of screen UV for this, we can
+    // layer transparency in a better way
     tryDiscardTransparentPixel(fNormal.a);
     
     // TODO: Try uncommenting this line, see if talia likes it

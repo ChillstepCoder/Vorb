@@ -17,7 +17,6 @@ public:
     void renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel);
 
     void setCubemap(AssetHandlePtr<CubemapDef>&& skyCubemap);
-    bool hasTexture() const { return mSkyCubemap != nullptr; }
     const CubemapDef* tryGetCubemap() const { return mSkyCubemap ? mSkyCubemap->tryGetAsset() : nullptr; }
 
 private:

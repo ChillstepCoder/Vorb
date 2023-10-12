@@ -15,3 +15,12 @@ protected:
     IWorld& mWorld;
 };
 
+// How net works
+// HostObject : IObject {
+//    CliObject;
+// }
+
+// World {
+//  IObject obj1;
+//  IObject obj2;
+// }

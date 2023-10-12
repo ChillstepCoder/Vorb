@@ -4,7 +4,6 @@
 #include "ecs/factory/EntityFactory.h"
 
 entt::entity CliEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
-    assert(!shouldReplicate); // Client interface cannot replicate
     ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     return newEntity;

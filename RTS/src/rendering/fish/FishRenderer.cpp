@@ -3,8 +3,6 @@
 
 #include "debugging/DebugRenderer.h"
 
-// For fish
-#include "world/srv/SrvWorldInterface.h"
 
 #include "world/IWorld.h"
 #include "world/ecosystem/FishEcosystem.h"
@@ -46,7 +44,6 @@ FishRenderer::~FishRenderer() {
 
 void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& world) {
     PROFILE_FUNCTION();
-    const SrvWorldInterface* srvWorldInterface = dynamic_cast<const SrvWorldInterface*>(&world);
 
     if (mFishShaderHandle) {
         mFishShader = mFishShaderHandle->tryGetAsset();
@@ -55,10 +52,6 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
         mFishShader = nullptr;
     }
     if (!mFishShader) return;
-
-    if (!srvWorldInterface) {
-        return;
-    }
 
     BoundingSphere boundingSphere;
     boundingSphere.radius = CHUNK_DIAGONAL_RADIUS + 1.0f;
@@ -74,7 +67,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
     mInstanceCountsThisFrame.clear();
     mFishInstanceDataIndexThisFrame.clear();
 
-    const FishChunkRenderStateMap& renderState = srvWorldInterface->getFishEcosystem().getRenderStateManager().getRenderStateForRender();
+    const FishChunkRenderStateMap& renderState = world.getFishEcosystem().getRenderStateManager().getRenderStateForRender();
     for (auto&& fishChunkIter : renderState) {
         // Draw active fish
         const FishRenderState& chunkRenderState = fishChunkIter.second;
@@ -118,60 +111,57 @@ void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
     // Dont spam this every frame
     if (mDebugTickCounter-- == 0) {
         mDebugTickCounter = DEBUG_LIFETIME;
-        const SrvWorldInterface* srvWorldInterface = dynamic_cast<const SrvWorldInterface*>(&world);
-        if (srvWorldInterface) {
-            const FishEcosystem& fishEcosystem = srvWorldInterface->getFishEcosystem();
-            // TODO: NOT THREAD SAFE
-            DebugRenderer::reserveFilledQuads(CHUNK_SIZE * fishEcosystem.mActiveFishChunks.size(), DEBUG_LIFETIME);
-            for (auto&& it : fishEcosystem.mActiveFishChunks) {
-                ChunkID id = it.first;
-                const FishChunk& fishChunk = *it.second;
-                const Chunk& chunk = world.getChunkGrid().getChunk(id);
-                if (fishChunk.mInUpdateRange) {
-                    DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Cyan, DEBUG_LIFETIME);
-                }
-                else {
-                    DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::OrangeRed, DEBUG_LIFETIME);
-                }
+        const FishEcosystem& fishEcosystem = world.getFishEcosystem();
+        // TODO: NOT THREAD SAFE
+        DebugRenderer::reserveFilledQuads(CHUNK_SIZE * fishEcosystem.mActiveFishChunks.size(), DEBUG_LIFETIME);
+        for (auto&& it : fishEcosystem.mActiveFishChunks) {
+            ChunkID id = it.first;
+            const FishChunk& fishChunk = *it.second;
+            const Chunk& chunk = world.getChunkGrid().getChunk(id);
+            if (fishChunk.mInUpdateRange) {
+                DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Cyan, DEBUG_LIFETIME);
+            }
+            else {
+                DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::OrangeRed, DEBUG_LIFETIME);
+            }
 
-                //// Draw active fish
+            //// Draw active fish
 
-                //for (int i = 0; i < 4; ++i) {
-                //    if (glm::distance2(world.getLoadCenter(), fishChunk.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
-                //        for (auto&& fish : fishChunk.mFish) {
-                //            DebugRenderer::drawFilledQuad(f32v3(fish.pos.x - 0.3f, fish.pos.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
-                //        }
-                //    }
-                //}
+            //for (int i = 0; i < 4; ++i) {
+            //    if (glm::distance2(world.getLoadCenter(), fishChunk.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
+            //        for (auto&& fish : fishChunk.mFish) {
+            //            DebugRenderer::drawFilledQuad(f32v3(fish.pos.x - 0.3f, fish.pos.y - 0.3f, 0.0f), f32v2(0.6f), color4(0, 255, 255, 128), 0);
+            //        }
+            //    }
+            //}
 
 #if DRAW_WATER_CELLS == 1
-                const int CELL_ROW_STRIDE = FISH_CELLS_WIDTH * FISH_CELL_TILE_SIZE;
-                for (int cy = 0; cy < FISH_CELLS_WIDTH; ++cy) {
-                    const int yIndexStart = cy * CELL_ROW_STRIDE;
-                    for (int cx = 0; cx < FISH_CELLS_WIDTH; ++cx) {
-                        const FishCell& cell = fishChunk.mCells[cy * FISH_CELLS_WIDTH + cx];
-                        const int indexStart = yIndexStart + cx * FISH_CELL_TILE_WIDTH;
-                        if (cell.mTotalSpawnableTiles) {
-                            for (int y = 0; y < FISH_CELL_TILE_WIDTH; ++y) {
-                                for (int x = 0; x < FISH_CELL_TILE_WIDTH; ++x) {
-                                    if (cell.mSpawnableTiles.getBit(y * FISH_CELL_TILE_WIDTH + x)) {
-                                        const TileIndex tileIndex = indexStart + y * CHUNK_WIDTH + x;
-                                        const f32v3 pos = chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos3D(tileIndex);
-                                        DebugRenderer::drawFilledQuad(pos, f32v2(1.0f), color::Green, DEBUG_LIFETIME);
-                                    }
+            const int CELL_ROW_STRIDE = FISH_CELLS_WIDTH * FISH_CELL_TILE_SIZE;
+            for (int cy = 0; cy < FISH_CELLS_WIDTH; ++cy) {
+                const int yIndexStart = cy * CELL_ROW_STRIDE;
+                for (int cx = 0; cx < FISH_CELLS_WIDTH; ++cx) {
+                    const FishCell& cell = fishChunk.mCells[cy * FISH_CELLS_WIDTH + cx];
+                    const int indexStart = yIndexStart + cx * FISH_CELL_TILE_WIDTH;
+                    if (cell.mTotalSpawnableTiles) {
+                        for (int y = 0; y < FISH_CELL_TILE_WIDTH; ++y) {
+                            for (int x = 0; x < FISH_CELL_TILE_WIDTH; ++x) {
+                                if (cell.mSpawnableTiles.getBit(y * FISH_CELL_TILE_WIDTH + x)) {
+                                    const TileIndex tileIndex = indexStart + y * CHUNK_WIDTH + x;
+                                    const f32v3 pos = chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos3D(tileIndex);
+                                    DebugRenderer::drawFilledQuad(pos, f32v2(1.0f), color::Green, DEBUG_LIFETIME);
                                 }
                             }
                         }
                     }
                 }
+            }
 #endif
-            }
-            for (auto&& it : fishEcosystem.mDormantFishChunks) {
-                ChunkID id = it.first;
-                const DormantFishChunk& fishChunk = it.second;
-                const Chunk& chunk = world.getChunkGrid().getChunk(id);
-                DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Azure, DEBUG_LIFETIME);
-            }
+        }
+        for (auto&& it : fishEcosystem.mDormantFishChunks) {
+            ChunkID id = it.first;
+            const DormantFishChunk& fishChunk = it.second;
+            const Chunk& chunk = world.getChunkGrid().getChunk(id);
+            DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Azure, DEBUG_LIFETIME);
         }
     }
 }

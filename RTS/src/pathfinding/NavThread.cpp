@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "NavThread.h"
 
-#include "world/srv/SrvWorldInterface.h"
 #include "world/IWorld.h"
 #include "NavWorld.h"
 #include "NavPath.h"

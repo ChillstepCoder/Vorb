@@ -12,7 +12,6 @@
 
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
-#include "world/srv/SrvWorldInterface.h"
 #include "resources/TileRepository.h"
 
 #include "ecs/IEntityComponentSystem.h"
@@ -216,9 +215,8 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     building.getTileContainer()->setState(TileContainerState::READY);
 
     // Navmesh
-    SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(blueprint.world);
-    if (srvWorldInterface) {
-        srvWorldInterface->getNavWorld().markContainerNavDirty(building.mTileContainer);
+    if (NavWorld* navWorld = blueprint.world->tryGetNavWorld()) {
+        navWorld->markContainerNavDirty(building.mTileContainer);
     }
 
 }

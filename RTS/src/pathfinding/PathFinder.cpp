@@ -2,7 +2,6 @@
 #include "PathFinder.h"
 
 #include "world/IWorld.h"
-#include "world/srv/SrvWorldInterface.h"
 #include "resources/TileRepository.h"
 #include "NavPath.h"
 #include "world/IHeightmapGrid.h"

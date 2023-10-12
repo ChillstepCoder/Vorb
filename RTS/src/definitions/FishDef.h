@@ -38,7 +38,7 @@ public:
 
     StrToken mItemName;
     StrToken mModelName;
-    ItemID mItemId = INVALID_ASSET_ID;
+    ItemID mItemId = INVALID_ITEM_ID;
     ModelID mModelId = INVALID_ASSET_ID;
     FishingMinigameFishData mMinigameData; // TODO: Yml
 };

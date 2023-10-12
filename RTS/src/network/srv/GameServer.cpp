@@ -7,7 +7,6 @@
 
 #include "ecs/srv/SrvEntityComponentSystem.h"
 
-#include "world/srv/SrvWorldInterface.h"
 #include "world/IWorld.h"
 
 #include "network/srv/SrvMessage.h"

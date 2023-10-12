@@ -105,7 +105,7 @@ void IEditorViewportPanel::clearFramebuffers() {
 }
 
 void IEditorViewportPanel::renderSkybox() {
-    if (mSkybox->hasTexture()) {
+    if (mSkybox->tryGetCubemap()) {
         if (mShowSkyboxIrradiance) {
             mSkybox->renderIrradianceDebug(camera->getViewProjectionMatrixNoTranslation());
         }
@@ -414,11 +414,11 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader,
             glUniform1f(*un, mHeightScale);
         }
 
-        if (mSkybox->hasTexture()) {
+        if (const CubemapDef* cubeMap = mSkybox->tryGetCubemap()) {
             glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit);
-            glBindTextureUnit(availableTextureUnit++, mSkybox->tryGetCubemap()->getIrradianceTexture());
+            glBindTextureUnit(availableTextureUnit++, cubeMap->getIrradianceTexture());
             glUniform1i(shader->getUniform("unPrefilterMap"), availableTextureUnit);
-            glBindTextureUnit(availableTextureUnit++, mSkybox->tryGetCubemap()->getPrefilterMap());
+            glBindTextureUnit(availableTextureUnit++, cubeMap->getPrefilterMap());
         }
         else {
             // TODO: empty textures?

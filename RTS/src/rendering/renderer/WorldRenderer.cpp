@@ -62,7 +62,6 @@
 #include "options/DebugOptions.h"
 
 #include "world/IWorld.h"
-#include "world/srv/SrvWorldInterface.h"
 #include "pathfinding/NavWorld.h"
 
 // TODO: Instead of single shader these should be able to be shader chains.
@@ -428,9 +427,8 @@ void WorldRenderer::renderDebug()
                 const f32v3& cameraPos = mCamera->getPosition();
                 if (glm::length2(mCamera->getPosition() - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
                     
-                    SrvWorldInterface* srvWorldInterface = dynamic_cast<SrvWorldInterface*>(mActiveWorld);
-                    if (srvWorldInterface) {
-                        srvWorldInterface->getNavWorld().debugDrawCoarseNavGraphForContainer(*it.second, nullptr, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                    if (NavWorld* navWorld = mActiveWorld->tryGetNavWorld()) {
+                        navWorld->debugDrawCoarseNavGraphForContainer(*it.second, nullptr, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                     }
                 }
             }
@@ -588,18 +586,19 @@ void WorldRenderer::renderPassTransparent() {
     if (!mCurrentWorldRenderDataManager) {
         return;
     }
-    if (!mSkyBox->hasTexture()) {
+    const CubemapDef* cubeMap = mSkyBox->tryGetCubemap();
+    if (!cubeMap) {
         return;
     }
 
     if (!sDebugOptions.mDisableClouds && !sDebugOptions.mWireframe) {
-        mCloudRenderer->renderClouds(mCurrentWorldRenderDataManager->getCloudMeshManager(), mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *mSkyBox->tryGetCubemap());
+        mCloudRenderer->renderClouds(mCurrentWorldRenderDataManager->getCloudMeshManager(), mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *cubeMap);
     }
 
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
         glEnable(GL_DEPTH_CLAMP);
-        mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *mSkyBox->tryGetCubemap());
+        mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *cubeMap);
         glDisable(GL_DEPTH_CLAMP);
     }
 

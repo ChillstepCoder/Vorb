@@ -15,7 +15,6 @@
 
 #include "world/IWorld.h"
 #include "world/Chunk.h"
-#include "world/WorldFactory.h"
 #include "rendering/renderer/WorldRenderer.h"
 
 #include "rendering/RenderContext.h"
@@ -192,7 +191,7 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
-    mEditorWorld = WorldFactory::makeWorld(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat);
+    mEditorWorld = std::make_unique<IWorld>(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat);
 
     GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
         IWorld* editorWorld = static_cast<IWorld*>(vWorld);

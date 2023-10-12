@@ -18,7 +18,6 @@ class IWorldGrid;
 
 class IChunkGrid
 {
-    friend class WorldFactory;
 public:
     IChunkGrid();
 

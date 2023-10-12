@@ -10,7 +10,6 @@
 #include "item/ItemStockpileRegistry.h"
 #include "rendering/RenderContext.h"
 #include "world/IWorld.h"
-#include "world/host/HostWorld.h"
 #include "physics/PhysicsWorld.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "ui/UIContext.h"
@@ -320,8 +319,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             // grass
             WorldObjectQueryPtr& worldObjects = mRightClickInteractPopup->getWorldObjects();
             ItemStockpile* stockPile = worldObjects->getStockpile();
-            SrvWorldInterface& srvWorld = dynamic_cast<SrvWorldInterface&>(*mWorld);
-            srvWorld.getItemStockpileRegistry().destroyStockpile(stockPile);
+            mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
             assert(false);
@@ -330,7 +328,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             const WorldNetMode netMode = mWorld->getNetMode();
             if (netMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
+                mWorld->tryGetNavWorld()->debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
             }
             else {
                 assert(false);
@@ -339,7 +337,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
             if (mWorld->getNetMode() == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+                mWorld->tryGetNavWorld()->debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
             }
             else {
                 assert(false);
@@ -348,7 +346,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
             if (mWorld->getNetMode() == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
+                mWorld->tryGetNavWorld()->debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
             }
             else {
                 assert(false);

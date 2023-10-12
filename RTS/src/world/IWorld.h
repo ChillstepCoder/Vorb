@@ -6,6 +6,7 @@
 #include "generation/WorldGeneratorType.h"
 
 class Structure;
+class Camera3D;
 class Chunk;
 class CityGraph;
 class IChunkGrid;
@@ -18,45 +19,34 @@ class TimeOfDayManager;
 class TileContainerRepository;
 class IWorldGenerator;
 class CombatContext;
+class NavWorld;
+class FishEcosystem;
+class RenderState;
 
-
-// Shared world interface
-class IWorld
-{
-    friend class WorldFactory;
-    friend class CliWorldInterface;
-protected:
-    IWorld(ui32 widthTiles, IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid, WorldGeneratorType generatorType);
+// Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
+// potentially do seamless transitions between two host/client worlds with portals or other weirdness.
+class IWorld {
 public:
-    virtual ~IWorld();
+    IWorld(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType);
+    ~IWorld();
+
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
 
+    virtual void onWorldBegin(const f32v2& loadCenter);
+    virtual void tick(f32 elapsedSec);
 
-    // Pure virtual interface
-    virtual void init() = 0;
-    virtual void onWorldBegin(const f32v2& loadCenter) = 0;
-    virtual WorldNetMode getNetMode() const = 0;
+    // World info
+    virtual WorldNetMode getNetMode() const { return mNetMode; }
     bool isEditorWorld() const { return getNetMode() == WorldNetMode::Editor; }
-    virtual void tick(f32 elapsedSec) = 0;
+    f32v3 getDefaultSpawn() const { return f32v3(mWidthTiles * 0.5f, mWidthTiles * 0.5f, 20.0f); }
+    f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
+    f32v2 getLoadCenter() const;
+    void setLoadCenter(const f32v2& loadCenter);
+    ui32 getWidthTiles() const { return mWidthTiles; }
+    ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
+    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_WIDTH; }
 
-
-    // Shared interface
-    void tickShared(f32 elapsedSec);
-    entt::entity createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
-    // Queries
-    bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);
-    void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
-
-    // Tile Accessors
-    TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
-    TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
-    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
-    TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
-    TileHandle getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const;
-    // TODO: Non vector
-    std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
-
-    // Accessors 
+    // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
     CityGraph& getCityGraph() const { return *mCities; }
@@ -67,30 +57,45 @@ public:
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     IWorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
     CombatContext& getCombatContext() const { return *mCombatContext; }
+    ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
+    FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
 
-    f32v3 getDefaultSpawn() const { return f32v3(mWidthTiles * 0.5f, mWidthTiles * 0.5f, 20.0f); }
-    f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
-    f32v2 getLoadCenter() const;
-    ui32 getWidthTiles() const { return mWidthTiles; }
-    ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
-    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_WIDTH; }
+    // Optional system accessors 
+    NavWorld* tryGetNavWorld() const { return mNavWorld.get(); }
 
-    void setLoadCenter(const f32v2& loadCenter);
+    // Tile Accessors
+    TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
+    TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
+    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
+    TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
+    TileHandle getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const;
 
-protected:
-    void onWorldBeginShared(const f32v2& loadCenter);
+    // Queries
+    bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);
+    void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
+    
+    // Structures
+    std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
+private:
+    // TODO: WorldRenderStateManager?
+    void updateRenderState();
+    void updateEntitiesRenderState(RenderState& renderState);
+    void updateDebugRenderState(RenderState& renderState);
 
-    // Server + Client shared world data
-    IChunkGrid* mChunkGrid = nullptr;
-    IHeightmapGrid* mHeightmapGrid = nullptr;
+    bool mDidBegin = false;
 
-    // TODO: Is this still needed? Can we make a ThreadSafeDataContainer?
+    // World info
+    WorldNetMode mNetMode;
     mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
-    ui32 mWidthTiles;
+    ui32 mWidthTiles = 0;
 
+    // Chunks
+    std::unique_ptr<IChunkGrid> mChunkGrid;
     // Tile containers
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
+    // Terrain
+    std::unique_ptr<IHeightmapGrid> mHeightmapGrid;
     // Time of day
     std::unique_ptr<TimeOfDayManager> mTimeOfDayManager;
     // ECS
@@ -105,5 +110,10 @@ protected:
     std::unique_ptr<IWorldGenerator> mWorldGenerator;
     // Combat
     std::unique_ptr<CombatContext> mCombatContext;
-
+    // Stockpiles
+    std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
+    // Ecosystems
+    std::unique_ptr<FishEcosystem> mFishEcosystem;
+    // Nav graph (OPTIONAL)
+    std::unique_ptr<NavWorld> mNavWorld;
 };

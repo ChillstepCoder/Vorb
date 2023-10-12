@@ -2,7 +2,6 @@
 #include "WorldObjectQuery.h"
 
 #include "world/IWorld.h"
-#include "world/srv/SrvWorldInterface.h"
 #include "world/IChunkGrid.h"
 #include "city/City.h"
 #include "city/CityQuartermaster.h"
@@ -81,8 +80,7 @@ void WorldObjectQuery::queryInternal() {
     assert(handle.isValid());
     if (handle.getTile().hasFlag(TileFlags::IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
-        SrvWorldInterface& srvWorld = dynamic_cast<SrvWorldInterface&>(mWorld);
-        const auto* stockPiles = srvWorld.getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
+        const auto* stockPiles = mWorld.getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
         if (stockPiles) {
             for (auto& stockpile : *stockPiles) {
                 if (pointIsWithinAABBInclusive(mWorldPos, stockpile->getAABB())) {

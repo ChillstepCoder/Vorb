@@ -9,7 +9,7 @@
 #include "resources/asset/AssetHandleBundle.h"
 
 AssetLoader::AssetLoader() {
-    size_t numWorkerThreads = 1;// 4;
+    size_t numWorkerThreads = 4;
     /// Allocate all threads
     mWorkers.resize(numWorkerThreads);
     for (ui32 i = 0; i < numWorkerThreads; i++) {

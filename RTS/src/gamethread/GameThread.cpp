@@ -1,11 +1,10 @@
 #include "stdafx.h"
 #include "GameThread.h"
 
-#include "world/cli/CliWorld.h"
-#include "world/host/HostWorld.h"
-
 #include "network/cli/GameClient.h"
 #include "network/srv/GameServer.h"
+
+#include "world/IWorld.h"
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/PhysicsComponent.h"
@@ -126,10 +125,6 @@ void GameThread::tick() {
 
 void GameThread::tickClient() {
     PROFILE_FUNCTION();
-    CliWorld* cliWorld = static_cast<CliWorld*>(&mWorld);
-
-    // Update main thread update queues
-    cliWorld->onFrameBegin();
 
     // Update client
     GameClient& client = GameClient::getInstance();
@@ -141,7 +136,7 @@ void GameThread::tickClient() {
     const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
     client.update(timeStep);
 
-    cliWorld->tick(timeStep);
+    mWorld.tick(timeStep);
 
     //// Update editors
     //UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
@@ -153,7 +148,6 @@ void GameThread::tickClient() {
 
 void GameThread::tickHost() {
     PROFILE_FUNCTION();
-    HostWorld* hostWorld = static_cast<HostWorld*>(&mWorld);
 
     // TODO: We need to send packets at the end of the tick! We will accrue packets and we dont want to delay an entire frame
     if (GameServer::exists()) {
@@ -161,7 +155,7 @@ void GameThread::tickHost() {
     }
 
     // Update world
-    hostWorld->tick(Services::GameTimeManager::ref().getTimestep());
+    mWorld.tick(Services::GameTimeManager::ref().getTimestep());
 
     // Update editors
     /*UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());

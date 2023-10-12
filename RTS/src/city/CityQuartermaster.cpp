@@ -2,7 +2,6 @@
 #include "CityQuartermaster.h"
 #include "city/City.h"
 #include "world/IWorld.h"
-#include "world/srv/SrvWorldInterface.h"
 
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
@@ -47,8 +46,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::entity ownerEntity) {
 
-    SrvWorldInterface& srvWorld = dynamic_cast<SrvWorldInterface&>(mCity.getWorld());
-    ItemStockpile* newStockpile = srvWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
+    ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
     
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
@@ -60,8 +58,7 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::ent
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
 
-    SrvWorldInterface& srvWorld = dynamic_cast<SrvWorldInterface&>(mCity.getWorld());
-    ItemStockpile* newStockpile = srvWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
+    ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
 
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
