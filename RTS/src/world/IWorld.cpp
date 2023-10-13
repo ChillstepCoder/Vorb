@@ -118,6 +118,7 @@ IWorld::~IWorld() {
     if (mDidBegin) {
         getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
         getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
+        dispatchOnWorldEnd(*this);
     }
 }
 
@@ -141,6 +142,9 @@ void IWorld::onWorldBegin(const f32v2& loadCenter) {
     if (!isEditorWorld()) {
         mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
     }
+
+    // Notify everyone
+    dispatchOnWorldBegin(*this);
 }
 
 void IWorld::tick(f32 elapsedSec) {
@@ -366,22 +370,18 @@ void IWorld::updateDebugRenderState(RenderState& renderState) {
     renderState.mDebugQuads.clear();
     // Terrain debug rendering
     if (sDebugOptions.mDebugTerrainLod) {
-        WorldRenderDataManager* manager = RenderContext::getInstance().tryGetRenderDataManagerForWorld(*this);
-        if (manager) {
-            for (auto&& terrainQuadtree : manager->getTerrainMeshManager().getTerrainQuadtrees()) {
-                terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
-            }
+        WorldRenderDataManager& manager = RenderContext::getInstance().getRenderDataManagerForWorld(*this);
+        for (auto&& terrainQuadtree : manager.getTerrainMeshManager().getTerrainQuadtrees()) {
+            terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
         }
     }
 
     // Grass debug rendering
     if (sDebugOptions.mDebugGrassLod) {
-        WorldRenderDataManager* manager = RenderContext::getInstance().tryGetRenderDataManagerForWorld(*this);
-        if (manager) {
-            for (auto&& it : manager->getGrassMeshManager().getGrassQuadtrees()) {
-                if (it.second) {
-                    it.second->getDebugQuads(renderState.mDebugQuads);
-                }
+        WorldRenderDataManager& manager = RenderContext::getInstance().getRenderDataManagerForWorld(*this);
+        for (auto&& it : manager.getGrassMeshManager().getGrassQuadtrees()) {
+            if (it.second) {
+                it.second->getDebugQuads(renderState.mDebugQuads);
             }
         }
     }

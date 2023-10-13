@@ -2045,6 +2045,9 @@
     <ClInclude Include="src\world\WorldContextObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\WorldEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

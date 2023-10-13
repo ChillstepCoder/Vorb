@@ -5,6 +5,8 @@
 
 #include "generation/WorldGeneratorType.h"
 
+#include "world/WorldEvents.h"
+
 class Structure;
 class Camera3D;
 class Chunk;
@@ -22,6 +24,7 @@ class CombatContext;
 class NavWorld;
 class FishEcosystem;
 class RenderState;
+
 
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
@@ -76,6 +79,10 @@ public:
     
     // Structures
     std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
+
+    STATIC_EVENT_LISTENER_FUNCS(IWorld, OnWorldBegin, WORLD_EVENT_TYPE::OnWorldBegin, IWorld&);
+    STATIC_EVENT_LISTENER_FUNCS(IWorld, OnWorldEnd, WORLD_EVENT_TYPE::OnWorldEnd, IWorld&);
+
 private:
     // TODO: WorldRenderStateManager?
     void updateRenderState();
@@ -116,4 +123,6 @@ private:
     std::unique_ptr<FishEcosystem> mFishEcosystem;
     // Nav graph (OPTIONAL)
     std::unique_ptr<NavWorld> mNavWorld;
+
+    STATIC_EVENT_DISPATCHER_DEF(IWorld);
 };

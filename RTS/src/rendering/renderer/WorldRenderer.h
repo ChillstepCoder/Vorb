@@ -1,6 +1,7 @@
 #pragma once
 
 #include "events/SkillEvent.h"
+#include "world/WorldEvents.h"
 
 class AmbientOcclusionPostProcess;
 class Camera3D;
@@ -56,13 +57,13 @@ public:
     ShadowRenderer& getShadowRenderer() { return *mShadowRenderer; }
 
     // Assets
-    WorldRenderDataManager* tryGetRenderDataManagerForWorld(const IWorld& world) const;
     WorldRenderDataManager& getRenderDataManagerForWorld(const IWorld& world);
 
     void selectNextDebugShader();
     StrToken getCurrentPassthroughRenderStageName() const;
 
 private:
+    void initEventHandlers();
 
     // Render passes
     void renderPassSky();
@@ -118,5 +119,7 @@ private:
     struct WorldRendererEventHandles {
         SkillsComponentSystemListeners mSkillsComponentListeners;
     } mEventHandles;
+    IWorldListeners mWorldEventListeners;
+
 };
 

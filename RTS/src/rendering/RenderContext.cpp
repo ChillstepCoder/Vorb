@@ -355,10 +355,8 @@ void RenderContext::endFrame() {
 }
 
 void RenderContext::tickGameThread(IWorld& world) {
-    WorldRenderDataManager* renderDataManager = mWorldRenderer->tryGetRenderDataManagerForWorld(world);
-    if (renderDataManager) {
-        renderDataManager->tickGameThread();
-    }
+    WorldRenderDataManager& renderDataManager = mWorldRenderer->getRenderDataManagerForWorld(world);
+    renderDataManager.tickGameThread();
 }
 
 void RenderContext::selectNextDebugShader() {
@@ -379,10 +377,6 @@ CharacterRenderer& RenderContext::getCharacterRenderer() const {
 
 WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& world) const {
     return mWorldRenderer->getRenderDataManagerForWorld(world);
-}
-
-WorldRenderDataManager* RenderContext::tryGetRenderDataManagerForWorld(IWorld& world) const {
-    return mWorldRenderer->tryGetRenderDataManagerForWorld(world);
 }
 
 void RenderContext::updateCamera(f32 frameAlpha) {

@@ -20,7 +20,6 @@ WorldRenderDataManager::WorldRenderDataManager(IWorld& world) : mWorld(world) {
     mInstancedStaticModelManager = std::make_unique<InstancedStaticModelManager>();
     mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(mWorld , *mInstancedStaticModelManager);
 
-    mCloudManager->init(mWorld.getWidthChunks(), mWorld.getLoadCenter());
 }
 
 WorldRenderDataManager::~WorldRenderDataManager() {

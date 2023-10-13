@@ -897,6 +897,7 @@
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\WorldContextObject.h" />
     <ClInclude Include="src\world\WorldData.h" />
+    <ClInclude Include="src\world\WorldEvents.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
   </ItemGroup>
   <ItemGroup>

@@ -27,10 +27,10 @@ public:
     CloudMeshManager(IWorldGenerator& worldGenerator);
     ~CloudMeshManager();
 
-    void init(i32 worldWidthChunks, const f32v2& loadCenter);
     void frameUpdate(const f32v2& loadCenter);
 
 private:
+    void init(i32 worldWidthChunks, const f32v2& loadCenter);
     void updateGridShift(const f32v2& loadCenter);
     void tryGenerateCloudBatchAt(i32v2 cloudPos);
     void destroyCloudBatch(CloudBatch& batch);
@@ -52,6 +52,7 @@ private:
     f32 mDyTotal = 0.0f;
     ui32 mTickCount = 0;
     ui32 mGeneratingIndexLast = 0;
+    bool mNeedsInit = true;
     //void addCloudAt(const f32v3& pos, f32 size);
 
     AssetHandleBundle mAssets;

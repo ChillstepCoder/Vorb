@@ -83,7 +83,6 @@ public:
     CharacterRenderer& getCharacterRenderer() const;
     WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
     WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world) const;
-    WorldRenderDataManager* tryGetRenderDataManagerForWorld(IWorld& world) const;
     vg::SpriteFont& getDebugFont() { return *mSpriteFont; }
 
     f32 getCurrentFrameAlpha() const { return mCurrentFrameAlpha; }

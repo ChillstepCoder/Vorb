@@ -56,7 +56,7 @@ CloudMeshManager::~CloudMeshManager()
 }
 
 void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
-
+    mNeedsInit = false;
     mWorldWidthCloudBatches = worldWidthChunks / CHUNK_STRIDE_PER_CLOUD_BATCH;
     const ui32 WORLD_SIZE_CLOUD_BATCHES = SQ(mWorldWidthCloudBatches);
 
@@ -109,6 +109,9 @@ void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
 }
 
 void CloudMeshManager::frameUpdate(const f32v2& loadCenter) {
+    if (mNeedsInit) {
+        init(mWorldGenerator.getWorld().getWidthChunks(), loadCenter);
+    }
 
     // Handle any new cloud spawns from grid shift
     updateGridShift(loadCenter);

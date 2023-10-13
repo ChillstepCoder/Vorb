@@ -98,7 +98,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mHDRLightGBuffer = std::make_unique<vg::GBuffer>(screenResolution);
     mHDRLightGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
-    //mCloudManager->init(world.getLoadCenter());
+    initEventHandlers();
 }
 
 WorldRenderer::~WorldRenderer()
@@ -136,17 +136,11 @@ void WorldRenderer::onBeginFrame(const RenderState* renderState, f32v3 playerPos
         setActiveWorld(renderState->getWorld());
     }
 
-    // Allocate render data if needed
     {
+        std::lock_guard lock(mRenderDataManagersMutex);
         auto&& it = mRenderDataManagers.find(mActiveWorld);
-        if (it == mRenderDataManagers.end()) {
-            mCurrentWorldRenderDataManager = mRenderDataManagers.insert(
-                std::make_pair(mActiveWorld, std::make_unique<WorldRenderDataManager>(*mActiveWorld))
-            ).first->second.get();
-        }
-        else {
-            mCurrentWorldRenderDataManager = it->second.get();
-        }
+        assert(it != mRenderDataManagers.end());
+        mCurrentWorldRenderDataManager = it->second.get();
     }
 
     mRenderState = renderState;
@@ -336,9 +330,10 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
 }
 
-void WorldRenderer::renderDebug()
-{
-    assert(mActiveWorld);
+void WorldRenderer::renderDebug() {
+    if (!mActiveWorld) {
+        return;
+    }
     // City Debug
     if (sDebugOptions.mCities) {
         const CityGraph& cities = mActiveWorld->getCityGraph();
@@ -458,44 +453,13 @@ void WorldRenderer::renderDebug()
     mActiveWorld->getPhysicsWorld().debugRender();
 }
 
-WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const IWorld& world) const {
-    if (IS_RENDER_THREAD()) {
-        auto&& it = mRenderDataManagers.find(&world);
-        if (it == mRenderDataManagers.end()) {
-            return nullptr;
-        }
-        return it->second.get();
-    }
-    else {
-        std::lock_guard lock(mRenderDataManagersMutex);
-        auto&& it = mRenderDataManagers.find(&world);
-        if (it == mRenderDataManagers.end()) {
-            return nullptr;
-        }
-        return it->second.get();
-    }
-}
-
 WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const IWorld& world) {
-    if (IS_RENDER_THREAD()) {
-        auto&& it = mRenderDataManagers.find(&world);
-        if (it == mRenderDataManagers.end()) {
-            std::lock_guard lock(mRenderDataManagersMutex);
-            return *mRenderDataManagers.insert(
-                std::make_pair(&world, std::make_unique<WorldRenderDataManager>(*mActiveWorld))
-            ).first->second;
-        }
-        return *it->second;
+    std::lock_guard lock(mRenderDataManagersMutex);
+    auto&& it = mRenderDataManagers.find(&world);
+    if (it == mRenderDataManagers.end()) {
+        panic("Missing world in WorldRenderer::getRenderDataManagerForWorld");
     }
-    else {
-        std::lock_guard lock(mRenderDataManagersMutex);
-        auto&& it = mRenderDataManagers.find(&world);
-        if (it == mRenderDataManagers.end()) {
-            assert(false);
-            throw std::exception("Invalid world on game thread query");
-        }
-        return *it->second;
-    }
+    return *it->second;
 }
 
 void WorldRenderer::selectNextDebugShader() {
@@ -511,6 +475,22 @@ StrToken WorldRenderer::getCurrentPassthroughRenderStageName() const
         return StrToken();
     }
     return sPassthroughMaterialNames[mPassthroughRenderMode];
+}
+
+void WorldRenderer::initEventHandlers() {
+    IWorld::registerIWorldListeners(mWorldEventListeners);
+    IWorld::addOnWorldBeginListener(mWorldEventListeners, [this](IWorld& world) {
+        std::lock_guard lock(mRenderDataManagersMutex);
+        mRenderDataManagers.insert(
+           std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
+       ).first->second.get();
+    });
+    // TODO: We should do this on the render thread somehow
+    //IWorld::addOnWorldEndListener(mWorldEventListeners, [this](IWorld& world) {
+    //    std::lock_guard lock(mRenderDataManagersMutex);
+    //    mRenderDataManagers.erase(&world);
+    //    // TODO: What if we are still holding on to the handle?
+    //});
 }
 
 void WorldRenderer::renderPassSky() {
