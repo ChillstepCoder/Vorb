@@ -20,6 +20,8 @@ constexpr const char* const EMITTER_LIFETIME_KEY("lifetime");
 constexpr const char* const EMITTER_PARTICLE_LIFESPAN_KEY("p_lifespan");
 constexpr const char* const EMITTER_LOOPING_KEY("looping");
 constexpr const char* const EMITTER_BLEND_KEY("blend");
+constexpr const char* const EMITTER_MATERIAL_KEY("mat");
+constexpr const char* const EMITTER_SHADER_KEY("shader");
 
 void ParticleSystemRepository::setDefaultMaterialID(MaterialID id)
 {
@@ -29,6 +31,8 @@ void ParticleSystemRepository::setDefaultMaterialID(MaterialID id)
 
 bool ParticleSystemRepository::saveAsset(AssetID id) {
     const ParticleSystemDef& particleSystem = *mAssets[id];
+
+    mEmitterStrBuf.clear();
 
     vio::Path filePath = getAssetFilePath(id);
     // TODO: DIALOG
@@ -57,7 +61,10 @@ bool ParticleSystemRepository::saveAsset(AssetID id) {
 }
 
 void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter) {
-    ryml::NodeRef innerNode = node[c4::to_csubstr(particleEmitter.mEmitterName.toString())];
+    // We must cache the strings since their data will be referenced when we are finished saving
+    // due to c4::to_csubstr using a pointer to the string data
+    const nString& nameStr = mEmitterStrBuf.emplace_back(particleEmitter.mEmitterName.toString());
+    ryml::NodeRef innerNode = node[c4::to_csubstr(nameStr)];
     innerNode |= ryml::MAP;
 
     // Serialize config
@@ -69,6 +76,11 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     innerNode[EMITTER_PARTICLE_LIFESPAN_KEY] << particleEmitter.mDefaultParticleLifespanSec;
     innerNode[EMITTER_LOOPING_KEY] << particleEmitter.mLooping;
     innerNode[EMITTER_BLEND_KEY] << particleEmitter.mBlendMode;
+    if (particleEmitter.mDefaultMaterialName.isValid()) {
+        innerNode[EMITTER_MATERIAL_KEY] << particleEmitter.mDefaultMaterialName;
+    }
+    innerNode[EMITTER_SHADER_KEY] << particleEmitter.mShaderName;
+
     { // Emitter Update
         ryml::NodeRef updateNode = innerNode["e_update"];
         updateNode |= ryml::SEQ;
@@ -102,7 +114,7 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
 
 bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter) {
 
-    // TODO: Material and shader
+    // Defaults
     particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
     particleEmitter.mShaderName = CStrToken("particle_bb_3d");
     
@@ -114,6 +126,10 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
     yml::tryReadValue(node, EMITTER_PARTICLE_LIFESPAN_KEY, particleEmitter.mDefaultParticleLifespanSec);
     yml::tryReadValue(node, EMITTER_LOOPING_KEY, particleEmitter.mLooping);
     yml::tryReadValue(node, EMITTER_BLEND_KEY, particleEmitter.mBlendMode);
+    if (yml::tryReadValue(node, EMITTER_MATERIAL_KEY, particleEmitter.mDefaultMaterialName)) {
+        particleEmitter.mDefaultMaterialID = MaterialRepository::get().getAssetID(particleEmitter.mDefaultMaterialName);
+    }
+    yml::tryReadValue(node, EMITTER_SHADER_KEY, particleEmitter.mShaderName);
 
     { // Emitter Update
         ryml::ConstNodeRef updateNode = node["e_update"];

@@ -24,5 +24,6 @@ private:
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
+    std::vector<nString> mEmitterStrBuf; // We need to hold on to strings while saving
 };
 
