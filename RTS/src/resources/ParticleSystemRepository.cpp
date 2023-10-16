@@ -57,7 +57,7 @@ bool ParticleSystemRepository::saveAsset(AssetID id) {
 }
 
 void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter) {
-    ryml::NodeRef innerNode = node[c4::to_csubstr(particleEmitter.mEmitterName)];
+    ryml::NodeRef innerNode = node[c4::to_csubstr(particleEmitter.mEmitterName.toString())];
     innerNode |= ryml::MAP;
 
     // Serialize config
@@ -104,7 +104,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
 
     // TODO: Material and shader
     particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
-    particleEmitter.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
+    particleEmitter.mShaderName = CStrToken("particle_bb_3d");
     
     // Deserialize config
     yml::tryReadValue(node, EMITTER_SCALE_KEY, particleEmitter.mDefaultScale);
@@ -157,21 +157,37 @@ AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
 
         ryml::Tree tree = YmlSerializer::parseFileData(fileData);
 
-        ParticleSystemDef* newDef = static_cast<ParticleSystemDef*>(assetDataPtr);
-        if (!newDef) {
-            panic("Failed to load {} from {} - already exists", filePath.getFileNameNoExtension(), filePath.getString());
-        }
+        ParticleSystemDef& newDef = *static_cast<ParticleSystemDef*>(assetDataPtr);
 
         // Loop through emitters
         ryml::ConstNodeRef emittersNode = tree.rootref()["emitters"];
         for (ryml::ConstNodeRef seqNode : emittersNode.children()) {
             ryml::ConstNodeRef innerNode = seqNode.first_child();
-            ParticleEmitterDef& newEmitter = newDef->mEmitters.emplace_back();
-            newEmitter.mEmitterName = nString(std::string_view(innerNode.key().data(), innerNode.key().size()));
+            ParticleEmitterDef& newEmitter = newDef.mEmitters.emplace_back();
+            newEmitter.mEmitterName = StrToken(innerNode.key().data(), innerNode.key().size());
             if (!loadParticleEmitter(innerNode, newEmitter)) {
                 panic("Failed to load particle emitter {} {}", filePath.getFileNameNoExtension(), filePath.getString());
             }
+            assert(newEmitter.mShaderName.isValid());
+            newDef.addDependency(MaterialShaderRepository::get().getAssetHandle(newEmitter.mShaderName));
         }
-        return true;
+
+        if (newDef.getDependencies()->areAllAssetsLoaded()) {
+            return true;
+        }
+        else {
+            // Make sure we load all dependencies (Shaders)
+            assetLoader.requestAssetLoadWithDependencies(nullptr, [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+                return true;
+            }, assetID,
+                assetDataPtr,
+                filePath,
+                mLoadedAssets[assetID].get(),
+                nullptr,
+                newDef.getDependencies()
+            );
+        }
+
+        return false;
     };
 }

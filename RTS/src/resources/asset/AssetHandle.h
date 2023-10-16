@@ -38,4 +38,4 @@ protected:
 };
 
 template <typename T>
-using AssetHandlePtr = std::shared_ptr<AssetHandle<T>>;
+using AssetHandlePtr = std::unique_ptr<AssetHandle<T>>;

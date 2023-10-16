@@ -103,7 +103,7 @@ public:
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
     bool isLooping() const { return mLooping; }
 
-    const MaterialShaderDef& getMaterialShader() const { return mShader; }
+    AssetID getShaderID() const { return mShaderID; }
 
     void setBlendMode(ParticleBlendMode blendMode) { mBlendMode = blendMode; }
     ParticleBlendMode getBlendMode() { return mBlendMode; }
@@ -142,8 +142,6 @@ protected:
     void render();
     void onNewParticleAdded(ParticleID id);
 
-    const MaterialShaderDef& mShader;
-
     // Updates the whole emitter with custom logic.
     // Can be null which implies static system, such as for UI
     ParticleUpdateFunction mNativeUpdateFunction;
@@ -178,6 +176,8 @@ protected:
     ParticleSystemInputs* mInputs = nullptr;
 
     std::unordered_set<MaterialID> mContainedMaterials;
+
+    AssetID mShaderID;
 
     f32 mTotalElapsedSec = 0.0f;
     f32 mLifetimeSec;

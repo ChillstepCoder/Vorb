@@ -25,7 +25,7 @@ public:
     AssetHandleBase* tryGetAssetHandle(AssetID id, AssetType assetType) {
         return tryGetAssetHandle(AssetDescriptor{ .id = id, .assetType = assetType });
     }
-    void addAssetHandle(std::shared_ptr<AssetHandleBase> handle) {
+    void addAssetHandle(std::unique_ptr<AssetHandleBase> handle) {
         if (mLockedByAssetLoader) panic("Tried to add an asset handle to bundle being loaded by the asset loader!");
 
         // No double add

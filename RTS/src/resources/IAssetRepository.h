@@ -38,7 +38,7 @@ protected:
     // Virtual interfaces
     virtual void loadAssetAsync(const AssetRegistryEntry& assetEntry) = 0;
     virtual void fillAsset(AssetHandleBase& handle) = 0;
-    virtual AssetHandleBasePtr makeAssetHandle() = 0;
+    virtual AssetHandleBasePtr makeAssetHandle() const = 0;
     virtual AssetID getAssetID(StrToken assetName) const = 0;
 
     // ==================================================================
@@ -152,17 +152,17 @@ public:
         return AssetDescriptor{ .id = getAssetID(assetName), .assetType = getAssetType() };
     }
     AssetHandlePtr<T> getAssetHandle(StrToken assetName) {
-        return std::static_pointer_cast<AssetHandle<T>>(getAssetHandleBase(assetName));
+        return static_unique_pointer_cast<AssetHandle<T>>(getAssetHandleBase(assetName));
     }
     AssetHandlePtr<T> getAssetHandle(AssetID id) {
-        return std::static_pointer_cast<AssetHandle<T>>(getAssetHandleBase(id));
+        return static_unique_pointer_cast<AssetHandle<T>>(getAssetHandleBase(id));
     }
     // Note that if you do not have a handle, this could become invalid!
     const T* tryGetLoadedAsset(StrToken assetName) {
         return tryGetLoadedAsset(getAssetID(assetName));
     }
     const T* tryGetLoadedAsset(AssetID id) {
-        if (mLoadedAssets[id]->load()) {
+        if (mLoadedAssets[id]->load()) [[likely]] {
             return mAssets[id].get();
         }
         return nullptr;
@@ -321,8 +321,8 @@ protected:
         AssetHandle<T>& typedHandle = (AssetHandle<T>&)handle;
         typedHandle.mLoadedAsset = mAssets[typedHandle.mAssetID].get();
     }
-    AssetHandleBasePtr makeAssetHandle() {
-        return std::make_shared<AssetHandle<T>>();
+    AssetHandleBasePtr makeAssetHandle() const {
+        return std::make_unique<AssetHandle<T>>();
     }
 
     // ==================================================================

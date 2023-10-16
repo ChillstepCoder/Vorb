@@ -20,4 +20,4 @@ protected:
     AssetType mAssetType = AssetType::COUNT;
 };
 // TODO: UniquePtr
-using AssetHandleBasePtr = std::shared_ptr<AssetHandleBase>;
+using AssetHandleBasePtr = std::unique_ptr<AssetHandleBase>;

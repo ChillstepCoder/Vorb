@@ -37,13 +37,15 @@ public:
 
 class ParticleEmitterDef {
 public:
+    ParticleEmitterDef() = default;
+    ~ParticleEmitterDef() = default;
 
-    bool isValid() { return mShader != nullptr; }
+    bool isValid() { return mShaderName.isValid(); }
 
     ParticleEmitterModuleContainer mModules;
 
-    AssetHandlePtr<MaterialShaderDef> mShader;
-    nString mEmitterName;
+    StrToken mShaderName;
+    StrToken mEmitterName;
     f32v2 mDefaultScale = f32v2(0.1f);
     color4 mDefaultColor = color::White;
     ui32 mMaxParticles = 2000;

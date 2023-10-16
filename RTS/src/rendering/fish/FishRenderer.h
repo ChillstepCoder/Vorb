@@ -25,6 +25,8 @@ public:
     FishInstanceData();
     ~FishInstanceData();
 
+    VORB_NON_COPYABLE_BUT_MOVABLE(FishInstanceData);
+
     FishGPUData* mMappedInstanceDataBuffer = nullptr;
     VGBuffer mInstanceDataBuffer = 0;
     const Mesh* mMesh = nullptr;

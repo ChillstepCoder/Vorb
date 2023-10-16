@@ -2,7 +2,7 @@
 #include "CPUParticleSystem.h"
 
 #include "definitions/ParticleSystemDef.h"
-#include "rendering/MaterialShaderDef.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include "rendering/MaterialRenderer.h"
 
@@ -31,7 +31,7 @@ bool CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
     const MaterialShaderDef* boundShader = nullptr;
     for (auto&& iter = mEmitters.begin(); iter != mEmitters.end();) {
         CpuParticleEmitter& emitter = **iter;
-        const MaterialShaderDef* nextShader = &emitter.getMaterialShader();
+        const MaterialShaderDef* nextShader = MaterialShaderRepository::get().tryGetLoadedAsset(emitter.getShaderID());
         if (!nextShader) {
             ++iter;
             continue;
@@ -66,7 +66,7 @@ bool CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, c
         if (*iter) {
             if (emitterVisibility[i]) {
                 CpuParticleEmitter& emitter = **iter;
-                const MaterialShaderDef* nextShader = &emitter.getMaterialShader();
+                const MaterialShaderDef* nextShader = MaterialShaderRepository::get().tryGetLoadedAsset(emitter.getShaderID());
                 if (!nextShader) {
                     continue;
                 }

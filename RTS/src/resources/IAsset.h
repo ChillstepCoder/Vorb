@@ -63,7 +63,7 @@ public:
     bool isDirty() const { return mDirty; }
     void setDirty(bool val) const { mDirty = val; }
     AssetHandleBundle* getDependencies() const { return mDependencies.get(); }
-    void addDependency(std::shared_ptr<AssetHandleBase> handle);
+    void addDependency(std::unique_ptr<AssetHandleBase>&& handle);
     void reserveDependencyCount(size_t count);
 
 protected:

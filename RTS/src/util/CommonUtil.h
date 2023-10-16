@@ -77,3 +77,10 @@ void className::operator delete(void* pointer, size_t size) { \
     UNUSED(size); \
     return singleton_##className##_pool::free(pointer); \
 }
+
+// cast unique ptr to new one
+template<typename TO, typename FROM>
+inline std::unique_ptr<TO> static_unique_pointer_cast(std::unique_ptr<FROM>&& old) {
+    // conversion: unique_ptr<FROM>->FROM*->TO*->unique_ptr<TO>
+    return std::unique_ptr<TO>{static_cast<TO*>(old.release())};
+}

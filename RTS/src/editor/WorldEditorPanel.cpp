@@ -464,14 +464,14 @@ void WorldEditorPanel::updateTerrainEdit() {
             struct TerrainEditTask {
                 WorldEditorPanel* editor;
                 PhysHitResult hitResult;
-                BrushSettings brushSettings;
+                BrushSettings* brushSettings;
                 TerrainEditState editState;
                 World* activeWorld;
             };
             TerrainEditTask* task = new TerrainEditTask;
             task->editor = this;
             task->hitResult = mHitResult;
-            task->brushSettings = *mCurrentBrushSettings;
+            task->brushSettings = mCurrentBrushSettings;
             task->editState = mTerrainEditState;
             task->activeWorld = mActiveWorld;
 
@@ -479,7 +479,7 @@ void WorldEditorPanel::updateTerrainEdit() {
                 PROFILE_SCOPE("WorldEditorPanel::updateTerrainEdit~lambda");
                 const TerrainEditTask* task = static_cast<TerrainEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
-                const BrushSettings& brushSettings = task->brushSettings;
+                const BrushSettings& brushSettings = *task->brushSettings;
 
                 PreciseTimer timer;
                 // Edit the terrain with iteration
@@ -521,21 +521,21 @@ void WorldEditorPanel::updateGrassEdit() {
             struct GrassEditTask {
                 WorldEditorPanel* editor;
                 PhysHitResult hitResult;
-                BrushSettings brushSettings;
+                BrushSettings* brushSettings;
                 GrassEditState editState;
                 TileGrassID selectedGrass;
             };
             GrassEditTask* task = new GrassEditTask;
             task->editor = this;
             task->hitResult = mHitResult;
-            task->brushSettings = *mCurrentBrushSettings;
+            task->brushSettings = mCurrentBrushSettings;
             task->editState = mGrassEditState;
             task->selectedGrass = mSelectedGrass;
 
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
                 const GrassEditTask* task = static_cast<GrassEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
-                const BrushSettings& brushSettings = task->brushSettings;
+                const BrushSettings& brushSettings = *task->brushSettings;
                 World* world = task->editor->mActiveWorld;
                 PreciseTimer timer;
                 // Edit the terrain with iteration

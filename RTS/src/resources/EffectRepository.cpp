@@ -14,16 +14,20 @@ AssetLoadFunc EffectRepository::getAssetLoadFunc()
         }
         def.addDependency(ParticleSystemRepository::get().getAssetHandle(def.mParticleSystemName));
 
-        assetLoader.requestAssetLoadWithDependencies(nullptr, [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+        if (def.getDependencies()->areAllAssetsLoaded()) {
             return true;
-        }, assetID,
-            assetDataPtr,
-            filePath,
-            mLoadedAssets[assetID].get(),
-            nullptr,
-            def.getDependencies()
-        );
-
+        }
+        else {
+            assetLoader.requestAssetLoadWithDependencies(nullptr, [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+                return true;
+            }, assetID,
+                assetDataPtr,
+                filePath,
+                mLoadedAssets[assetID].get(),
+                nullptr,
+                def.getDependencies()
+            );
+        }
         return false;
     };
 }

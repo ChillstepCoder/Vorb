@@ -3,6 +3,7 @@
 
 #include "rendering/particle/CpuParticleEmitter.h"
 #include "rendering/MaterialShaderDef.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include "resources/MaterialRepository.h"
 #include "resources/asset/AssetHandleBundle.h"
@@ -22,7 +23,7 @@ constexpr ui32 MAX_PARTICLES = 20000;
 POOLED_ALLOC_DEF_NOT_THREADSAFE(CpuParticleEmitter, 64, ASSERT_RENDER_THREAD());
 
 CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime /*= FLT_MAX*/) :
-    mShader(shader),
+    mShaderID(shader.getID()),
     mNativeUpdateFunction(updateFunction),
     mMaxParticles(maxParticles),
     mComponents(components),
@@ -35,7 +36,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
 }
 
 CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSystemInputs* inputs) :
-    mShader(def.mShader->getLoadedAsset()),
+    mShaderID(MaterialShaderRepository::get().getAssetID(def.mShaderName)),
     mInputs(inputs),
     mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {
@@ -400,8 +401,8 @@ void CpuParticleEmitter::render() {
     if (mNumActiveParticles == 0) {
         return;
     }
-
-    vg::GLProgram& program = mShader.mProgram;
+    const MaterialShaderDef& shader = MaterialShaderRepository::get().getLoadedAsset(mShaderID);
+    const vg::GLProgram& program = shader.mProgram;
 
     // TODO: UBO?
     const VGUniform unIsUsingColor = program.getUniform("unIsUsingColor");

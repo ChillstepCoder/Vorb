@@ -125,9 +125,9 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
                 mSystemDef->setName(StrToken((const char*)mTextInputBuffer));
                 ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
-                defaultEmitter.mEmitterName = "DefaultEmitter";
+                defaultEmitter.mEmitterName = CStrToken("default_emitter");
                 defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                defaultEmitter.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
+                defaultEmitter.mShaderName = CStrToken("particle_bb_3d");
                 mSelectedEmitter = &defaultEmitter;
                 mTextInputBuffer[0] = '\0';
             }
@@ -182,9 +182,9 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             if (ImGui::Button("Create")) {
                 ImGui::CloseCurrentPopup();
                 ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
-                newEmitterDef.mEmitterName = mTextInputBuffer;
+                newEmitterDef.mEmitterName = StrToken(mTextInputBuffer);
                 newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                newEmitterDef.mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("particle_bb_3d"));
+                newEmitterDef.mShaderName = CStrToken("particle_bb_3d");
                 mSelectedEmitter = &newEmitterDef;
                 mSelectedModule = nullptr;
                 mSelectedModuleVector = nullptr;
@@ -213,10 +213,10 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             ImGui::PushID(i);
             constexpr int VISIBILITY_SIZE = 32;
             if (mSelectedEmitter == &emitter) {
-                SELECTED_BUTTON(ImGui::Button(emitter.mEmitterName.c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0)));
+                SELECTED_BUTTON(ImGui::Button(emitter.mEmitterName.toString().c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0)));
             }
             else {
-                if (ImGui::Button(emitter.mEmitterName.c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0))) {
+                if (ImGui::Button(emitter.mEmitterName.toString().c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0))) {
                     mSelectedEmitter = &emitter;
                 }
             }
@@ -271,7 +271,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
  
     if (mSelectedEmitter) {
-        ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.c_str());
+        ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.toString().c_str());
         ImGui::Separator();
         ImGui::Text("Modules");
         const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
@@ -364,7 +364,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
     ImGui::Spacing(); ImGui::Separator();
 
     if (mSelectedEmitter) {
-        ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.c_str());
+        ImGui::Text("Emitter: %s", mSelectedEmitter->mEmitterName.toString().c_str());
         bool changed = false;
         changed |= ImGui::SliderFloat2("Scale", &mSelectedEmitter->mDefaultScale.x, 0.01f, 5.0f, "%.2f");
 
@@ -560,7 +560,7 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& em
     ParticleSystemRepository::get().forEachLoadedAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef& def) {
         name = def.getName().toString();
         for (auto& emitter : def.mEmitters) {
-            if (emitterName == name + "." + emitter.mEmitterName) {
+            if (emitterName == name + "." + emitter.mEmitterName.toString()) {
                 mSystemDef->mEmitters.emplace_back(emitter);
                 mSelectedEmitter = &mSystemDef->mEmitters.back();
                 createPreviewSystem();
@@ -578,7 +578,7 @@ std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() 
         if (def) {
             name = def->getName().toString();
             for (auto& emitter : def->mEmitters) {
-                emitterNames.push_back(name + "." + emitter.mEmitterName);
+                emitterNames.push_back(name + "." + emitter.mEmitterName.toString());
             }
         }
         else {
