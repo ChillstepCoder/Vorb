@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "IEntityComponentSystem.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "camera/Camera3D.h"
 
@@ -10,7 +10,7 @@
 
 const float DEAD_COLOR_MULT = 0.4f;
 
-IEntityComponentSystem::IEntityComponentSystem(IWorld& world) : mWorld(world) {
+IEntityComponentSystem::IEntityComponentSystem(World& world) : mWorld(world) {
 }
 
 IEntityComponentSystem::~IEntityComponentSystem() {

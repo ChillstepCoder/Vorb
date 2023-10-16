@@ -8,7 +8,7 @@ enum class TaskTickResult {
 };
 
 class IAgentTask;
-class IWorld;
+class World;
 
 typedef bool (*AgentTaskFinishedFunc)(bool, IAgentTask*);
 
@@ -19,7 +19,7 @@ public:
     IAgentTask(AgentTaskFinishedFunc func) : mTaskFinishedFunc(func) {};
     virtual ~IAgentTask() = default;
     // Return true when task is done
-    virtual TaskTickResult tick(IWorld& world, entt::registry& registry, entt::entity agent) = 0;
+    virtual TaskTickResult tick(World& world, entt::registry& registry, entt::entity agent) = 0;
 
     std::unique_ptr<IAgentTask>& getNextTask() { return mNextTask; }
     void setNextTask(std::unique_ptr<IAgentTask>&& nextTask) { assert(!mNextTask); mNextTask = std::move(nextTask); }

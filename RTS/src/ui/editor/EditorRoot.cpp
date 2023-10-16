@@ -74,7 +74,7 @@ EditorRoot::~EditorRoot() {
 
 }
 
-void EditorRoot::updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay) {
+void EditorRoot::updateEditors(World* world, const Camera3D& camera, const f32v3& mousePickRay) {
     if (sDebugOptions.mShowEditor) {
         mWorldEditorPanel->update(world, camera, mousePickRay);
     }
@@ -82,7 +82,7 @@ void EditorRoot::updateEditors(IWorld* world, const Camera3D& camera, const f32v
 
 void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
     if (sDebugOptions.mShowEditor) {
-        IWorld* world = mWorldEditorPanel->getActiveWorld();
+        World* world = mWorldEditorPanel->getActiveWorld();
         const ui32v2& dims = vui::InputDispatcher::window.getCurrentWindowDims();
         const f32 defaultPanelWidth = dims.x * 0.16f;
         const ImGuiCond cond = ImGuiCond_Once /*ImGuiCond_FirstUseEver*/;

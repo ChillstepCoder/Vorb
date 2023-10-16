@@ -5,7 +5,7 @@
 
 #include "events/SkillEvent.h"
 
-class IWorld;
+class World;
 
 struct SkillsComponentFileData {
     Array<nString> mSkillNames;
@@ -25,7 +25,7 @@ struct SkillsComponent {
 
 class SkillsComponentSystem {
 public:
-    void update(IWorld& world, entt::registry& registry, f32 elapsedSec);
+    void update(World& world, entt::registry& registry, f32 elapsedSec);
 
     bool tryActivateSkillSlot(entt::entity entity, entt::registry& registry, SkillSlot slot);
 
@@ -35,8 +35,8 @@ public:
     EVENT_LISTENER_FUNCS(SkillsComponentSystem, End, SkillEventType::End, SkillEvent);
 
 protected:
-    void handleSkillTrigger(IWorld& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger);
-    void handleAttackTrigger(IWorld& world, entt::entity entity, const SkillAttackTrigger& attackTrigger);
+    void handleSkillTrigger(World& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger);
+    void handleAttackTrigger(World& world, entt::entity entity, const SkillAttackTrigger& attackTrigger);
 
     EVENT_DISPATCHER_DEF(SkillsComponentSystem);
 };

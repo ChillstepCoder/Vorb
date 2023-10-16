@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "TerrainMeshManager.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "world/HeightmapTerrainQuadtree.h"
 
 #include <boost/container/flat_map.hpp>
 
-TerrainMeshManager::TerrainMeshManager(IWorld& world) : mWorld(world) {
+TerrainMeshManager::TerrainMeshManager(World& world) : mWorld(world) {
     // Init terrain
     mWidthTerrainTrees = mWorld.getWidthChunks() / CHUNKS_PER_TERRAIN_QUADTREE;
     IHeightmapGrid& heightmapGrid = mWorld.getHeightmapGrid();

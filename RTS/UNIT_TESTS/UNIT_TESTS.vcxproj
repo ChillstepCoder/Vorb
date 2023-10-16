@@ -266,7 +266,7 @@
     <ClCompile Include="..\src\util\IntersectionUtil.cpp" />
     <ClCompile Include="..\src\util\StrToken.cpp" />
     <ClCompile Include="..\src\util\ThreadIDs.cpp" />
-    <ClCompile Include="..\src\world\IWorld.cpp" />
+    <ClCompile Include="..\src\world\World.cpp" />
     <ClCompile Include="NETWORK_TESTS.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

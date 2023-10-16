@@ -5,7 +5,7 @@
 #include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"
 #include "city/CityPlot.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "resources/ResourceManager.h"
 #include "rendering/CharacterRenderer.h"
@@ -30,7 +30,7 @@ EntityComponentSystemRenderer::~EntityComponentSystemRenderer()
 
 }
 
-void EntityComponentSystemRenderer::renderBusinessDebug(IWorld& world, const Camera3D& camera) const {
+void EntityComponentSystemRenderer::renderBusinessDebug(World& world, const Camera3D& camera) const {
 
 	if (++mFrameCount <= mFramesPerDebugDraw) {
 		return;
@@ -52,7 +52,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(IWorld& world, const Cam
 	}
 }
 
-void EntityComponentSystemRenderer::renderDynamicLightComponents(IWorld& world, const Camera3D& camera, const LightRenderer& lightRenderer) {
+void EntityComponentSystemRenderer::renderDynamicLightComponents(World& world, const Camera3D& camera, const LightRenderer& lightRenderer) {
 
     auto& ecs = world.getECS();
 	// TODO: 3D

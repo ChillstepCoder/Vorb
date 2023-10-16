@@ -4,7 +4,7 @@
 #include "resources/MaterialRepository.h"
 #include "resources/TextureRepository.h"
 #include "resources/FontRepository.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
 #include "resources/AssetLoader.h"
@@ -354,7 +354,7 @@ void RenderContext::endFrame() {
     ImGui::EndFrame();
 }
 
-void RenderContext::tickGameThread(IWorld& world) {
+void RenderContext::tickGameThread(World& world) {
     WorldRenderDataManager& renderDataManager = mWorldRenderer->getRenderDataManagerForWorld(world);
     renderDataManager.tickGameThread();
 }
@@ -375,7 +375,7 @@ CharacterRenderer& RenderContext::getCharacterRenderer() const {
     return mWorldRenderer->getCharacterRenderer();
 }
 
-WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(IWorld& world) const {
+WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(World& world) const {
     return mWorldRenderer->getRenderDataManagerForWorld(world);
 }
 

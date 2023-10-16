@@ -18,7 +18,7 @@ TonemapRenderer::~TonemapRenderer() {
 }
 
 void TonemapRenderer::render(VGTexture lightTextureInput) {
-    const MaterialShaderDef* def = mShaderDef->tryGetAsset();
+    const MaterialShaderDef* def = mShaderDef->tryGetLoadedAsset();
     if (def) {
         ui32 textureUnit = 0;
         MaterialRenderer::bindMaterialShaderForRender(*def, &textureUnit);

@@ -4,7 +4,7 @@
 #include "debugging/DebugRenderer.h"
 
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/ecosystem/FishEcosystem.h"
 
 #include "resources/ResourceManager.h"
@@ -42,11 +42,11 @@ FishRenderer::~FishRenderer() {
     }
 }
 
-void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& world) {
+void FishRenderer::renderFishEcosystem(const Camera3D& camera, const World& world) {
     PROFILE_FUNCTION();
 
     if (mFishShaderHandle) {
-        mFishShader = mFishShaderHandle->tryGetAsset();
+        mFishShader = mFishShaderHandle->tryGetLoadedAsset();
     }
     else {
         mFishShader = nullptr;
@@ -103,7 +103,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const IWorld& wor
     incrementMod3(mFrameIndex);
 }
 
-void FishRenderer::debugRenderFishEcosystem(const IWorld& world) {
+void FishRenderer::debugRenderFishEcosystem(const World& world) {
 
     constexpr int DEBUG_LIFETIME = 0; // 40
     const f32 RENDER_DISTANCE_SQ = SQ(sDebugOptions.mFishRenderDistance);

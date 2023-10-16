@@ -3,14 +3,14 @@
 #include "tile/TileContainerConst.h"
 #include "tile/TileContainerEvents.h"
 
-class IWorld;
+class World;
 class TileContainer;
 
 typedef std::unordered_map<TileContainerID, std::unique_ptr<TileContainer>> TileContainerMap;
 
 class TileContainerRepository {
 public:
-    TileContainerRepository(IWorld& world);
+    TileContainerRepository(World& world);
     ~TileContainerRepository();
 
     TileContainer* getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner);
@@ -34,5 +34,5 @@ private:
     std::mutex mMutex;
     TileContainerMap mTileContainers;
     TileContainerID mTileContainerIdGen = 0;
-    IWorld& mWorld;
+    World& mWorld;
 };

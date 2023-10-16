@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GameClient.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "ecs/cli/CliEntityComponentSystem.h"
 #include "network/NetworkUtil.h"
 

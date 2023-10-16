@@ -8,12 +8,12 @@
 #include "rendering/RenderThreadTasks.h"
 
 #include "resources/TileRepository.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IChunkGrid.h"
 
 #include "physics/PhysicsWorld.h"
 
-TileContainer::TileContainer(IWorld& world) : mWorld(world)
+TileContainer::TileContainer(World& world) : mWorld(world)
 {
 
 }

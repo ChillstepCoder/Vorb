@@ -13,7 +13,7 @@
 
 #include "resources/ResourceManager.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/Chunk.h"
 #include "rendering/renderer/WorldRenderer.h"
 
@@ -56,7 +56,7 @@ bool BiomeEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     // Tell the world to follow our camera
     if (mEditorWorld) {
         const f32v2 cameraPos = camera->getPosition();
-        IWorld* editorWorld = mEditorWorld.get();
+        World* editorWorld = mEditorWorld.get();
         GameThreadTasks::getInstance().addGenericTaskWithCapture([cameraPos, editorWorld](GameThread&, void* vWorld) {
             //assert(editorWorld == static_cast<IWorld*>(vWorld));
             editorWorld->setLoadCenter(cameraPos);
@@ -191,10 +191,10 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
-    mEditorWorld = std::make_unique<IWorld>(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat);
+    mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat);
 
     GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
-        IWorld* editorWorld = static_cast<IWorld*>(vWorld);
+        World* editorWorld = static_cast<World*>(vWorld);
         editorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
         editorWorld->onWorldBegin(f32v2(0.0f));
     }, (void*)mEditorWorld.get());

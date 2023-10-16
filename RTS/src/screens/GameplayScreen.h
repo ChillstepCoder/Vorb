@@ -21,7 +21,7 @@ class App;
 class CameraController;
 class ResourceManager;
 class RenderContext;
-class IWorld;
+class World;
 class TileInteractPanel;
 class DeferredPhysicsPick;
 class IWorldInterfaceController;
@@ -68,7 +68,7 @@ private:
 	void displayLoadScreen(const nString& text, bool syncWindow);
 
 	// TODO: Maybe shouldn't live on the screen?
-	std::unique_ptr<IWorld> mWorld;
+	std::unique_ptr<World> mWorld;
 
     // Rendering
     std::unique_ptr<CameraController> mCameraController;

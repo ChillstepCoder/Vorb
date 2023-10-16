@@ -15,7 +15,7 @@ class GrassRenderer;
 class InstancedStaticModelRenderer;
 class ItemRenderer;
 class InstancedStaticModelGatherer;
-class IWorld;
+class World;
 class Skybox;
 class LightRenderer;
 class ParticleSystemRenderer;
@@ -57,7 +57,7 @@ public:
     ShadowRenderer& getShadowRenderer() { return *mShadowRenderer; }
 
     // Assets
-    WorldRenderDataManager& getRenderDataManagerForWorld(const IWorld& world);
+    WorldRenderDataManager& getRenderDataManagerForWorld(const World& world);
 
     void selectNextDebugShader();
     StrToken getCurrentPassthroughRenderStageName() const;
@@ -72,7 +72,7 @@ private:
 
     void buildHorizonMesh();
 
-    void setActiveWorld(IWorld* world);
+    void setActiveWorld(World* world);
 
     // Renderers
     // TODO: Remove mutable?
@@ -97,7 +97,7 @@ private:
     // World Data
     WorldRenderDataManager* mCurrentWorldRenderDataManager = nullptr;
     mutable std::mutex mRenderDataManagersMutex;
-    std::unordered_map<const IWorld*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
+    std::unordered_map<const World*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
 
@@ -107,7 +107,7 @@ private:
     f32v3 mPlayerPos = f32v3(0.0f);
     const Camera3D* mCamera = nullptr;
     const RenderState* mRenderState = nullptr;
-    IWorld* mActiveWorld = nullptr;
+    World* mActiveWorld = nullptr;
 
     int mPassthroughRenderMode = 0;
     std::vector< AssetHandlePtr<MaterialShaderDef>> mPassthroughMaterials;
@@ -119,7 +119,7 @@ private:
     struct WorldRendererEventHandles {
         SkillsComponentSystemListeners mSkillsComponentListeners;
     } mEventHandles;
-    IWorldListeners mWorldEventListeners;
+    WorldListeners mWorldEventListeners;
 
 };
 

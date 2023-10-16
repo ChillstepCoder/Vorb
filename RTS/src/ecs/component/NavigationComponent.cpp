@@ -13,7 +13,7 @@
 
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 enum class PathStatus {
 	IN_PROGRESS,
@@ -46,7 +46,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	return false;
 }
 
-PathStatus updateComponentFinePath(IWorld& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
+PathStatus updateComponentFinePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 
 	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return PathStatus::IN_PROGRESS;
@@ -244,7 +244,7 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestFinePathToPoint(IWorld& world, NavigationComponent& navCmp, const f32v3& start, const f32v3& goal) {
+void requestFinePathToPoint(World& world, NavigationComponent& navCmp, const f32v3& start, const f32v3& goal) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
@@ -267,7 +267,7 @@ void requestFinePathToPoint(IWorld& world, NavigationComponent& navCmp, const f3
 	}
 }
 
-void updateComponentCoarsePath(IWorld& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
+void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 
     if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return;
@@ -356,7 +356,7 @@ void updateComponentCoarsePathBuilding(entt::entity entity, NavigationComponent&
 	return;
 }
 
-void NavigationComponentSystem::update(IWorld& world, entt::registry& registry) {
+void NavigationComponentSystem::update(World& world, entt::registry& registry) {
 	// Update components
     auto view = registry.view<NavigationComponent, PositionComponent, CharacterControlComponent>();
 

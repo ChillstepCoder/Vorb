@@ -30,6 +30,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save materials yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("material"); }
+
     std::function<void(AssetID)> getImguiThumbnailFunc();
 
 protected:

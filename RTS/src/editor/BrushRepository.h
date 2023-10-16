@@ -12,6 +12,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save brushes yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("brush"); }
+
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;

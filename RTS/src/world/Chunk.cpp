@@ -8,7 +8,7 @@
 
 #include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "structure/Structure.h"
 
@@ -30,7 +30,7 @@ Chunk::~Chunk() {
 	dispose();
 }
 
-void Chunk::init(IWorld& world, const ChunkID& chunkId, i32v2 worldPos) {
+void Chunk::init(World& world, const ChunkID& chunkId, i32v2 worldPos) {
     mWorld = &world;
     mChunkId = chunkId;
     mAABB.x = worldPos.x;

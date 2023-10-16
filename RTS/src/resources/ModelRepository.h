@@ -27,6 +27,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save models yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("model"); }
+
     // TODO:?
     //void buildModelBatches();
 

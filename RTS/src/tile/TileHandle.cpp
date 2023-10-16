@@ -3,7 +3,7 @@
 #include "tile/TileContainer.h"
 #include "tile/TileContainerRepository.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IChunkGrid.h"
 
 #include "world/Chunk.h"
@@ -97,25 +97,25 @@ ChunkID TileHandle::getChunkIDAtPos() const
     if (!container) {
         return INVALID_CHUNK_ID;
     }
-    const IWorld& world = container->getWorld();
+    const World& world = container->getWorld();
     return world.getChunkGrid().getChunkIDFromWorldPos(getWorldPos2D());
 }
 
-IWorld& TileHandle::getWorld() const { return container->getWorld(); }
+World& TileHandle::getWorld() const { return container->getWorld(); }
 
-TileContainer* LiteTileHandle::getTileContainer(IWorld& world) const {
+TileContainer* LiteTileHandle::getTileContainer(World& world) const {
     return world.getTileContainerRepository().getTileContainer(containerId);
 }
 
-TileContainer* LiteTileHandle::tryGetTileContainer(IWorld& world) const {
+TileContainer* LiteTileHandle::tryGetTileContainer(World& world) const {
     return world.getTileContainerRepository().tryGetTileContainer(containerId);
 }
 
-TileHandle LiteTileHandle::toTileHandle(IWorld& world) const {
+TileHandle LiteTileHandle::toTileHandle(World& world) const {
     return TileHandle(tryGetTileContainer(world), index);
 }
 
-i32v3 LiteTileHandle::getWorldPosition(IWorld& world) const {
+i32v3 LiteTileHandle::getWorldPosition(World& world) const {
     TileContainer* container = getTileContainer(world);
     return container->getTileCenterWorldPosition(index);;
 }

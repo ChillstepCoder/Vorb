@@ -9,7 +9,7 @@
 
 class ChunkGrassQuadtree;
 class Chunk;
-class IWorld;
+class World;
 class GrassMesh;
 
 typedef std::pair<TileContainerEventDispatcher::Handle, ChunkEventDispatcher::Handle> GrassEventPair;
@@ -18,7 +18,7 @@ typedef std::pair<TileContainerEventDispatcher::Handle, ChunkEventDispatcher::Ha
 class GrassMeshManager
 {
 public:
-    GrassMeshManager(IWorld& world);
+    GrassMeshManager(World& world);
     ~GrassMeshManager();
 
     void tickGameThread(const f32v2& loadCenter);

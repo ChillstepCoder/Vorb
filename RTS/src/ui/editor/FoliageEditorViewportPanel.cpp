@@ -40,7 +40,7 @@ bool FoliageEditorViewportPanel::updateAndRender(f32 elapsedSec)
 {
     if (mGrassDataHandle) {
         // Editor can mutate
-        mGrassData = const_cast<TileGrassDef*>(mGrassDataHandle->tryGetAsset());
+        mGrassData = const_cast<TileGrassDef*>(mGrassDataHandle->tryGetLoadedAsset());
     }
     else {
         mGrassData = nullptr;

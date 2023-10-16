@@ -34,7 +34,7 @@ void PathToTargetTask::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-TaskTickResult PathToTargetTask::tick(IWorld& world, entt::registry& registry, entt::entity agent) {
+TaskTickResult PathToTargetTask::tick(World& world, entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case TaskState::NEEDS_PATH: {
             const PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);

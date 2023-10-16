@@ -2,14 +2,14 @@
 // Lets us query what objects are at a tile that we can interact with or inspect.
  // TODO: Will receive notifications if that tile changes so it can refresh
 
-class IWorld;
+class World;
 class ItemStockpile;
 
 #include "tile/TileHandle.h"
 #include "actor/ActorTypes.h"
 
 struct WorldObjectQueryData {
-    IWorld* mWorld = nullptr;
+    World* mWorld = nullptr;
     ItemStockpile* mStockpileAtTile = nullptr;
     //Building* mBuildingAtTile = nullptr;
     std::vector<EntityDistSortKey> mEntitiesAtTile;
@@ -29,7 +29,7 @@ class WorldObjectQuery {
     friend class TileInteractPanel;
     friend class WorldObjectQueryFactory;
 public:
-    WorldObjectQuery(IWorld& world);
+    WorldObjectQuery(World& world);
     ~WorldObjectQuery();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(WorldObjectQuery);
@@ -48,7 +48,7 @@ private:
     void query(const WorldObjectQueryPtr& ptr);
     void queryInternal();
 
-    IWorld& mWorld;
+    World& mWorld;
     ItemStockpile* mStockpileAtTile = nullptr;
     //Building* mBuildingAtTile = nullptr;
     std::vector<EntityDistSortKey> mEntitiesAtTile;
@@ -64,6 +64,6 @@ private:
 
 class WorldObjectQueryFactory {
 public:
-    static WorldObjectQueryPtr makeQuery(IWorld& world, const f32v3& worldPos);
-    static WorldObjectQueryPtr makeQuery(IWorld& world, LiteTileHandle handle);
+    static WorldObjectQueryPtr makeQuery(World& world, const f32v3& worldPos);
+    static WorldObjectQueryPtr makeQuery(World& world, LiteTileHandle handle);
 };

@@ -5,7 +5,7 @@
 class SrvEntityComponentSystem : public IEntityComponentSystem
 {
 public:
-    SrvEntityComponentSystem(IWorld& world) : IEntityComponentSystem(world) {};
+    SrvEntityComponentSystem(World& world) : IEntityComponentSystem(world) {};
 
     void tick(f32 elapsedSec) override;
 

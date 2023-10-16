@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "SkillsComponent.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "combat/CombatContext.h"
 
 // For asset handle
@@ -11,12 +11,12 @@ KEG_TYPE_DEF_SAME_NAME(SkillsComponentFileData, kt) {
     kt.addValue("skill_names", keg::Value::array(offsetof(SkillsComponentFileData, mSkillNames), keg::BasicType::STRING));
 }
 
-void SkillsComponentSystem::update(IWorld& world, entt::registry& registry, f32 elapsedSec) {
+void SkillsComponentSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
     ASSERT_GAME_THREAD();
 
 	const auto updateSkill =
 		[&](entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, f32 elapsedSec) -> bool {
-		const SkillDef* skillDef = skillsCmp.mSkills[e_cast(skillsCmp.mActiveSlot)]->tryGetAsset();
+		const SkillDef* skillDef = skillsCmp.mSkills[e_cast(skillsCmp.mActiveSlot)]->tryGetLoadedAsset();
 		if (!skillDef) return false;
 		// Fire all passed triggers
 		activeCmp.mElapsed += elapsedSec;
@@ -74,7 +74,7 @@ bool SkillsComponentSystem::tryActivateSkillSlot(entt::entity entity, entt::regi
 	return true;
 }
 
-void SkillsComponentSystem::handleSkillTrigger(IWorld& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger) {
+void SkillsComponentSystem::handleSkillTrigger(World& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger) {
 	switch (trigger.mType) {
 		case SkillTriggerType::Simple:
 			assert(false);
@@ -90,7 +90,7 @@ void SkillsComponentSystem::handleSkillTrigger(IWorld& world, entt::entity entit
 	}
 }
 
-void SkillsComponentSystem::handleAttackTrigger(IWorld& world, entt::entity entity, const SkillAttackTrigger& attackTrigger) {
+void SkillsComponentSystem::handleAttackTrigger(World& world, entt::entity entity, const SkillAttackTrigger& attackTrigger) {
 	AttackData attackData;
 	switch (attackTrigger.mShape) {
 		case AttackShape::SPHERE:

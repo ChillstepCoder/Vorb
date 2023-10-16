@@ -15,7 +15,7 @@
 
 class Chunk;
 class Building;
-class IWorld;
+class World;
 
 enum DynamicTileType : ui8 {
     // Walls (Keep first)
@@ -53,7 +53,7 @@ public:
     friend class NavWorld; // TODO: Remove
     friend class IChunkGrid;
     friend class PathFinder;
-    TileContainer(IWorld& world);
+    TileContainer(World& world);
     ~TileContainer();
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
@@ -184,7 +184,7 @@ public:
     EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
 
     // =========== World  ===========
-    IWorld& getWorld() const { return mWorld; }
+    World& getWorld() const { return mWorld; }
 
 private:
     bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
@@ -224,7 +224,7 @@ private:
     bool mPendingDestroy = false;
     std::variant<Chunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
-    IWorld& mWorld;
+    World& mWorld;
 
     EVENT_DISPATCHER_DEF(TileContainer);
 };

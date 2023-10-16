@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "NavThread.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "NavWorld.h"
 #include "NavPath.h"
 #include "PathFinder.h"

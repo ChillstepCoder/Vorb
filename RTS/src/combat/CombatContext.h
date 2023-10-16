@@ -4,14 +4,14 @@
 
 #include "tile/TileHandle.h"
 
-class IWorld;
+class World;
 
 
 // TODO: Weapon.h
 
 class CombatContext {
 public:
-    CombatContext(IWorld& world);
+    CombatContext(World& world);
 
     void performAttack(entt::entity source, const AttackData& attackData);
 
@@ -21,6 +21,6 @@ private:
 
     void hitTile(LiteTileHandle liteHandle, ui16v2 damageRange, f32v3 impactPosition, f32v3 impactNormal);
 
-    IWorld& mWorld;
+    World& mWorld;
 };
 

@@ -2,7 +2,7 @@
 
 #include "generation/WorldGenerationData.h"
 
-class IWorld;
+class World;
 class Tile;
 class Chunk;
 struct TileGrass;
@@ -10,18 +10,18 @@ struct TileGrass;
 class IWorldGenerator
 {
 public:
-    IWorldGenerator(IWorld& world);
+    IWorldGenerator(World& world);
     ~IWorldGenerator();
 
     void generateChunk(Chunk& chunk, f32* heightData);
     virtual f32 getTerrainHeightAtPos(const f32v2& worldPos);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }
-    IWorld& getWorld() const { return mWorld; }
+    World& getWorld() const { return mWorld; }
 protected:
     virtual Tile generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass = nullptr);
 
-    IWorld& mWorld;
+    World& mWorld;
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;
 };

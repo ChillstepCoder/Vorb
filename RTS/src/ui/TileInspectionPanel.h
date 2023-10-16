@@ -1,16 +1,16 @@
 #pragma once
 #include "tile/TileHandle.h"
 
-class IWorld;
+class World;
 
 class TileInspectionPanel
 {
 public:
-    TileInspectionPanel(IWorld& world, const f32v2& screenPos, const TileHandle& tileHandle);
+    TileInspectionPanel(World& world, const f32v2& screenPos, const TileHandle& tileHandle);
     void updateAndRender();
 
 private:
-    IWorld& mWorld;
+    World& mWorld;
     f32v2 mScreenPos;
     TileHandle mTileHandle;
     bool mDidInit = false;

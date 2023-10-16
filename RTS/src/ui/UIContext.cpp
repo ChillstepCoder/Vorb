@@ -6,7 +6,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "ui/editor/EditorRoot.h"
 #include "ui/editor/IEditorViewportPanel.h"
 #include "ui/minigame/LocalMinigameContext.h"
@@ -26,7 +26,7 @@ UIContext::~UIContext() {
 
 }
 
-void UIContext::updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay) {
+void UIContext::updateEditors(World* world, const Camera3D& camera, const f32v3& mousePickRay) {
     mEditorRoot->updateEditors(world, camera, mousePickRay);
 }
 

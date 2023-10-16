@@ -10,12 +10,12 @@ class ChunkMesher;
 class InstancedStaticModelManager;
 class ContainerMeshBuilders;
 class WorldRenderDataManager;
-class IWorld;
+class World;
 
 class TileContainerMeshManager
 {
 public:
-    TileContainerMeshManager(IWorld& world, InstancedStaticModelManager& instancedStaticModelManager);
+    TileContainerMeshManager(World& world, InstancedStaticModelManager& instancedStaticModelManager);
     ~TileContainerMeshManager();
 
     void frameUpdate();
@@ -37,7 +37,7 @@ private:
     void addBillboardMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mBillboardMeshes.insert(mesh); }
     void removeBillboardMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mBillboardMeshes.erase(mesh); }
 
-    void initEventHandlers(IWorld& world);
+    void initEventHandlers(World& world);
     void updateTileContainerMesh(TileContainer& tileContainer);
     // Mesh management
     std::unordered_map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;

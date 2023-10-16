@@ -4,7 +4,7 @@
 #include "generation/IWorldGenerator.h"
 #include "generation/FlatWorldGenerator.h"
 
-std::unique_ptr<IWorldGenerator> WorldGeneratorFactory::makeWorldGenerator(WorldGeneratorType type, IWorld& world) {
+std::unique_ptr<IWorldGenerator> WorldGeneratorFactory::makeWorldGenerator(WorldGeneratorType type, World& world) {
 	switch (type) {
 		case WorldGeneratorType::Default:
 			return std::make_unique<IWorldGenerator>(world);

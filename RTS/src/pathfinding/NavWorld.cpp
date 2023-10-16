@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "NavWorld.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/Chunk.h"
 #include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
@@ -55,7 +55,7 @@ std::set<LiteChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, co
     return chunkDependencies;
 }
 
-NavWorld::NavWorld(IWorld& world) : mWorld(world) {
+NavWorld::NavWorld(World& world) : mWorld(world) {
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
     const ui32 totalChunks = mWorld.getChunkGrid().getTotalChunks();

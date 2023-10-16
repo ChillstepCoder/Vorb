@@ -12,6 +12,9 @@ public:
     ASSET_REPOSITORY_COMMON_CODE(AnimMachineRepository, AnimMachineDef, AssetType::AnimMachine)
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save anim machines yet"); }
+
+    StrToken getAssetExtension() const override { return CStrToken("machine"); }
+
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
 };

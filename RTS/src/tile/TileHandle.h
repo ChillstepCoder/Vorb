@@ -5,7 +5,7 @@
 
 #include <boost/container_hash/hash.hpp>
 
-class IWorld;
+class World;
 class TileContainer;
 struct LiteTileHandle;
 
@@ -22,7 +22,7 @@ struct TileHandle {
     const Tile& getTile() const;
     LiteTileHandle toLiteTileHandle() const;
     ChunkID getChunkIDAtPos() const;
-    IWorld& getWorld() const;
+    World& getWorld() const;
 
     void reset() { container = nullptr; }
 
@@ -41,12 +41,12 @@ struct LiteTileHandle {
     LiteTileHandle() {};
     LiteTileHandle(TileContainerID containerId, TileIndex index) : containerId(containerId), index(index) {};
 
-    TileContainer* getTileContainer(IWorld& world) const;
-    TileContainer* tryGetTileContainer(IWorld& world) const;
+    TileContainer* getTileContainer(World& world) const;
+    TileContainer* tryGetTileContainer(World& world) const;
     bool isValid() const { return  containerId != INVALID_TILE_CONTAINER_ID; }
-    TileHandle toTileHandle(IWorld& world) const;
+    TileHandle toTileHandle(World& world) const;
 
-    i32v3 getWorldPosition(IWorld& world) const;
+    i32v3 getWorldPosition(World& world) const;
 
     void reset() { containerId = INVALID_TILE_CONTAINER_ID; }
 

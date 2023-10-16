@@ -22,7 +22,7 @@ public:
     UIContext(UIContext& other) = delete;
     void operator=(const UIContext&) = delete;
     
-    void updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay);
+    void updateEditors(World* world, const Camera3D& camera, const f32v3& mousePickRay);
     void updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec);
     void renderEditorBrushDecals(const Camera3D& camera);
 

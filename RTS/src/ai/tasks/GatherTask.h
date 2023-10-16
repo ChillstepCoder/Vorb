@@ -4,16 +4,14 @@
 #include "tile/TileHandle.h"
 #include "item/ItemReservation.h"
 
-class IWorld;
+class World;
 
 class HarvestItemsTask : public IAgentTask {
 public:
 	HarvestItemsTask(ItemID itemId, ui16 itemCount, AgentTaskFinishedFunc finishedFunc);
 	~HarvestItemsTask();
 
-    // Override allocation to use boost::singleton_pool
-    static void* operator new(size_t count);
-    static void operator delete(void* pointer, size_t size);
+	POOLED_ALLOC_DECL();
 
     // TODO: Override allocation to use boost::singleton_pool
     // static void* operator new(size_t count);
@@ -27,13 +25,13 @@ public:
 		FAIL
 	};
 
-	TaskTickResult tick(IWorld& world, entt::registry& registry, entt::entity agent) override;
+	TaskTickResult tick(World& world, entt::registry& registry, entt::entity agent) override;
 
 	const char* getTaskName() const override { return "GatherItemsForPromise"; }
 
 protected:
     void findItem(entt::registry& registry, entt::entity agent);
-    void harvestItem(IWorld& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle);
+    void harvestItem(World& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle);
 	void failTask();
 
 	ItemID mItemId;

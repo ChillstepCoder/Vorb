@@ -11,6 +11,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save animations yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("anim"); }
+
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 

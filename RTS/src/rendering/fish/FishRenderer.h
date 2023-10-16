@@ -1,6 +1,6 @@
 #pragma once
 
-class IWorld;
+class World;
 class Camera3D;
 class GLIndirectBuffer;
 class Mesh;
@@ -36,8 +36,8 @@ public:
     FishRenderer();
     ~FishRenderer();
 
-    void renderFishEcosystem(const Camera3D& camera, const IWorld& world);
-    void debugRenderFishEcosystem(const IWorld& world);
+    void renderFishEcosystem(const Camera3D& camera, const World& world);
+    void debugRenderFishEcosystem(const World& world);
 
 private:
     void addFishInstance(AssetID fish, f32v3 pos, f32v2 yawPitch, f32 scale, f32 turn, f32 time);

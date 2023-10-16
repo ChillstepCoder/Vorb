@@ -48,6 +48,8 @@ public:
 
     VORB_NON_COPYABLE(CpuParticleEmitter);
 
+    POOLED_ALLOC_DECL();
+
     // Bind shader before calling this.
     // Returns true once lifetime has expired
     bool updateAndRender(f32 elapsedSec);
@@ -95,8 +97,8 @@ public:
 
     int getFirstActiveParticle() const { return mFirstActiveParticle; }
     int getLastActiveParticle() const { return mLastActiveParticle; }
-    int getNumActiveParticles() const { return mActiveParticles; }
-    int getFragmentation() const { return mActiveParticles ? ((mLastActiveParticle - mFirstActiveParticle) / mActiveParticles) : 0; }
+    int getNumActiveParticles() const { return mNumActiveParticles; }
+    int getFragmentation() const { return mNumActiveParticles ? ((mLastActiveParticle - mFirstActiveParticle) / mNumActiveParticles) : 0; }
 
     f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
     bool isLooping() const { return mLooping; }
@@ -164,7 +166,7 @@ protected:
     std::unique_ptr<AssetHandleBundle> mMaterialAssetHandles;
     int mFirstActiveParticle = 0;
     int mLastActiveParticle = -1;
-    int mActiveParticles = 0;
+    int mNumActiveParticles = 0;
     int mMaxParticles;
     int mBaseInstance = 0;
     bool mLooping = false;

@@ -55,7 +55,7 @@ class ItemStockpile
     friend class ItemStockpileRegistry;
     friend class RenderContext;
 public:
-    ItemStockpile(IWorld& world, ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(World& world, ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
@@ -106,7 +106,7 @@ private:
     std::vector<ItemStockpileTileStorage> mStorage;
     std::unordered_set<ItemReservation*> mReservations;
 
-    IWorld& mWorld;
+    World& mWorld;
     TileContainerID mContainerDependencies[4] = {};
     ui8 mContainerDependenciesUnloaded = 0;
     i32AABB2 mAABB = i32AABB2(0);

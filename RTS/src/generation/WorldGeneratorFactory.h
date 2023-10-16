@@ -3,11 +3,11 @@
 #include "generation/WorldGeneratorType.h"
 
 class IWorldGenerator;
-class IWorld;
+class World;
 
 class WorldGeneratorFactory
 {
 public:
-    static std::unique_ptr<IWorldGenerator> makeWorldGenerator(WorldGeneratorType type, IWorld& world);
+    static std::unique_ptr<IWorldGenerator> makeWorldGenerator(WorldGeneratorType type, World& world);
 };
 

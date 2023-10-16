@@ -2,7 +2,7 @@
 #include "CliChunkGrid.h"
 
 #include "world/Chunk.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "tile/TileContainerRepository.h"
 

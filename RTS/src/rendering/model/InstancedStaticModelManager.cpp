@@ -211,7 +211,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
                 //*instanceData.mNumVisibleMeshesBufferPtr = 0; // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
 
-                if (const MaterialShaderDef* def = mCullingComputeShader->tryGetAsset()) {
+                if (const MaterialShaderDef* def = mCullingComputeShader->tryGetLoadedAsset()) {
                     def->useCompute();
                     glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
                     GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mTransformsVbo);

@@ -15,12 +15,12 @@ GameRenderStateManager& GameRenderStateManager::getInstance() {
     return *sInstance;
 }
 
-void GameRenderStateManager::setActiveWorld(const IWorld* activeWorld) {
+void GameRenderStateManager::setActiveWorld(const World* activeWorld) {
     std::lock_guard<std::mutex> lock(mWorldLock);
     mActiveWorld = activeWorld;
 }
 
-bool GameRenderStateManager::isActiveWorld(const IWorld* world) {
+bool GameRenderStateManager::isActiveWorld(const World* world) {
     std::lock_guard<std::mutex> lock(mWorldLock);
     return world == mActiveWorld;
 }

@@ -2,7 +2,7 @@
 #include "ItemStockpile.h"
 
 #include "debugging/DebugRenderer.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
@@ -13,7 +13,7 @@
 
 #include "camera/Camera3D.h"
 
-ItemStockpile::ItemStockpile(IWorld& world, ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+ItemStockpile::ItemStockpile(World& world, ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
     : mWorld(world)
     , mId(id)
     , mAABB(aabb)

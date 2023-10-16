@@ -8,7 +8,7 @@
 
 #include "math/Random.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "resources/ResourceManager.h"
 
 

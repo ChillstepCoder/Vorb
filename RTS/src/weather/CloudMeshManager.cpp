@@ -6,7 +6,7 @@
 #include "rendering/mesh/mesher/builder/BillboardMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
 

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "WorldContextObject.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 WorldNetMode WorldContextObject::getNetMode() const {
     return mWorld.getNetMode();

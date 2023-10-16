@@ -12,8 +12,6 @@ class AssetLoader;
 
 DECL_VIO(class IOManager);
 
-
-
 class IAssetRepositoryBase {
 public:
     virtual ~IAssetRepositoryBase() = default;
@@ -31,6 +29,8 @@ public:
     const std::vector<AssetRegistryEntry>& getAssetRegistry() const {
         return mAssetRegistry;
     }
+
+    virtual StrToken getAssetExtension() const = 0;
 
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
@@ -361,7 +361,7 @@ const T& AssetHandleBundle::getLoadedAsset(StrToken assetName) {
 }
 
 template <typename T>
-const T* AssetHandle<T>::tryGetAsset() const {
+const T* AssetHandle<T>::tryGetLoadedAsset() const {
     assert(isValid());
     if (mLoadedAsset) [[likely]] { return mLoadedAsset; }
     IAssetRepository<T>::getInstance().pollAsset(const_cast<AssetHandle<T>&>(*this));

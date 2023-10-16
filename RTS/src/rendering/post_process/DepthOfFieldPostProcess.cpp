@@ -26,7 +26,7 @@ DepthOfFieldPostProcess::DepthOfFieldPostProcess(const ui32v2& gbufferDims) {
 
 vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
 
-    const MaterialShaderDef* shaderDef = mMaterial->tryGetAsset();
+    const MaterialShaderDef* shaderDef = mMaterial->tryGetLoadedAsset();
     if (!shaderDef) {
         return prevGBuffer;
     }

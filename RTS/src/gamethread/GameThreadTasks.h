@@ -2,7 +2,7 @@
 
 class StaticPhysicsMeshBuilder;
 class TileContainer;
-class IWorld;
+class World;
 
 typedef void(*GameFunction)(class GameThread& gameThread, void*);
 typedef std::function<void(GameThread&, void*)> GameFunctionWithCapture;
@@ -11,7 +11,7 @@ class GameThreadTasks
 {
     friend class GameThread;
 protected:
-    GameThreadTasks(IWorld& mainGameWorld);
+    GameThreadTasks(World& mainGameWorld);
     ~GameThreadTasks();
 
 public:
@@ -19,7 +19,7 @@ public:
     void operator=(const GameThreadTasks&) = delete;
 
 protected:
-    static GameThreadTasks& initInstance(IWorld& world);
+    static GameThreadTasks& initInstance(World& world);
 public:
     static GameThreadTasks& getInstance();
     static bool exists();
@@ -31,7 +31,7 @@ public:
     void addHideLocalPlayerModelTask(bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);
     void addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
-    void setActiveEditorWorld(IWorld* editorWorld);
+    void setActiveEditorWorld(World* editorWorld);
 
     size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx() + mGameThreadFuncProcs.size_approx(); }
 
@@ -42,7 +42,7 @@ private:
     // Many queues can make up a "Scheduler"  which can try to balance thread time?
     moodycamel::ConcurrentQueue<std::pair<GameFunction, void*>> mGameThreadProcs;
     moodycamel::ConcurrentQueue<std::pair<GameFunctionWithCapture, void*>> mGameThreadFuncProcs;
-    IWorld& mMainGameWorld;
+    World& mMainGameWorld;
 
     static GameThreadTasks* sInstance;
 };

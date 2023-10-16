@@ -129,7 +129,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
 void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 {
     static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("material_preview"));
-    const MaterialShaderDef* previewShader = shaderDef->tryGetAsset();
+    const MaterialShaderDef* previewShader = shaderDef->tryGetLoadedAsset();
     if (!previewShader) return;
 
     if (ImGui::BeginTabItem("Materials")) {
@@ -230,7 +230,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
 void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
 
     static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("material_preview"));
-    const MaterialShaderDef* previewShader = shaderDef->tryGetAsset();
+    const MaterialShaderDef* previewShader = shaderDef->tryGetLoadedAsset();
     if (!previewShader) return;
 
     if (ImGui::BeginTabItem("Foliage")) {

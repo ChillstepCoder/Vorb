@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CityQuartermaster.h"
 #include "city/City.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"

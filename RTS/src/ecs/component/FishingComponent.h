@@ -1,6 +1,6 @@
 #pragma once
 
-class IWorld;
+class World;
 class PhysicsComponent;
 struct FishingMinigameGameThreadData;
 struct CharacterControlComponent;
@@ -40,9 +40,9 @@ public:
     FishingComponentSystem();
     ~FishingComponentSystem();
 
-    void update(IWorld& world, entt::registry& registry, f32 elapsedSec);
+    void update(World& world, entt::registry& registry, f32 elapsedSec);
 private:
-    void updateFishing(IWorld& world, entt::registry& registry, entt::entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp, f32 elapsedSec);
+    void updateFishing(World& world, entt::registry& registry, entt::entity, FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& characterControlCmp, f32 elapsedSec);
 
     f32 mTimeStep = 0.0f;
 

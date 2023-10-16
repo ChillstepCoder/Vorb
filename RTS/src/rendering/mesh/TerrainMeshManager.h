@@ -10,7 +10,7 @@ class TerrainMesh;
 class TerrainMeshManager
 {
 public:
-    TerrainMeshManager(IWorld& world);
+    TerrainMeshManager(World& world);
     ~TerrainMeshManager();
 
     void tickGameThread(const f32v2& loadCenter);
@@ -35,7 +35,7 @@ private:
     // Events
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     IHeightmapGridListeners mHeightmapGridListeners;
-    IWorld& mWorld;
+    World& mWorld;
 
     ui32 mWidthTerrainTrees = 0;
     std::vector<HeightmapTerrainQuadtree> mTerrainTrees;

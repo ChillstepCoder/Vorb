@@ -11,7 +11,7 @@
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
-class IWorld;
+class World;
 
 // TODO: 3D?
 typedef bg::model::point<i32, 2, bg::cs::cartesian> StructureBoxPoint;
@@ -38,7 +38,7 @@ struct bgi::indexable<StructureRegion>
 class StructureManager
 {
 public:
-    StructureManager(IWorld& world);
+    StructureManager(World& world);
     ~StructureManager() = default;
 
     Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight);
@@ -52,7 +52,7 @@ public:
 private:
     void initEventHandlers();
 
-    IWorld& mWorld;
+    World& mWorld;
     std::mutex mMutex;
     std::unordered_map<LiteChunkID, std::vector<StructureID>> mDormantStructures; // Structures who depend on multiple chunks can be duplicated here
     StructureMap mStructures;

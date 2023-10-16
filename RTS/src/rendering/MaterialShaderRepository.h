@@ -9,6 +9,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save MaterialsShaders yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("prog"); }
+
 private:
     AssetLoadFunc getAssetLoadFunc() override;
     std::any getUserData(AssetID assetId) override;

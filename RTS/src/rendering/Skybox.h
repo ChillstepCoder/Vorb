@@ -17,7 +17,7 @@ public:
     void renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel);
 
     void setCubemap(AssetHandlePtr<CubemapDef>&& skyCubemap);
-    const CubemapDef* tryGetCubemap() const { return mSkyCubemap ? mSkyCubemap->tryGetAsset() : nullptr; }
+    const CubemapDef* tryGetCubemap() const { return mSkyCubemap ? mSkyCubemap->tryGetLoadedAsset() : nullptr; }
 
 private:
     std::unique_ptr<Mesh> mSkyboxMesh;

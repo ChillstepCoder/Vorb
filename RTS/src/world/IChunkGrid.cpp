@@ -2,7 +2,7 @@
 #include "IChunkGrid.h"
 
 #include "generation/IWorldGenerator.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "tile/TileContainerRepository.h"
 
 #include "world/ecosystem/FishEcosystem.h"
@@ -183,7 +183,7 @@ i32v2 IChunkGrid::getChunkOffsetFromChunkID(ChunkID id) const {
     return i32v2(id % mWidthChunks, id / mWidthChunks);
 }
 
-void IChunkGrid::setWorldAndAllocateChunks(IWorld& world) {
+void IChunkGrid::setWorldAndAllocateChunks(World& world) {
     mWorld = &world;
     mWidthChunks = world.getWidthChunks();
     mTotalChunks = SQ(mWidthChunks);

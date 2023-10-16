@@ -2,7 +2,7 @@
 
 #include "rendering/renderstate/RenderState.h"
 
-class IWorld;
+class World;
 
 class GameRenderStateManager {
 public:
@@ -17,9 +17,9 @@ public:
     static GameRenderStateManager* tryGetInstance() { return sInstance; }
     static bool exists() { return sInstance != nullptr; }
 
-    void setActiveWorld(const IWorld* activeWorld);
+    void setActiveWorld(const World* activeWorld);
 
-    bool isActiveWorld(const IWorld* world);
+    bool isActiveWorld(const World* world);
 
     /// Gets the state for updating. Only call once per frame.
     RenderState& getRenderStateForUpdate();
@@ -29,7 +29,7 @@ public:
     /// Gets the state for rendering. Only call once per frame.
     const RenderState& getRenderStateForRender();
 private:
-    const IWorld* mActiveWorld = nullptr;
+    const World* mActiveWorld = nullptr;
     int mUpdating = 0; ///< Currently updating state
     int mLastUpdated = 0; ///< Most recently updated state
     int mRendering = 0; ///< Currently rendering state

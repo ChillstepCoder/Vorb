@@ -6,7 +6,7 @@
 
 #include "debugging/VisualLogger.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
@@ -97,7 +97,7 @@ void setDefaultTheme() {
 
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-void DebugTweakerPanel::updateAndRender(IWorld& world, const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
+void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
 {
     IEntityComponentSystem& ecs = world.getECS();
 

@@ -33,6 +33,8 @@ class TextureRepository : public IAssetRepository<TextureDef> {
     bool saveAsset(AssetID assetId) override { panic("Cannot save textures yet"); }
     void setSamplerState(AssetID textureId, const vg::SamplerState& samplerState);
 
+    StrToken getAssetExtension() const override { return CStrToken("png"); }
+
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;

@@ -7,7 +7,7 @@
 
 #include "ecs/srv/SrvEntityComponentSystem.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "network/srv/SrvMessage.h"
 
@@ -32,7 +32,7 @@ constexpr f32 SERVER_BACKLOG_FASTFORWARD_TIME_SEC = 0.6; // Time differential be
 
 GameServer* GameServer::sInstance = nullptr;
 
-GameServer::GameServer(IWorld& world, ServerType serverType) :
+GameServer::GameServer(World& world, ServerType serverType) :
     mWorld(world),
     mAdapter(std::make_unique<SrvAdapter>(*this)),
     mServer(yojimbo::GetDefaultAllocator(), DEFAULT_PRIVATE_KEY, initServerAddress(serverType), mConnectionConfig, *mAdapter, 0.0),
@@ -59,7 +59,7 @@ GameServer::GameServer(IWorld& world, ServerType serverType) :
 
 }
 
-GameServer& GameServer::initInstance(IWorld& world, ServerType serverType) {
+GameServer& GameServer::initInstance(World& world, ServerType serverType) {
 
     if (!sHasInitYojimbo) {
         sHasInitYojimbo = true;

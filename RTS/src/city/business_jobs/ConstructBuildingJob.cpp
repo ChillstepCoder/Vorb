@@ -5,7 +5,7 @@
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 
 #include "city/contracts/ContractManager.h"

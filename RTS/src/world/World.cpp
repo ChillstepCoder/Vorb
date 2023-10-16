@@ -1,8 +1,10 @@
 #include "stdafx.h"
-#include "IWorld.h"
+#include "World.h"
 
 #include "city/City.h"
 #include "combat/CombatContext.h"
+#include "effect/cli/CliEffectContext.h"
+#include "effect/host/HostEffectContext.h"
 #include "ecs/cli/CliEntityComponentSystem.h"
 #include "ecs/srv/SrvEntityComponentSystem.h"
 #include "generation/IWorldGenerator.h"
@@ -50,7 +52,7 @@ void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
     RenderThreadTasks::getInstance().removeCharacterModel(entity);
 }
 
-IWorld::IWorld(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType) : mNetMode(netMode) {
+World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType) : mNetMode(netMode) {
     constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
 
     assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
@@ -68,12 +70,14 @@ IWorld::IWorld(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType ge
             mHeightmapGrid = std::make_unique<CliHeightmapGrid>(worldWidthTiles);
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
+            mEffectContext = std::make_unique<CliEffectContext>(*this);
             break;
         }
         case WorldNetMode::Host: {
             mHeightmapGrid = std::make_unique<SrvHeightmapGrid>(worldWidthTiles);
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
+            mEffectContext = std::make_unique<HostEffectContext>(*this);
             break;
         }
         default:
@@ -114,7 +118,7 @@ IWorld::IWorld(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType ge
     static_assert(e_count(WorldNetMode) == 3);
 }
 
-IWorld::~IWorld() {
+World::~World() {
     if (mDidBegin) {
         getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
         getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
@@ -122,7 +126,7 @@ IWorld::~IWorld() {
     }
 }
 
-void IWorld::onWorldBegin(const f32v2& loadCenter) {
+void World::onWorldBegin(const f32v2& loadCenter) {
     assert(!mDidBegin);
     mDidBegin = true;
     // Init chunks
@@ -147,7 +151,7 @@ void IWorld::onWorldBegin(const f32v2& loadCenter) {
     dispatchOnWorldBegin(*this);
 }
 
-void IWorld::tick(f32 elapsedSec) {
+void World::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
 
     // Load center is player position
@@ -210,7 +214,7 @@ void IWorld::tick(f32 elapsedSec) {
     updateRenderState();
 }
 
-f32v2 IWorld::getLoadCenter() const {
+f32v2 World::getLoadCenter() const {
     if (IS_GAME_THREAD()) {
         return mLoadCenter;
     }
@@ -218,12 +222,12 @@ f32v2 IWorld::getLoadCenter() const {
     return mLoadCenter;
 }
 
-void IWorld::setLoadCenter(const f32v2& loadCenter) {
+void World::setLoadCenter(const f32v2& loadCenter) {
     assert(IS_GAME_THREAD());
     mLoadCenter = loadCenter;
 }
 
-TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
+TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     ASSERT_GAME_THREAD();
     i32v2 worldPos2D = worldPos;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos2D);
@@ -244,12 +248,12 @@ TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     return TileHandle();
 }
 
-TileHandle IWorld::getTileHandleAtWorldPos(const f32v3& worldPos) const {
+TileHandle World::getTileHandleAtWorldPos(const f32v3& worldPos) const {
     i32v3 wpi(worldPos.x, worldPos.y, floor(worldPos.z));
     return getTileHandleAtWorldPos(wpi);
 }
 
-TileHandle IWorld::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
+TileHandle World::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     TileHandle handle;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
@@ -260,7 +264,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     return TileHandle();
 }
 
-TileHandle IWorld::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
+TileHandle World::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     TileHandle handle;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
@@ -271,7 +275,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     return TileHandle();
 }
 
-bool IWorld::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {
+bool World::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {
     TileHandle handle = getTerrainTileHandleAtWorldPos(worldPos);
     if (handle.isValid()) {
         return handle.getTile().hasHarvestableResource(resource, outLayer);
@@ -280,7 +284,7 @@ bool IWorld::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable re
 }
 
 //  TODO: No std function?
-void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
+void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
 {
     ASSERT_GAME_THREAD();
     // TODO: handle this without asserts
@@ -309,11 +313,11 @@ void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chun
     }
 }
 
-std::vector<Structure*> IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
+std::vector<Structure*> World::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
     return mStructureManager->tryGetStructuresAtWorldPos(worldPos);
 }
 
-void IWorld::updateRenderState() {
+void World::updateRenderState() {
 
     RenderContext::getInstance().tickGameThread(*this);
     if (!GameRenderStateManager::getInstance().isActiveWorld(this)) {
@@ -346,7 +350,7 @@ void IWorld::updateRenderState() {
     GameRenderStateManager::getInstance().finishUpdating();
 }
 
-void IWorld::updateEntitiesRenderState(RenderState& renderState) {
+void World::updateEntitiesRenderState(RenderState& renderState) {
 
     IEntityComponentSystem& ecs = getECS();
     entt::registry& registry = ecs.mRegistry;
@@ -364,7 +368,7 @@ void IWorld::updateEntitiesRenderState(RenderState& renderState) {
     };
 }
 
-void IWorld::updateDebugRenderState(RenderState& renderState) {
+void World::updateDebugRenderState(RenderState& renderState) {
     PROFILE_FUNCTION();
 
     renderState.mDebugQuads.clear();

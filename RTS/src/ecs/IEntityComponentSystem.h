@@ -3,11 +3,11 @@
 
 #include "ecs/component/FishingComponent.h"
 
-class IWorld;
+class World;
 
 class IEntityComponentSystem {
 public:
-    IEntityComponentSystem(IWorld& world);
+    IEntityComponentSystem(World& world);
     virtual ~IEntityComponentSystem();
 
     virtual void tick(f32 elapsedSec);
@@ -33,7 +33,7 @@ public:
 	// Classes with World access
 	friend class PhysicsComponent;
 
-    IWorld& mWorld;
+    World& mWorld;
 
     entt::registry mRegistry;
 

@@ -3,7 +3,7 @@
 
 #include "tile/TileHandle.h"
 #include "world/Chunk.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IChunkGrid.h"
 #include "resources/TileRepository.h"
 
@@ -15,7 +15,7 @@
 
 #include <Vorb/ui/GameWindow.h>
 
-TileInspectionPanel::TileInspectionPanel(IWorld& world, const f32v2& screenPos, const TileHandle& tileHandle) : mWorld(world), mScreenPos(screenPos), mTileHandle(tileHandle) {
+TileInspectionPanel::TileInspectionPanel(World& world, const f32v2& screenPos, const TileHandle& tileHandle) : mWorld(world), mScreenPos(screenPos), mTileHandle(tileHandle) {
 
 }
 

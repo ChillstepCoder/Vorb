@@ -3,7 +3,7 @@
 #include "CityPlotter.h"
 #include "city/City.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "math/Random.h"
 

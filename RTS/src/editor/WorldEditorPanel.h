@@ -9,7 +9,7 @@
 
 class Camera3D;
 class BrushRepository;
-class IWorld;
+class World;
 
 enum class WorldEditorEditMode {
     TERRAIN,
@@ -60,12 +60,12 @@ class WorldEditorPanel {
 public:
     WorldEditorPanel();
 
-    void update(IWorld* world, const Camera3D& camera, const f32v3& pickRay);
+    void update(World* world, const Camera3D& camera, const f32v3& pickRay);
 
 	void renderBrushDecals(const Camera3D& camera) const;
     void renderUI(f32 ySize) const;
 
-    IWorld* getActiveWorld() const { return mActiveWorld; }
+    World* getActiveWorld() const { return mActiveWorld; }
 
 private:
     void renderMenuBar() const;
@@ -116,6 +116,6 @@ private:
     PhysHitResult mHitResult;
     TickingTimer mUpdateTimer = TickingTimer(WORLD_EDITOR_UPDATE_RATE_MS);
 
-    IWorld* mActiveWorld = nullptr;
+    World* mActiveWorld = nullptr;
 };
 

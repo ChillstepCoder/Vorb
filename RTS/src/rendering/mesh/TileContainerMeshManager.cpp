@@ -11,7 +11,7 @@
 #include "resources/MaterialRepository.h"
 #include "resources/asset/AssetHandleBundle.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "tile/TileContainerRepository.h"
 
@@ -20,7 +20,7 @@
 #include <boost/pool/singleton_pool.hpp>
 #include "rendering/tasks/MeshTask.inl"
 
-TileContainerMeshManager::TileContainerMeshManager(IWorld& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {
+TileContainerMeshManager::TileContainerMeshManager(World& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {
 
     mBuildingMesher = std::make_unique<BuildingMesher>(*this);
     mChunkMesher = std::make_unique<ChunkMesher>(*this);
@@ -74,7 +74,7 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         MeshTaskData* taskData = static_cast<MeshTaskData*>(meshTaskData);
         const TileContainer& tileContainer = taskData->builders.container;
         const TileContainerID id = tileContainer.getId();
-        IWorld& world = tileContainer.getWorld();
+        World& world = tileContainer.getWorld();
         WorldRenderDataManager& renderDataManager = context.getRenderDataManagerForWorld(world);
         TileContainerMeshManager& meshManager = renderDataManager.getTileContainerMeshManager();
         TileContainerMeshData& meshData = meshManager.getMeshDataForTileContainer(id);
@@ -143,7 +143,7 @@ void TileContainerMeshManager::removeMeshesForData(TileContainerMeshData& meshDa
     }
 }
 
-void TileContainerMeshManager::initEventHandlers(IWorld& world) {
+void TileContainerMeshManager::initEventHandlers(World& world) {
 
     TileContainerRepository& tileContainerRepository = world.getTileContainerRepository();
     tileContainerRepository.registerTileContainerListeners(mTileContainerListeners);

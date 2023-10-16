@@ -1,6 +1,6 @@
 #pragma once
 
-class IWorld;
+class World;
 
 enum class UIContextEventType {
     EditorWorldSet,
@@ -9,7 +9,7 @@ enum class UIContextEventType {
 
 struct UIContextEvent {
     union {
-        IWorld* mWorld;
+        World* mWorld;
     };
     UIContextEventType eventType;
 };

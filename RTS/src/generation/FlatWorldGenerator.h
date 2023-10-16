@@ -5,7 +5,7 @@
 class FlatWorldGenerator : public IWorldGenerator
 {
 public:
-	FlatWorldGenerator(IWorld& world) : IWorldGenerator(world) {};
+	FlatWorldGenerator(World& world) : IWorldGenerator(world) {};
 
 	f32 getTerrainHeightAtPos(const f32v2& worldPos) override;
 

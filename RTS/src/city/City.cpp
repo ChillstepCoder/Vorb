@@ -10,13 +10,13 @@
 #include "BuildingBlueprintGenerator.h"
 #include "BuildingDescriptionRepository.h"
 #include "ecs/business/BusinessRepository.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IChunkGrid.h"
 #include "resources/ResourceManager.h"
 
 #include "ecs/IEntityComponentSystem.h"
 
-City::City(IWorld& world, const ui32v2& cityCenterWorldPos)
+City::City(World& world, const ui32v2& cityCenterWorldPos)
     : mWorld(world)
     , mCityCenterWorldPos(cityCenterWorldPos)
     , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)

@@ -1,7 +1,7 @@
 #pragma once
 
 struct TileContainerMeshData;
-class IWorld;
+class World;
 class TerrainMeshManager;
 class GrassMeshManager;
 class TileContainerMeshManager;
@@ -11,7 +11,7 @@ class Camera3D;
 
 class WorldRenderDataManager {
 public:
-    WorldRenderDataManager(IWorld& world);
+    WorldRenderDataManager(World& world);
     ~WorldRenderDataManager();
 
     void tickGameThread();
@@ -25,7 +25,7 @@ public:
     CloudMeshManager& getCloudMeshManager() const { return *mCloudManager; }
 
 private:
-    IWorld& mWorld;
+    World& mWorld;
 
     // Mesh managers 
     std::unique_ptr<InstancedStaticModelManager> mInstancedStaticModelManager;

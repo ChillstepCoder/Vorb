@@ -7,7 +7,7 @@
 #include "ecs/component/TimedTileInteractComponent.h"
 
 #include "resources/TileRepository.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 
 #include <boost/pool/singleton_pool.hpp>
@@ -40,7 +40,7 @@ BuildBlueprintTask::~BuildBlueprintTask() {
 
 }
 
-TaskTickResult BuildBlueprintTask::tick(IWorld& world, entt::registry& registry, entt::entity agent) {
+TaskTickResult BuildBlueprintTask::tick(World& world, entt::registry& registry, entt::entity agent) {
     constexpr f32 BUILD_PER_TICK = 1.0f / 100.0f;
     switch (mState) {
         case TaskState::SELECT_TILE_TO_FILL:

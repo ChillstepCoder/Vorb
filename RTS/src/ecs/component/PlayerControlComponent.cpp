@@ -3,7 +3,7 @@
 
 #include "ecs/IEntityComponentSystem.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "debugging/DebugRenderer.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -64,7 +64,7 @@ f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 }
 
 
-void PlayerControlSystem::updateComponent(IWorld& world, entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw) {
+void PlayerControlSystem::updateComponent(World& world, entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw) {
 
     PlayerInputs inputs;
     if (playerControlCmp.mInputLockCount == 0) {
@@ -133,7 +133,7 @@ PlayerControlSystem::PlayerControlSystem() {
 
 }
 
-void PlayerControlSystem::update(IWorld& world, entt::registry& registry, f32 cameraYaw) {
+void PlayerControlSystem::update(World& world, entt::registry& registry, f32 cameraYaw) {
     ASSERT_GAME_THREAD();
     // Don't update while in free fly
     if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }

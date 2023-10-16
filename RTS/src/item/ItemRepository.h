@@ -15,6 +15,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save items yet"); }
     
+    StrToken getAssetExtension() const override { return CStrToken("item"); }
+
 private:
     void onRegisteredAsset(AssetID id) override;
     AssetLoadFunc getAssetLoadFunc() override;

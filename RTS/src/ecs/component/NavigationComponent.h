@@ -81,5 +81,5 @@ struct NavigationComponent {
 
 class NavigationComponentSystem {
 public:
-	void update(IWorld& world, entt::registry& registry);
+	void update(World& world, entt::registry& registry);
 };

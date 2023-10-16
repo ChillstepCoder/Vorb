@@ -27,11 +27,11 @@ public:
     bool isLoaded() const override;
 
     // Returns nullptr if the asset is loading
-    const T* tryGetAsset() const;
+    const T* tryGetLoadedAsset() const;
     // Asset MUST already be loaded or this will crash
     const T& getLoadedAsset() const;
 
-    T* editorTryGetMutableAsset() { return const_cast<T*>(tryGetAsset()); }
+    T* editorTryGetMutableAsset() { return const_cast<T*>(tryGetLoadedAsset()); }
 
 protected:
     const T* mLoadedAsset = nullptr;

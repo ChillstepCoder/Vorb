@@ -22,7 +22,7 @@ FishingEditorViewportPanel::FishingEditorViewportPanel() : IEditorViewportPanel(
 bool FishingEditorViewportPanel::updateAndRender(f32 elapsedSec) {
     if (mFishAsset) {
         // Editor can mutate
-        mFishDef = const_cast<FishDef*>(mFishAsset->tryGetAsset());
+        mFishDef = const_cast<FishDef*>(mFishAsset->tryGetLoadedAsset());
     }
     else {
         mFishDef = nullptr;
@@ -113,7 +113,7 @@ void FishingEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 const MaterialShaderDef* FishingEditorViewportPanel::getShader() {
     if (mCurrentFishingMinigame) return nullptr;
 
-    return mShader->tryGetAsset();
+    return mShader->tryGetLoadedAsset();
 }
 
 void FishingEditorViewportPanel::renderMesh() {

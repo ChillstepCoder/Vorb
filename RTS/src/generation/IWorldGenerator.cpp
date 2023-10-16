@@ -5,7 +5,7 @@
 #include "math/Noise.h"
 #include "math/Random.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/WorldData.h"
 #include "world/IHeightmapGrid.h"
 #include "world/Region.h"
@@ -15,7 +15,7 @@
 #include "generation/WorldGenerationData.h"
 
 
-IWorldGenerator::IWorldGenerator(IWorld& world) : mWorld(world) {
+IWorldGenerator::IWorldGenerator(World& world) : mWorld(world) {
     mWorldCenter = f32v2(mWorld.getWidthTiles() * 0.5f);
 }
 

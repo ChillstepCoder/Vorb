@@ -32,7 +32,7 @@ bool ModelEditorViewportPanel::updateAndRender(f32 elapsedSec) {
 
     if (mModelHandle) {
         // Editor can mutate the model
-        mCurrentModel = const_cast<ModelDef*>(mModelHandle->tryGetAsset());
+        mCurrentModel = const_cast<ModelDef*>(mModelHandle->tryGetLoadedAsset());
     }
     else {
         mCurrentModel = nullptr;
@@ -122,7 +122,7 @@ const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
     switch (mDrawMode) {
         case EditorViewportDrawMode::PBRTest:
             if (!mPbrMaterial) mPbrMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));
-            return mPbrMaterial->tryGetAsset();
+            return mPbrMaterial->tryGetLoadedAsset();
         case EditorViewportDrawMode::BlendTest:
         case EditorViewportDrawMode::EdgeTest:
         case EditorViewportDrawMode::Lit:
@@ -134,10 +134,10 @@ const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
         case EditorViewportDrawMode::Roughness:
         case EditorViewportDrawMode::UVs:
             if (!mEditorMaterial) mEditorMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model"));
-            return mEditorMaterial->tryGetAsset();
+            return mEditorMaterial->tryGetLoadedAsset();
         case EditorViewportDrawMode::Wireframe:
             if (!mWireframeMaterial) mWireframeMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("mesh_wireframe"));
-            return mWireframeMaterial->tryGetAsset();
+            return mWireframeMaterial->tryGetLoadedAsset();
         default:
             assert(false);
             break;

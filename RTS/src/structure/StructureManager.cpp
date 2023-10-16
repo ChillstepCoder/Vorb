@@ -5,7 +5,7 @@
 
 #include "tile/TileContainerRepository.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "debugging/DebugRenderer.h"
 
@@ -20,7 +20,7 @@
 // * When a dormant structure becomes active, we allocate its tiles and do all the rest
 StructureID sStructureIdGen = 0;
 
-StructureManager::StructureManager(IWorld& world) : mWorld(world) {
+StructureManager::StructureManager(World& world) : mWorld(world) {
     initEventHandlers();
 }
 

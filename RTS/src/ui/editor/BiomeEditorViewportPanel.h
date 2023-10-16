@@ -2,7 +2,7 @@
 #include "IEditorViewportPanel.h"
 
 class Chunk;
-class IWorld;
+class World;
 class EditorWorldInterfaceController;
 
 DECL_VG(class GBuffer);
@@ -26,7 +26,7 @@ protected:
 	void initializeWorld();
 
 	vg::GBuffer* mActiveGBuffer = nullptr;
-    std::unique_ptr<IWorld> mEditorWorld;
+    std::unique_ptr<World> mEditorWorld;
     std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
 	bool mLeftMousePressed = false;
 

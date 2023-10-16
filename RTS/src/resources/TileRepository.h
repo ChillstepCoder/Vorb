@@ -31,6 +31,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save tiles yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("tile"); }
+
 private:
     AssetLoadFunc getAssetLoadFunc() override { return nullptr; } // TODO:?
     void onRegisteredAsset(AssetID id) override;

@@ -5,7 +5,7 @@
 #include "resources/TileRepository.h"
 
 BuildingBlueprint::BuildingBlueprint(
-    IWorld& world,
+    World& world,
     const BuildingDef& desc,
     float sizeAlpha,
     Cartesian entrySide,

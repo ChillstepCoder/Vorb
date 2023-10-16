@@ -10,7 +10,7 @@
 #include "BulletCollision/BroadphaseCollision/btAxisSweep3.h"
 #include "resources/TileRepository.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "tile/TileContainer.h"
 #include "tile/TileContainerRepository.h"
 
@@ -50,7 +50,7 @@ int collisionMasks[e_cast(CollisionGroup::COUNT)] = {
 
 static_assert(e_cast(CollisionGroup::COUNT) == 4);
 
-PhysicsWorld::PhysicsWorld(IWorld& world, CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository), mWorld(world) {
+PhysicsWorld::PhysicsWorld(World& world, CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository), mWorld(world) {
 
     /// collision configuration contains default setup for memory , collision setup . Advanced users can create their own configuration .
     mCollisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
@@ -672,7 +672,7 @@ int PhysicsWorld::queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* o
 
     struct AabbCallback : public btBroadphaseAabbCallback {
 
-        AabbCallback(IWorld& world, PhysicsQueryResult* results, int maxResults) : world(world), results(results), maxResults(maxResults) {}
+        AabbCallback(World& world, PhysicsQueryResult* results, int maxResults) : world(world), results(results), maxResults(maxResults) {}
 
         bool process(const btBroadphaseProxy* proxy) override {
 
@@ -701,7 +701,7 @@ int PhysicsWorld::queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* o
             return true;
         }
 
-        IWorld& world;
+        World& world;
         PhysicsQueryResult* results;
         int maxResults;
         int numResults = 0;

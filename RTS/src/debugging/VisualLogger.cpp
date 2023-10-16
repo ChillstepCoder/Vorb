@@ -167,7 +167,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         return;
     }
 
-    const MaterialShaderDef* shaderDef = sMaterialHandle->tryGetAsset();
+    const MaterialShaderDef* shaderDef = sMaterialHandle->tryGetLoadedAsset();
     if (!shaderDef) {
         return;
     }

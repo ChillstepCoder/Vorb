@@ -1,7 +1,7 @@
 #pragma once
 
 struct CharacterControlComponent;
-class IWorld;
+class World;
 
 enum class PlayerControlFlags : ui8 {
 };
@@ -14,8 +14,8 @@ struct PlayerControlComponent {
 class PlayerControlSystem {
 public:
 	PlayerControlSystem();
-	void update(IWorld& world, entt::registry& registry, f32 cameraYaw);
+	void update(World& world, entt::registry& registry, f32 cameraYaw);
 
 private:
-	void updateComponent(IWorld& world, entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw);
+	void updateComponent(World& world, entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw);
 };

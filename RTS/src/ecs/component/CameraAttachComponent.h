@@ -1,6 +1,6 @@
 #pragma once
 
-class IWorld;
+class World;
 #include "camera/Camera3D.h"
 
 // Simply an identifier : Represents attaching to an entity in the world

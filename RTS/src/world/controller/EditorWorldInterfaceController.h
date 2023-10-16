@@ -15,7 +15,7 @@
 class EditorWorldInterfaceController : public IWorldInterfaceController
 {
 public:
-    EditorWorldInterfaceController(vui::GameWindow& window, IWorld& world, CameraController& cameraController) : IWorldInterfaceController(window, world, cameraController) {};
+    EditorWorldInterfaceController(vui::GameWindow& window, World& world, CameraController& cameraController) : IWorldInterfaceController(window, world, cameraController) {};
     virtual ~EditorWorldInterfaceController();
     void update() override;
     void renderUI() override;

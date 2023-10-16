@@ -42,7 +42,7 @@
     <ClCompile Include="..\src\util\StrToken.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\world\IWorld.cpp">
+    <ClCompile Include="..\src\world\World.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\util\BitArray.cpp">

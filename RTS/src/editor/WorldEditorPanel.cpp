@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "WorldEditorPanel.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/Chunk.h"
@@ -94,7 +94,7 @@ WorldEditorPanel::WorldEditorPanel() {
     });
 }
 
-void WorldEditorPanel::update(IWorld* world, const Camera3D& camera, const f32v3& pickRay) {
+void WorldEditorPanel::update(World* world, const Camera3D& camera, const f32v3& pickRay) {
     PROFILE_FUNCTION();
     mActiveWorld = world;
     assert(mActiveWorld);
@@ -466,7 +466,7 @@ void WorldEditorPanel::updateTerrainEdit() {
                 PhysHitResult hitResult;
                 BrushSettings brushSettings;
                 TerrainEditState editState;
-                IWorld* activeWorld;
+                World* activeWorld;
             };
             TerrainEditTask* task = new TerrainEditTask;
             task->editor = this;
@@ -536,7 +536,7 @@ void WorldEditorPanel::updateGrassEdit() {
                 const GrassEditTask* task = static_cast<GrassEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
                 const BrushSettings& brushSettings = task->brushSettings;
-                IWorld* world = task->editor->mActiveWorld;
+                World* world = task->editor->mActiveWorld;
                 PreciseTimer timer;
                 // Edit the terrain with iteration
                 const f32v2 hitPosition2D(hitResult.mPosition.x, hitResult.mPosition.y);
@@ -582,7 +582,7 @@ void WorldEditorPanel::updateTileEdit() {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
 
-            typedef std::tuple<ChunkID, TileIndex, TileID, IWorld*> TaskTuple;
+            typedef std::tuple<ChunkID, TileIndex, TileID, World*> TaskTuple;
             TaskTuple* taskData = new TaskTuple(chunkID, tileIndex, mSelectedTile, mActiveWorld);
             GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
                 TaskTuple* taskData = (TaskTuple*)v;
@@ -618,7 +618,7 @@ void WorldEditorPanel::updateCityEdit() {
 
         struct CityCreateTask {
             f32v2 worldPos;
-            IWorld* world;
+            World* world;
         };
         CityCreateTask* task = new CityCreateTask;
         task->worldPos = f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y);
@@ -641,7 +641,7 @@ void WorldEditorPanel::updateBuildingEdit() {
         struct BuildingEditCreateTask {
             i32AABB2 aabb;
             ui32 selectedBuildingId;
-            IWorld* world;
+            World* world;
         };
         BuildingEditCreateTask* task = new BuildingEditCreateTask;
         task->aabb.pos = createPos;
@@ -720,7 +720,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
 }
 
 f32 WorldEditorPanel::getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint) {
-    const BrushDef* brushDef = brush.activeBrush->tryGetAsset();
+    const BrushDef* brushDef = brush.activeBrush->tryGetLoadedAsset();
     if (!brushDef) return 0.0f;
 
     f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(brush.brushSize)) / f32v2(brush.brushSize * 2.0f);

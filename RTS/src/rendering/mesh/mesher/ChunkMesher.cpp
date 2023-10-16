@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "tile/TileContainer.h"
 
@@ -9,7 +9,7 @@ void ChunkMesher::initMeshAndPhysicsAsync(TileContainer& tileContainer) {
     ASSERT_GAME_THREAD();
     assert(tileContainer.getOwnerType() == TileContainerOwnerType::CHUNK);
 
-    IWorld& world = tileContainer.getWorld();
+    World& world = tileContainer.getWorld();
 
     // TODO: minimum size instead of entire block
     f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];

@@ -3,7 +3,7 @@
 
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/Chunk.h"
 #include "world/IHeightmapGrid.h"
 

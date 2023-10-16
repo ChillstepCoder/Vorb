@@ -9,6 +9,8 @@ class CubemapRepository : public IAssetRepository<CubemapDef> {
 
    bool saveAsset(AssetID assetId) override { panic("Cannot save Cubemaps yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("cube"); }
+
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     AssetLoadFunc getAssetLoadRenderProcessFunc() override;

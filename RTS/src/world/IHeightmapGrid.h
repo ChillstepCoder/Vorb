@@ -12,7 +12,7 @@
 
 #include <mutex>
 
-class IWorld;
+class World;
 class BitArray;
 struct TileHandle;
 
@@ -108,8 +108,8 @@ public:
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const;
 
     const SpatialGrid2D& getSpatialGrid2D() const { return mSpatialGrid2D; }
-    IWorld& getWorld() const { return *mWorld; }
-    void setWorld(IWorld& world) { mWorld = &world; }
+    World& getWorld() const { return *mWorld; }
+    void setWorld(World& world) { mWorld = &world; }
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
@@ -136,7 +136,7 @@ private:
     std::map<ui32, ui32> mPaddedGenWaitCount;
     std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
 
-    IWorld* mWorld = nullptr;
+    World* mWorld = nullptr;
     //std::mutex mMutex;
 
     // TODO: Server only

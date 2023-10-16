@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "WorldObjectQuery.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IChunkGrid.h"
 #include "city/City.h"
 #include "city/CityQuartermaster.h"
@@ -12,7 +12,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-WorldObjectQuery::WorldObjectQuery(IWorld& world) : mWorld(world)
+WorldObjectQuery::WorldObjectQuery(World& world) : mWorld(world)
 {
 }
 
@@ -98,14 +98,14 @@ void WorldObjectQuery::queryInternal() {
     //mEntitiesAtTile = mWorld.queryActorsInRadius(queryPos, 0.5f, ACTORTYPE_ANY, 0, true);
 }
 
-WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(IWorld& world, const f32v3& worldPos) {
+WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(World& world, const f32v3& worldPos) {
     WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
     newQuery->mWorldPos = worldPos;
     newQuery->query(newQuery);
     return newQuery;
 }
 
-WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(IWorld& world, LiteTileHandle handle) {
+WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(World& world, LiteTileHandle handle) {
     WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
     newQuery->mLiteHandle = handle;
     newQuery->query(newQuery);

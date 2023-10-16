@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GatherTask.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/PositionComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
@@ -16,10 +16,7 @@
 #include "resources/TileRepository.h"
 #include "math/Random.h"
 
-#include <boost/pool/singleton_pool.hpp>
 
-struct gather_pool {};
-using singleton_task_pool = boost::singleton_pool<gather_pool, sizeof(HarvestItemsTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
 HarvestItemsTask::HarvestItemsTask(ItemID itemId, ui16 itemCount, AgentTaskFinishedFunc finishedFunc) : mItemId(itemId), mTargetCount(itemCount), IAgentTask(finishedFunc) {
     mTargetHarvestable = ItemRepository::get().getLoadedOrUnloadedAsset(mItemId).getSourceHarvestable();
@@ -30,19 +27,9 @@ HarvestItemsTask::~HarvestItemsTask() {
 
 }
 
-void* HarvestItemsTask::operator new(size_t count) {
-    ASSERT_GAME_THREAD();
-    UNUSED(count);
-    return singleton_task_pool::malloc();
-}
+POOLED_ALLOC_DEF_NOT_THREADSAFE(HarvestItemsTask, 64u, ASSERT_GAME_THREAD());
 
-void HarvestItemsTask::operator delete(void* pointer, size_t size) {
-    ASSERT_GAME_THREAD();
-    UNUSED(size);
-    return singleton_task_pool::free(pointer);
-}
-
-TaskTickResult HarvestItemsTask::tick(IWorld& world, entt::registry& registry, entt::entity agent) {
+TaskTickResult HarvestItemsTask::tick(World& world, entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case TaskState::FIND_ITEM:
             findItem(registry, agent);
@@ -86,7 +73,7 @@ void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
     mState = TaskState::PATH_TO_ITEM;
 }
 
-void HarvestItemsTask::harvestItem(IWorld& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle) {
+void HarvestItemsTask::harvestItem(World& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle) {
     ASSERT_GAME_THREAD();
 
     assert(targetTileHandle.isValid());

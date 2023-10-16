@@ -459,7 +459,7 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\IWorld.cpp">
+    <ClCompile Include="src\world\World.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp">
@@ -832,6 +832,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\WorldContextObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\EffectRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\definitions\EffectDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1448,7 +1454,7 @@
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\IWorld.h">
+    <ClInclude Include="src\world\World.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\srv\SrvChunkGrid.h">
@@ -2046,6 +2052,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\EffectDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\EffectRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

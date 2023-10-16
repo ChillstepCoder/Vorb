@@ -18,6 +18,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save fish yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("fish"); }
+
 protected:
     void onRegisteredAsset(AssetID id) override;
     AssetLoadFunc getAssetLoadFunc() override;

@@ -9,6 +9,7 @@
 enum class AssetType : ui8 {
     Tile,
     ParticleSystem,
+    Effect,
     Texture,
     Cubemap,
     Brush,
@@ -27,6 +28,7 @@ enum class AssetType : ui8 {
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::Tile, "tile"sv },
     pair{ AssetType::ParticleSystem, "particle_system"sv },
+    pair{ AssetType::Effect, "effect"sv },
     pair{ AssetType::Texture, "texture"sv },
     pair{ AssetType::Cubemap, "cubemap"sv },
     pair{ AssetType::Brush, "brush"sv },
@@ -41,7 +43,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::MaterialShader, "material_shader"sv },
     pair{ AssetType::TileGrass, "tile_grass"sv },
 )
-static_assert(e_count(AssetType) == 15);
+static_assert(e_count(AssetType) == 16);
 
 class AssetHandleBundle;
 class AssetHandleBase;

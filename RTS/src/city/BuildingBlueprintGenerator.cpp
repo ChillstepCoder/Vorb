@@ -143,7 +143,7 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
     generatePossibleWindowPermutations();
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(IWorld& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags)
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
 
@@ -173,7 +173,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     return bp;
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(IWorld& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
     PROFILE_FUNCTION();
     BuildingBlueprintId id = getNextBuildingID(); // TODO: Move this to game thread only so we dont need to lock?
     constexpr ui32 maxFailCount = 5;

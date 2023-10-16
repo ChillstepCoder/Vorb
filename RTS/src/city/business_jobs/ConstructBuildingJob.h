@@ -4,7 +4,7 @@
 #include "item/ItemStack.h"
 
 class BuildingBlueprint;
-class IWorld;
+class World;
 struct OwnershipComponent;
 
 struct TilesToConstruct {

@@ -3,7 +3,7 @@
 #include "SoldierAIComponent.h"
 #include "CombatComponent.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "ecs/IEntityComponentSystem.h"
 
 // TODO: Debug render

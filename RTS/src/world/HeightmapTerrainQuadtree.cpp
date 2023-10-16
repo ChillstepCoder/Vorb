@@ -4,7 +4,7 @@
 #include "camera/Camera3D.h"
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
@@ -35,9 +35,9 @@ struct TerrainMeshTaskData {
 };
 
 struct TerrainMeshGenTaskData {
-    TerrainMeshGenTaskData(IWorld& world, HeightmapTerrainQuadtree* owner, ui32 patchIndex) : world(world), owner(owner), patchIndex(patchIndex) {}
+    TerrainMeshGenTaskData(World& world, HeightmapTerrainQuadtree* owner, ui32 patchIndex) : world(world), owner(owner), patchIndex(patchIndex) {}
 
-    IWorld& world;
+    World& world;
     TerrainMeshBuilder terrainBuilder;
     HeightmapTerrainQuadtree* owner;
     ui32 patchIndex;
@@ -45,7 +45,7 @@ struct TerrainMeshGenTaskData {
 };
 
 
-HeightmapTerrainQuadtree::HeightmapTerrainQuadtree(IWorld& world, const f32v2& worldPosition)
+HeightmapTerrainQuadtree::HeightmapTerrainQuadtree(World& world, const f32v2& worldPosition)
     : mWorld(world), FlatQuadtree(world.getHeightmapGrid(), worldPosition, TERRAIN_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mTerrainLodDistanceOffset) {
 
 }
@@ -63,7 +63,7 @@ void HeightmapTerrainQuadtree::markDirty() {
 }
 
 void createTerrainAndWaterMeshFromGen(
-    IWorld& world,
+    World& world,
     TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,
     ui32 lod,
@@ -251,11 +251,11 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
     }
 
     struct TerrainMeshFreeTask {
-        TerrainMeshFreeTask(std::unique_ptr<TerrainMesh>&& terrainMesh, std::unique_ptr<TerrainMesh>&& waterMesh, IWorld& world) : terrainMesh(std::move(terrainMesh)), waterMesh(std::move(waterMesh)), world(world) {}
+        TerrainMeshFreeTask(std::unique_ptr<TerrainMesh>&& terrainMesh, std::unique_ptr<TerrainMesh>&& waterMesh, World& world) : terrainMesh(std::move(terrainMesh)), waterMesh(std::move(waterMesh)), world(world) {}
 
         std::unique_ptr<TerrainMesh> terrainMesh;
         std::unique_ptr<TerrainMesh> waterMesh;
-        IWorld& world;
+        World& world;
     };
 
     TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]), mWorld);

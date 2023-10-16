@@ -349,7 +349,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     UNUSED(frameAlpha);
     PROFILE_FUNCTION();
 
-    const MaterialShaderDef* shaderDef = mShaderHandle->tryGetAsset();
+    const MaterialShaderDef* shaderDef = mShaderHandle->tryGetLoadedAsset();
     if (!shaderDef) return;
 
     // TODO: UBO
@@ -423,7 +423,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
 bool CharacterRenderer::tryInitializeCharacterAnimState(entt::entity entityId) {
     CharacterRenderData& renderData = *mEntityCharacterModels[entityId];
-    const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetAsset();
+    const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetLoadedAsset();
     if (!modelDefPtr) {
         return false;
     }

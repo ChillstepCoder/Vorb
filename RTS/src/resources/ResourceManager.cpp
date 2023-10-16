@@ -11,6 +11,7 @@
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
+#include "resources/EffectRepository.h"
 #include "resources/MaterialRepository.h"
 #include "resources/ModelRepository.h"
 #include "resources/AnimationRepository.h"
@@ -58,6 +59,7 @@ ResourceManager::ResourceManager() {
     mAssetRepositories.resize(e_count(AssetType));
     REGISTER_ASSET_REPO(TileRepository, AssetType::Tile, *mCollisionShapeRepository);
     REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
+    REGISTER_ASSET_REPO(EffectRepository, AssetType::Effect);
     REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
     REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
     REGISTER_ASSET_REPO(BrushRepository, AssetType::Brush);
@@ -71,6 +73,7 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(FishRepository, AssetType::Fish);
     REGISTER_ASSET_REPO(MaterialShaderRepository, AssetType::MaterialShader);
     REGISTER_ASSET_REPO(TileGrassRepository, AssetType::TileGrass);
+    static_assert(e_count(AssetType) == 16);
 
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
@@ -138,7 +141,6 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Load particle Systems
     {
         // Set default material
         ParticleSystemRepository& repo = ParticleSystemRepository::get();
@@ -275,6 +277,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".psys")) {
             ParticleSystemRepository::get().registerAsset(entry);
+        }
+        else if (fileHasExtension(entry, ".effect")) {
+            EffectRepository::get().registerAsset(entry);
         }
         else if (fileHasExtension(entry, ".ent")) {
             mEntityFiles.emplace_back(entry);

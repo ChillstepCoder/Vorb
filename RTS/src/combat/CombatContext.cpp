@@ -3,7 +3,7 @@
 
 #include "physics/PhysicsWorld.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/CharacterControlComponent.h"
@@ -145,7 +145,7 @@ f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 a
     return rv;
 }
 
-CombatContext::CombatContext(IWorld& world) : mWorld(world) {
+CombatContext::CombatContext(World& world) : mWorld(world) {
 
 }
 

@@ -4,7 +4,7 @@
 #include "network/cli/GameClient.h"
 #include "network/srv/GameServer.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/PhysicsComponent.h"
@@ -18,7 +18,7 @@
 
 GameThread* GameThread::sInstance = nullptr;
 
-GameThread::GameThread(IWorld& world, WorldNetMode worldType) : mWorld(world), mNetMode(worldType) {
+GameThread::GameThread(World& world, WorldNetMode worldType) : mWorld(world), mNetMode(worldType) {
     assert(!mThread); // No double init
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&GameThread::mainFunc, this);
@@ -32,7 +32,7 @@ GameThread::~GameThread() {
     }
 }
 
-GameThread& GameThread::initInstance(IWorld& world, WorldNetMode worldType) {
+GameThread& GameThread::initInstance(World& world, WorldNetMode worldType) {
     if (!sInstance) {
         sInstance = new GameThread(world, worldType);
         GameThreadTasks::initInstance(world);
@@ -50,7 +50,7 @@ void GameThread::destroyInstance() {
     sInstance = nullptr;
 }
 
-void GameThread::setActiveEditorWorld(IWorld* editorWorld)
+void GameThread::setActiveEditorWorld(World* editorWorld)
 {
     mActiveEditorWorld = editorWorld;
     if (GameRenderStateManager::exists()) {

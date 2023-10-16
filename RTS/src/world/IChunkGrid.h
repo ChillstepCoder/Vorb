@@ -5,7 +5,7 @@
 
 #include <Vorb/Event.hpp>
 
-class IWorld;
+class World;
 
 enum class CHUNK_GRID_EVENT_TYPE {
     Create,
@@ -48,13 +48,13 @@ public:
     const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
 
-    IWorld& getWorld() const { return *mWorld; }
+    World& getWorld() const { return *mWorld; }
 
     // Events
     EVENT_LISTENER_FUNCS(ChunkGrid, Ready, CHUNK_GRID_EVENT_TYPE::Ready, Chunk&);
     EVENT_LISTENER_FUNCS(ChunkGrid, Destroy, CHUNK_GRID_EVENT_TYPE::Destroy, Chunk&);
 
-    void setWorldAndAllocateChunks(IWorld& world);
+    void setWorldAndAllocateChunks(World& world);
 protected:
     virtual void updateLoadingChunks();
 
@@ -99,7 +99,7 @@ protected:
     std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
 
     // World
-    IWorld* mWorld = nullptr;
+    World* mWorld = nullptr;
 
     // Events
     IHeightmapGridListeners mHeightmapGridListeners;

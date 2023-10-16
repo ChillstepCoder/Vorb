@@ -4,7 +4,7 @@
 #include "network/GameConnectionConfig.h"
 #include "network/Message.h"
 
-class IWorld;
+class World;
 class CliAdapter;
 struct PingMessage;
 
@@ -30,7 +30,7 @@ public:
     void disconnect();
     void update(double dtSec);
 
-    void setActiveWorld(IWorld* world) { mActiveWorld = world; }
+    void setActiveWorld(World* world) { mActiveWorld = world; }
 
     // Messaging
     MessageBase* createMessage(int type) { return (MessageBase*)mClient->CreateMessage(type); }
@@ -56,7 +56,7 @@ private:
 
     void replicatePlayerState();
 
-    IWorld* mActiveWorld = nullptr;
+    World* mActiveWorld = nullptr;
 
     GameConnectionConfig mConnectionConfig;
     std::unique_ptr<CliAdapter> mAdapter;

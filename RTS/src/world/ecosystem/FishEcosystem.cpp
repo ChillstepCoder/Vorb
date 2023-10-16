@@ -14,7 +14,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "math/Random.h"
 
 constexpr f32 MAX_ZPOS_FISH_SPAWN = -1.0f;
@@ -31,7 +31,7 @@ constexpr f32 PATH_SUCCESS_DISTANCE_SQ = SQ(0.1f);
 constexpr f32 FISH_ANGULAR_ACCELERATION = 3.0f;
 constexpr f32 MAX_FISH_ANGULAR_SPEED = 2.0f;
 
-FishEcosystem::FishEcosystem(IWorld& world) :
+FishEcosystem::FishEcosystem(World& world) :
     mWorld(world) {
     initEventHandlers();
 

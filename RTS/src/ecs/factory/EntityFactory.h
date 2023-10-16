@@ -4,7 +4,7 @@
 
 class IEntityComponentSystem;
 class ResourceManager;
-class IWorld;
+class World;
 
 class EntityDefinitionRepository;
 
@@ -14,6 +14,6 @@ class EntityFactory
     friend class SrvEntityComponentSystem;
     friend class CliEntityComponentSystem;
 private:
-    static entt::entity createEntity(IWorld& world, const f32v3& position, StrToken typeToken);
+    static entt::entity createEntity(World& world, const f32v3& position, StrToken typeToken);
 };
 

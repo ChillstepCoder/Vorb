@@ -12,7 +12,7 @@ class CityBusinessManager;
 class CityQuartermaster;
 class BuildingDescriptionRepository;
 class Building;
-class IWorld;
+class World;
 
 //
 //enum class MarketStallType {
@@ -113,7 +113,7 @@ class City
     friend class CityDebugRenderer;
 
 public:
-    City(IWorld& world, const ui32v2& cityCenterWorldPos);
+    City(World& world, const ui32v2& cityCenterWorldPos);
     ~City();
 
     VORB_NON_COPYABLE(City);
@@ -130,7 +130,7 @@ public:
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
     std::vector<std::unique_ptr<Building>>& getBuildings() { return mBuildings; }
     const std::vector<std::unique_ptr<Building>>& getBuildings() const { return mBuildings; }
-    IWorld& getWorld() const { return mWorld; }
+    World& getWorld() const { return mWorld; }
 
     // Mutators
     void addResidentToCity(entt::entity entity);
@@ -161,7 +161,7 @@ private:
     std::unique_ptr<CityQuartermaster> mCityQuartermaster;
 
     // City center dims is even so this will be bottom left most center tile
-    IWorld& mWorld;
+    World& mWorld;
     ui32v2 mCityCenterWorldPos;
     i32AABB2 mCityAABB; // x,y,w,h
 
@@ -171,12 +171,12 @@ private:
 
 class CityGraph {
 public:
-    CityGraph(IWorld& world) : mWorld(world) {}
+    CityGraph(World& world) : mWorld(world) {}
 
     void update();
     City* getClosestCityToPoint(const f32v2& pos) const;
     void createCityAt(const i32v2& worldPos);
 
-    IWorld& mWorld;
+    World& mWorld;
     std::vector<std::unique_ptr<City>> mNodes;
 };

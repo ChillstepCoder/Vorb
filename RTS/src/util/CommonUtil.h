@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/pool/singleton_pool.hpp>
+
 // Enum cast
 template<typename E>
 constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
@@ -45,3 +47,33 @@ constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 
 // Autoinit on startup
 #define RUNTIME_INIT_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()
+
+#define POOLED_ALLOC_DECL() \
+    static void* operator new(size_t count); \
+    static void operator delete(void* pointer, size_t size);
+
+#define POOLED_ALLOC_DEF_NOT_THREADSAFE(className, initialSize, threadAssert) \
+struct className##_pool {}; \
+using singleton_##className##_pool = boost::singleton_pool<className##_pool, sizeof(className), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, initialSize>; \
+void* className::operator new(size_t count) { \
+    threadAssert; \
+    UNUSED(count); \
+    return singleton_##className##_pool::malloc(); \
+} \
+void className::operator delete(void* pointer, size_t size) { \
+    threadAssert; \
+    UNUSED(size); \
+    return singleton_##className##_pool::free(pointer); \
+}
+
+#define POOLED_ALLOC_DEF_THREADSAFE(className, initialSize) \
+struct className##_pool {}; \
+using singleton_##className##_pool = boost::singleton_pool<className##_pool, sizeof(className), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, initialSize>; \
+void* className::operator new(size_t count) { \
+    UNUSED(count); \
+    return singleton_##className##_pool::malloc(); \
+} \
+void className::operator delete(void* pointer, size_t size) { \
+    UNUSED(size); \
+    return singleton_##className##_pool::free(pointer); \
+}

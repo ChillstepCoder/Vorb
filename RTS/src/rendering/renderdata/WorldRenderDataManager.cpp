@@ -10,10 +10,10 @@
 #include "rendering/model/InstancedStaticModelManager.h"
 #include "weather/CloudMeshManager.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 
-WorldRenderDataManager::WorldRenderDataManager(IWorld& world) : mWorld(world) {
+WorldRenderDataManager::WorldRenderDataManager(World& world) : mWorld(world) {
     mCloudManager = std::make_unique<CloudMeshManager>(world.getWorldGenerator());
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>(mWorld);
     mGrassMeshManager = std::make_unique<GrassMeshManager>(mWorld);

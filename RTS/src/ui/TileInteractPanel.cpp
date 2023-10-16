@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TileInteractPanel.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
@@ -27,7 +27,7 @@ constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoRe
 //    return changed;
 //}
 
-TileInteractPanel::TileInteractPanel(IWorld& world, const f32v2& screenPos, SDL_Window* window, const WorldObjectQueryPtr& worldObjectQuery) :
+TileInteractPanel::TileInteractPanel(World& world, const f32v2& screenPos, SDL_Window* window, const WorldObjectQueryPtr& worldObjectQuery) :
     mWorld(world),
     mScreenPos(screenPos),
     mWindow(window),

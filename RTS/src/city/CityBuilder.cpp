@@ -10,7 +10,7 @@
 #include "pathfinding/NavThread.h"
 #include "pathfinding/NavWorld.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "resources/TileRepository.h"
 

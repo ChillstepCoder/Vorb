@@ -15,7 +15,7 @@ class GrassMesh;
 class GrassRenderer;
 class ICamera;
 class InstancedStaticModelGatherer;
-class IWorld;
+class World;
 class ItemRenderer;
 class LightRenderer;
 class MaterialShaderDef;
@@ -62,7 +62,7 @@ public:
     void renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
-    void tickGameThread(IWorld& world);
+    void tickGameThread(World& world);
 
     void selectNextDebugShader();
 
@@ -82,7 +82,7 @@ public:
     TileContainerRenderer& getTileContainerRenderer() const;
     CharacterRenderer& getCharacterRenderer() const;
     WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
-    WorldRenderDataManager& getRenderDataManagerForWorld(IWorld& world) const;
+    WorldRenderDataManager& getRenderDataManagerForWorld(World& world) const;
     vg::SpriteFont& getDebugFont() { return *mSpriteFont; }
 
     f32 getCurrentFrameAlpha() const { return mCurrentFrameAlpha; }
@@ -112,7 +112,7 @@ private:
     f32 mCurrentFrameElapsedSec;
 
     // World
-    IWorld* mActiveWorld = nullptr;
+    World* mActiveWorld = nullptr;
     std::unique_ptr<WorldRenderer> mWorldRenderer;
 
     // UI

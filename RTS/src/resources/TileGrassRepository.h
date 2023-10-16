@@ -14,6 +14,8 @@ public:
 
     bool saveAsset(AssetID assetId) override { panic("Cannot save tile grass yet"); }
 
+    StrToken getAssetExtension() const override { return CStrToken("grass"); }
+
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;

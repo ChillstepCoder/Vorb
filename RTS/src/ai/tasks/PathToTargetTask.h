@@ -14,7 +14,7 @@ public:
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t size);
 
-    TaskTickResult tick(IWorld& world, entt::registry& registry, entt::entity agent) override;
+    TaskTickResult tick(World& world, entt::registry& registry, entt::entity agent) override;
     const char* getTaskName() const override { return "PathToTarget"; }
 
 protected:

@@ -503,7 +503,7 @@ void ParticleSystemEditorViewportPanel::setParticleSystemDef(AssetID systemId) {
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {
     if (!mSystemDef) return;
     mCurrentTime = 0.0f;
-    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mSystemDef);
+    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mSystemDef, f32v3(0.0f));
 }
 
 void ParticleSystemEditorViewportPanel::updatePopups() {

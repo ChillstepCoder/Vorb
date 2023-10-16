@@ -7,7 +7,7 @@
 
 #include "ecs/component/OwnershipComponent.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "resources/ResourceManager.h"
 #include "city/BuildingDescriptionRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"

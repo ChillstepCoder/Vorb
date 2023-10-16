@@ -61,7 +61,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "pathfinding/NavWorld.h"
 
 // TODO: Instead of single shader these should be able to be shader chains.
@@ -261,7 +261,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         // Depth debug
     if (mPassthroughRenderMode == 1) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetAsset();
+        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetLoadedAsset();
         if (postMat) {
 
             // TODO: Swap chain for this to work
@@ -320,7 +320,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // TODO: Make this work. When in debug, render tonemap to a new texture
     // FBODebugRenderer?
     if (mPassthroughRenderMode > 1) {
-        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetAsset();
+        const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetLoadedAsset();
         if (postMat) {
 
             // TODO: Swap chain for this to work
@@ -453,7 +453,7 @@ void WorldRenderer::renderDebug() {
     mActiveWorld->getPhysicsWorld().debugRender();
 }
 
-WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const IWorld& world) {
+WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const World& world) {
     std::lock_guard lock(mRenderDataManagersMutex);
     auto&& it = mRenderDataManagers.find(&world);
     if (it == mRenderDataManagers.end()) {
@@ -478,8 +478,8 @@ StrToken WorldRenderer::getCurrentPassthroughRenderStageName() const
 }
 
 void WorldRenderer::initEventHandlers() {
-    IWorld::registerIWorldListeners(mWorldEventListeners);
-    IWorld::addOnWorldBeginListener(mWorldEventListeners, [this](IWorld& world) {
+    World::registerWorldListeners(mWorldEventListeners);
+    World::addOnWorldBeginListener(mWorldEventListeners, [this](World& world) {
         std::lock_guard lock(mRenderDataManagersMutex);
         mRenderDataManagers.insert(
            std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
@@ -594,7 +594,7 @@ void WorldRenderer::buildHorizonMesh() {
     meshBuilder.finishMesh(mHorizonQuad, f32v3(0.0f));
 }
 
-void WorldRenderer::setActiveWorld(IWorld* world) {
+void WorldRenderer::setActiveWorld(World* world) {
     mActiveWorld = world;
 
     // Skill events
@@ -603,7 +603,7 @@ void WorldRenderer::setActiveWorld(IWorld* world) {
     skillsSystem.addActivateListener(mEventHandles.mSkillsComponentListeners, [world](SkillEvent skillEvent) {
         ASSERT_GAME_THREAD();
         SkillsComponent& skillsCmp = world->getECS().mRegistry.get<SkillsComponent>(skillEvent.mEntity);
-        const SkillDef* skill = skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->tryGetAsset();
+        const SkillDef* skill = skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->tryGetLoadedAsset();
         if (skill) {
             RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skill->mAnimID);
         }

@@ -4,7 +4,7 @@
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "ecs/IEntityComponentSystem.h"
 
@@ -94,7 +94,7 @@ void PhysicsComponent::setVelocity(const f32v3& vel) {
     mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
 }
 
-void PhysicsSystem::update(IWorld& world, entt::registry& registry) {
+void PhysicsSystem::update(World& world, entt::registry& registry) {
     PROFILE_FUNCTION();
     const IHeightmapGrid& grid = world.getHeightmapGrid();
     auto view = registry.view<PhysicsComponent, PositionComponent>();

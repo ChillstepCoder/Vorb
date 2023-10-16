@@ -1,6 +1,6 @@
 #pragma once
 
-class IWorld;
+class World;
 
 #include <boost/container/flat_map.hpp>
 
@@ -91,7 +91,7 @@ class FishEcosystem
 {
     friend class FishRenderer;
 public:
-    FishEcosystem(IWorld& world);
+    FishEcosystem(World& world);
     ~FishEcosystem();
 
     void tickGameThread(f32 elapsedSec);
@@ -133,7 +133,7 @@ private:
     // Asset handles
     boost::container::flat_map<AssetID, AssetHandlePtr<FishDef>> mFishAssetHandles;
 
-    IWorld& mWorld;
+    World& mWorld;
 
     ChunkGridListeners mChunkGridEventListeners;
 

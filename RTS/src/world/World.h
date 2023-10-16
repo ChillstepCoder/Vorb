@@ -15,6 +15,7 @@ class IChunkGrid;
 class IEntityComponentSystem;
 class IHeightmapGrid;
 class ItemStockpileRegistry;
+class IEffectContext;
 class PhysicsWorld;
 class StructureManager;
 class TimeOfDayManager;
@@ -28,12 +29,12 @@ class RenderState;
 
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
-class IWorld {
+class World {
 public:
-    IWorld(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType);
-    ~IWorld();
+    World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType);
+    ~World();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
+    VORB_NON_COPYABLE_BUT_MOVABLE(World);
 
     virtual void onWorldBegin(const f32v2& loadCenter);
     virtual void tick(f32 elapsedSec);
@@ -80,8 +81,8 @@ public:
     // Structures
     std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
 
-    STATIC_EVENT_LISTENER_FUNCS(IWorld, OnWorldBegin, WORLD_EVENT_TYPE::OnWorldBegin, IWorld&);
-    STATIC_EVENT_LISTENER_FUNCS(IWorld, OnWorldEnd, WORLD_EVENT_TYPE::OnWorldEnd, IWorld&);
+    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldBegin, WORLD_EVENT_TYPE::OnWorldBegin, World&);
+    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEnd, WORLD_EVENT_TYPE::OnWorldEnd, World&);
 
 private:
     // TODO: WorldRenderStateManager?
@@ -121,8 +122,10 @@ private:
     std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
     // Ecosystems
     std::unique_ptr<FishEcosystem> mFishEcosystem;
+    // Effects
+    std::unique_ptr<IEffectContext> mEffectContext;
     // Nav graph (OPTIONAL)
     std::unique_ptr<NavWorld> mNavWorld;
 
-    STATIC_EVENT_DISPATCHER_DEF(IWorld);
+    STATIC_EVENT_DISPATCHER_DEF(World);
 };

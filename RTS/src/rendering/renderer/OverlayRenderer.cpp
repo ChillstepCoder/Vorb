@@ -22,7 +22,7 @@ void OverlayRenderer::renderUnderwaterOverlay() {
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
-    if (const MaterialShaderDef* def = mColorOverlayShader->tryGetAsset()) {
+    if (const MaterialShaderDef* def = mColorOverlayShader->tryGetLoadedAsset()) {
 
         MaterialRenderer::bindMaterialShaderForRender(*def);
         glUniform4fv(def->getUniform("unColor"), 1, &sDebugOptions.mUnderwaterOverlayColor.x);

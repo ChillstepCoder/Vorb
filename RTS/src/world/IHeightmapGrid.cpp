@@ -13,7 +13,7 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "physics/PhysicsWorld.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IChunkGrid.h"
 
 #include "util/BitArray.h"

@@ -4,7 +4,7 @@
 #include "tile/TileContainer.h"
 
 
-TileContainerRepository::TileContainerRepository(IWorld& world) : mWorld(world)
+TileContainerRepository::TileContainerRepository(World& world) : mWorld(world)
 {
 }
 

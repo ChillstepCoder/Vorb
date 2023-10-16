@@ -96,9 +96,9 @@ void Skybox::init(AssetHandlePtr<CubemapDef>&& skyCubemap) {
 
 void Skybox::render(const f32m4& cameraMatrix) {
     if (!mSkyCubemap) return;
-    const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
+    const CubemapDef* cubemapDef = mSkyCubemap->tryGetLoadedAsset();
     if (!cubemapDef) return;
-    const MaterialShaderDef* shader = mMaterialShader->tryGetAsset();
+    const MaterialShaderDef* shader = mMaterialShader->tryGetLoadedAsset();
     if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
@@ -118,9 +118,9 @@ void Skybox::render(const f32m4& cameraMatrix) {
 
 void Skybox::renderPbr(const f32m4& cameraMatrix) {
     if (!mSkyCubemap) return;
-    const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
+    const CubemapDef* cubemapDef = mSkyCubemap->tryGetLoadedAsset();
     if (!cubemapDef) return;
-    const MaterialShaderDef* shader = mMaterialShaderPbr->tryGetAsset();
+    const MaterialShaderDef* shader = mMaterialShaderPbr->tryGetLoadedAsset();
     if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
@@ -152,9 +152,9 @@ void Skybox::renderPbr(const f32m4& cameraMatrix) {
 
 void Skybox::renderIrradianceDebug(const f32m4& cameraMatrix) {
     if (!mSkyCubemap) return;
-    const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
+    const CubemapDef* cubemapDef = mSkyCubemap->tryGetLoadedAsset();
     if (!cubemapDef) return;
-    const MaterialShaderDef* shader = mMaterialShader->tryGetAsset();
+    const MaterialShaderDef* shader = mMaterialShader->tryGetLoadedAsset();
     if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);
@@ -174,9 +174,9 @@ void Skybox::renderIrradianceDebug(const f32m4& cameraMatrix) {
 
 void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel) {
     if (!mSkyCubemap) return;
-    const CubemapDef* cubemapDef = mSkyCubemap->tryGetAsset();
+    const CubemapDef* cubemapDef = mSkyCubemap->tryGetLoadedAsset();
     if (!cubemapDef) return;
-    const MaterialShaderDef* shader = mMaterialShader->tryGetAsset();
+    const MaterialShaderDef* shader = mMaterialShader->tryGetLoadedAsset();
     if (!shader) return;
 
     glEnable(GL_DEPTH_CLAMP);

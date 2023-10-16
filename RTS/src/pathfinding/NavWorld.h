@@ -21,7 +21,7 @@ namespace bgi = boost::geometry::index;
 typedef bg::model::point<i32, 2, bg::cs::cartesian> NavBoxPoint;
 typedef bg::model::box<NavBoxPoint> NavBBox;
 
-class IWorld;
+class World;
 class Chunk;
 class TileContainer;
 struct TileFineNavData;
@@ -182,7 +182,7 @@ private:
 class NavWorld
 {
 public:
-    NavWorld(IWorld& world);
+    NavWorld(World& world);
     ~NavWorld();
 
     void tickGameThread();
@@ -207,7 +207,7 @@ public:
     // Spatial lookup
     LiteTileHandle getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const;
 
-    IWorld& getWorld() const { return mWorld; }
+    World& getWorld() const { return mWorld; }
 
     void markContainerNavDirty(TileContainer* container);
     bool navThreadTryReserveHarvestable(LiteTileHandle position) const;
@@ -250,7 +250,7 @@ private:
 
     TileContainerListeners mTileContainerEventListeners;
 
-    IWorld& mWorld;
+    World& mWorld;
 
     // Large data at the bottom
     std::unique_ptr<TileContainerID[]> mTerrainTileContainers;

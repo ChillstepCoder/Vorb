@@ -4,7 +4,7 @@
 
 #include "ecs/IEntityComponentSystem.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "city/City.h"
 #include "city/CityBusinessManager.h"
 
@@ -18,7 +18,7 @@
 // 4. Safety needs
 // 5. physiological needs
 // https://www.youtube.com/watch?v=RYZSdPuvta8
-void updateComponent(IWorld& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
+void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
@@ -89,7 +89,7 @@ void updateComponent(IWorld& world, entt::registry& registry, entt::entity entit
     // Needs
 }
 
-void PersonAISystem::update(IWorld& world, entt::registry& registry) {
+void PersonAISystem::update(World& world, entt::registry& registry) {
     PROFILE_FUNCTION();
     auto view = registry.view<PersonAIComponent, PhysicsComponent>();
     for (auto entity : view) {

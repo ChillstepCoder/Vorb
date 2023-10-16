@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TimedTileInteractComponent.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 
 TimedTileInteractComponent::TimedTileInteractComponent(
     TileHandle interactTile,

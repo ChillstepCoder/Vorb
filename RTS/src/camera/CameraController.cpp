@@ -3,7 +3,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "physics/PhysicsWorld.h"
 
 #include "ecs/IEntityComponentSystem.h"

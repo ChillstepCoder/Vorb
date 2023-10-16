@@ -19,6 +19,8 @@
 // Arbitrary for estimated perf reasons
 constexpr ui32 MAX_PARTICLES = 20000;
 
+POOLED_ALLOC_DEF_NOT_THREADSAFE(CpuParticleEmitter, 64, ASSERT_RENDER_THREAD());
+
 CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime /*= FLT_MAX*/) :
     mShader(shader),
     mNativeUpdateFunction(updateFunction),
@@ -85,12 +87,14 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     mLastElapsedSec = elapsedSec;
     mTotalElapsedSec += elapsedSec;
 
+    const bool lifetimeExpired = mTotalElapsedSec >= mLifetimeSec;
+
     if (mNativeUpdateFunction) {
         mDataChanged = true;
         mNativeUpdateFunction(*this, mParticleData, elapsedSec);
     }
 
-    {// Update emitter
+    if (!lifetimeExpired) { // Update emitter only if we arent expired
         PROFILE_SCOPE("Emitter Update Methods");
         for (size_t i = 0; i < mNumEmitterUpdateMethods; ++i) {
             mEmitterModuleMethods[i](*this, INVALID_PARTICLE_ID, mParticleModuleData[i], elapsedSec);
@@ -177,11 +181,11 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
 
     render();
 
-    return mTotalElapsedSec >= mLifetimeSec;
+    return lifetimeExpired && (mNumActiveParticles <= 0);
 }
 
 ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
-    if (mActiveParticles >= mMaxParticles) {
+    if (mNumActiveParticles >= mMaxParticles) {
         return INVALID_PARTICLE_ID;
     }
 
@@ -193,7 +197,7 @@ ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
         mFreeParticleIDs.pop_back();
     }
     else {
-        newId = mActiveParticles;
+        newId = mNumActiveParticles;
     }
     onNewParticleAdded(newId);
     // This function always overrides position TODO: IS this what we always want? It will ignore modules
@@ -203,9 +207,9 @@ ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
 
 void CpuParticleEmitter::removeParticle(ParticleID id) {
     mDataChanged = true;
-    assert(mActiveParticles > 0);
+    assert(mNumActiveParticles > 0);
 
-    if (--mActiveParticles == 0) {
+    if (--mNumActiveParticles == 0) {
         mFirstActiveParticle = 0;
         mLastActiveParticle = -1;
     }
@@ -319,7 +323,7 @@ void CpuParticleEmitter::setGlobalMaterialID(MaterialID materialID)
 void CpuParticleEmitter::emitParticles(ui32v2 countRange) {
     
     int emitCount = (int)(Random::getCachedRandom() % (countRange.y - countRange.x)) + countRange.x;
-    emitCount = glm::min(emitCount, mActiveParticles - mMaxParticles);
+    emitCount = glm::min(emitCount, mNumActiveParticles - mMaxParticles);
     emitParticles(emitCount);
 }
 
@@ -327,8 +331,8 @@ void CpuParticleEmitter::emitParticles(int count) {
     if (count == 0) {
         return;
     }
-    assert(mActiveParticles <= mMaxParticles);
-    count = glm::min(count, mMaxParticles - mActiveParticles);
+    assert(mNumActiveParticles <= mMaxParticles);
+    count = glm::min(count, mMaxParticles - mNumActiveParticles);
     mDataChanged = true;
     for (int i = 0; i < count; ++i) {
         if (mFreeParticleIDs.size()) {
@@ -338,7 +342,7 @@ void CpuParticleEmitter::emitParticles(int count) {
             onNewParticleAdded(recycledId);
         }
         else {
-            onNewParticleAdded(mActiveParticles);
+            onNewParticleAdded(mNumActiveParticles);
         }
     }
 }
@@ -393,7 +397,7 @@ void CpuParticleEmitter::allocateParticleData()
 void CpuParticleEmitter::render() {
 
     PROFILE_FUNCTION();
-    if (mActiveParticles == 0) {
+    if (mNumActiveParticles == 0) {
         return;
     }
 
@@ -611,8 +615,8 @@ void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
         mEmitterModuleMethods[i](*this, id, mParticleModuleData[i], mLastElapsedSec);
     }
 
-    ++mActiveParticles;
-    if (mActiveParticles == 1) {
+    ++mNumActiveParticles;
+    if (mNumActiveParticles == 1) {
         mFirstActiveParticle = mLastActiveParticle = id;
         mNeedsFindFirstParticle = mNeedsFindLastParticle = false;
     }

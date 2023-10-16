@@ -18,14 +18,14 @@ class FoliageEditorViewportPanel;
 class FishingEditorViewportPanel;
 class ParticleSystemEditorViewportPanel;
 class IEditorViewportPanel;
-class IWorld;
+class World;
 
 class EditorRoot
 {
 public:
     EditorRoot();
     ~EditorRoot();
-    void updateEditors(IWorld* world, const Camera3D& camera, const f32v3& mousePickRay);
+    void updateEditors(World* world, const Camera3D& camera, const f32v3& mousePickRay);
     void updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec);
     void renderEditorBrushDecals(const Camera3D& camera);
 

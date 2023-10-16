@@ -6,7 +6,7 @@
 #include "character/CharacterConst.h"
 #include "rendering/renderstate/CharacterRenderState.h"
 
-class IWorld;
+class World;
 
 enum class DebugChunkFlags : ui8 {
     IS_NAVMESHING = 1 << 0,
@@ -35,7 +35,7 @@ struct DebugChunkRenderState {
 };
 
 class RenderState {
-    friend class IWorld;
+    friend class World;
     friend class GameRenderStateManager;
 public:
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
@@ -44,10 +44,10 @@ public:
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
-    IWorld* getWorld() const { return mWorld; }
+    World* getWorld() const { return mWorld; }
 private:
     // ======================== Game State  ========================
-    IWorld* mWorld;
+    World* mWorld;
     f32v2 mWorldLoadCenter;
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;

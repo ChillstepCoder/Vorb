@@ -4,7 +4,7 @@
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/GrassMeshManager.h"
 #include "renderdata/WorldRenderDataManager.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/Chunk.h"
 #include "world/IHeightmapGrid.h"
 #include "camera/Camera3D.h"
@@ -185,10 +185,10 @@ void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
         mChunk.getWorld().getHeightmapGrid().releaseHeightDataAt(id);
 
         struct GrassMeshFreeTask {
-            GrassMeshFreeTask(std::unique_ptr<GrassMesh>&& grassMesh, IWorld& world) : grassMesh(std::move(grassMesh)), world(world) {}
+            GrassMeshFreeTask(std::unique_ptr<GrassMesh>&& grassMesh, World& world) : grassMesh(std::move(grassMesh)), world(world) {}
 
             std::unique_ptr<GrassMesh> grassMesh;
-            IWorld& world;
+            World& world;
         };
 
         ASSERT_GAME_THREAD();

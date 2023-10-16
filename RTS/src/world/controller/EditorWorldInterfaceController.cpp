@@ -9,7 +9,7 @@
 #include "item/ItemReservation.h"
 #include "item/ItemStockpileRegistry.h"
 #include "rendering/RenderContext.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "physics/PhysicsWorld.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "ui/UIContext.h"
@@ -158,7 +158,7 @@ void EditorWorldInterfaceController::initEvents() {
         }
         else if (event.keyCode == VKEY_P) {
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
-                IWorld* world = static_cast<IWorld*>(vWorld);
+                World* world = static_cast<World*>(vWorld);
                 if (world->getPhysicsWorld().isProfiling()) {
                     world->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
                 }
@@ -237,7 +237,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
-            typedef std::pair<IWorld*, TileHandle> TaskData;
+            typedef std::pair<World*, TileHandle> TaskData;
             TaskData* taskData = new TaskData(mWorld, mSelectedTileHandle);
             if (mSelectedTileHandle.isValid()) {
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
@@ -364,7 +364,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD) {
             if (mSelectedTileHandle.isValid()) {
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* worldPtr) {
-                    IWorld* world = static_cast<IWorld*>(worldPtr);
+                    World* world = static_cast<World*>(worldPtr);
                     IEntityComponentSystem& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());

@@ -53,7 +53,7 @@ enum class NeighborIndex8 {
 
 // TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
-	friend class IWorld;
+	friend class World;
 	friend class IWorldGrid;
 	friend class WorldEditorPanel;
 	friend class IWorldGenerator;
@@ -71,7 +71,7 @@ public:
 
     // =========== Main methods  ===========
 
-    void init(IWorld& world, const ChunkID& chunkId, i32v2 worldPos);
+    void init(World& world, const ChunkID& chunkId, i32v2 worldPos);
 	void allocateTileContainer(TileContainerRepository& tileContainerRepository);
 	void freeData();
 	void dispose();
@@ -138,7 +138,7 @@ public:
 
 	void addStructure(Structure* structure);
 
-	IWorld& getWorld() const { return *mWorld; }
+	World& getWorld() const { return *mWorld; }
 
 	EVENT_LISTENER_FUNCS(Chunk, GrassEdit, ChunkEventType::GrassEdit, const ChunkEvent&);
 
@@ -150,7 +150,7 @@ private:
 	std::atomic<ChunkState> mState = ChunkState::INVALID;
 	BitFlags<ChunkFlags> mFlags;
 
-	IWorld* mWorld = nullptr;
+	World* mWorld = nullptr;
 	TileContainer* mTileContainer = nullptr;
     std::vector<TileGrass> mGrass; // Grass densities
     mutable std::shared_mutex mSharedGrassMutex;

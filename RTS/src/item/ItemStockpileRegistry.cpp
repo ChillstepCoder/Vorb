@@ -2,11 +2,11 @@
 #include "ItemStockpileRegistry.h"
 
 #include "world/IChunkGrid.h"
-#include "world/IWorld.h"
+#include "world/World.h"
 
 static ItemStockpileID sItemStockpileIdGen;
 
-ItemStockpileRegistry::ItemStockpileRegistry(IWorld& world) : mWorld(world)
+ItemStockpileRegistry::ItemStockpileRegistry(World& world) : mWorld(world)
 {
 
 }

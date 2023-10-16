@@ -10,7 +10,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "time/GameTimeManager.h"
 
@@ -43,7 +43,7 @@ FishingComponentSystem::~FishingComponentSystem() {
 
 }
 
-void FishingComponentSystem::update(IWorld& world, entt::registry& registry, f32 elapsedSec) {
+void FishingComponentSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
 
     mTimeStep = Services::GameTimeManager::ref().getTimestep();
 
@@ -107,7 +107,7 @@ void castLine(FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterCon
     fishCmp.mState = FishingComponentState::Casted;
 }
 
-void FishingComponentSystem::updateFishing(IWorld& world, entt::registry& registry, entt::entity entity, FishingComponent& fishingCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp, f32 elapsedSec) {
+void FishingComponentSystem::updateFishing(World& world, entt::registry& registry, entt::entity entity, FishingComponent& fishingCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp, f32 elapsedSec) {
     ASSERT_GAME_THREAD();
     // TODO: Configurable
     constexpr f32 RETICLE_DIMS = 0.5f;

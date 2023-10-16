@@ -58,5 +58,6 @@ class ParticleSystemDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(ParticleSystemDef);
 
+    f32 mLifetimeSec = 0.0f; // TODO: USE
     std::vector<ParticleEmitterDef> mEmitters;
 };

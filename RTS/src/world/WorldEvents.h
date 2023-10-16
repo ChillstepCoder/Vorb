@@ -1,9 +1,9 @@
 #pragma once
 
-class IWorld;
+class World;
 
 enum class WORLD_EVENT_TYPE {
     OnWorldBegin,
     OnWorldEnd
 };
-EVENT_DISPATCHER_TYPE(IWorld, WORLD_EVENT_TYPE, IWorld&);
+EVENT_DISPATCHER_TYPE(World, WORLD_EVENT_TYPE, World&);

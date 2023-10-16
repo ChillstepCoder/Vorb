@@ -10,10 +10,10 @@
 #include "resources/ResourceManager.h"
 
 #include <ozz/animation/runtime/animation.h>
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "physics/PhysicsWorld.h"
 
-entt::entity EntityFactory::createEntity(IWorld& world, const f32v3& position, StrToken typeToken) {
+entt::entity EntityFactory::createEntity(World& world, const f32v3& position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
     PhysicsWorld& physWorld = world.getPhysicsWorld();
     IEntityComponentSystem& ecs = world.getECS();

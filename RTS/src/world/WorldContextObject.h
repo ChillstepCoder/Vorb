@@ -2,17 +2,18 @@
 
 #include "network/WorldNetMode.h"
 
-class IWorld;
+class World;
 
 class WorldContextObject {
 public:
-    WorldContextObject(IWorld& world) : mWorld(world) {}
+    WorldContextObject(World& world) : mWorld(world) {}
     virtual ~WorldContextObject() = default;
 
+    World& getWorld() const { return mWorld; }
     WorldNetMode getNetMode() const;
     bool isEditor() const;
 protected:
-    IWorld& mWorld;
+    World& mWorld;
 };
 
 // How net works

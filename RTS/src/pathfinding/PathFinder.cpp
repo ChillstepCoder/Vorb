@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "PathFinder.h"
 
-#include "world/IWorld.h"
+#include "world/World.h"
 #include "resources/TileRepository.h"
 #include "NavPath.h"
 #include "world/IHeightmapGrid.h"

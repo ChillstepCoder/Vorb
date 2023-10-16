@@ -349,7 +349,7 @@ void IEditorViewportPanel::renderGrid(const f32m4& VP) {
         return;
     }
     if (!mGridMaterial) mGridMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("grid"));
-    const MaterialShaderDef* gridMaterial = mGridMaterial->tryGetAsset();
+    const MaterialShaderDef* gridMaterial = mGridMaterial->tryGetLoadedAsset();
     if (!gridMaterial) {
         return;
     }
@@ -474,7 +474,7 @@ void IEditorViewportPanel::postProcessBlendTest() {
 
     static AssetHandlePtr<MaterialShaderDef> blendShaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("blend_test"));
 
-    const MaterialShaderDef* blendShader = blendShaderDef->tryGetAsset();
+    const MaterialShaderDef* blendShader = blendShaderDef->tryGetLoadedAsset();
     if (!blendShader) return;
 
     ui32 freeTextureIndex;
@@ -531,7 +531,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     { // Edge test
         static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("edge_test"));
 
-        const MaterialShaderDef* edgeShader = shaderDef->tryGetAsset();
+        const MaterialShaderDef* edgeShader = shaderDef->tryGetLoadedAsset();
         if (!edgeShader) return;
 
         MaterialRenderer::bindMaterialShaderForRender(*edgeShader, &freeTextureIndex);
@@ -556,7 +556,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     { // Edge expand
         static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("edge_expand"));
 
-        const MaterialShaderDef* expandShader = shaderDef->tryGetAsset();
+        const MaterialShaderDef* expandShader = shaderDef->tryGetLoadedAsset();
         if (!expandShader) return;
 
         MaterialRenderer::bindMaterialShaderForRender(*expandShader, &freeTextureIndex);
@@ -586,7 +586,7 @@ void IEditorViewportPanel::postProcessEdgeTest() {
     { // Blur edges
         static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("blend_test_v2"));
 
-        const MaterialShaderDef* blendShader = shaderDef->tryGetAsset();
+        const MaterialShaderDef* blendShader = shaderDef->tryGetLoadedAsset();
         if (!blendShader) return;
 
         MaterialRenderer::bindMaterialShaderForRender(*blendShader, &freeTextureIndex);
