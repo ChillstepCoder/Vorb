@@ -15,6 +15,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save skills yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("skill"); }
+    const char* const getAssetTypeDisplayName() const override { return "Skill"; }
 
 private:
     AssetLoadFunc getAssetLoadFunc() override;

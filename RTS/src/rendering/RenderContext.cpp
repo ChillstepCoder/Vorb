@@ -79,9 +79,9 @@
 #include <Vorb/colors.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
-#include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+#include <imgui.h>
+#include <imgui_internal.h>
+
 
 #include <Vorb/io/IOManager.h>
 

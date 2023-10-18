@@ -34,6 +34,7 @@ class TextureRepository : public IAssetRepository<TextureDef> {
     void setSamplerState(AssetID textureId, const vg::SamplerState& samplerState);
 
     StrToken getAssetExtension() const override { return CStrToken("png"); }
+    const char* const getAssetTypeDisplayName() const override { return "PNG"; }
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;

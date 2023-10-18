@@ -17,7 +17,7 @@
 
 #include "resources/TileRepository.h"
 
-#include <Vorb/ui/imgui/imgui.h>
+#include <imgui.h>
 #include <SDL.h>
 #include <Vorb/ui/GameWindow.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vorb/ui/imgui/imgui.h>
+#include <imgui.h>
 
 #include "generation/NoiseFunction.hpp"
 

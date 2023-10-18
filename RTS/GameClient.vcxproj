@@ -143,7 +143,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\spdlog\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\spdlog\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_EULER_DEFAULT_ZYX;BT_ENABLE_PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -204,7 +204,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\spdlog\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\spdlog\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_NO_SIMD_OPERATOR_OVERLOADS;BT_ENABLE_PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -454,6 +454,8 @@
     <ClCompile Include="src\time\TimeOfDayManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ContentBrowserPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ContentBrowser\ContentBrowserItem.cpp" />
     <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
     <ClCompile Include="src\ui\editor\FishingEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\FoliageEditorViewportPanel.cpp" />
@@ -462,6 +464,7 @@
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\Selection\EditorSelectionManager.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
     <ClCompile Include="src\ui\minigame\FishingMinigame.cpp" />
     <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp" />
@@ -476,9 +479,11 @@
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
     <ClCompile Include="src\util\RandomPointFromShape.cpp" />
     <ClCompile Include="src\util\SpatialGrid2D.cpp" />
+    <ClCompile Include="src\util\StringUtils.cpp" />
     <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
+    <ClCompile Include="src\util\UUID.cpp" />
     <ClCompile Include="src\weather\CloudMeshManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
@@ -829,15 +834,20 @@
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ContentBrowserPanel.h" />
+    <ClInclude Include="src\ui\editor\ContentBrowser\ContentBrowserItem.h" />
     <ClInclude Include="src\ui\editor\EditorCurve.hpp" />
     <ClInclude Include="src\ui\editor\EditorRoot.h" />
     <ClInclude Include="src\ui\editor\FishingEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\FoliageEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h" />
+    <ClInclude Include="src\ui\editor\ImguiColors.h" />
     <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\Selection\EditorSelectionManager.h" />
+    <ClInclude Include="src\ui\editor\Settings\EditorSettings.h" />
     <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\minigame\FishingMinigame.h" />
@@ -869,6 +879,7 @@
     <ClInclude Include="src\util\RandomPointFromShape.h" />
     <ClInclude Include="src\util\SpatialGrid2D.h" />
     <ClInclude Include="src\util\StringHash.h" />
+    <ClInclude Include="src\util\StringUtils.h" />
     <ClInclude Include="src\util\StrToken.h" />
     <ClInclude Include="src\util\StrtokenEncodeTable.h" />
     <ClInclude Include="src\util\TextureUtil.h" />
@@ -879,6 +890,7 @@
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\util\TypeHash.h" />
     <ClInclude Include="src\util\Utils.h" />
+    <ClInclude Include="src\util\UUID.h" />
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\world\Chunk.h" />

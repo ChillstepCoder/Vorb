@@ -14,6 +14,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save anim machines yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("machine"); }
+    const char* const getAssetTypeDisplayName() const override { return "Anim Machine"; }
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;

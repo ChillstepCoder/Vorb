@@ -13,6 +13,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save rigs yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("rig"); }
+    const char* const getAssetTypeDisplayName() const override { return "Rig"; }
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
 };

@@ -6,9 +6,9 @@
 
 #include "options/LightingOptions.h"
 
-#include <Vorb/ui/imgui/imgui.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+#include <imgui.h>
+#include <imgui_internal.h>
+
 
 void MaterialUtils::uploadLightingUniforms(const MaterialShaderDef& material) {
     ASSERT_RENDER_THREAD();

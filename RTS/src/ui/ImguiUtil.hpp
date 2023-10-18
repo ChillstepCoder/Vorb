@@ -1,8 +1,10 @@
 #pragma once
 
-#include <Vorb/ui/imgui/imgui.h>
+#include <imgui.h>
+#include <imgui_internal.h>
 #include <numeric>  // std::iota
 
+#include "ui/editor/ImguiColors.h"
 #include "resources/asset/AssetRegistryEntry.h"
 
 namespace ImguiUtil {
@@ -336,5 +338,454 @@ namespace ImguiUtil {
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
 
         return ImGui::Button(label, size);
+    }
+
+    // Scoped utils taken from StudioCherno/Hazel ImGuiUtilities.h
+    class ScopedStyle
+    {
+    public:
+        ScopedStyle(const ScopedStyle&) = delete;
+        ScopedStyle& operator=(const ScopedStyle&) = delete;
+        template<typename T>
+        ScopedStyle(ImGuiStyleVar styleVar, T value) { ImGui::PushStyleVar(styleVar, value); }
+        ~ScopedStyle() { ImGui::PopStyleVar(); }
+    };
+
+    class ScopedColor
+    {
+    public:
+        ScopedColor(const ScopedColor&) = delete;
+        ScopedColor& operator=(const ScopedColor&) = delete;
+        template<typename T>
+        ScopedColor(ImGuiCol colourId, T colour) { ImGui::PushStyleColor(colourId, ImColor(colour).Value); }
+        ~ScopedColor() { ImGui::PopStyleColor(); }
+    };
+
+    class ScopedFont
+    {
+    public:
+        ScopedFont(const ScopedFont&) = delete;
+        ScopedFont& operator=(const ScopedFont&) = delete;
+        ScopedFont(ImFont* font) { ImGui::PushFont(font); }
+        ~ScopedFont() { ImGui::PopFont(); }
+    };
+
+    class ScopedID
+    {
+    public:
+        ScopedID(const ScopedID&) = delete;
+        ScopedID& operator=(const ScopedID&) = delete;
+        template<typename T>
+        ScopedID(T id) { ImGui::PushID(id); }
+        ~ScopedID() { ImGui::PopID(); }
+    };
+
+    class ScopedColorStack
+    {
+    public:
+        ScopedColorStack(const ScopedColorStack&) = delete;
+        ScopedColorStack& operator=(const ScopedColorStack&) = delete;
+
+        template <typename ColorType, typename... OtherColors>
+        ScopedColorStack(ImGuiCol firstColorID, ColorType firstColor, OtherColors&& ... otherColorPairs)
+            : m_Count((sizeof... (otherColorPairs) / 2) + 1)
+        {
+            static_assert ((sizeof... (otherColorPairs) & 1u) == 0,
+                "ScopedColorStack constructor expects a list of pairs of colour IDs and colours as its arguments");
+
+            PushColor(firstColorID, firstColor, std::forward<OtherColors>(otherColorPairs)...);
+        }
+
+        ~ScopedColorStack() { ImGui::PopStyleColor(m_Count); }
+
+    private:
+        int m_Count;
+
+        template <typename ColorType, typename... OtherColors>
+        void PushColor(ImGuiCol colourID, ColorType colour, OtherColors&& ... otherColorPairs)
+        {
+            if constexpr (sizeof... (otherColorPairs) == 0)
+            {
+                ImGui::PushStyleColor(colourID, ImColor(colour).Value);
+            }
+            else
+            {
+                ImGui::PushStyleColor(colourID, ImColor(colour).Value);
+                PushColor(std::forward<OtherColors>(otherColorPairs)...);
+            }
+        }
+    };
+
+    class ScopedStyleStack
+    {
+    public:
+        ScopedStyleStack(const ScopedStyleStack&) = delete;
+        ScopedStyleStack& operator=(const ScopedStyleStack&) = delete;
+
+        template <typename ValueType, typename... OtherStylePairs>
+        ScopedStyleStack(ImGuiStyleVar firstStyleVar, ValueType firstValue, OtherStylePairs&& ... otherStylePairs)
+            : m_Count((sizeof... (otherStylePairs) / 2) + 1)
+        {
+            static_assert ((sizeof... (otherStylePairs) & 1u) == 0,
+                "ScopedStyleStack constructor expects a list of pairs of colour IDs and colours as its arguments");
+
+            PushStyle(firstStyleVar, firstValue, std::forward<OtherStylePairs>(otherStylePairs)...);
+        }
+
+        ~ScopedStyleStack() { ImGui::PopStyleVar(m_Count); }
+
+    private:
+        int m_Count;
+
+        template <typename ValueType, typename... OtherStylePairs>
+        void PushStyle(ImGuiStyleVar styleVar, ValueType value, OtherStylePairs&& ... otherStylePairs)
+        {
+            if constexpr (sizeof... (otherStylePairs) == 0)
+            {
+                ImGui::PushStyleVar(styleVar, value);
+            }
+            else
+            {
+                ImGui::PushStyleVar(styleVar, value);
+                PushStyle(std::forward<OtherStylePairs>(otherStylePairs)...);
+            }
+        }
+    };
+
+
+    class ScopedItemFlags
+    {
+    public:
+        ScopedItemFlags(const ScopedItemFlags&) = delete;
+        ScopedItemFlags& operator=(const ScopedItemFlags&) = delete;
+        ScopedItemFlags(const ImGuiItemFlags flags, const bool enable = true)
+        {
+            assert(!(flags & ImGuiItemFlags_Disabled), "We shouldn't use ImGuiItemFlags_Disabled! Use ImguUtil::BeginDisabled / ImguUtil::EndDisabled instead. It will handle visuals for you.");
+            ImGui::PushItemFlag(flags, enable);
+        }
+        ~ScopedItemFlags() { ImGui::PopItemFlag(); }
+    };
+
+    class ScopedDisable
+    {
+    public:
+        ScopedDisable(const ScopedDisable&) = delete;
+        ScopedDisable& operator=(const ScopedDisable&) = delete;
+        ScopedDisable(bool disabled = true);
+        ~ScopedDisable();
+    };
+
+    // The delay won't work on texts, because the timer isn't tracked for them.
+    inline bool IsItemHovered(float delayInSeconds = 0.1f, ImGuiHoveredFlags flags = 0)
+    {
+        return ImGui::IsItemHovered() && GImGui->HoveredIdTimer > delayInSeconds; /*HoveredIdNotActiveTimer*/
+    }
+
+    inline void SetTooltip(std::string_view text, float delayInSeconds = 0.1f, bool allowWhenDisabled = true, ImVec2 padding = ImVec2(5, 5))
+    {
+        if (IsItemHovered(delayInSeconds, allowWhenDisabled ? ImGuiHoveredFlags_AllowWhenDisabled : 0))
+        {
+            ScopedStyle tooltipPadding(ImGuiStyleVar_WindowPadding, padding);
+            ScopedColor textCol(ImGuiCol_Text, ImguiColors::Theme::textBrighter);
+            ImGui::SetTooltip(text.data());
+        }
+    }
+
+    // Check if navigated to current item, e.g. with arrow keys
+    inline bool NavigatedTo()
+    {
+        ImGuiContext& g = *GImGui;
+        return g.NavJustMovedToId == g.LastItemData.ID;
+    }
+
+    //=========================================================================================
+    /// Rectangle
+
+    inline ImRect GetItemRect()
+    {
+        return ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    }
+
+    inline ImRect RectExpanded(const ImRect& rect, float x, float y)
+    {
+        ImRect result = rect;
+        result.Min.x -= x;
+        result.Min.y -= y;
+        result.Max.x += x;
+        result.Max.y += y;
+        return result;
+    }
+
+    inline ImRect RectOffset(const ImRect& rect, float x, float y)
+    {
+        ImRect result = rect;
+        result.Min.x += x;
+        result.Min.y += y;
+        result.Max.x += x;
+        result.Max.y += y;
+        return result;
+    }
+
+    inline ImRect RectOffset(const ImRect& rect, ImVec2 xy)
+    {
+        return RectOffset(rect, xy.x, xy.y);
+    }
+
+    //=========================================================================================
+    /// Button Image
+
+    inline void DrawButtonImage(VGTexture imageNormal, VGTexture imageHovered, VGTexture imagePressed,
+        ImU32 tintNormal, ImU32 tintHovered, ImU32 tintPressed,
+        ImVec2 rectMin, ImVec2 rectMax)
+    {
+        auto* drawList = ImGui::GetWindowDrawList();
+        if (ImGui::IsItemActive())
+            drawList->AddImage(ImTextureID(imagePressed), rectMin, rectMax, ImVec2(0, 0), ImVec2(1, 1), tintPressed);
+        else if (ImGui::IsItemHovered())
+            drawList->AddImage(ImTextureID(imageHovered), rectMin, rectMax, ImVec2(0, 0), ImVec2(1, 1), tintHovered);
+        else
+            drawList->AddImage(ImTextureID(imageNormal), rectMin, rectMax, ImVec2(0, 0), ImVec2(1, 1), tintNormal);
+    };
+
+    inline void DrawButtonImage(VGTexture& imageNormal, VGTexture imageHovered, VGTexture imagePressed,
+        ImU32 tintNormal, ImU32 tintHovered, ImU32 tintPressed,
+        ImRect rectangle)
+    {
+        DrawButtonImage(imageNormal, imageHovered, imagePressed, tintNormal, tintHovered, tintPressed, rectangle.Min, rectangle.Max);
+    };
+
+    inline void DrawButtonImage(VGTexture image,
+        ImU32 tintNormal, ImU32 tintHovered, ImU32 tintPressed,
+        ImVec2 rectMin, ImVec2 rectMax)
+    {
+        DrawButtonImage(image, image, image, tintNormal, tintHovered, tintPressed, rectMin, rectMax);
+    };
+
+    inline void DrawButtonImage(VGTexture image,
+        ImU32 tintNormal, ImU32 tintHovered, ImU32 tintPressed,
+        ImRect rectangle)
+    {
+        DrawButtonImage(image, image, image, tintNormal, tintHovered, tintPressed, rectangle.Min, rectangle.Max);
+    };
+
+
+    inline void DrawButtonImage(VGTexture imageNormal, VGTexture imageHovered, VGTexture imagePressed,
+        ImU32 tintNormal, ImU32 tintHovered, ImU32 tintPressed)
+    {
+        DrawButtonImage(imageNormal, imageHovered, imagePressed, tintNormal, tintHovered, tintPressed, ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    };
+
+    inline void DrawButtonImage(VGTexture image,
+        ImU32 tintNormal, ImU32 tintHovered, ImU32 tintPressed)
+    {
+        DrawButtonImage(image, image, image, tintNormal, tintHovered, tintPressed, ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    };
+
+
+    //=========================================================================================
+    /// Border
+
+    inline void DrawBorder(ImVec2 rectMin, ImVec2 rectMax, const ImVec4& borderColor, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        auto min = rectMin;
+        min.x -= thickness;
+        min.y -= thickness;
+        min.x += offsetX;
+        min.y += offsetY;
+        auto max = rectMax;
+        max.x += thickness;
+        max.y += thickness;
+        max.x += offsetX;
+        max.y += offsetY;
+
+        auto* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRect(min, max, ImGui::ColorConvertFloat4ToU32(borderColor), 0.0f, 0, thickness);
+    };
+
+    inline void DrawBorder(const ImVec4& borderColor, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorder(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), borderColor, thickness, offsetX, offsetY);
+    };
+
+    inline void DrawBorder(float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorder(ImGui::GetStyleColorVec4(ImGuiCol_Border), thickness, offsetX, offsetY);
+    };
+
+    inline void DrawBorder(ImVec2 rectMin, ImVec2 rectMax, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorder(rectMin, rectMax, ImGui::GetStyleColorVec4(ImGuiCol_Border), thickness, offsetX, offsetY);
+    };
+    inline void DrawBorder(ImRect rect, float thickness = 1.0f, float rounding = 0.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        auto min = rect.Min;
+        min.x -= thickness;
+        min.y -= thickness;
+        min.x += offsetX;
+        min.y += offsetY;
+        auto max = rect.Max;
+        max.x += thickness;
+        max.y += thickness;
+        max.x += offsetX;
+        max.y += offsetY;
+
+        auto* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRect(min, max, ImGui::ColorConvertFloat4ToU32(ImGui::GetStyleColorVec4(ImGuiCol_Border)), rounding, 0, thickness);
+    };
+
+    inline void DrawBorderHorizontal(ImVec2 rectMin, ImVec2 rectMax, const ImVec4& borderColor, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        auto min = rectMin;
+        min.y -= thickness;
+        min.x += offsetX;
+        min.y += offsetY;
+        auto max = rectMax;
+        max.y += thickness;
+        max.x += offsetX;
+        max.y += offsetY;
+
+        auto* drawList = ImGui::GetWindowDrawList();
+        const auto colour = ImGui::ColorConvertFloat4ToU32(borderColor);
+        drawList->AddLine(min, ImVec2(max.x, min.y), colour, thickness);
+        drawList->AddLine(ImVec2(min.x, max.y), max, colour, thickness);
+    };
+
+    inline void DrawBorderHorizontal(ImVec2 rectMin, ImVec2 rectMax, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorderHorizontal(rectMin, rectMax, ImGui::GetStyleColorVec4(ImGuiCol_Border), thickness, offsetX, offsetY);
+    };
+
+    inline void DrawBorderHorizontal(const ImVec4& borderColor, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorderHorizontal(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), borderColor, thickness, offsetX, offsetY);
+    };
+
+    inline void DrawBorderHorizontal(float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorderHorizontal(ImGui::GetStyleColorVec4(ImGuiCol_Border), thickness, offsetX, offsetY);
+    };
+
+    inline void DrawBorderVertical(ImVec2 rectMin, ImVec2 rectMax, const ImVec4& borderColor, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        auto min = rectMin;
+        min.x -= thickness;
+        min.x += offsetX;
+        min.y += offsetY;
+        auto max = rectMax;
+        max.x += thickness;
+        max.x += offsetX;
+        max.y += offsetY;
+
+        auto* drawList = ImGui::GetWindowDrawList();
+        const auto colour = ImGui::ColorConvertFloat4ToU32(borderColor);
+        drawList->AddLine(min, ImVec2(min.x, max.y), colour, thickness);
+        drawList->AddLine(ImVec2(max.x, min.y), max, colour, thickness);
+    };
+
+    inline void DrawBorderVertical(const ImVec4& borderColor, float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorderVertical(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), borderColor, thickness, offsetX, offsetY);
+    };
+
+    inline void DrawBorderVertical(float thickness = 1.0f, float offsetX = 0.0f, float offsetY = 0.0f)
+    {
+        DrawBorderVertical(ImGui::GetStyleColorVec4(ImGuiCol_Border), thickness, offsetX, offsetY);
+    };
+
+    inline void DrawItemActivityOutline(float rounding = 0.0f, bool drawWhenInactive = false, ImColor colourWhenActive = ImColor(80, 80, 80))
+    {
+        auto* drawList = ImGui::GetWindowDrawList();
+        const ImRect rect = RectExpanded(GetItemRect(), 1.0f, 1.0f);
+        if (ImGui::IsItemHovered() && !ImGui::IsItemActive())
+        {
+            drawList->AddRect(rect.Min, rect.Max,
+                ImColor(60, 60, 60), rounding, 0, 1.5f);
+        }
+        if (ImGui::IsItemActive())
+        {
+            drawList->AddRect(rect.Min, rect.Max,
+                colourWhenActive, rounding, 0, 1.0f);
+        }
+        else if (!ImGui::IsItemHovered() && drawWhenInactive)
+        {
+            drawList->AddRect(rect.Min, rect.Max,
+                ImColor(50, 50, 50), rounding, 0, 1.0f);
+        }
+    };
+
+    inline void ShiftCursorX(float distance) {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + distance);
+    }
+    inline void ShiftCursorY(float distance) {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + distance);
+    }
+    inline void ShiftCursor(float x, float y) {
+        const ImVec2 cursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(ImVec2(cursor.x + x, cursor.y + y));
+    }
+
+    //=========================================================================================
+    /// Colors
+
+    static ImColor ColorWithValue(const ImColor& color, float value)
+    {
+        const ImVec4& colRaw = color.Value;
+        float hue, sat, val;
+        ImGui::ColorConvertRGBtoHSV(colRaw.x, colRaw.y, colRaw.z, hue, sat, val);
+        return ImColor::HSV(hue, sat, std::min(value, 1.0f));
+    }
+
+    static ImColor ColorWithSaturation(const ImColor& color, float saturation)
+    {
+        const ImVec4& colRaw = color.Value;
+        float hue, sat, val;
+        ImGui::ColorConvertRGBtoHSV(colRaw.x, colRaw.y, colRaw.z, hue, sat, val);
+        return ImColor::HSV(hue, std::min(saturation, 1.0f), val);
+    }
+
+    static ImColor ColorWithHue(const ImColor& color, float hue)
+    {
+        const ImVec4& colRaw = color.Value;
+        float h, s, v;
+        ImGui::ColorConvertRGBtoHSV(colRaw.x, colRaw.y, colRaw.z, h, s, v);
+        return ImColor::HSV(std::min(hue, 1.0f), s, v);
+    }
+
+    static ImColor ColorWithAlpha(const ImColor& color, float multiplier)
+    {
+        ImVec4 colRaw = color.Value;
+        colRaw.w = multiplier;
+        return colRaw;
+    }
+
+    static ImColor ColorWithMultipliedValue(const ImColor& color, float multiplier)
+    {
+        const ImVec4& colRaw = color.Value;
+        float hue, sat, val;
+        ImGui::ColorConvertRGBtoHSV(colRaw.x, colRaw.y, colRaw.z, hue, sat, val);
+        return ImColor::HSV(hue, sat, std::min(val * multiplier, 1.0f));
+    }
+
+    static ImColor ColorWithMultipliedSaturation(const ImColor& color, float multiplier)
+    {
+        const ImVec4& colRaw = color.Value;
+        float hue, sat, val;
+        ImGui::ColorConvertRGBtoHSV(colRaw.x, colRaw.y, colRaw.z, hue, sat, val);
+        return ImColor::HSV(hue, std::min(sat * multiplier, 1.0f), val);
+    }
+
+    static ImColor ColorWithMultipliedHue(const ImColor& color, float multiplier)
+    {
+        const ImVec4& colRaw = color.Value;
+        float hue, sat, val;
+        ImGui::ColorConvertRGBtoHSV(colRaw.x, colRaw.y, colRaw.z, hue, sat, val);
+        return ImColor::HSV(std::min(hue * multiplier, 1.0f), sat, val);
+    }
+
+    static ImColor ColorWithMultipliedAlpha(const ImColor& color, float multiplier)
+    {
+        ImVec4 colRaw = color.Value;
+        colRaw.w *= multiplier;
+        return colRaw;
     }
 }

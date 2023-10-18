@@ -10,6 +10,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save MaterialsShaders yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("prog"); }
+    const char* const getAssetTypeDisplayName() const override { return "Shader Program"; }
 
 private:
     AssetLoadFunc getAssetLoadFunc() override;

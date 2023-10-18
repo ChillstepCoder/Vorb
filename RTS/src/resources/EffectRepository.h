@@ -9,6 +9,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save effects yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("effect"); }
+    const char* const getAssetTypeDisplayName() const override { return "Effect"; }
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;

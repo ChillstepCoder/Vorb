@@ -50,6 +50,11 @@ public:
 
     void addAssetToBundle(AssetHandleBundle& bundle, StrToken assetName, AssetType assetType);
 
+    IAssetRepositoryBase* tryGetAssetRepositoryForFileExtension(StrToken extension) const;
+    IAssetRepositoryBase& getAssetRepository(AssetType type) {
+        assert((size_t)type < mAssetRepositories.size());
+        return *mAssetRepositories[e_cast(type)];
+    }
 private:
     void gatherRecursive(const vio::Path& folderPath);
     void preloadFiles();
@@ -71,6 +76,7 @@ private:
     std::unique_ptr<CollisionShapeRepository> mCollisionShapeRepository;
 
     std::vector<IAssetRepositoryBase*> mAssetRepositories;
+    std::unordered_map<StrToken, IAssetRepositoryBase*> mExtensionToAssetRepository;
     AssetHandleBundle mPreloadAssetsBundle;
 
     // TODO: Replace with std::filesystem?

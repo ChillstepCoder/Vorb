@@ -31,6 +31,10 @@ public:
     }
 
     virtual StrToken getAssetExtension() const = 0;
+    virtual const char* const getAssetTypeDisplayName() const = 0;
+
+    // Editor function which will register and create a default asset of this type
+    virtual AssetHandleBasePtr editorTryAddNewAssetBase(StrToken name) = 0;
 
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
@@ -256,7 +260,7 @@ public:
     }
 
     // Editor function which will register and create a default asset of this type
-    AssetHandlePtr<T> editorTryAddNewAsset(StrToken name) {
+    AssetHandleBasePtr editorTryAddNewAssetBase(StrToken name) override {
         if (mAssetLookup.find(name) != mAssetLookup.end()) {
             return nullptr;
         }
@@ -265,7 +269,7 @@ public:
             AssetID id = mFreeIDs.back();
             mFreeIDs.pop_back();
             mAssetLookup[name] = id;
-            mAssetRegistry[id] = AssetRegistryEntry{ .mID=id, .mRequestedLoad=true /*Already loaded*/};
+            mAssetRegistry[id] = AssetRegistryEntry{ .mID = id, .mRequestedLoad = true /*Already loaded*/ };
             mAssetRefCounts[id]->store(0); // 1?
             // Retain pointer stability by replacing previous asset directly
             *mAssets[id] = T(name, id);
@@ -278,6 +282,9 @@ public:
             AssetHandlePtr<T> newHandle = getAssetHandle(newId);
             return newHandle;
         }
+    }
+    AssetHandlePtr<T> editorTryAddNewAsset(StrToken name) {
+       return static_unique_pointer_cast<T>(editorTryAddNewAssetBase(name));
     }
     
     void deleteAsset(AssetID id) {

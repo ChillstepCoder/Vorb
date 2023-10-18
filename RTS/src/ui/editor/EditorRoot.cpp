@@ -12,10 +12,10 @@
 #include "ui/editor/ParticleSystemEditorViewportPanel.h"
 #include "options/DebugOptions.h"
 
-#include <Vorb/ui/imgui/imgui.h>
+#include <imgui.h>
 #include <Vorb/ui/imgui/imgui_internal.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_sdl2.h>
-#include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+#include <imgui_internal.h>
+
 
 // Panel splitter https://github.com/ocornut/imgui/issues/319
 bool Splitter(bool split_vertically, float thickness, float* size1, float* size2, float min_size1, float min_size2, float splitter_long_axis_size = -1.0f) {

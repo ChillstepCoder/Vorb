@@ -14,6 +14,7 @@ class ParticleSystemRepository : public IAssetRepository<ParticleSystemDef> {
     bool saveAsset(AssetID assetId) override;
 
     StrToken getAssetExtension() const override { return CStrToken("psys"); }
+    const char* const getAssetTypeDisplayName() const override { return "Particle System"; }
 
 private:
     void saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter);

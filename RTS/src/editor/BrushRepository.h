@@ -13,6 +13,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save brushes yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("brush"); }
+    const char* const getAssetTypeDisplayName() const override { return "Brush"; }
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;

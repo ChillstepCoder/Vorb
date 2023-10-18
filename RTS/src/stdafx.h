@@ -77,6 +77,7 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "util/panic.h"
 
 // Utils
+#include "util/UUID.h"
 #include "util/CommonUtil.h"
 #include "util/MathDefines.h"
 #include "util/MathUtil.hpp"
@@ -86,6 +87,7 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "util/CubeFacing.h"
 #include "util/ThreadIDs.h"
 #include "util/StrToken.h"
+#include "util/StringUtils.h"
 
 #include "instrumentation/instrumentor.h"
 

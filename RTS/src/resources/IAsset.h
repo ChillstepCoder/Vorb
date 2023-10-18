@@ -84,4 +84,8 @@ struct AssetDescriptor {
         if (id != other.id) return id < other.id;
         return assetType < other.assetType;
     }
+
+    UUID getUUID() {
+        return UUID((ui64)id ^ ((ui64)assetType << 32ull));
+    }
 };

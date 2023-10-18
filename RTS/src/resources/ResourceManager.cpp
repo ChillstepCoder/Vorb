@@ -47,7 +47,8 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
 #define REGISTER_ASSET_REPO(RepoClass, AType, ...) \
     RepoClass::initInstance(*mIoManager, __VA_ARGS__); \
     mAssetRepositories[(size_t)AType] = &RepoClass::get(); \
-    RepoClass::get().init();
+    RepoClass::get().init(); \
+    mExtensionToAssetRepository[RepoClass::get().getAssetExtension()] = &RepoClass::get();
 
 ResourceManager::ResourceManager() {
     
@@ -57,6 +58,7 @@ ResourceManager::ResourceManager() {
     mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
     
     mAssetRepositories.resize(e_count(AssetType));
+    mExtensionToAssetRepository.reserve(e_count(AssetType));
     REGISTER_ASSET_REPO(TileRepository, AssetType::Tile, *mCollisionShapeRepository);
     REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
     REGISTER_ASSET_REPO(EffectRepository, AssetType::Effect);
@@ -208,6 +210,14 @@ void ResourceManager::generateNormalMaps() {
 
 void ResourceManager::addAssetToBundle(AssetHandleBundle& bundle, StrToken assetName, AssetType assetType) {
     bundle.addAssetHandle(mAssetRepositories[e_cast(assetType)]->getAssetHandleBase(assetName));
+}
+
+IAssetRepositoryBase* ResourceManager::tryGetAssetRepositoryForFileExtension(StrToken extension) const {
+    auto&& it = mExtensionToAssetRepository.find(extension);
+    if (it == mExtensionToAssetRepository.end()) {
+        return nullptr;
+    }
+    return it->second;
 }
 
 void ResourceManager::gatherRecursive(const vio::Path& folderPath)

@@ -47,7 +47,7 @@
 #include "ui/TileInteractPanel.h"
 #include "ui/UIContext.h"
 
-#include <Vorb/ui/imgui/imgui.h>
+#include <imgui.h>
 
 #include "options/DebugOptions.h"
 

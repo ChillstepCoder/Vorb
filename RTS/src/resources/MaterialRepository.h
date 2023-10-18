@@ -31,6 +31,7 @@ public:
     bool saveAsset(AssetID assetId) override { panic("Cannot save materials yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("material"); }
+    const char* const getAssetTypeDisplayName() const override { return "Material"; }
 
     std::function<void(AssetID)> getImguiThumbnailFunc();
 
