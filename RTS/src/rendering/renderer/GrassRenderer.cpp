@@ -264,7 +264,7 @@ void GrassRenderer::updateUniformBuffer() {
     GrassUniformData uboData[MAX_GRASS];
 
     size_t i = 0;
-    grassRepo.forEachLoadedOrUnloadedAsset([&](TileGrassDef& def, const AssetRegistryEntry& entry) {
+    grassRepo.forEachLoadedOrUnloadedAsset([&](TileGrassDef& def, const AssetMetadata& entry) {
         GrassUniformData& data = uboData[i];
         data.grassScale = def.mSizeMults;
         data.material = def.mMaterialID;

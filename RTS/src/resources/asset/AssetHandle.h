@@ -16,6 +16,8 @@ public:
         release();
     }
 
+    std::unique_ptr<AssetHandle<T>> clone() const;
+
     VORB_NON_COPYABLE(AssetHandle);
 
     void aquire(AssetID id);

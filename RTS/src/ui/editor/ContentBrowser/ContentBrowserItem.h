@@ -40,14 +40,16 @@ struct CBItemActionResult
     bool IsSet(ContentBrowserAction flag) const { return (uint16_t)flag & Field; }
 };
 
+// Can be a directory or an asset
 class ContentBrowserItem
 {
 public:
+    // TODO: Item is redundant. Move out of scope and call ContentBrowserItemType. Superior to ContentBrowserItem::ItemType
     enum class ItemType : uint16_t {
         Directory, Asset
     };
 public:
-    ContentBrowserItem(ItemType type, UUID uuid, const std::string& name, VGTexture icon);
+    ContentBrowserItem(ItemType type, UniqueId64 uuid, const std::string& name, VGTexture icon);
     virtual ~ContentBrowserItem() {}
 
     void OnRenderBegin();
@@ -57,7 +59,7 @@ public:
     virtual void Delete() {}
     virtual bool Move(const std::filesystem::path& destination) { return false; }
 
-    UUID GetUUID() const { return mUUID; }
+    UniqueId64 GetUUID() const { return mUUID; }
     ItemType GetType() const { return mType; }
     const std::string& GetName() const { return mFileName; }
 
@@ -79,7 +81,7 @@ private:
 
 protected:
     ItemType mType;
-    UUID mUUID;
+    UniqueId64 mUUID;
     std::string mDisplayName;
     std::string mFileName;
     VGTexture mIcon;
@@ -93,20 +95,20 @@ private:
 };
 
 struct DirectoryInfo {
-    AssetID handle;
-    DirectoryInfo* parent = nullptr;
+    UniqueId64 Handle;
+    std::shared_ptr<DirectoryInfo> Parent = nullptr;
 
-    std::filesystem::path filePath;
+    std::filesystem::path FilePath;
 
-    std::vector<AssetHandleBasePtr> assets;
-    std::map<UUID, DirectoryInfo> subDirectories;
+    std::vector<AssetDescriptor> Assets;
+    std::map<UniqueId64, std::shared_ptr<DirectoryInfo>> SubDirectories;
 };
 using DirectoryInfoPtr = std::shared_ptr<DirectoryInfo>;
 
 class ContentBrowserDirectory : public ContentBrowserItem
 {
 public:
-    ContentBrowserDirectory(const DirectoryInfoPtr& directoryInfo);
+    ContentBrowserDirectory(const std::shared_ptr<DirectoryInfo>& directoryInfo);
     virtual ~ContentBrowserDirectory();
 
     DirectoryInfoPtr& GetDirectoryInfo() { return m_DirectoryInfo; }
@@ -127,7 +129,7 @@ private:
 class ContentBrowserAsset : public ContentBrowserItem
 {
 public:
-    ContentBrowserAsset(const AssetDescriptor& assetInfo, VGTexture icon);
+    ContentBrowserAsset(AssetMetadata assetInfo, VGTexture icon);
     virtual ~ContentBrowserAsset();
 
     const AssetDescriptor& GetAssetInfo() const { return m_AssetInfo; }

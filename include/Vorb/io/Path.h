@@ -22,6 +22,9 @@
 #include "../types.h"
 #endif // !VORB_USING_PCH
 
+// TODO Replace vio::path completely
+#include <filesystem>
+
 namespace vorb {
     namespace io {
         class Directory;
@@ -38,6 +41,12 @@ namespace vorb {
             /// Construct a path from a string
             /// @param p: Path value
             Path(const nString& p);
+            //  TODO: Delete this entire class
+            Path(const std::filesystem::path& p);
+
+            const std::filesystem::path getStdPath() const {
+                return std::filesystem::path(getString());
+            }
 
             /// @return The path as a string
             const nString& getString() const {

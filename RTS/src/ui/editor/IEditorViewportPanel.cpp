@@ -208,7 +208,7 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
     CubemapRepository& cubemapRepo = CubemapRepository::get();
     cubemapNames.reserve(cubemapRepo.getNumRegisteredAssets() + 1);
     cubemapNames.emplace_back("NONE");
-    cubemapRepo.forEachRegisteredAsset([&](CubemapDef* def, const AssetRegistryEntry& entry) {
+    cubemapRepo.forEachRegisteredAsset([&](CubemapDef* def, const AssetMetadata& entry) {
         cubemapNames.emplace_back(entry.mName);
         return false;
     });

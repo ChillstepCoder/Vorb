@@ -5,7 +5,7 @@
 #include <numeric>  // std::iota
 
 #include "ui/editor/ImguiColors.h"
-#include "resources/asset/AssetRegistryEntry.h"
+#include "resources/asset/AssetMetadata.h"
 
 namespace ImguiUtil {
 
@@ -229,12 +229,12 @@ namespace ImguiUtil {
 
     class AssetSelectorPopup : public AssetPopup, public PopupFilterInterface {
     public:
-        AssetSelectorPopup(const std::vector<AssetRegistryEntry>& assets) : mAssets(assets), AssetPopup("AssetSelector", "", nullptr) {
+        AssetSelectorPopup(const std::vector<AssetMetadata>& assets) : mAssets(assets), AssetPopup("AssetSelector", "", nullptr) {
             char nameBuf1[MAX_CHARS_IN_STRTOKEN + 1];
             char nameBuf2[MAX_CHARS_IN_STRTOKEN + 1];
             ui32 size1 = 0;
             ui32 size2 = 0;
-            mSortedIndices = sortIndexes<AssetRegistryEntry>(assets, [&](size_t i1, size_t i2) -> bool {
+            mSortedIndices = sortIndexes<AssetMetadata>(assets, [&](size_t i1, size_t i2) -> bool {
                 assets[i1].mName.toString(nameBuf1, &size1);
                 assets[i2].mName.toString(nameBuf2, &size2);
                 std::string_view n1(nameBuf1, size1);
@@ -295,11 +295,11 @@ namespace ImguiUtil {
                             ImGui::Text(mAssets[i].mName.toString().c_str());
                             // ID
                             ImGui::TableSetColumnIndex(2);
-                            ImGui::Text(std::to_string(mAssets[i].mID).c_str());
+                            ImGui::Text(std::to_string(mAssets[i].getId()).c_str());
                             // Thumbnail
                             if (mThumbnailFunc) {
                                 ImGui::TableSetColumnIndex(3);
-                                mThumbnailFunc(mAssets[i].mID, mThumbnailSize);
+                                mThumbnailFunc(mAssets[i].getId(), mThumbnailSize);
                             }
                            
                             ImGui::PopID();
@@ -317,12 +317,12 @@ namespace ImguiUtil {
             }
             return true;
         }
-        AssetRegistryEntry getResult() const {
+        AssetMetadata getResult() const {
             return result;
         }
     protected:
-        AssetRegistryEntry result;
-        const std::vector<AssetRegistryEntry>& mAssets;
+        AssetMetadata result;
+        const std::vector<AssetMetadata>& mAssets;
         std::vector<size_t> mSortedIndices;
         std::function<void(AssetID, f32v2)> mThumbnailFunc = nullptr;
         f32v2 mThumbnailSize = f32v2(25.0f);
@@ -727,7 +727,7 @@ namespace ImguiUtil {
     //=========================================================================================
     /// Colors
 
-    static ImColor ColorWithValue(const ImColor& color, float value)
+    inline ImColor ColorWithValue(const ImColor& color, float value)
     {
         const ImVec4& colRaw = color.Value;
         float hue, sat, val;
@@ -735,7 +735,7 @@ namespace ImguiUtil {
         return ImColor::HSV(hue, sat, std::min(value, 1.0f));
     }
 
-    static ImColor ColorWithSaturation(const ImColor& color, float saturation)
+    inline ImColor ColorWithSaturation(const ImColor& color, float saturation)
     {
         const ImVec4& colRaw = color.Value;
         float hue, sat, val;
@@ -743,7 +743,7 @@ namespace ImguiUtil {
         return ImColor::HSV(hue, std::min(saturation, 1.0f), val);
     }
 
-    static ImColor ColorWithHue(const ImColor& color, float hue)
+    inline ImColor ColorWithHue(const ImColor& color, float hue)
     {
         const ImVec4& colRaw = color.Value;
         float h, s, v;
@@ -751,14 +751,14 @@ namespace ImguiUtil {
         return ImColor::HSV(std::min(hue, 1.0f), s, v);
     }
 
-    static ImColor ColorWithAlpha(const ImColor& color, float multiplier)
+    inline ImColor ColorWithAlpha(const ImColor& color, float multiplier)
     {
         ImVec4 colRaw = color.Value;
         colRaw.w = multiplier;
         return colRaw;
     }
 
-    static ImColor ColorWithMultipliedValue(const ImColor& color, float multiplier)
+    inline ImColor ColorWithMultipliedValue(const ImColor& color, float multiplier)
     {
         const ImVec4& colRaw = color.Value;
         float hue, sat, val;
@@ -766,7 +766,7 @@ namespace ImguiUtil {
         return ImColor::HSV(hue, sat, std::min(val * multiplier, 1.0f));
     }
 
-    static ImColor ColorWithMultipliedSaturation(const ImColor& color, float multiplier)
+    inline ImColor ColorWithMultipliedSaturation(const ImColor& color, float multiplier)
     {
         const ImVec4& colRaw = color.Value;
         float hue, sat, val;
@@ -774,7 +774,7 @@ namespace ImguiUtil {
         return ImColor::HSV(hue, std::min(sat * multiplier, 1.0f), val);
     }
 
-    static ImColor ColorWithMultipliedHue(const ImColor& color, float multiplier)
+    inline ImColor ColorWithMultipliedHue(const ImColor& color, float multiplier)
     {
         const ImVec4& colRaw = color.Value;
         float hue, sat, val;
@@ -782,10 +782,358 @@ namespace ImguiUtil {
         return ImColor::HSV(std::min(hue * multiplier, 1.0f), sat, val);
     }
 
-    static ImColor ColorWithMultipliedAlpha(const ImColor& color, float multiplier)
+    inline ImColor ColorWithMultipliedAlpha(const ImColor& color, float multiplier)
     {
         ImVec4 colRaw = color.Value;
         colRaw.w *= multiplier;
         return colRaw;
+    }
+
+    //=========================================================================================
+    /// Shadows
+
+    inline void DrawShadow(VGTexture shadowImage, int radius, ImVec2 rectMin, ImVec2 rectMax, float alphMultiplier, float lengthStretch,
+        bool drawLeft, bool drawRight, bool drawTop, bool drawBottom)
+    {
+        const float widthOffset = lengthStretch;
+        const float alphaTop = std::min(0.25f * alphMultiplier, 1.0f);
+        const float alphaSides = std::min(0.30f * alphMultiplier, 1.0f);
+        const float alphaBottom = std::min(0.60f * alphMultiplier, 1.0f);
+        const auto p1 = rectMin;
+        const auto p2 = rectMax;
+
+        ImTextureID textureID = ImTextureID(shadowImage);
+
+        auto* drawList = ImGui::GetWindowDrawList();
+        if (drawLeft)
+            drawList->AddImage(textureID, { p1.x - widthOffset,  p1.y - radius }, { p2.x + widthOffset, p1.y }, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, alphaTop));
+        if (drawRight)
+            drawList->AddImage(textureID, { p1.x - widthOffset,  p2.y }, { p2.x + widthOffset, p2.y + radius }, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, alphaBottom));
+
+        if (drawTop)
+            drawList->AddImageQuad(textureID, { p1.x - radius, p1.y - widthOffset }, { p1.x, p1.y - widthOffset }, { p1.x, p2.y + widthOffset }, { p1.x - radius, p2.y + widthOffset },
+                { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, ImColor(0.0f, 0.0f, 0.0f, alphaSides));
+        if (drawBottom)
+            drawList->AddImageQuad(textureID, { p2.x, p1.y - widthOffset }, { p2.x + radius, p1.y - widthOffset }, { p2.x + radius, p2.y + widthOffset }, { p2.x, p2.y + widthOffset },
+                { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, ImColor(0.0f, 0.0f, 0.0f, alphaSides));
+    };
+
+    inline void DrawShadow(VGTexture shadowImage, int radius, ImRect rectangle, float alphMultiplier, float lengthStretch,
+        bool drawLeft, bool drawRight, bool drawTop, bool drawBottom)
+    {
+        DrawShadow(shadowImage, radius, rectangle.Min, rectangle.Max, alphMultiplier, lengthStretch, drawLeft, drawRight, drawTop, drawBottom);
+    };
+
+
+    inline void DrawShadow(VGTexture shadowImage, int radius, float alphMultiplier, float lengthStretch,
+        bool drawLeft, bool drawRight, bool drawTop, bool drawBottom)
+    {
+        DrawShadow(shadowImage, radius, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), alphMultiplier, lengthStretch, drawLeft, drawRight, drawTop, drawBottom);
+    };
+
+    inline void DrawShadowInner(VGTexture shadowImage, int radius, ImVec2 rectMin, ImVec2 rectMax, float alpha, float lengthStretch,
+        bool drawLeft, bool drawRight, bool drawTop, bool drawBottom)
+    {
+        const float widthOffset = lengthStretch;
+        const float alphaTop = alpha; //std::min(0.25f * alphMultiplier, 1.0f);
+        const float alphaSides = alpha; //std::min(0.30f * alphMultiplier, 1.0f);
+        const float alphaBottom = alpha; //std::min(0.60f * alphMultiplier, 1.0f);
+        const auto p1 = ImVec2(rectMin.x + radius, rectMin.y + radius);
+        const auto p2 = ImVec2(rectMax.x - radius, rectMax.y - radius);
+        auto* drawList = ImGui::GetWindowDrawList();
+
+        ImTextureID textureID = ImTextureID(shadowImage);
+
+        if (drawTop)
+            drawList->AddImage(textureID, { p1.x - widthOffset,  p1.y - radius }, { p2.x + widthOffset, p1.y }, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f), ImColor(0.0f, 0.0f, 0.0f, alphaTop));
+        if (drawBottom)
+            drawList->AddImage(textureID, { p1.x - widthOffset,  p2.y }, { p2.x + widthOffset, p2.y + radius }, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImColor(0.0f, 0.0f, 0.0f, alphaBottom));
+        if (drawLeft)
+            drawList->AddImageQuad(textureID, { p1.x - radius, p1.y - widthOffset }, { p1.x, p1.y - widthOffset }, { p1.x, p2.y + widthOffset }, { p1.x - radius, p2.y + widthOffset },
+                { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, ImColor(0.0f, 0.0f, 0.0f, alphaSides));
+        if (drawRight)
+            drawList->AddImageQuad(textureID, { p2.x, p1.y - widthOffset }, { p2.x + radius, p1.y - widthOffset }, { p2.x + radius, p2.y + widthOffset }, { p2.x, p2.y + widthOffset },
+                { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, ImColor(0.0f, 0.0f, 0.0f, alphaSides));
+    };
+
+    inline void DrawShadowInner(VGTexture shadowImage, int radius, ImRect rectangle, float alpha, float lengthStretch,
+        bool drawLeft, bool drawRight, bool drawTop, bool drawBottom)
+    {
+        DrawShadowInner(shadowImage, radius, rectangle.Min, rectangle.Max, alpha, lengthStretch, drawLeft, drawRight, drawTop, drawBottom);
+    };
+
+
+    inline void DrawShadowInner(VGTexture shadowImage, int radius, float alpha, float lengthStretch,
+        bool drawLeft, bool drawRight, bool drawTop, bool drawBottom)
+    {
+        DrawShadowInner(shadowImage, radius, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), alpha, lengthStretch, drawLeft, drawRight, drawTop, drawBottom);
+    }
+
+    class Widgets
+    {
+    public:
+        template<uint32_t BuffSize = 256, typename StringType>
+        static bool SearchWidget(StringType& searchString, const char* hint = "Search...", bool* grabFocus = nullptr)
+        {
+            PushID();
+
+            ShiftCursorY(1.0f);
+
+            const bool layoutSuspended = []
+            {
+                ImGuiWindow* window = ImGui::GetCurrentWindow();
+                if (window->DC.CurrentLayout)
+                {
+                    ImGui::SuspendLayout();
+                    return true;
+                }
+                return false;
+            }();
+
+            bool modified = false;
+            bool searching = false;
+
+            const float areaPosX = ImGui::GetCursorPosX();
+            const float framePaddingY = ImGui::GetStyle().FramePadding.y;
+
+            UI::ScopedStyle rounding(ImGuiStyleVar_FrameRounding, 3.0f);
+            UI::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(28.0f, framePaddingY));
+
+            if constexpr (std::is_same<StringType, std::string>::value)
+            {
+                char searchBuffer[BuffSize]{};
+                strcpy_s<BuffSize>(searchBuffer, searchString.c_str());
+                if (ImGui::InputText(GenerateID(), searchBuffer, BuffSize))
+                {
+                    searchString = searchBuffer;
+                    modified = true;
+                }
+                else if (ImGui::IsItemDeactivatedAfterEdit())
+                {
+                    searchString = searchBuffer;
+                    modified = true;
+                }
+
+                searching = searchBuffer[0] != 0;
+            }
+            else
+            {
+                static_assert(std::is_same<decltype(&searchString[0]), char*>::value,
+                    "searchString paramenter must be std::string& or char*");
+
+                if (ImGui::InputText(GenerateID(), searchString, BuffSize))
+                {
+                    modified = true;
+                }
+                else if (ImGui::IsItemDeactivatedAfterEdit())
+                {
+                    modified = true;
+                }
+
+                searching = searchString[0] != 0;
+            }
+
+            if (grabFocus && *grabFocus)
+            {
+                if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)
+                    && !ImGui::IsAnyItemActive()
+                    && !ImGui::IsMouseClicked(0))
+                {
+                    ImGui::SetKeyboardFocusHere(-1);
+                }
+
+                if (ImGui::IsItemFocused())
+                    *grabFocus = false;
+            }
+
+            UI::DrawItemActivityOutline(3.0f, true, Colours::Theme::accent);
+            ImGui::SetItemAllowOverlap();
+
+            ImGui::SameLine(areaPosX + 5.0f);
+
+            if (layoutSuspended)
+                ImGui::ResumeLayout();
+
+            ImGui::BeginHorizontal(GenerateID(), ImGui::GetItemRectSize());
+            const ImVec2 iconSize(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight());
+
+            // Search icon
+            {
+                const float iconYOffset = framePaddingY - 3.0f;
+                UI::ShiftCursorY(iconYOffset);
+                UI::Image(EditorResources::SearchIcon, iconSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
+                UI::ShiftCursorY(-iconYOffset);
+
+                // Hint
+                if (!searching)
+                {
+                    UI::ShiftCursorY(-framePaddingY + 1.0f);
+                    UI::ScopedColour text(ImGuiCol_Text, Colours::Theme::textDarker);
+                    UI::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(0.0f, framePaddingY));
+                    ImGui::TextUnformatted(hint);
+                    UI::ShiftCursorY(-1.0f);
+                }
+            }
+
+            ImGui::Spring();
+
+            // Clear icon
+            if (searching)
+            {
+                const float spacingX = 4.0f;
+                const float lineHeight = ImGui::GetItemRectSize().y - framePaddingY / 2.0f;
+
+                if (ImGui::InvisibleButton(GenerateID(), ImVec2{ lineHeight, lineHeight }))
+                {
+                    if constexpr (std::is_same<StringType, std::string>::value)
+                        searchString.clear();
+                    else
+                        memset(searchString, 0, BuffSize);
+
+                    modified = true;
+                }
+
+                if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+                    ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+
+                UI::DrawButtonImage(EditorResources::ClearIcon, IM_COL32(160, 160, 160, 200),
+                    IM_COL32(170, 170, 170, 255),
+                    IM_COL32(160, 160, 160, 150),
+                    UI::RectExpanded(UI::GetItemRect(), -2.0f, -2.0f));
+
+                ImGui::Spring(-1.0f, spacingX * 2.0f);
+            }
+
+            ImGui::EndHorizontal();
+            UI::ShiftCursorY(-1.0f);
+            UI::PopID();
+            return modified;
+        }
+
+        static bool AssetSearchPopup(const char* ID, AssetType assetType, UniqueId64& selected, bool* cleared = nullptr, const char* hint = "Search Assets", ImVec2 size = ImVec2{ 250.0f, 350.0f });
+        static bool AssetSearchPopup(const char* ID, AssetType assetType, UniqueId64& selected, bool allowMemoryOnlyAssets, bool* cleared = nullptr, const char* hint = "Search Assets", ImVec2 size = ImVec2{ 250.0f, 350.0f });
+        static bool AssetSearchPopup(const char* ID, UniqueId64& selected, bool* cleared = nullptr, const char* hint = "Search Assets", ImVec2 size = ImVec2{ 250.0f, 350.0f }, std::initializer_list<AssetType> assetTypes = {});
+
+        static bool OptionsButton()
+        {
+            const bool clicked = ImGui::InvisibleButton("##options", ImVec2{ ImGui::GetFrameHeight(), ImGui::GetFrameHeight() });
+
+            const float spaceAvail = std::min(ImGui::GetItemRectSize().x, ImGui::GetItemRectSize().y);
+            const float desiredIconSize = 15.0f;
+            const float padding = std::max((spaceAvail - desiredIconSize) / 2.0f, 0.0f);
+
+            constexpr auto buttonColour = ImguiColors::Theme::text;
+            const uint8_t value = uint8_t(ImColor(buttonColour).Value.x * 255);
+            ImguiUtil::DrawButtonImage(EditorResources::GearIcon, IM_COL32(value, value, value, 200),
+                IM_COL32(value, value, value, 255),
+                IM_COL32(value, value, value, 150),
+                ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), -padding, -padding));
+            return clicked;
+        }
+    }; // Widgets
+
+    bool BeginPopup(const char* str_id, ImGuiWindowFlags flags)
+    {
+        bool opened = false;
+        if (ImGui::BeginPopup(str_id, flags))
+        {
+            opened = true;
+            // Fill background wiht nice gradient
+            const float padding = ImGui::GetStyle().WindowBorderSize;
+            const ImRect windowRect = ImguiUtil::RectExpanded(ImGui::GetCurrentWindow()->Rect(), -padding, -padding);
+            ImGui::PushClipRect(windowRect.Min, windowRect.Max, false);
+            const ImColor col1 = ImGui::GetStyleColorVec4(ImGuiCol_PopupBg);// Colours::Theme::backgroundPopup;
+            const ImColor col2 = ImguiUtil::ColorWithMultipliedValue(col1, 0.8f);
+            ImGui::GetWindowDrawList()->AddRectFilledMultiColor(windowRect.Min, windowRect.Max, col1, col1, col2, col2);
+            ImGui::GetWindowDrawList()->AddRect(windowRect.Min, windowRect.Max, ImguiUtil::ColorWithMultipliedValue(col1, 1.1f));
+            ImGui::PopClipRect();
+
+            // Popped in EndPopup()
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, IM_COL32(0, 0, 0, 80));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1.0f, 1.0f));
+        }
+
+        return opened;
+    }
+
+    void EndPopup()
+    {
+        ImGui::PopStyleVar(); // WindowPadding;
+        ImGui::PopStyleColor(); // HeaderHovered;
+        ImGui::EndPopup();
+    }
+
+    // MenuBar which allows you to specify its rectangle
+    bool BeginMenuBar(const ImRect& barRectangle)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+        /*if (!(window->Flags & ImGuiWindowFlags_MenuBar))
+            return false;*/
+
+        IM_ASSERT(!window->DC.MenuBarAppending);
+        ImGui::BeginGroup(); // Backup position on layer 0 // FIXME: Misleading to use a group for that backup/restore
+        ImGui::PushID("##menubar");
+
+        const ImVec2 padding = window->WindowPadding;
+
+        // We don't clip with current window clipping rectangle as it is already set to the area below. However we clip with window full rect.
+        // We remove 1 worth of rounding to Max.x to that text in long menus and small windows don't tend to display over the lower-right rounded area, which looks particularly glitchy.
+        ImRect bar_rect = ImguiUtil::RectOffset(barRectangle, 0.0f, padding.y);// window->MenuBarRect();
+        ImRect clip_rect(IM_ROUND(ImMax(window->Pos.x, bar_rect.Min.x + window->WindowBorderSize + window->Pos.x - 10.0f)), IM_ROUND(bar_rect.Min.y + window->WindowBorderSize + window->Pos.y),
+            IM_ROUND(ImMax(bar_rect.Min.x + window->Pos.x, bar_rect.Max.x - ImMax(window->WindowRounding, window->WindowBorderSize))), IM_ROUND(bar_rect.Max.y + window->Pos.y));
+
+        clip_rect.ClipWith(window->OuterRectClipped);
+        ImGui::PushClipRect(clip_rect.Min, clip_rect.Max, false);
+
+        // We overwrite CursorMaxPos because BeginGroup sets it to CursorPos (essentially the .EmitItem hack in EndMenuBar() would need something analogous here, maybe a BeginGroupEx() with flags).
+        window->DC.CursorPos = window->DC.CursorMaxPos = ImVec2(bar_rect.Min.x + window->Pos.x, bar_rect.Min.y + window->Pos.y);
+        window->DC.LayoutType = ImGuiLayoutType_Horizontal;
+        window->DC.NavLayerCurrent = ImGuiNavLayer_Menu;
+        window->DC.MenuBarAppending = true;
+        ImGui::AlignTextToFramePadding();
+        return true;
+    }
+
+    void EndMenuBar()
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return;
+        ImGuiContext& g = *GImGui;
+
+        // Nav: When a move request within one of our child menu failed, capture the request to navigate among our siblings.
+        if (ImGui::NavMoveRequestButNoResultYet() && (g.NavMoveDir == ImGuiDir_Left || g.NavMoveDir == ImGuiDir_Right) && (g.NavWindow->Flags & ImGuiWindowFlags_ChildMenu))
+        {
+            // Try to find out if the request is for one of our child menu
+            ImGuiWindow* nav_earliest_child = g.NavWindow;
+            while (nav_earliest_child->ParentWindow && (nav_earliest_child->ParentWindow->Flags & ImGuiWindowFlags_ChildMenu))
+                nav_earliest_child = nav_earliest_child->ParentWindow;
+            if (nav_earliest_child->ParentWindow == window && nav_earliest_child->DC.ParentLayoutType == ImGuiLayoutType_Horizontal && (g.NavMoveFlags & ImGuiNavMoveFlags_Forwarded) == 0)
+            {
+                // To do so we claim focus back, restore NavId and then process the movement request for yet another frame.
+                // This involve a one-frame delay which isn't very problematic in this situation. We could remove it by scoring in advance for multiple window (probably not worth bothering)
+                const ImGuiNavLayer layer = ImGuiNavLayer_Menu;
+                IM_ASSERT(window->DC.NavLayersActiveMaskNext & (1 << layer)); // Sanity check
+                ImGui::FocusWindow(window);
+                ImGui::SetNavID(window->NavLastIds[layer], layer, 0, window->NavRectRel[layer]);
+                g.NavDisableHighlight = true; // Hide highlight for the current frame so we don't see the intermediary selection.
+                g.NavDisableMouseHover = g.NavMousePosDirty = true;
+                ImGui::NavMoveRequestForward(g.NavMoveDir, g.NavMoveClipDir, g.NavMoveFlags, g.NavMoveScrollFlags); // Repeat
+            }
+        }
+
+        IM_MSVC_WARNING_SUPPRESS(6011); // Static Analysis false positive "warning C6011: Dereferencing NULL pointer 'window'"
+        // IM_ASSERT(window->Flags & ImGuiWindowFlags_MenuBar); // NOTE(Yan): Needs to be commented out because Jay
+        IM_ASSERT(window->DC.MenuBarAppending);
+        ImGui::PopClipRect();
+        ImGui::PopID();
+        window->DC.MenuBarOffset.x = window->DC.CursorPos.x - window->Pos.x; // Save horizontal position so next append can reuse it. This is kinda equivalent to a per-layer CursorPos.
+        g.GroupStack.back().EmitItem = false;
+        ImGui::EndGroup(); // Restore position on layer 0
+        window->DC.LayoutType = ImGuiLayoutType_Vertical;
+        window->DC.NavLayerCurrent = ImGuiNavLayer_Main;
+        window->DC.MenuBarAppending = false;
     }
 }

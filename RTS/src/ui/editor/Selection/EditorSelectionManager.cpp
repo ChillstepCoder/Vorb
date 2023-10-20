@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "EditorSelectionManager.h"
 
-void EditorSelectionManager::select(EditorSelectionContext contextID, UUID selectionID) {
+void EditorSelectionManager::select(EditorSelectionContext contextID, UniqueId64 selectionID) {
     auto& contextSelections = sContexts[contextID];
     if (std::find(contextSelections.begin(), contextSelections.end(), selectionID) != contextSelections.end())
         return;
@@ -16,7 +16,7 @@ void EditorSelectionManager::select(EditorSelectionContext contextID, UUID selec
     dispatchSelectionEvent(evnt);
 }
 
-bool EditorSelectionManager::isSelected(UUID selectionID) {
+bool EditorSelectionManager::isSelected(UniqueId64 selectionID) {
     for (const auto& [contextID, contextSelections] : sContexts) {
         if (std::find(contextSelections.begin(), contextSelections.end(), selectionID) != contextSelections.end()) {
             return true;
@@ -26,12 +26,12 @@ bool EditorSelectionManager::isSelected(UUID selectionID) {
     return false;
 }
 
-bool EditorSelectionManager::isSelected(EditorSelectionContext contextID, UUID selectionID) {
+bool EditorSelectionManager::isSelected(EditorSelectionContext contextID, UniqueId64 selectionID) {
     const auto& contextSelections = sContexts[contextID];
     return std::find(contextSelections.begin(), contextSelections.end(), selectionID) != contextSelections.end();
 }
 
-void EditorSelectionManager::deselect(UUID selectionID)
+void EditorSelectionManager::deselect(UniqueId64 selectionID)
 {
     for (auto& [contextID, contextSelections] : sContexts)
     {
@@ -48,7 +48,7 @@ void EditorSelectionManager::deselect(UUID selectionID)
     }
 }
 
-void EditorSelectionManager::deselect(EditorSelectionContext contextID, UUID selectionID) {
+void EditorSelectionManager::deselect(EditorSelectionContext contextID, UniqueId64 selectionID) {
     auto& contextSelections = sContexts[contextID];
     auto it = std::find(contextSelections.begin(), contextSelections.end(), selectionID);
     if (it == contextSelections.end())
@@ -85,7 +85,7 @@ void EditorSelectionManager::deselectAll(EditorSelectionContext contextID)
     contextSelections.clear();
 }
 
-UUID EditorSelectionManager::getSelection(EditorSelectionContext context, size_t index) {
+UniqueId64 EditorSelectionManager::getSelection(EditorSelectionContext context, size_t index) {
     auto& contextSelections = sContexts[context];
     assert(index >= 0 && index < contextSelections.size());
     return contextSelections[index];

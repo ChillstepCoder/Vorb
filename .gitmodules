@@ -1,9 +1,10 @@
 [submodule "RTS/dependencies/entt"]
 	path = RTS/dependencies/entt
 	url = https://github.com/skypjack/entt.git
-[submodule "include/Vorb/ui/imgui"]
-	path = include/Vorb/ui/imgui
-	url = https://github.com/ocornut/imgui.git
+[submodule "include/vendor/imgui"]
+	path = include/vendor/imgui
+#	url = https://github.com/ocornut/imgui.git
+    url = https://github.com/thedmd/imgui.git # feature/docking_layout_external
 [submodule "RTS/dependencies/ozz-animation"]
 	path = RTS/dependencies/ozz-animation
 	url = https://github.com/guillaumeblanc/ozz-animation.git

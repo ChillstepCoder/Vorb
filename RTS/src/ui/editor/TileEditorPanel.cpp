@@ -80,9 +80,8 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
 
             ImGui::TableHeadersRow();
 
-            ui32 ID = 250;
-            modelRepository.forEachRegisteredAsset([&](ModelDef* def, const AssetRegistryEntry& entry) {
-                ImGui::PushID(++ID);
+            modelRepository.forEachRegisteredAsset([&](ModelDef* def, const AssetMetadata& entry) {
+                ImGui::PushID(entry.getId() + 2500);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
                 // Name
                 ImGui::TableSetColumnIndex(0);
@@ -90,7 +89,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", entry.mID);
+                sprintf_s(label, "%04d", entry.getId());
                 ImGui::Text(label);
                 // Type
                 ImGui::TableSetColumnIndex(2);
@@ -110,7 +109,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_MODEL;
-                    result.second = entry.mID;
+                    result.second = entry.getId();
                 }
 
                 ImGui::PopID();
@@ -166,10 +165,9 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
             vg::DepthState::NONE.set();
             MaterialRenderer::bindMaterialShaderForRender(*previewShader);
 
-            ui32 ID = 250;
             ui32 previewIndex = 0;
-            materialRepository.forEachRegisteredAsset([&](MaterialDef* def, const AssetRegistryEntry& entry) {
-                ImGui::PushID(++ID);
+            materialRepository.forEachRegisteredAsset([&](MaterialDef* def, const AssetMetadata& entry) {
+                ImGui::PushID(entry.getId() + 5400);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
@@ -182,7 +180,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", entry.mID);
+                sprintf_s(label, "%04d", entry.getId());
                 ImGui::Text(label);
 
                 // Preview
@@ -192,7 +190,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 const ImVec2 dims(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x);
                 const bool visibleImage = ImGui::IsRectVisible(dims);
                 if (visibleImage && def) {
-                    const MaterialGpuData& material = materialRepository.getMaterialGpuData(entry.mID);
+                    const MaterialGpuData& material = materialRepository.getMaterialGpuData(entry.getId());
                     const VGTexture texture = renderMaterialPreview(previewShader, previewIndex++, material);
                     ImGui::Image((ImTextureID)texture, dims, uv0, uv1);
                 }
@@ -205,13 +203,13 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 if (def) {
                     if (ImGui::Button("Edit")) {
                         result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
-                        result.second = entry.mID;
+                        result.second = entry.getId();
                     }
                 }
                 else {
                     // Force load
                     if (ImGui::Button("UNLOADED")) {
-                        mForceLoadedAssets.addAssetHandle(materialRepository.getAssetHandle(entry.mID));
+                        mForceLoadedAssets.addAssetHandle(materialRepository.getAssetHandle(entry.getId()));
                     }
                 }
 
@@ -268,10 +266,9 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
             vg::DepthState::NONE.set();
             MaterialRenderer::bindMaterialShaderForRender(*previewShader);
 
-            ui32 ID = 250;
             ui32 previewIndex = 0;
-            grassRepository.forEachRegisteredAsset([&](TileGrassDef* def, const AssetRegistryEntry& entry) {
-                ImGui::PushID(++ID);
+            grassRepository.forEachRegisteredAsset([&](TileGrassDef* def, const AssetMetadata& entry) {
+                ImGui::PushID(entry.getId() + 9230);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
@@ -281,7 +278,7 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", entry.mID);
+                sprintf_s(label, "%04d", entry.getId());
                 ImGui::Text(label);
 
                 // Preview
@@ -304,7 +301,7 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_FOLIAGE;
-                    result.second = entry.mID;
+                    result.second = entry.getId();
                 }
 
                 ImGui::PopID();
@@ -359,10 +356,9 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
 
             ImGui::TableHeadersRow();
 
-            ui32 ID = 250;
             ui32 previewIndex = 0;
-            fishRepository.forEachRegisteredAsset([&](FishDef* def, const AssetRegistryEntry& entry) {
-                ImGui::PushID(++ID);
+            fishRepository.forEachRegisteredAsset([&](FishDef* def, const AssetMetadata& entry) {
+                ImGui::PushID(entry.getId() + 41224);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
@@ -372,14 +368,14 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", entry.mID);
+                sprintf_s(label, "%04d", entry.getId());
                 ImGui::Text(label);
 
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_FISH;
-                    result.second = entry.mID;
+                    result.second = entry.getId();
                 }
                 ImGui::PopID();
                 return false;
@@ -424,11 +420,10 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
 
             ImGui::TableHeadersRow();
 
-            ui32 ID = 2998;
             ui32 previewIndex = 0;
 
-            particleSystemRepository.forEachRegisteredAsset([&](ParticleSystemDef* asset, const AssetRegistryEntry& entry) {
-                ImGui::PushID(++ID);
+            particleSystemRepository.forEachRegisteredAsset([&](ParticleSystemDef* asset, const AssetMetadata& entry) {
+                ImGui::PushID(entry.getId() + 29983);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
                 // Name
@@ -438,14 +433,14 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
                 // ID
                 ImGui::TableSetColumnIndex(1);
                 char label[32];
-                sprintf_s(label, "%04d", entry.mID);
+                sprintf_s(label, "%04d", entry.getId());
                 ImGui::Text(label);
 
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
-                    result.second = entry.mID;
+                    result.second = entry.getId();
                 }
 
                 ImGui::PopID();

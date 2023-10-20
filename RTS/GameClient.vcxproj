@@ -286,6 +286,7 @@
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
+    <ClCompile Include="src\editor\EditorResources.cpp" />
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
     <ClCompile Include="src\effect\cli\CliEffectContext.cpp" />
     <ClCompile Include="src\effect\host\HostEffectContext.cpp" />
@@ -483,7 +484,7 @@
     <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
-    <ClCompile Include="src\util\UUID.cpp" />
+    <ClCompile Include="src\util\UniqueId64.cpp" />
     <ClCompile Include="src\weather\CloudMeshManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
@@ -604,6 +605,7 @@
     <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
+    <ClInclude Include="src\editor\EditorResources.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditorPanel.h" />
     <ClInclude Include="src\effect\cli\CliEffectContext.h" />
@@ -783,7 +785,7 @@
     <ClInclude Include="src\resources\asset\AssetHandle.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
-    <ClInclude Include="src\resources\asset\AssetRegistryEntry.h" />
+    <ClInclude Include="src\resources\asset\AssetMetadata.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\EffectRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
@@ -890,7 +892,7 @@
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\util\TypeHash.h" />
     <ClInclude Include="src\util\Utils.h" />
-    <ClInclude Include="src\util\UUID.h" />
+    <ClInclude Include="src\util\UniqueId64.h" />
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\world\Chunk.h" />

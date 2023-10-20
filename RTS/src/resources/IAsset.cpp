@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "IAsset.h"
 
+#include "resources/ResourceManager.h"
 #include "resources/asset/AssetHandleBundle.h"
 
 IAsset::IAsset(StrToken name, AssetID id) : mName(name), mID(id) {}
@@ -21,4 +22,25 @@ void IAsset::reserveDependencyCount(size_t count)
         mDependencies = std::make_unique<AssetHandleBundle>();
     }
     mDependencies->reserveCount(count);
+}
+
+StrToken AssetDescriptor::getName() const {
+    if (!isValid()) {
+        return StrToken();
+    }
+    return Services::ResourceManager::ref().getAssetRepository(assetType).getMetadata(id).mName;
+}
+
+std::filesystem::path AssetDescriptor::getPath() const {
+    if (!isValid()) {
+        return std::filesystem::path();
+    }
+    return Services::ResourceManager::ref().getAssetRepository(assetType).getMetadata(id).mFilePath.getStdPath();
+}
+
+IAssetRepositoryBase* AssetDescriptor::getRepo() const {
+    if (!isValid()) {
+        return nullptr;
+    }
+    return &Services::ResourceManager::ref().getAssetRepository(assetType);
 }

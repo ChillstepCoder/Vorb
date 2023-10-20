@@ -53,6 +53,7 @@ namespace vorb {
             //MouseEvent() = default;
             i32 x; ///< Mouse location on X axis (in pixels)
             i32 y; ///< Mouse location on Y axis (in pixels)
+            mutable bool wasHandled = false; ///< Set to true if you dont want any future events to process this
         };
 
         /// Mouse button event data
@@ -67,6 +68,7 @@ namespace vorb {
 
             MouseButton button; ///< The mouse button
             ui8 clicks; ///< Number of clicks done with this button (1 for single, 2 for double)
+            mutable bool wasHandled = false; ///< Set to true if you dont want any future events to process this
         };
 
         /// Mouse motion event data
@@ -81,6 +83,7 @@ namespace vorb {
 
             i32 dx; ///< Mouse displacement in X direction (in pixels)
             i32 dy; ///< Mouse displacement in Y direction (in pixels)
+            mutable bool wasHandled = false; ///< Set to true if you dont want any future events to process this
         };
 
         /// Mouse wheel scroll event data
@@ -99,6 +102,7 @@ namespace vorb {
             i32 dy; ///< Scroll value change in Y direction
             i32 sx; ///< Total scroll value in X direction
             i32 sy; ///< Total scroll value in Y direction
+            mutable bool wasHandled = false; ///< Set to true if you dont want any future events to process this
         };
 
         enum class MOUSE_EVENT_TYPE {

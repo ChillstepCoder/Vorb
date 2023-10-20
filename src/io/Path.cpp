@@ -86,6 +86,10 @@ bool isNiceFileFragment(const nString& fragment)
                 && (pos + 5) > fragment.length()));
 }
 
+vorb::io::Path::Path(const std::filesystem::path& p) {
+    *this = vio::Path(p.string());
+}
+
 /****************************************************************\
  * End adaptation from Boost::Filesystem portability functions. *
 \****************************************************************/

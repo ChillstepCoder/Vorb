@@ -13,7 +13,6 @@
 #include "options/DebugOptions.h"
 
 #include <imgui.h>
-#include <Vorb/ui/imgui/imgui_internal.h>
 #include <imgui_internal.h>
 
 

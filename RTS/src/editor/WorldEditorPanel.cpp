@@ -293,15 +293,15 @@ void WorldEditorPanel::tryRenderBrushSelect() const {
         if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Indent();
             ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-            brushRepo.forEachRegisteredAsset([&](BrushDef* brush, const AssetRegistryEntry& entry) {
+            brushRepo.forEachRegisteredAsset([&](BrushDef* brush, const AssetMetadata& entry) {
                 ImGui::TableNextColumn();
                 ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
                 ui32 strSize = 0;
                 char nameBuf[MAX_CHARS_IN_STRTOKEN];
                 entry.mName.toString(nameBuf, &strSize);
-                if (ImGui::RadioButton(nameBuf, mCurrentBrushSettings->brushId == entry.mID)) {
-                    mCurrentBrushSettings->brushId = entry.mID;
-                    mCurrentBrushSettings->activeBrush = BrushRepository::get().getAssetHandle(entry.mID);
+                if (ImGui::RadioButton(nameBuf, mCurrentBrushSettings->brushId == entry.getId())) {
+                    mCurrentBrushSettings->brushId = entry.getId();
+                    mCurrentBrushSettings->activeBrush = BrushRepository::get().getAssetHandle(entry.getId());
                 }
                 ImGui::TableNextColumn();
                 if (brush && brush->texture) {
@@ -345,10 +345,10 @@ void WorldEditorPanel::renderGrassEditUI() const {
 
     ImGui::Text("Tile select");
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    TileGrassRepository::get().forEachRegisteredAsset([this](TileGrassDef* def, const AssetRegistryEntry& entry) {
+    TileGrassRepository::get().forEachRegisteredAsset([this](TileGrassDef* def, const AssetMetadata& entry) {
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(entry.mName.toString().c_str(), mSelectedGrass == entry.mID)) {
-            mSelectedGrass = (ui32)entry.mID;
+        if (ImGui::RadioButton(entry.mName.toString().c_str(), mSelectedGrass == entry.getId())) {
+            mSelectedGrass = (ui32)entry.getId();
         }
         ImGui::TableNextColumn();
         return false;
@@ -366,7 +366,7 @@ void WorldEditorPanel::renderTileEditUI() const {
     ImGui::Text("Tile select");
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     size_t i = 0;
-    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetRegistryEntry& entry) {
+    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetMetadata& entry) {
         ImGui::TableNextColumn();
         if (ImGui::RadioButton(entry.mName.toString().c_str(), mSelectedTile == (ui32)i)) {
             mSelectedTile = (ui32)i;
@@ -382,7 +382,7 @@ void WorldEditorPanel::renderEntityEditUI() const {
     ImGui::Text("Select entity");
     const EntityDefinitionMap& entityDefs = Services::ResourceManager::ref().getEntityDefinitionRepository().getAllEntityDefinitions();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetRegistryEntry& entry) {
+    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetMetadata& entry) {
         ImGui::TableNextColumn();
         char buf[64];
         entry.mName.toString(buf, nullptr);

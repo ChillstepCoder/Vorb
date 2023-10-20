@@ -77,7 +77,7 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "util/panic.h"
 
 // Utils
-#include "util/UUID.h"
+#include "util/UniqueId64.h"
 #include "util/CommonUtil.h"
 #include "util/MathDefines.h"
 #include "util/MathUtil.hpp"

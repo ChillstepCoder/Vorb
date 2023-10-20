@@ -9,11 +9,13 @@ vui::KeyboardEventManager::KeyboardEventManager() {
         if (event.keyCode > 0 && event.keyCode < VKEY_HIGHEST_VALUE) {
             m_state[event.keyCode] = true;
         }
+        return false;
     });
     addKeyUpListener([this](const vui::KeyEvent& event) {
         if (event.keyCode > 0 && event.keyCode < VKEY_HIGHEST_VALUE) {
             m_state[event.keyCode] = false;
         }
+        return false;
     });
 
 }

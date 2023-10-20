@@ -387,7 +387,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         if (mAssetSelectorPopup) {
             if (mAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
                 assert(mSelectedEmitter);
-                mSelectedEmitter->mDefaultMaterialID = mAssetSelectorPopup->getResult().mID;
+                mSelectedEmitter->mDefaultMaterialID = mAssetSelectorPopup->getResult().getId();
                 mAssetSelectorPopup.reset();
                 changed = true;
             }
@@ -574,7 +574,7 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& em
 std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() {
     std::vector<nString> emitterNames;
     nString name; // Share memory
-    ParticleSystemRepository::get().forEachRegisteredAsset([&](ParticleSystemDef* def, const AssetRegistryEntry& entry) {
+    ParticleSystemRepository::get().forEachRegisteredAsset([&](ParticleSystemDef* def, const AssetMetadata& entry) {
         if (def) {
             name = def->getName().toString();
             for (auto& emitter : def->mEmitters) {
@@ -584,8 +584,8 @@ std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() 
         else {
             // Request asset load if needed
             ParticleSystemRepository& repo = ParticleSystemRepository::get();
-            if (!mAssetHandleBundle.hasAssetHandle(entry.mID, repo.getAssetType())) {
-                mAssetHandleBundle.addAssetHandle(repo.getAssetHandle(entry.mID));
+            if (!mAssetHandleBundle.hasAssetHandle(entry.getId(), repo.getAssetType())) {
+                mAssetHandleBundle.addAssetHandle(repo.getAssetHandle(entry.getId()));
             }
         }
         return false;

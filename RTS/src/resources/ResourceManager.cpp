@@ -27,12 +27,15 @@
 #include "resources/ParticleSystemRepository.h"
 #include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
+#include "editor/EditorResources.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
 #include <vorb/io/FileOps.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
+
+ResourceManager* sInstance = nullptr;
 
 struct ShaderData {
     nString vert;
@@ -51,6 +54,8 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
     mExtensionToAssetRepository[RepoClass::get().getAssetExtension()] = &RepoClass::get();
 
 ResourceManager::ResourceManager() {
+    assert(!sInstance);
+    sInstance = this;
     
     mIoManager = std::make_unique<vio::IOManager>();
     AssetLoader::initInstance();
@@ -85,7 +90,13 @@ ResourceManager::ResourceManager() {
 }
 
 ResourceManager::~ResourceManager() {
+    EditorResources::freeAllResources();
+    sInstance = nullptr;
+}
 
+ResourceManager& ResourceManager::get() {
+    assert(sInstance);
+    return *sInstance;
 }
 
 bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
@@ -212,12 +223,42 @@ void ResourceManager::addAssetToBundle(AssetHandleBundle& bundle, StrToken asset
     bundle.addAssetHandle(mAssetRepositories[e_cast(assetType)]->getAssetHandleBase(assetName));
 }
 
+AssetType ResourceManager::getAssetTypeForFilePath(const std::filesystem::path& path) {
+    StrToken extension(Utils::getExtension(path.string()));
+    IAssetRepositoryBase* repo = tryGetAssetRepositoryForFileExtension(extension);
+    if (!repo) {
+        return AssetType::NONE;
+    }
+    return repo->getAssetType();
+}
+
 IAssetRepositoryBase* ResourceManager::tryGetAssetRepositoryForFileExtension(StrToken extension) const {
     auto&& it = mExtensionToAssetRepository.find(extension);
     if (it == mExtensionToAssetRepository.end()) {
         return nullptr;
     }
     return it->second;
+}
+
+AssetDescriptor ResourceManager::registerOrGetRegisteredAsset(const std::filesystem::path& path) {
+    AssetType type = Services::ResourceManager::ref().getAssetTypeForFilePath(path);
+    if (type == AssetType::NONE) {
+        return AssetDescriptor();
+    }
+    IAssetRepositoryBase& repo = Services::ResourceManager::ref().getAssetRepository(type);
+    nString pathString = path.string();
+    std::string_view pathSV = Utils::getFilename(std::string_view(pathString.c_str(), pathString.size()));
+    StrToken assetName(pathSV.data(), pathSV.size());
+    if (!repo.isAssetRegistered(assetName)) {
+        repo.registerAsset(vio::Path(path));
+    }
+    return AssetDescriptor{ .id=repo.getAssetID(assetName), .assetType=type };
+}
+
+AssetMetadata ResourceManager::getAssetMetadata(AssetDescriptor desc) {
+    assert(desc.isValid());
+    IAssetRepositoryBase& repo = Services::ResourceManager::ref().getAssetRepository(desc.assetType);
+    return repo.getMetadata(desc.id);
 }
 
 void ResourceManager::gatherRecursive(const vio::Path& folderPath)
@@ -361,6 +402,17 @@ void ResourceManager::preloadFiles() {
     }
     LOG_INFO("Done");
 
+
+    LOG_INFO("Loading editor assets...");
+    // Editor resources
+    EditorResources::loadAllResources();
+    while (!EditorResources::isFullyLoaded()) {
+        loader.update();
+        Sleep(1);
+        RenderContext::getInstance().updateRenderThreadProcs();
+    }
+    LOG_INFO("Done");
+
     constexpr StrToken wildcard = CStrToken("*");
     for (ryml::ConstNodeRef child : preloadSeq.children()) {
         if (child.num_children() != 2) {
@@ -379,4 +431,5 @@ void ResourceManager::preloadFiles() {
             addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
         }
     }
+
 }

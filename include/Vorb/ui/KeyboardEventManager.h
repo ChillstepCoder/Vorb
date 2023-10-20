@@ -71,6 +71,7 @@ namespace vorb {
             ui16 scanCode; ///< Physical key code
             KeyModifiers mod; ///< Current modifiers
             ui32 repeatCount; ///< Number of times this event was repeated
+            mutable bool wasHandled = false; ///< Set to true if you dont want any future events to process this
         };
         
         /// Text event data

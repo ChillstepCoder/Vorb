@@ -16,7 +16,7 @@
 
 static char s_RenameBuffer[MAX_INPUT_BUFFER_LENGTH];
 
-ContentBrowserItem::ContentBrowserItem(ItemType type, UUID uuid, const std::string& name, VGTexture icon)
+ContentBrowserItem::ContentBrowserItem(ItemType type, UniqueId64 uuid, const std::string& name, VGTexture icon)
     : mType(type), mUUID(uuid), mFileName(name), mIcon(icon)
 {
     mDisplayName = mFileName;
@@ -395,7 +395,7 @@ void ContentBrowserItem::OnContextMenuOpen(CBItemActionResult& actionResult)
     RenderCustomContextItems();
 }
 
-ContentBrowserDirectory::ContentBrowserDirectory(const Ref<DirectoryInfo>& directoryInfo)
+ContentBrowserDirectory::ContentBrowserDirectory(const std::shared_ptr<DirectoryInfo>& directoryInfo)
     : ContentBrowserItem(ContentBrowserItem::ItemType::Directory, directoryInfo->Handle, directoryInfo->FilePath.filename().string(), EditorResources::FolderIcon), m_DirectoryInfo(directoryInfo)
 {
 }
@@ -477,8 +477,8 @@ bool ContentBrowserDirectory::Move(const std::filesystem::path& destination)
     return true;
 }
 
-ContentBrowserAsset::ContentBrowserAsset(const AssetMetadata& assetInfo, const Ref<Texture2D>& icon)
-    : ContentBrowserItem(ContentBrowserItem::ItemType::Asset, assetInfo.Handle, assetInfo.FilePath.stem().string(), icon), m_AssetInfo(assetInfo)
+ContentBrowserAsset::ContentBrowserAsset(AssetMetadata assetInfo, VGTexture icon)
+    : ContentBrowserItem(ContentBrowserItem::ItemType::Asset, assetInfo.getUUID(), assetInfo.getName(), icon), m_AssetInfo(assetInfo)
 {
 }
 

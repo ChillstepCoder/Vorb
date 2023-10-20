@@ -6,7 +6,7 @@
 #include "resources/AssetLoader.h"
 
 #include "resources/asset/AssetHandleBundle.h"
-#include "resources/asset/AssetRegistryEntry.h"
+#include "resources/asset/AssetMetadata.h"
 
 class AssetLoader;
 
@@ -22,11 +22,20 @@ public:
     virtual AssetType getAssetType() const = 0;
 
     // Called after every asset in the game has been registered
+    AssetID registerAsset(const vio::Path& filePath) {
+        // TODO remove string copy
+        return registerAsset(StrToken(filePath.getFileNameTrimOneExtension()), filePath);
+    }
+    virtual bool isAssetRegistered(StrToken name) const = 0;
+    virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
     virtual void onAllAssetTypesRegistered() {};
 
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
 
-    const std::vector<AssetRegistryEntry>& getAssetRegistry() const {
+    const AssetMetadata& getMetadata(AssetID id) {
+        return mAssetRegistry[id];
+    }
+    const std::vector<AssetMetadata>& getAssetRegistry() const {
         return mAssetRegistry;
     }
 
@@ -35,15 +44,15 @@ public:
 
     // Editor function which will register and create a default asset of this type
     virtual AssetHandleBasePtr editorTryAddNewAssetBase(StrToken name) = 0;
+    virtual AssetID getAssetID(StrToken assetName) const = 0;
 
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 
     // Virtual interfaces
-    virtual void loadAssetAsync(const AssetRegistryEntry& assetEntry) = 0;
+    virtual void loadAssetAsync(const AssetMetadata& assetEntry) = 0;
     virtual void fillAsset(AssetHandleBase& handle) = 0;
     virtual AssetHandleBasePtr makeAssetHandle() const = 0;
-    virtual AssetID getAssetID(StrToken assetName) const = 0;
 
     // ==================================================================
     // Asset friend functions
@@ -94,7 +103,7 @@ protected:
 
     vio::IOManager& mIoManager;
     std::map<StrToken, AssetID> mAssetLookup;
-    std::vector<AssetRegistryEntry> mAssetRegistry;
+    std::vector<AssetMetadata> mAssetRegistry;
     std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_int>>> mAssetRefCounts;
     std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_bool>>> mLoadedAssets;
     std::vector<AssetID> mFreeIDs;
@@ -102,6 +111,9 @@ protected:
     std::mutex mBeginLoadAssetMutex;
 };
 
+// TODO not thread safe due to editor register reallocating while game thread queries asset info
+// shared mutex?
+// wont affect live non editor builds
 template <IsAssetType T>
 class IAssetRepository : public IAssetRepositoryBase {
 public:
@@ -121,7 +133,7 @@ public:
     // Public interface
     // ==================================================================
     // If return true, break
-    void forEachLoadedOrUnloadedAsset(std::function<bool(T&, const AssetRegistryEntry& entry)> func) {
+    void forEachLoadedOrUnloadedAsset(std::function<bool(T&, const AssetMetadata& entry)> func) {
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             if (func(*mAssets[id], mAssetRegistry[id])) return;
         };
@@ -135,7 +147,7 @@ public:
         };
     }
     // If return true, break
-    void forEachRegisteredAsset(std::function<bool(T*, const AssetRegistryEntry& entry)> func) {
+    void forEachRegisteredAsset(std::function<bool(T*, const AssetMetadata& entry)> func) {
         for (AssetID id = 0; id < mAssets.size(); ++id) {
             if (mLoadedAssets[id]->load()) {
                 if (func(mAssets[id].get(), mAssetRegistry[id])) return;
@@ -197,11 +209,6 @@ public:
     StrToken getAssetName(AssetID id) const {
         return mAssetRegistry[id].mName;
     }
-    AssetID registerAsset(const vio::Path& filePath) {
-        // TODO remove string copy
-        return registerAsset(StrToken(filePath.getFileNameTrimOneExtension()), filePath);
-    }
-
     const T* tryGetLoadedOrUnloadedAsset(StrToken assetName) {
         auto&& it = mAssetLookup.find(assetName);
         if (it == mAssetLookup.end()) {
@@ -211,7 +218,9 @@ public:
     }
 
     // ALL assets must be registered before any are loaded, else we will have race conditions
-    AssetID registerAsset(StrToken name, const vio::Path& filePath) {
+    AssetID registerAsset(StrToken name, const vio::Path& filePath) override {
+        // Only allow registering on the render thread, for startup + imgui tools
+        ASSERT_RENDER_THREAD();
         LOG_INFO("Register {} {}", name.toString().c_str(), filePath.getCString());
 
         AssetID id = mAssets.size();
@@ -223,14 +232,14 @@ public:
             );
         }
         mAssetLookup[name] = id;
-        mAssetRegistry.emplace_back(AssetRegistryEntry{ .mName=name, .mFilePath=filePath, .mID=id});
+        mAssetRegistry.emplace_back(AssetMetadata{ .mFilePath=filePath, .mName=name, .mDescriptor=AssetDescriptor{.id=id, .assetType=getAssetType()}});
         mAssetRefCounts.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_int>>(0));
         mAssets.emplace_back(std::make_unique<T>(name, id));
         mLoadedAssets.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_bool>>(false));
         onRegisteredAsset(id);
         return id;
     }
-    inline bool isAssetRegistered(StrToken name) const {
+    inline bool isAssetRegistered(StrToken name) const override {
         return mAssetLookup.find(name) != mAssetLookup.end();
     }
 
@@ -269,10 +278,11 @@ public:
             AssetID id = mFreeIDs.back();
             mFreeIDs.pop_back();
             mAssetLookup[name] = id;
-            mAssetRegistry[id] = AssetRegistryEntry{ .mID = id, .mRequestedLoad = true /*Already loaded*/ };
-            mAssetRefCounts[id]->store(0); // 1?
+            mAssetRegistry[id] = AssetMetadata{ .mDescriptor=AssetDescriptor{.id =id, .assetType = getAssetType()}, .mRequestedLoad = true /*Already loaded*/};
+            mAssetRefCounts[id]->store(1); // Assets made this session will never go out of scope
             // Retain pointer stability by replacing previous asset directly
-            *mAssets[id] = T(name, id);
+            mAssets[id]->~T();  // Explicitly call the destructor
+            new (mAssets[id].get()) T(name, id);  // Use placement new to reinitialize
             mLoadedAssets[id]->store(true);
             return getAssetHandle(id);
         }
@@ -284,7 +294,7 @@ public:
         }
     }
     AssetHandlePtr<T> editorTryAddNewAsset(StrToken name) {
-       return static_unique_pointer_cast<T>(editorTryAddNewAssetBase(name));
+       return static_unique_pointer_cast<AssetHandle<T>>(editorTryAddNewAssetBase(name));
     }
     
     void deleteAsset(AssetID id) {
@@ -305,16 +315,17 @@ public:
     virtual bool saveAsset(AssetID assetId) = 0;
 
 private:
-    void loadAssetAsync(const AssetRegistryEntry& assetEntry) override {
-        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), assetEntry.mID, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), getUserData(assetEntry.mID));
+    void loadAssetAsync(const AssetMetadata& assetEntry) override {
+        const AssetID id = assetEntry.getId();
+        AssetLoader::getInstance().requestAssetLoad(getAssetLoadFunc(), getAssetLoadRenderProcessFunc(), id, mAssets[id].get(), assetEntry.mFilePath, mLoadedAssets[id].get(), getUserData(id));
     }
 
 protected:
     void loadAssetDependencies(AssetID id, AssetLoadFunc loadFunc, AssetLoadFunc renderPostFunc) {
-        const AssetRegistryEntry& assetEntry = mAssetRegistry[id];
+        const AssetMetadata& assetEntry = mAssetRegistry[id];
         AssetHandleBundle* dependencies = mAssets[id]->getDependencies();
         if (!dependencies) panic("Tried to add null dependencies to loadAssetDependencies");
-        AssetLoader::getInstance().requestAssetLoadWithDependencies(loadFunc, renderPostFunc, id, mAssets[assetEntry.mID].get(), assetEntry.mFilePath, mLoadedAssets[assetEntry.mID].get(), getUserData(), dependencies);
+        AssetLoader::getInstance().requestAssetLoadWithDependencies(loadFunc, renderPostFunc, id, mAssets[id].get(), assetEntry.mFilePath, mLoadedAssets[id].get(), getUserData(), dependencies);
     }
 
     virtual AssetLoadFunc getAssetLoadFunc() = 0;
@@ -380,6 +391,12 @@ bool AssetHandle<T>::isLoaded() const {
     if (mLoadedAsset != nullptr) [[likely]] { return true; }
     IAssetRepository<T>::getInstance().pollAsset(const_cast<AssetHandle<T>&>(*this));
     return mLoadedAsset != nullptr;
+}
+
+template <typename T>
+std::unique_ptr<AssetHandle<T>> AssetHandle<T>::clone() const {
+    AssetHandleBasePtr basePtr = IAssetRepository<T>::getInstance().getAssetHandleBase(mAssetID);
+    return static_unique_pointer_cast<AssetHandle<T>>(std::move(basePtr));
 }
 
 template <typename T>

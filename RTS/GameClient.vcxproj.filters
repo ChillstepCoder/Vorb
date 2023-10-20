@@ -849,10 +849,13 @@
     <ClCompile Include="src\ui\editor\Selection\EditorSelectionManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\util\UUID.cpp">
+    <ClCompile Include="src\util\UniqueId64.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\StringUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\editor\EditorResources.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2045,7 +2048,7 @@
     <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialogConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\resources\asset\AssetRegistryEntry.h">
+    <ClInclude Include="src\resources\asset\AssetMetadata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h">
@@ -2090,10 +2093,13 @@
     <ClInclude Include="src\ui\editor\Selection\EditorSelectionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\util\UUID.h">
+    <ClInclude Include="src\util\UniqueId64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\StringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\editor\EditorResources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

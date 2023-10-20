@@ -39,6 +39,7 @@
 typedef eventpp::EventDispatcher<eventType, void(paramType)> name##EventDispatcher; \
 typedef eventpp::ScopedRemover<eventpp::EventDispatcher<eventType, void(paramType)>> name##Listeners;
 
+
 #define EVENT_DISPATCHER_DEF(name) \
 name##EventDispatcher m##name##EventDispatcher; \
 public: \

@@ -3,6 +3,8 @@
 // TODO: Stdafx?
 #include "serialization/YmlSerializer.h"
 
+class IAssetRepositoryBase;
+
 #define DEFAULT_ASSET_CONSTRUCTOR(Type) \
     Type(StrToken name, AssetID id) : IAsset(name, id) {};
 
@@ -23,7 +25,8 @@ enum class AssetType : ui8 {
     Fish,
     MaterialShader,
     TileGrass,
-    COUNT
+    NONE,
+    COUNT = NONE
 };
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::Tile, "tile"sv },
@@ -76,16 +79,37 @@ protected:
 template <typename T>
 concept IsAssetType = std::is_base_of<IAsset, T>::value;
 
+// Represents a unique ID for an asset which can be used to look it up
 struct AssetDescriptor {
-    AssetID id = INVALID_ASSET_ID;
-    AssetType assetType = AssetType::COUNT;
 
+    bool isValid() const { return assetType != AssetType::NONE; }
+    
     bool operator<(const AssetDescriptor& other) const {
         if (id != other.id) return id < other.id;
         return assetType < other.assetType;
     }
 
-    UUID getUUID() {
-        return UUID((ui64)id ^ ((ui64)assetType << 32ull));
+    static AssetDescriptor fromUUID(UniqueId64 uid) {
+        AssetDescriptor descriptor;
+        descriptor.assetType = static_cast<AssetType>(uid >> 32ull);
+        // Indicates probably not a valid UUID
+        if (descriptor.assetType >= AssetType::NONE) {
+            LOG_WARN("Tried to convert an invalid asset UID {} to an AssetDescriptor", static_cast<ui64>(uid));
+            descriptor.assetType = AssetType::NONE;
+            return descriptor;
+        }
+        descriptor.id = uid & 0xffffffffull;
+        return descriptor;
     }
+
+    UniqueId64 getUUID() const {
+        return UniqueId64((ui64)id | ((ui64)assetType << 32ull));
+    }
+    StrToken getName() const;
+    std::filesystem::path getPath() const;
+    IAssetRepositoryBase* getRepo() const;
+
+    // Data
+    AssetID id = INVALID_ASSET_ID;
+    AssetType assetType = AssetType::NONE;
 };

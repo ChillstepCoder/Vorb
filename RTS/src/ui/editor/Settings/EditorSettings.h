@@ -5,7 +5,7 @@ struct EditorSettings {
     int contentBrowserThumbnailSize = 128;
 
     inline static EditorSettings& get() {
-        inline static EditorSettings sInstance;
+        static EditorSettings sInstance;
         return sInstance;
     }
 };

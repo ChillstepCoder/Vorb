@@ -7,6 +7,9 @@
 #include "resources/ResourceManager.h"
 
 #include "ui/editor/ContentBrowser/ContentBrowserItem.h"
+
+#include <Vorb/ui/InputDispatcher.h>
+
 enum class CONTENT_BROWSER_EVENT_TYPE {
     AssetCreated,
     AssetDeleted,
@@ -25,12 +28,12 @@ public:
         mSelections.assign(other.begin(), other.end());
     }
 
-    void copyFrom(const std::vector<UUID>& other)
+    void copyFrom(const std::vector<UniqueId64>& other)
     {
         mSelections.assign(other.begin(), other.end());
     }
 
-    void select(UUID handle)
+    void select(UniqueId64 handle)
     {
         if (isSelected(handle))
             return;
@@ -38,7 +41,7 @@ public:
         mSelections.push_back(handle);
     }
 
-    void deselect(UUID handle)
+    void deselect(UniqueId64 handle)
     {
         if (!isSelected(handle))
             return;
@@ -53,7 +56,7 @@ public:
         }
     }
 
-    bool isSelected(UUID handle) const
+    bool isSelected(UniqueId64 handle) const
     {
         for (const auto& selectedHandle : mSelections)
         {
@@ -70,23 +73,25 @@ public:
     }
 
     size_t selectionCount() const { return mSelections.size(); }
-    const UUID* selectionData() const { return mSelections.data(); }
+    const UniqueId64* selectionData() const { return mSelections.data(); }
 
-    UUID operator[](size_t index) const
+    UniqueId64 operator[](size_t index) const
     {
         assert(index >= 0 && index < mSelections.size());
         return mSelections[index];
     }
 
-    std::vector<UUID>::iterator begin() { return mSelections.begin(); }
-    std::vector<UUID>::const_iterator begin() const { return mSelections.begin(); }
-    std::vector<UUID>::iterator end() { return mSelections.end(); }
-    std::vector<UUID>::const_iterator end() const { return mSelections.end(); }
+    std::vector<UniqueId64>::iterator begin() { return mSelections.begin(); }
+    std::vector<UniqueId64>::const_iterator begin() const { return mSelections.begin(); }
+    std::vector<UniqueId64>::iterator end() { return mSelections.end(); }
+    std::vector<UniqueId64>::const_iterator end() const { return mSelections.end(); }
 
 private:
-    std::vector<UUID> mSelections;
+    std::vector<UniqueId64> mSelections;
 };
 
+// TODO: Just use std::vector
+// Why not just use std::vector and std::find... wrap it in mutex...
 struct ContentBrowserItemList
 {
     static constexpr size_t InvalidItem = std::numeric_limits<size_t>::max();
@@ -120,7 +125,7 @@ struct ContentBrowserItemList
         Items.clear();
     }
 
-    void erase(UUID handle)
+    void erase(UniqueId64 handle)
     {
         size_t index = findItem(handle);
         if (index == InvalidItem)
@@ -131,7 +136,7 @@ struct ContentBrowserItemList
         Items.erase(it);
     }
 
-    size_t findItem(UUID handle)
+    size_t findItem(UniqueId64 handle)
     {
         if (Items.size() == 0)
             return InvalidItem;
@@ -156,11 +161,23 @@ public:
     ContentBrowserPanel(std::filesystem::path rootDir);
 
     bool updateAndRender(f32 elapsedSec, bool* isOpen);
+    //virtual void OnEvent(Event& e) override;
+
+    ContentBrowserItemList& GetCurrentItems() { return m_CurrentItems; }
+
+    std::shared_ptr<DirectoryInfo> GetDirectory(const std::filesystem::path& filepath) const;
+
+
+public:
+    inline static std::mutex s_LockMutex; // ensure only one thread accessing file system content at once
+    //static ContentBrowserPanel& Get() { return *s_Instance; }
 
     STATIC_EVENT_LISTENER_FUNCS(ContentBrowser, AssetCreated, CONTENT_BROWSER_EVENT_TYPE::AssetCreated, ContentBrowserEvent&);
     STATIC_EVENT_LISTENER_FUNCS(ContentBrowser, AssetDeleted, CONTENT_BROWSER_EVENT_TYPE::AssetDeleted, ContentBrowserEvent&);
 
 private:
+    void initEvents();
+    UniqueId64 ProcessDirectory(const std::filesystem::path& directoryPath, const std::shared_ptr<DirectoryInfo>& parent);
 
     void ChangeDirectory(std::shared_ptr<DirectoryInfo>& directory);
     void OnBrowseBack();
@@ -172,6 +189,28 @@ private:
     void RenderBottomBar(float height);
 
     void Refresh();
+    void RefreshWithoutLock();
+
+    void UpdateInput();
+
+    bool OnKeyPressedEvent(const vui::KeyEvent& e);
+    bool OnMouseButtonPressed(const vui::MouseButtonEvent& e);
+
+    void PasteCopiedAssets();
+
+    void ClearSelections();
+
+    void RenderDeleteDialogue();
+    void RenderNewScriptDialogue();
+    void RemoveDirectory(std::shared_ptr<DirectoryInfo>& directory, bool removeFromParent = true);
+
+    void UpdateDropArea(const std::shared_ptr<DirectoryInfo>& target);
+
+    void SortItemList();
+
+    ContentBrowserItemList Search(const std::string& query, const std::shared_ptr<DirectoryInfo>& directoryInfo);
+
+    void OnFileSystemChanged(const std::vector<FileSystemChangedEvent>& events);
 
 private:
     // NOTE: This should only be used within the ContentBrowserPanel!
@@ -207,7 +246,7 @@ private:
     std::unordered_map<AssetType, VGTexture> m_AssetIconMap;
 
     ContentBrowserItemList m_CurrentItems;
-
+    std::filesystem::path mRootPath;
     std::shared_ptr<DirectoryInfo> m_CurrentDirectory;
     std::shared_ptr<DirectoryInfo> m_BaseDirectory;
     std::shared_ptr<DirectoryInfo> m_NextDirectory, m_PreviousDirectory;
@@ -216,7 +255,7 @@ private:
 
     SelectionStack m_CopiedAssets;
 
-    std::unordered_map<UUID, std::shared_ptr<DirectoryInfo>> m_Directories;
+    std::unordered_map<UniqueId64, std::shared_ptr<DirectoryInfo>> m_Directories;
 
     std::unordered_map<AssetType, std::function<void(const AssetDescriptor&)>> m_ItemActivationCallbacks;
     

@@ -13,7 +13,6 @@ public:
     VORB_NON_COPYABLE(CubemapDef);
     ~CubemapDef();
 
-
     VGTexture getTexture() const { return mTexture; }
     VGTexture getIrradianceTexture() const { return mIrradianceMap; }
     VGTexture getPrefilterMap() const { return mPrefilterMap; }

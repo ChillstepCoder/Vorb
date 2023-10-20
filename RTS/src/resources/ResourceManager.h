@@ -4,6 +4,7 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 
 #include "IAssetRepository.h"
+#include "filesystem/FileSystem.h"
 
 class AnimationRepository;
 class AnimMachineRepository;
@@ -26,6 +27,8 @@ class ResourceManager {
 public:
     ResourceManager();
     ~ResourceManager();
+
+    static ResourceManager& get();
 
     void setResourceRoot(const vio::Path& folderPath);
 
@@ -50,11 +53,15 @@ public:
 
     void addAssetToBundle(AssetHandleBundle& bundle, StrToken assetName, AssetType assetType);
 
+    AssetType getAssetTypeForFilePath(const std::filesystem::path& path);
     IAssetRepositoryBase* tryGetAssetRepositoryForFileExtension(StrToken extension) const;
     IAssetRepositoryBase& getAssetRepository(AssetType type) {
         assert((size_t)type < mAssetRepositories.size());
         return *mAssetRepositories[e_cast(type)];
     }
+    AssetDescriptor registerOrGetRegisteredAsset(const std::filesystem::path& path);
+    AssetMetadata getAssetMetadata(AssetDescriptor desc);
+
 private:
     void gatherRecursive(const vio::Path& folderPath);
     void preloadFiles();
