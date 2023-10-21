@@ -31,6 +31,12 @@ public:
     inline static AssetHandlePtr<TextureDef> shaderIcon;
     inline static AssetHandlePtr<TextureDef> floraIcon;
 
+    inline static AssetHandlePtr<TextureDef> backIcon;
+    inline static AssetHandlePtr<TextureDef> forwardIcon;
+    inline static AssetHandlePtr<TextureDef> clearIcon;
+    inline static AssetHandlePtr<TextureDef> gearIcon;
+    inline static AssetHandlePtr<TextureDef> searchIcon;
+
     inline static AssetHandlePtr<TextureDef> shadowTexture;
     inline static AssetHandlePtr<TextureDef> translucencyTexture;
 

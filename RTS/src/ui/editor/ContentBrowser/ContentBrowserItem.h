@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+#include "resources/asset/AssetMetadata.h"
+
 #define MAX_INPUT_BUFFER_LENGTH 128
 
 enum class ContentBrowserAction
@@ -132,7 +134,7 @@ public:
     ContentBrowserAsset(AssetMetadata assetInfo, VGTexture icon);
     virtual ~ContentBrowserAsset();
 
-    const AssetDescriptor& GetAssetInfo() const { return m_AssetInfo; }
+    const AssetMetadata& GetAssetInfo() const { return m_AssetInfo; }
 
     virtual void Delete() override;
     virtual bool Move(const std::filesystem::path& destination) override;
@@ -141,7 +143,7 @@ private:
     virtual void OnRenamed(const std::string& newName) override;
 
 private:
-    AssetDescriptor m_AssetInfo;
+    AssetMetadata m_AssetInfo;
 };
 
 using ContentBrowserItemPtr = std::shared_ptr<ContentBrowserItem>;

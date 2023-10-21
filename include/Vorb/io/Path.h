@@ -57,6 +57,10 @@ namespace vorb {
                 return m_path.c_str();
             }
 
+            std::string_view getStringView() const {
+                return std::string_view(m_path.data(), m_path.size());
+            }
+
             /// @return True if this path has an empty value
             bool isNull() const;
             /// @return True if this path is well-formed

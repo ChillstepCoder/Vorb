@@ -59,7 +59,7 @@ public:
 //    static fs::path openFolderDialog(const char* initialFolder = "");
 //    static fs::path saveFileDialog(const char* filter = "All\0*.*\0");
 //
-//    static fs::path getPersistentStoragePath();
+    static fs::path getPersistentStoragePath();
 //
 //    static void skipNextFileSystemChange();
 //

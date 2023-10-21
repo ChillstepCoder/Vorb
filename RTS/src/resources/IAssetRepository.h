@@ -22,17 +22,24 @@ public:
     virtual AssetType getAssetType() const = 0;
 
     // Called after every asset in the game has been registered
-    AssetID registerAsset(const vio::Path& filePath) {
+    AssetID registerAssetPath(const vio::Path& filePath) {
         // TODO remove string copy
         return registerAsset(StrToken(filePath.getFileNameTrimOneExtension()), filePath);
     }
     virtual bool isAssetRegistered(StrToken name) const = 0;
+    virtual AssetID tryGetRegisteredAssetID(StrToken name) const = 0;
     virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
     virtual void onAllAssetTypesRegistered() {};
 
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
 
-    const AssetMetadata& getMetadata(AssetID id) {
+    AssetMetadata tryGetMetadata(StrToken name) const {
+        if (AssetID id = tryGetRegisteredAssetID(name)) {
+            return getMetadata(id);
+        }
+        return AssetMetadata();
+    }
+    const AssetMetadata& getMetadata(AssetID id) const {
         return mAssetRegistry[id];
     }
     const std::vector<AssetMetadata>& getAssetRegistry() const {
@@ -241,6 +248,11 @@ public:
     }
     inline bool isAssetRegistered(StrToken name) const override {
         return mAssetLookup.find(name) != mAssetLookup.end();
+    }
+    inline AssetID tryGetRegisteredAssetID(StrToken name) const override {
+        auto&& it = mAssetLookup.find(name);
+        if (it == mAssetLookup.end()) return INVALID_ASSET_ID;
+        return it->second;
     }
 
     AssetHandleBundle reloadAllLoadedAssets() {

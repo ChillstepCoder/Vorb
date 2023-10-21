@@ -5,16 +5,17 @@
 enum class EDITOR_SELECTION_EVENT_TYPE {
     SelectionChanged,
 };
+
+enum class EditorSelectionContext : ui8 {
+    Global = 0, ContentBrowser
+};
+
 struct EditorSelectionEvent {
     UniqueId64 selectionID;
     EditorSelectionContext context;
     bool didSelect;
 };
 EVENT_DISPATCHER_TYPE(EditorSelectionManager, EDITOR_SELECTION_EVENT_TYPE, EditorSelectionEvent&);
-
-enum class EditorSelectionContext {
-    Global = 0, ContentBrowser
-};
 
 // Static - based on Hazel
 class EditorSelectionManager {

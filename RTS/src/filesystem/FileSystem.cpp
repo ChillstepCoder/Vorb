@@ -2,6 +2,7 @@
 #include "FileSystem.h"
 
 #include <windows.h>
+#include <Shlobj.h>
 
 // Mostly from https://github.com/StudioCherno/Hazel/blob/master/Hazel/src/Hazel/Utilities/FileSystem.cpp
 
@@ -170,4 +171,22 @@ std::filesystem::path FileSystem::getUniqueFileName(const std::filesystem::path&
     };
 
     return checkID(checkID);
+}
+
+fs::path FileSystem::getPersistentStoragePath() {
+    static std::filesystem::path s_PersistentStoragePath;
+
+    if (!s_PersistentStoragePath.empty())
+        return s_PersistentStoragePath;
+
+    PWSTR roamingFilePath;
+    HRESULT result = SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DEFAULT, NULL, &roamingFilePath);
+    assert(result == S_OK && "Could not open roaming");
+    s_PersistentStoragePath = roamingFilePath;
+    s_PersistentStoragePath /= "vorb";
+
+    if (!std::filesystem::exists(s_PersistentStoragePath))
+        std::filesystem::create_directory(s_PersistentStoragePath);
+
+    return s_PersistentStoragePath;
 }

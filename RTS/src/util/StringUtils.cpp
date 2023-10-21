@@ -74,8 +74,18 @@ namespace Utils {
         }
 
     }
-
+    // TODO OPTIMIZE
     std::string_view getFilename(const std::string_view filepath)
+    {
+        const std::vector<std::string> parts = splitString(filepath, "/\\");
+
+        if (parts.size() > 0)
+            return parts[parts.size() - 1];
+
+        return "";
+    }
+    // TODO OPTIMIZE
+    std::string getFilename(const std::string& filepath)
     {
         const std::vector<std::string> parts = splitString(filepath, "/\\");
 
@@ -165,25 +175,29 @@ namespace Utils {
         return str;
     }
 
-    std::string toLower(const std::string_view& string)
-    {
-        std::string result;
-        for (const auto& character : string)
-        {
-            result += std::tolower(character);
-        }
+    
+    //OLD
+    //std::string toLower(const std::string_view& string)
+    //{
+    //    std::string result;
+    //    for (const auto& character : string)
+    //    {
+    //        result += std::tolower(character);
+    //    }
 
+    //    return result;
+    //}
+    //NEW
+    std::string toLower(const std::string_view& string) {
+        std::string result(string);
+        std::ranges::transform(result, result.begin(), ::tolower);
         return result;
     }
 
     std::string toUpper(const std::string_view& string)
     {
-        std::string result;
-        for (const auto& character : string)
-        {
-            result += std::toupper(character);
-        }
-
+        std::string result(string);
+        std::ranges::transform(result, result.begin(), ::toupper);
         return result;
     }
 

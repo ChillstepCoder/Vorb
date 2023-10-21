@@ -13,9 +13,12 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+static bool s_ActivateSearchWidget = false;
+
 // Modified impl of StudioCherno/Hazel browser
 ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootPath(rootDir) {
-    //s_Instance = this;
+	assert(!sInstance);
+	sInstance = this;
 
     m_AssetIconMap[AssetType::Tile] = EditorResources::tileIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::ParticleSystem] = EditorResources::psysIcon->getLoadedAsset().getTextureHandle();
@@ -336,6 +339,20 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
     ImGui::End();
 }
 
+std::shared_ptr<DirectoryInfo> ContentBrowserPanel::GetDirectory(const std::filesystem::path& filepath) const
+{
+    if (filepath.string() == "" || filepath.string() == ".")
+        return m_BaseDirectory;
+
+    for (const auto& [handle, directory] : m_Directories)
+    {
+        if (directory->FilePath == filepath)
+            return directory;
+    }
+
+    return nullptr;
+}
+
 void ContentBrowserPanel::RenderDirectoryHierarchy(std::shared_ptr<DirectoryInfo>& directory)
 {
 	std::string name = directory->FilePath.filename().string();
@@ -525,7 +542,7 @@ void ContentBrowserPanel::RenderTopBar(float height)
 				return clicked;
 			};
 
-			if (contenBrowserButton("##back", EditorResources::BackIcon))
+			if (contenBrowserButton("##back", EditorResources::backIcon->getLoadedAsset().getTextureHandle()))
 			{
 				OnBrowseBack();
 			}
@@ -533,7 +550,7 @@ void ContentBrowserPanel::RenderTopBar(float height)
 
 			ImGui::Spring(-1.0f, edgeOffset);
 
-			if (contenBrowserButton("##forward", EditorResources::ForwardIcon))
+			if (contenBrowserButton("##forward", EditorResources::forwardIcon->getLoadedAsset().getTextureHandle()))
 			{
 				OnBrowseForward();
 			}
@@ -631,7 +648,7 @@ void ContentBrowserPanel::RenderTopBar(float height)
 		ImguiUtil::SetTooltip("Content Browser settings");
 
 
-		if (ImguiUtil::BeginPopup("ContentBrowserSettings"))
+		if (ImguiUtil::BeginPopup("ContentBrowserSettings", ImGuiWindowFlags_None))
 		{
 			auto& editorSettings = EditorSettings::get();
 
@@ -651,7 +668,6 @@ void ContentBrowserPanel::RenderTopBar(float height)
 	ImGui::EndChild();
 }
 
-std::mutex ContentBrowserPanel::s_LockMutex;
 void ContentBrowserPanel::RenderItems()
 {
 	m_IsAnyItemHovered = false;
@@ -880,7 +896,6 @@ void ContentBrowserPanel::UpdateInput()
 		Refresh();
 }
 
-static bool s_ActivateSearchWidget = false;
 bool ContentBrowserPanel::OnKeyPressedEvent(const vui::KeyEvent& e)
 {
     if (!m_IsContentBrowserFocused)
@@ -1004,6 +1019,65 @@ bool ContentBrowserPanel::OnMouseButtonPressed(const vui::MouseButtonEvent& e)
     return handled;
 }
 
+void ContentBrowserPanel::PasteCopiedAssets()
+{
+    if (m_CopiedAssets.selectionCount() == 0)
+        return;
+
+    auto GetUniquePath = [](const std::filesystem::path& fp)
+    {
+        int counter = 0;
+        auto checkFileName = [&counter, &fp](auto checkFileName) -> std::filesystem::path
+        {
+            ++counter;
+            const std::string counterStr = [&counter] {
+                if (counter < 10)
+                    return "0" + std::to_string(counter);
+                else
+                    return std::to_string(counter);
+            }();
+
+            std::string basePath = Utils::removeExtension(fp.string()) + "_" + counterStr + fp.extension().string();
+            if (std::filesystem::exists(basePath))
+                return checkFileName(checkFileName);
+            else
+                return std::filesystem::path(basePath);
+        };
+
+        return checkFileName(checkFileName);
+    };
+
+    for (UniqueId64 copiedAsset : m_CopiedAssets)
+    {
+        size_t assetIndex = m_CurrentItems.findItem(copiedAsset);
+
+        if (assetIndex == ContentBrowserItemList::InvalidItem)
+            continue;
+
+        const auto& item = m_CurrentItems[assetIndex];
+        auto originalFilePath = mRootPath;
+
+        if (item->GetType() == ContentBrowserItem::ItemType::Asset)
+        {
+            originalFilePath /= static_pointer_cast<ContentBrowserAsset>(item)->GetAssetInfo().mFilePath.getStdPath();
+            auto filepath = GetUniquePath(originalFilePath);
+            assert(!std::filesystem::exists(filepath));
+            std::filesystem::copy_file(originalFilePath, filepath);
+        }
+        else
+        {
+            originalFilePath /= static_pointer_cast<ContentBrowserDirectory>(item)->GetDirectoryInfo()->FilePath;
+            auto filepath = GetUniquePath(originalFilePath);
+            assert(!std::filesystem::exists(filepath));
+            std::filesystem::copy(originalFilePath, filepath, std::filesystem::copy_options::recursive);
+        }
+    }
+
+    RefreshWithoutLock();
+    EditorSelectionManager::deselectAll();
+    m_CopiedAssets.clear();
+}
+
 void ContentBrowserPanel::ClearSelections()
 {
 	std::vector<UniqueId64> selectedItems = EditorSelectionManager::getSelections(EditorSelectionContext::ContentBrowser);
@@ -1101,62 +1175,62 @@ void ContentBrowserPanel::RenderDeleteDialogue()
 		ImGui::SameLine();
 
 		ImGui::SetItemDefaultFocus();
-		if (ImGui::Button("No", ImVec2(buttonWidth, 0.0f)) || (leftButtonHovered && Input::IsKeyDown(KeyCode::Enter)))
+		if (ImGui::Button("No", ImVec2(buttonWidth, 0.0f)) || (leftButtonHovered && vui::InputDispatcher::key.isKeyPressed(VKEY_KP_ENTER)))
 			ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();
 	}
 }
 
-void ContentBrowserPanel::RenderNewScriptDialogue()
-{
-	static constexpr size_t MaxClassNameLength = 64 + 1;
-	static constexpr size_t MaxClassNamespaceLength = 64 + 1;
-	static char s_ScriptNameBuffer[MaxClassNameLength]{ 0 };
-	static char s_ScriptNamespaceBuffer[MaxClassNamespaceLength]{ 0 };
-
-	ImguiUtil::ScopedStyle framePadding(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 6.0f));
-
-	ImGui::SetNextWindowSize(ImVec2(300.0f, 0.0f));
-	if (ImGui::BeginPopupModal("New Script", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
-	{
-		ImGui::SetNextItemWidth(-1);
-		ImGui::InputTextWithHint("##ScriptNamespace", Project::GetActive()->GetConfig().DefaultNamespace.c_str(), s_ScriptNamespaceBuffer, MaxClassNamespaceLength);
-
-		ImGui::SetNextItemWidth(-1);
-		ImGui::InputTextWithHint("##ScriptName", "Class Name", s_ScriptNameBuffer, MaxClassNameLength);
-
-		ImGui::Separator();
-
-		const bool fileAlreadyExists = FileSystem::Exists(Project::GetAssetDirectory() / m_CurrentDirectory->FilePath / (std::string(s_ScriptNameBuffer) + ".cs"));
-		ImGui::BeginDisabled(fileAlreadyExists);
-		if (ImGui::Button("Create"))
-		{
-			if (strlen(s_ScriptNamespaceBuffer) == 0)
-				strcpy(s_ScriptNamespaceBuffer, Project::GetActive()->GetConfig().DefaultNamespace.c_str());
-
-			if (strlen(s_ScriptNameBuffer) > 0)
-			{
-				CreateAsset<ScriptFileAsset>(std::string(s_ScriptNameBuffer) + ".cs", s_ScriptNamespaceBuffer, s_ScriptNameBuffer);
-				ImGui::CloseCurrentPopup();
-			}
-		}
-		ImGui::EndDisabled();
-
-		ImGui::SameLine();
-
-		if (ImGui::Button("Close"))
-			ImGui::CloseCurrentPopup();
-
-		ImGui::EndPopup();
-	}
-
-	if (!ImGui::IsPopupOpen("New Script") && strlen(s_ScriptNameBuffer) > 0)
-	{
-		memset(s_ScriptNameBuffer, 0, MaxClassNameLength);
-		memset(s_ScriptNamespaceBuffer, 0, MaxClassNamespaceLength);
-	}
-}
+//void ContentBrowserPanel::RenderNewScriptDialogue()
+//{
+//	static constexpr size_t MaxClassNameLength = 64 + 1;
+//	static constexpr size_t MaxClassNamespaceLength = 64 + 1;
+//	static char s_ScriptNameBuffer[MaxClassNameLength]{ 0 };
+//	static char s_ScriptNamespaceBuffer[MaxClassNamespaceLength]{ 0 };
+//
+//	ImguiUtil::ScopedStyle framePadding(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 6.0f));
+//
+//	ImGui::SetNextWindowSize(ImVec2(300.0f, 0.0f));
+//    if (ImGui::BeginPopupModal("New Script", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+//    {
+//        ImGui::SetNextItemWidth(-1);
+//        ImGui::InputTextWithHint("##ScriptNamespace", Project::GetActive()->GetConfig().DefaultNamespace.c_str(), s_ScriptNamespaceBuffer, MaxClassNamespaceLength);
+//
+//        ImGui::SetNextItemWidth(-1);
+//        ImGui::InputTextWithHint("##ScriptName", "Class Name", s_ScriptNameBuffer, MaxClassNameLength);
+//
+//        ImGui::Separator();
+//
+//        const bool fileAlreadyExists = FileSystem::Exists(Project::GetAssetDirectory() / m_CurrentDirectory->FilePath / (std::string(s_ScriptNameBuffer) + ".cs"));
+//        ImGui::BeginDisabled(fileAlreadyExists);
+//        if (ImGui::Button("Create"))
+//        {
+//            if (strlen(s_ScriptNamespaceBuffer) == 0)
+//                strcpy(s_ScriptNamespaceBuffer, Project::GetActive()->GetConfig().DefaultNamespace.c_str());
+//
+//            if (strlen(s_ScriptNameBuffer) > 0)
+//            {
+//                CreateAsset<ScriptFileAsset>(std::string(s_ScriptNameBuffer) + ".cs", s_ScriptNamespaceBuffer, s_ScriptNameBuffer);
+//                ImGui::CloseCurrentPopup();
+//            }
+//        }
+//        ImGui::EndDisabled();
+//
+//        ImGui::SameLine();
+//
+//        if (ImGui::Button("Close"))
+//            ImGui::CloseCurrentPopup();
+//
+//        ImGui::EndPopup();
+//    }
+//
+//    if (!ImGui::IsPopupOpen("New Script") && strlen(s_ScriptNameBuffer) > 0)
+//    {
+//        memset(s_ScriptNameBuffer, 0, MaxClassNameLength);
+//        memset(s_ScriptNamespaceBuffer, 0, MaxClassNamespaceLength);
+//    }
+//}
 
 void ContentBrowserPanel::RemoveDirectory(std::shared_ptr<DirectoryInfo>& directory, bool removeFromParent)
 {
@@ -1175,20 +1249,16 @@ void ContentBrowserPanel::RemoveDirectory(std::shared_ptr<DirectoryInfo>& direct
 	m_Directories.erase(m_Directories.find(directory->Handle));
 }
 
-void ContentBrowserPanel::UpdateDropArea(const std::shared_ptr<DirectoryInfo>& target)
-{
-	if (target->Handle != m_CurrentDirectory->Handle && ImGui::BeginDragDropTarget())
-	{
+void ContentBrowserPanel::UpdateDropArea(const std::shared_ptr<DirectoryInfo>& target) {
+	if ((target->Handle != m_CurrentDirectory->Handle) && ImGui::BeginDragDropTarget()) {
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("asset_payload");
-
-		if (payload)
-		{
-			uint32_t count = payload->DataSize / sizeof(AssetHandle);
+		if (payload) {
+			uint32_t count = payload->DataSize / sizeof(UniqueId64);
 
 			for (uint32_t i = 0; i < count; i++)
 			{
-				AssetHandle assetHandle = *(((AssetHandle*)payload->Data) + i);
-				size_t index = m_CurrentItems.FindItem(assetHandle);
+				UniqueId64 assetHandle = *(((UniqueId64*)payload->Data) + i);
+				size_t index = m_CurrentItems.findItem(assetHandle);
 				if (index != ContentBrowserItemList::InvalidItem)
 				{
 					m_CurrentItems[index]->Move(target->FilePath);
@@ -1206,7 +1276,7 @@ void ContentBrowserPanel::SortItemList()
 	std::sort(m_CurrentItems.begin(), m_CurrentItems.end(), [](const std::shared_ptr<ContentBrowserItem>& item1, const std::shared_ptr<ContentBrowserItem>& item2)
 	{
 		if (item1->GetType() == item2->GetType())
-			return Utils::ToLower(item1->GetName()) < Utils::ToLower(item2->GetName());
+			return Utils::toLower(item1->GetName()) < Utils::toLower(item2->GetName());
 
 		return (uint16_t)item1->GetType() < (uint16_t)item2->GetType();
 	});
@@ -1215,13 +1285,13 @@ void ContentBrowserPanel::SortItemList()
 ContentBrowserItemList ContentBrowserPanel::Search(const std::string& query, const std::shared_ptr<DirectoryInfo>& directoryInfo)
 {
 	ContentBrowserItemList results;
-	std::string queryLowerCase = Utils::ToLower(query);
+	std::string queryLowerCase = Utils::toLower(query);
 
 	for (auto& [handle, subdir] : directoryInfo->SubDirectories)
 	{
 		std::string subdirName = subdir->FilePath.filename().string();
 		if (subdirName.find(queryLowerCase) != std::string::npos)
-			results.Items.push_back(std::shared_ptr<ContentBrowserDirectory>::Create(subdir));
+			results.Items.push_back(std::make_shared<ContentBrowserDirectory>(subdir));
 
 		ContentBrowserItemList list = Search(query, subdir);
 		results.Items.insert(results.Items.end(), list.Items.begin(), list.Items.end());
@@ -1229,11 +1299,14 @@ ContentBrowserItemList ContentBrowserPanel::Search(const std::string& query, con
 
 	for (auto& assetHandle : directoryInfo->Assets)
 	{
-		auto& asset = Project::GetEditorAssetManager()->GetMetadata(assetHandle);
-		std::string filename = Utils::ToLower(asset.FilePath.filename().string());
+		const AssetMetadata asset = ResourceManager::get().getAssetMetadata(assetHandle);
+		const std::string filename = Utils::toLower(Utils::getFilename(asset.mFilePath.getStringView()));
 
-		if (filename.find(queryLowerCase) != std::string::npos)
-			results.Items.push_back(std::shared_ptr<ContentBrowserAsset>::Create(asset, m_AssetIconMap.find(asset.FilePath.extension().string()) != m_AssetIconMap.end() ? m_AssetIconMap[asset.FilePath.extension().string()] : EditorResources::FileIcon));
+		if (filename.find(queryLowerCase) != std::string::npos) {
+			const AssetType assetType = ResourceManager::get().getAssetTypeForFilePath(asset.mFilePath.getStdPath());
+			const VGTexture icon = m_AssetIconMap.find(assetType) != m_AssetIconMap.end() ? m_AssetIconMap[assetType] : EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
+			results.Items.push_back(std::make_shared<ContentBrowserAsset>(asset, icon));
+		}
 	}
 
 	return results;
@@ -1251,11 +1324,14 @@ void ContentBrowserPanel::OnFileSystemChanged(const std::vector<FileSystemChange
 		if (e.Action != FileSystemAction::Added)
 			continue;
 
-		AssetHandle handle = 0;
+		UniqueId64 handle;
 
 		if (!e.IsDirectory)
 		{
-			handle = Project::GetEditorAssetManager()->GetAssetHandleFromFilePath(e.FilePath);
+			AssetMetadata assetData = ResourceManager::get().tryGetAssetMetadataForPath(e.FilePath);
+			if (assetData.isValid()) {
+				handle = assetData.getUUID();
+			}
 		}
 		else
 		{
@@ -1266,13 +1342,13 @@ void ContentBrowserPanel::OnFileSystemChanged(const std::vector<FileSystemChange
 		if (handle == 0)
 			continue;
 
-		size_t itemIndex = m_CurrentItems.FindItem(handle);
+		size_t itemIndex = m_CurrentItems.findItem(handle);
 
 		if (itemIndex == ContentBrowserItemList::InvalidItem)
 			continue;
 
 		auto& item = m_CurrentItems[itemIndex];
-		EditorSelectionManager::Select(EditorSelectionContext::ContentBrowser, handle);
+		EditorSelectionManager::select(EditorSelectionContext::ContentBrowser, handle);
 		break;
 	}
 }

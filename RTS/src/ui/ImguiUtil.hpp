@@ -6,8 +6,17 @@
 
 #include "ui/editor/ImguiColors.h"
 #include "resources/asset/AssetMetadata.h"
+#include "editor/EditorResources.h"
 
 namespace ImguiUtil {
+
+    inline const char* GenerateID() {
+        static uint32_t s_Counter = 0;
+        static char s_IDBuffer[16] = "##";
+        static char s_LabelIDBuffer[1024];
+        _itoa_s(s_Counter++, s_IDBuffer + 2, sizeof(s_IDBuffer) - 2, 16);
+        return s_IDBuffer;
+    }
 
     // https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
     template <typename T>
@@ -875,14 +884,14 @@ namespace ImguiUtil {
         template<uint32_t BuffSize = 256, typename StringType>
         static bool SearchWidget(StringType& searchString, const char* hint = "Search...", bool* grabFocus = nullptr)
         {
-            PushID();
+            ImGui::PushID(GenerateID());
 
             ShiftCursorY(1.0f);
 
             const bool layoutSuspended = []
             {
                 ImGuiWindow* window = ImGui::GetCurrentWindow();
-                if (window->DC.CurrentLayout)
+                if (window->DC.LayoutType)
                 {
                     ImGui::SuspendLayout();
                     return true;
@@ -896,8 +905,8 @@ namespace ImguiUtil {
             const float areaPosX = ImGui::GetCursorPosX();
             const float framePaddingY = ImGui::GetStyle().FramePadding.y;
 
-            UI::ScopedStyle rounding(ImGuiStyleVar_FrameRounding, 3.0f);
-            UI::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(28.0f, framePaddingY));
+            ImguiUtil::ScopedStyle rounding(ImGuiStyleVar_FrameRounding, 3.0f);
+            ImguiUtil::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(28.0f, framePaddingY));
 
             if constexpr (std::is_same<StringType, std::string>::value)
             {
@@ -946,7 +955,7 @@ namespace ImguiUtil {
                     *grabFocus = false;
             }
 
-            UI::DrawItemActivityOutline(3.0f, true, Colours::Theme::accent);
+            ImguiUtil::DrawItemActivityOutline(3.0f, true, ImguiColors::Theme::accent);
             ImGui::SetItemAllowOverlap();
 
             ImGui::SameLine(areaPosX + 5.0f);
@@ -960,18 +969,18 @@ namespace ImguiUtil {
             // Search icon
             {
                 const float iconYOffset = framePaddingY - 3.0f;
-                UI::ShiftCursorY(iconYOffset);
-                UI::Image(EditorResources::SearchIcon, iconSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
-                UI::ShiftCursorY(-iconYOffset);
+                ImguiUtil::ShiftCursorY(iconYOffset);
+                ImGui::Image((ImTextureID)EditorResources::searchIcon->getLoadedAsset().getTextureHandle(), iconSize, ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
+                ImguiUtil::ShiftCursorY(-iconYOffset);
 
                 // Hint
                 if (!searching)
                 {
-                    UI::ShiftCursorY(-framePaddingY + 1.0f);
-                    UI::ScopedColour text(ImGuiCol_Text, Colours::Theme::textDarker);
-                    UI::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(0.0f, framePaddingY));
+                    ImguiUtil::ShiftCursorY(-framePaddingY + 1.0f);
+                    ImguiUtil::ScopedColor text(ImGuiCol_Text, ImguiColors::Theme::textDarker);
+                    ImguiUtil::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(0.0f, framePaddingY));
                     ImGui::TextUnformatted(hint);
-                    UI::ShiftCursorY(-1.0f);
+                    ImguiUtil::ShiftCursorY(-1.0f);
                 }
             }
 
@@ -996,17 +1005,17 @@ namespace ImguiUtil {
                 if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
                     ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 
-                UI::DrawButtonImage(EditorResources::ClearIcon, IM_COL32(160, 160, 160, 200),
+                ImguiUtil::DrawButtonImage(EditorResources::clearIcon->getLoadedAsset().getTextureHandle(), IM_COL32(160, 160, 160, 200),
                     IM_COL32(170, 170, 170, 255),
                     IM_COL32(160, 160, 160, 150),
-                    UI::RectExpanded(UI::GetItemRect(), -2.0f, -2.0f));
+                    ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), -2.0f, -2.0f));
 
                 ImGui::Spring(-1.0f, spacingX * 2.0f);
             }
 
             ImGui::EndHorizontal();
-            UI::ShiftCursorY(-1.0f);
-            UI::PopID();
+            ImguiUtil::ShiftCursorY(-1.0f);
+            ImGui::PopID();
             return modified;
         }
 
@@ -1024,7 +1033,7 @@ namespace ImguiUtil {
 
             constexpr auto buttonColour = ImguiColors::Theme::text;
             const uint8_t value = uint8_t(ImColor(buttonColour).Value.x * 255);
-            ImguiUtil::DrawButtonImage(EditorResources::GearIcon, IM_COL32(value, value, value, 200),
+            ImguiUtil::DrawButtonImage(EditorResources::gearIcon->getLoadedAsset().getTextureHandle(), IM_COL32(value, value, value, 200),
                 IM_COL32(value, value, value, 255),
                 IM_COL32(value, value, value, 150),
                 ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), -padding, -padding));
@@ -1032,7 +1041,7 @@ namespace ImguiUtil {
         }
     }; // Widgets
 
-    bool BeginPopup(const char* str_id, ImGuiWindowFlags flags)
+    inline bool BeginPopup(const char* str_id, ImGuiWindowFlags flags)
     {
         bool opened = false;
         if (ImGui::BeginPopup(str_id, flags))
@@ -1056,7 +1065,7 @@ namespace ImguiUtil {
         return opened;
     }
 
-    void EndPopup()
+    inline void EndPopup()
     {
         ImGui::PopStyleVar(); // WindowPadding;
         ImGui::PopStyleColor(); // HeaderHovered;
@@ -1064,7 +1073,7 @@ namespace ImguiUtil {
     }
 
     // MenuBar which allows you to specify its rectangle
-    bool BeginMenuBar(const ImRect& barRectangle)
+    inline bool BeginMenuBar(const ImRect& barRectangle)
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems)
@@ -1096,7 +1105,7 @@ namespace ImguiUtil {
         return true;
     }
 
-    void EndMenuBar()
+    inline void EndMenuBar()
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems)
@@ -1135,5 +1144,17 @@ namespace ImguiUtil {
         window->DC.LayoutType = ImGuiLayoutType_Vertical;
         window->DC.NavLayerCurrent = ImGuiNavLayer_Main;
         window->DC.MenuBarAppending = false;
+    }
+
+    extern bool TreeNodeWithIcon(VGTexture icon, ImGuiID id, ImGuiTreeNodeFlags flags, const char* label, const char* label_end, ImColor iconTint = IM_COL32_WHITE);
+    extern bool TreeNodeWithIcon(VGTexture icon, const void* ptr_id, ImGuiTreeNodeFlags flags, ImColor iconTint, const char* fmt, ...);
+    extern bool TreeNodeWithIcon(VGTexture icon, const char* label, ImGuiTreeNodeFlags flags, ImColor iconTint = IM_COL32_WHITE);
+    inline bool TreeNode(const std::string& id, const std::string& label, ImGuiTreeNodeFlags flags = 0, VGTexture icon = 0)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        return ImguiUtil::TreeNodeWithIcon(icon, window->GetID(id.c_str()), flags, label.c_str(), NULL);
     }
 }

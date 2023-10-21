@@ -5,7 +5,11 @@
 
 #include "ui/editor/Selection/EditorSelectionManager.h"
 #include "ui/editor/Settings/EditorSettings.h"
+#include "editor/EditorResources.h"
 #include "ui/ImguiUtil.hpp"
+
+// TODO: REMOVE???
+#include "ui/editor/ContentBrowserPanel.h"
 
 #include <Vorb/ui/InputDispatcher.h>
 #include <imgui.h>
@@ -253,24 +257,25 @@ CBItemActionResult ContentBrowserItem::OnRender()
         if (!EditorSelectionManager::isSelected(EditorSelectionContext::ContentBrowser, mUUID))
             result.Set(ContentBrowserAction::ClearSelections, true);
 
+        // TODO: WHY?
         auto& currentItems = ContentBrowserPanel::Get().GetCurrentItems();
 
         if (selectionStack.size() > 0)
         {
-            for (const auto& selectedItemHandles : selectionStack)
+            for (const auto& selectedItemHandle : selectionStack)
             {
-                size_t index = currentItems.FindItem(selectedItemHandles);
+                size_t index = currentItems.findItem(selectedItemHandle);
                 if (index == ContentBrowserItemList::InvalidItem)
                     continue;
 
                 const auto& item = currentItems[index];
-                ImguiUtil::Image(item->GetIcon(), ImVec2(20, 20));
+                ImGui::Image((ImTextureID)item->getIcon(), ImVec2(20, 20));
                 ImGui::SameLine();
                 const auto& name = item->GetName();
                 ImGui::TextUnformatted(name.c_str());
             }
 
-            ImGui::SetDragDropPayload("asset_payload", selectionStack.data(), sizeof(AssetHandle) * selectionStack.size());
+            ImGui::SetDragDropPayload("asset_payload", selectionStack.data(), sizeof(UniqueId64) * selectionStack.size());
         }
 
         result.Set(ContentBrowserAction::Selected, true);
@@ -287,12 +292,12 @@ CBItemActionResult ContentBrowserItem::OnRender()
         }
         else
         {
-            bool action = SelectionManager::GetSelectionCount(EditorSelectionContext::ContentBrowser) > 1 ? ImGui::IsMouseReleased(ImGuiMouseButton_Left) : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-            const bool isSelected = SelectionManager::IsSelected(EditorSelectionContext::ContentBrowser, mUUID);
+            bool action = EditorSelectionManager::getSelectionCount(EditorSelectionContext::ContentBrowser) > 1 ? ImGui::IsMouseReleased(ImGuiMouseButton_Left) : ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+            const bool isSelected = EditorSelectionManager::isSelected(EditorSelectionContext::ContentBrowser, mUUID);
             bool skipBecauseDragging = mIsDragging && isSelected;
             if (action && !skipBecauseDragging)
             {
-                if (isSelected && Input::IsKeyDown(KeyCode::LeftControl) && !mJustSelected)
+                if (isSelected && vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) && !mJustSelected)
                 {
                     result.Set(ContentBrowserAction::Deselected, true);
                 }
@@ -306,10 +311,10 @@ CBItemActionResult ContentBrowserItem::OnRender()
                     mJustSelected = true;
                 }
 
-                if (!Input::IsKeyDown(KeyCode::LeftControl) && !Input::IsKeyDown(KeyCode::LeftShift) && mJustSelected)
+                if (!vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) && !vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT) && mJustSelected)
                     result.Set(ContentBrowserAction::ClearSelections, true);
 
-                if (Input::IsKeyDown(KeyCode::LeftShift))
+                if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT))
                     result.Set(ContentBrowserAction::SelectToHere, true);
             }
         }
@@ -372,7 +377,7 @@ void ContentBrowserItem::OnContextMenuOpen(CBItemActionResult& actionResult)
     if (ImGui::MenuItem("Reload"))
         actionResult.Set(ContentBrowserAction::Reload, true);
 
-    if (SelectionManager::GetSelectionCount(EditorSelectionContext::ContentBrowser) == 1 && ImGui::MenuItem("Rename"))
+    if (EditorSelectionManager::getSelectionCount(EditorSelectionContext::ContentBrowser) == 1 && ImGui::MenuItem("Rename"))
         actionResult.Set(ContentBrowserAction::StartRenaming, true);
 
     if (ImGui::MenuItem("Copy"))
@@ -396,7 +401,7 @@ void ContentBrowserItem::OnContextMenuOpen(CBItemActionResult& actionResult)
 }
 
 ContentBrowserDirectory::ContentBrowserDirectory(const std::shared_ptr<DirectoryInfo>& directoryInfo)
-    : ContentBrowserItem(ContentBrowserItem::ItemType::Directory, directoryInfo->Handle, directoryInfo->FilePath.filename().string(), EditorResources::FolderIcon), m_DirectoryInfo(directoryInfo)
+    : ContentBrowserItem(ContentBrowserItem::ItemType::Directory, directoryInfo->Handle, directoryInfo->FilePath.filename().string(), EditorResources::folderIcon->getLoadedAsset().getTextureHandle()), m_DirectoryInfo(directoryInfo)
 {
 }
 
@@ -406,25 +411,27 @@ ContentBrowserDirectory::~ContentBrowserDirectory()
 
 void ContentBrowserDirectory::OnRenamed(const std::string& newName)
 {
-    auto target = Project::GetActive()->GetAssetDirectory() / m_DirectoryInfo->FilePath;
-    auto destination = Project::GetActive()->GetAssetDirectory() / m_DirectoryInfo->FilePath.parent_path() / newName;
+    const std::filesystem::path& rootPath = ContentBrowserPanel::Get().getRootPath();
+    auto target = rootPath / m_DirectoryInfo->FilePath;
+    auto destination = rootPath / m_DirectoryInfo->FilePath.parent_path() / newName;
 
     if (Utils::toLower(newName) == Utils::toLower(target.filename().string()))
     {
-        auto tmp = Project::GetActive()->GetAssetDirectory() / m_DirectoryInfo->FilePath.parent_path() / "TempDir";
-        FileSystem::Rename(target, tmp);
+        auto tmp = rootPath / m_DirectoryInfo->FilePath.parent_path() / "TempDir";
+        FileSystem::rename(target, tmp);
         target = tmp;
     }
 
-    if (!FileSystem::Rename(target, destination))
+    if (!FileSystem::rename(target, destination))
     {
-        HZ_CORE_ERROR("Couldn't rename {0} to {1}!", m_DirectoryInfo->FilePath.filename().string(), newName);
+        LOG_CRITICAL("Couldn't rename {} to {}!", m_DirectoryInfo->FilePath.filename().string(), newName);
+        return;
     }
 }
 
 void ContentBrowserDirectory::UpdateDrop(CBItemActionResult& actionResult)
 {
-    if (SelectionManager::IsSelected(EditorSelectionContext::ContentBrowser, mUUID))
+    if (EditorSelectionManager::isSelected(EditorSelectionContext::ContentBrowser, mUUID))
         return;
 
     if (ImGui::BeginDragDropTarget())
@@ -434,12 +441,12 @@ void ContentBrowserDirectory::UpdateDrop(CBItemActionResult& actionResult)
         if (payload)
         {
             auto& currentItems = ContentBrowserPanel::Get().GetCurrentItems();
-            uint32_t count = payload->DataSize / sizeof(AssetHandle);
+            uint32_t count = payload->DataSize / sizeof(UniqueId64);
 
             for (uint32_t i = 0; i < count; i++)
             {
-                AssetHandle assetHandle = *(((AssetHandle*)payload->Data) + i);
-                size_t index = currentItems.FindItem(assetHandle);
+                UniqueId64 assetHandle = *(((UniqueId64*)payload->Data) + i);
+                size_t index = currentItems.findItem(assetHandle);
                 if (index != ContentBrowserItemList::InvalidItem)
                 {
                     if (currentItems[index]->Move(m_DirectoryInfo->FilePath))
@@ -457,20 +464,25 @@ void ContentBrowserDirectory::UpdateDrop(CBItemActionResult& actionResult)
 
 void ContentBrowserDirectory::Delete()
 {
-    bool deleted = FileSystem::DeleteFile(Project::GetActive()->GetAssetDirectory() / m_DirectoryInfo->FilePath);
+    const std::filesystem::path& rootPath = ContentBrowserPanel::Get().getRootPath();
+    bool deleted = FileSystem::deleteFile(rootPath / m_DirectoryInfo->FilePath);
     if (!deleted)
     {
-        HZ_CORE_ERROR("Failed to delete folder {0}", m_DirectoryInfo->FilePath);
+        LOG_CRITICAL("Failed to delete folder {}", m_DirectoryInfo->FilePath.string());
         return;
     }
 
-    for (auto asset : m_DirectoryInfo->Assets)
-        Project::GetEditorAssetManager()->OnAssetDeleted(asset);
+    LOG_ERROR("TODO: Deleting a directory with assets wont delete sub assets");
+    //TODO: UPDATE ASSET DATA
+    // TODO: Deleting a directory with assets wont delete sub assets.
+    //for (auto asset : m_DirectoryInfo->Assets)
+    //    Project::GetEditorAssetManager()->OnAssetDeleted(asset);
 }
 
 bool ContentBrowserDirectory::Move(const std::filesystem::path& destination)
 {
-    bool wasMoved = FileSystem::MoveFile(Project::GetActive()->GetAssetDirectory() / m_DirectoryInfo->FilePath, Project::GetActive()->GetAssetDirectory() / destination);
+    const std::filesystem::path& rootPath = ContentBrowserPanel::Get().getRootPath();
+    bool wasMoved = FileSystem::moveFile(rootPath / m_DirectoryInfo->FilePath, rootPath / destination);
     if (!wasMoved)
         return false;
 
@@ -478,7 +490,7 @@ bool ContentBrowserDirectory::Move(const std::filesystem::path& destination)
 }
 
 ContentBrowserAsset::ContentBrowserAsset(AssetMetadata assetInfo, VGTexture icon)
-    : ContentBrowserItem(ContentBrowserItem::ItemType::Asset, assetInfo.getUUID(), assetInfo.getName(), icon), m_AssetInfo(assetInfo)
+    : ContentBrowserItem(ContentBrowserItem::ItemType::Asset, assetInfo.getUUID(), std::string(Utils::getFilename(assetInfo.mFilePath.getStringView())), icon), m_AssetInfo(assetInfo)
 {
 }
 
@@ -489,59 +501,60 @@ ContentBrowserAsset::~ContentBrowserAsset()
 
 void ContentBrowserAsset::Delete()
 {
-    auto filepath = Project::GetEditorAssetManager()->GetFileSystemPath(m_AssetInfo);
-    bool deleted = FileSystem::DeleteFile(filepath);
+    bool deleted = FileSystem::deleteFile(m_AssetInfo.mFilePath.getStdPath());
     if (!deleted)
     {
-        HZ_CORE_ERROR("Couldn't delete {0}", m_AssetInfo.FilePath);
+        LOG_CRITICAL("Couldn't delete {}", m_AssetInfo.mFilePath.getString());
         return;
     }
 
-    auto& currentDirectory = ContentBrowserPanel::Get().GetDirectory(m_AssetInfo.FilePath.parent_path());
-    currentDirectory->Assets.erase(std::remove(currentDirectory->Assets.begin(), currentDirectory->Assets.end(), m_AssetInfo.Handle), currentDirectory->Assets.end());
-
-    Project::GetEditorAssetManager()->OnAssetDeleted(m_AssetInfo.Handle);
+    auto currentDirectory = ContentBrowserPanel::Get().GetDirectory(m_AssetInfo.mFilePath.getStdPath().parent_path());
+    currentDirectory->Assets.erase(std::remove(currentDirectory->Assets.begin(), currentDirectory->Assets.end(), AssetDescriptor::fromUUID(m_AssetInfo.getUUID())), currentDirectory->Assets.end());
+    //TODO: UPDATE ASSET DATA
+    //TODO: NO EVENT URGH
+    //Project::GetEditorAssetManager()->OnAssetDeleted(m_AssetInfo.Handle);
 }
 
 bool ContentBrowserAsset::Move(const std::filesystem::path& destination)
 {
-    auto filepath = Project::GetEditorAssetManager()->GetFileSystemPath(m_AssetInfo);
-    bool wasMoved = FileSystem::MoveFile(filepath, Project::GetActive()->GetAssetDirectory() / destination);
+    const std::filesystem::path& rootPath = ContentBrowserPanel::Get().getRootPath();
+    bool wasMoved = FileSystem::moveFile(m_AssetInfo.mFilePath.getStdPath(), rootPath / destination);
     if (!wasMoved)
     {
-        HZ_CORE_ERROR("Couldn't move {0} to {1}", m_AssetInfo.FilePath, destination);
+        LOG_CRITICAL("Couldn't move {} to {}", m_AssetInfo.mFilePath.getString(), destination.string());
         return false;
     }
 
-    Project::GetEditorAssetManager()->OnAssetRenamed(m_AssetInfo.Handle, destination / filepath.filename());
+    //TODO: UPDATE ASSET DATA
+    //Project::GetEditorAssetManager()->OnAssetRenamed(m_AssetInfo.Handle, destination / filepath.filename());
     return true;
 }
 
 void ContentBrowserAsset::OnRenamed(const std::string& newName)
 {
-    FileSystem::SkipNextFileSystemChange();
+    //FileSystem::skipNextFileSystemChange();
 
-    auto filepath = Project::GetEditorAssetManager()->GetFileSystemPath(m_AssetInfo);
+    std::filesystem::path filepath = m_AssetInfo.mFilePath.getStdPath();
     const std::string extension = filepath.extension().string();
     std::filesystem::path newFilepath = fmt::format("{0}\\{1}{2}", filepath.parent_path().string(), newName, extension);
 
     std::string targetName = fmt::format("{0}{1}", newName, extension);
     if (Utils::toLower(targetName) == Utils::toLower(filepath.filename().string()))
     {
-        FileSystem::RenameFilename(filepath, "temp-rename");
+        FileSystem::renameFilename(filepath, "temp-rename");
         filepath = fmt::format("{0}\\temp-rename{1}", filepath.parent_path().string(), extension);
     }
 
-    FileSystem::SkipNextFileSystemChange();
+    //FileSystem::skipNextFileSystemChange();
 
-    if (FileSystem::RenameFilename(filepath, newName))
+    if (FileSystem::renameFilename(filepath, newName))
     {
-        // Update AssetManager with new name
-        auto& metadata = Project::GetEditorAssetManager()->GetMetadata(m_AssetInfo.Handle);
-        Project::GetEditorAssetManager()->OnAssetRenamed(m_AssetInfo.Handle, newFilepath);
+        // TODO: Update AssetManager with new name
+       // auto& metadata = Project::GetEditorAssetManager()->GetMetadata(m_AssetInfo.Handle);
+       // Project::GetEditorAssetManager()->OnAssetRenamed(m_AssetInfo.Handle, newFilepath);
     }
     else
     {
-        HZ_CORE_ERROR("Couldn't rename {0} to {1}!", filepath.filename().string(), newName);
+        LOG_CRITICAL("Couldn't rename {} to {}!", filepath.filename().string(), newName);
     }
 }

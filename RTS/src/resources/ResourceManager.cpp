@@ -250,7 +250,7 @@ AssetDescriptor ResourceManager::registerOrGetRegisteredAsset(const std::filesys
     std::string_view pathSV = Utils::getFilename(std::string_view(pathString.c_str(), pathString.size()));
     StrToken assetName(pathSV.data(), pathSV.size());
     if (!repo.isAssetRegistered(assetName)) {
-        repo.registerAsset(vio::Path(path));
+        repo.registerAssetPath(vio::Path(path));
     }
     return AssetDescriptor{ .id=repo.getAssetID(assetName), .assetType=type };
 }
@@ -259,6 +259,17 @@ AssetMetadata ResourceManager::getAssetMetadata(AssetDescriptor desc) {
     assert(desc.isValid());
     IAssetRepositoryBase& repo = Services::ResourceManager::ref().getAssetRepository(desc.assetType);
     return repo.getMetadata(desc.id);
+}
+
+AssetMetadata ResourceManager::tryGetAssetMetadataForPath(const std::filesystem::path& path) {
+    AssetType type = Services::ResourceManager::ref().getAssetTypeForFilePath(path);
+    if (type == AssetType::NONE) {
+        return AssetMetadata();
+    }
+
+    StrToken assetName(Utils::getFilename(path.string()));
+    IAssetRepositoryBase& baseRepo = getAssetRepository(type);
+    return baseRepo.tryGetMetadata(assetName);
 }
 
 void ResourceManager::gatherRecursive(const vio::Path& folderPath)
@@ -284,14 +295,14 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".png")) {
             if (vio::containsSubpath(entry, "_brushes")) {
-                BrushRepository::get().registerAsset(entry);
+                BrushRepository::get().registerAssetPath(entry);
             }
             else {
-                TextureRepository::get().registerAsset(entry);
+                TextureRepository::get().registerAssetPath(entry);
             }
         }
         else if (fileHasExtension(entry, ".cube")) {
-            CubemapRepository::get().registerAsset(entry);
+            CubemapRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".room")) {
             mRoomFiles.emplace_back(entry);
@@ -300,16 +311,16 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mBuildingFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".tile")) {
-            TileRepository::get().registerAsset(entry);
+            TileRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".prog")) {
-            MaterialShaderRepository::get().registerAsset(entry);
+            MaterialShaderRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".material")) {
-            MaterialRepository::get().registerAsset(entry);
+            MaterialRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".comp")) {
-            MaterialShaderRepository::get().registerAsset(entry);
+            MaterialShaderRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".vert")) {
             ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
@@ -327,10 +338,10 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             ShaderLoader::registerTessEvalShaderPath(entry.getLeaf(), entry);
         }
         else if (fileHasExtension(entry, ".psys")) {
-            ParticleSystemRepository::get().registerAsset(entry);
+            ParticleSystemRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".effect")) {
-            EffectRepository::get().registerAsset(entry);
+            EffectRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".ent")) {
             mEntityFiles.emplace_back(entry);
@@ -339,34 +350,34 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mRecipeFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".item")) {
-            ItemRepository::get().registerAsset(entry);
+            ItemRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".fish")) {
-            FishRepository::get().registerAsset(entry);
+            FishRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".business")) {
             mBusinessFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".model")) {
-            ModelRepository::get().registerAsset(entry);
+            ModelRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".rig")) {
-            RigRepository::get().registerAsset(entry);
+            RigRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".machine")) {
-            AnimMachineRepository::get().registerAsset(entry);
+            AnimMachineRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".skill")) {
-            SkillRepository::get().registerAsset(entry);
+            SkillRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".anim")) {
-            AnimationRepository::get().registerAsset(entry);
+            AnimationRepository::get().registerAssetPath(entry);
         }
         else if (fileHasExtension(entry, ".ttf")) {
             mFontFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".grass")) {
-            TileGrassRepository::get().registerAsset(entry);
+            TileGrassRepository::get().registerAssetPath(entry);
         }
     }
 }

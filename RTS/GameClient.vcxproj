@@ -467,6 +467,7 @@
     <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Selection\EditorSelectionManager.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
+    <ClCompile Include="src\ui\ImguiUtil.cpp" />
     <ClCompile Include="src\ui\minigame\FishingMinigame.cpp" />
     <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp" />
     <ClCompile Include="src\ui\PauseMenuPanel.cpp" />

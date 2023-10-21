@@ -58,6 +58,9 @@ public:
     explicit StrToken(const char* str, size_t len) : mTokenHigh(0ull), mTokenLow(0ull) {
         initFromStrInternal(str, len);
     }
+    explicit StrToken(std::string_view s) : mTokenHigh(0ull), mTokenLow(0ull) {
+        initFromStrInternal(s.data(), s.size());
+    }
 
     bool operator==(const StrToken& rhs) const {
         return mTokenLow == rhs.mTokenLow && mTokenHigh == rhs.mTokenHigh;

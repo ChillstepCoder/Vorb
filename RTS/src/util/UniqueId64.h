@@ -15,10 +15,14 @@
 
         static UniqueId64 Generate();
 
-        operator ui64 () { return m_UUID; }
         operator const ui64() const { return m_UUID; }
+
+        //bool operator==(const UniqueId64& other) const { return m_UUID == other.m_UUID; }
+        //bool operator<(const UniqueId64& other) const { return m_UUID < other.m_UUID; }
+
+        bool isValid() const { return m_UUID != 0; }
     private:
-        ui64 m_UUID;
+        ui64 m_UUID = 0;
     };
 
 namespace std {

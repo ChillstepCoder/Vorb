@@ -61,6 +61,7 @@ public:
     }
     AssetDescriptor registerOrGetRegisteredAsset(const std::filesystem::path& path);
     AssetMetadata getAssetMetadata(AssetDescriptor desc);
+    AssetMetadata tryGetAssetMetadataForPath(const std::filesystem::path& path);
 
 private:
     void gatherRecursive(const vio::Path& folderPath);

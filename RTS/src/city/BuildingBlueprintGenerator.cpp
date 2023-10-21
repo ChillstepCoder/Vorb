@@ -1386,6 +1386,7 @@ bool BuildingBlueprintGenerator::validateRoomsArentEmpty(BuildingBlueprint& bp, 
             return false;
         }
     }
+    return true;
 }
 
 void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room)

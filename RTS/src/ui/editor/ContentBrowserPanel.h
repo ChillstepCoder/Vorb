@@ -166,11 +166,11 @@ public:
     ContentBrowserItemList& GetCurrentItems() { return m_CurrentItems; }
 
     std::shared_ptr<DirectoryInfo> GetDirectory(const std::filesystem::path& filepath) const;
-
+    const std::filesystem::path& getRootPath() const { return mRootPath; }
 
 public:
     inline static std::mutex s_LockMutex; // ensure only one thread accessing file system content at once
-    //static ContentBrowserPanel& Get() { return *s_Instance; }
+    static ContentBrowserPanel& Get() { return *sInstance; }
 
     STATIC_EVENT_LISTENER_FUNCS(ContentBrowser, AssetCreated, CONTENT_BROWSER_EVENT_TYPE::AssetCreated, ContentBrowserEvent&);
     STATIC_EVENT_LISTENER_FUNCS(ContentBrowser, AssetDeleted, CONTENT_BROWSER_EVENT_TYPE::AssetDeleted, ContentBrowserEvent&);
@@ -201,7 +201,7 @@ private:
     void ClearSelections();
 
     void RenderDeleteDialogue();
-    void RenderNewScriptDialogue();
+    //void RenderNewScriptDialogue();
     void RemoveDirectory(std::shared_ptr<DirectoryInfo>& directory, bool removeFromParent = true);
 
     void UpdateDropArea(const std::shared_ptr<DirectoryInfo>& target);
@@ -229,9 +229,9 @@ private:
         std::string_view fn = Utils::getFilename(std::string_view(filename));
         AssetHandlePtr<T> handle = static_unique_pointer_cast<T>(repo.editorTryAddNewAssetBase(StrToken(fn.data(), fn.size())));
         
-        auto filepath = FileSystem::getUniqueFileName(m_BaseDirectory / directory->FilePath / filename);
+        auto filepath = FileSystem::getUniqueFileName(mRootPath / directory->FilePath / std::filesystem::path(filename));
         desc = handle->getDescriptor();
-        directory->assets.emplace_back(std::move(handle));
+        directory->Assets.emplace_back(std::move(handle));
 
         ContentBrowserEvent evnt;
         evnt.path = filepath;
@@ -268,6 +268,8 @@ private:
     bool m_IsContentBrowserFocused = false;
 
     bool m_ShowAssetType = true;
+
+    inline static ContentBrowserPanel* sInstance = nullptr;
 
     STATIC_EVENT_DISPATCHER_DEF(ContentBrowser);
 };

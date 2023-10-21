@@ -84,6 +84,9 @@ struct AssetDescriptor {
 
     bool isValid() const { return assetType != AssetType::NONE; }
     
+    bool operator==(const AssetDescriptor& other) const {
+        return id == other.id && assetType == other.assetType;
+    }
     bool operator<(const AssetDescriptor& other) const {
         if (id != other.id) return id < other.id;
         return assetType < other.assetType;

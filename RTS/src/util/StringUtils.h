@@ -13,6 +13,7 @@ namespace Utils {
     }
 
     std::string_view getFilename(const std::string_view filepath);
+    std::string getFilename(const std::string& filepath);
     std::string getExtension(const std::string& filename);
     std::string removeExtension(const std::string& filename);
 
