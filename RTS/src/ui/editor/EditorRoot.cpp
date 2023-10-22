@@ -10,6 +10,7 @@
 #include "ui/editor/FoliageEditorViewportPanel.h"
 #include "ui/editor/FishingEditorViewportPanel.h"
 #include "ui/editor/ParticleSystemEditorViewportPanel.h"
+#include "ui/editor/ContentBrowserPanel.h"
 #include "options/DebugOptions.h"
 
 #include <imgui.h>
@@ -45,6 +46,7 @@ EditorRoot::EditorRoot() {
     mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
     mFishingEditorViewportPanel = std::make_unique<FishingEditorViewportPanel>();
     mParticleSystemEditorViewportPanel = std::make_unique<ParticleSystemEditorViewportPanel>();
+    mContentBrowserPanel = std::make_unique<ContentBrowserPanel>(ResourceManager::get().getResourceRoot().getStdPath());
 
     // Initialize inputs
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
@@ -206,6 +208,10 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                 }
             }
         }
+
+        // Content browser
+        mContentBrowserPanel->updateAndRender(elapsedSec, nullptr);
+
     }
 }
 

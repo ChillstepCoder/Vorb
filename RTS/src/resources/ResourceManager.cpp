@@ -247,8 +247,8 @@ AssetDescriptor ResourceManager::registerOrGetRegisteredAsset(const std::filesys
     }
     IAssetRepositoryBase& repo = Services::ResourceManager::ref().getAssetRepository(type);
     nString pathString = path.string();
-    std::string_view pathSV = Utils::getFilename(std::string_view(pathString.c_str(), pathString.size()));
-    StrToken assetName(pathSV.data(), pathSV.size());
+    pathString = Utils::getFilenameNoExtension(pathString);
+    StrToken assetName(pathString.data(), pathString.size());
     if (!repo.isAssetRegistered(assetName)) {
         repo.registerAssetPath(vio::Path(path));
     }
@@ -267,7 +267,7 @@ AssetMetadata ResourceManager::tryGetAssetMetadataForPath(const std::filesystem:
         return AssetMetadata();
     }
 
-    StrToken assetName(Utils::getFilename(path.string()));
+    StrToken assetName(Utils::getFilenameNoExtension(path.string()));
     IAssetRepositoryBase& baseRepo = getAssetRepository(type);
     return baseRepo.tryGetMetadata(assetName);
 }
@@ -297,9 +297,8 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             if (vio::containsSubpath(entry, "_brushes")) {
                 BrushRepository::get().registerAssetPath(entry);
             }
-            else {
-                TextureRepository::get().registerAssetPath(entry);
-            }
+            TextureRepository::get().registerAssetPath(entry);
+            
         }
         else if (fileHasExtension(entry, ".cube")) {
             CubemapRepository::get().registerAssetPath(entry);

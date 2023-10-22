@@ -95,6 +95,17 @@ namespace Utils {
         return "";
     }
 
+    std::string getFilenameNoExtension(const std::string& filepath) {
+        nString leaf = getFilename(filepath);
+        for (int c = leaf.size() - 1; c > 0; --c) {
+            // Trim extension, keep going for multiple extensions
+            if (leaf[c] == '.') {
+                leaf.resize(c);
+            }
+        }
+        return leaf;
+    }
+
     std::string getExtension(const std::string& filename)
     {
         std::vector<std::string> parts = splitString(filename, '.');

@@ -169,7 +169,6 @@ public:
     const std::filesystem::path& getRootPath() const { return mRootPath; }
 
 public:
-    inline static std::mutex s_LockMutex; // ensure only one thread accessing file system content at once
     static ContentBrowserPanel& Get() { return *sInstance; }
 
     STATIC_EVENT_LISTENER_FUNCS(ContentBrowser, AssetCreated, CONTENT_BROWSER_EVENT_TYPE::AssetCreated, ContentBrowserEvent&);
@@ -189,7 +188,6 @@ private:
     void RenderBottomBar(float height);
 
     void Refresh();
-    void RefreshWithoutLock();
 
     void UpdateInput();
 

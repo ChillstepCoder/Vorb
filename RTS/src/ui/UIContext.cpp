@@ -15,9 +15,20 @@
 
 #include "screens/ScreenState.h"
 
+#include <imgui.h>
+#include <imgui_internal.h>
+
 UIContext* UIContext::sInstance = nullptr;
 
 UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScreenResolution(screenResolution), mWindow(window) {
+
+    // Enable docking
+    // https://github.com/ocornut/imgui/issues/2109
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigDockingWithShift = false;
+    io.ConfigWindowsResizeFromEdges = true;
+
     mEditorRoot = std::make_unique<EditorRoot>();
     mMinigameContext = std::make_unique<LocalMinigameContext>();
 }

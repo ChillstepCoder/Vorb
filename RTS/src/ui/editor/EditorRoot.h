@@ -14,6 +14,7 @@ class ParticleSystemDef;
 class ModelEditorViewportPanel;
 class MaterialEditorViewportPanel;
 class BiomeEditorViewportPanel;
+class ContentBrowserPanel;
 class FoliageEditorViewportPanel;
 class FishingEditorViewportPanel;
 class ParticleSystemEditorViewportPanel;
@@ -55,6 +56,8 @@ private:
     std::unique_ptr<BiomeEditorViewportPanel> mBiomeEditorViewportPanel;
     std::unique_ptr<FishingEditorViewportPanel> mFishingEditorViewportPanel;
     std::unique_ptr<ParticleSystemEditorViewportPanel> mParticleSystemEditorViewportPanel;
+
+    std::unique_ptr<ContentBrowserPanel> mContentBrowserPanel;
 
     // Event listeners
     vui::KeyListeners mKeyListeners;

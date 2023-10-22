@@ -43,6 +43,8 @@ ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootP
     memset(m_SearchBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
 
 	initEvents();
+
+	Refresh();
 }
 
 void ContentBrowserPanel::initEvents() {
@@ -156,12 +158,12 @@ bool s_OpenDeletePopup = false;
 bool s_OpenNewScriptPopup = false;
 
 bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
-    //m_IsContentBrowserHovered = false;
-    //m_IsContentBrowserFocused = false;
+    m_IsContentBrowserHovered = false;
+    m_IsContentBrowserFocused = false;
     if (ImGui::Begin("Content Browser", isOpen, ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
     {
-       // m_IsContentBrowserHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
-        //m_IsContentBrowserFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+        m_IsContentBrowserHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
+        m_IsContentBrowserFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
         ImguiUtil::ScopedStyle spacing(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
         ImguiUtil::ScopedStyle padding(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 4.0f));
@@ -303,7 +305,7 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
                     const float paddingForOutline = 2.0f;
                     const float scrollBarrOffset = 20.0f + ImGui::GetStyle().ScrollbarSize;
                     float panelWidth = ImGui::GetContentRegionAvail().x - scrollBarrOffset;
-                    float cellSize = /*ApplicationSettings::Get().ContentBrowserThumbnailSize + s_Padding*/40.0f + paddingForOutline;
+                    const float cellSize = EditorSettings::get().contentBrowserThumbnailSize + paddingForOutline;
                     int columnCount = (int)(panelWidth / cellSize);
                     if (columnCount < 1) columnCount = 1;
 
@@ -673,7 +675,6 @@ void ContentBrowserPanel::RenderItems()
 	m_IsAnyItemHovered = false;
 
 	// TODO(Peter): This method of handling actions isn't great... It's starting to become spaghetti...
-	std::scoped_lock<std::mutex> lock(s_LockMutex);
 	for (auto& item : m_CurrentItems)
 	{
 		item->OnRenderBegin();
@@ -760,7 +761,7 @@ void ContentBrowserPanel::RenderItems()
 		if (result.IsSet(ContentBrowserAction::Renamed))
 		{
 			EditorSelectionManager::deselectAll(EditorSelectionContext::ContentBrowser);
-			RefreshWithoutLock();
+			Refresh();
 			SortItemList();
 
 			// NOTE (Tim): Calling the next line of code will cause the folder before the renaming to be selected as well, 
@@ -796,7 +797,7 @@ void ContentBrowserPanel::RenderItems()
 
 		if (result.IsSet(ContentBrowserAction::Refresh))
 		{
-			RefreshWithoutLock();
+			Refresh();
 			break;
 		}
 	}
@@ -817,7 +818,6 @@ void ContentBrowserPanel::RenderItems()
 
 void ContentBrowserPanel::RenderBottomBar(float height)
 {
-	std::lock_guard<std::mutex> lock(s_LockMutex);
 
 	ImguiUtil::ScopedStyle childBorderSize(ImGuiStyleVar_ChildBorderSize, 0);
 	ImguiUtil::ScopedStyle frameBorderSize(ImGuiStyleVar_FrameBorderSize, 0);
@@ -861,24 +861,20 @@ void ContentBrowserPanel::RenderBottomBar(float height)
 
 void ContentBrowserPanel::Refresh()
 {
-	std::lock_guard<std::mutex> lock(s_LockMutex);
-	RefreshWithoutLock();
-}
+    m_CurrentItems.clear();
+    m_Directories.clear();
 
-void ContentBrowserPanel::RefreshWithoutLock()
-{
-	m_CurrentItems.clear();
-	m_Directories.clear();
+    std::shared_ptr<DirectoryInfo> currentDirectory = m_CurrentDirectory;
+    UniqueId64 baseDirectoryHandle = ProcessDirectory(mRootPath, nullptr);
+    m_BaseDirectory = m_Directories[baseDirectoryHandle];
+	if (currentDirectory) {
+        m_CurrentDirectory = GetDirectory(currentDirectory->FilePath);
+	}
 
-	std::shared_ptr<DirectoryInfo> currentDirectory = m_CurrentDirectory;
-	UniqueId64 baseDirectoryHandle = ProcessDirectory(mRootPath, nullptr);
-	m_BaseDirectory = m_Directories[baseDirectoryHandle];
-	m_CurrentDirectory = GetDirectory(currentDirectory->FilePath);
+    if (!m_CurrentDirectory)
+        m_CurrentDirectory = m_BaseDirectory; // Our current directory was removed
 
-	if (!m_CurrentDirectory)
-		m_CurrentDirectory = m_BaseDirectory; // Our current directory was removed
-
-	ChangeDirectory(m_CurrentDirectory);
+    ChangeDirectory(m_CurrentDirectory);
 }
 
 void ContentBrowserPanel::UpdateInput()
@@ -1073,7 +1069,7 @@ void ContentBrowserPanel::PasteCopiedAssets()
         }
     }
 
-    RefreshWithoutLock();
+	Refresh();
     EditorSelectionManager::deselectAll();
     m_CopiedAssets.clear();
 }
@@ -1250,7 +1246,7 @@ void ContentBrowserPanel::RemoveDirectory(std::shared_ptr<DirectoryInfo>& direct
 }
 
 void ContentBrowserPanel::UpdateDropArea(const std::shared_ptr<DirectoryInfo>& target) {
-	if ((target->Handle != m_CurrentDirectory->Handle) && ImGui::BeginDragDropTarget()) {
+	if (target && (target->Handle != m_CurrentDirectory->Handle) && ImGui::BeginDragDropTarget()) {
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("asset_payload");
 		if (payload) {
 			uint32_t count = payload->DataSize / sizeof(UniqueId64);

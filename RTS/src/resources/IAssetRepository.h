@@ -428,6 +428,10 @@ void AssetHandle<T>::aquire(StrToken name) {
 
 template <typename T>
 const T& AssetHandle<T>::getLoadedAsset() const {
+    if (mLoadedAsset) [[likely]] {
+        return *mLoadedAsset;
+    }
+    IAssetRepository<T>::getInstance().pollAsset(const_cast<AssetHandle<T>&>(*this));
     assert(mLoadedAsset);
     return *mLoadedAsset;
 }
