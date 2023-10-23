@@ -469,7 +469,7 @@ namespace ImguiUtil {
         ScopedItemFlags& operator=(const ScopedItemFlags&) = delete;
         ScopedItemFlags(const ImGuiItemFlags flags, const bool enable = true)
         {
-            assert(!(flags & ImGuiItemFlags_Disabled), "We shouldn't use ImGuiItemFlags_Disabled! Use ImguUtil::BeginDisabled / ImguUtil::EndDisabled instead. It will handle visuals for you.");
+            assert(!(flags & ImGuiItemFlags_Disabled) && "We shouldn't use ImGuiItemFlags_Disabled! Use ImguUtil::BeginDisabled / ImguUtil::EndDisabled instead. It will handle visuals for you.");
             ImGui::PushItemFlag(flags, enable);
         }
         ~ScopedItemFlags() { ImGui::PopItemFlag(); }
@@ -549,11 +549,11 @@ namespace ImguiUtil {
     {
         auto* drawList = ImGui::GetWindowDrawList();
         if (ImGui::IsItemActive())
-            drawList->AddImage(ImTextureID(imagePressed), rectMin, rectMax, ImVec2(0, 0), ImVec2(1, 1), tintPressed);
+            drawList->AddImage(ImTextureID(imagePressed), rectMin, rectMax, ImVec2(0, 1), ImVec2(1, 0), tintPressed);
         else if (ImGui::IsItemHovered())
-            drawList->AddImage(ImTextureID(imageHovered), rectMin, rectMax, ImVec2(0, 0), ImVec2(1, 1), tintHovered);
+            drawList->AddImage(ImTextureID(imageHovered), rectMin, rectMax, ImVec2(0, 1), ImVec2(1, 0), tintHovered);
         else
-            drawList->AddImage(ImTextureID(imageNormal), rectMin, rectMax, ImVec2(0, 0), ImVec2(1, 1), tintNormal);
+            drawList->AddImage(ImTextureID(imageNormal), rectMin, rectMax, ImVec2(0, 1), ImVec2(1, 0), tintNormal);
     };
 
     inline void DrawButtonImage(VGTexture& imageNormal, VGTexture imageHovered, VGTexture imagePressed,

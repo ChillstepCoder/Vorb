@@ -48,7 +48,7 @@ class ContentBrowserItem
 public:
     // TODO: Item is redundant. Move out of scope and call ContentBrowserItemType. Superior to ContentBrowserItem::ItemType
     enum class ItemType : uint16_t {
-        Directory, Asset
+        File, Directory, Asset
     };
 public:
     ContentBrowserItem(ItemType type, UniqueId64 uuid, const std::string& name, VGTexture icon);
@@ -102,6 +102,7 @@ struct DirectoryInfo {
 
     std::filesystem::path FilePath;
 
+    std::vector<nString> Files;
     std::vector<AssetDescriptor> Assets;
     std::map<UniqueId64, std::shared_ptr<DirectoryInfo>> SubDirectories;
 };

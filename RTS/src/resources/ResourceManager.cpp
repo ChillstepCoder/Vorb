@@ -82,6 +82,9 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TileGrassRepository, AssetType::TileGrass);
     static_assert(e_count(AssetType) == 16);
 
+    // Add other extensions
+    mExtensionToAssetRepository[CStrToken("comp")] = &MaterialShaderRepository::get();
+
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);

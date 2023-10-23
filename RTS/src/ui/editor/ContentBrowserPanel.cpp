@@ -89,10 +89,14 @@ UniqueId64 ContentBrowserPanel::ProcessDirectory(const std::filesystem::path& di
             
             ResourceManager& resourceManager = Services::ResourceManager::ref();
             AssetDescriptor desc = resourceManager.registerOrGetRegisteredAsset(entry.path());
-            // Failed to import
+
             if (desc.isValid()) {
                 directoryInfo->Assets.push_back(desc);
-            }
+			}
+			else {
+				// Is a random file
+				directoryInfo->Files.emplace_back(Utils::getFilename(entry.path().string()));
+			}
         }
     }
     const UniqueId64 uidRv = directoryInfo->Handle;
@@ -114,7 +118,7 @@ void ContentBrowserPanel::ChangeDirectory(std::shared_ptr<DirectoryInfo>& direct
     if (strlen(m_SearchBuffer) == 0)
     {
         for (auto& [subdirHandle, subdir] : directory->SubDirectories) {
-            m_CurrentItems.Items.push_back(std::make_shared<ContentBrowserDirectory>(subdir));
+            m_CurrentItems.Items.emplace_back(std::make_shared<ContentBrowserDirectory>(subdir));
         }
 
         for (auto desc : directory->Assets)
@@ -123,10 +127,15 @@ void ContentBrowserPanel::ChangeDirectory(std::shared_ptr<DirectoryInfo>& direct
             AssetMetadata metadata = resourceManager.getAssetMetadata(desc);
             if (desc.isValid()) {
                 auto&& it = m_AssetIconMap.find(desc.assetType);
-                VGTexture icon = it != m_AssetIconMap.end() ? it->second : EditorResources::fileIcon->getLoadedAsset().gpuTexture.getHandle();
-                m_CurrentItems.Items.push_back(std::make_shared<ContentBrowserAsset>(metadata, icon));
+				VGTexture icon;
+				icon = it != m_AssetIconMap.end() ? it->second : EditorResources::fileIcon->getLoadedAsset().gpuTexture.getHandle();
+                m_CurrentItems.Items.emplace_back(std::make_shared<ContentBrowserAsset>(metadata, icon));
             }
         }
+
+		for (auto& fileName : directory->Files) {
+			m_CurrentItems.Items.emplace_back(std::make_shared<ContentBrowserItem>(ContentBrowserItem::ItemType::File, UniqueId64::Generate(), fileName, EditorResources::fileIcon->getLoadedAsset().getTextureHandle()));
+		}
     }
     else
     {
@@ -654,8 +663,9 @@ void ContentBrowserPanel::RenderTopBar(float height)
 		{
 			auto& editorSettings = EditorSettings::get();
 
-			bool saveSettings = ImGui::SliderInt("##thumbnail_size", &editorSettings.contentBrowserThumbnailSize, 96, 512);
-			ImguiUtil::SetTooltip("Thumnail Size");
+			bool saveSettings = ImGui::SliderInt("##thumbnail_size", &editorSettings.contentBrowserThumbnailSize, 64, 512);
+			ImGui::SameLine(); ImGui::Text("Thumbnail Size");
+			ImguiUtil::SetTooltip("Thumbnail Size");
 
 			if (saveSettings) {
 			//	ApplicationSettingsSerializer::SaveSettings();
@@ -680,6 +690,8 @@ void ContentBrowserPanel::RenderItems()
 		item->OnRenderBegin();
 
 		CBItemActionResult result = item->OnRender();
+
+		item->OnRenderEnd();
 
 		if (result.IsSet(ContentBrowserAction::ClearSelections))
 			ClearSelections();
@@ -725,11 +737,9 @@ void ContentBrowserPanel::RenderItems()
 		if (result.IsSet(ContentBrowserAction::ShowInExplorer))
 		{
 			if (item->GetType() == ContentBrowserItem::ItemType::Directory) {
-				LOG_CRITICAL("TODO: CHECK IF SHOW IN EXPLORER WORKS");
 				FileSystem::showFileInExplorer(mRootPath / m_CurrentDirectory->FilePath / item->GetName());
 			}
 			else {
-				LOG_CRITICAL("TODO: CHECK IF SHOW IN EXPLORER WORKS");
 				FileSystem::showFileInExplorer(mRootPath / m_CurrentDirectory->FilePath / item->GetName());
 			}
 		}
@@ -749,7 +759,7 @@ void ContentBrowserPanel::RenderItems()
 		if (result.IsSet(ContentBrowserAction::Hovered))
 			m_IsAnyItemHovered = true;
 
-		item->OnRenderEnd();
+		//item->OnRenderEnd();
 
 		if (result.IsSet(ContentBrowserAction::Duplicate))
 		{
@@ -1304,6 +1314,13 @@ ContentBrowserItemList ContentBrowserPanel::Search(const std::string& query, con
 			results.Items.push_back(std::make_shared<ContentBrowserAsset>(asset, icon));
 		}
 	}
+
+    for (auto& fileName : directoryInfo->Files)
+    {
+        if (fileName.find(queryLowerCase) != std::string::npos) {
+            results.Items.push_back(std::make_shared<ContentBrowserItem>(ContentBrowserItem::ItemType::File, UniqueId64::Generate(), fileName, EditorResources::fileIcon->getLoadedAsset().getTextureHandle()));
+        }
+    }
 
 	return results;
 }

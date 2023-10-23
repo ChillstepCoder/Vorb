@@ -100,7 +100,7 @@ CBItemActionResult ContentBrowserItem::OnRender()
     ImguiUtil::DrawButtonImage(mIcon, IM_COL32(255, 255, 255, 225),
         IM_COL32(255, 255, 255, 255),
         IM_COL32(255, 255, 255, 255),
-        ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), -6.0f, -6.0f));
+        ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), 0.0f, 0.0f));
 
     // Info Panel
     //-----------
@@ -269,7 +269,7 @@ CBItemActionResult ContentBrowserItem::OnRender()
                     continue;
 
                 const auto& item = currentItems[index];
-                ImGui::Image((ImTextureID)item->getIcon(), ImVec2(20, 20));
+                ImGui::Image((ImTextureID)item->getIcon(), ImVec2(20, 20), ImVec2(0, 1), ImVec2(1, 0));
                 ImGui::SameLine();
                 const auto& name = item->GetName();
                 ImGui::TextUnformatted(name.c_str());
@@ -490,7 +490,7 @@ bool ContentBrowserDirectory::Move(const std::filesystem::path& destination)
 }
 
 ContentBrowserAsset::ContentBrowserAsset(AssetMetadata assetInfo, VGTexture icon)
-    : ContentBrowserItem(ContentBrowserItem::ItemType::Asset, assetInfo.getUUID(), std::string(Utils::getFilename(assetInfo.mFilePath.getStringView())), icon), m_AssetInfo(assetInfo)
+    : ContentBrowserItem(ContentBrowserItem::ItemType::Asset, assetInfo.getUUID(), Utils::getFilename(assetInfo.mFilePath.getString()), icon), m_AssetInfo(assetInfo)
 {
 }
 
