@@ -15,6 +15,7 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include "ui/ImguiUtil.hpp"
 
 
 // Panel splitter https://github.com/ocornut/imgui/issues/319
@@ -83,6 +84,69 @@ void EditorRoot::updateEditors(World* world, const Camera3D& camera, const f32v3
 
 void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
     if (sDebugOptions.mShowEditor) {
+
+        { // Dockspace
+//             ImguiUtil::ScopedColorStack dockspaceColors(
+//                 ImGuiCol_TitleBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
+//                 ImGuiCol_TitleBgActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
+//                 ImGuiCol_TitleBgCollapsed, ImVec4(0.0f, 0.0f, 0.0f, 0.0f),
+//                 ImGuiCol_TabActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f), // NOTE(Peter): Disable tab bar underline
+//                 ImGuiCol_TabUnfocusedActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f) // NOTE(Peter): Disable tab bar underline
+//             );
+//             //ImGui::DockSpace(mDockspaceID, ImVec2(0, 0)/*ImGui::GetContentRegionAvail()*/, ImGuiDockNodeFlags_PassthruCentralNode);//)ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton);
+//             mDockspaceID = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton);
+        }
+
+        ImGuiViewport* viewport;
+        ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        {
+            viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->Pos);
+            ImGui::SetNextWindowSize(viewport->Size);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+        }
+        // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
+        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+            window_flags |= ImGuiWindowFlags_NoBackground;
+
+        // https://gist.github.com/PossiblyAShrub/0aea9511b84c34e191eaa90dd7225969#file-dock_builder_example-cpp-L8
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("DockSpace", nullptr, window_flags);
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar(2);
+        ImGuiID dockspaceId = ImGui::GetID("MainDockspace");
+        ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspace_flags);
+        //ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton);
+
+        // Rebuild Dockspace
+        
+        if (mRebuildDockspace)
+        {
+            mRebuildDockspace = false;
+            ImGuiID rootId = dockspaceId;
+            ImGui::DockBuilderRemoveNode(rootId); // clear any previous layout
+            ImGui::DockBuilderAddNode(rootId, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(rootId, viewport->Size);
+
+            //ImGuiID dockIdUp;
+            auto dockIdLeft = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.2f, nullptr, &dockspaceId);
+            auto dockIdRight = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Right, 0.25f, nullptr, &dockspaceId);
+            auto dockIdDown = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Down, 0.25f, nullptr, &dockspaceId);
+
+            // we now dock our windows into the docking node we made above
+            ImGui::DockBuilderDockWindow("Primary Controls", dockIdLeft);
+            ImGui::DockBuilderDockWindow("Secondary Controls", dockIdRight);
+            ImGui::DockBuilderDockWindow("Content Browser", dockIdDown);
+            ImGui::DockBuilderFinish(rootId);
+        }
+
+        ImGui::End(); // End dockspace
+
         World* world = mWorldEditorPanel->getActiveWorld();
         const ui32v2& dims = vui::InputDispatcher::window.getCurrentWindowDims();
         const f32 defaultPanelWidth = dims.x * 0.16f;
@@ -91,9 +155,11 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
         f32 rightPanelWidth = 0.0f;
 
         { // Left Panel
-            ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), cond);
+            //ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), cond);
             ImGui::SetNextWindowSize(ImVec2(defaultPanelWidth, dims.y), cond);
-            ImGui::Begin("pl", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+            // ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus)
+            //ImGui::Begin("pl", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar/* | ImGuiWindowFlags_NoMove*/);
+            ImGui::Begin("Primary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
             leftPanelWidth = ImGui::GetCurrentWindowRead()->Size.x;
 
             static f32 ySize1 = ImGui::GetContentRegionAvail().y * 0.5f;
@@ -116,9 +182,9 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
         }
 
         { // Right Panel
-            ImGui::SetNextWindowPos(ImVec2(dims.x - defaultPanelWidth, 0.0f), cond);
+            //ImGui::SetNextWindowPos(ImVec2(dims.x - defaultPanelWidth, 0.0f), cond);
             ImGui::SetNextWindowSize(ImVec2(defaultPanelWidth, dims.y), cond);
-            ImGui::Begin("pr", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+            ImGui::Begin("Secondary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
             rightPanelWidth = ImGui::GetCurrentWindowRead()->Size.x;
 
             TileEditorPanelResult result;

@@ -2,6 +2,8 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
+#include <imgui.h>
+
 DECL_VG(class GBuffer);
 class DebugTweakerPanel;
 class WorldEditorPanel;
@@ -62,5 +64,9 @@ private:
     // Event listeners
     vui::KeyListeners mKeyListeners;
     vui::WindowListeners mWindowListeners;
+
+    // Docking
+    bool mRebuildDockspace = true;
+    ImGuiID mDockspaceID;
 };
 
