@@ -39,7 +39,7 @@ bool CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
         if (nextShader != boundShader) {
             MaterialRenderer::bindMaterialShaderForRender(*nextShader);
             glUniformMatrix4fv(nextShader->getUniform("unVP"), 1, false, &VP[0][0]);
-            glUniformMatrix4fv(nextShader->getUniform("unRootPos"), 1, false, &VP[0][0]);
+            //glUniformMatrix4fv(nextShader->getUniform("unRootPos"), 1, false, &VP[0][0]);
             boundShader = nextShader;
         }
         if (emitter.updateAndRender(elapsedSec)) {

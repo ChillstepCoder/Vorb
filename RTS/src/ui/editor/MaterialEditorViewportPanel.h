@@ -13,8 +13,6 @@ public:
 
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
-    void setMaterial(AssetID assetId);
-
     const char* getViewportWindowName() const override { return "Material Editor"; }
 
 private:

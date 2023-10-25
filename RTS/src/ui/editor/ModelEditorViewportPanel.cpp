@@ -79,11 +79,6 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::EndChild();
 }
 
-void ModelEditorViewportPanel::setModel(ModelID modelId)
-{
-    mAssetHandle = ModelRepository::get().getAssetHandle(modelId);
-}
-
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
     switch (mDrawMode) {
         case EditorViewportDrawMode::PBRTest:

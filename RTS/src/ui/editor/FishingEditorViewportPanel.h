@@ -14,8 +14,6 @@ public:
 
     void renderMesh() override;
 
-    void setFishDef(AssetID fishId);
-
     const char* getViewportWindowName() const override { return "Fish Editor"; }
 
 private:

@@ -14,7 +14,6 @@ public:
     ~FoliageEditorViewportPanel();
 
     void updateAndRenderPrimaryControls(f32 ySize) override;
-    void setGrassData(AssetID tileGrassId);
 
     const char* getViewportWindowName() const override { return "Foliage Editor"; }
 
@@ -27,7 +26,6 @@ private:
     std::vector<std::unique_ptr<GrassMesh>> mGrassMeshes;
     boost::container::flat_set<const GrassMesh*> mGrassMeshesSet;
     std::unique_ptr<GrassRenderer> mGrassRenderer;
-    bool mDirtyFoliageMesh = true;
     i32v2 mDensityGradient = i32v2(255, 255);
 };
 

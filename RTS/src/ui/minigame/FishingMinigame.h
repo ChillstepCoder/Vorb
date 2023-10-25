@@ -52,6 +52,7 @@ private:
     MinigameResultType update();
     void render(f32 elapsedSec);
 
+    void initMinigame();
     void initUIParticles();
     void initPlayerParticles();
     void initBlockerParticles();
@@ -125,5 +126,6 @@ private:
     const MaterialShaderDef* mArenaShader = nullptr;
     const MaterialShaderDef* mUIShader = nullptr;
     AssetHandleBundle mAssetHandles;
+    bool mNeedsInit = true;
 };
 

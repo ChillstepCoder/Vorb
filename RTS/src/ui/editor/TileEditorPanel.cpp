@@ -108,8 +108,8 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
                 // Action
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_MODEL;
-                    result.second = entry.getId();
+                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.second = entry.mDescriptor;
                 }
 
                 ImGui::PopID();
@@ -202,8 +202,8 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 ImGui::TableSetColumnIndex(3);
                 if (def) {
                     if (ImGui::Button("Edit")) {
-                        result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
-                        result.second = entry.getId();
+                        result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                        result.second = entry.mDescriptor;
                     }
                 }
                 else {
@@ -300,8 +300,8 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
                 // Action
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_FOLIAGE;
-                    result.second = entry.getId();
+                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.second = entry.mDescriptor;
                 }
 
                 ImGui::PopID();
@@ -374,8 +374,8 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_FISH;
-                    result.second = entry.getId();
+                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.second = entry.mDescriptor;
                 }
                 ImGui::PopID();
                 return false;
@@ -391,8 +391,8 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
     if (ImGui::BeginTabItem("Particles")) {
         ImGui::Text("Particle Systems");
         if (ImGui::Button("Open Editor")) {
-            result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
-            result.second = INVALID_ASSET_ID;
+            result.first = TileEditorPanelResultCode::EDIT_ASSET;
+            result.second = AssetDescriptor{ .id = 0, .assetType = AssetType::ParticleSystem };
         }
 
         ParticleSystemRepository& particleSystemRepository = ParticleSystemRepository::get();
@@ -439,8 +439,8 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_PARTICLE;
-                    result.second = entry.getId();
+                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.second = entry.mDescriptor;
                 }
 
                 ImGui::PopID();

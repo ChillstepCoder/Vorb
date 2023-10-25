@@ -12,8 +12,6 @@ public:
 
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
-    void setModel(ModelID modelId);
-
     const char* getViewportWindowName() const override { return "Model Editor"; }
 
 private:

@@ -14,16 +14,12 @@ DECL_VG(class GBuffer);
 
 enum class TileEditorPanelResultCode {
     NONE,
-    EDIT_MODEL,
-    EDIT_MATERIAL,
-    EDIT_FOLIAGE,
+    EDIT_ASSET,
     EDIT_BIOME,
-    EDIT_FISH,
-    EDIT_PARTICLE,
     COUNT
 };
 
-typedef std::variant<AssetID> TileEditorPanelResultVariant;
+typedef std::variant<AssetDescriptor> TileEditorPanelResultVariant;
 
 typedef std::pair<TileEditorPanelResultCode, TileEditorPanelResultVariant> TileEditorPanelResult;
 

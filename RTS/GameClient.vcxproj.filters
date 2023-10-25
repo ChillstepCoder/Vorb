@@ -2111,6 +2111,9 @@
     <ClInclude Include="src\ui\editor\AssetEditorViewportPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\editor\AssetEditorViewportPanelBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

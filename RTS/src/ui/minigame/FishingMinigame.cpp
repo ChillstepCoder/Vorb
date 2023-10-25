@@ -89,15 +89,7 @@ FishingMinigame::FishingMinigame(const FishDef& fishData, OPT FishingMinigameGam
     mArenaShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, CStrToken("fishing_arena"));
     mUIShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mAssetHandles, CStrToken("particle_bb_2d"));
 
-    initUIParticles();
-
-    initPlayerParticles();
     
-    if (!mFlags.isBitSet(FishingMinigameFlags::DISABLE_DEBRIS)) {
-        initBlockerParticles();
-    }
-
-    initBubbleParticles();
 }
 
 FishingMinigame::~FishingMinigame()
@@ -107,6 +99,10 @@ FishingMinigame::~FishingMinigame()
 MinigameResult FishingMinigame::updateAndRender(const f32v2 screenResolution, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
     if (!mAssetHandles.areAllAssetsLoaded()) return MinigameResult();
+    if (mNeedsInit) {
+        mNeedsInit = false;
+        initMinigame();
+    }
 
     mCurrentScreenResolution = screenResolution;
 
@@ -254,6 +250,18 @@ void FishingMinigame::render(f32 elapsedSec) {
     mPlayerParticleSystem->updateAndRender(elapsedSec, camera);
 
     vg::DepthState::restorePrevious();
+}
+
+void FishingMinigame::initMinigame() {
+    initUIParticles();
+
+    initPlayerParticles();
+
+    if (!mFlags.isBitSet(FishingMinigameFlags::DISABLE_DEBRIS)) {
+        initBlockerParticles();
+    }
+
+    initBubbleParticles();
 }
 
 void FishingMinigame::initUIParticles() {

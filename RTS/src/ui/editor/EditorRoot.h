@@ -4,6 +4,8 @@
 
 #include <imgui.h>
 
+#include "ui/editor/AssetEditorViewportPanelBase.h"
+
 DECL_VG(class GBuffer);
 class DebugTweakerPanel;
 class WorldEditorPanel;
@@ -36,12 +38,9 @@ public:
     IEditorViewportPanel* getActiveCenterPanel() const { return mActiveCenterPanel; }
 
 private:
-    void openModelForEdit(AssetID modelId);
-    void openMaterialForEdit(AssetID materialId);
-    void openFoliageForEdit(AssetID grassId);
+    // Returns false if there is no valid editor
+    bool tryOpenAssetForEdit(AssetType type, AssetID assetId);
     void openBiomeForEdit();
-    void openFishForEdit(AssetID fishaid);
-    void openParticleSystemForEdit(AssetID systemId);
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 
     // Center panel display
@@ -52,12 +51,8 @@ private:
     std::unique_ptr<WorldEditorPanel> mWorldEditorPanel;
     std::unique_ptr<TileEditorPanel> mTileEditorPanel;
     // Viewport panels
-    std::unique_ptr<ModelEditorViewportPanel> mModelEditorViewportPanel;
-    std::unique_ptr<MaterialEditorViewportPanel> mMaterialEditorViewportPanel;
-    std::unique_ptr<FoliageEditorViewportPanel> mFoliageEditorViewportPanel;
+    std::map<AssetType, std::unique_ptr<AssetEditorViewportPanelBase>> mAssetEditorPanels;
     std::unique_ptr<BiomeEditorViewportPanel> mBiomeEditorViewportPanel;
-    std::unique_ptr<FishingEditorViewportPanel> mFishingEditorViewportPanel;
-    std::unique_ptr<ParticleSystemEditorViewportPanel> mParticleSystemEditorViewportPanel;
 
     std::unique_ptr<ContentBrowserPanel> mContentBrowserPanel;
 

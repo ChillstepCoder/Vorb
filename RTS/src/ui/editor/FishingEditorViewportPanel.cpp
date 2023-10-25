@@ -20,6 +20,11 @@ FishingEditorViewportPanel::FishingEditorViewportPanel() : AssetEditorViewportPa
 }
 
 void FishingEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
+    if (mAssetWasChanged) {
+        mCurrentFishingMinigame.reset();
+        mAssetWasChanged = false;
+    }
+
     renderCenterPanel(nullptr);
 }
 
@@ -99,11 +104,6 @@ void FishingEditorViewportPanel::renderMesh() {
     else {
         renderFishModel();
     }
-}
-
-void FishingEditorViewportPanel::setFishDef(AssetID fishId) {
-    mAssetHandle = FishRepository::get().getAssetHandle(fishId);
-    mCurrentFishingMinigame.reset();
 }
 
 void FishingEditorViewportPanel::renderFishModel() {

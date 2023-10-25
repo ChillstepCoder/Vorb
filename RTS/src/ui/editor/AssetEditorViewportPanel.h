@@ -1,14 +1,9 @@
 #pragma once
 
-#include "IEditorViewportPanel.h"
-
 #include <imgui.h>
 
-// TODO: Move out?
-class AssetEditorViewportPanelBase : public IEditorViewportPanel {
-public:
-    virtual const char* getViewportWindowName() const = 0;
-};
+#include "AssetEditorViewportPanelBase.h"
+#include "resources/IAssetRepository.h"
 
 template <typename T>
 class AssetEditorViewportPanel : public AssetEditorViewportPanelBase {
@@ -42,11 +37,23 @@ public:
         return isOpen;
     }
 
+    void setCurrentAsset(AssetID assetId) override {
+        if (assetId == INVALID_ASSET_ID) {
+            mAssetHandle = nullptr;
+            mAssetData = nullptr;
+        }
+        else {
+            mAssetHandle = IAssetRepository<T>::getInstance().getAssetHandle(assetId);
+        }
+        mAssetWasChanged = true;
+    }
+
     virtual void updateAndRenderInternal(f32 elapsedSec) = 0;
 protected:
     AssetHandlePtr<T> mAssetHandle;
     T* mAssetData = nullptr;
     f32 mCurrentElapsedSec = 0.0f;
     f32v2 mViewportDims = f32v2(0.0f);
+    bool mAssetWasChanged = true; // Always starts true for initialization
 };
 

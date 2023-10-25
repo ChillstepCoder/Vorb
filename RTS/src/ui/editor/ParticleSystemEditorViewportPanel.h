@@ -22,8 +22,6 @@ public:
 
     void renderMesh() override;
 
-    void setParticleSystemDef(AssetID systemId);
-
     const char* getViewportWindowName() const override { return "Particle System Editor"; }
 
 private:

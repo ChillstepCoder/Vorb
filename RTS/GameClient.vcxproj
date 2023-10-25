@@ -838,6 +838,7 @@
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\editor\AssetEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\AssetEditorViewportPanelBase.h" />
     <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ContentBrowserPanel.h" />
     <ClInclude Include="src\ui\editor\ContentBrowser\ContentBrowserItem.h" />

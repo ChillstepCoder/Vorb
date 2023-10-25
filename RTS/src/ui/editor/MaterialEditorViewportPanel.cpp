@@ -73,10 +73,6 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::EndChild();
 }
 
-void MaterialEditorViewportPanel::setMaterial(AssetID assetId) {
-    mAssetHandle = MaterialRepository::get().getAssetHandle(assetId);
-}
-
 const MaterialShaderDef* MaterialEditorViewportPanel::getShader()
 {
     switch (mDrawMode) {

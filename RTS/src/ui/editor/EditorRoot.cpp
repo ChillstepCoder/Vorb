@@ -41,12 +41,15 @@ EditorRoot::EditorRoot() {
     mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>();
     mWorldEditorPanel = std::make_unique<WorldEditorPanel>();
     mTileEditorPanel = std::make_unique<TileEditorPanel>();
-    mModelEditorViewportPanel = std::make_unique<ModelEditorViewportPanel>();
-    mMaterialEditorViewportPanel = std::make_unique<MaterialEditorViewportPanel>();
-    mFoliageEditorViewportPanel = std::make_unique<FoliageEditorViewportPanel>();
+
+    // Asset editors
+    mAssetEditorPanels[AssetType::Model] = std::make_unique<ModelEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::Material] = std::make_unique<MaterialEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::TileGrass] = std::make_unique<FoliageEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::Fish] = std::make_unique<FishingEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::ParticleSystem] = std::make_unique<ParticleSystemEditorViewportPanel>();
+
     mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
-    mFishingEditorViewportPanel = std::make_unique<FishingEditorViewportPanel>();
-    mParticleSystemEditorViewportPanel = std::make_unique<ParticleSystemEditorViewportPanel>();
     mContentBrowserPanel = std::make_unique<ContentBrowserPanel>(ResourceManager::get().getResourceRoot().getStdPath());
 
     // Initialize inputs
@@ -209,31 +212,20 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             {
                 case TileEditorPanelResultCode::NONE:
                     break;
-                case TileEditorPanelResultCode::EDIT_MODEL:
-                    openModelForEdit(std::get<AssetID>(result.second));
+                case TileEditorPanelResultCode::EDIT_ASSET: {
+                    AssetDescriptor desc = std::get<AssetDescriptor>(result.second);
+                    tryOpenAssetForEdit(desc.assetType, desc.id);
                     break;
-                case TileEditorPanelResultCode::EDIT_MATERIAL:
-                    openMaterialForEdit(std::get<AssetID>(result.second));
-                    break;
-                case TileEditorPanelResultCode::EDIT_FOLIAGE:
-                    openFoliageForEdit(std::get<AssetID>(result.second));
-                    break;
+                }
                 case TileEditorPanelResultCode::EDIT_BIOME:
                     // TODO: Biome
                     openBiomeForEdit();
-                    break;
-                case TileEditorPanelResultCode::EDIT_FISH:
-                    // TODO: Fich
-                    openFishForEdit(std::get<AssetID>(result.second));
-                    break;
-                case TileEditorPanelResultCode::EDIT_PARTICLE:
-                    openParticleSystemForEdit(std::get<AssetID>(result.second));
                     break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_count(TileEditorPanelResultCode) == 7);
+            static_assert(e_count(TileEditorPanelResultCode) == 3);
 
         }
         if (mActiveCenterPanel) {
@@ -286,33 +278,18 @@ void EditorRoot::renderEditorBrushDecals(const Camera3D& camera) {
     }
 }
 
-void EditorRoot::openModelForEdit(AssetID modelId) {
-    mModelEditorViewportPanel->setModel(modelId);
-    setActiveCenterPanel(mModelEditorViewportPanel.get());
-}
-
-void EditorRoot::openMaterialForEdit(AssetID materialId) {
-    mMaterialEditorViewportPanel->setMaterial(materialId);
-    setActiveCenterPanel(mMaterialEditorViewportPanel.get());
-}
-
-void EditorRoot::openFoliageForEdit(AssetID grassId) {
-    mFoliageEditorViewportPanel->setGrassData(grassId);
-    setActiveCenterPanel(mFoliageEditorViewportPanel.get());
+bool EditorRoot::tryOpenAssetForEdit(AssetType type, AssetID assetId)
+{
+    auto&& it = mAssetEditorPanels.find(type);
+    if (it == mAssetEditorPanels.end()) {
+        return false;
+    }
+    it->second->setCurrentAsset(assetId);
+    setActiveCenterPanel(it->second.get());
 }
 
 void EditorRoot::openBiomeForEdit() {
     setActiveCenterPanel(mBiomeEditorViewportPanel.get());
-}
-
-void EditorRoot::openFishForEdit(AssetID fishId) {
-    mFishingEditorViewportPanel->setFishDef(fishId);
-    setActiveCenterPanel(mFishingEditorViewportPanel.get());
-}
-
-void EditorRoot::openParticleSystemForEdit(AssetID systemId) {
-    mParticleSystemEditorViewportPanel->setParticleSystemDef(systemId);
-    setActiveCenterPanel(mParticleSystemEditorViewportPanel.get());
 }
 
 void EditorRoot::setActiveCenterPanel(IEditorViewportPanel* newCenterPanel)

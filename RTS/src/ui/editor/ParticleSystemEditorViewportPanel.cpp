@@ -48,8 +48,17 @@ ParticleSystemEditorViewportPanel::~ParticleSystemEditorViewportPanel() {
 void ParticleSystemEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
     mCurrentTime += elapsedSec;
 
+    if (mAssetWasChanged) {
+        mAssetWasChanged = false;
+        if (mAssetData) {
+            mSelectedEmitter = &mAssetData->mEmitters[0];
+        }
+        createPreviewSystem();
+    }
+
     if (!mAssetData) {
         mCurrentTime = mTimelineEnd;
+        mSelectedEmitter = nullptr;
     }
     if (mCurrentTime >= mTimelineEnd) {
         createPreviewSystem();
@@ -447,24 +456,6 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
     if (mPreviewSystem) {
         mPreviewSystem->updateAndRenderEditor(mCurrentElapsedSec, camera->getViewProjectionMatrix(), mShowEmitters);
     }
-}
-
-void ParticleSystemEditorViewportPanel::setParticleSystemDef(AssetID systemId) {
-    if (systemId == INVALID_ASSET_ID) {
-        mAssetHandle = nullptr;
-        mAssetData = nullptr;
-        mSelectedEmitter = nullptr;
-        return;
-    }
-    mAssetHandle = ParticleSystemRepository::get().getAssetHandle(systemId);
-    if (systemIsLoaded()) {
-        mAssetData = mAssetHandle->editorTryGetMutableAsset();
-        mSelectedEmitter = &mAssetData->mEmitters[0];
-    }
-    else {
-        mSelectedEmitter = nullptr;
-    }
-    createPreviewSystem();
 }
 
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {
