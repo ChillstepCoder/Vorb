@@ -454,6 +454,7 @@
     <ClCompile Include="src\time\GameTimeManager.cpp" />
     <ClCompile Include="src\time\TimeOfDayManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
+    <ClCompile Include="src\ui\editor\AssetEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ContentBrowserPanel.cpp" />
     <ClCompile Include="src\ui\editor\ContentBrowser\ContentBrowserItem.cpp" />
@@ -836,6 +837,7 @@
     <ClInclude Include="src\time\TimeOfDayManager.h" />
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
+    <ClInclude Include="src\ui\editor\AssetEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ContentBrowserPanel.h" />
     <ClInclude Include="src\ui\editor\ContentBrowser\ContentBrowserItem.h" />

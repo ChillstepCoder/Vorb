@@ -28,42 +28,8 @@ ModelEditorViewportPanel::~ModelEditorViewportPanel()
 {
 }
 
-bool ModelEditorViewportPanel::updateAndRender(f32 elapsedSec) {
-
-    if (mModelHandle) {
-        // Editor can mutate the model
-        mCurrentModel = const_cast<ModelDef*>(mModelHandle->tryGetLoadedAsset());
-    }
-    else {
-        mCurrentModel = nullptr;
-    }
-
-    bool isOpen = true;
-    ImGui::Begin("Model Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-
-    ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-    updateCamera(imageDims.x / imageDims.y);
-
-    if (mCurrentModel) {
-        ImGui::Text(mCurrentModel->getName().toString().c_str());
-    }
-    else {
-        ImGui::Text("NO MODEL");
-    }
-
-    // Lazy init so we don't use GPU memory when not in editor
-    if (sGBuffers[0] == nullptr) {
-        initGBuffers(imageDims);
-    }
-    
+void ModelEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
     renderCenterPanel(nullptr);
-
-    ImGui::End();
-
-    return isOpen;
 }
 
 void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
@@ -74,18 +40,18 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     updateAndRenderSharedControls();
     ImGui::Separator();
 
-    if (mCurrentModel) {
-        ImGui::Text("Name: %s", mCurrentModel->getName().toString().c_str());
-        if (ImGui::BeginCombo("Shadow detail", ENUM_CSTR(ShadowLodDetail, mCurrentModel->mShadowDetail))) {
+    if (mAssetData) {
+        ImGui::Text("Name: %s", mAssetData->getName().toString().c_str());
+        if (ImGui::BeginCombo("Shadow detail", ENUM_CSTR(ShadowLodDetail, mAssetData->mShadowDetail))) {
 
             for (int i = e_cast(ShadowLodDetail::None); i <= e_cast(ShadowLodDetail::Highest); ++i) {
-                bool isSelected = e_cast(mCurrentModel->mShadowDetail) == i;
+                bool isSelected = e_cast(mAssetData->mShadowDetail) == i;
                 ImGui::Selectable(ENUM_CSTR(ShadowLodDetail, (ShadowLodDetail)i), &isSelected);
 
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();
-                    if (e_cast(mCurrentModel->mShadowDetail) != i) {
-                        mCurrentModel->mShadowDetail = (ShadowLodDetail)i;
+                    if (e_cast(mAssetData->mShadowDetail) != i) {
+                        mAssetData->mShadowDetail = (ShadowLodDetail)i;
                         mDirtyModelData = true;
                     }
                 }
@@ -99,10 +65,10 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         {
             ImGui::SetTooltip("LOD is auto generated");
         }
-        ImGui::Text("MeshCount %d", mCurrentModel->getNumMeshes());
+        ImGui::Text("MeshCount %d", mAssetData->getNumMeshes());
         int polyCount = 0;
-        for (int i = 0; i < mCurrentModel->getNumMeshes(); ++i) {
-            const Mesh& mesh = mCurrentModel->getMesh(i);
+        for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+            const Mesh& mesh = mAssetData->getMesh(i);
             polyCount += mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3;
         }
         ImGui::Text("Polygons %d", polyCount);
@@ -115,7 +81,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 
 void ModelEditorViewportPanel::setModel(ModelID modelId)
 {
-    mModelHandle = ModelRepository::get().getAssetHandle(modelId);
+    mAssetHandle = ModelRepository::get().getAssetHandle(modelId);
 }
 
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
@@ -151,9 +117,9 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 }
 
 void ModelEditorViewportPanel::renderMesh() {
-    if (mCurrentModel) {
-        for (int i = 0; i < mCurrentModel->getNumMeshes(); ++i) {
-            MeshDrawer::draw(mCurrentModel->getMesh(i).mMainMesh, MeshLODLevel(mLod));
+    if (mAssetData) {
+        for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+            MeshDrawer::draw(mAssetData->getMesh(i).mMainMesh, MeshLODLevel(mLod));
         }
     }
 }

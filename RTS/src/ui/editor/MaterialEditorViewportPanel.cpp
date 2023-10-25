@@ -25,43 +25,9 @@ MaterialEditorViewportPanel::~MaterialEditorViewportPanel()
 {
 }
 
-bool MaterialEditorViewportPanel::updateAndRender(f32 elapsedSec)
+void MaterialEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec)
 {
-    if (mMaterialAsset) {
-        // Editor can mutate
-        mCurrentMaterial = const_cast<MaterialDef*>(mMaterialAsset->tryGetLoadedAsset());
-    }
-    else {
-        mCurrentMaterial = nullptr;
-    }
-
-    bool isOpen = true;
-    ImGui::Begin("Material Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-
-    ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-
-    updateCamera(imageDims.x / imageDims.y);
-
-    if (mCurrentMaterial) {
-        ImGui::Text(mCurrentMaterial->getName().toString().c_str());
-    }
-    else {
-        ImGui::Text("NO MATERIAL");
-    }
-
-    glDisable(GL_CULL_FACE);
-    vg::DepthState::FULL.set();
-
-    renderGrid(camera->getViewProjectionMatrix());
     renderCenterPanel(nullptr);
-
-
-    ImGui::End();
-
-    return isOpen;
 }
 
 void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
@@ -99,7 +65,7 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 
     ImGui::SliderFloat("UV Scale", &mUvScale, 0.0f, 4.0f);
 
-    if (mCurrentMaterial) {
+    if (mAssetData) {
         updateAndRenderTweakers();
     }
     ImGui::Separator();
@@ -108,7 +74,7 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 }
 
 void MaterialEditorViewportPanel::setMaterial(AssetID assetId) {
-    mMaterialAsset = MaterialRepository::get().getAssetHandle(assetId);
+    mAssetHandle = MaterialRepository::get().getAssetHandle(assetId);
 }
 
 const MaterialShaderDef* MaterialEditorViewportPanel::getShader()
@@ -146,7 +112,7 @@ void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShade
     UNUSED(availableTextureUnit);
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
         VGUniform unMaterialIndex = shader->getUniform("unMaterialIndex");
-        glUniform1i(unMaterialIndex, mCurrentMaterial->getID());
+        glUniform1i(unMaterialIndex, mAssetData->getID());
     }
     glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 1.0f, 0.0f);
     if (const VGUniform* uniform = shader->tryGetUniform("unUvScale")) {

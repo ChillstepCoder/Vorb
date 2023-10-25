@@ -6,7 +6,7 @@ class EffectRepository : public IAssetRepository<EffectDef> {
 public:
     ASSET_REPOSITORY_COMMON_CODE(EffectRepository, EffectDef, AssetType::Effect)
 
-    bool saveAsset(AssetID assetId) override { panic("Cannot save effects yet"); }
+    bool saveAsset(AssetID assetId) override;
 
     StrToken getAssetExtension() const override { return CStrToken("effect"); }
     const char* const getAssetTypeDisplayName() const override { return "Effect"; }

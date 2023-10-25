@@ -95,7 +95,7 @@ UniqueId64 ContentBrowserPanel::ProcessDirectory(const std::filesystem::path& di
 			}
 			else {
 				// Is a random file
-				directoryInfo->Files.emplace_back(Utils::getFilename(entry.path().string()));
+				directoryInfo->Files.insert(std::make_pair(UniqueId64::Generate(), Utils::getFilename(entry.path().string())));
 			}
         }
     }
@@ -133,8 +133,8 @@ void ContentBrowserPanel::ChangeDirectory(std::shared_ptr<DirectoryInfo>& direct
             }
         }
 
-		for (auto& fileName : directory->Files) {
-			m_CurrentItems.Items.emplace_back(std::make_shared<ContentBrowserItem>(ContentBrowserItem::ItemType::File, UniqueId64::Generate(), fileName, EditorResources::fileIcon->getLoadedAsset().getTextureHandle()));
+		for (auto&& it : directory->Files) {
+			m_CurrentItems.Items.emplace_back(std::make_shared<ContentBrowserItem>(ContentBrowserItem::ItemType::File, it.first, it.second, EditorResources::fileIcon->getLoadedAsset().getTextureHandle()));
 		}
     }
     else
@@ -284,7 +284,7 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
                              }*/
                         }
 
-                        if (ImGui::MenuItem("std::shared_ptrresh")) {
+                        if (ImGui::MenuItem("Refresh")) {
                             Refresh();
                         }
 
@@ -304,8 +304,7 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
                         ImGui::Separator();
 
                         if (ImGui::MenuItem("Show in Explorer")) {
-                            panic("TODO: Implement show in explorer");
-                            //FileSystem::OpenDirectoryInExplorer(Project::GetAssetDirectory() / m_CurrentDirectory->FilePath);
+                            FileSystem::openDirectoryInExplorer(mRootPath / m_CurrentDirectory->FilePath);
                         }
                         ImGui::EndPopup();
                     }
@@ -334,7 +333,7 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
 
                     ImGui::PopStyleColor(2);
 
-                    //RenderDeleteDialogue();
+                    RenderDeleteDialogue();
                     //RenderNewScriptDialogue();
                 }
                 ImGui::EndChild();
@@ -747,11 +746,9 @@ void ContentBrowserPanel::RenderItems()
 		if (result.IsSet(ContentBrowserAction::OpenExternal))
 		{
             if (item->GetType() == ContentBrowserItem::ItemType::Directory) {
-                LOG_CRITICAL("TODO: CHECK IF OPEN EXTERNAL WORKS");
 				FileSystem::openExternally(mRootPath / m_CurrentDirectory->FilePath / item->GetName());
 			}
             else {
-                LOG_CRITICAL("TODO: CHECK IF OPEN EXTERNAL WORKS");
 				FileSystem::openExternally(mRootPath / m_CurrentDirectory->FilePath / item->GetName());
 			}
 		}
@@ -849,11 +846,18 @@ void ContentBrowserPanel::RenderBottomBar(float height)
 				filepath = m_Directories[firstSelection]->FilePath.string();
 			}
 			else {
-                // Is an asset
-				AssetDescriptor desc(AssetDescriptor::fromUUID(firstSelection));
-				if (desc.isValid()) {
-					AssetMetadata assetMetadata = Services::ResourceManager::ref().getAssetMetadata(desc);
-					filepath = assetMetadata.mFilePath.getString();
+				auto&& it = m_CurrentDirectory->Files.find(firstSelection);
+				if (it != m_CurrentDirectory->Files.end()) {
+					// Random file
+					filepath = (m_CurrentDirectory->FilePath / std::filesystem::path(it->second)).string();
+				}
+				else {
+					// Asset
+					AssetDescriptor desc(AssetDescriptor::fromUUID(firstSelection));
+					if (desc.isValid()) {
+						AssetMetadata assetMetadata = Services::ResourceManager::ref().getAssetMetadata(desc);
+						filepath = assetMetadata.mFilePath.getString();
+					}
 				}
 			}
 
@@ -895,8 +899,8 @@ void ContentBrowserPanel::UpdateInput()
 	if ((!m_IsAnyItemHovered && ImGui::IsMouseDown(ImGuiMouseButton_Left)) || vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE))
 		ClearSelections();
 
-	//if (Input::IsKeyDown(KeyCode::Delete) && EditorSelectionManager::GetSelectionCount(EditorSelectionContext::ContentBrowser) > 0)
-	//	ImGui::OpenPopup("Delete");
+	if (vui::InputDispatcher::key.isKeyPressed(VKEY_DELETE) && EditorSelectionManager::getSelectionCount(EditorSelectionContext::ContentBrowser) > 0)
+		ImGui::OpenPopup("Delete");
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_F5))
 		Refresh();
@@ -1069,9 +1073,17 @@ void ContentBrowserPanel::PasteCopiedAssets()
             auto filepath = GetUniquePath(originalFilePath);
             assert(!std::filesystem::exists(filepath));
             std::filesystem::copy_file(originalFilePath, filepath);
-        }
+		}
+		else if (item->GetType() == ContentBrowserItem::ItemType::File) {
+			originalFilePath /= static_pointer_cast<ContentBrowserItem>(item)->GetName();
+            auto filepath = GetUniquePath(originalFilePath);
+            assert(!std::filesystem::exists(filepath));
+            std::filesystem::copy_file(originalFilePath, filepath);
+		}
         else
         {
+			// Directory
+			assert(item->GetType() == ContentBrowserItem::ItemType::Directory);
             originalFilePath /= static_pointer_cast<ContentBrowserDirectory>(item)->GetDirectoryInfo()->FilePath;
             auto filepath = GetUniquePath(originalFilePath);
             assert(!std::filesystem::exists(filepath));
@@ -1315,10 +1327,10 @@ ContentBrowserItemList ContentBrowserPanel::Search(const std::string& query, con
 		}
 	}
 
-    for (auto& fileName : directoryInfo->Files)
+    for (auto&& it : directoryInfo->Files)
     {
-        if (fileName.find(queryLowerCase) != std::string::npos) {
-            results.Items.push_back(std::make_shared<ContentBrowserItem>(ContentBrowserItem::ItemType::File, UniqueId64::Generate(), fileName, EditorResources::fileIcon->getLoadedAsset().getTextureHandle()));
+        if (it.second.find(queryLowerCase) != std::string::npos) {
+            results.Items.push_back(std::make_shared<ContentBrowserItem>(ContentBrowserItem::ItemType::File, it.first, it.second, EditorResources::fileIcon->getLoadedAsset().getTextureHandle()));
         }
     }
 

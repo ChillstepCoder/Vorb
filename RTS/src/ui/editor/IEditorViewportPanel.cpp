@@ -45,13 +45,9 @@ void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
 
     const i32v2 imageDims = i32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
 
-    // Lazy init resources
-    updateFramebufferAndLazyInit(imageDims);
-
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    clearFramebuffers();
     renderSkybox();
 
     const MaterialShaderDef* shader = getShader();

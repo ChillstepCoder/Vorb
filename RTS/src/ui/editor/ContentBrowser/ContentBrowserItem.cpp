@@ -389,6 +389,8 @@ void ContentBrowserItem::OnContextMenuOpen(CBItemActionResult& actionResult)
     if (ImGui::MenuItem("Delete"))
         actionResult.Set(ContentBrowserAction::OpenDeleteDialogue, true);
 
+    RenderCustomContextItems(actionResult);
+
     ImGui::Separator();
 
     if (ImGui::MenuItem("Show In Explorer"))
@@ -397,7 +399,6 @@ void ContentBrowserItem::OnContextMenuOpen(CBItemActionResult& actionResult)
     if (ImGui::MenuItem("Open Externally"))
         actionResult.Set(ContentBrowserAction::OpenExternal, true);
 
-    RenderCustomContextItems();
 }
 
 ContentBrowserDirectory::ContentBrowserDirectory(const std::shared_ptr<DirectoryInfo>& directoryInfo)
@@ -509,7 +510,9 @@ void ContentBrowserAsset::Delete()
     }
 
     auto currentDirectory = ContentBrowserPanel::Get().GetDirectory(m_AssetInfo.mFilePath.getStdPath().parent_path());
-    currentDirectory->Assets.erase(std::remove(currentDirectory->Assets.begin(), currentDirectory->Assets.end(), AssetDescriptor::fromUUID(m_AssetInfo.getUUID())), currentDirectory->Assets.end());
+    if (currentDirectory) {
+        currentDirectory->Assets.erase(std::remove(currentDirectory->Assets.begin(), currentDirectory->Assets.end(), AssetDescriptor::fromUUID(m_AssetInfo.getUUID())), currentDirectory->Assets.end());
+    }
     //TODO: UPDATE ASSET DATA
     //TODO: NO EVENT URGH
     //Project::GetEditorAssetManager()->OnAssetDeleted(m_AssetInfo.Handle);
@@ -556,5 +559,13 @@ void ContentBrowserAsset::OnRenamed(const std::string& newName)
     else
     {
         LOG_CRITICAL("Couldn't rename {} to {}!", filepath.filename().string(), newName);
+    }
+}
+
+void ContentBrowserAsset::RenderCustomContextItems(CBItemActionResult& actionResult)
+{
+    IAssetRepositoryBase& baseRepo = ResourceManager::get().getAssetRepository(m_AssetInfo.getAssetType());
+    if (baseRepo.renderImguiAssetActions(m_AssetInfo)) {
+        actionResult.Set(ContentBrowserAction::Refresh, true);
     }
 }

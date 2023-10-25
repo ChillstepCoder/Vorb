@@ -1,27 +1,26 @@
 #pragma once
 
-#include "IEditorViewportPanel.h"
+#include "AssetEditorViewportPanel.h"
 
-class ModelDef;
+#include "definitions/ModelDef.h"
 
-class ModelEditorViewportPanel : public IEditorViewportPanel
+class ModelEditorViewportPanel : public AssetEditorViewportPanel<ModelDef>
 {
 public:
     ModelEditorViewportPanel();
     ~ModelEditorViewportPanel();
 
-    bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void setModel(ModelID modelId);
 
+    const char* getViewportWindowName() const override { return "Model Editor"; }
+
 private:
+    void updateAndRenderInternal(f32 elapsedSec) override;
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
-
-    AssetHandlePtr<ModelDef> mModelHandle;
-    ModelDef* mCurrentModel = nullptr;
 
     AssetHandlePtr<MaterialShaderDef> mPbrMaterial;
     AssetHandlePtr<MaterialShaderDef> mEditorMaterial;

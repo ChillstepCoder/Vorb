@@ -140,6 +140,6 @@ protected:
 
     // Config
     bool mShowDrawModeDropdown = true;
-    f32v4 mClearColor = f32v4(1.0f, 1.0f, 1.0f, 1.0f);
+    f32v4 mClearColor = f32v4(0.3f, 0.3f, 0.3f, 1.0f);
 };
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditorViewportPanel.h"
+#include "AssetEditorViewportPanel.h"
 
 #include "resources/IAssetRepository.h"
 #include "definitions/ParticleSystemDef.h"
@@ -8,12 +8,11 @@ class ParticleEmitterDef;
 class CPUParticleEmitterModule;
 class CPUParticleSystem;
 
-class ParticleSystemEditorViewportPanel : public IEditorViewportPanel {
+class ParticleSystemEditorViewportPanel : public AssetEditorViewportPanel<ParticleSystemDef> {
 public:
     ParticleSystemEditorViewportPanel();
     ~ParticleSystemEditorViewportPanel();
 
-    bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
     bool updateAndRenderSecondaryControls(f32 ySize) override;
     bool updateAndRenderTertiaryControls(f32 ySize) override;
@@ -25,7 +24,10 @@ public:
 
     void setParticleSystemDef(AssetID systemId);
 
+    const char* getViewportWindowName() const override { return "Particle System Editor"; }
+
 private:
+    void updateAndRenderInternal(f32 elapsedSec) override;
     void createPreviewSystem();
     void updatePopups();
 
@@ -34,10 +36,7 @@ private:
 
     std::vector<nString> getGlobalEmitterNames();
 
-    bool systemIsLoaded() const { return mSystemDefHandle != nullptr && mSystemDefHandle->isLoaded(); }
-
-    AssetHandlePtr<ParticleSystemDef> mSystemDefHandle = nullptr;
-    ParticleSystemDef* mSystemDef = nullptr;
+    bool systemIsLoaded() const { return mAssetHandle != nullptr && mAssetHandle->isLoaded(); }
 
     ParticleEmitterDef* mSelectedEmitter = nullptr;
     CPUParticleEmitterModule* mSelectedModule = nullptr;
@@ -56,7 +55,6 @@ private:
     std::unique_ptr<CPUParticleSystem> mPreviewSystem;
     f32 mTimelineEnd = 3.0f;
     f32 mCurrentTime = 0.0f;
-    f32 mCurrentElapsedSec = 0.0f;
 
     f32 mBottomHeight = 120.0f;
 

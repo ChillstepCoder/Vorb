@@ -4,11 +4,15 @@
 #include <fstream>
 #include <Vorb/io/IOManager.h>
 
+#include "resources/EffectRepository.h"
 #include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
 #include "rendering/MaterialShaderRepository.h"
+
+#include <imgui.h>
+#include <imgui_internal.h>
 
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
@@ -58,6 +62,34 @@ bool ParticleSystemRepository::saveAsset(AssetID id) {
     ss << tree;
     nString str = ss.str();
     return saveAssetContents(particleSystem, filePath, str.c_str(), str.size());
+}
+
+bool ParticleSystemRepository::renderImguiAssetActions(AssetMetadata& asset) {
+    bool shouldRefresh = false;
+    if (ImGui::BeginMenu("Asset Actions")) {
+        if (ImGui::MenuItem("Create EffectDef")) {
+            EffectRepository& effectRepo = EffectRepository::get();
+            AssetHandlePtr<EffectDef> newAssetHandle = effectRepo.editorTryAddNewAsset(asset.mName);
+            if (newAssetHandle) {
+                EffectDef* newAssetPtr = newAssetHandle->editorTryGetMutableAsset();
+                assert(newAssetPtr);
+                newAssetPtr->mParticleSystemName = asset.mName;
+                newAssetPtr->addDependency(getAssetHandle(asset.getId()));
+
+                vio::Path targetDir = getAssetFilePath(asset.getId()).trimEnd();
+                targetDir /= (asset.mName.toString() + "." + effectRepo.getAssetExtension().toString());
+
+                effectRepo.changeAssetFilePath(newAssetHandle->getAssetID(), targetDir);
+                effectRepo.saveAsset(newAssetHandle->getAssetID());
+                shouldRefresh = true;
+            }
+            else {
+                showMessage("Could not create asset. There is probably already one with the same name.");
+            }
+        }
+        ImGui::EndMenu();
+    }
+    return shouldRefresh;
 }
 
 void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter) {

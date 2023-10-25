@@ -47,8 +47,9 @@ class ContentBrowserItem
 {
 public:
     // TODO: Item is redundant. Move out of scope and call ContentBrowserItemType. Superior to ContentBrowserItem::ItemType
+    // Ordered by priority in the view
     enum class ItemType : uint16_t {
-        File, Directory, Asset
+        Directory, Asset, File
     };
 public:
     ContentBrowserItem(ItemType type, UniqueId64 uuid, const std::string& name, VGTexture icon);
@@ -74,9 +75,9 @@ public:
     void Rename(const nString& newName);
     void SetDisplayNameFromFileName();
 
-private:
+protected:
     virtual void OnRenamed(const nString& newName) { mFileName = newName; }
-    virtual void RenderCustomContextItems() {}
+    virtual void RenderCustomContextItems(CBItemActionResult& actionResult) {}
     virtual void UpdateDrop(CBItemActionResult& actionResult) {}
 
     void OnContextMenuOpen(CBItemActionResult& actionResult);
@@ -102,7 +103,7 @@ struct DirectoryInfo {
 
     std::filesystem::path FilePath;
 
-    std::vector<nString> Files;
+    std::map<UniqueId64, nString> Files;
     std::vector<AssetDescriptor> Assets;
     std::map<UniqueId64, std::shared_ptr<DirectoryInfo>> SubDirectories;
 };
@@ -123,7 +124,7 @@ private:
     virtual void OnRenamed(const std::string& newName) override;
     virtual void UpdateDrop(CBItemActionResult& actionResult) override;
 
-    void UpdateDirectoryPath(DirectoryInfoPtr directoryInfo, const std::filesystem::path& newParentPath, const std::filesystem::path& newName);
+    //void UpdateDirectoryPath(DirectoryInfoPtr directoryInfo, const std::filesystem::path& newParentPath, const std::filesystem::path& newName);
 
 private:
     DirectoryInfoPtr m_DirectoryInfo;
@@ -142,6 +143,7 @@ public:
 
 private:
     virtual void OnRenamed(const std::string& newName) override;
+    virtual void RenderCustomContextItems(CBItemActionResult& actionResult) override;
 
 private:
     AssetMetadata m_AssetInfo;

@@ -142,6 +142,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             ImGui::DockBuilderDockWindow("Primary Controls", dockIdLeft);
             ImGui::DockBuilderDockWindow("Secondary Controls", dockIdRight);
             ImGui::DockBuilderDockWindow("Content Browser", dockIdDown);
+            ImGui::DockBuilderDockWindow("Bottom Controls", dockIdDown);
             ImGui::DockBuilderFinish(rootId);
         }
 
@@ -252,8 +253,6 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                     const f32 bottomPanelHeight = mActiveCenterPanel->getBottomHeight();
 
                     // Bottom panel
-                    ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, dims.y - bottomPanelHeight));
-                    ImGui::SetNextWindowSize(ImVec2(width, bottomPanelHeight));
                     mActiveCenterPanel->updateAndRenderBottomControls();
 
                     // Center panel

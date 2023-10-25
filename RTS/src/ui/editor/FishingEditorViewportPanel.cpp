@@ -15,44 +15,12 @@
 
 #include <Vorb/ui/GameWindow.h>
 
-FishingEditorViewportPanel::FishingEditorViewportPanel() : IEditorViewportPanel() {
+FishingEditorViewportPanel::FishingEditorViewportPanel() : AssetEditorViewportPanel<FishDef>() {
     mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));
 }
 
-bool FishingEditorViewportPanel::updateAndRender(f32 elapsedSec) {
-    if (mFishAsset) {
-        // Editor can mutate
-        mFishDef = const_cast<FishDef*>(mFishAsset->tryGetLoadedAsset());
-    }
-    else {
-        mFishDef = nullptr;
-    }
- 
-    bool isOpen = true;
-    ImGui::Begin("Fishing Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-
-    ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-    mViewportDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-    updateCamera(mViewportDims.x / mViewportDims.y);
-
-    mClearColor = f32v4(0.0f);
-
-    //updateFramebufferAndLazyInit(imageDims);
-
-    //clearFramebuffers();
-
-    // Lazy init so we don't use GPU memory when not in editor
-    if (sGBuffers[0] == nullptr) {
-        initGBuffers(mViewportDims);
-    }
-
+void FishingEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
     renderCenterPanel(nullptr);
-
-    ImGui::End();
-
-    return isOpen;
 }
 
 void FishingEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
@@ -64,12 +32,12 @@ void FishingEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
         }
     } else {
         if (ImGui::Button("Start Minigame")) {
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr, getMinigameFlags());
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mAssetData, nullptr, nullptr, getMinigameFlags());
         }
     }
     ImGui::Checkbox("Disable chests", &mDisableChests);
     ImGui::Checkbox("Disable debris", &mDisableDebris);
-    FishingMinigameFishData& minigameData = mFishDef->mMinigameData;
+    FishingMinigameFishData& minigameData = mAssetData->mMinigameData;
     ImGui::Text("Test Minigame Data");
     ImGui::Separator();
     ImGui::SliderFloat2("Acceleration", &minigameData.mAcceleration.x, 0.0f, 4000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -122,10 +90,10 @@ void FishingEditorViewportPanel::renderMesh() {
         MinigameResult result = mCurrentFishingMinigame->updateAndRender(mViewportDims, RenderContext::getInstance().getCurrentFrameElapsedSec());
         if (result.mType == MinigameResultType::Fail) {
             LOG_INFO("Fishing failed!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr, getMinigameFlags());
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mAssetData, nullptr, nullptr, getMinigameFlags());
         } else if (result.mType == MinigameResultType::Success) {
             LOG_INFO("Fishing success!");
-            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mFishDef, nullptr, nullptr, getMinigameFlags());
+            mCurrentFishingMinigame = std::make_unique<FishingMinigame>(*mAssetData, nullptr, nullptr, getMinigameFlags());
         }
     }
     else {
@@ -134,14 +102,14 @@ void FishingEditorViewportPanel::renderMesh() {
 }
 
 void FishingEditorViewportPanel::setFishDef(AssetID fishId) {
-    mFishAsset = FishRepository::get().getAssetHandle(fishId);
+    mAssetHandle = FishRepository::get().getAssetHandle(fishId);
     mCurrentFishingMinigame.reset();
 }
 
 void FishingEditorViewportPanel::renderFishModel() {
     ModelRepository& modelRepo = ModelRepository::get();
-    if (mFishDef) {
-        const ModelDef& model = modelRepo.getLoadedAsset(mFishDef->mModelId);
+    if (mAssetData) {
+        const ModelDef& model = modelRepo.getLoadedAsset(mAssetData->mModelId);
         for (int i = 0; i < model.getNumMeshes(); ++i) {
             MeshDrawer::draw(model.getMesh(i).mMainMesh, MeshLODLevel::Highest);
         }

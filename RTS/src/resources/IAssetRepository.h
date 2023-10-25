@@ -29,7 +29,8 @@ public:
     virtual bool isAssetRegistered(StrToken name) const = 0;
     virtual AssetID tryGetRegisteredAssetID(StrToken name) const = 0;
     virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
-    virtual void onAllAssetTypesRegistered() {};
+    virtual void onAllAssetTypesRegistered() {}
+    virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
 
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
 

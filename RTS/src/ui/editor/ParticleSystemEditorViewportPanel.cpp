@@ -37,7 +37,7 @@ const nString SAVE_DIALOG_NAME = "SaveFileDialog";
 #define POP_COLOR() ImGui::PopStyleColor(3);
 #define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_COLOR();
 
-ParticleSystemEditorViewportPanel::ParticleSystemEditorViewportPanel() : IEditorViewportPanel() {
+ParticleSystemEditorViewportPanel::ParticleSystemEditorViewportPanel() {
 
 }
 
@@ -45,49 +45,17 @@ ParticleSystemEditorViewportPanel::~ParticleSystemEditorViewportPanel() {
 
 }
 
-bool ParticleSystemEditorViewportPanel::updateAndRender(f32 elapsedSec) {
-    mCurrentElapsedSec = elapsedSec;
-
-    // Refresh asset every frame in case awaiting load
-    if (mSystemDefHandle) {
-        mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
-    }
-
+void ParticleSystemEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
     mCurrentTime += elapsedSec;
 
-    if (!mSystemDef) {
+    if (!mAssetData) {
         mCurrentTime = mTimelineEnd;
     }
     if (mCurrentTime >= mTimelineEnd) {
         createPreviewSystem();
     }
 
-    bool isOpen = true;
-    ImGui::Begin("Particle System Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings);
-
-    ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-
-    f32v2 viewportDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-    updateCamera(viewportDims.x / viewportDims.y);
-
-    mClearColor = f32v4(0.3f, 0.3f, 0.3f, 1.0f);
-
-    //updateFramebufferAndLazyInit(imageDims);
-
-    //clearFramebuffers();
-
-    // Lazy init so we don't use GPU memory when not in editor
-    if (sGBuffers[0] == nullptr) {
-        initGBuffers(viewportDims);
-    }
-
     renderCenterPanel(nullptr);
-
-    ImGui::End();
-
-    return isOpen;
 }
 
 void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
@@ -117,14 +85,14 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Create"))
         {
             ImGui::CloseCurrentPopup();
-            mSystemDefHandle = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken((const char*)mTextInputBuffer));
-            if (!mSystemDefHandle) {
+            mAssetHandle = ParticleSystemRepository::get().editorTryAddNewAsset(StrToken((const char*)mTextInputBuffer));
+            if (!mAssetHandle) {
                 LOG_CRITICAL("Failed to create system {}", mTextInputBuffer);
             }
             else {
-                mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
-                mSystemDef->setName(StrToken((const char*)mTextInputBuffer));
-                ParticleEmitterDef& defaultEmitter = mSystemDef->mEmitters.emplace_back();
+                mAssetData = mAssetHandle->editorTryGetMutableAsset();
+                mAssetData->setName(StrToken((const char*)mTextInputBuffer));
+                ParticleEmitterDef& defaultEmitter = mAssetData->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = CStrToken("default_emitter");
                 defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 defaultEmitter.mShaderName = CStrToken("particle_bb_3d");
@@ -142,29 +110,29 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         ImGui::EndPopup();
     }
 
-    if (mSystemDef) {
+    if (mAssetData) {
         bool changed = false;
 
         ImGui::Separator();
-        ImGui::Text("System: %s", mSystemDef->getName().toString().c_str());
+        ImGui::Text("System: %s", mAssetData->getName().toString().c_str());
         if (ImGui::Button("Rename")) {
-            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mSystemDef->getName().toString(), (void*)mSystemDef);
+            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mAssetData->getName().toString(), (void*)mAssetData);
         }
         ImGui::SameLine();
         if (ImGui::Button("Save")) {
             ParticleSystemRepository& repo = ParticleSystemRepository::get();
-            if (repo.getAssetFilePath(mSystemDef->getID()).isNull()) {
-                ImGuiFileDialog::Instance()->OpenDialog(SAVE_DIALOG_NAME, "Save As", ".psys", "./data/particle/" + mSystemDef->getName().toString(), 1, nullptr, ImGuiFileDialogFlags_Modal);
+            if (repo.getAssetFilePath(mAssetData->getID()).isNull()) {
+                ImGuiFileDialog::Instance()->OpenDialog(SAVE_DIALOG_NAME, "Save As", ".psys", "./data/particle/" + mAssetData->getName().toString(), 1, nullptr, ImGuiFileDialogFlags_Modal);
             }
             else {
-                if (!ParticleSystemRepository::get().saveAsset(mSystemDef->getID())) {
-                    panic("FAILED TO SAVE PARTICLE SYSTEM {}", repo.getAssetFilePath(mSystemDef->getID()).getCString());
+                if (!ParticleSystemRepository::get().saveAsset(mAssetData->getID())) {
+                    panic("FAILED TO SAVE PARTICLE SYSTEM {}", repo.getAssetFilePath(mAssetData->getID()).getCString());
                 }
             }
         }
         ImGui::SameLine();
         if (ImGui::Button("Delete")) {
-            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mSystemDef->getName().toString(), (void*)mSystemDef);
+            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mAssetData->getName().toString(), (void*)mAssetData);
         }
         ImGui::Separator();
         ImGui::Spacing();
@@ -181,7 +149,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             // Your popup content here
             if (ImGui::Button("Create")) {
                 ImGui::CloseCurrentPopup();
-                ParticleEmitterDef& newEmitterDef = mSystemDef->mEmitters.emplace_back();
+                ParticleEmitterDef& newEmitterDef = mAssetData->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = StrToken(mTextInputBuffer);
                 newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 newEmitterDef.mShaderName = CStrToken("particle_bb_3d");
@@ -201,15 +169,15 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         }
         
         // Make sure we have emitter visibility
-        if (mShowEmitters.size() != mSystemDef->mEmitters.size()) {
-            mShowEmitters.resize(mSystemDef->mEmitters.size(), true);
+        if (mShowEmitters.size() != mAssetData->mEmitters.size()) {
+            mShowEmitters.resize(mAssetData->mEmitters.size(), true);
         }
 
         // Show all emitters
         ImGui::Separator();
         ImGui::Text("Emitters:");
         int i = 0;
-        for (auto&& emitter : mSystemDef->mEmitters) {
+        for (auto&& emitter : mAssetData->mEmitters) {
             ImGui::PushID(i);
             constexpr int VISIBILITY_SIZE = 32;
             if (mSelectedEmitter == &emitter) {
@@ -355,7 +323,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         ImGui::Text("Select a Particle Emitter");
     }
 
-    if (!mSystemDef) {
+    if (!mAssetData) {
         ImGui::Text("Select a Particle System");
         ImGui::EndChild();
         return true;
@@ -415,7 +383,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize) {
     ImGui::BeginChild("Particle Module Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
-    if (!mSystemDef) {
+    if (!mAssetData) {
         ImGui::Text("Select a Particle System");
         ImGui::EndChild();
         return true;
@@ -458,11 +426,10 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
 
 void ParticleSystemEditorViewportPanel::updateAndRenderBottomControls() {
 
-    ImGui::Begin("Particle Bottom Panel", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("Bottom Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
 
-    if (mSystemDef) {
-        ImGui::Text("System: %s Particles (Fragmentation): %d (%d)", mSystemDef->getName().toString().c_str(), mPreviewSystem ? mPreviewSystem->getNumParticles() : 0, mPreviewSystem ? mPreviewSystem->getFragmentation() : 0);
+    if (mAssetData) {
+        ImGui::Text("System: %s Particles (Fragmentation): %d (%d)", mAssetData->getName().toString().c_str(), mPreviewSystem ? mPreviewSystem->getNumParticles() : 0, mPreviewSystem ? mPreviewSystem->getFragmentation() : 0);
         ImGui::SliderFloat("Preview Time", &mTimelineEnd, 0.0f, 20.0);
         f32 time = mCurrentTime;
         ImGui::SliderFloat("Time", &time, 0.0f, mTimelineEnd);
@@ -484,15 +451,15 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 
 void ParticleSystemEditorViewportPanel::setParticleSystemDef(AssetID systemId) {
     if (systemId == INVALID_ASSET_ID) {
-        mSystemDefHandle = nullptr;
-        mSystemDef = nullptr;
+        mAssetHandle = nullptr;
+        mAssetData = nullptr;
         mSelectedEmitter = nullptr;
         return;
     }
-    mSystemDefHandle = ParticleSystemRepository::get().getAssetHandle(systemId);
+    mAssetHandle = ParticleSystemRepository::get().getAssetHandle(systemId);
     if (systemIsLoaded()) {
-        mSystemDef = mSystemDefHandle->editorTryGetMutableAsset();
-        mSelectedEmitter = &mSystemDef->mEmitters[0];
+        mAssetData = mAssetHandle->editorTryGetMutableAsset();
+        mSelectedEmitter = &mAssetData->mEmitters[0];
     }
     else {
         mSelectedEmitter = nullptr;
@@ -501,9 +468,9 @@ void ParticleSystemEditorViewportPanel::setParticleSystemDef(AssetID systemId) {
 }
 
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {
-    if (!mSystemDef) return;
+    if (!mAssetData) return;
     mCurrentTime = 0.0f;
-    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mSystemDef, f32v3(0.0f));
+    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mAssetData, f32v3(0.0f));
 }
 
 void ParticleSystemEditorViewportPanel::updatePopups() {
@@ -520,9 +487,9 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
         if (mConfirmDeletePopup->updateAndRender()) {
             bool result = mConfirmDeletePopup->getResult();
             mConfirmDeletePopup.reset();
-            if (result && mSystemDef) {
-                ParticleSystemRepository::get().deleteAsset(mSystemDef->getID());
-                mSystemDef = nullptr;
+            if (result && mAssetData) {
+                ParticleSystemRepository::get().deleteAsset(mAssetData->getID());
+                mAssetData = nullptr;
                 mSelectedEmitter = nullptr;
             }
         }
@@ -538,8 +505,8 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
         {
             std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-            ParticleSystemRepository::get().changeAssetFilePath(mSystemDef->getID(), vio::Path(filePathName));
-            if (!ParticleSystemRepository::get().saveAsset(mSystemDef->getID())) {
+            ParticleSystemRepository::get().changeAssetFilePath(mAssetData->getID(), vio::Path(filePathName));
+            if (!ParticleSystemRepository::get().saveAsset(mAssetData->getID())) {
                 panic("FAILED TO SAVE PARTICLE SYSTEM {}", filePathName);
             }
         }
@@ -554,15 +521,15 @@ void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
 
 void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& emitterName) {
     if (emitterName.empty()) return;
-    if (mSystemDef == nullptr) return;
+    if (mAssetData == nullptr) return;
 
     nString name; // Share memory
     ParticleSystemRepository::get().forEachLoadedAsset([&](IAssetRepository<ParticleSystemDef>& repo, ParticleSystemDef& def) {
         name = def.getName().toString();
         for (auto& emitter : def.mEmitters) {
             if (emitterName == name + "." + emitter.mEmitterName.toString()) {
-                mSystemDef->mEmitters.emplace_back(emitter);
-                mSelectedEmitter = &mSystemDef->mEmitters.back();
+                mAssetData->mEmitters.emplace_back(emitter);
+                mSelectedEmitter = &mAssetData->mEmitters.back();
                 createPreviewSystem();
                 return true;
             }

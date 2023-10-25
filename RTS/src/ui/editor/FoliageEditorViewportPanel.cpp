@@ -36,44 +36,9 @@ FoliageEditorViewportPanel::~FoliageEditorViewportPanel()
 
 }
 
-bool FoliageEditorViewportPanel::updateAndRender(f32 elapsedSec)
+void FoliageEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec)
 {
-    if (mGrassDataHandle) {
-        // Editor can mutate
-        mGrassData = const_cast<TileGrassDef*>(mGrassDataHandle->tryGetLoadedAsset());
-    }
-    else {
-        mGrassData = nullptr;
-    }
-
-    if (!mGrassRenderer) {
-        mGrassRenderer = std::make_unique<GrassRenderer>();
-        mGrassMeshes.emplace_back(std::make_unique<GrassMesh>(0));
-        mGrassMeshesSet.insert(mGrassMeshes.begin()->get());
-    }
-
-    bool isOpen = true;
-    ImGui::Begin("Foliage Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-
-    ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-
-    updateCamera(imageDims.x / imageDims.y);
-
-    updateFramebufferAndLazyInit(imageDims);
-
-    glDisable(GL_CULL_FACE);
-    vg::DepthState::FULL.set();
-
-    clearFramebuffers();
-    
     renderCenterPanel(nullptr);
-
-    ImGui::End();
-
-    return isOpen;
 }
 
 void FoliageEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
@@ -90,14 +55,24 @@ void FoliageEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 }
 
 void FoliageEditorViewportPanel::setGrassData(AssetID tileGrassId) {
-    mGrassDataHandle = TileGrassRepository::get().getAssetHandle(tileGrassId);
+    mAssetHandle = TileGrassRepository::get().getAssetHandle(tileGrassId);
     mDirtyFoliageMesh = true;
 }
 
 void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
-    if (!mGrassData) {
+    if (!mAssetData) {
         return;
     }
+
+    if (!mGrassRenderer) {
+        mGrassRenderer = std::make_unique<GrassRenderer>();
+        mGrassMeshes.emplace_back(std::make_unique<GrassMesh>(0));
+        mGrassMeshesSet.insert(mGrassMeshes.begin()->get());
+    }
+
+    glDisable(GL_CULL_FACE);
+    vg::DepthState::FULL.set();
+
     // Lazy init resources
     const i32v2 imageDims = i32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
     updateFramebufferAndLazyInit(imageDims);
@@ -116,7 +91,7 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
             int x = i % WIDTH_TILES;
             const f32 gradientAlpha = (f32)x / (WIDTH_TILES - 1);
             const int density = round(glm::lerp((f32)mDensityGradient.x, (f32)mDensityGradient.y, gradientAlpha));
-            grassDataArray[i].grassIDs[0] = mGrassData->getID();
+            grassDataArray[i].grassIDs[0] = mAssetData->getID();
             grassDataArray[i].densities[0] = (ui8)glm::clamp(density, 0, 255);
         }
         GrassBillboardMeshBuilder builder(mesh);
@@ -148,23 +123,23 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
 
 void FoliageEditorViewportPanel::renderGrassControls()
 {
-    if (!mGrassData) {
+    if (!mAssetData) {
         return;
     }
-    ImGui::Text(mGrassData->getName().toString().c_str());
-    if (ImGui::SliderFloat2("Size Mults", &mGrassData->mSizeMults.x, 0.01f, 10.0f)) {
+    ImGui::Text(mAssetData->getName().toString().c_str());
+    if (ImGui::SliderFloat2("Size Mults", &mAssetData->mSizeMults.x, 0.01f, 10.0f)) {
         mDirtyFoliageMesh = true;
     }
-    if (ImGui::SliderFloat2("Size Variance", &mGrassData->mHeightVariance.x, 0.01f, 1.0f)) {
+    if (ImGui::SliderFloat2("Size Variance", &mAssetData->mHeightVariance.x, 0.01f, 1.0f)) {
         mDirtyFoliageMesh = true;
     }
-    if (ImGui::SliderFloat2("ZOffset Variance", &mGrassData->mZOffsetVariance.x, 0.0f, 2.0f)) {
+    if (ImGui::SliderFloat2("ZOffset Variance", &mAssetData->mZOffsetVariance.x, 0.0f, 2.0f)) {
         mDirtyFoliageMesh = true;
     }
-    if (ImGui::SliderFloat("Lean Variance", &mGrassData->mLeanVariance, 0.0f, 2.0f)) {
+    if (ImGui::SliderFloat("Lean Variance", &mAssetData->mLeanVariance, 0.0f, 2.0f)) {
         mDirtyFoliageMesh = true;
     }
-    if (ImGui::Checkbox("Use Gradient Color", &mGrassData->mUseGradientColor)) {
+    if (ImGui::Checkbox("Use Gradient Color", &mAssetData->mUseGradientColor)) {
         mDirtyFoliageMesh = true;
     }
 
@@ -174,7 +149,7 @@ void FoliageEditorViewportPanel::renderGrassControls()
       "billboard",
     };
     static_assert(e_cast(TileGrassMeshType::COUNT) == 3);
-    if (ImGui::BeginCombo("Mesh Shape", meshShapes[e_cast(mGrassData->mMeshType)])) {
+    if (ImGui::BeginCombo("Mesh Shape", meshShapes[e_cast(mAssetData->mMeshType)])) {
         for (int i = 0; i < e_cast(TileGrassMeshType::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;
             if (ImGui::Selectable(meshShapes[i], &isSelected)) {
@@ -183,16 +158,16 @@ void FoliageEditorViewportPanel::renderGrassControls()
 
             if (isSelected) {
                 ImGui::SetItemDefaultFocus();
-                mGrassData->mMeshType = (TileGrassMeshType)i;
+                mAssetData->mMeshType = (TileGrassMeshType)i;
             }
         }
         ImGui::EndCombo();
     }
 
     // Densities are power of two but display as index
-    int density = mGrassData->mDensity;
+    int density = mAssetData->mDensity;
     if (ImGui::SliderInt("Density", &density, 1, MAX_GRASS_DETAIL)) {
-        mGrassData->mDensity = density;
+        mAssetData->mDensity = density;
         mDirtyFoliageMesh = true;
     }
 

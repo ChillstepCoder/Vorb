@@ -1,28 +1,30 @@
 #pragma once
 
-#include "IEditorViewportPanel.h"
+#include "AssetEditorViewportPanel.h"
 #include "rendering/mesh/PrimitiveShapeMeshes.h"
 
 #include "rendering/material/MaterialData.h"
 
-class MaterialEditorViewportPanel : public IEditorViewportPanel
+class MaterialEditorViewportPanel : public AssetEditorViewportPanel<MaterialDef>
 {
 public:
     MaterialEditorViewportPanel();
     ~MaterialEditorViewportPanel();
 
-    bool updateAndRender(f32 elapsedSec) override;
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
     void setMaterial(AssetID assetId);
 
+    const char* getViewportWindowName() const override { return "Material Editor"; }
+
 private:
+    void updateAndRenderInternal(f32 elapsedSec) override;
+
+
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
 
-    AssetHandlePtr<MaterialDef> mMaterialAsset;
-    MaterialDef* mCurrentMaterial = nullptr;
     PrimitiveShapeType mShapeType = PrimitiveShapeType::Cube;
     float mUvScale = 2.0f;
 
