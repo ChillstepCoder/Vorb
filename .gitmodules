@@ -4,7 +4,7 @@
 [submodule "include/vendor/imgui"]
 	path = include/vendor/imgui
 #	url = https://github.com/ocornut/imgui.git
-    url = https://github.com/thedmd/imgui.git # feature/docking_layout_external
+    url = https://github.com/thedmd/imgui.git # feature/docking-layout-external
 [submodule "RTS/dependencies/ozz-animation"]
 	path = RTS/dependencies/ozz-animation
 	url = https://github.com/guillaumeblanc/ozz-animation.git
