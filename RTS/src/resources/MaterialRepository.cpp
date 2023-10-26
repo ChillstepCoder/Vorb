@@ -164,38 +164,40 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
             vio::Path folderPath = filePath;
             --folderPath;
-            const vio::Path ambientOcclusionTexturePath = folderPath / materialDef.ambientOcclusionTexture.toString();
-            const vio::Path roughnessTexturePath = folderPath / materialDef.roughnessTexture.toString();
-            const vio::Path metalTexturePath = folderPath / materialDef.metalTexture.toString();
+            const vio::Path ambientOcclusionTexturePath = folderPath / (materialDef.ambientOcclusionTexture.toString() + ".png");
+            const vio::Path roughnessTexturePath = folderPath / (materialDef.roughnessTexture.toString() + ".png");
+            const vio::Path metalTexturePath = folderPath / (materialDef.metalTexture.toString() + ".png");
 
             fs::path ddsPath(textureRepo.getAssetFilePath(materialDef.albedoTexture).getCString());
-            const fs::path& resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
-            ddsPath.replace_extension("_AMR.dds");
+            ResourceManager& resourceManager = ResourceManager::get();
+            const fs::path& resourceRoot(resourceManager.getResourceRoot().getString());
+            const fs::path& cacheRoot(resourceManager.getCacheRoot().getString());
+            ddsPath.replace_filename(Utils::getFilenameNoExtension(ddsPath.string()) + "_AMR.dds");
             ddsPath = ddsPath.lexically_relative(resourceRoot);
-            ddsPath = resourceRoot / "_cache" / ddsPath;
+            ddsPath = cacheRoot / ddsPath;
 
             bool needsGenerateDDS = false;
             time_t fileLastWriteTime = 0;
             if (fs::exists(ddsPath)) {
                 fileLastWriteTime = FileSystem::getLastFileWriteTime(ddsPath);
+
+                fs::path stdAoPath(ambientOcclusionTexturePath.getStdPath());
+                fs::path stdRoughnessPath(roughnessTexturePath.getStdPath());
+                fs::path stdMetalPath(metalTexturePath.getStdPath());
+
+                // Find target path
+                if (fs::exists(stdAoPath) && fs::is_regular_file(stdAoPath)) {
+                    needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdAoPath) >= fileLastWriteTime;
+                }
+                if (fs::exists(stdRoughnessPath) && fs::is_regular_file(stdRoughnessPath)) {
+                    needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdRoughnessPath) >= fileLastWriteTime;
+                }
+                if (fs::exists(stdMetalPath) && fs::is_regular_file(stdMetalPath)) {
+                    needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdMetalPath) >= fileLastWriteTime;
+                }
             }
             else {
                 needsGenerateDDS = true;
-            }
-
-            fs::path stdAoPath(ambientOcclusionTexturePath.getString());
-            fs::path stdRoughnessPath(roughnessTexturePath.getString());
-            fs::path stdMetalPath(metalTexturePath.getString());
-
-            // Find target path
-            if (fs::exists(stdAoPath) && fs::is_regular_file(stdAoPath)) {
-                needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdAoPath) >= fileLastWriteTime;
-            }
-            if (fs::exists(stdRoughnessPath) && fs::is_regular_file(stdRoughnessPath)) {
-                needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdRoughnessPath) >= fileLastWriteTime;
-            }
-            if (fs::exists(stdMetalPath) && fs::is_regular_file(stdMetalPath)) {
-                needsGenerateDDS |= FileSystem::getLastFileWriteTime(stdMetalPath) >= fileLastWriteTime;
             }
 
             gli::texture2d aoData;

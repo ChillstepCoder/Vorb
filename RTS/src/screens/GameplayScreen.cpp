@@ -103,7 +103,7 @@ i32 GameplayScreen::getPreviousScreen() const {
 
 void GameplayScreen::build() {
 
-    mResourceManager.setResourceRoot("data");
+    mResourceManager.setResourceRoot("data", "_cache");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 

@@ -10,6 +10,8 @@ enum class SkillTriggerType {
 };
 
 struct SkillAttackTrigger {
+    f32v3 mSwingDir = f32v3(0.0f);
+    f32 mSwingHeight = 0.5f;
     f32 mRadius = 1.0f;
     f32 mAngle = 120.0f;
     f32 mHeight = 1.5f;
@@ -43,6 +45,8 @@ struct SkillAttackTriggerFileData {
 };
 SERIALIZABLE_SIMPLE(SkillAttackTriggerFileData,
     make_field(o.mTime, "time"sv),
+    make_field(o.mData.mSwingDir, "swing_dir"sv),
+    make_field(o.mData.mSwingHeight, "swing_height"sv),
     make_field(o.mData.mRadius, "radius"sv),
     make_field(o.mData.mAngle, "angle"sv),
     make_field(o.mData.mHeight, "height"sv),
@@ -52,6 +56,7 @@ SERIALIZABLE_SIMPLE(SkillAttackTriggerFileData,
 
 struct SkillDefFileData {
     StrToken mAnimName;
+    StrToken mHitEffectName;
     f32 mDuration = 1.0f;
     f32 mCost = 0.0f;
     std::vector<SkillSimpleTriggerFileData> mSimpleTriggers;
@@ -59,6 +64,7 @@ struct SkillDefFileData {
 };
 SERIALIZABLE_SIMPLE(SkillDefFileData,
     make_field(o.mAnimName, "anim"sv),
+    make_field(o.mHitEffectName, "hit_effect"sv),
     make_field(o.mDuration, "duration"sv),
     make_field(o.mCost, "cost"sv),
     make_field(o.mSimpleTriggers, "simple_triggers"sv),
@@ -81,6 +87,7 @@ public:
     std::unique_ptr<SkillTrigger[]> mTriggers;
     ui32 mNumTriggers;
     BitFlags<SkillDefFlags> mFlags;
-    AssetID mAnimID;
+    AssetID mAnimID = INVALID_ASSET_ID;
+    StrToken mHitEffectName;
 };
 

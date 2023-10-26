@@ -13,6 +13,7 @@ struct SkillsComponentFileData {
 KEG_TYPE_DECL(SkillsComponentFileData);
 
 struct ActiveSkillComponent {
+    const SkillDef* mDef = nullptr;
     f32 mElapsed = 0.0f;
     int mNextTrigger = 0;
 };
@@ -36,7 +37,7 @@ public:
 
 protected:
     void handleSkillTrigger(World& world, entt::entity entity, SkillsComponent& skillsCmp, ActiveSkillComponent& activeCmp, const SkillTrigger& trigger);
-    void handleAttackTrigger(World& world, entt::entity entity, const SkillAttackTrigger& attackTrigger);
+    void handleAttackTrigger(World& world, entt::entity entity, ActiveSkillComponent& activeCmp, const SkillAttackTrigger& attackTrigger);
 
     EVENT_DISPATCHER_DEF(SkillsComponentSystem);
 };

@@ -4,6 +4,7 @@
 #include "physics/PhysicsWorld.h"
 
 #include "world/World.h"
+#include "effect/IEffectContext.h"
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/CharacterControlComponent.h"
@@ -145,17 +146,17 @@ f32AABB3 getAABBEnclosingArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 a
     return rv;
 }
 
-CombatContext::CombatContext(World& world) : mWorld(world) {
+CombatContext::CombatContext(World& world) : WorldContextObject(world) {
 
 }
 
-void CombatContext::performAttack(entt::entity source, const AttackData& attackData) {
+void CombatContext::performAttack(entt::entity source, const SkillDef& skillDef, const AttackData& attackData) {
     switch (attackData.shapeType) {
         case AttackShape::SPHERE:
             assert(false);
             break;
         case AttackShape::CONE:
-            performConeAttack(source, attackData);
+            performConeAttack(source, skillDef, attackData);
             break;
         default:
             assert(false);
@@ -165,7 +166,7 @@ void CombatContext::performAttack(entt::entity source, const AttackData& attackD
     static_assert(e_count(AttackShape) == 2);
 }
 
-void CombatContext::performConeAttack(entt::entity source, const AttackData& attackData) {
+void CombatContext::performConeAttack(entt::entity source, const SkillDef& skillDef, const AttackData& attackData) {
     assert(attackData.shapeType == AttackShape::CONE);
 
     const AttackShapeCone& coneData = std::get<AttackShapeCone>(attackData.varAttackShape);
@@ -198,8 +199,13 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
 
         const f32v3 targetRootPosition = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
         const f32v2 targetCenterPoint2D = targetRootPosition;
-        const f32v2 offsetToTarget = targetCenterPoint2D - f32v2(attackStartPos);
-        const f32 distanceFromTarget2 = glm::length2(offsetToTarget);
+        const f32v2 offsetToTarget2D = targetCenterPoint2D - f32v2(attackStartPos);
+        const f32 distanceFromTarget2 = glm::length2(offsetToTarget2D);
+        const f32v2 normalToTarget2D = offsetToTarget2D / sqrt(distanceFromTarget2);
+
+        f32v3 impactPosition = f32v3(0.0f);
+        f32v3 impactNormal = f32v3(0.0f);
+        f32v3 impactDir = f32v3(0.0f);
 
         // Tile handle
         if (std::holds_alternative<LiteTileHandle>(results[i].mObject)) {
@@ -219,9 +225,8 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
                         intersectsArc = true;
                     }
                     else if (distanceFromTarget2 <= SQ(totalRadius)) {
-                        const f32v2 normalToTarget = offsetToTarget / sqrt(distanceFromTarget2);
                         // If target center is within the front arc
-                        if (acosf(glm::dot(normalToTarget, forwardNormal)) < coneData.arcAngleRad * 0.5f) {
+                        if (acosf(glm::dot(normalToTarget2D, forwardNormal)) < coneData.arcAngleRad * 0.5f) {
                             intersectsArc = true;
                         }
                         else {
@@ -234,6 +239,13 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
                             }
                         }
                     }
+                    // Compute hit info
+                    if (intersectsArc) {
+                        const f32v2 impactNormal2D = offsetToTarget2D / sqrt(distanceFromTarget2);
+                        impactNormal = f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f);
+                        const f32v3 impactCenter = targetRootPosition + f32v3(0.0f, 0.0f, attackData.swingHeight);
+                        impactPosition = impactCenter + impactNormal * static_cast<f32>(halfExtents.x());
+                    }
                     break;
                     // ... (add other cases as needed)
                 }
@@ -241,10 +253,11 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
                     assert(false && "Unhandled shape type");
             }
 
+            // Hit!
             if (intersectsArc) {
-                // TODO: Better impact pos
-                f32v2 impactNormal2D = offsetToTarget / sqrt(distanceFromTarget2);
-                hitTile(std::get<LiteTileHandle>(results[i].mObject), attackData.damageRange, targetRootPosition, f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f));
+                const f32 angleRad = MathUtil::yawFromDirection(normalToTarget2D);
+                impactDir = MathUtil::rotateVectorYawRad(attackData.swingDir, angleRad);
+                hitTile(std::get<LiteTileHandle>(results[i].mObject), skillDef, attackData.damageRange, impactPosition, impactNormal, attackData.swingDir);
             }
         }
         else {
@@ -259,7 +272,7 @@ void CombatContext::performConeAttack(entt::entity source, const AttackData& att
     }
 }
 
-void CombatContext::hitTile(LiteTileHandle liteHandle, ui16v2 damageRange, f32v3 impactPosition, f32v3 impactNormal) {
+void CombatContext::hitTile(LiteTileHandle liteHandle, const SkillDef& skillDef, ui16v2 damageRange, f32v3 impactPosition, f32v3 impactNormal, f32v3 impactDir) {
     TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
     tileHandle.getMutableContainer()->adjustTileHealth(
         tileHandle.tileIndex,
@@ -268,4 +281,11 @@ void CombatContext::hitTile(LiteTileHandle liteHandle, ui16v2 damageRange, f32v3
         impactPosition,
         impactNormal
     );
+
+    if (skillDef.mHitEffectName.isValid()) {
+        ParticleSystemInputs inputs;
+        inputs.mInputImpactDirection = impactDir;
+        inputs.mInputImpactSurfaceNormal = impactNormal;
+        mWorld.getEffectContext().playParticleEffectAtPoint(skillDef.mHitEffectName, impactPosition, inputs, BitFlags<EffectCreateFlags>());
+    }
 }

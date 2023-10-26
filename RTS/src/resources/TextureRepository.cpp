@@ -193,7 +193,9 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
         // Get absolute path of texture.
         vio::Path texPath;
         mIoManager.resolvePath(filePath, texPath);
-        const fs::path resourceRoot(Services::ResourceManager::ref().getResourceRoot().getString());
+        ResourceManager& resourceManager = ResourceManager::get();
+        const fs::path resourceRoot(resourceManager.getResourceRoot().getString());
+        const fs::path& cacheRoot(resourceManager.getCacheRoot().getString());
 
         fs::path stdPath(texPath.getString());
         const nString extension = stdPath.extension().string();
@@ -218,7 +220,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 
             // Get relative to resource root
             ddsPath = ddsPath.lexically_relative(resourceRoot);
-            ddsPath = resourceRoot / "_cache" / ddsPath;
+            ddsPath = cacheRoot / ddsPath;
 
             if (fs::is_regular_file(ddsPath)) {
                 if (FileSystem::getLastFileWriteTime(ddsPath) >= fileLastWriteTime) {

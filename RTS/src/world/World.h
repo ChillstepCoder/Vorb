@@ -63,6 +63,7 @@ public:
     CombatContext& getCombatContext() const { return *mCombatContext; }
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
+    IEffectContext& getEffectContext() const { return *mEffectContext; }
 
     // Optional system accessors 
     NavWorld* tryGetNavWorld() const { return mNavWorld.get(); }

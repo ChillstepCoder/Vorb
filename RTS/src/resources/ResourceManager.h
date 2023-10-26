@@ -30,7 +30,7 @@ public:
 
     static ResourceManager& get();
 
-    void setResourceRoot(const vio::Path& folderPath);
+    void setResourceRoot(const vio::Path& resourceRoot, const vio::Path& cacheRoot);
 
     void gatherFiles();
     void loadFiles();
@@ -50,6 +50,7 @@ public:
     void generateNormalMaps();
     
     const vio::Path& getResourceRoot() const { return mResourceRoot; }
+    const vio::Path& getCacheRoot() const { return mCacheRoot; }
 
     void addAssetToBundle(AssetHandleBundle& bundle, StrToken assetName, AssetType assetType);
 
@@ -91,6 +92,7 @@ private:
     std::unique_ptr<vio::IOManager> mIoManager;
 
     vio::Path mResourceRoot;
+    vio::Path mCacheRoot;
     bool mHasLoadedResources = false;
     bool mHasGathered = false;
 };

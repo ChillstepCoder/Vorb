@@ -49,8 +49,7 @@ namespace MathUtil {
         rv.y = x * sn + y * cs;
         return rv;
     }
-    inline f32v3 rotateVectorYaw(const f32v3& in, float angleDeg) {
-        const float angleRad = DEG_TO_RAD(angleDeg);
+    inline f32v3 rotateVectorYawRad(const f32v3& in, float angleRad) {
         const float cs = cosf(angleRad);
         const float sn = sinf(angleRad);
 
@@ -59,6 +58,9 @@ namespace MathUtil {
         rv.y = in.x * sn + in.y * cs;
         rv.z = in.z;
         return rv;
+    }
+    inline f32v3 rotateVectorYaw(const f32v3& in, float angleDeg) {
+        return rotateVectorYawRad(in, DEG_TO_RAD(angleDeg));
     }
     inline f32v2 rotateVector2DRad(const f32v2& in, float angleRad) {
         const float cs = cosf(angleRad);
@@ -249,6 +251,10 @@ namespace MathUtil {
     // +X is forward
     inline f32v3 directionFromYaw3D(f32 yaw) {
         return f32v3(cos(yaw), sin(yaw), 0.0f);
+    }
+
+    inline f32 yawFromDirection(const f32v2 dir) {
+        return atan2(dir.y, dir.x);
     }
 }
 

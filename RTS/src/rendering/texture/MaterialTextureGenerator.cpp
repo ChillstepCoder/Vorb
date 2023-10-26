@@ -223,7 +223,7 @@ gli::texture2d MaterialTextureGenerator::combineAoRoughnessMetallicTextureData(c
     if (!metallic.empty() && (metallic.extent().x != dims.x || metallic.extent().y != dims.y)) panic("Mismatched texture dimensions for metallic. Must match other AO + rough");
     
     const ui32 pixelCount = dims.x * dims.y;
-    gli::texture2d resultTexture(gli::FORMAT_RGB8_UNORM_PACK8, gli::texture2d::extent_type(dims.x, dims.y), 1);
+    gli::texture2d resultTexture(gli::FORMAT_RGB8_UNORM_PACK8, gli::texture2d::extent_type(dims.x, dims.y));
     // These are separated into every possible case so we move all comparisons out of the critical
     // pixel loops to improve performance in debug mode
     // Also cache data ptr as the cast is a non trivial operation in debug mode

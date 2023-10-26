@@ -110,9 +110,15 @@ bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
     return strcmp(filePath.getString().c_str() + (length - extension.size()), extension.c_str()) == 0;
 }
 
-void ResourceManager::setResourceRoot(const vio::Path& folderPath) {
-    if (!mIoManager->resolvePath(folderPath, mResourceRoot)) {
-        pError("Could not resolve /data/ folder. Try verifying game files");
+void ResourceManager::setResourceRoot(const vio::Path& resourceRoot, const vio::Path& cacheRoot) {
+    if (!mIoManager->resolvePath(resourceRoot, mResourceRoot)) {
+        panic("Could not resolve {} folder. Try verifying game files", resourceRoot.getString());
+    }
+    mCacheRoot = mIoManager->getCurrentWorkingDirectory() / cacheRoot;
+    if (!std::filesystem::exists(mCacheRoot.getStdPath())) {
+        if (!std::filesystem::create_directories(mCacheRoot.getStdPath())) {
+            panic("Could not create _cache folder at {}. Try running in administrator", cacheRoot.getString());
+        }
     }
 }
 

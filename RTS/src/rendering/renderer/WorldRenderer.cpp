@@ -6,6 +6,7 @@
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/SkillsComponent.h"
+#include "effect/IEffectContext.h"
 
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/MaterialRenderer.h"
@@ -229,6 +230,9 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
     // Paint smudges
     mSmudgeRenderer->renderPaintNoise(activeGBuffer, *mCamera);
+
+    // Particles
+    mActiveWorld->getEffectContext().renderEffects(elapsedSec, *mCamera);
 
     // Clouds
     /* if (!sDebugOptions.mDisableClouds) {

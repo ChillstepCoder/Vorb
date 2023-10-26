@@ -120,22 +120,22 @@ void EditorWorldInterfaceController::initEvents() {
             return;
         }
         // View toggle
-        if (event.keyCode == VKEY_B) {
+        if (event.keyCode == VKEY_B && event.mod.lShift) {
             sDebugOptions.mWireframe = !sDebugOptions.mWireframe;
         }
-        else if (event.keyCode == VKEY_C) {
+        else if (event.keyCode == VKEY_C && event.mod.lShift) {
             sDebugOptions.mChunkBoundaries = !sDebugOptions.mChunkBoundaries;
         }
-        else if (event.keyCode == VKEY_V) {
+        else if (event.keyCode == VKEY_V && event.mod.lShift) {
             sDebugOptions.mCities = !sDebugOptions.mCities;
         }
-        else if (event.keyCode == VKEY_J) {
+        else if (event.keyCode == VKEY_J && event.mod.lShift) {
             sDebugOptions.mShowNavGraphUpdates = !sDebugOptions.mShowNavGraphUpdates;
         }
-        else if (event.keyCode == VKEY_R/* && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)*/) { // TODO: Broken on laptop (Nvidia alt + r overlay?)
+        else if (event.keyCode == VKEY_R && event.mod.lCtrl) {
             Services::ResourceManager::ref().reloadMaterials();
         }
-        else if (event.keyCode == VKEY_N) {
+        else if (event.keyCode == VKEY_N && event.mod.lShift) {
             RenderContext::getInstance().selectNextDebugShader();
         }
         else if (event.keyCode == VKEY_U) {
@@ -148,7 +148,7 @@ void EditorWorldInterfaceController::initEvents() {
                 GameThreadTasks::getInstance().addHideLocalPlayerModelTask(false);
             }
         }
-        else if (event.keyCode == VKEY_F) {
+        else if (event.keyCode == VKEY_F && event.mod.lShift) {
             if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) {
                 sDebugOptions.mCameraMode = CameraMode::MMO;
             }
@@ -156,7 +156,7 @@ void EditorWorldInterfaceController::initEvents() {
                 sDebugOptions.mCameraMode = CameraMode::FREE_LOOK;
             }
         }
-        else if (event.keyCode == VKEY_P) {
+        else if (event.keyCode == VKEY_P && event.mod.lShift) {
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
                 World* world = static_cast<World*>(vWorld);
                 if (world->getPhysicsWorld().isProfiling()) {

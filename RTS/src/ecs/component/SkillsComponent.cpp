@@ -53,6 +53,7 @@ void SkillsComponentSystem::update(World& world, entt::registry& registry, f32 e
 
 bool SkillsComponentSystem::tryActivateSkillSlot(entt::entity entity, entt::registry& registry, SkillSlot slot) {
 	ASSERT_GAME_THREAD();
+	assert(slot != SkillSlot::NONE);
 
 	if (registry.try_get<ActiveSkillComponent>(entity)) {
 		// TODO: handle interrupts
@@ -65,9 +66,16 @@ bool SkillsComponentSystem::tryActivateSkillSlot(entt::entity entity, entt::regi
 		return false;
 	}
 
+	const SkillDef* skillDef = skillsCmp->mSkills[e_cast(slot)]->tryGetLoadedAsset();
+	if (!skillDef) {
+		LOG_WARN("Tried to activate skill that is not loadedL {}", skillsCmp->mSkills[e_cast(slot)]->getDescriptor().getName().toString());
+		return false;
+	}
+
 	skillsCmp->mActiveSlot = slot;
 
-	registry.emplace<ActiveSkillComponent>(entity);
+	ActiveSkillComponent& activeCmp = registry.emplace<ActiveSkillComponent>(entity);
+	activeCmp.mDef = skillDef;
 
 	// Event
 	dispatchActivate(SkillEvent{ .mEntity = entity, .mSkillSlot = slot });
@@ -80,7 +88,7 @@ void SkillsComponentSystem::handleSkillTrigger(World& world, entt::entity entity
 			assert(false);
 			break;
 		case SkillTriggerType::Attack: {
-			handleAttackTrigger(world, entity, trigger.mAttackTrigger);
+			handleAttackTrigger(world, entity, activeCmp, trigger.mAttackTrigger);
             break;
         }
 		default:
@@ -90,7 +98,7 @@ void SkillsComponentSystem::handleSkillTrigger(World& world, entt::entity entity
 	}
 }
 
-void SkillsComponentSystem::handleAttackTrigger(World& world, entt::entity entity, const SkillAttackTrigger& attackTrigger) {
+void SkillsComponentSystem::handleAttackTrigger(World& world, entt::entity entity, ActiveSkillComponent& activeCmp, const SkillAttackTrigger& attackTrigger) {
 	AttackData attackData;
 	switch (attackTrigger.mShape) {
 		case AttackShape::SPHERE:
@@ -102,7 +110,9 @@ void SkillsComponentSystem::handleAttackTrigger(World& world, entt::entity entit
 		default:
 			assert(false);
 	}
-	static_assert(e_count(AttackShape) == 2);
-	world.getCombatContext().performAttack(entity, attackData);
+    static_assert(e_count(AttackShape) == 2);
+    attackData.swingDir = attackTrigger.mSwingDir;
+	attackData.swingHeight = attackTrigger.mSwingHeight;
+	world.getCombatContext().performAttack(entity, *activeCmp.mDef, attackData);
 }
 

@@ -2,6 +2,7 @@
 #include "SkillRepository.h"
 
 #include "resources/AnimationRepository.h"
+#include "resources/EffectRepository.h"
 
 AssetLoadFunc SkillRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
@@ -18,6 +19,13 @@ AssetLoadFunc SkillRepository::getAssetLoadFunc() {
             AssetHandlePtr<AnimationDef> animHandle = AnimationRepository::get().getAssetHandle(fileData.mAnimName);
             def.mAnimID = animHandle->getAssetID();
             def.addDependency(std::move(animHandle));
+        }
+
+        // Hit effects
+        if (fileData.mHitEffectName.isValid()) {
+            AssetHandlePtr<EffectDef> effectHandle = EffectRepository::get().getAssetHandle(fileData.mHitEffectName);
+            def.mHitEffectName = fileData.mHitEffectName;
+            def.addDependency(std::move(effectHandle));
         }
 
         def.mDuration = fileData.mDuration;

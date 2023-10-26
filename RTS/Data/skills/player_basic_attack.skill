@@ -6,3 +6,5 @@ attack_triggers:
      shape: cone
      angle: 120.0
      radius: 1.5
+     swing_dir: [0.0, 1.0, 0.0]
+     swing_height: 0.5

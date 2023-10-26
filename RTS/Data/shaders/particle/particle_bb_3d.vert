@@ -7,7 +7,7 @@ uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
 uniform uint unBaseInstanceOffset = 0;
-uniform vec3 unRootOffset = vec3(0.0);
+uniform vec3 unRootPos = vec3(0.0);
 
 uniform uint unIsUsingColor = 0;
 uniform uint unIsUsingHDRColor = 0;
@@ -131,7 +131,7 @@ void main() {
 
     fUV = (offset.xy + 0.5);
     fUV.y = 1.0 - fUV.y; // Flip
-    vec3 position = ParticlePositions[particleId].xyz + unRootOffset;
+    vec3 position = ParticlePositions[particleId].xyz + unRootPos;
     
     vec3 upOrient = CameraUp;
     vec3 rightOrient = CameraRight;
