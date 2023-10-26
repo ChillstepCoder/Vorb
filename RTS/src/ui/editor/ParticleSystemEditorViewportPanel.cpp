@@ -63,8 +63,6 @@ void ParticleSystemEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) 
     if (mCurrentTime >= mTimelineEnd) {
         createPreviewSystem();
     }
-
-    renderCenterPanel(nullptr);
 }
 
 void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {

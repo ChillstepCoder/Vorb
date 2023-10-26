@@ -24,8 +24,6 @@ void FishingEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
         mCurrentFishingMinigame.reset();
         mAssetWasChanged = false;
     }
-
-    renderCenterPanel(nullptr);
 }
 
 void FishingEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {

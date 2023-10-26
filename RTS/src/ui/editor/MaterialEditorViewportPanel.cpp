@@ -25,11 +25,6 @@ MaterialEditorViewportPanel::~MaterialEditorViewportPanel()
 {
 }
 
-void MaterialEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec)
-{
-    renderCenterPanel(nullptr);
-}
-
 void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Material Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Material Editor Controls");
@@ -105,6 +100,9 @@ const MaterialShaderDef* MaterialEditorViewportPanel::getShader()
 }
 
 void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {
+    if (!mAssetData) {
+        return;
+    }
     UNUSED(availableTextureUnit);
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
         VGUniform unMaterialIndex = shader->getUniform("unMaterialIndex");

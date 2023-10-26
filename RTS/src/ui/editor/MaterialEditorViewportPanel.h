@@ -16,8 +16,6 @@ public:
     const char* getViewportWindowName() const override { return "Material Editor"; }
 
 private:
-    void updateAndRenderInternal(f32 elapsedSec) override;
-
 
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;

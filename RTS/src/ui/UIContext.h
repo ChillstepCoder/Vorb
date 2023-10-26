@@ -44,6 +44,7 @@ public:
     bool shouldPauseGameRendering() const;
 
     LocalMinigameContext& getMinigameContext() const { return *mMinigameContext; }
+    EditorRoot& getEditorRoot() const { return *mEditorRoot; }
 
     EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:

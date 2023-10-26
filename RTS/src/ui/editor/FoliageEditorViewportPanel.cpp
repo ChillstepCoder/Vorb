@@ -36,11 +36,6 @@ FoliageEditorViewportPanel::~FoliageEditorViewportPanel()
 
 }
 
-void FoliageEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec)
-{
-    renderCenterPanel(nullptr);
-}
-
 void FoliageEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 {
     ImGui::BeginChild("Foliage Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);

@@ -37,9 +37,9 @@ public:
     bool hasActiveCenterPanel() const { return mActiveCenterPanel != nullptr; }
     IEditorViewportPanel* getActiveCenterPanel() const { return mActiveCenterPanel; }
 
-private:
     // Returns false if there is no valid editor
-    bool tryOpenAssetForEdit(AssetType type, AssetID assetId);
+    bool tryOpenAssetForEdit(AssetDescriptor desc);
+private:
     void openBiomeForEdit();
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
 

@@ -214,7 +214,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                     break;
                 case TileEditorPanelResultCode::EDIT_ASSET: {
                     AssetDescriptor desc = std::get<AssetDescriptor>(result.second);
-                    tryOpenAssetForEdit(desc.assetType, desc.id);
+                    tryOpenAssetForEdit(desc);
                     break;
                 }
                 case TileEditorPanelResultCode::EDIT_BIOME:
@@ -278,13 +278,13 @@ void EditorRoot::renderEditorBrushDecals(const Camera3D& camera) {
     }
 }
 
-bool EditorRoot::tryOpenAssetForEdit(AssetType type, AssetID assetId)
+bool EditorRoot::tryOpenAssetForEdit(AssetDescriptor desc)
 {
-    auto&& it = mAssetEditorPanels.find(type);
+    auto&& it = mAssetEditorPanels.find(desc.assetType);
     if (it == mAssetEditorPanels.end()) {
         return false;
     }
-    it->second->setCurrentAsset(assetId);
+    it->second->setCurrentAsset(desc.id);
     setActiveCenterPanel(it->second.get());
 }
 

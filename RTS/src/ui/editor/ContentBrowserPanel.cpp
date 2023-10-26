@@ -4,6 +4,8 @@
 #include "filesystem/FileSystem.h"
 
 #include "ui/ImguiUtil.hpp"
+#include "ui/UIContext.h"
+#include "ui/editor/EditorRoot.h"
 
 #include "ui/editor/settings/EditorSettings.h"
 #include "editor/EditorResources.h"
@@ -785,20 +787,10 @@ void ContentBrowserPanel::RenderItems()
 				ChangeDirectory(static_pointer_cast<ContentBrowserDirectory>(item)->GetDirectoryInfo());
 				break;
 			}
-			else
+			else if (item->GetType() == ContentBrowserItem::ItemType::Asset)
 			{
-				auto assetItem = static_pointer_cast<ContentBrowserAsset>(item);
-				const auto& assetMetadata = assetItem->GetAssetInfo();
-
-				panic("MUST IMPLEMENT ACTIVATED FOR FILE");
-                /*if (m_ItemActivationCallbacks.find(assetMetadata.assetType) != m_ItemActivationCallbacks.end())
-                {
-                    m_ItemActivationCallbacks[assetMetadata.Type](assetMetadata);
-                }
-                else
-                {
-                    AssetEditorPanel::OpenEditor(AssetManager::GetAsset<Asset>(assetMetadata.Handle));
-                }*/
+				std::shared_ptr<ContentBrowserAsset> assetItem = static_pointer_cast<ContentBrowserAsset>(item);
+				UIContext::getInstance().getEditorRoot().tryOpenAssetForEdit(assetItem->GetAssetInfo().mDescriptor);
 			}
 		}
 
@@ -1318,7 +1310,7 @@ ContentBrowserItemList ContentBrowserPanel::Search(const std::string& query, con
 	for (auto& assetHandle : directoryInfo->Assets)
 	{
 		const AssetMetadata asset = ResourceManager::get().getAssetMetadata(assetHandle);
-		const std::string filename = Utils::toLower(Utils::getFilename(asset.mFilePath.getStringView()));
+		const std::string filename = Utils::toLower(Utils::getFilename(asset.mFilePath.getString()));
 
 		if (filename.find(queryLowerCase) != std::string::npos) {
 			const AssetType assetType = ResourceManager::get().getAssetTypeForFilePath(asset.mFilePath.getStdPath());

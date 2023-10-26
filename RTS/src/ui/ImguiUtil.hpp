@@ -884,7 +884,7 @@ namespace ImguiUtil {
         template<uint32_t BuffSize = 256, typename StringType>
         static bool SearchWidget(StringType& searchString, const char* hint = "Search...", bool* grabFocus = nullptr)
         {
-            ImGui::PushID(GenerateID());
+            ImGui::PushID(432);
 
             ShiftCursorY(1.0f);
 
@@ -912,7 +912,7 @@ namespace ImguiUtil {
             {
                 char searchBuffer[BuffSize]{};
                 strcpy_s<BuffSize>(searchBuffer, searchString.c_str());
-                if (ImGui::InputText(GenerateID(), searchBuffer, BuffSize))
+                if (ImGui::InputText("##Search", searchBuffer, BuffSize))
                 {
                     searchString = searchBuffer;
                     modified = true;
@@ -930,7 +930,7 @@ namespace ImguiUtil {
                 static_assert(std::is_same<decltype(&searchString[0]), char*>::value,
                     "searchString paramenter must be std::string& or char*");
 
-                if (ImGui::InputText(GenerateID(), searchString, BuffSize))
+                if (ImGui::InputText("##Search", searchString, BuffSize))
                 {
                     modified = true;
                 }
@@ -963,7 +963,7 @@ namespace ImguiUtil {
             if (layoutSuspended)
                 ImGui::ResumeLayout();
 
-            ImGui::BeginHorizontal(GenerateID(), ImGui::GetItemRectSize());
+            ImGui::BeginHorizontal("horiz", ImGui::GetItemRectSize());
             const ImVec2 iconSize(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight());
 
             // Search icon
@@ -992,7 +992,8 @@ namespace ImguiUtil {
                 const float spacingX = 4.0f;
                 const float lineHeight = ImGui::GetItemRectSize().y - framePaddingY / 2.0f;
 
-                if (ImGui::InvisibleButton(GenerateID(), ImVec2{ lineHeight, lineHeight }))
+                // TODO: Cant click on this, only hover
+                if (ImGui::InvisibleButton("##Clear", ImVec2{lineHeight, lineHeight}))
                 {
                     if constexpr (std::is_same<StringType, std::string>::value)
                         searchString.clear();
@@ -1005,10 +1006,10 @@ namespace ImguiUtil {
                 if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
                     ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 
-                ImguiUtil::DrawButtonImage(EditorResources::clearIcon->getLoadedAsset().getTextureHandle(), IM_COL32(160, 160, 160, 200),
-                    IM_COL32(170, 170, 170, 255),
-                    IM_COL32(160, 160, 160, 150),
-                    ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), -2.0f, -2.0f));
+                 ImguiUtil::DrawButtonImage(EditorResources::clearIcon->getLoadedAsset().getTextureHandle(), IM_COL32(160, 160, 160, 200),
+                     IM_COL32(170, 170, 170, 255),
+                     IM_COL32(160, 160, 160, 150),
+                     ImguiUtil::RectExpanded(ImguiUtil::GetItemRect(), -2.0f, -2.0f));
 
                 ImGui::Spring(-1.0f, spacingX * 2.0f);
             }

@@ -18,7 +18,6 @@ public:
     const char* getViewportWindowName() const override { return "Foliage Editor"; }
 
 private:
-    void updateAndRenderInternal(f32 elapsedSec) override;
 
     void renderCenterPanel(i32AABB2* outImageRect) override;
     void renderGrassControls();

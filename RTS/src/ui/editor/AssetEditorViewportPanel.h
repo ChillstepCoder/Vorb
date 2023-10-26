@@ -33,6 +33,8 @@ public:
 
         updateAndRenderInternal(elapsedSec);
 
+        renderCenterPanel(nullptr);
+
         ImGui::End();
         return isOpen;
     }
@@ -48,7 +50,7 @@ public:
         mAssetWasChanged = true;
     }
 
-    virtual void updateAndRenderInternal(f32 elapsedSec) = 0;
+    virtual void updateAndRenderInternal(f32 elapsedSec) { UNUSED(elapsedSec); }
 protected:
     AssetHandlePtr<T> mAssetHandle;
     T* mAssetData = nullptr;

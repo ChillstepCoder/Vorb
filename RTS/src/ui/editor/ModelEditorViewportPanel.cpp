@@ -28,10 +28,6 @@ ModelEditorViewportPanel::~ModelEditorViewportPanel()
 {
 }
 
-void ModelEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
-    renderCenterPanel(nullptr);
-}
-
 void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 {
     ImGui::BeginChild("Model Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);

@@ -23,9 +23,6 @@ static char s_RenameBuffer[MAX_INPUT_BUFFER_LENGTH];
 ContentBrowserItem::ContentBrowserItem(ItemType type, UniqueId64 uuid, const std::string& name, VGTexture icon)
     : mType(type), mUUID(uuid), mFileName(name), mIcon(icon)
 {
-    mDisplayName = mFileName;
-    if (mFileName.size() > 25)
-        mDisplayName = mFileName.substr(0, 25) + "...";
 }
 
 void ContentBrowserItem::OnRenderBegin()
@@ -45,7 +42,7 @@ CBItemActionResult ContentBrowserItem::OnRender()
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 
-    const float edgeOffset = 4.0f;
+    const float edgeOffset = 2.0f;
 
     const float textLineHeight = ImGui::GetTextLineHeightWithSpacing() * 2.0f + edgeOffset * 2.0f;
     const float infoPanelHeight = std::max(thumbnailSize * 0.5f, textLineHeight);
@@ -364,10 +361,10 @@ void ContentBrowserItem::SetDisplayNameFromFileName()
     const auto& editorSettings = EditorSettings::get();
     const float thumbnailSize = editorSettings.contentBrowserThumbnailSize;
 
-    int maxCharacters = 0.00152587f * (thumbnailSize * thumbnailSize); // 0.00152587f is a magic number that is gained from graphing this equation in desmos and setting the y=25 at x=128
+    int maxCharacters = 0.0031f * (thumbnailSize * thumbnailSize);
 
     if (mFileName.size() > maxCharacters)
-        mDisplayName = mFileName.substr(0, maxCharacters) + " ...";
+        mDisplayName = mFileName.substr(0, maxCharacters) + "...";
     else
         mDisplayName = mFileName;
 }

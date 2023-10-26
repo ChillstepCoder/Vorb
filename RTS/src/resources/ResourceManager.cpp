@@ -202,6 +202,11 @@ void ResourceManager::loadFiles() {
 }
 
 void ResourceManager::reloadMaterials() {
+
+    if (!mHasLoadedResources) {
+        return;
+    }
+
     LOG_DEBUG("Reloading materials...");
 
     ShaderLoader::clearAllCachedPrograms();
