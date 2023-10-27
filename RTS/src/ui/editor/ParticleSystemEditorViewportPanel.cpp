@@ -125,6 +125,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (ImGui::Button("Rename")) {
             mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mAssetData->getName().toString(), (void*)mAssetData);
         }
+        ImGui::SliderFloat("Lifetime", &mAssetData->mLifetimeSec, 0.0f, 60.0f);
         ImGui::SameLine();
         if (ImGui::Button("Save")) {
             ParticleSystemRepository& repo = ParticleSystemRepository::get();

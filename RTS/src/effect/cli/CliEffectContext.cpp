@@ -14,6 +14,8 @@ EffectInstance::EffectInstance(const EffectDef* effectDef, const ParticleSystemD
 EffectInstance::~EffectInstance() = default;
 
 void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
+    ASSERT_RENDER_THREAD();
+
     // Pending effects
     for (auto&& it = mPendingEffects.begin(); it != mPendingEffects.end();) {
         PendingEffectData& data = it->second;
@@ -27,6 +29,16 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
         }
         else {
             ++it;
+        }
+    }
+
+    // Render queue
+    constexpr size_t BULK_SIZE = 64;
+    std::pair<StrToken, PendingEffectInstanceData> effects[BULK_SIZE];
+    if (size_t count = mRenderThreadQueue.try_dequeue_bulk(effects, BULK_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            auto&& data = effects[i];
+            playParticleEffectAtPoint(data.first, data.second.position, data.second.inputs, data.second.flags);
         }
     }
 
@@ -52,31 +64,31 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
 }
 
 void CliEffectContext::playParticleEffectAtPoint(StrToken effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
-    UNUSED(flags);
-    // TODO: Allow from game thread too
-    ASSERT_RENDER_THREAD();
-
-    AssetHandlePtr<EffectDef> effectHandle = EffectRepository::get().getAssetHandle(effectName);
-    if (const EffectDef* effectDef = effectHandle->tryGetLoadedAsset()) {
-        addEffectInstance(
-            std::move(effectHandle),
-            EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, inputs)
-        );
-    }
-    else {
-        auto&& it = mPendingEffects.find(effectName);
-        if (it != mPendingEffects.end()) {
-            it->second.mPendingInstances.emplace_back(PendingEffectInstanceData{.position=point, .inputs=inputs});
+    if (IS_RENDER_THREAD()) {
+        AssetHandlePtr<EffectDef> effectHandle = EffectRepository::get().getAssetHandle(effectName);
+        if (const EffectDef* effectDef = effectHandle->tryGetLoadedAsset()) {
+            addEffectInstance(
+                std::move(effectHandle),
+                EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, inputs)
+            );
         }
         else {
-            mPendingEffects.insert(std::make_pair(effectName, PendingEffectData{
-                .mEffectHandle = std::move(effectHandle),
-                .mPendingInstances =
-                    std::vector<PendingEffectInstanceData>{PendingEffectInstanceData{.position=point,.inputs=inputs}}
-                })
-            );
-            it->second.mPendingInstances.emplace_back(PendingEffectInstanceData{ .position = point, .inputs = inputs });
+            auto&& it = mPendingEffects.find(effectName);
+            if (it != mPendingEffects.end()) {
+                it->second.mPendingInstances.emplace_back(PendingEffectInstanceData(point, inputs, flags));
+            }
+            else {
+                mPendingEffects.insert(std::make_pair(effectName, PendingEffectData{
+                    .mEffectHandle = std::move(effectHandle),
+                    .mPendingInstances =
+                        std::vector<PendingEffectInstanceData>{PendingEffectInstanceData(point, inputs, flags)}
+                    })
+                );
+                it->second.mPendingInstances.emplace_back(PendingEffectInstanceData(point, inputs, flags));
+            }
         }
+    } else {
+        mRenderThreadQueue.enqueue(std::make_pair(effectName, PendingEffectInstanceData(point, inputs, flags)));
     }
 }
 

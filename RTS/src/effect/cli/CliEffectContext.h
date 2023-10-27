@@ -3,11 +3,21 @@
 #include "effect/IEffectContext.h"
 #include "definitions/EffectDef.h"
 
+#include <concurrent_queue.h>
+
 class CPUParticleSystem;
 
-struct PendingEffectInstanceData {
+class PendingEffectInstanceData {
+public:
+    PendingEffectInstanceData() = default;
+    PendingEffectInstanceData(f32v3 position, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) :
+        position(position),
+        inputs(inputs),
+        flags(flags) {}
+
     f32v3 position;
     ParticleSystemInputs inputs;
+    BitFlags<EffectCreateFlags> flags;
 };
 
 class EffectInstance {
@@ -42,6 +52,8 @@ public:
 
 private:
     void addEffectInstance(AssetHandlePtr<EffectDef>&& assetHandle, EffectInstance instance);
+
+    moodycamel::ConcurrentQueue<std::pair<StrToken, PendingEffectInstanceData>> mRenderThreadQueue;
 
     std::unordered_map<StrToken, PendingEffectData> mPendingEffects;
     std::vector<EffectInstance> mEffectInstances;
