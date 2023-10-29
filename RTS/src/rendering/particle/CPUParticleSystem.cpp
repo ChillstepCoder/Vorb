@@ -50,10 +50,12 @@ bool CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
         }
     }
 
+    // TODO: Just always use emitter lifetime?
     mLifetimeRemaining -= elapsedSec;
-    if (mLifetimeRemaining <= 0.0f) {
+    if (mLifetimeRemaining <= 0.0f && mEmitters.size() == 0) {
         return true;
     }
+    return false;
 }
 
 bool CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, const std::vector<bool>& emitterVisibility) {
@@ -73,6 +75,7 @@ bool CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, c
                 if (nextShader != boundShader) {
                     MaterialRenderer::bindMaterialShaderForRender(*nextShader);
                     glUniformMatrix4fv(nextShader->getUniform("unVP"), 1, false, &VP[0][0]);
+                    glUniform3fv(nextShader->getUniform("unRootPos"), 1, &mRootPosition[0]);
                     boundShader = nextShader;
                 }
                 if (emitter.updateAndRender(elapsedSec)) {

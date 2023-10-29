@@ -68,7 +68,7 @@ private:
     // Render passes
     void renderPassSky();
     void renderPassShadows(const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer);
-    void renderPassTransparent();
+    void renderPassTransparent(f32 elapsedSec);
 
     void buildHorizonMesh();
 

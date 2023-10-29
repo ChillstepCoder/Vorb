@@ -11,7 +11,7 @@ enum class SkillTriggerType {
 
 struct SkillAttackTrigger {
     f32v3 mSwingDir = f32v3(0.0f);
-    f32 mSwingHeight = 0.5f;
+    f32 mSwingHeight = 1.3f;
     f32 mRadius = 1.0f;
     f32 mAngle = 120.0f;
     f32 mHeight = 1.5f;

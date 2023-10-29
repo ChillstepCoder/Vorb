@@ -146,6 +146,10 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             ImGui::DockBuilderDockWindow("Secondary Controls", dockIdRight);
             ImGui::DockBuilderDockWindow("Content Browser", dockIdDown);
             ImGui::DockBuilderDockWindow("Bottom Controls", dockIdDown);
+            ImGui::DockBuilderDockWindow("Biome  Editor", dockspaceId);
+            for (auto&& it : mAssetEditorPanels) {
+                ImGui::DockBuilderDockWindow(it.second->getViewportWindowName(), dockspaceId);
+            }
             ImGui::DockBuilderFinish(rootId);
         }
 
@@ -229,40 +233,13 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
 
         }
         if (mActiveCenterPanel) {
-            const f32 width = dims.x - (rightPanelWidth + leftPanelWidth);
-            if (width >= 2.0f) {
-                // Optional bottom panel
-                if (mActiveCenterPanel->hasBottomControls()) {
-                    const f32 ySize1 = dims.y * 0.75f;
-                    const f32 ySize2 = ySize1;
-
-                    //// Hack for splitter not in a window
-                    //const ImVec2 prevCursor = GImGui->CurrentWindow->DC.CursorPos;
-                    //GImGui->CurrentWindow->DC.CursorPos.x = leftPanelWidth;
-                    //Splitter(false, 10.0f, &ySize1, &ySize2, 8, 8, width);
-                    //GImGui->CurrentWindow->DC.CursorPos.x = prevCursor.x;
-
-                    const f32 bottomPanelHeight = mActiveCenterPanel->getBottomHeight();
-
-                    // Bottom panel
-                    mActiveCenterPanel->updateAndRenderBottomControls();
-
-                    // Center panel
-                    ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
-                    ImGui::SetNextWindowSize(ImVec2(width, dims.y - bottomPanelHeight));
-                    if (!mActiveCenterPanel->updateAndRender(elapsedSec)) {
-                        setActiveCenterPanel(nullptr);
-                    }
-             
-                }
-                else {
-                    // Center panel
-                    ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
-                    ImGui::SetNextWindowSize(ImVec2(width, dims.y));
-                    if (!mActiveCenterPanel->updateAndRender(elapsedSec)) {
-                        setActiveCenterPanel(nullptr);
-                    }
-                }
+            // Optional bottom panel
+            if (mActiveCenterPanel->hasBottomControls()) {
+                mActiveCenterPanel->updateAndRenderBottomControls();
+            }
+            // Center panel
+            if (!mActiveCenterPanel->updateAndRender(elapsedSec)) {
+                setActiveCenterPanel(nullptr);
             }
         }
 

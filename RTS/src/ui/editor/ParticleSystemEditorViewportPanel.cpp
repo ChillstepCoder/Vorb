@@ -373,8 +373,24 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         ImGui::Text(mSelectedEmitter->mDefaultMaterialID != INVALID_MATERIAL_ID ? MaterialRepository::get().getAssetName(mSelectedEmitter->mDefaultMaterialID).toString().c_str() : "NONE");
         ImguiAssetThumbnails::getMaterialThumbnailFunction()(mSelectedEmitter->mDefaultMaterialID, f32v2(60.0f));
 
-
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
+
+        // TODO: EnumCombo utility
+        if (ImGui::BeginCombo("Blend Mode", ENUM_CSTR(ParticleBlendMode, mSelectedEmitter->mBlendMode))) {
+            for (int i = 0; i < int(ParticleBlendMode::COUNT); ++i) {
+                bool isSelected = e_cast(mDrawMode) == i;
+                ImGui::Selectable(ENUM_CSTR(ParticleBlendMode, (ParticleBlendMode)i), &isSelected);
+
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                    if (mSelectedEmitter->mBlendMode != (ParticleBlendMode)i) {
+                        mSelectedEmitter->mBlendMode = (ParticleBlendMode)i;
+                        changed = true;
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
 
         if (changed) {
             createPreviewSystem();

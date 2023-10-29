@@ -90,7 +90,7 @@ bool vui::MainGame::initSystems() {
 #if defined(VORB_IMPL_GRAPHICS_OPENGL)
     // TODO: Replace With BlendState
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    vg::sBlendStates.ALPHA.set();
 
     // Set A Default OpenGL State
     vg::DepthState::FULL.set();

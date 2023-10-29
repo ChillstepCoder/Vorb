@@ -81,7 +81,6 @@ void main() {
 	vec4 cameraRelativePos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
-    vec2 randSeed = vec2(vPosition.xy);
     fWorldRoot = vPosition.xyz + unPosition;
     
     // Displace the vertex along the normal
@@ -99,6 +98,7 @@ void main() {
     fWorldPos = cameraRelativePos.xyz;
 	
     // Blade type
+    vec2 randSeed = vec2(vPosition.xy);
     fGrassMaterial = grassID;
     int cellCounti = unGrassData[grassID].materialCellCount;
     float uWidth = 1.0 / float(cellCounti);

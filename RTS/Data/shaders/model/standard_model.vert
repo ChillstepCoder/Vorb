@@ -2,6 +2,8 @@
 #include "util/wind.glsl"
 #include "util/uv.glsl"
 
+const float WIND_INTENSITY = 0.3; // TODO: PASS IN
+
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
 layout(location = 2) in uint vMaterialIndex;
@@ -30,14 +32,27 @@ void main() {
     normal = modelMatrix3 * normal;
     tangent = modelMatrix3 * tangent;
     
+    
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
     
-    vec4 worldPos = (vModelMatrix * vPosition) - vec4(CameraPos, 0.0);
-    gl_Position = VP * worldPos;
+    
+    vec4 trueWorldPos = (vModelMatrix * vPosition);
+    
+    
+    float height = vPosition.z;
+    
+    // Displace the vertex along the normal
+    float windIntensity = getWindAtPosition(-Time + height, vec4(trueWorldPos.xyz, 0.0)) * WIND_INTENSITY;
+    windIntensity *= height;
+    vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity);
+    trueWorldPos.xyz += windOffset;
+    
+    vec4 relativeWorldPos = trueWorldPos - vec4(CameraPos, 0.0);
+    gl_Position = VP * relativeWorldPos;
     
     // For displacement, get our world space -> tangent space
     mat3 tfTBN = transpose(fTBN); // Transpose is same as inverse for tbn because it is orthogonal, apparently
     fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
-    fFragPosTangent  = tfTBN * worldPos.xyz;
+    fFragPosTangent  = tfTBN * relativeWorldPos.xyz;
 }

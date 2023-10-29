@@ -2,7 +2,6 @@
 
 uniform mat4 unVP;
 
-uniform vec4 unGlobalOverlayColor = vec4(0.0);
 uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
@@ -131,7 +130,7 @@ void main() {
 
     fUV = (offset.xy + 0.5);
     fUV.y = 1.0 - fUV.y; // Flip
-    vec3 position = ParticlePositions[particleId].xyz + unRootPos;
+    vec3 position = ParticlePositions[particleId].xyz + (unRootPos - CameraPos);
     
     vec3 upOrient = CameraUp;
     vec3 rightOrient = CameraRight;
@@ -174,5 +173,6 @@ void main() {
     } else {
         fParticleMaterial = unGlobalMaterial;
     }
+    
     gl_Position = unVP * vec4(position.xyz, 1.0);
 }

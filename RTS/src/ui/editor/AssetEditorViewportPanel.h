@@ -20,11 +20,15 @@ public:
         }
 
         bool isOpen = true;
-        ImGui::Begin(getViewportWindowName(), &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-            ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+        ImGui::Begin(getViewportWindowName(), &isOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
         ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
         mViewportDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+        if (mViewportDims.x < 1 || mViewportDims.y < 1) {
+            ImGui::End();
+            return isOpen;
+        }
+
         updateCamera(mViewportDims.x / mViewportDims.y);
 
         updateFramebufferAndLazyInit(mViewportDims);

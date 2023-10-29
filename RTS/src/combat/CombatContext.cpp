@@ -197,6 +197,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
             return;
         }
 
+        // This is at the center of the collision object, not the base
         const f32v3 targetRootPosition = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
         const f32v2 targetCenterPoint2D = targetRootPosition;
         const f32v2 offsetToTarget2D = targetCenterPoint2D - f32v2(attackStartPos);
@@ -243,8 +244,9 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
                     if (intersectsArc) {
                         const f32v2 impactNormal2D = offsetToTarget2D / sqrt(distanceFromTarget2);
                         impactNormal = f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f);
-                        const f32v3 impactCenter = targetRootPosition + f32v3(0.0f, 0.0f, attackData.swingHeight);
-                        impactPosition = impactCenter + impactNormal * static_cast<f32>(halfExtents.x());
+                        f32v3 targetCenterAtSourceHeight(targetRootPosition.x, targetRootPosition.y, attackStartPos.z);
+                        const f32v3 impactCenter = targetCenterAtSourceHeight + f32v3(0.0f, 0.0f, attackData.swingHeight);
+                        impactPosition = impactCenter - impactNormal * static_cast<f32>(halfExtents.x());
                     }
                     break;
                     // ... (add other cases as needed)
@@ -257,7 +259,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
             if (intersectsArc) {
                 const f32 angleRad = MathUtil::yawFromDirection(normalToTarget2D);
                 impactDir = MathUtil::rotateVectorYawRad(attackData.swingDir, angleRad);
-                hitTile(std::get<LiteTileHandle>(results[i].mObject), skillDef, attackData.damageRange, impactPosition, impactNormal, attackData.swingDir);
+                hitTile(std::get<LiteTileHandle>(results[i].mObject), skillDef, attackData.damageRange, impactPosition, impactNormal, impactDir);
             }
         }
         else {

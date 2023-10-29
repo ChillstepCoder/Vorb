@@ -54,7 +54,10 @@ void EditorWorldInterfaceController::update()
 void EditorWorldInterfaceController::renderUI() {
     tryUpdateAndRenderInteractPopup();
 }
-
+//  TODO: REMOVE
+#include "effect/IEffectContext.h"
+#include "rendering/particle/ParticleSystemInputs.h"
+#include "debugging/DebugRenderer.h"
 void EditorWorldInterfaceController::updateTilePicking() {
     const f32 normalizedX = (mMousePosition.x / (f32)mWindow->getWidth()) * 2.0f - 1.0f;
     const f32 normalizedY = -((mMousePosition.y / (f32)mWindow->getHeight()) * 2.0f - 1.0f);
@@ -79,6 +82,16 @@ void EditorWorldInterfaceController::updateTilePicking() {
     if (mRightClickUpPick && mRightClickUpPick->isDone()) {
         PhysHitResult hitResult = mRightClickUpPick->getLastPickResult();
         if (hitResult.didHit()) {
+
+            // TMP REMOVE
+            if (vui::InputDispatcher::key.isKeyPressed(VKEY_I)) {
+                DebugRenderer::drawWireQuad(hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), f32v2(0.3f), color4(1.0f, 0.0f, 0.0f, 1.0f), 100);
+                ParticleSystemInputs inputs;
+                mWorld->getEffectContext().playParticleEffectAtPoint(CStrToken("hitfx"), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), inputs, BitFlags<EffectCreateFlags>());
+                mRightClickUpPick.reset();
+                return;
+            }
+
             mSelectedScreenPos = mRightClickUpPickScreenPos;
             // For interact must click in about the same spot
             if (hitResult.mSelectedEntity != INVALID_ENTITY) {
@@ -109,6 +122,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
     }
 }
 
+
 void EditorWorldInterfaceController::initEvents() {
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
     vui::InputDispatcher::mouse.registerMouseListeners(mMouseListeners);
@@ -119,6 +133,7 @@ void EditorWorldInterfaceController::initEvents() {
         if (!GameThreadTasks::exists()) {
             return;
         }
+
         // View toggle
         if (event.keyCode == VKEY_B && event.mod.lShift) {
             sDebugOptions.mWireframe = !sDebugOptions.mWireframe;

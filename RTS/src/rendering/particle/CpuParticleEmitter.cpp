@@ -579,9 +579,9 @@ void CpuParticleEmitter::render() {
     sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
 
     checkGlError("CpuParticleEmitter::render");
-
     vg::DepthState::restorePrevious();
     vg::BlendState::restorePrevious();
+    return;
 }
 
 void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {

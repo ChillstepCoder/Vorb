@@ -141,6 +141,7 @@ void APIENTRY glDebugOutput(GLenum source,
     } ss << std::endl;
     ss << std::endl;
     LOG_CRITICAL("{}", ss.str());
+    //panic(ss.str()); //  Dont want to crash on program link errors
     //assert(false);
 }
 

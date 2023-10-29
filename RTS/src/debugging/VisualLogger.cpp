@@ -231,7 +231,7 @@ void VisualLog::buildMesh() {
     TextMeshBuilder textBuilder;
     
     // Build meshes
-    for (; i < end; ++i) {
+    for (; i < end && i < mShapes.size() /*Added second check cause we went out of bounds*/; ++i) {
         const VisualLogShape& shape = mShapes[i];
         switch (shape.type) {
             case VisualLogShapeType::LINE: {

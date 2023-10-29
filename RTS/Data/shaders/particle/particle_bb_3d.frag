@@ -1,7 +1,5 @@
 #include "MaterialData.glsl"
 
-uniform sampler2D unTexture;
-
 in vec2 fUV;
 flat in uint fParticleMaterial;
 flat in vec4 fColor;

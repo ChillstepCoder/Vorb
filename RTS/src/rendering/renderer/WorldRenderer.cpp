@@ -209,6 +209,8 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Grass + billboards
 
     mTileContainerRenderer->renderBillboards(tileContainerMeshManager.getBillboardMeshes(), *mCamera);
+
+
     // PRE SMUDGE GRASS PASS
     /*if (!sDebugOptions.mHideGrass) {
         mGrassRenderer->renderGrass(*mCamera, playerPos, mGrassMeshes);
@@ -228,11 +230,11 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         glDisable(GL_STENCIL_TEST);
     }
 
+    // SHADOWED PARTICLES
+    //mActiveWorld->getEffectContext().renderEffects(elapsedSec, *mCamera);
+
     // Paint smudges
     mSmudgeRenderer->renderPaintNoise(activeGBuffer, *mCamera);
-
-    // Particles
-    mActiveWorld->getEffectContext().renderEffects(elapsedSec, *mCamera);
 
     // Clouds
     /* if (!sDebugOptions.mDisableClouds) {
@@ -248,8 +250,6 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
     renderPassShadows(renderData, activeGBuffer);
 
-    // TODO: Particles
-
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
@@ -264,7 +264,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, camera, 0.20f, frameAlpha);
         // Depth debug
     if (mPassthroughRenderMode == 1) {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        vg::sBlendStates.ALPHA.set();
         const MaterialShaderDef* postMat = mPassthroughMaterials[mPassthroughRenderMode]->tryGetLoadedAsset();
         if (postMat) {
 
@@ -296,7 +296,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         renderPassSky();
     }
 
-    renderPassTransparent();
+    renderPassTransparent(elapsedSec);
 
     // Update active
     activeGBuffer = mHDRLightGBuffer.get();
@@ -565,7 +565,7 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
     }
 }
 
-void WorldRenderer::renderPassTransparent() {
+void WorldRenderer::renderPassTransparent(f32 elapsedSec) {
     // Render clouds without shadows
     if (!mCurrentWorldRenderDataManager) {
         return;
@@ -579,6 +579,9 @@ void WorldRenderer::renderPassTransparent() {
         mCloudRenderer->renderClouds(mCurrentWorldRenderDataManager->getCloudMeshManager(), mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), *mCamera, *cubeMap);
     }
 
+    // Emissive Particles
+    mActiveWorld->getEffectContext().renderEffects(elapsedSec, *mCamera);
+
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
         glEnable(GL_DEPTH_CLAMP);
@@ -587,6 +590,8 @@ void WorldRenderer::renderPassTransparent() {
     }
 
     // Light transparent layer
+
+
 }
 
 

@@ -129,6 +129,7 @@ void IEditorViewportPanel::renderCenterPanelImage(i32AABB2* outImageRect, VGText
 }
 
 void IEditorViewportPanel::updateFramebufferAndLazyInit(const i32v2& framebufferDims) {
+
     if (!mSkybox) {
         mSkybox = std::make_unique<Skybox>();
         mSkybox->init(nullptr);

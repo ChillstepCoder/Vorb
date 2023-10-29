@@ -15,6 +15,7 @@ EffectInstance::~EffectInstance() = default;
 
 void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
+    glDisable(GL_CULL_FACE);
 
     // Pending effects
     for (auto&& it = mPendingEffects.begin(); it != mPendingEffects.end();) {
@@ -98,7 +99,6 @@ void CliEffectContext::addEffectInstance(AssetHandlePtr<EffectDef>&& assetHandle
     if (eit != mEffectReferences.end()) {
         // If it is in mEffectReferences, it is loaded. Incref
         ++eit->second.first;
-        return;
     }
     else {
         mEffectReferences.insert(

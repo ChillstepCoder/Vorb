@@ -44,12 +44,15 @@ BiomeEditorViewportPanel::~BiomeEditorViewportPanel()
 bool BiomeEditorViewportPanel::updateAndRender(f32 elapsedSec) {
    
     bool isOpen = true;
-    ImGui::Begin("Biome Editor", &isOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Biome Editor", &isOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
     ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
     f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+    if (imageDims.x < 1 || imageDims.y < 1) {
+        ImGui::End();
+        return isOpen;
+    }
 
     updateCamera(imageDims.x / imageDims.y);
 
