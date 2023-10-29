@@ -44,8 +44,7 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
     ModelDef& def = *mAssets[newId];
 
     panic("Need to finish ModelRepository::loadFbxFile");
-    ModelDefFileData fileData;
-    loadModelInternal(def, fileData, newName, filePath);
+    loadModelInternal(def, newName, filePath);
 }
 
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
@@ -56,10 +55,9 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
 
         LOG_TRACE("Loading model {}", filePath.getCString());
 
-        ModelDefFileData fileData;
-        YmlSerializer::readFileData(readFileToString(filePath), fileData);
+        YmlSerializer::readFileData(readFileToString(filePath), def);
 
-        if (!fileData.mModelName.isValid()) {
+        if (!def.mModelName.isValid()) {
             panic("Model file missing model name - {}", filePath.getString());
         }
 
@@ -67,14 +65,14 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         rootDir.trimEnd();
         assert(rootDir.isDirectory());
 
-        const vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName.toString();
-        loadModelInternal(def, fileData, def.getName(), modelPath);
+        const vio::Path modelPath = rootDir + nString("\\") + def.mModelName.toString();
+        loadModelInternal(def, def.getName(), modelPath);
 
         return false;
     };
 }
 
-void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileData, StrToken modelName, const vio::Path& modelPath) {
+void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath) {
     
     MaterialRepository& materialRepo = MaterialRepository::get();
     // Allocate raw FBX
@@ -87,13 +85,11 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
         mRawModels[std::move(modelName)] = std::move(rawFbxMesh);
     }
 
-    def.mShadowDetail = fileData.mShadowDetail;
-
     // If has rig, we need to load animation and skeleton info
-    if (fileData.mRigName.isValid()) {
-        def.addDependency(RigRepository::get().getAssetHandle(fileData.mRigName));
-        if (fileData.mMachineName.isValid()) {
-            def.addDependency(AnimMachineRepository::get().getAssetHandle(fileData.mMachineName));
+    if (def.mRigName.isValid()) {
+        def.addDependency(RigRepository::get().getAssetHandle(def.mRigName));
+        if (def.mMachineName.isValid()) {
+            def.addDependency(AnimMachineRepository::get().getAssetHandle(def.mMachineName));
         }
     }
 
@@ -110,16 +106,16 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
         def.addDependency(materialRepo.getAssetHandle(StrToken(rawMeshPtr->mMaterials[i].materialName)));
     }
 
-    AssetLoader::getInstance().requestAssetLoadWithDependencies([this, fileData, rawMeshPtr, materialCount]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+    AssetLoader::getInstance().requestAssetLoadWithDependencies([this, rawMeshPtr, materialCount]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         FBXLoadContext& loadContext = *std::any_cast<std::shared_ptr<FBXLoadContext>&>(userData);
 
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
         // Rig + animation
-        if (fileData.mRigName.isValid()) {
-            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(fileData.mRigName);
-            if (fileData.mMachineName.isValid()) {
-                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(fileData.mMachineName);
+        if (def.mRigName.isValid()) {
+            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(def.mRigName);
+            if (def.mMachineName.isValid()) {
+                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineName);
             }
         }
 
@@ -130,7 +126,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
 
         // Load model to raw
         loadRawModelFromFBX(loadContext, *rawMeshPtr, filePath, def.mRig ? &def.mRig->mSkeleton : nullptr);
-        if (fileData.mForceNormalsUp) {
+        if (def.mForceNormalsUp) {
             MeshOperations::setAllNormals(*rawMeshPtr, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
         }
 
@@ -142,8 +138,8 @@ void ModelRepository::loadModelInternal(ModelDef& def, ModelDefFileData& fileDat
             }
             loadContext.meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials);
             // Apply scale if needed
-            if (fileData.mScale != 1.0f) {
-                MeshOperations::applyScale(loadContext.meshData[def.mNumMeshes], fileData.mScale);
+            if (def.mScale != 1.0f) {
+                MeshOperations::applyScale(loadContext.meshData[def.mNumMeshes], def.mScale);
             }
             RawMeshSkeletonData& rawSkeletonData = combinedMeshData.mSkeletonData;
 

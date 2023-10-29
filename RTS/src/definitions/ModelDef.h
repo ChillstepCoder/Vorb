@@ -12,23 +12,6 @@ constexpr int MAX_MODEL_MESH_COUNT = e_count(MaterialRenderPassType);
 struct RigDef;
 struct AnimMachineDef;
 
-struct ModelDefFileData {
-    StrToken mModelName;
-    StrToken mRigName;
-    StrToken mMachineName;
-    f32 mScale = 1.0f;
-    ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
-    bool mForceNormalsUp = false;
-};
-// TODO: Decl
-SERIALIZABLE_SIMPLE(ModelDefFileData,
-    make_field(o.mModelName, "model"sv),
-    make_field(o.mRigName, "rig"sv),
-    make_field(o.mMachineName, "machine"sv),
-    make_field(o.mScale, "scale"sv),
-    make_field(o.mShadowDetail, "shadow_detail"sv),
-    make_field(o.mForceNormalsUp, "force_normals_up"sv)
-);
 
 // Contains gpu buffers one or more models and their LODs, to improve batching performance
 // Currently all models in a batch must share a skeleton (or have no skeleton)
@@ -64,9 +47,22 @@ public:
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    // TODO: single unique_ptr?
+    // TODO: single unique_ptr? <mesh[]>
     std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
     ui32 mNumMeshes = 0;
+    StrToken mModelName;
+    StrToken mRigName;
+    StrToken mMachineName;
+    f32 mScale = 1.0f;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
+    bool mForceNormalsUp = false;
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
+SERIALIZABLE_SIMPLE(ModelDef,
+    make_field(o.mModelName, "model"sv),
+    make_field(o.mRigName, "rig"sv),
+    make_field(o.mMachineName, "machine"sv),
+    make_field(o.mScale, "scale"sv),
+    make_field(o.mShadowDetail, "shadow_detail"sv),
+    make_field(o.mForceNormalsUp, "force_normals_up"sv)
+);

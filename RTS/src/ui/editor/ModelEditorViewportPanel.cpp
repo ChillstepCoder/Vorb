@@ -68,6 +68,16 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
             polyCount += mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3;
         }
         ImGui::Text("Polygons %d", polyCount);
+        ImGui::Separator();
+        ImGui::Checkbox("Edit Submesh", &mShowSingle);
+        if (mShowSingle) {
+            ImGui::Spacing(); ImGui::SameLine();
+            ImGui::Text("Submesh Edit");
+            ImGui::Spacing(); ImGui::SameLine();
+            ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
+            ImGui::Separator();
+            // TODO: Wind
+        }
 
         updateAndRenderTweakers();
     }
@@ -109,8 +119,14 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
-        for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-            MeshDrawer::draw(mAssetData->getMesh(i).mMainMesh, MeshLODLevel(mLod));
+        if (mShowSingle) {
+            mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
+            MeshDrawer::draw(mAssetData->getMesh(mSingleIndex).mMainMesh, MeshLODLevel(mLod));
+        }
+        else {
+            for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+                MeshDrawer::draw(mAssetData->getMesh(i).mMainMesh, MeshLODLevel(mLod));
+            }
         }
     }
 }

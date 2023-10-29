@@ -25,6 +25,8 @@ private:
    
     bool mDirtyModelData = false;
     int mLod = 0;
+    bool mShowSingle = false;
+    int mSingleIndex = 0;
 
 };
 

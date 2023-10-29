@@ -36,7 +36,7 @@ public:
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 
-    void loadModelInternal(ModelDef& def, ModelDefFileData& fileData, StrToken modelName, const vio::Path& modelPath);
+    void loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath);
     void loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
 
     std::mutex mRawModelsMutex;
