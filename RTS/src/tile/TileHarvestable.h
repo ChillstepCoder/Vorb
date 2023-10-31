@@ -1,6 +1,6 @@
 #pragma once
 
-// TODO: Could this become TileInteractable?
+// TODO: Could this become TileInteractable? ResourceTag?
 enum class TileHarvestable : ui8 {
     WOOD,
     STONE,

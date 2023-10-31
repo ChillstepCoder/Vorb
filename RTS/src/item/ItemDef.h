@@ -30,7 +30,7 @@ SERIALIZABLE_ENUM_SAME_NAME(ItemType,
 );
 static_assert(e_count(ItemType) == 9, "Update def");
 
-enum class ItemStorageShape {
+enum class ItemStockpileShape {
     POINT,
     QUAD_SHAPES_START,
     PLANK = QUAD_SHAPES_START,
@@ -38,13 +38,32 @@ enum class ItemStorageShape {
     INGOT,
     COUNT
 };
-SERIALIZABLE_ENUM_SAME_NAME(ItemStorageShape,
-    pair{ ItemStorageShape::POINT, "point"sv },
-    pair{ ItemStorageShape::PLANK, "plank"sv },
-    pair{ ItemStorageShape::LOG, "log"sv },
-    pair{ ItemStorageShape::INGOT, "ingot"sv }
+SERIALIZABLE_ENUM_SAME_NAME(ItemStockpileShape,
+    pair{ ItemStockpileShape::POINT, "point"sv },
+    pair{ ItemStockpileShape::PLANK, "plank"sv },
+    pair{ ItemStockpileShape::LOG, "log"sv },
+    pair{ ItemStockpileShape::INGOT, "ingot"sv }
 );
-static_assert(e_count(ItemStorageShape) == 4, "Update def");
+static_assert(e_count(ItemStockpileShape) == 4, "Update def");
+
+enum class InventoryBagType : ui8 {
+    Resources,
+    Food,
+    Equipment,
+    Alchemy,
+    Valuables,
+    Misc,
+    COUNT
+};
+SERIALIZABLE_ENUM_SAME_NAME(InventoryBagType, 
+    pair{ InventoryBagType::Resources, "resources"sv },
+    pair{ InventoryBagType::Food, "food"sv },
+    pair{ InventoryBagType::Equipment, "equipment"sv },
+    pair{ InventoryBagType::Alchemy, "alchemy"sv },
+    pair{ InventoryBagType::Valuables, "valuables"sv },
+    pair{ InventoryBagType::Misc, "misc"sv }
+);
+static_assert(e_count(InventoryBagType) == 6, "Update def");
 
 class ItemDef : public IAsset {
     friend class ItemRepository;
@@ -56,28 +75,32 @@ public:
     // TODO: Remove accessors
     f32 getValue() const { return mValue; }
     f32 getWeight() const { return mWeight; }
-    ui32 getMaxStackSize() const { return mStackSize; }
+    ui32 getMaxStockpileStackSize() const { return mStockpileStackSize; }
     TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
 
     StrToken mTextureName;
     ItemType mType = ItemType::UNKNOWN;
-    ItemStorageShape mShape = ItemStorageShape::POINT;
-    TileHarvestable mHarvestableSource = TileHarvestable::NONE;
-    // TODO: Model or something?
+    TileHarvestable mHarvestableSource = TileHarvestable::NONE; // TODO: Resource Tags instead?
+    InventoryBagType mInventoryBagType = InventoryBagType::Misc;
+    // TODO: ModelDef
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;
-    ui32 mStackSize = 10;
-    ui32v3 mStackDims = ui32v3(5, 5, 5);
+
+    // Stockpile specific
+    ui32 mStockpileStackSize = 10;
+    ItemStockpileShape mStockpileShape = ItemStockpileShape::POINT;
+    ui32v3 mStockpileStackDims = ui32v3(5, 5, 5);
 };
 SERIALIZABLE_SIMPLE(ItemDef,
     make_field(o.mTextureName, "texture"sv),
     make_field(o.mType, "type"sv),
-    make_field(o.mShape, "shape"sv),
+    make_field(o.mStockpileShape, "shape"sv),
     make_field(o.mHarvestableSource, "harvest"sv),
     make_field(o.mValue, "value"sv),
     make_field(o.mWeight, "weight"sv),
-    make_field(o.mStackSize, "stack_size"sv),
-    make_field(o.mStackDims, "stack_dims"sv)
+    make_field(o.mStockpileStackSize, "stack_size"sv),
+    make_field(o.mStockpileStackDims, "stack_dims"sv),
+    make_field(o.mInventoryBagType, "inv_bag"sv)
 );
 
 struct StoredItemStack {
@@ -85,3 +108,12 @@ struct StoredItemStack {
     i32v2 worldPos = {};
     bool isInContainer = false;
 };
+
+// TODO: Use?
+struct ItemInstanceStack {
+    ItemID id; // Base type (Potion of healing)
+    ui32 count;
+    void* modifiers; //???
+    // For example, Superior/weak potion of healing
+};
+static_assert(sizeof(ItemInstanceStack) == 16);

@@ -150,7 +150,7 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryPromiseItemStac
     assert(itemStack.quantity < UINT16_MAX);
 
     ItemRepository& itemRepo = ItemRepository::get();
-    const ui32 maxStackSize = itemRepo.getLoadedOrUnloadedAsset(itemStack.id).getMaxStackSize();
+    const ui32 maxStackSize = itemRepo.getLoadedOrUnloadedAsset(itemStack.id).getMaxStockpileStackSize();
     ui32 totalFreeSpace = maxStackSize * mFreeSlots;
     ui32 remainingQuantity;
     std::vector<ItemReservationTarget> targets;
@@ -361,7 +361,7 @@ bool ItemStockpile::freeSlot(ItemStockpileTileStorage& tileStorage, ItemStockpil
         assert(didRemove);
 
         ItemRepository& itemRepo = ItemRepository::get();
-        const ui32 maxStackSize = itemRepo.getLoadedOrUnloadedAsset(itemId).getMaxStackSize();
+        const ui32 maxStackSize = itemRepo.getLoadedOrUnloadedAsset(itemId).getMaxStockpileStackSize();
         assert(record.freeStackSpace >= maxStackSize);
         record.freeStackSpace -= maxStackSize;
         return false;
