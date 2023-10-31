@@ -126,7 +126,6 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mAssetData->getName().toString(), (void*)mAssetData);
         }
         ImGui::SliderFloat("Lifetime", &mAssetData->mLifetimeSec, 0.0f, 60.0f);
-        ImGui::SameLine();
         if (ImGui::Button("Save")) {
             ParticleSystemRepository& repo = ParticleSystemRepository::get();
             if (repo.getAssetFilePath(mAssetData->getID()).isNull()) {
@@ -363,6 +362,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         if (mAssetSelectorPopup) {
             if (mAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
                 assert(mSelectedEmitter);
+                mSelectedEmitter->mDefaultMaterialName = mAssetSelectorPopup->getResult().mName;
                 mSelectedEmitter->mDefaultMaterialID = mAssetSelectorPopup->getResult().getId();
                 mAssetSelectorPopup.reset();
                 changed = true;

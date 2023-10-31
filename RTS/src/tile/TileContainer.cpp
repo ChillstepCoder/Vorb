@@ -6,6 +6,7 @@
 #include "tile/TileContainerRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/RenderThreadTasks.h"
+#include "effect/IEffectContext.h"
 
 #include "resources/TileRepository.h"
 #include "world/World.h"
@@ -434,10 +435,17 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         return false;
     }
 
-    TileID tileId = mTiles[index].layers[e_cast(layer)];
+    const TileID tileId = mTiles[index].layers[e_cast(layer)];
     assert(tileId != INVALID_TILE_INDEX && "Tried to damage empty tile");
 
     auto destroyTile = [&](TileContainerEvent evnt) {
+
+        // Optional VFX
+        const TileDef& destroyedTile = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
+        if (destroyedTile.destroyEffect.isValid()) {
+            mWorld.getEffectContext().playParticleEffectAtPoint(destroyedTile.destroyEffect, impactPosition, ParticleSystemInputs(), BitFlags<EffectCreateFlags>());
+        }
+
         std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;
         // Destroy tile
         setTileLayer(index, TileLayer::Main, TILE_ID_NONE);
@@ -446,6 +454,8 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
         dispatchTileDestroyed(evnt);
         mWorld.getTileContainerRepository().dispatchTileDestroyed(evnt);
+
+       
     };
 
     // Check if already damaged

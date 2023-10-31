@@ -17,16 +17,19 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
     glDisable(GL_CULL_FACE);
 
-    // Pending effects
-    for (auto&& it = mPendingEffects.begin(); it != mPendingEffects.end();) {
+    // Pending asset load effects
+    for (auto&& it = mPendingAssetLoadEffects.begin(); it != mPendingAssetLoadEffects.end();) {
         PendingEffectData& data = it->second;
         if (const EffectDef* def = data.mEffectHandle->tryGetLoadedAsset()) {
             mEffectInstances.reserve(mEffectInstances.size() + data.mPendingInstances.size());
             const ParticleSystemDef* sysDef = def->getLoadedParticleSystemDef();
             for (PendingEffectInstanceData& instance : data.mPendingInstances) {
-                mEffectInstances.emplace_back(def, sysDef, instance.position, instance.inputs);
+                addEffectInstance(
+                    data.mEffectHandle->getAssetID(),
+                    EffectInstance(def, sysDef, instance.position, instance.inputs)
+                );
             }
-            it = mPendingEffects.erase(it);
+            it = mPendingAssetLoadEffects.erase(it);
         }
         else {
             ++it;
@@ -69,23 +72,22 @@ void CliEffectContext::playParticleEffectAtPoint(StrToken effectName, f32v3 poin
         AssetHandlePtr<EffectDef> effectHandle = EffectRepository::get().getAssetHandle(effectName);
         if (const EffectDef* effectDef = effectHandle->tryGetLoadedAsset()) {
             addEffectInstance(
-                std::move(effectHandle),
+                effectHandle->getAssetID(),
                 EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, inputs)
             );
         }
         else {
-            auto&& it = mPendingEffects.find(effectName);
-            if (it != mPendingEffects.end()) {
+            auto&& it = mPendingAssetLoadEffects.find(effectName);
+            if (it != mPendingAssetLoadEffects.end()) {
                 it->second.mPendingInstances.emplace_back(PendingEffectInstanceData(point, inputs, flags));
             }
             else {
-                mPendingEffects.insert(std::make_pair(effectName, PendingEffectData{
+                mPendingAssetLoadEffects.insert(std::make_pair(effectName, PendingEffectData{
                     .mEffectHandle = std::move(effectHandle),
                     .mPendingInstances =
                         std::vector<PendingEffectInstanceData>{PendingEffectInstanceData(point, inputs, flags)}
                     })
                 );
-                it->second.mPendingInstances.emplace_back(PendingEffectInstanceData(point, inputs, flags));
             }
         }
     } else {
@@ -93,7 +95,7 @@ void CliEffectContext::playParticleEffectAtPoint(StrToken effectName, f32v3 poin
     }
 }
 
-void CliEffectContext::addEffectInstance(AssetHandlePtr<EffectDef>&& assetHandle, EffectInstance instance) {
+void CliEffectContext::addEffectInstance(AssetID assetId, EffectInstance instance) {
     // Refcounting
     auto&& eit = mEffectReferences.find(instance.mEffectDef);
     if (eit != mEffectReferences.end()) {
@@ -104,7 +106,7 @@ void CliEffectContext::addEffectInstance(AssetHandlePtr<EffectDef>&& assetHandle
         mEffectReferences.insert(
             std::make_pair(
                 instance.mEffectDef,
-                std::make_pair(1, std::move(assetHandle))
+                std::make_pair(1, EffectRepository::get().getAssetHandle(assetId))
             )
         );
     }

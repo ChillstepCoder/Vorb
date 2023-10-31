@@ -3,6 +3,7 @@ col_shape: cylinder
 col_half_dims: [1.0, 1.0, 5.0]
 resource: wood
 path_weight: 0
+destroy_effect: tree_explode
 drops:
   - item: wood_raw
     count: [15, 20]

@@ -1,0 +1,57 @@
+emitters:
+  - default_emitter:
+      scale: [0.1,0.1]
+      color: [79,56,0,255]
+      max_particles: 2500
+      lifetime: 3
+      p_lifespan: 3
+      looping: 1
+      blend: additive
+      mat: soft_particle
+      shader: particle_bb_3d
+      e_update:
+        - spawn_burst:
+            delay: 0
+            spawn_count: 2500
+      p_init:
+        - set_position:
+            pos:
+              add_vec3:
+                p0: [0,0,5]
+                p1:
+                  rnd_point_shape:
+                    type: box
+                    half_extents: [0.5,0.5,5]
+        - cone_burst:
+            speed_range: [1,6]
+            angle_range: [0,3]
+            dir: [0,0,1]
+        - set_life:
+            life:
+              rand_float:
+                min: 1
+                max: 2
+                seed_by_p: 1
+      p_update:
+        - apply_force:
+            force: [0,0,-4]
+        - drag_force:
+            drag: 0.45
+        - set_scale:
+            scale:
+              f32_to_vec2:
+                v:
+                  mult_f32:
+                    p0:
+                      float_curve:
+                        norm_input:
+                          p_norm_life: {}
+                        keys:
+                          - [0,1]
+                          - [0.679,0.8]
+                          - [1,0]
+                    p1:
+                      rand_float:
+                        min: 1
+                        max: 3
+                        seed_by_p: 1
