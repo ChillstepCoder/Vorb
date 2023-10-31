@@ -2,8 +2,6 @@
 #include "util/wind.glsl"
 #include "util/uv.glsl"
 
-const float WIND_INTENSITY = 0.3; // TODO: PASS IN
-
 uniform int unWindType = 0;
 
 layout(location = 0) in vec4 vPosition;
@@ -40,15 +38,11 @@ void main() {
     
     
     vec4 trueWorldPos = (vModelMatrix * vPosition);
+    vec3 modelRoot = vModelMatrix[0].xyz;
     
     float height = vPosition.z;
     
-    if (unWindType != 0) {
-        float windIntensity = getWindAtPosition(-Time + height, vec4(trueWorldPos.xyz, 0.0)) * WIND_INTENSITY;
-        windIntensity *= pow(height, 1.1);
-        vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity);
-        trueWorldPos.xyz += windOffset;
-    }
+    addModelWind(trueWorldPos, modelRoot, unWindType, height);
     
     vec4 relativeWorldPos = trueWorldPos - vec4(CameraPos, 0.0);
     gl_Position = VP * relativeWorldPos;
