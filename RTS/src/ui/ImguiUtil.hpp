@@ -1158,4 +1158,26 @@ namespace ImguiUtil {
 
         return ImguiUtil::TreeNodeWithIcon(icon, window->GetID(id.c_str()), flags, label.c_str(), NULL);
     }
+
+    // Usage: ImguiUtil::EnumCombo<T>("Label", Val, ENUM_NAME_MAP(T));
+    template<typename T, std::size_t S>
+    inline bool EnumCombo(const char* label, T& val, const ConstexprMap<T, std::string_view, S>& nameMap) {
+        bool changed = false;
+        if (ImGui::BeginCombo(label, nameMap[val].data())) {
+            for (int i = 0; i < int(T::COUNT); ++i) {
+                bool isSelected = e_cast(val) == i;
+                ImGui::Selectable(nameMap[(T)i].data(), &isSelected);
+
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                    if (val != (T)i) {
+                        val = (T)i;
+                        changed = true;
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
+        return changed;
+    }
 }

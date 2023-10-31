@@ -54,6 +54,8 @@ public:
     virtual AssetHandleBasePtr editorTryAddNewAssetBase(StrToken name) = 0;
     virtual AssetID getAssetID(StrToken assetName) const = 0;
 
+    virtual bool saveAsset(AssetID assetId) = 0;
+
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 
@@ -325,7 +327,7 @@ public:
         // TODO: Remove file
     }
 
-    virtual bool saveAsset(AssetID assetId) = 0;
+    
 
 private:
     void loadAssetAsync(const AssetMetadata& assetEntry) override {
@@ -446,4 +448,25 @@ namespace AssetUtil {
         bundle.addAssetHandle(IAssetRepository<T>::getInstance().getAssetHandle(assetName));
         return &IAssetRepository<T>::getInstance().getLoadedOrUnloadedAsset(assetName);
     }
+}
+
+#define DEFAULT_ASSET_SAVE_FUNC() \
+virtual bool saveAsset(AssetID assetId) override { \
+    const auto& def = *mAssets[assetId];  \
+    vio::Path filePath = getAssetFilePath(assetId); \
+    if (filePath.isNull()) { \
+        panic("Missing filepath for {} {} while saving", getAssetTypeDisplayName(), def.getName().toString()); \
+    } \
+    ryml::Tree tree; \
+    ryml::NodeRef root = tree.rootref(); \
+    root |= ryml::MAP; \
+    root << def; \
+    std::stringstream ss; \
+    ss << tree; \
+    nString str = ss.str(); \
+    const bool success = saveAssetContents(def, filePath, str.c_str(), str.size()); \
+    if (!success) { \
+        LOG_CRITICAL("Failed to save {} {}", getAssetTypeDisplayName(), def.getName().toString()); \
+    } \
+    return success; \
 }

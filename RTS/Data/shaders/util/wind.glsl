@@ -66,6 +66,7 @@ const float WIND_SPEED = 1.0;
 const float WIND_STRENGTH = 0.1;
 const float WORLD_SCALE = 0.2;
 
+// TODO: Optimize this
 float getWindAtPosition(in float Time, in vec4 worldPos) {
     // Standard wind forces
     float windForce = fbm(vec2(worldPos.x + Time * 0.075, worldPos.y)) * AMPLITUDE;

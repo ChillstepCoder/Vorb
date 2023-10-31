@@ -1,3 +1,9 @@
 model: tree_new.fbx
-scale: 3.0
+rig: ''
+machine: ''
+scale: 3
 shadow_detail: highest
+force_normals_up: 0
+submesh_data:
+  - wind: tree_trunk
+  - wind: tree_leaves

@@ -30,6 +30,7 @@ struct ModelDrawInfo {
 };
 
 
+
 // Modeldef contains all information about a 3D model including its location
 // in a ModelBatch
 class ModelDef : public IAsset {
@@ -41,6 +42,7 @@ public:
     bool isSkeletalModel() const { return mRig != nullptr; }
     ui32 getNumMeshes() const { return mNumMeshes; }
     const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
+    Mesh& getMesh(ui32 meshIndex) { return *mMeshes[meshIndex]; }
     const Mesh& getMesh(ui32 meshIndex) const { return *mMeshes[meshIndex]; }
     void addMesh(std::unique_ptr<Mesh>&& mesh);
 
@@ -56,6 +58,7 @@ public:
     f32 mScale = 1.0f;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     bool mForceNormalsUp = false;
+    std::vector<ModelSubmeshData> mSubmeshesData;
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
 SERIALIZABLE_SIMPLE(ModelDef,
@@ -64,5 +67,6 @@ SERIALIZABLE_SIMPLE(ModelDef,
     make_field(o.mMachineName, "machine"sv),
     make_field(o.mScale, "scale"sv),
     make_field(o.mShadowDetail, "shadow_detail"sv),
-    make_field(o.mForceNormalsUp, "force_normals_up"sv)
+    make_field(o.mForceNormalsUp, "force_normals_up"sv),
+    make_field(o.mSubmeshesData, "submesh_data"sv)
 );

@@ -18,6 +18,8 @@
 
 #include "rendering/mesh/fbx2raw.inl"
 
+
+
 class FBXLoadContext {
 public:
     FBXLoadContext(const char* filePath) : fbxManager(), settings(fbxManager), sceneLoader(filePath, "", fbxManager, settings) {}
@@ -163,6 +165,14 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             newMesh.setRenderPass((MaterialRenderPassType)renderPassType);
         }
 
+        // Make sure we have proper submesh data linked
+        if (def.mNumMeshes != def.mSubmeshesData.size()) {
+            def.mSubmeshesData.resize(def.mNumMeshes);
+        }
+        for (ui32 i = 0; i < def.mNumMeshes; ++i) {
+            def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
+        }
+
         return true;
 
     }, [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
@@ -187,7 +197,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         def.getDependencies()
     );
 
-    
 }
 
 void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {

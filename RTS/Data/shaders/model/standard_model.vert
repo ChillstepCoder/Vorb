@@ -4,6 +4,8 @@
 
 const float WIND_INTENSITY = 0.3; // TODO: PASS IN
 
+uniform int unWindType = 0;
+
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
 layout(location = 2) in uint vMaterialIndex;
@@ -39,14 +41,14 @@ void main() {
     
     vec4 trueWorldPos = (vModelMatrix * vPosition);
     
-    
     float height = vPosition.z;
     
-    // Displace the vertex along the normal
-    float windIntensity = getWindAtPosition(-Time + height, vec4(trueWorldPos.xyz, 0.0)) * WIND_INTENSITY;
-    windIntensity *= height;
-    vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity);
-    trueWorldPos.xyz += windOffset;
+    if (unWindType != 0) {
+        float windIntensity = getWindAtPosition(-Time + height, vec4(trueWorldPos.xyz, 0.0)) * WIND_INTENSITY;
+        windIntensity *= pow(height, 1.1);
+        vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity);
+        trueWorldPos.xyz += windOffset;
+    }
     
     vec4 relativeWorldPos = trueWorldPos - vec4(CameraPos, 0.0);
     gl_Position = VP * relativeWorldPos;
@@ -55,4 +57,14 @@ void main() {
     mat3 tfTBN = transpose(fTBN); // Transpose is same as inverse for tbn because it is orthogonal, apparently
     fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
     fFragPosTangent  = tfTBN * relativeWorldPos.xyz;
+    
+    // THIS IS FUNNY
+   // fTint.rgb *= (sin(Time * fTint.g + height * 4.0 + trueWorldPos.x - trueWorldPos.y) + 1.0) * 0.5 + 0.5;
+   // vec2 center = vec2(0.0, 0.0); // Assuming the center of the screen is (0,0) in NDC
+   // vec2 toCenter = center - gl_Position.xy;
+   // float distanceFromCenter = length(toCenter);
+    //float angle = atan(toCenter.y, toCenter.x);
+   // float spiralEffect = sin(angle + distanceFromCenter * 2.1); 
+   // fTint.rgb += (vec3(spiralEffect) + vec3(1.0)) * 0.5;
+
 }

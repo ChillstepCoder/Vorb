@@ -23,9 +23,9 @@ class ModelRepository : public IAssetRepository<ModelDef> {
 public:
     ASSET_REPOSITORY_COMMON_CODE(ModelRepository, ModelDef, AssetType::Model)
 
-    bool loadFbxFile(const vio::Path& filePath);
+    DEFAULT_ASSET_SAVE_FUNC();
 
-    bool saveAsset(AssetID assetId) override { panic("Cannot save models yet"); }
+    bool loadFbxFile(const vio::Path& filePath);
 
     StrToken getAssetExtension() const override { return CStrToken("model"); }
     const char* const getAssetTypeDisplayName() const override { return "Model"; }

@@ -42,6 +42,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
     glDisable(GL_CULL_FACE);
 
     MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
+    const VGUniform windUniform = mStandardMaterial->getUniform("unWindType");
     for (auto& it : modelInstances) {
         const StaticMeshInstanceData& instanceData = it.second;
         if (!instanceData.mDrawCommands) {
@@ -57,6 +58,8 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
         ModelID modelId = it.first;
         const Mesh& mesh = *instanceData.mMesh;
+
+        glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
 
         // Bind our transforms every frame as we could be using different instanced static model managers
         GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));

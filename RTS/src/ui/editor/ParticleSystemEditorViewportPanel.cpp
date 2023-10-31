@@ -133,7 +133,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ImGuiFileDialog::Instance()->OpenDialog(SAVE_DIALOG_NAME, "Save As", ".psys", "./data/particle/" + mAssetData->getName().toString(), 1, nullptr, ImGuiFileDialogFlags_Modal);
             }
             else {
-                if (!ParticleSystemRepository::get().saveAsset(mAssetData->getID())) {
+                if (!repo.saveAsset(mAssetData->getID())) {
                     panic("FAILED TO SAVE PARTICLE SYSTEM {}", repo.getAssetFilePath(mAssetData->getID()).getCString());
                 }
             }
@@ -375,22 +375,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
 
-        // TODO: EnumCombo utility
-        if (ImGui::BeginCombo("Blend Mode", ENUM_CSTR(ParticleBlendMode, mSelectedEmitter->mBlendMode))) {
-            for (int i = 0; i < int(ParticleBlendMode::COUNT); ++i) {
-                bool isSelected = e_cast(mDrawMode) == i;
-                ImGui::Selectable(ENUM_CSTR(ParticleBlendMode, (ParticleBlendMode)i), &isSelected);
-
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                    if (mSelectedEmitter->mBlendMode != (ParticleBlendMode)i) {
-                        mSelectedEmitter->mBlendMode = (ParticleBlendMode)i;
-                        changed = true;
-                    }
-                }
-            }
-            ImGui::EndCombo();
-        }
+        changed |= ImguiUtil::EnumCombo<ParticleBlendMode>("Blend Mode", mSelectedEmitter->mBlendMode, ENUM_NAME_MAP(ParticleBlendMode));
 
         if (changed) {
             createPreviewSystem();

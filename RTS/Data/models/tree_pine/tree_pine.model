@@ -1,3 +1,9 @@
 model: tree_pine.fbx
-scale: 1.0
+rig: ''
+machine: ''
+scale: 1
 shadow_detail: highest
+force_normals_up: 0
+submesh_data:
+  - wind: tree_trunk
+  - wind: tree_leaves

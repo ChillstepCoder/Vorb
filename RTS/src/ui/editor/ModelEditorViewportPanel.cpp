@@ -12,7 +12,7 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
-
+#include "ui/ImguiUtil.hpp"
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
@@ -38,6 +38,9 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 
     if (mAssetData) {
         ImGui::Text("Name: %s", mAssetData->getName().toString().c_str());
+        if (ImGui::Button("Save")) {
+            ModelRepository::get().saveAsset(mAssetData->getID());
+        }
         if (ImGui::BeginCombo("Shadow detail", ENUM_CSTR(ShadowLodDetail, mAssetData->mShadowDetail))) {
 
             for (int i = e_cast(ShadowLodDetail::None); i <= e_cast(ShadowLodDetail::Highest); ++i) {
@@ -69,14 +72,22 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         }
         ImGui::Text("Polygons %d", polyCount);
         ImGui::Separator();
-        ImGui::Checkbox("Edit Submesh", &mShowSingle);
-        if (mShowSingle) {
-            ImGui::Spacing(); ImGui::SameLine();
-            ImGui::Text("Submesh Edit");
-            ImGui::Spacing(); ImGui::SameLine();
-            ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
-            ImGui::Separator();
-            // TODO: Wind
+        if (mAssetData->getNumMeshes()) {
+            ImGui::Checkbox("Edit Submesh", &mShowSingle);
+            if (mShowSingle) {
+                ImGui::Spacing(); ImGui::SameLine();
+                ImGui::Text("Submesh Edit");
+                ImGui::Spacing(); ImGui::SameLine();
+                ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
+                ModelSubmeshData& subMeshData = mAssetData->mSubmeshesData[mSingleIndex];
+
+                ImguiUtil::EnumCombo<MeshWindType>("Wind Type", subMeshData.windType, ENUM_NAME_MAP(MeshWindType));
+                  
+                ImGui::Separator();
+            }
+        }
+        else {
+            ImGui::Text("*EMPTY MODEL*");
         }
 
         updateAndRenderTweakers();

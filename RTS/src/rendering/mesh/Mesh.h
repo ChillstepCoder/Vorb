@@ -12,6 +12,27 @@ constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE *
 
 typedef i32 SubmeshIndex;
 
+enum class MeshWindType {
+    None,
+    Grass,
+    TreeTrunk,
+    TreeLeaves,
+    COUNT
+};
+SERIALIZABLE_ENUM_SAME_NAME(MeshWindType,
+    pair{ MeshWindType::None, "none"sv },
+    pair{ MeshWindType::Grass, "grass"sv },
+    pair{ MeshWindType::TreeTrunk, "tree_trunk"sv },
+    pair{ MeshWindType::TreeLeaves, "tree_leaves"sv }
+);
+
+struct ModelSubmeshData {
+    MeshWindType windType;
+};
+SERIALIZABLE_SIMPLE(ModelSubmeshData,
+    make_field(o.windType, "wind"sv)
+);
+
 enum class MeshLODLevel {
     Highest,
     Medium,
@@ -137,6 +158,8 @@ public:
     void setBoundingSphere(const BoundingSphere& boundingSphere) { mBoundingSphere = boundingSphere; }
     MaterialRenderPassType getRenderPass() const { return mRenderPassType; }
     void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
+    const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
+    void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
 
     // Override allocation to use boost::singleton_pool DOESNT WORK WITH POLYMORPHISM
     //static void* operator new(size_t count);
@@ -148,6 +171,7 @@ protected:
     f32v3                  mPosition = f32v3(0.0f);
     BoundingSphere         mBoundingSphere;  ///< Optional
     MaterialRenderPassType mRenderPassType = MaterialRenderPassType::Default;
+    const ModelSubmeshData* mSubmeshData = nullptr;
 };
 
 class SkeletalMesh : public Mesh {

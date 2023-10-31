@@ -18,6 +18,13 @@ FieldPair<T> make_field(T& val, std::string_view k) {
     return FieldPair<T>{ val, k };
 }
 
+//// A helper type trait to check if a type is a specialization of std::vector
+//template<typename>
+//struct is_std_vector : std::false_type {};
+//
+//template<typename U>
+//struct is_std_vector<std::vector<U>> : std::true_type {};
+
 namespace YmlSerializer {
     template<typename T>
     void serializeYmlFields(ryml::NodeRef& s) {}
@@ -29,7 +36,9 @@ namespace YmlSerializer {
     template<typename T, typename First, typename... Rest>
     void serializeYmlFields(ryml::NodeRef& s, const FieldPair<First> first, const Rest&... rest) {
         // TODO: Dont serialize if default?
+        s |= ryml::MAP;
         s[ryml::to_csubstr(first.key)] << first.value;
+
         serializeYmlFields<T>(s, rest...);
     }
 
@@ -94,6 +103,7 @@ YML_READ_DEF(color4) {
 // Custom types
 namespace c4 {
     namespace yml {
+        namespace impl {}
 
         // All glm vector types
         template <int N, typename T>
@@ -179,6 +189,10 @@ namespace c4::yml { \
 
 #define ENUM_CSTR(TypeNoNamespace, val) \
    c4::yml::impl::s##TypeNoNamespace##NameLookup[val].data()
+
+#define ENUM_NAME_MAP(TypeNoNamespace) \
+   c4::yml::impl::s##TypeNoNamespace##NameLookup
+
 
 // Usage: MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
 #define SERIALIZABLE_ENUM_SAME_NAME(Type, ...) SERIALIZABLE_ENUM(Type, Type, __VA_ARGS__)
