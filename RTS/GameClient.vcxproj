@@ -858,6 +858,7 @@
     <ClInclude Include="src\ui\editor\Settings\EditorSettings.h" />
     <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
+    <ClInclude Include="src\ui\imgui_controls\EnumCombo.h" />
     <ClInclude Include="src\ui\minigame\FishingMinigame.h" />
     <ClInclude Include="src\ui\minigame\ILocalMinigame.h" />
     <ClInclude Include="src\ui\minigame\LocalMinigameContext.h" />
@@ -876,6 +877,7 @@
     <ClInclude Include="src\util\ConstexprMap.h" />
     <ClInclude Include="src\util\CubeFacing.h" />
     <ClInclude Include="src\util\ExclusiveCacheLine.h" />
+    <ClInclude Include="src\util\GlobalEnumNameMap.h" />
     <ClInclude Include="src\util\GridEdge.h" />
     <ClInclude Include="src\util\GridEdgeFinder.h" />
     <ClInclude Include="src\util\IntersectionHit.h" />

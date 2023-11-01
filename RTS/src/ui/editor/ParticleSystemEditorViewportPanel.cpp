@@ -375,7 +375,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
 
-        changed |= ImguiUtil::EnumCombo<ParticleBlendMode>("Blend Mode", mSelectedEmitter->mBlendMode, ENUM_NAME_MAP(ParticleBlendMode));
+        changed |= ImguiUtil::EnumCombo("Blend Mode", mSelectedEmitter->mBlendMode);
 
         if (changed) {
             createPreviewSystem();

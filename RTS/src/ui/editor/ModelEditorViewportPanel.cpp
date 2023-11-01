@@ -38,9 +38,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 
     if (mAssetData) {
         ImGui::Text("Name: %s", mAssetData->getName().toString().c_str());
-        if (ImGui::Button("Save")) {
-            ModelRepository::get().saveAsset(mAssetData->getID());
-        }
+        updateAndRenderSaveButton();
         if (ImGui::BeginCombo("Shadow detail", ENUM_CSTR(ShadowLodDetail, mAssetData->mShadowDetail))) {
 
             for (int i = e_cast(ShadowLodDetail::None); i <= e_cast(ShadowLodDetail::Highest); ++i) {
@@ -81,7 +79,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
                 ModelSubmeshData& subMeshData = mAssetData->mSubmeshesData[mSingleIndex];
 
-                ImguiUtil::EnumCombo<MeshWindType>("Wind Type", subMeshData.windType, ENUM_NAME_MAP(MeshWindType));
+                ImguiUtil::EnumCombo("Wind Type", subMeshData.windType);
                   
                 ImGui::Separator();
             }

@@ -5,10 +5,17 @@
 #include <c4/std/string_view.hpp>
 #include <ryml_std.hpp>
 
-#include "util/ConstexprMap.h"
-
 //  TODO #If WITH_EDITOR
 #include <imgui.h>
+#include "ui/imgui_controls/EnumCombo.h"
+
+#include "util/GlobalEnumNameMap.h"
+
+namespace c4 {
+    namespace yml {
+        namespace impl {}
+    }
+}
 
 template<typename T>
 struct FieldPair {
@@ -27,6 +34,57 @@ FieldPair<T> make_field(T& val, std::string_view k) {
 //
 //template<typename U>
 //struct is_std_vector<std::vector<U>> : std::true_type {};
+
+// Usage: ns::MyType, MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
+#define SERIALIZABLE_ENUM(Type, TypeNoNamespace, ...) \
+template<> \
+inline const std::map<Type, std::string_view>& getGlobalEnumNameMap() { \
+    using namespace std; \
+    static const std::map<Type, std::string_view> sNameLookup = { __VA_ARGS__ }; \
+    return sNameLookup; \
+} \
+namespace c4::yml { \
+   namespace impl { \
+        using namespace std; \
+        inline void write(c4::yml::NodeRef* n, Type const& v) { \
+            const c4::csubstr substr = c4::to_csubstr(getGlobalEnumNameMap<Type>().at(v)); \
+            *n << substr;\
+        } \
+        inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
+            c4::csubstr s; \
+            n >> s; \
+            const auto& m = getGlobalEnumNameMap<Type>(); \
+            std::string_view searchStr(s.data(), s.size()); \
+            auto findResult = std::find_if(std::begin(m), std::end(m), [&](const std::pair<Type, std::string_view>& pair) { \
+                return pair.second == searchStr; \
+            }); \
+            if (findResult != std::end(m)) { \
+                *v = findResult->first; \
+            } \
+            return true; \
+        } \
+    } \
+    inline void write(c4::yml::NodeRef* n, Type const& v) { \
+        impl::write(n, v); \
+    } \
+    inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
+        return impl::read(n, v); \
+    } \
+}
+
+// Usage: ENUM_STR(MyType, MyType::Val)
+#define ENUM_STRV(TypeNoNamespace, val) \
+   getGlobalEnumNameMap<TypeNoNamespace>().at(val)
+
+#define ENUM_CSTR(TypeNoNamespace, val) \
+   getGlobalEnumNameMap<TypeNoNamespace>().at(val).data()
+
+#define ENUM_NAME_MAP(TypeNoNamespace) \
+   getGlobalEnumNameMap<TypeNoNamespace>()
+
+
+// Usage: MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
+#define SERIALIZABLE_ENUM_SAME_NAME(Type, ...) SERIALIZABLE_ENUM(Type, Type, __VA_ARGS__)
 
 namespace YmlSerializer {
     template<typename T>
@@ -53,7 +111,7 @@ namespace YmlSerializer {
     }
 
     template<typename T>
-    bool updateAndRenderImgui() {}
+    bool updateAndRenderImgui() { return false; }
     template<typename T, typename First, typename... Rest>
     bool updateAndRenderImgui(FieldPair<First> first, Rest... rest) {
         First& value = first.value;
@@ -68,13 +126,7 @@ namespace YmlSerializer {
             changed |= ImGui::SliderInt(label.data(), reinterpret_cast<int*>(&value), 0, 100);
         }
         else if constexpr (std::is_enum_v<First>) {
-            // Handle enum types
-            // You need to provide a way to convert enum to int and back, this is just a placeholder
-            int enumValue = static_cast<int>(value);
-            changed |= ImGui::SliderInt(label.data(), &enumValue, 0, 100);
-            if (changed) {
-                value = static_cast<T>(enumValue);
-            }
+            changed |= ImguiUtil::EnumCombo<First>(label.data(), value);
         }
         else if constexpr (std::is_same_v<First, std::string>) {
             // Handle std::string
@@ -84,6 +136,33 @@ namespace YmlSerializer {
             if (changed) {
                 value = buffer;
             }
+        }
+        else if constexpr (std::is_same_v<First, f32v2>) {
+            changed |= ImGui::InputFloat2(label.data(), &value.x);
+        }
+        else if constexpr (std::is_same_v<First, f32v3>) {
+            changed |= ImGui::InputFloat3(label.data(), &value.x);
+        }
+        else if constexpr (std::is_same_v<First, f32v4>) {
+            changed |= ImGui::InputFloat4(label.data(), &value.x);
+        }
+        else if constexpr (std::is_same_v<First, i32v2>) {
+            changed |= ImGui::InputInt2(label.data(), &value.x);
+        }
+        else if constexpr (std::is_same_v<First, i32v3>) {
+            changed |= ImGui::InputInt3(label.data(), &value.x);
+        }
+        else if constexpr (std::is_same_v<First, i32v4>) {
+            changed |= ImGui::InputInt4(label.data(), &value.x);
+        }
+        else if constexpr (std::is_same_v<First, ui32v2>) {
+            changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 2);
+        }
+        else if constexpr (std::is_same_v<First, ui32v3>) {
+            changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 3);
+        }
+        else if constexpr (std::is_same_v<First, ui32v4>) {
+            changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 4);
         }
         // Add more type checks if needed
         return changed | updateAndRenderImgui<T>(rest...);
@@ -195,47 +274,3 @@ namespace c4 {
         }
     }
 }
-
-
-// Usage: ns::MyType, MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
-#define SERIALIZABLE_ENUM(Type, TypeNoNamespace, ...) \
-namespace c4::yml { \
-   namespace impl { \
-        using namespace std; \
-        inline constexpr auto s##TypeNoNamespace##NameLookup = ConstexprMap( \
-            std::array{ \
-            __VA_ARGS__ \
-            } \
-        ); \
-        inline void write(c4::yml::NodeRef* n, Type const& v) { \
-            const c4::csubstr substr = c4::to_csubstr(s##TypeNoNamespace##NameLookup[v]); \
-            *n << substr;\
-        } \
-        inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
-            c4::csubstr s; \
-            n >> s; \
-            *v = s##TypeNoNamespace##NameLookup.getKeyForValue(std::string_view(s.data(), s.size())); \
-            return true; \
-        } \
-    } \
-    inline void write(c4::yml::NodeRef* n, Type const& v) { \
-        impl::write(n, v); \
-    } \
-    inline bool read(c4::yml::ConstNodeRef const& n, Type* v) { \
-        return impl::read(n, v); \
-    } \
-}
-
-// Usage: ENUM_STR(MyType, MyType::Val)
-#define ENUM_STRV(TypeNoNamespace, val) \
-   c4::yml::impl::s##TypeNoNamespace##NameLookup[val]
-
-#define ENUM_CSTR(TypeNoNamespace, val) \
-   c4::yml::impl::s##TypeNoNamespace##NameLookup[val].data()
-
-#define ENUM_NAME_MAP(TypeNoNamespace) \
-   c4::yml::impl::s##TypeNoNamespace##NameLookup
-
-
-// Usage: MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
-#define SERIALIZABLE_ENUM_SAME_NAME(Type, ...) SERIALIZABLE_ENUM(Type, Type, __VA_ARGS__)

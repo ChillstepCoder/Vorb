@@ -1,7 +1,9 @@
 texture: item_wood
 type: material
+shape: plank
+harvest: none
 value: 0.2
 weight: 0.4
 stack_size: 60
 stack_dims: [1,5,5]
-shape: plank
+inv_bag: food

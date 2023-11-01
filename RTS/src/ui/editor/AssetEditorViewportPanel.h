@@ -55,6 +55,15 @@ public:
     }
 
     virtual void updateAndRenderInternal(f32 elapsedSec) { UNUSED(elapsedSec); }
+      
+    virtual void updateAndRenderSaveButton() {
+        if (ImGui::Button("Save")) {
+            IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
+            if (!repo.saveAsset(mAssetData->getID())) {
+                panic("Failed to save asset {}", repo.getAssetFilePath(mAssetData->getID()).getCString());
+            }
+        }
+    }
 protected:
     AssetHandlePtr<T> mAssetHandle;
     T* mAssetData = nullptr;

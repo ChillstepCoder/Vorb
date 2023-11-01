@@ -11,9 +11,9 @@ class ItemRepository : public IAssetRepository<ItemDef> {
 public:
     ASSET_REPOSITORY_COMMON_CODE(ItemRepository, ItemDef, AssetType::Item)
 
-    ItemID getItemId(StrToken itemName) const { return (ItemID)getAssetID(itemName); }
+    DEFAULT_ASSET_SAVE_FUNC()
 
-    bool saveAsset(AssetID assetId) override { panic("Cannot save items yet"); }
+    ItemID getItemId(StrToken itemName) const { return (ItemID)getAssetID(itemName); }
     
     StrToken getAssetExtension() const override { return CStrToken("item"); }
     const char* const getAssetTypeDisplayName() const override { return "Item"; }
