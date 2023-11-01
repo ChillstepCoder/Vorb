@@ -463,6 +463,7 @@
     <ClCompile Include="src\ui\editor\FoliageEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ImguiAssetThumbnails.cpp" />
+    <ClCompile Include="src\ui\editor\ItemEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
@@ -849,6 +850,7 @@
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h" />
     <ClInclude Include="src\ui\editor\ImguiColors.h" />
+    <ClInclude Include="src\ui\editor\ItemEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h" />

@@ -10,6 +10,7 @@
 #include "ui/editor/FoliageEditorViewportPanel.h"
 #include "ui/editor/FishingEditorViewportPanel.h"
 #include "ui/editor/ParticleSystemEditorViewportPanel.h"
+#include "ui/editor/ItemEditorViewportPanel.h"
 #include "ui/editor/ContentBrowserPanel.h"
 #include "options/DebugOptions.h"
 
@@ -48,6 +49,7 @@ EditorRoot::EditorRoot() {
     mAssetEditorPanels[AssetType::TileGrass] = std::make_unique<FoliageEditorViewportPanel>();
     mAssetEditorPanels[AssetType::Fish] = std::make_unique<FishingEditorViewportPanel>();
     mAssetEditorPanels[AssetType::ParticleSystem] = std::make_unique<ParticleSystemEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::Item] = std::make_unique<ItemEditorViewportPanel>();
 
     mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
     mContentBrowserPanel = std::make_unique<ContentBrowserPanel>(ResourceManager::get().getResourceRoot().getStdPath());

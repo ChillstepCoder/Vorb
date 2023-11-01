@@ -69,7 +69,7 @@ public:
     ui32 mStackSize = 10;
     ui32v3 mStackDims = ui32v3(5, 5, 5);
 };
-SERIALIZABLE_SIMPLE(ItemDef,
+SERIALIZABLE_IMGUI_CONTROLLED(ItemDef,
     make_field(o.mTextureName, "texture"sv),
     make_field(o.mType, "type"sv),
     make_field(o.mShape, "shape"sv),

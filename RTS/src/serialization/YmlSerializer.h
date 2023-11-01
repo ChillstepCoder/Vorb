@@ -7,6 +7,9 @@
 
 #include "util/ConstexprMap.h"
 
+//  TODO #If WITH_EDITOR
+#include <imgui.h>
+
 template<typename T>
 struct FieldPair {
     T& value;
@@ -28,10 +31,6 @@ FieldPair<T> make_field(T& val, std::string_view k) {
 namespace YmlSerializer {
     template<typename T>
     void serializeYmlFields(ryml::NodeRef& s) {}
-
-    template<typename T>
-    void deserializeYmlFields(const ryml::ConstNodeRef& s) {}
-
     // Recursive serialize/deserialize field for variadic templates
     template<typename T, typename First, typename... Rest>
     void serializeYmlFields(ryml::NodeRef& s, const FieldPair<First> first, const Rest&... rest) {
@@ -42,6 +41,8 @@ namespace YmlSerializer {
         serializeYmlFields<T>(s, rest...);
     }
 
+    template<typename T>
+    void deserializeYmlFields(const ryml::ConstNodeRef& s) {}
     template<typename T, typename First, typename... Rest>
     void deserializeYmlFields(ryml::ConstNodeRef const& s, FieldPair<First> first, Rest... rest) {
         c4::csubstr nameSubstr = ryml::to_csubstr(first.key);
@@ -49,6 +50,43 @@ namespace YmlSerializer {
             s[nameSubstr] >> first.value;
         }
         deserializeYmlFields<T>(s, rest...);
+    }
+
+    template<typename T>
+    bool updateAndRenderImgui() {}
+    template<typename T, typename First, typename... Rest>
+    bool updateAndRenderImgui(FieldPair<First> first, Rest... rest) {
+        First& value = first.value;
+        const std::string_view label = first.key;
+        bool changed = false;
+        if constexpr (std::is_floating_point_v<First>) {
+            // Handle floating point types (e.g., float, double)
+            changed |= ImGui::SliderFloat(label.data(), reinterpret_cast<float*>(&value), 0.0f, 100.0f);
+        }
+        else if constexpr (std::is_integral_v<First>) {
+            // Handle integral types (e.g., int, unsigned int)
+            changed |= ImGui::SliderInt(label.data(), reinterpret_cast<int*>(&value), 0, 100);
+        }
+        else if constexpr (std::is_enum_v<First>) {
+            // Handle enum types
+            // You need to provide a way to convert enum to int and back, this is just a placeholder
+            int enumValue = static_cast<int>(value);
+            changed |= ImGui::SliderInt(label.data(), &enumValue, 0, 100);
+            if (changed) {
+                value = static_cast<T>(enumValue);
+            }
+        }
+        else if constexpr (std::is_same_v<First, std::string>) {
+            // Handle std::string
+            char buffer[256];
+            std::strncpy(buffer, value.c_str(), sizeof(buffer));
+            changed |= ImGui::InputText(label.data(), buffer, sizeof(buffer));
+            if (changed) {
+                value = buffer;
+            }
+        }
+        // Add more type checks if needed
+        return changed | updateAndRenderImgui<T>(rest...);
     }
 
     inline ryml::Tree parseFileData(const nString& ymlFileData) {
@@ -82,6 +120,11 @@ namespace YmlSerializer {
         Type& o = *target; \
         YmlSerializer::deserializeYmlFields<Type>(n, __VA_ARGS__); \
         return true; \
+    }
+#define SERIALIZABLE_IMGUI_CONTROLLED(Type, ...) \
+    SERIALIZABLE_SIMPLE(Type, __VA_ARGS__) \
+    inline bool updateAndRenderImguiControls(Type& o) { \
+        return YmlSerializer::updateAndRenderImgui<Type>(__VA_ARGS__); \
     }
 
 YML_WRITE_DEF(color4) {
