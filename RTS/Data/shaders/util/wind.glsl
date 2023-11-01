@@ -82,4 +82,23 @@ float getWindAtPosition(in float Time, in vec4 worldPos) {
 	return windForce;
 }
 
+void addModelWind(inout vec4 trueWorldPos, in vec3 modelRoot, int windType, float height) {
+    float h = max(height, 0.001);
+    if (windType == 1) { // Grass
+        float windIntensity = getWindAtPosition(-Time + h, vec4(trueWorldPos.xyz, 0.0)) * 0.3;
+        windIntensity *= pow(h, 1.1);
+        vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity);
+        trueWorldPos.xyz += windOffset;
+    } else {
+        // 2 == tree trunk
+        float seed = Time * 0.65 - (modelRoot.x + modelRoot.y * 0.2);
+        float windIntensity = (sin(seed * 0.5) * pow(h, 2.0)) * 0.005;
+        trueWorldPos.x += windIntensity;
+        if (windType == 3) { // Tree Leaves jitter
+            float jitter = fbm(vec2(-trueWorldPos.x + Time * 0.175, -trueWorldPos.y)) * 0.2;
+            trueWorldPos.xyz += vec3(jitter, jitter, 0.3 * jitter);
+        }
+    }
+} 
+
 // ***********************************************************************************

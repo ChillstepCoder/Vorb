@@ -110,6 +110,7 @@ public:
     std::vector<StrToken> materialNames;
     std::vector<MaterialDesc> materialData;
     TileTextureMethod textureMethod;
+    StrToken destroyEffect;
     StrToken modelName;
     ModelID modelId = INVALID_MODEL_ID;
     ui16 maxHealth = 100;
@@ -138,6 +139,7 @@ SERIALIZABLE_SIMPLE(TileDef,
     make_field(o.harvestable, "harvestable"),
     make_field(o.materialNames, "materials"),
     make_field(o.textureMethod, "texture_method"),
+    make_field(o.destroyEffect, "destroy_effect"),
     make_field(o.modelName, "model"),
     make_field(o.maxHealth, "max_health"),
     make_field(o.layer, "layer"),

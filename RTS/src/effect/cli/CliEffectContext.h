@@ -51,11 +51,11 @@ public:
     ) override;
 
 private:
-    void addEffectInstance(AssetHandlePtr<EffectDef>&& assetHandle, EffectInstance instance);
+    void addEffectInstance(AssetID assetId, EffectInstance instance);
 
     moodycamel::ConcurrentQueue<std::pair<StrToken, PendingEffectInstanceData>> mRenderThreadQueue;
 
-    std::unordered_map<StrToken, PendingEffectData> mPendingEffects;
+    std::unordered_map<StrToken, PendingEffectData> mPendingAssetLoadEffects;
     std::vector<EffectInstance> mEffectInstances;
     std::unordered_map<const EffectDef*, std::pair<int, AssetHandlePtr<EffectDef>>> mEffectReferences;
 };
