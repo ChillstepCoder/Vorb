@@ -1,4 +1,9 @@
 texture: item_wood
 type: material
+shape: point
+harvest: none
 value: 0.01
 weight: 0.05
+stack_size: 10
+stack_dims: [5,5,5]
+inv_bag: resources

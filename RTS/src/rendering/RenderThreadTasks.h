@@ -35,6 +35,7 @@ public:
 private:
     // Task queue
     // TODO: Clear task queues on destroy?
+    // TODO: Investigate performance of https://gitlab.com/rmettler/cpp_delegates instead
     moodycamel::ConcurrentQueue<std::pair<RenderFunction, void*>> mRenderThreadProcs;
 
     static RenderThreadTasks* sInstance;
