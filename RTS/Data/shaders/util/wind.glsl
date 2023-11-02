@@ -94,6 +94,8 @@ void addModelWind(inout vec4 trueWorldPos, in vec3 modelRoot, int windType, floa
         float seed = Time * 0.65 - (modelRoot.x + modelRoot.y * 0.2);
         float windIntensity = (sin(seed * 0.5) * pow(h, 2.0)) * 0.005;
         trueWorldPos.x += windIntensity;
+        float bendDown = abs(windIntensity);
+        trueWorldPos.z -= bendDown * bendDown * 0.1; // Simulate bend (See wolfram alpha graph -(pow(abs(sin(x)), 2.0)) from 0 to 2PI)
         if (windType == 3) { // Tree Leaves jitter
             float jitter = fbm(vec2(-trueWorldPos.x + Time * 0.175, -trueWorldPos.y)) * 0.2;
             trueWorldPos.xyz += vec3(jitter, jitter, 0.3 * jitter);
