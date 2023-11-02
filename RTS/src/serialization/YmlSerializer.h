@@ -38,9 +38,9 @@ FieldPair<T> make_field(T& val, std::string_view k) {
 // Usage: ns::MyType, MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
 #define SERIALIZABLE_ENUM(Type, TypeNoNamespace, ...) \
 template<> \
-inline const std::map<Type, std::string_view>& getGlobalEnumNameMap() { \
+inline const boost::container::flat_map<Type, std::string_view>& getGlobalEnumNameMap() { \
     using namespace std; \
-    static const std::map<Type, std::string_view> sNameLookup = { __VA_ARGS__ }; \
+    static const boost::container::flat_map<Type, std::string_view> sNameLookup = { __VA_ARGS__ }; \
     return sNameLookup; \
 } \
 namespace c4::yml { \
