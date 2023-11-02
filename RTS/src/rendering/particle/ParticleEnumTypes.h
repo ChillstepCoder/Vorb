@@ -1,7 +1,5 @@
 #pragma once
 
-#include "serialization/YmlSerializer.h"
-
 // Position is implicit
 enum class ParticleComponentType : ui8 {
     Velocity = BIT(0),

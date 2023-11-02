@@ -1,5 +1,4 @@
 #pragma once
-#include "serialization/YmlSerializer.h"
 
 // TODO: Helper?
 enum class QueryPointFromShapeType : int {

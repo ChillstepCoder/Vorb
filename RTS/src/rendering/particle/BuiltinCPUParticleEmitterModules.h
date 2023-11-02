@@ -3,8 +3,6 @@
 
 #include "util/ArbitraryObjectArray.h"
 
-#include "serialization/YmlSerializer.h"
-
 // Common module impl
 #define MODULE_DEF(x) struct ModuleData { x } mModuleData; \
 void addModuleDataToArray(ArbitraryObjectArray& arry) const { \

@@ -867,6 +867,9 @@
     <ClCompile Include="src\ui\editor\ItemEditorViewportPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\asset\SoftAssetReference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2127,6 +2130,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\asset\SoftAssetReference.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\asset\AssetType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\serialization\CommonSerializable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -104,9 +104,10 @@ template <typename Stream> bool netSerialize(Stream& stream);
 // Items
 #include "item/ItemConst.h"
 
-// Asset (includes serializer)
+// Asset
 #include "resources/IAsset.h"
 #include "resources/asset/AssetHandle.h"
+#include "resources/asset/SoftAssetReference.h"
 
 // **************** Constexpr vectors *****************
 #include "math/ConstVectors.h"
@@ -158,8 +159,9 @@ using namespace std::literals::string_view_literals;
 //#define glBindTexture(x, y) assert(y); glBindTexture(x, y)
 
 // TODO: Remove this by making ryml exist in vorb or removing vorb
+#include "serialization/YmlSerializer.h"
 #include "serialization/VorbSerializableDefs.h"
-
+#include "serialization/CommonSerializable.h"
 
 // Runs automatically at program startup
 

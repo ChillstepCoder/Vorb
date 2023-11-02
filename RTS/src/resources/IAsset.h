@@ -1,52 +1,11 @@
 #pragma once
 
-// TODO: Stdafx?
-#include "serialization/YmlSerializer.h"
+#include "resources/asset/AssetType.h"
 
 class IAssetRepositoryBase;
 
 #define DEFAULT_ASSET_CONSTRUCTOR(Type) \
     Type(StrToken name, AssetID id) : IAsset(name, id) {};
-
-enum class AssetType : ui8 {
-    Tile,
-    ParticleSystem,
-    Effect,
-    Texture,
-    Cubemap,
-    Brush,
-    Material,
-    Rig,
-    Animation,
-    AnimMachine,
-    Model,
-    Skill,
-    Item,
-    Fish,
-    MaterialShader,
-    TileGrass,
-    NONE,
-    COUNT = NONE
-};
-SERIALIZABLE_ENUM_SAME_NAME(AssetType,
-    pair{ AssetType::Tile, "tile"sv },
-    pair{ AssetType::ParticleSystem, "particle_system"sv },
-    pair{ AssetType::Effect, "effect"sv },
-    pair{ AssetType::Texture, "texture"sv },
-    pair{ AssetType::Cubemap, "cubemap"sv },
-    pair{ AssetType::Brush, "brush"sv },
-    pair{ AssetType::Material, "material"sv },
-    pair{ AssetType::Rig, "rig"sv },
-    pair{ AssetType::Animation, "animation"sv },
-    pair{ AssetType::AnimMachine, "anim_machine"sv },
-    pair{ AssetType::Model, "model"sv },
-    pair{ AssetType::Skill, "skill"sv },
-    pair{ AssetType::Item, "item"sv },
-    pair{ AssetType::Fish, "fish"sv },
-    pair{ AssetType::MaterialShader, "material_shader"sv },
-    pair{ AssetType::TileGrass, "tile_grass"sv },
-)
-static_assert(e_count(AssetType) == 16);
 
 class AssetHandleBundle;
 class AssetHandleBase;

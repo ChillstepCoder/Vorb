@@ -416,6 +416,7 @@
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\AssetLoader.cpp" />
+    <ClCompile Include="src\resources\asset\SoftAssetReference.cpp" />
     <ClCompile Include="src\resources\CubemapRepository.cpp" />
     <ClCompile Include="src\resources\EffectRepository.cpp" />
     <ClCompile Include="src\resources\FishRepository.cpp" />
@@ -789,6 +790,7 @@
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
     <ClInclude Include="src\resources\asset\AssetMetadata.h" />
+    <ClInclude Include="src\resources\asset\AssetType.h" />
     <ClInclude Include="src\resources\asset\SoftAssetReference.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\EffectRepository.h" />
@@ -809,6 +811,7 @@
     <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />
+    <ClInclude Include="src\serialization\CommonSerializable.h" />
     <ClInclude Include="src\serialization\NetSerialize.h" />
     <ClInclude Include="src\serialization\VorbSerializableDefs.h" />
     <ClInclude Include="src\serialization\YmlSerializable.h" />

@@ -6,10 +6,13 @@
 #include <ryml_std.hpp>
 
 //  TODO #If WITH_EDITOR
+// TODO: Try to get this UI shit out of here? Its included in stdafx
 #include <imgui.h>
 #include "ui/imgui_controls/EnumCombo.h"
 
 #include "util/GlobalEnumNameMap.h"
+
+#include "resources/asset/SoftAssetReference.h"
 
 namespace c4 {
     namespace yml {
@@ -163,6 +166,9 @@ namespace YmlSerializer {
         }
         else if constexpr (std::is_same_v<First, ui32v4>) {
             changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 4);
+        }
+        else if constexpr (std::is_same_v<First, SoftAssetReference>) {
+            changed |= ImguiUtil::updateAndRenderSoftAssetReference(first);
         }
         // Add more type checks if needed
         return changed | updateAndRenderImgui<T>(rest...);

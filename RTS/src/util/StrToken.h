@@ -2,8 +2,6 @@
 
 #include "util/StrtokenEncodeTable.h"
 
-#include "serialization/YmlSerializer.h"
-
 constexpr ui64 strTokenEncodeChar(const char c) {
     return (ui64)sStrtokenEncodeTable[c];
 }
@@ -102,20 +100,6 @@ namespace std {
             return hash<ui64>{}(token.mTokenLow) ^ (hash<ui64>{}(token.mTokenHigh));
         }
     };
-}
-
-YML_WRITE_DEF(StrToken) {
-    ryml::NodeRef& nr = *n;
-    nr << o.toString();
-}
-YML_READ_DEF(StrToken) {
-    c4::csubstr str;
-    n >> str;
-    if (str.size() > MAX_CHARS_IN_STRTOKEN) {
-        panic("Invalid string token length (max 20) {} {}", str.size(), str.data());
-    };
-    *target = StrToken(str.data(), str.size());
-    return true;
 }
 
 // Guarenteed consteval initialization

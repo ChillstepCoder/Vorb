@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "CubemapRepository.h"
 
-#include "serialization/YmlSerializer.h"
 #include "rendering/texture/TextureHelpers.h"
 
 #include <Vorb/io/IOManager.h>
