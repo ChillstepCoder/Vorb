@@ -789,6 +789,7 @@
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
     <ClInclude Include="src\resources\asset\AssetMetadata.h" />
+    <ClInclude Include="src\resources\asset\SoftAssetReference.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\EffectRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />

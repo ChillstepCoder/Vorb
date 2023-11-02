@@ -5,6 +5,8 @@
 #include "item/ItemStack.h"
 #include "tile/TileHarvestable.h"
 
+#include "resources/asset/SoftAssetReference.h"
+
 enum class ItemType {
     UNKNOWN,
     MATERIAL,
@@ -78,7 +80,7 @@ public:
     ui32 getMaxStockpileStackSize() const { return mStockpileStackSize; }
     TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
 
-    StrToken mTextureName;
+    SoftAssetReference mTextureName = SoftAssetReference(AssetType::Texture);
     ItemType mType = ItemType::UNKNOWN;
     TileHarvestable mHarvestableSource = TileHarvestable::NONE; // TODO: Resource Tags instead?
     InventoryBagType mInventoryBagType = InventoryBagType::Misc;

@@ -2126,6 +2126,9 @@
     <ClInclude Include="src\util\GlobalEnumNameMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\resources\asset\SoftAssetReference.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
