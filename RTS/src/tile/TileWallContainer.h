@@ -46,6 +46,7 @@ public:
         mTileSpatialGrid = other.mTileSpatialGrid;
         memcpy(mWalls.data(), other.mWalls.data(), mWalls.size() * sizeof(TileWall));
     }
+    // TODO: Serialize
     void destroy() {
         std::vector<TileWall>().swap(mWalls);
         mTileSpatialGrid = nullptr;

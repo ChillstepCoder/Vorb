@@ -46,6 +46,7 @@ void TileContainer::allocateData() {
     size_t numTiles = mTileSpatialGrid.getNumTiles();
     mTiles.resize(numTiles);
     mTileWallsContainer.init(&mTileSpatialGrid);
+    mTileItemContainer.init(&mTileSpatialGrid);
     mHarvestableRegistry.init(*this);
 }
 
@@ -54,6 +55,7 @@ void TileContainer::freeData() {
     std::vector<Tile>().swap(mTiles);
     std::vector<DynamicTile>().swap(mDynamicTiles);
     mTileWallsContainer.destroy();
+    mTileItemContainer.destroy();
     mOwnedTiles.freeData();
     mHarvestableRegistry.destroy();
 }

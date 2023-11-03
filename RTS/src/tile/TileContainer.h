@@ -7,6 +7,7 @@
 #include "tile/TileContainerHarvestableRegistry.h"
 #include "tile/TileSpatialGrid.h"
 #include "tile/TileWallContainer.h"
+#include "tile/TileItemContainer.h"
 
 #include "physics/StaticPhysicsMesh.h"
 #include <shared_mutex>
@@ -207,6 +208,7 @@ private:
     // TODO: Can we use arrays instead of vectors to shrink these a bit?
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
     TileWallContainer mTileWallsContainer;
+    TileItemContainer mTileItemContainer;
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
 

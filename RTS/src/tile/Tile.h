@@ -159,20 +159,6 @@ struct TileOrientation {
 static_assert(sizeof(TileOrientation) == 1);
 
 
-// Per tile steering and navigation usage
-// TODO: Use
-struct TileSteeringData {
-    union {
-        struct {
-            entt::entity e0; // Southwest
-            entt::entity e1; // Southeast
-            entt::entity e2; // Northwest
-            entt::entity e3; // Northeast
-        };
-        entt::entity entities[4];
-    };
-};
-
 class Tile {
     friend class TileContainer;
     friend class IWorldGenerator;
