@@ -285,7 +285,7 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
 
 
     if (reservation->mIsPromise) {
-        const ui32 transferQuantity = std::min(target.quantity, sourceStack.quantity);
+        const ui32 transferQuantity = std::min(target.quantity, (ui16)sourceStack.quantity);
         target.quantity -= transferQuantity;
         reservation->mRemainingQuantity -= transferQuantity;
         assert(sourceStack.quantity);

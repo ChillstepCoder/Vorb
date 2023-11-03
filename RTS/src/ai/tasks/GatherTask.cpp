@@ -127,7 +127,7 @@ void HarvestItemsTask::harvestItem(World& world, entt::registry& registry, entt:
                 stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
             }
             stack.id = drop.id;
-            invCmp.addItemStackToWorkingStorage(stack, WorkStorageID::HAULING);
+            invCmp.tryAddItemStackToWorkingStorage(stack, WorkStorageID::HAULING);
 
             if (stack.id == mItemId) {
                 mCurrentCount += stack.quantity;

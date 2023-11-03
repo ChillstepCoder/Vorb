@@ -23,9 +23,5 @@ private:
 
     PrimitiveShapeType mShapeType = PrimitiveShapeType::Cube;
     float mUvScale = 2.0f;
-
-    AssetHandlePtr<MaterialShaderDef> mPbrMaterial;
-    AssetHandlePtr<MaterialShaderDef> mEditorMaterial;
-    AssetHandlePtr<MaterialShaderDef> mWireframeMaterial;
 };
 

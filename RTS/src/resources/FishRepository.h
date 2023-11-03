@@ -16,7 +16,7 @@ class FishRepository : public IAssetRepository<FishDef>
 public:
     ASSET_REPOSITORY_COMMON_CODE(FishRepository, FishDef, AssetType::Fish)
 
-    bool saveAsset(AssetID assetId) override { panic("Cannot save fish yet"); }
+    DEFAULT_ASSET_SAVE_FUNC();
 
     StrToken getAssetExtension() const override { return CStrToken("fish"); }
     const char* const getAssetTypeDisplayName() const override { return "Fish"; }

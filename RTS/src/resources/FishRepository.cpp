@@ -1,16 +1,16 @@
 #include "stdafx.h"
 #include "FishRepository.h"
 
-#include "item/ItemRepository.h"
-#include "resources/ModelRepository.h"
+#include "item/ItemDef.h"
+#include "definitions/ModelDef.h"
 
 void FishRepository::onRegisteredAsset(AssetID id) {
     FishDef& def = *mAssets[id];
     const vio::Path& filePath = mAssetRegistry[id].mFilePath;
     YmlSerializer::readFileData(readFileToString(filePath), def);
 
-    if (!def.mItemName.isValid()) panic("FishDef {} mising item name", filePath.getString());
-    if (!def.mModelName.isValid()) panic("FishDef {} mising model name", filePath.getString());
+    if (!def.mItemRef.isValid()) panic("FishDef {} mising item name", filePath.getString());
+    if (!def.mModelRef.isValid()) panic("FishDef {} mising model name", filePath.getString());
 }
 
 AssetLoadFunc FishRepository::getAssetLoadFunc() {
@@ -19,23 +19,13 @@ AssetLoadFunc FishRepository::getAssetLoadFunc() {
         FishDef& def = *static_cast<FishDef*>(assetDataPtr);
 
         def.reserveDependencyCount(2);
-        def.addDependency(ItemRepository::get().getAssetHandle(def.mItemName));
-        def.addDependency(ModelRepository::get().getAssetHandle(def.mModelName));
+        def.addDependency(def.mItemRef.getAssetHandle());
+        def.addDependency(def.mModelRef.getAssetHandle());
 
-        assetLoader.requestAssetLoadWithDependencies([&]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr) {
+        LOAD_DEPENDENCIES_HELPER(def,
             FishDef& def = *static_cast<FishDef*>(assetDataPtr);
-            def.mItemId = ItemRepository::get().getAssetID(def.mItemName);
-            def.mModelId = ModelRepository::get().getAssetID(def.mModelName);
-            return true;
-        },  nullptr,
-            assetId,
-            assetDataPtr,
-            filePath,
-            mLoadedAssets[assetId].get(),
-            nullptr,
-            def.getDependencies()
+            def.mItemId = def.getDependencies()->getLoadedAsset<ItemDef>(def.mItemRef.name).getID();
+            def.mModelId = def.getDependencies()->getLoadedAsset<ModelDef>(def.mModelRef.name).getID();
         );
-        
-        return false;
     };
 }

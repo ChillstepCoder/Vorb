@@ -9,6 +9,26 @@ typedef std::function<bool(AssetLoader&, AssetID, const vio::Path&, void*, std::
 
 #define ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) (AssetLoader& assetLoader, AssetID assetID, const vio::Path& filePath, void* assetDataPtr, std::any& userData) -> bool
 
+// TO be used inside ASSET_LOAD_LAMBDA
+#define LOAD_DEPENDENCIES_HELPER(defName, ...) \
+if (defName.getDependencies()) { \
+    assetLoader.requestAssetLoadWithDependencies([&]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr) { \
+        __VA_ARGS__ \
+        return true; \
+    }, nullptr, \
+    assetId, \
+    assetDataPtr, \
+    filePath, \
+    mLoadedAssets[assetId].get(), \
+    nullptr, \
+    defName.getDependencies() \
+    ); \
+    return false; \
+} else { \
+    return true; \
+}
+
+
 // TODO: Task pool?
 struct AssetLoadTask {
     AssetID mAssetID = INVALID_ASSET_ID;

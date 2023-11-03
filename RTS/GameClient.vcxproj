@@ -456,6 +456,7 @@
     <ClCompile Include="src\time\TimeOfDayManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\editor\AssetEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\AssetEditorViewportPanelBase.cpp" />
     <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ContentBrowserPanel.cpp" />
     <ClCompile Include="src\ui\editor\ContentBrowser\ContentBrowserItem.cpp" />

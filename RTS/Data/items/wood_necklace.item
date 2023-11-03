@@ -1,4 +1,3 @@
-texture: item_wood
 type: material
 shape: point
 harvest: none

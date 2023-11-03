@@ -273,7 +273,13 @@ namespace ImguiUtil {
             ImVec2 maxSize(1000.0f, maxHeight); // Example values, adjust as needed
             ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), maxSize);
             if (ImGui::BeginPopupModal(id, nullptr)) {
+                if (ImGui::Button("Cancel")) {
+                    ImGui::EndPopup();
+                    return true;
+                }
+                ImGui::Separator();
                 updateAndRenderFilter();
+                ImGui::Separator();
                 int colCount = mThumbnailFunc ? 4 : 3;
                 if (ImGui::BeginTable("AssetTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
                     constexpr f32 FIXED_WIDTH = 75.0f;
@@ -290,7 +296,7 @@ namespace ImguiUtil {
                     for (size_t i : mSortedIndices) {
                         if (mFilterStatus[i]) {
                             ImGui::PushID(i);
-                            ImGui::TableNextRow(ImGuiTableRowFlags_None, mThumbnailSize.y);
+                            ImGui::TableNextRow(ImGuiTableRowFlags_None, mThumbnailFunc ? mThumbnailSize.y : 0);
                             // Select
                             ImGui::TableSetColumnIndex(0);
                             if (ImGui::Button("Select")) {
@@ -318,10 +324,6 @@ namespace ImguiUtil {
                     ImGui::EndTable();
                 }
                 
-                if (ImGui::Button("Cancel")) {
-                    ImGui::EndPopup();
-                    return true;
-                }
                 ImGui::EndPopup();
                 return false;
             }

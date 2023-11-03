@@ -46,25 +46,6 @@ SERIALIZABLE_ENUM_SAME_NAME(ItemStockpileShape,
 );
 static_assert(e_count(ItemStockpileShape) == 4, "Update def");
 
-enum class InventoryBagType : ui8 {
-    Resources,
-    Food,
-    Equipment,
-    Alchemy,
-    Valuables,
-    Misc,
-    COUNT
-};
-SERIALIZABLE_ENUM_SAME_NAME(InventoryBagType, 
-    pair{ InventoryBagType::Resources, "resources"sv },
-    pair{ InventoryBagType::Food, "food"sv },
-    pair{ InventoryBagType::Equipment, "equipment"sv },
-    pair{ InventoryBagType::Alchemy, "alchemy"sv },
-    pair{ InventoryBagType::Valuables, "valuables"sv },
-    pair{ InventoryBagType::Misc, "misc"sv }
-);
-static_assert(e_count(InventoryBagType) == 6, "Update def");
-
 class ItemDef : public IAsset {
     friend class ItemRepository;
     friend class ItemRenderer;
@@ -78,8 +59,8 @@ public:
     ui32 getMaxStockpileStackSize() const { return mStockpileStackSize; }
     TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
 
-    //SoftAssetReference mTextureName = SoftAssetReference(AssetType::Texture);
-    StrToken mTextureName;
+    SoftAssetReference mIconTextureRef = AssetType::Texture;
+    SoftAssetReference mModelRef = AssetType::Model;
     ItemType mType = ItemType::UNKNOWN;
     TileHarvestable mHarvestableSource = TileHarvestable::NONE; // TODO: Resource Tags instead?
     InventoryBagType mInventoryBagType = InventoryBagType::Misc;
@@ -93,7 +74,8 @@ public:
     ui32v3 mStockpileStackDims = ui32v3(5, 5, 5);
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ItemDef,
-    make_field(o.mTextureName, "texture"sv),
+    make_field(o.mIconTextureRef, "texture"sv),
+    make_field(o.mModelRef, "model"sv),
     make_field(o.mType, "type"sv),
     make_field(o.mStockpileShape, "shape"sv),
     make_field(o.mHarvestableSource, "harvest"sv),
@@ -109,12 +91,3 @@ struct StoredItemStack {
     i32v2 worldPos = {};
     bool isInContainer = false;
 };
-
-// TODO: Use?
-struct ItemInstanceStack {
-    ItemID id; // Base type (Potion of healing)
-    ui32 count;
-    void* modifiers; //???
-    // For example, Superior/weak potion of healing
-};
-static_assert(sizeof(ItemInstanceStack) == 16);

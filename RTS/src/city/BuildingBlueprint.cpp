@@ -170,7 +170,7 @@ void PlaceTileBlueprintItemsHandle::fulfillFromItemStack(ItemStack& stack) {
     for (ui32 i = 0; i < itemDataHandle.mItemDataCountRequired; ++i) {
         BlueprintTileItemData& itemData = mBlueprint->tileItemData[itemDataHandle.mItemDataOffset + i];
         if (itemData.mItemId == mItemId) {
-            const ui16 quantityToAdd = std::min(stack.quantity, itemData.mMissingQuantity);
+            const ui16 quantityToAdd = std::min((ui16)stack.quantity, itemData.mMissingQuantity);
             if (quantityToAdd == 0) {
                 // Someone else filled this, so we can just cancel
                 mPromisedItemCount = 0;

@@ -9,5 +9,9 @@ public:
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
     const char* getViewportWindowName() const override { return "Item Editor"; }
+
+private:
+    const MaterialShaderDef* getShader() override;
+    void renderMesh() override;
 };
 

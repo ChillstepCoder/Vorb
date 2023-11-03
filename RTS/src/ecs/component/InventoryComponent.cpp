@@ -1,53 +1,75 @@
 #include "stdafx.h"
 #include "InventoryComponent.h"
 
+#include "item/ItemRepository.h"
+
 constexpr f32 ENCUMBER_MULT = 2.0f;
 
-InventoryComponent::InventoryComponent(f32 maxCarryWeight) :
-    mMaxCarryWeight(maxCarryWeight) {
-
-}
-
-f32 InventoryComponent::getEncumbermentValue() const {
-    const f32 diff = mTotalCarryWeight - mMaxCarryWeight;
+f32 InventoryComponent::getEncumbermentValue(InventoryBagType bagType) const {
+    const f32 maxCarryWeight = getMaxCarryWeight(bagType);
+    const f32 diff = mBags[e_cast(bagType)].totalCarryWeight - getMaxCarryWeight(bagType);
     if (diff > 0.0f) {
-        return (diff / mMaxCarryWeight) * ENCUMBER_MULT;
+        return (diff / maxCarryWeight) * ENCUMBER_MULT;
     }
     return 0.0f;
 }
 
-bool InventoryComponent::addOrDropItemStackToPersonalStorage(ItemStack itemStack) {
+bool InventoryComponent::addOrDropItemStack(ItemStack itemStack) {
+    assert(itemStack.bagType != InventoryBagType::COUNT);
+    const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
     // TODO: Handle inventory weight and overflow
-    for (auto&& it : mPersonalStorage) {
-        if (it.id == itemStack.id) {
-            it.quantity += itemStack.quantity;
+    auto range = mItems.equal_range(itemStack.id);
+    for (auto&& it = range.first; it != range.second; ++it) {
+        if (it->second.canCombine(itemStack)) {
+            it->second.quantity += itemStack.quantity;
+            mBags[e_cast(itemStack.bagType)].totalCarryWeight += weight * itemStack.quantity;
             return true;
         }
     }
-    mPersonalStorage.emplace_back(itemStack);
+    mItems.emplace(itemStack.id, itemStack);
+    mBags[e_cast(itemStack.bagType)].totalCarryWeight += weight * itemStack.quantity;
     return true;
 }
 
-ItemStack InventoryComponent::removeItemStackFromPersonalStorage(ItemStack itemStack) {
-    // TODO: Handle inventory weight and overflow
-    for (size_t i = 0; i < mPersonalStorage.size(); ++i) {
-        ItemStack& existing = mPersonalStorage[i];
-        if (existing.id == itemStack.id) {
-            if (itemStack.quantity < existing.quantity) {
-                existing.quantity -= itemStack.quantity;
+int InventoryComponent::removeItemStack(ItemStack itemStack) {
+    assert(itemStack.bagType != InventoryBagType::COUNT);
+    const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
+    auto range = mItems.equal_range(itemStack.id);
+    for (auto&& it = range.first; it != range.second; ++it) {
+        if (it->second.canCombine(itemStack)) {
+            ItemStack& existing = it->second;
+            if (existing.id == itemStack.id) {
+                if (existing.quantity > itemStack.quantity) {
+                    existing.quantity -= itemStack.quantity;
+                    mBags[e_cast(itemStack.bagType)].totalCarryWeight -= weight * itemStack.quantity;
+                    return itemStack.quantity;
+                }
+                else {
+                    int removedCount = existing.quantity;
+                    mItems.erase(it);
+                    mBags[e_cast(itemStack.bagType)].totalCarryWeight -= weight * removedCount;
+                    return removedCount;
+                }
             }
-            else {
-                itemStack.quantity = existing.quantity;
-                mPersonalStorage[i] = mPersonalStorage.back();
-                mPersonalStorage.pop_back();
-            }
-            return itemStack;
+            return true;
         }
     }
-    return ItemStack();
+    return 0;
 }
 
-bool InventoryComponent::addItemStackToWorkingStorage(ItemStack itemStack, WorkStorageID workingStorageID) {
+bool InventoryComponent::canCarryItemStack(ItemStack itemStack) const {
+    assert(itemStack.bagType != InventoryBagType::COUNT);
+    const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
+    return itemStack.quantity * weight + mBags[e_cast(itemStack.bagType)].totalCarryWeight <= getMaxCarryWeight(itemStack.bagType);
+}
+
+bool InventoryComponent::tryAddItemStackToWorkingStorage(ItemStack itemStack, WorkStorageID workingStorageID) {
+    assert(itemStack.bagType != InventoryBagType::COUNT);
+    const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
+
+    if (!canCarryItemStack(itemStack)) {
+        return false;
+    }
 
     auto&& workingStorage = mWorkingStorage[workingStorageID];
     for (size_t i = 0; i < workingStorage.size(); ++i) {

@@ -7,11 +7,14 @@ public:
     SoftAssetReference(AssetType assetType) : assetType(assetType) {};
 
     bool isValid() const { return name.isValid(); }
-
+    void toString(OUT char* outStr, OUT ui32* outLength) const { name.toString(outStr, outLength); }
+    nString toString() const { return name.toString(); }
+    AssetHandleBasePtr getAssetHandle() const;
+    
     StrToken name;
     const AssetType assetType;
 };
 
 namespace ImguiUtil {
-    bool updateAndRenderSoftAssetReference(SoftAssetReference& ref);
+    bool updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef);
 }

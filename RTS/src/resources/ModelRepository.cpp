@@ -89,9 +89,9 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
     // If has rig, we need to load animation and skeleton info
     if (def.mRigName.isValid()) {
-        def.addDependency(RigRepository::get().getAssetHandle(def.mRigName));
+        def.addDependency(RigRepository::get().getAssetHandle(def.mRigName.name));
         if (def.mMachineName.isValid()) {
-            def.addDependency(AnimMachineRepository::get().getAssetHandle(def.mMachineName));
+            def.addDependency(AnimMachineRepository::get().getAssetHandle(def.mMachineName.name));
         }
     }
 
@@ -115,9 +115,9 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
         // Rig + animation
         if (def.mRigName.isValid()) {
-            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(def.mRigName);
+            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(def.mRigName.name);
             if (def.mMachineName.isValid()) {
-                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineName);
+                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineName.name);
             }
         }
 

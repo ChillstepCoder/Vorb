@@ -9,7 +9,10 @@ IAsset::IAsset(StrToken name, AssetID id) : mName(name), mID(id) {}
 IAsset::~IAsset() = default;
 
 void IAsset::addDependency(std::unique_ptr<AssetHandleBase>&& handle) {
-    assert(handle);
+    // Passing null handle is allowed for convenience
+    if (!handle) {
+        return;
+    }
     if (!mDependencies) {
         mDependencies = std::make_unique<AssetHandleBundle>();
     }

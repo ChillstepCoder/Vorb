@@ -36,25 +36,13 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     updateAndRenderSharedControls();
     ImGui::Separator();
 
+    bool changed = false;
+
     if (mAssetData) {
         ImGui::Text("Name: %s", mAssetData->getName().toString().c_str());
         updateAndRenderSaveButton();
-        if (ImGui::BeginCombo("Shadow detail", ENUM_CSTR(ShadowLodDetail, mAssetData->mShadowDetail))) {
+        changed |= updateAndRenderImguiControls(*mAssetData);
 
-            for (int i = e_cast(ShadowLodDetail::None); i <= e_cast(ShadowLodDetail::Highest); ++i) {
-                bool isSelected = e_cast(mAssetData->mShadowDetail) == i;
-                ImGui::Selectable(ENUM_CSTR(ShadowLodDetail, (ShadowLodDetail)i), &isSelected);
-
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                    if (e_cast(mAssetData->mShadowDetail) != i) {
-                        mAssetData->mShadowDetail = (ShadowLodDetail)i;
-                        mDirtyModelData = true;
-                    }
-                }
-            }
-            ImGui::EndCombo();
-        }
         ImGui::SliderInt("LOD", &mLod, e_cast(MeshLODLevel::Highest), e_cast(MeshLODLevel::Lowest));
         // TODO: Tooltip button utility
         ImGui::SameLine(); ImGui::Button("?");
@@ -91,35 +79,15 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         updateAndRenderTweakers();
     }
 
+    if (changed) {
+        mDirtyModelData = true;
+    }
+    
     ImGui::EndChild();
 }
 
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
-    switch (mDrawMode) {
-        case EditorViewportDrawMode::PBRTest:
-            if (!mPbrMaterial) mPbrMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));
-            return mPbrMaterial->tryGetLoadedAsset();
-        case EditorViewportDrawMode::BlendTest:
-        case EditorViewportDrawMode::EdgeTest:
-        case EditorViewportDrawMode::Lit:
-        case EditorViewportDrawMode::Unlit:
-        case EditorViewportDrawMode::Normals:
-        case EditorViewportDrawMode::Tangents:
-        case EditorViewportDrawMode::AO:
-        case EditorViewportDrawMode::Metallic:
-        case EditorViewportDrawMode::Roughness:
-        case EditorViewportDrawMode::UVs:
-            if (!mEditorMaterial) mEditorMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model"));
-            return mEditorMaterial->tryGetLoadedAsset();
-        case EditorViewportDrawMode::Wireframe:
-            if (!mWireframeMaterial) mWireframeMaterial = MaterialShaderRepository::get().getAssetHandle(CStrToken("mesh_wireframe"));
-            return mWireframeMaterial->tryGetLoadedAsset();
-        default:
-            assert(false);
-            break;
-    }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12);
-    return nullptr;
+    return getModelRenderShader();
 }
 
 void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {

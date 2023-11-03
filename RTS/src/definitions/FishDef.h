@@ -31,18 +31,40 @@ struct FishingMinigameFishData {
     f32v2 mPlayerStickyness = f32v2(0.99f, 0.999f);
     f32 mPlayerStrength = 150.0f;
 };
+SERIALIZABLE_IMGUI_CONTROLLED(FishingMinigameFishData,
+    make_field(o.mMaxSpeed, "max_speed"sv),
+    make_field(o.mAcceleration, "accel"sv),
+    make_field(o.mFishDrag, "drag"sv),
+    make_field(o.mJerkChance, "jerk_chance"sv),
+    make_field(o.mJerkIntensity, "jerk_int"sv),
+    make_field(o.mJerkCooldownVarianceSec, "jerk_cool"sv),
+    make_field(o.mRadius, "radius"sv),
+    make_field(o.mSteeringIntensity, "steer_int"sv),
+    make_field(o.mWallBouncyness, "wall_bounce"sv),
+    make_field(o.mGravity, "gravity"sv),
+    make_field(o.mCenterMagnitism, "center_mag"sv),
+    make_field(o.mFailAngle, "fail_angle"sv),
+    make_field(o.mParticleMaterial, "particle_mat"sv),
+    make_field(o.mParticleScale, "particle_scale"sv),
+    make_field(o.mStaminaDepleteRate, "stam_deplete"sv),
+    make_field(o.mStaminaRechargeRate, "stam_rech"sv),
+    make_field(o.mOutOfStaminaPowerMult, "oos_power"sv),
+    make_field(o.mFishDamageRate, "fish_damage"sv),
+    make_field(o.mPlayerDamageRate, "player_damage"sv)
+)
 
 class FishDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(FishDef);
 
-    StrToken mItemName;
-    StrToken mModelName;
+    SoftAssetReference mItemRef = AssetType::Item;
+    SoftAssetReference mModelRef = AssetType::Model;
     ItemID mItemId = INVALID_ITEM_ID;
     ModelID mModelId = INVALID_ASSET_ID;
     FishingMinigameFishData mMinigameData; // TODO: Yml
 };
-SERIALIZABLE_SIMPLE(FishDef,
-    make_field(o.mItemName, "item"sv),
-    make_field(o.mModelName, "model"sv)
+SERIALIZABLE_IMGUI_CONTROLLED(FishDef,
+    make_field(o.mItemRef, "item"sv),
+    make_field(o.mModelRef, "model"sv),
+    make_field(o.mMinigameData, "minigame"sv)
 );

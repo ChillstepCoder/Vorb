@@ -9,8 +9,8 @@
 
 constexpr int MAX_MODEL_MESH_COUNT = e_count(MaterialRenderPassType);
 
-struct RigDef;
-struct AnimMachineDef;
+class RigDef;
+class AnimMachineDef;
 
 
 // Contains gpu buffers one or more models and their LODs, to improve batching performance
@@ -52,16 +52,16 @@ public:
     // TODO: single unique_ptr? <mesh[]>
     std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
     ui32 mNumMeshes = 0;
-    StrToken mModelName;
-    StrToken mRigName;
-    StrToken mMachineName;
+    SoftAssetReference mModelName = AssetType::Model;
+    SoftAssetReference mRigName = AssetType::Rig;
+    SoftAssetReference mMachineName = AssetType::AnimMachine;
     f32 mScale = 1.0f;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
-SERIALIZABLE_SIMPLE(ModelDef,
+SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mModelName, "model"sv),
     make_field(o.mRigName, "rig"sv),
     make_field(o.mMachineName, "machine"sv),

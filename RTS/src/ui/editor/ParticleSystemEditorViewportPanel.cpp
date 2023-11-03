@@ -357,7 +357,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
        
         if (ImGui::Button("Material")) {
             mAssetSelectorPopup = std::make_unique<ImguiUtil::AssetSelectorPopup>(MaterialRepository::get().getAssetRegistry());
-            mAssetSelectorPopup->setThumbnailFunc(ImguiAssetThumbnails::getMaterialThumbnailFunction(), f32v2(50.0f));
+            mAssetSelectorPopup->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<MaterialDef>(), f32v2(50.0f));
         }
         if (mAssetSelectorPopup) {
             if (mAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
@@ -371,7 +371,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         ImGui::SameLine();
         ImGui::Text(mSelectedEmitter->mDefaultMaterialID != INVALID_MATERIAL_ID ? MaterialRepository::get().getAssetName(mSelectedEmitter->mDefaultMaterialID).toString().c_str() : "NONE");
-        ImguiAssetThumbnails::getMaterialThumbnailFunction()(mSelectedEmitter->mDefaultMaterialID, f32v2(60.0f));
+        ImguiAssetThumbnails::getThumbnailFunction<MaterialDef>()(mSelectedEmitter->mDefaultMaterialID, f32v2(60.0f));
 
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
 

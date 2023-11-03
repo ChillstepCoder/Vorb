@@ -87,11 +87,11 @@ void addModelWind(inout vec4 trueWorldPos, in vec3 modelRoot, int windType, floa
     if (windType == 1) { // Grass
         float windIntensity = getWindAtPosition(-Time + h, vec4(trueWorldPos.xyz, 0.0)) * 0.3;
         windIntensity *= pow(h, 1.1);
-        vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity);
+        vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity); // TODO: Follow bend like tree?
         trueWorldPos.xyz += windOffset;
     } else {
         // 2 == tree trunk
-        float seed = Time * 0.65 - (modelRoot.x + modelRoot.y * 0.2);
+        float seed = Time * 0.65 - (modelRoot.x - modelRoot.y) * 0.5;
         float windIntensity = (sin(seed * 0.5) * pow(h, 2.0)) * 0.005;
         trueWorldPos.x += windIntensity;
         float bendDown = abs(windIntensity);

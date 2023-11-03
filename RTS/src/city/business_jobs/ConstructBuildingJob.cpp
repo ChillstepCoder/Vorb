@@ -36,7 +36,7 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::e
     mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
     for (size_t i = 0; i < mRequiredItems.size(); ++i) {
         JobRequiredItems& required = mRequiredItems[i];
-        ItemStackUnbounded& stack = mBlueprint.requiredItemsToBuild[i];
+        ItemStack& stack = mBlueprint.requiredItemsToBuild[i];
         required.id = stack.id;
         required.quantityRequired = stack.quantity;
     }

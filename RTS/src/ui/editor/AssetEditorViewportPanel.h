@@ -65,10 +65,10 @@ public:
         }
     }
 protected:
+
     AssetHandlePtr<T> mAssetHandle;
     T* mAssetData = nullptr;
     f32 mCurrentElapsedSec = 0.0f;
     f32v2 mViewportDims = f32v2(0.0f);
     bool mAssetWasChanged = true; // Always starts true for initialization
 };
-

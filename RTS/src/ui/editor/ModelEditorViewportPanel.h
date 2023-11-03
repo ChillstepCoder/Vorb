@@ -18,10 +18,6 @@ private:
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
-
-    AssetHandlePtr<MaterialShaderDef> mPbrMaterial;
-    AssetHandlePtr<MaterialShaderDef> mEditorMaterial;
-    AssetHandlePtr<MaterialShaderDef> mWireframeMaterial;
    
     bool mDirtyModelData = false;
     int mLod = 0;

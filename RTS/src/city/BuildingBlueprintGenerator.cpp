@@ -2133,7 +2133,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
                     else {
                         it->second += stack.quantity;
                     }
-                    bp.tileItemData.emplace_back(BlueprintTileItemData{stack.id, stack.quantity, 0});
+                    bp.tileItemData.emplace_back(BlueprintTileItemData{stack.id, (ui16)stack.quantity, 0});
                     // We will pull from back so lets emplace front to make it a FIFO
                     bp.tilesNeedingItems[stack.id].emplace_front(tileIndex);
                 }
@@ -2149,7 +2149,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
     for (auto&& it : requiredItems) {
-        bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, (ui32)it.second });
+        bp.requiredItemsToBuild.emplace_back(it.first, it.second);
     }
 
     computeOwnedTilesOnFirstFloor(bp);

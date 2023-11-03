@@ -76,7 +76,7 @@ entt::entity EntityFactory::createEntity(World& world, const f32v3& position, St
                 break;
             }
             case ComponentTypes::Inventory: {
-                registry.emplace<InventoryComponent>(newEntity, DEFAULT_CARRY_WEIGHT);
+                registry.emplace<InventoryComponent>(newEntity);
                 break;
             }
             case ComponentTypes::Physics: {

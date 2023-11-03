@@ -105,7 +105,7 @@ public:
     std::map<ItemID, std::deque<TileIndex>> tilesNeedingItems; // Pull from back first
     std::vector<TileIndex> tilesReadyToBuild;
     std::vector<BlueprintTileItemData> tileItemData;
-    std::vector<ItemStackUnbounded> requiredItemsToBuild;
+    std::vector<ItemStack> requiredItemsToBuild;
     std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
     std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
     f32 mDesiredTerrainFlattenHeight = 0.0f;

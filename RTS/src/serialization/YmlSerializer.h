@@ -168,7 +168,7 @@ namespace YmlSerializer {
             changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 4);
         }
         else if constexpr (std::is_same_v<First, SoftAssetReference>) {
-            changed |= ImguiUtil::updateAndRenderSoftAssetReference(first);
+            changed |= ImguiUtil::updateAndRenderSoftAssetReference(label.data(), value );
         }
         // Add more type checks if needed
         return changed | updateAndRenderImgui<T>(rest...);
