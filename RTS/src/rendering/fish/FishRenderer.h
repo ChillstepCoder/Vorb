@@ -2,7 +2,7 @@
 
 class World;
 class Camera3D;
-class GLIndirectBuffer;
+class GLDrawCommandBuffer;
 class Mesh;
 class MaterialShaderDef;
 

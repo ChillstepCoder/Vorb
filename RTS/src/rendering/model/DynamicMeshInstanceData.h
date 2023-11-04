@@ -5,7 +5,7 @@ class Mesh;
 class DynamicMeshInstanceData
 {
 public:
-    std::unique_ptr<GLIndirectBuffer> mDrawCommands;
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommands;
     const Mesh* mMesh = nullptr;
 };
 

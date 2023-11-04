@@ -124,8 +124,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 // Rebuild command buffer
                 {
                     PROFILE_SCOPE("Indirect Buffer");
-                    instanceData.mDrawCommands = std::make_unique<GLIndirectBuffer>(workGroupRoundedSize);
-                    instanceData.mDrawCommandsShadows = std::make_unique<GLIndirectBuffer>(workGroupRoundedSize);
+                    instanceData.mDrawCommands = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
+                    instanceData.mDrawCommandsShadows = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
                     // This is now initialized on the gpu
                     //for (size_t i = 0; i < instanceData.mDrawCommands->mDrawCommands.size(); ++i) {
                     //    DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->mDrawCommands[i];
@@ -172,8 +172,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 instanceData.mFirstDirtyInstance = UINT32_MAX;
             }
 
-            GLIndirectBuffer& inDrawCommands = *instanceData.mDrawCommands;
-            GLIndirectBuffer& inDrawCommandsShadows = *instanceData.mDrawCommandsShadows;
+            GLDrawCommandBuffer& inDrawCommands = *instanceData.mDrawCommands;
+            GLDrawCommandBuffer& inDrawCommandsShadows = *instanceData.mDrawCommandsShadows;
             const size_t drawCommandsCapacity = inDrawCommands.getDrawCommands().size();
 
             if (sDebugOptions.mDisableGPUCulling == false) {

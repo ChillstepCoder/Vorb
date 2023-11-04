@@ -121,6 +121,6 @@ void GLBuffer::destroy() {
     mCapacity = 0;
 }
 
-void GLIndirectBuffer::uploadDrawCommands() {
+void GLDrawCommandBuffer::uploadDrawCommands() {
     mIndirectBuffer.flushRange(0, mNumActiveCommands * sizeof(DrawElementsIndirectCommand));
 }

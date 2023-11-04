@@ -1,6 +1,6 @@
 #pragma once
 
-class GLIndirectBuffer;
+class GLDrawCommandBuffer;
 class Mesh;
 
 struct ModelInstanceOwner {
@@ -41,8 +41,8 @@ public:
 
     std::vector<f32m4> mInstanceTransforms;
     std::vector<ModelInstanceOwner> mInstanceOwners;
-    std::unique_ptr<GLIndirectBuffer> mDrawCommands;
-    std::unique_ptr<GLIndirectBuffer> mDrawCommandsShadows;
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommands;
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows;
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;

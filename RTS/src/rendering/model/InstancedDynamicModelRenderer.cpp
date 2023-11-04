@@ -38,7 +38,7 @@ void InstancedDynamicModelRenderer::renderModelPass(const DynamicModelInstanceMa
         }
 
         // Copy draw commands
-        GLIndirectBuffer& drawCommands = *instanceData.mDrawCommands;
+        GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommands;
         const size_t drawCommandsSize = drawCommands.getDrawCommands().size();
         if (!drawCommandsSize) {
             continue;

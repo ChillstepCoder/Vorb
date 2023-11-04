@@ -69,7 +69,7 @@ void MeshDrawer::drawInstanced(const MeshGpuData& meshData, MeshLODLevel lod, GL
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 }
 
-void MeshDrawer::drawIndirect(const MeshGpuData& meshData, const GLIndirectBuffer* buffer) {
+void MeshDrawer::drawIndirect(const MeshGpuData& meshData, const GLDrawCommandBuffer* buffer) {
     assert(meshData.mVao);
     assert(meshData.mLODData.mTotalIndexCount);
 

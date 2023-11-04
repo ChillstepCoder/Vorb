@@ -76,14 +76,14 @@ private:
     void* mMappedBuffer = nullptr;
 };
 
-class GLIndirectBuffer final
+class GLDrawCommandBuffer final
 {
 public:
-    VORB_NON_COPYABLE(GLIndirectBuffer);
-    GLIndirectBuffer(GLIndirectBuffer&& o) = delete;
-    GLIndirectBuffer& operator=(GLIndirectBuffer&& o) = delete;
+    VORB_NON_COPYABLE(GLDrawCommandBuffer);
+    GLDrawCommandBuffer(GLDrawCommandBuffer&& o) = delete;
+    GLDrawCommandBuffer& operator=(GLDrawCommandBuffer&& o) = delete;
 
-    explicit GLIndirectBuffer(size_t maxDrawCommands)
+    explicit GLDrawCommandBuffer(size_t maxDrawCommands)
         : mIndirectBuffer(sizeof(DrawElementsIndirectCommand) * maxDrawCommands)
     {
         mDrawCommands =
@@ -96,6 +96,7 @@ public:
     GLuint getHandle() const { return mIndirectBuffer.getHandle(); }
     // Capacity in number of draw commands
     ui32 getCapacity() const { return mIndirectBuffer.getCapacity() / sizeof(DrawElementsIndirectCommand); }
+    // Call site is responsible for filling with valid commands and then calling setNumActiveCommands
     std::span<DrawElementsIndirectCommand> getDrawCommands() { return mDrawCommands; }
 
     // Call before uploadDrawCommands

@@ -48,7 +48,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
         }
 
         // Copy draw commands
-        GLIndirectBuffer& drawCommands = *instanceData.mDrawCommands;
+        GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommands;
         if (!drawCommands.getNumActiveCommands()) {
             continue;
         }
@@ -101,7 +101,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
 
             const StaticMeshInstanceData& instanceData = it.second;
 
-            GLIndirectBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
+            GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
             if (!drawCommands.getNumActiveCommands()) {
                 continue;
             }
