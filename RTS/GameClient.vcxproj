@@ -264,10 +264,12 @@
     <ClCompile Include="src\ecs\component\AttributesComponent.cpp" />
     <ClCompile Include="src\ecs\component\CameraAttachComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\DynamicModelComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
     <ClCompile Include="src\ecs\component\FishingComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterControlComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ItemComponent.cpp" />
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
@@ -276,6 +278,7 @@
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ProjectileComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SkillsComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
@@ -378,6 +381,8 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
+    <ClCompile Include="src\rendering\model\DynamicMeshInstanceData.cpp" />
+    <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
@@ -579,11 +584,13 @@
     <ClInclude Include="src\ecs\component\CameraAttachComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
+    <ClInclude Include="src\ecs\component\DynamicModelComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\FishingComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
+    <ClInclude Include="src\ecs\component\ItemComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
     <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
@@ -597,6 +604,7 @@
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
     <ClInclude Include="src\ecs\component\PositionComponent.h" />
     <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
+    <ClInclude Include="src\ecs\component\ProjectileComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SkillsComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
@@ -736,6 +744,8 @@
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
+    <ClInclude Include="src\rendering\model\DynamicMeshInstanceData.h" />
+    <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />

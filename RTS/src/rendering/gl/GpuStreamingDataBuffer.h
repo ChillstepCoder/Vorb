@@ -16,6 +16,7 @@ public:
     int flushDataAndIncrementFrame(ui32 elementCount);
 
     void bindBufferAsSSBO(GLuint bindingPoint);
+    void bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride);
 
 private:
     void* mMappedBuffer;

@@ -49,3 +49,7 @@ int GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
 void GpuStreamingDataBuffer::bindBufferAsSSBO(GLuint bindingPoint) {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, mBufferObject);
 }
+
+void GpuStreamingDataBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride) {
+    glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, offset, stride);
+}

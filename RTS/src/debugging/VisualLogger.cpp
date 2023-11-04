@@ -209,7 +209,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         glUniform3fv(shaderDef->getUniform("unOffset"), 1, &offset.x);
         glUniform1i(shaderDef->getUniform("unFontTexture"), textureUnit);
         glBindTextureUnit(textureUnit, mTextData[0].font->mTexture);
-        MeshDrawer::draw(mTextMesh.mMainMesh);
+        MeshDrawer::draw(mTextMesh.mGpuData);
     }
 }
 

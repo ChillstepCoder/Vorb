@@ -69,7 +69,7 @@ void MeshDrawer::drawInstanced(const MeshGpuData& meshData, MeshLODLevel lod, GL
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 }
 
-void MeshDrawer::drawIndirect(const MeshGpuData& meshData, size_t numDrawCommands, const GLIndirectBuffer* buffer) {
+void MeshDrawer::drawIndirect(const MeshGpuData& meshData, const GLIndirectBuffer* buffer) {
     assert(meshData.mVao);
     assert(meshData.mLODData.mTotalIndexCount);
 
@@ -83,7 +83,7 @@ void MeshDrawer::drawIndirect(const MeshGpuData& meshData, size_t numDrawCommand
         GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, meshData.mSSBO);
     }
     GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
-    glMultiDrawElementsIndirect(GL_TRIANGLES, e_cast(meshData.mIndexType), nullptr, (GLsizei)numDrawCommands, 0);
+    glMultiDrawElementsIndirect(GL_TRIANGLES, e_cast(meshData.mIndexType), nullptr, (GLsizei)buffer->getNumActiveCommands(), 0);
 }
 
 void MeshDrawer::drawMinimum(const MeshMinimumRenderData& meshData) {

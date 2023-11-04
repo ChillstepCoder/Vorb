@@ -65,7 +65,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
             }
             f32v3 position = mesh.getPosition();
             glUniform3fv(positionUniform, 1, &position.x);
-            MeshDrawer::draw(mesh.mMainMesh);
+            MeshDrawer::draw(mesh.mGpuData);
         }
     }
 }
@@ -145,7 +145,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
         int crossfadeDir = waterMesh->mCrossfadeDir.load();
         const BoundingSphere& bounds = mesh.getBoundingSphere();
         if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-            MeshDrawer::draw(mesh.mMainMesh);
+            MeshDrawer::draw(mesh.mGpuData);
         }
     }
 

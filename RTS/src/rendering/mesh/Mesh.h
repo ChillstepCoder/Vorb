@@ -150,7 +150,7 @@ public:
     VORB_NON_COPYABLE(Mesh);
 
     void destroy();
-    bool isValid() const { return mMainMesh.mVao != 0; }
+    bool isValid() const { return mGpuData.mVao != 0; }
 
     const f32v3& getPosition() const { return mPosition; }
     void setPosition(const f32v3& position) { mPosition = position; }
@@ -160,18 +160,20 @@ public:
     void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
     const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
+    void bindModelTransformAttribs() const;
 
     // Override allocation to use boost::singleton_pool DOESNT WORK WITH POLYMORPHISM
     //static void* operator new(size_t count);
     //static void operator delete(void* pointer, size_t size);
 
     // TODO: Protected
-    MeshGpuData            mMainMesh;
+    MeshGpuData            mGpuData;
 protected:
     f32v3                  mPosition = f32v3(0.0f);
     BoundingSphere         mBoundingSphere;  ///< Optional
     MaterialRenderPassType mRenderPassType = MaterialRenderPassType::Default;
     const ModelSubmeshData* mSubmeshData = nullptr;
+    mutable bool mHasModelTransformsAttribsBound = false; // Used by instanced model renderers
 };
 
 class SkeletalMesh : public Mesh {

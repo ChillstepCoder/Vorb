@@ -32,7 +32,7 @@ void ItemEditorViewportPanel::renderMesh() {
         AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->mModelRef.getAssetHandle());
         if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
             for (int i = 0; i < modelDef->getNumMeshes(); ++i) {
-                MeshDrawer::draw(modelDef->getMesh(i).mMainMesh, MeshLODLevel(0));
+                MeshDrawer::draw(modelDef->getMesh(i).mGpuData, MeshLODLevel(0));
             }
         }
     }

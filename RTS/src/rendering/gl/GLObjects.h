@@ -1,5 +1,7 @@
 #pragma once
 
+#include <span>
+
 constexpr GLuint BUFFER_BASE_GLOBAL_UBO = 0; // Always bound
 constexpr GLuint BUFFER_BASE_GLOBAL_MATERIAL_SSBO = 1; // Always bound
 constexpr GLuint BUFFER_BASE_MESH_UBO = 2;
@@ -22,7 +24,6 @@ struct DrawElementsIndirectCommand
     GLuint baseInstance_;
 };
 
-// TODO: Optimize via mapped buffer
 class GLBuffer
 {
 public:
@@ -31,8 +32,6 @@ public:
     GLBuffer() = default;
     GLBuffer(GLsizeiptr size, const void* data, GLbitfield flags);
     ~GLBuffer();
-    GLBuffer(GLBuffer&& o) = delete;
-    GLBuffer& operator=(GLBuffer&& o) = delete;
 
     void allocate(GLsizeiptr size, const void* data, GLbitfield flags);
     void updateSubData(GLintptr offset, GLsizeiptr size, const void* data);
@@ -48,6 +47,35 @@ private:
     GLbitfield mFlags = 0;
 };
 
+class GLMappedBuffer
+{
+public:
+    VORB_NON_COPYABLE(GLMappedBuffer);
+
+    GLMappedBuffer() = default;
+    // GL_MAP_FLUSH_EXPLICIT_BIT is always set
+    GLMappedBuffer(GLsizeiptr size, GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+    ~GLMappedBuffer();
+
+    // GL_MAP_FLUSH_EXPLICIT_BIT is always set
+    void reallocate(GLsizeiptr size, GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+    void flushRange(GLintptr offsetBytes, GLsizeiptr sizeBytes);
+    void destroy();
+    void* getMappedBuffer() const { return mMappedBuffer; }
+
+    GLuint getHandle() const { return mBufferObject; }
+    ui32 getCapacity() const { return mCapacity; }
+    GLbitfield getFlags() const { return mFlags; }
+
+private:
+    void reallocateInternal(GLsizeiptr size, GLbitfield flags);
+    GLuint mBufferObject = 0;
+    ui32 mCapacity = 0;
+    ui32 mSize = 0;
+    GLbitfield mFlags = 0;
+    void* mMappedBuffer = nullptr;
+};
+
 class GLIndirectBuffer final
 {
 public:
@@ -56,16 +84,28 @@ public:
     GLIndirectBuffer& operator=(GLIndirectBuffer&& o) = delete;
 
     explicit GLIndirectBuffer(size_t maxDrawCommands)
-        : mIndirectBuffer(sizeof(DrawElementsIndirectCommand) * maxDrawCommands, nullptr, GL_DYNAMIC_STORAGE_BIT)
-        , mDrawCommands(maxDrawCommands)
-    {}
+        : mIndirectBuffer(sizeof(DrawElementsIndirectCommand) * maxDrawCommands)
+    {
+        mDrawCommands =
+            std::span<DrawElementsIndirectCommand>(
+                (DrawElementsIndirectCommand*)mIndirectBuffer.getMappedBuffer(),
+                getCapacity()
+            );
+    }
 
     GLuint getHandle() const { return mIndirectBuffer.getHandle(); }
-    void uploadIndirectBuffer();
+    // Capacity in number of draw commands
+    ui32 getCapacity() const { return mIndirectBuffer.getCapacity() / sizeof(DrawElementsIndirectCommand); }
+    std::span<DrawElementsIndirectCommand> getDrawCommands() { return mDrawCommands; }
 
-    std::vector<DrawElementsIndirectCommand> mDrawCommands;
+    // Call before uploadDrawCommands
+    void setNumActiveCommands(ui32 numActive) { assert(numActive <= getCapacity()); mNumActiveCommands = numActive; }
+    void uploadDrawCommands();
+
+    ui32 getNumActiveCommands() const { return mNumActiveCommands; }
 
 private:
-    GLBuffer mIndirectBuffer;
-    ui32 TMPlastUploadedSize = 0;
+    std::span<DrawElementsIndirectCommand> mDrawCommands;
+    GLMappedBuffer mIndirectBuffer;
+    ui32 mNumActiveCommands = 0;
 };

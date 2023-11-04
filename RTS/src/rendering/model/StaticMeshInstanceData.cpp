@@ -8,8 +8,3 @@ StaticMeshInstanceData::StaticMeshInstanceData()/* : mNumVisibleMeshesBuffer(siz
     assert(mNumVisibleMeshesBufferPtr);*/
 
 }
-
-StaticMeshInstanceData::~StaticMeshInstanceData()
-{
-
-}

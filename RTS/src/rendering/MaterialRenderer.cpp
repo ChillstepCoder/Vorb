@@ -23,7 +23,7 @@ void MaterialRenderer::renderFullScreenQuad(const MaterialShaderDef& material) {
 void MaterialRenderer::renderMesh(const Mesh& mesh, const MaterialShaderDef& material) {
     bindMaterialShaderForRender(material, nullptr);
 
-    MeshDrawer::draw(mesh.mMainMesh);
+    MeshDrawer::draw(mesh.mGpuData);
 }
 
 void MaterialRenderer::renderMaterialToQuadWithTexture(const MaterialShaderDef& material, VGTexture texture, const f32v4& worldSpaceRect) {

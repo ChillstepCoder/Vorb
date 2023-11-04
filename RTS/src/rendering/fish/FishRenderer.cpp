@@ -89,7 +89,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const World& worl
             const ui32 instanceCount = mInstanceCountsThisFrame[i];
             glFlushMappedNamedBufferRange(instanceData.mInstanceDataBuffer, transformIndexStart * INSTANCE_TRANSFORM_DATA_SIZE, instanceCount * INSTANCE_TRANSFORM_DATA_SIZE);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, instanceData.mInstanceDataBuffer);
-            MeshDrawer::drawInstanced(instanceData.mMesh->mMainMesh, MeshLODLevel::Highest, instanceCount);
+            MeshDrawer::drawInstanced(instanceData.mMesh->mGpuData, MeshLODLevel::Highest, instanceCount);
         }
     }
 

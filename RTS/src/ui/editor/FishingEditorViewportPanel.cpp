@@ -116,7 +116,7 @@ void FishingEditorViewportPanel::renderFishModel() {
     if (mAssetData) {
         const ModelDef& model = modelRepo.getLoadedAsset(mAssetData->mModelId);
         for (int i = 0; i < model.getNumMeshes(); ++i) {
-            MeshDrawer::draw(model.getMesh(i).mMainMesh, MeshLODLevel::Highest);
+            MeshDrawer::draw(model.getMesh(i).mGpuData, MeshLODLevel::Highest);
         }
     }
 }

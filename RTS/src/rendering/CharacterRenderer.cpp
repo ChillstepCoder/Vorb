@@ -404,7 +404,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                     glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
 
                     // TODO: Indirect?
-                    MeshDrawer::draw(skeletalMesh.mMainMesh);
+                    MeshDrawer::draw(skeletalMesh.mGpuData);
                 }
                 else {
                     // INVALID ANIMATION
@@ -414,7 +414,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                     }
                     glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
 
-                    MeshDrawer::draw(skeletalMesh.mMainMesh);
+                    MeshDrawer::draw(skeletalMesh.mGpuData);
                 }
             }
         }

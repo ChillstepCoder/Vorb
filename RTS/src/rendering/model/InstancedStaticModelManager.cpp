@@ -115,7 +115,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             const Mesh& mesh = *instanceData.mMesh;
             MeshLODDrawInfo drawInfos[4];
             for (int i = 0; i < 4; ++i) {
-                drawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
+                drawInfos[i] = mesh.mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
             }
 
             if (instanceData.mFirstDirtyInstance != UINT32_MAX) {
@@ -143,19 +143,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     // Transform takes up 4 binding points
                     if (instanceData.mTransformsVbo == 0) {
                         GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 8);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 9);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 10);
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, MODEL_TRANSFORMS_BINDING_POINT);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, MODEL_TRANSFORMS_BINDING_POINT);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, MODEL_TRANSFORMS_BINDING_POINT);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, MODEL_TRANSFORMS_BINDING_POINT);
-                        glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, MODEL_TRANSFORMS_BINDING_POINT, 1);
+                        mesh.bindModelTransformAttribs();
                         GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                         GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
                         instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
@@ -186,7 +174,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
             GLIndirectBuffer& inDrawCommands = *instanceData.mDrawCommands;
             GLIndirectBuffer& inDrawCommandsShadows = *instanceData.mDrawCommandsShadows;
-            const size_t drawCommandsSize = inDrawCommands.mDrawCommands.size();
+            const size_t drawCommandsCapacity = inDrawCommands.getDrawCommands().size();
 
             if (sDebugOptions.mDisableGPUCulling == false) {
                 PROFILE_SCOPE("GPU Culling");
@@ -194,7 +182,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 GpuCullUniformData uniformData;
                 const f32v3& camPos = camera.getPosition();
                 uniformData.cameraPos = f32v4(camPos.x, camPos.y, camPos.z, 1.0f);
-                uniformData.numShapesToCull = drawCommandsSize;
+                uniformData.numShapesToCull = drawCommandsCapacity;
                 if (sDebugOptions.mDisableLOD) {
                     uniformData.lodDistancesSQ[0] = FLT_MAX;
                 }
@@ -205,7 +193,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 }
                 for (int i = 0; i < 4; ++i) {
                     uniformData.frustumPlanes[i] = camera.getFrustum().getPlane(i).vec4Data;
-                    uniformData.lodDrawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
+                    uniformData.lodDrawInfos[i] = mesh.mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
                 }
 
                 mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
@@ -220,25 +208,28 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     GL.glBindBufferBase(GL_UNIFORM_BUFFER, 5, mGpuCullingUniformBuffer.getHandle());
                     //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
                     //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-                    if (drawCommandsSize % WORK_GROUP_SIZE == 0) {
-                        glDispatchCompute((GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
+                    if (drawCommandsCapacity % WORK_GROUP_SIZE == 0) {
+                        glDispatchCompute((GLuint)drawCommandsCapacity / WORK_GROUP_SIZE, 1, 1);
                     }
                     else {
-                        glDispatchCompute(1 + (GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
+                        glDispatchCompute(1 + (GLuint)drawCommandsCapacity / WORK_GROUP_SIZE, 1, 1);
                     }
                     glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT); // GL_ATOMIC_COUNTER_BARRIER_BIT
-                    // 114 fps
-                    instanceData.mShadowDrawCommandsCount = drawCommandsSize;
+
+                    inDrawCommands.setNumActiveCommands(drawCommandsCapacity);
+                    inDrawCommandsShadows.setNumActiveCommands(drawCommandsCapacity);
                 }
             }
             else {
-                assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
+                assert(instanceData.mInstanceTransforms.size() <= drawCommandsCapacity);
                 PROFILE_SCOPE("CPU Culling");
                 // CPU Culling
+                // TODO: Should the renderer handle this??
+                int activeCount = 0;
                 int shadowCount = 0;
                 for (size_t i = 0; i < instanceData.mInstanceTransforms.size(); ++i) {
-                    DrawElementsIndirectCommand& cmd = inDrawCommands.mDrawCommands[i];
-                    DrawElementsIndirectCommand& cmdShadow = inDrawCommandsShadows.mDrawCommands[shadowCount];
+                    DrawElementsIndirectCommand& cmd = inDrawCommands.getDrawCommands().data()[activeCount];
+                    DrawElementsIndirectCommand& cmdShadow = inDrawCommandsShadows.getDrawCommands().data()[shadowCount];
                     const f32m4& transform = instanceData.mInstanceTransforms[i];
                     // Columns are first
                     const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
@@ -274,14 +265,15 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         cmd.firstIndex_ = drawInfo.startIndex;
                         cmdShadow.count_ = drawInfoShadow.indexCount;
                         cmdShadow.firstIndex_ = drawInfoShadow.startIndex;
-                    }
-                    else {
-                        cmd.instanceCount_ = 0;
+                        ++activeCount;
                     }
                 }
-                instanceData.mShadowDrawCommandsCount = shadowCount;
-                inDrawCommands.uploadIndirectBuffer();
-                inDrawCommandsShadows.uploadIndirectBuffer();
+                inDrawCommands.setNumActiveCommands(activeCount);
+                inDrawCommandsShadows.setNumActiveCommands(shadowCount);
+                // TODO: If we are streaming this, should we use a double or triple buffered approach?
+                //  - NOTE I tried disabling the upload and it gained almost nothing so prob not important
+                inDrawCommands.uploadDrawCommands();
+                inDrawCommandsShadows.uploadDrawCommands();
 
             }
 

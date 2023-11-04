@@ -200,16 +200,16 @@ void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
         return;
     }
     // Always shared
-    mesh.mMainMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+    mesh.mGpuData.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
 
     // Set bounds
     mesh.mBoundingSphere = mBoundingSphere;
 
     // Allocate all buffers if needed
-    initMeshBuffers(mesh.mMainMesh);
+    initMeshBuffers(mesh.mGpuData);
 
     // Upload data
-    uploadBufferData(mesh.mMainMesh, mFontData, drawMode);
+    uploadBufferData(mesh.mGpuData, mFontData, drawMode);
     mFontData.clear();
 
 }

@@ -49,5 +49,5 @@ KEG_TYPE_DECL(PhysicsComponentDef);
 
 class PhysicsSystem {
 public:
-	static void update(World& world, entt::registry& registry);
+    static void update(World& world, entt::registry& registry);
 };

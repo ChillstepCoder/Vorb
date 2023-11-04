@@ -24,9 +24,7 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge"));
 }
 
-InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
-  
-}
+InstancedStaticModelRenderer::~InstancedStaticModelRenderer() = default;
 
 void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
@@ -51,8 +49,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
         // Copy draw commands
         GLIndirectBuffer& drawCommands = *instanceData.mDrawCommands;
-        const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
-        if (!drawCommandsSize) {
+        if (!drawCommands.getNumActiveCommands()) {
             continue;
         }
 
@@ -62,7 +59,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
         glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
 
         // Bind our transforms every frame as we could be using different instanced static model managers
-        GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
+        GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
 
         // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
         //// Make sure we created a fence for this instance
@@ -77,8 +74,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
         //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
         //assert(totalCommands == drawCommands.mDrawCommands.size());
-        assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
-        MeshDrawer::drawIndirect(mesh.mMainMesh, instanceData.mInstanceTransforms.size(), &drawCommands);
+        MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
     }
     
     // TODO: Material specific
@@ -104,19 +100,16 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
             // TODO: Have a no shadow render type?
 
             const StaticMeshInstanceData& instanceData = it.second;
-            if (!instanceData.mShadowDrawCommandsCount) {
+
+            GLIndirectBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
+            if (!drawCommands.getNumActiveCommands()) {
                 continue;
             }
-
-            // Copy draw commands
-            GLIndirectBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
-            const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
 
             ModelID modelId = it.first;
             const Mesh& mesh = *instanceData.mMesh;
 
-            assert(instanceData.mShadowDrawCommandsCount <= drawCommandsSize);
-            MeshDrawer::drawIndirect(mesh.mMainMesh, instanceData.mShadowDrawCommandsCount, &drawCommands);
+            MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
         }
     }
 

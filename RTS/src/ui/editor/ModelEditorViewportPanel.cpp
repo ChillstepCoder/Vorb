@@ -54,7 +54,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         int polyCount = 0;
         for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
             const Mesh& mesh = mAssetData->getMesh(i);
-            polyCount += mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3;
+            polyCount += mesh.mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3;
         }
         ImGui::Text("Polygons %d", polyCount);
         ImGui::Separator();
@@ -98,11 +98,11 @@ void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
         if (mShowSingle) {
             mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
-            MeshDrawer::draw(mAssetData->getMesh(mSingleIndex).mMainMesh, MeshLODLevel(mLod));
+            MeshDrawer::draw(mAssetData->getMesh(mSingleIndex).mGpuData, MeshLODLevel(mLod));
         }
         else {
             for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-                MeshDrawer::draw(mAssetData->getMesh(i).mMainMesh, MeshLODLevel(mLod));
+                MeshDrawer::draw(mAssetData->getMesh(i).mGpuData, MeshLODLevel(mLod));
             }
         }
     }

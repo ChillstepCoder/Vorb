@@ -384,7 +384,7 @@ void PrimitiveShapeMeshes::uploadMesh(const std::vector<StaticModelVertex>& vert
     MeshLODData lodData;
     lodData.mTotalIndexCount = indices16.size();
     lodData.mLODStarts[1] = lodData.mTotalIndexCount;
-    ModelMeshBuilder::uploadCpuMeshToGpu(vertices.data(), (ui32)vertices.size(), StaticModelVertex::vertexType(), indices16.data(), MeshIndexType::SHORT, lodData, mesh->mMainMesh);
+    ModelMeshBuilder::uploadCpuMeshToGpu(vertices.data(), (ui32)vertices.size(), StaticModelVertex::vertexType(), indices16.data(), MeshIndexType::SHORT, lodData, mesh->mGpuData);
 
     mMeshes[e_cast(shapeType)] = std::move(mesh);
 }

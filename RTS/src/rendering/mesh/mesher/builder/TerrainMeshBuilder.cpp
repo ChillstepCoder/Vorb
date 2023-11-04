@@ -110,19 +110,19 @@ void TerrainMeshBuilder::finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const 
     terrainMesh.setBoundingSphere(mBoundingSphere);
     waterMesh.setBoundingSphere(mBoundingSphere);
 
-    MeshBuilderCommon::initMeshBuffers(terrainMesh.mMainMesh, &sTerrainIboUI32, 0);
-    MeshBuilderCommon::initMeshBuffers(waterMesh.mMainMesh, &sTerrainIboUI32, 0);
+    MeshBuilderCommon::initMeshBuffers(terrainMesh.mGpuData, &sTerrainIboUI32, 0);
+    MeshBuilderCommon::initMeshBuffers(waterMesh.mGpuData, &sTerrainIboUI32, 0);
 
-    terrainMesh.mMainMesh.mIndexType = MeshIndexType::INT;
-    waterMesh.mMainMesh.mIndexType = MeshIndexType::INT;
-    terrainMesh.mMainMesh.mLODData.mTotalIndexCount = TERRAIN_MESH_INDICES;
-    waterMesh.mMainMesh.mLODData.mTotalIndexCount = WATER_MESH_INDICES;
+    terrainMesh.mGpuData.mIndexType = MeshIndexType::INT;
+    waterMesh.mGpuData.mIndexType = MeshIndexType::INT;
+    terrainMesh.mGpuData.mLODData.mTotalIndexCount = TERRAIN_MESH_INDICES;
+    waterMesh.mGpuData.mLODData.mTotalIndexCount = WATER_MESH_INDICES;
 
-    MeshBuilderCommon::uploadVertexData(terrainMesh.mMainMesh, mTerrainVerts, TERRAIN_MESH_SIZE_VERTS, sizeof(TerrainVertex), 0);
-    MeshBuilderCommon::uploadVertexData(waterMesh.mMainMesh, mWaterVerts, WATER_MESH_SIZE_VERTS, sizeof(WaterVertex), 0);
+    MeshBuilderCommon::uploadVertexData(terrainMesh.mGpuData, mTerrainVerts, TERRAIN_MESH_SIZE_VERTS, sizeof(TerrainVertex), 0);
+    MeshBuilderCommon::uploadVertexData(waterMesh.mGpuData, mWaterVerts, WATER_MESH_SIZE_VERTS, sizeof(WaterVertex), 0);
 
-    terrainMesh.mMainMesh.mVertexType = TerrainVertex::bindVertexAttribs(terrainMesh.mMainMesh.mVao);
-    waterMesh.mMainMesh.mVertexType = WaterVertex::bindVertexAttribs(waterMesh.mMainMesh.mVao);
+    terrainMesh.mGpuData.mVertexType = TerrainVertex::bindVertexAttribs(terrainMesh.mGpuData.mVao);
+    waterMesh.mGpuData.mVertexType = WaterVertex::bindVertexAttribs(waterMesh.mGpuData.mVao);
 
 
     checkGlError("TerrainMeshBuilder::finishMeshes");

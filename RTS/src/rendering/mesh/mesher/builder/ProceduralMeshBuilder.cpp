@@ -497,12 +497,12 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     // Make sure we didn't fuck up and say shared when it wasn't
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
-    MeshBuilderCommon::initMeshBuffers(mesh.mMainMesh, sharedIbo, 0);
+    MeshBuilderCommon::initMeshBuffers(mesh.mGpuData, sharedIbo, 0);
 
-    uploadMeshData(mesh.mMainMesh, worldPos, mSubMeshesData[0], GL_DYNAMIC_STORAGE_BIT);
+    uploadMeshData(mesh.mGpuData, worldPos, mSubMeshesData[0], GL_DYNAMIC_STORAGE_BIT);
 
     // TODO: Support other index formats
-    mesh.mMainMesh.mIndexType = MeshIndexType::INT;
+    mesh.mGpuData.mIndexType = MeshIndexType::INT;
 
 }
 

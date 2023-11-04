@@ -181,7 +181,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMe
     // TODO: Reduce swaps
     MaterialRenderer::bindMaterialShaderForRender(mItemBillboardMaterial.getLoadedAsset(), nullptr);
     glUniform3fv(offsetUniform, 1, &offset.x);
-    MeshDrawer::draw(itemMesh.mMainMesh);
+    MeshDrawer::draw(itemMesh.mGpuData);
 }
 
 

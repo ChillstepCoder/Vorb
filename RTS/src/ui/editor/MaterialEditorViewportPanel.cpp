@@ -117,5 +117,5 @@ void MaterialEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShade
 void MaterialEditorViewportPanel::renderMesh() {
     glEnable(GL_CULL_FACE);
     Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
-    MeshDrawer::draw(mesh.mMainMesh, MeshLODLevel(0));
+    MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(0));
 }

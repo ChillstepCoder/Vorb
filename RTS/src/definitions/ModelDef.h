@@ -7,6 +7,7 @@
 
 #include <ozz/animation/runtime/skeleton.h>
 
+
 constexpr int MAX_MODEL_MESH_COUNT = e_count(MaterialRenderPassType);
 
 class RigDef;

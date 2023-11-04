@@ -38,7 +38,7 @@ void TileContainerRenderer::renderStaticMeshes(const boost::container::flat_set<
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             glUniform3fv(unPosition, 1, &mesh->getPosition().x);
-            MeshDrawer::draw(mesh->mMainMesh);
+            MeshDrawer::draw(mesh->mGpuData);
         }
     }
 }
@@ -52,7 +52,7 @@ void TileContainerRenderer::renderBillboards(const boost::container::flat_set<co
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
             assert(mesh->isValid());
-            MeshDrawer::draw(mesh->mMainMesh);
+            MeshDrawer::draw(mesh->mGpuData);
         }
     };
 }
@@ -69,7 +69,7 @@ void TileContainerRenderer::renderWorldShadows(const boost::container::flat_set<
         f32v3 offset = mesh->getPosition() - camera.getPosition();
         if (glm::length2(offset) <= maxDistSQ) {
             glUniform3fv(unPosition, 1, &mesh->getPosition().x);
-            MeshDrawer::draw(mesh->mMainMesh);
+            MeshDrawer::draw(mesh->mGpuData);
         }
     }
 }

@@ -181,7 +181,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         FBXLoadContext& loadContext = *loadContextPtr;
         for (ui32 i = 0; i < def.mNumMeshes; ++i) {
             if (loadContext.meshData[i].mVertsCount) {
-                ModelMeshBuilder::uploadCpuMeshToGpu(loadContext.meshData[i], def.mMeshes[i]->mMainMesh);
+                ModelMeshBuilder::uploadCpuMeshToGpu(loadContext.meshData[i], def.mMeshes[i]->mGpuData);
             }
         }
         mFbxSdkMutex.lock();

@@ -67,16 +67,16 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& 
     mesh->mBoundingSphere = mBoundingSphere;
     mesh->mBoundingSphere.center += worldPos;
     MeshBuilderCommon::initMeshBuffers(
-        mesh->mMainMesh,
+        mesh->mGpuData,
         &ProceduralMeshBuilder::sQuadIboUI32,
         BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::NO_VBO, MeshBuilderBufferFlags::SSBO)
     );
 
     // TODO: Support other formats
-    mesh->mMainMesh.mIndexType = MeshIndexType::INT;
+    mesh->mGpuData.mIndexType = MeshIndexType::INT;
 
     // Upload data
-    uploadBufferData(mesh->mMainMesh, worldPos, bufferFlags);
+    uploadBufferData(mesh->mGpuData, worldPos, bufferFlags);
     mBillboards.clear();
 }
 

@@ -110,7 +110,7 @@ void Skybox::render(const f32m4& cameraMatrix) {
     glUniform1i(shader->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getTexture());
-    MeshDrawer::draw(mSkyboxMesh->mMainMesh);
+    MeshDrawer::draw(mSkyboxMesh->mGpuData);
 
     vg::DepthState::restorePrevious();
     glDisable(GL_DEPTH_CLAMP);
@@ -144,7 +144,7 @@ void Skybox::renderPbr(const f32m4& cameraMatrix) {
     else {
         glUniform1f(shader->getUniform("unLightingSplit"), 1.0f);
     }
-    MeshDrawer::draw(mSkyboxMesh->mMainMesh);
+    MeshDrawer::draw(mSkyboxMesh->mGpuData);
 
     vg::DepthState::restorePrevious();
     glDisable(GL_DEPTH_CLAMP);
@@ -166,7 +166,7 @@ void Skybox::renderIrradianceDebug(const f32m4& cameraMatrix) {
     glUniform1i(shader->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, cubemapDef->getIrradianceTexture());
-    MeshDrawer::draw(mSkyboxMesh->mMainMesh);
+    MeshDrawer::draw(mSkyboxMesh->mGpuData);
 
     vg::DepthState::restorePrevious();
     glDisable(GL_DEPTH_CLAMP);
@@ -190,7 +190,7 @@ void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel)
     VGTexture texture = cubemapDef->getPrefilterMap();
     glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, baseLevel);
     glBindTextureUnit(textureUnit, texture);
-    MeshDrawer::draw(mSkyboxMesh->mMainMesh);
+    MeshDrawer::draw(mSkyboxMesh->mGpuData);
     glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, 0);
 
     vg::DepthState::restorePrevious();

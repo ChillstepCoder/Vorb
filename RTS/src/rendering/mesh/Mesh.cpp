@@ -6,6 +6,7 @@
 #include <boost/pool/singleton_pool.hpp>
 
 #include "rendering/gl/GL.h"
+#include "rendering/model/ModelConst.h"
 
 //struct mesh_pool {};
 //using singleton_mesh_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
@@ -19,7 +20,27 @@ Mesh::~Mesh() {
 }
 
 void Mesh::destroy() {
-    mMainMesh.destroy();
+    mGpuData.destroy();
+}
+
+void Mesh::bindModelTransformAttribs() const {
+    assert(mGpuData.mVao);
+    if (!mHasModelTransformsAttribsBound) [[unlikely]] {
+        mHasModelTransformsAttribsBound = true;
+        glEnableVertexArrayAttrib(mGpuData.mVao, 7);
+        glEnableVertexArrayAttrib(mGpuData.mVao, 8);
+        glEnableVertexArrayAttrib(mGpuData.mVao, 9);
+        glEnableVertexArrayAttrib(mGpuData.mVao, 10);
+        glVertexArrayAttribFormat(mGpuData.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
+        glVertexArrayAttribFormat(mGpuData.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
+        glVertexArrayAttribFormat(mGpuData.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
+        glVertexArrayAttribFormat(mGpuData.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
+        glVertexArrayAttribBinding(mGpuData.mVao, 7, MODEL_TRANSFORMS_BINDING_POINT);
+        glVertexArrayAttribBinding(mGpuData.mVao, 8, MODEL_TRANSFORMS_BINDING_POINT);
+        glVertexArrayAttribBinding(mGpuData.mVao, 9, MODEL_TRANSFORMS_BINDING_POINT);
+        glVertexArrayAttribBinding(mGpuData.mVao, 10, MODEL_TRANSFORMS_BINDING_POINT);
+        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 1);
+    }
 }
 
 void MeshGpuData::destroy() {
