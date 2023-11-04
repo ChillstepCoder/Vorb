@@ -25,7 +25,7 @@ bool GameRenderStateManager::isActiveWorld(const World* world) {
     return world == mActiveWorld;
 }
 
-RenderState& GameRenderStateManager::getRenderStateForUpdate() {
+WorldRenderState& GameRenderStateManager::getRenderStateForUpdate() {
     ASSERT_GAME_THREAD();
     assert(mActiveWorld);
     {
@@ -46,7 +46,7 @@ void GameRenderStateManager::finishUpdating() {
     mLastUpdated = mUpdating;
 }
 
-const RenderState& GameRenderStateManager::getRenderStateForRender() {
+const WorldRenderState& GameRenderStateManager::getRenderStateForRender() {
     ASSERT_RENDER_THREAD();
     {
         std::lock_guard<std::mutex> lock(mLock);

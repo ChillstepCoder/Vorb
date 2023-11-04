@@ -1565,7 +1565,7 @@
     <ClInclude Include="src\gamethread\GameThreadTasks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\renderstate\RenderState.h">
+    <ClInclude Include="src\rendering\renderstate\WorldRenderState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\renderstate\GameRenderStateManager.h">
@@ -2175,6 +2175,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\DynamicMeshInstanceData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\renderstate\DynamicModelRenderState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

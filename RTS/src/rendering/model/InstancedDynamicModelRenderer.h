@@ -4,8 +4,13 @@
 #include "rendering/model/DynamicMeshInstanceData.h"
 #include "resources/asset/AssetHandleBundle.h"
 
+#include "rendering/renderstate/DynamicModelRenderState.h"
+
 class Camera3D;
 class MaterialShaderDef;
+
+// Stores all specific instances of a given model in the world
+typedef std::unordered_map<ModelID, DynamicMeshInstanceData> DynamicModelInstanceMap;
 
 class InstancedDynamicModelRenderer
 {
@@ -13,7 +18,7 @@ public:
     InstancedDynamicModelRenderer();
     ~InstancedDynamicModelRenderer();
 
-    void renderModelPass(const DynamicModelInstanceMap& modelInstances, const Camera3D& camera);
+    void renderModelPass(const std::vector<DynamicModelRenderState>& dynamicModels, const Camera3D& camera);
     // TODO: Shadows?
 
 protected:
@@ -22,6 +27,7 @@ protected:
     const MaterialShaderDef* mSmudgeShader = nullptr;
     AssetHandleBundle mShaderAssets;
 
+    DynamicModelInstanceMap mModelInstancesThisFrame;
     std::unique_ptr<GpuStreamingDataBuffer> mTransformsBuffer;
     std::vector<f32m4> mInstanceTransforms;
     ui32 mNumTransforms = 0;

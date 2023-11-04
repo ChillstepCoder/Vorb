@@ -24,7 +24,7 @@ class IWorldGenerator;
 class CombatContext;
 class NavWorld;
 class FishEcosystem;
-class RenderState;
+class WorldRenderState;
 
 
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
@@ -88,8 +88,8 @@ public:
 private:
     // TODO: WorldRenderStateManager?
     void updateRenderState();
-    void updateEntitiesRenderState(RenderState& renderState);
-    void updateDebugRenderState(RenderState& renderState);
+    void updateEntitiesRenderState(WorldRenderState& renderState);
+    void updateDebugRenderState(WorldRenderState& renderState);
 
     bool mDidBegin = false;
 

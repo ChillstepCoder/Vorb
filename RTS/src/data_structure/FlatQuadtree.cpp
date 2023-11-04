@@ -3,7 +3,7 @@
 
 #include "debugging/DebugRenderer.h"
 
-#include "rendering/renderstate/RenderState.h"
+#include "rendering/renderstate/WorldRenderState.h"
 
 QuadtreePatch::~QuadtreePatch()
 {

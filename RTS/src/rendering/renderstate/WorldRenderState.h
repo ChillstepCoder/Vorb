@@ -5,6 +5,7 @@
 
 #include "character/CharacterConst.h"
 #include "rendering/renderstate/CharacterRenderState.h"
+#include "rendering/renderstate/DynamicModelRenderState.h"
 
 class World;
 
@@ -34,7 +35,12 @@ struct DebugChunkRenderState {
     BitFlags<DebugChunkFlags> mFlags;
 };
 
-class RenderState {
+struct DynamicModelRenderStateCollection {
+    std::vector<DynamicModelRenderState> mModels;
+    std::unordered_map<ModelID, ui32> mModelCounts;
+};
+
+class WorldRenderState {
     friend class World;
     friend class GameRenderStateManager;
 public:
@@ -52,6 +58,7 @@ private:
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
+    DynamicModelRenderStateCollection mDynamicModels;
 
     // ======================== Debug state ========================
     std::vector<DebugChunkRenderState> mDebugChunks;

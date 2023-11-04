@@ -774,7 +774,8 @@
     <ClInclude Include="src\rendering\renderer\OverlayRenderer.h" />
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
-    <ClInclude Include="src\rendering\renderstate\RenderState.h" />
+    <ClInclude Include="src\rendering\renderstate\DynamicModelRenderState.h" />
+    <ClInclude Include="src\rendering\renderstate\WorldRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\GameRenderStateManager.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\StencilBufferIDs.h" />

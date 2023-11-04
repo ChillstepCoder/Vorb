@@ -38,7 +38,7 @@ void main() {
     
     
     vec4 trueWorldPos = (vModelMatrix * vPosition);
-    vec3 modelRoot = vModelMatrix[0].xyz;
+    vec3 modelRoot = vModelMatrix[3].xyz;
     
     float height = vPosition.z;
     

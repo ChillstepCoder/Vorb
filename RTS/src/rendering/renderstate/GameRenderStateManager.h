@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/renderstate/RenderState.h"
+#include "rendering/renderstate/WorldRenderState.h"
 
 class World;
 
@@ -22,18 +22,18 @@ public:
     bool isActiveWorld(const World* world);
 
     /// Gets the state for updating. Only call once per frame.
-    RenderState& getRenderStateForUpdate();
+    WorldRenderState& getRenderStateForUpdate();
     /// Marks state as finished updating. Only call once per frame,
     /// must call for every call to getRenderStateForUpdate.
     void finishUpdating();
     /// Gets the state for rendering. Only call once per frame.
-    const RenderState& getRenderStateForRender();
+    const WorldRenderState& getRenderStateForRender();
 private:
     const World* mActiveWorld = nullptr;
     int mUpdating = 0; ///< Currently updating state
     int mLastUpdated = 0; ///< Most recently updated state
     int mRendering = 0; ///< Currently rendering state
-    RenderState mRenderState[3]; ///< Triple-buffered state
+    WorldRenderState mRenderState[3]; ///< Triple-buffered state
     std::mutex mLock;
     std::mutex mWorldLock;
 

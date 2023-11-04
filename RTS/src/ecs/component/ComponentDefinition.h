@@ -21,6 +21,7 @@
 #include "ecs/component/SkillsComponent.h"
 #include "ecs/component/CameraAttachComponent.h"
 #include "ecs/component/PositionComponent.h"
+#include "ecs/component/DynamicModelComponent.h"
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"

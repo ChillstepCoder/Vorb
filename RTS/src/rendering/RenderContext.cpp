@@ -262,7 +262,7 @@ void RenderContext::initPostLoad() {
 
 }
 
-void RenderContext::beginFrame(const RenderState* renderState, f32v3 playerPos, f32 frameAlpha) {
+void RenderContext::beginFrame(const WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha) {
 
     PROFILE_FUNCTION();
 
@@ -299,7 +299,7 @@ void RenderContext::beginFrame(const RenderState* renderState, f32v3 playerPos, 
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
     PROFILE_FUNCTION();
-    const RenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForRender();
+    const WorldRenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForRender();
     mCurrentFrameAlpha = frameAlpha;
     mCurrentFrameElapsedSec = elapsedSec;
     mCameraController = &cameraController;
@@ -466,7 +466,7 @@ color4 sprintfThreadStats(const ThreadUtilizationTimer& timer, const char* name,
     return color::White;
 }
 
-void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& renderState) {
+void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState& renderState) {
     if (sDebugOptions.mShowDevHud) {
         mSb->begin(100);
         char buffer[STR_BUFFER_SIZE];

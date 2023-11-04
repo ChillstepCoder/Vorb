@@ -21,7 +21,7 @@ class LightRenderer;
 class MaterialShaderDef;
 class Mesh;
 class ParticleSystemRenderer;
-class RenderState;
+class WorldRenderState;
 class ShadowRenderer;
 class Skybox;
 class SmudgeRenderer;
@@ -58,7 +58,7 @@ public:
 
     void initPostLoad();
 
-    void beginFrame(const RenderState* renderState, f32v3 playerPos, f32 frameAlpha); // Called automatically by beginFrame
+    void beginFrame(const WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha); // Called automatically by beginFrame
     void renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
@@ -97,13 +97,13 @@ private:
     void updateCamera(f32 frameAlpha);
 
     // Render passes
-    void renderPassUI(const Camera3D& camera, const RenderState& renderState);
+    void renderPassUI(const Camera3D& camera, const WorldRenderState& renderState);
 
     static RenderContext* sInstance;
     
     // Data
     GlobalRenderData mRenderData;
-    const RenderState* mCurrentRenderState = nullptr;
+    const WorldRenderState* mCurrentRenderState = nullptr;
     ui32v2 mScreenResolution;
     ui32v2 mCurrentFramebufferDims;
     CameraController* mCameraController = nullptr;

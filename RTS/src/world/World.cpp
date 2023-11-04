@@ -324,7 +324,7 @@ void World::updateRenderState() {
         return;
     }
 
-    RenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForUpdate();
+    WorldRenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForUpdate();
     // Cache things we need to update so we can keep the update section small as possible
 
     // TODO: If we have a camera attach component, use that
@@ -350,25 +350,42 @@ void World::updateRenderState() {
     GameRenderStateManager::getInstance().finishUpdating();
 }
 
-void World::updateEntitiesRenderState(RenderState& renderState) {
+void World::updateEntitiesRenderState(WorldRenderState& renderState) {
 
     IEntityComponentSystem& ecs = getECS();
     entt::registry& registry = ecs.mRegistry;
-    auto view = registry.view<PhysicsComponent, CharacterControlComponent, CharacterModelComponent>();
 
-    renderState.mCharacters.clear();
+    { // Characters
+        auto view = registry.view<PositionComponent, CharacterControlComponent, CharacterModelComponent>();
 
-    // Construct fresh list of all entities
-    for (auto entity : view) {
-        PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
-        CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
-        if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) {
-            renderState.mCharacters.emplace_back(CharacterRenderState{ entity, physCmp.getPosition(), controlCmp.mControllerAngle, controlCmp.mMode });
-        }
-    };
+        renderState.mCharacters.clear();
+        renderState.mCharacters.reserve(view.size_hint());
+
+        for (auto entity : view) {
+            PositionComponent& posCmp = view.get<PositionComponent>(entity);
+            CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
+            if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) {
+                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, controlCmp.mControllerAngle, controlCmp.mMode });
+            }
+        };
+    }
+
+    { // Dynamic models
+        auto view = registry.view<PositionComponent, DynamicModelComponent>();
+
+        renderState.mDynamicModels.clear();
+        renderState.mDynamicModels.reserve(view.size_hint());
+
+        for (auto entity : view) {
+            PositionComponent& posCmp = view.get<PositionComponent>(entity);
+            DynamicModelComponent& modelCmp = view.get<DynamicModelComponent>(entity);
+            // TODO: Orientation
+            renderState.mDynamicModels.emplace_back(glm::quat(), posCmp.mPosition, modelCmp.modelId);
+        };
+    }
 }
 
-void World::updateDebugRenderState(RenderState& renderState) {
+void World::updateDebugRenderState(WorldRenderState& renderState) {
     PROFILE_FUNCTION();
 
     renderState.mDebugQuads.clear();

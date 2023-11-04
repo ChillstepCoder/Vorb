@@ -28,7 +28,7 @@
 #include "rendering/TerrainRenderer.h"
 #include "rendering/TileContainerRenderer.h"
 #include "rendering/Skybox.h"
-#include "rendering/renderstate/RenderState.h"
+#include "rendering/renderstate/WorldRenderState.h"
 #include "rendering/GlobalRenderData.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/model/InstancedStaticModelManager.h"
@@ -129,7 +129,7 @@ void WorldRenderer::initPostLoad() {
     mPassthroughMaterial = shaderRepo.getAssetHandle(CStrToken("pass_through"));
 }
 
-void WorldRenderer::onBeginFrame(const RenderState* renderState, f32v3 playerPos) {
+void WorldRenderer::onBeginFrame(const WorldRenderState* renderState, f32v3 playerPos) {
     if (!renderState->getWorld()) {
         return;
     }
