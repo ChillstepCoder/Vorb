@@ -117,21 +117,15 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             for (int i = 0; i < 4; ++i) {
                 drawInfos[i] = mesh.mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
             }
-
             if (instanceData.mFirstDirtyInstance != UINT32_MAX) {
                 PROFILE_SCOPE("Rebuild Indirect Buffer");
                 const size_t workGroupRoundedSize = roundToWorkGroupSize(instanceData.mInstanceTransforms.size());
+                assert(workGroupRoundedSize >= instanceData.mInstanceTransforms.size());
                 // Rebuild command buffer
                 {
                     PROFILE_SCOPE("Indirect Buffer");
                     instanceData.mDrawCommands = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
                     instanceData.mDrawCommandsShadows = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
-                    // This is now initialized on the gpu
-                    //for (size_t i = 0; i < instanceData.mDrawCommands->mDrawCommands.size(); ++i) {
-                    //    DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->mDrawCommands[i];
-                    //    cmd.baseInstance_ = i;
-                    //}
-                    //instanceData.mDrawCommands->uploadIndirectBuffer();
                 }
 
                 // Allocate VBO
@@ -174,7 +168,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
             GLDrawCommandBuffer& inDrawCommands = *instanceData.mDrawCommands;
             GLDrawCommandBuffer& inDrawCommandsShadows = *instanceData.mDrawCommandsShadows;
-            const size_t drawCommandsCapacity = inDrawCommands.getDrawCommands().size();
+            const size_t drawCommandsCapacity = inDrawCommands.getCapacity();
+
+            inDrawCommands.frameBegin();
+            inDrawCommandsShadows.frameBegin();
 
             if (sDebugOptions.mDisableGPUCulling == false) {
                 PROFILE_SCOPE("GPU Culling");
@@ -270,8 +267,6 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 }
                 inDrawCommands.setNumActiveCommands(activeCount);
                 inDrawCommandsShadows.setNumActiveCommands(shadowCount);
-                // TODO: If we are streaming this, should we use a double or triple buffered approach?
-                //  - NOTE I tried disabling the upload and it gained almost nothing so prob not important
                 inDrawCommands.uploadDrawCommands();
                 inDrawCommandsShadows.uploadDrawCommands();
 

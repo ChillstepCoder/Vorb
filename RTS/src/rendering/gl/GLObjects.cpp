@@ -59,8 +59,8 @@ void GLBuffer::updateSubData(GLintptr offset, GLsizeiptr size, const void* data)
 
 GLMappedBuffer::GLMappedBuffer(GLsizeiptr size, GLbitfield flags /*= GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT*/) : mFlags(flags) {
     glCreateBuffers(1, &mBufferObject);
-    glNamedBufferStorage(mBufferObject, size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-    mMappedBuffer = glMapNamedBufferRange(mBufferObject, 0, size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+    glNamedBufferStorage(mBufferObject, size, nullptr, flags);
+    mMappedBuffer = glMapNamedBufferRange(mBufferObject, 0, size, flags | GL_MAP_FLUSH_EXPLICIT_BIT);
     assert(mMappedBuffer);
     mCapacity = size;
 }
@@ -122,5 +122,10 @@ void GLBuffer::destroy() {
 }
 
 void GLDrawCommandBuffer::uploadDrawCommands() {
-    mIndirectBuffer.flushRange(0, mNumActiveCommands * sizeof(DrawElementsIndirectCommand));
+    mIndirectBuffer.flushDataAndIncrementFrame(mNumActiveCommands);
+}
+
+void GLDrawCommandBuffer::multiDrawElementsIndirect(GLenum mode, GLenum type) const {
+    GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, getHandle());
+    glMultiDrawElementsIndirect(mode, type, (void*)getByteOffsetLastFlush(), (GLsizei)getNumActiveCommands(), 0);
 }

@@ -371,7 +371,8 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
     }
 
     { // Dynamic models
-        auto view = registry.view<PositionComponent, DynamicModelComponent>();
+        // TODO: Allow no orientation
+        auto view = registry.view<PositionComponent, DynamicModelComponent, OrientationComponent>();
 
         renderState.mDynamicModels.clear();
         renderState.mDynamicModels.reserve(view.size_hint());
@@ -379,8 +380,9 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
         for (auto entity : view) {
             PositionComponent& posCmp = view.get<PositionComponent>(entity);
             DynamicModelComponent& modelCmp = view.get<DynamicModelComponent>(entity);
-            // TODO: Orientation
-            renderState.mDynamicModels.emplace_back(glm::quat(), posCmp.mPosition, modelCmp.modelId);
+            OrientationComponent& orientCmp = view.get<OrientationComponent>(entity);
+
+            renderState.mDynamicModels.emplace_back(orientCmp.mOrientation, posCmp.mPosition, modelCmp.modelId);
         };
     }
 }

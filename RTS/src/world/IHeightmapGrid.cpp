@@ -539,6 +539,18 @@ f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
     return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
 }
 
+f32 IHeightmapGrid::tryComputeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const {
+    ASSERT_GAME_THREAD();
+    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
+    const HeightmapPatch& patch = mHeightData[id];
+
+    if (!patch.isDone()) {
+        return FLT_MAX;
+    }
+
+    return computeHeightAndNormalAtPoint(id, patch.mHeightData->data, worldPos, outNormal);
+}
+
 f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk) {
     i32v2 chunkPos = mWorld->getChunkGrid().getChunkOffsetFromChunkID(chunkId);
     // TODO: This doesnt account the individual world dimensions

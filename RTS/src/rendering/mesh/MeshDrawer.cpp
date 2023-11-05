@@ -82,8 +82,7 @@ void MeshDrawer::drawIndirect(const MeshGpuData& meshData, const GLDrawCommandBu
     if (meshData.mSSBO) {
         GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, meshData.mSSBO);
     }
-    GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
-    glMultiDrawElementsIndirect(GL_TRIANGLES, e_cast(meshData.mIndexType), nullptr, (GLsizei)buffer->getNumActiveCommands(), 0);
+    buffer->multiDrawElementsIndirect(GL_TRIANGLES, e_cast(meshData.mIndexType));
 }
 
 void MeshDrawer::drawMinimum(const MeshMinimumRenderData& meshData) {

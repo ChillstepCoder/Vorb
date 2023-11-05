@@ -14,6 +14,8 @@
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
 
+#include "math/Random.h"
+
 entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
     PhysicsWorld& physWorld = world.getPhysicsWorld();
@@ -146,6 +148,9 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
 
     registry.emplace<PositionComponent>(newEntity, position);
     registry.emplace<ItemComponent>(newEntity, itemStack);
+    registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
+    BitFlags<ProjectileFlags> flags(ProjectileFlags::RemoveOnLand, ProjectileFlags::OrientToTerrainOnLand);
+    ProjectileSystem::addProjectileComponent(registry, newEntity, velocity, flags);
 
     ItemRepository& itemRepo = ItemRepository::get();
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);

@@ -18,11 +18,15 @@ public:
     void bindBufferAsSSBO(GLuint bindingPoint);
     void bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride);
     ui32 getMaxElements() const { return mMaxElements; }
+    ui32 getByteOffsetLastFlush() const { return mByteOffsetLastFlush; }
+    ui32 getCurrentElementOffset() const { return mFrameIndex * mMaxElements;}
+    VGBuffer getBufferObject() const { return mBufferObject; }
 
 private:
     void* mMappedBuffer;
     VGBuffer mBufferObject;
     int mFrameIndex = 0;
+    ui32 mByteOffsetLastFlush = 0;
     ui32 mMaxElements;
     ui32 mElementSize;
     GLsync mFence[3] = { 0 };

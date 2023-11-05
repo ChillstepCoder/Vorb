@@ -3,6 +3,7 @@
 enum class ProjectileFlags : ui8 {
     RemoveOnLand = BIT(0), // Remove this component when we land on the ground
     RemoveOnHit = BIT(1), // Remove this component when we hit any collision
+    OrientToTerrainOnLand = BIT(2), // Orient to the terrain normal when we land on the ground
 };
 
 class World;

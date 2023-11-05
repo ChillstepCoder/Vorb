@@ -34,9 +34,9 @@ void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
 int GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
     assert(elementCount <= mMaxElements);
     elementCount = glm::min(elementCount, mMaxElements);
-    const int bufferOffsetBytes = mFrameIndex * mElementSize * mMaxElements;
+    mByteOffsetLastFlush = mFrameIndex * mElementSize * mMaxElements;
 
-    glFlushMappedNamedBufferRange(mBufferObject, bufferOffsetBytes, elementCount * mElementSize);
+    glFlushMappedNamedBufferRange(mBufferObject, mByteOffsetLastFlush, elementCount * mElementSize);
 
     mFence[mFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 

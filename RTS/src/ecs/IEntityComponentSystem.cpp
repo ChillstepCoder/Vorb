@@ -40,6 +40,8 @@ void IEntityComponentSystem::tick(f32 elapsedSec) {
 
     mSkillsSystem.update(mWorld, mRegistry, elapsedSec);
 
+	ProjectileSystem::update(mWorld, mRegistry, elapsedSec);
+
 }
 
 void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {

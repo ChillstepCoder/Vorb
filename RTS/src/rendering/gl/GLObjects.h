@@ -2,6 +2,8 @@
 
 #include <span>
 
+#include "rendering/gl/GpuStreamingDataBuffer.h"
+
 constexpr GLuint BUFFER_BASE_GLOBAL_UBO = 0; // Always bound
 constexpr GLuint BUFFER_BASE_GLOBAL_MATERIAL_SSBO = 1; // Always bound
 constexpr GLuint BUFFER_BASE_MESH_UBO = 2;
@@ -47,6 +49,7 @@ private:
     GLbitfield mFlags = 0;
 };
 
+// TODO: This needs a fence sync or something! It causes flickering
 class GLMappedBuffer
 {
 public:
@@ -84,30 +87,35 @@ public:
     GLDrawCommandBuffer& operator=(GLDrawCommandBuffer&& o) = delete;
 
     explicit GLDrawCommandBuffer(size_t maxDrawCommands)
-        : mIndirectBuffer(sizeof(DrawElementsIndirectCommand) * maxDrawCommands)
-    {
+        : mIndirectBuffer(maxDrawCommands, sizeof(DrawElementsIndirectCommand)) {
+    }
+
+    void frameBegin() {
         mDrawCommands =
             std::span<DrawElementsIndirectCommand>(
-                (DrawElementsIndirectCommand*)mIndirectBuffer.getMappedBuffer(),
-                getCapacity()
+                (DrawElementsIndirectCommand*)mIndirectBuffer.frameBeginAndGetDataForUpdate(),
+                mIndirectBuffer.getMaxElements()
             );
     }
 
-    GLuint getHandle() const { return mIndirectBuffer.getHandle(); }
+    GLuint getHandle() const { return mIndirectBuffer.getBufferObject(); }
     // Capacity in number of draw commands
-    ui32 getCapacity() const { return mIndirectBuffer.getCapacity() / sizeof(DrawElementsIndirectCommand); }
+    ui32 getCapacity() const { return mIndirectBuffer.getMaxElements(); }
     // Call site is responsible for filling with valid commands and then calling setNumActiveCommands
     std::span<DrawElementsIndirectCommand> getDrawCommands() { return mDrawCommands; }
 
     // Call before uploadDrawCommands
-    DrawElementsIndirectCommand& appendCommand() { return mDrawCommands[mNumActiveCommands++]; }
+    DrawElementsIndirectCommand& appendCommand() { assert(mNumActiveCommands < getCapacity()); return mDrawCommands[mNumActiveCommands++]; }
     void setNumActiveCommands(ui32 numActive) { assert(numActive <= getCapacity()); mNumActiveCommands = numActive; }
     void uploadDrawCommands();
+    ui32 getByteOffsetLastFlush() const { return mIndirectBuffer.getByteOffsetLastFlush(); }
 
     ui32 getNumActiveCommands() const { return mNumActiveCommands; }
 
+    void multiDrawElementsIndirect(GLenum mode, GLenum type) const;
+
 private:
     std::span<DrawElementsIndirectCommand> mDrawCommands;
-    GLMappedBuffer mIndirectBuffer;
+    GpuStreamingDataBuffer mIndirectBuffer;
     ui32 mNumActiveCommands = 0;
 };

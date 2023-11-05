@@ -89,6 +89,7 @@ public:
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
     f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
+    f32 tryComputeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
 
     f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk);
     f32 computeHeightAtPoint(const f32* heightData, const f32v2& worldPos) const;

@@ -19,6 +19,11 @@ InstancedDynamicModelRenderer::InstancedDynamicModelRenderer() {
 InstancedDynamicModelRenderer::~InstancedDynamicModelRenderer() = default;
 
 void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelInstanceState>& dynamicModels, const Camera3D& camera) {
+    
+    if (sDebugOptions.mHideDynamicModels) {
+        return;
+    }
+    
     if (!mShaderAssets.areAllAssetsLoaded()) {
         return;
     }
@@ -84,13 +89,14 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
     else if (totalTransforms > mTransformsBuffer->getMaxElements() ||
         totalTransforms < mTransformsBuffer->getMaxElements() * 0.5f - FUZZ) {
         // Grow or shrink if needed
-        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms, sizeof(f32m4));
+        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms + FUZZ, sizeof(f32m4));
     }
     
     f32m4* transformsArray = static_cast<f32m4*>(mTransformsBuffer->frameBeginAndGetDataForUpdate());
     assert(transformsArray);
 
     // Process all batches
+    GLuint transformOffset = mTransformsBuffer->getCurrentElementOffset();
     GLuint transformIndex = 0;
     for (auto&& it = mModelBatchesThisFrame.begin(); it != mModelBatchesThisFrame.end();) {
         auto& [modelId, batch] = *it;
@@ -110,6 +116,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
                     // TODO: Just store the render pass intead of the whole mesh?
                     mDrawCommandsThisFrame[e_cast(meshData.mesh->getRenderPass())].emplace_back(meshData.drawCommands.get(), meshData.mesh);
                     meshData.drawCommands->setNumActiveCommands(0);
+                    meshData.drawCommands->frameBegin();
                 }
                 else {
                     meshData.drawCommands.reset();
@@ -126,7 +133,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
                     DrawElementsIndirectCommand& cmd = meshData.drawCommands->appendCommand();
                     // build draw command
                     cmd.instanceCount_ = 1;
-                    cmd.baseInstance_ = transformIndex;
+                    cmd.baseInstance_ = transformOffset + transformIndex;
                     cmd.baseVertex_ = 0;
                     MeshLODDrawInfo drawInfo, drawInfoShadow;
                     f32 distance2 = glm::length2(dynamicModel.position - camera.getPosition());
@@ -171,8 +178,9 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
 
 void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType renderPass) {
     ASSERT_RENDER_THREAD();
-    if (sDebugOptions.mHideModels)
+    if (sDebugOptions.mHideDynamicModels) {
         return;
+    }
 
     PROFILE_FUNCTION();
 

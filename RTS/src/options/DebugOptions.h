@@ -113,6 +113,7 @@ struct DebugOptions {
     bool mEnableVisualLogs;
     bool mShowDevHud;
     bool mHideModels;
+    bool mHideDynamicModels;
     bool mDisableLOD;
     bool mDisableGPUCulling;
     bool mDebugToggle0;

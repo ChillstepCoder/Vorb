@@ -110,6 +110,7 @@ DebugOptions::DebugOptions() :
     mEnableVisualLogs(true),
     mShowDevHud(true),
     mHideModels(false),
+    mHideDynamicModels(false),
     mDisableLOD(false),
     mDisableGPUCulling(true), // GPU CULLING HAS A BUG IT CAUSES SHADOW FKERY
     // Water

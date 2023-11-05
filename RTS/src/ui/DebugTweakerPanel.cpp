@@ -395,7 +395,8 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
     }
 
     if (ImGui::CollapsingHeader("Models")) {
-        ImGui::Checkbox("Hide Models", &sDebugOptions.mHideModels);
+        ImGui::Checkbox("Hide Static Models", &sDebugOptions.mHideModels);
+        ImGui::Checkbox("Hide Dynamic Models", &sDebugOptions.mHideDynamicModels);
         ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
         ImGui::Checkbox("CPU Culling", &sDebugOptions.mDisableGPUCulling);
         ImGui::SliderFloat3("LOD Distances", sDebugOptions.mLodDistances, 0.0f, 1000.0f);
