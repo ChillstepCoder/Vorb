@@ -57,6 +57,7 @@ public:
     SoftAssetReference mRigName = AssetType::Rig;
     SoftAssetReference mMachineName = AssetType::AnimMachine;
     f32 mScale = 1.0f;
+    f32 mBoundingSphereRadius = 5.0f; // TODO: FLYWEIGHT THIS
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
@@ -67,6 +68,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mRigName, "rig"sv),
     make_field(o.mMachineName, "machine"sv),
     make_field(o.mScale, "scale"sv),
+    make_field(o.mBoundingSphereRadius, "bound_sphere"sv),
     make_field(o.mShadowDetail, "shadow_detail"sv),
     make_field(o.mForceNormalsUp, "force_normals_up"sv),
     make_field(o.mSubmeshesData, "submesh_data"sv)

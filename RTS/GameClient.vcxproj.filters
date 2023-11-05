@@ -888,7 +888,7 @@
     <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\DynamicMeshInstanceData.cpp">
+    <ClCompile Include="src\rendering\model\DynamicModelInstanceData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2174,7 +2174,7 @@
     <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\DynamicMeshInstanceData.h">
+    <ClInclude Include="src\rendering\model\DynamicModelInstanceData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\renderstate\DynamicModelRenderState.h">

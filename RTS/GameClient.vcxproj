@@ -381,7 +381,7 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
-    <ClCompile Include="src\rendering\model\DynamicMeshInstanceData.cpp" />
+    <ClCompile Include="src\rendering\model\DynamicModelInstanceData.cpp" />
     <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
@@ -744,7 +744,7 @@
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
-    <ClInclude Include="src\rendering\model\DynamicMeshInstanceData.h" />
+    <ClInclude Include="src\rendering\model\DynamicModelInstanceData.h" />
     <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />

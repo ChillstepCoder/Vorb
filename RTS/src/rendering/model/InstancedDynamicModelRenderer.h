@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/gl/GpuStreamingDataBuffer.h"
-#include "rendering/model/DynamicMeshInstanceData.h"
+#include "rendering/model/DynamicModelInstanceData.h"
 #include "resources/asset/AssetHandleBundle.h"
 
 #include "rendering/renderstate/DynamicModelRenderState.h"
@@ -10,7 +10,7 @@ class Camera3D;
 class MaterialShaderDef;
 
 // Stores all specific instances of a given model in the world
-typedef std::unordered_map<ModelID, DynamicMeshInstanceData> DynamicModelInstanceMap;
+typedef std::unordered_map<ModelID, DynamicModelInstanceData> DynamicModelInstanceMap;
 
 class InstancedDynamicModelRenderer
 {

@@ -35,11 +35,6 @@ struct DebugChunkRenderState {
     BitFlags<DebugChunkFlags> mFlags;
 };
 
-struct DynamicModelRenderStateCollection {
-    std::vector<DynamicModelRenderState> mModels;
-    std::unordered_map<ModelID, ui32> mModelCounts;
-};
-
 class WorldRenderState {
     friend class World;
     friend class GameRenderStateManager;
@@ -58,7 +53,7 @@ private:
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
-    DynamicModelRenderStateCollection mDynamicModels;
+    std::vector<DynamicModelRenderState> mDynamicModels;
 
     // ======================== Debug state ========================
     std::vector<DebugChunkRenderState> mDebugChunks;
