@@ -16,7 +16,7 @@ public:
     ~InstancedStaticModelRenderer();
 
     void renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera);
-    void renderModelShadows(const ModelInstanceMap* allModelPasses, const ShadowPassShaderData& shaderData, const Camera3D& camera);
+    void renderModelShadows(const ModelInstanceMap* modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera);
 
 private:
 

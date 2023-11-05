@@ -41,8 +41,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
     MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
     const VGUniform windUniform = mStandardMaterial->getUniform("unWindType");
-    for (auto& it : modelInstances) {
-        const StaticMeshInstanceData& instanceData = it.second;
+    for (auto& [modelId, instanceData] : modelInstances) {
         if (!instanceData.mDrawCommands) {
             continue;
         }
@@ -53,7 +52,6 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
             continue;
         }
 
-        ModelID modelId = it.first;
         const Mesh& mesh = *instanceData.mMesh;
 
         glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
@@ -82,7 +80,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
-void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* allModelPasses, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
 
     if (!mShaderAssets.areAllAssetsLoaded()) {
@@ -96,17 +94,17 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* al
     MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperMaterial);
     glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
     for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
-        for (auto& it : allModelPasses[ri]) {
+        for (auto& [modelId, instanceData] : modelInstances[ri]) {
+            if (!instanceData.mDrawCommands) {
+                continue;
+            }
             // TODO: Have a no shadow render type?
-
-            const StaticMeshInstanceData& instanceData = it.second;
 
             GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
             if (!drawCommands.getNumActiveCommands()) {
                 continue;
             }
 
-            ModelID modelId = it.first;
             const Mesh& mesh = *instanceData.mMesh;
 
             MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);

@@ -8,35 +8,36 @@
 #include "ecs/component/SkillsComponent.h"
 #include "effect/IEffectContext.h"
 
-#include "rendering/RenderThreadTasks.h"
-#include "rendering/MaterialRenderer.h"
-#include "rendering/StencilBufferIDs.h"
+#include "debugging/DebugRenderer.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/EntityComponentSystemRenderer.h"
+#include "rendering/fish/FishRenderer.h"
+#include "rendering/GlobalRenderData.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/LightRenderer.h"
+#include "rendering/MaterialRenderer.h"
+#include "rendering/mesh/GrassMeshManager.h"
+#include "rendering/mesh/TerrainMeshManager.h"
+#include "rendering/mesh/TileContainerMeshManager.h"
+#include "rendering/model/InstancedDynamicModelRenderer.h"
+#include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/post_process/SmudgeRenderer.h"
 #include "rendering/post_process/TonemapRenderer.h"
+#include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/renderer/GrassRenderer.h"
 #include "rendering/renderer/OverlayRenderer.h"
+#include "rendering/renderstate/WorldRenderState.h"
+#include "rendering/RenderThreadTasks.h"
+#include "rendering/Skybox.h"
+#include "rendering/StencilBufferIDs.h"
 #include "rendering/TerrainRenderer.h"
 #include "rendering/TileContainerRenderer.h"
-#include "rendering/Skybox.h"
-#include "rendering/renderstate/WorldRenderState.h"
-#include "rendering/GlobalRenderData.h"
-#include "rendering/renderdata/WorldRenderDataManager.h"
-#include "rendering/model/InstancedStaticModelManager.h"
-#include "rendering/mesh/TileContainerMeshManager.h"
-#include "rendering/mesh/TerrainMeshManager.h"
-#include "rendering/mesh/GrassMeshManager.h"
-#include "rendering/fish/FishRenderer.h"
-#include "debugging/DebugRenderer.h"
 
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 
@@ -79,6 +80,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
 
     mCharacterRenderer = std::make_unique<CharacterRenderer>();
     mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
+    mDynamicModelRenderer = std::make_unique<InstancedDynamicModelRenderer>();
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
     mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
@@ -176,8 +178,11 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     }
 
     // Instanced models
+    mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
+
     MaterialRepository::get().bindMaterialBuffer();
     mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
+    mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
 
     // Fish
     if (sDebugOptions.mShowFish) {
@@ -188,6 +193,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     {
         mSmudgeRenderer->beginSmudgePass(activeGBuffer);
         mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera);
+        mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Smudge);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             glDisable(GL_CULL_FACE);
             mGrassRenderer->renderGrass(*mCamera, mPlayerPos, mCurrentWorldRenderDataManager->getGrassMeshManager().getGrassMeshes());

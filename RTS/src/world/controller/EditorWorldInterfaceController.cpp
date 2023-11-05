@@ -12,6 +12,7 @@
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
 #include "ecs/IEntityComponentSystem.h"
+#include "ecs/factory/EntityFactory.h"
 #include "ui/UIContext.h"
 #include "pathfinding/NavWorld.h"
 
@@ -184,6 +185,10 @@ void EditorWorldInterfaceController::initEvents() {
         }
         else if (event.keyCode == VKEY_ESCAPE) {
             UIContext::getInstance().toggleMainMenu();
+        }
+        else if (event.keyCode == VKEY_N) {
+            EntityFactory::createItemProjectile(*mWorld, mWorld->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), f32v3(0.0f), ItemRepository::get().getAssetID(CStrToken("wood_raw")));
+            sDebugOptions.mCities = !sDebugOptions.mCities;
         }
     });
 

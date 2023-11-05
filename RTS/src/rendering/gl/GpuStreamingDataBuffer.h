@@ -17,6 +17,7 @@ public:
 
     void bindBufferAsSSBO(GLuint bindingPoint);
     void bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride);
+    ui32 getMaxElements() const { return mMaxElements; }
 
 private:
     void* mMappedBuffer;

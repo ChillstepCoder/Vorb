@@ -5,7 +5,7 @@
 
 #include "character/CharacterConst.h"
 #include "rendering/renderstate/CharacterRenderState.h"
-#include "rendering/renderstate/DynamicModelRenderState.h"
+#include "rendering/renderstate/DynamicModelInstanceState.h"
 
 class World;
 
@@ -45,6 +45,7 @@ public:
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
+    const std::vector<DynamicModelInstanceState>& getDynamicModels() const { return mDynamicModels; }
     World* getWorld() const { return mWorld; }
 private:
     // ======================== Game State  ========================
@@ -53,7 +54,7 @@ private:
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
-    std::vector<DynamicModelRenderState> mDynamicModels;
+    std::vector<DynamicModelInstanceState> mDynamicModels;
 
     // ======================== Debug state ========================
     std::vector<DebugChunkRenderState> mDebugChunks;

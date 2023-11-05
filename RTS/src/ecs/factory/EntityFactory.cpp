@@ -8,12 +8,13 @@
 #include "resources/ModelRepository.h"
 #include "resources/SkillRepository.h"
 #include "resources/ResourceManager.h"
+#include "item/ItemRepository.h"
 
 #include <ozz/animation/runtime/animation.h>
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
 
-entt::entity EntityFactory::createEntity(World& world, const f32v3& position, StrToken typeToken) {
+entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
     PhysicsWorld& physWorld = world.getPhysicsWorld();
     IEntityComponentSystem& ecs = world.getECS();
@@ -136,4 +137,19 @@ entt::entity EntityFactory::createEntity(World& world, const f32v3& position, St
    // }
 
     return newEntity;
+}
+
+entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemID itemId) {
+    IEntityComponentSystem& ecs = world.getECS();
+    entt::registry& registry = ecs.mRegistry;
+    const entt::entity newEntity = registry.create();
+
+    registry.emplace<PositionComponent>(newEntity, position);
+    registry.emplace<ItemComponent>(newEntity, itemId);
+
+    ItemRepository& itemRepo = ItemRepository::get();
+    const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemId);
+    if (itemDef.mModelRef.isValid()) {
+        registry.emplace<DynamicModelComponent>(newEntity, ModelRepository::get().getAssetID(itemDef.mModelRef.name));
+    }
 }

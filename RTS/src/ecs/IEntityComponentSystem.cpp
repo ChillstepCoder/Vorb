@@ -56,3 +56,12 @@ void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
     mRegistry.emplace<PlayerControlComponent>(playerEntity);
     mPlayerEntity = playerEntity;
 }
+
+f32v3 IEntityComponentSystem::getLocalPlayerPosition() {
+	ASSERT_GAME_THREAD();
+	entt::entity localPlayer = getLocalPlayer();
+	if (localPlayer == entt::null) {
+        return f32v3(0.0f);
+    }
+	return mRegistry.get<PositionComponent>(localPlayer).mPosition;
+}

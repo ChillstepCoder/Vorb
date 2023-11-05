@@ -20,6 +20,7 @@ public:
 
     entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mPlayerEntity; }
     void setLocalPlayer(entt::entity playerEntity);
+    f32v3 getLocalPlayerPosition();
 
     // TODO: UniquePtr for faster include
     CharacterControlSystem mCharacterControlSystem;

@@ -100,6 +100,7 @@ public:
     std::span<DrawElementsIndirectCommand> getDrawCommands() { return mDrawCommands; }
 
     // Call before uploadDrawCommands
+    DrawElementsIndirectCommand& appendCommand() { return mDrawCommands[mNumActiveCommands++]; }
     void setNumActiveCommands(ui32 numActive) { assert(numActive <= getCapacity()); mNumActiveCommands = numActive; }
     void uploadDrawCommands();
 

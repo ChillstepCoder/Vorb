@@ -12,6 +12,7 @@ class CloudRenderer;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
 class GrassRenderer;
+class InstancedDynamicModelRenderer;
 class InstancedStaticModelRenderer;
 class ItemRenderer;
 class InstancedStaticModelGatherer;
@@ -89,6 +90,7 @@ private:
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
     mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
+    mutable std::unique_ptr<InstancedDynamicModelRenderer> mDynamicModelRenderer;
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
     mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
     mutable std::unique_ptr<FishRenderer> mFishRenderer;

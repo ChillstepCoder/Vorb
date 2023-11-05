@@ -32,6 +32,7 @@ void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
 }
 
 int GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
+    assert(elementCount < mMaxElements);
     elementCount = glm::min(elementCount, mMaxElements);
     const int bufferOffsetBytes = mFrameIndex * mElementSize * mMaxElements;
 

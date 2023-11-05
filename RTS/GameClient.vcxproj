@@ -381,7 +381,7 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
-    <ClCompile Include="src\rendering\model\DynamicModelInstanceData.cpp" />
+    <ClCompile Include="src\rendering\model\DynamicModelBatchData.cpp" />
     <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
@@ -718,6 +718,7 @@
     <ClInclude Include="src\rendering\material\BrdfLUT.h" />
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\GrassBillboardMeshRenderData.h" />
+    <ClInclude Include="src\rendering\mesh\MeshConst.h" />
     <ClInclude Include="src\rendering\mesh\MeshDrawer.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.h" />
@@ -744,7 +745,7 @@
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
-    <ClInclude Include="src\rendering\model\DynamicModelInstanceData.h" />
+    <ClInclude Include="src\rendering\model\DynamicModelBatchData.h" />
     <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />
@@ -774,7 +775,7 @@
     <ClInclude Include="src\rendering\renderer\OverlayRenderer.h" />
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
-    <ClInclude Include="src\rendering\renderstate\DynamicModelRenderState.h" />
+    <ClInclude Include="src\rendering\renderstate\DynamicModelInstanceState.h" />
     <ClInclude Include="src\rendering\renderstate\WorldRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\GameRenderStateManager.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />

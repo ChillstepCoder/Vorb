@@ -1,16 +1,17 @@
 #pragma once
 
 #include "rendering/gl/GpuStreamingDataBuffer.h"
-#include "rendering/model/DynamicModelInstanceData.h"
+#include "rendering/model/DynamicModelBatchData.h"
 #include "resources/asset/AssetHandleBundle.h"
+#include "rendering/model/MaterialRenderPassType.h"
 
-#include "rendering/renderstate/DynamicModelRenderState.h"
+#include "rendering/renderstate/DynamicModelInstanceState.h"
 
 class Camera3D;
 class MaterialShaderDef;
 
 // Stores all specific instances of a given model in the world
-typedef std::unordered_map<ModelID, DynamicModelInstanceData> DynamicModelInstanceMap;
+typedef std::unordered_map<ModelID, DynamicModelBatchData> DynamicModelBatchMap;
 
 class InstancedDynamicModelRenderer
 {
@@ -18,7 +19,8 @@ public:
     InstancedDynamicModelRenderer();
     ~InstancedDynamicModelRenderer();
 
-    void renderModelPass(const std::vector<DynamicModelRenderState>& dynamicModels, const Camera3D& camera);
+    void prepareFrame(const std::vector<DynamicModelInstanceState>& dynamicModels, const Camera3D& camera);
+    void renderModelPass(MaterialRenderPassType renderPass);
     // TODO: Shadows?
 
 protected:
@@ -27,8 +29,9 @@ protected:
     const MaterialShaderDef* mSmudgeShader = nullptr;
     AssetHandleBundle mShaderAssets;
 
-    DynamicModelInstanceMap mModelInstancesThisFrame;
+    DynamicModelBatchMap mModelBatchesThisFrame;
     std::unique_ptr<GpuStreamingDataBuffer> mTransformsBuffer;
+    std::vector<std::pair<GLDrawCommandBuffer*, Mesh*>> mDrawCommandsThisFrame[e_count(MaterialRenderPassType)];
     std::vector<f32m4> mInstanceTransforms;
     ui32 mNumTransforms = 0;
 };
