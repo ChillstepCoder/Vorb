@@ -257,7 +257,7 @@ namespace MathUtil {
         return atan2(dir.y, dir.x);
     }
 
-    f32m4 createTransformMatrix(const f32v3& translation, const glm::quat& orientation) {
+    inline f32m4 createTransformMatrix(const f32v3& translation, const glm::quat& orientation) {
         // TODO: we can potentially optimize this by using mat3 cast and making sure the outside floats are initialized to 0 elsewhere
         f32m4 matrix = glm::mat4_cast(orientation); // Creates a rotation matrix from the quaternion.
 

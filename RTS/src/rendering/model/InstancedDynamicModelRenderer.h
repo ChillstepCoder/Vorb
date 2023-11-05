@@ -31,7 +31,7 @@ protected:
 
     DynamicModelBatchMap mModelBatchesThisFrame;
     std::unique_ptr<GpuStreamingDataBuffer> mTransformsBuffer;
-    std::vector<std::pair<GLDrawCommandBuffer*, Mesh*>> mDrawCommandsThisFrame[e_count(MaterialRenderPassType)];
+    std::vector<std::pair<GLDrawCommandBuffer*, const Mesh*>> mDrawCommandsThisFrame[e_count(MaterialRenderPassType)];
     std::vector<f32m4> mInstanceTransforms;
     ui32 mNumTransforms = 0;
 };

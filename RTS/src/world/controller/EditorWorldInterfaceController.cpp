@@ -39,6 +39,18 @@ void EditorWorldInterfaceController::update()
     ASSERT_RENDER_THREAD();
     assert(mWorld);
 
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_N)) {
+        // TODO: ITEMFactory
+
+        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
+            World* world = static_cast<World*>(vWorld);
+            ItemID id = ItemRepository::get().getAssetID(CStrToken("wood_raw"));
+            ItemStack newStack(id, 1);
+            EntityFactory::createItemProjectile(*world, world->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), f32v3(0.0f), newStack);
+            sDebugOptions.mCities = !sDebugOptions.mCities;
+        }, (void*)mWorld);
+    }
+
     if (mIsQuerying && mWorldObjectQuery && mWorldObjectQuery->isValid()) {
         // Right click picking
         mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
@@ -186,10 +198,7 @@ void EditorWorldInterfaceController::initEvents() {
         else if (event.keyCode == VKEY_ESCAPE) {
             UIContext::getInstance().toggleMainMenu();
         }
-        else if (event.keyCode == VKEY_N) {
-            EntityFactory::createItemProjectile(*mWorld, mWorld->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), f32v3(0.0f), ItemRepository::get().getAssetID(CStrToken("wood_raw")));
-            sDebugOptions.mCities = !sDebugOptions.mCities;
-        }
+        
     });
 
     vui::InputDispatcher::mouse.addButtonDownListener(mMouseListeners, [this](const vui::MouseButtonEvent& event) {

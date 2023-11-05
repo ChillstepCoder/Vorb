@@ -42,7 +42,10 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
         DynamicModelBatchData& batch = mModelBatchesThisFrame[dynamicModel.modelId];
         // Initialize if needed
         if (batch.mIsInitialized == false) [[unlikely]] {
-            if (const ModelDef* modelDef = batch.mModelHandle.tryGetLoadedAsset()) {
+            if (!batch.mModelHandle) {
+                batch.mModelHandle = ModelRepository::get().getAssetHandle(dynamicModel.modelId);
+            }
+            if (const ModelDef* modelDef = batch.mModelHandle->tryGetLoadedAsset()) {
                 batch.mIsInitialized = true;
                 batch.mBoundingSphereRadius = modelDef->mBoundingSphereRadius;
                 for (ui32 meshIndex = 0; meshIndex < modelDef->getNumMeshes(); ++meshIndex) {
@@ -67,6 +70,10 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
             batch.mVisibleIndices.emplace_back(i);
             ++totalTransforms;
         }
+    }
+
+    if (totalTransforms == 0) {
+        return;
     }
 
     // Allocate transforms buffer
@@ -102,6 +109,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
                     }
                     // TODO: Just store the render pass intead of the whole mesh?
                     mDrawCommandsThisFrame[e_cast(meshData.mesh->getRenderPass())].emplace_back(meshData.drawCommands.get(), meshData.mesh);
+                    meshData.drawCommands->setNumActiveCommands(0);
                 }
                 else {
                     meshData.drawCommands.reset();
@@ -173,7 +181,7 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
 
     for (auto& drawCommandPair : mDrawCommandsThisFrame[e_cast(renderPass)]) {
         GLDrawCommandBuffer* drawCommands = drawCommandPair.first;
-        Mesh& mesh = *drawCommandPair.second;
+        const Mesh& mesh = *drawCommandPair.second;
         // TODO: Do elsewhere
         mesh.bindModelTransformAttribs();
 

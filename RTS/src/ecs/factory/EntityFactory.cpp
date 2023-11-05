@@ -139,17 +139,18 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     return newEntity;
 }
 
-entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemID itemId) {
+entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemStack itemStack) {
     IEntityComponentSystem& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
     registry.emplace<PositionComponent>(newEntity, position);
-    registry.emplace<ItemComponent>(newEntity, itemId);
+    registry.emplace<ItemComponent>(newEntity, itemStack);
 
     ItemRepository& itemRepo = ItemRepository::get();
-    const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemId);
+    const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
     if (itemDef.mModelRef.isValid()) {
         registry.emplace<DynamicModelComponent>(newEntity, ModelRepository::get().getAssetID(itemDef.mModelRef.name));
     }
+    return newEntity;
 }

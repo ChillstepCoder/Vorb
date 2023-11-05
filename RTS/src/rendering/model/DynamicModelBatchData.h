@@ -9,7 +9,7 @@ class Mesh;
 class DynamicModelBatchData
 {
 public:
-    AssetHandle<ModelDef> mModelHandle;
+    AssetHandlePtr<ModelDef> mModelHandle;
     struct MeshData {
         const Mesh* mesh = nullptr;
         MeshLODDrawInfo drawInfos[4];
