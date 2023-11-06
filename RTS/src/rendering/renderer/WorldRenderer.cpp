@@ -390,7 +390,7 @@ void WorldRenderer::renderDebug() {
                     case ChunkState::TILE_LOAD_FINISHED:
                         color = color4(0.0f, 0.0f, 1.0f);
                         break;
-                    case ChunkState::WAITING_MESH_PHYSICS_NAV:
+                    case ChunkState::WAITING_MESH_PHYSICS_NAV_VISIBILITY:
                         color = color4(0.0f, 0.5f, 1.0f);
                         break;
                     case ChunkState::READY:

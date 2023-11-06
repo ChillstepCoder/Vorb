@@ -34,7 +34,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
-            newStructure->mTileContainer = mWorld.getTileContainerRepository().getNewTileContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
             break;
         }
         default:
@@ -43,7 +43,6 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     newStructure->mAABB = aabb;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
-    newStructure->mTileContainer->allocateData();
     // Clamping to int32 cause this is what tilecontainer does
     if (sStructureIdGen >= INT32_MAX) {
         sStructureIdGen = 0;

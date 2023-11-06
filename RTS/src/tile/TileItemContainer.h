@@ -7,9 +7,10 @@
 // TODO: Evaluate this pool vs others
 template <typename T>
 using TileItemPoolAllocator = boost::fast_pool_allocator<T>;
+using EntityPoolAllocator = TileItemPoolAllocator<entt::entity>;
 
 // Preallocate 4 items per tile which should usually result in no additional heap allocations
-typedef boost::container::small_vector<entt::entity, 4, TileItemPoolAllocator<entt::entity>> TileItemList;
+typedef boost::container::small_vector<entt::entity, 4, EntityPoolAllocator> TileItemList;
 
 class TileItemContainer {
 public:

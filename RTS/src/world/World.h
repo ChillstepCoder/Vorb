@@ -25,6 +25,7 @@ class CombatContext;
 class NavWorld;
 class FishEcosystem;
 class WorldRenderState;
+class VisibilityManager;
 
 
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
@@ -64,6 +65,7 @@ public:
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
     IEffectContext& getEffectContext() const { return *mEffectContext; }
+    VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
 
     // Optional system accessors 
     NavWorld* tryGetNavWorld() const { return mNavWorld.get(); }
@@ -125,6 +127,8 @@ private:
     std::unique_ptr<FishEcosystem> mFishEcosystem;
     // Effects
     std::unique_ptr<IEffectContext> mEffectContext;
+    // Visibility
+    std::unique_ptr<VisibilityManager> mVisibilityManager;
     // Nav graph (OPTIONAL)
     std::unique_ptr<NavWorld> mNavWorld;
 

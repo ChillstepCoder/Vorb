@@ -8,6 +8,7 @@
 
 // TODO: Reduce copy paste
 void CliChunkGrid::updateLoadingChunks() {
+    assert(false); // Fix this, use IChunkGrid and better interface
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     for (size_t i = 0; i < mLoadingChunks.size();) {
         Chunk& chunk = mChunks[mLoadingChunks[i]];
@@ -26,8 +27,8 @@ void CliChunkGrid::updateLoadingChunks() {
                 break;
             }
             case ChunkState::TILE_LOAD_FINISHED: {
-                chunk.setState(ChunkState::WAITING_MESH_PHYSICS_NAV);
-                container->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
+                chunk.setState(ChunkState::WAITING_MESH_PHYSICS_NAV_VISIBILITY);
+                container->setState(TileContainerState::WAITING_MESH_PHYSICS_VISIBILITY);
 
                 // Cache harvestables
                 container->getHarvestableRegistry().refreshFromOwner();
@@ -38,7 +39,7 @@ void CliChunkGrid::updateLoadingChunks() {
                 ++i;
                 break;
             }
-            case ChunkState::WAITING_MESH_PHYSICS_NAV: {
+            case ChunkState::WAITING_MESH_PHYSICS_NAV_VISIBILITY: {
                 if (container->didInitMeshPhysics()) {
                     mLoadingChunks[i] = mLoadingChunks.back();
                     mLoadingChunks.pop_back();

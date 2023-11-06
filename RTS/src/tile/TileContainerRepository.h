@@ -5,15 +5,24 @@
 
 class World;
 class TileContainer;
+class TileContainerLoader;
 
 typedef std::unordered_map<TileContainerID, std::unique_ptr<TileContainer>> TileContainerMap;
+
+enum class LoadBehavior {
+    LOAD_OR_GENERATE,
+    CREATE_EMPTY
+};
 
 class TileContainerRepository {
 public:
     TileContainerRepository(World& world);
     ~TileContainerRepository();
 
-    TileContainer* getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner);
+    TileContainer* loadTerrainTileContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner);
+    // Instantly initialized and valid
+    TileContainer* createNewEmptyBuildingContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Building* owner);
+
     void destroyTileContainer(TileContainer* container);
 
     TileContainer* getTileContainer(TileContainerID id);
@@ -30,9 +39,11 @@ public:
     EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
     EVENT_DISPATCHER_DEF(TileContainer);
 private:
+    TileContainer* allocateNewTileContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, VarTileContainerOwner owner);
 
     std::mutex mMutex;
     TileContainerMap mTileContainers;
     TileContainerID mTileContainerIdGen = 0;
     World& mWorld;
+    std::unique_ptr<TileContainerLoader> mLoader;
 };

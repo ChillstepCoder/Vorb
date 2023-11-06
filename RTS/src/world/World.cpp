@@ -31,6 +31,8 @@
 #include "world/srv/SrvHeightmapGrid.h"
 #include "world/ecosystem/FishEcosystem.h"
 
+#include "visibility/VisibilityManager.h"
+
 // TODO: Move this stuff out with a separate manager class
 #include "rendering/renderstate/GameRenderStateManager.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
@@ -104,6 +106,8 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
     // Fish
     mFishEcosystem = std::make_unique<FishEcosystem>(*this);
+    // Visibility
+    mVisibilityManager = std::make_unique<VisibilityManager>(*this);
 
     // Initialize world data
     mChunkGrid->setWorldAndAllocateChunks(*this);

@@ -96,7 +96,6 @@ protected:
     std::vector<ChunkID> mLoadingChunks;
     std::vector<ChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
     std::vector<ChunkID> mDestroyingChunks;
-    std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
 
     // World
     World* mWorld = nullptr;

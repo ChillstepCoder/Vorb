@@ -72,7 +72,7 @@ public:
     // =========== Main methods  ===========
 
     void init(World& world, const ChunkID& chunkId, i32v2 worldPos);
-	void allocateTileContainer(TileContainerRepository& tileContainerRepository);
+	void beginLoad();
 	void freeData();
 	void dispose();
 

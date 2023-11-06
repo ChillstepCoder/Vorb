@@ -42,10 +42,10 @@ void Chunk::init(World& world, const ChunkID& chunkId, i32v2 worldPos) {
     mAABB.height = 4;
 }
 
-void Chunk::allocateTileContainer(TileContainerRepository& tileContainerRepository) {
+void Chunk::beginLoad() {
     assert(!mTileContainer);
     const ui32v3 worldPosInt3D(mAABB.pos.x, mAABB.pos.y, 0u);
-    mTileContainer = tileContainerRepository.getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
+    mTileContainer = mWorld->getTileContainerRepository().loadTerrainTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
     mGrass.resize(CHUNK_SIZE);
     assert(mTileContainer);
 }

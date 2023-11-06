@@ -214,8 +214,8 @@ void IChunkGrid::updateLoadingChunks() {
                 break;
             }
             case ChunkState::TILE_LOAD_FINISHED: {
-                chunk.mState = ChunkState::WAITING_MESH_PHYSICS_NAV;
-                chunk.mTileContainer->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
+                chunk.mState = ChunkState::WAITING_MESH_PHYSICS_NAV_VISIBILITY;
+                chunk.mTileContainer->setState(TileContainerState::WAITING_MESH_PHYSICS_VISIBILITY);
 
                 // Cache harvestables
                 chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
@@ -230,7 +230,7 @@ void IChunkGrid::updateLoadingChunks() {
                 ++i;
                 break;
             }
-            case ChunkState::WAITING_MESH_PHYSICS_NAV: {
+            case ChunkState::WAITING_MESH_PHYSICS_NAV_VISIBILITY: {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mLoadingChunks[i] = mLoadingChunks.back();
                     mLoadingChunks.pop_back();
@@ -537,27 +537,7 @@ void IChunkGrid::beginTileLoadForChunk(Chunk& chunk) {
 
 void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 
-    chunk.allocateTileContainer(mWorld->getTileContainerRepository());
-    chunk.incRef();
-
-    // Make sure we dont lose height data
-    // TODO: copy minimum
-    f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
-    const f32* srcData = heightGrid.getHeightDataAt(chunk.getHeightmapPatchID())->data;
-    memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
-    Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
-        // Worker thread
-        chunk.getWorld().getWorldGenerator().generateChunk(chunk, heightData);
-        delete heightData;
-        // Generate fish if needed
-    }, [&chunk]() {
-        // Game thread
-        chunk.getWorld().getFishEcosystem().initChunkFish(chunk);
-        chunk.setState(ChunkState::TILE_LOAD_FINISHED);
-        chunk.decRef();
-    });
-
+    chunk.beginLoad();
 }
 
 void IChunkGrid::onChunkReady(Chunk& chunk)

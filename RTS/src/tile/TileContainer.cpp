@@ -56,6 +56,7 @@ void TileContainer::freeData() {
     std::vector<DynamicTile>().swap(mDynamicTiles);
     mTileWallsContainer.destroy();
     mTileItemContainer.destroy();
+    mTileVisibilityContainer.destroy();
     mOwnedTiles.freeData();
     mHarvestableRegistry.destroy();
 }
@@ -116,6 +117,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
         prevNavBlockerType = TileRepository::get().getLoadedOrUnloadedAsset(prevId).navBlockerType;
     }
 
+    // TODO: Handle visibility on block
     if (navBlockerType != prevNavBlockerType) {
         if (prevNavBlockerType != NavBlockerType::NONE) {
             // Remove old blockage
