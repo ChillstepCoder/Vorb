@@ -13,6 +13,7 @@ void TileVisibilityContainer::init(const TileSpatialGrid* tileSpatialGrid, const
     // TODO: Care about BitArray OwnedTiles?
     // Init visibility tile
     mTileVisibility.resizeAndZero(tileSpatialGrid->getNumTiles() * 4);
+    assert(false);
 }
 
 void TileVisibilityContainer::resize(const TileSpatialGrid* tileSpatialGrid)
@@ -29,7 +30,7 @@ void TileVisibilityContainer::resize(const TileSpatialGrid* tileSpatialGrid)
 
 void TileVisibilityContainer::copyFrom(const TileVisibilityContainer& other)
 {
-    assert(mVisibilityEdges.size() == other.mVisibilityEdges.size());
+    assert(mVisibilityEdges.getNumBits() == other.mVisibilityEdges.getNumBits());
     assert(mEdgesDims == other.mEdgesDims);
     mTileSpatialGrid = other.mTileSpatialGrid;
     memcpy(mVisibilityEdges.data(), other.mVisibilityEdges.data(), mVisibilityEdges.getNumBytes());

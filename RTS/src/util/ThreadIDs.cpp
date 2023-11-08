@@ -6,6 +6,7 @@
 std::thread::id GAME_THREAD_ID = {};
 std::thread::id NAV_THREAD_ID = {};
 std::thread::id RENDER_THREAD_ID = {};
+std::thread::id VISIBILITY_THREAD_ID = {};
 
 std::unordered_map<std::thread::id, nString> sThreadNames;
 static std::shared_mutex sThreadNameMutex;

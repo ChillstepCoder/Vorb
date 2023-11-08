@@ -49,6 +49,7 @@ public:
     friend struct TileRef;
     friend struct TileHandle;
     friend class TileContainerRepository;
+    friend class TileContainerLoader;
     friend class IWorldGenerator;
     friend class CityBuilder; // ONLY FOR DEBUG GENERATION
     friend class NavThread; // TODO: Too many friends?
@@ -163,6 +164,7 @@ public:
     void setDidInitMesh() const { mDidInitMesh = true; }
     void setDidInitPhysics() const { mDidInitPhysics = true; }
     void setDidInitNav() const { mDidInitNav = true; }
+    void setDidInitVisibility() const { mDidInitVisibility = true; }
 
     // =========== Dirty bits  ===========
     bool isDirtyData() const { return mDirtyData; }

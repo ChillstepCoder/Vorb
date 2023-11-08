@@ -81,7 +81,13 @@ SERIALIZABLE_ENUM_SAME_NAME(TileTextureMethod,
     pair{ TileTextureMethod::WORLD_TILING, "world_tiling"sv }
 );
 
-enum class NavBlockerType {
+enum class NavBlockerType : ui8 {
+    NONE,
+    MEDIUM,
+    LARGE,
+    COUNT
+};
+enum class VisibilityBlockerType : ui8 {
     NONE,
     MEDIUM,
     LARGE,
@@ -119,6 +125,8 @@ public:
     ui8 pathWeight = 255;
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
     NavBlockerType navBlockerType = NavBlockerType::NONE;
+    VisibilityBlockerType visBlockerType = VisibilityBlockerType::NONE;
+    bool blocksVisibility = false;
     union {
         struct {
             f32 heightOffsetSouth;
@@ -146,6 +154,7 @@ SERIALIZABLE_SIMPLE(TileDef,
     make_field(o.shape, "shape"),
     make_field(o.pathWeight, "path_weight"),
     make_field(o.navMask, "nav_mask"),
+    make_field(o.blocksVisibility, "block_vis"),
     make_field(o.name, "name"),
     make_field(o.itemDrops, "item_drops"),
     make_field(o.recipeData, "recipe")

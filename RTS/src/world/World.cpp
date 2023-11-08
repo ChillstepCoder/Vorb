@@ -32,6 +32,7 @@
 #include "world/ecosystem/FishEcosystem.h"
 
 #include "visibility/VisibilityManager.h"
+#include "visibility/VisibilityThread.h"
 
 // TODO: Move this stuff out with a separate manager class
 #include "rendering/renderstate/GameRenderStateManager.h"
@@ -202,6 +203,11 @@ void World::tick(f32 elapsedSec) {
     if (mNavWorld) {
         Services::NavThread::ref().mainThreadUpdate();
         mNavWorld->tickGameThread();
+    }
+
+    // Visibility
+    if (VisibilityThread::hasInstance()) {
+        VisibilityThread::getInstance().mainThreadUpdate();
     }
 
     // Fish

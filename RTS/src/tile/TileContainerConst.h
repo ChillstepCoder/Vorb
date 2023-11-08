@@ -5,7 +5,6 @@ class Building;
 
 enum class TileContainerState : ui8 {
     LOADING,
-    WAITING_MESH_PHYSICS_VISIBILITY,
     READY
 };
 

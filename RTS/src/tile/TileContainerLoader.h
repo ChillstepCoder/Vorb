@@ -1,6 +1,7 @@
 #pragma once
 
 class TileContainer;
+class World;
 
 typedef std::function<void(TileContainer&)> TileContainerLoadFinishedCallback;
 

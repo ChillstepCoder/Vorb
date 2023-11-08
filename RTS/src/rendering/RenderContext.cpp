@@ -11,6 +11,7 @@
 #include "pathfinding/NavWorld.h"
 // Performance counters
 #include "pathfinding/NavThread.h"
+#include "visibility/VisibilityThread.h"
 #include "gamethread/GameThread.h"
 
 #include "debugging/DebugRenderer.h"
@@ -490,6 +491,10 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
             yOffset += GAP_SIZE;
             // Game
             drawColor = sprintfThreadStats(GameThread::getInstance().getThreadUtilizationTimer(), "GameThread", buffer);
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
+            yOffset += GAP_SIZE;
+            // Visibility
+            drawColor = sprintfThreadStats(VisibilityThread::getInstance().getThreadUtilizationTimer(), "VisThread", buffer);
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
             yOffset += GAP_SIZE * 2.0f;
         }

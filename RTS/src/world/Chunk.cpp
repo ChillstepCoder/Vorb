@@ -43,6 +43,8 @@ void Chunk::init(World& world, const ChunkID& chunkId, i32v2 worldPos) {
 }
 
 void Chunk::beginLoad() {
+    assert(mState != ChunkState::LOADING_TILES);
+    mState = ChunkState::LOADING_TILES;
     assert(!mTileContainer);
     const ui32v3 worldPosInt3D(mAABB.pos.x, mAABB.pos.y, 0u);
     mTileContainer = mWorld->getTileContainerRepository().loadTerrainTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);

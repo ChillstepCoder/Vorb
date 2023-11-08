@@ -69,14 +69,11 @@ protected:
     void addChunkToActiveList(Chunk& chunk);
     void removeChunkFromActiveList(Chunk& chunk);
     void addChunkToLoadList(Chunk& chunk);
-    void removeChunkFromLoadList(Chunk& chunk);
     void addChunkToDestroyList(Chunk& chunk);
     void removeChunkFromDestroyList(Chunk& chunk);
     // Loading
     void onAllNeighborsAlive(Chunk& chunk);
     void beginHeightLoadForChunk(Chunk& chunk);
-    void beginTileLoadForChunk(Chunk& chunk);
-    void generateChunkAsync(Chunk& chunk);
     // Ready
     void onChunkReady(Chunk& chunk);
     

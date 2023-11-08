@@ -63,6 +63,8 @@ class Chunk {
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavWorld;
 	friend class NavThread;
+	friend class TileContainerLoader;
+	friend class TileContainerRepository;
 	friend struct TileHandle;
 	friend struct TileRef;
 public:

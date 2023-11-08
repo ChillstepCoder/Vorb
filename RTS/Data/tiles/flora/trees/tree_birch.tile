@@ -1,9 +1,10 @@
 model: tree_birch
-col_shape: cylinder
+col_shape: capsule
 col_half_dims: [0.6, 0.6, 5.0]
 resource: wood
 path_weight: 0
 destroy_effect: tree_explode
+block_vis: true
 drops:
   - item: wood_raw
     count: [15, 20]

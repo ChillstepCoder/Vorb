@@ -8,7 +8,7 @@
 #include "tile/TileContainerLoader.h"
 
 TileContainerRepository::TileContainerRepository(World& world) : mWorld(world) {
-    mLoader = std::make_unique<TileContainerLoader>();
+    mLoader = std::make_unique<TileContainerLoader>(mWorld);
 }
 
 TileContainerRepository::~TileContainerRepository()
@@ -16,9 +16,9 @@ TileContainerRepository::~TileContainerRepository()
 }
 
 TileContainer* TileContainerRepository::loadTerrainTileContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner) {
-    TileContainer* container = allocateNewTileContainer(rootPos, dims, floorHeight, owner);
-    mLoader->loadTerrainTileContainer(container);
-    return container;
+    owner->mTileContainer = allocateNewTileContainer(rootPos, dims, floorHeight, owner);
+    mLoader->loadTerrainTileContainer(*owner->mTileContainer);
+    return owner->mTileContainer;
 }
 
 TileContainer* TileContainerRepository::createNewEmptyBuildingContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Building* owner) {
