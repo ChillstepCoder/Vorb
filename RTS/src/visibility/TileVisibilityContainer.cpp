@@ -60,7 +60,6 @@ void TileVisibilityContainer::resize(const TileSpatialGrid* tileSpatialGrid) {
 
 void TileVisibilityContainer::copyFrom(const TileVisibilityContainer& other) {
     assert(mOccludedEdges.getNumBits() == other.mOccludedEdges.getNumBits());
-    assert(mEdgesDims == other.mEdgesDims);
     mTileSpatialGrid = other.mTileSpatialGrid;
     memcpy(mOccludedEdges.data(), other.mOccludedEdges.data(), mOccludedEdges.getNumBytes());
 }
@@ -83,7 +82,7 @@ void TileVisibilityContainer::refreshTileVisibility(TileIndex tileIndex, const T
 }
 
 void TileVisibilityContainer::refreshTileVisibility(TileIndex tileIndex, TileWall prevWall, TileWall newWall, Cartesian dir) {
-    VisEdgeIndex edgeIndex = getEdgeIndex(getEdgeIndexBase(tileIndex), dir);
+    VisEdgeIndex edgeIndex = getEdgeIndex(tileIndex, dir);
     const bool isBitSet = mOccludedEdges.getBit(edgeIndex);
     bool changed = false;
     if (isBitSet) {

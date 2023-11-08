@@ -12,10 +12,10 @@ enum class VisibilityThreadTaskType {
 };
 
 struct VisibilityThreadTask {
-    std::function<void()> callback = nullptr;
-    TileContainer* tileContainer = nullptr;
+    TileContainerID tileContainer = nullptr;
     VisibilityThreadTaskType taskType = VisibilityThreadTaskType::Init;
 };
+SIZER(VisibilityThreadTask);
 
 class VisibilityThread {
     friend class VisibilityManager;
@@ -33,7 +33,7 @@ public:
     const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
 private:
     void addInitContainerVisibilityTask(TileContainer& container) {
-        mTasks.enqueue(VisibilityThreadTask{ nullptr, &container, VisibilityThreadTaskType::Init });
+        mTasks.enqueue(VisibilityThreadTask{ &container, VisibilityThreadTaskType::Init });
     }
     void visThreadFunc();
 
