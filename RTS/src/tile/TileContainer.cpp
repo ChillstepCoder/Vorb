@@ -377,13 +377,12 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     assert(isReady());
     assert(index < mTiles.size());
     ASSERT_GAME_THREAD();
-    TileWalls prevTileWalls;
-    mTileWallsContainer.getWallsAtTile(prevTileWalls, index);
+    TileWall prevTileWall = mTileWallsContainer.getWallAtTile(index, dir);
     Tile& tile = mTiles[index];
 
     // Check for removed or added door (Dynamic object)
     // Old door
-    TileID oldId = prevTileWalls.walls[e_cast(dir)].wallID;
+    TileID oldId = prevTileWall.wallID;
     if (oldId != TILE_ID_NONE && TileRepository::get().getLoadedOrUnloadedAsset(oldId).shape == TileShape::DOOR) {
         removeDoor(dir, index);
     }
@@ -393,10 +392,15 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
         addDoor(dir, index);
     }
 
+
     {
         std::lock_guard lock(mSharedMutex);
         mTileWallsContainer.setWallAtTile(index, wall, dir);
     }
+
+    // Visibility
+    mTileVisibilityContainer.refreshTileVisibility(index, prevTileWall, wall, dir);
+
     onTileChanged(index);
 }
 

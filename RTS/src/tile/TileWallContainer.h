@@ -4,7 +4,8 @@
 
 struct TileWall {
     TileID wallID = TILE_ID_NONE;
-    bool isDoor = false;
+    bool isDoor = false; // TODO: Flags
+    //ui8 health = UINT8_MAX; TODO: USE
 
     void clear() { wallID = TILE_ID_NONE; }
     bool isValid() const { return wallID != TILE_ID_NONE; }

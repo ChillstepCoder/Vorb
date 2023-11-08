@@ -6,6 +6,8 @@ class Tile;
 class TileWallContainer;
 struct TileWalls;
 
+typedef i32 VisEdgeIndex;
+
 class TileVisibilityContainer {
 public:
     void init(const TileSpatialGrid* tileSpatialGrid, const std::vector<Tile>& tiles, const TileWallContainer& tileWalls);
@@ -14,18 +16,34 @@ public:
     // TODO: Serialize
     void destroy();
 
-    bool isTileVisibleFromDirection(TileIndex tileIndex, Cartesian dir);
-    // Return true if it changed
-    bool refreshTileVisibility(TileIndex tileIndex, const Tile& tile, const TileWalls& tileWalls);
+    // Return true if there was a change
+    void refreshTileVisibility(TileIndex tileIndex, const Tile& prevTile, const Tile& newTile);
+    void refreshTileVisibility(TileIndex tileIndex, const TileWalls& prevTileWalls, const TileWalls& newTileWalls);
+    void refreshTileVisibility(TileIndex tileIndex, TileWall prevWall, TileWall newWall, Cartesian dir);
+
+    bool getOccludedEdge(TileIndex tileIndex, Cartesian dir) const;
+
+    void debugRender() const;
 
 private:
-    // Each tile has 4 visibility edges, tiles share edges. We store an extra tile border, and each tile owns its -x and -y edges.
-    // First -y then -x
-    BitArray mVisibilityEdges;
+    VisEdgeIndex getEdgeIndexBase(TileIndex tileIndex) const {
+        return tileIndex * 4;
+    }
+    VisEdgeIndex getEdgeIndexFromBase(VisEdgeIndex base, Cartesian dir) const {
+        return base + VisEdgeIndex(dir);
+    }
+    VisEdgeIndex getEdgeIndex(TileIndex tileIndex, Cartesian dir) const {
+        return tileIndex * 4 + VisEdgeIndex(dir);
+    }
+
+    void occludeAllEdgesForTile(TileIndex tileIndex);
+    // TODO: Microoptimization - we could allocate mVisibilityEdges and mTileVisibility in one big BitArray to reduce fragmentation and save a cache miss
+    // Each tile has 4 visibility edges representing whether you can see into or out of the tile in that direction
+    BitArray mOccludedEdges;
     // Each tile has its own visibility info used to construct the visibility edges
-    BitArray mTileVisibility; //< Not used by worker thread
+    BitArray mTileOcclusion; // Not used by visibility thread. 1 means we do not have visibility
+    std::vector<ui8> mTileVisibilityBlockerCounts; // > 1 means we do not have visibility. Not used by visibility thread
     const TileSpatialGrid* mTileSpatialGrid = nullptr;
-    i32v3 mEdgesDims = i32v3(0);
     i32 mFloorStride = 0;
 };
 

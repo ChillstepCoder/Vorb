@@ -226,7 +226,7 @@ private:
 static_assert(sizeof(Tile) == 12, "Keep small");
 //SIZER(Tile);
 
-// All meshable data from a container, copied to prevent race conditions or mutex locks
+// All meshable (and visibility) data from a container, copied to prevent race conditions or mutex locks
 struct ContainerMeshDataCopy {
     std::vector<Tile> mTiles;
     TileWallContainer mWalls;
