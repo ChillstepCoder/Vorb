@@ -36,22 +36,22 @@ VisibilityThread& VisibilityThread::getInstance() {
     return *sInstance;
 }
 
-void VisibilityThread::mainThreadUpdate() {
-    std::function<void()> proc;
-    // TODO: bulk dequeue?
-    constexpr unsigned MAX_MS = 3;
-    PreciseTimer timer;
-    // TODO: Use optik for profiling
-    while (mMainThreadProcs.try_dequeue(proc)) {
-        proc();
-        if (timer.stop() > MAX_MS) {
-            break;
-        }
-    }
-    if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms *** VIS SPIKE WARNING ***\n";
-    }
-}
+//void VisibilityThread::mainThreadUpdate() {
+//    std::function<void()> proc;
+//    // TODO: bulk dequeue?
+//    constexpr unsigned MAX_MS = 3;
+//    PreciseTimer timer;
+//    // TODO: Use optik for profiling
+//    while (mMainThreadProcs.try_dequeue(proc)) {
+//        proc();
+//        if (timer.stop() > MAX_MS) {
+//            break;
+//        }
+//    }
+//    if (timer.stop() > 20.0f) {
+//        std::cout << timer.stop() << " ms *** VIS SPIKE WARNING ***\n";
+//    }
+//}
 
 
 void VisibilityThread::visThreadFunc() {
@@ -79,10 +79,6 @@ void VisibilityThread::visThreadFunc() {
                 default:
                     panic("Unknown vistask type");
                     break;
-            }
-
-            if (task.callback) {
-                mMainThreadProcs.enqueue(std::move(task.callback));
             }
         }
     }

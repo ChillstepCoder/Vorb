@@ -37,7 +37,7 @@ void BuildingGrammar::buildFromStrings(const Array<nString>& strings) {
     }
 }
 
-void BuildingGrammar::buildRoomGraph(OUT std::vector<RoomNode>& graph) const {
+void BuildingGrammar::buildRoomGraph(OUT std::vector<RoomNode>& graph, RandomGenerator& randGen) const {
     ui8 ruleBuffer[255];
     const ui32 maxNodes = (ui32)graph.size();
     RoomNodeID currentIndex = 0; // Start with door node
@@ -51,7 +51,7 @@ void BuildingGrammar::buildRoomGraph(OUT std::vector<RoomNode>& graph) const {
         const CityGrammarRule& currentRule = mRules[currentRuleIndex];
         // Pick our next statec
         assert(currentRule.numStates);
-        ui32 resultStateIndex = Random::xorshf96() % currentRule.numStates;
+        ui32 resultStateIndex = randGen.getRandomUint() % currentRule.numStates;
         // Build the new nodes from this grammar state
         const ui8 stateOffset = currentRule.statesOffsets[resultStateIndex];
         const ui8* newNodeType = &mData[stateOffset];

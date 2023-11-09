@@ -403,7 +403,18 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 }, mWorld);
             }
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 15, "update");
+        else if (result & INTERACT_MENU_RESULT_REBUILD_NAVMESH) {
+            std::pair<TileHandle, World*>* taskData = new std::pair<TileHandle, World*>(mSelectedTileHandle, mWorld);
+            TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
+            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* taskPtr) {
+                std::pair<TileHandle, World*>* taskData = static_cast<std::pair<TileHandle, World*>*>(taskPtr);
+                World* world = static_cast<World*>(taskData->second);
+                if (NavWorld* navWorld = world->tryGetNavWorld()) {
+                    navWorld->markContainerNavDirty(taskData->first.getMutableContainer());
+                }
+            }, taskData);
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 16, "update");
 
         // If we had a result, close window
         if (result) {

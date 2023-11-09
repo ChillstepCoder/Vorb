@@ -30,7 +30,7 @@ public:
 
     DataType* data() { return mData.data(); }
     const DataType* data() const { return mData.data(); }
-    size_t getNumBytes() const { return mData.size(); }
+    size_t getNumBytes() const { return mData.size() * sizeof(DataType); }
 
     void debugPrint(ui32 width, ui32 height) const;
 private:

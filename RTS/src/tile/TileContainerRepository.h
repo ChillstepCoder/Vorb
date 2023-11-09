@@ -19,7 +19,7 @@ public:
     TileContainerRepository(World& world);
     ~TileContainerRepository();
 
-    TileContainer* loadTerrainTileContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner);
+    TileContainer* loadChunk(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner);
     // Instantly initialized and valid
     TileContainer* createNewEmptyBuildingContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Building* owner);
 

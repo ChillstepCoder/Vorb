@@ -17,9 +17,8 @@
 
 TileContainerLoader::TileContainerLoader(World& world) : mWorld(world) {}
 
-void TileContainerLoader::loadTerrainTileContainer(TileContainer& container)
+void TileContainerLoader::loadChunk(TileContainer& container)
 {
-
     // TODO: Go from SimulatedChunk somehow (SimulatedChunk vs SimulatedStructure)
 
     Chunk* chunk = container.getOwnerChunk();
@@ -33,14 +32,21 @@ void TileContainerLoader::loadTerrainTileContainer(TileContainer& container)
     memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
 
     Services::Threadpool::ref().addTask([chunk, heightData](ThreadPoolWorkerData* workerData) {
+        TileContainer& container = *chunk->mTileContainer;
         // Worker thread
+        //
+        // Initialize containers lookup
+        chunk->mTileContainersLookup = std::make_unique<ChunkTileContainersLookup>();
+        chunk->mTileContainersLookup->chunkContainerID = container.getId();
+        for (int i = 0; i < CHUNK_SIZE; ++i) {
+            chunk->mTileContainersLookup->structureContainers[i] = INVALID_TILE_CONTAINER_ID;
+        }
 
         // Generate chunk
         chunk->getWorld().getWorldGenerator().generateChunk(*chunk, heightData);
         delete heightData;
 
         // Build visibility
-        TileContainer& container = *chunk->mTileContainer;
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());
 
     }, [chunk, this]() {

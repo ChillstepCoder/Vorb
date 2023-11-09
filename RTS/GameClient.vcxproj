@@ -667,6 +667,7 @@
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\logging\ErrorLogging.h" />
     <ClInclude Include="src\math\ConstVectors.h" />
+    <ClInclude Include="src\math\fastPRNG.h" />
     <ClInclude Include="src\math\Noise.h" />
     <ClInclude Include="src\math\Random.h" />
     <ClInclude Include="src\network\cli\CliAdapter.h" />

@@ -146,9 +146,8 @@ public:
     // =========== Refcount  ===========
     inline void incRef() const {
         ASSERT_GAME_THREAD(); // Only main thread is allowed to incref
-        assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
-        if (mRefCount > 400) {
+        if (mRefCount > 2000u) { // This is probably a sign of something really awful
             std::cout << "DETECTED " << mRefCount << " REF COUNTS ON TILE CONTAINER " << std::endl;
             assert(false && "Too many container refcounts");
         }
@@ -240,4 +239,16 @@ private:
     World& mWorld;
 
     EVENT_DISPATCHER_DEF(TileContainer);
+};
+
+class TileContainerRef {
+public:
+    TileContainerRef(TileContainer& container) : container(container) {
+        container.incRef();
+    }
+    ~TileContainerRef() {
+        container.decRef();
+    }
+
+    TileContainer& container;
 };

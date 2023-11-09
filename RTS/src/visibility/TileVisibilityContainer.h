@@ -1,10 +1,9 @@
 #pragma once
 
 #include "tile/TileSpatialGrid.h"
+#include "tile/TileWallContainer.h"
 
 class Tile;
-class TileWallContainer;
-struct TileWalls;
 
 typedef i32 VisEdgeIndex;
 

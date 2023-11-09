@@ -4,6 +4,8 @@
 
 #include "resources/TileRepository.h"
 
+#include "math/Random.h"
+
 BuildingBlueprint::BuildingBlueprint(
     World& world,
     const BuildingDef& desc,
@@ -30,6 +32,8 @@ BuildingBlueprint::BuildingBlueprint(
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
 }
+
+BuildingBlueprint::~BuildingBlueprint() = default;
 
 TileHandle BuildingBlueprint::getTileHandle(TileIndex tileIndex) const {
     ASSERT_GAME_THREAD();

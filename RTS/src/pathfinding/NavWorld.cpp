@@ -1387,7 +1387,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
 void NavWorld::markContainerNavDirty(TileContainer* container) {
     ASSERT_GAME_THREAD();
     assert(container);
-    bool didAdd = mDirtyTileContainers.gameThreadTryDirtyObject(container);
+    const bool didAdd = mDirtyTileContainers.gameThreadTryDirtyObject(container);
     
     // Make sure we don't get deallocated while we are in the dirty list
     // TODO: Technically this is race condition if the nav thread and worker thread manage to finish their entire cycle before we get here.. but

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "math/fastPRNG.h"
+
 // Fast
 namespace Random {
     extern ui32 xorshf96();
@@ -26,7 +28,36 @@ namespace Random {
     private:
         std::vector<unsigned> mPerm;
     };
+
 }
+
+class RandomGenerator {
+public:
+    RandomGenerator(ui32 seed) : mGen(seed), mSeed(seed) {}
+
+    void reset() {
+        mGen = fastPRNG::fastXS32(mSeed);
+    }
+
+    // [0, 1]
+    f32 getRandomFloatUnsigned() {
+        return mGen.xoroshiro64x_UNI<f32>();
+    }
+    // [-1, 1]
+    f32 getRandomFloatSigned() {
+        return mGen.xoroshiro64x_VNI<f32>();
+    }
+    f32 getRandomFloatInRange(f32 min, f32 max) {
+        return mGen.xoroshiro64x_Range<f32>(min, max);
+    }
+    // [0, UINT32_MAX]
+    ui32 getRandomUint() {
+        return mGen.xoroshiro64x();
+    }
+
+    fastPRNG::fastXS32 mGen;
+    ui32 mSeed;
+};
 
 inline f32 randFromf32v3(const f32v3& x, ui64 additional) {
     return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);

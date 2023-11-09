@@ -4,6 +4,8 @@
 
 #include "city/RoomNode.h"
 
+class RandomGenerator;
+
 constexpr ui8 GRAMMAR_SEPARATOR = 254;
 constexpr ui8 GRAMMAR_DELIMINATOR = 255;
 constexpr ui8 MAX_GRAMMAR_DATA_COUNT = 0xff;
@@ -19,7 +21,7 @@ class BuildingGrammar {
 public:
     void buildFromStrings(const Array<nString>& strings);
     // Input/output vector will be presized
-    void buildRoomGraph(OUT std::vector<RoomNode>& graph) const;
+    void buildRoomGraph(OUT std::vector<RoomNode>& graph, RandomGenerator& randGen) const;
 
 private:
     // Array index is state index

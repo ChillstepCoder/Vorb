@@ -206,9 +206,9 @@ void World::tick(f32 elapsedSec) {
     }
 
     // Visibility
-    if (VisibilityThread::hasInstance()) {
+   /* if (VisibilityThread::hasInstance()) {
         VisibilityThread::getInstance().mainThreadUpdate();
-    }
+    }*/
 
     // Fish
     mFishEcosystem->tickGameThread(elapsedSec);

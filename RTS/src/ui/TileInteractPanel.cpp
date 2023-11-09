@@ -173,6 +173,9 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             if (ImGui::Button("Build Wall", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_BUILD_WALL;
             }
+            if (ImGui::Button("Rebuild Navmesh", sButtonSize)) {
+                resultFlags |= INTERACT_MENU_RESULT_REBUILD_NAVMESH;
+            }
             break;
         }
         case UIInteractMenuState::SELECTED_STOCKPILE: {
@@ -231,7 +234,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     // TODO: Not thread safe!
     tilePos.z += handle.getTile().getGroundZOffset();
     DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
-    static_assert(INTERACT_MENU_RESULT_COUNT == 15, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 16, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");
     return resultFlags;
 }
@@ -257,6 +260,13 @@ ui32 TileInteractPanel::updateAndRenderStructureTile() {
     }
     if (ImGui::Button("Inspect", sButtonSize)) {
         resultFlags |= INTERACT_MENU_RESULT_INSPECT;
+        mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
+    }
+    if (ImGui::Button("Rebuild Navmesh", sButtonSize)) {
+        resultFlags |= INTERACT_MENU_RESULT_REBUILD_NAVMESH;
+    }
+    if (ImGui::Button("Clear Tile", sButtonSize)) {
+        resultFlags |= INTERACT_MENU_RESULT_CLEAR_TILE;
         mSelectedTileHandle = mWorldObjectQuery->getTileHandle();
     }
     TileHandle handle = mWorldObjectQuery->getTileHandle();

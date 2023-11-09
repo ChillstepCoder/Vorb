@@ -12,10 +12,9 @@ enum class VisibilityThreadTaskType {
 };
 
 struct VisibilityThreadTask {
-    TileContainerID tileContainer = nullptr;
+    TileContainer* tileContainer = nullptr;
     VisibilityThreadTaskType taskType = VisibilityThreadTaskType::Init;
 };
-SIZER(VisibilityThreadTask);
 
 class VisibilityThread {
     friend class VisibilityManager;
@@ -28,7 +27,7 @@ public:
     static bool hasInstance();
     static VisibilityThread& getInstance();
 
-    void mainThreadUpdate();
+    //void mainThreadUpdate();
 
     const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
 private:
@@ -38,7 +37,7 @@ private:
     void visThreadFunc();
 
     moodycamel::BlockingConcurrentQueue<VisibilityThreadTask> mTasks;
-    moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs;
+    // moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs;
 
     std::atomic_bool mStop = false;
     std::unique_ptr<std::thread> mThread;

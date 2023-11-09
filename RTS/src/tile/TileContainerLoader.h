@@ -13,7 +13,7 @@ public:
     void update();
 
     // Container must be initialized
-    void loadTerrainTileContainer(TileContainer& container);
+    void loadChunk(TileContainer& container);
 
 private:
     std::unordered_map<TileContainerID, TileContainerLoadFinishedCallback> mLoadingContainers;

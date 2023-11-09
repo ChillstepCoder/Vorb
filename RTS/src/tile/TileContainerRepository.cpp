@@ -15,9 +15,9 @@ TileContainerRepository::~TileContainerRepository()
 {
 }
 
-TileContainer* TileContainerRepository::loadTerrainTileContainer(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner) {
+TileContainer* TileContainerRepository::loadChunk(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner) {
     owner->mTileContainer = allocateNewTileContainer(rootPos, dims, floorHeight, owner);
-    mLoader->loadTerrainTileContainer(*owner->mTileContainer);
+    mLoader->loadChunk(*owner->mTileContainer);
     return owner->mTileContainer;
 }
 

@@ -265,6 +265,7 @@ bool EditorRoot::tryOpenAssetForEdit(AssetDescriptor desc)
     }
     it->second->setCurrentAsset(desc.id);
     setActiveCenterPanel(it->second.get());
+    return true;
 }
 
 void EditorRoot::openBiomeForEdit() {

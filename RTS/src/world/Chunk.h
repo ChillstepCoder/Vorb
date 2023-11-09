@@ -51,6 +51,15 @@ enum class NeighborIndex8 {
 	COUNT        = 8
 };
 
+// Stores all tile containers that exist on a chunk and stores references to them.
+// Can be copied to worker threads to allow fast lookups and guarentee containers will not be destroyed
+class ChunkTileContainersLookup {
+public:
+	TileContainerID structureContainers[CHUNK_SIZE];
+	TileContainerID chunkContainerID;
+	std::unordered_map<TileContainerID, TileContainerRef> structureContainerRefs;
+};
+
 // TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
 	friend class World;
@@ -158,6 +167,9 @@ private:
     mutable std::shared_mutex mSharedGrassMutex;
 	std::vector<StructureID> mStructures;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
+
+	std::unique_ptr<ChunkTileContainersLookup> mTileContainersLookup;
+	std::atomic<ui32> mTileContainersLookupVersion = 0;
 
 	EVENT_DISPATCHER_DEF(Chunk);
 };

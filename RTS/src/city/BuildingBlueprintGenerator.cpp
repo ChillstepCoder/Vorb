@@ -143,18 +143,19 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
     generatePossibleWindowPermutations();
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags)
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
 
+    // TODO: This seems inefficient
     std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(world, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
     BuildingBlueprint* bPtr = bp.get();
     mGeneratingBuildings.insert(bPtr);
     
-    Services::Threadpool::ref().addTask([this, &world, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([this, &world, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed](ThreadPoolWorkerData* workerData) {
         PROFILE_FUNCTION("Generate blueprint async");
-        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(world, mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
+        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(world, mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed);
         if (newBP) {
             // TODO: If we destroy the original we are fucked
             // Copy the result to the output bp
@@ -173,13 +174,18 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     return bp;
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed) {
     PROFILE_FUNCTION();
     BuildingBlueprintId id = getNextBuildingID(); // TODO: Move this to game thread only so we dont need to lock?
     constexpr ui32 maxFailCount = 5;
     ui32 failCount = 0;
+    // Get new seed each fail
+    RandomGenerator seedMutator(seed);
+
     do {
         std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(world, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
+        bp->generationSeed = seed;
+        bp->randomGen = std::make_unique<RandomGenerator>(seed);
         assert(plotSize.x > 2 && plotSize.y > 2);
         bp->id = id;
         if (tryGenerateBlueprintInternal(bp.get(), buildingRepo)) {
@@ -188,6 +194,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBluepr
             }
             return bp;
         }
+        seed = seedMutator.getRandomUint();
     } while (++failCount < maxFailCount);
 
     LOG_WARN("Failed to generate building with fail count {}", failCount);
@@ -227,9 +234,11 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
 
 bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo) {
 
-    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint");
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(bPtr->randomGen->mSeed));
     if (visLog) {
         visLog->setRootPos(f32v3(bPtr->mTileSpatialGrid.getWorldPos3D()));
+        const i32v3 dims = bPtr->mTileSpatialGrid.getDims();
+        visLog->setUserString(fmt::format("  Dims <{},{},{}>", dims.x, dims.y, dims.z));
     }
 
     // Room Graph
@@ -292,10 +301,10 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint*
 void BuildingBlueprintGenerator::addPublicRoomsToGraph(BuildingBlueprint& bp) {
     // Generate public room structure using grammar
     const i32 publicRoomCount = bp.desc->publicRoomCountRange.y <= bp.desc->publicRoomCountRange.x ?
-        bp.desc->publicRoomCountRange.x : Random::xorshf96() % (bp.desc->publicRoomCountRange.y - bp.desc->publicRoomCountRange.x) + bp.desc->publicRoomCountRange.x;
+        bp.desc->publicRoomCountRange.x : bp.randomGen->getRandomUint() % (bp.desc->publicRoomCountRange.y - bp.desc->publicRoomCountRange.x) + bp.desc->publicRoomCountRange.x;
     assert(publicRoomCount); // Must have at least one public room
     bp.rooms.resize(publicRoomCount);
-    bp.desc->publicGrammar.buildRoomGraph(bp.rooms);
+    bp.desc->publicGrammar.buildRoomGraph(bp.rooms, *bp.randomGen);
 }
 
 void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp)
@@ -371,7 +380,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) {
 
     bp.rooms.reserve(bp.rooms.size() + privateRoomCount);
     int failCount = 0;
-    int publicIndex = Random::xorshf96() % numPublicRooms; // Random start room to test
+    int publicIndex = bp.randomGen->getRandomUint() % numPublicRooms; // Random start room to test
     int privateIndex = 0;
     for (size_t i = 0; i < privateRoomCount; ++i) {
         RoomNode& publicRoom = bp.rooms[publicIndex];
@@ -450,7 +459,7 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
         RoomNode& child = nodes[node->childRooms[i]];
         // New floor TODO: Random? Statistics?
         if (node->roomDef->stairsChance && child.roomDef->canStairsConnect && child.desiredWidth >= 3) {
-            if (Random::getCachedRandomf() > node->roomDef->stairsChance) {
+            if (bp.randomGen->getRandomFloatUnsigned() > node->roomDef->stairsChance) {
                 didCreateStairs = true;
                 node->hasStairs = true;
 
@@ -1499,7 +1508,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
         bfsBackIndex = 1;
 
         // Random tile to start
-        const i32 startIndex = (i32)room.tilePositions[Random::xorshf96() % room.tilePositions.size()];
+        const i32 startIndex = (i32)room.tilePositions[bp.randomGen->getRandomUint() % room.tilePositions.size()];
         assert(bp.ownerArray[startIndex] == room.id);
         // Visual log
         if (visLog) {
@@ -2038,7 +2047,7 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprint& bp, VisualLog* 
 
     for (ExteriorWallRun& wallRun : bp.exteriorWallRuns) {
         if (wallRun.length > 2 && wallRun.length <= MAX_EXTERIOR_WALL_RUN_LENGTH) {
-            const ui32 permutation = Random::xorshf96() % sPossibleWindowPermutations[wallRun.length].size();
+            const ui32 permutation = bp.randomGen->getRandomUint() % sPossibleWindowPermutations[wallRun.length].size();
             const std::vector<bool>& windowPlacements = sPossibleWindowPermutations[wallRun.length][permutation];
             assert(windowPlacements.size() == wallRun.length);
             TileIndex index = wallRun.start;

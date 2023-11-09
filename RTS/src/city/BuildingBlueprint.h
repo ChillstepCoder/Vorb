@@ -12,6 +12,7 @@ class World;
 struct BuildingDef;
 struct Recipe;
 struct TileHandle;
+class RandomGenerator;
 
 enum class BlueprintTileType : ui8 {
     NONE    = 0, // THIS SHOULD ALWAYS BE 0
@@ -88,6 +89,7 @@ class BuildingBlueprint {
 public:
     BuildingBlueprint() = default;
     BuildingBlueprint(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    ~BuildingBlueprint();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
 
@@ -138,4 +140,8 @@ public:
     bool isBuilding = false;
     BitFlags<BuildingBlueprintFlags> flags;
     ui32 refCount = 0;
+
+    // TODO: can we store this stuff in a separate generation structure?
+    std::unique_ptr<RandomGenerator> randomGen;
+    ui32 generationSeed = 0;
 };

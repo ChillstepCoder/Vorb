@@ -1,0 +1,18 @@
+How to handle structures, chunks transitioning and generating in simulatedChunks
+
+We should be able to generate a structure in Simulated or unsimulated chunks.
+1. Simulated
+   Structure blueprint is fully generated, and the seed is stored on successful generation.
+   It is then marked as "under construction" or "completed" and based on this, will display different LOD mes
+      Under construction - Display generic scaffolding mesh
+      Completed - Display LOD mesh from the full blueprint data.
+   After mesh is generated in simulated, data is discarded. We only need to know the structures plot dimensions.
+2. Full
+   Generated as currently is done. Store full data.
+
+CHUNK NAV GENERATION
+
+1. Chunk becomes "wants active" and loads data
+2. All nested containers become "wants active" and loads data
+  - Nested containers become "fully active" once all dependend chunks are "wants active"
+  - Chunks becomes "fully active" once all nested containers are "wants active"

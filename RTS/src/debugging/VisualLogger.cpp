@@ -461,6 +461,9 @@ void VisualLogger::renderImgui() {
         VisualLog& log = *sVisualLogs[sSelected];
         ImGui::Separator();
         ImGui::Text(log.mName.c_str());
+        if (log.mUserString.size()) {
+            ImGui::Text(log.mUserString.c_str());
+        }
         // Collecct total time
         f32 total = 0.0f;
         for (auto&& step : log.mRenderStepInfo) {

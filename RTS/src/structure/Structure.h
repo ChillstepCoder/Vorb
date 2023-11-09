@@ -16,6 +16,12 @@ enum class StructureState : ui8 {
     DORMANT
 };
 
+class StructureSimulationData {
+public:
+    StructureID mId;
+    i32AABB3 mAABB;
+};
+
 class Structure {
     friend class StructureManager;
 public:

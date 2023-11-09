@@ -214,13 +214,13 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
             bool intersectsArc = false;
             const int shapeType = shape->getShapeType();
             switch (shapeType) {
-                case CYLINDER_SHAPE_PROXYTYPE: {
-                    const btCylinderShape* cylinder = static_cast<const btCylinderShape*>(shape);
-                    const btVector3 halfExtents = cylinder->getHalfExtentsWithoutMargin();
-                    const f32 targetRadiusSQ = SQ(halfExtents.x());
-                    assert(halfExtents.x() == halfExtents.y());
+                //case CYLINDER_SHAPE_PROXYTYPE: {
+                case CAPSULE_SHAPE_PROXYTYPE: {
+                    const btCapsuleShape* capsule = static_cast<const btCapsuleShape*>(shape);
+                    const f32 capsuleRadius = capsule->getRadius();
+                    const f32 targetRadiusSQ = SQ(capsuleRadius);
 
-                    const f32 totalRadius = coneData.radius + halfExtents.x();
+                    const f32 totalRadius = coneData.radius + capsuleRadius;
                     if (distanceFromTarget2 <= targetRadiusSQ) {
                         // If attack origin intersects the cylinder
                         intersectsArc = true;
@@ -246,7 +246,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
                         impactNormal = f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f);
                         f32v3 targetCenterAtSourceHeight(targetRootPosition.x, targetRootPosition.y, attackStartPos.z);
                         const f32v3 impactCenter = targetCenterAtSourceHeight + f32v3(0.0f, 0.0f, attackData.swingHeight);
-                        impactPosition = impactCenter - impactNormal * static_cast<f32>(halfExtents.x());
+                        impactPosition = impactCenter - impactNormal * static_cast<f32>(capsuleRadius);
                     }
                     break;
                     // ... (add other cases as needed)

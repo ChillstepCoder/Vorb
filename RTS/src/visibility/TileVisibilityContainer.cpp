@@ -116,10 +116,9 @@ void TileVisibilityContainer::debugRender() const
 }
 
 void TileVisibilityContainer::occludeAllEdgesForTile(TileIndex tileIndex) {
-    const i32v3 xyzOffset = mTileSpatialGrid->getTileXYZOffset(tileIndex);
-    const i32 index = xyzOffset.x * mEdgesDims.x + xyzOffset.y * mEdgesDims.y + mFloorStride * xyzOffset.z;
+    VisEdgeIndex index = getEdgeIndexBase(tileIndex);
     mOccludedEdges.setBit(index);
     mOccludedEdges.setBit(index + 1);
     mOccludedEdges.setBit(index + 2);
-    mOccludedEdges.setBit(index + mEdgesDims.x);
+    mOccludedEdges.setBit(index + 3);
 }

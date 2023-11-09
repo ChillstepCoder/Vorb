@@ -83,6 +83,8 @@ public:
 
     void render(const f32v3& cameraPos, const f32m4& viewMatrix);
 
+    void setUserString(const nString& userString) { mUserString = userString; }
+
 private:
     void buildMesh();
 
@@ -107,6 +109,7 @@ private:
     SimpleMesh mQuadsMesh;
     Mesh mTextMesh;
     nString mName;
+    nString mUserString;
 
     inline static const Font* sDefaultFont = nullptr;
 };

@@ -47,8 +47,9 @@ void Chunk::beginLoad() {
     mState = ChunkState::LOADING_TILES;
     assert(!mTileContainer);
     const ui32v3 worldPosInt3D(mAABB.pos.x, mAABB.pos.y, 0u);
-    mTileContainer = mWorld->getTileContainerRepository().loadTerrainTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
+    mTileContainer = mWorld->getTileContainerRepository().loadChunk(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
     mGrass.resize(CHUNK_SIZE);
+
     assert(mTileContainer);
 }
 

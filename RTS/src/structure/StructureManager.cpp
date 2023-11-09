@@ -18,6 +18,8 @@
 
 // * When an active structure becomes dormant, we deallocate its tiles
 // * When a dormant structure becomes active, we allocate its tiles and do all the rest
+
+// TODO: Serialize this
 StructureID sStructureIdGen = 0;
 
 StructureManager::StructureManager(World& world) : mWorld(world) {
@@ -27,6 +29,8 @@ StructureManager::StructureManager(World& world) : mWorld(world) {
 Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight) {
     ASSERT_GAME_THREAD();
     i32v3 tileDims = aabb.dims;
+    assert((tileDims.z % floorHeight) == 0);
+    tileDims.z /= floorHeight;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
     std::unique_ptr<Structure> newStructure;
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
@@ -41,12 +45,6 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
             assert(false && "Invalid structure type");
     }
     newStructure->mAABB = aabb;
-    assert((tileDims.z % floorHeight) == 0);
-    tileDims.z /= floorHeight;
-    // Clamping to int32 cause this is what tilecontainer does
-    if (sStructureIdGen >= INT32_MAX) {
-        sStructureIdGen = 0;
-    }
     newStructure->mId = sStructureIdGen++;
 
     const StructureBBox newBox(StructureBoxPoint(aabb.x, aabb.y), StructureBoxPoint(aabb.x + aabb.width, aabb.y + aabb.depth));

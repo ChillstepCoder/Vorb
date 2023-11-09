@@ -62,7 +62,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     else if (plot.neighborRoads[e_cast(Cartesian::NORTH)] != INVALID_ROAD_ID) {
         dir = Cartesian::SOUTH;
     }
-    plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilder(mCity.getWorld(), desc, sizeAlpha, dir, plotDims, rootPos, plot.mOwnerEntity, flags);
+    plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilder(mCity.getWorld(), desc, sizeAlpha, dir, plotDims, rootPos, plot.mOwnerEntity, flags, Random::getCachedRandom());
     plot.mPendingBlueprint->plotIndex = plot.plotIndex;
 }
 

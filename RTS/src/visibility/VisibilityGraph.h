@@ -32,6 +32,8 @@ protected:
     TileSpatialGrid mSpatialGrid;
     // Fast empty test, as most nodes are empty. Prevents accessing mNodes
     BitArray mNonEmptyNodesLookup;
+    // Copied from the TileVisibilityContainer
+    BitArray mTileOccludedEdges;
     // Entities contained in each node
     std::vector<VisiblityGraphNodeEntities> mNodeEntities;
     // 1 Bit indicates visible neighbor node

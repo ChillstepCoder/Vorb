@@ -64,6 +64,7 @@ void TileInspectionPanel::updateAndRender() {
     }
 
     const TileContainer& container = *mTileHandle.container;
+    const i32v3 dims = container.getTileSpatialGrid().getDims();
     const i32v3 xyzOffset = container.getTileSpatialGrid().getTileXYZOffset(mTileHandle.tileIndex);
     const i32v2 xyOffset(xyzOffset.x, xyzOffset.y);
     const i32v2 worldPos2D = i32v2(xyOffset) + container.getTileSpatialGrid().getWorldPos2D();
@@ -89,7 +90,7 @@ void TileInspectionPanel::updateAndRender() {
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse);
     if (!isOwned) {
-        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "UNOWNED");
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "===UNOWNED TILE===");
     }
     ImGui::Text("World Position: <%u, %u>", worldPos2D.x, worldPos2D.y);
     ImGui::Text("Base Z Position: %f", mTileHandle.getTile().getGroundZOffset());
@@ -109,6 +110,7 @@ void TileInspectionPanel::updateAndRender() {
     ImGui::Text("ChunkID: %u", mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos2D));
     ImGui::Text("Tile Index: %u", mTileHandle.tileIndex);
     ImGui::Text("Container Offset: <%u,%u,%u>", xyzOffset.x, xyzOffset.y, xyzOffset.z);
+    ImGui::Text("Container Dims: <%u,%u,%u>", dims.x, dims.y, dims.z);
 
     { // Select adjacent tiles
         if (ImGui::Button("x-1")) {
