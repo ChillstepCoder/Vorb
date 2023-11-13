@@ -30,7 +30,7 @@ Chunk::~Chunk() {
 	dispose();
 }
 
-void Chunk::init(World& world, const ChunkID& chunkId, i32v2 worldPos) {
+void Chunk::init(World& world, ChunkID chunkId, i32v2 worldPos) {
     mWorld = &world;
     mChunkId = chunkId;
     mAABB.x = worldPos.x;

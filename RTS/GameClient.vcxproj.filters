@@ -471,7 +471,7 @@
     <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp">
+    <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\screens\ScreenState.cpp">
@@ -906,6 +906,18 @@
     <ClCompile Include="src\tile\TileContainerLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\simulation\host\HostSimContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\SimChunk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\screens\WorldGenScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -998,7 +1010,7 @@
     <ClInclude Include="src\world\Region.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\WorldData.h">
+    <ClInclude Include="src\world\WorldDefaults.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\NoiseFunction.hpp">
@@ -1532,7 +1544,7 @@
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\srv\SrvHeightmapGrid.h">
+    <ClInclude Include="src\world\srv\HostHeightmapGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\network\WorldNetMode.h">
@@ -2214,6 +2226,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\math\fastPRNG.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\HostSimContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\SimChunk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\ChunkSimulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\screens\WorldGenScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\host\HostWorldData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

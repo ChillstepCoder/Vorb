@@ -84,3 +84,36 @@ inline std::unique_ptr<TO> static_unique_pointer_cast(std::unique_ptr<FROM>&& ol
     // conversion: unique_ptr<FROM>->FROM*->TO*->unique_ptr<TO>
     return std::unique_ptr<TO>{static_cast<TO*>(old.release())};
 }
+
+
+template<typename T>
+class UniqueArray {
+
+public:
+    UniqueArray() = default;
+    explicit UniqueArray(size_t size) : ptr(new T[size]) {}
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(UniqueArray);
+
+    T& operator[](size_t index) {
+        return ptr[index];
+    }
+
+    const T& operator[](size_t index) const {
+        return ptr[index];
+    }
+
+    T* get() const {
+        return ptr.get();
+    }
+
+    T* release() {
+        return ptr.release();
+    }
+
+    void reset(T* newPtr = nullptr) {
+        ptr.reset(newPtr);
+    }
+
+    std::unique_ptr<T[]> ptr;
+};

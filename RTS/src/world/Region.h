@@ -2,7 +2,7 @@
 
 class Chunk;
 
-#include "world/WorldData.h"
+#include "world/WorldDefaults.h"
 //
 //const ui32 REGION_ID_INVALID = UINT32_MAX;
 //

@@ -6,7 +6,7 @@
 #include "math/Random.h"
 
 #include "world/World.h"
-#include "world/WorldData.h"
+#include "world/WorldDefaults.h"
 #include "world/IHeightmapGrid.h"
 #include "world/Region.h"
 #include "resources/TileRepository.h"

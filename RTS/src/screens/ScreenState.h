@@ -5,6 +5,14 @@
 #include "network/WorldNetMode.h"
 #include "network/NetworkConst.h"
 
+#include "world/host/HostWorldData.h"
+
+enum class RegisteredScreens {
+    MainMenu = 0,
+    WorldGen = 1,
+    Gameplay = 2,
+};
+
 class MainMenuScreenGlobalState {
 public:
     static void initDefaults();
@@ -27,4 +35,8 @@ public:
 
     static bool isQuittingToMenu;
     static bool isQuittingToDesktop;
+};
+
+class WorldGenScreenGlobalState {
+public:
 };

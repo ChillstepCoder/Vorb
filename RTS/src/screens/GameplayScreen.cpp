@@ -94,11 +94,11 @@ GameplayScreen::~GameplayScreen() {
 }
 
 i32 GameplayScreen::getNextScreen() const {
-	return 0;
+	return e_cast(RegisteredScreens::MainMenu);
 }
 
 i32 GameplayScreen::getPreviousScreen() const {
-	return 0;
+	return e_cast(RegisteredScreens::MainMenu);
 }
 
 void GameplayScreen::build() {
@@ -141,10 +141,9 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     GameplayScreenGlobalState::initDefaults();
 
 
-
     // Initialize services
     if (MainMenuScreenGlobalState::isClient()) {
-        Services::initCli();
+        //Services::initCli();
 
         mState = GameplayScreenState::WAITING_JOIN_SERVER;
         CliMessage::sendClientReadyJoinMessage();
@@ -153,18 +152,15 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
         mNetMode = WorldNetMode::Client;
     }
     else {
-        Services::initHost();
+        //Services::initHost();
 
         mState = GameplayScreenState::RUNNING;
         mNetMode = WorldNetMode::Host;
     }
 
-    // Allocate world
-    initWorld();
-
     // Initialize hosted server if needed
     if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
-        GameServer::initInstance(*mWorld, MainMenuScreenGlobalState::serverType);
+        GameServer::initInstance(*sGameWorld, MainMenuScreenGlobalState::serverType);
     }
 
 
@@ -174,7 +170,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     initCamera();
 
     // Start the game :O
-    GameThread::initInstance(*mWorld, mNetMode);
+    GameThread::initInstance(*sGameWorld, mNetMode);
 
     initWorldInterfaceController();
 
@@ -184,7 +180,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
     IS_SHUTTING_DOWN = true;
     displayLoadScreen("Cleaning up...", true);
-    mWorld.reset();
+    sGameWorld.reset();
     Services::destroy();
     IS_SHUTTING_DOWN = false;
 }
@@ -263,10 +259,6 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
 }
 
-void GameplayScreen::initWorld() {
-    mWorld = std::make_unique<World>(mNetMode, WorldData::DEFAULT_WORLD_WIDTH_TILES, WorldGeneratorType::Default);
-}
-
 void GameplayScreen::initCamera() {
     mCameraController = std::make_unique<CameraController>(m_app->getWindow());
 }
@@ -287,7 +279,7 @@ void GameplayScreen::initEvents()
 }
 
 void GameplayScreen::initWorldInterfaceController() {
-    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(m_app->getWindow(), *mWorld, *mCameraController);
+    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(m_app->getWindow(), *sGameWorld, *mCameraController);
     mWorldInterfaceController->init();
 }
 

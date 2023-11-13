@@ -82,7 +82,7 @@ public:
 
     // =========== Main methods  ===========
 
-    void init(World& world, const ChunkID& chunkId, i32v2 worldPos);
+    void init(World& world, ChunkID chunkId, i32v2 worldPos);
 	void beginLoad();
 	void freeData();
 	void dispose();

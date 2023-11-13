@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world/WorldData.h"
+#include "world/WorldDefaults.h"
 
 
 struct QuadtreeSettings {

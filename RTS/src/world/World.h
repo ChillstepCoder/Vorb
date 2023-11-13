@@ -7,6 +7,7 @@
 
 #include "world/WorldEvents.h"
 
+class HostWorldData;
 class Structure;
 class Camera3D;
 class Chunk;
@@ -21,6 +22,7 @@ class StructureManager;
 class TimeOfDayManager;
 class TileContainerRepository;
 class IWorldGenerator;
+class HostSimContext;
 class CombatContext;
 class NavWorld;
 class FishEcosystem;
@@ -32,7 +34,7 @@ class VisibilityManager;
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
 class World {
 public:
-    World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType);
+    World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType, HostWorldData* hostWorldData);
     ~World();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(World);
@@ -66,6 +68,7 @@ public:
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
     IEffectContext& getEffectContext() const { return *mEffectContext; }
     VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
+    HostSimContext& getHostSimContext() const { assert(mHostSimContext); return *mHostSimContext; }
 
     // Optional system accessors 
     NavWorld* tryGetNavWorld() const { return mNavWorld.get(); }
@@ -129,8 +132,12 @@ private:
     std::unique_ptr<IEffectContext> mEffectContext;
     // Visibility
     std::unique_ptr<VisibilityManager> mVisibilityManager;
-    // Nav graph (OPTIONAL)
+    // Simulation (HOST ONLY)
+    std::unique_ptr<HostSimContext> mHostSimContext;
+    // Nav world (OPTIONAL)
     std::unique_ptr<NavWorld> mNavWorld;
 
     STATIC_EVENT_DISPATCHER_DEF(World);
 };
+
+extern std::unique_ptr<World> sGameWorld;

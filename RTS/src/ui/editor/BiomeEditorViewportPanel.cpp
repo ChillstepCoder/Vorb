@@ -194,7 +194,7 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
-    mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, WorldData::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat);
+    mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, WorldDefaults::DEFAULT_EDITOR_WORLD_WIDTH_TILES, WorldGeneratorType::Flat, nullptr);
 
     GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
         World* editorWorld = static_cast<World*>(vWorld);

@@ -30,12 +30,12 @@ MainMenuScreen::~MainMenuScreen()
 
 i32 MainMenuScreen::getNextScreen() const
 {
-    return 1;
+    return e_cast(RegisteredScreens::WorldGen);
 }
 
 i32 MainMenuScreen::getPreviousScreen() const
 {
-    return 0;
+    return e_cast(RegisteredScreens::MainMenu);
 }
 
 void MainMenuScreen::build()

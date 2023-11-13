@@ -441,6 +441,7 @@
     <ClCompile Include="src\screens\GameplayScreen.cpp" />
     <ClCompile Include="src\screens\MainMenuScreen.cpp" />
     <ClCompile Include="src\screens\ScreenState.cpp" />
+    <ClCompile Include="src\screens\WorldGenScreen.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
     <ClCompile Include="src\visibility\VisibilityGraph.cpp" />
@@ -511,10 +512,13 @@
     <ClCompile Include="src\world\IChunkGrid.cpp" />
     <ClCompile Include="src\world\IHeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
+    <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
+    <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
+    <ClCompile Include="src\world\simulation\SimChunk.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
-    <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
     <ClCompile Include="src\world\WorldContextObject.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
   </ItemGroup>
@@ -831,6 +835,7 @@
     <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />
+    <ClInclude Include="src\screens\WorldGenScreen.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />
@@ -942,17 +947,21 @@
     <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
     <ClInclude Include="src\world\controller\IWorldInterfaceController.h" />
     <ClInclude Include="src\world\ecosystem\FishEcosystem.h" />
+    <ClInclude Include="src\world\host\HostWorldData.h" />
     <ClInclude Include="src\world\IChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />
     <ClInclude Include="src\world\IHeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
+    <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
+    <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
+    <ClInclude Include="src\world\simulation\SimChunk.h" />
     <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
-    <ClInclude Include="src\world\srv\SrvHeightmapGrid.h" />
+    <ClInclude Include="src\world\srv\HostHeightmapGrid.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\WorldContextObject.h" />
-    <ClInclude Include="src\world\WorldData.h" />
+    <ClInclude Include="src\world\WorldDefaults.h" />
     <ClInclude Include="src\world\WorldEvents.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
   </ItemGroup>

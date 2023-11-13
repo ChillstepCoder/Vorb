@@ -28,8 +28,10 @@
 #include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "world/srv/SrvChunkGrid.h"
-#include "world/srv/SrvHeightmapGrid.h"
+#include "world/srv/HostHeightmapGrid.h"
 #include "world/ecosystem/FishEcosystem.h"
+#include "world/host/HostWorldData.h"
+#include  "world/simulation/host/HostSimContext.h"
 
 #include "visibility/VisibilityManager.h"
 #include "visibility/VisibilityThread.h"
@@ -41,6 +43,9 @@
 #include "rendering/mesh/GrassMeshManager.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
+
+
+std::unique_ptr<World> sGameWorld;
 
 // TODO: Instead should the character renderer listen to these events by hooking
 // int OnWorldBegin/End?
@@ -55,7 +60,7 @@ void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
     RenderThreadTasks::getInstance().removeCharacterModel(entity);
 }
 
-World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType) : mNetMode(netMode) {
+World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType, HostWorldData* hostWorldData) : mNetMode(netMode) {
     constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
 
     assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
@@ -70,6 +75,7 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
     switch (netMode) {
         case WorldNetMode::Editor:
         case WorldNetMode::Client: {
+            assert(!hostWorldData);
             mHeightmapGrid = std::make_unique<CliHeightmapGrid>(worldWidthTiles);
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
@@ -77,10 +83,12 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
             break;
         }
         case WorldNetMode::Host: {
-            mHeightmapGrid = std::make_unique<SrvHeightmapGrid>(worldWidthTiles);
+            assert(hostWorldData);
+            mHeightmapGrid = std::move(hostWorldData->heightmapGrid);
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);
+            mHostSimContext = std::make_unique<HostSimContext>(*this);
             break;
         }
         default:

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world/WorldData.h"
+#include "world/WorldDefaults.h"
 #include "data_structure/FlatQuadtree.h"
 
 #include "rendering/mesh/Mesh.h"
