@@ -26,16 +26,16 @@ void TileContainerLoader::loadChunk(TileContainer& container)
     chunk->incRef();
     // Make sure we dont lose height data
     // TODO: copy minimum
-    f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
+    CompressedHeight* heightData = new CompressedHeight[HEIGHTMAP_VERT_SIZE_PER_PATCH];
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    const f32* srcData = heightGrid.getHeightDataAt(chunk->getHeightmapPatchID())->data;
-    memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
+    const CompressedHeight* srcData = heightGrid.getHeightDataAt(chunk->getHeightmapPatchID())->getData();
+    memcpy(heightData, srcData, sizeof(CompressedHeight) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
 
     Services::Threadpool::ref().addTask([chunk, heightData](ThreadPoolWorkerData* workerData) {
         TileContainer& container = *chunk->mTileContainer;
         // Worker thread
         //
-        // Initialize containers lookup
+        // Initialize containers lookupap
         chunk->mTileContainersLookup = std::make_unique<ChunkTileContainersLookup>();
         chunk->mTileContainersLookup->chunkContainerID = container.getId();
         for (int i = 0; i < CHUNK_SIZE; ++i) {

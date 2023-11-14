@@ -130,7 +130,7 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
     return tile;
 }
 
-void IWorldGenerator::generateChunk(Chunk& chunk, f32* heightData) {
+void IWorldGenerator::generateChunk(Chunk& chunk, CompressedHeight* heightData) {
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();

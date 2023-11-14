@@ -18,7 +18,7 @@
 #include "tile/TileContainer.h"
 
 
-void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& container, const f32* heightData, bool staticMeshIsOnlyQuads, ui32 reserveStaticVertexCount, const void* userData) const {
+void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& container, const CompressedHeight* heightData, bool staticMeshIsOnlyQuads, ui32 reserveStaticVertexCount, const void* userData) const {
     ASSERT_GAME_THREAD(); // Game thread makes the request
 
     // Always incref, will be decrefed in the task

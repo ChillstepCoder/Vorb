@@ -16,9 +16,10 @@
 
 #include "world/World.h"
 #include "world/WorldDefaults.h"
+#include "generation/TerrainGenerator.h"
 
 WorldGenScreen::WorldGenScreen(App* const app) : IAppScreen<App>(app) {
-
+    mTerrainGenerator = std::make_unique<TerrainGenerator>();
 }
 
 WorldGenScreen::~WorldGenScreen()
@@ -47,6 +48,8 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 }
 
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
+    mGenState = WorldGenScreenState::Idle;
+
     if (mFirstEntry) {
         Services::initHost();
     }
@@ -58,6 +61,7 @@ void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
 }
 
 void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
+    mTerrainGenerator->destroy();
     if (mCancelled) {
         sGameWorld.reset();
     }
@@ -68,8 +72,22 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     mWorldData.reset();
 }
 
-void WorldGenScreen::update(const vui::GameTime& gameTime)
-{
+void WorldGenScreen::update(const vui::GameTime& gameTime) {
+
+    switch (mGenState) {
+        case WorldGenScreenState::Idle:
+            break;
+        case WorldGenScreenState::GeneratingTerrain: {
+            updateTerrainGen();
+            break;
+        }
+        case WorldGenScreenState::Done:
+            break;
+        default:
+            break;
+
+    }
+    static_assert(e_count(WorldGenScreenState) == 3);
 
 }
 
@@ -98,8 +116,14 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::End();
 
     ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
-    if (ImGui::Button("Confirm")) {
-        m_state = vorb::ui::ScreenState::CHANGE_NEXT;
+    if (mGenState == WorldGenScreenState::Done) {
+        if (ImGui::Button("Start Game")) {
+            m_state = vorb::ui::ScreenState::CHANGE_NEXT;
+        }
+    }
+    else {
+        ImguiUtil::ScopedColor lockedColor(ImGuiCol_Button, ImguiColors::Theme::muted);
+        ImGui::Button("Start Game");
     }
     ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
@@ -116,6 +140,10 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 void WorldGenScreen::initWorldData() {
     mWorldData = std::make_unique<HostWorldData>();
     mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(WorldDefaults::DEFAULT_WORLD_WIDTH_TILES);
+
+    mGenState = WorldGenScreenState::GeneratingTerrain;
+    mTerrainGenerator->init(*mWorldData->heightmapGrid);
+    mTerrainGenerator->generateBaseHeightmap();
 }
 
 void WorldGenScreen::updateDockspace()
@@ -165,4 +193,23 @@ void WorldGenScreen::updateDockspace()
     }
 
     ImGui::End(); // End dockspace
+}
+
+void WorldGenScreen::updateTerrainGen()
+{
+    const TerrainGenerationState terrainState = mTerrainGenerator->tick();
+    switch (terrainState) {
+        case TerrainGenerationState::None:
+            break;
+        case TerrainGenerationState::GeneratingBaseHeightmap:
+            LOG_INFO("Generating");
+            break;
+        case TerrainGenerationState::GeneratingBaseHeightmapDone:
+            LOG_INFO("DONE");
+            mGenState = WorldGenScreenState::Done;
+            break;
+        default:
+            break;
+    }
+    static_assert(e_count(TerrainGenerationState) == 3);
 }

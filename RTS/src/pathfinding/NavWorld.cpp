@@ -34,7 +34,7 @@ inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos
     return f32v3(pos2d.x, pos2d.y, heightGrid.tryComputeHeightAtPoint(pos2d));
 }
 
-inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapPatchID& patchId, const f32* heightData, const f32v2& pos2d) {
+inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapPatchID& patchId, const CompressedHeight* heightData, const f32v2& pos2d) {
     if (!heightData)
     {
         return f32v3(pos2d.x, pos2d.y, 4.0f);
@@ -1010,7 +1010,7 @@ bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const Til
     return false;
 }
 
-void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const f32* heightData, ui32 lifetime, int debugId /*= 0*/) const
+void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const CompressedHeight* heightData, ui32 lifetime, int debugId /*= 0*/) const
 {
     const color4 color1(0.0f, 1.0f, 1.0f, 0.75f);
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
@@ -1182,7 +1182,7 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
     }
 }
 
-void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f32* heightData, ui32 lifetime, int debugId /*= 0*/) const
+void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const CompressedHeight* heightData, ui32 lifetime, int debugId /*= 0*/) const
 {
     // TODO: Mutex lock? This is a race condition
 

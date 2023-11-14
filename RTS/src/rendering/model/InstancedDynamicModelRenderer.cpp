@@ -181,7 +181,10 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
     if (sDebugOptions.mHideDynamicModels) {
         return;
     }
-
+    
+    if (!mShaderAssets.areAllAssetsLoaded()) {
+        return;
+    }
     PROFILE_FUNCTION();
 
     MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);

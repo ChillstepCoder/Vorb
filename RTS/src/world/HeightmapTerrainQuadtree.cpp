@@ -30,7 +30,7 @@ struct TerrainMeshTaskData {
 
     TerrainMeshBuilder terrainBuilder;
     HeightmapTerrainQuadtree* owner;
-    f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
+    CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     ui32 patchIndex;
 };
 
@@ -76,12 +76,13 @@ void createTerrainAndWaterMeshFromGen(
     IWorldGenerator& worldGenerator = world.getWorldGenerator();
 
     // Generate heightfield
-    f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
+    // TODO: This could stack overflow on some systems I think
+    CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            f32 zPos = worldGenerator.getTerrainHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-            paddedHeightfield[y][x] = zPos;
+            const f32 zPos = worldGenerator.getTerrainHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            paddedHeightfield[y][x] = compressHeight(zPos);
         }
     }
     terrainBuilder.buildFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
@@ -92,7 +93,7 @@ void createTerrainAndWaterMesh(
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
-    const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]
+    const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 patchWorldPos = worldPos + f32v2(posStart);

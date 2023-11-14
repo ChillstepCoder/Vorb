@@ -5,6 +5,6 @@
 class HostHeightmapGrid : public IHeightmapGrid
 {
 public:
-    HostHeightmapGrid(ui32 worldWidthTiles) : IHeightmapGrid(worldWidthTiles) {}
+    HostHeightmapGrid(ui32 worldWidthTiles);
 };
 

@@ -183,7 +183,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 }
 
 // TODO: Dual grid meshing? https://www.youtube.com/watch?v=buKQjkad2I0
-void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
+void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const CompressedHeight* heightData) {
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();

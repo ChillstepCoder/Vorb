@@ -2,7 +2,7 @@
 
 class Chunk;
 class GrassBillboardMeshBuilder;
-struct HeightmapPatchData;
+class HeightmapPatchData;
 struct TileGrass;
 
 

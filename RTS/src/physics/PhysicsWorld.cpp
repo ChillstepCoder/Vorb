@@ -157,25 +157,25 @@ btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     ASSERT_GAME_THREAD();
     btTransform startTransform;
     const f32v3 center = patch.mHeightData->aabb.getCenter();
-
-    btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
-        HEIGHTMAP_VERT_WIDTH_PER_PATCH,
-        HEIGHTMAP_VERT_WIDTH_PER_PATCH,
-        patch.mHeightData->data,
-        patch.mHeightData->aabb.z,
-        patch.mHeightData->aabb.getMaxZ(),
-        AXIS_Z,
-        false /*flipQuadEdges*/
-    );
+    panic("Fix PhysicsWorld::addHeightField");
+    //btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
+    //    HEIGHTMAP_VERT_WIDTH_PER_PATCH,
+    //    HEIGHTMAP_VERT_WIDTH_PER_PATCH,
+    //    patch.mHeightData->data,
+    //    patch.mHeightData->aabb.z,
+    //    patch.mHeightData->aabb.getMaxZ(),
+    //    AXIS_Z,
+    //    false /*flipQuadEdges*/
+    //);
     
     // Store so we dont leak
-    assert(mHeightShapes.find(patch.mHeightData) == mHeightShapes.end());
+   /* assert(mHeightShapes.find(patch.mHeightData) == mHeightShapes.end());
     mHeightShapes[patch.mHeightData] = heightFieldShape;
 
     heightFieldShape->setUseDiamondSubdivision();
-    heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));
+    heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));*/
 
-    return createStaticCollisionObject(INVALID_PHYSICS_USER_INDEX, INVALID_PHYSICS_USER_INDEX, center, heightFieldShape, CollisionGroup::TERRAIN);
+    return nullptr;//createStaticCollisionObject(INVALID_PHYSICS_USER_INDEX, INVALID_PHYSICS_USER_INDEX, center, heightFieldShape, CollisionGroup::TERRAIN);
 }
 
 void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {

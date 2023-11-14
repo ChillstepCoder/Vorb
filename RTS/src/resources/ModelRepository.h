@@ -43,5 +43,7 @@ private:
     std::mutex mFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
     // TODO: Pooled allocate
     std::vector<std::unique_ptr<ModelBatch>> mModelBatches;
+    // We cant delete these multithreaded...
+    //std::map<const vio::Path, std::shared_ptr<FBXLoadContext>> mFbxLoadContexts;
 };
 

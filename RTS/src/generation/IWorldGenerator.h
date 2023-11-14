@@ -1,6 +1,7 @@
 #pragma once
 
 #include "generation/WorldGenerationData.h"
+#include "terrain/CompressedHeight.h"
 
 class World;
 class Tile;
@@ -13,7 +14,7 @@ public:
     IWorldGenerator(World& world);
     ~IWorldGenerator();
 
-    void generateChunk(Chunk& chunk, f32* heightData);
+    void generateChunk(Chunk& chunk, CompressedHeight* heightData);
     virtual f32 getTerrainHeightAtPos(const f32v2& worldPos);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }

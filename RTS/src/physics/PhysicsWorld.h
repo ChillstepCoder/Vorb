@@ -15,7 +15,7 @@ class btHeightfieldTerrainShape;
 class DynamicCharacterController;
 class StaticPhysicsMeshBuilder;
 class World;
-struct HeightmapPatchData;
+class HeightmapPatchData;
 
 constexpr int INVALID_PHYSICS_USER_INDEX = INT32_MAX;
 

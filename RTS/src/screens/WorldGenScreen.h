@@ -4,6 +4,14 @@
 
 class App;
 class HostWorldData;
+class TerrainGenerator;
+
+enum class WorldGenScreenState {
+    Idle,
+    GeneratingTerrain,
+    Done,
+    COUNT
+};
 
 class WorldGenScreen : public vui::IAppScreen<App>
 {
@@ -27,10 +35,15 @@ public:
 protected:
     void initWorldData();
     void updateDockspace();
+    void updateTerrainGen();
+
     bool mRebuildDockspace = true;
     bool mCancelled = false;
     bool mFirstEntry = true;
 
     std::unique_ptr<HostWorldData> mWorldData;
+    std::unique_ptr<TerrainGenerator> mTerrainGenerator;
+
+    WorldGenScreenState mGenState = WorldGenScreenState::Idle;
 };
 

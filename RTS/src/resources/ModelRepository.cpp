@@ -75,7 +75,7 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
 }
 
 void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath) {
-    
+
     MaterialRepository& materialRepo = MaterialRepository::get();
     // Allocate raw FBX
     FBXRawMesh* rawMeshPtr;
@@ -202,6 +202,9 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     
+    // FBX sdk is not thread safe...
+    std::unique_lock lock(mFbxSdkMutex);
+
     if (!loadContext.sceneLoader.scene()) {
         panic("Failed to import fbx scene: {}", filePath.getString());
     }
@@ -250,6 +253,8 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
         }
     }
     assert(hasSkin != INT32_MAX);
+
+    lock.unlock();
 
     // Skin data
     if (hasSkin) {

@@ -1,17 +1,18 @@
 #pragma once
 
 #include "tile/Tile.h"
+#include "terrain/CompressedHeight.h"
 
 class ProceduralMeshBuilder;
 
-struct HeightmapPatchData;
+class HeightmapPatchData;
 struct TileHandle;
 struct MaterialDesc;
 class ContainerMeshBuilders;
 class StaticPhysicsMeshBuilder;
 
 namespace TileMeshBuilderMethods {
-    void meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData);
+    void meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const CompressedHeight* heightData);
 
     void addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh);
     void addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh);

@@ -12,9 +12,9 @@ void ChunkMesher::initMeshAndPhysicsAsync(TileContainer& tileContainer) {
     World& world = tileContainer.getWorld();
 
     // TODO: minimum size instead of entire block
-    f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
-    const f32* srcData = world.getHeightmapGrid().getHeightDataAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D())->data;
-    memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
+    CompressedHeight* heightData = new CompressedHeight[HEIGHTMAP_VERT_SIZE_PER_PATCH];
+    const CompressedHeight* srcData = world.getHeightmapGrid().getHeightDataAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D())->getData();
+    memcpy(heightData, srcData, sizeof(CompressedHeight) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
 
     initMeshAndPhysicsAsyncInternal(tileContainer, heightData, true, 512 /*reserveCount*/, nullptr);
 }

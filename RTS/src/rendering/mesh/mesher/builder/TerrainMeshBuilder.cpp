@@ -4,6 +4,8 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 
+#include "terrain/HeightmapPatch.h"
+
 
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
 constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
@@ -128,7 +130,7 @@ void TerrainMeshBuilder::finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const 
     checkGlError("TerrainMeshBuilder::finishMeshes");
 }
 
-void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
 
     // AABB calculation
     f32AABB3 aabb;
@@ -145,7 +147,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& corne
     for (int y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
         for (int x = 0; x < TERRAIN_MESH_WIDTH_VERTS; ++x) {
             TerrainVertex& v = mTerrainVerts[y * TERRAIN_MESH_WIDTH_VERTS + x];
-            f32 height = paddedHeightfield[y + 1][x + 1];
+            f32 height = uncompressHeight(paddedHeightfield[y + 1][x + 1]);
 
             if (height < minZ) minZ = height;
             if (height > maxZ) maxZ = height;
@@ -155,14 +157,14 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& corne
             v.pos.z = height;
 
             // Normal calc
-            f32 fl = paddedHeightfield[y][x]; // front left
-            f32  l = paddedHeightfield[y + 1][x];   // left
-            f32 bl = paddedHeightfield[y + 2][x]; // back left
-            f32  f = paddedHeightfield[y][x + 1];   // front
-            f32  b = paddedHeightfield[y + 2][x + 1];   // back
-            f32 fr = paddedHeightfield[y][x + 2]; // front right
-            f32  r = paddedHeightfield[y + 1][x + 2];   // right
-            f32 br = paddedHeightfield[y + 2][x + 2]; // back right
+            f32 fl = uncompressHeight(paddedHeightfield[y][x]); // front left
+            f32  l = uncompressHeight(paddedHeightfield[y + 1][x]);   // left
+            f32 bl = uncompressHeight(paddedHeightfield[y + 2][x]); // back left
+            f32  f = uncompressHeight(paddedHeightfield[y][x + 1]);   // front
+            f32  b = uncompressHeight(paddedHeightfield[y + 2][x + 1]);   // back
+            f32 fr = uncompressHeight(paddedHeightfield[y][x + 2]); // front right
+            f32  r = uncompressHeight(paddedHeightfield[y + 1][x + 2]);   // right
+            f32 br = uncompressHeight(paddedHeightfield[y + 2][x + 2]); // back right
 
             //https://gamedev.stackexchange.com/questions/165575/calculating-normal-map-from-height-map-using-sobel-operator
             // Sobel filter
@@ -216,7 +218,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& corne
     mBoundingSphere = boundingSphereFromAABB(aabb);
 }
 
-void TerrainMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void TerrainMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
 

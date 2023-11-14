@@ -15,6 +15,8 @@
 
 #include "tile/TileContainerEvents.h"
 
+#include "terrain/CompressedHeight.h"
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -191,9 +193,9 @@ public:
     void buildNavGraphForContainer(const TileContainer& tileContainer, OPT TerrainExternalEdges* terrainExternalEdges);
 
     // ========== Debug drawing ==========
-    void debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const f32* heightData, ui32 lifetime, int debugId = 0) const;
+    void debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const CompressedHeight* heightData, ui32 lifetime, int debugId = 0) const;
     void debugDrawFineNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
-    void debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f32* heightData, ui32 lifetime, int debugId = 0) const;
+    void debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const CompressedHeight* heightData, ui32 lifetime, int debugId = 0) const;
 
     const CoarseNavGraph* tryGetCoarseNavGraph(TileContainerID containerId) const;
     const CoarseNavGraph& getCoarseNavGraph(TileContainerID containerId) const;
