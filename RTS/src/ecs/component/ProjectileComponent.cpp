@@ -44,7 +44,7 @@ std::pair<ImpactResult, f32v3> updateProjectile(World& world, ProjectileComponen
 
     const IHeightmapGrid& grid = world.getHeightmapGrid();
     f32v3 terrainNormal(0.0f);
-    f32 terrainHeight = grid.tryComputeHeightAndNormalAtPoint(posCmp.mPosition, &terrainNormal);
+    f32 terrainHeight = grid.computeHeightAndNormalAtPoint(posCmp.mPosition, &terrainNormal);
     if (terrainHeight != FLT_MAX) {
         if (terrainHeight >= posCmp.mPosition.z) {
             posCmp.mPosition.z = terrainHeight;

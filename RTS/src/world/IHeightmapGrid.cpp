@@ -99,6 +99,7 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_WIDTH), mTotalPatches(SQ(mWidthPatches)) {
     mHeightData = std::unique_ptr<HeightmapPatch[]>(new HeightmapPatch[mTotalPatches]);
     mSpatialGrid2D.init(HEIGHTMAP_WIDTH, mWidthPatches);
+    mMaxCoordinate = mWidthPatches * HEIGHTMAP_WIDTH - 1;
 }
 
 IHeightmapGrid::~IHeightmapGrid() {
@@ -111,25 +112,6 @@ IHeightmapGrid::~IHeightmapGrid() {
 void IHeightmapGrid::tickShared() {
     ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
-    // Delete any inactive patches
-    // std::lock_guard lock(mMutex);
-    for (size_t i = 0; i < mActiveHeightmapPatches.size();) {
-        HeightmapPatch& patch = mHeightData[mActiveHeightmapPatches[i]];
-        if (patch.mRefCount == 0) {
-            assert(!patch.isGenerating());
-            // Remove the collider
-            mWorld->getPhysicsWorld().deleteHeightField(patch);
-            patch.mFlags = 0u;
-            delete patch.mHeightData; // TODO: Recycle
-            patch.mHeightData = nullptr;
-            // Remove from active list
-            mActiveHeightmapPatches[i] = mActiveHeightmapPatches.back();
-            mActiveHeightmapPatches.pop_back();
-        }
-        else {
-            ++i;
-        }
-    }
 
     // Notify of changed portions
     // TODO: Server Only
@@ -143,110 +125,6 @@ void IHeightmapGrid::tickShared() {
     }
 }
 
-//void IHeightmapGrid::asyncGetPatchHandle(HeightmapPatchID id, OUT HeightmapPatchHandle& handle) {
-//    // Handle must be null
-//    assert(!handle);
-//
-//    handle = std::make_unique<HeightmapPatchHandleData>();
-//    GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* handlePtr) {
-//
-//    }
-//}
-//
-//void IHeightmapGrid::releasePatchHandle(HeightmapPatchHandle&& handle)
-//{
-//
-//}
-
-void IHeightmapGrid::requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback) {
-    ASSERT_GAME_THREAD();
-    assert(id < mTotalPatches);
-    HeightmapPatch& patch = mHeightData[id];
-    assert(!patch.isDone());
-
-    // Requesting generating locks the height data
-    ++patch.mRefCount;
-
-    if (!patch.mHeightData) {
-        // TODO: Recycle
-        patch.mHeightData = new HeightmapPatchData(id);
-    }
-    if (!patch.isGenerating()) {
-        // Always extra ref while generating
-        ++patch.mRefCount;
-        patch.mFlags |= HEIGHTMAP_PATCH_FLAG_GENERATING;
-        f32v2 position = mSpatialGrid2D.getWorldPosXYFromID(id);
-
-        Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
-            generateHeightDataPatch(patch, position);
-        }, [this, id]() {
-            // TODO: Can we just set an atomic instead?
-            onPatchFinishedGenerating(id);
-        });
-    }
-    if (callback) {
-        mFinishCallbacks[id].push_back(callback);
-    }
-}
-
-void IHeightmapGrid::requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback) {
-    ASSERT_GAME_THREAD();
-    HeightmapPatchID requiredIds[9];
-    computeRequiredPaddedIDs(id, requiredIds);
-
-    int totalRequired = 0;
-    for (int i = 0; i < 9; ++i) {
-        HeightmapPatchID requiredId = requiredIds[i];
-        if (!mSpatialGrid2D.isIdValid(requiredId)) {
-            continue;
-        }
-        HeightmapPatch& patch = mHeightData[requiredId];
-
-        // Requesting generating locks the height data
-        ++patch.mRefCount;
-
-        if (patch.isDone()) {
-            continue;
-        }
-
-        ++totalRequired;
-
-        mPaddedGenListeners[requiredId].push_back(id);
-
-        if (!patch.mHeightData) {
-            // TODO: Recycle
-            patch.mHeightData = new HeightmapPatchData(requiredId);
-        }
-        if (!patch.isGenerating()) {
-            // Always extra ref while generating
-            ++patch.mRefCount;
-            patch.mFlags |= HEIGHTMAP_PATCH_FLAG_GENERATING;
-            f32v2 position = mSpatialGrid2D.getWorldPosXYFromID(requiredId);
-
-            Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
-                generateHeightDataPatch(patch, position);
-            }, [this, requiredId]() {
-                onPatchFinishedGenerating(requiredId);
-            });
-        }
-    }
-
-    if (callback) {
-        if (totalRequired == 0) {
-            callback();
-        }
-        else {
-            // Keep track of how many neighbors we are waiting on to generate before callback runs
-            assert(mPaddedGenWaitCount.find(id) == mPaddedGenWaitCount.end());
-            mPaddedGenWaitCount[id] = totalRequired;
-            mPaddedFinishCallbacks[id].push_back(callback);
-        }
-    }
-    else if (totalRequired) {
-        mPaddedGenWaitCount[id] = totalRequired;
-    }
-}
-
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& worldPos) const {
     return getHeightDataAt(mSpatialGrid2D.getIDAtWorldPos(worldPos));
 }
@@ -254,76 +132,7 @@ const HeightmapPatchData* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& w
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
     ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
-    assert(patch.isDone());
     return patch.mHeightData;
-}
-
-const HeightmapPatchData* IHeightmapGrid::tryGetHeightDataAt(HeightmapPatchID id) const {
-    ASSERT_GAME_THREAD();
-    const HeightmapPatch& patch = mHeightData[id];
-    if (patch.isDone()) {
-        return patch.mHeightData;
-    }
-    return nullptr;
-}
-
-const HeightmapPatchData* IHeightmapGrid::aquireHeightData(HeightmapPatchID id) {
-    ASSERT_GAME_THREAD();
-    HeightmapPatch& patch = mHeightData[id];
-    assert(patch.isDone());
-    ++patch.mRefCount;
-    return patch.mHeightData;
-}
-
-const HeightmapPatchData* IHeightmapGrid::tryAquireHeightData(HeightmapPatchID id) {
-    ASSERT_GAME_THREAD();
-    HeightmapPatch& patch = mHeightData[id];
-    if (patch.isDone()) {
-        ++patch.mRefCount;
-        return patch.mHeightData;
-    }
-    return nullptr;
-}
-
-//const HeightmapPatchData* IHeightmapGrid::tryAquireHeightDataThreadSafe(HeightmapPatchID id) {
-//    assert(!IS_GAME_THREAD());
-//    std::lock_guard lock(mMutex);
-//    HeightmapPatch& patch = mHeightData[id];
-//    if (patch.isDone()) {
-//        ++patch.mRefCount;
-//        return patch.mHeightData;
-//    }
-//    return nullptr;
-//}
-
-bool IHeightmapGrid::tryAquirePaddedHeightDataAt(HeightmapPatchID id) {
-    ASSERT_GAME_THREAD();
-    HeightmapPatchID requiredIds[9];
-    computeRequiredPaddedIDs(id, requiredIds);
-    bool failed = false;
-    for (int i = 0; i < 9; ++i) {
-        const HeightmapPatchID& required = requiredIds[i];
-        if (mSpatialGrid2D.isIdValid(required)) {
-            if (!mHeightData[required].isDone()) {
-                failed = true;
-                break;
-            }
-        }
-    }
-    if (failed) {
-        return false;
-    }
-    else {
-        // Return all data and aquire
-        for (int i = 0; i < 9; ++i) {
-            const HeightmapPatchID& required = requiredIds[i];
-            if (mSpatialGrid2D.isIdValid(required)) {
-                const HeightmapPatch& patch = mHeightData[required];
-                ++mHeightData[required].mRefCount;
-            }
-        }
-        return true;
-    }
 }
 
 void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]) {
@@ -334,35 +143,11 @@ void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const Height
     for (int i = 0; i < 9; ++i) {
         if (mSpatialGrid2D.isIdValid(id)) {
             const HeightmapPatch& patch = mHeightData[requiredIds[i]];
-            assert(patch.isDone());
             paddedHeightData[i] = patch.mHeightData;
         }
         else {
             paddedHeightData[i] = nullptr;
         }
-    }
-}
-
-void IHeightmapGrid::releaseHeightDataAt(HeightmapPatchID id) {
-    ASSERT_GAME_THREAD();
-    // Padded may result in this
-    if (!mSpatialGrid2D.isIdValid(id)) {
-        return;
-    }
-    HeightmapPatch& patch = mHeightData[id];
-    assert(patch.mRefCount);
-    --patch.mRefCount;
-}
-
-void IHeightmapGrid::releasePaddedHeightDataAt(HeightmapPatchID id) {
-    ASSERT_GAME_THREAD();
-    // Release the 9 chunks
-    HeightmapPatchID bottomId = mSpatialGrid2D.getSouthID(id);
-    HeightmapPatchID topId = mSpatialGrid2D.getNorthID(id);
-    HeightmapPatchID requiredIDs[9];
-    computeRequiredPaddedIDs(id, requiredIDs);
-    for (int i = 0; i < 9; ++i) {
-        releaseHeightDataAt(requiredIDs[i]);
     }
 }
 
@@ -508,47 +293,46 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
 f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const {
     ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
-    if (!patch.isDone()) return 0.0f;
     return patch.mHeightData->data[vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x];
 }
 
-bool IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
-    ASSERT_GAME_THREAD();
-    // assert(IS_MAIN_THREAD) // TODO: Uncomment this, im lazy rn
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
-    const HeightmapPatch& patch = mHeightData[id];
-
-    if (!patch.isDone()) {
-        return false;
-    }
-
-    *h = computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
-    return true;
-}
-
-
-f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
+f32 IHeightmapGrid::computeHeightAtPoint(const f32v2& worldPos) const {
     ASSERT_GAME_THREAD();
     HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
     const HeightmapPatch& patch = mHeightData[id];
-
-    if (!patch.isDone()) {
-        return FLT_MAX;
-    }
 
     return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
 }
 
-f32 IHeightmapGrid::tryComputeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const {
+f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const {
     ASSERT_GAME_THREAD();
     HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
     const HeightmapPatch& patch = mHeightData[id];
 
-    if (!patch.isDone()) {
-        return FLT_MAX;
-    }
-
     return computeHeightAndNormalAtPoint(id, patch.mHeightData->data, worldPos, outNormal);
+}
+
+f32 IHeightmapGrid::getHeightAtPointThreadSafe(const f32v2& worldPos) const
+{
+    const f32v2 clampedPos(glm::clamp(worldPos, 0.0f, mMaxCoordinate));
+
+    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(clampedPos);
+    const HeightmapPatch& patch = mHeightData[id];
+
+    std::shared_lock lock(patch.mHeightData->mMutex);
+    return computeHeightAtPoint(id, patch.mHeightData->data, clampedPos);
+}
+
+f32 IHeightmapGrid::getHeightAndNormalAtPointThreadSafe(const f32v2& worldPos, OUT f32v3* outNormal) const
+{
+    const f32v2 clampedPos(glm::clamp(worldPos, 0.0f, mMaxCoordinate));
+
+    ASSERT_GAME_THREAD();
+    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(clampedPos);
+    const HeightmapPatch& patch = mHeightData[id];
+
+    std::shared_lock lock(patch.mHeightData->mMutex);
+    return computeHeightAndNormalAtPoint(id, patch.mHeightData->data, clampedPos, outNormal);
 }
 
 f32 IHeightmapGrid::computeHeightAtChunkOffset(const CompressedHeight* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk) {
@@ -615,10 +399,6 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
     HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldTilePos);
     const HeightmapPatch& patch = mHeightData[id];
 
-    if (!patch.isDone()) {
-        return 0.0f;
-    }
-
     return computeCenterHeightAtTile(patch.mHeightData->data, worldTilePos);
 }
 
@@ -683,10 +463,6 @@ f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
     HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldTilePos);
     const HeightmapPatch& patch = mHeightData[id];
 
-    if (!patch.isDone()) {
-        return 0.0f;
-    }
-
     return computeMinHeightAtTile(patch.mHeightData->data, worldTilePos);
 }
 
@@ -694,10 +470,6 @@ f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
     ASSERT_GAME_THREAD();
     HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldTilePos);
     const HeightmapPatch& patch = mHeightData[id];
-
-    if (!patch.isDone()) {
-        return 0.0f;
-    }
 
     f32 corners[4];
     computeTileCorners(patch.mHeightData->data, worldTilePos, corners);
@@ -708,21 +480,14 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
     ASSERT_GAME_THREAD();
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
-    ui32 total = 0;
+    const f32 total = (f32)(aabb.dims.x * aabb.dims.y);
     for (i32 y = 0; y < aabb.dims.y; ++y) {
         for (i32 x = 0; x < aabb.dims.x; ++x) {
-            f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
-            f32 h;
-            if (tryComputeHeightAtPoint(pos, &h)) {
-                meanHeight += h;
-                ++total;
-            }
-            else {
-                assert(false); // Failed to compute height for city builder debug build instant
-            }
+            const f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
+            meanHeight += computeHeightAtPoint(pos);
         }
     }
-    return  meanHeight / (f32)total;
+    return meanHeight / total;
 }
 
 f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const {
@@ -734,53 +499,19 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray
         for (ui32 x = 0; x < aabb.dims.x; ++x) {
             const ui32 index = y * aabb.dims.x + x;
             if (checkBits.getBit(index)) {
-                f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
-                f32 h;
-                if (tryComputeHeightAtPoint(pos, &h)) {
-                    meanHeight += h;
-                    ++total;
-                }
-                else {
-                    assert(false); // Failed to compute height for city builder debug build instant
-                }
+                const f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
+                meanHeight += computeHeightAtPoint(pos);
+                ++total;
             }
         }
     }
     return meanHeight / (f32)total;
 }
 
-void IHeightmapGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {
-    // AABB calculation
-    f32AABB3& aabb = patch.mHeightData->aabb;
-    aabb.dims.x = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-    aabb.dims.y = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-    aabb.pos.x = position.x;
-    aabb.pos.y = position.y;
-    f32 minZ = FLT_MAX;
-    f32 maxZ = -FLT_MAX;
-    IWorldGenerator& worldGenerator = mWorld->getWorldGenerator();
-    for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
-        for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
-            const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);
-            f32 height = worldGenerator.getTerrainHeightAtPos(vertPos);
-            if (height > maxZ) maxZ = height;
-            if (height < minZ) minZ = height;
-            patch.mHeightData->setHeightAt(y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x, height);
-        }
-    }
-
-    aabb.pos.z = minZ;
-    aabb.dims.z = maxZ - minZ;
-    patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
-}
-
 
 void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
     ASSERT_GAME_THREAD();
     HeightmapPatch& patch = mHeightData[id];
-    mActiveHeightmapPatches.push_back(id);
-    patch.mFlags = HEIGHTMAP_PATCH_FLAG_DONE;
-    --patch.mRefCount;
     {
         auto&& it = mFinishCallbacks.find(id);
         if (it != mFinishCallbacks.end()) {
@@ -827,45 +558,43 @@ void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
     ASSERT_GAME_THREAD();
     HeightmapPatch& patch = mHeightData[id];
-    if (patch.isDone() && patch.mRefCount) {
-        {
-            std::lock_guard lock(patch.mHeightData->mMutex);
-            HeightmapPatchData& data = *patch.mHeightData;
-            switch (dir) {
-                case TerrainHeightSetDirection::ANY:
-                    data.setHeightAt(vertIndex, height);
-                    break;
-                case TerrainHeightSetDirection::RAISE:
-                    if (height > uncompressHeight(data.data[vertIndex])) data.setHeightAt(vertIndex, height);
-                    break;
-                case TerrainHeightSetDirection::LOWER:
-                    if (height < uncompressHeight(data.data[vertIndex])) data.setHeightAt(vertIndex, height);
-                    break;
-                default:
-                    assert(false);
-                    break;
+    {
+        std::lock_guard lock(patch.mHeightData->mMutex);
+        HeightmapPatchData& data = *patch.mHeightData;
+        switch (dir) {
+            case TerrainHeightSetDirection::ANY:
+                data.setHeightAt(vertIndex, height);
+                break;
+            case TerrainHeightSetDirection::RAISE:
+                if (height > uncompressHeight(data.data[vertIndex])) data.setHeightAt(vertIndex, height);
+                break;
+            case TerrainHeightSetDirection::LOWER:
+                if (height < uncompressHeight(data.data[vertIndex])) data.setHeightAt(vertIndex, height);
+                break;
+            default:
+                assert(false);
+                break;
 
-            }
-            // TODO: Can we pull this out of critical section?
-            // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
-            if (height > data.aabb.pos.z + data.aabb.height) {
-                data.aabb.height = height - data.aabb.pos.z;
-                data.boundingSphere = boundingSphereFromAABB(data.aabb);
-            }
-            else if (height < data.aabb.pos.z) {
-                data.aabb.height += data.aabb.pos.z - height;
-                data.aabb.pos.z = height;
-                data.boundingSphere = boundingSphereFromAABB(data.aabb);
-            }
         }
-        // Store position of this edit for later batched notify
-        ui32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
-        const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-        const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-        worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
-        worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
-        mModifiedVertsThisTick.insert(i32v2(worldPos));
+        // TODO: Can we pull this out of critical section?
+        // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
+        if (height > data.aabb.pos.z + data.aabb.height) {
+            data.aabb.height = height - data.aabb.pos.z;
+            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        }
+        else if (height < data.aabb.pos.z) {
+            data.aabb.height += data.aabb.pos.z - height;
+            data.aabb.pos.z = height;
+            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        }
     }
+    // Store position of this edit for later batched notify
+    ui32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
+    const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
+    worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
+    mModifiedVertsThisTick.insert(i32v2(worldPos));
 }
 
 void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const {

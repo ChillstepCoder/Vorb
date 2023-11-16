@@ -102,29 +102,21 @@ void PhysicsSystem::update(World& world, entt::registry& registry) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
         f32v3 pos = cmp.getPosition();
         const f32v2 xyPosition(pos.x, pos.y);
-        f32 terrainHeight;
         constexpr f32 SNAP_THRESHOLD = 0.01f;
-        if (grid.tryComputeHeightAtPoint(xyPosition, &terrainHeight)) {
-            if (terrainHeight >= pos.z - SNAP_THRESHOLD) {
-                f32v3 vel = cmp.getLinearVelocity();
-                const f32v3 velocity = cmp.getLinearVelocity();
-                if (velocity.z < 0.0f) {
-                    cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
-                }
-                pos.z = terrainHeight;
-                cmp.setTransform(pos, 0.0f);
-                cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
+        const f32 terrainHeight = grid.computeHeightAtPoint(xyPosition);
+
+        if (terrainHeight >= pos.z - SNAP_THRESHOLD) {
+            f32v3 vel = cmp.getLinearVelocity();
+            const f32v3 velocity = cmp.getLinearVelocity();
+            if (velocity.z < 0.0f) {
+                cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
             }
-            else {
-                cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
-            }
+            pos.z = terrainHeight;
+            cmp.setTransform(pos, 0.0f);
+            cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
         }
         else {
-            /*cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);*/
-            f32v3 vel = cmp.getLinearVelocity();
-            cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
             cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
-            // TODO: Deactivate? hmmm
         }
         // Copy position to our position component
         view.get<PositionComponent>(entity).mPosition = pos;

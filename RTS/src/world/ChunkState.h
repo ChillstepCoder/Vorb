@@ -2,7 +2,6 @@
 
 enum class ChunkState : ui8 {
     INVALID,
-    WAITING_HEIGHT,
     LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
     LOADING_MESH_PHYSICS_NAV_VISIBILITY,
     READY,

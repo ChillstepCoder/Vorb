@@ -82,8 +82,6 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         if (chunk.getRefCount() == 0) {
             // Release height and notify only if we were ever valid
             if (chunk.mState != ChunkState::INVALID) {
-                const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
-                heightGrid.releaseHeightDataAt(heightId);
                 dispatchDestroy(chunk);
             }
             chunk.dispose();
@@ -200,14 +198,6 @@ void IChunkGrid::updateLoadingChunks() {
     for (size_t i = 0; i < mLoadingChunks.size();) {
         Chunk& chunk = mChunks[mLoadingChunks[i]];
         switch (chunk.mState) {
-            case ChunkState::WAITING_HEIGHT: {
-                // Poll for generated height
-                if (heightGrid.tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
-                    chunk.beginLoad();
-                }
-                ++i;
-                break;
-            }
             case ChunkState::LOADING_TILES: {
                 ++i;
                 break;
@@ -472,12 +462,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 
     if (chunk.mState == ChunkState::INVALID) {
         // Begin load
-        if (heightGrid.tryAquireHeightData(chunk.getHeightmapPatchID())) {
-            chunk.beginLoad();
-        }
-        else {
-            beginHeightLoadForChunk(chunk);
-        }
+        chunk.beginLoad();
         addChunkToLoadList(chunk);
     }
     else if (chunk.mState == ChunkState::READY) {
@@ -489,13 +474,6 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         panic("Tried to re-load chunk already being loaded");
         //addChunkToLoadList(chunk);
     }
-}
-
-void IChunkGrid::beginHeightLoadForChunk(Chunk& chunk) {
-    assert(chunk.mState != ChunkState::WAITING_HEIGHT);
-    chunk.mState = ChunkState::WAITING_HEIGHT;
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
-    heightGrid.requestHeightDataGenAndAquireAt(chunk.getHeightmapPatchID(), nullptr);
 }
 
 void IChunkGrid::onChunkReady(Chunk& chunk)

@@ -381,9 +381,6 @@ void WorldRenderer::renderDebug() {
                     case ChunkState::INVALID:
                         color = color4(0.5f, 0.5f, 0.5f);
                         break;
-                    case ChunkState::WAITING_HEIGHT:
-                        color = color4(1.0f, 1.0f, 0.0f);
-                        break;
                     case ChunkState::LOADING_TILES:
                         color = color4(0.0f, 1.0f, 1.0f);
                         break;

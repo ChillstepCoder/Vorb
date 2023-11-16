@@ -31,7 +31,7 @@ constexpr f32 FINE_NAV_HEIGHT_THRESHOLD = 3.0f / 4.0f + 0.05f;
 constexpr f64 RESERVE_DURATION_SEC = 10.0;
 
 inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
-    return f32v3(pos2d.x, pos2d.y, heightGrid.tryComputeHeightAtPoint(pos2d));
+    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(pos2d));
 }
 
 inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapPatchID& patchId, const CompressedHeight* heightData, const f32v2& pos2d) {

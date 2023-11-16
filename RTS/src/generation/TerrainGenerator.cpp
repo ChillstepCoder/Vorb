@@ -62,9 +62,7 @@ void TerrainGenerator::generateBaseHeightmap() {
                 HeightmapPatch& patch = mHeightGrid->mHeightData[rowOffset + j];
                 delete patch.mHeightData;
                 patch.mHeightData = new HeightmapPatchData(rowOffset + j);
-                ++patch.mRefCount;
                 generateHeightDataPatch(patch, f32v2());
-                patch.mFlags = HEIGHTMAP_PATCH_FLAG_DONE;
             }
             ++mFinishedRows;
             LOG_INFO("Finished generating terrain row {}", i);
@@ -85,7 +83,7 @@ void TerrainGenerator::generateHeightDataPatch(HeightmapPatch& patch, const f32v
         for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
             const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);
             //f32 height = worldGenerator.getTerrainHeightAtPos(vertPos);
-            f32 height = 5.0f;
+            f32 height = 3.f;
             if (height > maxZ) maxZ = height;
             if (height < minZ) minZ = height;
             patch.mHeightData->setHeightAt(y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x, height);

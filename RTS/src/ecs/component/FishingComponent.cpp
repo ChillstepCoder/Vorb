@@ -150,7 +150,7 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
                 fishingCmp.mBobberVelocity = f32v3(0.0f);
                 fishingCmp.mState = FishingComponentState::Fishing;
             }
-            else if (fishingCmp.mBobberPosition.z <= world.getHeightmapGrid().tryComputeHeightAtPoint(f32v2(fishingCmp.mBobberPosition))) {
+            else if (fishingCmp.mBobberPosition.z <= world.getHeightmapGrid().computeHeightAtPoint(f32v2(fishingCmp.mBobberPosition))) {
                 // Terrain collision is failure
                 fishingCmp.mState = FishingComponentState::Fail;
                 return;
@@ -180,12 +180,8 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
                     return;
                 }
                 // Check for beaching the bobber
-                const f32 terrainHeight = world.getHeightmapGrid().tryComputeHeightAtPoint(f32v2(fishingCmp.mBobberPosition));
+                const f32 terrainHeight = world.getHeightmapGrid().computeHeightAtPoint(f32v2(fishingCmp.mBobberPosition));
                 // TODO: If tile handle is invalid, switch to LOD?
-                if (terrainHeight == FLT_MAX) {
-                    fishingCmp.mState = FishingComponentState::Fail;
-                    return;
-                }
                 if (terrainHeight >= -0.01f) {
                     fishingCmp.mState = FishingComponentState::Fail;
                     return;

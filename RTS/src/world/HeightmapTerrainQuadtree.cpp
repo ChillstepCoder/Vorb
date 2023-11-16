@@ -62,7 +62,7 @@ void HeightmapTerrainQuadtree::markDirty() {
     }
 }
 
-void createTerrainAndWaterMeshFromGen(
+void createTerrainAndWaterMeshLowerLOD(
     World& world,
     TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,
@@ -73,15 +73,13 @@ void createTerrainAndWaterMeshFromGen(
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     assert(dims.x == dims.y);
 
-    IWorldGenerator& worldGenerator = world.getWorldGenerator();
-
     // Generate heightfield
-    // TODO: This could stack overflow on some systems I think
+    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            const f32 zPos = worldGenerator.getTerrainHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            const f32 zPos = heightGrid.getHeightAtPointThreadSafe(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
             paddedHeightfield[y][x] = compressHeight(zPos);
         }
     }
@@ -118,9 +116,7 @@ void HeightmapTerrainQuadtree::updateCrossfadeRenderForPatch(ui32 patchIndex, f3
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
 {
     ASSERT_GAME_THREAD();
-    bool hasAquired = true;
     if (!mTerrainMeshes[patchIndex] || !mWaterMeshes[patchIndex]) {
-        hasAquired = false; // If we dont have a mesh, we haven't aquired yet
         mTerrainMeshes[patchIndex] = std::make_unique<TerrainMesh>(patchIndex);
         mWaterMeshes[patchIndex] = std::make_unique<TerrainMesh>(patchIndex);
         assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
@@ -137,26 +133,12 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
             return;
         }
 
-        TerrainMeshTaskData* taskData = new TerrainMeshTaskData(this, patchIndex);
-
-        if (hasAquired || heightGrid.tryAquirePaddedHeightDataAt(id)) {
-            createMeshesHighestLOD(taskData);
-        }
-        else {
-            // Wait for the terrain generator to generate our chunk
-            // TODO: No std::function
-            heightGrid.requestPaddedHeightDataGenAndAquireAt(id, [this, taskData]() {
-                createMeshesHighestLOD(taskData);
-            });
-        }
+        createMeshesHighestLOD(new TerrainMeshTaskData(this, patchIndex));
     }
     else {
         TerrainMeshGenTaskData* taskData = new TerrainMeshGenTaskData(mWorld, this, patchIndex);
-        // At lower LODs we have to regenerate every time
-        // TODO: we actually shouldnt do this.. it ignores diffs
-        // Generate mesh data on worker thread
         Services::Threadpool::ref().addTask([this, lod, taskData](ThreadPoolWorkerData*) {
-            createTerrainAndWaterMeshFromGen(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
+            createTerrainAndWaterMeshLowerLOD(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
 
             // To render thread for upload
             RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
@@ -244,12 +226,6 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
 void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
 {
     ASSERT_GAME_THREAD();
-    // Only highest LOD has reference to heightmap
-    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    if (QUADTREE_LOD_FROM_INDEX[patchIndex] == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
-        const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-        heightGrid.releasePaddedHeightDataAt(id);
-    }
 
     struct TerrainMeshFreeTask {
         TerrainMeshFreeTask(std::unique_ptr<TerrainMesh>&& terrainMesh, std::unique_ptr<TerrainMesh>&& waterMesh, World& world) : terrainMesh(std::move(terrainMesh)), waterMesh(std::move(waterMesh)), world(world) {}

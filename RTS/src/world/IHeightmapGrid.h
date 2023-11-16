@@ -60,24 +60,10 @@ public:
 
     void tickShared();
 
-    //// NEW INTERFACE
-    //const HeightmapPatchData* tryGetHeightDataMainThread(HeightmapPatchID id) const;
-    //void asyncGetPatchHandle(HeightmapPatchID id, OUT HeightmapPatchHandle& handle);
-    //void releasePatchHandle(HeightmapPatchHandle&& handle);
-
     // Aquire
-    void requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
-    void requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
     const HeightmapPatchData* getHeightDataAtWorldPos(const i32v2& worldPos) const;
     const HeightmapPatchData* getHeightDataAt(HeightmapPatchID id) const;
-    const HeightmapPatchData* tryGetHeightDataAt(HeightmapPatchID id) const;
-    const HeightmapPatchData* aquireHeightData(HeightmapPatchID id);
-    const HeightmapPatchData* tryAquireHeightData(HeightmapPatchID id);
-    //const HeightmapPatchData* tryAquireHeightDataThreadSafe(HeightmapPatchID id);
-    bool tryAquirePaddedHeightDataAt(HeightmapPatchID id);
     void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]);
-    void releaseHeightDataAt(HeightmapPatchID id);
-    void releasePaddedHeightDataAt(HeightmapPatchID id);
 
     // Mutators
     void setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
@@ -88,9 +74,11 @@ public:
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
-    bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
-    f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
-    f32 tryComputeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
+    f32 computeHeightAtPoint(const f32v2& worldPos) const;
+    f32 computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
+
+    f32 getHeightAtPointThreadSafe(const f32v2& worldPos) const;
+    f32 getHeightAndNormalAtPointThreadSafe(const f32v2& worldPos, OUT f32v3* outNormal) const;
 
     f32 computeHeightAtChunkOffset(const CompressedHeight* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk);
     f32 computeHeightAtPoint(const CompressedHeight* heightData, const f32v2& worldPos) const;
@@ -117,7 +105,6 @@ public:
 
 
 protected:
-    void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
     void onPatchFinishedGenerating(HeightmapPatchID id);
     void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
@@ -131,7 +118,7 @@ protected:
     std::unique_ptr<HeightmapPatch[]> mHeightData;
     ui32 mWidthPatches;
     ui32 mTotalPatches;
-    std::vector<ui32> mActiveHeightmapPatches;
+    f32 mMaxCoordinate;
 
     std::map<ui32, std::list<std::function<void()>>> mFinishCallbacks; // Runs when generation is finished
     std::map<ui32, std::list<std::function<void()>>> mPaddedFinishCallbacks; // Runs when generation is finished

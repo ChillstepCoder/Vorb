@@ -28,7 +28,7 @@ constexpr ui32 MAX_FINE_OPEN_LIST_SIZE = 512;
 
 constexpr ui32 DEBUG_DURATION = 200;
 inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
-    return f32v3(pos2d.x, pos2d.y, heightGrid.tryComputeHeightAtPoint(pos2d));
+    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(pos2d));
 }
 
 struct CoarseAStarNode {

@@ -3,9 +3,9 @@ class SpatialGrid2D
 {
 public:
     SpatialGrid2D() {};
-    SpatialGrid2D(ui32 cellWidth, ui32 gridWidthCells) : mCellWidth(cellWidth), mGridWidthCells(gridWidthCells) { }
+    SpatialGrid2D(ui32 cellWidth, ui32 gridWidthCells) : mCellWidth((i32)cellWidth), mGridWidthCells((i32)gridWidthCells) { }
 
-    void init(ui32 cellWidth, ui32 gridWidthCells) { mCellWidth = cellWidth; mGridWidthCells = gridWidthCells; }
+    void init(ui32 cellWidth, ui32 gridWidthCells) { mCellWidth = (i32)cellWidth; mGridWidthCells = (i32)gridWidthCells; }
 
     ui32 getIDAtWorldPos(const i32v2& worldPos) const;
     i32v2 getWorldPosXYFromID(ui32 id) const;
@@ -18,7 +18,7 @@ public:
     i32v2 getGridXYFromID(ui32 id) const;
 
 private:
-    ui32 mCellWidth = 0;
-    ui32 mGridWidthCells = 0;
+    i32 mCellWidth = 0;
+    i32 mGridWidthCells = 0;
 };
 

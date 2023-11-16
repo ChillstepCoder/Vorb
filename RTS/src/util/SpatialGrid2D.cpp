@@ -3,11 +3,11 @@
 
 ui32 SpatialGrid2D::getIDAtWorldPos(const i32v2& worldPos) const {
     assert(worldPos.x >= 0 && worldPos.y >= 0);
-    return ((int)worldPos.y / mCellWidth) * mGridWidthCells + (int)worldPos.x / mCellWidth;
+    return (worldPos.y / mCellWidth) * mGridWidthCells + worldPos.x / mCellWidth;
 }
 
 i32v2 SpatialGrid2D::getWorldPosXYFromID(ui32 id) const {
-    return i32v2((id % mGridWidthCells) * mCellWidth, (id / mGridWidthCells) * mCellWidth);
+    return i32v2(((i32)id % mGridWidthCells) * mCellWidth, ((i32)id / mGridWidthCells) * mCellWidth);
 }
 
 bool SpatialGrid2D::isSentinelID(ui32 id) const {
@@ -16,5 +16,5 @@ bool SpatialGrid2D::isSentinelID(ui32 id) const {
 }
 
 i32v2 SpatialGrid2D::getGridXYFromID(ui32 id) const {
-    return i32v2((id % mGridWidthCells), (id / mGridWidthCells));
+    return i32v2(((i32)id % mGridWidthCells), ((i32)id / mGridWidthCells));
 }

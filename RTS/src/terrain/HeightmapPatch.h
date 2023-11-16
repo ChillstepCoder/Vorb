@@ -8,13 +8,6 @@
 
 class btCollisionObject;
 
-enum HeightmapPatchFlags : ui32 {
-    HEIGHTMAP_PATCH_FLAG_GENERATING = 1 << 0,
-    HEIGHTMAP_PATCH_FLAG_DONE = 1 << 1
-};
-
-
-
 class HeightmapPatchData {
     friend class IHeightmapGrid;
 public:
@@ -24,7 +17,7 @@ public:
         return HEIGHT_STEP * data[pos];
     }
     void setHeightAt(int pos, f32 height) {
-        data[pos] = (CompressedHeight)glm::round(glm::clamp(height, MAX_HEIGHT, MAX_HEIGHT) / HEIGHT_STEP);
+        data[pos] = (CompressedHeight)glm::round(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT) / HEIGHT_STEP);
     }
     const CompressedHeight* getData() const {
         return data;
@@ -37,7 +30,6 @@ public:
     HeightmapPatchID id;
     btCollisionObject* mCollider = nullptr;
     mutable std::shared_mutex mMutex;
-
 };
 
 class HeightmapPatch {
@@ -45,11 +37,6 @@ public:
     HeightmapPatch() = default;
     ~HeightmapPatch() = default;
 
-    bool isDone() const { return mFlags & HEIGHTMAP_PATCH_FLAG_DONE; }
-    bool isGenerating() const { return mFlags & HEIGHTMAP_PATCH_FLAG_GENERATING; }
-
-    ui32 mFlags = 0u;
-    std::atomic<ui32> mRefCount = 0u;
     HeightmapPatchData* mHeightData = nullptr;
 };
-static_assert(sizeof(HeightmapPatch) == 16, "Keep small");
+static_assert(sizeof(HeightmapPatch) == 8, "Keep small");
