@@ -25,3 +25,8 @@ constexpr AssetID INVALID_ASSET_ID = UINT32_MAX;
 typedef ui8 TileGrassID;
 constexpr TileGrassID INVALID_TILE_GRASS_ID = UINT8_MAX;
 constexpr ui32 MAX_TILE_GRASS_IDS = 0xff;
+
+typedef ui32 HeightmapPatchID;
+typedef ui32 ChunkID;
+typedef ui32 LiteChunkID;
+constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;

@@ -100,6 +100,7 @@ IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthT
     mHeightData = std::unique_ptr<HeightmapPatch[]>(new HeightmapPatch[mTotalPatches]);
     mSpatialGrid2D.init(HEIGHTMAP_WIDTH, mWidthPatches);
     mMaxCoordinate = mWidthPatches * HEIGHTMAP_WIDTH - 1;
+    mPatchWidth = (f32)worldWidthTiles / mWidthPatches;
 }
 
 IHeightmapGrid::~IHeightmapGrid() {
@@ -509,50 +510,14 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray
 }
 
 
-void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
+void IHeightmapGrid::onPatchFinishedGeneratingTODOREMOVE(HeightmapPatchID id) {
     ASSERT_GAME_THREAD();
     HeightmapPatch& patch = mHeightData[id];
-    {
-        auto&& it = mFinishCallbacks.find(id);
-        if (it != mFinishCallbacks.end()) {
-            for (auto&& func : it->second) {
-                func();
-            }
-            mFinishCallbacks.erase(it);
-        }
-    }
 
     assert(!patch.mHeightData->mCollider);
     // Generate collider
     patch.mHeightData->mCollider = mWorld->getPhysicsWorld().addHeightField(patch);
 
-    // See if any other patches were waiting on us for padded data access
-    {
-        auto&& it = mPaddedGenListeners.find(id);
-        if (it != mPaddedGenListeners.end()) {
-            //std::cout << "START " << it->second.size() << std::endl;
-            for (auto&& idListener : it->second) {
-                auto&& it2 = mPaddedGenWaitCount.find(idListener);
-                assert(it2 != mPaddedGenWaitCount.end());
-                //std::cout << it2->second << " " << idListener.id << std::endl;
-                if (it2->second == 1) {
-                    // Child is done, run any waiting callbacks
-                    mPaddedGenWaitCount.erase(it2);
-                    auto&& it3 = mPaddedFinishCallbacks.find(idListener);
-                    if (it3 != mPaddedFinishCallbacks.end()) {
-                        for (auto&& func : it3->second) {
-                            func();
-                        }
-                        mPaddedFinishCallbacks.erase(it3);
-                    }
-                }
-                else {
-                    --it2->second;
-                }
-            }
-            mPaddedGenListeners.erase(it);
-        }
-    }
 }
 
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {

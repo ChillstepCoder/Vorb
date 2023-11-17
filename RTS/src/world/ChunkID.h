@@ -84,7 +84,3 @@ protected:
 //typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
 
 
-typedef ui32 HeightmapPatchID;
-typedef ui32 ChunkID;
-typedef ui32 LiteChunkID;
-constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;

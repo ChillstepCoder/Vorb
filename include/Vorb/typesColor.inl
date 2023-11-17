@@ -159,7 +159,7 @@ public:
         r = (ui8)(invRatio * ca.r + ratio * cb.r);
         g = (ui8)(invRatio * ca.g + ratio * cb.g);
         b = (ui8)(invRatio * ca.b + ratio * cb.b);
-        a = (ui8)(invRatio * ca.r + ratio * cb.a);
+        a = (ui8)(invRatio * ca.a + ratio * cb.a);
     }
 
     bool operator==(const ColorRGBA8& rhs) const {

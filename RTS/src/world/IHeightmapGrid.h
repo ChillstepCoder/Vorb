@@ -58,6 +58,8 @@ public:
     IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();
 
+    VORB_NON_COPYABLE(IHeightmapGrid);
+
     void tickShared();
 
     // Aquire
@@ -100,12 +102,13 @@ public:
     const SpatialGrid2D& getSpatialGrid2D() const { return mSpatialGrid2D; }
     World& getWorld() const { return *mWorld; }
     void setWorld(World& world) { mWorld = &world; }
+    f32 getPatchWidth() const { return mPatchWidth; }
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
 
 protected:
-    void onPatchFinishedGenerating(HeightmapPatchID id);
+    void onPatchFinishedGeneratingTODOREMOVE(HeightmapPatchID id); // TODO: REMOVE
     void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
@@ -119,11 +122,7 @@ protected:
     ui32 mWidthPatches;
     ui32 mTotalPatches;
     f32 mMaxCoordinate;
-
-    std::map<ui32, std::list<std::function<void()>>> mFinishCallbacks; // Runs when generation is finished
-    std::map<ui32, std::list<std::function<void()>>> mPaddedFinishCallbacks; // Runs when generation is finished
-    std::map<ui32, ui32> mPaddedGenWaitCount;
-    std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
+    f32 mPatchWidth;
 
     World* mWorld = nullptr;
     //std::mutex mMutex;

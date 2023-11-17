@@ -1,0 +1,20 @@
+
+#include "util/noise/snoise3.glsl"
+
+layout(local_size_x = 128, local_size_y = 128) in;
+
+layout(std430, binding = 0) writeonly buffer HeightData
+{
+    int heightData[];
+};
+
+uniform vec2 unInputDims;
+
+const uint totalSamples = 1024u;
+
+void main() {   
+    const uint idx = gl_GlobalInvocationID.x;
+    const uint idy = gl_GlobalInvocationID.y;
+    
+    //imageStore(unPrefilteredOutput, cubeCoord, vec4(prefilteredColor, 1.0));
+}

@@ -17,6 +17,8 @@ public:
     bool isSentinelID(ui32 id) const;
     i32v2 getGridXYFromID(ui32 id) const;
 
+    i32 getCellWidth() const { return mCellWidth; }
+    i32 getGridWidthCells() const { return mGridWidthCells; }
 private:
     i32 mCellWidth = 0;
     i32 mGridWidthCells = 0;

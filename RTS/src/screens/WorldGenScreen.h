@@ -1,6 +1,9 @@
 #pragma once
 
 #include <Vorb/ui/IGameScreen.h>
+#include <Vorb/blockingconcurrentqueue.h>
+
+#include <gli/gli.hpp>
 
 class App;
 class HostWorldData;
@@ -36,6 +39,9 @@ protected:
     void initWorldData();
     void updateDockspace();
     void updateTerrainGen();
+    void onPatchFinished(HeightmapPatchID patchId);
+
+    void initScreenTexture();
 
     bool mRebuildDockspace = true;
     bool mCancelled = false;
@@ -45,5 +51,10 @@ protected:
     std::unique_ptr<TerrainGenerator> mTerrainGenerator;
 
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
+    moodycamel::ConcurrentQueue<HeightmapPatchID> mFinishedTerrainPatches;
+
+    VGTexture mScreenTexture = 0;
+    gli::texture2d mScreenTextureData;
+    ui32 mPatchPixelDims = 0;
 };
 
