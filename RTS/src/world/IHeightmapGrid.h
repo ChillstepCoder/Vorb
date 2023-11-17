@@ -51,6 +51,7 @@ struct HeightmapGridEvent {
 };
 EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGridEvent&);
 
+// TOTAL MEMORY PRE TRIM = 839mb
 class IHeightmapGrid
 {
     friend class TerrainGenerator;
