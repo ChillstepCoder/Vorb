@@ -264,7 +264,7 @@ void WorldGenScreen::onPatchFinished(HeightmapPatchID patchId) {
         const f32 yPosOffset = y * heightStride;
         const int yOffset = y * mPatchPixelDims;
         for (int x = 0; x < mPatchPixelDims; ++x) {
-            const f32 height = heightGrid.getHeightAtPointThreadSafe(patchWorldPos + f32v2(x * heightStride, yPosOffset));
+            const f32 height = heightGrid.computeHeightAtPointForGeneration(patchWorldPos + f32v2(x * heightStride, yPosOffset));
             ColorRGB8 lerpColor;
             if (height < 0.0f) {
                 const f32 depthMult = glm::min(-height * 0.025f, 1.0f);

@@ -359,7 +359,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             const WorldNetMode netMode = mWorld->getNetMode();
             if (netMode == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                mWorld->tryGetNavWorld()->debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
+                mWorld->tryGetNavWorld()->debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
             }
             else {
                 assert(false);
@@ -377,7 +377,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
             if (mWorld->getNetMode() == WorldNetMode::Host) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                mWorld->tryGetNavWorld()->debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
+                mWorld->tryGetNavWorld()->debugDrawCoarseNavNode(tileHandle, 2000);
             }
             else {
                 assert(false);

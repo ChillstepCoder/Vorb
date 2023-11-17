@@ -17,7 +17,6 @@ public:
         setVertsWaterFromPaddedHeightfield(cornerPos, totalWidth, paddedHeightfield);
     }
 
-
     void finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const f32v3& worldPos);
 private:
     void setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);

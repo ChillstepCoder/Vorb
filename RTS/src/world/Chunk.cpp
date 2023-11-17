@@ -306,7 +306,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                 const ui32v2 chunkRelPos(offsetFromChunk.x + x, offsetFromChunk.y + y);
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
                     TileIndex tileIndex = mTileContainer->getTileSpatialGrid().getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
-                    bulkEdit.emplace_back(std::make_pair(tileIndex, heightmapGrid.computeCenterHeightAtTile(f32v2(chunkRelPos) + worldPos)));
+                    bulkEdit.emplace_back(std::make_pair(tileIndex, heightmapGrid.computeCenterHeightAtTile<false>(f32v2(chunkRelPos) + worldPos)));
                     //if (tile.getLayers()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
                         //mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeMinHeightAtTile(f32v2(chunkRelPos) + worldPos));

@@ -30,7 +30,6 @@ struct TerrainMeshTaskData {
 
     TerrainMeshBuilder terrainBuilder;
     HeightmapTerrainQuadtree* owner;
-    CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     ui32 patchIndex;
 };
 
@@ -62,7 +61,7 @@ void HeightmapTerrainQuadtree::markDirty() {
     }
 }
 
-void createTerrainAndWaterMeshLowerLOD(
+void createTerrainAndWaterMesh(
     World& world,
     TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,
@@ -79,25 +78,11 @@ void createTerrainAndWaterMeshLowerLOD(
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            const f32 zPos = heightGrid.getHeightAtPointThreadSafe(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            const f32 zPos = heightGrid.computeHeightAtPoint<true>(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
             paddedHeightfield[y][x] = compressHeight(zPos);
         }
     }
     terrainBuilder.buildFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
-};
-
-void createTerrainAndWaterMesh(
-    TerrainMeshBuilder& terrainBuilder,
-    const ui32v2& posStart,
-    ui32 lod,
-    const f32v2& worldPos,
-    const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]
-) {
-    const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
-    f32v2 patchWorldPos = worldPos + f32v2(posStart);
-
-    // Build
-    terrainBuilder.buildFromPaddedHeightfield(posStart, (f32)dims.x, paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {
@@ -123,76 +108,26 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     }
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
-    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    if (lod == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
-        // At highest LOD we ask the heightmap generator to handle it
-        const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-        // Sentinal IDs never mesh
-        if (heightGrid.getSpatialGrid2D().isSentinelID(id)) {
-            onMeshFinished(patchIndex, false);
-            return;
-        }
+    TerrainMeshGenTaskData* taskData = new TerrainMeshGenTaskData(mWorld, this, patchIndex);
+    Services::Threadpool::ref().addTask([this, lod, taskData](ThreadPoolWorkerData*) {
+        createTerrainAndWaterMesh(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
 
-        createMeshesHighestLOD(new TerrainMeshTaskData(this, patchIndex));
-    }
-    else {
-        TerrainMeshGenTaskData* taskData = new TerrainMeshGenTaskData(mWorld, this, patchIndex);
-        Services::Threadpool::ref().addTask([this, lod, taskData](ThreadPoolWorkerData*) {
-            createTerrainAndWaterMeshLowerLOD(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
-
-            // To render thread for upload
-            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-                TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
-                HeightmapTerrainQuadtree* owner = taskData->owner;
-                owner->finishMeshes(taskData->terrainBuilder, taskData->patchIndex);
-                taskData->isAnyMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
-
-                // Back to the main thread to update state
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
-                    TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
-                    taskData->owner->onMeshFinished(taskData->patchIndex, taskData->isAnyMeshValid);
-                    // Free resources
-                    delete taskData;
-                }, taskData);
-            }, taskData);
-        }, nullptr);
-    }
-}
-
-void HeightmapTerrainQuadtree::createMeshesHighestLOD(TerrainMeshTaskData* taskData) {
-
-    f32v2 patchWorldPos = mWorldPos + f32v2(PATCH_POSITIONS.data[taskData->patchIndex].xy);
-    ui32v2 intWorldPos(glm::round(patchWorldPos));
-
-    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    const ui32 quadWidth = HEIGHTMAP_QUAD_SIZE;
-    intWorldPos -= quadWidth; // Padding so we start on the side
-    for (int y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
-        heightGrid.copyHeightRowToBuffer(taskData->paddedHeightfield[y], intWorldPos, TERRAIN_MESH_PADDED_WIDTH_VERTS);
-        intWorldPos.y += quadWidth;
-    }
-
-    // Generate mesh data on worker thread
-    Services::Threadpool::ref().addTask([this, taskData](ThreadPoolWorkerData*) {
-        createTerrainAndWaterMesh(taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD, mWorldPos, taskData->paddedHeightfield);
-
-        // To render thread to upload
+        // To render thread for upload
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-            TerrainMeshTaskData* taskData = static_cast<TerrainMeshTaskData*>(vTaskData);
-            taskData->owner->finishMeshes(taskData->terrainBuilder, taskData->patchIndex);
+            TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
+            HeightmapTerrainQuadtree* owner = taskData->owner;
+            owner->finishMeshes(taskData->terrainBuilder, taskData->patchIndex);
+            taskData->isAnyMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
 
             // Back to the main thread to update state
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
-                TerrainMeshTaskData* taskData = static_cast<TerrainMeshTaskData*>(vTaskData);
-                HeightmapTerrainQuadtree* owner = taskData->owner;
-                const bool isMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
-                taskData->owner->onMeshFinished(taskData->patchIndex, isMeshValid);
+                TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
+                taskData->owner->onMeshFinished(taskData->patchIndex, taskData->isAnyMeshValid);
                 // Free resources
                 delete taskData;
             }, taskData);
         }, taskData);
     }, nullptr);
-
 }
 
 void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex) {

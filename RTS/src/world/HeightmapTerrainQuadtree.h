@@ -38,7 +38,6 @@ private:
 
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
 
-    void createMeshesHighestLOD(TerrainMeshTaskData* taskData);
     void finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex);
     void freeMeshForPatch(ui32 patchIndex) override;
 

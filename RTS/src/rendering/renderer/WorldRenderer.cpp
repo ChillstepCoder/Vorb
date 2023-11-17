@@ -427,7 +427,7 @@ void WorldRenderer::renderDebug() {
                 if (glm::length2(mCamera->getPosition() - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
                     
                     if (NavWorld* navWorld = mActiveWorld->tryGetNavWorld()) {
-                        navWorld->debugDrawCoarseNavGraphForContainer(*it.second, nullptr, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                        navWorld->debugDrawCoarseNavGraphForContainer(*it.second, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                     }
                 }
             }

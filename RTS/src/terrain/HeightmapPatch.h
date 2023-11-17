@@ -13,8 +13,15 @@ class HeightmapPatchData {
 public:
     HeightmapPatchData(HeightmapPatchID id) : id(id) {};
 
-    f32 getHeightAt(int pos) {
-        return HEIGHT_STEP * data[pos];
+    template<bool THREAD_SAFE = false>
+    f32 getHeightAt(int pos) const {
+        if constexpr (THREAD_SAFE) {
+            std::shared_lock lock(mMutex);
+            return HEIGHT_STEP * data[pos];
+        }
+        else {
+            return HEIGHT_STEP * data[pos];
+        }
     }
     void setHeightAt(int pos, f32 height) {
         data[pos] = (CompressedHeight)glm::round(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT) / HEIGHT_STEP);
@@ -32,10 +39,17 @@ public:
     mutable std::shared_mutex mMutex;
 };
 
+// TODO: Remove the middleman
 class HeightmapPatch {
 public:
     HeightmapPatch() = default;
     ~HeightmapPatch() = default;
+
+    template<bool THREAD_SAFE = false>
+    f32 getHeightAt(int pos) const {
+        assert(mHeightData);
+        return mHeightData->getHeightAt<THREAD_SAFE>(pos);
+    }   
 
     HeightmapPatchData* mHeightData = nullptr;
 };

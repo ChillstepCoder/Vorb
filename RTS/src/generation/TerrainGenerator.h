@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "generation/WorldGenerationData.h"
 
 class IHeightmapGrid;
@@ -11,6 +10,11 @@ enum class TerrainGenerationState {
     GeneratingBaseHeightmap,
     GeneratingBaseHeightmapDone,
     COUNT
+};
+
+struct PendingGPUTerrainGeneration {
+    GLsync sync;
+    HeightmapPatchID patchID;
 };
 
 class TerrainGenerator
@@ -34,5 +38,7 @@ private:
 
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;
+
+
 };
 

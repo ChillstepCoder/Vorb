@@ -51,7 +51,7 @@ public:
     void setLoadCenter(const f32v2& loadCenter);
     ui32 getWidthTiles() const { return mWidthTiles; }
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
-    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_WIDTH; }
+    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH; }
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }

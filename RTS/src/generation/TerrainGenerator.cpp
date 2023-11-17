@@ -59,12 +59,12 @@ void TerrainGenerator::generateBaseHeightmapCPU(std::function<void(HeightmapPatc
     for (ui32 y = 0; y < mHeightGrid->mWidthPatches; ++y) {
         Services::Threadpool::ref().addTask([this, y, onPatchFinished](ThreadPoolWorkerData*) {
             const ui32 rowOffset = y * mHeightGrid->mWidthPatches;
-            const f32 yPos = y * HEIGHTMAP_WIDTH;
+            const f32 yPos = y * HEIGHTMAP_PATCH_WIDTH;
             for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x) {
                 HeightmapPatch& patch = mHeightGrid->mHeightData[rowOffset + x];
                 delete patch.mHeightData;
                 patch.mHeightData = new HeightmapPatchData(rowOffset + x);
-                generateHeightDataPatch(patch, f32v2(x * HEIGHTMAP_WIDTH, yPos));
+                generateHeightDataPatch(patch, f32v2(x * HEIGHTMAP_PATCH_WIDTH, yPos));
                 if (onPatchFinished) {
                     onPatchFinished(rowOffset + x);
                 }
@@ -83,8 +83,8 @@ void TerrainGenerator::generateBaseHeightmapGPU(std::function<void(HeightmapPatc
 void TerrainGenerator::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {
     // AABB calculation
     f32AABB3& aabb = patch.mHeightData->aabb;
-    aabb.dims.x = HEIGHTMAP_WIDTH;
-    aabb.dims.y = HEIGHTMAP_WIDTH;
+    aabb.dims.x = HEIGHTMAP_PATCH_WIDTH;
+    aabb.dims.y = HEIGHTMAP_PATCH_WIDTH;
     aabb.pos.x = position.x;
     aabb.pos.y = position.y;
     f32 minZ = FLT_MAX;

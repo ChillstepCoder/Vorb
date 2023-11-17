@@ -251,7 +251,7 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
             for (auto&& pos : it.second) {
                 const ui32 x = (ui32)pos.x & (CHUNK_WIDTH - 1); // Fast modulus
                 const ui32 y = (ui32)pos.y & (CHUNK_WIDTH - 1); // Fast modulus
-                editData.emplace_back(std::make_pair(y * CHUNK_WIDTH + x, heightmapGrid.computeCenterHeightAtTile(pos)));
+                editData.emplace_back(std::make_pair(y * CHUNK_WIDTH + x, heightmapGrid.computeCenterHeightAtTile<false>(pos)));
             }
             chunk.getTileContainer()->bulkSetTileGroundZPosition(editData.data(), editData.size());
             editData.clear();

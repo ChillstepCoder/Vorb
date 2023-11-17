@@ -166,12 +166,10 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
     boundingSphere.center.y = chunkWorldPos.y + tilePosStart.y + halfDims;
     
     IHeightmapGrid& heightmapGrid = chunk.getWorld().getHeightmapGrid();
-    const HeightmapPatchID heightmapPatchId = heightmapGrid.getSpatialGrid2D().getIDAtWorldPos(i32v2(chunkWorldPos));
-    { // Read lock
-        std::shared_lock lock(heightData->mMutex); // TODO: This can be locked for a long time, we need a worker thread copy function
-
+    //const HeightmapPatchID heightmapPatchId = heightmapGrid.getSpatialGrid2D().getIDAtWorldPos(i32v2(chunkWorldPos));
+    {
         // Sample bounding sphere from heightmap
-        boundingSphere.center.z = heightmapGrid.computeHeightAtChunkOffset(heightData->getData(), chunk.getChunkID(), f32v2(tilePosStart.x + halfDims, tilePosStart.y + halfDims));
+        boundingSphere.center.z = heightmapGrid.computeHeightAtPoint<true>(chunkWorldPos + f32v2(tilePosStart.x + halfDims, tilePosStart.y + halfDims));
         const TileSpatialGrid& tileSpatialGrid = chunk.getTileContainer()->getTileSpatialGrid();
         // TODO: Optimize redundant math
 
@@ -231,7 +229,7 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                                 const float yo = (y2 - rnd) / (float)detail;
                                 f32v3 relativePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo, 0.0f);
                                 f32v3 normal;
-                                relativePos.z = heightmapGrid.computeHeightAndNormalAtPoint(heightmapPatchId, heightData->getData(), chunkWorldPos + f32v2(relativePos), &normal);
+                                relativePos.z = heightmapGrid.computeHeightAndNormalAtPoint<true>(chunkWorldPos + f32v2(relativePos), &normal);
                                 addGrass(grassMeshBuilder, grassData, grassNoiseFunction, relativePos, normal, rnd, (f32)detail, bladeWidth, densityMult, x, y, x2, y2);
                             }
                         }

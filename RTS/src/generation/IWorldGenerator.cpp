@@ -130,7 +130,7 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
     return tile;
 }
 
-void IWorldGenerator::generateChunk(Chunk& chunk, CompressedHeight* heightData) {
+void IWorldGenerator::generateChunk(Chunk& chunk) {
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();
@@ -139,12 +139,12 @@ void IWorldGenerator::generateChunk(Chunk& chunk, CompressedHeight* heightData) 
     chunk.mTileContainer->allocateData();
     const ChunkID& id = chunk.getChunkID();
 
-    // Cache all min heights
+    // Cache all center heights
     f32 centerHeights[CHUNK_SIZE];
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = chunk.getWorld().getHeightmapGrid().computeCenterHeightAtTile(heightData, chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
+        centerHeights[i] = chunk.getWorld().getHeightmapGrid().computeCenterHeightAtTile<true>(chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
     }
 
     // Large objects

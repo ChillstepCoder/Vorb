@@ -20,18 +20,11 @@ TileContainerLoader::TileContainerLoader(World& world) : mWorld(world) {}
 void TileContainerLoader::loadChunk(TileContainer& container)
 {
     // TODO: Go from SimulatedChunk somehow (SimulatedChunk vs SimulatedStructure)
-
     Chunk* chunk = container.getOwnerChunk();
     assert(chunk);
     chunk->incRef();
-    // Make sure we dont lose height data
-    // TODO: copy minimum
-    CompressedHeight* heightData = new CompressedHeight[HEIGHTMAP_VERT_SIZE_PER_PATCH];
-    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    const CompressedHeight* srcData = heightGrid.getHeightDataAt(chunk->getHeightmapPatchID())->getData();
-    memcpy(heightData, srcData, sizeof(CompressedHeight) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
 
-    Services::Threadpool::ref().addTask([chunk, heightData](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([chunk](ThreadPoolWorkerData* workerData) {
         TileContainer& container = *chunk->mTileContainer;
         // Worker thread
         //
@@ -43,8 +36,7 @@ void TileContainerLoader::loadChunk(TileContainer& container)
         }
 
         // Generate chunk
-        chunk->getWorld().getWorldGenerator().generateChunk(*chunk, heightData);
-        delete heightData;
+        chunk->getWorld().getWorldGenerator().generateChunk(*chunk);
 
         // Build visibility
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());

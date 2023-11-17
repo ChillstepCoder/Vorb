@@ -44,7 +44,7 @@ std::vector<f32v3> NavPath::convertToWorldPoints(const IHeightmapGrid& heightGri
     std::vector<f32v3> rv(numPoints);
     for (ui32 i = 0; i < numPoints; ++i) {
         i32v2 worldPosI = points[i].getWorldPosition(heightGrid.getWorld());
-        rv[i] = f32v3(worldPosI.x, worldPosI.y, heightGrid.computeHeightAtPoint(worldPosI));
+        rv[i] = f32v3(worldPosI.x, worldPosI.y, heightGrid.computeHeightAtPoint<true>(worldPosI));
     }
     return rv;
 }

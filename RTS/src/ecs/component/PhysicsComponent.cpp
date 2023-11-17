@@ -103,7 +103,7 @@ void PhysicsSystem::update(World& world, entt::registry& registry) {
         f32v3 pos = cmp.getPosition();
         const f32v2 xyPosition(pos.x, pos.y);
         constexpr f32 SNAP_THRESHOLD = 0.01f;
-        const f32 terrainHeight = grid.computeHeightAtPoint(xyPosition);
+        const f32 terrainHeight = grid.computeHeightAtPoint<false>(xyPosition);
 
         if (terrainHeight >= pos.z - SNAP_THRESHOLD) {
             f32v3 vel = cmp.getLinearVelocity();

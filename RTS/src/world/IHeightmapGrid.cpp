@@ -22,32 +22,11 @@
 
 #include <boost/pool/singleton_pool.hpp>
 
-//
-//// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
-//struct patch_handle_pool {};
-//using singleton_handle_pool = boost::singleton_pool<patch_handle_pool, sizeof(HeightmapPatchHandleData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 128u>;
-//
-//
-//
-//HeightmapPatchHandleData::HeightmapPatchHandleData() {
-//
-//}
-//
-//HeightmapPatchHandleData::~HeightmapPatchHandleData() {
-//    // We cannot legally free until finished gen
-//    assert(isFinishedGenerating);
-//}
-//
-//void* HeightmapPatchHandleData::operator new(size_t count) {
-//    UNUSED(count);
-//    return singleton_handle_pool::malloc();
-//}
-//
-//void HeightmapPatchHandleData::operator delete(void* pointer, size_t size) {
-//    UNUSED(size);
-//    return singleton_handle_pool::free(pointer);
-//}
+#define DECL_BOOL_TEMPLATE(signature, rest) \
+template signature<true>rest; \
+template signature<false>rest;
 
+//
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
 // point p with respect to triangle (a, b, c)
@@ -96,10 +75,10 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 }
 
 
-IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_WIDTH), mTotalPatches(SQ(mWidthPatches)) {
+IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH), mTotalPatches(SQ(mWidthPatches)) {
     mHeightData = std::unique_ptr<HeightmapPatch[]>(new HeightmapPatch[mTotalPatches]);
-    mSpatialGrid2D.init(HEIGHTMAP_WIDTH, mWidthPatches);
-    mMaxCoordinate = mWidthPatches * HEIGHTMAP_WIDTH - 1;
+    mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH, mWidthPatches);
+    mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH - 1;
     mPatchWidth = (f32)worldWidthTiles / mWidthPatches;
 }
 
@@ -211,57 +190,9 @@ void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeig
     }
 }
 
-void IHeightmapGrid::setHeightAtPatch(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/)
-{
+void IHeightmapGrid::setHeightAtPatch(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
     ASSERT_GAME_THREAD();
     setHeightAtInternal(patchId, vertIndex, height, dir);
-
-    // Update duplicate verts (TODO: should we do this?)
-    const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    if (x == 0) {
-        // update left duplicate verts
-        const HeightmapPatchID leftId = mSpatialGrid2D.getWestID(patchId);
-        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_WIDTH_PER_PATCH - 1;
-        setHeightAtInternal(leftId, newIndex, height, dir);
-        if (y == 0) {
-            // update bottom left duplicate verts
-            const ui32 cornerIndex = newIndex + HEIGHTMAP_VERT_SIZE_PER_PATCH - HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-            setHeightAtInternal(mSpatialGrid2D.getSouthID(leftId), cornerIndex, height, dir);
-        }
-        else if (y == HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
-            // update top left duplicate verts
-            const ui32 cornerIndex = newIndex - HEIGHTMAP_VERT_SIZE_PER_PATCH + HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-            setHeightAtInternal(mSpatialGrid2D.getNorthID(leftId), cornerIndex, height, dir);
-        }
-    }
-    else if (x == HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
-        // update right duplicate verts
-        const HeightmapPatchID rightId = mSpatialGrid2D.getEastID(patchId);
-        const ui32 newIndex = vertIndex - HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1;
-        setHeightAtInternal(rightId, newIndex, height, dir);
-        if (y == 0) {
-            // update bottom right duplicate verts
-            const ui32 cornerIndex = newIndex + HEIGHTMAP_VERT_SIZE_PER_PATCH - HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-            setHeightAtInternal(mSpatialGrid2D.getSouthID(rightId), cornerIndex, height, dir);
-        }
-        else if (y == HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
-            // update top right duplicate verts
-            const ui32 cornerIndex = newIndex - HEIGHTMAP_VERT_SIZE_PER_PATCH + HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-            setHeightAtInternal(mSpatialGrid2D.getNorthID(rightId), cornerIndex, height, dir);
-        }
-    }
-    if (y == 0) {
-        // update bottom duplicate verts
-        const HeightmapPatchID bottomId = mSpatialGrid2D.getSouthID(patchId);
-        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_SIZE_PER_PATCH - HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-        setHeightAtInternal(bottomId, newIndex, height, dir);
-    }
-    else if (y == HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
-        const HeightmapPatchID topId = mSpatialGrid2D.getNorthID(patchId);
-        const ui32 newIndex = vertIndex - HEIGHTMAP_VERT_SIZE_PER_PATCH + HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-        setHeightAtInternal(topId, newIndex, height, dir);
-    }
 }
 
 void IHeightmapGrid::adjustHeightAtChunk(ChunkID id, ui32 vertIndex, f32 adjust) {
@@ -294,156 +225,68 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
 f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const {
     ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
-    return patch.mHeightData->data[vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x];
+    assert(vertPos.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH && vertPos.y < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    return patch.getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
 }
 
+template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAtPoint(const f32v2& worldPos) const {
-    ASSERT_GAME_THREAD();
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
-    const HeightmapPatch& patch = mHeightData[id];
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
+    return interpolateHeightAtWorldPos<THREAD_SAFE>(worldPos);
+}
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAtPoint, (const f32v2& worldPos) const)
 
-    return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
+f32 IHeightmapGrid::computeHeightAtPointForGeneration(const f32v2& worldPos) const {
+    return interpolateHeightAtWorldPos<false>(worldPos);
 }
 
+template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const {
-    ASSERT_GAME_THREAD();
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
-    const HeightmapPatch& patch = mHeightData[id];
-
-    return computeHeightAndNormalAtPoint(id, patch.mHeightData->data, worldPos, outNormal);
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
+    return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(worldPos, outNormal);
 }
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAndNormalAtPoint, (const f32v2& worldPos, OUT f32v3* outNormal) const)
 
-f32 IHeightmapGrid::getHeightAtPointThreadSafe(const f32v2& worldPos) const
-{
-    const f32v2 clampedPos(glm::clamp(worldPos, 0.0f, mMaxCoordinate));
-
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(clampedPos);
-    const HeightmapPatch& patch = mHeightData[id];
-
-    std::shared_lock lock(patch.mHeightData->mMutex);
-    return computeHeightAtPoint(id, patch.mHeightData->data, clampedPos);
-}
-
-f32 IHeightmapGrid::getHeightAndNormalAtPointThreadSafe(const f32v2& worldPos, OUT f32v3* outNormal) const
-{
-    const f32v2 clampedPos(glm::clamp(worldPos, 0.0f, mMaxCoordinate));
-
-    ASSERT_GAME_THREAD();
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(clampedPos);
-    const HeightmapPatch& patch = mHeightData[id];
-
-    std::shared_lock lock(patch.mHeightData->mMutex);
-    return computeHeightAndNormalAtPoint(id, patch.mHeightData->data, clampedPos, outNormal);
-}
-
-f32 IHeightmapGrid::computeHeightAtChunkOffset(const CompressedHeight* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk) {
-    i32v2 chunkPos = mWorld->getChunkGrid().getChunkOffsetFromChunkID(chunkId);
-    // TODO: This doesnt account the individual world dimensions
-    const f32v2 offset = offsetIntoChunk + f32v2((chunkPos % i32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (i32)CHUNK_WIDTH);
-    const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
-
-    // Compute normalized offset from bl
-    // TODO: Optimize
-    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
-    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
-
-    return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-}
-
-f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const CompressedHeight* heightData, const f32v2& worldPos) const
-{
-    const f32v2 offset = worldPos - f32v2(mSpatialGrid2D.getWorldPosXYFromID(id));
-    const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
-
-    // Compute normalized offset from bl
-    // TODO: Optimize
-    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
-    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
-
-    return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-}
-
-f32 IHeightmapGrid::computeHeightAtPoint(const CompressedHeight* heightData, const f32v2& worldPos) const {
-    return computeHeightAtPoint(mSpatialGrid2D.getIDAtWorldPos(i32v2(worldPos)), heightData, worldPos);
-}
-
-f32 IHeightmapGrid::computeHeightAndNormalAtPoint(HeightmapPatchID id, const CompressedHeight* heightData, const f32v2& worldPos, OUT f32v3* outNormal) const {
-    assert(outNormal);
-    const f32v2 offset = worldPos - f32v2(mSpatialGrid2D.getWorldPosXYFromID(id));
-    const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
-
-    // Compute normalized offset from bl
-    // TODO: Optimize
-    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
-    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
-
-    return getHeightAndNormalAtOffset(dxy, heightData, heightmapXY, outNormal);
-}
-
-f32 IHeightmapGrid::computeCenterHeightAtTile(const CompressedHeight* heightData, ui32v2 worldTilePos) const
-{
-    const f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos) + f32v2(0.5f);
-    const ui32v2 heightmapXY = getHeightmapXYfromTilePos(worldTilePos);
-
-    // Compute normalized offset from bl
-    // TODO: Optimize
-    const f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
-    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
-
-    return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-
-}
-
+template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
-    ASSERT_GAME_THREAD();
-
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldTilePos);
-    const HeightmapPatch& patch = mHeightData[id];
-
-    return computeCenterHeightAtTile(patch.mHeightData->data, worldTilePos);
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
+    return interpolateHeightAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos) + f32v2(0.5f));
 }
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAtTile, (ui32v2 worldTilePos) const)
 
-void IHeightmapGrid::copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const {
-    ASSERT_GAME_THREAD();
-    assert(mHeightData);
-    assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH * 2.0f);
+//void IHeightmapGrid::copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const {
+//    ASSERT_GAME_THREAD();
+//    assert(mHeightData);
+//    assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH * 2.0f);
+//
+//    ui32 lengthRemaining = rowLength;
+//    i32v2 worldPos = worldPosStart;
+//    do {
+//        // Get heightmap position and vertex offset
+//        HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
+//        i32v2 offset = (worldPos - mSpatialGrid2D.getWorldPosXYFromID(id)) / HEIGHTMAP_QUAD_SIZE;
+//        assert(offset.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+//        // Get length values
+//        const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
+//        const ui32 lengthToCopy = glm::min(maxLength, lengthRemaining);
+//        // Copy data
+//
+//        HeightmapPatchData* data = mHeightData[id].mHeightData;
+//        assert(data);
+//        memcpy(dst, &data->data[offset.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + offset.x], sizeof(CompressedHeight) * lengthToCopy);
+//        // Increment pointers and update length + position
+//        dst += lengthToCopy;
+//        lengthRemaining -= lengthToCopy;
+//        worldPos.x += HEIGHTMAP_QUAD_SIZE * lengthToCopy + 1; // +1 since we have a shared vertex on the edge
+//    } while (lengthRemaining > 0);
+//}
 
-    ui32 lengthRemaining = rowLength;
-    i32v2 worldPos = worldPosStart;
-    do {
-        // Get heightmap position and vertex offset
-        HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
-        i32v2 offset = (worldPos - mSpatialGrid2D.getWorldPosXYFromID(id)) / HEIGHTMAP_QUAD_SIZE;
-        assert(offset.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
-        // Get length values
-        const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
-        const ui32 lengthToCopy = glm::min(maxLength, lengthRemaining);
-        // Copy data
-
-        HeightmapPatchData* data = mHeightData[id].mHeightData;
-        assert(data);
-        memcpy(dst, &data->data[offset.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + offset.x], sizeof(CompressedHeight) * lengthToCopy);
-        // Increment pointers and update length + position
-        dst += lengthToCopy;
-        lengthRemaining -= lengthToCopy;
-        worldPos.x += HEIGHTMAP_QUAD_SIZE * lengthToCopy + 1; // +1 since we have a shared vertex on the edge
-    } while (lengthRemaining > 0);
-}
-
-void IHeightmapGrid::computeTileCorners(const CompressedHeight* heightData, ui32v2 worldTilePos, OUT f32 corners[4]) const {
-    constexpr f32 tileWidthHeightmap = 1.0f / HEIGHTMAP_QUAD_SIZE;
-
-    f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos);
-    ui32v2 heightmapXY = getHeightmapXYfromTilePos(worldTilePos);
-    // Compute normalized offset from bl
-    // TODO: Optimize
-    f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
-    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
-
-    corners[0] = interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-    corners[1] = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap, 0.0f), heightData, heightmapXY);
-    corners[2] = interpolateHeightAtOffset(dxy + f32v2(0.0f, tileWidthHeightmap), heightData, heightmapXY);
-    corners[3] = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap), heightData, heightmapXY);
+void IHeightmapGrid::computeTileCorners(ui32v2 worldTilePos, OUT f32 corners[4]) const {
+    const f32v2 worldPosf(worldTilePos);
+    corners[0] = interpolateHeightAtWorldPos<false>(worldPosf);
+    corners[1] = interpolateHeightAtWorldPos<false>(worldPosf + f32v2(1.0f, 0.0f));
+    corners[2] = interpolateHeightAtWorldPos<false>(worldPosf + f32v2(0.0f, 1.0f));
+    corners[3] = interpolateHeightAtWorldPos<false>(worldPosf + f32v2(1.0f));
 }
 
 bool IHeightmapGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) const {
@@ -452,28 +295,17 @@ bool IHeightmapGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) con
     return (heightmapXY.x + heightmapXY.y) % 2 == 1;
 }
 
-f32 IHeightmapGrid::computeMinHeightAtTile(const CompressedHeight* heightData, ui32v2 worldTilePos) const {
-    f32 corners[4];
-    computeTileCorners(heightData, worldTilePos, corners);
-    return uncompressHeight(glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]));
-}
-
 f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
     ASSERT_GAME_THREAD();
-
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldTilePos);
-    const HeightmapPatch& patch = mHeightData[id];
-
-    return computeMinHeightAtTile(patch.mHeightData->data, worldTilePos);
+    f32 corners[4];
+    computeTileCorners(worldTilePos, corners);
+    return glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
 f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
     ASSERT_GAME_THREAD();
-    HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldTilePos);
-    const HeightmapPatch& patch = mHeightData[id];
-
     f32 corners[4];
-    computeTileCorners(patch.mHeightData->data, worldTilePos, corners);
+    computeTileCorners(worldTilePos, corners);
     return glm::max(glm::max(glm::max(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
@@ -485,7 +317,7 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
     for (i32 y = 0; y < aabb.dims.y; ++y) {
         for (i32 x = 0; x < aabb.dims.x; ++x) {
             const f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
-            meanHeight += computeHeightAtPoint(pos);
+            meanHeight += computeHeightAtPoint<false>(pos);
         }
     }
     return meanHeight / total;
@@ -501,7 +333,7 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray
             const ui32 index = y * aabb.dims.x + x;
             if (checkBits.getBit(index)) {
                 const f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
-                meanHeight += computeHeightAtPoint(pos);
+                meanHeight += computeHeightAtPoint<false>(pos);
                 ++total;
             }
         }
@@ -576,9 +408,64 @@ void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT Heightmap
     requiredIds[8] = mSpatialGrid2D.getEastID(topId);
 }
 
-f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight* heightData, const ui32v2 heightmapXY, OUT f32v3* outNormal) {
+template <bool THREAD_SAFE>
+f32 IHeightmapGrid::interpolateHeightAndNormalAtWorldPos(f32v2 worldPos, OUT f32v3* outNormal) const {
+    worldPos = glm::clamp(worldPos, 0.0f, mMaxCoordinate);
+
+    // Get the position and ID of this patch
+    const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH);
+    const HeightmapPatchID blID = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
+    const i32v2 patchWorldCoords = patchGridCoords * HEIGHTMAP_PATCH_WIDTH;
+
+    // Get offset into the patch and the xy indices of the current quad
+    const f32v2 offsetIntoPatch = worldPos - f32v2(patchWorldCoords);
+    const i32v2 quadXYIndices = i32v2(offsetIntoPatch) / HEIGHTMAP_QUAD_SIZE;
+    const f32v2 quadRootPos = f32v2(quadXYIndices * HEIGHTMAP_QUAD_SIZE);
+
+    // Get interpolation values between 0-1
+    const f32v2 dxy = (offsetIntoPatch - quadRootPos) / f32(HEIGHTMAP_QUAD_SIZE);
+    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
+
+    const i32 rowStrideMinus1 = HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1;
+
+    // Get patches and positions for each vertex
+    int blIndex = quadXYIndices.y * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + quadXYIndices.x;
+    HeightmapPatchID brID = blID;
+    int brIndex = blIndex + 1;
+    HeightmapPatchID tlID = blID;
+    int tlIndex = blIndex + HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+    HeightmapPatchID trID = blID;
+    int trIndex = blIndex + HEIGHTMAP_QUAD_WIDTH_PER_PATCH + 1;
+    if (quadXYIndices.x >= rowStrideMinus1) [[unlikely]] {
+        brID += 1;
+        brIndex -= HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+        trID += 1;
+        trIndex -= HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+        if (brID >= mTotalPatches) [[unlikely]] {
+            brID = blID;
+            brIndex = blIndex;
+        }
+        if (trID >= mTotalPatches) [[unlikely]] {
+            trID = blID;
+            trIndex = blIndex;
+        }
+    }
+    if (quadXYIndices.y >= rowStrideMinus1) [[unlikely]] {
+        tlID += mWidthPatches;
+        tlIndex -= HEIGHTMAP_VERT_SIZE_PER_PATCH;
+        trID += mWidthPatches;
+        trIndex -= HEIGHTMAP_VERT_SIZE_PER_PATCH;
+        if (tlID >= mTotalPatches) [[unlikely]] {
+            tlID = blID;
+            tlIndex = blIndex;
+        }
+        if (trID >= mTotalPatches) [[unlikely]] {
+            trID = blID;
+            trIndex = blIndex;
+        }
+    }
     // Select which triangle we are looking at, taking into account orientation
-    if ((heightmapXY.x + heightmapXY.y) % 2 == 0) {
+    if ((quadXYIndices.x + quadXYIndices.y) % 2 == 0) {
         // This shape
         // **********
         // *     ** *
@@ -588,9 +475,9 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight
         if (dxy.x + (1.0f - dxy.y) > 1.0f) {
             // Lower quadrant
             // Get the 3 corner heights
-            const f32 bl = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 br = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-            const f32 tr = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
+            const f32 bl = mHeightData[blID].getHeightAt<THREAD_SAFE>(blIndex);
+            const f32 br = mHeightData[brID].getHeightAt<THREAD_SAFE>(brIndex);
+            const f32 tr = mHeightData[trID].getHeightAt<THREAD_SAFE>(trIndex);
 
             // Compute normal from this triangle
             const f32v3 blv(0.0f, 0.0f, bl);
@@ -609,9 +496,9 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight
         else {
             // Upper quadrant
             // Get the 3 corner heights
-            const f32 bl = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 tl = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 tr = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
+            const f32 bl = mHeightData[blID].getHeightAt<THREAD_SAFE>(blIndex);
+            const f32 tl = mHeightData[tlID].getHeightAt<THREAD_SAFE>(tlIndex);
+            const f32 tr = mHeightData[trID].getHeightAt<THREAD_SAFE>(trIndex);
 
             // Compute normal from this triangle
             const f32v3 blv(0.0f, 0.0f, bl);
@@ -638,9 +525,9 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight
         if (dxy.x + dxy.y > 1.0f) {
             // Upper quadrant
             // Get the 3 corner heights
-            const f32 br = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-            const f32 tl = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 tr = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
+            const f32 br = mHeightData[brID].getHeightAt<THREAD_SAFE>(brIndex);
+            const f32 tl = mHeightData[tlID].getHeightAt<THREAD_SAFE>(tlIndex);
+            const f32 tr = mHeightData[trID].getHeightAt<THREAD_SAFE>(trIndex);
 
             // Compute normal from this triangle
             const f32v3 brv(HEIGHTMAP_QUAD_SIZE, 0.0f, br);
@@ -659,9 +546,9 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight
         else {
             // Lower quadrant
             // Get the 3 corner heights
-            const f32 bl = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 br = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-            const f32 tl = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
+            const f32 bl = mHeightData[blID].getHeightAt<THREAD_SAFE>(blIndex);
+            const f32 br = mHeightData[brID].getHeightAt<THREAD_SAFE>(brIndex);
+            const f32 tl = mHeightData[tlID].getHeightAt<THREAD_SAFE>(tlIndex);
 
             // Compute normal from this triangle
             const f32v3 blv(0.0f, 0.0f, bl);
@@ -679,10 +566,66 @@ f32 IHeightmapGrid::getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight
         }
     }
 }
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::interpolateHeightAndNormalAtWorldPos, (f32v2 worldPos, OUT f32v3* outNormal) const)
 
-f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const CompressedHeight* heightData, const ui32v2& heightmapXY) {
+template <bool THREAD_SAFE>
+f32 IHeightmapGrid::interpolateHeightAtWorldPos(f32v2 worldPos) const {
+    worldPos = glm::clamp(worldPos, 0.0f, mMaxCoordinate);
+    // Get the position and ID of this patch
+    const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH);
+    const HeightmapPatchID blID = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
+    const i32v2 patchWorldCoords = patchGridCoords * HEIGHTMAP_PATCH_WIDTH;
+
+    // Get offset into the patch and the xy indices of the current quad
+    const f32v2 offsetIntoPatch = worldPos - f32v2(patchWorldCoords);
+    const i32v2 quadXYIndices = i32v2(offsetIntoPatch) / HEIGHTMAP_QUAD_SIZE;
+    const f32v2 quadRootPos = f32v2(quadXYIndices * HEIGHTMAP_QUAD_SIZE);
+
+    // Get interpolation values between 0-1
+    const f32v2 dxy = (offsetIntoPatch - quadRootPos) / f32(HEIGHTMAP_QUAD_SIZE);
+    assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
+
+    const i32 rowStrideMinus1 = HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1;
+
+    // Get patches and positions for each vertex
+    int blIndex = quadXYIndices.y * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + quadXYIndices.x;
+    HeightmapPatchID brID = blID;
+    int brIndex = blIndex + 1;
+    HeightmapPatchID tlID = blID;
+    int tlIndex = blIndex + HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+    HeightmapPatchID trID = blID;
+    int trIndex = blIndex + HEIGHTMAP_QUAD_WIDTH_PER_PATCH + 1;
+    if (quadXYIndices.x >= rowStrideMinus1) [[unlikely]] {
+        brID += 1;
+        brIndex -= HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+        trID += 1;
+        trIndex -= HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+        if (brID >= mTotalPatches) [[unlikely]] {
+            brID = blID;
+            brIndex = blIndex;
+        }
+        if (trID >= mTotalPatches) [[unlikely]] {
+            trID = blID;
+            trIndex = blIndex;
+        }
+    }
+    if (quadXYIndices.y >= rowStrideMinus1) [[unlikely]] {
+        tlID += mWidthPatches;
+        tlIndex -= HEIGHTMAP_VERT_SIZE_PER_PATCH;
+        trID += mWidthPatches;
+        trIndex -= HEIGHTMAP_VERT_SIZE_PER_PATCH;
+        if (tlID >= mTotalPatches) [[unlikely]] {
+            tlID = blID;
+            tlIndex = blIndex;
+        }
+        if (trID >= mTotalPatches) [[unlikely]] {
+            trID = blID;
+            trIndex = blIndex;
+        }
+    }
+    //const HeightmapPatchData* blPatch = mHeightData[rootId].mHeightData;
     // Select which triangle we are looking at, taking into account orientation
-    if ((heightmapXY.x + heightmapXY.y) % 2 == 0) {
+    if ((quadXYIndices.x + quadXYIndices.y) % 2 == 0) {
         // This shape
         // **********
         // *     ** *
@@ -692,9 +635,9 @@ f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const CompressedHeight*
         if (dxy.x + (1.0f - dxy.y) > 1.0f) {
             // Lower quadrant
             // Get the 3 corner heights
-            const f32 bl = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 br = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-            const f32 tr = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
+            const f32 bl = mHeightData[blID].getHeightAt<THREAD_SAFE>(blIndex);
+            const f32 br = mHeightData[brID].getHeightAt<THREAD_SAFE>(brIndex);
+            const f32 tr = mHeightData[trID].getHeightAt<THREAD_SAFE>(trIndex);
 
             const f32v3 uvw = BarycentricBlBrTr(dxy);
             return bl * uvw.x + br * uvw.y + tr * uvw.z;
@@ -702,9 +645,10 @@ f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const CompressedHeight*
         else {
             // Upper quadrant
             // Get the 3 corner heights
-            const f32 bl = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 tl = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 tr = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
+
+            const f32 bl = mHeightData[blID].getHeightAt<THREAD_SAFE>(blIndex);
+            const f32 tl = mHeightData[tlID].getHeightAt<THREAD_SAFE>(tlIndex);
+            const f32 tr = mHeightData[trID].getHeightAt<THREAD_SAFE>(trIndex);
 
             const f32v3 uvw = BarycentricBlTlTr(dxy);
             return bl * uvw.x + tl * uvw.y + tr * uvw.z;
@@ -720,37 +664,23 @@ f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const CompressedHeight*
         if (dxy.x + dxy.y > 1.0f) {
             // Upper quadrant
             // Get the 3 corner heights
-            const f32 br = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-            const f32 tl = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 tr = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-
+            const f32 br = mHeightData[brID].getHeightAt<THREAD_SAFE>(brIndex);
+            const f32 tl = mHeightData[tlID].getHeightAt<THREAD_SAFE>(tlIndex);
+            const f32 tr = mHeightData[trID].getHeightAt<THREAD_SAFE>(trIndex);
+         
             const f32v3 uvw = BarycentricBrTlTr(dxy);
             return br * uvw.x + tl * uvw.y + tr * uvw.z;
         }
         else {
             // Lower quadrant
             // Get the 3 corner heights
-            const f32 bl = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
-            const f32 br = uncompressHeight(heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x + 1]);
-            const f32 tl = uncompressHeight(heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + heightmapXY.x]);
 
+            const f32 bl = mHeightData[blID].getHeightAt<THREAD_SAFE>(blIndex);
+            const f32 br = mHeightData[brID].getHeightAt<THREAD_SAFE>(brIndex);
+            const f32 tl = mHeightData[tlID].getHeightAt<THREAD_SAFE>(tlIndex);
+          
             const f32v3 uvw = BarycentricBlBrTl(dxy);
             return bl * uvw.x + br * uvw.y + tl * uvw.z;
         }
     }
-}
-
-ui32v2 IHeightmapGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
-    ui32v2 heightmapXY = worldTilePos;
-    // Offset into the heightmap by our chunk position
-    heightmapXY = heightmapXY % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);
-    heightmapXY /= HEIGHTMAP_QUAD_SIZE;
-    return heightmapXY;
-}
-
-f32v2 IHeightmapGrid::getHeightmapOffsetFromTilePos(ui32v2 worldTilePos) {
-    ui32v2 offset = worldTilePos;
-    // Offset into the heightmap by our chunk position
-    offset = offset % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);
-    return f32v2(offset);
 }

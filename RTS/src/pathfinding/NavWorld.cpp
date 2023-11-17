@@ -30,17 +30,9 @@ constexpr f32 FINE_NAV_HEIGHT_THRESHOLD = 3.0f / 4.0f + 0.05f;
 // Harvestable reservation
 constexpr f64 RESERVE_DURATION_SEC = 10.0;
 
-inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
-    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(pos2d));
-}
-
-inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapPatchID& patchId, const CompressedHeight* heightData, const f32v2& pos2d) {
-    if (!heightData)
-    {
-        return f32v3(pos2d.x, pos2d.y, 4.0f);
-    }
-    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(patchId, heightData, pos2d));
-}
+//inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
+//    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(pos2d));
+//}
 
 std::set<LiteChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
     std::set<LiteChunkID> chunkDependencies; // TODO: flatset?
@@ -1010,7 +1002,7 @@ bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const Til
     return false;
 }
 
-void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const CompressedHeight* heightData, ui32 lifetime, int debugId /*= 0*/) const
+void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId /*= 0*/) const
 {
     const color4 color1(0.0f, 1.0f, 1.0f, 0.75f);
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
@@ -1018,9 +1010,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
     const color4 color4(1.0f, 0.0f, 1.0f, 0.75f);
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const TileContainerID containerId = tileContainer.getId();
-    if (!tileContainer.isTerrain()) {
-        heightData = nullptr;
-    }
+    const bool isTerrain = tileContainer.isTerrain();
     auto&& it = mNavGraphs.find(containerId);
     if (it == mNavGraphs.end()) {
         std::cout << "Failed to find navgraph for container " << containerId << std::endl;
@@ -1036,10 +1026,8 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
             const CoarseNavNodeEdge& edge = graph.edges[node.edgesStart + i];
             const Tile& tile = tileContainer.getTileAt(edge.startPos); // TODO: RACE CONDITION
             i32v3 startOffset = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(edge.startPos);
-            // TODO: Remove
-            if (heightData) {
-                HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D());
-                startOffset.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset));
+            if (isTerrain) {
+                startOffset.z = heightGrid.computeHeightAtPoint<true>(f32v2(containerPos + startOffset));
             }
             i32v3 worldPos = containerPos + startOffset;
             // TODO: This is not thread safe!
@@ -1050,10 +1038,9 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
             const f32v2 offset = f32v2(CARTESIAN_TANGENTS_ABS_2D[e_cast(edge.dir)]) * (f32)(edge.edgeLength/* + 1.0f*/);
             f32v3 pointA = f32v3(worldPos) + f32v3(0.00f, 0.00f, 0.00f);
             f32v3 pointB = f32v3(worldPos) + f32v3(offset.x, offset.y, 0.0f);
-            if (heightData) {
-                HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D());
-                pointA.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointA));
-                pointB.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointB));
+            if (isTerrain) {
+                pointA.z = heightGrid.computeHeightAtPoint<true>(f32v2(pointA));
+                pointB.z = heightGrid.computeHeightAtPoint<true>(f32v2(pointB));
             }
             if (edge.isExternalEdge()) {
                 DebugRenderer::drawLineBetweenPoints(pointA, pointB, color2, lifetime, debugId);
@@ -1062,9 +1049,9 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                 DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
             }
             f32v3 midpoint(worldPos.x + offset.x * 0.5f, worldPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
-            if (heightData) {
+            if (isTerrain) {
                 HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D());
-                midpoint.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint));
+                midpoint.z = heightGrid.computeHeightAtPoint<true>(f32v2(midpoint));
             }
             f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
             // TODO: Combine above
@@ -1073,9 +1060,9 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
             for (ui32 j = i + 1; j < edgeCount; ++j) {
                 const CoarseNavNodeEdge& edge2 = graph.edges[node.edgesStart + j];
                 i32v3 startOffset2 = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(edge2.startPos);
-                if (heightData) {
+                if (isTerrain) {
                     HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D());
-                    startOffset2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset2));
+                    startOffset2.z = heightGrid.computeHeightAtPoint<true>(f32v2(containerPos + startOffset2));
                 }
                 i32v3 worldPos2 = containerPos + startOffset2;
                 if (edge2.dir == Cartesian::EAST) worldPos2.x += 1.0f;
@@ -1084,9 +1071,9 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                 f32v3 midpoint2(worldPos2.x + offset2.x * 0.5f, worldPos2.y + offset2.y * 0.5f, worldPos2.z);
                 // TODO: Not thread safe!
                 midpoint2.z += tileContainer.getTileAt(edge2.startPos).getGroundZOffset();
-                if (heightData) {
+                if (isTerrain) {
                     HeightmapPatchID patchId(heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileContainer.getTileSpatialGrid().getWorldPos2D()));
-                    midpoint2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint2));
+                    midpoint2.z = heightGrid.computeHeightAtPoint<true>(f32v2(midpoint2));
                 }
                 DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
             }
@@ -1182,7 +1169,7 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
     }
 }
 
-void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const CompressedHeight* heightData, ui32 lifetime, int debugId /*= 0*/) const
+void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetime, int debugId /*= 0*/) const
 {
     // TODO: Mutex lock? This is a race condition
 
@@ -1206,9 +1193,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const Co
     const color4 color4(1.0f, 0.0f, 1.0f, 0.75f);
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const TileContainerID containerId = tileHandle.container->getId();
-    if (!tileHandle.container->isTerrain()) {
-        heightData = nullptr;
-    }
+    const bool isTerrain = tileHandle.container->isTerrain();
     auto&& it = mNavGraphs.find(containerId);
     if (it == mNavGraphs.end()) {
         std::cout << "Failed to find navgraph for container " << containerId << std::endl;
@@ -1222,9 +1207,8 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const Co
         const CoarseNavNodeEdge& edge = graph.edges[node.edgesStart + i];
         i32v3 startOffset = tileHandle.container->getTileSpatialGrid().getTileXYZOffsetWithZScale(edge.startPos);
         // TODO: Remove
-        if (heightData) {
-            HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileHandle.container->getTileSpatialGrid().getWorldPos2D());
-            startOffset.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset));
+        if (isTerrain) {
+            startOffset.z = heightGrid.computeHeightAtPoint<true>(f32v2(containerPos + startOffset));
         }
         f32v3 worldPos = containerPos + startOffset;
         // TODO: Not thread safe!
@@ -1234,10 +1218,9 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const Co
         const f32v2 offset = f32v2(CARTESIAN_TANGENTS_ABS_2D[e_cast(edge.dir)]) * (f32)(edge.edgeLength/* + 1.0f*/);
         f32v3 pointA = f32v3(worldPos) + f32v3(0.00f, 0.00f, 0.00f);
         f32v3 pointB = f32v3(worldPos) + f32v3(offset.x, offset.y, 0.0f);
-        if (heightData) {
-            HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileHandle.container->getTileSpatialGrid().getWorldPos2D());
-            pointA.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointA));
-            pointB.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(pointB));
+        if (isTerrain) {
+            pointA.z = heightGrid.computeHeightAtPoint<true>(f32v2(pointA));
+            pointB.z = heightGrid.computeHeightAtPoint<true>(f32v2(pointB));
         }
         if (edge.isExternalEdge()) {
             DebugRenderer::drawLineBetweenPoints(pointA, pointB, color2, lifetime, debugId);
@@ -1246,9 +1229,8 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const Co
             DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
         }
         f32v3 midpoint(worldPos.x + offset.x * 0.5f, worldPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
-        if (heightData) {
-            HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileHandle.container->getTileSpatialGrid().getWorldPos2D());
-            midpoint.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint));
+        if (isTerrain) {
+            midpoint.z = heightGrid.computeHeightAtPoint<true>(f32v2(midpoint));
         }
         f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
         // TODO: Combine above
@@ -1257,9 +1239,8 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const Co
         for (ui32 j = i + 1; j < edgeCount; ++j) {
             const CoarseNavNodeEdge& edge2 = graph.edges[node.edgesStart + j];
             i32v3 startOffset2 = tileHandle.container->getTileSpatialGrid().getTileXYZOffsetWithZScale(edge2.startPos);
-            if (heightData) {
-                HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileHandle.container->getTileSpatialGrid().getWorldPos2D());
-                startOffset2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(containerPos + startOffset2));
+            if (isTerrain) {
+                startOffset2.z = heightGrid.computeHeightAtPoint<true>(f32v2(containerPos + startOffset2));
             }
             i32v3 worldPos2 = containerPos + startOffset2;
             if (edge2.dir == Cartesian::EAST) worldPos2.x += 1.0f;
@@ -1268,9 +1249,9 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const Co
             f32v3 midpoint2(worldPos2.x + offset2.x * 0.5f, worldPos2.y + offset2.y * 0.5f, worldPos2.z);
             // TODO: Not thread safe!
             midpoint2.z += tileHandle.container->getTileAt(edge2.startPos).getGroundZOffset();
-            if (heightData) {
+            if (isTerrain) {
                 HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileHandle.container->getTileSpatialGrid().getWorldPos2D());
-                midpoint2.z = heightGrid.computeHeightAtPoint(patchId, heightData, f32v2(midpoint2));
+                midpoint2.z = heightGrid.computeHeightAtPoint<true>(f32v2(midpoint2));
             }
             DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
         }

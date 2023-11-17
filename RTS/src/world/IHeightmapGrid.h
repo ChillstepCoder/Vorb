@@ -51,7 +51,7 @@ struct HeightmapGridEvent {
 };
 EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGridEvent&);
 
-// TOTAL MEMORY PRE TRIM = 839mb
+// TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
 class IHeightmapGrid
 {
     friend class TerrainGenerator;
@@ -77,23 +77,22 @@ public:
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
+
+    template <bool THREAD_SAFE>
     f32 computeHeightAtPoint(const f32v2& worldPos) const;
+    // Never thread safe
+    f32 computeHeightAtPointForGeneration(const f32v2& worldPos) const;
+
+    template <bool THREAD_SAFE>
     f32 computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
 
-    f32 getHeightAtPointThreadSafe(const f32v2& worldPos) const;
-    f32 getHeightAndNormalAtPointThreadSafe(const f32v2& worldPos, OUT f32v3* outNormal) const;
-
-    f32 computeHeightAtChunkOffset(const CompressedHeight* heightData, ChunkID chunkId, const f32v2& offsetIntoChunk);
-    f32 computeHeightAtPoint(const CompressedHeight* heightData, const f32v2& worldPos) const;
-    f32 computeHeightAtPoint(HeightmapPatchID id, const CompressedHeight* heightData, const f32v2& worldPos) const;
-    f32 computeHeightAndNormalAtPoint(HeightmapPatchID id, const CompressedHeight* heightData, const f32v2& worldPos, OUT f32v3* outNormal) const;
-    f32 computeCenterHeightAtTile(const CompressedHeight* heightData, ui32v2 worldTilePos) const;
-    void computeTileCorners(const CompressedHeight* heightData, ui32v2 worldTilePos, OUT f32 corners[4]) const;
-    bool areTrianglesFlippedAtTile(const TileHandle& tileHandle) const;
+    template <bool THREAD_SAFE>
     f32 computeCenterHeightAtTile(ui32v2 worldTilePos) const;
-    void copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const;
 
-    f32 computeMinHeightAtTile(const CompressedHeight* heightData, ui32v2 worldTilePos) const;
+    void computeTileCorners(ui32v2 worldTilePos, OUT f32 corners[4]) const;
+    bool areTrianglesFlippedAtTile(const TileHandle& tileHandle) const;
+    //void copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const;
+
     f32 computeMinHeightAtTile(ui32v2 worldTilePos) const;
     f32 computeMaxHeightAtTile(ui32v2 worldTilePos) const;
 
@@ -107,16 +106,15 @@ public:
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
-
 protected:
     void onPatchFinishedGeneratingTODOREMOVE(HeightmapPatchID id); // TODO: REMOVE
     void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
-    static f32 getHeightAndNormalAtOffset(f32v2 dxy, const CompressedHeight* heightData, const ui32v2 heightmapXY, OUT f32v3* outNormal);
-    static f32 interpolateHeightAtOffset(f32v2 dxy, const CompressedHeight* heightData, const ui32v2& heightmapXY);
-    static ui32v2 getHeightmapXYfromTilePos(ui32v2 worldTilePos);
-    static f32v2 getHeightmapOffsetFromTilePos(ui32v2 worldTilePos);
+    template <bool THREAD_SAFE>
+    f32 interpolateHeightAndNormalAtWorldPos(f32v2 worldPos, OUT f32v3* outNormal) const;
+    template <bool THREAD_SAFE>
+    f32 interpolateHeightAtWorldPos(f32v2 worldPos) const;
 
     SpatialGrid2D mSpatialGrid2D;
     std::unique_ptr<HeightmapPatch[]> mHeightData;
