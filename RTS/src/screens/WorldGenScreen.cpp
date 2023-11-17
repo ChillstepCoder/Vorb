@@ -73,6 +73,16 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
         sGameWorld = std::make_unique<World>(WorldNetMode::Host, WorldDefaults::DEFAULT_WORLD_WIDTH_TILES, WorldGeneratorType::Default, mWorldData.get());
     }
     mWorldData.reset();
+
+    //Force cycle a frame to avoid bug with deleting mScreenTexture as imgui uses it an extra frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame((SDL_Window*)m_app->getWindow().getHandle());
+    ImGui::NewFrame();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::EndFrame();
+
+    // Free screen texture after flushing imgui
     glDeleteTextures(1, &mScreenTexture);
     mScreenTexture = 0;
     mScreenTextureData = gli::texture2d();
