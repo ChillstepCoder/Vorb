@@ -39,6 +39,8 @@ private:
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;
 
-
+    ui32 mNextGenerationIndex = 0;
+    std::vector<PendingGPUTerrainGeneration> mGPUTerrainGenerations;
+    bool mIsGeneratingGPU = false;
 };
 

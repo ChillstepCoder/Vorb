@@ -3,6 +3,11 @@
 
 #include "world/IHeightmapGrid.h"
 
+#include "rendering/MaterialShaderRepository.h"
+
+// Match the shader
+constexpr int LOCAL_GROUP_SIZE = 16;
+
 void TerrainGenerator::init(IHeightmapGrid& heightGrid, f32v2 worldCenter) {
     mHeightGrid = &heightGrid;
     mWorldCenter = worldCenter;
@@ -31,6 +36,12 @@ void TerrainGenerator::destroy() {
 }
 
 TerrainGenerationState TerrainGenerator::tick() {
+
+    if (mIsGeneratingGPU)
+    {
+
+    }
+
     switch (mState) {
         case TerrainGenerationState::None:
             break;
@@ -51,6 +62,7 @@ TerrainGenerationState TerrainGenerator::tick() {
 }
 
 void TerrainGenerator::generateBaseHeightmapCPU(std::function<void(HeightmapPatchID)> onPatchFinished) {
+    mIsGeneratingGPU = false;
     assert(mState != TerrainGenerationState::GeneratingBaseHeightmap);
     mState = TerrainGenerationState::GeneratingBaseHeightmap;
     assert(mHeightGrid);
@@ -77,7 +89,27 @@ void TerrainGenerator::generateBaseHeightmapCPU(std::function<void(HeightmapPatc
 
 void TerrainGenerator::generateBaseHeightmapGPU(std::function<void(HeightmapPatchID)> onPatchFinished)
 {
-    assert(false);
+    const MaterialShaderDef* def = MaterialShaderRepository::get().tryGetLoadedAsset(CStrToken("terrain_base"));
+    if (!def) {
+        panic("terrain_base.comp was not loaded. Make sure it exists and is in assets.preload");
+    }
+    mIsGeneratingGPU = true;
+    mGPUTerrainGenerations.resize(mHeightGrid->mWidthPatches);
+    ui32 i = 0;
+    const int numGroups = mHeightGrid->getPatchWidth() / LOCAL_GROUP_SIZE;
+
+    def->useCompute();
+    glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT); // Not needed I think but eh
+    for (ui32 y = 0; y < mHeightGrid->mWidthPatches; ++y) {
+        for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x, ++i) {
+            mGPUTerrainGenerations[i].patchID = y * mHeightGrid->mWidthPatches + x;
+            // Local group is 16 x 16
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, xxx);
+            glDispatchCompute(numGroups, numGroups, 1);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            mGPUTerrainGenerations[i].sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        }
+    }
 }
 
 void TerrainGenerator::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {
