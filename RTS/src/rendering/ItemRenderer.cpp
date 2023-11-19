@@ -167,7 +167,7 @@ void ItemRenderer::updateDirtyStockpileMeshes() const {
     mDirtyStockpiles.aquireAllDirtyObjects(dirtyStockpiles);
 
     for (auto&& stockpile : dirtyStockpiles) {
-        Services::Threadpool::ref().addTask([this, stockpile](ThreadPoolWorkerData* workerData) {
+        Services::Threadpool::ref().addTask([this, stockpile]() {
             updateStockpileQuadMesh(*stockpile);
         }, nullptr);
     }

@@ -110,7 +110,7 @@ void NavWorld::updateNavThread()
                 }
 
                 // Run task
-                Services::Threadpool::ref().addTask([this, container, externalEdges](ThreadPoolWorkerData* workerData) {
+                Services::Threadpool::ref().addTask([this, container, externalEdges]() {
                     buildNavGraphForContainer(*container, externalEdges);
                     if (externalEdges) {
                         delete externalEdges;
@@ -118,7 +118,7 @@ void NavWorld::updateNavThread()
                 }, nullptr);
             }
             else {
-                Services::Threadpool::ref().addTask([this, container](ThreadPoolWorkerData* workerData) {
+                Services::Threadpool::ref().addTask([this, container]() {
                     buildNavGraphForContainer(*container, nullptr);
                 }, nullptr);
             }

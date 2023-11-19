@@ -5,16 +5,15 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(std430, binding = 0) writeonly buffer HeightData
 {
-    int heightData[];
+    float heightData[];
 };
 
-uniform vec2 unInputDims;
-
-const uint totalSamples = 1024u;
+uniform uint unYStride;
 
 void main() {   
     const uint idx = gl_GlobalInvocationID.x;
     const uint idy = gl_GlobalInvocationID.y;
     
+    heightData[idy * unYStride + idx] = -50.0 + (float(idx) + float(idy));
     //imageStore(unPrefilteredOutput, cubeCoord, vec4(prefilteredColor, 1.0));
 }

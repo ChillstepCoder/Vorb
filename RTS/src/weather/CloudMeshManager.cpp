@@ -219,7 +219,7 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
 
     CloudBatchTaskData* data = new CloudBatchTaskData{ {}, this, &newBatch, index };
 
-    Services::Threadpool::ref().addTask([size, genPos, this, cloudMaterialId, data](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([size, genPos, this, cloudMaterialId, data]() {
         const NoiseFunction& cloudNoiseFunction = mWorldGenerator.getGenerationData().mCloudsNoise;
         const NoiseFunction& cloudHeightFunction = mWorldGenerator.getGenerationData().mCloudHeightNoise;
         for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {

@@ -103,7 +103,7 @@ void APIENTRY glDebugOutput(GLenum source,
     const void* userParam) {
     // ignore non-significant error/warning codes
     // 131218 - performance - recompiling shader... hmmm
-    if (/*id == 131169 || */id == 131185 || id == 131218 || id == 131204) return;
+    if (/*id == 131169 || */id == 131185 || id == 131218 || id == 131204 || id == 131186/*Buffer Performance warning*/) return;
 
     std::stringstream ss;
 

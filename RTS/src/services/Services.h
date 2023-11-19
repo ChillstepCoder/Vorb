@@ -8,9 +8,6 @@ class ResourceManager;
 class ContractManager;
 class GameTimeManager;
 
-struct ThreadPoolWorkerData {
-};
-
 class Services
 {
 public:
@@ -24,7 +21,7 @@ public:
     static void resetThreads();
     static bool isUsingNav() { return sUsingNav; }
 
-    using Threadpool = entt::service_locator<vcore::ThreadPool<ThreadPoolWorkerData>>;
+    using Threadpool = entt::service_locator<vcore::ThreadPool>;
     using NavThread = entt::service_locator<NavThread>;
     using ResourceManager = entt::service_locator<ResourceManager>;
     using ContractManager = entt::service_locator<ContractManager>;

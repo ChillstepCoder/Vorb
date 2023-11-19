@@ -24,7 +24,7 @@ void TileContainerLoader::loadChunk(TileContainer& container)
     assert(chunk);
     chunk->incRef();
 
-    Services::Threadpool::ref().addTask([chunk](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([chunk]() {
         TileContainer& container = *chunk->mTileContainer;
         // Worker thread
         //

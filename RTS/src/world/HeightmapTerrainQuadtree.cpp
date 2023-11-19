@@ -109,7 +109,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
     TerrainMeshGenTaskData* taskData = new TerrainMeshGenTaskData(mWorld, this, patchIndex);
-    Services::Threadpool::ref().addTask([this, lod, taskData](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([this, lod, taskData]() {
         createTerrainAndWaterMesh(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
 
         // To render thread for upload

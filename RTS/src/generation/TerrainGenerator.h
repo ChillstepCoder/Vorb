@@ -13,13 +13,18 @@ enum class TerrainGenerationState {
 };
 
 struct PendingGPUTerrainGeneration {
-    GLsync sync;
+    ~PendingGPUTerrainGeneration();
+    VGBuffer ssbo = 0;
+    GLsync sync = 0;
     HeightmapPatchID patchID;
+    bool generateStarted = false;
 };
 
 class TerrainGenerator
 {
 public:
+    TerrainGenerator();
+    ~TerrainGenerator();
     void init(IHeightmapGrid& heightGrid, f32v2 worldCenter);
     void destroy();
 
@@ -27,10 +32,12 @@ public:
     // Pass 1 - Generate base heightmap
     void generateBaseHeightmapCPU(std::function<void(HeightmapPatchID)> onPatchFinished);
     void generateBaseHeightmapGPU(std::function<void(HeightmapPatchID)> onPatchFinished);
+    void cleanupPatchGPUData(HeightmapPatchID id);
 
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
     f32 generateHeightAtPos(const f32v2& worldPos);
+    void finishPendingGeneration(PendingGPUTerrainGeneration& generation);
 
     std::atomic<int> mFinishedRows = 0;
     TerrainGenerationState mState;
@@ -40,7 +47,9 @@ private:
     WorldGenerationData mGenerationData;
 
     ui32 mNextGenerationIndex = 0;
+    ui32 mNextRowToGenerate = 0;
     std::vector<PendingGPUTerrainGeneration> mGPUTerrainGenerations;
     bool mIsGeneratingGPU = false;
+    std::function<void(HeightmapPatchID)> mOnPatchFinished;
 };
 

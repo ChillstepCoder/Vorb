@@ -87,10 +87,10 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
         if (program.isLinked()) break;
         program.dispose();
         if (geometryPath.isNull()) {
-            printf("Enter any key to try recompiling with Vertex Shader: %s and Fragment Shader %s\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString());
+            LOG_CRITICAL("Enter any key to try recompiling with Vertex Shader: {} and Fragment Shader {}\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString());
         }
         else {
-            printf("Enter any key to try recompiling with Vertex Shader: %s and Fragment Shader: %s and Geometry Shader: %s\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString(), geometryPath.getCString());
+            LOG_CRITICAL("Enter any key to try recompiling with Vertex Shader: {} and Fragment Shader: {} and Geometry Shader: {}\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString(), geometryPath.getCString());
         }
         char tmp;
         std::cin >> tmp;
@@ -116,7 +116,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
         program = vg::ShaderManager::createProgram(vertSrc, fragSrc, defines);
         if (program.isLinked()) break;
         program.dispose();
-        printf("Enter any key to try recompiling with %s shader.\nEnter Z to abort.\n", name.c_str());
+        LOG_CRITICAL("Enter any key to try recompiling with {} shader.\nEnter Z to abort.\n", name.c_str());
         char tmp;
         std::cin >> tmp;
         if (tmp == 'Z' || tmp == 'z') break;
@@ -142,7 +142,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nSt
         program = vg::ShaderManager::createProgramFromFile(path);
         if (program.isLinked()) break;
         program.dispose();
-        printf("Enter any key to try recompiling with Compute Shader: %s\nEnter Z to abort.\n", path.getCString());
+        LOG_CRITICAL("Enter any key to try recompiling with Compute Shader: {}\nEnter Z to abort.\n", path.getCString());
         char tmp;
         std::cin >> tmp;
         if (tmp == 'Z' || tmp == 'z') break;

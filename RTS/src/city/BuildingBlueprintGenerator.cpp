@@ -153,7 +153,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     BuildingBlueprint* bPtr = bp.get();
     mGeneratingBuildings.insert(bPtr);
     
-    Services::Threadpool::ref().addTask([this, &world, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([this, &world, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed]() {
         PROFILE_FUNCTION("Generate blueprint async");
         std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(world, mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed);
         if (newBP) {

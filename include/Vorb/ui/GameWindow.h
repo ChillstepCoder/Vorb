@@ -86,6 +86,8 @@ namespace vorb {
             ui32 major; ///< Major version for the graphics context (ex. GL:4, DX:11).
             ui32 minor; ///< Minor version for the graphics context (ex. GL:4, DX:0).
             bool core; ///< True if the graphics context should disable compatability with lower versions.
+
+            bool temporaryUnlimitedFPS = false;
         };
         
         class GameWindow {
@@ -194,6 +196,7 @@ namespace vorb {
             void setFullscreen(bool useFullscreen, bool overrideCheck = false);
             void setBorderless(bool useBorderless, bool overrideCheck = false);
             void setSwapInterval(GameSwapInterval mode, bool overrideCheck = false);
+            void setTemporaryUnlimitedFPS(bool unlimitedFPS);
             void setHideMouse(bool hideMouse);
             void setRelativeMouseMode(bool relativeMouse);
             void warpMouse(int x, int y);

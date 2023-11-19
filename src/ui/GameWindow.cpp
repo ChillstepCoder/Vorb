@@ -473,6 +473,18 @@ void vui::GameWindow::setSwapInterval(GameSwapInterval mode, bool overrideCheck 
     }
 }
 
+void vui::GameWindow::setTemporaryUnlimitedFPS(bool unlimitedFPS) {
+    if (m_displayMode.temporaryUnlimitedFPS != unlimitedFPS) {
+        m_displayMode.temporaryUnlimitedFPS = unlimitedFPS;
+        if (unlimitedFPS) {
+            SDL_GL_SetSwapInterval(0);
+        }
+        else {
+            setSwapInterval(m_displayMode.swapInterval, true);
+        }
+    }
+}
+
 void vui::GameWindow::setHideMouse(bool mouseHide) {
     static_assert(VORB_IMPL_UI_SDL == 1);
     SDL_ShowCursor(!mouseHide);

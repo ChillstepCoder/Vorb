@@ -28,7 +28,7 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
     container.incRef();
     container.incRef();
 
-    Services::Threadpool::ref().addTask([&container, heightData, staticMeshIsOnlyQuads, reserveStaticVertexCount, this, userData](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([&container, heightData, staticMeshIsOnlyQuads, reserveStaticVertexCount, this, userData]() {
 
         TileContainerID containerId = container.getId();
         PROFILE_SCOPE("ChunkMesh build");

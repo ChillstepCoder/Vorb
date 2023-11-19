@@ -34,13 +34,11 @@
 #include "Vorb/IThreadPoolTask.h"
 
 
-template<typename T>
-using ThreadPoolTaskProcs = std::pair<std::function<void(T*)>, std::function<void()>>;
+using ThreadPoolTaskProcs = std::pair<std::function<void()>, std::function<void()>>;
 
 namespace vorb {
     namespace core {
 
-        template<typename T>
         class ThreadPool {
         public:
             ThreadPool(ui32 size);
@@ -54,7 +52,7 @@ namespace vorb {
             /// Adds a task to the task queue
             /// @param task: The task to add
             /// TODO: Remove mainProc
-            void addTask(std::function<void(T*)>&& workerProc, std::function<void()>&& mainProc) {
+            void addTask(std::function<void()>&& workerProc, std::function<void()>&& mainProc) {
                 mTasks.enqueue(std::make_pair(std::move(workerProc), std::move(mainProc)));
             }
 
@@ -66,51 +64,55 @@ namespace vorb {
             }*/
 
             /// Getters
-            i32 getNumWorkers() const { return m_workers.size(); }
+            i32 getNumWorkers() const { return mWorkers.size(); }
             size_t getTasksSizeApprox() const { return mTasks.size_approx(); }
             size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }
+
+            // Adjust number of running threads
+            void setSize(ui32 size);
+            int getSize() const { return mRunningThreads; }
         private:
             VORB_NON_COPYABLE(ThreadPool);
             // Typedef for func ptr
-            typedef void (ThreadPool<T>::*workerFunc)(T*);
 
             /// Class definition for worker thread
             class WorkerThread {
             public:
+                typedef void (ThreadPool::* workerFunc)(WorkerThread*);
                 /// Creates the thread
                 /// @param func: The function the thread should execute
-                WorkerThread(workerFunc func, ThreadPool<T>* threadPool) {
-                    thread = std::make_unique<std::thread>(func, threadPool, &data);
+                WorkerThread(workerFunc func, ThreadPool* threadPool) : thread(func, threadPool, this) {
                 }
 
                 ~WorkerThread() {
-
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
                 }
                 /// Blocks until the worker thread completes
                 void join() {
-                    thread->join();
+                    thread.join();
                 }
 
-                std::unique_ptr<std::thread> thread; ///< The thread handle
-                T data; ///< Worker specific data
+                std::thread thread; ///< The thread handle
+                std::atomic_bool mStop;
+                std::atomic_bool mRunning = true;
             };
 
             /// Thread function that processes tasks
             /// @param data: The worker specific data
-            void workerThreadFunc(T* data);
+            void workerThreadFunc(WorkerThread* thisThread);
 
             /// Lock free task queues
-            moodycamel::BlockingConcurrentQueue<ThreadPoolTaskProcs<T>> mTasks; ///< Holds tasks to execute
+            moodycamel::BlockingConcurrentQueue<ThreadPoolTaskProcs> mTasks; ///< Holds tasks to execute
             moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs; ///< Contains functions to run on main thread after complete
-            std::atomic_bool mStop = false;
            
-            std::vector<WorkerThread*> m_workers; ///< All the worker threads
+            std::vector <std::unique_ptr<WorkerThread>> mWorkers; ///< All the worker threads
+            std::atomic_int mRunningThreads = 0;
         };
 
     }
 }
 namespace vcore = vorb::core;
-
-#include "ThreadPool.inl"
 
 #endif // !Vorb_ThreadPool_h__

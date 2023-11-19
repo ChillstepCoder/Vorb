@@ -19,9 +19,9 @@
 #include "generation/TerrainGenerator.h"
 
 constexpr int SCREEN_TEXTURE_RES = 2048;
+constexpr bool GEN_GPU = true;
 
 WorldGenScreen::WorldGenScreen(App* const app) : IAppScreen<App>(app) {
-    mTerrainGenerator = std::make_unique<TerrainGenerator>();
 }
 
 WorldGenScreen::~WorldGenScreen()
@@ -50,11 +50,17 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 }
 
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
+
+    mTerrainGenerator = std::make_unique<TerrainGenerator>();
     mGenState = WorldGenScreenState::Idle;
+    mFinishedPatchCount = 0;
 
     if (mFirstEntry) {
         Services::initHost();
     }
+    mThreadpoolSizePostEntry = Services::Threadpool::ref().getSize();
+    Services::Threadpool::ref().setSize(std::thread::hardware_concurrency() - 1);
+
 
     initWorldData();
     initScreenTexture();
@@ -64,7 +70,12 @@ void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
 }
 
 void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
-    mTerrainGenerator->destroy();
+
+    Services::Threadpool::ref().setSize(mThreadpoolSizePostEntry);
+
+    if (mTerrainGenerator) {
+        mTerrainGenerator.reset();
+    }
     if (mCancelled) {
         sGameWorld.reset();
     }
@@ -89,6 +100,9 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
 }
 
 void WorldGenScreen::update(const vui::GameTime& gameTime) {
+
+    // Update tasks
+    Services::Threadpool::ref().mainThreadUpdate();
 
     switch (mGenState) {
         case WorldGenScreenState::Idle:
@@ -160,11 +174,51 @@ void WorldGenScreen::initWorldData() {
     mWorldData = std::make_unique<HostWorldData>();
     mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(WorldDefaults::DEFAULT_WORLD_WIDTH_TILES);
 
+    mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
+
     mGenState = WorldGenScreenState::GeneratingTerrain;
     mTerrainGenerator->init(*mWorldData->heightmapGrid, f32v2(WorldDefaults::DEFAULT_WORLD_WIDTH_TILES * 0.5f));
-    mTerrainGenerator->generateBaseHeightmapCPU([this](HeightmapPatchID finishedPatchID) {
-        mFinishedTerrainPatches.enqueue(finishedPatchID);
-    });
+    
+    mGenTimer.start();
+    if (GEN_GPU) {
+        // Generate as fast as GPU can handle
+        m_app->getWindow().setTemporaryUnlimitedFPS(true);
+        mTerrainGenerator->generateBaseHeightmapGPU([this](HeightmapPatchID finishedPatchID) {
+            HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
+            const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
+            const f32v2 patchWorldPos = grid.getWorldPosXYFromID(finishedPatchID);
+            ui8v4* filledData = new ui8v4[mPatchPixelDims * mPatchPixelDims];
+
+            // Build pixels for patch
+            ui8v4 pixel;
+            const f32 heightStride = (heightGrid.getPatchWidth() / mPatchPixelDims);
+            for (int y = 0; y < mPatchPixelDims; ++y) {
+                const f32 yPosOffset = y * heightStride;
+                const int yOffset = y * mPatchPixelDims;
+                for (int x = 0; x < mPatchPixelDims; ++x) {
+                    const f32 height = heightGrid.computeHeightAtPointForGeneration(patchWorldPos + f32v2(x * heightStride, yPosOffset));
+                    ColorRGB8 lerpColor;
+                    if (height < 0.0f) {
+                        const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
+                        lerpColor.lerp(ColorRGB8(4, 119, 162), ColorRGB8(3, 66, 122), depthMult);
+                        pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
+                    }
+                    else {
+                        const f32 heightMult = glm::min(height * 0.01f, 1.0f);
+                        lerpColor.lerp(ColorRGB8(40, 98, 41), ColorRGB8(255, 255, 255), heightMult);
+                        pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
+                    }
+                    filledData[yOffset + x] = pixel;
+                }
+            }
+            mFinishedTerrainGPUPatches.enqueue(std::make_pair(finishedPatchID, filledData));
+        });
+    }
+    else {
+        mTerrainGenerator->generateBaseHeightmapCPU([this](HeightmapPatchID finishedPatchID) {
+            mFinishedTerrainPatches.enqueue(finishedPatchID);
+        });
+    }
 
     mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
 }
@@ -226,31 +280,33 @@ void WorldGenScreen::updateTerrainGen()
         case TerrainGenerationState::GeneratingBaseHeightmap:
             break;
         case TerrainGenerationState::GeneratingBaseHeightmapDone:
-            LOG_INFO("Terrain Heightmap Generation Finished");
-            mGenState = WorldGenScreenState::Done;
             break;
         default:
             break;
     }
     static_assert(e_count(TerrainGenerationState) == 3);
-    HeightmapPatchID finishedPatches[512];
-  
-    if (mGenState == WorldGenScreenState::Done) {
-        // Wen done, guarentee we flush the entire queue
-        while (size_t count = mFinishedTerrainPatches.try_dequeue_bulk(finishedPatches, 512)) {
+    constexpr int BULK_SIZE = 128;
+
+    if constexpr (GEN_GPU) {
+        std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
+        if (size_t count = mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
             for (size_t i = 0; i < count; ++i) {
-                onPatchFinished(finishedPatches[i]);
+                onPatchFinishedGPU(finishedPatches[i]);
             }
         }
     }
-    else if (size_t count = mFinishedTerrainPatches.try_dequeue_bulk(finishedPatches, 512)) {
-        for (size_t i = 0; i < count; ++i) {
-            onPatchFinished(finishedPatches[i]);
+    else {
+        HeightmapPatchID finishedPatches[BULK_SIZE];
+        if (size_t count = mFinishedTerrainPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
+            for (size_t i = 0; i < count; ++i) {
+                onPatchFinishedCPU(finishedPatches[i]);
+            }
         }
     }
 }
 
-void WorldGenScreen::onPatchFinished(HeightmapPatchID patchId) {
+void WorldGenScreen::onPatchFinishedCPU(HeightmapPatchID patchId) {
+
     HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
     const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
     const f32v2 patchWorldPos = grid.getWorldPosXYFromID(patchId);
@@ -279,8 +335,42 @@ void WorldGenScreen::onPatchFinished(HeightmapPatchID patchId) {
             filledData[yOffset + x] = pixel;
         }
     }
-
     glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGBA, GL_UNSIGNED_BYTE, filledData.data());
+
+    // Cleanup gpu data so that we don't allocate too much memory at once
+    if constexpr (GEN_GPU) {
+        mTerrainGenerator->cleanupPatchGPUData(patchId);
+    }
+
+    ++mFinishedPatchCount;
+    if (mFinishedPatchCount >= mTotalPatches) {
+        mGenState = WorldGenScreenState::Done;
+        mTerrainGenerator.reset();
+        m_app->getWindow().setTemporaryUnlimitedFPS(false);
+        LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
+    }
+}
+
+void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data) {
+    HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
+    const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
+    i32v2 patchPos = grid.getGridXYFromID(data.first);
+    glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGBA, GL_UNSIGNED_BYTE, data.second);
+
+    // Cleanup gpu data so that we don't allocate too much memory at once
+    if constexpr (GEN_GPU) {
+        mTerrainGenerator->cleanupPatchGPUData(data.first);
+    }
+
+    ++mFinishedPatchCount;
+    if (mFinishedPatchCount >= mTotalPatches) {
+        mGenState = WorldGenScreenState::Done;
+        mTerrainGenerator.reset();
+        m_app->getWindow().setTemporaryUnlimitedFPS(false);
+        LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
+    }
+
+    delete[] data.second;
 }
 
 void WorldGenScreen::initScreenTexture() {
