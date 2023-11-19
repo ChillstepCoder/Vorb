@@ -49,8 +49,6 @@ void main() {
         posInputSeeded.y - unWorldCenter.y
     );
     
-    
-    
     //  TODO: Precompute and interpolate, can cubic interpolate and others
     float distanceFromCenter2 = offsetToCenter.x * offsetToCenter.x + offsetToCenter.y * offsetToCenter.y;
 

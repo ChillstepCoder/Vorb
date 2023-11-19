@@ -8,13 +8,24 @@
 // Match the shader
 constexpr int LOCAL_GROUP_SIZE = 16;
 
+static std::atomic<ui32> sGenerationUID = 0;
+
 TerrainGenerator::TerrainGenerator(const WorldGenerationData& generationData) : mGenerationData(generationData)
 {
-
 }
 
 TerrainGenerator::~TerrainGenerator() {
-    destroy();
+    cleanup();
+
+    if (mHeightmapTexture) {
+        glDeleteTextures(1, &mHeightmapTexture);
+        glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+        mHeightmapTexture = 0;
+        assert(mSsbo);
+        glUnmapNamedBuffer(mSsbo);
+        glDeleteBuffers(1, &mSsbo);
+        mSsbo = 0;
+    }
 }
 
 void TerrainGenerator::init(IHeightmapGrid& heightGrid, f32v2 worldCenter) {
@@ -23,16 +34,28 @@ void TerrainGenerator::init(IHeightmapGrid& heightGrid, f32v2 worldCenter) {
 
 }
 
-void TerrainGenerator::destroy() {
+void TerrainGenerator::cleanup() {
+    mNextGenerationIndex = 0;
+    mNextRowToGenerate = 0;
+    // Trigger all threads to stop functioning
+    ++sGenerationUID;
+    Services::Threadpool::ref().clearTasks();
+    // Wait for all threads to finish
+    while (Services::Threadpool::ref().getNumRunningThreads()) {
+        Sleep(1);
+    }
+
     if (mHeightGrid) {
         switch (mState) {
             case TerrainGenerationState::None:
                 break;
             case TerrainGenerationState::GeneratingBaseHeightmap:
                 // Make sure threadpool is finished
-                do {
-                    Sleep(10);
-                } while (mFinishedRows < mHeightGrid->mWidthPatches);
+                if (!mIsGeneratingGPU) {
+                    do {
+                        Sleep(10);
+                    } while (mFinishedRows < mHeightGrid->mWidthPatches);
+                }
                 break;
             case TerrainGenerationState::GeneratingBaseHeightmapDone:
                 break;
@@ -45,15 +68,6 @@ void TerrainGenerator::destroy() {
     }
     std::vector<PendingGPUTerrainGeneration>().swap(mGPUTerrainGenerations);
 
-    if (mHeightmapTexture) {
-        glDeleteTextures(1, &mHeightmapTexture);
-        glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
-        mHeightmapTexture = 0;
-        assert(mSsbo);
-        glUnmapNamedBuffer(mSsbo);
-        glDeleteBuffers(1, &mSsbo);
-        mSsbo = 0;
-    }
 }
 
 TerrainGenerationState TerrainGenerator::tick() {
@@ -72,7 +86,7 @@ TerrainGenerationState TerrainGenerator::tick() {
             glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unWorldCenter"), 1, &mGenerationData.mWorldCenter.x);
             glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentOutlineScale"), mGenerationData.mContinentOutlineScale);
             glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentRadiusSq"), mGenerationData.mContinentRadiusSq);
-            //glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), );
+            glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), mWorldSeed);
             //glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches);
 
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSsbo);
@@ -152,6 +166,8 @@ TerrainGenerationState TerrainGenerator::tick() {
 }
 
 void TerrainGenerator::generateBaseHeightmapCPU(std::function<void(HeightmapPatchID)> onPatchFinished) {
+    mWorldSeed = mGenerationData.getSeedHash();
+
     mIsGeneratingGPU = false;
     assert(mState != TerrainGenerationState::GeneratingBaseHeightmap);
     mState = TerrainGenerationState::GeneratingBaseHeightmap;
@@ -179,6 +195,7 @@ void TerrainGenerator::generateBaseHeightmapCPU(std::function<void(HeightmapPatc
 
 void TerrainGenerator::generateBaseHeightmapGPU(i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished)
 {
+    mWorldSeed = mGenerationData.getSeedHash();
 
     GLint maxTextureSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
@@ -186,27 +203,25 @@ void TerrainGenerator::generateBaseHeightmapGPU(i32 resolution, std::function<vo
         panic("max supported texture size {} is less than required of {} for gpu gen", maxTextureSize, resolution);
     }
 
-    // TODO: Only if resolution changes
-    if (mHeightmapTexture) {
-        glDeleteTextures(1, &mHeightmapTexture);
-    }
-    glCreateTextures(GL_TEXTURE_2D, 1, &mHeightmapTexture);
-    glTextureStorage2D(
-        mHeightmapTexture,
-        1,           // one level, no mipmaps
-        GL_R32F,    // internal format
-        resolution,
-        resolution
-    );
-    GLfloat clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    glClearTexImage(mHeightmapTexture, 0, GL_RED, GL_FLOAT, clearColor);
-    glBindImageTexture(0, mHeightmapTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+    if (!mHeightmapTexture) {
+        glCreateTextures(GL_TEXTURE_2D, 1, &mHeightmapTexture);
+        glTextureStorage2D(
+            mHeightmapTexture,
+            1,           // one level, no mipmaps
+            GL_R32F,    // internal format
+            resolution,
+            resolution
+        );
+        GLfloat clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        glClearTexImage(mHeightmapTexture, 0, GL_RED, GL_FLOAT, clearColor);
+        glBindImageTexture(0, mHeightmapTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
 
-    const ui32 totalPatches = mHeightGrid->getTotalPatches();
-    assert(!mSsbo);
-    glCreateBuffers(1, &mSsbo);
-    glNamedBufferStorage(mSsbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-    mMappedHeights = (GLfloat*)glMapNamedBufferRange(mSsbo, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        const ui32 totalPatches = mHeightGrid->getTotalPatches();
+        assert(!mSsbo);
+        glCreateBuffers(1, &mSsbo);
+        glNamedBufferStorage(mSsbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        mMappedHeights = (GLfloat*)glMapNamedBufferRange(mSsbo, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    }
 
     mOnPatchFinished = onPatchFinished;
     
@@ -278,10 +293,15 @@ void TerrainGenerator::finishPendingGeneration(PendingGPUTerrainGeneration& gene
     generation.sync = 0;
 
     // One task per patch
+    const ui32 genID = sGenerationUID;
     for (int x = 0; x < mHeightGrid->getWidthPatches(); ++x) {
-        Services::Threadpool::ref().addTask([this, &generation, x]() {
+        Services::Threadpool::ref().addTask([this, rowIndex = generation.rowIndex, x, genID]() {
+            // Check for interrupt
+            if (genID != sGenerationUID) {
+                return;
+            }
             // Build row
-            const HeightmapPatchID patchId = generation.rowIndex * mHeightGrid->getWidthPatches() + x;
+            const HeightmapPatchID patchId = rowIndex * mHeightGrid->getWidthPatches() + x;
             const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
             const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
             const i32v2 rootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
@@ -309,7 +329,6 @@ void TerrainGenerator::finishPendingGeneration(PendingGPUTerrainGeneration& gene
             aabb.pos.z = minZ;
             aabb.dims.z = maxZ - minZ;
             patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
-
             mOnPatchFinished(patch.mHeightData->id);
         }, nullptr);
     }

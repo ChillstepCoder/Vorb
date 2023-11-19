@@ -25,7 +25,8 @@ public:
     TerrainGenerator(const WorldGenerationData& generationData);
     ~TerrainGenerator();
     void init(IHeightmapGrid& heightGrid, f32v2 worldCenter);
-    void destroy();
+    // Call before generating agian
+    void cleanup();
 
     TerrainGenerationState tick();
     // Pass 1 - Generate base heightmap
@@ -54,5 +55,6 @@ private:
     VGTexture mHeightmapTexture = 0;
     VGBuffer mSsbo = 0;
     GLfloat* mMappedHeights = nullptr;
+    f32 mWorldSeed = 0.f;
 };
 

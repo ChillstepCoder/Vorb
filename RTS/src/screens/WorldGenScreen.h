@@ -65,6 +65,7 @@ protected:
     ui32 mFinishedPatchCount = 0;
     ui32 mTotalPatches = 0;
     ui32 mThreadpoolSizePostEntry = 0;
+    bool mIsDirty = false;
 
     PreciseTimer mGenTimer;
 };

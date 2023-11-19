@@ -4,6 +4,7 @@
 
 constexpr f32 MIN_WORLD_GEN_HEIGHT = -200.0f;
 constexpr f32 MAX_WORLD_GEN_HEIGHT = 900.0f;
+constexpr int MAX_WORLD_GEN_SEED_SIZE = 16;
 
 // NoiseFunction(const char* label, int octaves, f64 persistence, f64 frequency, f64v2 posOffset, f64 amplitude = 1.0, f64 heightOffset = 0.0) 
 // TIP FOR USING NOISE - Start with a very high frequency to see the shape at a zoomed out scale, then reduce frequency
@@ -30,6 +31,21 @@ struct WorldGenerationData {
     f32 mContinentOutlineScale = SQ(20000.0f);
     // Constant
     f32 mContinentRadiusSq = SQ(mContinentRadius);
+    char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";
+
+    f32 getSeedHash() const {
+        int hash = 425381; // Starting value
+        int c;
+
+        // DJB2 Hash
+        for (size_t i = 0; i < MAX_WORLD_GEN_SEED_SIZE && mSeed[i] != '\0'; ++i) {
+            c = static_cast<unsigned char>(mSeed[i]);
+            hash = ((hash << 5) + hash) + c; // hash * 33 + c
+        }
+        // Bound the seed so it doesn't damage GPU precision with large numbers
+        // Returns numbers in (-32768.5, 32768.5)
+        return hash / ((f32)INT_MAX / 65535.0f);
+    }
 
     bool mIsDirty = false;
 };

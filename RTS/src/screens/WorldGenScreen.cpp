@@ -161,8 +161,17 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         mCancelled = true;
         m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
     }
+
+    if (ImGui::SliderFloat2("World Center", &mGenData.mWorldCenter.x, 0, 32768.f, "%.1f")) {
+        mIsDirty = true;
+    }
+    if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
+        mIsDirty = true;
+    }
+
     if (mGenState == WorldGenScreenState::Done) {
-        if (ImGui::Button("REGENERATE")) {
+        if (ImGui::Button("REGENERATE") || mIsDirty) {
+            mIsDirty = false;
             // Reload compute shader
             //ShaderLoader::clearCachedProgram("terrain_base.comp");
             vg::ShaderManager::disposeProgram("terrain_base");
@@ -185,9 +194,11 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 }
 
 void WorldGenScreen::initWorldData() {
-    mWorldData = std::make_unique<HostWorldData>();
-    mWorldData->worldWidth = WorldDefaults::DEFAULT_WORLD_WIDTH_TILES;
-    mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
+    if (!mWorldData) {
+        mWorldData = std::make_unique<HostWorldData>();
+        mWorldData->worldWidth = WorldDefaults::DEFAULT_WORLD_WIDTH_TILES;
+        mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
+    }
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
 
@@ -380,12 +391,14 @@ void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data
 }
 
 void WorldGenScreen::beginWorldGeneration() {
-    mTerrainGenerator = std::make_unique<TerrainGenerator>(mGenData);
+    if (mTerrainGenerator) {
+        mTerrainGenerator->cleanup();
+    }
+    else {
+        mTerrainGenerator = std::make_unique<TerrainGenerator>(mGenData);
+    }
     mGenState = WorldGenScreenState::Idle;
     mFinishedPatchCount = 0;
-
-
-
 
     initWorldData();
     initScreenTexture();

@@ -70,7 +70,8 @@ namespace vorb {
 
             // Adjust number of running threads
             void setSize(ui32 size);
-            int getSize() const { return mRunningThreads; }
+            int getSize() const { return mActiveThreads; }
+            int getNumRunningThreads() const { return mRunningThreads; }
         private:
             VORB_NON_COPYABLE(ThreadPool);
             // Typedef for func ptr
@@ -96,7 +97,7 @@ namespace vorb {
 
                 std::thread thread; ///< The thread handle
                 std::atomic_bool mStop;
-                std::atomic_bool mRunning = true;
+                std::atomic_bool mActive = true;
             };
 
             /// Thread function that processes tasks
@@ -108,6 +109,7 @@ namespace vorb {
             moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs; ///< Contains functions to run on main thread after complete
            
             std::vector <std::unique_ptr<WorkerThread>> mWorkers; ///< All the worker threads
+            std::atomic_int mActiveThreads = 0;
             std::atomic_int mRunningThreads = 0;
         };
 
