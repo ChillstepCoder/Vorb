@@ -217,16 +217,16 @@ f32 IWorldGenerator::getTerrainHeightAtPos(const f32v2& worldPos) {
     f64 distanceFromCenter2 = glm::length2(offsetToCenter);
 
     // Preturb the outline via noise
-    distanceFromCenter2 += mGenerationData.CONTINENT_OUTLINE_SCALE * mGenerationData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
+    distanceFromCenter2 += mGenerationData.mContinentOutlineScale * mGenerationData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
 
     // Outline check
-    if (distanceFromCenter2 > mGenerationData.CONTINENT_RADIUS_SQ) {
+    if (distanceFromCenter2 > mGenerationData.mContinentRadiusSq) {
         // Ocean
-        height -= (distanceFromCenter2 - mGenerationData.CONTINENT_RADIUS_SQ) * 0.0000001;
+        height -= (distanceFromCenter2 - mGenerationData.mContinentRadiusSq) * 0.0000001;
     }
     else {
         // Continent internals
-        f64 lerp = (mGenerationData.CONTINENT_RADIUS_SQ - distanceFromCenter2) * 0.00000001;
+        f64 lerp = (mGenerationData.mContinentRadiusSq - distanceFromCenter2) * 0.00000001;
         // Mountains
         f64 mountainDist = mGenerationData.mMountainsDistNoise.compute((f64)worldPos.x, (f64)worldPos.y);
         if (mountainDist > 0.0) {

@@ -240,6 +240,13 @@ f32 IHeightmapGrid::computeHeightAtPointForGeneration(const f32v2& worldPos) con
     return interpolateHeightAtWorldPos<false>(worldPos);
 }
 
+f32 IHeightmapGrid::getHeightAtVertexForGeneration(const i32v2& worldVertexOffset) const {
+    const i32v2 patchGridCoords(i32(worldVertexOffset.x) / HEIGHTMAP_QUAD_WIDTH_PER_PATCH, i32(worldVertexOffset.y) / HEIGHTMAP_QUAD_WIDTH_PER_PATCH);
+    const HeightmapPatchID id = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
+    const i32v2 patchVertCoords = worldVertexOffset - patchGridCoords * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+    return mHeightData[id].mHeightData->getHeightAt(patchVertCoords.y * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + patchVertCoords.x);
+}
+
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const {
     if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();

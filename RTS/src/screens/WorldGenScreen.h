@@ -5,6 +5,8 @@
 
 #include <gli/gli.hpp>
 
+#include "generation/WorldGenerationData.h"
+
 class App;
 class HostWorldData;
 class TerrainGenerator;
@@ -42,6 +44,7 @@ protected:
     void onPatchFinishedCPU(HeightmapPatchID patchId);
     void onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data);
 
+    void beginWorldGeneration();
     void initScreenTexture();
 
     bool mRebuildDockspace = true;
@@ -51,6 +54,7 @@ protected:
     std::unique_ptr<HostWorldData> mWorldData;
     std::unique_ptr<TerrainGenerator> mTerrainGenerator;
 
+    WorldGenerationData mGenData;
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
     moodycamel::ConcurrentQueue<HeightmapPatchID> mFinishedTerrainPatches;
     moodycamel::ConcurrentQueue<std::pair<HeightmapPatchID, ui8v4*>> mFinishedTerrainGPUPatches;

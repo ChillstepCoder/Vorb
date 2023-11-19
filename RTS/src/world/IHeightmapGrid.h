@@ -82,6 +82,8 @@ public:
     f32 computeHeightAtPoint(const f32v2& worldPos) const;
     // Never thread safe
     f32 computeHeightAtPointForGeneration(const f32v2& worldPos) const;
+    // Each vertex spans 2 tiles
+    f32 getHeightAtVertexForGeneration(const i32v2& worldVertexOffset) const;
 
     template <bool THREAD_SAFE>
     f32 computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
@@ -103,6 +105,7 @@ public:
     World& getWorld() const { return *mWorld; }
     void setWorld(World& world) { mWorld = &world; }
     f32 getPatchWidth() const { return mPatchWidth; }
+    f32 getWidthPatches() const { return mWidthPatches; }
     f32 getTotalPatches() const { return SQ(mWidthPatches); }
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);

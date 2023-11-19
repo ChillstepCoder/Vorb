@@ -398,6 +398,13 @@ void vg::ShaderManager::disposeAllPrograms() {
     GLProgramMap().swap(m_programMap);
 }
 
+void vg::ShaderManager::disposeProgram(const nString& name) {
+    auto&& it = m_programMap.find(name);
+    assert(it != m_programMap.end());
+    it->second.dispose();
+    m_programMap.erase(it);
+}
+
 bool vg::ShaderManager::registerProgram(const nString& name, const GLProgram& program) {
     auto it = m_programMap.find(name);
     if (it != m_programMap.end()) return false;

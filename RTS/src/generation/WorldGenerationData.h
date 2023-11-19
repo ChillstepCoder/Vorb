@@ -24,10 +24,12 @@ struct WorldGenerationData {
 
     // === Continent noise modifiers ===
     // Configurable
-    f64 CONTINENT_RADIUS = 10000.0;
-    f64 CONTINENT_OUTLINE_SCALE = SQ(20000.0);
+    f32v2 mWorldCenter = f32v2(16384.f);
+    f32v2 mWorldPosRoot = f32v2(0.0f);
+    f32 mContinentRadius = 10000.0f;
+    f32 mContinentOutlineScale = SQ(20000.0f);
     // Constant
-    f64 CONTINENT_RADIUS_SQ = SQ(CONTINENT_RADIUS);
+    f32 mContinentRadiusSq = SQ(mContinentRadius);
 
     bool mIsDirty = false;
 };

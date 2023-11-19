@@ -18,7 +18,13 @@
 #include "world/WorldDefaults.h"
 #include "generation/TerrainGenerator.h"
 
-constexpr int SCREEN_TEXTURE_RES = 2048;
+#include "rendering/MaterialShaderRepository.h"
+#include "rendering/RenderContext.h"
+
+#include "rendering/ShaderLoader.h"
+#include <Vorb/graphics/ShaderManager.h>
+
+constexpr int SCREEN_TEXTURE_RES = 4096;
 constexpr bool GEN_GPU = true;
 
 WorldGenScreen::WorldGenScreen(App* const app) : IAppScreen<App>(app) {
@@ -51,22 +57,14 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
 
-    mTerrainGenerator = std::make_unique<TerrainGenerator>();
-    mGenState = WorldGenScreenState::Idle;
-    mFinishedPatchCount = 0;
-
     if (mFirstEntry) {
         Services::initHost();
     }
     mThreadpoolSizePostEntry = Services::Threadpool::ref().getSize();
     Services::Threadpool::ref().setSize(std::thread::hardware_concurrency() - 1);
 
-
-    initWorldData();
-    initScreenTexture();
-
-    mCancelled = false;
-    assert(!sGameWorld);
+    beginWorldGeneration();
+   
 }
 
 void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
@@ -163,8 +161,24 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         mCancelled = true;
         m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
     }
-    ImGui::End();
+    if (mGenState == WorldGenScreenState::Done) {
+        if (ImGui::Button("REGENERATE")) {
+            // Reload compute shader
+            //ShaderLoader::clearCachedProgram("terrain_base.comp");
+            vg::ShaderManager::disposeProgram("terrain_base");
+            AssetHandleBasePtr newAssetPtr = MaterialShaderRepository::get().reloadAsset(CStrToken("terrain_base"));
+            AssetLoader& loader = AssetLoader::getInstance();
+            while (!newAssetPtr->isLoaded()) {
+                loader.update();
+                Sleep(1);
+                RenderContext::getInstance().updateRenderThreadProcs();
+            }
+            beginWorldGeneration();
+        }
+    }
 
+
+    ImGui::End();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     ImGui::EndFrame();
@@ -172,31 +186,33 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 
 void WorldGenScreen::initWorldData() {
     mWorldData = std::make_unique<HostWorldData>();
-    mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(WorldDefaults::DEFAULT_WORLD_WIDTH_TILES);
+    mWorldData->worldWidth = WorldDefaults::DEFAULT_WORLD_WIDTH_TILES;
+    mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
 
     mGenState = WorldGenScreenState::GeneratingTerrain;
-    mTerrainGenerator->init(*mWorldData->heightmapGrid, f32v2(WorldDefaults::DEFAULT_WORLD_WIDTH_TILES * 0.5f));
+    mTerrainGenerator->init(*mWorldData->heightmapGrid, f32v2(mWorldData->worldWidth * 0.5f));
     
     mGenTimer.start();
     if (GEN_GPU) {
+        mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
         // Generate as fast as GPU can handle
         m_app->getWindow().setTemporaryUnlimitedFPS(true);
-        mTerrainGenerator->generateBaseHeightmapGPU([this](HeightmapPatchID finishedPatchID) {
+        mTerrainGenerator->generateBaseHeightmapGPU(mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
             HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
             const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
-            const f32v2 patchWorldPos = grid.getWorldPosXYFromID(finishedPatchID);
+            const i32v2 patchWorldPos = grid.getGridXYFromID(finishedPatchID) * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
             ui8v4* filledData = new ui8v4[mPatchPixelDims * mPatchPixelDims];
 
             // Build pixels for patch
             ui8v4 pixel;
-            const f32 heightStride = (heightGrid.getPatchWidth() / mPatchPixelDims);
+            const i32 heightStride = HEIGHTMAP_QUAD_WIDTH_PER_PATCH / mPatchPixelDims;
             for (int y = 0; y < mPatchPixelDims; ++y) {
-                const f32 yPosOffset = y * heightStride;
+                const i32 yPosOffset = y * heightStride;
                 const int yOffset = y * mPatchPixelDims;
                 for (int x = 0; x < mPatchPixelDims; ++x) {
-                    const f32 height = heightGrid.computeHeightAtPointForGeneration(patchWorldPos + f32v2(x * heightStride, yPosOffset));
+                    const f32 height = heightGrid.getHeightAtVertexForGeneration(patchWorldPos + i32v2(x * heightStride, yPosOffset));
                     ColorRGB8 lerpColor;
                     if (height < 0.0f) {
                         const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
@@ -220,7 +236,6 @@ void WorldGenScreen::initWorldData() {
         });
     }
 
-    mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
 }
 
 void WorldGenScreen::updateDockspace()
@@ -345,13 +360,13 @@ void WorldGenScreen::onPatchFinishedCPU(HeightmapPatchID patchId) {
     ++mFinishedPatchCount;
     if (mFinishedPatchCount >= mTotalPatches) {
         mGenState = WorldGenScreenState::Done;
-        mTerrainGenerator.reset();
         m_app->getWindow().setTemporaryUnlimitedFPS(false);
         LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
     }
 }
 
 void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data) {
+
     HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
     const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
     i32v2 patchPos = grid.getGridXYFromID(data.first);
@@ -365,12 +380,26 @@ void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data
     ++mFinishedPatchCount;
     if (mFinishedPatchCount >= mTotalPatches) {
         mGenState = WorldGenScreenState::Done;
-        mTerrainGenerator.reset();
         m_app->getWindow().setTemporaryUnlimitedFPS(false);
         LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
     }
 
     delete[] data.second;
+}
+
+void WorldGenScreen::beginWorldGeneration() {
+    mTerrainGenerator = std::make_unique<TerrainGenerator>(mGenData);
+    mGenState = WorldGenScreenState::Idle;
+    mFinishedPatchCount = 0;
+
+
+
+
+    initWorldData();
+    initScreenTexture();
+
+    mCancelled = false;
+    assert(!sGameWorld);
 }
 
 void WorldGenScreen::initScreenTexture() {
@@ -380,13 +409,13 @@ void WorldGenScreen::initScreenTexture() {
 
     if (!mScreenTexture) {
         glCreateTextures(GL_TEXTURE_2D, 1, &mScreenTexture);
+        glTextureStorage2D(
+            mScreenTexture,
+            1,           // one level, no mipmaps
+            GL_RGBA8,    // internal format
+            SCREEN_TEXTURE_RES,
+            SCREEN_TEXTURE_RES
+        );
+        glTextureSubImage2D(mScreenTexture, 0, 0, 0, SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES, GL_RGBA, GL_UNSIGNED_BYTE, mScreenTextureData.data());
     }
-    glTextureStorage2D(
-        mScreenTexture,
-        1,           // one level, no mipmaps
-        GL_RGBA8,    // internal format
-        SCREEN_TEXTURE_RES,
-        SCREEN_TEXTURE_RES
-    );
-    glTextureSubImage2D(mScreenTexture, 0, 0, 0, SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES, GL_RGBA, GL_UNSIGNED_BYTE, mScreenTextureData.data());
 }

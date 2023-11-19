@@ -60,6 +60,7 @@ public:
     }
 
     static void clearAllCachedPrograms();
+    static void clearCachedProgram(nString vert, nString fragGeom);
 
 private:
     static void tryGetCachedPaths(

@@ -158,6 +158,10 @@ void ShaderLoader::clearAllCachedPrograms() {
     sProgramCache.clear();
 }
 
+void ShaderLoader::clearCachedProgram(nString vert, nString fragGeom) {
+    sProgramCache.erase(std::make_pair(vert, fragGeom));
+}
+
 void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath)
 {
     {

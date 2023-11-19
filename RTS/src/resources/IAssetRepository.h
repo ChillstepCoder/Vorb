@@ -257,7 +257,27 @@ public:
         if (it == mAssetLookup.end()) return INVALID_ASSET_ID;
         return it->second;
     }
-
+    AssetHandleBasePtr reloadAsset(AssetID id) {
+        // TODO: Cleanup first?
+        onRegisteredAsset(id);
+        onAllAssetTypesRegistered(); // TODO: MIGHT CAUSE PROBLEMS if this is implemented to not clean itself up
+        // Some assets don't "load"
+        if (getAssetLoadFunc() || getAssetLoadRenderProcessFunc()) {
+            if (mLoadedAssets[id]->load()) {
+                mBeginLoadAssetMutex.lock(); // LOCK
+                mLoadedAssets[id]->store(false);
+                mAssetRegistry[id].mRequestedLoad = false;
+                if (mAssets[id]->getDependencies() && mAssets[id]->getDependencies()->isLockedByAssetLoader()) {
+                    panic("Tried to reload asset {} while dependencies still being loaded", mAssetRegistry[id].mName.toString().c_str());
+                }
+                mBeginLoadAssetMutex.unlock(); // UNLOCK
+            }
+        }
+        return getAssetHandleBase(id);
+    }
+    AssetHandleBasePtr reloadAsset(StrToken name) {
+        return reloadAsset(getAssetID(name));
+    }
     AssetHandleBundle reloadAllLoadedAssets() {
         AssetHandleBundle assets;
         // TODO: Cleanup first?

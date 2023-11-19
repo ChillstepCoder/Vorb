@@ -6,5 +6,6 @@
 // from disk
 class HostWorldData {
 public:
+    ui32 worldWidth = 0;
     std::unique_ptr<HostHeightmapGrid> heightmapGrid;
 };

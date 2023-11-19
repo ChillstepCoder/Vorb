@@ -84,6 +84,7 @@ namespace vorb {
 
             /// Disposes and deallocates all globally cached programs and clears the cache
             static void disposeAllPrograms();
+            static void disposeProgram(const nString& name);
 
             /// Adds a program to the global cache
             /// @param name: String identifier for the program

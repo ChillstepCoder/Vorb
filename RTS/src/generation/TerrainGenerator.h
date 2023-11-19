@@ -14,6 +14,7 @@ enum class TerrainGenerationState {
 
 struct PendingGPUTerrainGeneration {
     ~PendingGPUTerrainGeneration();
+    VGBuffer pbo = 0;
     VGBuffer ssbo = 0;
     GLsync sync = 0;
     HeightmapPatchID patchID;
@@ -23,7 +24,7 @@ struct PendingGPUTerrainGeneration {
 class TerrainGenerator
 {
 public:
-    TerrainGenerator();
+    TerrainGenerator(const WorldGenerationData& generationData);
     ~TerrainGenerator();
     void init(IHeightmapGrid& heightGrid, f32v2 worldCenter);
     void destroy();
@@ -31,9 +32,10 @@ public:
     TerrainGenerationState tick();
     // Pass 1 - Generate base heightmap
     void generateBaseHeightmapCPU(std::function<void(HeightmapPatchID)> onPatchFinished);
-    void generateBaseHeightmapGPU(std::function<void(HeightmapPatchID)> onPatchFinished);
+    void generateBaseHeightmapGPU(i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished);
     void cleanupPatchGPUData(HeightmapPatchID id);
 
+    VGTexture getHeightmapTexture() const { return mHeightmapTexture; }
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
     f32 generateHeightAtPos(const f32v2& worldPos);
@@ -44,12 +46,15 @@ private:
     IHeightmapGrid* mHeightGrid = nullptr;
 
     f32v2 mWorldCenter;
-    WorldGenerationData mGenerationData;
+    const WorldGenerationData& mGenerationData;
 
     ui32 mNextGenerationIndex = 0;
     ui32 mNextRowToGenerate = 0;
     std::vector<PendingGPUTerrainGeneration> mGPUTerrainGenerations;
     bool mIsGeneratingGPU = false;
     std::function<void(HeightmapPatchID)> mOnPatchFinished;
+
+    VGTexture mHeightmapTexture = 0;
+    VGFramebuffer mFramebuffer = 0;
 };
 
