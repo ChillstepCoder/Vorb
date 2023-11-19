@@ -20,13 +20,11 @@ const float MIN_WORLD_GEN_HEIGHT = -3000.0;
 const float MAX_WORLD_GEN_HEIGHT = 3000.0;
 const float VERTEX_SPACING = 2; // Match C++
 
-// Note that we are inverting them here to be compatable with c++
-// Remove this once it is data driven
-float standardNoise(vec3 position, int octaves, float persistence, float frequency, vec2 posOffset, float amplitude, float heightOffset) {
+float standardNoise(vec3 position, int octaves, float frequency, float persistence, vec2 posOffset, float amplitude, float heightOffset) {
     position.xy += posOffset;
     return (noise(position, octaves, frequency, persistence) + heightOffset) * amplitude;
 }
-float ridgedNoise(vec3 position, int octaves, float persistence, float frequency, vec2 posOffset, float amplitude, float heightOffset) {
+float ridgedNoise(vec3 position, int octaves, float frequency, float persistence, vec2 posOffset, float amplitude, float heightOffset) {
     position.xy += posOffset;
     float noiseVal = noise(position, octaves, frequency, persistence);
     noiseVal = 1.0 - abs(noiseVal);
@@ -44,7 +42,7 @@ void main() {
     const vec3 posInputSeeded = vec3(unPatchWorldPos.x + float(idx) * VERTEX_SPACING, unPatchWorldPos.y + float(idy) * VERTEX_SPACING, unSeed);
     
       // Base height
-    float height = standardNoise(posInputSeeded, 7, 0.001, 25.0, vec2(0, 0), 25.0, 0.0);
+    float height = standardNoise(posInputSeeded, 4, 0.001, 0.7, vec2(0, 0), 25.0, 0.0) * 0.5 + 4.0;
     
     vec2 offsetToCenter = vec2(
         posInputSeeded.x - unWorldCenter.x,
@@ -57,26 +55,26 @@ void main() {
     float distanceFromCenter2 = offsetToCenter.x * offsetToCenter.x + offsetToCenter.y * offsetToCenter.y;
 
     // Preturb the outline via noise
-    const float continentOutlineNoise = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 9, 0.65, 0.0001, vec2(-2000.0, 0.0), 1.0, 0.0);
+    const float continentOutlineNoise = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 9, 0.0001, 0.65, vec2(-2000.0, 0.0), 1.0, 0.0);
     distanceFromCenter2 += unContinentOutlineScale * continentOutlineNoise;
 
     // Outline check
     if (distanceFromCenter2 > unContinentRadiusSq) {
         // Ocean
-        height -= (distanceFromCenter2 - unContinentRadiusSq) * 0.0000001;
+        height -= (distanceFromCenter2 - unContinentRadiusSq) * 0.0000005;
     }
     else {
         // Continent internals
         float o = (unContinentRadiusSq - distanceFromCenter2) * 0.00000001;
         // Mountains
-        float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 7, 0.6, 0.000166, vec2(0, 0), 11.0, -0.15);
+        float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 7, 0.000166, 0.6, vec2(0, 0), 11.0, -0.15);
         if (mountainDist > 0.0) {
-            float mountain = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 9, 0.65, 0.0001, vec2(0, 0), 150.0, -0.3);
+            float mountain = ridgedNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 9, 0.0001, 0.65, vec2(0, 0), 150.0, -0.3);
             height += o * mountain * min(mountainDist, 1.0);
         }
     }
     const float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
     
-    heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight * 0.000001 + standardNoise(posInputSeeded, 5, 0.6, 0.001, vec2(0, 0), 25.0, 0.0);
+    heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight;
     
 }

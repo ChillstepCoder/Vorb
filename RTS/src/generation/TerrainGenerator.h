@@ -15,7 +15,7 @@ enum class TerrainGenerationState {
 struct PendingGPUTerrainGeneration {
     ~PendingGPUTerrainGeneration();
     GLsync sync = 0;
-    HeightmapPatchID patchID;
+    ui32 rowIndex;
     bool generateStarted = false;
 };
 
@@ -31,7 +31,6 @@ public:
     // Pass 1 - Generate base heightmap
     void generateBaseHeightmapCPU(std::function<void(HeightmapPatchID)> onPatchFinished);
     void generateBaseHeightmapGPU(i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished);
-    void cleanupPatchGPUData(HeightmapPatchID id);
 
     VGTexture getHeightmapTexture() const { return mHeightmapTexture; }
 private:

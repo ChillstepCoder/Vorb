@@ -195,8 +195,8 @@ void WorldGenScreen::initWorldData() {
     mTerrainGenerator->init(*mWorldData->heightmapGrid, f32v2(mWorldData->worldWidth * 0.5f));
     
     mGenTimer.start();
+    mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
     if (GEN_GPU) {
-        mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
         // Generate as fast as GPU can handle
         m_app->getWindow().setTemporaryUnlimitedFPS(true);
         mTerrainGenerator->generateBaseHeightmapGPU(mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
@@ -352,10 +352,6 @@ void WorldGenScreen::onPatchFinishedCPU(HeightmapPatchID patchId) {
     }
     glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGBA, GL_UNSIGNED_BYTE, filledData.data());
 
-    // Cleanup gpu data so that we don't allocate too much memory at once
-    if constexpr (GEN_GPU) {
-        mTerrainGenerator->cleanupPatchGPUData(patchId);
-    }
 
     ++mFinishedPatchCount;
     if (mFinishedPatchCount >= mTotalPatches) {
@@ -372,10 +368,6 @@ void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data
     i32v2 patchPos = grid.getGridXYFromID(data.first);
     glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGBA, GL_UNSIGNED_BYTE, data.second);
 
-    // Cleanup gpu data so that we don't allocate too much memory at once
-    if constexpr (GEN_GPU) {
-        mTerrainGenerator->cleanupPatchGPUData(data.first);
-    }
 
     ++mFinishedPatchCount;
     if (mFinishedPatchCount >= mTotalPatches) {
