@@ -105,8 +105,8 @@ public:
     World& getWorld() const { return *mWorld; }
     void setWorld(World& world) { mWorld = &world; }
     f32 getPatchWidth() const { return mPatchWidth; }
-    f32 getWidthPatches() const { return mWidthPatches; }
-    f32 getTotalPatches() const { return SQ(mWidthPatches); }
+    ui32 getWidthPatches() const { return mWidthPatches; }
+    ui32 getTotalPatches() const { return SQ(mWidthPatches); }
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 

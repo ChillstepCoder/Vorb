@@ -3,12 +3,16 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-layout(binding = 0, r32f) uniform image2D heightMap;
+layout(std430, binding = 0) writeonly buffer HeightData
+{
+    float heightData[];
+};
 
 uniform vec2 unWorldCenter;
 uniform float unContinentOutlineScale;
 uniform float unContinentRadiusSq;
 uniform float unSeed = 0;
+uniform uint unYStride;
 uniform ivec2 unVertexOffset;
 
 uniform vec2 unPatchWorldPos;
@@ -71,9 +75,8 @@ void main() {
             height += o * mountain * min(mountainDist, 1.0);
         }
     }
-    float finalHeight =  clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
+    const float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
     
-    finalHeight = finalHeight * 0.000001 + standardNoise(posInputSeeded, 5, 0.6, 0.001, vec2(0, 0), 25.0, 0.0);
-    imageStore(heightMap, unVertexOffset + ivec2(idx, idy), vec4(finalHeight, 0.0, 0.0, 0.0));
+    heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight * 0.000001 + standardNoise(posInputSeeded, 5, 0.6, 0.001, vec2(0, 0), 25.0, 0.0);
     
 }

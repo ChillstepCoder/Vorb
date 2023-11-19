@@ -14,8 +14,6 @@ enum class TerrainGenerationState {
 
 struct PendingGPUTerrainGeneration {
     ~PendingGPUTerrainGeneration();
-    VGBuffer pbo = 0;
-    VGBuffer ssbo = 0;
     GLsync sync = 0;
     HeightmapPatchID patchID;
     bool generateStarted = false;
@@ -55,6 +53,7 @@ private:
     std::function<void(HeightmapPatchID)> mOnPatchFinished;
 
     VGTexture mHeightmapTexture = 0;
-    VGFramebuffer mFramebuffer = 0;
+    VGBuffer mSsbo = 0;
+    GLfloat* mMappedHeights = nullptr;
 };
 
