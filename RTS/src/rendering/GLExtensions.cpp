@@ -19,15 +19,15 @@ void GLExtensions::init() {
 
     // Shader5 for bindless textures
     if (!hasExtension("GL_ARB_gpu_shader5")) {
-        pError("GL_ARB_gpu_shader5 not supported by this GPU. Try updating drivers");
+        panic("GL_ARB_gpu_shader5 not supported by this GPU. Try updating drivers");
     }
 
     if (!hasExtension("GL_ARB_bindless_texture")) {
-        pError("GL_ARB_bindless_texture not supported by this GPU. Try updating drivers");
+        panic("GL_ARB_bindless_texture not supported by this GPU. Try updating drivers");
     }
 
     if (!hasExtension("GL_EXT_texture_compression_s3tc")) {
-        pError("GL_EXT_texture_compression_s3tc not supported by this GPU. Try updating drivers");
+        panic("GL_EXT_texture_compression_s3tc not supported by this GPU. Try updating drivers");
     }
 }
 

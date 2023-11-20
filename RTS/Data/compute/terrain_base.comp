@@ -9,8 +9,7 @@ layout(std430, binding = 0) writeonly buffer HeightData
 };
 
 uniform vec2 unWorldCenter;
-uniform float unContinentOutlineScale;
-uniform float unContinentRadiusSq;
+uniform float unContinentRadius;
 uniform float unSeed = 0;
 uniform uint unYStride;
 uniform ivec2 unVertexOffset;
@@ -19,6 +18,11 @@ uniform vec2 unPatchWorldPos;
 const float MIN_WORLD_GEN_HEIGHT = -3000.0;
 const float MAX_WORLD_GEN_HEIGHT = 3000.0;
 const float VERTEX_SPACING = 2; // Match C++
+const float MAX_RADIUS = 15000.0;
+const float WORLD_RADIUS = 16536.0;
+const float WORLD_RADIUS2 = WORLD_RADIUS * WORLD_RADIUS;
+const float OUTER_LERP_DISTANCE = WORLD_RADIUS - MAX_RADIUS;
+const float WORLD_EDGE_MIN_DEPTH = -100.0;
 
 float standardNoise(vec3 position, int octaves, float frequency, float persistence, vec2 posOffset, float amplitude, float heightOffset) {
     position.xy += posOffset;
@@ -35,6 +39,10 @@ float ridgedNoise(vec3 position, int octaves, float frequency, float persistence
 //}
 
 
+float cutNoiseAtStep(float noiseVal, float stepVal) {
+    return noiseVal * step(stepVal, noiseVal);
+}
+
 void main() {   
     const uint idx = gl_GlobalInvocationID.x;
     const uint idy = gl_GlobalInvocationID.y;
@@ -42,7 +50,7 @@ void main() {
     const vec3 posInputSeeded = vec3(unPatchWorldPos.x + float(idx) * VERTEX_SPACING, unPatchWorldPos.y + float(idy) * VERTEX_SPACING, unSeed);
     
       // Base height
-    float height = standardNoise(posInputSeeded, 4, 0.001, 0.7, vec2(0, 0), 25.0, 0.0) * 0.5 + 4.0;
+    float height = standardNoise(posInputSeeded, 4, 0.001, 0.7, vec2(0, 0), 25.0, 0.0) * 0.5 + 8.0;
     
     vec2 offsetToCenter = vec2(
         posInputSeeded.x - unWorldCenter.x,
@@ -50,29 +58,43 @@ void main() {
     );
     
     //  TODO: Precompute and interpolate, can cubic interpolate and others
-    float distanceFromCenter2 = offsetToCenter.x * offsetToCenter.x + offsetToCenter.y * offsetToCenter.y;
+    float distanceFromCenter = length(offsetToCenter);
 
     // Preturb the outline via noise
-    const float continentOutlineNoise = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 9, 0.0001, 0.65, vec2(-2000.0, 0.0), 1.0, 0.0);
-    distanceFromCenter2 += unContinentOutlineScale * continentOutlineNoise;
+    const float continentOutlineNoise = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 8, 0.0004, 0.65, vec2(0.0, 0.0), 3000.0, 0.0);
+    float adjustedDistanceFromCenter = distanceFromCenter + continentOutlineNoise;
 
-    // Outline check
-    if (distanceFromCenter2 > unContinentRadiusSq) {
-        // Ocean
-        height -= (distanceFromCenter2 - unContinentRadiusSq) * 0.0000005;
-    }
+    // Create a fairly circular outline to deep ocean
+    height -= max((adjustedDistanceFromCenter - unContinentRadius) * 0.05, 0.0);
+        
     // Continent internals
     // Mountains
-    float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 1, 0.000166, 0.6, vec2(0, 0), 3.0, -0.15);
-    if (mountainDist > 0.0) {
-        float mountain = ridgedNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 6, 0.0001, 0.65, vec2(0, 0), 20.0, -0.3);
-        height += mountain * min(mountainDist, 1.0);
+    //float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 1, 0.000166, 0.6, vec2(0, 0), 3.0, -0.15);
+    //if (mountainDist > 0.0) {
+    //    float mountain = ridgedNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 6, 0.0001, 0.65, vec2(0, 0), 20.0, -0.3);
+    //    height += mountain * min(mountainDist, 1.0);
+   // }
+        
+    //Split world into subcontinents.
+    float continentBreak = standardNoise(posInputSeeded, 8, 0.0001, 0.6, vec2(0, 0), 1.0, 0.1) * 0.5;
+    continentBreak = cutNoiseAtStep(continentBreak, 0.0);
+    // REMOVE
+    //continentBreak = 0.0;
+    height -= continentBreak * 240.0;
+    
+    // Enforce water on edge of world
+    if (distanceFromCenter > MAX_RADIUS) {
+        height = mix(height, min(height, WORLD_EDGE_MIN_DEPTH), pow((distanceFromCenter - MAX_RADIUS) / OUTER_LERP_DISTANCE, 8.0));
     }
         
     float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
     
     // Cone world lol
     //finalHeight = 0.0000001 * finalHeight + 500.0 - pow((length(offsetToCenter)), 1.0);
+    
+    //if (continentBreak > 0.0) {
+    //    finalHeight = 1000.0;
+   // }
     
     
     heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight;

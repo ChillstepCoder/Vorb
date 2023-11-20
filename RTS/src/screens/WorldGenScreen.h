@@ -41,7 +41,7 @@ protected:
     void initWorldData();
     void updateDockspace();
     void updateBaseHeightGeneration();
-    void onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data);
+    void onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v3*> data);
 
     void beginWorldGeneration();
     void initScreenTexture();
@@ -55,7 +55,7 @@ protected:
 
     WorldGenerationData mGenData;
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
-    moodycamel::ConcurrentQueue<std::pair<HeightmapPatchID, ui8v4*>> mFinishedTerrainGPUPatches;
+    moodycamel::ConcurrentQueue<std::pair<HeightmapPatchID, ui8v3*>> mFinishedTerrainGPUPatches;
 
     VGTexture mScreenTexture = 0;
     gli::texture2d mScreenTextureData;
@@ -64,6 +64,9 @@ protected:
     ui32 mTotalPatches = 0;
     ui32 mThreadpoolSizePostEntry = 0;
     bool mIsDirty = false;
+
+    // Controls
+    bool mShowBiomes = true;
 
     PreciseTimer mGenTimer;
 };

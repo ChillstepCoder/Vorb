@@ -171,6 +171,10 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
         mIsDirty = true;
     }
+    if (ImGui::SliderFloat("Continent Radius", &mGenData.mContinentRadius, 1000.0f, 16000.0f, "%.1f")) {
+        mGenData.mContinentRadiusSq = SQ(mGenData.mContinentRadius);
+        mIsDirty = true;
+    }
 
     //if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("REGENERATE") || mIsDirty) {
@@ -215,10 +219,9 @@ void WorldGenScreen::initWorldData() {
         HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
         const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
         const i32v2 patchWorldPos = grid.getGridXYFromID(finishedPatchID) * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-        ui8v4* filledData = new ui8v4[mPatchPixelDims * mPatchPixelDims];
+        ui8v3* filledData = new ui8v3[mPatchPixelDims * mPatchPixelDims];
 
         // Build pixels for patch
-        ui8v4 pixel;
         const i32 heightStride = HEIGHTMAP_QUAD_WIDTH_PER_PATCH / mPatchPixelDims;
         for (int y = 0; y < mPatchPixelDims; ++y) {
             const i32 yPosOffset = y * heightStride;
@@ -229,14 +232,13 @@ void WorldGenScreen::initWorldData() {
                 if (height < 0.0f) {
                     const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
                     lerpColor.lerp(ColorRGB8(4, 119, 162), ColorRGB8(3, 66, 122), depthMult);
-                    pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
+                    filledData[yOffset + x] = ui8v3(lerpColor.r, lerpColor.g, lerpColor.b);
                 }
                 else {
                     const f32 heightMult = glm::min(height * 0.01f, 1.0f);
                     lerpColor.lerp(ColorRGB8(40, 98, 41), ColorRGB8(255, 255, 255), heightMult);
-                    pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
+                    filledData[yOffset + x] = ui8v3(lerpColor.r, lerpColor.g, lerpColor.b);
                 }
-                filledData[yOffset + x] = pixel;
             }
         }
         mFinishedTerrainGPUPatches.enqueue(std::make_pair(finishedPatchID, filledData));
@@ -295,9 +297,8 @@ void WorldGenScreen::updateDockspace()
 
 void WorldGenScreen::updateBaseHeightGeneration()
 {
-
     constexpr int BULK_SIZE = 128;
-    std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
+    std::pair<HeightmapPatchID, ui8v3*> finishedPatches[BULK_SIZE];
     if (size_t count = mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             onPatchFinishedGPU(finishedPatches[i]);
@@ -305,12 +306,12 @@ void WorldGenScreen::updateBaseHeightGeneration()
     }
 }
 
-void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data) {
+void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v3*> data) {
 
     HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
     const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
     i32v2 patchPos = grid.getGridXYFromID(data.first);
-    glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGBA, GL_UNSIGNED_BYTE, data.second);
+    glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGB, GL_UNSIGNED_BYTE, data.second);
 
 
     ++mFinishedPatchCount;
@@ -328,7 +329,7 @@ void WorldGenScreen::beginWorldGeneration() {
         mWorldGenerator->cleanup();
         // Flush
         constexpr int BULK_SIZE = 128;
-        std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
+        std::pair<HeightmapPatchID, ui8v3*> finishedPatches[BULK_SIZE];
         while (mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE));
     }
     else {
@@ -346,18 +347,18 @@ void WorldGenScreen::beginWorldGeneration() {
 
 void WorldGenScreen::initScreenTexture() {
     gli::extent2d dimensions{ SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES };
-    mScreenTextureData = gli::texture2d(gli::FORMAT_RGBA8_UNORM_PACK8, dimensions, 1);
-    memset(mScreenTextureData.data(), 255, SCREEN_TEXTURE_RES * SCREEN_TEXTURE_RES * 4);
+    mScreenTextureData = gli::texture2d(gli::FORMAT_RGB8_UNORM_PACK8, dimensions, 1);
+    memset(mScreenTextureData.data(), 255, SCREEN_TEXTURE_RES * SCREEN_TEXTURE_RES * 3);
 
     if (!mScreenTexture) {
         glCreateTextures(GL_TEXTURE_2D, 1, &mScreenTexture);
         glTextureStorage2D(
             mScreenTexture,
-            1,           // one level, no mipmaps
-            GL_RGBA8,    // internal format
+            1,          // one level, no mipmaps
+            GL_RGB8,    // internal format
             SCREEN_TEXTURE_RES,
             SCREEN_TEXTURE_RES
         );
-        glTextureSubImage2D(mScreenTexture, 0, 0, 0, SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES, GL_RGBA, GL_UNSIGNED_BYTE, mScreenTextureData.data());
+        glTextureSubImage2D(mScreenTexture, 0, 0, 0, SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES, GL_RGB, GL_UNSIGNED_BYTE, mScreenTextureData.data());
     }
 }

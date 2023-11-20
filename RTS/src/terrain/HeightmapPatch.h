@@ -24,7 +24,11 @@ public:
         }
     }
     void setHeightAt(int pos, f32 height) {
-        data[pos] = (CompressedHeight)glm::round(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT) / HEIGHT_STEP);
+        data[pos] = compressHeight(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT));
+    }
+    // Use if guarenteed that height is withing MIN_HEIGHT and MAX_HEIGHT
+    void setHeightAtNoClamp(int pos, f32 height) {
+        data[pos] = compressHeight(height);
     }
     const CompressedHeight* getData() const {
         return data;

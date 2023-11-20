@@ -27,7 +27,7 @@ struct WorldGenerationData {
     // Configurable
     f32v2 mWorldCenter = f32v2(16384.f);
     f32v2 mWorldPosRoot = f32v2(0.0f);
-    f32 mContinentRadius = 10000.0f;
+    f32 mContinentRadius = 14000.0f;
     f32 mContinentOutlineScale = SQ(20000.0f);
     // Constant
     f32 mContinentRadiusSq = SQ(mContinentRadius);

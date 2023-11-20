@@ -92,8 +92,8 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         }
         def->useCompute();
         glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unWorldCenter"), 1, &mGenerationData.mWorldCenter.x);
-        glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentOutlineScale"), mGenerationData.mContinentOutlineScale);
-        glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentRadiusSq"), mGenerationData.mContinentRadiusSq);
+        //glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentOutlineScale"), mGenerationData.mContinentOutlineScale);
+        glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentRadius"), mGenerationData.mContinentRadius);
         glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), mWorldSeed);
         //glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches);
 
@@ -211,7 +211,7 @@ void WorldDataGPUGenerator::finishPendingGeneration(PendingGPUTerrainGeneration&
                 for (i32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
                     const i32 targetVert = yStrideTarget + x;
                     const i32 sourceVert = rootVert + yStrideSource + x;
-                    patch.mHeightData->setHeightAt(targetVert, mMappedHeights[sourceVert]);
+                    patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
                 }
             }
             aabb.pos.z = minZ;
