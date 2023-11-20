@@ -61,17 +61,19 @@ void main() {
         // Ocean
         height -= (distanceFromCenter2 - unContinentRadiusSq) * 0.0000005;
     }
-    else {
-        // Continent internals
-        float o = (unContinentRadiusSq - distanceFromCenter2) * 0.00000001;
-        // Mountains
-        float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 7, 0.000166, 0.6, vec2(0, 0), 11.0, -0.15);
-        if (mountainDist > 0.0) {
-            float mountain = ridgedNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 9, 0.0001, 0.65, vec2(0, 0), 150.0, -0.3);
-            height += o * mountain * min(mountainDist, 1.0);
-        }
+    // Continent internals
+    // Mountains
+    float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 1, 0.000166, 0.6, vec2(0, 0), 3.0, -0.15);
+    if (mountainDist > 0.0) {
+        float mountain = ridgedNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 6, 0.0001, 0.65, vec2(0, 0), 20.0, -0.3);
+        height += mountain * min(mountainDist, 1.0);
     }
-    const float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
+        
+    float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
+    
+    // Cone world lol
+    //finalHeight = 0.0000001 * finalHeight + 500.0 - pow((length(offsetToCenter)), 1.0);
+    
     
     heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight;
     
