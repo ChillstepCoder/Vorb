@@ -50,12 +50,6 @@ void TerrainGenerator::cleanup() {
             case TerrainGenerationState::None:
                 break;
             case TerrainGenerationState::GeneratingBaseHeightmap:
-                // Make sure threadpool is finished
-                if (!mIsGeneratingGPU) {
-                    do {
-                        Sleep(10);
-                    } while (mFinishedRows < mHeightGrid->mWidthPatches);
-                }
                 break;
             case TerrainGenerationState::GeneratingBaseHeightmapDone:
                 break;
@@ -71,126 +65,77 @@ void TerrainGenerator::cleanup() {
 }
 
 TerrainGenerationState TerrainGenerator::tick() {
+    // Send next row
+    if (mNextRowToGenerate < mHeightGrid->mWidthPatches) {
+        const int numGroups = HEIGHTMAP_VERT_WIDTH_PER_PATCH / LOCAL_GROUP_SIZE;
 
-    if (mIsGeneratingGPU) {
-        
-        // Send next row
-        if (mNextRowToGenerate < mHeightGrid->mWidthPatches) {
-            const int numGroups = HEIGHTMAP_VERT_WIDTH_PER_PATCH / LOCAL_GROUP_SIZE;
+        const MaterialShaderDef* def = MaterialShaderRepository::get().tryGetLoadedAsset(CStrToken("terrain_base"));
+        if (!def) {
+            panic("terrain_base.comp was not loaded. Make sure it exists and is in assets.preload");
+        }
+        def->useCompute();
+        glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unWorldCenter"), 1, &mGenerationData.mWorldCenter.x);
+        glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentOutlineScale"), mGenerationData.mContinentOutlineScale);
+        glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentRadiusSq"), mGenerationData.mContinentRadiusSq);
+        glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), mWorldSeed);
+        //glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches);
 
-            const MaterialShaderDef* def = MaterialShaderRepository::get().tryGetLoadedAsset(CStrToken("terrain_base"));
-            if (!def) {
-                panic("terrain_base.comp was not loaded. Make sure it exists and is in assets.preload");
-            }
-            def->useCompute();
-            glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unWorldCenter"), 1, &mGenerationData.mWorldCenter.x);
-            glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentOutlineScale"), mGenerationData.mContinentOutlineScale);
-            glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentRadiusSq"), mGenerationData.mContinentRadiusSq);
-            glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), mWorldSeed);
-            //glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches);
-
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSsbo);
-            //for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSsbo);
+        //for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x) {
             
-            // TODO: batch create?
+        // TODO: batch create?
 
-            // Upload position
+        // Upload position
 
-            HeightmapPatchID patchIdLeftmost = mNextRowToGenerate * mHeightGrid->mWidthPatches;
-            const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchIdLeftmost);
-            const i32v2 vertXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchIdLeftmost) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+        HeightmapPatchID patchIdLeftmost = mNextRowToGenerate * mHeightGrid->mWidthPatches;
+        const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchIdLeftmost);
+        const i32v2 vertXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchIdLeftmost) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
 
-            glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unPatchWorldPos"), 1, &rootPos.x);
-            glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches * (ui32)HEIGHTMAP_VERT_WIDTH_PER_PATCH);
-            glProgramUniform2i(def->mProgram.getID(), def->getUniform("unVertexOffset"), vertXY.x, vertXY.y);
+        glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unPatchWorldPos"), 1, &rootPos.x);
+        glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches * (ui32)HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+        glProgramUniform2i(def->mProgram.getID(), def->getUniform("unVertexOffset"), vertXY.x, vertXY.y);
 
-            // Create buffer data
-            // glCreateBuffers(1, &generation.ssbo);
-            //glNamedBufferData(generation.ssbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH, nullptr, GL_DYNAMIC_READ);
-            //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, generation.ssbo);
+        // Create buffer data
+        // glCreateBuffers(1, &generation.ssbo);
+        //glNamedBufferData(generation.ssbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH, nullptr, GL_DYNAMIC_READ);
+        //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, generation.ssbo);
 
-            // Dispatch compute
-            glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups, 1);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+        // Dispatch compute
+        glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
 
-            PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate];
-            generation.rowIndex = mNextRowToGenerate;
-            generation.sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-            assert(generation.sync);
-            generation.generateStarted = true;
+        PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate];
+        generation.rowIndex = mNextRowToGenerate;
+        generation.sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        assert(generation.sync);
+        generation.generateStarted = true;
 
-            checkGlError("TerrainGenerator::generateBaseHeightmapGPU");
-            ++mNextRowToGenerate;
-        }
-
-        while (mNextGenerationIndex != mGPUTerrainGenerations.size()) {
-            PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextGenerationIndex];
-            if (!generation.generateStarted) {
-                break;
-            }
-            GLenum waitResult = glClientWaitSync(generation.sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
-            assert(generation.sync);
-            if (waitResult == GL_ALREADY_SIGNALED || waitResult == GL_CONDITION_SATISFIED) {
-                ++mNextGenerationIndex;
-                finishPendingGeneration(generation);
-            }
-            else if (waitResult == GL_TIMEOUT_EXPIRED) {
-                // The GPU commands are not yet complete. Continue other tasks or loop back later.
-                return mState;
-            }
-            else {
-                panic("Terrain generation sync failed with GL_WAIT_FAILED");
-            }
-        }
-        mState = TerrainGenerationState::GeneratingBaseHeightmapDone;
-        return mState;
+        checkGlError("TerrainGenerator::generateBaseHeightmapGPU");
+        ++mNextRowToGenerate;
     }
 
-    switch (mState) {
-        case TerrainGenerationState::None:
+    while (mNextGenerationIndex != mGPUTerrainGenerations.size()) {
+        PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextGenerationIndex];
+        if (!generation.generateStarted) {
             break;
-        case TerrainGenerationState::GeneratingBaseHeightmap:
-            if (mFinishedRows >= mHeightGrid->mWidthPatches) {
-                mFinishedRows = 0;
-                mState = TerrainGenerationState::GeneratingBaseHeightmapDone;
-            }
-            break;
-        case TerrainGenerationState::GeneratingBaseHeightmapDone:
-            break;
-        default:
-            assert(false);
-            break;
+        }
+        GLenum waitResult = glClientWaitSync(generation.sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+        assert(generation.sync);
+        if (waitResult == GL_ALREADY_SIGNALED || waitResult == GL_CONDITION_SATISFIED) {
+            ++mNextGenerationIndex;
+            finishPendingGeneration(generation);
+        }
+        else if (waitResult == GL_TIMEOUT_EXPIRED) {
+            // The GPU commands are not yet complete. Continue other tasks or loop back later.
+            return mState;
+        }
+        else {
+            panic("Terrain generation sync failed with GL_WAIT_FAILED");
+        }
     }
-    static_assert(e_count(TerrainGenerationState) == 3);
+    mState = TerrainGenerationState::GeneratingBaseHeightmapDone;
     return mState;
-}
-
-void TerrainGenerator::generateBaseHeightmapCPU(std::function<void(HeightmapPatchID)> onPatchFinished) {
-    mWorldSeed = mGenerationData.getSeedHash();
-
-    mIsGeneratingGPU = false;
-    assert(mState != TerrainGenerationState::GeneratingBaseHeightmap);
-    mState = TerrainGenerationState::GeneratingBaseHeightmap;
-    assert(mHeightGrid);
-    // Send each row to the threadpool
-    // TODO: Allocate extra threads as needed
-    for (ui32 y = 0; y < mHeightGrid->mWidthPatches; ++y) {
-        Services::Threadpool::ref().addTask([this, y, onPatchFinished]() {
-            const ui32 rowOffset = y * mHeightGrid->mWidthPatches;
-            const f32 yPos = y * HEIGHTMAP_PATCH_WIDTH;
-            for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x) {
-                HeightmapPatch& patch = mHeightGrid->mHeightData[rowOffset + x];
-                delete patch.mHeightData;
-                patch.mHeightData = new HeightmapPatchData(rowOffset + x);
-                generateHeightDataPatch(patch, f32v2(x * HEIGHTMAP_PATCH_WIDTH, yPos));
-                if (onPatchFinished) {
-                    onPatchFinished(rowOffset + x);
-                }
-            }
-            ++mFinishedRows;
-            LOG_INFO("Finished generating terrain row {}", y);
-        }, nullptr);
-    }
+    static_assert(e_count(TerrainGenerationState) == 3);
 }
 
 void TerrainGenerator::generateBaseHeightmapGPU(i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished)
@@ -225,7 +170,6 @@ void TerrainGenerator::generateBaseHeightmapGPU(i32 resolution, std::function<vo
 
     mOnPatchFinished = onPatchFinished;
     
-    mIsGeneratingGPU = true;
     mNextGenerationIndex = 0;
     mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches());
     

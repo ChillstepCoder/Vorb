@@ -25,7 +25,6 @@
 #include <Vorb/graphics/ShaderManager.h>
 
 constexpr int SCREEN_TEXTURE_RES = 4096;
-constexpr bool GEN_GPU = true;
 
 WorldGenScreen::WorldGenScreen(App* const app) : IAppScreen<App>(app) {
 }
@@ -169,7 +168,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         mIsDirty = true;
     }
 
-    if (mGenState == WorldGenScreenState::Done) {
+    //if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("REGENERATE") || mIsDirty) {
             mIsDirty = false;
             // Reload compute shader
@@ -184,7 +183,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
             }
             beginWorldGeneration();
         }
-    }
+    //}
 
 
     ImGui::End();
@@ -207,45 +206,38 @@ void WorldGenScreen::initWorldData() {
     
     mGenTimer.start();
     mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
-    if (GEN_GPU) {
-        // Generate as fast as GPU can handle
-        m_app->getWindow().setTemporaryUnlimitedFPS(true);
-        mTerrainGenerator->generateBaseHeightmapGPU(mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
-            HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
-            const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
-            const i32v2 patchWorldPos = grid.getGridXYFromID(finishedPatchID) * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-            ui8v4* filledData = new ui8v4[mPatchPixelDims * mPatchPixelDims];
+    // Generate as fast as GPU can handle
+    m_app->getWindow().setTemporaryUnlimitedFPS(true);
+    mTerrainGenerator->generateBaseHeightmapGPU(mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
+        HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
+        const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
+        const i32v2 patchWorldPos = grid.getGridXYFromID(finishedPatchID) * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+        ui8v4* filledData = new ui8v4[mPatchPixelDims * mPatchPixelDims];
 
-            // Build pixels for patch
-            ui8v4 pixel;
-            const i32 heightStride = HEIGHTMAP_QUAD_WIDTH_PER_PATCH / mPatchPixelDims;
-            for (int y = 0; y < mPatchPixelDims; ++y) {
-                const i32 yPosOffset = y * heightStride;
-                const int yOffset = y * mPatchPixelDims;
-                for (int x = 0; x < mPatchPixelDims; ++x) {
-                    const f32 height = heightGrid.getHeightAtVertexForGeneration(patchWorldPos + i32v2(x * heightStride, yPosOffset));
-                    ColorRGB8 lerpColor;
-                    if (height < 0.0f) {
-                        const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
-                        lerpColor.lerp(ColorRGB8(4, 119, 162), ColorRGB8(3, 66, 122), depthMult);
-                        pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
-                    }
-                    else {
-                        const f32 heightMult = glm::min(height * 0.01f, 1.0f);
-                        lerpColor.lerp(ColorRGB8(40, 98, 41), ColorRGB8(255, 255, 255), heightMult);
-                        pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
-                    }
-                    filledData[yOffset + x] = pixel;
+        // Build pixels for patch
+        ui8v4 pixel;
+        const i32 heightStride = HEIGHTMAP_QUAD_WIDTH_PER_PATCH / mPatchPixelDims;
+        for (int y = 0; y < mPatchPixelDims; ++y) {
+            const i32 yPosOffset = y * heightStride;
+            const int yOffset = y * mPatchPixelDims;
+            for (int x = 0; x < mPatchPixelDims; ++x) {
+                const f32 height = heightGrid.getHeightAtVertexForGeneration(patchWorldPos + i32v2(x * heightStride, yPosOffset));
+                ColorRGB8 lerpColor;
+                if (height < 0.0f) {
+                    const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
+                    lerpColor.lerp(ColorRGB8(4, 119, 162), ColorRGB8(3, 66, 122), depthMult);
+                    pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
                 }
+                else {
+                    const f32 heightMult = glm::min(height * 0.01f, 1.0f);
+                    lerpColor.lerp(ColorRGB8(40, 98, 41), ColorRGB8(255, 255, 255), heightMult);
+                    pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
+                }
+                filledData[yOffset + x] = pixel;
             }
-            mFinishedTerrainGPUPatches.enqueue(std::make_pair(finishedPatchID, filledData));
-        });
-    }
-    else {
-        mTerrainGenerator->generateBaseHeightmapCPU([this](HeightmapPatchID finishedPatchID) {
-            mFinishedTerrainPatches.enqueue(finishedPatchID);
-        });
-    }
+        }
+        mFinishedTerrainGPUPatches.enqueue(std::make_pair(finishedPatchID, filledData));
+    });
 
 }
 
@@ -313,62 +305,11 @@ void WorldGenScreen::updateTerrainGen()
     static_assert(e_count(TerrainGenerationState) == 3);
     constexpr int BULK_SIZE = 128;
 
-    if constexpr (GEN_GPU) {
-        std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
-        if (size_t count = mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
-            for (size_t i = 0; i < count; ++i) {
-                onPatchFinishedGPU(finishedPatches[i]);
-            }
+    std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
+    if (size_t count = mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            onPatchFinishedGPU(finishedPatches[i]);
         }
-    }
-    else {
-        HeightmapPatchID finishedPatches[BULK_SIZE];
-        if (size_t count = mFinishedTerrainPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
-            for (size_t i = 0; i < count; ++i) {
-                onPatchFinishedCPU(finishedPatches[i]);
-            }
-        }
-    }
-}
-
-void WorldGenScreen::onPatchFinishedCPU(HeightmapPatchID patchId) {
-
-    HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
-    const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
-    const f32v2 patchWorldPos = grid.getWorldPosXYFromID(patchId);
-    i32v2 patchPos = grid.getGridXYFromID(patchId);
-    static std::vector<ui8v4> filledData(mPatchPixelDims * mPatchPixelDims, ui8v4(255, 0, 0, 255));
-
-    // Build pixels for patch
-    ui8v4 pixel;
-    const f32 heightStride = (heightGrid.getPatchWidth() / mPatchPixelDims);
-    for (int y = 0; y < mPatchPixelDims; ++y) {
-        const f32 yPosOffset = y * heightStride;
-        const int yOffset = y * mPatchPixelDims;
-        for (int x = 0; x < mPatchPixelDims; ++x) {
-            const f32 height = heightGrid.computeHeightAtPointForGeneration(patchWorldPos + f32v2(x * heightStride, yPosOffset));
-            ColorRGB8 lerpColor;
-            if (height < 0.0f) {
-                const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
-                lerpColor.lerp(ColorRGB8(4, 119, 162), ColorRGB8(3, 66, 122), depthMult);
-                pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
-            }
-            else {
-                const f32 heightMult = glm::min(height * 0.01f, 1.0f);
-                lerpColor.lerp(ColorRGB8(40, 98, 41), ColorRGB8(255, 255, 255), heightMult);
-                pixel = ui8v4(lerpColor.r, lerpColor.g, lerpColor.b, 255);
-            }
-            filledData[yOffset + x] = pixel;
-        }
-    }
-    glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGBA, GL_UNSIGNED_BYTE, filledData.data());
-
-
-    ++mFinishedPatchCount;
-    if (mFinishedPatchCount >= mTotalPatches) {
-        mGenState = WorldGenScreenState::Done;
-        m_app->getWindow().setTemporaryUnlimitedFPS(false);
-        LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
     }
 }
 
@@ -393,6 +334,10 @@ void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data
 void WorldGenScreen::beginWorldGeneration() {
     if (mTerrainGenerator) {
         mTerrainGenerator->cleanup();
+        // Flush
+        constexpr int BULK_SIZE = 128;
+        std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
+        while (mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE));
     }
     else {
         mTerrainGenerator = std::make_unique<TerrainGenerator>(mGenData);
