@@ -7,9 +7,12 @@
 
 #include "generation/WorldGenerationData.h"
 
+DECL_VG(class GBuffer);
+
 class App;
 class HostWorldData;
 class WorldDataGPUGenerator;
+class MaterialShaderDef;
 
 enum class WorldGenScreenState {
     Idle,
@@ -46,6 +49,8 @@ protected:
     void beginWorldGeneration();
     void initScreenTexture();
 
+    void renderMapView();
+
     bool mRebuildDockspace = true;
     bool mCancelled = false;
     bool mFirstEntry = true;
@@ -56,6 +61,9 @@ protected:
     WorldGenerationData mGenData;
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
     moodycamel::ConcurrentQueue<std::pair<HeightmapPatchID, ui8v3*>> mFinishedTerrainGPUPatches;
+
+    std::unique_ptr<vg::GBuffer> mMapScreenGBuffer;
+    AssetHandlePtr<MaterialShaderDef> mScreenShader;
 
     VGTexture mScreenTexture = 0;
     gli::texture2d mScreenTextureData;

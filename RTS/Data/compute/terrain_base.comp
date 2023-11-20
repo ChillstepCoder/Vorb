@@ -58,14 +58,14 @@ void main() {
     );
     
     //  TODO: Precompute and interpolate, can cubic interpolate and others
-    float distanceFromCenter = length(offsetToCenter);
+    float manhattanDistanceFromCenter = max(abs(offsetToCenter.x), abs(offsetToCenter.y));
 
     // Preturb the outline via noise
-    const float continentOutlineNoise = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 8, 0.0004, 0.65, vec2(0.0, 0.0), 3000.0, 0.0);
-    float adjustedDistanceFromCenter = distanceFromCenter + continentOutlineNoise;
+    const float continentOutlineNoise = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 8, 0.0002, 0.65, vec2(0.0, 0.0), 3000.0, 0.0);
+    float adjustedDistanceFromCenter = manhattanDistanceFromCenter + continentOutlineNoise;
 
     // Create a fairly circular outline to deep ocean
-    height -= max((adjustedDistanceFromCenter - unContinentRadius) * 0.05, 0.0);
+    height -= max((adjustedDistanceFromCenter - unContinentRadius) * 0.025, 0.0);
         
     // Continent internals
     // Mountains
@@ -83,8 +83,8 @@ void main() {
     height -= continentBreak * 240.0;
     
     // Enforce water on edge of world
-    if (distanceFromCenter > MAX_RADIUS) {
-        height = mix(height, min(height, WORLD_EDGE_MIN_DEPTH), pow((distanceFromCenter - MAX_RADIUS) / OUTER_LERP_DISTANCE, 8.0));
+    if (manhattanDistanceFromCenter > MAX_RADIUS) {
+        height = mix(height, min(height, WORLD_EDGE_MIN_DEPTH), pow((manhattanDistanceFromCenter - MAX_RADIUS) / OUTER_LERP_DISTANCE, 8.0));
     }
         
     float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);

@@ -13,6 +13,7 @@
 
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
+#include <Vorb/graphics/GBuffer.h>
 
 #include "world/World.h"
 #include "world/WorldDefaults.h"
@@ -22,7 +23,28 @@
 #include "rendering/RenderContext.h"
 
 #include "rendering/ShaderLoader.h"
+#include "rendering/MaterialRenderer.h"
 #include <Vorb/graphics/ShaderManager.h>
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
+
+#include "math/Random.h"
+
+// Possible human readable characters to generate a game seed with
+constexpr int RANDOM_SEED_VALUES_COUNT = 95;
+constexpr char RANDOM_SEED_VALUES[RANDOM_SEED_VALUES_COUNT] = {
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+    'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D',
+    'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+    'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+    'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', '!', '"', '#', '$', '%', '&', '\'', '(',
+    ')', '*', '+', ',', '-', '.', '/', ':', ';', '<',
+    '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`',
+    '{', '|', '}', '~', ' ',
+};
+
+    
 
 constexpr int SCREEN_TEXTURE_RES = 4096;
 
@@ -55,6 +77,10 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 }
 
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
+    mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
+
+    mMapScreenGBuffer = std::make_unique<vg::GBuffer>(SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES);
+    mMapScreenGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
 
     if (mFirstEntry) {
         Services::initHost();
@@ -94,6 +120,8 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     glDeleteTextures(1, &mScreenTexture);
     mScreenTexture = 0;
     mScreenTextureData = gli::texture2d();
+
+    mMapScreenGBuffer.reset();
 }
 
 void WorldGenScreen::update(const vui::GameTime& gameTime) {
@@ -124,6 +152,9 @@ void WorldGenScreen::update(const vui::GameTime& gameTime) {
 
 void WorldGenScreen::draw(const vui::GameTime& gameTime)
 {
+
+    renderMapView();
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
@@ -146,7 +177,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Begin("World Generator", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     const ImVec2 availableSize = ImGui::GetContentRegionAvail();
     const f32 minAvailable = glm::min(availableSize.x, availableSize.y);
-    ImGui::Image((ImTextureID)mScreenTexture, ImVec2(minAvailable, minAvailable));
+    ImGui::Image((ImTextureID)mMapScreenGBuffer->getAlbedoTexture(), ImVec2(minAvailable, minAvailable));
     ImGui::End();
 
     ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
@@ -169,6 +200,15 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         mIsDirty = true;
     }
     if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
+        mIsDirty = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Randomize")) {
+        RandomGenerator randGen(std::chrono::system_clock::now().time_since_epoch().count() % (ui64)UINT32_MAX);
+        for (size_t i = 0; i < MAX_WORLD_GEN_SEED_SIZE - 1; ++i) {
+            mGenData.mSeed[i] = RANDOM_SEED_VALUES[randGen.getRandomUint() % RANDOM_SEED_VALUES_COUNT];
+        }
+        mGenData.mSeed[MAX_WORLD_GEN_SEED_SIZE - 1] = '\0';
         mIsDirty = true;
     }
     if (ImGui::SliderFloat("Continent Radius", &mGenData.mContinentRadius, 1000.0f, 16000.0f, "%.1f")) {
@@ -361,4 +401,19 @@ void WorldGenScreen::initScreenTexture() {
         );
         glTextureSubImage2D(mScreenTexture, 0, 0, 0, SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES, GL_RGB, GL_UNSIGNED_BYTE, mScreenTextureData.data());
     }
+}
+
+void WorldGenScreen::renderMapView() {
+    const MaterialShaderDef* def = mScreenShader->tryGetLoadedAsset();
+    if (!def) {
+        return;
+    }
+
+    mMapScreenGBuffer->use();
+    MaterialRenderer::bindMaterialShaderForRender(*def, nullptr);
+
+    sGlobalFullTriangleVAO.draw();
+
+    mMapScreenGBuffer->unuse();
+
 }

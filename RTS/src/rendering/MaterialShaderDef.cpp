@@ -17,6 +17,11 @@ void MaterialShaderDef::useCompute() const {
     assert(mIsCompute);
     mProgram.use();
 }
+
+void MaterialShaderDef::unuse() {
+    vg::GLProgram::unuse();
+}
+
 //
 //void MaterialShaderDef::dispose() {
 //    mUniforms.clear();

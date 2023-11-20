@@ -49,6 +49,7 @@ public:
 
     void use(OUT ui32& nextAvailableTextureIndex) const;
     void useCompute() const;
+    static void unuse();
     // Doesn't dispose program
     //void dispose();
 

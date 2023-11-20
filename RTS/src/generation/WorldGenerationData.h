@@ -34,13 +34,13 @@ struct WorldGenerationData {
     char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";
 
     f32 getSeedHash() const {
-        int hash = 425381; // Starting value
+        int hash = 2047471739; // Starting value (Random huge prime)
         int c;
 
-        // DJB2 Hash
+        // DJB2 style Hash
         for (size_t i = 0; i < MAX_WORLD_GEN_SEED_SIZE && mSeed[i] != '\0'; ++i) {
-            c = static_cast<unsigned char>(mSeed[i]);
-            hash = ((hash << 5) + hash) + c; // hash * 33 + c
+            c = int(mSeed[i]);
+            hash = ((hash << 5) + hash) * c + (c << 16); // hash * 33 + c
         }
         // Bound the seed so it doesn't damage GPU precision with large numbers
         // Returns numbers in (-32768.5, 32768.5)
