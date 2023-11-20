@@ -1,7 +1,8 @@
 #include "stdafx.h"
-#include "TerrainGenerator.h"
+#include "WorldDataGPUGenerator.h"
 
 #include "world/IHeightmapGrid.h"
+#include "world/host/HostWorldData.h"
 
 #include "rendering/MaterialShaderRepository.h"
 
@@ -10,11 +11,9 @@ constexpr int LOCAL_GROUP_SIZE = 16;
 
 static std::atomic<ui32> sGenerationUID = 0;
 
-TerrainGenerator::TerrainGenerator(const WorldGenerationData& generationData) : mGenerationData(generationData)
-{
-}
+WorldDataGPUGenerator::WorldDataGPUGenerator() = default;
 
-TerrainGenerator::~TerrainGenerator() {
+WorldDataGPUGenerator::~WorldDataGPUGenerator() {
     cleanup();
 
     if (mHeightmapTexture) {
@@ -28,13 +27,24 @@ TerrainGenerator::~TerrainGenerator() {
     }
 }
 
-void TerrainGenerator::init(IHeightmapGrid& heightGrid, f32v2 worldCenter) {
-    mHeightGrid = &heightGrid;
-    mWorldCenter = worldCenter;
+void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished) {
+    mWorldData = &worldData;
+    mGenerationData = generationData;
+    mHeightGrid = worldData.heightmapGrid.get();
+    mWorldCenter = f32v2(worldData.worldWidth * 0.5f);
+    mWorldSeed = mGenerationData.getSeedHash();
 
+    initResourcesIfNeeded(resolution);
+
+    mOnPatchFinished = onPatchFinished;
+
+    mNextGenerationIndex = 0;
+    mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches());
+
+    mState = WorldGenerationState::GeneratingBaseHeightmap;
 }
 
-void TerrainGenerator::cleanup() {
+void WorldDataGPUGenerator::cleanup() {
     mNextGenerationIndex = 0;
     mNextRowToGenerate = 0;
     // Trigger all threads to stop functioning
@@ -45,26 +55,33 @@ void TerrainGenerator::cleanup() {
         Sleep(1);
     }
 
-    if (mHeightGrid) {
-        switch (mState) {
-            case TerrainGenerationState::None:
-                break;
-            case TerrainGenerationState::GeneratingBaseHeightmap:
-                break;
-            case TerrainGenerationState::GeneratingBaseHeightmapDone:
-                break;
-            default:
-                assert(false);
-                break;
-        }
-
-        mHeightGrid = nullptr;
-    }
+    mHeightGrid = nullptr;
     std::vector<PendingGPUTerrainGeneration>().swap(mGPUTerrainGenerations);
 
+    mState = WorldGenerationState::None;
 }
 
-TerrainGenerationState TerrainGenerator::tick() {
+WorldGenerationState WorldDataGPUGenerator::update() {
+    switch (mState)
+    {
+        case WorldGenerationState::None:
+            break;
+        case WorldGenerationState::GeneratingBaseHeightmap:
+            updateGenerateBaseHeightmap();
+            break;
+        case WorldGenerationState::GeneratingBaseBiomes:
+            break;
+        case WorldGenerationState::Done:
+            break;
+        default:
+            panic("Unhandled state in WorldDataGPUGenerator::update");
+            break;
+    }
+
+    return mState;
+}
+
+void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
     // Send next row
     if (mNextRowToGenerate < mHeightGrid->mWidthPatches) {
         const int numGroups = HEIGHTMAP_VERT_WIDTH_PER_PATCH / LOCAL_GROUP_SIZE;
@@ -82,7 +99,7 @@ TerrainGenerationState TerrainGenerator::tick() {
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSsbo);
         //for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x) {
-            
+
         // TODO: batch create?
 
         // Upload position
@@ -94,11 +111,6 @@ TerrainGenerationState TerrainGenerator::tick() {
         glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unPatchWorldPos"), 1, &rootPos.x);
         glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches * (ui32)HEIGHTMAP_VERT_WIDTH_PER_PATCH);
         glProgramUniform2i(def->mProgram.getID(), def->getUniform("unVertexOffset"), vertXY.x, vertXY.y);
-
-        // Create buffer data
-        // glCreateBuffers(1, &generation.ssbo);
-        //glNamedBufferData(generation.ssbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH, nullptr, GL_DYNAMIC_READ);
-        //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, generation.ssbo);
 
         // Dispatch compute
         glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups, 1);
@@ -127,21 +139,16 @@ TerrainGenerationState TerrainGenerator::tick() {
         }
         else if (waitResult == GL_TIMEOUT_EXPIRED) {
             // The GPU commands are not yet complete. Continue other tasks or loop back later.
-            return mState;
+            return;
         }
         else {
             panic("Terrain generation sync failed with GL_WAIT_FAILED");
         }
     }
-    mState = TerrainGenerationState::GeneratingBaseHeightmapDone;
-    return mState;
-    static_assert(e_count(TerrainGenerationState) == 3);
 }
 
-void TerrainGenerator::generateBaseHeightmapGPU(i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished)
+bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
 {
-    mWorldSeed = mGenerationData.getSeedHash();
-
     GLint maxTextureSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
     if (maxTextureSize < resolution) {
@@ -167,72 +174,9 @@ void TerrainGenerator::generateBaseHeightmapGPU(i32 resolution, std::function<vo
         glNamedBufferStorage(mSsbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
         mMappedHeights = (GLfloat*)glMapNamedBufferRange(mSsbo, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
     }
-
-    mOnPatchFinished = onPatchFinished;
-    
-    mNextGenerationIndex = 0;
-    mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches());
-    
 }
 
-void TerrainGenerator::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {
-    // AABB calculation
-    f32AABB3& aabb = patch.mHeightData->aabb;
-    aabb.dims.x = HEIGHTMAP_PATCH_WIDTH;
-    aabb.dims.y = HEIGHTMAP_PATCH_WIDTH;
-    aabb.pos.x = position.x;
-    aabb.pos.y = position.y;
-    f32 minZ = FLT_MAX;
-    f32 maxZ = -FLT_MAX;
-    for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
-        for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
-            const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);
-            f32 height = generateHeightAtPos(vertPos);
-            if (height > maxZ) maxZ = height;
-            if (height < minZ) minZ = height;
-            patch.mHeightData->setHeightAt(y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x, height);
-        }
-    }
-
-    aabb.pos.z = minZ;
-    aabb.dims.z = maxZ - minZ;
-    patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
-}
-
-f32 TerrainGenerator::generateHeightAtPos(const f32v2& worldPos) {
-    // Base height
-    f64 height = mGenerationData.mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-
-    f32v2 offsetToCenter(
-        worldPos.x - mWorldCenter.x,
-        worldPos.y - mWorldCenter.y
-    );
-
-    //  TODO: Precompute and interpolate, can cubic interpolate and others
-    f64 distanceFromCenter2 = glm::length2(offsetToCenter);
-
-    // Preturb the outline via noise
-    distanceFromCenter2 += mGenerationData.mContinentOutlineScale * mGenerationData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
-
-    // Outline check
-    if (distanceFromCenter2 > mGenerationData.mContinentRadiusSq) {
-        // Ocean
-        height -= (distanceFromCenter2 - mGenerationData.mContinentRadiusSq) * 0.0000001;
-    }
-    else {
-        // Continent internals
-        f64 lerp = (mGenerationData.mContinentRadiusSq - distanceFromCenter2) * 0.00000001;
-        // Mountains
-        f64 mountainDist = mGenerationData.mMountainsDistNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-        if (mountainDist > 0.0) {
-            f64 mountain = mGenerationData.mMountainsNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-            height += lerp * mountain * glm::min(mountainDist, 1.0);
-        }
-    }
-    return glm::clamp((f32)height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
-}
-
-void TerrainGenerator::finishPendingGeneration(PendingGPUTerrainGeneration& generation) {
+void WorldDataGPUGenerator::finishPendingGeneration(PendingGPUTerrainGeneration& generation) {
     glDeleteSync(generation.sync);
     generation.sync = 0;
 

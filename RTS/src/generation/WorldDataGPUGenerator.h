@@ -4,11 +4,13 @@
 
 class IHeightmapGrid;
 class HeightmapPatch;
+class HostWorldData;
 
-enum class TerrainGenerationState {
+enum class WorldGenerationState {
     None,
     GeneratingBaseHeightmap,
-    GeneratingBaseHeightmapDone,
+    GeneratingBaseBiomes,
+    Done,
     COUNT
 };
 
@@ -19,30 +21,33 @@ struct PendingGPUTerrainGeneration {
     bool generateStarted = false;
 };
 
-class TerrainGenerator
+class WorldDataGPUGenerator
 {
 public:
-    TerrainGenerator(const WorldGenerationData& generationData);
-    ~TerrainGenerator();
-    void init(IHeightmapGrid& heightGrid, f32v2 worldCenter);
+    WorldDataGPUGenerator();
+    ~WorldDataGPUGenerator();
+
+    void beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished);
+
     // Call before generating agian
     void cleanup();
 
-    TerrainGenerationState tick();
-    // Pass 1 - Generate base heightmap
-    void generateBaseHeightmapGPU(i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished);
+    WorldGenerationState update();
+    WorldGenerationState getState() const { return mState; }
 
     VGTexture getHeightmapTexture() const { return mHeightmapTexture; }
 private:
-    void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
-    f32 generateHeightAtPos(const f32v2& worldPos);
+    void updateGenerateBaseHeightmap();
+
+    bool initResourcesIfNeeded(i32 resolution);
     void finishPendingGeneration(PendingGPUTerrainGeneration& generation);
 
-    TerrainGenerationState mState;
+    WorldGenerationState mState;
+    HostWorldData* mWorldData = nullptr;
     IHeightmapGrid* mHeightGrid = nullptr;
 
     f32v2 mWorldCenter;
-    const WorldGenerationData& mGenerationData;
+    WorldGenerationData mGenerationData;
 
     ui32 mNextGenerationIndex = 0;
     ui32 mNextRowToGenerate = 0;

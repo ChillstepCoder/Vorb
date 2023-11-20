@@ -16,7 +16,7 @@
 
 #include "world/World.h"
 #include "world/WorldDefaults.h"
-#include "generation/TerrainGenerator.h"
+#include "generation/WorldDataGPUGenerator.h"
 
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/RenderContext.h"
@@ -70,8 +70,8 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
 
     Services::Threadpool::ref().setSize(mThreadpoolSizePostEntry);
 
-    if (mTerrainGenerator) {
-        mTerrainGenerator.reset();
+    if (mWorldGenerator) {
+        mWorldGenerator.reset();
     }
     if (mCancelled) {
         sGameWorld.reset();
@@ -101,18 +101,22 @@ void WorldGenScreen::update(const vui::GameTime& gameTime) {
     // Update tasks
     Services::Threadpool::ref().mainThreadUpdate();
 
-    switch (mGenState) {
-        case WorldGenScreenState::Idle:
-            break;
-        case WorldGenScreenState::GeneratingTerrain: {
-            updateTerrainGen();
-            break;
-        }
-        case WorldGenScreenState::Done:
-            break;
-        default:
-            break;
+    if (mWorldGenerator) {
+        mWorldGenerator->update();
 
+        switch (mGenState) {
+            case WorldGenScreenState::Idle:
+                break;
+            case WorldGenScreenState::GeneratingBaseHeight: {
+                updateBaseHeightGeneration();
+                break;
+            }
+            case WorldGenScreenState::Done:
+                break;
+            default:
+                break;
+
+        }
     }
     static_assert(e_count(WorldGenScreenState) == 3);
 
@@ -201,14 +205,13 @@ void WorldGenScreen::initWorldData() {
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
 
-    mGenState = WorldGenScreenState::GeneratingTerrain;
-    mTerrainGenerator->init(*mWorldData->heightmapGrid, f32v2(mWorldData->worldWidth * 0.5f));
+    mGenState = WorldGenScreenState::GeneratingBaseHeight;
     
     mGenTimer.start();
     mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
     // Generate as fast as GPU can handle
     m_app->getWindow().setTemporaryUnlimitedFPS(true);
-    mTerrainGenerator->generateBaseHeightmapGPU(mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
+    mWorldGenerator->beginGeneration(*mWorldData, mGenData, mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
         HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
         const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
         const i32v2 patchWorldPos = grid.getGridXYFromID(finishedPatchID) * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
@@ -290,21 +293,10 @@ void WorldGenScreen::updateDockspace()
     ImGui::End(); // End dockspace
 }
 
-void WorldGenScreen::updateTerrainGen()
+void WorldGenScreen::updateBaseHeightGeneration()
 {
-    const TerrainGenerationState terrainState = mTerrainGenerator->tick();
-    switch (terrainState) {
-        case TerrainGenerationState::None:
-        case TerrainGenerationState::GeneratingBaseHeightmap:
-            break;
-        case TerrainGenerationState::GeneratingBaseHeightmapDone:
-            break;
-        default:
-            break;
-    }
-    static_assert(e_count(TerrainGenerationState) == 3);
-    constexpr int BULK_SIZE = 128;
 
+    constexpr int BULK_SIZE = 128;
     std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
     if (size_t count = mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
@@ -332,15 +324,15 @@ void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data
 }
 
 void WorldGenScreen::beginWorldGeneration() {
-    if (mTerrainGenerator) {
-        mTerrainGenerator->cleanup();
+    if (mWorldGenerator) {
+        mWorldGenerator->cleanup();
         // Flush
         constexpr int BULK_SIZE = 128;
         std::pair<HeightmapPatchID, ui8v4*> finishedPatches[BULK_SIZE];
         while (mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE));
     }
     else {
-        mTerrainGenerator = std::make_unique<TerrainGenerator>(mGenData);
+        mWorldGenerator = std::make_unique<WorldDataGPUGenerator>();
     }
     mGenState = WorldGenScreenState::Idle;
     mFinishedPatchCount = 0;

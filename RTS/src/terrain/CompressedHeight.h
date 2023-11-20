@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr f32 HEIGHT_STEP = 0.2f;
+constexpr f32 HEIGHT_STEP = 0.1f;
 constexpr f32 MAX_HEIGHT = HEIGHT_STEP * 32767.0f;
 constexpr f32 MIN_HEIGHT = -MAX_HEIGHT;
 

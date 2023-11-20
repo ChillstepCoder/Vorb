@@ -9,11 +9,11 @@
 
 class App;
 class HostWorldData;
-class TerrainGenerator;
+class WorldDataGPUGenerator;
 
 enum class WorldGenScreenState {
     Idle,
-    GeneratingTerrain,
+    GeneratingBaseHeight,
     Done,
     COUNT
 };
@@ -40,7 +40,7 @@ public:
 protected:
     void initWorldData();
     void updateDockspace();
-    void updateTerrainGen();
+    void updateBaseHeightGeneration();
     void onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v4*> data);
 
     void beginWorldGeneration();
@@ -51,7 +51,7 @@ protected:
     bool mFirstEntry = true;
 
     std::unique_ptr<HostWorldData> mWorldData;
-    std::unique_ptr<TerrainGenerator> mTerrainGenerator;
+    std::unique_ptr<WorldDataGPUGenerator> mWorldGenerator;
 
     WorldGenerationData mGenData;
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;

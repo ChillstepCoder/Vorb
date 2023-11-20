@@ -54,7 +54,7 @@ EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGri
 // TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
 class IHeightmapGrid
 {
-    friend class TerrainGenerator;
+    friend class WorldDataGPUGenerator;
 public:
     IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();

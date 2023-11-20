@@ -918,7 +918,7 @@
     <ClCompile Include="src\screens\WorldGenScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\generation\TerrainGenerator.cpp">
+    <ClCompile Include="src\generation\WorldDataGPUGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2246,7 +2246,7 @@
     <ClInclude Include="src\world\host\HostWorldData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\generation\TerrainGenerator.h">
+    <ClInclude Include="src\generation\WorldDataGPUGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\terrain\CompressedHeight.h">
