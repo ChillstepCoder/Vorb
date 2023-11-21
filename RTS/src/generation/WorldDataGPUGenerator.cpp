@@ -17,11 +17,7 @@ WorldDataGPUGenerator::WorldDataGPUGenerator() = default;
 WorldDataGPUGenerator::~WorldDataGPUGenerator() {
     cleanup();
 
-    if (mHeightmapTexture) {
-        glDeleteTextures(1, &mHeightmapTexture);
-        glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
-        mHeightmapTexture = 0;
-        assert(mSsbo);
+    if (mSsbo) {
         glUnmapNamedBuffer(mSsbo);
         glDeleteBuffers(1, &mSsbo);
         mSsbo = 0;
@@ -58,7 +54,7 @@ void WorldDataGPUGenerator::cleanup() {
     }
 
     mHeightGrid = nullptr;
-    std::vector<PendingGPUTerrainGeneration>().swap(mGPUTerrainGenerations);
+    std::vector<PendingHeightGeneration>().swap(mGPUTerrainGenerations);
 
     mState = WorldGenerationState::None;
 }
@@ -71,7 +67,7 @@ WorldGenerationState WorldDataGPUGenerator::update() {
         case WorldGenerationState::GeneratingBaseHeightmap:
             updateGenerateBaseHeightmap();
             break;
-        case WorldGenerationState::GeneratingBaseBiomes:
+        case WorldGenerationState::PropagatingBiomes:
             break;
         case WorldGenerationState::Done:
             break;
@@ -81,6 +77,24 @@ WorldGenerationState WorldDataGPUGenerator::update() {
     }
 
     return mState;
+}
+
+
+bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
+{
+    GLint maxTextureSize;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+    if (maxTextureSize < resolution) {
+        panic("max supported texture size {} is less than required of {} for gpu gen", maxTextureSize, resolution);
+    }
+
+    if (!mSsbo) {
+        const ui32 totalPatches = mHeightGrid->getTotalPatches();
+        assert(!mSsbo);
+        glCreateBuffers(1, &mSsbo);
+        glNamedBufferStorage(mSsbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        mMappedHeights = (GLfloat*)glMapNamedBufferRange(mSsbo, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    }
 }
 
 void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
@@ -120,7 +134,7 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups * rowsToGenerate, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
 
-        PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
+        PendingHeightGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
         generation.rowIndexStart = mNextRowToGenerate;
         generation.numRows = rowsToGenerate;
         generation.generateStarted = true;
@@ -135,7 +149,7 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
     }
 
     while (mNextGenerationIndex != mGPUTerrainGenerations.size()) {
-        PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextGenerationIndex];
+        PendingHeightGeneration& generation = mGPUTerrainGenerations[mNextGenerationIndex];
         if (!generation.generateStarted) {
             break;
         }
@@ -143,7 +157,7 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         assert(generation.sync);
         if (waitResult == GL_ALREADY_SIGNALED || waitResult == GL_CONDITION_SATISFIED) {
             ++mNextGenerationIndex;
-            finishPendingGeneration(generation);
+            finishPendingHeightGeneration(generation);
         }
         else if (waitResult == GL_TIMEOUT_EXPIRED) {
             // The GPU commands are not yet complete. Continue other tasks or loop back later.
@@ -155,36 +169,8 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
     }
 }
 
-bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
-{
-    GLint maxTextureSize;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-    if (maxTextureSize < resolution) {
-        panic("max supported texture size {} is less than required of {} for gpu gen", maxTextureSize, resolution);
-    }
 
-    if (!mHeightmapTexture) {
-        glCreateTextures(GL_TEXTURE_2D, 1, &mHeightmapTexture);
-        glTextureStorage2D(
-            mHeightmapTexture,
-            1,           // one level, no mipmaps
-            GL_R32F,    // internal format
-            resolution,
-            resolution
-        );
-        GLfloat clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        glClearTexImage(mHeightmapTexture, 0, GL_RED, GL_FLOAT, clearColor);
-        glBindImageTexture(0, mHeightmapTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
-
-        const ui32 totalPatches = mHeightGrid->getTotalPatches();
-        assert(!mSsbo);
-        glCreateBuffers(1, &mSsbo);
-        glNamedBufferStorage(mSsbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-        mMappedHeights = (GLfloat*)glMapNamedBufferRange(mSsbo, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-    }
-}
-
-void WorldDataGPUGenerator::finishPendingGeneration(PendingGPUTerrainGeneration& generation) {
+void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneration& generation) {
     glDeleteSync(generation.sync);
     generation.sync = 0;
 
@@ -236,7 +222,7 @@ void WorldDataGPUGenerator::finishPendingGeneration(PendingGPUTerrainGeneration&
 }
 static_assert(sizeof(f32) == sizeof(GLfloat), "God help us");
 
-PendingGPUTerrainGeneration::~PendingGPUTerrainGeneration()
+PendingHeightGeneration::~PendingHeightGeneration()
 {
     if (sync) {
         glDeleteSync(sync);

@@ -8,6 +8,7 @@ DECL_VG(class TextureCache);
 
 class AnimationRepository;
 class AnimMachineRepository;
+class BiomeRepository;
 class BrushRepository;
 class BuildingDescriptionRepository;
 class BusinessRepository;

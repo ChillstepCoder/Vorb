@@ -39,9 +39,10 @@ ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootP
     m_AssetIconMap[AssetType::Fish] = EditorResources::fishIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::MaterialShader] = EditorResources::shaderIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::TileGrass] = EditorResources::floraIcon->getLoadedAsset().getTextureHandle();
+    m_AssetIconMap[AssetType::Biome] = EditorResources::biomeIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::NONE] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
 
-    static_assert(e_count(AssetType) == 16, "Add icon");
+    static_assert(e_count(AssetType) == 17, "Add icon");
     memset(m_SearchBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
 
 	initEvents();

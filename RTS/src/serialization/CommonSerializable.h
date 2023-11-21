@@ -49,5 +49,6 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     pair{ AssetType::Fish, "fish"sv },
     pair{ AssetType::MaterialShader, "material_shader"sv },
     pair{ AssetType::TileGrass, "tile_grass"sv },
+    pair{ AssetType::Biome, "biome"sv },
 )
-static_assert(e_count(AssetType) == 16);
+static_assert(e_count(AssetType) == 17);

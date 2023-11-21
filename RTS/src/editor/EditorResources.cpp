@@ -38,6 +38,7 @@ void EditorResources::loadAllResources()
     ADD_TEXTURE_RES(fishIcon, "fish_icon");
     ADD_TEXTURE_RES(shaderIcon, "shader_icon");
     ADD_TEXTURE_RES(floraIcon, "flora_icon");
+    ADD_TEXTURE_RES(biomeIcon, "biome_icon");
 
     ADD_TEXTURE_RES(backIcon, "back_icon");
     ADD_TEXTURE_RES(forwardIcon, "forward_icon");
@@ -47,7 +48,7 @@ void EditorResources::loadAllResources()
 
     ADD_TEXTURE_RES(shadowTexture, "ui_shadow");
     ADD_TEXTURE_RES(translucencyTexture, "ui_translucency");
-    static_assert(e_count(AssetType) == 16, "Load icon if needed");
+    static_assert(e_count(AssetType) == 17, "Load icon if needed");
 }
 
 void EditorResources::freeAllResources() {

@@ -12,6 +12,7 @@
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
 #include "resources/EffectRepository.h"
+#include "resources/BiomeRepository.h"
 #include "resources/MaterialRepository.h"
 #include "resources/ModelRepository.h"
 #include "resources/AnimationRepository.h"
@@ -80,7 +81,8 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(FishRepository, AssetType::Fish);
     REGISTER_ASSET_REPO(MaterialShaderRepository, AssetType::MaterialShader);
     REGISTER_ASSET_REPO(TileGrassRepository, AssetType::TileGrass);
-    static_assert(e_count(AssetType) == 16);
+    REGISTER_ASSET_REPO(BiomeRepository, AssetType::Biome);
+    static_assert(e_count(AssetType) == 17);
 
     // Add other extensions
     mExtensionToAssetRepository[CStrToken("comp")] = &MaterialShaderRepository::get();
@@ -307,90 +309,51 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         if (entry.isDirectory()) {
             gatherRecursive(entry);
         }
-        else if (fileHasExtension(entry, ".png")) {
-            if (vio::containsSubpath(entry, "_brushes")) {
-                BrushRepository::get().registerAssetPath(entry);
+        else {
+            const StrToken extensionToken = StrToken(Utils::getExtension(entry.getString()));
+
+            if (extensionToken == CStrToken("png")) {
+                if (vio::containsSubpath(entry, "_brushes")) {
+                    BrushRepository::get().registerAssetPath(entry);
+                }
+                TextureRepository::get().registerAssetPath(entry);
+                continue;
             }
-            TextureRepository::get().registerAssetPath(entry);
-            
-        }
-        else if (fileHasExtension(entry, ".cube")) {
-            CubemapRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".room")) {
-            mRoomFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".bldg")) {
-            mBuildingFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".tile")) {
-            TileRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".prog")) {
-            MaterialShaderRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".material")) {
-            MaterialRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".comp")) {
-            MaterialShaderRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".vert")) {
-            ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".frag")) {
-            ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".geom")) {
-            ShaderLoader::registerGeometryShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".tcs")) {
-            ShaderLoader::registerTessControlShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".tes")) {
-            ShaderLoader::registerTessEvalShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".psys")) {
-            ParticleSystemRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".effect")) {
-            EffectRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".ent")) {
-            mEntityFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".recipe")) {
-            mRecipeFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".item")) {
-            ItemRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".fish")) {
-            FishRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".business")) {
-            mBusinessFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".model")) {
-            ModelRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".rig")) {
-            RigRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".machine")) {
-            AnimMachineRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".skill")) {
-            SkillRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".anim")) {
-            AnimationRepository::get().registerAssetPath(entry);
-        }
-        else if (fileHasExtension(entry, ".ttf")) {
-            mFontFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".grass")) {
-            TileGrassRepository::get().registerAssetPath(entry);
+
+            auto&& it = mExtensionToAssetRepository.find(extensionToken);
+            if (it != mExtensionToAssetRepository.end()) {
+                it->second->registerAssetPath(entry);
+            }
+            else if (fileHasExtension(entry, ".room")) {
+                mRoomFiles.emplace_back(entry);
+            }
+            else if (fileHasExtension(entry, ".bldg")) {
+                mBuildingFiles.emplace_back(entry);
+            }
+            else if (fileHasExtension(entry, ".vert")) {
+                ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
+            }
+            else if (fileHasExtension(entry, ".frag")) {
+                ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
+            }
+            else if (fileHasExtension(entry, ".geom")) {
+                ShaderLoader::registerGeometryShaderPath(entry.getLeaf(), entry);
+            }
+            else if (fileHasExtension(entry, ".tcs")) {
+                ShaderLoader::registerTessControlShaderPath(entry.getLeaf(), entry);
+            }
+            else if (fileHasExtension(entry, ".tes")) {
+                ShaderLoader::registerTessEvalShaderPath(entry.getLeaf(), entry);
+            }
+            else if (fileHasExtension(entry, ".recipe")) {
+                mRecipeFiles.emplace_back(entry);
+            }
+            else if (fileHasExtension(entry, ".business")) {
+                mBusinessFiles.emplace_back(entry);
+            }
+            else if (fileHasExtension(entry, ".ttf")) {
+                mFontFiles.emplace_back(entry);
+            }
         }
     }
 }

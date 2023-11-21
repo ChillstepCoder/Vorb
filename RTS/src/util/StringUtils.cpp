@@ -108,10 +108,13 @@ namespace Utils {
 
     std::string getExtension(const std::string& filename)
     {
-        std::vector<std::string> parts = splitString(filename, '.');
+        // Find the last occurrence of '.'
+        const size_t lastDotPos = filename.find_last_of('.');
 
-        if (parts.size() > 1)
-            return parts[parts.size() - 1];
+        // Check if there's a dot and it's not at the end of the string
+        if (lastDotPos != std::string::npos && lastDotPos != filename.length() - 1) {
+            return filename.substr(lastDotPos + 1);
+        }
 
         return "";
     }

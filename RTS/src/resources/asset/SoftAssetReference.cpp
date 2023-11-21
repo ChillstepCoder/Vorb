@@ -12,6 +12,7 @@
 #include "rendering/material/MaterialData.h"
 #include "definitions/AnimationDef.h"
 #include "definitions/AnimMachineDef.h"
+#include "definitions/BiomeDef.h"
 #include "definitions/BrushDef.h"
 #include "definitions/BuildingDef.h"
 #include "definitions/BusinessDef.h"
@@ -102,13 +103,16 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
         case AssetType::TileGrass:
             assetButton<TileGrassDef>(assetRef);
             break;
+        case AssetType::Biome:
+            assetButton<BiomeDef>(assetRef);
+            break;
         case AssetType::NONE:
         default:
             panic("Unhandled asset type {} in SoftAssetReference::updateAndRenderSoftAssetReference", e_cast(assetRef.assetType));
             break;
 
     }
-    static_assert(e_count(AssetType) == 16);
+    static_assert(e_count(AssetType) == 17);
 
     auto&& it = sAssetSelectorPopup.find(&assetRef);
     if (it != sAssetSelectorPopup.end()) {

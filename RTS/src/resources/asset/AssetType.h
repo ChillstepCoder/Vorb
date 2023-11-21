@@ -17,6 +17,7 @@ enum class AssetType : ui8 {
     Fish,
     MaterialShader,
     TileGrass,
+    Biome,
     NONE,
     COUNT = NONE
 };

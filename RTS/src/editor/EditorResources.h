@@ -30,6 +30,7 @@ public:
     inline static AssetHandlePtr<TextureDef> fishIcon;
     inline static AssetHandlePtr<TextureDef> shaderIcon;
     inline static AssetHandlePtr<TextureDef> floraIcon;
+    inline static AssetHandlePtr<TextureDef> biomeIcon;
 
     inline static AssetHandlePtr<TextureDef> backIcon;
     inline static AssetHandlePtr<TextureDef> forwardIcon;

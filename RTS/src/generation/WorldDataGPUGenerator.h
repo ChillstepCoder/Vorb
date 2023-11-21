@@ -9,19 +9,26 @@ class HostWorldData;
 enum class WorldGenerationState {
     None,
     GeneratingBaseHeightmap,
-    GeneratingBaseBiomes,
+    PropagatingBiomes,
     Done,
     COUNT
 };
 
-struct PendingGPUTerrainGeneration {
-    ~PendingGPUTerrainGeneration();
+struct PendingHeightGeneration {
+    ~PendingHeightGeneration();
     GLsync sync = 0;
     ui32 rowIndexStart = 0;
     ui32 numRows = 0;
     bool generateStarted = false;
 };
 
+
+// Generates full world data on the GPU, with some back and forth with CPU
+// Stage 1 - Generate base height on GPU
+// Stage 2 - Seed base biomes on CPU (Can be done in parallel with stage 1)
+// Stage 3 - Propagate biomes on GPU with checkerboard cellular automata
+// Stage 4 - Generate biome height on GPU -> Download height to CPU on finish per patch
+// Stage 5 - Carve rivers on CPU
 class WorldDataGPUGenerator
 {
 public:
@@ -37,13 +44,15 @@ public:
     WorldGenerationState getState() const { return mState; }
     bool getAllGenerationSentThisStep() const { return mAllGenerationSentThisStep; }
 
-    VGTexture getHeightmapTexture() const { return mHeightmapTexture; }
     VGBuffer getHeightSSBO() const { return mSsbo; }
 private:
+    bool initResourcesIfNeeded(i32 resolution);
+
+    // ============== Generation Stages ==============
     void updateGenerateBaseHeightmap();
 
-    bool initResourcesIfNeeded(i32 resolution);
-    void finishPendingGeneration(PendingGPUTerrainGeneration& generation);
+    // ============== Finish methods ==============
+    void finishPendingHeightGeneration(PendingHeightGeneration& generation);
 
     WorldGenerationState mState;
     HostWorldData* mWorldData = nullptr;
@@ -54,10 +63,9 @@ private:
 
     ui32 mNextGenerationIndex = 0;
     ui32 mNextRowToGenerate = 0;
-    std::vector<PendingGPUTerrainGeneration> mGPUTerrainGenerations;
+    std::vector<PendingHeightGeneration> mGPUTerrainGenerations;
     std::function<void(HeightmapPatchID)> mOnPatchFinished;
 
-    VGTexture mHeightmapTexture = 0;
     VGBuffer mSsbo = 0;
     GLfloat* mMappedHeights = nullptr;
     f32 mWorldSeed = 0.f;
