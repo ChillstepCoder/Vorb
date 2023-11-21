@@ -8,6 +8,7 @@
 
 // Match the shader
 constexpr int LOCAL_GROUP_SIZE = 16;
+constexpr ui32 ROWS_TO_GENERATE_PER_FRAME = 32; // POWER OF TWO REQUIRED
 
 static std::atomic<ui32> sGenerationUID = 0;
 
@@ -28,6 +29,7 @@ WorldDataGPUGenerator::~WorldDataGPUGenerator() {
 }
 
 void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished) {
+    mAllGenerationSentThisStep = false;
     mWorldData = &worldData;
     mGenerationData = generationData;
     mHeightGrid = worldData.heightmapGrid.get();
@@ -39,7 +41,7 @@ void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const Worl
     mOnPatchFinished = onPatchFinished;
 
     mNextGenerationIndex = 0;
-    mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches());
+    mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches() / ROWS_TO_GENERATE_PER_FRAME);
 
     mState = WorldGenerationState::GeneratingBaseHeightmap;
 }
@@ -83,7 +85,9 @@ WorldGenerationState WorldDataGPUGenerator::update() {
 
 void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
     // Send next row
-    if (mNextRowToGenerate < mHeightGrid->mWidthPatches) {
+    const ui32 rowsToGenerate = glm::min(ROWS_TO_GENERATE_PER_FRAME, mHeightGrid->mWidthPatches - mNextRowToGenerate);
+    if (rowsToGenerate) {
+        assert(rowsToGenerate == ROWS_TO_GENERATE_PER_FRAME); // Make sure it is evenly divisible
         const int numGroups = HEIGHTMAP_VERT_WIDTH_PER_PATCH / LOCAL_GROUP_SIZE;
 
         const MaterialShaderDef* def = MaterialShaderRepository::get().tryGetLoadedAsset(CStrToken("terrain_base"));
@@ -113,17 +117,21 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         glProgramUniform2i(def->mProgram.getID(), def->getUniform("unVertexOffset"), vertXY.x, vertXY.y);
 
         // Dispatch compute
-        glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups, 1);
+        glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups * rowsToGenerate, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
 
-        PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate];
-        generation.rowIndex = mNextRowToGenerate;
+        PendingGPUTerrainGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
+        generation.rowIndexStart = mNextRowToGenerate;
+        generation.numRows = rowsToGenerate;
+        generation.generateStarted = true;
         generation.sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         assert(generation.sync);
-        generation.generateStarted = true;
 
         checkGlError("TerrainGenerator::generateBaseHeightmapGPU");
-        ++mNextRowToGenerate;
+        mNextRowToGenerate += rowsToGenerate;
+    }
+    else {
+        mAllGenerationSentThisStep = true;
     }
 
     while (mNextGenerationIndex != mGPUTerrainGenerations.size()) {
@@ -182,43 +190,46 @@ void WorldDataGPUGenerator::finishPendingGeneration(PendingGPUTerrainGeneration&
 
     // One task per patch
     const ui32 genID = sGenerationUID;
-    for (int x = 0; x < mHeightGrid->getWidthPatches(); ++x) {
-        Services::Threadpool::ref().addTask([this, rowIndex = generation.rowIndex, x, genID]() {
-            // Check for interrupt
-            if (genID != sGenerationUID) {
-                return;
-            }
-            // Build row
-            const HeightmapPatchID patchId = rowIndex * mHeightGrid->getWidthPatches() + x;
-            const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
-            const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-            const i32v2 rootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
-            HeightmapPatch& patch = mHeightGrid->mHeightData[patchId];
-            delete patch.mHeightData;
-            patch.mHeightData = new HeightmapPatchData(patchId);
-            f32AABB3& aabb = patch.mHeightData->aabb;
-            aabb.dims.x = HEIGHTMAP_PATCH_WIDTH;
-            aabb.dims.y = HEIGHTMAP_PATCH_WIDTH;
-            aabb.pos.x = rootPos.x;
-            aabb.pos.y = rootPos.y;
-            f32 minZ = FLT_MAX;
-            f32 maxZ = -FLT_MAX;
-
-            const i32 rootVert = rootXY.y * totalWidthVerts * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + rootXY.x * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-            for (i32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
-                const i32 yStrideSource = y * totalWidthVerts;
-                const i32 yStrideTarget = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-                for (i32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
-                    const i32 targetVert = yStrideTarget + x;
-                    const i32 sourceVert = rootVert + yStrideSource + x;
-                    patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
+    for (int r = 0; r < generation.numRows; ++r) {
+        for (int x = 0; x < mHeightGrid->getWidthPatches(); ++x) {
+            Services::Threadpool::ref().addTask([this, rowIndex = generation.rowIndexStart + r, x, genID]() {
+                // Check for interrupt
+                if (genID != sGenerationUID) {
+                    return;
                 }
-            }
-            aabb.pos.z = minZ;
-            aabb.dims.z = maxZ - minZ;
-            patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
-            mOnPatchFinished(patch.mHeightData->id);
-        }, nullptr);
+                // Build row
+                const HeightmapPatchID patchId = rowIndex * mHeightGrid->getWidthPatches() + x;
+                const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
+                const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+                const i32v2 rootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
+                HeightmapPatch& patch = mHeightGrid->mHeightData[patchId];
+                if (!patch.mHeightData) {
+                    patch.mHeightData = new HeightmapPatchData(patchId);
+                }
+                f32AABB3& aabb = patch.mHeightData->aabb;
+                aabb.dims.x = HEIGHTMAP_PATCH_WIDTH;
+                aabb.dims.y = HEIGHTMAP_PATCH_WIDTH;
+                aabb.pos.x = rootPos.x;
+                aabb.pos.y = rootPos.y;
+                f32 minZ = FLT_MAX;
+                f32 maxZ = -FLT_MAX;
+
+                const i32 rootVert = rootXY.y * totalWidthVerts * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + rootXY.x * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+                for (i32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
+                    const i32 yStrideSource = y * totalWidthVerts;
+                    const i32 yStrideTarget = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+                    for (i32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
+                        const i32 targetVert = yStrideTarget + x;
+                        const i32 sourceVert = rootVert + yStrideSource + x;
+                        patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
+                    }
+                }
+                aabb.pos.z = minZ;
+                aabb.dims.z = maxZ - minZ;
+                patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
+                mOnPatchFinished(patch.mHeightData->id);
+            }, nullptr);
+        }
     }
 
     checkGlError("TerrainGenerator::finishPendingGeneration");

@@ -1,4 +1,6 @@
 
+#include "util/noise/snoise3.glsl"
+
 in vec2 fUV;
 
 out vec4 fColor;
@@ -6,21 +8,70 @@ out vec4 fColor;
 const vec3 colors[4] = {
     vec3(1.0, 0.0, 0.0),
     vec3(0.0, 1.0, 0.0),
-    vec3(0.0, 0.0, 1.0),
-    vec3(0.0, 0.0, 0.0)
-}
+    vec3(0.0, 0.0, 0.0),
+    vec3(0.0, 0.0, 1.0)
+};
 const vec2 cornerUVs[4] = {
     vec2(0.0, 0.0),
     vec2(0.0, 1.0),
     vec2(1.0, 0.0),
     vec2(1.0, 1.0)
+};
+
+uniform ivec2 unHeightDataDims;
+
+layout(std430, binding = 0) readonly buffer HeightData
+{
+    float heightData[];
+};
+
+float standardNoise(vec3 position, int octaves, float frequency, float persistence, vec2 posOffset, float amplitude, float heightOffset) {
+    position.xy += posOffset;
+    return (noise(position, octaves, frequency, persistence) + heightOffset) * amplitude;
+}
+
+vec3 colorFromHeight(float height) {
+    if (height < 0.0f) {
+        const float depthMult = min(-height * 0.025, 1.0);
+        return mix(vec3(4.0 / 255.0, 119.0 / 255.0, 162.0 / 255.0), vec3(3.0 / 255.0, 66.0 / 255.0, 122.0 / 255.0), depthMult);
+    }
+    else {
+        const float heightMult = min(height * 0.01f, 1.0f);
+        return mix(vec3(40.0 / 255.0, 98.0 / 255.0, 41.0 / 255.0), vec3(1.0), heightMult);
+    }
 }
 
 void main() {
-    vec3 color = vec4(0.0, 0.0, 0.0);
-    for (int i = 0; i < 4; ++i) {
-        
-    }
-    color = color / 4;
-    fColor = vec4(color.r, color.g, color.b, 1.0);
+    
+    ivec2 coords = ivec2(int(fUV.x * float(unHeightDataDims.x)), int(fUV.y * float(unHeightDataDims.y)));
+    
+    fColor.rgb = colorFromHeight(heightData[coords.y * unHeightDataDims.x + coords.x]);
+    fColor.a = 1.0;
 }
+
+/*
+float standardNoise(vec3 position, int octaves, float frequency, float persistence, vec2 posOffset, float amplitude, float heightOffset) {
+    position.xy += posOffset;
+    return (noise(position, octaves, frequency, persistence) + heightOffset) * amplitude;
+}
+
+void main() {
+    float distanceFromCenter = max(abs(fUV.x - 0.5), abs(fUV.y - 0.5));
+    float noiseStrength = pow((1.0 - (2.0 * distanceFromCenter)), 0.5);
+    vec2 coords = fUV;
+    coords += standardNoise(vec3(coords.x, coords.y, 0.0), 6, 0.25, 0.7, vec2(0, 0), 1.0, 0.0) * noiseStrength;
+    coords = clamp(coords, 0.0, 1.0);
+    vec3 botCol = mix(colors[0], colors[1], coords.x);
+    vec3 topCol = mix(colors[2], colors[3], coords.x);
+    vec3 color = mix(topCol, botCol, coords.y);
+    
+    float len = length(color);
+    if (len > 1.0) {
+        color = normalize(color);
+        len = 1.0;
+        color = vec3(1.0, 1.0, 1.0);
+    }
+    fColor.rgb = color;
+    fColor.a = 1.0;
+}
+*/

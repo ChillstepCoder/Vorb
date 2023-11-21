@@ -44,10 +44,8 @@ protected:
     void initWorldData();
     void updateDockspace();
     void updateBaseHeightGeneration();
-    void onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v3*> data);
 
     void beginWorldGeneration();
-    void initScreenTexture();
 
     void renderMapView();
 
@@ -60,15 +58,13 @@ protected:
 
     WorldGenerationData mGenData;
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
-    moodycamel::ConcurrentQueue<std::pair<HeightmapPatchID, ui8v3*>> mFinishedTerrainGPUPatches;
+    //moodycamel::ConcurrentQueue<HeightmapPatchID> mFinishedTerrainGPUPatches;
 
     std::unique_ptr<vg::GBuffer> mMapScreenGBuffer;
     AssetHandlePtr<MaterialShaderDef> mScreenShader;
 
-    VGTexture mScreenTexture = 0;
-    gli::texture2d mScreenTextureData;
     ui32 mPatchPixelDims = 0;
-    ui32 mFinishedPatchCount = 0;
+    std::atomic<ui32> mFinishedPatchCount = 0;
     ui32 mTotalPatches = 0;
     ui32 mThreadpoolSizePostEntry = 0;
     bool mIsDirty = false;

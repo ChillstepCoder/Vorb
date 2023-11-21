@@ -116,11 +116,6 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     ImGui::EndFrame();
 
-    // Free screen texture after flushing imgui
-    glDeleteTextures(1, &mScreenTexture);
-    mScreenTexture = 0;
-    mScreenTextureData = gli::texture2d();
-
     mMapScreenGBuffer.reset();
 }
 
@@ -218,27 +213,27 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 
     //if (mGenState == WorldGenScreenState::Done) {
     if (mScreenShader->isLoaded()) {
-        if (ImGui::Button("REGENERATE") || mIsDirty) {
-            mIsDirty = false;
-            // Reload compute shader
-            //ShaderLoader::clearCachedProgram("terrain_base.comp");
+        if (ImGui::Button("Reload Generation Shaders")) {
+            PreciseTimer loadTimer;
             vg::ShaderManager::disposeProgram("terrain_base");
             vg::ShaderManager::disposeProgram("generation_map.vertgeneration_map.frag");
             ShaderLoader::clearCachedProgram("generation_map.vert", "generation_map.frag");
             AssetHandleBasePtr newAssetPtrA = MaterialShaderRepository::get().reloadAsset(CStrToken("terrain_base"));
             AssetHandleBasePtr newAssetPtrB = MaterialShaderRepository::get().reloadAsset(CStrToken("generation_map"));
             AssetLoader& loader = AssetLoader::getInstance();
-            while (!newAssetPtrA->isLoaded() && !newAssetPtrB->isLoaded()) {
+            while (!newAssetPtrA->isLoaded() || !newAssetPtrB->isLoaded()) {
                 loader.update();
-                Sleep(1);
                 RenderContext::getInstance().updateRenderThreadProcs();
             }
-            mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
+
+            mScreenShader = static_unique_pointer_cast<AssetHandle<MaterialShaderDef>>(std::move(newAssetPtrB));
+            LOG_DEBUG("Reload shaders took {} ms", loadTimer.stop());
+        }
+        if (ImGui::Button("REGENERATE") || mIsDirty) {
+            mIsDirty = false;
             beginWorldGeneration();
         }
     }
-    //}
-
 
     ImGui::End();
     ImGui::Render();
@@ -262,32 +257,7 @@ void WorldGenScreen::initWorldData() {
     // Generate as fast as GPU can handle
     m_app->getWindow().setTemporaryUnlimitedFPS(true);
     mWorldGenerator->beginGeneration(*mWorldData, mGenData, mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
-        HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
-        const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
-        const i32v2 patchWorldPos = grid.getGridXYFromID(finishedPatchID) * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-        ui8v3* filledData = new ui8v3[mPatchPixelDims * mPatchPixelDims];
-
-        // Build pixels for patch
-        const i32 heightStride = HEIGHTMAP_QUAD_WIDTH_PER_PATCH / mPatchPixelDims;
-        for (int y = 0; y < mPatchPixelDims; ++y) {
-            const i32 yPosOffset = y * heightStride;
-            const int yOffset = y * mPatchPixelDims;
-            for (int x = 0; x < mPatchPixelDims; ++x) {
-                const f32 height = heightGrid.getHeightAtVertexForGeneration(patchWorldPos + i32v2(x * heightStride, yPosOffset));
-                ColorRGB8 lerpColor;
-                if (height < 0.0f) {
-                    const f32 depthMult = glm::min(-height * 0.025f, 1.0f);
-                    lerpColor.lerp(ColorRGB8(4, 119, 162), ColorRGB8(3, 66, 122), depthMult);
-                    filledData[yOffset + x] = ui8v3(lerpColor.r, lerpColor.g, lerpColor.b);
-                }
-                else {
-                    const f32 heightMult = glm::min(height * 0.01f, 1.0f);
-                    lerpColor.lerp(ColorRGB8(40, 98, 41), ColorRGB8(255, 255, 255), heightMult);
-                    filledData[yOffset + x] = ui8v3(lerpColor.r, lerpColor.g, lerpColor.b);
-                }
-            }
-        }
-        mFinishedTerrainGPUPatches.enqueue(std::make_pair(finishedPatchID, filledData));
+        ++mFinishedPatchCount;
     });
 
 }
@@ -343,40 +313,17 @@ void WorldGenScreen::updateDockspace()
 
 void WorldGenScreen::updateBaseHeightGeneration()
 {
-    constexpr int BULK_SIZE = 128;
-    std::pair<HeightmapPatchID, ui8v3*> finishedPatches[BULK_SIZE];
-    if (size_t count = mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE)) {
-        for (size_t i = 0; i < count; ++i) {
-            onPatchFinishedGPU(finishedPatches[i]);
-        }
-    }
-}
-
-void WorldGenScreen::onPatchFinishedGPU(std::pair<HeightmapPatchID, ui8v3*> data) {
-
-    HostHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
-    const SpatialGrid2D& grid = heightGrid.getSpatialGrid2D();
-    i32v2 patchPos = grid.getGridXYFromID(data.first);
-    glTextureSubImage2D(mScreenTexture, 0, patchPos.x * mPatchPixelDims, patchPos.y * mPatchPixelDims, mPatchPixelDims, mPatchPixelDims, GL_RGB, GL_UNSIGNED_BYTE, data.second);
-
-
-    ++mFinishedPatchCount;
     if (mFinishedPatchCount >= mTotalPatches) {
+        assert(mGenState != WorldGenScreenState::Done);
         mGenState = WorldGenScreenState::Done;
         m_app->getWindow().setTemporaryUnlimitedFPS(false);
         LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
     }
-
-    delete[] data.second;
 }
 
 void WorldGenScreen::beginWorldGeneration() {
     if (mWorldGenerator) {
         mWorldGenerator->cleanup();
-        // Flush
-        constexpr int BULK_SIZE = 128;
-        std::pair<HeightmapPatchID, ui8v3*> finishedPatches[BULK_SIZE];
-        while (mFinishedTerrainGPUPatches.try_dequeue_bulk(finishedPatches, BULK_SIZE));
     }
     else {
         mWorldGenerator = std::make_unique<WorldDataGPUGenerator>();
@@ -385,28 +332,9 @@ void WorldGenScreen::beginWorldGeneration() {
     mFinishedPatchCount = 0;
 
     initWorldData();
-    initScreenTexture();
 
     mCancelled = false;
     assert(!sGameWorld);
-}
-
-void WorldGenScreen::initScreenTexture() {
-    gli::extent2d dimensions{ SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES };
-    mScreenTextureData = gli::texture2d(gli::FORMAT_RGB8_UNORM_PACK8, dimensions, 1);
-    memset(mScreenTextureData.data(), 255, SCREEN_TEXTURE_RES * SCREEN_TEXTURE_RES * 3);
-
-    if (!mScreenTexture) {
-        glCreateTextures(GL_TEXTURE_2D, 1, &mScreenTexture);
-        glTextureStorage2D(
-            mScreenTexture,
-            1,          // one level, no mipmaps
-            GL_RGB8,    // internal format
-            SCREEN_TEXTURE_RES,
-            SCREEN_TEXTURE_RES
-        );
-        glTextureSubImage2D(mScreenTexture, 0, 0, 0, SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES, GL_RGB, GL_UNSIGNED_BYTE, mScreenTextureData.data());
-    }
 }
 
 void WorldGenScreen::renderMapView() {
@@ -417,6 +345,10 @@ void WorldGenScreen::renderMapView() {
 
     mMapScreenGBuffer->use();
     MaterialRenderer::bindMaterialShaderForRender(*def, nullptr);
+
+    i32v2 dims = i32v2(mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells() * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mWorldGenerator->getHeightSSBO());
 
     sGlobalFullTriangleVAO.draw();
 

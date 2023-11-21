@@ -17,7 +17,8 @@ enum class WorldGenerationState {
 struct PendingGPUTerrainGeneration {
     ~PendingGPUTerrainGeneration();
     GLsync sync = 0;
-    ui32 rowIndex;
+    ui32 rowIndexStart = 0;
+    ui32 numRows = 0;
     bool generateStarted = false;
 };
 
@@ -34,8 +35,10 @@ public:
 
     WorldGenerationState update();
     WorldGenerationState getState() const { return mState; }
+    bool getAllGenerationSentThisStep() const { return mAllGenerationSentThisStep; }
 
     VGTexture getHeightmapTexture() const { return mHeightmapTexture; }
+    VGBuffer getHeightSSBO() const { return mSsbo; }
 private:
     void updateGenerateBaseHeightmap();
 
@@ -58,5 +61,6 @@ private:
     VGBuffer mSsbo = 0;
     GLfloat* mMappedHeights = nullptr;
     f32 mWorldSeed = 0.f;
+    bool mAllGenerationSentThisStep = false;
 };
 
