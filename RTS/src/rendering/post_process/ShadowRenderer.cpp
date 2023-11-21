@@ -356,7 +356,7 @@ void ShadowRenderer::clearShadowTexture() {
     mShadowBlurGBuffers[0]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO);
 }
 
-void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
+void ShadowRenderer::renderShadows(const f32v3 cameraPos) {
     if (!mShaderAssets.areAllAssetsLoaded()) {
         return;
     }

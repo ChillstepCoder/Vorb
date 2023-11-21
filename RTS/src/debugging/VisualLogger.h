@@ -81,7 +81,7 @@ public:
 
     void finish();
 
-    void render(const f32v3& cameraPos, const f32m4& viewMatrix);
+    void render(const f32v3 cameraPos, const f32m4& viewMatrix);
 
     void setUserString(const nString& userString) { mUserString = userString; }
 
@@ -119,7 +119,7 @@ public:
     static VisualLog* tryGetNewVisualLog(const nString& name);
     static void renderImgui();
 
-    static void renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix);
+    static void renderActiveLogs(const f32v3 cameraPos, const f32m4& viewMatrix);
     
     static std::vector<std::unique_ptr<VisualLog>> sVisualLogs;
 

@@ -50,7 +50,7 @@ void main() {
     const vec3 posInputSeeded = vec3(unPatchWorldPos.x + float(idx) * VERTEX_SPACING, unPatchWorldPos.y + float(idy) * VERTEX_SPACING, unSeed);
     
       // Base height
-    float height = standardNoise(posInputSeeded, 4, 0.001, 0.7, vec2(0, 0), 25.0, 0.0) * 0.5 + 8.0;
+    float height = standardNoise(posInputSeeded, 4, 0.001, 0.7, vec2(0, 0), 10.0, 1.0);
     
     vec2 offsetToCenter = vec2(
         posInputSeeded.x - unWorldCenter.x,

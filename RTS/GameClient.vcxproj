@@ -224,6 +224,7 @@
     <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\camera\CameraController.cpp" />
+    <ClCompile Include="src\camera\OrthoCamera.cpp" />
     <ClCompile Include="src\camera\SimpleCamera.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprint.cpp" />
@@ -536,6 +537,7 @@
     <ClInclude Include="src\camera\Camera3D.h" />
     <ClInclude Include="src\camera\CameraController.h" />
     <ClInclude Include="src\camera\CameraMode.h" />
+    <ClInclude Include="src\camera\OrthoCamera.h" />
     <ClInclude Include="src\camera\SimpleCamera.h" />
     <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\character\CharacterConst.h" />

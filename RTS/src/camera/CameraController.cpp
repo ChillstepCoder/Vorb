@@ -20,7 +20,7 @@ CameraController::CameraController(vui::GameWindow& window) : mWindow(window) {
     vui::InputDispatcher::mouse.registerMouseListeners(mMouseListeners);
 
 
-    mCamera.init((f32)window.getWidth() / window.getHeight());
+    mCamera.setAspectRatio((f32)window.getWidth() / window.getHeight());
     setCameraMode(sDebugOptions.mCameraMode);
    
 }

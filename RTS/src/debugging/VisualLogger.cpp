@@ -161,7 +161,7 @@ void VisualLog::finish() {
     mDirtyRender = true;
 }
 
-void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
+void VisualLog::render(const f32v3 cameraPos, const f32m4& viewMatrix) {
     ASSERT_RENDER_THREAD();
     if (!mShapesToRender) {
         return;
@@ -552,7 +552,7 @@ void VisualLogger::renderImgui() {
     
 }
 
-void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
+void VisualLogger::renderActiveLogs(const f32v3 cameraPos, const f32m4& viewMatrix) {
 
     std::lock_guard<std::mutex> lock(sMutex);
     for (auto&& log : sVisualLogs) {

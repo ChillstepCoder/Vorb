@@ -19,50 +19,26 @@ Camera3D::Camera3D() {
     // Empty
 }
 
-void Camera3D::init(float aspectRatio) {
-    mAspectRatio = aspectRatio;
-}
-
-void Camera3D::offsetPosition(const f32v3& offset) {
-    mPosition += offset;
-    mViewChanged = true;
-}
-
 // TODO: Update should take delta time and interpolate it
-void Camera3D::update() {
-
-    bool updateFrustum = false;
-    if (mViewChanged) {
-        updateView();
-        mViewChanged = false;
-        updateFrustum = true;
-    }
-    if (mProjectionChanged) {
-        updateProjection();
-        mProjectionChanged = false;
-        updateFrustum = true;
-    }
-
-    if (updateFrustum) {
-        mVP = mP * mV;
-        mInverseVP = glm::inverse(mVP);
+void Camera3D::postUpdate(bool changed) {
+    if (changed) {
         if (!sDebugOptions.mPauseFrustum) {
-            mFrustum.updateFromWVP(mVP);
+            mFrustum.updateFromWVP(mMatrices.VP);
         }
     }
 }
 
 void Camera3D::updateView() {
-    mV = glm::lookAt(f32v3(0.0f), mDirection, mUp);
-    mInverseV = glm::inverse(mV);
+    mMatrices.V = glm::lookAt(f32v3(0.0f), mDirection, mUp);
+    mMatrices.inverseV = glm::inverse(mMatrices.V);
 }
 
 void Camera3D::updateProjection() {
     if (!sDebugOptions.mPauseFrustum) {
         mFrustum.setCamInternals(mFieldOfView, mAspectRatio, mZNear, mZFar);
     }
-    mP = glm::perspective(glm::radians(mFieldOfView), mAspectRatio, mZNear, mZFar);
-    mInverseP = glm::inverse(mP);
+    mMatrices.P = glm::perspective(glm::radians(mFieldOfView), mAspectRatio, mZNear, mZFar);
+    mMatrices.inverseP = glm::inverse(mMatrices.P);
 }
 
 void Camera3D::applyRotation(const f32q& rot) {
@@ -146,7 +122,7 @@ void Camera3D::setOrientation(const f32q& orientation) {
 
 f32v3 Camera3D::worldToScreenPoint(const f32v3& worldPoint) const {
     // Transform world to clipping coordinates
-    f32v4 clipPoint = mVP * f32v4(worldPoint, 1.0f);
+    f32v4 clipPoint = mMatrices.VP * f32v4(worldPoint, 1.0f);
     clipPoint.x /= clipPoint.w;
     clipPoint.y /= clipPoint.w;
     clipPoint.z /= clipPoint.w;
@@ -157,7 +133,7 @@ f32v3 Camera3D::worldToScreenPoint(const f32v3& worldPoint) const {
 
 f32v3 Camera3D::worldToScreenPointLogZ(const f32v3& worldPoint, f32 zFar) const {
     // Transform world to clipping coordinates
-    f32v4 clipPoint = mVP * f32v4(worldPoint, 1.0f);
+    f32v4 clipPoint = mMatrices.VP * f32v4(worldPoint, 1.0f);
     clipPoint.z = log2(glm::max(0.0001f, clipPoint.w + 1.0f)) * 2.0f / log2(zFar + 1.0f) - 1.0f;
     clipPoint.x /= clipPoint.w;
     clipPoint.y /= clipPoint.w;
@@ -168,7 +144,7 @@ f32v3 Camera3D::worldToScreenPointLogZ(const f32v3& worldPoint, f32 zFar) const 
 
 f32v3 Camera3D::getPickRay(const f32v2& ndcScreenPos) const {
     f32v4 clipRay(ndcScreenPos.x, ndcScreenPos.y, -1.0f, 1.0f);
-    f32v4 eyeRay = mInverseP * clipRay;
+    f32v4 eyeRay = mMatrices.inverseP * clipRay;
     eyeRay = f32v4(eyeRay.x, eyeRay.y, -1.0f, 0.0f);
-    return glm::normalize(f32v3(mInverseV * eyeRay));
+    return glm::normalize(f32v3(mMatrices.inverseV * eyeRay));
 }

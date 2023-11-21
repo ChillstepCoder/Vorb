@@ -319,7 +319,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
                 TextureRepository::get().registerAssetPath(entry);
                 continue;
             }
-
+            //
             auto&& it = mExtensionToAssetRepository.find(extensionToken);
             if (it != mExtensionToAssetRepository.end()) {
                 it->second->registerAssetPath(entry);
@@ -353,6 +353,12 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             }
             else if (fileHasExtension(entry, ".ttf")) {
                 mFontFiles.emplace_back(entry);
+            }
+            else if (fileHasExtension(entry, ".ent")) {
+                mEntityFiles.emplace_back(entry);
+            }
+            else if (fileHasExtension(entry, ".recipe")) {
+                mRecipeFiles.emplace_back(entry);
             }
         }
     }

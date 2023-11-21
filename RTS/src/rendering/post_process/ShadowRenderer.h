@@ -26,7 +26,7 @@ public:
     void useShadowBuffer();
     void clearShadowTexture();
 
-    void renderShadows(const f32v3& cameraPos);
+    void renderShadows(const f32v3 cameraPos);
 
     const f32m4* getShadowFrustumMatrices() const { return mLightVP; }
     const f32* getShadowCascadePlaneDistances() const { return mPlaneDistances; }

@@ -325,7 +325,7 @@ void DebugRenderer::drawCircle(const f32v3& origin, f32 radius, color4 color, in
     circles.emplace_back(origin, radius, color);
 }
 
-void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
+void DebugRenderer::render(const f32v3 cameraPos, const f32m4& viewMatrix)
 {
     ASSERT_RENDER_THREAD();
 

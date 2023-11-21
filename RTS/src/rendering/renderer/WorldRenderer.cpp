@@ -423,7 +423,7 @@ void WorldRenderer::renderDebug() {
             const auto& containers = mActiveWorld->getTileContainerRepository().getTileContainers();
             for (auto&& it : containers) {
                 const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter3D();
-                const f32v3& cameraPos = mCamera->getPosition();
+                const f32v3 cameraPos = mCamera->getPosition();
                 if (glm::length2(mCamera->getPosition() - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
                     
                     if (NavWorld* navWorld = mActiveWorld->tryGetNavWorld()) {
