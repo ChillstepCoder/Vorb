@@ -217,20 +217,26 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     }
 
     //if (mGenState == WorldGenScreenState::Done) {
+    if (mScreenShader->isLoaded()) {
         if (ImGui::Button("REGENERATE") || mIsDirty) {
             mIsDirty = false;
             // Reload compute shader
             //ShaderLoader::clearCachedProgram("terrain_base.comp");
             vg::ShaderManager::disposeProgram("terrain_base");
-            AssetHandleBasePtr newAssetPtr = MaterialShaderRepository::get().reloadAsset(CStrToken("terrain_base"));
+            vg::ShaderManager::disposeProgram("generation_map.vertgeneration_map.frag");
+            ShaderLoader::clearCachedProgram("generation_map.vert", "generation_map.frag");
+            AssetHandleBasePtr newAssetPtrA = MaterialShaderRepository::get().reloadAsset(CStrToken("terrain_base"));
+            AssetHandleBasePtr newAssetPtrB = MaterialShaderRepository::get().reloadAsset(CStrToken("generation_map"));
             AssetLoader& loader = AssetLoader::getInstance();
-            while (!newAssetPtr->isLoaded()) {
+            while (!newAssetPtrA->isLoaded() && !newAssetPtrB->isLoaded()) {
                 loader.update();
                 Sleep(1);
                 RenderContext::getInstance().updateRenderThreadProcs();
             }
+            mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
             beginWorldGeneration();
         }
+    }
     //}
 
 
