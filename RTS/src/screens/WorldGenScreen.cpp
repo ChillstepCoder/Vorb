@@ -71,6 +71,9 @@ i32 WorldGenScreen::getPreviousScreen() const
 void WorldGenScreen::build()
 {
     mCamera = std::make_unique<OrthoCamera>();
+    mCamera->setDirection(f32v3(0.f, 0.f, -1.f));
+    mCamera->setRight(f32v3(1.f, 0.f, 0.f));
+    mCamera->setUp(f32v3(0.f, 1.f, 0.f));
     //mCamera->setDims(f32v3(32768.f, 32768.0, 0.0f));
 }
 
@@ -358,7 +361,7 @@ void WorldGenScreen::renderMapView() {
     mMapScreenGBuffer->use();
     MaterialRenderer::bindMaterialShaderForRender(*def, nullptr);
 
-    i32v2 dims = i32v2(mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells() * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    const i32v2 dims = i32v2(mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells() * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
     glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mWorldGenerator->getHeightSSBO());
