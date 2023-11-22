@@ -59,7 +59,10 @@ public:
 
 protected:
     virtual void updateProjection() = 0;
-    virtual void updateView() = 0;
+    virtual void updateView() {
+        mMatrices.V = glm::lookAt(f32v3(0.0f), mDirection, mUp);
+        mMatrices.inverseV = glm::inverse(mMatrices.V);
+    }
 
     // Override to set custom update logic
     virtual void preUpdate() {}

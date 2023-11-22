@@ -13,6 +13,7 @@ class App;
 class HostWorldData;
 class WorldDataGPUGenerator;
 class MaterialShaderDef;
+class OrthoCamera;
 
 enum class WorldGenScreenState {
     Idle,
@@ -47,6 +48,7 @@ protected:
 
     void beginWorldGeneration();
 
+    void updateCamera();
     void renderMapView();
 
     bool mRebuildDockspace = true;
@@ -60,8 +62,10 @@ protected:
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
     //moodycamel::ConcurrentQueue<HeightmapPatchID> mFinishedTerrainGPUPatches;
 
+    // Rendering
     std::unique_ptr<vg::GBuffer> mMapScreenGBuffer;
     AssetHandlePtr<MaterialShaderDef> mScreenShader;
+    std::unique_ptr<OrthoCamera> mCamera;
 
     ui32 mPatchPixelDims = 0;
     std::atomic<ui32> mFinishedPatchCount = 0;

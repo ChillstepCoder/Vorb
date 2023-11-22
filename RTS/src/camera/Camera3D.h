@@ -49,7 +49,6 @@ public:
 
 protected:
     void updateProjection() override;
-    void updateView() override;
     void postUpdate(bool changed) override;
 
 

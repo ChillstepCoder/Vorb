@@ -28,10 +28,6 @@ void Camera3D::postUpdate(bool changed) {
     }
 }
 
-void Camera3D::updateView() {
-    mMatrices.V = glm::lookAt(f32v3(0.0f), mDirection, mUp);
-    mMatrices.inverseV = glm::inverse(mMatrices.V);
-}
 
 void Camera3D::updateProjection() {
     if (!sDebugOptions.mPauseFrustum) {

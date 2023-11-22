@@ -27,6 +27,8 @@
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
+#include "camera/OrthoCamera.h"
+
 #include "math/Random.h"
 
 // Possible human readable characters to generate a game seed with
@@ -68,7 +70,8 @@ i32 WorldGenScreen::getPreviousScreen() const
 
 void WorldGenScreen::build()
 {
-
+    mCamera = std::make_unique<OrthoCamera>();
+    //mCamera->setDims(f32v3(32768.f, 32768.0, 0.0f));
 }
 
 void WorldGenScreen::destroy(const vui::GameTime& gameTime)
@@ -337,17 +340,27 @@ void WorldGenScreen::beginWorldGeneration() {
     assert(!sGameWorld);
 }
 
+void WorldGenScreen::updateCamera()
+{
+    assert(mCamera);
+    // TDOO: DeltaTime
+    mCamera->update();
+}
+
 void WorldGenScreen::renderMapView() {
     const MaterialShaderDef* def = mScreenShader->tryGetLoadedAsset();
     if (!def) {
         return;
     }
 
+    updateCamera();
+
     mMapScreenGBuffer->use();
     MaterialRenderer::bindMaterialShaderForRender(*def, nullptr);
 
     i32v2 dims = i32v2(mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells() * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
+    glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mWorldGenerator->getHeightSSBO());
 
     sGlobalFullTriangleVAO.draw();
