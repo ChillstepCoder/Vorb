@@ -44,7 +44,7 @@ void Camera3D::applyRotation(const f32q& rot) {
 
     mUp = glm::normalize(glm::cross(mRight, mDirection));
 
-    mViewChanged = true;
+    mDirtyView = true;
 }
 
 void Camera3D::applyRotation(const f32 pitch, const f32 yaw) {
@@ -66,7 +66,7 @@ void Camera3D::applyRotation(const f32 pitch, const f32 yaw) {
     mRight = glm::normalize(mRight);
     mUp = glm::cross(mRight, mDirection);
 
-    mViewChanged = true;
+    mDirtyView = true;
 }
 
 void Camera3D::rotateFromMouse(float dx, float dy, float speed) {
@@ -91,7 +91,7 @@ void Camera3D::lookAt(const f32v3& pos) {
     mPitch = asin(-mDirection.z);
     mYaw = atan2(mDirection.y, mDirection.x);
 
-    mViewChanged = true;
+    mDirtyView = true;
 }
 
 void Camera3D::copyFromSimpleCamera(SimpleCamera& simpleCamera) {
@@ -100,7 +100,7 @@ void Camera3D::copyFromSimpleCamera(SimpleCamera& simpleCamera) {
     mFieldOfView = simpleCamera.getFov();
     mZNear = simpleCamera.ZNEAR;
     mZFar = simpleCamera.ZFAR;
-    mProjectionChanged = true;
+    mDirtyProjection = true;
     lookAt(mPosition + simpleCamera.getDirection());
     update();
 }
@@ -113,7 +113,7 @@ void Camera3D::setOrientation(const f32q& orientation) {
     mPitch = asin(-mDirection.z);
     mYaw = atan2(mDirection.y, mDirection.x);
 
-    mViewChanged = true;
+    mDirtyView = true;
 }
 
 f32v3 Camera3D::worldToScreenPoint(const f32v3& worldPoint) const {

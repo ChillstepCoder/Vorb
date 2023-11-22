@@ -19,6 +19,7 @@ const vec2 cornerUVs[4] = {
 };
 
 uniform ivec2 unHeightDataDims;
+uniform vec2 unSpawnPoint = vec2(0.5);
 
 layout(std430, binding = 0) readonly buffer HeightData
 {
@@ -45,8 +46,17 @@ void main() {
     
     ivec2 coords = ivec2(int(fUV.x * float(unHeightDataDims.x)), int(fUV.y * float(unHeightDataDims.y)));
     
+    coords = clamp(coords, ivec2(0), unHeightDataDims - ivec2(1));
+    
     fColor.rgb = colorFromHeight(heightData[coords.y * unHeightDataDims.x + coords.x]);
     fColor.a = 1.0;
+    
+    // Spawn cursor
+    float distanceFromSpawn = length(fUV - unSpawnPoint);
+    float spawnCursorIntensity = max(1.0 - distanceFromSpawn * 300.0, 0.0);
+    spawnCursorIntensity = pow(spawnCursorIntensity, 0.6);
+    spawnCursorIntensity = smoothstep(0.0, 1.0, spawnCursorIntensity);
+    fColor.rgb = mix(fColor.rgb, vec3(1.0, 0.0, 0.0), spawnCursorIntensity);
 }
 
 /*

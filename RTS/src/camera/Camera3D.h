@@ -25,8 +25,8 @@ public:
 
     // Setters
     void setOrientation(const f32q& orientation);
-    void setClippingPlane(float zNear, float zFar) { mZNear = zNear; mZFar = zFar; mProjectionChanged = true; }
-    void setFieldOfView(float fieldOfView) { mFieldOfView = fieldOfView; mProjectionChanged = true; }
+    void setClippingPlane(float zNear, float zFar) { mZNear = zNear; mZFar = zFar; mDirtyProjection = true; }
+    void setFieldOfView(float fieldOfView) { mFieldOfView = fieldOfView; mDirtyProjection = true; }
 
     // Gets the position of a 3D point on the screen plane
     f32v3 worldToScreenPoint(const f32v3& worldPoint) const;

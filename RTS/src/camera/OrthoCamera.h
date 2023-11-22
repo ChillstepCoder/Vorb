@@ -11,16 +11,14 @@ public:
 
 	bool sphereIsVisible(const f32v3& pos, float radius) const override;
 	// Center of screen is here
-	f32v3 getOrthoPosition() const { return mOrthoPosition; }
-	void setOrthoPosition(f32v3 pos) { mOrthoPosition = pos; }
+	void setXYPos(f32v2 pos) { mPosition.x = pos.x; mPosition.y = pos.y; }
     f32v3 getDims() const { return mDims; }
-    void setDims(f32v3 dims) { mDims = dims; }
+	void setXYDims(f32v2 dims) { mDims.x = dims.x; mDims.y = dims.y; mDirtyProjection = true; }
+    void setDims(f32v3 dims) { mDims = dims; mDirtyProjection = true;  }
 	f32 getZoom() const { return mZoom; }
-	void setZoom(f32 zoom) { mZoom = zoom; }
+	void setZoom(f32 zoom) { mZoom = zoom; mDirtyProjection = true;}
 protected:
 	void updateProjection() override;
-
-	f32v3 mOrthoPosition = f32v3(0.0);
 	// [-1, 1] default
 	f32v3 mDims = f32v3(2.0, 2.0, 600000.0);
 	f32 mZoom = 0.0f; // 0.0f - 1.0f

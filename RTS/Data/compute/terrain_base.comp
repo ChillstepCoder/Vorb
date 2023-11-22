@@ -95,7 +95,7 @@ void main() {
     //if (continentBreak > 0.0) {
     //    finalHeight = 1000.0;
    // }
-    
+
     
     heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight;
     

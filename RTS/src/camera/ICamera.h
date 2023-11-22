@@ -16,14 +16,14 @@ public:
         preUpdate();
 
         bool changed = false;
-        if (mViewChanged) {
+        if (mDirtyView) {
             updateView();
-            mViewChanged = false;
+            mDirtyView = false;
             changed = true;
         }
-        if (mProjectionChanged) {
+        if (mDirtyProjection) {
             updateProjection();
-            mProjectionChanged = false;
+            mDirtyProjection = false;
             changed = true;
         }
         if (changed) {
@@ -32,12 +32,12 @@ public:
 
         postUpdate(changed);
     }
-    void offsetPosition(const f32v3& offset) { mPosition += offset; mViewChanged = true; }
-    void setPosition(const f32v3& position) { mPosition = position; mViewChanged = true; }
-    void setDirection(const f32v3& direction) { mDirection = direction; mViewChanged = true; }
-    void setRight(const f32v3& right) { mRight = right; mViewChanged = true; }
-    void setUp(const f32v3& up) { mUp = up; mViewChanged = true; }
-    void setAspectRatio(float aspectRatio) { mAspectRatio = aspectRatio; mProjectionChanged = true; }
+    void offsetPosition(const f32v3& offset) { mPosition += offset; mDirtyView = true; }
+    void setPosition(const f32v3& position) { mPosition = position; mDirtyView = true; }
+    void setDirection(const f32v3& direction) { mDirection = direction; mDirtyView = true; }
+    void setRight(const f32v3& right) { mRight = right; mDirtyView = true; }
+    void setUp(const f32v3& up) { mUp = up; mDirtyView = true; }
+    void setAspectRatio(float aspectRatio) { mAspectRatio = aspectRatio; mDirtyProjection = true; }
 
     const f32m4& getViewMatrix() const { return mMatrices.V; }
     const f32m4& getInverseViewMatrix() const { return mMatrices.inverseV; }
@@ -47,11 +47,11 @@ public:
     const f32m4& getInverseVPMatrix() const { return mMatrices.inverseVP; }
     const CameraMatrices& getCameraMatrices() const { return mMatrices; }
 
-    const f32v3 getPosition() const { return mPosition; }
-    const f32v3 getDirection() const { return mDirection; }
-    const f32v3 getRightVector() const { return mRight; }
-    const f32v3 getFrontVector() const { return mDirection; }
-    const f32v3 getUpVector() const  { return mUp; }
+    f32v3 getPosition() const { return mPosition; }
+    f32v3 getDirection() const { return mDirection; }
+    f32v3 getRightVector() const { return mRight; }
+    f32v3 getFrontVector() const { return mDirection; }
+    f32v3 getUpVector() const  { return mUp; }
     virtual f32 getZAngle() const = 0;
     virtual f32 getZNear() const = 0;
     virtual f32 getZFar() const = 0;
@@ -74,8 +74,8 @@ protected:
     }
 
     // === Data ===
-    bool mViewChanged = true;
-    bool mProjectionChanged = true;
+    bool mDirtyView = true;
+    bool mDirtyProjection = true;
     CameraMatrices mMatrices;
 
     f32 mAspectRatio = 4.0f / 3.0f;

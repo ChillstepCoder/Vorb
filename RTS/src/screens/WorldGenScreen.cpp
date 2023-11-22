@@ -26,6 +26,7 @@
 #include "rendering/MaterialRenderer.h"
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
+#include <Vorb/ui/InputDispatcher.h>
 
 #include "camera/OrthoCamera.h"
 
@@ -74,6 +75,7 @@ void WorldGenScreen::build()
     mCamera->setDirection(f32v3(0.f, 0.f, -1.f));
     mCamera->setRight(f32v3(1.f, 0.f, 0.f));
     mCamera->setUp(f32v3(0.f, 1.f, 0.f));
+    mCamera->setXYDims(f32v2(1.0f, 1.0f));
     //mCamera->setDims(f32v3(32768.f, 32768.0, 0.0f));
 }
 
@@ -179,6 +181,11 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     const ImVec2 availableSize = ImGui::GetContentRegionAvail();
     const f32 minAvailable = glm::min(availableSize.x, availableSize.y);
     ImGui::Image((ImTextureID)mMapScreenGBuffer->getAlbedoTexture(), ImVec2(minAvailable, minAvailable));
+
+    if (ImGui::IsItemHovered()) {
+        updateMouseInput();
+    }
+
     ImGui::End();
 
     ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
@@ -364,10 +371,32 @@ void WorldGenScreen::renderMapView() {
     const i32v2 dims = i32v2(mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells() * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
     glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+    glUniform2f(def->getUniform("unPosition"), mCamera->getPosition().x, mCamera->getPosition().y);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mWorldGenerator->getHeightSSBO());
 
     sGlobalFullTriangleVAO.draw();
 
     mMapScreenGBuffer->unuse();
 
+}
+
+void WorldGenScreen::updateMouseInput() {
+    const int middleDrag = -ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y;
+    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
+    f32 zoom = mCamera->getZoom();
+    zoom += middleDrag * 0.01f * zoom;
+    LOG_INFO("{} {}", middleDrag, zoom);
+    zoom = glm::clamp(zoom, 1.0f, 100.f);
+    mCamera->setZoom(zoom);
+
+
+    const ImVec2 rightDrag = -ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
+    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
+
+    const f32 MOVE_SPEED = 0.0005f;
+    f32v3 pos = mCamera->getPosition();
+    pos += f32v3(rightDrag.x * MOVE_SPEED, rightDrag.y * MOVE_SPEED, 0.f) / mCamera->getZoom();
+    pos.x = glm::clamp(pos.x, -1.0f, 1.0f);
+    pos.y = glm::clamp(pos.y, -1.0f, 1.0f);
+    mCamera->setXYPos(pos);
 }

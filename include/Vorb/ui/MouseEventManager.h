@@ -126,6 +126,9 @@ namespace vorb {
             i32v2 getPosition() const {
                 return m_lastPos;
             }
+            i32v2 getFullScroll() const {
+                return m_fullScroll;
+            }
             bool hasFocus() const;
             bool isRelative() const;
             bool isHidden() const;
@@ -149,7 +152,7 @@ namespace vorb {
             bool m_state[static_cast<int>(MouseButton::COUNT)]; ///< The pressed state each virtual key
 
             i32v2 m_lastPos; ///< The last tracked position of the mouse
-            i32v2 m_fullScroll; ///< The accumulated values of the scroll wheel
+            i32v2 m_fullScroll = i32v2(0); ///< The accumulated values of the scroll wheel
 
             std::atomic<i32> m_x = ATOMIC_VAR_INIT(0); ///< The last known x-position of the mouse
             std::atomic<i32> m_y = ATOMIC_VAR_INIT(0); ///< The last known y-position of the mouse

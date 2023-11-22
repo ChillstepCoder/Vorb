@@ -50,6 +50,7 @@ protected:
 
     void updateCamera();
     void renderMapView();
+    void updateMouseInput();
 
     bool mRebuildDockspace = true;
     bool mCancelled = false;
