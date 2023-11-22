@@ -9,7 +9,8 @@ uniform mat4 unVP;
 out vec2 fUV;
 void main() {
     // [-1,1]
+    mat2 smallVP = mat2(unVP);
     const vec2 xyPos = vertices[gl_VertexID];
-    gl_Position = unVP * vec4(xyPos,0,1);
-    fUV = 0.5 * xyPos + vec2(0.5);
+    gl_Position = vec4(xyPos,0,1);
+    fUV = 0.5 * (smallVP * xyPos) + vec2(0.5);
 }
