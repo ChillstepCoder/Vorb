@@ -17,6 +17,8 @@ public:
     void setDims(f32v3 dims) { mDims = dims; mDirtyProjection = true;  }
 	f32 getZoom() const { return mZoom; }
 	void setZoom(f32 zoom) { mZoom = zoom; mDirtyProjection = true;}
+
+	f32v3 screenToWorld(f32v2 screenPos, f32 depth = 0.0f) const;
 protected:
 	void updateProjection() override;
 	// [-1, 1] default

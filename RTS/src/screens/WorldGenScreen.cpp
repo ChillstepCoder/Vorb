@@ -75,7 +75,7 @@ void WorldGenScreen::build()
     mCamera->setDirection(f32v3(0.f, 0.f, -1.f));
     mCamera->setRight(f32v3(1.f, 0.f, 0.f));
     mCamera->setUp(f32v3(0.f, 1.f, 0.f));
-    mCamera->setXYDims(f32v2(1.0f, 1.0f));
+    mCamera->setXYDims(f32v2(2.0f, 2.0f));
     //mCamera->setDims(f32v3(32768.f, 32768.0, 0.0f));
 }
 
@@ -85,6 +85,7 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 }
 
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
+    mFrameTimer.start();
     mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
 
     mMapScreenGBuffer = std::make_unique<vg::GBuffer>(SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES);
@@ -101,7 +102,6 @@ void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
 }
 
 void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
-
     Services::Threadpool::ref().setSize(mThreadpoolSizePostEntry);
 
     if (mWorldGenerator) {
@@ -155,7 +155,8 @@ void WorldGenScreen::update(const vui::GameTime& gameTime) {
 
 void WorldGenScreen::draw(const vui::GameTime& gameTime)
 {
-
+    mFrameTimeThisFrame = mFrameTimer.stop();
+    mFrameTimer.start();
     renderMapView();
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -180,7 +181,9 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Begin("World Generator", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     const ImVec2 availableSize = ImGui::GetContentRegionAvail();
     const f32 minAvailable = glm::min(availableSize.x, availableSize.y);
-    ImGui::Image((ImTextureID)mMapScreenGBuffer->getAlbedoTexture(), ImVec2(minAvailable, minAvailable));
+    mCurrentTextureSize = f32v2(minAvailable);
+    ImGui::Image((ImTextureID)mMapScreenGBuffer->getAlbedoTexture(), ImVec2(minAvailable, minAvailable),
+        ImVec2(0, 1),  ImVec2(1, 0));
 
     if (ImGui::IsItemHovered()) {
         updateMouseInput();
@@ -189,6 +192,8 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::End();
 
     ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+    ImGui::Text("%.2f ms", mFrameTimeThisFrame);
+    ImGui::Separator();
     if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("Start Game")) {
             m_state = vorb::ui::ScreenState::CHANGE_NEXT;
@@ -372,6 +377,7 @@ void WorldGenScreen::renderMapView() {
     glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
     glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
     glUniform2f(def->getUniform("unPosition"), mCamera->getPosition().x, mCamera->getPosition().y);
+    glUniform2f(def->getUniform("unSpawnPoint"), mWorldData->playerStart.x, mWorldData->playerStart.y);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mWorldGenerator->getHeightSSBO());
 
     sGlobalFullTriangleVAO.draw();
@@ -385,18 +391,27 @@ void WorldGenScreen::updateMouseInput() {
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
     f32 zoom = mCamera->getZoom();
     zoom += middleDrag * 0.01f * zoom;
-    LOG_INFO("{} {}", middleDrag, zoom);
     zoom = glm::clamp(zoom, 1.0f, 100.f);
     mCamera->setZoom(zoom);
 
 
-    const ImVec2 rightDrag = -ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
+    const ImVec2 rightDrag = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
 
     const f32 MOVE_SPEED = 0.0005f;
     f32v3 pos = mCamera->getPosition();
-    pos += f32v3(rightDrag.x * MOVE_SPEED, rightDrag.y * MOVE_SPEED, 0.f) / mCamera->getZoom();
+    pos += f32v3(-rightDrag.x * MOVE_SPEED, rightDrag.y * MOVE_SPEED, 0.f) / mCamera->getZoom();
     pos.x = glm::clamp(pos.x, -1.0f, 1.0f);
     pos.y = glm::clamp(pos.y, -1.0f, 1.0f);
     mCamera->setXYPos(pos);
+
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && mCurrentTextureSize.x > 0) {
+        ImVec2 cursorPosPixels = ImGui::GetMousePos() - ImGui::GetItemRectMin();
+        f32v2 uv = f32v2(cursorPosPixels.x, cursorPosPixels.y) / f32v2(mCurrentTextureSize);
+        uv.y = 1.0 - uv.y;
+        f32v2 worldPos = mCamera->screenToWorld(uv * 2.0f - 1.0f);
+        mWorldData->playerStart = (worldPos + 1.0f) * 0.5f;
+        LOG_INFO("{} {} {} {}", cursorPosPixels.x, cursorPosPixels.y, mWorldData->playerStart.x, mWorldData->playerStart.y);
+    }
 }

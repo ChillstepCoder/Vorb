@@ -13,5 +13,5 @@ void main() {
     mat2 smallVP = mat2(unVP);
     const vec2 xyPos = vertices[gl_VertexID];
     gl_Position = vec4(xyPos,0,1);
-    fUV = (0.5 * (smallVP * xyPos) + vec2(0.5)) + unPosition;
+    fUV = (0.5 * (inverse(smallVP) * xyPos) + vec2(0.5)) + unPosition;
 }

@@ -84,6 +84,7 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
         }
         case WorldNetMode::Host: {
             assert(hostWorldData);
+            mDefaultPlayerSpawnUV = hostWorldData->playerStart;
             mHeightmapGrid = std::move(hostWorldData->heightmapGrid);
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
@@ -230,6 +231,10 @@ void World::tick(f32 elapsedSec) {
 
     // Rendering
     updateRenderState();
+}
+
+f32v3 World::getDefaultSpawn() const {
+    return f32v3(mWidthTiles * mDefaultPlayerSpawnUV.x, mWidthTiles * mDefaultPlayerSpawnUV.y, 20.0f);
 }
 
 f32v2 World::getLoadCenter() const {

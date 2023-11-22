@@ -45,7 +45,7 @@ public:
     // World info
     virtual WorldNetMode getNetMode() const { return mNetMode; }
     bool isEditorWorld() const { return getNetMode() == WorldNetMode::Editor; }
-    f32v3 getDefaultSpawn() const { return f32v3(mWidthTiles * 0.5f, mWidthTiles * 0.5f, 20.0f); }
+    f32v3 getDefaultSpawn() const;
     f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
     f32v2 getLoadCenter() const;
     void setLoadCenter(const f32v2& loadCenter);
@@ -103,6 +103,7 @@ private:
     mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
     ui32 mWidthTiles = 0;
+    f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
 
     // Chunks
     std::unique_ptr<IChunkGrid> mChunkGrid;

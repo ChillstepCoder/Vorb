@@ -67,6 +67,9 @@ protected:
     std::unique_ptr<vg::GBuffer> mMapScreenGBuffer;
     AssetHandlePtr<MaterialShaderDef> mScreenShader;
     std::unique_ptr<OrthoCamera> mCamera;
+    f32v2 mCurrentTextureSize = f32v2(0.0f);
+    PreciseTimer mFrameTimer;
+    float mFrameTimeThisFrame = 0.0f;
 
     ui32 mPatchPixelDims = 0;
     std::atomic<ui32> mFinishedPatchCount = 0;
