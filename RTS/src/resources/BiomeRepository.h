@@ -17,5 +17,12 @@ public:
 
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
+    void onRegisteredAsset(AssetID id) override;
+    void onAllAssetTypesRegistered() override;
+
+    // Allow us to persist biome data consistently by
+    // assigning a static ID per biome
+    // Key = uniqueID, Value = AssetID
+    std::vector<AssetID> mUniqueIDMap;
 };
 

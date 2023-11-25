@@ -18,13 +18,16 @@ const vec2 cornerUVs[4] = {
     vec2(1.0, 1.0)
 };
 
-uniform ivec2 unHeightDataDims;
 uniform vec2 unSpawnPoint = vec2(0.5);
+uniform float unZoom = 1.0;
 
-layout(std430, binding = 0) readonly buffer HeightData
-{
-    float heightData[];
-};
+
+const float HEIGHT_VERTEX_SPACING = 2; // Match C++
+const float BIOME_VERTEX_SPACING = 8; // Match C++
+const uint BIOME_VERTEX_SPACING_DIFF = uint(BIOME_VERTEX_SPACING) / uint(HEIGHT_VERTEX_SPACING);
+
+layout(binding = 0) uniform sampler2D heightTexture;
+layout(binding = 1) uniform sampler2D biomeTexture;
 
 float standardNoise(vec3 position, int octaves, float frequency, float persistence, vec2 posOffset, float amplitude, float heightOffset) {
     position.xy += posOffset;
@@ -44,15 +47,22 @@ vec3 colorFromHeight(float height) {
 
 void main() {
     
-    ivec2 coords = ivec2(int(fUV.x * float(unHeightDataDims.x)), int(fUV.y * float(unHeightDataDims.y)));
+    //ivec2 coords = ivec2(int(fUV.x * float(unHeightDataDims.x)), int(fUV.y * float(unHeightDataDims.y)));
+    //coords = clamp(coords, ivec2(0), unHeightDataDims - ivec2(1));
     
-    coords = clamp(coords, ivec2(0), unHeightDataDims - ivec2(1));
-    
-    fColor.rgb = colorFromHeight(heightData[coords.y * unHeightDataDims.x + coords.x]);
+    // Height
+    float height = texture(heightTexture, fUV).r * 255.0 - 127.0; 
+    fColor.rgb = colorFromHeight(height);
     fColor.a = 1.0;
     
+    // Biome
+    float biome = texture(heightTexture, fUV).r; 
+    if (biome == 1280.0) {
+        fColor.r = 1.0;
+    }
+    
     // Spawn cursor
-    float distanceFromSpawn = length(fUV - unSpawnPoint);
+    float distanceFromSpawn = length(fUV - unSpawnPoint) * unZoom * 0.5;
     float spawnCursorIntensity = max(1.0 - distanceFromSpawn * 300.0, 0.0);
     spawnCursorIntensity = pow(spawnCursorIntensity, 0.6);
     spawnCursorIntensity = smoothstep(0.0, 1.0, spawnCursorIntensity);

@@ -3,9 +3,15 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
+layout(r8, binding = 0) uniform writeonly image2D heightImage;
 layout(std430, binding = 0) writeonly buffer HeightData
 {
     float heightData[];
+};
+layout(r8, binding = 0) uniform writeonly image2D biomeImage;
+layout(std430, binding = 1) writeonly buffer BiomeData
+{
+    uint biomeData[];
 };
 
 uniform vec2 unWorldCenter;
@@ -17,7 +23,9 @@ uniform ivec2 unVertexOffset;
 uniform vec2 unPatchWorldPos;
 const float MIN_WORLD_GEN_HEIGHT = -3000.0;
 const float MAX_WORLD_GEN_HEIGHT = 3000.0;
-const float VERTEX_SPACING = 2; // Match C++
+const float HEIGHT_VERTEX_SPACING = 2; // Match C++
+const float BIOME_VERTEX_SPACING = 8; // Match C++
+const uint BIOME_VERTEX_SPACING_DIFF = uint(BIOME_VERTEX_SPACING) / uint(HEIGHT_VERTEX_SPACING);
 const float MAX_RADIUS = 15000.0;
 const float WORLD_RADIUS = 16536.0;
 const float WORLD_RADIUS2 = WORLD_RADIUS * WORLD_RADIUS;
@@ -47,7 +55,7 @@ void main() {
     const uint idx = gl_GlobalInvocationID.x;
     const uint idy = gl_GlobalInvocationID.y;
     
-    const vec3 posInputSeeded = vec3(unPatchWorldPos.x + float(idx) * VERTEX_SPACING, unPatchWorldPos.y + float(idy) * VERTEX_SPACING, unSeed);
+    const vec3 posInputSeeded = vec3(unPatchWorldPos.x + float(idx) * HEIGHT_VERTEX_SPACING, unPatchWorldPos.y + float(idy) * HEIGHT_VERTEX_SPACING, unSeed);
     
       // Base height
     float height = standardNoise(posInputSeeded, 4, 0.001, 0.7, vec2(0, 0), 10.0, 1.0);
@@ -96,7 +104,16 @@ void main() {
     //    finalHeight = 1000.0;
    // }
 
+    ivec2 hxy = ivec2(unVertexOffset.x + idx, unVertexOffset.y + idy);
+    uint heightIndex = hxy.y * unYStride + hxy.x;
+    heightData[heightIndex] = finalHeight;
+    imageStore(heightImage, hxy, vec4(clamp(finalHeight + 127.0, 0.0, 255.0) / 255.0, 0.0, 0.0, 0.0));
     
-    heightData[(unVertexOffset.y + idy) * unYStride + unVertexOffset.x + idx] = finalHeight;
-    
+    // TODO: Separate pass?
+    if (mod(idx, 8) + mod(idy, 8) == 0) {
+        ivec2 bxy = ivec2((unVertexOffset.x + idx) / BIOME_VERTEX_SPACING_DIFF, (unVertexOffset.y + idy) / BIOME_VERTEX_SPACING_DIFF);
+        uint biomeIndex = bxy.y * (unYStride / BIOME_VERTEX_SPACING_DIFF) + bxy.x;
+        biomeData[biomeIndex] = 128;
+        imageStore(biomeImage, bxy, vec4(128.0, 0.0, 0.0, 0.0));
+    }
 }

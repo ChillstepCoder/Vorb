@@ -193,6 +193,12 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 
     ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("%.2f ms", mFrameTimeThisFrame);
+    const f32v2 playerSpawn = mWorldData->playerStart * f32(mWorldData->worldWidth);
+    ImGui::Text("Spawn Position (%.1f, %.1f)", playerSpawn.x, playerSpawn.y);
+    if (mGenState == WorldGenScreenState::Done) {
+        ImGui::Text("Height: %.1f", mWorldData->heightmapGrid->computeHeightAtPoint<true>(playerSpawn));
+        ImGui::Text("Biome: %s", "UNKNOWN");
+    }
     ImGui::Separator();
     if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("Start Game")) {
@@ -264,6 +270,7 @@ void WorldGenScreen::initWorldData() {
         mWorldData = std::make_unique<HostWorldData>();
         mWorldData->worldWidth = WorldDefaults::DEFAULT_WORLD_WIDTH_TILES;
         mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
+        mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
     }
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
@@ -374,11 +381,16 @@ void WorldGenScreen::renderMapView() {
     MaterialRenderer::bindMaterialShaderForRender(*def, nullptr);
 
     const i32v2 dims = i32v2(mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells() * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
-    glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
-    glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+    //glProgramUniform2iv(def->mProgram.getID(), def->getUniform("unHeightDataDims"), 1, &dims.x);
+    glUniformMatrix4fv(def->getUniform("unInverseVP"), 1, GL_FALSE, &mCamera->getInverseVPMatrix()[0][0]);
     glUniform2f(def->getUniform("unPosition"), mCamera->getPosition().x, mCamera->getPosition().y);
     glUniform2f(def->getUniform("unSpawnPoint"), mWorldData->playerStart.x, mWorldData->playerStart.y);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mWorldGenerator->getHeightSSBO());
+    glUniform1f(def->getUniform("unZoom"), mCamera->getZoom());
+
+    vg::sSamplerStates.POINT_WRAP.setForTexture(mWorldGenerator->getHeightTexture());
+    vg::sSamplerStates.POINT_WRAP.setForTexture(mWorldGenerator->getBiomeTexture());
+    glBindTextureUnit(0, mWorldGenerator->getHeightTexture());
+    glBindTextureUnit(1, mWorldGenerator->getBiomeTexture());
 
     sGlobalFullTriangleVAO.draw();
 

@@ -2,6 +2,7 @@
 #include "WorldDataGPUGenerator.h"
 
 #include "world/IHeightmapGrid.h"
+#include "world/biome/BiomeGrid.h"
 #include "world/host/HostWorldData.h"
 
 #include "rendering/MaterialShaderRepository.h"
@@ -17,10 +18,17 @@ WorldDataGPUGenerator::WorldDataGPUGenerator() = default;
 WorldDataGPUGenerator::~WorldDataGPUGenerator() {
     cleanup();
 
-    if (mSsbo) {
-        glUnmapNamedBuffer(mSsbo);
-        glDeleteBuffers(1, &mSsbo);
-        mSsbo = 0;
+    if (mTerrainSSBO) {
+        glUnmapNamedBuffer(mTerrainSSBO);
+        glDeleteBuffers(1, &mTerrainSSBO);
+        mTerrainSSBO = 0;
+
+        glUnmapNamedBuffer(mBiomeSSBO);
+        glDeleteBuffers(1, &mBiomeSSBO);
+        mBiomeSSBO = 0;
+
+        glDeleteTextures(1, &mHeightTexture);
+        glDeleteTextures(1, &mBiomeTexture);
     }
 }
 
@@ -29,6 +37,7 @@ void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const Worl
     mWorldData = &worldData;
     mGenerationData = generationData;
     mHeightGrid = worldData.heightmapGrid.get();
+    mBiomeGrid = worldData.biomeGrid.get();
     mWorldCenter = f32v2(worldData.worldWidth * 0.5f);
     mWorldSeed = mGenerationData.getSeedHash();
 
@@ -39,7 +48,7 @@ void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const Worl
     mNextGenerationIndex = 0;
     mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches() / ROWS_TO_GENERATE_PER_FRAME);
 
-    mState = WorldGenerationState::GeneratingBaseHeightmap;
+    mState = WorldGenerationState::GeneratingBaseHeightmapAndBiomes;
 }
 
 void WorldDataGPUGenerator::cleanup() {
@@ -64,7 +73,7 @@ WorldGenerationState WorldDataGPUGenerator::update() {
     {
         case WorldGenerationState::None:
             break;
-        case WorldGenerationState::GeneratingBaseHeightmap:
+        case WorldGenerationState::GeneratingBaseHeightmapAndBiomes:
             updateGenerateBaseHeightmap();
             break;
         case WorldGenerationState::PropagatingBiomes:
@@ -88,12 +97,26 @@ bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
         panic("max supported texture size {} is less than required of {} for gpu gen", maxTextureSize, resolution);
     }
 
-    if (!mSsbo) {
+    if (!mTerrainSSBO) {
+        // Terrain
         const ui32 totalPatches = mHeightGrid->getTotalPatches();
-        assert(!mSsbo);
-        glCreateBuffers(1, &mSsbo);
-        glNamedBufferStorage(mSsbo, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-        mMappedHeights = (GLfloat*)glMapNamedBufferRange(mSsbo, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        assert(!mTerrainSSBO);
+        glCreateBuffers(1, &mTerrainSSBO);
+        glNamedBufferStorage(mTerrainSSBO, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        mMappedHeights = (GLfloat*)glMapNamedBufferRange(mTerrainSSBO, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        glCreateTextures(GL_TEXTURE_2D, 1, &mHeightTexture);
+        const ui32 hWidth = mHeightGrid->getWidthPatches() * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+        glTextureStorage2D(mHeightTexture, 1, GL_R8, hWidth, hWidth);
+
+        // Biomes
+        const ui32 biomesSizeBytes = mBiomeGrid->getTotalVertices() * sizeof(ui32);
+        assert(!mBiomeSSBO);
+        glCreateBuffers(1, &mBiomeSSBO);
+        glNamedBufferStorage(mBiomeSSBO, biomesSizeBytes, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        mMappedBiomes = (ui32*)glMapNamedBufferRange(mBiomeSSBO, 0, biomesSizeBytes, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        glCreateTextures(GL_TEXTURE_2D, 1, &mBiomeTexture);
+        const ui32 bWidth = mBiomeGrid->getWidthVertices();
+        glTextureStorage2D(mBiomeTexture, 1, GL_R8, bWidth, bWidth);
     }
 }
 
@@ -113,14 +136,11 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         //glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentOutlineScale"), mGenerationData.mContinentOutlineScale);
         glProgramUniform1f(def->mProgram.getID(), def->getUniform("unContinentRadius"), mGenerationData.mContinentRadius);
         glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), mWorldSeed);
-        //glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->mWidthPatches);
 
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSsbo);
-        //for (ui32 x = 0; x < mHeightGrid->mWidthPatches; ++x) {
-
-        // TODO: batch create?
-
-        // Upload position
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mTerrainSSBO);
+        glBindImageTexture(0, mHeightTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mBiomeSSBO);
+        glBindImageTexture(1, mBiomeTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
 
         HeightmapPatchID patchIdLeftmost = mNextRowToGenerate * mHeightGrid->mWidthPatches;
         const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchIdLeftmost);
@@ -132,7 +152,7 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
 
         // Dispatch compute
         glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups * rowsToGenerate, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         PendingHeightGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
         generation.rowIndexStart = mNextRowToGenerate;

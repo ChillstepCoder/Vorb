@@ -5,10 +5,11 @@
 class IHeightmapGrid;
 class HeightmapPatch;
 class HostWorldData;
+class BiomeGrid;
 
 enum class WorldGenerationState {
     None,
-    GeneratingBaseHeightmap,
+    GeneratingBaseHeightmapAndBiomes,
     PropagatingBiomes,
     Done,
     COUNT
@@ -24,8 +25,8 @@ struct PendingHeightGeneration {
 
 
 // Generates full world data on the GPU, with some back and forth with CPU
-// Stage 1 - Generate base height on GPU
-// Stage 2 - Seed base biomes on CPU (Can be done in parallel with stage 1)
+// Stage 1 - Generate base height on GPU as well as base biomes via noise
+// Stage 2 - Seed corrupted biomes on CPU (Can be done in parallel with stage 1)
 // Stage 3 - Propagate biomes on GPU with checkerboard cellular automata
 // Stage 4 - Generate biome height on GPU -> Download height to CPU on finish per patch
 // Stage 5 - Carve rivers on CPU
@@ -44,7 +45,10 @@ public:
     WorldGenerationState getState() const { return mState; }
     bool getAllGenerationSentThisStep() const { return mAllGenerationSentThisStep; }
 
-    VGBuffer getHeightSSBO() const { return mSsbo; }
+    VGBuffer getHeightSSBO() const { return mTerrainSSBO; }
+    VGTexture getHeightTexture() const { return mHeightTexture; }
+    VGBuffer getBiomeSSBO() const { return mBiomeSSBO; }
+    VGTexture getBiomeTexture() const { return mBiomeTexture; }
 private:
     bool initResourcesIfNeeded(i32 resolution);
 
@@ -57,6 +61,7 @@ private:
     WorldGenerationState mState;
     HostWorldData* mWorldData = nullptr;
     IHeightmapGrid* mHeightGrid = nullptr;
+    BiomeGrid* mBiomeGrid = nullptr;
 
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;
@@ -66,8 +71,12 @@ private:
     std::vector<PendingHeightGeneration> mGPUTerrainGenerations;
     std::function<void(HeightmapPatchID)> mOnPatchFinished;
 
-    VGBuffer mSsbo = 0;
-    GLfloat* mMappedHeights = nullptr;
+    VGBuffer mTerrainSSBO = 0;
+    VGTexture mHeightTexture = 0;
+    VGBuffer mBiomeSSBO = 0;
+    VGTexture mBiomeTexture = 0;
+    GLfloat * mMappedHeights = nullptr;
+    ui32* mMappedBiomes = nullptr;
     f32 mWorldSeed = 0.f;
     bool mAllGenerationSentThisStep = false;
 };
