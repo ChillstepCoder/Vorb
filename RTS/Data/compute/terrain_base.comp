@@ -1,5 +1,18 @@
 
 #include "util/noise/snoise3.glsl"
+#include "util/noise/cellular3d.glsl"
+
+
+const int BIOME_PLAINS = 0;
+const int BIOME_MOUNTAINS = 1;
+const int BIOME_FOREST = 2;
+const int BIOME_HOTSPRINGS = 3;
+
+const float MOUNTAIN_BLEND = 0.3;
+const float SEA_BLEND_TO_BIOME = 0.3;
+const float SEA_BLEND_TO_MOUNTAINS = 0.15;
+const float PLAINS_PRIORITY = 0.1;
+
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
@@ -8,7 +21,7 @@ layout(std430, binding = 0) writeonly buffer HeightData
 {
     float heightData[];
 };
-layout(r8, binding = 0) uniform writeonly image2D biomeImage;
+layout(r8, binding = 1) uniform writeonly image2D biomeImage;
 layout(std430, binding = 1) writeonly buffer BiomeData
 {
     uint biomeData[];
@@ -51,6 +64,72 @@ float cutNoiseAtStep(float noiseVal, float stepVal) {
     return noiseVal * step(stepVal, noiseVal);
 }
 
+
+int generateBiomes(inout float height, vec3 posInputSeeded) {
+    float bestWeight = 0.0;
+    int bestBiome = 255;
+    
+    if (height <= 0.0) {
+        return bestBiome;
+    }
+    const float seaHeightMultMountains = clamp(height * SEA_BLEND_TO_MOUNTAINS, 0.0, 1.0);
+    // TODO: Multiply at end? hmm
+    const float seaHeightMult = clamp(height * SEA_BLEND_TO_BIOME, 0.0, 1.0);
+    
+    // Mountains
+    float mountainDist = standardNoise(posInputSeeded.yzx, 5, 0.000166, 0.6, vec2(0, 0), 4.0, -0.15) * seaHeightMultMountains;
+    if (mountainDist > 0.0) {
+        float mountainWeight = min(mountainDist, 1.0);
+        float mountainHeight = cellularNoise3D(posInputSeeded.zxy, 3, 0.00157, 0.65, vec2(0, 0), 300.0, 0.0);
+        float mountainDetail = ridgedNoise(posInputSeeded.zxy, 6, 0.001, 0.6, vec2(0, 0), 64.0, 0.0);
+        height += (mountainHeight + mountainDetail) * mountainWeight * seaHeightMult;
+        bestWeight = mountainWeight;
+        bestBiome = BIOME_MOUNTAINS;
+    }
+    
+    // Mountains take things over
+    if (mountainDist < MOUNTAIN_BLEND) {
+        // Plains
+        float plainsHeight = standardNoise(posInputSeeded, 6, 0.001, 0.65, vec2(0, 0), 15.0, 0.5);
+        float nonMountainWeight = ((MOUNTAIN_BLEND - mountainDist) / MOUNTAIN_BLEND);
+        nonMountainWeight = min(nonMountainWeight, 1.0);
+        height += plainsHeight * nonMountainWeight * seaHeightMult;
+        if (nonMountainWeight > bestWeight) {
+            bestBiome = BIOME_PLAINS;
+            bestWeight = 0.0;
+        }
+    
+        // Forest
+        float forestDist = standardNoise(posInputSeeded.yxz, 6, 0.001, 0.6, vec2(-1000.0, 0), 5.0, -0.2);
+        float forestHeight = standardNoise(posInputSeeded, 3, 0.05, 0.65, vec2(0, 0), 5.0, 0.0);
+        float forestWeight = nonMountainWeight * forestDist;
+        forestWeight = clamp(forestWeight, 0.0, 1.0);
+        height += forestHeight * forestWeight * seaHeightMult;
+        if (forestWeight > bestWeight) {
+            bestBiome = BIOME_FOREST;
+            bestWeight = forestWeight;
+        }
+        
+        // Hot springs
+        float springsDist = standardNoise(posInputSeeded.zxy, 6, 0.001, 0.6, vec2(1000.0, 0), 3.0, -0.25);
+        float springsHeight = standardNoise(posInputSeeded, 2, 0.01, 0.65, vec2(0, 0), 20.0, 0.5);
+        float springsWeight = nonMountainWeight * springsDist;
+        // Springs lower priority
+        springsWeight *= (1.0 - bestWeight);
+        springsWeight = clamp(springsWeight, 0.0, 1.0);
+        springsHeight = springsHeight * springsWeight * seaHeightMult;
+        // Step function
+        springsHeight = floor(springsHeight / 2.0) * 2.0;
+        height += springsHeight;
+        if (springsWeight > bestWeight) {
+            bestBiome = BIOME_HOTSPRINGS;
+            bestWeight = springsWeight;
+        }
+    }
+    return bestBiome;
+}
+
+
 void main() {   
     const uint idx = gl_GlobalInvocationID.x;
     const uint idy = gl_GlobalInvocationID.y;
@@ -74,20 +153,10 @@ void main() {
 
     // Create a fairly circular outline to deep ocean
     height -= max((adjustedDistanceFromCenter - unContinentRadius) * 0.025, 0.0);
-        
-    // Continent internals
-    // Mountains
-    //float mountainDist = standardNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 1, 0.000166, 0.6, vec2(0, 0), 3.0, -0.15);
-    //if (mountainDist > 0.0) {
-    //    float mountain = ridgedNoise(vec3(offsetToCenter.x, offsetToCenter.y, unSeed), 6, 0.0001, 0.65, vec2(0, 0), 20.0, -0.3);
-    //    height += mountain * min(mountainDist, 1.0);
-   // }
-        
+
     //Split world into subcontinents.
     float continentBreak = standardNoise(posInputSeeded, 8, 0.0001, 0.6, vec2(0, 0), 1.0, 0.1) * 0.5;
     continentBreak = cutNoiseAtStep(continentBreak, 0.0);
-    // REMOVE
-    //continentBreak = 0.0;
     height -= continentBreak * 240.0;
     
     // Enforce water on edge of world
@@ -95,25 +164,26 @@ void main() {
         height = mix(height, min(height, WORLD_EDGE_MIN_DEPTH), pow((manhattanDistanceFromCenter - MAX_RADIUS) / OUTER_LERP_DISTANCE, 8.0));
     }
         
+    // Biomes  
+    const int biome = generateBiomes(height, posInputSeeded);
+        
     float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
     
     // Cone world lol
     //finalHeight = 0.0000001 * finalHeight + 500.0 - pow((length(offsetToCenter)), 1.0);
-    
-    //if (continentBreak > 0.0) {
-    //    finalHeight = 1000.0;
-   // }
 
+    // Store height
     ivec2 hxy = ivec2(unVertexOffset.x + idx, unVertexOffset.y + idy);
     uint heightIndex = hxy.y * unYStride + hxy.x;
     heightData[heightIndex] = finalHeight;
-    imageStore(heightImage, hxy, vec4(clamp(finalHeight + 127.0, 0.0, 255.0) / 255.0, 0.0, 0.0, 0.0));
+    imageStore(heightImage, hxy, vec4(clamp((finalHeight + 127.0) - 100.0, 0.0, 255.0) / 255.0, 0.0, 0.0, 0.0));
     
-    // TODO: Separate pass?
-    if (mod(idx, 8) + mod(idy, 8) == 0) {
+   
+    // Store biome
+    if (mod(idx, BIOME_VERTEX_SPACING_DIFF) + mod(idy, BIOME_VERTEX_SPACING_DIFF) == 0) {
         ivec2 bxy = ivec2((unVertexOffset.x + idx) / BIOME_VERTEX_SPACING_DIFF, (unVertexOffset.y + idy) / BIOME_VERTEX_SPACING_DIFF);
         uint biomeIndex = bxy.y * (unYStride / BIOME_VERTEX_SPACING_DIFF) + bxy.x;
-        biomeData[biomeIndex] = 128;
-        imageStore(biomeImage, bxy, vec4(128.0, 0.0, 0.0, 0.0));
+        biomeData[biomeIndex] = uint(biome);
+        imageStore(biomeImage, bxy, vec4(float(biome) / 255.0, 0.0, 0.0, 0.0));
     }
 }

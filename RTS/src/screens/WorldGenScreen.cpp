@@ -199,6 +199,8 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         ImGui::Text("Height: %.1f", mWorldData->heightmapGrid->computeHeightAtPoint<true>(playerSpawn));
         ImGui::Text("Biome: %s", "UNKNOWN");
     }
+    ImGui::Checkbox("Show Biomes", &mShowBiomes);
+    ImGui::Checkbox("Show Height", &mShowHeight);
     ImGui::Separator();
     if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("Start Game")) {
@@ -386,9 +388,9 @@ void WorldGenScreen::renderMapView() {
     glUniform2f(def->getUniform("unPosition"), mCamera->getPosition().x, mCamera->getPosition().y);
     glUniform2f(def->getUniform("unSpawnPoint"), mWorldData->playerStart.x, mWorldData->playerStart.y);
     glUniform1f(def->getUniform("unZoom"), mCamera->getZoom());
+    glUniform1i(def->getUniform("unShowBiomes"), mShowBiomes);
+    glUniform1i(def->getUniform("unShowHeight"), mShowHeight);
 
-    vg::sSamplerStates.POINT_WRAP.setForTexture(mWorldGenerator->getHeightTexture());
-    vg::sSamplerStates.POINT_WRAP.setForTexture(mWorldGenerator->getBiomeTexture());
     glBindTextureUnit(0, mWorldGenerator->getHeightTexture());
     glBindTextureUnit(1, mWorldGenerator->getBiomeTexture());
 

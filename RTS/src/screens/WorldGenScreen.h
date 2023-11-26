@@ -78,7 +78,8 @@ protected:
     bool mIsDirty = false;
 
     // Controls
-    bool mShowBiomes = true;
+    bool mShowBiomes = false;
+    bool mShowHeight = false;
 
     PreciseTimer mGenTimer;
 };

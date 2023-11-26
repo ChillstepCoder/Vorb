@@ -107,6 +107,7 @@ bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
         glCreateTextures(GL_TEXTURE_2D, 1, &mHeightTexture);
         const ui32 hWidth = mHeightGrid->getWidthPatches() * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
         glTextureStorage2D(mHeightTexture, 1, GL_R8, hWidth, hWidth);
+        vg::sSamplerStates.LINEAR_CLAMP.setForTexture(mHeightTexture);
 
         // Biomes
         const ui32 biomesSizeBytes = mBiomeGrid->getTotalVertices() * sizeof(ui32);
@@ -117,6 +118,7 @@ bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
         glCreateTextures(GL_TEXTURE_2D, 1, &mBiomeTexture);
         const ui32 bWidth = mBiomeGrid->getWidthVertices();
         glTextureStorage2D(mBiomeTexture, 1, GL_R8, bWidth, bWidth);
+        vg::sSamplerStates.POINT_CLAMP.setForTexture(mBiomeTexture);
     }
 }
 
