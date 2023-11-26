@@ -38,7 +38,7 @@ public:
     ui32 getTotalVertices() const { return mTotalVertices; }
     ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
     // template <bool THREAD_SAFE>
-    const BiomeDef* getBiomeDefAtPoint(f32v2 position) const;
+    const BiomeDef* getBiomeDefAtPoint(f32v2 worldPos) const;
 private:
     void setVertex(i32v2 vertexPos, BiomeVertex vertex) {
         mGrid[vertexPos.y * getWidthVertices() + vertexPos.x] = vertex;

@@ -22,6 +22,7 @@
 #include "tile/TileContainerRepository.h"
 #include "time/TimeOfDayManager.h"
 #include "world/Chunk.h"
+#include "world/biome/BiomeGrid.h"
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
@@ -86,6 +87,7 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
             assert(hostWorldData);
             mDefaultPlayerSpawnUV = hostWorldData->playerStart;
             mHeightmapGrid = std::move(hostWorldData->heightmapGrid);
+            mBiomeGrid = std::move(hostWorldData->biomeGrid);
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);

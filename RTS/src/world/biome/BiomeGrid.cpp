@@ -12,8 +12,8 @@ BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
 
 BiomeGrid::~BiomeGrid() = default;
 
-const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 position) const {
-    const i32v2 blVertex = i32v2(position) / BIOME_VERTEX_STRIDE;
+const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 worldPos) const {
+    const i32v2 blVertex = i32v2(worldPos) / BIOME_VERTEX_STRIDE;
     if (blVertex.x < 0 || blVertex.y < 0 || blVertex.x >= (i32)mSpatialGrid.getGridWidthCells() || blVertex.y >= (i32)mSpatialGrid.getGridWidthCells()) {
         return nullptr;
     }

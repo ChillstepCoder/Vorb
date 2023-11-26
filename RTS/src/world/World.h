@@ -22,6 +22,7 @@ class StructureManager;
 class TimeOfDayManager;
 class TileContainerRepository;
 class IWorldGenerator;
+class BiomeGrid;
 class HostSimContext;
 class CombatContext;
 class NavWorld;
@@ -55,6 +56,7 @@ public:
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
+    BiomeGrid& getBiomeGrid() const { return *mBiomeGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
     CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
@@ -111,6 +113,8 @@ private:
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
     // Terrain
     std::unique_ptr<IHeightmapGrid> mHeightmapGrid;
+    // Biome
+    std::unique_ptr<BiomeGrid> mBiomeGrid;
     // Time of day
     std::unique_ptr<TimeOfDayManager> mTimeOfDayManager;
     // ECS

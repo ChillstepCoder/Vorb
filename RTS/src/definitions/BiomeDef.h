@@ -1,11 +1,13 @@
 #pragma once
 
 // For now match .biome files
-enum class BIOME_IDS {
+enum class BiomeUniqueID : ui8 {
     PLAINS = 0,
     MOUNTAINS = 1,
     FOREST = 2,
     HOTSPRINGS = 3,
+    COUNT,
+    INVALID = UINT8_MAX
 };
 
 const ui8 INVALID_BIOME_ID = UINT8_MAX;
@@ -14,7 +16,7 @@ class BiomeDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(BiomeDef);
 
-    ui8 uniqueId = UINT8_MAX;
+    BiomeUniqueID uniqueId = BiomeUniqueID::INVALID;
     f32 priority = 0.0f;
     nString displayName = "UNKNOWN";
 };
