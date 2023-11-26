@@ -29,6 +29,8 @@ public:
 
     void playOneShotAnimation(entt::entity entityId, AssetID animationId);
     void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha);
+
+    CharacterRenderData* tryGetCharacterRenderData(entt::entity entityId);
 private:
     bool tryInitializeCharacterAnimState(entt::entity entityId);
 

@@ -421,6 +421,13 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     }
 }
 
+CharacterRenderData* CharacterRenderer::tryGetCharacterRenderData(entt::entity entityId) {
+    ASSERT_RENDER_THREAD();
+    auto it = mEntityCharacterModels.find(entityId);
+    if (it == mEntityCharacterModels.end()) return nullptr;
+    return it->second.get();
+}
+
 bool CharacterRenderer::tryInitializeCharacterAnimState(entt::entity entityId) {
     CharacterRenderData& renderData = *mEntityCharacterModels[entityId];
     const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetLoadedAsset();

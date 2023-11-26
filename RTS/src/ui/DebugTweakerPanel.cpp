@@ -15,6 +15,11 @@
 
 #include "rendering/GLExtensions.h"
 #include "rendering/MaterialUtils.h"
+#include "rendering/CharacterRenderer.h"
+#include "rendering/renderer/WorldRenderer.h"
+#include "rendering/RenderContext.h"
+
+#include "resources/ModelRepository.h"
 
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
@@ -451,35 +456,44 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
 
     if (ImGui::CollapsingHeader("Animation Debugger")) {
         ImGui::PushID(++ID);
-        ImGui::Text("PLEASE FIX ImGui::CollapsingHeader(\"Animation Debugger\")");
-        //CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(ecs.getLocalPlayer());
-        //ui32 numActive = 0;
-        //for (int i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        //    AnimTrack& track = playerModel.mAnimState->mTracks[i];
-        //    const ozz::animation::Animation* anim = playerModel.mModel->mAnimMachine->mAnimsArray[i];
-        //    if (anim) {
-        //        bool isActive = track.mFlags.isBitSet(AnimTrackFlags::IS_ACTIVE);
-        //        if (ImGui::Checkbox((nString("Is Active ") + std::to_string(i)).c_str(), &isActive)) {
-        //            if (isActive) {
-        //                track.mFlags.setBit(AnimTrackFlags::IS_ACTIVE);
-        //            }
-        //            else {
-        //                track.mFlags.clearBit(AnimTrackFlags::IS_ACTIVE);
-        //            }
-        //        }
-        //        if (track.isActive()) {
-        //            ++numActive;
-        //        }
-        //        if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeightScale, 0.0f, 1.0f)) {
-        //            // Debug update the context
-        //            playerModel.setAnimTrackWeight(AnimMachineState(i), track.mWeight);
-        //        }
-        //        ImGui::SliderFloat((nString("Time ") + std::to_string(i)).c_str(), &track.mTime, 0.0f, track.mDuration);
-        //        f32 fadeWeight = (f32)track.mWeight / MAX_ANIM_FADE_WEIGHT;
-        //        ImGui::SliderFloat((nString("Weight ") + std::to_string(i)).c_str(), &fadeWeight, 0.0f, 1.0f);
-        //        ImGui::Separator();
-        //    }
-        //}
+        entt::entity localPlayer = ecs.getLocalPlayerThreadSafe();
+        if (localPlayer != entt::null) {
+            CharacterRenderData* renderData = RenderContext::getInstance().getWorldRenderer().getCharacterRenderer().tryGetCharacterRenderData(localPlayer);
+            if (renderData) {
+                CharacterAnimState& animState = renderData->mAnimState;
+
+                // TODO: NOT THREAD SAFE! WILL CRASH!
+                CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(localPlayer);
+                const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(playerModel.modelId);
+                ui32 numActive = 0;
+                for (int i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
+                    AnimTrack& track = animState.mTracks[i];
+                    const ozz::animation::Animation* anim = modelDef.mAnimMachine->mAnimsArray[i];
+                    if (anim) {
+                        bool isActive = track.mFlags.isBitSet(AnimTrackFlags::IS_ACTIVE);
+                        if (ImGui::Checkbox((nString("Is Active ") + std::to_string(i)).c_str(), &isActive)) {
+                            if (isActive) {
+                                track.mFlags.setBit(AnimTrackFlags::IS_ACTIVE);
+                            }
+                            else {
+                                track.mFlags.clearBit(AnimTrackFlags::IS_ACTIVE);
+                            }
+                        }
+                        if (track.isActive()) {
+                            ++numActive;
+                        }
+                        if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeightScale, 0.0f, 1.0f)) {
+                            // Debug update the context
+                            animState.setAnimTrackWeight(AnimMachineState(i), track.mWeight);
+                        }
+                        ImGui::SliderFloat((nString("Time ") + std::to_string(i)).c_str(), &track.mTime, 0.0f, track.mDuration);
+                        f32 fadeWeight = (f32)track.mWeight / MAX_ANIM_FADE_WEIGHT;
+                        ImGui::SliderFloat((nString("Weight ") + std::to_string(i)).c_str(), &fadeWeight, 0.0f, 1.0f);
+                        ImGui::Separator();
+                    }
+                }
+            }
+        }
         ImGui::Separator();
         /*ImGui::Text((nString("Total Active Anims: ") + std::to_string(numActive)).c_str());
         ImGui::SliderFloat((nString("Footstep alpha ")).c_str(), &playerModel.mFootstepAlpha, 0.0f, 1.0f);*/

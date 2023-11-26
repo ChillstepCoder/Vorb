@@ -55,9 +55,9 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
     const bool onGround = physCmp.mFlags.isBitSet(PhysicsComponentFlag::IS_ON_GROUND);
 
     const btVector3& currentLinearVelocity = rigidBody->getLinearVelocity();
-    if (controlCmp.mDesiredMode == CharacterLocomotionMode::BEGIN_JUMP && onGround) {
-        controlCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
-        controlCmp.mMode = CharacterLocomotionMode::JUMPING;
+    if (controlCmp.mDesiredLocomotionMode == CharacterLocomotionMode::BEGIN_JUMP && onGround) {
+        controlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::JUMPING;
+        controlCmp.mLocomotionMode = CharacterLocomotionMode::JUMPING;
         // Immediately adjust linear velocity to account the jump, this will update currentLinearVelocity
         btVector3 jumpVelocity = btVector3(currentLinearVelocity.x(), currentLinearVelocity.y(), JUMP_VELOCITY);
         rigidBody->setLinearVelocity(jumpVelocity);
@@ -65,26 +65,26 @@ inline void updateComponent(CharacterControlComponent& controlCmp, PhysicsCompon
     else if (controlCmp.isInAirState()) {
         if (onGround) {
             // Transition back to grounded
-            controlCmp.mMode = CharacterLocomotionMode::LANDING;
+            controlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::LANDING;
             //controlCmp.mLandingTimer.start();
         }
-        else if (controlCmp.mMode == CharacterLocomotionMode::JUMPING) {
+        else if (controlCmp.mLocomotionMode == CharacterLocomotionMode::JUMPING) {
             if (physCmp.mRigidBody->getLinearVelocity().getZ() <= 0.0f) {
-                controlCmp.mMode = CharacterLocomotionMode::FALLING;
+                controlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::FALLING;
             }
         }
     }
 
-    if (controlCmp.mMode != controlCmp.mDesiredMode) {
-        if (controlCmp.mMode == CharacterLocomotionMode::LANDING) {
+    if (controlCmp.mLocomotionMode != controlCmp.mDesiredLocomotionMode) {
+        if (controlCmp.mLocomotionMode == CharacterLocomotionMode::LANDING) {
             // TODO: HMM IM NOT SURE ABOUT THISSSSS
            // constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
            // if (controlCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
-                controlCmp.mMode = controlCmp.mDesiredMode;
+                controlCmp.mLocomotionMode = controlCmp.mDesiredLocomotionMode;
            // }
         }
         else {
-            controlCmp.mMode = controlCmp.mDesiredMode;
+            controlCmp.mLocomotionMode = controlCmp.mDesiredLocomotionMode;
         }
     }
 

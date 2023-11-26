@@ -56,17 +56,17 @@ struct CharacterControlComponent {
     f32v2 mMoveDirection = f32v2(0.0f);
     f32 mControllerAngle = 0.0f;
     f32 mSpeedRun = 4.167f; // ~15 kmph // TODO: AttributesComponent
-    CharacterLocomotionMode mMode = CharacterLocomotionMode::IDLE;
-    CharacterLocomotionMode mDesiredMode = CharacterLocomotionMode::IDLE;
+    CharacterLocomotionMode mLocomotionMode = CharacterLocomotionMode::IDLE;
+    CharacterLocomotionMode mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
     BitFlags<CharacterControlComponentFlags> mFlags = BitFlags<CharacterControlComponentFlags>(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT);
 
     f32v2 getControllerDir() const { return f32v2(cos(mControllerAngle), sin(mControllerAngle)); }
 
     // TODO: Mask
-    bool isInAirState() const { return mMode == CharacterLocomotionMode::BEGIN_JUMP || mMode == CharacterLocomotionMode::JUMPING || mMode == CharacterLocomotionMode::FALLING; }
+    bool isInAirState() const { return mLocomotionMode == CharacterLocomotionMode::BEGIN_JUMP || mLocomotionMode == CharacterLocomotionMode::JUMPING || mLocomotionMode == CharacterLocomotionMode::FALLING; }
 
-    f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
-    f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mMode)]; }
+    f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mLocomotionMode)]; }
+    f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mLocomotionMode)]; }
 };
 static_assert(sizeof(CharacterControlComponent) == 20, "Keep small");
 

@@ -35,12 +35,12 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - *(f32v2*)&pos;
     const float distance2 = glm::length2(offset);
     if (distance2 <= SQ(MIN_DISTANCE)) {
-		motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
+		motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
         return true;
     }
 
 	// TODO: Allow variable pathing urgency
-    motionCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
+    motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::SPRINT;
 
 	motionCmp.mMoveDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 	return false;
@@ -90,7 +90,7 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
         const f32 baseZ = tileHandle.getTile().getGroundZOffset();
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
             // Climb
-			motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
+			motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::JUMPING;
         }
 	}
 
@@ -116,7 +116,7 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
 
 	motionCmp.mMoveDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
     // TODO: Allow variable pathing urgency
-    motionCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
+    motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::SPRINT;
 	    
 	// Steer around obstacles and corners
 	// Raycast forward to find a collision intersect
@@ -218,7 +218,7 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
 
 void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success) {
 	// Target reached
-	motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
+	motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	motionCmp.mMoveDirection = f32v2(0.0f);
     if (success) {
 		if (!navCmp.mTargetHandle.isValid()) {
@@ -451,7 +451,7 @@ void NavigationComponent::requestCoarsePathToHarvestable(const f32v3& start, Til
 }
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
-    motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
+    motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	mStatus = NavigationStatus::IN_PROGRESS;
 	mTargetHandle.reset();
 	mFinePath.reset();

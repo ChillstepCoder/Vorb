@@ -3,6 +3,8 @@
 
 #include "ecs/component/FishingComponent.h"
 
+#include <mutex>
+
 class World;
 
 class IEntityComponentSystem {
@@ -19,6 +21,7 @@ public:
     virtual void destroyEntity(entt::entity entity) = 0;
 
     entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mPlayerEntity; }
+    entt::entity getLocalPlayerThreadSafe() const;
     void setLocalPlayer(entt::entity playerEntity);
     f32v3 getLocalPlayerPosition();
 
@@ -39,6 +42,6 @@ public:
     entt::registry mRegistry;
 
 protected:
-
+    mutable std::mutex mPlayerEntityMutex;
     entt::entity mPlayerEntity = entt::null;
 };

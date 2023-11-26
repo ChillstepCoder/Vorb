@@ -49,6 +49,11 @@ void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
 	mCharacterControlSystem.update(mRegistry);
 }
 
+entt::entity IEntityComponentSystem::getLocalPlayerThreadSafe() const {
+	std::lock_guard lock(mPlayerEntityMutex);
+    return mPlayerEntity;
+}
+
 void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
 {
     ASSERT_GAME_THREAD();
@@ -56,6 +61,8 @@ void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
 		mRegistry.remove<PlayerControlComponent>(mPlayerEntity);
 	}
     mRegistry.emplace<PlayerControlComponent>(playerEntity);
+
+	std::lock_guard lock(mPlayerEntityMutex);
     mPlayerEntity = playerEntity;
 }
 

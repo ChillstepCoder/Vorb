@@ -82,16 +82,16 @@ void PlayerControlSystem::updateComponent(World& world, entt::entity entity, Pla
     // Inputs for states, but only while we are on ground
     if (!characterControlCmp.isInAirState()) {
         if (inputs.jump) {
-            characterControlCmp.mDesiredMode = CharacterLocomotionMode::BEGIN_JUMP;
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::BEGIN_JUMP;
         }
         else if (inputs.sprint) {
-            characterControlCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::SPRINT;
         }
         else if (inputs.walk) {
-            characterControlCmp.mDesiredMode = CharacterLocomotionMode::WALK;
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::WALK;
         }
         else {
-            characterControlCmp.mDesiredMode = CharacterLocomotionMode::RUN;
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::RUN;
         }
 
         // Fishing
@@ -123,8 +123,8 @@ void PlayerControlSystem::updateComponent(World& world, entt::entity entity, Pla
         // Remove any navigation component if we are applying movement input
         registry.remove<NavigationComponent>(entity);
 	}
-	else if (!characterControlCmp.isInAirState() && characterControlCmp.mDesiredMode != CharacterLocomotionMode::BEGIN_JUMP) {
-        characterControlCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
+	else if (!characterControlCmp.isInAirState() && characterControlCmp.mDesiredLocomotionMode != CharacterLocomotionMode::BEGIN_JUMP) {
+        characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	}
 
 }

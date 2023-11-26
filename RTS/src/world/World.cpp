@@ -390,7 +390,7 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
             PositionComponent& posCmp = view.get<PositionComponent>(entity);
             CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
             if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) {
-                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, controlCmp.mControllerAngle, controlCmp.mMode });
+                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, controlCmp.mControllerAngle, controlCmp.mLocomotionMode });
             }
         };
     }

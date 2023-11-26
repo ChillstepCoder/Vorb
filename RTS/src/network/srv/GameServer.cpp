@@ -249,7 +249,7 @@ void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerSt
         physCmp.setTransform(message->mPosition, 0.0f);
         physCmp.setVelocity(message->mVelocity);
         controlCmp.mControllerAngle = message->mControlAngle;
-        controlCmp.mDesiredMode = (CharacterLocomotionMode)message->mDesiredLocomotionMode;
+        controlCmp.mDesiredLocomotionMode = (CharacterLocomotionMode)message->mDesiredLocomotionMode;
     }
 }
 
@@ -309,7 +309,7 @@ void GameServer::replicateEntities() {
         for (int clientIndex : mConnectedClients) {
             if (repCmp.shouldReplicateTo(clientIndex)) {
                 //SrvMessage::sendEntityTransformMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getRotation());
-                SrvMessage::sendCharacterStateMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngle, e_cast(controlCmp.mDesiredMode));
+                SrvMessage::sendCharacterStateMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngle, e_cast(controlCmp.mDesiredLocomotionMode));
             }
         }
     }
