@@ -16,7 +16,7 @@ struct BiomeVertex {
         return distanceFromRoot == 0;
     }
 
-    ui8 biomeID = UINT8_MAX;
+    ui8 biomeUniqueId = UINT8_MAX;
     BitFlags<BiomeFlags> biomeFlags;
     ui16 distanceFromRoot = 0;
     ui32 rootVertexIndex = 0;

@@ -70,7 +70,7 @@ void main() {
     float spawnCursorIntensity = max(1.0 - distanceFromSpawn * 300.0, 0.0);
     spawnCursorIntensity = pow(spawnCursorIntensity, 0.6);
     spawnCursorIntensity = smoothstep(0.0, 1.0, spawnCursorIntensity);
-    fColor.rgb = mix(fColor.rgb, vec3(1.0, 0.0, 0.0), spawnCursorIntensity);
+    fColor.rgb = mix(fColor.rgb, mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), 1.0 - spawnCursorIntensity), spawnCursorIntensity);
 }
 
 

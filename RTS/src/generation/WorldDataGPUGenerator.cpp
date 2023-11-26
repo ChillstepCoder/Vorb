@@ -245,14 +245,14 @@ void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneratio
                 // Set biome data
                 constexpr i32 BIOME_VERT_WIDTH_PER_PATCH = HEIGHTMAP_VERT_WIDTH_PER_PATCH / BIOME_VERTEX_SPACING_DIFF;
                 {
-                    const i32v2 biomeRootXY = terrainRootXY / BIOME_VERT_WIDTH_PER_PATCH;
+                    const i32v2 biomeRootXY = (terrainRootXY * HEIGHTMAP_QUAD_WIDTH_PER_PATCH) / BIOME_VERTEX_SPACING_DIFF;
                     for (i32 y = 0; y < BIOME_VERT_WIDTH_PER_PATCH; ++y) {
                         const i32 yPos = biomeRootXY.y + y;
                         for (i32 x = 0; x < BIOME_VERT_WIDTH_PER_PATCH; ++x) {
                             BiomeVertex newVertex;
                             const ui32 index = yPos * mBiomeGrid->getWidthVertices() + biomeRootXY.x + x;
                             BiomeVertex& vertex = mBiomeGrid->mGrid[index];
-                            vertex.biomeID = mMappedBiomes[index];
+                            vertex.biomeUniqueId = mMappedBiomes[index];
                         }
                     }
                 }

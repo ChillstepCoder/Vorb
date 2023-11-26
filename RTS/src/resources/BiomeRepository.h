@@ -15,6 +15,7 @@ public:
     StrToken getAssetExtension() const override { return CStrToken("biome"); }
     const char* const getAssetTypeDisplayName() const override { return "Biome"; }
 
+    const BiomeDef& getBiomeFromUniqueID(ui32 uniqueId) { return getLoadedOrUnloadedAsset(mUniqueIDMap[uniqueId]); }
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;

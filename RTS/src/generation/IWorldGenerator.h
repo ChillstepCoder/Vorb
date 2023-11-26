@@ -14,7 +14,6 @@ public:
     ~IWorldGenerator();
 
     void generateChunk(Chunk& chunk);
-    virtual f32 getTerrainHeightAtPos(const f32v2& worldPos);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }
     World& getWorld() const { return mWorld; }

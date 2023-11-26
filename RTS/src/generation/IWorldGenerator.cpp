@@ -134,6 +134,7 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();
+    IHeightmapGrid& heightGrid = chunk.getWorld().getHeightmapGrid();
 
     // Allocate tiles if needed
     chunk.mTileContainer->allocateData();
@@ -144,7 +145,7 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = chunk.getWorld().getHeightmapGrid().computeCenterHeightAtTile<true>(chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
+        centerHeights[i] = heightGrid.computeCenterHeightAtTile<true>(chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
     }
 
     // Large objects
@@ -202,37 +203,4 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
     // TODO: uhhhh?
     // TODO: use heightData.bounding sphere?
     chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
-}
-
-f32 IWorldGenerator::getTerrainHeightAtPos(const f32v2& worldPos) {
-    // Base height
-    f64 height = mGenerationData.mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-
-    f32v2 offsetToCenter(
-        worldPos.x - mWorldCenter.x,
-        worldPos.y - mWorldCenter.y
-    );
-
-    //  TODO: Precompute and interpolate, can cubic interpolate and others
-    f64 distanceFromCenter2 = glm::length2(offsetToCenter);
-
-    // Preturb the outline via noise
-    distanceFromCenter2 += mGenerationData.mContinentOutlineScale * mGenerationData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
-
-    // Outline check
-    if (distanceFromCenter2 > mGenerationData.mContinentRadiusSq) {
-        // Ocean
-        height -= (distanceFromCenter2 - mGenerationData.mContinentRadiusSq) * 0.0000001;
-    }
-    else {
-        // Continent internals
-        f64 lerp = (mGenerationData.mContinentRadiusSq - distanceFromCenter2) * 0.00000001;
-        // Mountains
-        f64 mountainDist = mGenerationData.mMountainsDistNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-        if (mountainDist > 0.0) {
-            f64 mountain = mGenerationData.mMountainsNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-            height += lerp * mountain * glm::min(mountainDist, 1.0);
-        }
-    }
-    return glm::clamp((f32)height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
 }

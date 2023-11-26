@@ -18,7 +18,7 @@ const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 position) const {
         return nullptr;
     }
 
-    ui8 biomeId = mGrid[mSpatialGrid.getIDfromGridXY(blVertex)].biomeID;
-    if (biomeId == INVALID_BIOME_ID) return nullptr;
-    return &BiomeRepository::get().getLoadedOrUnloadedAsset(biomeId);
+    const ui8 uniqueId = mGrid[mSpatialGrid.getIDfromGridXY(blVertex)].biomeUniqueId;
+    if (uniqueId == INVALID_BIOME_ID) return nullptr;
+    return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
 }
