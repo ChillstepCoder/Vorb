@@ -59,12 +59,14 @@ Tile IWorldGenerator::generateTilePlains(const f32v2& worldPos, f32 height, Tile
     static TileID bushMed = tileRepo.getTileID(CStrToken("bush_med"));
     static TileID bush2 = tileRepo.getTileID(CStrToken("bush_g"));
 
+    generateTileGrass(worldPos, height, grass);
+
     constexpr f32 MAX_TREE_HEIGHT = 100.0f;
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     if (height < MAX_TREE_HEIGHT) {
         f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.01f, 1.0f);
         f32 treeNoise = mGenerationData.mForestNoise.compute(worldPos.x, worldPos.y);
-        constexpr f32 TREE_DENSITY = 0.01f;
+        constexpr f32 TREE_DENSITY = 0.001f;
         constexpr f32 BUSH_DENSITY = 0.015f;
         if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
             if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.42f) {
@@ -91,6 +93,7 @@ Tile IWorldGenerator::generateTilePlains(const f32v2& worldPos, f32 height, Tile
 }
 
 Tile IWorldGenerator::generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+    generateTileGrass(worldPos, height, grass);
     return Tile();
 }
 
@@ -102,12 +105,14 @@ Tile IWorldGenerator::generateTileForests(const f32v2& worldPos, f32 height, Til
     static TileID bushMed = tileRepo.getTileID(CStrToken("bush_med"));
     static TileID bush2 = tileRepo.getTileID(CStrToken("bush_g"));
 
+    generateTileGrass(worldPos, height, grass);
+
     constexpr f32 MAX_TREE_HEIGHT = 100.0f;
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     if (height < MAX_TREE_HEIGHT) {
         f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.01f, 1.0f);
-        constexpr f32 TREE_DENSITY = 0.1f;
-        constexpr f32 BUSH_DENSITY = 0.015f;
+        constexpr f32 TREE_DENSITY = 0.05f;
+        constexpr f32 BUSH_DENSITY = 0.013f;
         if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY * fadeMult) {
             if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.42f) {
                 tile.mainLayer = baseTree;
@@ -216,7 +221,7 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
 void IWorldGenerator::generateTileGrass(const f32v2& worldPos, f32 height, TileGrass* grass) {
     static constexpr TileGrassID defaultGrass = 0; // TODO: DIFFERENT
 
-    constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
+    constexpr f32 MAX_GRASS_HEIGHT = 45.0f;
     if (height < MAX_GRASS_HEIGHT) {
         //f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
 

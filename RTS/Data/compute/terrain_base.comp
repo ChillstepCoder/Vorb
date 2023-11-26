@@ -9,7 +9,7 @@ const int BIOME_FOREST = 2;
 const int BIOME_HOTSPRINGS = 3;
 
 const float MOUNTAIN_BLEND = 0.3;
-const float SEA_BLEND_TO_BIOME = 0.3;
+const float SEA_BLEND_TO_BIOME = 0.1;
 const float SEA_BLEND_TO_MOUNTAINS = 0.15;
 const float PLAINS_PRIORITY = 0.1;
 
@@ -90,7 +90,7 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
     // Mountains take things over
     if (mountainDist < MOUNTAIN_BLEND) {
         // Plains
-        float plainsHeight = standardNoise(posInputSeeded, 6, 0.001, 0.65, vec2(0, 0), 15.0, 0.5);
+        float plainsHeight = standardNoise(posInputSeeded, 6, 0.001, 0.65, vec2(0, 0), 30.0, 0.35);
         float nonMountainWeight = ((MOUNTAIN_BLEND - mountainDist) / MOUNTAIN_BLEND);
         nonMountainWeight = min(nonMountainWeight, 1.0);
         height += plainsHeight * nonMountainWeight * seaHeightMult;
