@@ -7,6 +7,9 @@
 
 #include "rendering/MaterialShaderRepository.h"
 
+
+constexpr int BIOME_VERTEX_SPACING_DIFF = BIOME_VERTEX_STRIDE / HEIGHTMAP_QUAD_SIZE;
+
 // Match the shader
 constexpr int LOCAL_GROUP_SIZE = 16;
 constexpr ui32 ROWS_TO_GENERATE_PER_FRAME = 32; // POWER OF TWO REQUIRED
@@ -196,6 +199,7 @@ void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneratio
     glDeleteSync(generation.sync);
     generation.sync = 0;
 
+
     // One task per patch
     const ui32 genID = sGenerationUID;
     for (int r = 0; r < generation.numRows; ++r) {
@@ -205,11 +209,12 @@ void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneratio
                 if (genID != sGenerationUID) {
                     return;
                 }
-                // Build row
+                // Set height data
                 const HeightmapPatchID patchId = rowIndex * mHeightGrid->getWidthPatches() + x;
                 const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
                 const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-                const i32v2 rootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
+                const ui32 totalWidthTiles = totalWidthVerts * HEIGHTMAP_QUAD_SIZE;
+                const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->mHeightData[patchId];
                 if (!patch.mHeightData) {
                     patch.mHeightData = new HeightmapPatchData(patchId);
@@ -221,20 +226,36 @@ void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneratio
                 aabb.pos.y = rootPos.y;
                 f32 minZ = FLT_MAX;
                 f32 maxZ = -FLT_MAX;
-
-                const i32 rootVert = rootXY.y * totalWidthVerts * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + rootXY.x * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-                for (i32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
-                    const i32 yStrideSource = y * totalWidthVerts;
-                    const i32 yStrideTarget = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-                    for (i32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
-                        const i32 targetVert = yStrideTarget + x;
-                        const i32 sourceVert = rootVert + yStrideSource + x;
-                        patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
+                {
+                    const i32 rootVert = terrainRootXY.y * totalWidthVerts * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + terrainRootXY.x * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
+                    for (i32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
+                        const i32 yStrideSource = y * totalWidthVerts;
+                        const i32 yStrideTarget = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+                        for (i32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
+                            const i32 targetVert = yStrideTarget + x;
+                            const i32 sourceVert = rootVert + yStrideSource + x;
+                            patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
+                        }
                     }
                 }
                 aabb.pos.z = minZ;
                 aabb.dims.z = maxZ - minZ;
                 patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
+
+                // Set biome data
+                constexpr i32 BIOME_VERT_WIDTH_PER_PATCH = HEIGHTMAP_VERT_WIDTH_PER_PATCH / BIOME_VERTEX_SPACING_DIFF;
+                {
+                    const i32v2 biomeRootXY = terrainRootXY / BIOME_VERT_WIDTH_PER_PATCH;
+                    for (i32 y = 0; y < BIOME_VERT_WIDTH_PER_PATCH; ++y) {
+                        const i32 yPos = biomeRootXY.y + y;
+                        for (i32 x = 0; x < BIOME_VERT_WIDTH_PER_PATCH; ++x) {
+                            BiomeVertex newVertex;
+                            const ui32 index = yPos * mBiomeGrid->getWidthVertices() + biomeRootXY.x + x;
+                            BiomeVertex& vertex = mBiomeGrid->mGrid[index];
+                            vertex.biomeID = mMappedBiomes[index];
+                        }
+                    }
+                }
                 mOnPatchFinished(patch.mHeightData->id);
             }, nullptr);
         }

@@ -18,8 +18,8 @@ public:
     i32v2 getGridXYFromID(ui32 id) const;
     ui32 getIDfromGridXY(i32v2 gridXY) const;
 
-    i32 getCellWidth() const { return mCellWidth; }
-    i32 getGridWidthCells() const { return mGridWidthCells; }
+    inline i32 getCellWidth() const { return mCellWidth; }
+    inline i32 getGridWidthCells() const { return mGridWidthCells; }
 private:
     i32 mCellWidth = 0;
     i32 mGridWidthCells = 0;

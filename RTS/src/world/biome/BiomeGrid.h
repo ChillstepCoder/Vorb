@@ -28,6 +28,7 @@ struct BiomeVertex {
 // Host only?
 class BiomeGrid
 {
+    friend class WorldDataGPUGenerator;
 public:
     BiomeGrid(ui32 worldWidthTiles);
     ~BiomeGrid();
@@ -39,6 +40,9 @@ public:
     // template <bool THREAD_SAFE>
     const BiomeDef* getBiomeDefAtPoint(f32v2 position) const;
 private:
+    void setVertex(i32v2 vertexPos, BiomeVertex vertex) {
+        mGrid[vertexPos.y * getWidthVertices() + vertexPos.x] = vertex;
+    }
     std::unique_ptr<BiomeVertex[]> mGrid;
     ui32 mTotalVertices;
     SpatialGrid2D mSpatialGrid;
