@@ -18,3 +18,7 @@ bool SpatialGrid2D::isSentinelID(ui32 id) const {
 i32v2 SpatialGrid2D::getGridXYFromID(ui32 id) const {
     return i32v2(((i32)id % mGridWidthCells), ((i32)id / mGridWidthCells));
 }
+
+ui32 SpatialGrid2D::getIDfromGridXY(i32v2 gridXY) const {
+    return gridXY.y * mGridWidthCells + gridXY.x;
+}

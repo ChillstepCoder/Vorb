@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/SpatialGrid2D.h"
+#include "definitions/BiomeDef.h"
 
 // TODO: BiomeConstants
 constexpr i32 BIOME_VERTEX_STRIDE = 8;
@@ -35,6 +36,8 @@ public:
 
     ui32 getTotalVertices() const { return mTotalVertices; }
     ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
+    // template <bool THREAD_SAFE>
+    const BiomeDef* getBiomeDefAtPoint(f32v2 position) const;
 private:
     std::unique_ptr<BiomeVertex[]> mGrid;
     ui32 mTotalVertices;

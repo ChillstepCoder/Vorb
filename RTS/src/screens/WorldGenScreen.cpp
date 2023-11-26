@@ -197,7 +197,13 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Text("Spawn Position (%.1f, %.1f)", playerSpawn.x, playerSpawn.y);
     if (mGenState == WorldGenScreenState::Done) {
         ImGui::Text("Height: %.1f", mWorldData->heightmapGrid->computeHeightAtPoint<true>(playerSpawn));
-        ImGui::Text("Biome: %s", "UNKNOWN");
+        const BiomeDef* biome = mWorldData->biomeGrid->getBiomeDefAtPoint(playerSpawn);
+        if (biome) {
+            ImGui::Text("Biome: %s", biome->displayName.c_str());
+        }
+        else {
+            ImGui::Text("Biome: OCEAN");
+        }
     }
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
     ImGui::Checkbox("Show Height", &mShowHeight);

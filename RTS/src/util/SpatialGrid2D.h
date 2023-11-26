@@ -16,6 +16,7 @@ public:
     bool isIdValid(ui32 id) const { return id < SQ(mGridWidthCells); }
     bool isSentinelID(ui32 id) const;
     i32v2 getGridXYFromID(ui32 id) const;
+    ui32 getIDfromGridXY(i32v2 gridXY) const;
 
     i32 getCellWidth() const { return mCellWidth; }
     i32 getGridWidthCells() const { return mGridWidthCells; }

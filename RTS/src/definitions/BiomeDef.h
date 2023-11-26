@@ -8,11 +8,13 @@ enum class BIOME_IDS {
     HOTSPRINGS = 3,
 };
 
+const ui8 INVALID_BIOME_ID = UINT8_MAX;
+
 class BiomeDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(BiomeDef);
 
-    ui32 uniqueId = UINT32_MAX;
+    ui8 uniqueId = UINT8_MAX;
     f32 priority = 0.0f;
     nString displayName = "UNKNOWN";
 };
