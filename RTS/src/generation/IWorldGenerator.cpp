@@ -33,13 +33,13 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
     if (biomeDef) {
 
         switch (biomeDef->uniqueId) {
-            case BiomeUniqueID::PLAINS:
+            case BiomeUniqueID::Plains:
                 return generateTilePlains(worldPos, height, grass, biomeDef);
-            case BiomeUniqueID::MOUNTAINS:
+            case BiomeUniqueID::Mountains:
                 return generateTileMountains(worldPos, height, grass, biomeDef);
-            case BiomeUniqueID::FOREST:
+            case BiomeUniqueID::Forest:
                 return generateTileForests(worldPos, height, grass, biomeDef);
-            case BiomeUniqueID::HOTSPRINGS:
+            case BiomeUniqueID::Hotsprings:
                 return generateTileHotsprings(worldPos, height, grass, biomeDef);
             default:
                 break;
