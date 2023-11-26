@@ -14,16 +14,16 @@ void BiomeRepository::onRegisteredAsset(AssetID id) {
 
     BiomeDef& def = *mAssets[id];
     YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
-    if (def.uniqueId == UINT32_MAX) {
+    if (e_cast(def.uniqueId) == UINT32_MAX) {
         panic("Biome {} has no id", mAssetRegistry[id].mFilePath.getString());
     }
-    if (def.uniqueId >= mUniqueIDMap.size()) {
-        mUniqueIDMap.resize(def.uniqueId + 1, UINT32_MAX);
+    if (e_cast(def.uniqueId) >= mUniqueIDMap.size()) {
+        mUniqueIDMap.resize(e_cast(def.uniqueId) + 1, UINT32_MAX);
     }
-    if (mUniqueIDMap[def.uniqueId] != UINT32_MAX) {
-        panic("Biome {} has duplicate id {}", mAssetRegistry[id].mFilePath.getString(), def.uniqueId);
+    if (mUniqueIDMap[e_cast(def.uniqueId)] != UINT32_MAX) {
+        panic("Biome {} has duplicate id {}", mAssetRegistry[id].mFilePath.getString(), e_cast(def.uniqueId));
     }
-    mUniqueIDMap[def.uniqueId] = id;
+    mUniqueIDMap[e_cast(def.uniqueId)] = id;
     mLoadedAssets[id]->store(true);
 }
 
