@@ -930,6 +930,9 @@
     <ClCompile Include="src\world\biome\BiomeGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\character\CharacterAnimator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2271,6 +2274,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\biome\BiomeGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\character\CharacterAnimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

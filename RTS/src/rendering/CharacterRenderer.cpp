@@ -18,6 +18,8 @@
 #include "resources/AnimationRepository.h"
 #include "resources/ResourceManager.h"
 
+#include "rendering/character/CharacterAnimator.h"
+
 #include "options/DebugOptions.h"
 
 #include "math/Random.h"
@@ -54,6 +56,8 @@ static_assert(NUM_ANIM_STATE_TRACKS == 14u, "Update any defaults");
 CharacterRenderer::CharacterRenderer() :
     mShaderHandle(MaterialShaderRepository::get().getAssetHandle(CStrToken("character"))) {
     mEntityCharacterModels.reserve(256);
+
+    mCharacterAnimator = std::make_unique<CharacterAnimator>();
 }
 
 CharacterRenderer::~CharacterRenderer() {
@@ -84,11 +88,12 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
     assert(it != mEntityCharacterModels.end());
     if (it != mEntityCharacterModels.end()) {
 
-        if (!it->second->mIsInitialized) {
+        if (!it->second->mIsInitialized) [[unlikely]] {
             if (!tryInitializeCharacterAnimState(entityId)) {
                 LOG_WARN("Tried to animate {} with animation {} but asset load was still pending", (ui32)entityId, animationId);
                 return;
             }
+            it->second->mIsInitialized = true;
         }
 
         // TODO: Allow lazy load anim? hmmm prob not?
@@ -366,10 +371,11 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
         auto&& it = mEntityCharacterModels.find(character.mEntityID);
         if (it != mEntityCharacterModels.end()) {
 
-            if (!it->second->mIsInitialized) {
+            if (!it->second->mIsInitialized) [[unlikely]] {
                 if (!tryInitializeCharacterAnimState(character.mEntityID)) {
                     continue;
                 }
+                it->second->mIsInitialized = true;
             }
 
             CharacterAnimState& animState = it->second->mAnimState;

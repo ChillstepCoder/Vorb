@@ -6,6 +6,7 @@
 
 class MaterialShaderDef;
 class Camera3D;
+class CharacterAnimator;
 struct CharacterRenderState;
 
 class CharacterRenderData {
@@ -37,6 +38,7 @@ private:
     AssetHandlePtr<MaterialShaderDef> mShaderHandle;
     std::unordered_map<entt::entity, std::unique_ptr<CharacterRenderData>> mEntityCharacterModels;
 
+    std::unique_ptr<CharacterAnimator> mCharacterAnimator;
 };
 
 //  TODO: This is temp af
