@@ -54,6 +54,7 @@ void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
         const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
         f32 currentFade = (f32)mWeight / MAX_ANIM_FADE_WEIGHT;
         currentFade += fadeAmount;
+        LOG_ERROR("Fade in {} {} {} {}", currentFade, mWeight, fadeAmount, mTime);
         if (currentFade >= 1.0f) {
             mWeight = MAX_ANIM_FADE_WEIGHT;
             mFlags.clearBit(AnimTrackFlags::IS_FADING_IN);
@@ -66,6 +67,7 @@ void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
         const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
         f32 currentFade = (f32)mWeight / MAX_ANIM_FADE_WEIGHT;
         currentFade -= fadeAmount;
+        LOG_CRITICAL("Fade out {} {} {} {}", currentFade, mWeight, fadeAmount, mTime);
         if (currentFade <= 0.0f) {
             mWeight = 0;
             mFlags.clearMaskBits(e_cast(AnimTrackFlags::IS_FADING_OUT) | e_cast(AnimTrackFlags::IS_ACTIVE));

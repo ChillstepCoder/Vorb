@@ -9,7 +9,7 @@
 struct RigDefFileData {
     std::vector<StrToken> mAnimationNames;
     StrToken mSkeletonFileName;
-    StrToken mUpperRootJointName;
+    nString mUpperRootJointName;
 };
 SERIALIZABLE_SIMPLE(RigDefFileData,
     make_field(o.mAnimationNames, "anims"sv),

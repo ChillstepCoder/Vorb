@@ -63,16 +63,16 @@ AssetLoadFunc RigRepository::getAssetLoadFunc() {
         // Set upper body weight mask
         def.mUpperBodyJointWeights.resize(def.mSkeleton.num_soa_joints());
         def.mLowerBodyJointWeights.resize(def.mSkeleton.num_soa_joints());
-        if (!fileData.mUpperRootJointName.isValid()) {
+        if (fileData.mUpperRootJointName.size()) {
             // Zero out all joints
             for (int i = 0; i < def.mSkeleton.num_soa_joints(); ++i) {
                 def.mUpperBodyJointWeights[i] = ozz::math::simd_float4::zero();
                 def.mLowerBodyJointWeights[i] = ozz::math::simd_float4::one();
             }
             // Find the upper root joint
-            const int upperBodyRootJointIndex = ozz::animation::FindJoint(def.mSkeleton, fileData.mUpperRootJointName.toString().c_str());
+            const int upperBodyRootJointIndex = ozz::animation::FindJoint(def.mSkeleton, fileData.mUpperRootJointName.c_str());
             if (upperBodyRootJointIndex < 0) {
-                panic("Rig upper_root {} is not found in the skeleton {}. Ensure it is a valid strtoken ", fileData.mUpperRootJointName.toString(), filePath.getString());
+                panic("Rig upper_root {} is not found in the skeleton {}. Ensure it is a valid strtoken ", fileData.mUpperRootJointName.c_str(), filePath.getString());
             }
             // DFS iterate joints from the upper body root and set to 1.0f for upper
             WeightSetupIterator upper_it(&def.mUpperBodyJointWeights, 1.0f);
