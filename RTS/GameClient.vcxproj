@@ -342,6 +342,7 @@
     <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\character\CharacterAnimator.cpp" />
     <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
@@ -710,6 +711,7 @@
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\character\CharacterAnimator.h" />
     <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
