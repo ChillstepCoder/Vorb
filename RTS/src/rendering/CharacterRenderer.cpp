@@ -89,6 +89,15 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
     if (it != mEntityCharacterModels.end()) {
 
         if (!it->second->mIsInitialized) [[unlikely]] {
+            CharacterRenderData& renderData = *mEntityCharacterModels[entityId];
+
+            const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetLoadedAsset();
+            if (!modelDefPtr) {
+                return false;
+            }
+            const ModelDef& modelDef = *modelDefPtr;
+            CharacterAnimState& animState = renderData.mAnimState;
+
             if (!tryInitializeCharacterAnimState(entityId)) {
                 LOG_WARN("Tried to animate {} with animation {} but asset load was still pending", (ui32)entityId, animationId);
                 return;
@@ -364,35 +373,6 @@ CharacterRenderData* CharacterRenderer::tryGetCharacterRenderData(entt::entity e
     auto it = mEntityCharacterModels.find(entityId);
     if (it == mEntityCharacterModels.end()) return nullptr;
     return it->second.get();
-}
-
-bool CharacterRenderer::tryInitializeCharacterAnimState(entt::entity entityId) {
-    CharacterRenderData& renderData = *mEntityCharacterModels[entityId];
-    const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetLoadedAsset();
-    if (!modelDefPtr) {
-        return false;
-    }
-    const ModelDef& modelDef = *modelDefPtr;
-    CharacterAnimState& animState = renderData.mAnimState;
-    animState.mModelID = modelDef.getID();
-    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        AnimTrack& track = animState.mTracks[i];
-        const ozz::animation::Animation* anim = modelDef.mAnimMachine->mAnimsArray[i];
-        if (anim) {
-            track.mDuration = modelDef.mAnimMachine->mAnimsArray[i]->duration();
-        }
-        animState.mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
-        // TODO: Better context allocation
-        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-        track.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
-    }
-    // Init to idle state engaged
-    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
-    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
-    // Init one shot anim track
-    animState.mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-    animState.mCurrentOneShotTrack.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
-    return true;
 }
 
 // Prevent rounding errors, 0.0001 is half a pixel

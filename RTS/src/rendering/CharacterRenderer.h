@@ -33,14 +33,9 @@ public:
 
     CharacterRenderData* tryGetCharacterRenderData(entt::entity entityId);
 private:
-    bool tryInitializeCharacterAnimState(entt::entity entityId);
 
     AssetHandlePtr<MaterialShaderDef> mShaderHandle;
     std::unordered_map<entt::entity, std::unique_ptr<CharacterRenderData>> mEntityCharacterModels;
 
     std::unique_ptr<CharacterAnimator> mCharacterAnimator;
 };
-
-//  TODO: This is temp af
-//extern vg::Texture sShadowTexture;
-

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "CharacterAnimator.h"
+#include "rendering/CharacterModel.h"
 
+#include "definitions/ModelDef.h"
 #include "ozz/base/containers/vector.h"
 #include "ozz/base/span.h"
 #include "ozz/base/maths/simd_math.h"
@@ -254,4 +256,30 @@ void CharacterAnimator::updateAnimationStates(CharacterAnimState& animState, Cha
     }
     static_assert(e_cast(CharacterLocomotionMode::COUNT) == 9, "Update anim mapping");
 
+}
+
+bool CharacterAnimator::tryInitializeCharacterAnimState(CharacterAnimState& animState, const ModelDef* modelDefPtr) {
+    if (!modelDefPtr) {
+        return false;
+    }
+    const ModelDef& modelDef = *modelDefPtr;
+    animState.mModelID = modelDef.getID();
+    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
+        AnimTrack& track = animState.mTracks[i];
+        const ozz::animation::Animation* anim = modelDef.mAnimMachine->mAnimsArray[i];
+        if (anim) {
+            track.mDuration = modelDef.mAnimMachine->mAnimsArray[i]->duration();
+        }
+        animState.mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
+        // TODO: Better context allocation
+        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+        track.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
+    }
+    // Init to idle state engaged
+    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
+    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
+    // Init one shot anim track
+    animState.mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+    animState.mCurrentOneShotTrack.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
+    return true;
 }
