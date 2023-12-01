@@ -48,19 +48,6 @@
 
 std::unique_ptr<World> sGameWorld;
 
-// TODO: Instead should the character renderer listen to these events by hooking
-// int OnWorldBegin/End?
-void onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
-    ModelID modelId = registry.get<CharacterModelComponent>(entity).modelId;
-    LOG_DEBUG("Added model ID {} for entity {}", modelId, e_cast(entity));
-    RenderThreadTasks::getInstance().addCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
-}
-
-void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
-    LOG_DEBUG("Destroying model for entity {}", e_cast(entity));
-    RenderThreadTasks::getInstance().removeCharacterModel(entity);
-}
-
 World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType, HostWorldData* hostWorldData) : mNetMode(netMode) {
     constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
 
@@ -136,8 +123,6 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
 
 World::~World() {
     if (mDidBegin) {
-        getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
-        getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
         dispatchOnWorldEnd(*this);
     }
 }
@@ -155,16 +140,14 @@ void World::onWorldBegin(const f32v2& loadCenter) {
     // Register for rendering
     GameRenderStateManager::getInstance().setActiveWorld(this);
 
-    // When character models are added, we should let the render thread know
-    mEcs->mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
-    mEcs->mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
-    // TODO: Move
+    // Notify everyone
+    dispatchOnWorldBegin(*this);
+
+    // Initialize player last
     if (!isEditorWorld()) {
         mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
     }
 
-    // Notify everyone
-    dispatchOnWorldBegin(*this);
 }
 
 void World::tick(f32 elapsedSec) {

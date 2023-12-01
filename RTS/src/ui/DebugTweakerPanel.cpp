@@ -25,6 +25,7 @@
 #include "options/DebugOptions.h"
 
 #include "definitions/ModelDef.h"
+#include "definitions/AnimMachineDef.h"
 #include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/ValueTweaker.h"
@@ -458,9 +459,9 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::PushID(++ID);
         entt::entity localPlayer = ecs.getLocalPlayerThreadSafe();
         if (localPlayer != entt::null) {
-            CharacterRenderData* renderData = RenderContext::getInstance().getWorldRenderer().getCharacterRenderer().tryGetCharacterRenderData(localPlayer);
+            CharacterRendererCharacterState* renderData = RenderContext::getInstance().getWorldRenderer().getCharacterRenderer().tryGetCharacterRenderStateForDebug(localPlayer);
             if (renderData) {
-                CharacterAnimState& animState = renderData->mAnimState;
+                CharacterAnimState& animState = renderData->animState;
 
                 // TODO: NOT THREAD SAFE! WILL CRASH!
                 CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(localPlayer);
@@ -484,7 +485,8 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
                         }
                         if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeightScale, 0.0f, 1.0f)) {
                             // Debug update the context
-                            animState.setAnimTrackWeight(AnimMachineState(i), track.mWeight);
+                            RenderContext::getInstance().getCharacterRenderer().getCharacterAnimator().setAnimTrackWeight(animState, AnimMachineState(i), track.mWeight);
+                            
                         }
                         ImGui::SliderFloat((nString("Time ") + std::to_string(i)).c_str(), &track.mTime, 0.0f, track.mDuration);
                         f32 fadeWeight = (f32)track.mWeight / MAX_ANIM_FADE_WEIGHT;

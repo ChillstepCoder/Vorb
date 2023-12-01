@@ -2282,9 +2282,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
-    <None Include="src\rendering\tasks\CharacterModelTask.inl">
-      <Filter>Header Files</Filter>
-    </None>
     <None Include="src\rendering\mesh\VertexType" />
     <None Include="src\rendering\mesh\fbx2raw.inl">
       <Filter>Header Files</Filter>

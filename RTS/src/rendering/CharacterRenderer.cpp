@@ -18,7 +18,8 @@
 #include "resources/AnimationRepository.h"
 #include "resources/ResourceManager.h"
 
-#include "rendering/character/CharacterAnimator.h"
+#include "world/World.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "options/DebugOptions.h"
 
@@ -28,267 +29,77 @@
 
 #include "definitions/RigDef.h"
 #include "ozz/base/containers/vector.h"
-#include "ozz/base/span.h"
 #include "ozz/base/maths/simd_math.h"
-#include "ozz/base/maths/soa_transform.h"
-#include "ozz/animation/runtime/local_to_model_job.h"
-#include "ozz/animation/runtime/sampling_job.h"
-#include "ozz/animation/runtime/blending_job.h"
 
-constexpr ui16 DEFAULT_ANIM_TRACK_FLAGS[NUM_ANIM_STATE_TRACKS] = {
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_LEFT
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_RIGHT
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_FRONT
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_BACK
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_LEFT
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_RIGHT
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_FRONT
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_BACK
-    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// SPRINT_FRONT
-    e_cast(AnimTrackFlags::IS_ACTIVE) | e_cast(AnimTrackFlags::IS_LOOPING),// IDLE
-    e_cast(AnimTrackFlags::IS_LOOPING), // IDLE_COMBAT
-    e_cast(AnimTrackFlags::IS_LOOPING), // FALLING
-    e_cast(AnimTrackFlags::HOLD_END_POSE) | e_cast(AnimTrackFlags::IS_LOOPING),// JUMP
-    0u, // LAND
-};
-static_assert(NUM_ANIM_STATE_TRACKS == 14u, "Update any defaults");
 
 CharacterRenderer::CharacterRenderer() :
     mShaderHandle(MaterialShaderRepository::get().getAssetHandle(CStrToken("character"))) {
-    mEntityCharacterModels.reserve(256);
 
     mCharacterAnimator = std::make_unique<CharacterAnimator>();
 }
 
 CharacterRenderer::~CharacterRenderer() {
+    if (mRegisteredECS) {
+        mRegisteredECS->on_construct<CharacterModelComponent>().disconnect<&CharacterRenderer::onCharacterModelConstruct>(this);
+        mRegisteredECS->on_destroy<CharacterModelComponent>().disconnect<&CharacterRenderer::onCharacterModelDestroy>(this);
+    }
+}
 
+void CharacterRenderer::onWorldBegin(World& world) {
+    ASSERT_GAME_THREAD();
+    mRegisteredECS = &world.getECS().mRegistry;
+    mRegisteredECS->on_construct<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelConstruct>(this);
+    mRegisteredECS->on_destroy<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelDestroy>(this);
+}
+
+void CharacterRenderer::frameBegin() {
+    ASSERT_RENDER_THREAD();
+
+    constexpr ui32 BULK_DEQUEUE_SIZE = 16;
+    CharacterModelUpdateData modelsToUpdate[BULK_DEQUEUE_SIZE];
+
+    if (const size_t count = mModelsToUpdate.try_dequeue_bulk(modelsToUpdate, BULK_DEQUEUE_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            CharacterModelUpdateData& updateData = modelsToUpdate[i];
+            if (updateData.isAdd) {
+                addCharacterModelInternal(updateData.entityId, updateData.modelId);
+            }
+            else {
+                removeCharacterModelInternal(updateData.entityId, updateData.modelId);
+            }
+        }
+    }
 }
 
 void CharacterRenderer::addCharacterModel(entt::entity entityId, AssetID modelId) {
-    assert(mEntityCharacterModels.find(entityId) == mEntityCharacterModels.end());
-    assert(modelId != INVALID_MODEL_ID);
-    std::unique_ptr<CharacterRenderData> renderData = std::make_unique<CharacterRenderData>();
-
-    CharacterAnimState& animState = renderData->mAnimState;
-    renderData->mModelHandle = ModelRepository::get().getAssetHandle(modelId);
-
-    mEntityCharacterModels[entityId] = std::move(renderData);
+    if (IS_RENDER_THREAD()) {
+        addCharacterModelInternal(entityId, modelId);
+    }
+    else {
+        mModelsToUpdate.enqueue({ entityId, modelId, true });
+    }
 }
 
-void CharacterRenderer::removeCharacterModel(entt::entity entityId) {
-    auto&& it = mEntityCharacterModels.find(entityId);
-    assert(it != mEntityCharacterModels.end());
-    it->second.reset();
-    mEntityCharacterModels.erase(it);
+void CharacterRenderer::removeCharacterModel(entt::entity entityId, AssetID modelId) {
+    if (IS_RENDER_THREAD()) {
+        removeCharacterModelInternal(entityId, modelId);
+    }
+    else {
+        mModelsToUpdate.enqueue({ entityId, modelId, false });
+    }
 }
 
 void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID animationId) {
-    auto&& it = mEntityCharacterModels.find(entityId);
-    // TODO: Ensure
-    assert(it != mEntityCharacterModels.end());
-    if (it != mEntityCharacterModels.end()) {
-
-        if (!it->second->mIsInitialized) [[unlikely]] {
-            CharacterRenderData& renderData = *mEntityCharacterModels[entityId];
-
-            const ModelDef* modelDefPtr = renderData.mModelHandle->tryGetLoadedAsset();
-            if (!modelDefPtr) {
-                return false;
-            }
-            const ModelDef& modelDef = *modelDefPtr;
-            CharacterAnimState& animState = renderData.mAnimState;
-
-            if (!tryInitializeCharacterAnimState(entityId)) {
-                LOG_WARN("Tried to animate {} with animation {} but asset load was still pending", (ui32)entityId, animationId);
-                return;
-            }
-            it->second->mIsInitialized = true;
-        }
+    auto&& it = mEntityCharacterRenderData.find(entityId);
+    // TODO: Ensure?
+    assert(it != mEntityCharacterRenderData.end());
+    if (it != mEntityCharacterRenderData.end()) {
 
         // TODO: Allow lazy load anim? hmmm prob not?
         const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
         if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
-        it->second->mAnimState.playOneShotAnimation(&animDef->mAnimation);
+        mCharacterAnimator->playOneShotAnimation(it->second->animState, &animDef->mAnimation);
     }
-}
-
-bool updateAnimation(const MeshSkeletonData& skeletonData, CharacterAnimState& animState, CharacterLocomotionMode locomotionMode, const ModelDef& modelDef, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
-
-    // Speed blend, run/walk/sprint
-    updateAnimationStates(animState, locomotionMode, elapsedSec);
-
-    // Buffer of local transforms as sampled from animation_.
-    // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
-    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_STATE_TRACKS + 1];
-    f32 blendWeights[NUM_ANIM_STATE_TRACKS + 1];
-    ozz::vector<ozz::math::SoaTransform> blendedLocals;
-
-    assert(modelDef.mAnimMachine);
-    assert(modelDef.mRig);
-
-    const AnimMachineDef& machine = *modelDef.mAnimMachine;
-    const RigDef& rig = *modelDef.mRig;
-
-    // Animation and skinning
-
-    // Allocates runtime buffers.
-    // TODO: Cache
-    const int numSoaJoints = rig.mSkeleton.num_soa_joints();
-    blendedLocals.resize(numSoaJoints);
-    const int numJoints = rig.mSkeleton.num_joints();
-    models.resize(numJoints);
-
-    // TODO: cache
-    ui8 num_skinning_matrices = 0;
-    num_skinning_matrices = skeletonData.mNumJoints;
-
-    ui32 numValidTracks = 0;
-    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        AnimTrack& currentTrack = animState.mTracks[i];
-        // If our weightScale made us inactive, make sure to fully disable
-        if (!currentTrack.isActive()) {
-            // Always force fadeout
-            if (currentTrack.mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT)) {
-                currentTrack.mWeight = 0;
-                currentTrack.mFlags.clearBit(AnimTrackFlags::IS_FADING_OUT);
-            }
-            continue;
-        }
-        // Allocate buffers
-        locals[numValidTracks].resize(numSoaJoints);
-        // Sample animation
-        ozz::animation::SamplingJob sampling_job;
-        sampling_job.animation = machine.mAnimsArray[i];
-        sampling_job.context = currentTrack.mContext.get();
-        sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
-        sampling_job.output = make_span(locals[numValidTracks]);
-        blendWeights[numValidTracks] = currentTrack.getTotalWeight();
-        ++numValidTracks;
-        if (!sampling_job.Run()) {
-            pError("Sampling job error");
-            return false;
-        }
-
-        // Increment timers
-        currentTrack.update(elapsedSec, animState.mFootstepAlpha);
-    }
-
-    // One shot animation
-    f32 oneShotWeight = 0.0f;
-    AnimTrack& oneShotTrack = animState.mCurrentOneShotTrack;
-    if (oneShotTrack.isActive()) {
-        oneShotWeight = oneShotTrack.getTotalWeight();
-        // Allocate buffers
-        locals[numValidTracks].resize(numSoaJoints);
-        // Sample animation
-        ozz::animation::SamplingJob sampling_job;
-        sampling_job.animation = animState.mCurrentOneShotAnimation;
-        sampling_job.context = oneShotTrack.mContext.get();
-        sampling_job.ratio = oneShotTrack.mTime / oneShotTrack.mDuration;
-        sampling_job.output = make_span(locals[numValidTracks]);
-        blendWeights[numValidTracks] = oneShotWeight;
-        if (!sampling_job.Run()) {
-            pError("Sampling job error");
-            return false;
-        }
-
-        // Increment timers
-        oneShotTrack.update(elapsedSec, animState.mFootstepAlpha);
-    }
-
-    // Converts from local space to model space matrices.
-    ozz::animation::LocalToModelJob ltm_job;
-    ltm_job.skeleton = &rig.mSkeleton;
-
-    // Blending
-    if (numValidTracks > 1 || oneShotWeight) {
-
-        const f32 inverseOneShotWeightMult = 1.0f - oneShotWeight;
-        int totalLayers = 0;
-        // Prepares blending layers.
-        ozz::animation::BlendingJob::Layer layers[(NUM_ANIM_STATE_TRACKS + 1) * 2]; // Account for splitting layers
-
-        // While one shots are active, blending is more complex as we must split lower and upper body blending
-        if (oneShotWeight) {
-            // Split all layers into upper and lower body portions based on the one shot weight
-            if (numValidTracks > 0) {
-                if (oneShotWeight == 1.0f) {
-                    // If we are at full weight, we have no upper body layers
-                    for (ui32 i = 0; i < numValidTracks; ++i) {
-                        layers[totalLayers].transform = make_span(locals[i]);
-                        layers[totalLayers].weight = blendWeights[i];
-                        layers[totalLayers].joint_weights = make_span(rig.mLowerBodyJointWeights);
-                        ++totalLayers;
-                    }
-                }
-                else {
-                    // Split into two layers for upper and lower portion
-                    const f32 upperBodyWeight = 1.0f - oneShotWeight;
-                    for (ui32 i = 0; i < numValidTracks; ++i) {
-                        // Lower body
-                        layers[totalLayers].transform = make_span(locals[i]);
-                        layers[totalLayers].weight = blendWeights[i];
-                        layers[totalLayers].joint_weights = make_span(rig.mLowerBodyJointWeights);
-                        ++totalLayers;
-
-                        // Upper body
-                        layers[totalLayers].transform = make_span(locals[i]);
-                        layers[totalLayers].weight = blendWeights[i] * upperBodyWeight;
-                        layers[totalLayers].joint_weights = make_span(rig.mUpperBodyJointWeights);
-                        ++totalLayers;
-                    }
-                }
-
-                // The final layer is the one shot layer, flag it upper body only if we are in motion
-                // TODO: Need to fade this in as well to prevent pop?
-                if (locomotionMode != CharacterLocomotionMode::IDLE) {
-                    layers[totalLayers].joint_weights = make_span(rig.mUpperBodyJointWeights);
-                }
-            }
-
-            // Add one shot locals
-            layers[totalLayers].transform = make_span(locals[numValidTracks]);
-            layers[totalLayers].weight = blendWeights[numValidTracks];
-            ++totalLayers;
-        }
-        else {
-            // No one shot, standard, cheap full blending for each anim
-            for (ui32 i = 0; i < numValidTracks; ++i) {
-                layers[totalLayers].transform = make_span(locals[i]);
-                layers[totalLayers].weight = blendWeights[i];
-                ++totalLayers;
-            }
-        }
-
-        // Setups blending job.
-        ozz::animation::BlendingJob blend_job;
-        blend_job.threshold = 0.015f;
-        blend_job.layers = ozz::span{layers, size_t(totalLayers)};
-        blend_job.rest_pose = rig.mSkeleton.joint_rest_poses();
-        blend_job.output = make_span(blendedLocals);
-
-        // Blends.
-        if (!blend_job.Run()) {
-            pError("Blending job error");
-            return false;
-        }
-        ltm_job.input = make_span(blendedLocals);
-    }
-    else {
-        ltm_job.input = make_span(locals[0]);
-    }
-
-    // Run the final job
-    if (numValidTracks) {
-        ltm_job.output = make_span(models);
-        if (!ltm_job.Run()) {
-            pError("Local to model job error");
-            return false;
-        }
-        return true;
-    }
-    return false;
-
 }
 
 void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha) {
@@ -298,30 +109,50 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     const MaterialShaderDef* shaderDef = mShaderHandle->tryGetLoadedAsset();
     if (!shaderDef) return;
 
+    // We will render sorted by model ID, so pair up all render states this frame
+    for (const auto& character : characters) {
+        auto&& it = mEntityCharacterRenderData.find(character.mEntityID);
+        if (it != mEntityCharacterRenderData.end()) {
+            it->second->renderStateThisFrame = const_cast<CharacterRenderState*>(&character);
+        }
+    }
+
     // TODO: UBO
     MaterialRenderer::bindMaterialShaderForRender(*shaderDef);
     VGUniform offsetUniform = shaderDef->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = shaderDef->mProgram.getUniform("unModelTransform");
     VGUniform boneUniform = shaderDef->mProgram.getUniform("unBoneTransforms[0]");
+    for (auto& [modelID, renderData] : mModelRenderData) {
 
-    for (const auto& character : characters) {
-        // Get physics info
-        const f32v3& position = character.mPos;
-        const f32 angle = character.mRotation;
-
-        auto&& it = mEntityCharacterModels.find(character.mEntityID);
-        if (it != mEntityCharacterModels.end()) {
-
-            if (!it->second->mIsInitialized) [[unlikely]] {
-                if (!tryInitializeCharacterAnimState(character.mEntityID)) {
-                    continue;
-                }
-                it->second->mIsInitialized = true;
+        // Lazy initialize
+        if (renderData.needsInitialize) [[unlikely]] {
+            if (!renderData.handle) {
+                renderData.handle = ModelRepository::get().getAssetHandle(modelID);
             }
+            if (const ModelDef* modelDefPtr = renderData.handle->tryGetLoadedAsset()) {
+                renderData.animatorData.rig = modelDefPtr->mRig;
+                renderData.animatorData.machine = modelDefPtr->mAnimMachine;
+                assert(renderData.animatorData.rig);
+                assert(renderData.animatorData.machine);
+                for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
+                    mCharacterAnimator->initializeCharacterAnimState(characterState.animState, *modelDefPtr);
+                }
+                renderData.needsInitialize = false;
+            }
+            else {
+                continue;
+            }
+        }
 
-            CharacterAnimState& animState = it->second->mAnimState;
-            const ModelDef& modelDef = it->second->mModelHandle->getLoadedAsset();
 
+        const ModelDef& modelDef = renderData.handle->getLoadedAsset();
+
+        // Render all characters with this model
+        for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
+            const CharacterRenderState& character = *characterState.renderStateThisFrame;
+
+            const f32v3& position = character.mPos;
+            const f32 angle = character.mRotation;
             // TODO: Optimize
             f32m4 transform(1.0f);
             transform = glm::rotate(transform, DEG_TO_RAD(90.0f) + angle, f32v3(0.0f, 0.0f, 1.0f));
@@ -331,35 +162,23 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             glUniform3fv(offsetUniform, 1, &offset.x);
             glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
-            // Buffer of model space matrices.
-            ozz::vector<ozz::math::Float4x4> models;
-            // Buffer of skinning matrices, result of the joint multiplication of the
-            // inverse bind pose with the model space matrix.
-            ozz::vector<ozz::math::Float4x4> skinningMatrices;
             // Allocates skinning matrices.
             for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
                 const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
                 const MeshSkeletonData& skelData = skeletalMesh.getSkeleton();
-                skinningMatrices.resize(skelData.mNumJoints);
 
-                if (updateAnimation(skelData, animState, character.mLocomotionMode, modelDef, models, elapsedSec)) {
+                if (ozz::vector<ozz::math::Float4x4>* skinningMatrices = mCharacterAnimator->updateAnimation(renderData.animatorData, skelData, characterState.animState, character.mLocomotionMode, elapsedSec)) {
                     // Draw animated
-                    const ozz::math::Float4x4* bindPoses = skelData.mInverseBindPoses.get();
-                    for (size_t i = 0; i < skelData.mNumJoints; ++i) {
-                        skinningMatrices[i] = models[skelData.mJointRemaps[i]] * bindPoses[i];
-                    }
-                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
+                  
+                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&(*skinningMatrices)[0].cols);
 
                     // TODO: Indirect?
                     MeshDrawer::draw(skeletalMesh.mGpuData);
                 }
                 else {
                     // INVALID ANIMATION
-                    // Draw T pose
-                    for (size_t i = 0; i < skelData.mNumJoints; ++i) {
-                        skinningMatrices[i] = ozz::math::Float4x4::identity();
-                    }
-                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
+                    ozz::vector<ozz::math::Float4x4> tmpMatrices(skelData.mNumJoints, ozz::math::Float4x4::identity());
+                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&tmpMatrices[0].cols);
 
                     MeshDrawer::draw(skeletalMesh.mGpuData);
                 }
@@ -368,16 +187,44 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     }
 }
 
-CharacterRenderData* CharacterRenderer::tryGetCharacterRenderData(entt::entity entityId) {
+CharacterRendererCharacterState* CharacterRenderer::tryGetCharacterRenderStateForDebug(entt::entity entityId) {
     ASSERT_RENDER_THREAD();
-    auto it = mEntityCharacterModels.find(entityId);
-    if (it == mEntityCharacterModels.end()) return nullptr;
-    return it->second.get();
+    for (auto& it : mModelRenderData) {
+        auto it2 = it.second.entityCharacterModels.find(entityId);
+        if (it2 != it.second.entityCharacterModels.end()) {
+            return &it2->second;
+        }
+    }
+    return nullptr;
 }
 
-// Prevent rounding errors, 0.0001 is half a pixel
-constexpr f32 UV_EPSILON = 0.0001f;
-constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
+void CharacterRenderer::addCharacterModelInternal(entt::entity entityId, AssetID modelId) {
+    ASSERT_RENDER_THREAD();
+    CharacterModelRendererData& renderData = mModelRenderData[modelId];
+    CharacterRendererCharacterState& newState = renderData.entityCharacterModels.emplace(entityId, CharacterRendererCharacterState()).first->second;
+    if (!renderData.needsInitialize) {
+        const ModelDef& modelDef = renderData.handle->getLoadedAsset();
+        mCharacterAnimator->initializeCharacterAnimState(newState.animState, modelDef);
+    }
+    assert(!mEntityCharacterRenderData.contains(entityId));
+    mEntityCharacterRenderData[entityId] = &newState;
+}
 
-CharacterRenderData::CharacterRenderData() = default;
-CharacterRenderData::~CharacterRenderData() = default;
+void CharacterRenderer::removeCharacterModelInternal(entt::entity entityId, AssetID modelId) {
+    ASSERT_RENDER_THREAD();
+    CharacterModelRendererData& renderData = mModelRenderData[modelId];
+    renderData.entityCharacterModels.erase(entityId);
+    mEntityCharacterRenderData.erase(entityId);
+    // TODO: Deallocate handle if needed
+}
+
+void CharacterRenderer::onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
+    ModelID modelId = registry.get<CharacterModelComponent>(entity).modelId;
+    LOG_DEBUG("Added model ID {} for entity {}", modelId, e_cast(entity));
+    addCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
+}
+
+void CharacterRenderer::onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
+    LOG_DEBUG("Destroying model for entity {}", e_cast(entity));
+    removeCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
+}

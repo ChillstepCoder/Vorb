@@ -23,8 +23,6 @@ public:
     static bool exists() { return sInstance != nullptr; }
 
     // Tasks
-    void addCharacterModel(entt::entity characterEntity, ui32 modelId);
-    void removeCharacterModel(entt::entity characterEntity);
     void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);
     //void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder&& meshBuilder, Mesh* mesh);
     // TODO: Add cancel logic for if we destroy the threadpool so we can free data ptr?

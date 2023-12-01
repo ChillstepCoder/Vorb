@@ -1,5 +1,6 @@
 #pragma once
 
+
 // Forward declare animations
 namespace ozz {
     namespace animation {
@@ -28,7 +29,8 @@ enum class AnimMachineState : ui16 {
     COUNT
 };
 
-const ui32 ANIMATION_MACHINE_ANIMS_COUNT = e_cast(AnimMachineState::COUNT);
+constexpr ui32 NUM_ANIM_STATE_TRACKS = e_cast(AnimMachineState::COUNT);
+constexpr ui32 ANIMATION_MACHINE_ANIMS_COUNT = e_cast(AnimMachineState::COUNT);
 
 constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
     "WALK_LEFT",

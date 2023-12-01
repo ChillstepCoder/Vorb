@@ -1,41 +1,67 @@
 #pragma once
 #include "rendering/CharacterModel.h"
+#include "rendering/character/CharacterAnimator.h"
 
 #include "definitions/ModelDef.h"
 #include "events/SkillEvent.h"
 
 class MaterialShaderDef;
 class Camera3D;
-class CharacterAnimator;
+class World;
 struct CharacterRenderState;
 
-class CharacterRenderData {
-public:
-    CharacterRenderData();
-    ~CharacterRenderData();
-
-    CharacterAnimState mAnimState;
-    // TODO: Not ptr, we can just have AssetHandle and aquire
-    AssetHandlePtr<ModelDef> mModelHandle;
-    bool mIsInitialized = false;
+struct CharacterRendererCharacterState {
+    CharacterAnimState animState;
+    const CharacterRenderState* renderStateThisFrame = nullptr;
 };
+
+typedef std::unordered_map<entt::entity, CharacterRendererCharacterState> EntityCharacterModelMap;
+
+struct CharacterModelRendererData {
+    EntityCharacterModelMap entityCharacterModels;
+    AssetHandlePtr<ModelDef> handle;
+    CharacterAnimatorModelData animatorData;
+    bool needsInitialize = true;
+};
+
+struct CharacterModelUpdateData {
+    entt::entity entityId;
+    ui32 modelId;
+    bool isAdd;
+};
+static_assert(sizeof(CharacterModelUpdateData) == 12);
 
 class CharacterRenderer {
 public:
 	CharacterRenderer();
 	~CharacterRenderer();
 
+    void onWorldBegin(World& world);
+    void frameBegin();
+
     void addCharacterModel(entt::entity entityId, AssetID modelId);
-    void removeCharacterModel(entt::entity entityId);
+    void removeCharacterModel(entt::entity entityId, AssetID modelId);
 
     void playOneShotAnimation(entt::entity entityId, AssetID animationId);
     void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha);
 
-    CharacterRenderData* tryGetCharacterRenderData(entt::entity entityId);
+    CharacterAnimator& getCharacterAnimator() const { return *mCharacterAnimator; }
+
+    CharacterRendererCharacterState* tryGetCharacterRenderStateForDebug(entt::entity entityId);
 private:
+    void addCharacterModelInternal(entt::entity entityId, AssetID modelId);
+    void removeCharacterModelInternal(entt::entity entityId, AssetID modelId);
+
+    void onCharacterModelConstruct(entt::registry& registry, entt::entity entity);
+    void onCharacterModelDestroy(entt::registry& registry, entt::entity entity);
+
+    moodycamel::ConcurrentQueue<CharacterModelUpdateData> mModelsToUpdate;
 
     AssetHandlePtr<MaterialShaderDef> mShaderHandle;
-    std::unordered_map<entt::entity, std::unique_ptr<CharacterRenderData>> mEntityCharacterModels;
+
+    std::map<ModelID, CharacterModelRendererData> mModelRenderData;
+    std::unordered_map<entt::entity, CharacterRendererCharacterState*> mEntityCharacterRenderData;
 
     std::unique_ptr<CharacterAnimator> mCharacterAnimator;
+    entt::registry* mRegisteredECS = nullptr;
 };

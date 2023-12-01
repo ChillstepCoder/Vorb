@@ -11,8 +11,6 @@
 
 #include <boost/pool/singleton_pool.hpp>
 
-#include "tasks/CharacterModelTask.inl"
-
 RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;
 
 RenderThreadTasks::RenderThreadTasks()
@@ -39,29 +37,7 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
     return *sInstance;
 }
 
-void RenderThreadTasks::addCharacterModel(entt::entity characterEntity, ui32 modelId) {
-    ASSERT_GAME_THREAD();
-    CharacterModelTaskData* taskData = new CharacterModelTaskData();
-    taskData->entityId = characterEntity;
-    taskData->modelId = modelId;
-    
-    // TODO: maybe this should be its own queue?
-    mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
-        CharacterModelTaskData* taskData = static_cast<CharacterModelTaskData*>(data);
-        context.getCharacterRenderer().addCharacterModel(taskData->entityId, taskData->modelId);
-        delete taskData;
-    }, taskData));
-}
-
-void RenderThreadTasks::removeCharacterModel(entt::entity characterEntity) {
-    ASSERT_GAME_THREAD();
-    // TODO: maybe this should be its own queue?
-    mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
-        entt::entity entityId = entt::entity(reinterpret_cast<entt::id_type>(data));
-        context.getCharacterRenderer().removeCharacterModel(entityId);
-    }, (void*)characterEntity));
-}
-
+// TODO: Move to characterRenderer?
 void RenderThreadTasks::playOneShotAnimation(entt::entity characterEntity, ui32 animationId) {
     std::pair<ui32, ui32> animationTask{ e_cast(characterEntity), animationId };
     static_assert(sizeof(std::pair<ui32, ui32>) == sizeof(void*));

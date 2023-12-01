@@ -149,6 +149,8 @@ void WorldRenderer::onBeginFrame(const WorldRenderState* renderState, f32v3 play
     mRenderState = renderState;
     mPlayerPos = playerPos;
 
+    mCharacterRenderer->frameBegin();
+
 }
 
 void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec, vg::GBuffer* targetGBuffer) {
@@ -488,6 +490,7 @@ void WorldRenderer::initEventHandlers() {
         mRenderDataManagers.insert(
            std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
        ).first->second.get();
+        mCharacterRenderer->onWorldBegin(world);
     });
     // TODO: We should do this on the render thread somehow
     //IWorld::addOnWorldEndListener(mWorldEventListeners, [this](IWorld& world) {
