@@ -43,7 +43,6 @@ DebugOptions::DebugOptions() :
     mTerrainSquaresColorPeriod(0.187f),
     mTerrainSquaresIntensity(0.0f),
     mTerrainBlendMult(0.037f),
-    mTerrainGrassColorV(0.95),
     mDisableTerrain(false),
     mDebugToggle0(false),
     // Fish

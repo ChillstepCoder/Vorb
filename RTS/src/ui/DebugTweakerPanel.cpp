@@ -159,7 +159,6 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Squares Period", &sDebugOptions.mTerrainSquaresColorPeriod, 0.0f, 1.0f);
         ImGui::SliderFloat("Squares Intensity", &sDebugOptions.mTerrainSquaresIntensity, 0.0f, 1.0f);
         ImGui::SliderFloat("Blend Mult", &sDebugOptions.mTerrainBlendMult, 0.0f, 1.0f);
-        ImGui::SliderFloat("Grass Color V", &sDebugOptions.mTerrainGrassColorV, 0.0f, 1.0f);
         ImGui::Separator();
         ImGui::NewLine();
         ImGui::BeginChild("Terrain Funcs", ImVec2(0.0f, 0.0f));

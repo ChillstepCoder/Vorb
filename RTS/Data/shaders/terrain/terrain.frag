@@ -4,8 +4,8 @@
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
-uniform sampler2D GrassGradients;
-uniform sampler2D TerrainGradients;
+uniform sampler2D PlainsGradients;
+uniform sampler2D MountainGradients;
 uniform sampler2D CellNoise;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
@@ -16,10 +16,12 @@ uniform float unWavyMult = 0.167;
 uniform float unSquaresIntensity = 0.5;
 uniform float unSquaresPeriod = 0.187;
 uniform float unBlendMult = 0.037;
-uniform float unGrassColorV = 0.2;
 
+// Config
 uniform int unDebugLines = 0;
-uniform int unUseNewGradient = 1;
+
+const float DISTANT_COLOR_EXP = 0.6;
+const float DISTANT_COLOR_INTENSITY = 0.75;
 
 in float fHeight;
 in vec3 fPosition;
@@ -85,33 +87,38 @@ void main() {
         discard;
     }
     
-    // Grass color
-    
-    vec2 farStoneUVs = -(fUV * 0.01);
-    vec2 farGrassUVs = -(fUV * 0.1);
-    float distance = length(fPosition.xy);
-    float distUvLerp = min(distance * 0.001, 1.0);
-    
-    float cellNoiseColor = texture(CellNoise, fUV * unColorMapScale).r;
-    vec2 gradientUV = vec2(1.0 - cellNoiseColor, unGrassColorV);
-    vec3 GrassColor;
-    if (unUseNewGradient == 1){
-        GrassColor = texture(TerrainGradients, gradientUV).rgb;
-    } else {
-        GrassColor = texture(GrassGradients, gradientUV).rgb;
-    }
-    
     // === Normals ===
     // TODO: NORMAL MAPPING
     vec3 normal = vec3(0.0, 0.0, 1.0);
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
     
-    // Debug distance lerp
-    //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
+
+    // TMP Texturing test with color remapping
+    // We use the texture value with the terrain color and saturation
+    float distance = length(fPosition.xy);
+    float distUvLerp = min(distance * 0.001, 1.0);
     
-    // =========== BEGIN NEW ART STYLE ==========
+    vec2 farUVs = -(fUV * 0.1);
+    vec3 textureColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farUVs).rgb, distUvLerp);
+    //vec3 currhsv = rgb2hsv(oColor.rgb);
+    //vec3 texturehsv = rgb2hsv(textureColor);
+    //currhsv.b = texturehsv.b;
+    //currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
+    //oColor.rgb = hsv2rgb(currhsv);
     
+    
+    // Texture and color
+    float cellNoiseColor = texture(CellNoise, fUV * unColorMapScale).r;
+    float u = 1.0 - cellNoiseColor;
+    float v = textureColor.r;
+    vec2 uv = vec2(u, v);
+    oColor.rgb = texture(PlainsGradients, uv).rgb;
+    if (fHeight > 50.0) {
+        oColor.rgb = mix(oColor.rgb, texture(MountainGradients, uv).rgb, min((fHeight - 50.0) * 0.1, 1.0));
+    }
+    
+    // =========== Distance color ===========
     vec3 colorNormal = normal.rgb; // normal
     
     float FLAT_REDUCE_MULT = 1.0;
@@ -131,37 +138,14 @@ void main() {
     int index = int(lowIndex + 5) % NUM_COLORS;
     int index2 = int(highIndex + 5) % NUM_COLORS;
     
-    
     float lerpVal = mod(totalNormal, 1.0);
     // Shorten the transition
     lerpVal = (lerpVal - 0.3) * 12.0 * unBlendMult;
     lerpVal = clamp(lerpVal, 0.0, 1.0);
-    
-    // TODO: REVISIT THIS!!!!!
-    if (fHeight > 15.0) {
-        oColor.rgb = mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
-    } else {
-        oColor.rgb = GrassColor;
-    }
-  
-    
-    // =========== END NEW ART STYLE ==========
-    // TMP Texturing test with color remapping
-    // We use the texture value with the terrain color and saturation
-    vec3 textureColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp);
-    //vec3 currhsv = rgb2hsv(oColor.rgb);
-    //vec3 texturehsv = rgb2hsv(textureColor);
-    //currhsv.b = texturehsv.b;
-    //currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
-    //oColor.rgb = hsv2rgb(currhsv);
-    
-    if (unUseNewGradient == 1){
-        float v = textureColor.r;
-        vec2 uv = vec2(gradientUV.x, v);
-        oColor.rgb = texture(TerrainGradients, uv).rgb;
-    } else {
-        oColor.rgb *= textureColor;
-    }
+    vec3 distanceColor = mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
+    oColor.rgb = mix(oColor.rgb, distanceColor, pow(distUvLerp, DISTANT_COLOR_EXP) * DISTANT_COLOR_INTENSITY);
+        
+        
     if (unDebugLines == 1)
     {
         vec2 scaledUV = fUV * 0.3;
@@ -170,7 +154,7 @@ void main() {
             oColor.rgb = vec3(0.0);
         } else {
             vec2 uv2 = vec2(uv.x * (1.0 / 0.9), textureColor.r);
-            oColor.rgb = texture(TerrainGradients, uv2).rgb;
+            oColor.rgb = texture(PlainsGradients, uv2).rgb;
         }
     }
     
@@ -180,11 +164,17 @@ void main() {
     float wetnessMult = clamp(-fHeight * 10.0 + 0.01, 0.0, 1.0);
     oColor.rgb = mix(oColor.rgb, oColor.rgb * 0.6 * vec3(1.2, 1.1, 1.0), wetnessMult);
     
-    //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
     
     // === Roughness + metallic ===
     oMetallicRoughness.r = 0.0; // Metallic
 	oMetallicRoughness.g = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3; // Roughness
     // TODO: Cosine curve so only shore is wet?
     oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
+    
+    // Debug draw cell noise
+    //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
+    
+    // Debug distance lerp
+    //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
+
 }

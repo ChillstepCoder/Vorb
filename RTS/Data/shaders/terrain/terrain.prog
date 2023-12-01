@@ -5,9 +5,9 @@ textures:
     uniform: GreyNoise
   - name: grass_terrain
     uniform: GrassTexture
-  - name: grass_gradients
-    uniform: GrassGradients
   - name: cell_noise
     uniform: CellNoise
   - name: terrain_gradients
-    uniform: TerrainGradients
+    uniform: PlainsGradients
+  - name: terrain_grad_mtns
+    uniform: MountainGradients

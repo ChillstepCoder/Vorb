@@ -49,7 +49,6 @@ struct DebugOptions {
     f32 mTerrainSquaresColorPeriod;
     f32 mTerrainSquaresIntensity;
     f32 mTerrainBlendMult;
-    f32 mTerrainGrassColorV;
     bool mDisableTerrain;
     // DOF
     float mDepthOfFieldBlurRadius;
