@@ -48,7 +48,7 @@ static_assert(sizeof(StaticModelVertex) == 32, "16 byte alignment needed");
 struct alignas(16) TerrainVertex {
     f32v3 pos;
     f32v3 normal;
-    f32v2 uvs;
+    //f32v2 ???; // We have extra space
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::TERRAIN; }

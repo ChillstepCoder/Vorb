@@ -11,10 +11,6 @@
 //struct mesh_pool {};
 //using singleton_mesh_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
 
-Mesh::Mesh() {
-
-}
-
 Mesh::~Mesh() {
     destroy();
 }

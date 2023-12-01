@@ -102,8 +102,9 @@ void TerrainMeshBuilder::initStaticIBO() {
     checkGlError("TerrainMesh::initGlobalIBO");
 }
 
-void TerrainMeshBuilder::finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const f32v3& worldPos) {
+void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPos) {
 
+    terrainMesh.mUVRoot = mUVRoot;
 
     // Set bounds
     terrainMesh.setPosition(worldPos);
@@ -143,12 +144,11 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
     constexpr f32 UV_SCALE = 0.05f;
 
-    f32v2 rootUV;
     { // Compute with high precision
         f64v2 rootUVDouble = f64v2(worldPosTreeRoot + cornerPosRelativeToRoot) * f64(UV_SCALE);
         f64 intpart;
-        rootUV.x = (f32)modf(rootUVDouble.x, &intpart);
-        rootUV.y = (f32)modf(rootUVDouble.y, &intpart);
+        mUVRoot.x = (f32)modf(rootUVDouble.x, &intpart);
+        mUVRoot.y = (f32)modf(rootUVDouble.y, &intpart);
     }
 
     constexpr f32 NORMAL_STRENGTH = 1.0f / 4.0f;
@@ -164,10 +164,6 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
             v.pos.x = cornerPosRelativeToRoot.x + x * quadWidth;
             v.pos.y = cornerPosRelativeToRoot.y + y * quadWidth;
             v.pos.z = height;
-
-            // World space UVs with high precision
-            v.uvs.x = rootUV.x + x * quadWidth * UV_SCALE;
-            v.uvs.y = rootUV.y + y * quadWidth * UV_SCALE;
 
             // Normal calc
             f32 fl = uncompressHeight(paddedHeightfield[y][x]); // front left

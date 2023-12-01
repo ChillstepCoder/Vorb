@@ -10,18 +10,6 @@ class World;
 class TerrainMeshBuilder;
 DECL_VG(class GLProgram);
 
-class TerrainMesh {
-public:
-    TerrainMesh(ui32 patchIndex) : mIndex(patchIndex) {};
-
-    VORB_NON_COPYABLE_BUT_MOVABLE(TerrainMesh);
-
-    Mesh mMesh;
-    ui32 mIndex;
-    std::atomic<f32> mCrossfadeAlpha = 0.0f;
-    std::atomic_int mCrossfadeDir = 0; // -1 = down, 0 = none, 1 = up
-};
-
 class HeightmapTerrainQuadtree : public FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>
 {
 public:

@@ -4,7 +4,7 @@
 #include "world/TerrainConstants.h"
 #include "terrain/CompressedHeight.h"
 
-class Mesh;
+class TerrainMesh;
 
 class TerrainMeshBuilder
 {
@@ -17,7 +17,7 @@ public:
         setVertsWaterFromPaddedHeightfield(cornerPosRelativeToRoot, totalWidth, paddedHeightfield);
     }
 
-    void finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const f32v3& worldPosTreeRoot);
+    void finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPosTreeRoot);
 private:
     void setVertsTerrainFromPaddedHeightfield(const f32v2& worldPosTreeRoot, const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
     void setVertsWaterFromPaddedHeightfield(const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
@@ -25,6 +25,8 @@ private:
     TerrainVertex mTerrainVerts[TERRAIN_MESH_SIZE_VERTS];
     WaterVertex mWaterVerts[WATER_MESH_SIZE_VERTS];
     BoundingSphere mBoundingSphere;
+    f32v2 mUVRoot = f32v2(0.0f);
+    f32v2 mBiomeUVRoot = f32v2(0.0f);
 
     static VGBuffer sTerrainIboUI32;
 };

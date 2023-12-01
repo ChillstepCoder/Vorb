@@ -132,14 +132,14 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
 
 void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex) {
     const f32v3& worldPos = f32v3(mWorldPos.x, mWorldPos.y, 0.0f);
-    const bool hadTerrain = mTerrainMeshes[patchIndex]->mMesh.isValid();
-    const bool hadWater = mWaterMeshes[patchIndex]->mMesh.isValid();
-    terrainBuilder.finishMeshes(mTerrainMeshes[patchIndex]->mMesh, mWaterMeshes[patchIndex]->mMesh, worldPos);
+    const bool hadTerrain = mTerrainMeshes[patchIndex]->isValid();
+    const bool hadWater = mWaterMeshes[patchIndex]->isValid();
+    terrainBuilder.finishMeshes(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], worldPos);
     // TODO: if this can happen, we need to store a "has acquired" bit since right now we are using existence of a mesh to determine if we acquired
     assert(mTerrainMeshes[patchIndex] || mWaterMeshes[patchIndex]);
 
     TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(mWorld).getTerrainMeshManager();
-    if (mTerrainMeshes[patchIndex]->mMesh.isValid()) {
+    if (mTerrainMeshes[patchIndex]->isValid()) {
         if (!hadTerrain) {
             terrainMeshManager.addTerrainMesh(mTerrainMeshes[patchIndex].get());
         }
@@ -148,7 +148,7 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
         terrainMeshManager.removeTerrainMesh(mTerrainMeshes[patchIndex].get());
     }
 
-    if (mWaterMeshes[patchIndex]->mMesh.isValid()) {
+    if (mWaterMeshes[patchIndex]->isValid()) {
         if (!hadTerrain) {
             terrainMeshManager.addTerrainWaterMesh(mWaterMeshes[patchIndex].get());
         }
