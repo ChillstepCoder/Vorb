@@ -6,6 +6,7 @@
 
 #include "terrain/HeightmapPatch.h"
 
+#include <math.h>  /* modf */
 
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
 constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
@@ -103,8 +104,6 @@ void TerrainMeshBuilder::initStaticIBO() {
 
 void TerrainMeshBuilder::finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const f32v3& worldPos) {
 
-    // World relative
-    mBoundingSphere.center += worldPos;
 
     // Set bounds
     terrainMesh.setPosition(worldPos);
@@ -130,18 +129,27 @@ void TerrainMeshBuilder::finishMeshes(Mesh& terrainMesh, Mesh& waterMesh, const 
     checkGlError("TerrainMeshBuilder::finishMeshes");
 }
 
-void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& worldPosTreeRoot, const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
 
     // AABB calculation
     f32AABB3 aabb;
     aabb.dims.x = totalWidth;
     aabb.dims.y = totalWidth;
-    aabb.pos.x = cornerPos.x;
-    aabb.pos.y = cornerPos.y;
+    aabb.pos.x = worldPosTreeRoot.x + cornerPosRelativeToRoot.x;
+    aabb.pos.y = worldPosTreeRoot.y + cornerPosRelativeToRoot.y;
     f32 minZ = FLT_MAX;
     f32 maxZ = -FLT_MAX;
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
+    constexpr f32 UV_SCALE = 0.05f;
+
+    f32v2 rootUV;
+    { // Compute with high precision
+        f64v2 rootUVDouble = f64v2(worldPosTreeRoot + cornerPosRelativeToRoot) * f64(UV_SCALE);
+        f64 intpart;
+        rootUV.x = (f32)modf(rootUVDouble.x, &intpart);
+        rootUV.y = (f32)modf(rootUVDouble.y, &intpart);
+    }
 
     constexpr f32 NORMAL_STRENGTH = 1.0f / 4.0f;
     for (int y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
@@ -152,9 +160,14 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& corne
             if (height < minZ) minZ = height;
             if (height > maxZ) maxZ = height;
 
-            v.pos.x = cornerPos.x + x * quadWidth;
-            v.pos.y = cornerPos.y + y * quadWidth;
+            // Position
+            v.pos.x = cornerPosRelativeToRoot.x + x * quadWidth;
+            v.pos.y = cornerPosRelativeToRoot.y + y * quadWidth;
             v.pos.z = height;
+
+            // World space UVs with high precision
+            v.uvs.x = rootUV.x + x * quadWidth * UV_SCALE;
+            v.uvs.y = rootUV.y + y * quadWidth * UV_SCALE;
 
             // Normal calc
             f32 fl = uncompressHeight(paddedHeightfield[y][x]); // front left
@@ -218,15 +231,15 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& corne
     mBoundingSphere = boundingSphereFromAABB(aabb);
 }
 
-void TerrainMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void TerrainMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
 
     for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_WIDTH_VERTS; ++x) {
             WaterVertex& v = mWaterVerts[y * TERRAIN_MESH_WIDTH_VERTS + x];
-            v.pos.x = cornerPos.x + x * quadWidth;
-            v.pos.y = cornerPos.y + y * quadWidth;
+            v.pos.x = cornerPosRelativeToRoot.x + x * quadWidth;
+            v.pos.y = cornerPosRelativeToRoot.y + y * quadWidth;
             v.pos.z = 0.0f;
             f32 height = paddedHeightfield[y + 1][x + 1];
             v.depth = glm::max(-height, 0.0f);

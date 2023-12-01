@@ -12,6 +12,10 @@ VertexType TerrainVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribFormat(vao, 1 /*index*/, 3 /*size*/, GL_FLOAT, false, offsetof(TerrainVertex, normal));
     glVertexArrayAttribBinding(vao, 1, 0);
 
+    glEnableVertexArrayAttrib(vao, 2);
+    glVertexArrayAttribFormat(vao, 2 /*index*/, 2 /*size*/, GL_FLOAT, false, offsetof(TerrainVertex, uvs));
+    glVertexArrayAttribBinding(vao, 2, 0);
+
     return VertexType::TERRAIN;
 }
 

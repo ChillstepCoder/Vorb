@@ -82,7 +82,7 @@ void createTerrainAndWaterMesh(
             paddedHeightfield[y][x] = compressHeight(zPos);
         }
     }
-    terrainBuilder.buildFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
+    terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {

@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec3 vNormal;
+layout(location = 2) in vec2 vUVs;
 
 uniform vec3 unPosition;
 
@@ -22,7 +23,9 @@ void main() {
     // TODO: TANGENT???
 	fTBN = mat3(TANGENT, binormal, normal);
 	
-    fUV = (worldPos.xy + CameraPos.xy) * 0.05;
+    // Commented version causes horrible precision issues
+    //fUV = (vertexPos.xy + unPosition.xy) * 0.05;
+    fUV = vUVs;
     fHeight = vertexPos.z;
     fPosition = worldPos.xyz;
 
