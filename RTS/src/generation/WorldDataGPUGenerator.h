@@ -49,6 +49,14 @@ public:
     VGTexture getHeightTexture() const { return mHeightTexture; }
     VGBuffer getBiomeSSBO() const { return mBiomeSSBO; }
     VGTexture getBiomeTexture() const { return mBiomeTexture; }
+
+    // Caller takes ownership of the returned texture
+    VGTexture releaseBiomeTexture() {
+        assert(mBiomeTexture);
+        VGTexture tex = mBiomeTexture;
+        mBiomeTexture = 0;
+        return tex;
+    }
 private:
     bool initResourcesIfNeeded(i32 resolution);
 

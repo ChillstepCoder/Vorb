@@ -104,17 +104,20 @@ void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
 void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     Services::Threadpool::ref().setSize(mThreadpoolSizePostEntry);
 
-    if (mWorldGenerator) {
-        mWorldGenerator.reset();
-    }
     if (mCancelled) {
         sGameWorld.reset();
     }
     else {
         // Initialize world
+        assert(mWorldGenerator);
+        mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
         sGameWorld = std::make_unique<World>(WorldNetMode::Host, WorldDefaults::DEFAULT_WORLD_WIDTH_TILES, WorldGeneratorType::Default, mWorldData.get());
     }
     mWorldData.reset();
+
+    if (mWorldGenerator) {
+        mWorldGenerator.reset();
+    }
 
     //Force cycle a frame to avoid bug with deleting mScreenTexture as imgui uses it an extra frame
     ImGui_ImplOpenGL3_NewFrame();

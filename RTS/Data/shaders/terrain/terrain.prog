@@ -11,3 +11,5 @@ textures:
     uniform: PlainsGradients
   - name: terrain_grad_mtns
     uniform: MountainGradients
+  - name: turbulent_noise
+    uniform: TurbulentNoise

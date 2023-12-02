@@ -1,21 +1,29 @@
 //#include "util/hsv.glsl"
 #include "GlobalUbo.glsl"
 
+#include "util/noise/snoise3.glsl"
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform sampler2D PlainsGradients;
 uniform sampler2D MountainGradients;
 uniform sampler2D CellNoise;
+uniform sampler2D TurbulentNoise;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 uniform float unColorMapScale = 0.1;
+
+uniform sampler2D unBiomeTexture;
+
 
 uniform float unHeightMult = 0.191;
 uniform float unWavyMult = 0.167;
 uniform float unSquaresIntensity = 0.5;
 uniform float unSquaresPeriod = 0.187;
 uniform float unBlendMult = 0.037;
+
+uniform float unBiomeBlendScale = 1.0;
+uniform float unBiomeBlendFrequency = 1.0;
 
 // Config
 uniform int unDebugLines = 0;
@@ -25,11 +33,19 @@ const float DISTANT_COLOR_INTENSITY = 0.75;
 
 in float fHeight;
 in vec3 fPosition;
+in vec2 fBiomeUV;
 in vec2 fUV;
 in mat3 fTBN;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
+
+const vec3 BIOME_COLORS[4] = {
+    vec3(1.0, 0.0, 0.0), // PLAINS
+    vec3(1.0, 0.0, 1.0), // MOUNTAINS
+    vec3(0.0, 1.0, 0.0), // FOREST
+    vec3(0.0, 1.0, 1.0), // HOT SPRINGS
+};
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
@@ -171,6 +187,23 @@ void main() {
     // TODO: Cosine curve so only shore is wet?
     oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
     
+    // Testing biomes
+    
+    //noise(vec3 position, int octaves, float frequency, float persistence)
+    //float preturbX = noise(vec3(fBiomeUV, 0.0), 6, 2000.0, 0.65);
+    float preturbX = texture(TurbulentNoise, fBiomeUV * 1000.0 * unBiomeBlendFrequency).r * 2.0 - 1.0;
+    //float preturbY = -preturbX;
+    float preturbY = texture(TurbulentNoise, -fBiomeUV * 1000.0 * unBiomeBlendFrequency).r * 2.0 - 1.0;
+    //float preturbY = noise(vec3(0.0, fBiomeUV.y, fBiomeUV.x), 3, 1000.0, 0.65);
+    
+    int biome = int(round(texture(unBiomeTexture, fBiomeUV + vec2(preturbX, preturbY) * 0.001 * unBiomeBlendScale).r * 255.0));
+    if (biome < 4) {
+        oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);
+    }
+    if (biome == 255) {
+        oColor.rgb = vec3(1.0,1.0,1.0);
+    }
+        
     // Debug draw cell noise
     //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
     

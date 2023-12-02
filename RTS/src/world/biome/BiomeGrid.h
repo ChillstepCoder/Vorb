@@ -39,6 +39,10 @@ public:
     ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
     // template <bool THREAD_SAFE>
     const BiomeDef* getBiomeDefAtPoint(f32v2 worldPos) const;
+
+    void setBiomeTexture(VGTexture biomeTexture) { mBiomeTexture = biomeTexture; }
+    // Safe to call from render thread
+    VGTexture getBiomeTexture() const { return mBiomeTexture; }
 private:
     void setVertex(i32v2 vertexPos, BiomeVertex vertex) {
         mGrid[vertexPos.y * getWidthVertices() + vertexPos.x] = vertex;
@@ -46,5 +50,7 @@ private:
     std::unique_ptr<BiomeVertex[]> mGrid;
     ui32 mTotalVertices;
     SpatialGrid2D mSpatialGrid;
+    // Used by terrain to look up biome info
+    VGTexture mBiomeTexture = 0;
 };
 

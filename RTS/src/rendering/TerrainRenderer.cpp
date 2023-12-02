@@ -12,6 +12,8 @@
 #include <Vorb/graphics/BlendState.h>
 
 #include "world/HeightmapTerrainQuadtree.h"
+#include "world/World.h"
+#include "world/biome/BiomeGrid.h"
 
 #include "resources/ResourceManager.h"
 #include "camera/Camera3D.h"
@@ -27,6 +29,10 @@ TerrainRenderer::TerrainRenderer() {
     mWaterPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_pbr"));
 }
 
+void TerrainRenderer::onWorldBegin(World& world) {
+    mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
+}
+
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes) {
     if (!mShaderAssets.areAllAssetsLoaded()) {
         return;
@@ -34,7 +40,8 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
 
     glEnable(GL_CULL_FACE);
 
-    MaterialRenderer::bindMaterialShaderForRender(*mTerrainMaterial);
+    ui32 nextTextureUnit = 0;
+    MaterialRenderer::bindMaterialShaderForRender(*mTerrainMaterial, &nextTextureUnit);
     // Terrain uniforms
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
@@ -42,10 +49,15 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendScale"), sDebugOptions.mBiomeBlendScale);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendFrequency"), sDebugOptions.mBiomeBlendFrequency);
+
     VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeDirection");
     VGUniform uvRootUniform = mTerrainMaterial->mProgram.getUniform("unUVRoot");
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeTexture"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, mBiomeTexture);
 
     for (auto&& terrainMesh : terrainMeshes) {
         const BoundingSphere& bounds = terrainMesh->getBoundingSphere();

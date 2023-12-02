@@ -31,7 +31,9 @@ WorldDataGPUGenerator::~WorldDataGPUGenerator() {
         mBiomeSSBO = 0;
 
         glDeleteTextures(1, &mHeightTexture);
-        glDeleteTextures(1, &mBiomeTexture);
+        if (mBiomeTexture) {
+            glDeleteTextures(1, &mBiomeTexture);
+        }
     }
 }
 

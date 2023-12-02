@@ -491,6 +491,7 @@ void WorldRenderer::initEventHandlers() {
            std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
        ).first->second.get();
         mCharacterRenderer->onWorldBegin(world);
+        mTerrainRenderer->onWorldBegin(world);
     });
     // TODO: We should do this on the render thread somehow
     //IWorld::addOnWorldEndListener(mWorldEventListeners, [this](IWorld& world) {

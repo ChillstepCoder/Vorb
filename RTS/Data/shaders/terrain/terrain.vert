@@ -9,6 +9,7 @@ uniform vec2 unUVRoot;
 out float fHeight;
 out vec3 fPosition;
 out vec2 fUV;
+out vec2 fBiomeUV;
 out mat3 fTBN;
 
 const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
@@ -17,6 +18,7 @@ const float UV_SCALE = 0.05;
 void main() {
     vec4 vertexPos = vPosition;
     vec4 worldPos = vertexPos + vec4(unPosition - CameraPos, 0.0);
+    fBiomeUV = (vertexPos.xy + unPosition.xy) / 32768.0;
 	
 	vec3 normal = vNormal; // Prenormalized on CPU
 	vec3 binormal = cross(normal, TANGENT);

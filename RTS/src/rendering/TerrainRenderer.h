@@ -8,12 +8,15 @@ class MaterialShaderDef;
 class Camera3D;
 class TerrainMesh;
 class CubemapDef;
+class World;
 
 
 class TerrainRenderer
 {
 public:
     TerrainRenderer();
+
+    void onWorldBegin(World& world);
 
     void renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes);
     void renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const CubemapDef& skyCubeMap);
@@ -23,5 +26,7 @@ private:
     const MaterialShaderDef* mWaterPbrMaterial = nullptr;
     const MaterialShaderDef* mTerrainMaterial = nullptr;
     AssetHandleBundle mShaderAssets;
+    // Owned by the world
+    VGTexture mBiomeTexture = 0;
 };
 

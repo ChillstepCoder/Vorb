@@ -10,7 +10,12 @@ BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
     mGrid = std::make_unique<BiomeVertex[]>(mTotalVertices);
 }
 
-BiomeGrid::~BiomeGrid() = default;
+BiomeGrid::~BiomeGrid() {
+    ASSERT_RENDER_THREAD();
+    if (mBiomeTexture) {
+        glDeleteTextures(1, &mBiomeTexture);
+    }
+};
 
 const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 worldPos) const {
     const i32v2 blVertex = i32v2(worldPos) / BIOME_VERTEX_STRIDE;
