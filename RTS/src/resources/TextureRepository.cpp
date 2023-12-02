@@ -38,6 +38,11 @@ void TextureRepository::init() {
     TextureConvert::initConverters();
 }
 
+gli::texture2d TextureRepository::loadRawPngData(AssetID textureId, bool flipV)
+{
+    return  loadRawPngData(getAssetFilePath(textureId), flipV);
+}
+
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
 
     // Get absolute path of texture.
@@ -47,7 +52,6 @@ gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool
     // Load the pixel data.
     return PngLoader::loadPng(fs::path(resultPath.getString()), flipV);
 }
-
 
 GLTexture TextureRepository::uploadTexture(const gli::texture2d& textureData, vg::TextureTarget textureTarget, const vg::SamplerState& samplerState, i32 maxMipLevels) {
     assert(!textureData.empty());

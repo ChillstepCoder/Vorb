@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "BiomeRepository.h"
 
+#include "resources/TextureRepository.h"
+
 constexpr int COLOR_MAP_DIM_X = 128;
 constexpr int COLOR_MAP_DIM_Y = 256;
 
@@ -52,10 +54,26 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     // Build array texture
     assert(!mBiomeColorMapsArrayTexture);
     glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &mBiomeColorMapsArrayTexture);
-    glTextureStorage3D(mBiomeColorMapsArrayTexture, 1, GL_RGB8, 256, 256, colorMapTextureIDs.size());
+    glTextureStorage3D(mBiomeColorMapsArrayTexture, 1, GL_RGB8, COLOR_MAP_DIM_X, COLOR_MAP_DIM_Y, colorMapTextureIDs.size());
 
     for (auto& [assetId, layerIndex] : colorMapTextureIDs) {
-        glTextureImage3DEXT(mBiomeColorMapsArrayTexture, GL_TEXTURE_2D_ARRAY, 0, GL_RGB8, 256, 256, layerIndex, 0, GL_RGBA, GL_UNSIGNED_BYTE, mAssets[assetId]->colorMapTexture.getTexture().getData());
+
+        gli::texture2d layerData = TextureRepository::get().loadRawPngData(assetId, false);
+        assert(layerData.extent().x == COLOR_MAP_DIM_X);
+        assert(layerData.extent().y == COLOR_MAP_DIM_Y);
+
+        glTextureSubImage3D(mBiomeColorMapsArrayTexture,
+            0,
+            0,
+            0,
+            layerIndex,
+            COLOR_MAP_DIM_X,
+            COLOR_MAP_DIM_Y,
+            1,
+            GL_RGB,
+            GL_UNSIGNED_BYTE,
+            layerData.data()
+        );
     }
 
     vg::sSamplerStates.LINEAR_CLAMP.setForTexture(mBiomeColorMapsArrayTexture);

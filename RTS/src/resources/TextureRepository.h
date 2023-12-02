@@ -17,7 +17,8 @@ class TextureRepository : public IAssetRepository<TextureDef> {
     void init() override;
 
     // Loads in as RGBAUI8
-    gli::texture2d loadRawPngData(const vio::Path& filePath, bool flipV);
+    gli::texture2d [[nodiscard]] loadRawPngData(AssetID textureId, bool flipV);
+    gli::texture2d [[nodiscard]] loadRawPngData(const vio::Path& filePath, bool flipV);
 
     GLTexture uploadTexture(
         const gli::texture2d& textureData,
