@@ -140,3 +140,11 @@ AssetHandleBasePtr SoftAssetReference::getAssetHandle() const {
     IAssetRepositoryBase& repo = ResourceManager::get().getAssetRepository(assetType);
     return repo.getAssetHandleBase(name);
 }
+
+AssetID SoftAssetReference::getAssetID() const {
+    if (!isValid()) {
+        return INVALID_ASSET_ID;
+    }
+    IAssetRepositoryBase& repo = ResourceManager::get().getAssetRepository(assetType);
+    return repo.getAssetID(name);
+}

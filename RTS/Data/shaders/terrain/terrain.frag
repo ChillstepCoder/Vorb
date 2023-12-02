@@ -40,11 +40,18 @@ in mat3 fTBN;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 
+// Debug colors
 const vec3 BIOME_COLORS[4] = {
     vec3(1.0, 0.0, 0.0), // PLAINS
     vec3(1.0, 0.0, 1.0), // MOUNTAINS
     vec3(0.0, 1.0, 0.0), // FOREST
     vec3(0.0, 1.0, 1.0), // HOT SPRINGS
+};
+
+uniform sampler2DArray BiomeColorMapsTexture;
+layout(std430, binding = 4) readonly buffer BiomeColorMapLookup
+{
+    uint biomeColorMapLookup[];
 };
 
 layout (location = 0) out vec4 oColor;

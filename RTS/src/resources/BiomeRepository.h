@@ -16,6 +16,8 @@ public:
     const char* const getAssetTypeDisplayName() const override { return "Biome"; }
 
     const BiomeDef& getBiomeFromUniqueID(ui32 uniqueId) { return getLoadedOrUnloadedAsset(mUniqueIDMap[uniqueId]); }
+    VGTexture getBiomeColorMapsArrayTexture() const { return mBiomeColorMapsArrayTexture; }
+    VGBuffer getBiomeColorMapsShaderLookupBuffer() const { return mBiomeColorMapsShaderLookupBuffer; }
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;
@@ -25,5 +27,7 @@ protected:
     // assigning a static ID per biome
     // Key = uniqueID, Value = AssetID
     std::vector<AssetID> mUniqueIDMap;
+    VGTexture mBiomeColorMapsArrayTexture = 0;
+    VGBuffer mBiomeColorMapsShaderLookupBuffer = 0;
 };
 

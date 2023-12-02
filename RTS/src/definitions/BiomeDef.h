@@ -24,11 +24,15 @@ public:
     DEFAULT_ASSET_CONSTRUCTOR(BiomeDef);
 
     BiomeUniqueID uniqueId = BiomeUniqueID::INVALID;
-    f32 priority = 0.0f;
+    f32 priority = 0.0f; // ??
     nString displayName = "UNKNOWN";
+    SoftAssetReference colorMapTexture = AssetType::Texture;
+    // Index in the color map texture array
+    ui32 colorMapTextureIndex = 0;
 };
 SERIALIZABLE_SIMPLE(BiomeDef,
     make_field(o.uniqueId, "id"sv),
     make_field(o.priority, "priority"sv),
-    make_field(o.displayName, "name"sv)
+    make_field(o.displayName, "name"sv),
+    make_field(o.colorMapTexture, "col_map"sv)
 );

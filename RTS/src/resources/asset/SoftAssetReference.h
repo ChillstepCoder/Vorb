@@ -10,6 +10,7 @@ public:
     void toString(OUT char* outStr, OUT ui32* outLength) const { name.toString(outStr, outLength); }
     nString toString() const { return name.toString(); }
     AssetHandleBasePtr getAssetHandle() const;
+    AssetID getAssetID() const;
     
     StrToken name;
     const AssetType assetType;

@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "BiomeRepository.h"
 
+constexpr int COLOR_MAP_DIM_X = 128;
+constexpr int COLOR_MAP_DIM_Y = 256;
+
 AssetLoadFunc BiomeRepository::getAssetLoadFunc() {
     return[&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
         assert(false);
@@ -28,5 +31,38 @@ void BiomeRepository::onRegisteredAsset(AssetID id) {
 }
 
 void BiomeRepository::onAllAssetTypesRegistered() {
-    // Load mapping file so we can persist biome IDs
+    ASSERT_RENDER_THREAD();
+
+    std::map<AssetID, ui32> colorMapTextureIDs;
+
+    // Get all texture layers
+    for (auto& asset : mAssetRegistry) {
+        BiomeDef& def = *mAssets[asset.getId()];
+        AssetID textureId = def.colorMapTexture.getAssetID();
+        const auto& it = colorMapTextureIDs.find(textureId);
+        if (it != colorMapTextureIDs.end()) {
+            def.colorMapTextureIndex = it->second;
+        }
+        else {
+            def.colorMapTextureIndex = colorMapTextureIDs.size();
+            colorMapTextureIDs.emplace(textureId, colorMapTextureIDs.size());
+        }
+    }
+
+    // Build array texture
+    assert(!mBiomeColorMapsArrayTexture);
+    glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &mBiomeColorMapsArrayTexture);
+    glTextureStorage3D(mBiomeColorMapsArrayTexture, 1, GL_RGB8, 256, 256, colorMapTextureIDs.size());
+
+    for (auto& [assetId, layerIndex] : colorMapTextureIDs) {
+        glTextureImage3DEXT(mBiomeColorMapsArrayTexture, GL_TEXTURE_2D_ARRAY, 0, GL_RGB8, 256, 256, layerIndex, 0, GL_RGBA, GL_UNSIGNED_BYTE, mAssets[assetId]->colorMapTexture.getTexture().getData());
+    }
+
+    vg::sSamplerStates.LINEAR_CLAMP.setForTexture(mBiomeColorMapsArrayTexture);
+
+    // Build shader data buffer
+    assert(!mBiomeColorMapsShaderLookupBuffer);
+    glCreateBuffers(1, &mBiomeColorMapsShaderLookupBuffer);
+
+    // TODO: Load mapping file so we can persist biome IDs for mods?
 }

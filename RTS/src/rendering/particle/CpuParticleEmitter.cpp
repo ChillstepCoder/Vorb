@@ -444,7 +444,7 @@ void CpuParticleEmitter::render() {
     const ui32 particlesToRender = (mLastActiveParticle - mFirstActiveParticle) + 1;
 
     // Always bind positions
-    mGpuData.mPositionsBuffer->bindBufferAsSSBO(BUFFER_BASE_POSITIONS_SSBO);
+    mGpuData.mPositionsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_POSITIONS_SSBO);
     if (mDataChanged) {
         mDataChanged = false;
         // Positions + padding float
@@ -461,7 +461,7 @@ void CpuParticleEmitter::render() {
             f32v2* rotations = (f32v2*)mGpuData.mRotationsBuffer->frameBeginAndGetDataForUpdate();
             memcpy(rotations, &mParticleData.mRotations[mFirstActiveParticle], particlesToRender * sizeof(f32v2));
             mGpuData.mRotationsBuffer->flushDataAndIncrementFrame(particlesToRender);
-            mGpuData.mRotationsBuffer->bindBufferAsSSBO(BUFFER_BASE_ROTATIONS_SSBO);
+            mGpuData.mRotationsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_ROTATIONS_SSBO);
             glUniform1ui(unIsUsingRotation, 1u);
         }
         else {
@@ -473,7 +473,7 @@ void CpuParticleEmitter::render() {
             f32v2* scales = (f32v2*)mGpuData.mScalesBuffer->frameBeginAndGetDataForUpdate();
             memcpy(scales, &mParticleData.mScales[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
             mGpuData.mScalesBuffer->flushDataAndIncrementFrame(particlesToRender);
-            mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_SCALES_SSBO);
+            mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_SCALES_SSBO);
             glUniform1ui(unIsUsingScale, 1u);
         }
         else {
@@ -486,7 +486,7 @@ void CpuParticleEmitter::render() {
                 f32v4* colors = (f32v4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
                 memcpy(colors, &mParticleData.mHDRColors[mFirstActiveParticle], sizeof(f32v4) * particlesToRender);
                 mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender);
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_HDR_COLORS_SSBO);
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_HDR_COLORS_SSBO);
                 glUniform1ui(unIsUsingHDRColor, 1u);
                 glUniform1ui(unIsUsingColor, 0u);
             }
@@ -494,7 +494,7 @@ void CpuParticleEmitter::render() {
                 color4* colors = (color4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
                 memcpy(colors, &mParticleData.mColors[mFirstActiveParticle], sizeof(color4) * particlesToRender);
                 mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender);
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_COLORS_SSBO);
                 glUniform1ui(unIsUsingHDRColor, 0u);
                 glUniform1ui(unIsUsingColor, 1u);
             }
@@ -509,7 +509,7 @@ void CpuParticleEmitter::render() {
             ui32* materials = (ui32*)mGpuData.mMaterialsBuffer->frameBeginAndGetDataForUpdate();
             memcpy(materials, &mParticleData.mMaterials[mFirstActiveParticle], sizeof(ui32) * particlesToRender);
             mGpuData.mMaterialsBuffer->flushDataAndIncrementFrame(particlesToRender);
-            mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_MATERIALS_SSBO);
+            mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_MATERIALS_SSBO);
             glUniform1ui(unIsUsingMaterial, 1u);
         }
         else {
@@ -520,7 +520,7 @@ void CpuParticleEmitter::render() {
     else {
         // Scales
         if (mGpuData.mScalesBuffer) {
-            mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_SCALES_SSBO);
+            mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_SCALES_SSBO);
             glUniform1ui(unIsUsingScale, 1u);
         }
         else {
@@ -530,12 +530,12 @@ void CpuParticleEmitter::render() {
         // Colors
         if (mGpuData.mColorsBuffer) {
             if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_HDR_COLORS_SSBO);
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_HDR_COLORS_SSBO);
                 glUniform1ui(unIsUsingHDRColor, 1u);
                 glUniform1ui(unIsUsingColor, 0u);
             }
             else {
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_COLORS_SSBO);
+                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_COLORS_SSBO);
                 glUniform1ui(unIsUsingHDRColor, 0u);
                 glUniform1ui(unIsUsingColor, 1u);
             }
@@ -547,7 +547,7 @@ void CpuParticleEmitter::render() {
 
         // Materials
         if (mGpuData.mMaterialsBuffer) {
-            mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_MATERIALS_SSBO);
+            mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_MATERIALS_SSBO);
             glUniform1ui(unIsUsingMaterial, 1u);
         }
         else {
