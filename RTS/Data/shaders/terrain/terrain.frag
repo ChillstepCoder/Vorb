@@ -121,7 +121,7 @@ void main() {
     float distUvLerp = min(distance * 0.001, 1.0);
     
     vec2 farUVs = -(fUV * 0.1);
-    vec3 textureColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farUVs).rgb, distUvLerp);
+    vec3 textureColor = mix(texture(GrassTexture, fUV).rrr, texture(GrassTexture, farUVs).rrr, distUvLerp);
     //vec3 currhsv = rgb2hsv(oColor.rgb);
     //vec3 texturehsv = rgb2hsv(textureColor);
     //currhsv.b = texturehsv.b;
@@ -147,7 +147,7 @@ void main() {
     float v = textureColor.r;
     vec2 uv = vec2(u, v);
     vec3 terrainGrad = texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
-    oColor.rgb *= terrainGrad;
+    oColor.rgb = terrainGrad * textureColor;
    
     
     // =========== Distance color ===========
