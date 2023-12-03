@@ -52,6 +52,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendScale"), sDebugOptions.mBiomeBlendScale);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendFrequency"), sDebugOptions.mBiomeBlendFrequency);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unDetailTextureStrength"), sDebugOptions.mTerrainDetailTextureStrength);
 
     VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
@@ -64,7 +65,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
 
     for (auto&& terrainMesh : terrainMeshes) {
         const BoundingSphere& bounds = terrainMesh->getBoundingSphere();

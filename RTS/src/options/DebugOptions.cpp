@@ -43,6 +43,7 @@ DebugOptions::DebugOptions() :
     mTerrainSquaresColorPeriod(0.187f),
     mTerrainSquaresIntensity(0.0f),
     mTerrainBlendMult(0.037f),
+    mTerrainDetailTextureStrength(1.0f),
     mBiomeBlendScale(1.0f),
     mBiomeBlendFrequency(1.0f),
     mDisableTerrain(false),

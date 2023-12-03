@@ -145,7 +145,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
     constexpr f32 UV_SCALE = 0.05f;
 
     { // Compute with high precision
-        f64v2 rootUVDouble = f64v2(worldPosTreeRoot + cornerPosRelativeToRoot) * f64(UV_SCALE);
+        f64v2 rootUVDouble = f64v2(worldPosTreeRoot) * f64(UV_SCALE);
         f64 intpart;
         mUVRoot.x = (f32)modf(rootUVDouble.x, &intpart);
         mUVRoot.y = (f32)modf(rootUVDouble.y, &intpart);

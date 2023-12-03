@@ -26,7 +26,7 @@ void main() {
     // TODO: TANGENT???
 	fTBN = mat3(TANGENT, binormal, normal);
 	
-    fUV = unUVRoot + vertexPos.xy * UV_SCALE;
+    fUV = unUVRoot + vPosition.xy * UV_SCALE;
     fHeight = vertexPos.z;
     fPosition = worldPos.xyz;
 

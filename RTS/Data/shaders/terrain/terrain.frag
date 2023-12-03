@@ -19,6 +19,7 @@ uniform float unWavyMult = 0.167;
 uniform float unSquaresIntensity = 0.5;
 uniform float unSquaresPeriod = 0.187;
 uniform float unBlendMult = 0.037;
+uniform float unDetailTextureStrength = 1.0;
 
 uniform float unBiomeBlendScale = 1.0;
 uniform float unBiomeBlendFrequency = 1.0;
@@ -121,9 +122,9 @@ void main() {
     float distUvLerp = min(distance * 0.001, 1.0);
     
     vec2 farUVs = -(fUV * 0.1);
-    vec3 textureColor = mix(texture(GrassTexture, fUV).rrr, texture(GrassTexture, farUVs).rrr, distUvLerp);
+    float detailValue = mix(texture(GrassTexture, fUV).r, texture(GrassTexture, farUVs).r, distUvLerp) * unDetailTextureStrength;
     //vec3 currhsv = rgb2hsv(oColor.rgb);
-    //vec3 texturehsv = rgb2hsv(textureColor);
+    //vec3 texturehsv = rgb2hsv(detailValue);
     //currhsv.b = texturehsv.b;
     //currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
     //oColor.rgb = hsv2rgb(currhsv);
@@ -133,22 +134,22 @@ void main() {
     //float preturbY = -preturbX;
     
     // Texture and color
-    int biome = int(round(texture(unBiomeTexture, fBiomeUV + vec2(preturbX, preturbY) * 0.001 * unBiomeBlendScale).r * 255.0));
-    //if (biome < 4) {
-    //    oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);
-    //}
-    
+    int biome = int(round(texture(unBiomeTexture, fBiomeUV + vec2(preturbX, preturbY) * 0.00025 * unBiomeBlendScale).r * 255.0));
+
     //if (biome == 255) {
     //    oColor.rgb = vec3(1.0,1.0,1.0);
     //}
     
     float cellNoiseColor = texture(CellNoise, fUV * unColorMapScale).r;
     float u = 1.0 - cellNoiseColor;
-    float v = textureColor.r;
+    float v = detailValue;
     vec2 uv = vec2(u, v);
     vec3 terrainGrad = texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
-    oColor.rgb = terrainGrad * textureColor;
+    oColor.rgb = terrainGrad;
    
+    //if (biome < 4) {
+    //    oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);
+    //}
     
     // =========== Distance color ===========
     vec3 colorNormal = normal.rgb; // normal
@@ -184,11 +185,7 @@ void main() {
         vec2 uv = vec2(fract(scaledUV.x), fract(scaledUV.y));
         if (uv.x > 0.9 || uv.y > 0.9) {
             oColor.rgb = vec3(0.0);
-        } 
-        //else {
-        //    vec2 uv2 = vec2(uv.x * (1.0 / 0.9), textureColor.r);
-        //    oColor.rgb = texture(PlainsGradients, uv2).rgb;
-        //}
+        }
     }
     
     oColor.a = 1.0; // AO
@@ -204,7 +201,6 @@ void main() {
     // TODO: Cosine curve so only shore is wet?
     oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
     
-        
     // Debug draw cell noise
     //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
     

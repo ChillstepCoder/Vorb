@@ -159,6 +159,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Squares Period", &sDebugOptions.mTerrainSquaresColorPeriod, 0.0f, 1.0f);
         ImGui::SliderFloat("Squares Intensity", &sDebugOptions.mTerrainSquaresIntensity, 0.0f, 1.0f);
         ImGui::SliderFloat("Blend Mult", &sDebugOptions.mTerrainBlendMult, 0.0f, 1.0f);
+        ImGui::SliderFloat("Detail Texture Str", &sDebugOptions.mTerrainDetailTextureStrength, 0.0f, 1.0f);
         ImGui::SliderFloat("Biome Blend Scale", &sDebugOptions.mBiomeBlendScale, 0.0f, 10.0f);
         ImGui::SliderFloat("Biome Blend Freq", &sDebugOptions.mBiomeBlendFrequency, 0.0f, 10.0f);
         ImGui::Separator();

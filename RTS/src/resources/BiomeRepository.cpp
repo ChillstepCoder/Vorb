@@ -35,23 +35,25 @@ void BiomeRepository::onRegisteredAsset(AssetID id) {
 void BiomeRepository::onAllAssetTypesRegistered() {
     ASSERT_RENDER_THREAD();
 
-    std::map<AssetID, ui32> colorMapTextureIDs;
-
-    // Get all texture layers
+    std::vector<AssetID> colorMapTextureIDs;
     std::vector<ui32> ssboData;
-    ssboData.reserve(mAssetRegistry.size());
+
+    // Get all unique texture layers
+    colorMapTextureIDs.reserve(mAssetRegistry.size());
+    ssboData.resize(mAssetRegistry.size());
     for (auto& asset : mAssetRegistry) {
         BiomeDef& def = *mAssets[asset.getId()];
         AssetID textureId = def.colorMapTexture.getAssetID();
-        const auto& it = colorMapTextureIDs.find(textureId);
+        const auto& it = std::find(colorMapTextureIDs.begin(), colorMapTextureIDs.end(), textureId);
         if (it != colorMapTextureIDs.end()) {
-            def.colorMapTextureIndex = it->second;
+            def.colorMapTextureIndex = *it;
         }
         else {
             def.colorMapTextureIndex = colorMapTextureIDs.size();
-            colorMapTextureIDs.emplace(textureId, colorMapTextureIDs.size());
+            colorMapTextureIDs.emplace_back(textureId);
         }
-        ssboData.emplace_back(def.colorMapTextureIndex);
+        assert(e_cast(def.uniqueId) < ssboData.size());
+        ssboData[e_cast(def.uniqueId)] = def.colorMapTextureIndex;
     }
 
     // Build array texture
@@ -59,18 +61,18 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &mBiomeColorMapsArrayTexture);
     glTextureStorage3D(mBiomeColorMapsArrayTexture, 1, GL_RGB8, COLOR_MAP_DIM_X, COLOR_MAP_DIM_Y, colorMapTextureIDs.size());
 
+    for (int i = 0; i < colorMapTextureIDs.size(); ++i) {
 
-    for (auto& [assetId, layerIndex] : colorMapTextureIDs) {
-
-        gli::texture2d layerData = TextureRepository::get().loadRawPngData(assetId, false);
+        gli::texture2d layerData = TextureRepository::get().loadRawPngData(colorMapTextureIDs[i], false);
         assert(layerData.extent().x == COLOR_MAP_DIM_X);
         assert(layerData.extent().y == COLOR_MAP_DIM_Y);
+        assert(layerData.format() == gli::format::FORMAT_RGB8_UNORM_PACK8);
 
         glTextureSubImage3D(mBiomeColorMapsArrayTexture,
             0,
             0,
             0,
-            layerIndex,
+            i,
             COLOR_MAP_DIM_X,
             COLOR_MAP_DIM_Y,
             1,
