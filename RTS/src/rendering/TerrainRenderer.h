@@ -28,5 +28,6 @@ private:
     AssetHandleBundle mShaderAssets;
     // Owned by the world
     VGTexture mBiomeTexture = 0;
+    f32 mInverseWorldWidth = 0.0f;
 };
 

@@ -102,13 +102,13 @@ void TerrainMeshBuilder::initStaticIBO() {
     checkGlError("TerrainMesh::initGlobalIBO");
 }
 
-void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPos) {
+void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPosTreeRoot) {
 
     terrainMesh.mUVRoot = mUVRoot;
 
     // Set bounds
-    terrainMesh.setPosition(worldPos);
-    waterMesh.setPosition(worldPos);
+    terrainMesh.setPosition(worldPosTreeRoot);
+    waterMesh.setPosition(worldPosTreeRoot);
     terrainMesh.setBoundingSphere(mBoundingSphere);
     waterMesh.setBoundingSphere(mBoundingSphere);
 
@@ -142,9 +142,9 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
     f32 maxZ = -FLT_MAX;
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
-    constexpr f32 UV_SCALE = 0.05f;
 
-    { // Compute with high precision
+    { // Compute with high precision to avoid precision issues in shader
+        constexpr f32 UV_SCALE = 0.05f;
         f64v2 rootUVDouble = f64v2(worldPosTreeRoot) * f64(UV_SCALE);
         f64 intpart;
         mUVRoot.x = (f32)modf(rootUVDouble.x, &intpart);

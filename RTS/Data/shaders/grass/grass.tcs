@@ -8,6 +8,7 @@ layout (vertices = 3) out;
 in vec3 fWorldPos[];
 in float fHeight[];
 flat in vec3 fWorldRoot[];
+flat in vec2 fRelXY[];
 in vec2 fUV[];
 flat in int fGrassMaterial[];
 in float fDistance[];
@@ -15,6 +16,7 @@ in vec2 fLean[];
 
 // attributes of the output CPs
 out vec3 tWorldPos[];
+out vec2 tRelXY[];
 out float tHeight[];
 flat out vec3 tWorldRoot[];
 out vec2 tUV[];
@@ -46,6 +48,7 @@ void main()
     tWorldPos[gl_InvocationID] = fWorldPos[gl_InvocationID];
     tHeight[gl_InvocationID] = fHeight[gl_InvocationID];
     tWorldRoot[gl_InvocationID] = fWorldRoot[gl_InvocationID];
+    tRelXY[gl_InvocationID] = fRelXY[gl_InvocationID];
     tUV[gl_InvocationID] = fUV[gl_InvocationID];
     tGrassMaterial[gl_InvocationID] = fGrassMaterial[gl_InvocationID];
     tDistance[gl_InvocationID] = fDistance[gl_InvocationID];

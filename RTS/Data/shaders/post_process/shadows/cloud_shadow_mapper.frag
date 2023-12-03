@@ -9,7 +9,8 @@ out vec4 fColor;
 void main()
 {
   MaterialData mtl = inMaterials[fMaterialIndex];
-  if (sampleMaterialAlbedo(mtl, fUV).a < 0.99) {
+  // TODO: There is something wrong with the dds compression for cloud_sil as its storing alpha in G...
+  if (sampleMaterialAlbedo(mtl, fUV).g < 0.99) {
     discard;
   }
   float depth = gl_FragCoord.z;

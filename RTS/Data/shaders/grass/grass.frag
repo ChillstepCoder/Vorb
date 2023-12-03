@@ -13,8 +13,9 @@ uniform float unColorMapScale = 0.1;
 
 uniform int unDebugLines = 0;
 
+uniform vec2 unUVRoot;
 
-flat in vec3 fWorldRoot;
+flat in vec2 fRelXY;
 in vec2 fUV;
 flat in int fGrassMaterial;
 in float fDistance;
@@ -27,13 +28,20 @@ float InvSmoothStep(float x) {
     return x + (x - (x * x * (3.0 - 2.0 * x)));
 }
 
+// TODO: REMOVE
+uniform vec3 unPosition;
+
+const float UV_SCALE = 0.05;
+
 void main() {
     vec4 color;
     // TODO: Lower settings disable transparency?
     
-    vec2 worldUV = fWorldRoot.xy * 0.05;
+    // TODO: Fix
+    vec2 worldUV = unUVRoot + fRelXY.xy * UV_SCALE;
+    worldUV = 0.000001 * worldUV + (unPosition.xy + fRelXY) * UV_SCALE;
     float cellNoiseColor = texture(CellNoise, worldUV * unColorMapScale).r;
-    vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y);
+    vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y * 0.0001);
     
     
     int materialID = unGrassData[fGrassMaterial].material;

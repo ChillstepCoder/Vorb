@@ -12,7 +12,7 @@ uniform vec2 unScale;
 uniform float unLeanVariance;
 
 out vec3 fWorldPos;
-flat out vec3 fWorldRoot;
+flat out vec2 fRelXY;
 out float fHeight;
 out vec2 fUV;
 flat out int fGrassMaterial;
@@ -83,7 +83,7 @@ void main() {
     
     // Wind
     vec2 randSeed = vec2(vPosition.xy);
-    fWorldRoot = vPosition.xyz + unPosition;
+    fRelXY = vPosition.xy;
     fHeight = 0.0; // TODO: HEIGHT
 	
 	gl_Position = VP * cameraRelativePos;

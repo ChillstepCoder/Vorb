@@ -54,6 +54,7 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
     VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
     VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
     VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
+    VGUniform uvRootUniform = program.getUniform("unUVRoot");
     glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
     glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
@@ -69,6 +70,16 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
 
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMeshRenderData& renderData = grassMesh.renderData;
+
+        { // Compute with high precision to avoid precision issues in shader
+            constexpr f32 UV_SCALE = 0.05f;
+            f64v2 rootUVDouble = f64v2(grassMesh.pos.x, grassMesh.pos.y) * f64(UV_SCALE);
+            f64 intpart;
+            f32v2 rootUv;
+            rootUv.x = (f32)modf(rootUVDouble.x, &intpart);
+            rootUv.y = (f32)modf(rootUVDouble.y, &intpart);
+            glUniform2fv(uvRootUniform, 1, &rootUv.x);
+        }
         glUniform3fv(positionUniform, 1, &grassMesh.pos.x);
         //TODO: Move out and cache
         //int crossfadeDir = grassMesh->mCrossfadeDir.load();

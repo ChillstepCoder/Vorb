@@ -32,6 +32,7 @@ TerrainRenderer::TerrainRenderer() {
 
 void TerrainRenderer::onWorldBegin(World& world) {
     mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
+    mInverseWorldWidth = (f32)(1.0 / (f64)world.getWidthTiles());
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes) {
@@ -44,6 +45,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     ui32 nextTextureUnit = 0;
     MaterialRenderer::bindMaterialShaderForRender(*mTerrainMaterial, &nextTextureUnit);
     // Terrain uniforms
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unInverseWorldWidth"), mInverseWorldWidth);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);

@@ -15,7 +15,7 @@ uniform vec2 unScale;
 uniform float unLeanVariance;
 
 out vec3 fWorldPos;
-flat out vec3 fWorldRoot;
+flat out vec2 fRelXY;
 out float fHeight;
 out vec2 fUV;
 flat out int fGrassMaterial;
@@ -80,13 +80,14 @@ void main() {
 	
 	vec4 cameraRelativePos = vertexPosition - vec4(CameraPos, 0.0);
     
+    fRelXY = vPosition.xy;
+    
     // Wind
-    fWorldRoot = vPosition.xyz + unPosition;
+    vec3 worldRoot = vPosition.xyz + unPosition;
     
     // Displace the vertex along the normal
-    float wind = getWindAtPosition(-Time + xyzOffset.z, vec4(fWorldRoot, 0.0)) * WIND_INTENSITY;
+    float wind = getWindAtPosition(-Time + xyzOffset.z, vec4(worldRoot, 0.0)) * WIND_INTENSITY;
     vec3 windOffset = vec3(wind, wind, 0.35 * wind);
-    fWorldRoot.xyz += windOffset;
     cameraRelativePos.xyz += windOffset;
     
     fHeight = 0.0; // TODO: HEIGHT

@@ -11,12 +11,13 @@ uniform vec3 unPlayerPos;
 in vec3 tWorldPos[];
 in float tHeight[];
 flat in vec3 tWorldRoot[];
+flat in vec2 tRelXY[];
 in vec2 tUV[];
 flat in int tGrassMaterial[];
 in float tDistance[];
 in vec2 tLean[];
 
-flat out vec3 fWorldRoot;
+flat out vec2 fRelXY;
 out vec2 fUV;
 flat out int fGrassMaterial;
 out float fDistance;
@@ -63,6 +64,6 @@ void main()
     
     
     worldPos.xy += collisionForce;
-    fWorldRoot = tWorldRoot[0];
+    fRelXY = tRelXY[0];
     gl_Position = VP * vec4(worldPos, 1.0);
 }
