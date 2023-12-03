@@ -38,6 +38,8 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     std::map<AssetID, ui32> colorMapTextureIDs;
 
     // Get all texture layers
+    std::vector<ui32> ssboData;
+    ssboData.reserve(mAssetRegistry.size());
     for (auto& asset : mAssetRegistry) {
         BiomeDef& def = *mAssets[asset.getId()];
         AssetID textureId = def.colorMapTexture.getAssetID();
@@ -49,12 +51,14 @@ void BiomeRepository::onAllAssetTypesRegistered() {
             def.colorMapTextureIndex = colorMapTextureIDs.size();
             colorMapTextureIDs.emplace(textureId, colorMapTextureIDs.size());
         }
+        ssboData.emplace_back(def.colorMapTextureIndex);
     }
 
     // Build array texture
     assert(!mBiomeColorMapsArrayTexture);
     glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &mBiomeColorMapsArrayTexture);
     glTextureStorage3D(mBiomeColorMapsArrayTexture, 1, GL_RGB8, COLOR_MAP_DIM_X, COLOR_MAP_DIM_Y, colorMapTextureIDs.size());
+
 
     for (auto& [assetId, layerIndex] : colorMapTextureIDs) {
 
@@ -81,6 +85,7 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     // Build shader data buffer
     assert(!mBiomeColorMapsShaderLookupBuffer);
     glCreateBuffers(1, &mBiomeColorMapsShaderLookupBuffer);
+    glNamedBufferStorage(mBiomeColorMapsShaderLookupBuffer, sizeof(ui32) * ssboData.size(), ssboData.data(), 0);
 
     // TODO: Load mapping file so we can persist biome IDs for mods?
 }

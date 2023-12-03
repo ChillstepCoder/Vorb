@@ -5,8 +5,6 @@
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
-uniform sampler2D PlainsGradients;
-uniform sampler2D MountainGradients;
 uniform sampler2D CellNoise;
 uniform sampler2D TurbulentNoise;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
@@ -48,7 +46,7 @@ const vec3 BIOME_COLORS[4] = {
     vec3(0.0, 1.0, 1.0), // HOT SPRINGS
 };
 
-uniform sampler2DArray BiomeColorMapsTexture;
+uniform sampler2DArray unBiomeColorMapsTexture;
 layout(std430, binding = 4) readonly buffer BiomeColorMapLookup
 {
     uint biomeColorMapLookup[];
@@ -130,16 +128,27 @@ void main() {
     //currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
     //oColor.rgb = hsv2rgb(currhsv);
     
+    float preturbX = texture(TurbulentNoise, fBiomeUV * 1000.0 * unBiomeBlendFrequency).r * 2.0 - 1.0;
+    float preturbY = texture(TurbulentNoise, -fBiomeUV * 1000.0 * unBiomeBlendFrequency).r * 2.0 - 1.0;
+    //float preturbY = -preturbX;
     
     // Texture and color
+    int biome = int(round(texture(unBiomeTexture, fBiomeUV + vec2(preturbX, preturbY) * 0.001 * unBiomeBlendScale).r * 255.0));
+    //if (biome < 4) {
+    //    oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);
+    //}
+    
+    //if (biome == 255) {
+    //    oColor.rgb = vec3(1.0,1.0,1.0);
+    //}
+    
     float cellNoiseColor = texture(CellNoise, fUV * unColorMapScale).r;
     float u = 1.0 - cellNoiseColor;
     float v = textureColor.r;
     vec2 uv = vec2(u, v);
-    oColor.rgb = texture(PlainsGradients, uv).rgb;
-    if (fHeight > 50.0) {
-        oColor.rgb = mix(oColor.rgb, texture(MountainGradients, uv).rgb, min((fHeight - 50.0) * 0.1, 1.0));
-    }
+    vec3 terrainGrad = texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
+    oColor.rgb *= terrainGrad;
+   
     
     // =========== Distance color ===========
     vec3 colorNormal = normal.rgb; // normal
@@ -175,10 +184,11 @@ void main() {
         vec2 uv = vec2(fract(scaledUV.x), fract(scaledUV.y));
         if (uv.x > 0.9 || uv.y > 0.9) {
             oColor.rgb = vec3(0.0);
-        } else {
-            vec2 uv2 = vec2(uv.x * (1.0 / 0.9), textureColor.r);
-            oColor.rgb = texture(PlainsGradients, uv2).rgb;
-        }
+        } 
+        //else {
+        //    vec2 uv2 = vec2(uv.x * (1.0 / 0.9), textureColor.r);
+        //    oColor.rgb = texture(PlainsGradients, uv2).rgb;
+        //}
     }
     
     oColor.a = 1.0; // AO
@@ -194,22 +204,6 @@ void main() {
     // TODO: Cosine curve so only shore is wet?
     oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
     
-    // Testing biomes
-    
-    //noise(vec3 position, int octaves, float frequency, float persistence)
-    //float preturbX = noise(vec3(fBiomeUV, 0.0), 6, 2000.0, 0.65);
-    float preturbX = texture(TurbulentNoise, fBiomeUV * 1000.0 * unBiomeBlendFrequency).r * 2.0 - 1.0;
-    //float preturbY = -preturbX;
-    float preturbY = texture(TurbulentNoise, -fBiomeUV * 1000.0 * unBiomeBlendFrequency).r * 2.0 - 1.0;
-    //float preturbY = noise(vec3(0.0, fBiomeUV.y, fBiomeUV.x), 3, 1000.0, 0.65);
-    
-    int biome = int(round(texture(unBiomeTexture, fBiomeUV + vec2(preturbX, preturbY) * 0.001 * unBiomeBlendScale).r * 255.0));
-    if (biome < 4) {
-        oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);
-    }
-    if (biome == 255) {
-        oColor.rgb = vec3(1.0,1.0,1.0);
-    }
         
     // Debug draw cell noise
     //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);

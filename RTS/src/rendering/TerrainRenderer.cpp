@@ -16,6 +16,7 @@
 #include "world/biome/BiomeGrid.h"
 
 #include "resources/ResourceManager.h"
+#include "resources/BiomeRepository.h"
 #include "camera/Camera3D.h"
 #include "mesh/Mesh.h"
 #include "mesh/MeshDrawer.h"
@@ -58,6 +59,12 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     VGUniform uvRootUniform = mTerrainMaterial->mProgram.getUniform("unUVRoot");
     glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeTexture"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, mBiomeTexture);
+
+    ++nextTextureUnit;
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
 
     for (auto&& terrainMesh : terrainMeshes) {
         const BoundingSphere& bounds = terrainMesh->getBoundingSphere();

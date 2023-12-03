@@ -7,9 +7,5 @@ textures:
     uniform: GrassTexture
   - name: cell_noise
     uniform: CellNoise
-  - name: terrain_gradients
-    uniform: PlainsGradients
-  - name: terrain_grad_mtns
-    uniform: MountainGradients
   - name: turbulent_noise
     uniform: TurbulentNoise
