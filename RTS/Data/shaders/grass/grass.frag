@@ -38,8 +38,10 @@ void main() {
     // TODO: Lower settings disable transparency?
     
     // TODO: Fix
-    vec2 worldUV = unUVRoot + fRelXY.xy * UV_SCALE;
-    worldUV = 0.000001 * worldUV + (unPosition.xy + fRelXY) * UV_SCALE;
+    vec2 worldUV = fract(unUVRoot + fRelXY.xy * UV_SCALE * 0.1);
+    vec2 testUV = fract((unPosition.xy + fRelXY) * UV_SCALE * 0.1);
+    worldUV = mix(worldUV, testUV, 0.9999);
+    //worldUV = 0.000001 * worldUV + testUV;
     float cellNoiseColor = texture(CellNoise, worldUV * unColorMapScale).r;
     vec2 gradientUV = vec2(1.0 - cellNoiseColor, fUV.y * 0.0001);
     
@@ -86,6 +88,8 @@ void main() {
     
     // Normal (Upwards)
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);
+    worldUV.x = 0.0;
+    oColor.rgba = oColor.rgba * 0.00001 + vec4(worldUV, 0.0, 1.0);
     
     // Metallic Roughness
 	oMetallicRoughness.r = 0.0;
