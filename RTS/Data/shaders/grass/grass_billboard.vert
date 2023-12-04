@@ -3,6 +3,7 @@
 #include "GrassUbo.glsl"
 #include "NormalUtil.glsl"
 #include "util/wind.glsl"
+#include "terrain/biome_util.glsl"
 
 
 const float WIND_INTENSITY = 0.3; // TODO: PASS IN
@@ -13,11 +14,13 @@ uniform vec3 unPosition;
 uniform float UnYOffset = 1.0;
 uniform vec2 unScale;
 uniform float unLeanVariance;
+uniform float unInverseWorldWidth;
 
 out vec3 fWorldPos;
 flat out vec2 fRelXY;
 out float fHeight;
 out vec2 fUV;
+flat out int fBiome;
 flat out int fGrassMaterial;
 out float fDistance;
 
@@ -56,6 +59,11 @@ float rand(vec2 co){
   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+void computeBiome(vec2 worldRoot) {
+    vec2 biomeUV = worldRoot * unInverseWorldWidth;
+    fBiome = getBiome(biomeUV);
+}
+
 void main() {
     int bladeIndex = (gl_VertexID / 4);
 	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
@@ -84,6 +92,9 @@ void main() {
     
     // Wind
     vec3 worldRoot = vPosition.xyz + unPosition;
+    
+    // Biome
+    computeBiome(worldRoot.xy);
     
     // Displace the vertex along the normal
     float wind = getWindAtPosition(-Time + xyzOffset.z, vec4(worldRoot, 0.0)) * WIND_INTENSITY;

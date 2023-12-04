@@ -27,7 +27,7 @@ DebugOptions::DebugOptions() :
     mGrassScale(1.0f, 1.0f),
     mGrassLeanVariance(1.0f),
     mGrassDitherPower(0.5f),
-    mGrassColorMapScale(0.1f),
+    mGrassColorMapScale(0.005f),
     mDebugGrassLod(false),
     mHideGrass(false),
     // Structures

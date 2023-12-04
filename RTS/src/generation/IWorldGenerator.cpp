@@ -138,6 +138,9 @@ Tile IWorldGenerator::generateTileForests(const f32v2& worldPos, f32 height, Til
 }
 
 Tile IWorldGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+
+    generateTileGrass(worldPos, height, grass);
+
     return Tile();
 }
 

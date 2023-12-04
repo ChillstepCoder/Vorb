@@ -8,6 +8,10 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/RenderStats.h"
 
+#include "world/World.h"
+#include "world/biome/BiomeGrid.h"
+#include "resources/BiomeRepository.h"
+
 #include "options/DebugOptions.h"
 #include "camera/Camera3D.h"
 
@@ -37,6 +41,11 @@ GrassRenderer::~GrassRenderer() {
 
 }
 
+void GrassRenderer::onWorldBegin(World& world) {
+    mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
+    mInverseWorldWidth = (f32)(1.0 / (f64)world.getWidthTiles());
+}
+
 void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshRenderDataWithPos>& grassMeshes) {
     if (grassMeshes.empty()) {
         return;
@@ -46,7 +55,8 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
     }
     
     const MaterialShaderDef* grassMaterial = mMaterials[e_cast(TileGrassMeshType::DEFAULT)];
-    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial);
+    ui32 nextTextureUnit = 0;
+    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial, &nextTextureUnit);
     const vg::GLProgram& program = grassMaterial->mProgram;
     VGUniform positionUniform = program.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
@@ -62,6 +72,17 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
     glUniform1f(program.getUniform("unDitherPower"), sDebugOptions.mGrassDitherPower);
     glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
 
+    glUniform1f(program.getUniform("unInverseWorldWidth"), mInverseWorldWidth);
+
+    glUniform1i(program.getUniform("unBiomeTexture"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, mBiomeTexture);
+
+    ++nextTextureUnit;
+    glUniform1i(program.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
+
     glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
     glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
     glUniform1i(tboNormalUniform, GRASS_TBO_NORMAL_DATA_BINDING);
@@ -72,8 +93,7 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
         const GrassBillboardMeshRenderData& renderData = grassMesh.renderData;
 
         { // Compute with high precision to avoid precision issues in shader
-            constexpr f32 UV_SCALE = 0.05f;
-            f64v2 rootUVDouble = f64v2(grassMesh.pos.x, grassMesh.pos.y) * f64(UV_SCALE);
+            f64v2 rootUVDouble = f64v2(grassMesh.pos.x, grassMesh.pos.y) * f64(sDebugOptions.mGrassColorMapScale);
             f64 intpart;
             f32v2 rootUv;
             rootUv.x = (f32)modf(rootUVDouble.x, &intpart);

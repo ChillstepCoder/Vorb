@@ -6,6 +6,7 @@ layout(location = 1) in vec3 vNormal;
 uniform vec3 unPosition;
 uniform vec2 unUVRoot;
 uniform float unInverseWorldWidth;
+uniform float unColorMapScale = 0.005;
 
 out float fHeight;
 out vec3 fPosition;
@@ -14,7 +15,6 @@ out vec2 fBiomeUV;
 out mat3 fTBN;
 
 const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
-const float UV_SCALE = 0.05;
 
 void main() {
     vec4 vertexPos = vPosition;
@@ -27,7 +27,7 @@ void main() {
     // TODO: TANGENT???
 	fTBN = mat3(TANGENT, binormal, normal);
 	
-    fUV = unUVRoot + vPosition.xy * UV_SCALE;
+    fUV = unUVRoot + vPosition.xy * unColorMapScale;
     fHeight = vertexPos.z;
     fPosition = worldPos.xyz;
 

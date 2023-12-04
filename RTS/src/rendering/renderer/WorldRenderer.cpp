@@ -492,6 +492,7 @@ void WorldRenderer::initEventHandlers() {
        ).first->second.get();
         mCharacterRenderer->onWorldBegin(world);
         mTerrainRenderer->onWorldBegin(world);
+        mGrassRenderer->onWorldBegin(world);
     });
     // TODO: We should do this on the render thread somehow
     //IWorld::addOnWorldEndListener(mWorldEventListeners, [this](IWorld& world) {

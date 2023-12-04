@@ -3,7 +3,7 @@ frag: grass.frag
 textures:
   - name: grey_noise
     uniform: GreyNoise
-  - name: grass_gradients
-    uniform: GrassGradients
   - name: cell_noise
     uniform: CellNoise
+  - name: turbulent_noise
+    uniform: TurbulentNoise

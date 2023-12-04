@@ -12,6 +12,7 @@ in vec3 tWorldPos[];
 in float tHeight[];
 flat in vec3 tWorldRoot[];
 flat in vec2 tRelXY[];
+flat in int tBiome[];
 in vec2 tUV[];
 flat in int tGrassMaterial[];
 in float tDistance[];
@@ -19,6 +20,7 @@ in vec2 tLean[];
 
 flat out vec2 fRelXY;
 out vec2 fUV;
+flat out int fBiome;
 flat out int fGrassMaterial;
 out float fDistance;
 
@@ -65,5 +67,6 @@ void main()
     
     worldPos.xy += collisionForce;
     fRelXY = tRelXY[0];
+    fBiome = tBiome[0];
     gl_Position = VP * vec4(worldPos, 1.0);
 }

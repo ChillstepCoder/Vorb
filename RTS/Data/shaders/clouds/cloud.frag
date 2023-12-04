@@ -31,20 +31,20 @@ void main() {
     tryDiscardTransparentPixel(fNormal.a);
     
     // TODO: Try uncommenting this line, see if talia likes it
-    //fNormal.a = 1.0;
+    fNormal.a = 1.0;
 
     // https://gamedev.stackexchange.com/questions/16588/computing-gl-fragdepth
-    float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);
-	float clipDepth = ndcDepth / gl_FragCoord.w;
-	vec4 cameraSpacePosition = InverseP * vec4(0.0, 0.0, clipDepth, 1.0 / gl_FragCoord.w);
+    //float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);
+	//float clipDepth = ndcDepth / gl_FragCoord.w;
+	//vec4 cameraSpacePosition = InverseP * vec4(0.0, 0.0, clipDepth, 1.0 / gl_FragCoord.w);
     
     // SUUPER HACKY DEPTH BULLSHIT LOL
-	cameraSpacePosition.z += norm.z * 10.0 - step(0.01, (1.0 - fNormal.a)) * 1000.0;
+	//cameraSpacePosition.z += norm.z * 10.0 - step(0.01, (1.0 - fNormal.a)) * 1000.0;
     
     // TODO: Do we actually care about this? gl_FragDepth is expensive
-    vec4 clipPos = P * vec4(cameraSpacePosition.xyz, 1.0);
-    ndcDepth = clipPos.z / clipPos.w;
-    gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
+    //vec4 clipPos = P * vec4(cameraSpacePosition.xyz, 1.0);
+    //ndcDepth = clipPos.z / clipPos.w;
+    //gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	
     // Screen space
 	norm = norm * 2.0 - 1.0;

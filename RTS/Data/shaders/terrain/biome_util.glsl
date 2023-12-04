@@ -2,7 +2,6 @@
 // Optional inputs
 uniform float unBiomeBlendScale = 1.0;
 uniform float unBiomeBlendFrequency = 1.0;
-uniform float unColorMapScale = 0.1;
 uniform float unDetailTextureStrength = 1.0;
 
 // .prog must define these inputs
@@ -30,6 +29,6 @@ int getBiome(vec2 biomeUvs) {
 }
 
 float getBiomeColorGradientUCoord(vec2 terrainUvs) {
-    float cellNoiseColor = texture(CellNoise, terrainUvs * unColorMapScale).r;
+    float cellNoiseColor = texture(CellNoise, terrainUvs).r;
     return 1.0 - cellNoiseColor;
 }

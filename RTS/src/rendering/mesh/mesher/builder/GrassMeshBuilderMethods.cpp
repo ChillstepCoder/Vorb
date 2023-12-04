@@ -33,9 +33,9 @@ static_assert(MAX_GRASS_DETAIL == 12);
 
 constexpr f32 GRASS_BLADE_WIDTHS[GRASS_QUADTREE_MAX_LOD] = {
     0.0f,
-    1.00f,
-    0.5f,
-    0.12f,
+    0.4f,
+    0.2f,
+    0.1f,
     0.05f,
 };
 
@@ -155,6 +155,13 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
     TileGrass paddedGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH];
     chunk.copyPaddedGrassDataWorkerThread(paddedGrassData);
 
+    const auto& getHeightAndNormalFunc = (lod == GRASS_QUADTREE_MAX_LOD) ? [](f32v2 worldPos, f32v3* outNormal, IHeightmapGrid& grid) -> f32 {
+        return grid.computeHeightAndNormalAtPoint<true>(worldPos, outNormal);
+    } : [](f32v2 worldPos, f32v3* outNormal, IHeightmapGrid& grid) -> f32 {
+        *outNormal = f32v3(0.0f, 0.0f, 1.0f);
+        return grid.computeHeightAtPoint<true>(worldPos);
+    };
+
     // Bounding sphere
     // TODO: This isn't accurate for slopey surfaces! We need a proper AABB
     BoundingSphere boundingSphere;
@@ -229,7 +236,7 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                                 const float yo = (y2 - rnd) / (float)detail;
                                 f32v3 relativePos(tileWorldOffset.x + xo, tileWorldOffset.y + yo, 0.0f);
                                 f32v3 normal;
-                                relativePos.z = heightmapGrid.computeHeightAndNormalAtPoint<true>(chunkWorldPos + f32v2(relativePos), &normal);
+                                relativePos.z = getHeightAndNormalFunc(chunkWorldPos + f32v2(relativePos), &normal, heightmapGrid);
                                 addGrass(grassMeshBuilder, grassData, grassNoiseFunction, relativePos, normal, rnd, (f32)detail, bladeWidth, densityMult, x, y, x2, y2);
                             }
                         }

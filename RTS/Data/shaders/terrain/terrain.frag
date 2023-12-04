@@ -106,14 +106,12 @@ float getTerrainDistanceFactor(float distance) {
 }
 
 vec3 getTerrainColor(vec2 terrainUvs, int biome, float distanceFactor) {
-    vec2 farUVs = -(terrainUvs * 0.1);
-    float detailValue = mix(texture(GrassTexture, terrainUvs).r, texture(GrassTexture, farUVs).r, distanceFactor) * unDetailTextureStrength;
+    float detailValue = texture(GrassTexture, terrainUvs * 10.0).r * unDetailTextureStrength;
     float u = getBiomeColorGradientUCoord(terrainUvs);
     float v = detailValue;
     vec2 uv = vec2(u, v);
     return texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
 }
-
 
 // =========== MAIN ===========
 void main() {

@@ -10,6 +10,7 @@
 class MaterialShaderDef;
 class GrassMesh;
 class Camera3D;
+class World;
 
 struct GrassMeshRenderDataWithPos {
     GrassBillboardMeshRenderData renderData;
@@ -21,6 +22,9 @@ class GrassRenderer
 public:
     GrassRenderer();
     ~GrassRenderer();
+
+    void onWorldBegin(World& world);
+
     void renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes);
 
     // Only call if you update any grass data through foliage editor or file reload
@@ -36,5 +40,9 @@ private:
 
     std::vector<GrassMeshRenderDataWithPos> mVisibleMeshes[e_count(TileGrassMeshType)];
     static VGBuffer sGrassUniformBuffer; // TODO: This will never be destroyed
+
+    // Owned by the world
+    VGTexture mBiomeTexture = 0;
+    f32 mInverseWorldWidth = 0.0f;
 };
 

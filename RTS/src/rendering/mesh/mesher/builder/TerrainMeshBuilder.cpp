@@ -5,6 +5,7 @@
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 
 #include "terrain/HeightmapPatch.h"
+#include "options/DebugOptions.h"
 
 #include <math.h>  /* modf */
 
@@ -144,8 +145,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
 
     { // Compute with high precision to avoid precision issues in shader
-        constexpr f32 UV_SCALE = 0.05f;
-        f64v2 rootUVDouble = f64v2(worldPosTreeRoot) * f64(UV_SCALE);
+        f64v2 rootUVDouble = f64v2(worldPosTreeRoot) * f64(sDebugOptions.mGrassColorMapScale);
         f64 intpart;
         mUVRoot.x = (f32)modf(rootUVDouble.x, &intpart);
         mUVRoot.y = (f32)modf(rootUVDouble.y, &intpart);

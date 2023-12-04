@@ -2,6 +2,7 @@
 #include "GlobalUbo.glsl"
 #include "GrassUbo.glsl"
 #include "NormalUtil.glsl"
+#include "terrain/biome_util.glsl"
 
 uniform samplerBuffer UnTboPosition;
 uniform samplerBuffer UnTboSizeType;
@@ -10,12 +11,14 @@ uniform vec3 unPosition;
 uniform float UnYOffset = 1.0;
 uniform vec2 unScale;
 uniform float unLeanVariance;
+uniform float unInverseWorldWidth;
 
 out vec3 fWorldPos;
 flat out vec3 fWorldRoot;
 flat out vec2 fRelXY;
 out float fHeight;
 out vec2 fUV;
+flat out int fBiome;
 flat out int fGrassMaterial;
 out float fDistance;
 out vec2 fLean;
@@ -55,6 +58,11 @@ float rand(vec2 co){
   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+void computeBiome(vec2 worldRoot) {
+    vec2 biomeUV = worldRoot * unInverseWorldWidth;
+    fBiome = getBiome(biomeUV);
+}
+
 void main() {
     int bladeIndex = (gl_VertexID / 4);
 	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
@@ -87,6 +95,10 @@ void main() {
     // Wind
     vec2 randSeed = vec2(vPosition.xy);
     fWorldRoot = vPosition.xyz + unPosition;
+    
+    // Biome
+    computeBiome(fWorldRoot.xy);
+    
     fRelXY = vPosition.xy;
     fHeight = xyzOffset.z;
 	
