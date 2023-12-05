@@ -42,11 +42,14 @@ private:
     };
 
     std::vector<TrackedChunk> mTrackedChunks;
-    std::unordered_map<ChunkID, ui32> mTrackedChunksLookup;
+    std::mutex mTrackedChunksMutex;
+    std::unordered_map<ChunkID, std::pair<ui32, bool /*isActive*/>> mTrackedChunksLookup;
 
     boost::container::flat_map<TileContainerID, GrassEventPair> mTileEditEventHandles;
 
     World& mWorld;
     moodycamel::ConcurrentQueue<std::pair<ChunkID, bool /*startTracking*/>> mChunkTrackChanges;
+    moodycamel::ConcurrentQueue<f32v2> mTileContainerEdits;
+
 };
 

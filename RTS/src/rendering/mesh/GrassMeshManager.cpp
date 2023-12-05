@@ -67,6 +67,7 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
 
 void GrassMeshManager::trackChunk(ChunkID chunkId) {
     const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+    std::lock_guard lock(mTrackedChunksMutex);
     auto&& it = mTrackedChunksLookup.find(chunkId);
     if (it == mTrackedChunksLookup.end()) {
         mTrackedChunksLookup.emplace(chunkId, TrackedChunk{ nullptr, &chunk, chunk.getWorldPosCenter2D() });
@@ -81,9 +82,10 @@ void GrassMeshManager::trackChunk(ChunkID chunkId) {
                 const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
 
                 if (editEvent.type == TileContainerEditEventType::ChangeZPos) {
-                    const Chunk* owner = evnt.container->getOwnerChunk();
-                    auto& quadtreePtr = mChunkGrassQuadtrees[owner];
-                    if (quadtreePtr) {
+
+                    std::lock_guard lock(mTrackedChunksMutex);
+                    auto&& it = mTrackedChunksLookup.find(evnt.container->getOwnerChunk()->getChunkID());
+                    if (it != mTrackedChunksLookup.end() && it->second.second) {
                         for (ui32 i = 0; i < editEvent.editCount; ++i) {
                             assert(owner);
                             TileContainerEditZPosEventData& data = editEvent.changeZPosArray[i];
@@ -108,7 +110,7 @@ void GrassMeshManager::trackChunk(ChunkID chunkId) {
 }
 
 void GrassMeshManager::stopTrackingChunk(ChunkID chunkId) {
-    x;
+    std::lock_guard lock(mTrackedChunksMutex);
     const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId)
     // If we never existed, return
     if (!chunk.getTileContainer()) {
