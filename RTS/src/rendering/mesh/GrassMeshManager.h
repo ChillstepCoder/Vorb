@@ -21,9 +21,7 @@ public:
     GrassMeshManager(World& world);
     ~GrassMeshManager();
 
-    void tickGameThread(const f32v2& loadCenter);
-    void addGrassForChunk(const Chunk& chunk);
-    void removeGrassForChunk(const Chunk& chunk);
+    void frameUpdate(const f32v2& loadCenter, f32 elapsedSec);
     void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);
 
     void addGrassMesh(const GrassMesh* mesh) { ASSERT_RENDER_THREAD(); mGrassMeshes.insert(mesh); }
@@ -33,9 +31,22 @@ public:
     const boost::container::flat_set<const GrassMesh*>& getGrassMeshes() const { ASSERT_RENDER_THREAD(); return mGrassMeshes; }
 
 private:
+    void trackChunk(ChunkID chunkId);
+    void stopTrackingChunk(ChunkID chunkId);
     boost::container::flat_set<const GrassMesh*> mGrassMeshes;
 
-    std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>> mChunkGrassQuadtrees;
+    struct TrackedChunk {
+        std::unique_ptr<ChunkGrassQuadtree> quadtree;
+        const Chunk* chunk;
+        f32v2 worldPosCenter;
+    };
+
+    std::vector<TrackedChunk> mTrackedChunks;
+    std::unordered_map<ChunkID, ui32> mTrackedChunksLookup;
+
     boost::container::flat_map<TileContainerID, GrassEventPair> mTileEditEventHandles;
+
+    World& mWorld;
+    moodycamel::ConcurrentQueue<std::pair<ChunkID, bool /*startTracking*/>> mChunkTrackChanges;
 };
 

@@ -9,14 +9,14 @@
 
 #include "options/DebugOptions.h"
 
-GrassMeshManager::GrassMeshManager(World& world) {
+GrassMeshManager::GrassMeshManager(World& world) : mWorld(world) {
     // TODO: LISTENERS!
     LOG_CRITICAL("Missing event listeners in GrassMeshManager::GrassMeshManager");
     world.getChunkGrid().addReadyListener([this](const Chunk& chunk) {
-        addGrassForChunk(chunk);
+        mChunkTrackChanges.enqueue(std::make_pair(chunk.getChunkID(), true));
     });
     world.getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
-        removeGrassForChunk(chunk);
+        mChunkTrackChanges.enqueue(std::make_pair(chunk.getChunkID(), false));
     });
 }
 
@@ -24,41 +24,52 @@ GrassMeshManager::~GrassMeshManager() {
 
 }
 
-void GrassMeshManager::tickGameThread(const f32v2& loadCenter) {
-    ASSERT_GAME_THREAD();
+void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
+    ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
 
-    // Update grass
-    for (auto&& it : mChunkGrassQuadtrees) {
-        const Chunk& chunk = *it.first;
-        if (chunk.isDataReady()) {
+    constexpr size_t BULK_SIZE = 64;
+    std::pair<ChunkID, bool /*startTracking*/> trackingChanges[BULK_SIZE];
+    if (size_t count = mChunkTrackChanges.try_dequeue_bulk(trackingChanges, BULK_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            auto&& data = trackingChanges[i];
+            if (data.second) {
+                trackChunk(data.first);
+            }
+            else {
+                stopTrackingChunk(data.first);
+            }
+        }
+    }
 
-            const f32 distSq = glm::length2(f32v2(chunk.getWorldPosCenter2D()) - loadCenter);
-
-            std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = it.second;
-            if (grassQuadtree) {
-                grassQuadtree->update(loadCenter);
-                if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
-                    if (grassQuadtree->getRefCount() == 0) {
-                        grassQuadtree.reset();
-                    }
-                }
-                else {
-                    grassQuadtree->update(loadCenter);
+    for (TrackedChunk& trackedChunk : mTrackedChunks) {
+        const f32 distSq = glm::length2(trackedChunk.worldPosCenter - loadCenter);
+        std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = trackedChunk.quadtree;
+        if (grassQuadtree) {
+            grassQuadtree->update(loadCenter, elapsedSec);
+            if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
+                if (grassQuadtree->getRefCount() == 0) {
+                    grassQuadtree.reset();
+                    trackedChunk.chunk->decRef();
                 }
             }
-            else if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
-                grassQuadtree = std::make_unique<ChunkGrassQuadtree>(chunk);
+            else {
+                grassQuadtree->update(loadCenter, elapsedSec);
+            }
+        }
+        else if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
+            if (trackedChunk.chunk->tryAquireThreadSafe()) {
+                grassQuadtree = std::make_unique<ChunkGrassQuadtree>(*trackedChunk.chunk);
             }
         }
     }
 }
 
-void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
-    ASSERT_GAME_THREAD();
-    auto&& it = mChunkGrassQuadtrees.find(&chunk);
-    if (it == mChunkGrassQuadtrees.end()) {
-        mChunkGrassQuadtrees[&chunk] = nullptr;
+void GrassMeshManager::trackChunk(ChunkID chunkId) {
+    const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+    auto&& it = mTrackedChunksLookup.find(chunkId);
+    if (it == mTrackedChunksLookup.end()) {
+        mTrackedChunksLookup.emplace(chunkId, TrackedChunk{ nullptr, &chunk, chunk.getWorldPosCenter2D() });
         // Const cast ~ get fucked
         Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
         TileContainer* container = chunkNonConst.getTileContainer();
@@ -91,10 +102,14 @@ void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
         );
         // Destroy will be handled by removeGrassForChunk
     }
+    else {
+        panic("Double add failure in GrassMeshManager::trackChunk");
+    }
 }
 
-void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
-    ASSERT_GAME_THREAD();
+void GrassMeshManager::stopTrackingChunk(ChunkID chunkId) {
+    x;
+    const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId)
     // If we never existed, return
     if (!chunk.getTileContainer()) {
         return;

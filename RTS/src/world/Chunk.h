@@ -142,10 +142,19 @@ public:
     const TileContainer* getTileContainer() const { return mTileContainer; }
 
     // =========== Ref counting  ===========
-	// Only game thread can incref but any thread can decref
+	// Try incref on another thread. Fails if chunk is being destroyed
+	inline bool tryAquireThreadSafe() const {
+		// Situations:
+		// 1. Main thread about to destroy, we succeed lock, but fail aquire because refcount == 0
+		// 2. Main thread about to create, we succeed lock, but fail because tileContainer is null
+		std::shared_lock lock(mTileContainerLifetimeMutex);
+		if (!mTileContainer) return false;
+		return mTileContainer->tryAquireThreadSafe();
+    }
+    // Only game thread can incref but any thread can decref
 	inline void incRef() const { ASSERT_GAME_THREAD();  mTileContainer->incRef(); }
 	inline void decRef() const { mTileContainer->decRef(); }
-    ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
+    ui32 getRefCount() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
 	void addStructure(Structure* structure);
 
@@ -163,6 +172,7 @@ private:
 
 	World* mWorld = nullptr;
 	TileContainer* mTileContainer = nullptr;
+	std::shared_mutex mTileContainerLifetimeMutex;
     std::vector<TileGrass> mGrass; // Grass densities
     mutable std::shared_mutex mSharedGrassMutex;
 	std::vector<StructureID> mStructures;

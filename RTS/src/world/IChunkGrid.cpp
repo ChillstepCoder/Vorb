@@ -79,7 +79,12 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     for (size_t i = 0; i < mDestroyingChunks.size();) {
         Chunk& chunk = mChunks[mDestroyingChunks[i]];
+
+        // Prevent a very rare race condition
+        chunk.mTileContainer->mLifetimeMutex.lock(); // LOCK
         if (chunk.getRefCount() == 0) {
+            // See TileContainer::tryAquireThreadSafe for why we need this lock
+            chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
             // Release height and notify only if we were ever valid
             if (chunk.mState != ChunkState::INVALID) {
                 dispatchDestroy(chunk);
@@ -89,6 +94,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
             mDestroyingChunks.pop_back();
         }
         else {
+            chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
             ++i;
         }
     }

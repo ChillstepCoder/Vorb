@@ -29,8 +29,6 @@ WorldRenderDataManager::~WorldRenderDataManager() {
 void WorldRenderDataManager::tickGameThread() {
     ASSERT_GAME_THREAD();
     const f32v2 loadCenter = mWorld.getLoadCenter();
-    mTerrainMeshManager->tickGameThread(loadCenter);
-    mGrassMeshManager->tickGameThread(loadCenter);
 }
 
 void WorldRenderDataManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
@@ -40,4 +38,7 @@ void WorldRenderDataManager::frameUpdate(const Camera3D& camera, f32 elapsedSec)
     const f32v2 loadCenter = mWorld.getLoadCenter();
     mCloudManager->frameUpdate(loadCenter);
     mTileContainerMeshManager->frameUpdate();
+
+    mTerrainMeshManager->frameUpdate(loadCenter, elapsedSec);
+    mGrassMeshManager->frameUpdate(loadCenter, elapsedSec);
 }

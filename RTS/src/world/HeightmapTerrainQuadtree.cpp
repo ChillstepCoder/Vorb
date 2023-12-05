@@ -100,7 +100,7 @@ void HeightmapTerrainQuadtree::updateCrossfadeRenderForPatch(ui32 patchIndex, f3
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
 {
-    ASSERT_GAME_THREAD();
+    ASSERT_RENDER_THREAD();
     if (!mTerrainMeshes[patchIndex] || !mWaterMeshes[patchIndex]) {
         mTerrainMeshes[patchIndex] = std::make_unique<TerrainMesh>(patchIndex);
         mWaterMeshes[patchIndex] = std::make_unique<TerrainMesh>(patchIndex);

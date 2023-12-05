@@ -60,12 +60,11 @@ void GrassMeshTaskData::operator delete(void* pointer, size_t size) {
 }
 
 ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorld().getHeightmapGrid(), chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
-    mChunk.incRef();
+
 }
 
 ChunkGrassQuadtree::~ChunkGrassQuadtree()
 {
-    mChunk.decRef();
     // Free all meshes on active nodes
     for (auto&& i : mActiveNodes) {
         freeMeshForPatch(i);
@@ -77,12 +76,11 @@ bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) 
 }
 
 void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
-    ASSERT_GAME_THREAD();
+    ASSERT_RENDER_THREAD();
     if (!mMeshes[patchIndex]) {
         mMeshes[patchIndex] = std::make_unique<GrassMesh>(patchIndex);
     }
     ++mRefCount;
-    mChunk.incRef();
 
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
@@ -92,27 +90,20 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     // Instantly generate
     Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData]() {
 
-        //PreciseTimer timer;
         GrassMeshTaskData* taskData = new GrassMeshTaskData(this, patchIndex, mMeshes[patchIndex]->mMesh);
         GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData);
 
-        // To render thread for upload
+        // Back to render thread for upload and state update
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
             GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
             taskData->owner->finishMesh(taskData->meshBuilder, taskData->patchIndex);
 
-            // Back to the main thread to update state
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
-                GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
-                ChunkGrassQuadtree* owner = taskData->owner;
-                const ui32 patchIndex = taskData->patchIndex;
-                owner->onMeshFinished(patchIndex, owner->mMeshes[patchIndex] != nullptr);
-
-                owner->mChunk.decRef();
-                --owner->mRefCount;
-                // Free resources
-                delete taskData;
-            }, taskData);
+            ChunkGrassQuadtree* owner = taskData->owner;
+            const ui32 patchIndex = taskData->patchIndex;
+            owner->onMeshFinished(patchIndex, owner->mMeshes[patchIndex] != nullptr);
+            --owner->mRefCount;
+            // Free resources
+            delete taskData;
         }, taskData);
     }, nullptr);
    

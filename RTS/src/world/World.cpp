@@ -401,6 +401,7 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
     renderState.mDebugQuads.clear();
     // Terrain debug rendering
     if (sDebugOptions.mDebugTerrainLod) {
+        assert(false); // Move to render thread
         WorldRenderDataManager& manager = RenderContext::getInstance().getRenderDataManagerForWorld(*this);
         for (auto&& terrainQuadtree : manager.getTerrainMeshManager().getTerrainQuadtrees()) {
             terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
@@ -409,6 +410,7 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
 
     // Grass debug rendering
     if (sDebugOptions.mDebugGrassLod) {
+        assert(false); // Move to render thread
         WorldRenderDataManager& manager = RenderContext::getInstance().getRenderDataManagerForWorld(*this);
         for (auto&& it : manager.getGrassMeshManager().getGrassQuadtrees()) {
             if (it.second) {

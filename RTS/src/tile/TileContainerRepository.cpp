@@ -30,6 +30,7 @@ TileContainer* TileContainerRepository::createNewEmptyBuildingContainer(ui32v3 r
 void TileContainerRepository::destroyTileContainer(TileContainer* container) {
     // TODO: Maybe just dont destroy this on the game thread
     assert(IS_GAME_THREAD() || IS_SHUTTING_DOWN);
+    assert(container->getRefCount() == 0 || IS_SHUTTING_DOWN);
 
     const TileContainerEvent destroyEvent{ container, {} };
     TileContainerRepository::dispatchDestroy(destroyEvent);

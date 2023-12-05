@@ -110,7 +110,7 @@ template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::ge
 
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
-void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 elapsedSec)
 {
     f32v2 mRelativeCenter = loadCenter - mWorldPos;
     bool needSort = false;
@@ -317,7 +317,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
     constexpr f32 CROSSFADE_AMMOUNT = 0.05f;
     for (ui32 i = 0; i < mNumCrossfading;) {
         ui16 crossfadeIndex = mCrossfadeActiveTable[i];
-        mCrossfadeTable[crossfadeIndex] += CROSSFADE_AMMOUNT/* * deltaTime*/;
+        mCrossfadeTable[crossfadeIndex] += CROSSFADE_AMMOUNT * elapsedSec;
         if (mCrossfadeTable[crossfadeIndex] >= 1.0f) {
             mCrossfadeActiveTable[i] = mCrossfadeActiveTable[--mNumCrossfading];
         }
@@ -332,5 +332,5 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
         // std::cout << "HAD TO SORT " << (unsigned long long)this << std::endl;
     }
 }
-template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::update(const f32v2&);
-template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::update(const f32v2&);
+template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::update(const f32v2&, f32);
+template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::update(const f32v2&, f32);

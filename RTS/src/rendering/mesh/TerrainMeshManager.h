@@ -13,9 +13,7 @@ public:
     TerrainMeshManager(World& world);
     ~TerrainMeshManager();
 
-    void tickGameThread(const f32v2& loadCenter);
-
-    void dirtyAllTerrain();
+    void frameUpdate(const f32v2& loadCenter, f32 elapsedSec);
 
     void addTerrainMesh(const TerrainMesh* mesh) { ASSERT_RENDER_THREAD(); mTerrainMeshes.insert(mesh); }
     void removeTerrainMesh(const TerrainMesh* mesh) { ASSERT_RENDER_THREAD(); mTerrainMeshes.erase(mesh); }

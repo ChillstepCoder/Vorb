@@ -32,23 +32,16 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 }
 
-void TerrainMeshManager::tickGameThread(const f32v2& loadCenter) {
-    ASSERT_GAME_THREAD();
+void TerrainMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
+    ASSERT_RENDER_THREAD();
     for (auto&& terrainQuadtree : mTerrainTrees) {
-        terrainQuadtree.update(loadCenter);
-    }
-}
-
-void TerrainMeshManager::dirtyAllTerrain() {
-    ASSERT_GAME_THREAD();
-    // Force all terrain to regenerate
-    for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
-        mTerrainTrees[i].markDirty();
+        terrainQuadtree.update(loadCenter, elapsedSec);
     }
 }
 
 void TerrainMeshManager::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
     PROFILE_FUNCTION();
+    ASSERT_RENDER_THREAD();
     const i32v2 ROOT_DIMS = HeightmapTerrainQuadtree::LOD_DIMS[0].xy;
     const f32v2 ROOT_HALF_DIMSF = HeightmapTerrainQuadtree::LOD_DIMS[0].xy / 2u;
     const i32v2 LEAF_DIMS = HeightmapTerrainQuadtree::LOD_DIMS[HeightmapTerrainQuadtree::HIGHEST_LOD].xy;

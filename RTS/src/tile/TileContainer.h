@@ -144,6 +144,21 @@ public:
     void setOwnedTileTo(TileIndex index, bool isOwned) { mOwnedTiles.setBitTo(index, isOwned); }
 
     // =========== Refcount  ===========
+    // Threads cannot incref while container is ready to destroy
+    bool tryAquireThreadSafe() const {
+        assert(!IS_GAME_THREAD());
+        // When refcount is 0, main thread is about to destroy this container
+        std::lock_guard lock(mLifetimeMutex);
+        if (mRefCount) {
+            // It is possible another thread decrefs here, resulting in a brief period of 0 ref,
+            // in which the main thread can then decide to destroy. Hence the lock being needed.
+            // With this lock, the main thread will block until we have increffed again, and we won't
+            // have a race condition
+            ++mRefCount;
+             return true;
+        }
+        return false;
+    }
     inline void incRef() const {
         ASSERT_GAME_THREAD(); // Only main thread is allowed to incref
         ++mRefCount;
@@ -207,6 +222,7 @@ private:
 
     BitArray mOwnedTiles;
     mutable std::shared_mutex mSharedMutex;
+    mutable std::mutex mLifetimeMutex;
 
     // Tile data
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression

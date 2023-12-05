@@ -92,7 +92,7 @@ public:
     void getDebugQuads(std::vector<DebugWireQuadState>& outQuads) const;
 
     // TODOL lightupdate, heavyupdate, only heavy when transition to diff cell, heavy determines splitting
-    void update(const f32v2& loadCenter);
+    void update(const f32v2& loadCenter, f32 elapsedSec);
 
     // Mark terrain as dirty at the brush position
     void onDataChanged(const f32v2& editPosition, f32 editRadius); // TODO: Deprecate?
