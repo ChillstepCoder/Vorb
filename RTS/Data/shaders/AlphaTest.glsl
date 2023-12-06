@@ -19,26 +19,29 @@ const float TRANSPARENCY_TABLE[256] =
   72,136, 39,250,104,226, 75,112,198,126, 66,213,110,203, 89,160
 };
 
+float getAlphaTestTransparencyModifier() {
+    const float SCALE_MOD = 16.0;
+    int index = int(mod(gl_FragCoord.x, SCALE_MOD)) + int(mod(gl_FragCoord.y, SCALE_MOD)) * 16;
+    return TRANSPARENCY_TABLE[index] / 255.0;
+}
+
 void runAlphaTest(float alpha, float alphaThreshold)
 {
-    const float SCALE_MOD = 16.0;
-	if (alphaThreshold > 0.0)
-	{
-        // OLD
-		//mat4 thresholdMatrix = mat4(
-		//	1.0  / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
-		//	13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
-		//	4.0  / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
-		//	16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0
-		//);
-		//alpha = clamp(alpha - 0.5 * thresholdMatrix[int(mod(gl_FragCoord.x, SCALE_MOD))][int(mod(gl_FragCoord.y, SCALE_MOD))], 0.0, 1.0);
-        
-		// http://alex-charlton.com/posts/Dithering_on_the_GPU/
-		// https://forums.khronos.org/showthread.php/5091-screen-door-transparency
-        int index = int(mod(gl_FragCoord.x, SCALE_MOD)) + int(mod(gl_FragCoord.y, SCALE_MOD)) * 16;
-        alpha = clamp(alpha - 0.5 * (TRANSPARENCY_TABLE[index] / 255.0), 0.0, 1.0);
+    float modifier = getAlphaTestTransparencyModifier();
+    // http://alex-charlton.com/posts/Dithering_on_the_GPU/
+    // https://forums.khronos.org/showthread.php/5091-screen-door-transparency
+    alpha = clamp(alpha - 0.5 * modifier, 0.0, 1.0);
 
-		if (alpha < alphaThreshold)
-			discard;
-	}
+    if (alpha < alphaThreshold)
+        discard;
+}
+
+void runAlphaTestManualModifier(float alpha, float alphaThreshold, float modifier)
+{
+    // http://alex-charlton.com/posts/Dithering_on_the_GPU/
+    // https://forums.khronos.org/showthread.php/5091-screen-door-transparency
+    alpha = clamp(alpha - 0.5 * modifier, 0.0, 1.0);
+
+    if (alpha < alphaThreshold)
+        discard;
 }

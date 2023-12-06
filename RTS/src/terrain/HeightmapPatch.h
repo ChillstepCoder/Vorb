@@ -39,7 +39,6 @@ public:
     BoundingSphere boundingSphere;
     f32AABB3 aabb;
     HeightmapPatchID id;
-    btCollisionObject* mCollider = nullptr;
     mutable std::shared_mutex mMutex;
 };
 

@@ -111,7 +111,6 @@ public:
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
 protected:
-    void onPatchFinishedGeneratingTODOREMOVE(HeightmapPatchID id); // TODO: REMOVE
     void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 

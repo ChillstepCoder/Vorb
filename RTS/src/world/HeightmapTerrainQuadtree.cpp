@@ -158,28 +158,15 @@ void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, 
     }
 }
 
-void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
-{
-    ASSERT_GAME_THREAD();
-
-    struct TerrainMeshFreeTask {
-        TerrainMeshFreeTask(std::unique_ptr<TerrainMesh>&& terrainMesh, std::unique_ptr<TerrainMesh>&& waterMesh, World& world) : terrainMesh(std::move(terrainMesh)), waterMesh(std::move(waterMesh)), world(world) {}
-
-        std::unique_ptr<TerrainMesh> terrainMesh;
-        std::unique_ptr<TerrainMesh> waterMesh;
-        World& world;
-    };
-
-    TerrainMeshFreeTask* freeTask = new TerrainMeshFreeTask(std::move(mTerrainMeshes[patchIndex]), std::move(mWaterMeshes[patchIndex]), mWorld);
-    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-        TerrainMeshFreeTask* taskData = static_cast<TerrainMeshFreeTask*>(vTaskData);
-        TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).getTerrainMeshManager();
-        if (taskData->terrainMesh) {
-            terrainMeshManager.removeTerrainMesh(taskData->terrainMesh.get());
-        }
-        if (taskData->waterMesh) {
-            terrainMeshManager.removeTerrainWaterMesh(taskData->waterMesh.get());
-        }
-        delete taskData;
-    }, freeTask);
+void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex) {
+    ASSERT_RENDER_THREAD();
+    TerrainMeshManager& terrainMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(mWorld).getTerrainMeshManager();
+    if (mTerrainMeshes[patchIndex]) {
+        terrainMeshManager.removeTerrainMesh(mTerrainMeshes[patchIndex].get());
+        mTerrainMeshes[patchIndex].reset();
+    }
+    if (mWaterMeshes[patchIndex]) {
+        terrainMeshManager.removeTerrainWaterMesh(mWaterMeshes[patchIndex].get());
+        mWaterMeshes[patchIndex].reset();
+    }
 }

@@ -110,7 +110,6 @@ const HeightmapPatchData* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& w
 }
 
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
-    ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
     return patch.mHeightData;
 }
@@ -346,17 +345,6 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray
         }
     }
     return meanHeight / (f32)total;
-}
-
-
-void IHeightmapGrid::onPatchFinishedGeneratingTODOREMOVE(HeightmapPatchID id) {
-    ASSERT_GAME_THREAD();
-    HeightmapPatch& patch = mHeightData[id];
-
-    assert(!patch.mHeightData->mCollider);
-    // Generate collider
-    patch.mHeightData->mCollider = mWorld->getPhysicsWorld().addHeightField(patch);
-
 }
 
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {

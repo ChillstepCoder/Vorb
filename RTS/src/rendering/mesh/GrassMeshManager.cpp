@@ -49,6 +49,20 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
             grassQuadtree->update(loadCenter, elapsedSec);
             if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
                 if (grassQuadtree->getRefCount() == 0) {
+                    TrackedChunkLookupData* lookupData;
+                    { // Critical section
+                        std::lock_guard lock(mTrackedChunksMutex);
+                        lookupData = &mTrackedChunksLookup[trackedChunk.chunk->getChunkID()];
+                        assert(lookupData->isActive);
+                        lookupData->isActive = false;
+                    }
+
+                    // Unregister for events
+                    Chunk& chunkNonConst = const_cast<Chunk&>(*trackedChunk.chunk);
+                    TileContainer* container = chunkNonConst.getTileContainer();
+                    container->removeEditTilesListener(lookupData->eventHandle.first);
+                    chunkNonConst.removeGrassEditListener(lookupData->eventHandle.second);
+
                     grassQuadtree.reset();
                     trackedChunk.chunk->decRef();
                 }
@@ -59,6 +73,41 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
         }
         else if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
             if (trackedChunk.chunk->tryAquireThreadSafe()) {
+                TrackedChunkLookupData* lookupData;
+                { // Critical section
+                    std::lock_guard lock(mTrackedChunksMutex);
+                    lookupData = &mTrackedChunksLookup[trackedChunk.chunk->getChunkID()];
+                    assert(!lookupData->isActive);
+                    lookupData->isActive = true;
+                }
+                // Register for edit events  // Const cast ~ get fucked
+                Chunk& chunkNonConst = const_cast<Chunk&>(*trackedChunk.chunk);
+                TileContainer* container = chunkNonConst.getTileContainer();
+                lookupData->eventHandle = std::make_pair(
+                    container->addEditTilesListener([this](const TileContainerEvent& evnt) {
+                    PROFILE_SCOPE("GrassEdit Dirty");
+                    ASSERT_GAME_THREAD();
+
+                    const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
+
+                    if (editEvent.type == TileContainerEditEventType::ChangeZPos) {
+                        // TODO: We could build a bulk enqueue array
+                        std::lock_guard lock(mTrackedChunksMutex);
+                        auto&& it = mTrackedChunksLookup.find(evnt.container->getOwnerChunk()->getChunkID());
+                        assert(it != mTrackedChunksLookup.end() && it->second.isActive);
+                        for (ui32 i = 0; i < editEvent.editCount; ++i) {
+                            TileContainerEditZPosEventData& data = editEvent.changeZPosArray[i];
+                            mTileContainerEdits.enqueue(data.worldPosition);
+                        }
+                    }
+                }),
+                    chunkNonConst.addGrassEditListener([this](const ChunkEvent& evnt) {
+                    std::lock_guard lock(mTrackedChunksMutex);
+                    auto&& it = mTrackedChunksLookup.find(evnt.chunk.getChunkID());
+                    assert(it != mTrackedChunksLookup.end() && it->second.isActive);
+                    const f32v2 worldPos = evnt.chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos2D(evnt.tileIndex);
+                    mTileContainerEdits.enqueue(worldPos);
+                }));
                 grassQuadtree = std::make_unique<ChunkGrassQuadtree>(*trackedChunk.chunk);
             }
         }
@@ -70,38 +119,12 @@ void GrassMeshManager::trackChunk(ChunkID chunkId) {
     std::lock_guard lock(mTrackedChunksMutex);
     auto&& it = mTrackedChunksLookup.find(chunkId);
     if (it == mTrackedChunksLookup.end()) {
-        mTrackedChunksLookup.emplace(chunkId, TrackedChunk{ nullptr, &chunk, chunk.getWorldPosCenter2D() });
-        // Const cast ~ get fucked
-        Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
-        TileContainer* container = chunkNonConst.getTileContainer();
-        mTileEditEventHandles[container->getId()] = std::make_pair(
-            container->addEditTilesListener([this](const TileContainerEvent& evnt) {
-                PROFILE_SCOPE("GrassEdit Dirty");
-                ASSERT_GAME_THREAD();
 
-                const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
-
-                if (editEvent.type == TileContainerEditEventType::ChangeZPos) {
-
-                    std::lock_guard lock(mTrackedChunksMutex);
-                    auto&& it = mTrackedChunksLookup.find(evnt.container->getOwnerChunk()->getChunkID());
-                    if (it != mTrackedChunksLookup.end() && it->second.second) {
-                        for (ui32 i = 0; i < editEvent.editCount; ++i) {
-                            assert(owner);
-                            TileContainerEditZPosEventData& data = editEvent.changeZPosArray[i];
-                            quadtreePtr->markDirty(f32v2(data.worldPosition));
-                        }
-                    }
-                }
-            }),
-            chunkNonConst.addGrassEditListener([this](const ChunkEvent& evnt) {
-                auto& quadtreePtr = mChunkGrassQuadtrees[&evnt.chunk];
-                if (quadtreePtr) {
-                    const f32v2 worldPos = evnt.chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos2D(evnt.tileIndex);
-                    quadtreePtr->markDirty(worldPos);
-                }
-            })
-        );
+        mTrackedChunksLookup.emplace(chunkId, TrackedChunkLookupData{
+            .index = (ui32)mTrackedChunks.size(),
+            .isActive = false
+            });
+        mTrackedChunks.emplace_back(TrackedChunk{ nullptr, &chunk, chunk.getWorldPosCenter2D() });
         // Destroy will be handled by removeGrassForChunk
     }
     else {
@@ -111,37 +134,14 @@ void GrassMeshManager::trackChunk(ChunkID chunkId) {
 
 void GrassMeshManager::stopTrackingChunk(ChunkID chunkId) {
     std::lock_guard lock(mTrackedChunksMutex);
-    const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId)
-    // If we never existed, return
-    if (!chunk.getTileContainer()) {
-        return;
-    }
-    auto&& it = mTileEditEventHandles.find(chunk.getTileContainer()->getId());
-    if (it != mTileEditEventHandles.end()) {
-        // Const cast ~ get fucked
-        Chunk& chunkNonConst = const_cast<Chunk&>(chunk);
-        TileContainer* container = chunkNonConst.getTileContainer();
-        // TODO: Can this be automatic? We are only holding a weak_ptr handle...
-        container->removeEditTilesListener(it->second.first);
-        chunkNonConst.removeGrassEditListener(it->second.second);
-        mTileEditEventHandles.erase(it);
-    }
-   
-    // TODO: uhhh....
-    //auto&& it = mChunkGrassQuadtrees.find(&chunk);
-    //if (it != mChunkGrassQuadtrees.end()) {
-    //    // If we hit this, it means that we didnt reset it in tick above before removing..
-    //    assert(it->second == nullptr);
-    //    mChunkGrassQuadtrees.erase(it);
-    //}
-}
-
-void GrassMeshManager::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
-    ASSERT_GAME_THREAD();
-    // Only update grass which was impacted by brush
-    for (auto&& quadtree : mChunkGrassQuadtrees) {
-        if (quadtree.second) {
-            quadtree.second->onDataChanged(pos, brushRadius);
-        }
+    auto&& it = mTrackedChunksLookup.find(chunkId);
+    if (it != mTrackedChunksLookup.end()) {
+        TrackedChunkLookupData& data = it->second;
+        // While we are active, we have a ref, so this should be impossible
+        assert(!data.isActive);
+        mTrackedChunksLookup[mTrackedChunks.back().chunk->getChunkID()].index = data.index;
+        mTrackedChunks[data.index] = std::move(mTrackedChunks.back());
+        mTrackedChunks.pop_back();
+        mTrackedChunksLookup.erase(it);
     }
 }

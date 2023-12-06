@@ -178,17 +178,6 @@ btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     return nullptr;//createStaticCollisionObject(INVALID_PHYSICS_USER_INDEX, INVALID_PHYSICS_USER_INDEX, center, heightFieldShape, CollisionGroup::TERRAIN);
 }
 
-void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
-    ASSERT_GAME_THREAD();
-    auto&& it = mHeightShapes.find(patch.mHeightData);
-    assert(it != mHeightShapes.end());
-    delete it->second;
-    mHeightShapes.erase(it);
-    mDynamicsWorld->removeCollisionObject(patch.mHeightData->mCollider);
-    freeStaticCollisionObject(patch.mHeightData->mCollider);
-    patch.mHeightData->mCollider = nullptr;
-}
-
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, CollisionGroup group, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
     CollisionShapeID shapeId = mShapeRepository.getOrAddCollisionShape(shapeType, halfExtents);
     return addRigidBody(ownerEntity, position, mShapeRepository.getShape(shapeId), mass, group, rotationType);

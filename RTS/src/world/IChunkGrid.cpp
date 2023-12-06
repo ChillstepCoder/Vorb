@@ -81,21 +81,37 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         Chunk& chunk = mChunks[mDestroyingChunks[i]];
 
         // Prevent a very rare race condition
-        chunk.mTileContainer->mLifetimeMutex.lock(); // LOCK
-        if (chunk.getRefCount() == 0) {
-            // See TileContainer::tryAquireThreadSafe for why we need this lock
-            chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
-            // Release height and notify only if we were ever valid
-            if (chunk.mState != ChunkState::INVALID) {
-                dispatchDestroy(chunk);
+        if (chunk.mTileContainer) {
+            chunk.mTileContainer->mLifetimeMutex.lock(); // LOCK
+            if (chunk.getRefCount() == 0) {
+                // See TileContainer::tryAquireThreadSafe for why we need this lock
+                chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
+                // Release height and notify only if we were ever valid
+                if (chunk.mState != ChunkState::INVALID) {
+                    dispatchDestroy(chunk);
+                }
+                chunk.dispose();
+                mDestroyingChunks[i] = mDestroyingChunks.back();
+                mDestroyingChunks.pop_back();
             }
-            chunk.dispose();
-            mDestroyingChunks[i] = mDestroyingChunks.back();
-            mDestroyingChunks.pop_back();
+            else {
+                chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
+                ++i;
+            }
         }
         else {
-            chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
-            ++i;
+            if (chunk.getRefCount() == 0) {
+                // Release height and notify only if we were ever valid
+                if (chunk.mState != ChunkState::INVALID) {
+                    dispatchDestroy(chunk);
+                }
+                chunk.dispose();
+                mDestroyingChunks[i] = mDestroyingChunks.back();
+                mDestroyingChunks.pop_back();
+            }
+            else {
+                ++i;
+            }
         }
     }
 }
@@ -358,6 +374,7 @@ void IChunkGrid::addChunkToActiveList(Chunk& chunk) {
     mActiveChunks.emplace_back(chunk.getChunkID());
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST));
     chunk.mFlags.setBit(ChunkFlags::IN_ACTIVE_LIST);
+    chunk.incRef();
 }
 
 void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
@@ -372,6 +389,7 @@ void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
             break;
         }
     }
+    chunk.decRef();
     // Make sure we removed
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST));
 }

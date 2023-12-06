@@ -23,6 +23,9 @@ public:
     const f32v3 getWorldPos3D() const { return f32v3(mWorldPos.x, mWorldPos.y, 0.0f); }
 
 private:
+    virtual void resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) override;
+    virtual void updateCrossfadeRenderForPatch(ui32 patchIndex, f32 crossfadeAlpha) override;
+
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
     void freeMeshForPatch(ui32 patchIndex) override;
     void finishMesh(GrassBillboardMeshBuilder& meshBuilder, ui32 patchIndex);

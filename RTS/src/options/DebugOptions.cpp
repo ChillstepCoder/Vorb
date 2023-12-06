@@ -26,7 +26,6 @@ DebugOptions::DebugOptions() :
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mGrassScale(1.0f, 1.0f),
     mGrassLeanVariance(1.0f),
-    mGrassDitherPower(0.5f),
     mGrassColorMapScale(0.005f),
     mDebugGrassLod(false),
     mHideGrass(false),

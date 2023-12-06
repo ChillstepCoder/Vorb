@@ -131,27 +131,25 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 e
             f32 currentCrossfade = mCrossfadeTable[patch.mCrossFadeTableIndex];
             if (currentCrossfade >= 1.0f) {
                 if (patch.mFlags & QUADTREE_PATCH_FLAG_CROSSFADING_OUT) {
-                    if (currentCrossfade >= 1.0f) {
-                        // Free mesh
-                        freeMeshForPatch(index);
-                        // Destroy and continue
-                        if (patch.didSignalRecombine()) {
-                            // We are combining into parent
-                            patch.destroy(QUADTREE_PATCH_STATUS_INVALID);
-                        }
-                        else {
-                            // We are subdividing into children
-                            patch.destroy(QUADTREE_PATCH_STATUS_SUBDIVIDED);
-                        }
-                        mActiveNodes[i] = mActiveNodes[--mNumActiveNodes];
-                        needSort = true;
-                        continue;
+                    // Free mesh
+                    freeMeshForPatch(index);
+                    // Destroy and continue
+                    if (patch.didSignalRecombine()) {
+                        // We are combining into parent
+                        patch.destroy(QUADTREE_PATCH_STATUS_INVALID);
                     }
+                    else {
+                        // We are subdividing into children
+                        patch.destroy(QUADTREE_PATCH_STATUS_SUBDIVIDED);
+                    }
+                    mActiveNodes[i] = mActiveNodes[--mNumActiveNodes];
+                    needSort = true;
+                    continue;
                 }
                 else {
                     patch.mFlags &= (~QUADTREE_PATCH_IS_CROSSFADING);
                 }
-                resetCrossfadeRenderForPatch(index, 0, currentCrossfade);
+                resetCrossfadeRenderForPatch(index, 0, 0.0f);
             }
             else {
                 updateCrossfadeRenderForPatch(index, currentCrossfade);
@@ -314,10 +312,10 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 e
     }
 
     // Update all crossfade, in separate table so we can deterministically bind crossfade for 5 patches at once (parent and children)
-    constexpr f32 CROSSFADE_AMMOUNT = 0.05f;
+    constexpr f32 CROSSFADE_SPEED = 2.0f; // 0.5s transition
     for (ui32 i = 0; i < mNumCrossfading;) {
         ui16 crossfadeIndex = mCrossfadeActiveTable[i];
-        mCrossfadeTable[crossfadeIndex] += CROSSFADE_AMMOUNT * elapsedSec;
+        mCrossfadeTable[crossfadeIndex] += CROSSFADE_SPEED * elapsedSec;
         if (mCrossfadeTable[crossfadeIndex] >= 1.0f) {
             mCrossfadeActiveTable[i] = mCrossfadeActiveTable[--mNumCrossfading];
         }
@@ -329,7 +327,6 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 e
     // Sort active nodes for cache efficiency
     if (needSort) {
         std::sort(mActiveNodes, mActiveNodes + mNumActiveNodes);
-        // std::cout << "HAD TO SORT " << (unsigned long long)this << std::endl;
     }
 }
 template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::update(const f32v2&, f32);

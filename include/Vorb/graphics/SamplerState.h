@@ -75,9 +75,12 @@ namespace vorb {
                 const vg::SamplerState POINT_CLAMP_MIPMAP;
                 const vg::SamplerState LINEAR_WRAP_MIPMAP;
                 const vg::SamplerState LINEAR_CLAMP_MIPMAP;
+                const vg::SamplerState LINEAR_CLAMPV;
+                const vg::SamplerState LINEAR_CLAMPV_MIPMAP;
+                const vg::SamplerState LINEAR_MIRROR;
             };
         };
-        static_assert(int(vg::SamplerStateType::COUNT) == 9, "Update with new");
+        static_assert(int(vg::SamplerStateType::COUNT) == 12, "Update with new");
 		extern SamplerStates sSamplerStates;
 	}
 }

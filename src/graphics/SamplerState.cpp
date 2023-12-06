@@ -12,10 +12,14 @@ vg::SamplerStates vg::sSamplerStates = {
         vg::SamplerState(vg::TextureMinFilter::NEAREST_MIPMAP_NEAREST, vg::TextureMagFilter::NEAREST, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), //POINT_CLAMP_MIPMAP
         vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR,   vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT), //LINEAR_WRAP_MIPMAP
         vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMP_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMPV
+        vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMPV_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT_MIRRORED, vg::TextureWrapMode::REPEAT_MIRRORED, vg::TextureWrapMode::REPEAT), // LINEAR_MIRROR
     }
 };
-static_assert(int(vg::SamplerStateType::COUNT) == 9, "Update with new");
+static_assert(int(vg::SamplerStateType::COUNT) == 12, "Update with new");
 
+// TODO: DELETE ME
 KEG_ENUM_DEF(SamplerStateType, vg::SamplerStateType, kt) {
     kt.addValue("POINT_WRAP", vg::SamplerStateType::POINT_WRAP);
     kt.addValue("POINT_CLAMP", vg::SamplerStateType::POINT_CLAMP);
@@ -27,7 +31,6 @@ KEG_ENUM_DEF(SamplerStateType, vg::SamplerStateType, kt) {
     kt.addValue("LINEAR_WRAP_MIPMAP", vg::SamplerStateType::LINEAR_WRAP_MIPMAP);
     kt.addValue("LINEAR_CLAMP_MIPMAP", vg::SamplerStateType::LINEAR_CLAMP_MIPMAP);
 }
-static_assert(int(vg::SamplerStateType::COUNT) == 9, "Update with new");
 
 vg::SamplerState::SamplerState(TextureMinFilter texMinFilter, TextureMagFilter texMagFilter, TextureWrapMode texWrapS, 
                                     TextureWrapMode texWrapT, TextureWrapMode texWrapR) :

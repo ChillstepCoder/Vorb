@@ -14,6 +14,9 @@ namespace vorb {
             POINT_CLAMP_MIPMAP,
             LINEAR_WRAP_MIPMAP,
             LINEAR_CLAMP_MIPMAP,
+            LINEAR_CLAMPV,
+            LINEAR_CLAMPV_MIPMAP,
+            LINEAR_MIRROR,
             COUNT
         };
         KEG_ENUM_DECL(SamplerStateType);

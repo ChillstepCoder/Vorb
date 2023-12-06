@@ -408,17 +408,6 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
         }
     }
 
-    // Grass debug rendering
-    if (sDebugOptions.mDebugGrassLod) {
-        assert(false); // Move to render thread
-        WorldRenderDataManager& manager = RenderContext::getInstance().getRenderDataManagerForWorld(*this);
-        for (auto&& it : manager.getGrassMeshManager().getGrassQuadtrees()) {
-            if (it.second) {
-                it.second->getDebugQuads(renderState.mDebugQuads);
-            }
-        }
-    }
-
     // Chunk debug rendering
     if (sDebugOptions.mChunkBoundaries) {
         const IChunkGrid& chunkGrid = getChunkGrid();

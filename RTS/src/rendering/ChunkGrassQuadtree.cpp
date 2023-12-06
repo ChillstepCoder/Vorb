@@ -75,6 +75,19 @@ bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) 
     return (length2(centerPos - cameraPos) - SQ(radius)) <= sDebugOptions.mGrassSettings.distanceSq - SQ(CHUNK_WIDTH * 0.5f); // SQ chunkwidth half will make it fit more closely (for some reason?)
 }
 
+void ChunkGrassQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {
+    auto& mesh = mMeshes[patchIndex];
+    assert(mesh);
+    mesh->mCrossfadeAlpha = crossfadeAlpha;
+    mesh->mCrossfadeDir = crossfadeDir;
+}
+
+void ChunkGrassQuadtree::updateCrossfadeRenderForPatch(ui32 patchIndex, f32 crossfadeAlpha) {
+    auto& mesh = mMeshes[patchIndex];
+    assert(mesh);
+    mesh->mCrossfadeAlpha = crossfadeAlpha;
+}
+
 void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
     ASSERT_RENDER_THREAD();
     if (!mMeshes[patchIndex]) {
@@ -111,21 +124,9 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
     if (mMeshes[patchIndex]) {
-
-        struct GrassMeshFreeTask {
-            GrassMeshFreeTask(std::unique_ptr<GrassMesh>&& grassMesh, World& world) : grassMesh(std::move(grassMesh)), world(world) {}
-
-            std::unique_ptr<GrassMesh> grassMesh;
-            World& world;
-        };
-
-        ASSERT_GAME_THREAD();
-        GrassMeshFreeTask* freeTask = new GrassMeshFreeTask(std::move(mMeshes[patchIndex]), mChunk.getWorld());
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-            GrassMeshFreeTask* taskData = static_cast<GrassMeshFreeTask*>(vTaskData);
-            RenderContext::getInstance().getRenderDataManagerForWorld(taskData->world).getGrassMeshManager().removeGrassMesh(taskData->grassMesh.get());
-            delete taskData;
-        }, freeTask);
+        RenderContext::getInstance().getRenderDataManagerForWorld(mChunk.getWorld()).getGrassMeshManager().removeGrassMesh(mMeshes[patchIndex].get());
+        mMeshes[patchIndex].reset();
+        ASSERT_RENDER_THREAD();
     }
 }
 

@@ -132,7 +132,6 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mGrassSettings.lodDistanceOffset, -50.0f, 150.0f, "%.1f");
         ImGui::SliderFloat2("Blade Scale", &sDebugOptions.mGrassScale.x, 0.5f, 8.0f);
         ImGui::SliderFloat("Lean Variance", &sDebugOptions.mGrassLeanVariance, 0.0f, 1.0f);
-        ImGui::SliderFloat("Dither Power", &sDebugOptions.mGrassDitherPower, 0.1f, 1.0f);
         ImGui::SliderFloat("Color Map Scale", &sDebugOptions.mGrassColorMapScale, 0.01f, 3.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
         ImGui::Checkbox("Disable", &sDebugOptions.mHideGrass);

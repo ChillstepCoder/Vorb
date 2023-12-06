@@ -21,13 +21,17 @@ public:
     GrassMeshManager(World& world);
     ~GrassMeshManager();
 
+    struct TrackedChunk {
+        std::unique_ptr<ChunkGrassQuadtree> quadtree;
+        const Chunk* chunk;
+        f32v2 worldPosCenter;
+    };
     void frameUpdate(const f32v2& loadCenter, f32 elapsedSec);
-    void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius);
 
     void addGrassMesh(const GrassMesh* mesh) { ASSERT_RENDER_THREAD(); mGrassMeshes.insert(mesh); }
     void removeGrassMesh(const GrassMesh* mesh) { ASSERT_RENDER_THREAD(); mGrassMeshes.erase(mesh); }
 
-    const std::map<const Chunk*, std::unique_ptr<ChunkGrassQuadtree>>& getGrassQuadtrees() const { ASSERT_GAME_THREAD(); return mChunkGrassQuadtrees; }
+    const std::vector<TrackedChunk>& getTrackedChunks() const { ASSERT_RENDER_THREAD(); return mTrackedChunks; }
     const boost::container::flat_set<const GrassMesh*>& getGrassMeshes() const { ASSERT_RENDER_THREAD(); return mGrassMeshes; }
 
 private:
@@ -35,17 +39,15 @@ private:
     void stopTrackingChunk(ChunkID chunkId);
     boost::container::flat_set<const GrassMesh*> mGrassMeshes;
 
-    struct TrackedChunk {
-        std::unique_ptr<ChunkGrassQuadtree> quadtree;
-        const Chunk* chunk;
-        f32v2 worldPosCenter;
+    struct TrackedChunkLookupData {
+        ui32 index;
+        bool isActive;
+        GrassEventPair eventHandle;
     };
 
     std::vector<TrackedChunk> mTrackedChunks;
     std::mutex mTrackedChunksMutex;
-    std::unordered_map<ChunkID, std::pair<ui32, bool /*isActive*/>> mTrackedChunksLookup;
-
-    boost::container::flat_map<TileContainerID, GrassEventPair> mTileEditEventHandles;
+    std::unordered_map<ChunkID, TrackedChunkLookupData> mTrackedChunksLookup;
 
     World& mWorld;
     moodycamel::ConcurrentQueue<std::pair<ChunkID, bool /*startTracking*/>> mChunkTrackChanges;

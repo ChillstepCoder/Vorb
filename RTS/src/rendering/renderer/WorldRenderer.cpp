@@ -10,6 +10,7 @@
 
 #include "debugging/DebugRenderer.h"
 #include "rendering/CharacterRenderer.h"
+#include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/EntityComponentSystemRenderer.h"
@@ -445,6 +446,20 @@ void WorldRenderer::renderDebug() {
     const std::vector<DebugWireQuadState>& debugQuads = mRenderState->getDebugQuads();
     for (const DebugWireQuadState& quad : debugQuads) {
         DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
+    }
+
+    // Grass
+    if (sDebugOptions.mDebugGrassLod) {
+        std::vector<DebugWireQuadState> newDebugQuads;
+        newDebugQuads.reserve(128);
+        for (auto&& trackedChunk : mCurrentWorldRenderDataManager->getGrassMeshManager().getTrackedChunks()) {
+            if (trackedChunk.quadtree) {
+                trackedChunk.quadtree->getDebugQuads(newDebugQuads);
+            }
+        }
+        for (const DebugWireQuadState& quad : debugQuads) {
+            DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
+        }
     }
 
     // Axis labels

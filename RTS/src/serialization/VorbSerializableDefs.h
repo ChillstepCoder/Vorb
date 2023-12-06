@@ -15,9 +15,12 @@ SERIALIZABLE_ENUM(vg::SamplerStateType, SamplerStateType,
     pair{ vg::SamplerStateType::POINT_WRAP_MIPMAP, "POINT_WRAP_MIPMAP"sv },
     pair{ vg::SamplerStateType::POINT_CLAMP_MIPMAP, "POINT_CLAMP_MIPMAP"sv },
     pair{ vg::SamplerStateType::LINEAR_WRAP_MIPMAP, "LINEAR_WRAP_MIPMAP"sv },
-    pair{ vg::SamplerStateType::LINEAR_CLAMP_MIPMAP, "LINEAR_CLAMP_MIPMAP"sv }
+    pair{ vg::SamplerStateType::LINEAR_CLAMP_MIPMAP, "LINEAR_CLAMP_MIPMAP"sv },
+    pair{ vg::SamplerStateType::LINEAR_CLAMPV, "LINEAR_CLAMPV"sv },
+    pair{ vg::SamplerStateType::LINEAR_CLAMPV_MIPMAP, "LINEAR_CLAMPV_MIPMAP"sv },
+    pair{ vg::SamplerStateType::LINEAR_MIRROR, "LINEAR_MIRROR"sv }
 )
-static_assert(e_count(vg::SamplerStateType) == 9, "Update with new");
+static_assert(e_count(vg::SamplerStateType) == 12, "Update with new");
 
 SERIALIZABLE_ENUM(vg::BlendStateType, BlendStateType,
     pair{ vg::BlendStateType::ALPHA, "alpha"sv },

@@ -172,7 +172,7 @@ private:
 
 	World* mWorld = nullptr;
 	TileContainer* mTileContainer = nullptr;
-	std::shared_mutex mTileContainerLifetimeMutex;
+	mutable std::shared_mutex mTileContainerLifetimeMutex;
     std::vector<TileGrass> mGrass; // Grass densities
     mutable std::shared_mutex mSharedGrassMutex;
 	std::vector<StructureID> mStructures;

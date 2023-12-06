@@ -7,7 +7,6 @@ uniform sampler2D GreyNoise;
 uniform float unFadeDistance = 1000.0;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
-uniform float unDitherPower = 0.5;
 uniform float unColorMapScale = 0.005;
 
 uniform int unDebugLines = 0;
@@ -51,18 +50,17 @@ void main() {
 	
 	// Distance fade
     // TODO: Can we do without a noise lookup?
-	float noiseVal = texture(GreyNoise, worldUV).r;
+	float noiseVal = texture(GreyNoise, worldUV * 20.0).r;
 	float fadeDist = unFadeDistance * 0.35;
 	float lerpVal = clamp(fDistance, 0.0, fadeDist) / fadeDist;
-	color.a *= clamp(mix(0.0, 1.0, 1.0 - ((noiseVal  + 1.0) * lerpVal)), 0.0, 1.0);
+	color.a *= clamp(mix(0.0, 1.0, 1.0 - ((noiseVal + 1.0) * lerpVal)), 0.0, 1.0);
 	
 	// Crossfade
-	float alpha = unCrossfadeAlpha * 0.05 + noiseVal * unCrossfadeAlpha + 0.4;
-	alpha = InvSmoothStep(alpha);
-	color.a = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), color.a);
-	color.a = clamp(color.a, 0.0, 1.0);
-	
-    runAlphaTest(pow(color.a, unDitherPower), 0.001);
+	float alphaThreshold = unCrossfadeAlpha;
+	alphaThreshold = mix(1.0 - alphaThreshold, alphaThreshold, unCrossfadeDirection);
+	color.a = color.a * alphaThreshold;
+    runAlphaTest(color.a, 0.001);
+    
     oColor.rgb = color.rgb;
     oColor.a = 1.0; // AO
     
@@ -74,6 +72,10 @@ void main() {
             oColor.rgb = vec3(0.0);
         }
     }
+    
+    //oColor.rgb = 0.0001 * oColor.rgb + vec3(unCrossfadeAlpha, alphaThreshold, 0.0);
+
+    
     
     // Normal (Upwards)
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);
