@@ -302,7 +302,7 @@
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\FlatWorldGenerator.cpp" />
-    <ClCompile Include="src\generation\WorldDataGPUGenerator.cpp" />
+    <ClCompile Include="src\generation\WorldDataGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
     <ClCompile Include="src\generation\IWorldGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGeneratorFactory.cpp" />
@@ -656,7 +656,7 @@
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\FlatWorldGenerator.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
-    <ClInclude Include="src\generation\WorldDataGPUGenerator.h" />
+    <ClInclude Include="src\generation\WorldDataGenerator.h" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
     <ClInclude Include="src\generation\IWorldGenerator.h" />
     <ClInclude Include="src\generation\WorldGeneratorFactory.h" />

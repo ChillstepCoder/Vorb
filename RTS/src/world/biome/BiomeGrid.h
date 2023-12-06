@@ -28,7 +28,7 @@ struct BiomeVertex {
 // Host only?
 class BiomeGrid
 {
-    friend class WorldDataGPUGenerator;
+    friend class WorldDataGenerator;
 public:
     BiomeGrid(ui32 worldWidthTiles);
     ~BiomeGrid();

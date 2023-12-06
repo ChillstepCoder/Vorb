@@ -11,13 +11,13 @@ DECL_VG(class GBuffer);
 
 class App;
 class HostWorldData;
-class WorldDataGPUGenerator;
+class WorldDataGenerator;
 class MaterialShaderDef;
 class OrthoCamera;
 
 enum class WorldGenScreenState {
     Idle,
-    GeneratingBaseHeight,
+    Generating,
     Done,
     COUNT
 };
@@ -44,7 +44,6 @@ public:
 protected:
     void initWorldData();
     void updateDockspace();
-    void updateBaseHeightGeneration();
 
     void beginWorldGeneration();
 
@@ -57,7 +56,7 @@ protected:
     bool mFirstEntry = true;
 
     std::unique_ptr<HostWorldData> mWorldData;
-    std::unique_ptr<WorldDataGPUGenerator> mWorldGenerator;
+    std::unique_ptr<WorldDataGenerator> mWorldGenerator;
 
     WorldGenerationData mGenData;
     WorldGenScreenState mGenState = WorldGenScreenState::Idle;
@@ -72,7 +71,6 @@ protected:
     float mFrameTimeThisFrame = 0.0f;
 
     ui32 mPatchPixelDims = 0;
-    std::atomic<ui32> mFinishedPatchCount = 0;
     ui32 mTotalPatches = 0;
     ui32 mThreadpoolSizePostEntry = 0;
     bool mIsDirty = false;

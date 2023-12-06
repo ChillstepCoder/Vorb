@@ -15,8 +15,8 @@ enum class WorldGenerationState {
     COUNT
 };
 
-struct PendingHeightGeneration {
-    ~PendingHeightGeneration();
+struct PendingBaseHeightAndBiomeGeneration {
+    ~PendingBaseHeightAndBiomeGeneration();
     GLsync sync = 0;
     ui32 rowIndexStart = 0;
     ui32 numRows = 0;
@@ -30,13 +30,13 @@ struct PendingHeightGeneration {
 // Stage 3 - Propagate biomes on GPU with checkerboard cellular automata
 // Stage 4 - Generate biome height on GPU -> Download height to CPU on finish per patch
 // Stage 5 - Carve rivers on CPU
-class WorldDataGPUGenerator
+class WorldDataGenerator
 {
 public:
-    WorldDataGPUGenerator();
-    ~WorldDataGPUGenerator();
+    WorldDataGenerator();
+    ~WorldDataGenerator();
 
-    void beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished);
+    void beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void()> onFinished);
 
     // Call before generating agian
     void cleanup();
@@ -61,10 +61,14 @@ private:
     bool initResourcesIfNeeded(i32 resolution);
 
     // ============== Generation Stages ==============
-    void updateGenerateBaseHeightmap();
+    void updateGenerateBaseHeightmapAndBiomes(); // Stage 1
+    //void updatePropagateBiomes(); // Stage 2
 
     // ============== Finish methods ==============
-    void finishPendingHeightGeneration(PendingHeightGeneration& generation);
+    void finishPendingBaseHeightAndBiomeGeneration(PendingBaseHeightAndBiomeGeneration& generation); // Stage 1
+
+    // Final method
+    void onCompletelyFinished();
 
     WorldGenerationState mState;
     HostWorldData* mWorldData = nullptr;
@@ -76,8 +80,10 @@ private:
 
     ui32 mNextGenerationIndex = 0;
     ui32 mNextRowToGenerate = 0;
-    std::vector<PendingHeightGeneration> mGPUTerrainGenerations;
-    std::function<void(HeightmapPatchID)> mOnPatchFinished;
+    std::vector<PendingBaseHeightAndBiomeGeneration> mGPUBaseHeightAndBiomeGenerations;
+
+    // Runs at very end
+    std::function<void()> mOnFinished;
 
     VGBuffer mTerrainSSBO = 0;
     VGTexture mHeightTexture = 0;
@@ -86,6 +92,8 @@ private:
     GLfloat * mMappedHeights = nullptr;
     ui32* mMappedBiomes = nullptr;
     f32 mWorldSeed = 0.f;
+    ui32 mTotalPatches = 0;
+    std::atomic<ui32> mFinishedPatchesThisStep = 0;
     bool mAllGenerationSentThisStep = false;
 };
 

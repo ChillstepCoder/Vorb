@@ -17,7 +17,7 @@
 
 #include "world/World.h"
 #include "world/WorldDefaults.h"
-#include "generation/WorldDataGPUGenerator.h"
+#include "generation/WorldDataGenerator.h"
 
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/RenderContext.h"
@@ -141,10 +141,8 @@ void WorldGenScreen::update(const vui::GameTime& gameTime) {
         switch (mGenState) {
             case WorldGenScreenState::Idle:
                 break;
-            case WorldGenScreenState::GeneratingBaseHeight: {
-                updateBaseHeightGeneration();
+            case WorldGenScreenState::Generating:
                 break;
-            }
             case WorldGenScreenState::Done:
                 break;
             default:
@@ -286,14 +284,17 @@ void WorldGenScreen::initWorldData() {
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
 
-    mGenState = WorldGenScreenState::GeneratingBaseHeight;
+    mGenState = WorldGenScreenState::Generating;
     
     mGenTimer.start();
     mPatchPixelDims = SCREEN_TEXTURE_RES / mWorldData->heightmapGrid->getSpatialGrid2D().getGridWidthCells();
     // Generate as fast as GPU can handle
     m_app->getWindow().setTemporaryUnlimitedFPS(true);
-    mWorldGenerator->beginGeneration(*mWorldData, mGenData, mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this](HeightmapPatchID finishedPatchID) {
-        ++mFinishedPatchCount;
+    mWorldGenerator->beginGeneration(*mWorldData, mGenData, mWorldData->worldWidth / HEIGHTMAP_QUAD_SIZE, [this]() {
+        assert(mGenState != WorldGenScreenState::Done);
+        mGenState = WorldGenScreenState::Done;
+        m_app->getWindow().setTemporaryUnlimitedFPS(false);
+        LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
     });
 
 }
@@ -347,25 +348,14 @@ void WorldGenScreen::updateDockspace()
     ImGui::End(); // End dockspace
 }
 
-void WorldGenScreen::updateBaseHeightGeneration()
-{
-    if (mFinishedPatchCount >= mTotalPatches) {
-        assert(mGenState != WorldGenScreenState::Done);
-        mGenState = WorldGenScreenState::Done;
-        m_app->getWindow().setTemporaryUnlimitedFPS(false);
-        LOG_DEBUG("Generation finished in {} ms", mGenTimer.stop());
-    }
-}
-
 void WorldGenScreen::beginWorldGeneration() {
     if (mWorldGenerator) {
         mWorldGenerator->cleanup();
     }
     else {
-        mWorldGenerator = std::make_unique<WorldDataGPUGenerator>();
+        mWorldGenerator = std::make_unique<WorldDataGenerator>();
     }
     mGenState = WorldGenScreenState::Idle;
-    mFinishedPatchCount = 0;
 
     initWorldData();
 

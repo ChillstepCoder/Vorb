@@ -61,7 +61,7 @@ struct HeightmapPickResult {
 // TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
 class IHeightmapGrid
 {
-    friend class WorldDataGPUGenerator;
+    friend class WorldDataGenerator;
 public:
     IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();

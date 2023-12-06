@@ -51,7 +51,6 @@ public:
     const boost::container::flat_set<const GrassMesh*>& getGrassMeshes() const { ASSERT_RENDER_THREAD(); return mGrassMeshes; }
 
 private:
-    void handleGrassEdit();
     void trackChunk(ChunkID chunkId);
     void stopTrackingChunk(ChunkID chunkId);
     boost::container::flat_set<const GrassMesh*> mGrassMeshes;

@@ -918,7 +918,7 @@
     <ClCompile Include="src\screens\WorldGenScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\generation\WorldDataGPUGenerator.cpp">
+    <ClCompile Include="src\generation\WorldDataGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resources\BiomeRepository.cpp">
@@ -2258,7 +2258,7 @@
     <ClInclude Include="src\world\host\HostWorldData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\generation\WorldDataGPUGenerator.h">
+    <ClInclude Include="src\generation\WorldDataGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\terrain\CompressedHeight.h">

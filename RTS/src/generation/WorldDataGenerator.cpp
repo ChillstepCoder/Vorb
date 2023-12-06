@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "WorldDataGPUGenerator.h"
+#include "WorldDataGenerator.h"
 
 #include "world/IHeightmapGrid.h"
 #include "world/biome/BiomeGrid.h"
@@ -16,9 +16,9 @@ constexpr ui32 ROWS_TO_GENERATE_PER_FRAME = 32; // POWER OF TWO REQUIRED
 
 static std::atomic<ui32> sGenerationUID = 0;
 
-WorldDataGPUGenerator::WorldDataGPUGenerator() = default;
+WorldDataGenerator::WorldDataGenerator() = default;
 
-WorldDataGPUGenerator::~WorldDataGPUGenerator() {
+WorldDataGenerator::~WorldDataGenerator() {
     cleanup();
 
     if (mTerrainSSBO) {
@@ -37,7 +37,7 @@ WorldDataGPUGenerator::~WorldDataGPUGenerator() {
     }
 }
 
-void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void(HeightmapPatchID)> onPatchFinished) {
+void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void()> onFinished) {
     mAllGenerationSentThisStep = false;
     mWorldData = &worldData;
     mGenerationData = generationData;
@@ -45,18 +45,19 @@ void WorldDataGPUGenerator::beginGeneration(HostWorldData& worldData, const Worl
     mBiomeGrid = worldData.biomeGrid.get();
     mWorldCenter = f32v2(worldData.worldWidth * 0.5f);
     mWorldSeed = mGenerationData.getSeedHash();
+    mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
 
     initResourcesIfNeeded(resolution);
 
-    mOnPatchFinished = onPatchFinished;
+    mOnFinished = onFinished;
 
     mNextGenerationIndex = 0;
-    mGPUTerrainGenerations.resize(mHeightGrid->getWidthPatches() / ROWS_TO_GENERATE_PER_FRAME);
+    mGPUBaseHeightAndBiomeGenerations.resize(mHeightGrid->getWidthPatches() / ROWS_TO_GENERATE_PER_FRAME);
 
     mState = WorldGenerationState::GeneratingBaseHeightmapAndBiomes;
 }
 
-void WorldDataGPUGenerator::cleanup() {
+void WorldDataGenerator::cleanup() {
     mNextGenerationIndex = 0;
     mNextRowToGenerate = 0;
     // Trigger all threads to stop functioning
@@ -68,18 +69,18 @@ void WorldDataGPUGenerator::cleanup() {
     }
 
     mHeightGrid = nullptr;
-    std::vector<PendingHeightGeneration>().swap(mGPUTerrainGenerations);
+    std::vector<PendingBaseHeightAndBiomeGeneration>().swap(mGPUBaseHeightAndBiomeGenerations);
 
     mState = WorldGenerationState::None;
 }
 
-WorldGenerationState WorldDataGPUGenerator::update() {
+WorldGenerationState WorldDataGenerator::update() {
     switch (mState)
     {
         case WorldGenerationState::None:
             break;
         case WorldGenerationState::GeneratingBaseHeightmapAndBiomes:
-            updateGenerateBaseHeightmap();
+            updateGenerateBaseHeightmapAndBiomes();
             break;
         case WorldGenerationState::PropagatingBiomes:
             break;
@@ -89,12 +90,13 @@ WorldGenerationState WorldDataGPUGenerator::update() {
             panic("Unhandled state in WorldDataGPUGenerator::update");
             break;
     }
+    static_assert(e_count(WorldGenerationState) == 4);
 
     return mState;
 }
 
 
-bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
+bool WorldDataGenerator::initResourcesIfNeeded(i32 resolution)
 {
     GLint maxTextureSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
@@ -127,7 +129,7 @@ bool WorldDataGPUGenerator::initResourcesIfNeeded(i32 resolution)
     }
 }
 
-void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
+void WorldDataGenerator::updateGenerateBaseHeightmapAndBiomes() {
     // Send next row
     const ui32 rowsToGenerate = glm::min(ROWS_TO_GENERATE_PER_FRAME, mHeightGrid->mWidthPatches - mNextRowToGenerate);
     if (rowsToGenerate) {
@@ -161,7 +163,7 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         glDispatchCompute(numGroups * mHeightGrid->mWidthPatches, numGroups * rowsToGenerate, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        PendingHeightGeneration& generation = mGPUTerrainGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
+        PendingBaseHeightAndBiomeGeneration& generation = mGPUBaseHeightAndBiomeGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
         generation.rowIndexStart = mNextRowToGenerate;
         generation.numRows = rowsToGenerate;
         generation.generateStarted = true;
@@ -175,8 +177,8 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         mAllGenerationSentThisStep = true;
     }
 
-    while (mNextGenerationIndex != mGPUTerrainGenerations.size()) {
-        PendingHeightGeneration& generation = mGPUTerrainGenerations[mNextGenerationIndex];
+    while (mNextGenerationIndex != mGPUBaseHeightAndBiomeGenerations.size()) {
+        PendingBaseHeightAndBiomeGeneration& generation = mGPUBaseHeightAndBiomeGenerations[mNextGenerationIndex];
         if (!generation.generateStarted) {
             break;
         }
@@ -184,7 +186,7 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
         assert(generation.sync);
         if (waitResult == GL_ALREADY_SIGNALED || waitResult == GL_CONDITION_SATISFIED) {
             ++mNextGenerationIndex;
-            finishPendingHeightGeneration(generation);
+            finishPendingBaseHeightAndBiomeGeneration(generation);
         }
         else if (waitResult == GL_TIMEOUT_EXPIRED) {
             // The GPU commands are not yet complete. Continue other tasks or loop back later.
@@ -194,10 +196,14 @@ void WorldDataGPUGenerator::updateGenerateBaseHeightmap() {
             panic("Terrain generation sync failed with GL_WAIT_FAILED");
         }
     }
+
+    if (mFinishedPatchesThisStep == mTotalPatches) {
+        onCompletelyFinished();
+    }
 }
 
 
-void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneration& generation) {
+void WorldDataGenerator::finishPendingBaseHeightAndBiomeGeneration(PendingBaseHeightAndBiomeGeneration& generation) {
     glDeleteSync(generation.sync);
     generation.sync = 0;
 
@@ -258,7 +264,7 @@ void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneratio
                         }
                     }
                 }
-                mOnPatchFinished(patch.mHeightData->id);
+                ++mFinishedPatchesThisStep;
             }, nullptr);
         }
     }
@@ -267,7 +273,12 @@ void WorldDataGPUGenerator::finishPendingHeightGeneration(PendingHeightGeneratio
 }
 static_assert(sizeof(f32) == sizeof(GLfloat), "God help us");
 
-PendingHeightGeneration::~PendingHeightGeneration()
+void WorldDataGenerator::onCompletelyFinished() {
+    mOnFinished();
+    mState = WorldGenerationState::Done;
+}
+
+PendingBaseHeightAndBiomeGeneration::~PendingBaseHeightAndBiomeGeneration()
 {
     if (sync) {
         glDeleteSync(sync);

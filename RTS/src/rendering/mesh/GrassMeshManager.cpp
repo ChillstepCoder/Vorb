@@ -127,27 +127,6 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
         }
     }
 }
-//
-//void GrassMeshManager::handleGrassEdit() {
-//    const i32v2 ROOT_DIMS = ChunkGrassQuadtree::LOD_DIMS[0].xy;
-//    const f32v2 ROOT_HALF_DIMSF = ChunkGrassQuadtree::LOD_DIMS[0].xy / 2u;
-//    const i32v2 LEAF_DIMS = ChunkGrassQuadtree::LOD_DIMS[ChunkGrassQuadtree::HIGHEST_LOD].xy;
-//    // Condense all updates to just the leaf positions
-//    boost::container::flat_map<ui32 /*terrainTreeIndex*/, std::vector<f32v2>> modifiedLeafNodePositions;
-//    for (const i32v2& modifiedPos : modifiedPositions) {
-//        const i32v2 rootPosition = modifiedPos / ROOT_DIMS;
-//        const i32v2 leafPosition = modifiedPos / LEAF_DIMS;
-//        const ui32 terrainTreeIndex = rootPosition.y * mWidthTerrainTrees + rootPosition.x;
-//        modifiedLeafNodePositions[terrainTreeIndex].emplace_back(leafPosition);
-//    }
-//
-//    for (auto&& it : modifiedLeafNodePositions) {
-//        for (const i32v2& leafPos : it.second) {
-//            mDirtyNodesQueue.enqueue(DirtyTreeNode{ it.first, leafPos * LEAF_DIMS });
-//        }
-//    }
-//}
-
 
 void GrassMeshManager::trackChunk(ChunkID chunkId) {
     const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
