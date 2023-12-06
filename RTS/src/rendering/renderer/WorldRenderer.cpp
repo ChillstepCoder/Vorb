@@ -457,7 +457,7 @@ void WorldRenderer::renderDebug() {
                 trackedChunk.quadtree->getDebugQuads(newDebugQuads);
             }
         }
-        for (const DebugWireQuadState& quad : debugQuads) {
+        for (const DebugWireQuadState& quad : newDebugQuads) {
             DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
         }
     }

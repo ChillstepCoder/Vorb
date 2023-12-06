@@ -11,6 +11,7 @@
 #include "resources/TileRepository.h"
 
 #include "world/World.h"
+#include "world/IHeightmapGrid.h"
 #include "tile/TileContainer.h"
 #include "tile/TileContainerRepository.h"
 
@@ -548,7 +549,7 @@ void PhysicsWorld::debugRender() const {
             actions[i]->debugDraw(mDebugDrawer.get());
         }
     }
-    
+
 }
 
 struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
@@ -592,6 +593,20 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
     rayResult.m_collisionFilterMask = collisionMask;
     //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
     mDynamicsWorld->rayTest(start, end, rayResult);
+
+    // Test terrain
+    if (pickTypes & PICK_TYPE_STATIC) {
+        HeightmapPickResult result = mWorld.getHeightmapGrid().pick(rayStart, rayEnd);
+        if (result.hitTime < rayResult.m_closestHitFraction) {
+            PhysHitResult rv;
+            rv.mTime = result.hitTime;
+            rv.mNormal = result.hitNormal;
+            rv.mCollisionObject = nullptr;
+            rv.mPosition = result.hitPoint;
+            assert(rv.mTime >= 0.0);
+            return rv;
+        }
+    }
 
     PhysHitResult rv;
     rv.mTime = rayResult.m_closestHitFraction;
@@ -646,6 +661,7 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
         }
     }
 
+    assert(rv.mTime >= 0.0);
     return rv;
 }
 

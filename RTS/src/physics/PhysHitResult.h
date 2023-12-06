@@ -18,12 +18,13 @@ struct PhysHitResult {
     const btCollisionObject* mCollisionObject = nullptr;
     f32v3 mPosition;
     f32v3 mNormal;
-    f32 mTime;
+    f32 mTime = 1.0f;
     entt::entity mSelectedEntity = INVALID_ENTITY;
     TileContainerID mContainerID = INVALID_TILE_CONTAINER_ID;
     TileIndex mTileIndex = INVALID_TILE_INDEX;
 
-    bool didHit() const { return mCollisionObject != nullptr; }
+    bool didHit() const { return mTime < 1.0f; }
+    bool wasTerrain() const { return mCollisionObject != nullptr; }
 };
 
 enum class PhysicsPickQueryFlags : ui8 {

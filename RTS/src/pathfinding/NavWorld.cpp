@@ -91,7 +91,7 @@ void NavWorld::updateNavThread()
 
         for (auto&& container : dirtyContainers) {
             // The decref will happen after the build
-            LOG_DEBUG("NAV BEGIN {}", container->getId());
+            //LOG_DEBUG("NAV BEGIN {}", container->getId());
             if (container->isTerrain()) {
                 PROFILE_SCOPE("IsTerrain");
                 // Build external edges if needed
@@ -715,7 +715,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
 void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     const TileContainerID containerId = taskData.container->getId();
-    LOG_DEBUG("NAV FINISHED {}", containerId);
+    //LOG_DEBUG("NAV FINISHED {}", containerId);
     // Store nav data
     const auto& navGraphIt = mNavGraphs.find(containerId);
     bool isNewContainer = (navGraphIt == mNavGraphs.end());

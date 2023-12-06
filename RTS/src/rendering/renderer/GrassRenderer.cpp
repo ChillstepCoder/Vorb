@@ -61,30 +61,13 @@ void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& play
 
     ui32 nextTextureUnit = 0;
     MaterialRenderer::bindMaterialShaderForRender(*grassMaterial, &nextTextureUnit);
-    VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
-    VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
     VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
     VGUniform uvRootUniform = program.getUniform("unUVRoot");
     glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
-    glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
-    glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
     glUniform1f(program.getUniform("unLeanVariance"), sDebugOptions.mGrassLeanVariance);
-    glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
-
-    glUniform1f(program.getUniform("unInverseWorldWidth"), mInverseWorldWidth);
-
-    glUniform1i(program.getUniform("unBiomeTexture"), nextTextureUnit);
-    glBindTextureUnit(nextTextureUnit, mBiomeTexture);
-
-    ++nextTextureUnit;
-    glUniform1i(program.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
-    glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
-
-    glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
-    glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
     glUniform1i(tboNormalUniform, GRASS_TBO_NORMAL_DATA_BINDING);
+
+    uploadSharedUniforms(program, nextTextureUnit);
 
     glPatchParameteri(GL_PATCH_VERTICES, 3);
 
@@ -127,22 +110,15 @@ void GrassRenderer::renderPlaneGrass(const Camera3D& camera, const f32v3& player
     }
 
     const MaterialShaderDef* grassMaterial = mMaterials[e_cast(TileGrassMeshType::PLANE)];
-    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial);
+    ui32 nextTextureUnit = 0;
+    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial, &nextTextureUnit);
     const vg::GLProgram& program = grassMaterial->mProgram;
     cacheUniforms(program);
 
 
     VGUniform positionUniform = program.getUniform("unPosition");
-    VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
-    VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
     VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
-    //glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x); // No player collision yet
-    glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
-    glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
-    glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
-
-    glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
-    glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
+    uploadSharedUniforms(program, nextTextureUnit);
     glUniform1i(tboNormalUniform, GRASS_TBO_NORMAL_DATA_BINDING);
 
     for (auto&& grassMesh : grassMeshes) {
@@ -175,23 +151,18 @@ void GrassRenderer::renderBillboardGrass(const Camera3D& camera, const f32v3& pl
     }
 
     const MaterialShaderDef* grassMaterial = mMaterials[e_cast(TileGrassMeshType::BILLBOARD)];
-    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial);
+    ui32 nextTextureUnit = 0;
+    MaterialRenderer::bindMaterialShaderForRender(*grassMaterial, &nextTextureUnit);
     const vg::GLProgram& program = grassMaterial->mProgram;
     cacheUniforms(program);
 
     VGUniform positionUniform = program.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
-    VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
-    VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
+
+    uploadSharedUniforms(program, nextTextureUnit);
     //VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
     //glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x); // No player collision yet
-    glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
-    glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
-    glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
-
-    glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
-    glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
    // glUniform1i(tboNormalUniform, GRASS_TBO_NORMAL_DATA_BINDING);
 
     for (auto&& grassMesh : grassMeshes) {
@@ -213,6 +184,30 @@ void GrassRenderer::renderBillboardGrass(const Camera3D& camera, const f32v3& pl
         glDrawElements(GL_TRIANGLES, renderData.mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
         RenderStats::recordDrawCall(renderData.mIndexCount / 3);
     };
+}
+
+void GrassRenderer::uploadSharedUniforms(const vg::GLProgram& program, ui32& nextTextureUnit) {
+
+    glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
+    glUniform2f(program.getUniform("unScale"), sDebugOptions.mGrassScale.x, sDebugOptions.mGrassScale.y);
+    glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
+
+    glUniform1f(program.getUniform("unInverseWorldWidth"), mInverseWorldWidth);
+
+    glUniform1i(program.getUniform("unBiomeTexture"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, mBiomeTexture);
+
+    ++nextTextureUnit;
+    glUniform1i(program.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
+
+    VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
+    VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
+
+    glUniform1i(tboSizeTypeUniform, GRASS_TBO_INSTANCE_DATA_BINDING);
+    glUniform1i(tboPositionUniform, GRASS_TBO_POSITION_DATA_BINDING);
 }
 
 void GrassRenderer::uploadGrassMeshUniforms(const GrassMeshFrameRenderData& grassMesh) {

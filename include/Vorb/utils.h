@@ -297,48 +297,85 @@ inline bool computeClipping(f32 clipPos, f32 clipWidth, f32& position, f32& widt
 /************************************************************************/
 /* Hash functions                                                       */
 /************************************************************************/
+// https://stackoverflow.com/a/12996028
 template <>
 struct std::hash<i32v3> {
     size_t operator()(const i32v3& k) const {
-        std::hash<i32> h;
+        std::size_t seed = 0x9e3779b9; // Initial seed value
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1) ^ (h(k.z) << 1);
+        std::size_t hash[3] = { k.x, k.y, k.z };
+        for (int i = 0; i < 3; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 template <>
 struct std::hash<i32v2> {
     size_t operator()(const i32v2& k) const {
-        std::hash<i32> h;
+        std::size_t seed = 0x9e3779b9;
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1);
+        std::size_t hash[2] = { k.x, k.y };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+    }
+};
+template <>
+struct std::hash<i16v2> {
+    size_t operator()(const i16v2& k) const {
+        std::size_t seed = 0x9e3779b9;
+
+        std::size_t hash[2] = { k.x, k.y };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 template <>
 struct std::hash<ui32v3> {
     size_t operator()(const ui32v3& k) const {
-        std::hash<ui32> h;
+        std::size_t seed = 0x9e3779b9;
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1) ^ (h(k.z) << 1);
+        std::size_t hash[3] = { k.x, k.y, k.z };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 template <>
 struct std::hash<ui32v2> {
     size_t operator()(const ui32v2& k) const {
-        std::hash<ui32> h;
+        std::size_t seed = 0x9e3779b9;
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1);
+        std::size_t hash[2] = { k.x, k.y };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 

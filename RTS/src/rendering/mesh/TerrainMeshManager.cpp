@@ -34,6 +34,17 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 void TerrainMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
+
+    // Dirty nodes
+    constexpr size_t BULK_SIZE = 128;
+    DirtyTreeNode dirtyNodes[BULK_SIZE];
+    if (size_t count = mDirtyNodesQueue.try_dequeue_bulk(dirtyNodes, BULK_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            auto&& data = dirtyNodes[i];
+            mTerrainTrees[data.terrainTreeIndex].markLeafDirty(data.leafPos);
+        }
+    }
+
     for (auto&& terrainQuadtree : mTerrainTrees) {
         terrainQuadtree.update(loadCenter, elapsedSec);
     }
@@ -41,7 +52,6 @@ void TerrainMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
 
 void TerrainMeshManager::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
     PROFILE_FUNCTION();
-    ASSERT_RENDER_THREAD();
     const i32v2 ROOT_DIMS = HeightmapTerrainQuadtree::LOD_DIMS[0].xy;
     const f32v2 ROOT_HALF_DIMSF = HeightmapTerrainQuadtree::LOD_DIMS[0].xy / 2u;
     const i32v2 LEAF_DIMS = HeightmapTerrainQuadtree::LOD_DIMS[HeightmapTerrainQuadtree::HIGHEST_LOD].xy;
@@ -56,7 +66,7 @@ void TerrainMeshManager::onTerrainModified(const boost::container::flat_set<i32v
 
     for (auto&& it : modifiedLeafNodePositions) {
         for (const i32v2& leafPos : it.second) {
-            mTerrainTrees[it.first].markLeafDirty(leafPos * LEAF_DIMS);
+            mDirtyNodesQueue.enqueue(DirtyTreeNode{ it.first, leafPos * LEAF_DIMS });
         }
     }
 }

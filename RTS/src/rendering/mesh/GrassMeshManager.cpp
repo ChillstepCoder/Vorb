@@ -28,19 +28,33 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
 
-    constexpr size_t BULK_SIZE = 64;
-    std::pair<ChunkID, bool /*startTracking*/> trackingChanges[BULK_SIZE];
-    if (size_t count = mChunkTrackChanges.try_dequeue_bulk(trackingChanges, BULK_SIZE)) {
-        for (size_t i = 0; i < count; ++i) {
-            auto&& data = trackingChanges[i];
-            if (data.second) {
-                trackChunk(data.first);
-            }
-            else {
-                stopTrackingChunk(data.first);
+    {
+        constexpr size_t BULK_SIZE = 64;
+        std::pair<ChunkID, bool /*startTracking*/> trackingChanges[BULK_SIZE];
+        if (size_t count = mChunkTrackChanges.try_dequeue_bulk(trackingChanges, BULK_SIZE)) {
+            for (size_t i = 0; i < count; ++i) {
+                auto&& data = trackingChanges[i];
+                if (data.second) {
+                    trackChunk(data.first);
+                }
+                else {
+                    stopTrackingChunk(data.first);
+                }
             }
         }
     }
+
+    constexpr f32 LEAF_DIM = ChunkGrassQuadtree::LOD_DIMS[ChunkGrassQuadtree::HIGHEST_LOD].x;
+    std::unordered_set<std::pair<ChunkID, i16v2>> dirtyObjects;
+    mDirtyPositions.aquireAllDirtyObjects(dirtyObjects);
+    for (auto& [chunkId, xyOffset] : dirtyObjects) {
+        auto&& it = mTrackedChunksLookup.find(chunkId);
+        if (it != mTrackedChunksLookup.end() && it->second.isActive) {
+            const f32v2 pos = f32v2(xyOffset) * LEAF_DIM + f32v2(mTrackedChunks[it->second.index].chunk->getWorldPos()) + f32v2(0.1f /*make sure were off the border*/);
+            mTrackedChunks[it->second.index].quadtree->markDirty(pos);
+        }
+    }
+
 
     for (TrackedChunk& trackedChunk : mTrackedChunks) {
         const f32 distSq = glm::length2(trackedChunk.worldPosCenter - loadCenter);
@@ -83,6 +97,9 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
                 // Register for edit events  // Const cast ~ get fucked
                 Chunk& chunkNonConst = const_cast<Chunk&>(*trackedChunk.chunk);
                 TileContainer* container = chunkNonConst.getTileContainer();
+
+                // We use the dimensions of the lowest LOD so we don't enqueue too many edits
+                constexpr i32 LEAF_DIM = ChunkGrassQuadtree::LOD_DIMS[ChunkGrassQuadtree::HIGHEST_LOD].x;
                 lookupData->eventHandle = std::make_pair(
                     container->addEditTilesListener([this](const TileContainerEvent& evnt) {
                     PROFILE_SCOPE("GrassEdit Dirty");
@@ -92,27 +109,45 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
 
                     if (editEvent.type == TileContainerEditEventType::ChangeZPos) {
                         // TODO: We could build a bulk enqueue array
-                        std::lock_guard lock(mTrackedChunksMutex);
-                        auto&& it = mTrackedChunksLookup.find(evnt.container->getOwnerChunk()->getChunkID());
-                        assert(it != mTrackedChunksLookup.end() && it->second.isActive);
+                        ChunkID chunkId = evnt.container->getOwnerChunk()->getChunkID();
                         for (ui32 i = 0; i < editEvent.editCount; ++i) {
                             TileContainerEditZPosEventData& data = editEvent.changeZPosArray[i];
-                            mTileContainerEdits.enqueue(data.worldPosition);
+                            i16v2 xyOffset((data.tileIndex % CHUNK_WIDTH) / LEAF_DIM, (data.tileIndex / CHUNK_WIDTH) / LEAF_DIM);
+                            mDirtyPositions.dirtyObject(std::make_pair(chunkId, xyOffset));
                         }
                     }
                 }),
                     chunkNonConst.addGrassEditListener([this](const ChunkEvent& evnt) {
-                    std::lock_guard lock(mTrackedChunksMutex);
-                    auto&& it = mTrackedChunksLookup.find(evnt.chunk.getChunkID());
-                    assert(it != mTrackedChunksLookup.end() && it->second.isActive);
                     const f32v2 worldPos = evnt.chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos2D(evnt.tileIndex);
-                    mTileContainerEdits.enqueue(worldPos);
+                    i16v2 xyOffset((evnt.tileIndex% CHUNK_WIDTH) / LEAF_DIM, (evnt.tileIndex / CHUNK_WIDTH) / LEAF_DIM);
+                    mDirtyPositions.dirtyObject(std::make_pair(evnt.chunk.getChunkID(), xyOffset));
                 }));
                 grassQuadtree = std::make_unique<ChunkGrassQuadtree>(*trackedChunk.chunk);
             }
         }
     }
 }
+//
+//void GrassMeshManager::handleGrassEdit() {
+//    const i32v2 ROOT_DIMS = ChunkGrassQuadtree::LOD_DIMS[0].xy;
+//    const f32v2 ROOT_HALF_DIMSF = ChunkGrassQuadtree::LOD_DIMS[0].xy / 2u;
+//    const i32v2 LEAF_DIMS = ChunkGrassQuadtree::LOD_DIMS[ChunkGrassQuadtree::HIGHEST_LOD].xy;
+//    // Condense all updates to just the leaf positions
+//    boost::container::flat_map<ui32 /*terrainTreeIndex*/, std::vector<f32v2>> modifiedLeafNodePositions;
+//    for (const i32v2& modifiedPos : modifiedPositions) {
+//        const i32v2 rootPosition = modifiedPos / ROOT_DIMS;
+//        const i32v2 leafPosition = modifiedPos / LEAF_DIMS;
+//        const ui32 terrainTreeIndex = rootPosition.y * mWidthTerrainTrees + rootPosition.x;
+//        modifiedLeafNodePositions[terrainTreeIndex].emplace_back(leafPosition);
+//    }
+//
+//    for (auto&& it : modifiedLeafNodePositions) {
+//        for (const i32v2& leafPos : it.second) {
+//            mDirtyNodesQueue.enqueue(DirtyTreeNode{ it.first, leafPos * LEAF_DIMS });
+//        }
+//    }
+//}
+
 
 void GrassMeshManager::trackChunk(ChunkID chunkId) {
     const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);

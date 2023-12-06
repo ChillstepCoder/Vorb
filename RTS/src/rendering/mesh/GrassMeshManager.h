@@ -7,12 +7,28 @@
 #include "world/ChunkEvents.h"
 #include "rendering/mesh/TileGrassMeshType.h"
 
+#include "util/ThreadSafeDirtySet.h"
+#include <boost/functional/hash.hpp> // For boost::hash_combine
+
 class ChunkGrassQuadtree;
 class Chunk;
 class World;
 class GrassMesh;
 
 typedef std::pair<TileContainerEventDispatcher::Handle, ChunkEventDispatcher::Handle> GrassEventPair;
+
+// Specialize std::hash for std::pair<ChunkID, i16v2>
+namespace std {
+    template<>
+    struct hash<std::pair<ChunkID, i16v2>> {
+        size_t operator()(const std::pair<ChunkID, i16v2>& p) const {
+            size_t seed = 0;
+            boost::hash_combine(seed, std::hash<ChunkID>()(p.first));
+            boost::hash_combine(seed, std::hash<i16v2>()(p.second));
+            return seed;
+        }
+    };
+}
 
 // Shared by game + render thread
 class GrassMeshManager
@@ -35,6 +51,7 @@ public:
     const boost::container::flat_set<const GrassMesh*>& getGrassMeshes() const { ASSERT_RENDER_THREAD(); return mGrassMeshes; }
 
 private:
+    void handleGrassEdit();
     void trackChunk(ChunkID chunkId);
     void stopTrackingChunk(ChunkID chunkId);
     boost::container::flat_set<const GrassMesh*> mGrassMeshes;
@@ -51,7 +68,9 @@ private:
 
     World& mWorld;
     moodycamel::ConcurrentQueue<std::pair<ChunkID, bool /*startTracking*/>> mChunkTrackChanges;
-    moodycamel::ConcurrentQueue<f32v2> mTileContainerEdits;
+
+
+    ThreadSafeDirtySet<std::pair<ChunkID, i16v2>> mDirtyPositions;
 
 };
 

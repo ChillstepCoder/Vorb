@@ -105,6 +105,39 @@ void IHeightmapGrid::tickShared() {
     }
 }
 
+// TODO: This could be optimized using a grid traversal algorithm instead of standard substepping
+HeightmapPickResult IHeightmapGrid::pick(f32v3 rayStart, f32v3 rayEnd) {
+    ASSERT_GAME_THREAD();
+    PROFILE_FUNCTION();
+    const f32v3 dir = rayEnd - rayStart;
+    const f32 maxDist = glm::length(dir);
+    const f32v3 normalizedDir = dir / maxDist;
+
+    const f32 minStepLength = 0.1f;
+    const f32 maxStepLength = HEIGHTMAP_QUAD_SIZE * 2.0f; // May cause tunneling but thats ok
+
+    HeightmapPickResult result;
+    f32v3 currentPoint = rayStart;
+
+    f32 currDist = 0.0f;
+    do {
+        const f32 heightDiff = computeHeightAtPoint<false>(currentPoint) - currentPoint.z;
+        if (heightDiff >= 0.0f) {
+            result.hitPoint = currentPoint;
+            computeHeightAndNormalAtPoint<false>(currentPoint, &result.hitNormal);
+            result.hitTime = currDist / maxDist;
+            result.didHit = true;
+        }
+        else {
+            const f32 stepLength = glm::max(minStepLength, glm::min(maxStepLength, (-heightDiff) * 0.5f));
+            currDist += stepLength;
+            currentPoint += normalizedDir * stepLength;
+        }
+    } while (currDist <= maxDist && !result.didHit);
+
+    return result;
+}
+
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& worldPos) const {
     return getHeightDataAt(mSpatialGrid2D.getIDAtWorldPos(worldPos));
 }
@@ -203,7 +236,7 @@ void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f3
     ASSERT_GAME_THREAD();
     assert(id < mTotalPatches);
     HeightmapPatch& patch = mHeightData[id];
-    setHeightAtPatch(id, vertIndex, patch.mHeightData->data[vertIndex] + adjust);
+    setHeightAtPatch(id, vertIndex, patch.getHeightAt(vertIndex) + adjust);
 }
 
 void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {

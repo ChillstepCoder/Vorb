@@ -163,7 +163,7 @@ void ItemRenderer::initEventHandlers() {
 }
 
 void ItemRenderer::updateDirtyStockpileMeshes() const {
-    std::set<const ItemStockpile*> dirtyStockpiles;
+    std::unordered_set<const ItemStockpile*> dirtyStockpiles;
     mDirtyStockpiles.aquireAllDirtyObjects(dirtyStockpiles);
 
     for (auto&& stockpile : dirtyStockpiles) {

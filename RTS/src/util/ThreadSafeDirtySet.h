@@ -8,6 +8,12 @@ template <typename T>
 class ThreadSafeDirtySet
 {
 public:
+
+    void dirtyObject(T obj) {
+        std::lock_guard lock(mMutex);
+        mDirtyObjects.insert(obj);
+    }
+
     // Returns false if already dirty
     bool tryDirtyObject(T obj) {
         bool didAdd = false;
@@ -37,13 +43,13 @@ public:
     }
     
     // Will fill outObjects with all currently dirty objects and clear
-    void aquireAllDirtyObjects(std::set<T>& outObjects) {
+    void aquireAllDirtyObjects(std::unordered_set<T>& outObjects) {
         std::lock_guard lock(mMutex);
         std::swap(outObjects, mDirtyObjects);
     }
 private:
     std::mutex mMutex;
-    std::set<T> mDirtyObjects;
+    std::unordered_set<T> mDirtyObjects;
 };
 
 // Intended to flush dirty objects to another thread once per frame

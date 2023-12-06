@@ -195,7 +195,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     const f32v3 tileContainerWorldPos = spatialGrid.getWorldPos3D();
     const f32 floorHeight = spatialGrid.getFloorHeight();
 
-    LOG_DEBUG("Meshing Container {}", tileContainer.getId());
+    //LOG_DEBUG("Meshing Container {}", tileContainer.getId());
 
     // =============== Mesh tiles ===============
     TileIndex index = 0;

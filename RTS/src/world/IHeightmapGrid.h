@@ -51,6 +51,13 @@ struct HeightmapGridEvent {
 };
 EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGridEvent&);
 
+struct HeightmapPickResult {
+    f32v3 hitPoint;
+    f32v3 hitNormal;
+    f32 hitTime = 1.0; // [0, 1]
+    bool didHit = false;
+};
+
 // TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
 class IHeightmapGrid
 {
@@ -62,6 +69,9 @@ public:
     VORB_NON_COPYABLE(IHeightmapGrid);
 
     void tickShared();
+
+    // Picking
+    HeightmapPickResult pick(f32v3 rayStart, f32v3 rayEnd);
 
     // Aquire
     const HeightmapPatchData* getHeightDataAtWorldPos(const i32v2& worldPos) const;

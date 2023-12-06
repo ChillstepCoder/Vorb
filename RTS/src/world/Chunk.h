@@ -99,7 +99,9 @@ public:
 	const HeightmapPatchID getHeightmapPatchID() const;
     const i32AABB3& getAABB() const { return mAABB; }
 	const std::vector<StructureID>& getStructures() const { return mStructures; }
-
+    f32v2 getTileWorldPos2D(TileIndex i) const {
+        return f32v2(mAABB.pos.x + (i % CHUNK_WIDTH), mAABB.pos.y + i / CHUNK_WIDTH);
+    }
 
     // =========== Tile handles  ===========
 	TileHandle getTileHandleAt(const TileIndex index) const;

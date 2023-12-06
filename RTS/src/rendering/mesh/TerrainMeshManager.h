@@ -7,6 +7,7 @@ class HeightmapTerrainQuadtree;
 class TerrainMesh;
 
 // Shared by render and game thread
+// TODO: Optimize https://www.youtube.com/watch?v=5zlfJW2VGLM
 class TerrainMeshManager
 {
 public:
@@ -29,6 +30,12 @@ private:
     // Mesh data
     boost::container::flat_set<const TerrainMesh*> mTerrainMeshes;
     boost::container::flat_set<const TerrainMesh*> mTerrainWaterMeshes;
+
+    struct DirtyTreeNode {
+        ui32 terrainTreeIndex;
+        i32v2 leafPos;
+    };
+    moodycamel::ConcurrentQueue<DirtyTreeNode> mDirtyNodesQueue;
 
     // Events
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);

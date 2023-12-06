@@ -38,6 +38,7 @@ private:
     void renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshFrameRenderData>& grassMeshes);
     void renderPlaneGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshFrameRenderData>& grassMeshes);
     void renderBillboardGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshFrameRenderData>& grassMeshes);
+    void uploadSharedUniforms(const vg::GLProgram& program, ui32& nextTextureUnit);
     void uploadGrassMeshUniforms(const GrassMeshFrameRenderData& grassMesh);
     void cacheUniforms(const vg::GLProgram& program);
     
