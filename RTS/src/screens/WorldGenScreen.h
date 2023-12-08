@@ -51,6 +51,8 @@ protected:
     void renderMapView();
     void updateMouseInput();
 
+    void debugDrawRivers();
+
     bool mRebuildDockspace = true;
     bool mCancelled = false;
     bool mFirstEntry = true;
@@ -78,6 +80,7 @@ protected:
     // Controls
     bool mShowBiomes = false;
     bool mShowHeight = false;
+    bool mShowRivers = false;
 
     PreciseTimer mGenTimer;
 };

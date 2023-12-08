@@ -147,6 +147,10 @@ const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) c
     return patch.mHeightData;
 }
 
+HeightmapPatch& IHeightmapGrid::getPatchForGeneration(HeightmapPatchID id) {
+    return mHeightData[id];
+}
+
 void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]) {
     ASSERT_GAME_THREAD();
     HeightmapPatchID requiredIds[9];
@@ -259,6 +263,13 @@ f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) 
     const HeightmapPatch& patch = mHeightData[id];
     assert(vertPos.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH && vertPos.y < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     return patch.getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
+}
+
+f32 IHeightmapGrid::getHeightAtVert(i32v2 vertPos) const {
+    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    return mHeightData[id].getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
 }
 
 template <bool THREAD_SAFE>

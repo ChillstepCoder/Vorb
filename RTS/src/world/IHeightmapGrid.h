@@ -61,7 +61,6 @@ struct HeightmapPickResult {
 // TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
 class IHeightmapGrid
 {
-    friend class WorldDataGenerator;
 public:
     IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();
@@ -76,6 +75,7 @@ public:
     // Aquire
     const HeightmapPatchData* getHeightDataAtWorldPos(const i32v2& worldPos) const;
     const HeightmapPatchData* getHeightDataAt(HeightmapPatchID id) const;
+    HeightmapPatch& getPatchForGeneration(HeightmapPatchID id);
     void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]);
 
     // Mutators
@@ -86,6 +86,7 @@ public:
     void adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
+    f32 getHeightAtVert(i32v2 vertPos) const;
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
 
     template <bool THREAD_SAFE>

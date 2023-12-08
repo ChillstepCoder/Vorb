@@ -43,6 +43,10 @@ public:
     void setBiomeTexture(VGTexture biomeTexture) { mBiomeTexture = biomeTexture; }
     // Safe to call from render thread
     VGTexture getBiomeTexture() const { return mBiomeTexture; }
+
+    BiomeVertex& getVertexForGeneration(ui32 index) {
+        return mGrid[index];
+    }
 private:
     void setVertex(i32v2 vertexPos, BiomeVertex vertex) {
         mGrid[vertexPos.y * getWidthVertices() + vertexPos.x] = vertex;

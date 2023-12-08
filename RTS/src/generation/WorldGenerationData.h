@@ -29,17 +29,19 @@ struct WorldGenerationData {
     f32v2 mWorldPosRoot = f32v2(0.0f);
     f32 mContinentRadius = 14000.0f;
     f32 mContinentOutlineScale = SQ(20000.0f);
+    i32 mDesiredRiverCount = 128;
     // Constant
     f32 mContinentRadiusSq = SQ(mContinentRadius);
     char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";
+    f32 mSeedHashed = getSeedHash("default");
 
-    f32 getSeedHash() const {
+    static constexpr f32 getSeedHash(const char seed[MAX_WORLD_GEN_SEED_SIZE]) {
         int hash = 2047471739; // Starting value (Random huge prime)
         int c;
 
         // DJB2 style Hash
-        for (size_t i = 0; i < MAX_WORLD_GEN_SEED_SIZE && mSeed[i] != '\0'; ++i) {
-            c = int(mSeed[i]);
+        for (size_t i = 0; i < MAX_WORLD_GEN_SEED_SIZE && seed[i] != '\0'; ++i) {
+            c = int(seed[i]);
             hash = ((hash << 5) + hash) * c + (c << 16); // hash * 33 + c
         }
         // Bound the seed so it doesn't damage GPU precision with large numbers

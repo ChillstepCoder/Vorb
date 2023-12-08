@@ -18,6 +18,7 @@
 #include "world/World.h"
 #include "world/WorldDefaults.h"
 #include "generation/WorldDataGenerator.h"
+#include "generation/WorldGenerationBlackboard.h"
 
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/RenderContext.h"
@@ -178,7 +179,6 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     //const ImVec2 screenSize = ImVec2(window.getWidth(), window.getHeight());
    // ImGui::SetNextWindowPos(ImVec2(0, 0));
    // ImGui::SetNextWindowSize(screenSize);
-
     ImGui::Begin("World Generator", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     const ImVec2 availableSize = ImGui::GetContentRegionAvail();
     const f32 minAvailable = glm::min(availableSize.x, availableSize.y);
@@ -193,6 +193,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::End();
 
     ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+    ImGui::Text(mWorldGenerator->getCurrentStageName());
     ImGui::Text("%.2f ms", mFrameTimeThisFrame);
     const f32v2 playerSpawn = mWorldData->playerStart * f32(mWorldData->worldWidth);
     ImGui::Text("Spawn Position (%.1f, %.1f)", playerSpawn.x, playerSpawn.y);
@@ -208,6 +209,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     }
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
     ImGui::Checkbox("Show Height", &mShowHeight);
+    ImGui::Checkbox("Show Rivers", &mShowRivers);
     ImGui::Separator();
     if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("Start Game")) {
@@ -227,7 +229,11 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     if (ImGui::SliderFloat2("World Center", &mGenData.mWorldCenter.x, 0, 32768.f, "%.1f")) {
         mIsDirty = true;
     }
+    if (ImGui::SliderInt("River Count", &mGenData.mDesiredRiverCount, 0, 600)) {
+        mIsDirty = true;
+    }
     if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
+        mGenData.mSeedHashed = mGenData.getSeedHash(mGenData.mSeed);
         mIsDirty = true;
     }
     ImGui::SameLine();
@@ -395,6 +401,12 @@ void WorldGenScreen::renderMapView() {
 
     sGlobalFullTriangleVAO.draw();
 
+    if (mShowRivers) {
+        debugDrawRivers();
+    }
+
+
+
     mMapScreenGBuffer->unuse();
 
 }
@@ -426,5 +438,11 @@ void WorldGenScreen::updateMouseInput() {
         f32v2 worldPos = mCamera->screenToWorld(uv * 2.0f - 1.0f);
         mWorldData->playerStart = (worldPos + 1.0f) * 0.5f;
         LOG_INFO("{} {} {} {}", cursorPosPixels.x, cursorPosPixels.y, mWorldData->playerStart.x, mWorldData->playerStart.y);
+    }
+}
+
+void WorldGenScreen::debugDrawRivers() {
+    if (mWorldGenerator->getBlackboard().mRiversDone) {
+        assert(false);
     }
 }
