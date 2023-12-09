@@ -1,2 +1,2 @@
 vert: fish.vert
-frag: standard_model.frag
+frag: fish.frag

@@ -5,7 +5,9 @@ constexpr f32 MIN_GENERATION_PEAK_HEIGHT = 100.0f;
 
 struct RiverPath {
     std::vector<i16v2> points;
+    std::vector<i16v2> visited;
     i16v2 startPoint;
+    bool isValid = false;
 };
 
 class WorldGenerationBlackboard

@@ -6,7 +6,8 @@ in vec4 fTint;
 in mat3 fTBN;
 in vec3 fViewTangent;
 in vec3 fFragPosTangent;
-in float fSnow;
+
+uniform float unSnowLevel;
 
 uniform float unHeightScale = 0.023;
 
@@ -52,7 +53,7 @@ void main() {
     oColor.rgb = color.rgb;
     
     // =========== Snow ===========
-    oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));
+    oColor.rgb = mix(oColor.rgb, vec3(1.0), unSnowLevel);
     
     oColor.a = ao;
     

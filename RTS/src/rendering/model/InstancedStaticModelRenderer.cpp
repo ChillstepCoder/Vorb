@@ -12,6 +12,9 @@
 #include "rendering/post_process/ShadowPassShaderData.h"
 #include "options/DebugOptions.h"
 
+#include "world/World.h"
+#include "weather/WeatherManager.h"
+
 #include "camera/Camera3D.h"
 
 #include "rendering/gl/GL.h"
@@ -19,14 +22,18 @@
 
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
 
-    mStandardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
-    mShadowMapperMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_instd"));
-    mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge"));
+    mStandardShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
+    mShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_instd"));
+    mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model"));
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() = default;
 
-void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera) {
+void InstancedStaticModelRenderer::onWorldBegin(World& world) {
+    mWeatherManager = &world.getWeatherManager();
+}
+
+void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType) {
     ASSERT_RENDER_THREAD();
     if (sDebugOptions.mHideModels)
         return;
@@ -38,9 +45,25 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
 
     // TODO: Material specific, we lose 10fps disabling this
     glDisable(GL_CULL_FACE);
+    const MaterialShaderDef* def = nullptr;
 
-    MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
-    const VGUniform windUniform = mStandardMaterial->getUniform("unWindType");
+    switch (passType) {
+        case MaterialRenderPassType::Default:
+            def = mStandardShader;
+            break;
+        case MaterialRenderPassType::Smudge:
+            def = mSmudgeShader;
+            break;
+        default:
+            assert(false);
+            break;
+
+    }
+    static_assert(e_count(MaterialRenderPassType) == 2);
+
+    MaterialRenderer::bindMaterialShaderForRender(*def);
+    const VGUniform windUniform = def->getUniform("unWindType");
+    glUniform1f(def->getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
     for (auto& [modelId, instanceData] : modelInstances) {
         if (!instanceData.mDrawCommands) {
             continue;
@@ -91,8 +114,8 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* mo
 
     PROFILE_FUNCTION();
 
-    MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperMaterial);
-    glUniformMatrix4fv(mShadowMapperMaterial->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
+    MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperShader);
+    glUniformMatrix4fv(mShadowMapperShader->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
     for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& [modelId, instanceData] : modelInstances[ri]) {
             if (!instanceData.mDrawCommands) {

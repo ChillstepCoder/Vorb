@@ -23,6 +23,7 @@ out vec2 fUV;
 flat out int fBiome;
 flat out int fGrassMaterial;
 out float fDistance;
+uniform float unSnowLevel;
 
 float interpolate1D(float v0, float v1, float v2)
 {
@@ -62,7 +63,7 @@ void main()
     // Displace the vertex along the normal
     float wind = getWindAtPosition(-Time + height, vec4(tWorldRoot[0], 0.0)) * height * WIND_INTENSITY * (1.0 - collisionAlpha);
     vec3 windOffset = vec3(wind, wind, 0.35 * wind);
-    worldPos.xyz += windOffset;
+    worldPos.xyz += windOffset * pow(1.0 - unSnowLevel, 4.0);
     
     
     worldPos.xy += collisionForce;

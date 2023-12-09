@@ -87,46 +87,64 @@ void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
 
     bool foundGoal = false;
 
-    i16v2 currentNode = path.startPoint;
+    constexpr i16 GRANULARITY = 8;
+
+    i16v2 currentNode = (path.startPoint / GRANULARITY) * GRANULARITY;
+    const i16v2 startNode = currentNode;
     f32 currentHeight = mHeightGrid->getHeightAtVert(currentNode);
     allNodes[currentNode] = NodeInfo(currentNode, 0, currentHeight);
 
     size_t numChecks = 0;
     while (numChecks < MAX_CHECKS) {
-        if (currentHeight < 0.0f) {
+        if (currentHeight < -1.0f) [[unlikely]] {
             foundGoal = true;
             break;
         }
 
-        std::array<i16v2, 4> neighbors = {
-            currentNode + i16v2(0, -1), // Down
-            currentNode + i16v2(-1, 0), // Left
-            currentNode + i16v2(1, 0),  // Right
-            currentNode + i16v2(0, 1)   // Up
+        NodeInfo& currentNodeInfo = allNodes[currentNode];
+
+        const i16v2 down = currentNode + i16v2(0, -GRANULARITY);
+        const i16v2 left = currentNode + i16v2(-GRANULARITY, 0);
+        const i16v2 right = currentNode + i16v2(GRANULARITY, 0);
+        const i16v2 up = currentNode + i16v2(0, GRANULARITY);
+        std::array<std::pair<i16v2, f32>, 4> neighbors = {
+            std::pair{down, mHeightGrid->getHeightAtVert(down)}, // Down
+            std::pair{left, mHeightGrid->getHeightAtVert(left)}, // Left
+            std::pair{right,  mHeightGrid->getHeightAtVert(right)},  // Right
+            std::pair{up,  mHeightGrid->getHeightAtVert(up)}   // Up
         };
 
-        bool moved = false;
-        for (const auto& neighbor : neighbors) {
-            f32 neighborHeight = mHeightGrid->getHeightAtVert(neighbor);
-            auto it = allNodes.find(neighbor);
-            int newDepth = allNodes[currentNode].depth + 1;
+        f32 bestChildHeight = FLT_MAX;
+        int bestChildIndex = -1;
+
+        // First check if any neighbors should be our new parent or greedy child
+        for (int i = 0; i < 4; ++i) {
+            const auto& [neighborPos, neighborHeight] = neighbors[i];
+            auto it = allNodes.find(neighborPos);
 
             if (it == allNodes.end()) {
-                // Unvisited node
-                allNodes[neighbor] = NodeInfo(currentNode, newDepth, neighborHeight);
-                currentNode = neighbor;
-                currentHeight = neighborHeight;
-                moved = true;
-                break;
+                if (neighborHeight < bestChildHeight) {
+                    bestChildHeight = neighborHeight;
+                    bestChildIndex = i;
+                }
             }
-            else if (it->second.depth > newDepth) {
-                // Visited node with higher depth, reroute to this path
-                it->second.backPointer = currentNode;
-                it->second.depth = newDepth;
+            else if (it->second.depth < currentNodeInfo.depth - 1) {
+                // Shorter route found
+                currentNodeInfo.depth = it->second.depth + 1;
+                currentNodeInfo.backPointer = neighborPos;
             }
         }
 
-        if (!moved) {
+        // Greedily select best child
+        if (bestChildIndex != -1) {
+            const int newDepth = currentNodeInfo.depth + 1;
+            auto& [neighborPos, neighborHeight] = neighbors[bestChildIndex];
+            // Unvisited node
+            allNodes[neighborPos] = NodeInfo(currentNode, newDepth, neighborHeight);
+            currentNode = neighborPos;
+            currentHeight = neighborHeight;
+        }
+        else {
             // If no move was made, backtrack
             const auto& backPointer = allNodes[currentNode].backPointer;
             if (currentNode == backPointer) {
@@ -137,22 +155,33 @@ void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
             currentHeight = allNodes[currentNode].height;
         }
 
-        numChecks++;
+        ++numChecks;
     }
+
+    // LOGGING
+    constexpr bool LOG_ENABLED = false;
 
     // Building the final path
     if (foundGoal) {
-        for (i16v2 node = currentNode; node != path.startPoint; node = allNodes[node].backPointer) {
+        for (i16v2 node = currentNode; node != startNode; node = allNodes[node].backPointer) {
             path.points.push_back(node);
         }
-        path.points.push_back(path.startPoint);
-        std::reverse(path.points.begin(), path.points.end());
-        LOG_CRITICAL("VALID {} {}", path.points.size(), numChecks);
+        path.points.push_back(startNode);
+        path.isValid = true;
+       if constexpr (LOG_ENABLED) LOG_CRITICAL("VALID {} {}", path.points.size(), numChecks);
     }
     else {
-        path.points.clear();
-        LOG_CRITICAL("INVALID {}", numChecks);
+        for (i16v2 node = currentNode; node != startNode; node = allNodes[node].backPointer) {
+            path.points.push_back(node);
+        }
+        path.points.push_back(startNode);
+        path.isValid = false;
+        if constexpr (LOG_ENABLED) LOG_CRITICAL("INVALID {} ", numChecks);
     }
-
-
+    // TODO: REMOVE
+    path.visited.reserve(allNodes.size());
+    for (auto& it : allNodes) {
+        path.visited.push_back(it.first);
+    }
 }
+

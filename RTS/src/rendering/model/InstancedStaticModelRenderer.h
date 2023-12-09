@@ -5,6 +5,8 @@
 #include "resources/asset/AssetHandleBundle.h"
 
 class Camera3D;
+class World;
+class WeatherManager;
 class MaterialShaderDef;
 struct ShadowPassShaderData;
 
@@ -15,14 +17,17 @@ public:
     InstancedStaticModelRenderer();
     ~InstancedStaticModelRenderer();
 
-    void renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera);
+    void onWorldBegin(World& world);
+
+    void renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType);
     void renderModelShadows(const ModelInstanceMap* modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera);
 
 private:
 
-    const MaterialShaderDef* mStandardMaterial = nullptr;
-    const MaterialShaderDef* mShadowMapperMaterial = nullptr;
+    const MaterialShaderDef* mStandardShader = nullptr;
+    const MaterialShaderDef* mShadowMapperShader = nullptr;
     const MaterialShaderDef* mSmudgeShader = nullptr;
     AssetHandleBundle mShaderAssets;
+    WeatherManager* mWeatherManager = nullptr;
 };
 

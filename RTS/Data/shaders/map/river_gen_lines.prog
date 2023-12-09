@@ -1,0 +1,2 @@
+vert: river_gen_lines.vert
+frag: river_gen_lines.frag

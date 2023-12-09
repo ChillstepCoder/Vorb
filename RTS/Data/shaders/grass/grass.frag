@@ -12,6 +12,7 @@ uniform float unColorMapScale = 0.005;
 uniform int unDebugLines = 0;
 
 uniform vec2 unUVRoot;
+uniform float unSnowLevel;
 
 flat in vec2 fRelXY;
 in vec2 fUV;
@@ -75,7 +76,8 @@ void main() {
     
     //oColor.rgb = 0.0001 * oColor.rgb + vec3(unCrossfadeAlpha, alphaThreshold, 0.0);
 
-    
+    // =========== Snow ===========
+    oColor.rgb = mix(oColor.rgb, vec3(1.0), unSnowLevel);
     
     // Normal (Upwards)
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);

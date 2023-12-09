@@ -366,6 +366,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp" />
+    <ClCompile Include="src\rendering\mesh\LineMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshDrawer.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.cpp" />
@@ -511,6 +512,7 @@
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
     <ClCompile Include="src\util\UniqueId64.cpp" />
     <ClCompile Include="src\weather\CloudMeshManager.cpp" />
+    <ClCompile Include="src\weather\WeatherManager.cpp" />
     <ClCompile Include="src\world\biome\BiomeGrid.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
@@ -745,6 +747,7 @@
     <ClInclude Include="src\rendering\material\BrdfLUT.h" />
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\GrassBillboardMeshRenderData.h" />
+    <ClInclude Include="src\rendering\mesh\LineMesh.h" />
     <ClInclude Include="src\rendering\mesh\MeshConst.h" />
     <ClInclude Include="src\rendering\mesh\MeshDrawer.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.h" />
@@ -957,6 +960,7 @@
     <ClInclude Include="src\util\UniqueId64.h" />
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudMeshManager.h" />
+    <ClInclude Include="src\weather\WeatherManager.h" />
     <ClInclude Include="src\world\biome\BiomeGrid.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />

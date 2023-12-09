@@ -9,6 +9,7 @@ class Camera3D;
 class TerrainMesh;
 class CubemapDef;
 class World;
+class WeatherManager;
 
 
 class TerrainRenderer
@@ -29,5 +30,6 @@ private:
     // Owned by the world
     VGTexture mBiomeTexture = 0;
     f32 mInverseWorldWidth = 0.0f;
+    WeatherManager* mWeatherManager = nullptr;
 };
 

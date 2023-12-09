@@ -21,6 +21,8 @@
 #include "mesh/Mesh.h"
 #include "mesh/MeshDrawer.h"
 
+#include "weather/WeatherManager.h"
+
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
@@ -33,6 +35,7 @@ TerrainRenderer::TerrainRenderer() {
 void TerrainRenderer::onWorldBegin(World& world) {
     mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
     mInverseWorldWidth = (f32)(1.0 / (f64)world.getWidthTiles());
+    mWeatherManager = &world.getWeatherManager();
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes) {
@@ -55,6 +58,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendScale"), sDebugOptions.mBiomeBlendScale);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendFrequency"), sDebugOptions.mBiomeBlendFrequency);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unDetailTextureStrength"), sDebugOptions.mTerrainDetailTextureStrength);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
 
     VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");

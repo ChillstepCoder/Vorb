@@ -11,6 +11,7 @@ class MaterialShaderDef;
 class GrassMesh;
 class Camera3D;
 class World;
+class WeatherManager;
 
 DECL_VG(class GLProgram);
 
@@ -54,5 +55,6 @@ private:
     VGUniform mPositionUniform;
     VGUniform mCrossfadeAlphaUniform;
     VGUniform mCrossfadeDirectionUniform;
+    WeatherManager* mWeatherManager = nullptr;
 };
 

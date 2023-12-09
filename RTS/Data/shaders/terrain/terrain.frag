@@ -26,6 +26,7 @@ in vec3 fPosition;
 in vec2 fBiomeUV;
 in vec2 fUV;
 in mat3 fTBN;
+in float fSnow;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
@@ -113,6 +114,8 @@ vec3 getTerrainColor(vec2 terrainUvs, int biome, float distanceFactor) {
     return texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
 }
 
+
+
 // =========== MAIN ===========
 void main() {
 	
@@ -167,6 +170,10 @@ void main() {
     oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
     
     oColor.a = 1.0; // AO?
+    
+    
+    // =========== Snow ===========
+    oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));
     
     // Debug biome colors 
     // if (biome < 4) oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);

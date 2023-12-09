@@ -25,6 +25,7 @@
 
 #include "rendering/ShaderLoader.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/mesh/LineMesh.h"
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/ui/InputDispatcher.h>
@@ -88,6 +89,7 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
     mFrameTimer.start();
     mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
+    mRiverDebugShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("river_gen_lines"));
 
     mMapScreenGBuffer = std::make_unique<vg::GBuffer>(SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES);
     mMapScreenGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
@@ -98,12 +100,16 @@ void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
     mThreadpoolSizePostEntry = Services::Threadpool::ref().getSize();
     Services::Threadpool::ref().setSize(std::thread::hardware_concurrency() - 1);
 
+
     beginWorldGeneration();
    
 }
 
 void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     Services::Threadpool::ref().setSize(mThreadpoolSizePostEntry);
+
+    mRiverDebugMesh.reset();
+    mRiverDebugVisitedMesh.reset();
 
     if (mCancelled) {
         sGameWorld.reset();
@@ -243,6 +249,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
             mGenData.mSeed[i] = RANDOM_SEED_VALUES[randGen.getRandomUint() % RANDOM_SEED_VALUES_COUNT];
         }
         mGenData.mSeed[MAX_WORLD_GEN_SEED_SIZE - 1] = '\0';
+        mGenData.mSeedHashed = mGenData.getSeedHash(mGenData.mSeed);
         mIsDirty = true;
     }
     if (ImGui::SliderFloat("Continent Radius", &mGenData.mContinentRadius, 1000.0f, 16000.0f, "%.1f")) {
@@ -367,6 +374,8 @@ void WorldGenScreen::beginWorldGeneration() {
 
     mCancelled = false;
     assert(!sGameWorld);
+
+    mRiverDebugMesh.reset();
 }
 
 void WorldGenScreen::updateCamera()
@@ -443,6 +452,80 @@ void WorldGenScreen::updateMouseInput() {
 
 void WorldGenScreen::debugDrawRivers() {
     if (mWorldGenerator->getBlackboard().mRiversDone) {
-        assert(false);
+        const auto& paths = mWorldGenerator->getBlackboard().mRiverPaths;
+        if (!mRiverDebugMesh) {
+            const color4 riverColor = color::Aqua;
+            const color4 failRiverColor = color::Red;
+            mRiverDebugMesh = std::make_unique<LineMesh>();
+            mRiverDebugVisitedMesh = std::make_unique<LineMesh>();
+            const f32 worldWidthVerts = mWorldData->heightmapGrid->getWidthPatches() * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+          
+            size_t totalPoints = 0;
+            size_t totalVisited = 0;
+            for (const RiverPath& path : paths) {
+                totalPoints += path.points.size();
+                totalVisited += path.visited.size();
+            }
+
+            std::vector<LineVertex> lines;
+            std::vector<LineVertex> points;
+            lines.reserve(totalPoints);
+            points.reserve(totalVisited);
+
+            for (const RiverPath& path : paths) {
+                for (i16v2 point : path.points) {
+                    LineVertex& vertex = lines.emplace_back();
+                    // [-1, 1]
+                    vertex.pos.x = ((f32)point.x / worldWidthVerts) * 2.0f - 1.0f;
+                    vertex.pos.y = ((f32)point.y / worldWidthVerts) * 2.0f - 1.0f;
+                    vertex.pos.z = 0.0f;
+                    vertex.color = path.isValid ? riverColor : failRiverColor;
+                }
+                int k = 0;
+                for (i16v2 point : path.visited) {
+                    LineVertex& vertex = points.emplace_back();
+                    // [-1, 1]
+                    vertex.pos.x = ((f32)point.x / worldWidthVerts) * 2.0f - 1.0f;
+                    vertex.pos.y = ((f32)point.y / worldWidthVerts) * 2.0f - 1.0f;
+                    vertex.pos.z = 0.0f;
+                    vertex.color = path.isValid ? riverColor : failRiverColor;
+                    vertex.color.a = 100;
+                    vertex.color.g = int(k * 0.05) % 255;
+                    vertex.color.b = int(k * 0.05) % 255;
+                    ++k;
+                }
+            }
+
+            mRiverDebugMesh->initialize(lines);
+            mRiverDebugVisitedMesh->initialize(points);
+        }
+
+        const MaterialShaderDef* def = mRiverDebugShader->tryGetLoadedAsset();
+        if (def) {
+            MaterialRenderer::bindMaterialShaderForRender(*def);
+
+            glEnable(GL_LINE_SMOOTH); // Antialiasing
+            glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+            glUniform2f(def->getUniform("unCameraPos"), mCamera->getPosition().x, mCamera->getPosition().y);
+            glLineWidth(2.0f + mCamera->getZoom());
+            mRiverDebugMesh->bind();
+            int start = 0;
+            for (const RiverPath& path : paths) {
+                if (path.points.size()) {
+                    mRiverDebugMesh->drawLineStrip(start, path.points.size());
+                    start += path.points.size();
+                }
+            }
+
+            start = 0;
+            mRiverDebugVisitedMesh->bind();
+            glPointSize(0.75f + mCamera->getZoom() * 0.25f);
+            for (const RiverPath& path : paths) {
+                if (path.visited.size()) {
+                    mRiverDebugVisitedMesh->drawPoints(start, path.visited.size());
+                    start += path.visited.size();
+                }
+            }
+        }
     }
 }

@@ -32,7 +32,8 @@
 #include "world/srv/HostHeightmapGrid.h"
 #include "world/ecosystem/FishEcosystem.h"
 #include "world/host/HostWorldData.h"
-#include  "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/HostSimContext.h"
+#include "weather/WeatherManager.h"
 
 #include "visibility/VisibilityManager.h"
 #include "visibility/VisibilityThread.h"
@@ -44,7 +45,6 @@
 #include "rendering/mesh/GrassMeshManager.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
-
 
 std::unique_ptr<World> sGameWorld;
 
@@ -107,6 +107,8 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
     mFishEcosystem = std::make_unique<FishEcosystem>(*this);
     // Visibility
     mVisibilityManager = std::make_unique<VisibilityManager>(*this);
+    // Weather
+    mWeatherManager = std::make_unique<WeatherManager>(*this);
 
     // Initialize world data
     mChunkGrid->setWorldAndAllocateChunks(*this);

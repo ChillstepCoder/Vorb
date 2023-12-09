@@ -7,12 +7,14 @@ uniform vec3 unPosition;
 uniform vec2 unUVRoot;
 uniform float unInverseWorldWidth;
 uniform float unColorMapScale = 0.005;
+uniform float unSnowLevel;
 
 out float fHeight;
 out vec3 fPosition;
 out vec2 fUV;
 out vec2 fBiomeUV;
 out mat3 fTBN;
+out float fSnow;
 
 const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
 
@@ -26,6 +28,9 @@ void main() {
     vec3 tangent = cross(binormal, normal);
     // TODO: TANGENT???
 	fTBN = mat3(TANGENT, binormal, normal);
+    
+    fSnow = normal.z * unSnowLevel;
+    worldPos.z += fSnow * 0.5f;
 	
     fUV = unUVRoot + vPosition.xy * unColorMapScale;
     fHeight = vertexPos.z;

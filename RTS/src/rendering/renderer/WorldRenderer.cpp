@@ -184,7 +184,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
 
     MaterialRepository::get().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera);
+    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera, MaterialRenderPassType::Default);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
 
     // Fish
@@ -195,7 +195,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Smudge
     {
         mSmudgeRenderer->beginSmudgePass(activeGBuffer);
-        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera, MaterialRenderPassType::Smudge);
         mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Smudge);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             glDisable(GL_CULL_FACE);
@@ -508,6 +508,7 @@ void WorldRenderer::initEventHandlers() {
         mCharacterRenderer->onWorldBegin(world);
         mTerrainRenderer->onWorldBegin(world);
         mGrassRenderer->onWorldBegin(world);
+        mStaticModelRenderer->onWorldBegin(world);
     });
     // TODO: We should do this on the render thread somehow
     //IWorld::addOnWorldEndListener(mWorldEventListeners, [this](IWorld& world) {

@@ -8,6 +8,8 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/RenderStats.h"
 
+#include "weather/WeatherManager.h"
+
 #include "world/World.h"
 #include "world/biome/BiomeGrid.h"
 #include "resources/BiomeRepository.h"
@@ -44,6 +46,7 @@ GrassRenderer::~GrassRenderer() {
 void GrassRenderer::onWorldBegin(World& world) {
     mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
     mInverseWorldWidth = (f32)(1.0 / (f64)world.getWidthTiles());
+    mWeatherManager = &world.getWeatherManager();
 }
 
 void GrassRenderer::renderDefaultGrass(const Camera3D& camera, const f32v3& playerPos, const std::vector<GrassMeshFrameRenderData>& grassMeshes) {
@@ -193,6 +196,7 @@ void GrassRenderer::uploadSharedUniforms(const vg::GLProgram& program, ui32& nex
     glUniform1f(program.getUniform("unColorMapScale"), sDebugOptions.mGrassColorMapScale);
 
     glUniform1f(program.getUniform("unInverseWorldWidth"), mInverseWorldWidth);
+    glUniform1f(program.getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
 
     glUniform1i(program.getUniform("unBiomeTexture"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, mBiomeTexture);

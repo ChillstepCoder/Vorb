@@ -29,6 +29,7 @@ class NavWorld;
 class FishEcosystem;
 class WorldRenderState;
 class VisibilityManager;
+class WeatherManager;
 
 
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
@@ -70,6 +71,7 @@ public:
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
     IEffectContext& getEffectContext() const { return *mEffectContext; }
     VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
+    WeatherManager& getWeatherManager() const { return *mWeatherManager; }
     HostSimContext& getHostSimContext() const { assert(mHostSimContext); return *mHostSimContext; }
 
     // Optional system accessors 
@@ -137,6 +139,8 @@ private:
     std::unique_ptr<IEffectContext> mEffectContext;
     // Visibility
     std::unique_ptr<VisibilityManager> mVisibilityManager;
+    // Weather
+    std::unique_ptr<WeatherManager> mWeatherManager;
     // Simulation (HOST ONLY)
     std::unique_ptr<HostSimContext> mHostSimContext;
     // Nav world (OPTIONAL)

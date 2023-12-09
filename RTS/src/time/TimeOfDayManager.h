@@ -8,9 +8,9 @@ public:
     // [-1.0, 1.0]
     // TODO: Render thread accesses all of this! Race conditions!
     float getSunHeight() const { return mSunHeight; }
-    const f32v3& getSunPosition() const { return mSunPosition; }
+    f32v3 getSunPosition() const { return mSunPosition; }
     float getTimeOfDayHours() const { return mTimeOfDayHours; }
-    const f32v3& getSunColor() const { return mSunColor; }
+    f32v3 getSunColor() const { return mSunColor; }
     const f32m4& getSkyRotMatrix() const { return mSkyRotMatrix; }
 
 private:

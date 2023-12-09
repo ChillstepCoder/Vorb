@@ -19,6 +19,8 @@
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/RenderContext.h"
 
+#include "weather/WeatherManager.h"
+
 #include "resources/ModelRepository.h"
 
 #include "options/LightingOptions.h"
@@ -196,6 +198,11 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Roughness", &sDebugOptions.mWaterRoughness, 0.0f, 1.0f, "%.3f");
         ImGui::PopID();
         ImGui::Separator();
+    }
+
+    if (ImGui::CollapsingHeader("Weather")) {
+        WeatherManager& weatherManager = world.getWeatherManager();
+        ImGui::SliderFloat("Snow", &weatherManager.mSnowLevel, 0.0f, 1.0f);
     }
 
     if (ImGui::CollapsingHeader("Lighting")) {

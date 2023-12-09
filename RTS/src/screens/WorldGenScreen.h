@@ -14,6 +14,7 @@ class HostWorldData;
 class WorldDataGenerator;
 class MaterialShaderDef;
 class OrthoCamera;
+class LineMesh;
 
 enum class WorldGenScreenState {
     Idle,
@@ -81,6 +82,11 @@ protected:
     bool mShowBiomes = false;
     bool mShowHeight = false;
     bool mShowRivers = false;
+
+    // Debug rendering
+    AssetHandlePtr<MaterialShaderDef> mRiverDebugShader;
+    std::unique_ptr<LineMesh> mRiverDebugMesh;
+    std::unique_ptr<LineMesh> mRiverDebugVisitedMesh;
 
     PreciseTimer mGenTimer;
 };

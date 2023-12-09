@@ -6,7 +6,6 @@ in vec4 fTint;
 in mat3 fTBN;
 in vec3 fViewTangent;
 in vec3 fFragPosTangent;
-in float fSnow;
 
 uniform float unHeightScale = 0.023;
 
@@ -36,24 +35,11 @@ void main() {
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
-    // Invert normals if away from camera
-    if (!gl_FrontFacing) {
-        
-        // Doesnt quite work
-        //vec3 frontNormal = normal;
-       // vec3 backNormal = -normal;
-        //float blendFactor = dot(normal, -tangentViewDir);
-        //normal = mix(frontNormal, backNormal, blendFactor);
-        normal = -normal;
-   }
+
     // Into 0-1 range
 	oNormal = (normal + 1.0) * 0.5;
     
     oColor.rgb = color.rgb;
-    
-    // =========== Snow ===========
-    oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));
-    
     oColor.a = ao;
     
     oMetallicRoughness.r = metallic;
