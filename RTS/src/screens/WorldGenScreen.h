@@ -87,6 +87,7 @@ protected:
     AssetHandlePtr<MaterialShaderDef> mRiverDebugShader;
     std::unique_ptr<LineMesh> mRiverDebugMesh;
     std::unique_ptr<LineMesh> mRiverDebugVisitedMesh;
+    std::unique_ptr<LineMesh> mRiverDebugLocalGroupMesh;
 
     PreciseTimer mGenTimer;
 };

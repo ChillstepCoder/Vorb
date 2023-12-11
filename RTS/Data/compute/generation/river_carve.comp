@@ -1,0 +1,86 @@
+
+//#include "util/noise/snoise3.glsl"
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(r8, binding = 0) uniform writeonly image2D heightImage;
+layout(std430, binding = 0) buffer HeightData
+{
+    float heightData[];
+};
+
+layout(std430, binding = 1) readonly buffer RiverPoints
+{
+    vec4 riverSegments[];
+};
+
+layout(std430, binding = 2) readonly buffer WorkGroupData
+{
+    uvec4 workGroupData[]; // CellPos.xy, SegmentStart, NumSegments
+};
+
+uniform uint unYStride;
+
+// Match C++
+const float MAX_INFLUENCE_DIST = 31.0;
+
+float distToSegment(vec2 p, vec2 p1, vec2 p2) {
+    vec2 v = p2 - p1;
+    vec2 w = p - p1;
+
+    // Project point onto the line segment
+    float t = dot(w, v) / dot(v, v);
+    t = clamp(t, 0.0, 1.0); // Clamps t in the range [0, 1]
+
+    // Interpolate between p1 and p2 based on t
+    vec2 projection = mix(p1, p2, t);
+
+    // Distance from the point to its projection on the line segment
+    return length(p - projection);
+}
+
+void main() {
+    uvec4 groupData = workGroupData[gl_WorkGroupID.x];
+    const uint idx = gl_LocalInvocationID.x;
+    const uint idy = gl_LocalInvocationID.y;
+    const ivec2 hxy = ivec2(groupData.x + idx * 2, groupData.y + idy * 2);
+    
+    
+    const uint heightIndices[4] = {
+        hxy.y * unYStride + hxy.x, //BL
+        hxy.y * unYStride + hxy.x + 1, //BR
+        (hxy.y + 1) * unYStride + hxy.x, //TL
+        (hxy.y + 1) * unYStride + hxy.x + 1 //TR
+    };
+    const vec2 worldPosPoints[4] = {
+        vec2(hxy), // BL
+        vec2(hxy.x + 1, hxy.y), //BR
+        vec2(hxy.x, hxy.y + 1), //TL
+        vec2(hxy.x + 1, hxy.y + 1), //TR
+    };
+    float minDists[4] = {
+        99999999999.0f,
+        99999999999.0f,
+        99999999999.0f,
+        99999999999.0f
+    };
+    
+    // Get closest distances to river points
+    for (uint i = groupData.z; i < groupData.z + groupData.w; ++i) {
+        const vec4 segment = riverSegments[i];
+        for (uint j = 0; j < 4; ++j) {
+            float currentDist = distToSegment(worldPosPoints[j], segment.xy, segment.zw);
+            minDists[j] = min(currentDist, minDists[j]);
+        }
+    }
+    
+    // Store results
+    for (uint j = 0; j < 4; ++j) {
+        const float prevHeight = heightData[heightIndices[j]];
+        float lerpVal = 1.0 - clamp(minDists[j] / MAX_INFLUENCE_DIST, 0.0, 1.0);
+        float finalHeight = mix(prevHeight, -15.0, smoothstep(0.0, 1.0, lerpVal));
+        
+        heightData[heightIndices[j]] = finalHeight;
+        imageStore(heightImage, ivec2(worldPosPoints[j]), vec4(clamp((finalHeight + 127.0) - 100.0, 0.0, 255.0) / 255.0, 0.0, 0.0, 0.0));
+    }
+}

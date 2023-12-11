@@ -3,6 +3,8 @@ startup:
   - [integrate_brdf, material_shader]
   - [cubemap_irradiance, material_shader]
   - [prefilter_ggx, material_shader]
+  - [terrain_base, material_shader]
+  - [river_carve, material_shader]
 preload:
 #  - [*, material] #uncomment to force generate all .dds
   - [*, material_shader]
@@ -12,4 +14,4 @@ preload:
   - [cell_noise, material]
   - [grass_terrain, material]
   - [mountain, material]
-  - [*, model] #DEVELOPMENT ONLY
+  - [*, model] #DEVELOPMENT ONLY?

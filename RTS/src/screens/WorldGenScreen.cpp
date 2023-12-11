@@ -110,6 +110,7 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
 
     mRiverDebugMesh.reset();
     mRiverDebugVisitedMesh.reset();
+    mRiverDebugLocalGroupMesh.reset();
 
     if (mCancelled) {
         sGameWorld.reset();
@@ -235,7 +236,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     if (ImGui::SliderFloat2("World Center", &mGenData.mWorldCenter.x, 0, 32768.f, "%.1f")) {
         mIsDirty = true;
     }
-    if (ImGui::SliderInt("River Count", &mGenData.mDesiredRiverCount, 0, 600)) {
+    if (ImGui::SliderInt("River Count", &mGenData.mDesiredRiverCount, 0, 128)) {
         mIsDirty = true;
     }
     if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
@@ -451,39 +452,46 @@ void WorldGenScreen::updateMouseInput() {
 }
 
 void WorldGenScreen::debugDrawRivers() {
-    if (mWorldGenerator->getBlackboard().mRiversDone) {
+    if (mWorldGenerator->getBlackboard().mRiverSplinesGenerated) {
         const auto& paths = mWorldGenerator->getBlackboard().mRiverPaths;
         if (!mRiverDebugMesh) {
             const color4 riverColor = color::Aqua;
             const color4 failRiverColor = color::Red;
             mRiverDebugMesh = std::make_unique<LineMesh>();
             mRiverDebugVisitedMesh = std::make_unique<LineMesh>();
+            mRiverDebugLocalGroupMesh = std::make_unique<LineMesh>();
             const f32 worldWidthVerts = mWorldData->heightmapGrid->getWidthPatches() * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
           
             size_t totalPoints = 0;
             size_t totalVisited = 0;
+            size_t totalGroups = 0;
             for (const RiverPath& path : paths) {
-                totalPoints += path.points.size();
+                totalPoints += path.splinePath.size();
                 totalVisited += path.visited.size();
+                totalGroups += path.affectedLocalGroups.size();
             }
 
-            std::vector<LineVertex> lines;
-            std::vector<LineVertex> points;
-            lines.reserve(totalPoints);
-            points.reserve(totalVisited);
+            std::vector<LineVertex> pathLines;
+            std::vector<LineVertex> visitedPoints;
+            std::vector<LineVertex> groupQuads;
+            pathLines.reserve(totalPoints);
+            visitedPoints.reserve(totalVisited);
+            groupQuads.reserve(totalGroups * 8); // 2x4 segments
 
             for (const RiverPath& path : paths) {
-                for (i16v2 point : path.points) {
-                    LineVertex& vertex = lines.emplace_back();
+                // Path
+                for (f32v2 point : path.splinePath) {
+                    LineVertex& vertex = pathLines.emplace_back();
                     // [-1, 1]
                     vertex.pos.x = ((f32)point.x / worldWidthVerts) * 2.0f - 1.0f;
                     vertex.pos.y = ((f32)point.y / worldWidthVerts) * 2.0f - 1.0f;
                     vertex.pos.z = 0.0f;
                     vertex.color = path.isValid ? riverColor : failRiverColor;
                 }
+                // Visited
                 int k = 0;
                 for (i16v2 point : path.visited) {
-                    LineVertex& vertex = points.emplace_back();
+                    LineVertex& vertex = visitedPoints.emplace_back();
                     // [-1, 1]
                     vertex.pos.x = ((f32)point.x / worldWidthVerts) * 2.0f - 1.0f;
                     vertex.pos.y = ((f32)point.y / worldWidthVerts) * 2.0f - 1.0f;
@@ -494,10 +502,30 @@ void WorldGenScreen::debugDrawRivers() {
                     vertex.color.b = int(k * 0.05) % 255;
                     ++k;
                 }
+                // Local group
+                const f32 CELL_WIDTH = (RIVER_CARVE_LOCAL_GROUP_SIZE / (f32)worldWidthVerts) * 2.0f;
+                const color4 cellColor = color4(255, 0, 0, 100);
+                for (auto&& it : path.affectedLocalGroups) {
+                    // Add a quad with duplicate verts
+                    const f32v2 pos = (f32v2(it.first) / worldWidthVerts) * 2.0f - 1.0f;
+                    // Left segment
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x, pos.y, 0.0f), cellColor });
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x, pos.y + CELL_WIDTH, 0.0f), cellColor });
+                    // Top segment
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x, pos.y + CELL_WIDTH, 0.0f), cellColor });
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x + CELL_WIDTH, pos.y + CELL_WIDTH, 0.0f), cellColor });
+                    // Right segment
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x + CELL_WIDTH, pos.y + CELL_WIDTH, 0.0f), cellColor });
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x + CELL_WIDTH, pos.y, 0.0f), cellColor });
+                    // Bottom segment
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x + CELL_WIDTH, pos.y, 0.0f), cellColor });
+                    groupQuads.emplace_back(LineVertex{ f32v3(pos.x, pos.y, 0.0f), cellColor });
+                }
             }
 
-            mRiverDebugMesh->initialize(lines);
-            mRiverDebugVisitedMesh->initialize(points);
+            mRiverDebugMesh->initialize(pathLines);
+            mRiverDebugVisitedMesh->initialize(visitedPoints);
+            mRiverDebugLocalGroupMesh->initialize(groupQuads);
         }
 
         const MaterialShaderDef* def = mRiverDebugShader->tryGetLoadedAsset();
@@ -511,9 +539,9 @@ void WorldGenScreen::debugDrawRivers() {
             mRiverDebugMesh->bind();
             int start = 0;
             for (const RiverPath& path : paths) {
-                if (path.points.size()) {
-                    mRiverDebugMesh->drawLineStrip(start, path.points.size());
-                    start += path.points.size();
+                if (path.splinePath.size()) {
+                    mRiverDebugMesh->drawLineStrip(start, path.splinePath.size());
+                    start += path.splinePath.size();
                 }
             }
 
@@ -524,6 +552,15 @@ void WorldGenScreen::debugDrawRivers() {
                 if (path.visited.size()) {
                     mRiverDebugVisitedMesh->drawPoints(start, path.visited.size());
                     start += path.visited.size();
+                }
+            }
+            glLineWidth(mCamera->getZoom());
+            start = 0;
+            mRiverDebugLocalGroupMesh->bind();
+            for (const RiverPath& path : paths) {
+                if (path.affectedLocalGroups.size()) {
+                    mRiverDebugLocalGroupMesh->drawLines(start, path.affectedLocalGroups.size() * 8);
+                    start += path.affectedLocalGroups.size() * 8;
                 }
             }
         }

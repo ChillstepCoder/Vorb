@@ -29,7 +29,7 @@ struct WorldGenerationData {
     f32v2 mWorldPosRoot = f32v2(0.0f);
     f32 mContinentRadius = 14000.0f;
     f32 mContinentOutlineScale = SQ(20000.0f);
-    i32 mDesiredRiverCount = 32;
+    i32 mDesiredRiverCount = 8;
     // Constant
     f32 mContinentRadiusSq = SQ(mContinentRadius);
     char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";

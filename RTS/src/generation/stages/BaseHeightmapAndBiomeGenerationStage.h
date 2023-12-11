@@ -25,7 +25,7 @@ private:
 
     ui32 mNextGenerationIndex = 0;
     ui32 mNextRowToGenerate = 0;
-    std::vector<PendingBaseHeightAndBiomeGeneration> mGPUBaseHeightAndBiomeGenerations;
+    std::vector<PendingBaseHeightAndBiomeGeneration> mGPUGenerations;
 
     std::atomic<ui32> mFinishedPatchesThisStep = 0;
     bool mAllGenerationSentThisStep = false;

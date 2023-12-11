@@ -1,0 +1,3 @@
+albedo: default
+normal: GENERATE
+sampler_state: LINEAR_CLAMP_MIPMAP

@@ -20,6 +20,7 @@ public:
 
     void drawLineStrip(int start, ui32 count) const;
     void drawPoints(int start, ui32 count) const;
+    void drawLines(int start, ui32 count) const;
 
     VGBuffer mVao = 0;
     VGBuffer mVbo = 0;

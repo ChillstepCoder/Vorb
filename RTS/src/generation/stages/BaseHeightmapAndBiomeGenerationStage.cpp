@@ -23,7 +23,7 @@ PendingBaseHeightAndBiomeGeneration::~PendingBaseHeightAndBiomeGeneration() {
 
 void BaseHeightmapAndBiomeGenerationStage::begin()
 {
-    mGPUBaseHeightAndBiomeGenerations.resize(mHeightGrid->getWidthPatches() / ROWS_TO_GENERATE_PER_FRAME);
+    mGPUGenerations.resize(mHeightGrid->getWidthPatches() / ROWS_TO_GENERATE_PER_FRAME);
 }
 
 bool BaseHeightmapAndBiomeGenerationStage::update()
@@ -58,10 +58,14 @@ bool BaseHeightmapAndBiomeGenerationStage::update()
         glProgramUniform2i(def->mProgram.getID(), def->getUniform("unVertexOffset"), vertXY.x, vertXY.y);
 
         // Dispatch compute
+        constexpr i32 MAX_COMPUTE_SIZE = 65535; // Minimum as according to openGL spec
+        if (MAX_COMPUTE_SIZE < numGroups * mHeightGrid->getWidthPatches()) {
+            panic("Heightmap gen compute attempted to dispatch {} groups, but max is {}", numGroups * mHeightGrid->getWidthPatches(), MAX_COMPUTE_SIZE);
+        }
         glDispatchCompute(numGroups * mHeightGrid->getWidthPatches(), numGroups * rowsToGenerate, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        PendingBaseHeightAndBiomeGeneration& generation = mGPUBaseHeightAndBiomeGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
+        PendingBaseHeightAndBiomeGeneration& generation = mGPUGenerations[mNextRowToGenerate / ROWS_TO_GENERATE_PER_FRAME];
         generation.rowIndexStart = mNextRowToGenerate;
         generation.numRows = rowsToGenerate;
         generation.generateStarted = true;
@@ -75,8 +79,8 @@ bool BaseHeightmapAndBiomeGenerationStage::update()
         mAllGenerationSentThisStep = true;
     }
 
-    while (mNextGenerationIndex != mGPUBaseHeightAndBiomeGenerations.size()) {
-        PendingBaseHeightAndBiomeGeneration& generation = mGPUBaseHeightAndBiomeGenerations[mNextGenerationIndex];
+    while (mNextGenerationIndex != mGPUGenerations.size()) {
+        PendingBaseHeightAndBiomeGeneration& generation = mGPUGenerations[mNextGenerationIndex];
         if (!generation.generateStarted) {
             break;
         }
@@ -120,7 +124,6 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                 const i32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
                 const i32v2 rootVertXY = rootPos / HEIGHTMAP_QUAD_SIZE;
                 const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-                const ui32 totalWidthTiles = totalWidthVerts * HEIGHTMAP_QUAD_SIZE;
                 const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->getPatchForGeneration(patchId);
                 if (!patch.mHeightData) {

@@ -47,3 +47,9 @@ void LineMesh::drawPoints(int start, ui32 count) const {
     assert(mVao);
     glDrawArrays(GL_POINTS, start, count);
 }
+
+void LineMesh::drawLines(int start, ui32 count) const {
+    assert(count);
+    assert(mVao);
+    glDrawArrays(GL_LINES, start, count);
+}

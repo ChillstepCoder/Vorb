@@ -63,7 +63,7 @@ public:
 private:
     void initStages();
     IWorldGenerationStage* tryGetCurrentStage() const;
-    bool initResourcesIfNeeded(i32 resolution);
+    void initResourcesIfNeeded(i32 resolution);
 
     // Final method
     void onCompletelyFinished();

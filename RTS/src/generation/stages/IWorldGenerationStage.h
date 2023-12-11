@@ -1,11 +1,11 @@
 #pragma once
 
 class WorldDataGenerator;
-class WorldGenerationData;
 class IHeightmapGrid;
 class HostWorldData;
 class BiomeGrid;
 class WorldGenerationBlackboard;
+struct WorldGenerationData;
 
 class IWorldGenerationStage
 {

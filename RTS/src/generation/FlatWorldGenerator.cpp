@@ -6,7 +6,7 @@
 
 constexpr f32 BASE_HEIGHT = 10.0f;
 
-Tile FlatWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biome) {
+Tile FlatWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biome) {
 
     static TileGrassID defaultGrass = 0; // TODO: DIFFERENT
     constexpr f32 GRASS_SCALE = 2.0f;

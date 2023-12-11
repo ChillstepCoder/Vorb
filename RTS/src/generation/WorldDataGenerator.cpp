@@ -132,7 +132,7 @@ IWorldGenerationStage* WorldDataGenerator::tryGetCurrentStage() const {
     return nullptr;
 }
 
-bool WorldDataGenerator::initResourcesIfNeeded(i32 resolution)
+void WorldDataGenerator::initResourcesIfNeeded(i32 resolution)
 {
     GLint maxTextureSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);

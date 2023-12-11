@@ -1,0 +1,5 @@
+albedo: hotspringch01
+normal: hotspringch01_n
+rough: hotspringch01_r
+ao: hotspringch01_ao
+sampler_state: LINEAR_CLAMP_MIPMAP

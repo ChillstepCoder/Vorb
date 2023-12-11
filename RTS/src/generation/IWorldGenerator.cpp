@@ -27,7 +27,7 @@ IWorldGenerator::~IWorldGenerator() {
 }
 
 
-Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
     assert(grass);
 
     if (biomeDef) {
@@ -40,7 +40,7 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, TileG
             case BiomeUniqueID::Forest:
                 return generateTileForests(worldPos, height, grass, biomeDef);
             case BiomeUniqueID::Hotsprings:
-                return generateTileHotsprings(worldPos, height, grass, biomeDef);
+                return generateTileHotsprings(worldPos, height, normal, grass, biomeDef);
             default:
                 break;
 
@@ -94,7 +94,16 @@ Tile IWorldGenerator::generateTilePlains(const f32v2& worldPos, f32 height, Tile
 
 Tile IWorldGenerator::generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     generateTileGrass(worldPos, height, grass);
-    return Tile();
+    TileRepository& tileRepo = TileRepository::get();
+    static TileID rock_small = tileRepo.getTileID(CStrToken("rock_small"));
+    constexpr f32 TREE_DENSITY = 0.05f;
+
+    Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
+    if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY) {
+        tile.mainLayer = rock_small;
+    }
+
+    return tile;
 }
 
 Tile IWorldGenerator::generateTileForests(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
@@ -137,11 +146,31 @@ Tile IWorldGenerator::generateTileForests(const f32v2& worldPos, f32 height, Til
     return tile;
 }
 
-Tile IWorldGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile IWorldGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
+
+    TileRepository& tileRepo = TileRepository::get();
+    static TileID hotspring01 = tileRepo.getTileID(CStrToken("hotspring_01"));
+    static TileID hotspringCh01 = tileRepo.getTileID(CStrToken("hotspring_ch01"));
+
+
+    Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
+    constexpr f32 TREE_DENSITY = 0.01f;
+    if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY) {
+        if (Random::getThreadSafef(worldPos.x * 20.353f, worldPos.y * -54.25f) < 0.3f) {
+            tile.mainLayer = hotspringCh01;
+        }
+        *grass = TileGrass();
+    }
+    else if (normal.z < 0.65f) {
+        if (Random::getThreadSafef(worldPos.y, worldPos.x) < 0.65f) {
+            tile.mainLayer = hotspring01;
+            *grass = TileGrass();
+        }
+    }
 
     generateTileGrass(worldPos, height, grass);
 
-    return Tile();
+    return tile;
 }
 
 void IWorldGenerator::generateChunk(Chunk& chunk) {
@@ -157,10 +186,11 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
 
     // Cache all center heights
     f32 centerHeights[CHUNK_SIZE];
+    f32v3 centerNormals[CHUNK_SIZE];
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = heightGrid.computeCenterHeightAtTile<true>(chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y));
+        centerHeights[i] = heightGrid.computeCenterHeightAndNormalAtTile<true>(chunk.mTileContainer->getTileSpatialGrid().getWorldPos2D() + i32v2(x, y), &centerNormals[i]);
     }
 
     // Large objects
@@ -177,9 +207,9 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-        const f32 height = centerHeights[y * CHUNK_WIDTH + x];
+        const f32 height = centerHeights[i];
         TileGrass grass;
-        Tile tile = generateTileAtPos(tilePosWorld, height, &grass, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
+        Tile tile = generateTileAtPos(tilePosWorld, height, centerNormals[i], &grass, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
         tile.groundZOffset = height;
         const f32 baseZPos = height;
         if (baseZPos + 1.0f > maxHeight) {

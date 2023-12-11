@@ -102,6 +102,9 @@ public:
     template <bool THREAD_SAFE>
     f32 computeCenterHeightAtTile(ui32v2 worldTilePos) const;
 
+    template <bool THREAD_SAFE>
+    f32 computeCenterHeightAndNormalAtTile(ui32v2 worldTilePos, OUT f32v3* outNormal) const;
+
     void computeTileCorners(ui32v2 worldTilePos, OUT f32 corners[4]) const;
     bool areTrianglesFlippedAtTile(const TileHandle& tileHandle) const;
     //void copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const;

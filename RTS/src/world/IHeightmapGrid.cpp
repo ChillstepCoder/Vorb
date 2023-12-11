@@ -304,6 +304,15 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAtTile, (ui32v2 worldTilePos) const)
 
+template <bool THREAD_SAFE>
+f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile(ui32v2 worldTilePos, OUT f32v3* outNormal) const {
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
+    return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos) + f32v2(0.5f), outNormal);
+}
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile, (ui32v2 worldTilePos, OUT f32v3* outNormal) const)
+
+
+
 //void IHeightmapGrid::copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const {
 //    ASSERT_GAME_THREAD();
 //    assert(mHeightData);
