@@ -279,7 +279,7 @@ std::vector<f32v2> smoothPath(const std::vector<i16v2>& points) {
 
 void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
 
-    constexpr size_t MAX_CHECKS = 16384;
+    constexpr size_t MAX_CHECKS = 65536;
 
     std::unordered_map<i16v2, NodeInfo> allNodes;
     allNodes.reserve(16384);
