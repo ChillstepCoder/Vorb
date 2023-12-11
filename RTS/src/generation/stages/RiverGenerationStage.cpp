@@ -7,6 +7,7 @@
 #include "generation/WorldGenerationBlackboard.h"
 
 #include "rendering/MaterialShaderRepository.h"
+#include "resources/TextureRepository.h"
 
 #include <tinysplinecxx.h>
 
@@ -92,66 +93,80 @@ bool RiverGenerationStage::update() {
 
         // Build generations
         // Each cell has a number of passes, based on how many different rivers influence them
-        std::unordered_map<i32v2 /*vertexPosCorner*/, std::vector<std::vector<f32v4>*>> cellPasses;
 
         // TODO: refine reserve
-        cellPasses.reserve(mBlackboard.mRiverPaths.size() * 4);
-
-        PreciseTimer timer;
+        mCellPasses.reserve(mBlackboard.mRiverPaths.size() * 4);
 
         // Track all passes in each cell
-        size_t passCount = 0;
         for (auto&& it : mBlackboard.mRiverPaths) {
             for (auto&& it2 : it.affectedLocalGroups) {
-                auto& v = cellPasses[it2.first];
-                v.emplace_back(&it2.second);
-                if (v.size() > passCount) [[unlikely]] {
-                    passCount = v.size();
+                CellPassData& passData = mCellPasses[it2.first];
+                const ui32 passIndex = passData.passes.size();
+                CellPassData::PassData& pass = passData.passes.emplace_back();
+                pass.riverSegments = &it2.second;
+                if (passIndex >= mGPUGenerations.size()) [[unlikely]] {
+                    mGPUGenerations.resize(passIndex + 1);
+                }
+                RiverGenerationPass& generationPass = mGPUGenerations[passIndex];
+                // Track where in the array we belong
+                pass.groupIndex = generationPass.numLocalGroups;
+                pass.segmentStart = generationPass.numSegments;
+                generationPass.numSegments += it2.second.size();
+                ++generationPass.numLocalGroups;
+            }
+        }
+
+        // Build passes
+        for (size_t passIndex = 0; passIndex < mGPUGenerations.size(); ++passIndex) {
+            RiverGenerationPass& pass = mGPUGenerations[passIndex];
+            pass.passIndex = passIndex;
+            pass.allSegments.resize(pass.numSegments);
+            pass.bufferData.resize(pass.numLocalGroups);
+        }
+        mGeneratingPasses = true;
+
+        // Large copy so dont stall main thread
+        const ui32 genID = sGenerationUID;
+        Services::Threadpool::ref().addTask([this, genID]() {
+
+            for (auto&& it : mCellPasses) {
+                // Check for interrupt
+                if (genID != sGenerationUID) [[unlikely]] {
+                    return;
+                }
+                CellPassData& cellPassData = it.second;
+                for (size_t passIndex = 0; passIndex < cellPassData.passes.size(); ++passIndex) {
+                    const CellPassData::PassData& pass = cellPassData.passes[passIndex];
+                    const std::vector<f32v4>* river = pass.riverSegments;
+                    RiverGenerationPass& generationPass = mGPUGenerations[passIndex];
+                    RiverGenerationBufferData& bufferData = generationPass.bufferData[pass.groupIndex];
+
+                    bufferData.cellPos = it.first;
+                    bufferData.segmentStartIndex = pass.segmentStart;
+                    bufferData.numSegments = river->size();
+
+                    for (ui32 i = 0; i < bufferData.numSegments; ++i) {
+                        generationPass.allSegments[pass.segmentStart + i] = river->operator[](i);
+                    }
                 }
             }
-        }
 
-        LOG_CRITICAL(" A {}", timer.stop());
-        timer.start();
+            mGeneratingPasses = false;
+        }, nullptr);
 
-        mCellPassCounts.reserve(cellPasses.size());
-        for (auto&& it : cellPasses) {
-            mCellPassCounts[it.first] = it.second.size();
-        }
-        LOG_CRITICAL(" B {}", timer.stop());
-        timer.start();
-        // Build passes
-        size_t passIndex = 0;
-        mGPUGenerations.resize(passCount);
-        for (size_t passIndex = 0; passIndex < passCount; ++passIndex) {
-            mGPUGenerations[passIndex].passIndex = passIndex;
-        }
-        
-        for (auto&& it : cellPasses) {
-            std::vector<std::vector<f32v4>*>& riversInfluencing = it.second;
-            for (size_t passIndex = 0; passIndex < riversInfluencing.size(); ++passIndex) {
-                std::vector<f32v4>* river = riversInfluencing[passIndex];
-                RiverGenerationPass& pass = mGPUGenerations[passIndex];
-                RiverGenerationBufferData& bufferData = pass.bufferData.emplace_back();
-                bufferData.cellPos = it.first;
-                bufferData.segmentStartIndex = pass.allSegments.size();
-                bufferData.numSegments = 0;
-
-                bufferData.numSegments += river->size();
-                pass.allSegments.reserve(pass.allSegments.size() + river->size());
-                pass.allSegments.insert(pass.allSegments.end(), river->begin(), river->end());
-            }
-        }
-
-        LOG_CRITICAL(" C {}", timer.stop());
-        timer.start();
     }
 
     if (mFinishedGeneratingPaths) {
 
+        if (mGeneratingPasses) {
+            return false;
+        }
+
         // Download height
         if (mAllGpuGenerationsFinished) {
             if (mFinishedHeightDownloads == mPendingHeightDownloads) {
+                // Free unused memory
+                std::unordered_map<i32v2 /*vertexPosCorner*/, CellPassData>().swap(mCellPasses);
                 return true;
             }
             return false;
@@ -180,6 +195,8 @@ bool RiverGenerationStage::update() {
                     glCreateBuffers(1, &pass.groupDataBuffer);
                     glNamedBufferStorage(pass.groupDataBuffer, sizeof(RiverGenerationBufferData) * pass.bufferData.size(), pass.bufferData.data(), 0);
                     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pass.groupDataBuffer);
+
+                    glBindTextureUnit(3, TextureRepository::get().getLoadedAsset(CStrToken("perlin_noise")).gpuTexture.getHandle());
 
                     constexpr i32 MAX_COMPUTE_SIZE = 65535; // Minimum as according to openGL spec
 
@@ -246,7 +263,7 @@ std::vector<f32v2> smoothPath(const std::vector<i16v2>& points) {
     spline.setControlPoints(ctrlp);
 
     // Generate smoothed path
-    constexpr int SEGMENTS_PER_POINT = 2;
+    constexpr int SEGMENTS_PER_POINT = 3;
     const int numPoints = points.size() * SEGMENTS_PER_POINT;
     std::vector<f32v2> smoothedPath;
     smoothedPath.reserve(numPoints);
@@ -292,7 +309,7 @@ void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
         const i16v2 left = currentNode + i16v2(-GRANULARITY, 0);
         const i16v2 right = currentNode + i16v2(GRANULARITY, 0);
         const i16v2 up = currentNode + i16v2(0, GRANULARITY);
-        std::array<std::pair<i16v2, f32>, 4> neighbors = {
+        std::pair<i16v2, f32> neighbors[4] = {
             std::pair{down, mHeightGrid->getHeightAtVert(down)}, // Down
             std::pair{left, mHeightGrid->getHeightAtVert(left)}, // Left
             std::pair{right,  mHeightGrid->getHeightAtVert(right)},  // Right
@@ -432,8 +449,8 @@ void RiverGenerationStage::onPassFinished(RiverGenerationPass& pass) {
     const ui32 genID = sGenerationUID;
     for (int p = 0; p < pass.bufferData.size(); ++p) {
         const RiverGenerationBufferData& data = pass.bufferData[p];
-        assert(pass.passIndex <= mCellPassCounts[data.cellPos] - 1);
-        if (pass.passIndex == mCellPassCounts[data.cellPos] - 1) {
+        assert(pass.passIndex <= mCellPasses[data.cellPos].passes.size() - 1);
+        if (pass.passIndex == mCellPasses[data.cellPos].passes.size() - 1) {
             ++mPendingHeightDownloads;
             // This cell has no more pending generations so we can initiate the download
             Services::Threadpool::ref().addTask([this, cellPos = data.cellPos, genID]() {

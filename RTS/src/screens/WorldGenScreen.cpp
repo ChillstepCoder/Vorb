@@ -236,7 +236,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     if (ImGui::SliderFloat2("World Center", &mGenData.mWorldCenter.x, 0, 32768.f, "%.1f")) {
         mIsDirty = true;
     }
-    if (ImGui::SliderInt("River Count", &mGenData.mDesiredRiverCount, 0, 128)) {
+    if (ImGui::SliderInt("River Count", &mGenData.mDesiredRiverCount, 0, 300)) {
         mIsDirty = true;
     }
     if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
@@ -504,7 +504,7 @@ void WorldGenScreen::debugDrawRivers() {
                 }
                 // Local group
                 const f32 CELL_WIDTH = (RIVER_CARVE_LOCAL_GROUP_SIZE / (f32)worldWidthVerts) * 2.0f;
-                const color4 cellColor = color4(255, 0, 0, 100);
+                const color4 cellColor = color4(255, 0, 0, 25);
                 for (auto&& it : path.affectedLocalGroups) {
                     // Add a quad with duplicate verts
                     const f32v2 pos = (f32v2(it.first) / worldWidthVerts) * 2.0f - 1.0f;

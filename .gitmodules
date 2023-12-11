@@ -26,3 +26,6 @@
 [submodule "RTS/dependencies/rapidyaml"]
 	path = RTS/dependencies/rapidyaml
 	url = https://github.com/biojppm/rapidyaml.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/Microsoft/vcpkg.git

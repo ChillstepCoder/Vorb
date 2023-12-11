@@ -5,6 +5,7 @@ startup:
   - [prefilter_ggx, material_shader]
   - [terrain_base, material_shader]
   - [river_carve, material_shader]
+  - [perlin_noise, texture]
 preload:
 #  - [*, material] #uncomment to force generate all .dds
   - [*, material_shader]

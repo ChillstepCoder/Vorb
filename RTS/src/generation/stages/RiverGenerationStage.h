@@ -18,6 +18,8 @@ struct RiverGenerationPass {
     bool generateStarted = false;
     std::vector<f32v4> allSegments;
     std::vector<RiverGenerationBufferData> bufferData;
+    ui32 numSegments = 0;
+    ui32 numLocalGroups = 0;
 };
 
 class RiverGenerationStage : public IWorldGenerationStage
@@ -38,13 +40,23 @@ protected:
     ui32 mNextPassIndex = 0;
     // One per pass
     std::vector<RiverGenerationPass> mGPUGenerations;
-    std::unordered_map<ui32v2 /*cellPos*/, ui32 /*passCount*/> mCellPassCounts;
 
     std::atomic<ui32> mNumFinishedRiverPaths = 0;
     bool mFinishedGeneratingPaths = false;
     bool mAllGpuGenerationsFinished = false;
+    std::atomic_bool mGeneratingPasses = false;
 
     int mPendingHeightDownloads = 0;
     std::atomic<ui32> mFinishedHeightDownloads = 0;
+
+    struct CellPassData {
+        struct PassData {
+            std::vector<f32v4>* riverSegments;
+            ui32 groupIndex;
+            ui32 segmentStart;
+        };
+        std::vector<PassData> passes;
+    };
+    std::unordered_map<i32v2 /*vertexPosCorner*/, CellPassData> mCellPasses;
 };
 
