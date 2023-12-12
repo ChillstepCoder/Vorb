@@ -126,7 +126,7 @@ public:
 
     // =========== State  ===========
 	bool isInvalid() const { ASSERT_GAME_THREAD(); return mState == ChunkState::INVALID; }
-	bool isDataReady() const { ASSERT_GAME_THREAD(); return mState == ChunkState::READY; }
+	bool isDataReady() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVE; }
 
 	void setState(ChunkState state) { mState = state; }
 	

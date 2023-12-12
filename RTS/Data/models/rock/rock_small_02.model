@@ -3,7 +3,7 @@ rig: ''
 machine: ''
 scale: 0.8
 bound_sphere: 5
-shadow_detail: highest
+shadow_detail: none
 force_normals_up: 0
 submesh_data:
   - wind: none

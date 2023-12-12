@@ -42,12 +42,10 @@ void TileContainerLoader::loadChunk(TileContainer& container)
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());
 
     }, [chunk, this]() {
-        // Game thread
-        
+
+        chunk->setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY); // Dormant?
         // Ecosystem
         chunk->getWorld().getFishEcosystem().initChunkFish(*chunk);
-
-        chunk->setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY);
 
         // Cache harvestables
         chunk->mTileContainer->mHarvestableRegistry.refreshFromOwner();

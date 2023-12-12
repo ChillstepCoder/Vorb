@@ -409,6 +409,10 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
     if (chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST)) {
         removeChunkFromActiveList(chunk);
     }
+   /* else if (chunk.mFlags.isBitSet(ChunkFlags::IN_DORMANT_LIST)) {
+        removeChunkFromDormantList(chunk);
+    }*/
+
     const LiteChunkID id = chunk.getChunkID();
     // We are destroying so we have no neighbor bits
     mNeighborBits[id] = 0;
@@ -484,27 +488,38 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         return;
     }
 
-    if (chunk.mState == ChunkState::INVALID) {
-        // Begin load
-        chunk.beginLoad();
-        addChunkToLoadList(chunk);
+    ChunkState state = chunk.mState;
+    switch (state) {
+        case ChunkState::INVALID:
+            // Begin load
+            chunk.beginLoad();
+            addChunkToLoadList(chunk);
+            break;
+        case ChunkState::LOADING_TILES:
+            panic("Tried to re-load chunk already being loaded");
+            break;
+        case ChunkState::DORMANT:
+            break;
+        case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY:
+            panic("Tried to re-load chunk already being loaded (mesh)");
+            break;
+        case ChunkState::ACTIVE:
+            // If we are already loaded, just insert us back into the active list
+            addChunkToActiveList(chunk);
+            break;
+        default:
+            assert(false);
+            break;
+
     }
-    else if (chunk.mState == ChunkState::READY) {
-        // If we are already loaded, just insert us back into the active list
-        addChunkToActiveList(chunk);
-    }
-    else {
-        // Otherwise we are still loading
-        panic("Tried to re-load chunk already being loaded");
-        //addChunkToLoadList(chunk);
-    }
+    static_assert(e_count(ChunkState) == 5);
 }
 
 void IChunkGrid::onChunkReady(Chunk& chunk)
 {
     assert(chunk.getTileContainer()->getState() == TileContainerState::READY);
 
-    chunk.mState = ChunkState::READY;
+    chunk.mState = ChunkState::ACTIVE;
     addChunkToActiveList(chunk);
 
     // Notify observers
