@@ -141,7 +141,7 @@ void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassDef& g
     );
 }
 
-void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatchData* heightData)
+void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatch* heightData)
 {
     PROFILE_FUNCTION();
     TileGrassRepository& grassRepository = TileGrassRepository::get();

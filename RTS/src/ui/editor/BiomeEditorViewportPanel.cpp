@@ -15,6 +15,7 @@
 
 #include "world/World.h"
 #include "world/Chunk.h"
+#include "world/host/HostWorldData.h"
 #include "rendering/renderer/WorldRenderer.h"
 
 #include "rendering/RenderContext.h"
@@ -194,7 +195,21 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 
 void BiomeEditorViewportPanel::initializeWorld() {
     LOG_INFO("Initializing Editor World...");
-    mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, WorldDefaults::DEFAULT_EDITOR_WORLD_WIDTH_TILES, nullptr);
+
+    assert(!mBiomeTexture);
+    glCreateTextures(GL_TEXTURE_2D, 1, &mBiomeTexture);
+    glTextureStorage2D(mBiomeTexture, 1, GL_R8, 1, 1); // Just one pixel
+    glTextureSubImage2D(mBiomeTexture, 0, 0, 0, 1, 1, GL_RED, GL_UNSIGNED_BYTE, 0); // Set default biome
+
+    HostWorldData worldData;
+    worldData.worldWidth = WorldDefaults::DEFAULT_EDITOR_WORLD_WIDTH_TILES;
+    worldData.playerStart = f32v2(0.5f);
+    worldData.heightmapGrid = std::make_unique<HostHeightmapGrid>(worldData.worldWidth);
+    worldData.biomeGrid = std::make_unique<BiomeGrid>(worldData.worldWidth);
+    worldData.biomeGrid->setBiomeTexture(mBiomeTexture);
+
+    //mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
+    mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, &worldData);
 
     GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
         World* editorWorld = static_cast<World*>(vWorld);

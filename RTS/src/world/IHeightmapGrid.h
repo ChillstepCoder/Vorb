@@ -73,10 +73,10 @@ public:
     HeightmapPickResult pick(f32v3 rayStart, f32v3 rayEnd);
 
     // Aquire
-    const HeightmapPatchData* getHeightDataAtWorldPos(const i32v2& worldPos) const;
-    const HeightmapPatchData* getHeightDataAt(HeightmapPatchID id) const;
+    const HeightmapPatch* getHeightDataAtWorldPos(const i32v2& worldPos) const;
+    const HeightmapPatch* getHeightDataAt(HeightmapPatchID id) const;
     HeightmapPatch& getPatchForGeneration(HeightmapPatchID id);
-    void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]);
+    void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatch* paddedHeightData[9]);
 
     // Mutators
     void setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);

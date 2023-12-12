@@ -126,10 +126,7 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                 const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
                 const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->getPatchForGeneration(patchId);
-                if (!patch.mHeightData) {
-                    patch.mHeightData = new HeightmapPatchData(patchId);
-                }
-                f32AABB3& aabb = patch.mHeightData->aabb;
+                f32AABB3& aabb = patch.aabb;
                 aabb.dims.x = HEIGHTMAP_PATCH_WIDTH;
                 aabb.dims.y = HEIGHTMAP_PATCH_WIDTH;
                 aabb.pos.x = (f32)rootPos.x;
@@ -149,13 +146,13 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                                 highestHeight = height;
                                 highestPointLocation = i32v2(rootVertXY.x + x, rootVertXY.y + y);
                             }
-                            patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
+                            patch.setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
                         }
                     }
                 }
                 aabb.pos.z = minZ;
                 aabb.dims.z = maxZ - minZ;
-                patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
+                patch.boundingSphere = boundingSphereFromAABB(aabb);
                 mBlackboard.mPeakPositions[patchId] = highestPointLocation;
 
                 // Set biome data

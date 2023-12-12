@@ -99,7 +99,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
     const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
     IHeightmapGrid& heightmapGrid = mChunk.getWorld().getHeightmapGrid();
-    const HeightmapPatchData* heightData = heightmapGrid.getHeightDataAt(id);
+    const HeightmapPatch* heightData = heightmapGrid.getHeightDataAt(id);
     // Instantly generate
     Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData]() {
 

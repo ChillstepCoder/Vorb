@@ -581,7 +581,7 @@ void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 
     physMesh.addQuadBetweenPoints(positions);
 }
 
-void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileDef& tileData) {
+void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatch* heightData, const TileHandle& tileHandle, const TileDef& tileData) {
     //const SubTexture& texture = tileData.texture;
 
     //f32 corners[4];

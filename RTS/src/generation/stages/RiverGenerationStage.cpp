@@ -465,10 +465,7 @@ void RiverGenerationStage::onPassFinished(RiverGenerationPass& pass) {
                 const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
                 const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->getPatchForGeneration(patchId);
-                if (!patch.mHeightData) {
-                    patch.mHeightData = new HeightmapPatchData(patchId);
-                }
-                f32AABB3& aabb = patch.mHeightData->aabb;
+                f32AABB3& aabb = patch.aabb;
                
                 // Recalculate AABB
                 f32 minZ = aabb.pos.z;
@@ -482,13 +479,13 @@ void RiverGenerationStage::onPassFinished(RiverGenerationPass& pass) {
                             const i32 targetVert = yStrideTarget + x;
                             const i32 sourceVert = rootVert + yStrideSource + x;
                             const float height = mMappedHeights[sourceVert];
-                            patch.mHeightData->setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
+                            patch.setHeightAtNoClamp(targetVert, mMappedHeights[sourceVert]);
                         }
                     }
                 }
                 aabb.pos.z = minZ;
                 aabb.dims.z = maxZ - minZ;
-                patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
+                patch.boundingSphere = boundingSphereFromAABB(aabb);
 
                 ++mFinishedHeightDownloads;
             }, nullptr);

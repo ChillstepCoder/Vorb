@@ -2,7 +2,7 @@
 
 class Chunk;
 class GrassBillboardMeshBuilder;
-class HeightmapPatchData;
+class HeightmapPatch;
 struct TileGrass;
 
 
@@ -13,7 +13,7 @@ namespace GrassMeshBuilderMethods
         const Chunk& chunk,
         const ui32v2& tilePosStart,
         ui32 lod,
-        const HeightmapPatchData* heightData
+        const HeightmapPatch* heightData
     );
 
     void editorCreateGrassMesh(

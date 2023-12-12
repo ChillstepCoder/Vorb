@@ -34,7 +34,7 @@ class WeatherManager;
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
 class World {
 public:
-    World(WorldNetMode netMode, ui32 worldWidthTiles, HostWorldData* hostWorldData);
+    World(WorldNetMode netMode, HostWorldData* hostWorldData);
     ~World();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(World);

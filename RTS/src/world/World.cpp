@@ -47,9 +47,9 @@
 
 std::unique_ptr<World> sGameWorld;
 
-World::World(WorldNetMode netMode, ui32 worldWidthTiles, HostWorldData* hostWorldData) : mNetMode(netMode) {
+World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netMode) {
     constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
-
+    const ui32 worldWidthTiles = hostWorldData->worldWidth;
     assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
 
     // Clamp world width to multiple of MIN_WORLD_WIDTH_TILES
@@ -64,6 +64,7 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, HostWorldData* hostWorl
         case WorldNetMode::Client: {
             assert(!hostWorldData);
             mHeightmapGrid = std::make_unique<CliHeightmapGrid>(worldWidthTiles);
+            mBiomeGrid = std::move(hostWorldData->biomeGrid);
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);

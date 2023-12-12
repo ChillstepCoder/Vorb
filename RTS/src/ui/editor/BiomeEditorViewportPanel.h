@@ -30,5 +30,6 @@ protected:
     std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
 	bool mLeftMousePressed = false;
 
+	VGTexture mBiomeTexture;
 };
 

@@ -76,17 +76,17 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 
 
 IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH), mTotalPatches(SQ(mWidthPatches)) {
-    mHeightData = std::unique_ptr<HeightmapPatch[]>(new HeightmapPatch[mTotalPatches]);
+    mHeightData = std::make_unique<HeightmapPatch[]>(mTotalPatches);
+    for (HeightmapPatchID id = 0; id < mTotalPatches; ++id) {
+        mHeightData[id].init(id);
+    }
     mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH, mWidthPatches);
     mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH - 1;
     mPatchWidth = (f32)worldWidthTiles / mWidthPatches;
 }
 
 IHeightmapGrid::~IHeightmapGrid() {
-    // TODO: Unique_ptr?
-    for (int i = 0; i < mTotalPatches; ++i) {
-        delete mHeightData[i].mHeightData;
-    }
+
 }
 
 void IHeightmapGrid::tickShared() {
@@ -138,20 +138,20 @@ HeightmapPickResult IHeightmapGrid::pick(f32v3 rayStart, f32v3 rayEnd) {
     return result;
 }
 
-const HeightmapPatchData* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& worldPos) const {
+const HeightmapPatch* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& worldPos) const {
     return getHeightDataAt(mSpatialGrid2D.getIDAtWorldPos(worldPos));
 }
 
-const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
+const HeightmapPatch* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
     const HeightmapPatch& patch = mHeightData[id];
-    return patch.mHeightData;
+    return &patch;
 }
 
 HeightmapPatch& IHeightmapGrid::getPatchForGeneration(HeightmapPatchID id) {
     return mHeightData[id];
 }
 
-void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]) {
+void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatch* paddedHeightData[9]) {
     ASSERT_GAME_THREAD();
     HeightmapPatchID requiredIds[9];
     computeRequiredPaddedIDs(id, requiredIds);
@@ -159,7 +159,7 @@ void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const Height
     for (int i = 0; i < 9; ++i) {
         if (mSpatialGrid2D.isIdValid(id)) {
             const HeightmapPatch& patch = mHeightData[requiredIds[i]];
-            paddedHeightData[i] = patch.mHeightData;
+            paddedHeightData[i] = &patch;
         }
         else {
             paddedHeightData[i] = nullptr;
@@ -287,7 +287,7 @@ f32 IHeightmapGrid::getHeightAtVertexForGeneration(const i32v2& worldVertexOffse
     const i32v2 patchGridCoords(i32(worldVertexOffset.x) / HEIGHTMAP_QUAD_WIDTH_PER_PATCH, i32(worldVertexOffset.y) / HEIGHTMAP_QUAD_WIDTH_PER_PATCH);
     const HeightmapPatchID id = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
     const i32v2 patchVertCoords = worldVertexOffset - patchGridCoords * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-    return mHeightData[id].mHeightData->getHeightAt(patchVertCoords.y * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + patchVertCoords.x);
+    return mHeightData[id].getHeightAt(patchVertCoords.y * HEIGHTMAP_QUAD_WIDTH_PER_PATCH + patchVertCoords.x);
 }
 
 template <bool THREAD_SAFE>
@@ -404,17 +404,16 @@ void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f3
     ASSERT_GAME_THREAD();
     HeightmapPatch& patch = mHeightData[id];
     {
-        std::lock_guard lock(patch.mHeightData->mMutex);
-        HeightmapPatchData& data = *patch.mHeightData;
+        std::lock_guard lock(patch.mMutex);
         switch (dir) {
             case TerrainHeightSetDirection::ANY:
-                data.setHeightAt(vertIndex, height);
+                patch.setHeightAt(vertIndex, height);
                 break;
             case TerrainHeightSetDirection::RAISE:
-                if (height > uncompressHeight(data.data[vertIndex])) data.setHeightAt(vertIndex, height);
+                if (height > uncompressHeight(patch.data[vertIndex])) patch.setHeightAt(vertIndex, height);
                 break;
             case TerrainHeightSetDirection::LOWER:
-                if (height < uncompressHeight(data.data[vertIndex])) data.setHeightAt(vertIndex, height);
+                if (height < uncompressHeight(patch.data[vertIndex])) patch.setHeightAt(vertIndex, height);
                 break;
             default:
                 assert(false);
@@ -423,14 +422,14 @@ void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f3
         }
         // TODO: Can we pull this out of critical section?
         // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
-        if (height > data.aabb.pos.z + data.aabb.height) {
-            data.aabb.height = height - data.aabb.pos.z;
-            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        if (height > patch.aabb.pos.z + patch.aabb.height) {
+            patch.aabb.height = height - patch.aabb.pos.z;
+            patch.boundingSphere = boundingSphereFromAABB(patch.aabb);
         }
-        else if (height < data.aabb.pos.z) {
-            data.aabb.height += data.aabb.pos.z - height;
-            data.aabb.pos.z = height;
-            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        else if (height < patch.aabb.pos.z) {
+            patch.aabb.height += patch.aabb.pos.z - height;
+            patch.aabb.pos.z = height;
+            patch.boundingSphere = boundingSphereFromAABB(patch.aabb);
         }
     }
     // Store position of this edit for later batched notify

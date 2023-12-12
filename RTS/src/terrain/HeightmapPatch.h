@@ -8,27 +8,27 @@
 
 class btCollisionObject;
 
-class HeightmapPatchData {
+class HeightmapPatch {
     friend class IHeightmapGrid;
 public:
-    HeightmapPatchData(HeightmapPatchID id) : id(id) {};
+    void init(HeightmapPatchID id) { this->id = id; }
 
     template<bool THREAD_SAFE = false>
-    f32 getHeightAt(int pos) const {
+    f32 getHeightAt(int vertPos) const {
         if constexpr (THREAD_SAFE) {
             std::shared_lock lock(mMutex);
-            return HEIGHT_STEP * data[pos];
+            return HEIGHT_STEP * data[vertPos];
         }
         else {
-            return HEIGHT_STEP * data[pos];
+            return HEIGHT_STEP * data[vertPos];
         }
     }
-    void setHeightAt(int pos, f32 height) {
-        data[pos] = compressHeight(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT));
+    void setHeightAt(int vertPos, f32 height) {
+        data[vertPos] = compressHeight(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT));
     }
-    // Use if guarenteed that height is withing MIN_HEIGHT and MAX_HEIGHT
-    void setHeightAtNoClamp(int pos, f32 height) {
-        data[pos] = compressHeight(height);
+    // Use if guaranteed that height is withing MIN_HEIGHT and MAX_HEIGHT
+    void setHeightAtNoClamp(int vertPos, f32 height) {
+        data[vertPos] = compressHeight(height);
     }
     const CompressedHeight* getData() const {
         return data;
@@ -41,19 +41,3 @@ public:
     HeightmapPatchID id;
     mutable std::shared_mutex mMutex;
 };
-
-// TODO: Remove the middleman
-class HeightmapPatch {
-public:
-    HeightmapPatch() = default;
-    ~HeightmapPatch() = default;
-
-    template<bool THREAD_SAFE = false>
-    f32 getHeightAt(int pos) const {
-        assert(mHeightData);
-        return mHeightData->getHeightAt<THREAD_SAFE>(pos);
-    }   
-
-    HeightmapPatchData* mHeightData = nullptr;
-};
-static_assert(sizeof(HeightmapPatch) == 8, "Keep small");

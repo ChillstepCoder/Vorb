@@ -15,7 +15,7 @@ class btHeightfieldTerrainShape;
 class DynamicCharacterController;
 class StaticPhysicsMeshBuilder;
 class World;
-class HeightmapPatchData;
+class HeightmapPatch;
 
 constexpr int INVALID_PHYSICS_USER_INDEX = INT32_MAX;
 
@@ -135,7 +135,7 @@ private:
     TileContainerListeners mTileContainerEventListeners;
 
     // For cleanup
-    std::map<HeightmapPatchData*, btHeightfieldTerrainShape*> mHeightShapes;
+    std::map<HeightmapPatch*, btHeightfieldTerrainShape*> mHeightShapes;
 
     std::vector<btCollisionObject*> mFreeStaticCollisionObjects;
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;

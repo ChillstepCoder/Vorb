@@ -295,6 +295,9 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
 
     // Reverse iterate the edge positions so new edge chunks don't usually get processed this frame
     for (int i = (int)mEdgeChunkPositions.size() - 1; i >= 0; --i) {
+        // This can happen because makeChunkAlive mutates the edge positions array
+        if (i >= mEdgeChunkPositions.size()) i = mEdgeChunkPositions.size() - 1;
+
         const ChunkID chunkId = mEdgeChunkPositions[i];
         if (isChunkInLoadRange(getWorldPosXYFromChunkID(chunkId), loadCenter)) {
             // Try to load any unloaded neighbors
@@ -318,9 +321,6 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
             if (!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST)) {
                 mEdgeChunkPositions[i] = mEdgeChunkPositions.back();
                 mEdgeChunkPositions.pop_back();
-                if (i == mEdgeChunkPositions.size()) {
-                    --i;
-                }
                 chunk.mFlags.clearBit(ChunkFlags::IN_EDGE_LIST);
                 mForceUpdateEdgeChunks = true;
                 // Chunk is now dead and destroying

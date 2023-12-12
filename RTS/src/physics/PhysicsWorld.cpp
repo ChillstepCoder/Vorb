@@ -157,7 +157,7 @@ btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
 {
     ASSERT_GAME_THREAD();
     btTransform startTransform;
-    const f32v3 center = patch.mHeightData->aabb.getCenter();
+    const f32v3 center = patch.aabb.getCenter();
     panic("Fix PhysicsWorld::addHeightField");
     //btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
     //    HEIGHTMAP_VERT_WIDTH_PER_PATCH,

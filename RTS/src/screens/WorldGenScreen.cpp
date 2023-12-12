@@ -119,7 +119,7 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
         // Initialize world
         assert(mWorldGenerator);
         mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
-        sGameWorld = std::make_unique<World>(WorldNetMode::Host, WorldDefaults::DEFAULT_WORLD_WIDTH_TILES, mWorldData.get());
+        sGameWorld = std::make_unique<World>(WorldNetMode::Host, mWorldData.get());
     }
     mWorldData.reset();
 

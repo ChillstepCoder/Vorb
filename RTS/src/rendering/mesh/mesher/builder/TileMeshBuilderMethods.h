@@ -5,7 +5,7 @@
 
 class ProceduralMeshBuilder;
 
-class HeightmapPatchData;
+class HeightmapPatch;
 struct TileHandle;
 struct MaterialDesc;
 class ContainerMeshBuilders;
@@ -19,7 +19,7 @@ namespace TileMeshBuilderMethods {
     void addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh);
     void addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh);
     void addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh);
-    void addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileDef& tileData);
+    void addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatch* heightData, const TileHandle& tileHandle, const TileDef& tileData);
     void addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, float tileGroundZOffset, Cartesian tileOrientation, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh);
     f32 getModelRotationAtPosition(const f32v3& worldPos);
 

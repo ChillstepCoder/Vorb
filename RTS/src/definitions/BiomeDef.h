@@ -1,5 +1,7 @@
 #pragma once
 
+#include "generation/NoiseFunction.hpp"
+
 // For now match .biome files
 enum class BiomeUniqueID : ui8 {
     Plains = 0,
@@ -18,6 +20,24 @@ SERIALIZABLE_ENUM_SAME_NAME(BiomeUniqueID,
 static_assert(e_count(BiomeUniqueID) == 4);
 
 const ui8 INVALID_BIOME_ID = UINT8_MAX;
+
+struct NoiseDistribution {
+    NoiseFunction func;
+    f32v2 range = f32v2(0.0f, 1.0f);
+};
+SERIALIZABLE_SIMPLE(NoiseDistribution,
+    make_field(o.func, "func"),
+    make_field(o.range, "range")
+);
+
+struct BiomePossibleTile {
+    StrToken tileName;
+    f32 spawnChance = 0.0f;
+    f32 minHeight = 0.0f;
+    f32 maxHeight = FLT_MAX;
+    NoiseDistribution distribution;
+    bool usesDistribution = false;
+};
 
 class BiomeDef : public IAsset {
 public:
