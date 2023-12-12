@@ -1,0 +1,9 @@
+model: rock_xsmall_01.fbx
+rig: ''
+machine: ''
+scale: 0.8
+bound_sphere: 5
+shadow_detail: highest
+force_normals_up: 0
+submesh_data:
+  - wind: none

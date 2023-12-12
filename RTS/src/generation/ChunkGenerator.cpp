@@ -95,12 +95,18 @@ Tile ChunkGenerator::generateTilePlains(const f32v2& worldPos, f32 height, TileG
 Tile ChunkGenerator::generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     generateTileGrass(worldPos, height, grass);
     TileRepository& tileRepo = TileRepository::get();
-    static TileID rock_small = tileRepo.getTileID(CStrToken("rock_small"));
-    constexpr f32 TREE_DENSITY = 0.05f;
+    static TileID rockIds[5] = {
+        tileRepo.getTileID(CStrToken("rock_xsmall_01")),
+        tileRepo.getTileID(CStrToken("rock_small_01")),
+        tileRepo.getTileID(CStrToken("rock_small_02")),
+        tileRepo.getTileID(CStrToken("rock_med_01")),
+        tileRepo.getTileID(CStrToken("rock_med_02"))
+    };
+    constexpr f32 TREE_DENSITY = 0.1f;
 
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY) {
-        tile.mainLayer = rock_small;
+        tile.mainLayer = rockIds[rand() % 5];
     }
 
     return tile;
