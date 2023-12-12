@@ -7,7 +7,7 @@
 #include "world/Chunk.h"
 #include "world/IHeightmapGrid.h"
 
-#include "generation/IWorldGenerator.h"
+#include "generation/ChunkGenerator.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/TileGrassRepository.h"

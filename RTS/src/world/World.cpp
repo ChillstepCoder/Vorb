@@ -7,8 +7,7 @@
 #include "effect/host/HostEffectContext.h"
 #include "ecs/cli/CliEntityComponentSystem.h"
 #include "ecs/srv/SrvEntityComponentSystem.h"
-#include "generation/IWorldGenerator.h"
-#include "generation/WorldGeneratorFactory.h"
+#include "generation/ChunkGenerator.h"
 #include "item/ItemStockpileRegistry.h"
 #include "options/DebugOptions.h"
 #include "pathfinding/NavThread.h"
@@ -48,7 +47,7 @@
 
 std::unique_ptr<World> sGameWorld;
 
-World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType, HostWorldData* hostWorldData) : mNetMode(netMode) {
+World::World(WorldNetMode netMode, ui32 worldWidthTiles, HostWorldData* hostWorldData) : mNetMode(netMode) {
     constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
 
     assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
@@ -98,7 +97,7 @@ World::World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType gene
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
-    mWorldGenerator = WorldGeneratorFactory::makeWorldGenerator(generatorType, *this);
+    mChunkGenerator = std::make_unique<ChunkGenerator>(*this);
     // Combat
     mCombatContext = std::make_unique<CombatContext>(*this);
     // Items

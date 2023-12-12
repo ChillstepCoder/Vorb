@@ -170,8 +170,8 @@ static_assert(sizeof(TileOrientation) == 1);
 
 class Tile {
     friend class TileContainer;
-    friend class IWorldGenerator;
-    friend class FlatWorldGenerator;
+    friend class ChunkGenerator;
+    friend class FlatChunkGenerator;
     friend class CityBuilder; // TODO: Remove? Only for debug?
 public:
 	Tile() {};

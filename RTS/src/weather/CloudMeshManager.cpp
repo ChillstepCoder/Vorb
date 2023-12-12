@@ -14,7 +14,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "generation/IWorldGenerator.h"
+#include "generation/ChunkGenerator.h"
  
 constexpr ui32 CHUNK_STRIDE_PER_CLOUD_BATCH = 8; // POWER OF TWO ONLY
 constexpr i32 CLOUD_BATCH_WIDTH = CHUNK_WIDTH * CHUNK_STRIDE_PER_CLOUD_BATCH;
@@ -45,7 +45,7 @@ struct CloudBatchTaskData {
     ui32 index;
 };
 
-CloudMeshManager::CloudMeshManager(IWorldGenerator& worldGenerator) : mWorldGenerator(worldGenerator) {
+CloudMeshManager::CloudMeshManager(ChunkGenerator& worldGenerator) : mWorldGenerator(worldGenerator) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     mAssets.addAssetHandle(materialRepo.getAssetHandle(CLOUD_SIL_TOKEN));
 }

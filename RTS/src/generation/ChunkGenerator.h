@@ -8,11 +8,11 @@ class Chunk;
 class BiomeDef;
 struct TileGrass;
 
-class IWorldGenerator
+class ChunkGenerator
 {
 public:
-    IWorldGenerator(World& world);
-    ~IWorldGenerator();
+    ChunkGenerator(World& world);
+    ~ChunkGenerator();
 
     void generateChunk(Chunk& chunk);
 

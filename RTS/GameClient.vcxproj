@@ -301,15 +301,13 @@
     <ClCompile Include="src\filesystem\FileSystem.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
-    <ClCompile Include="src\generation\FlatWorldGenerator.cpp" />
     <ClCompile Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\IWorldGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\RiverGenerationStage.cpp" />
     <ClCompile Include="src\generation\WorldDataGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGenerationBlackboard.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
-    <ClCompile Include="src\generation\IWorldGenerator.cpp" />
-    <ClCompile Include="src\generation\WorldGeneratorFactory.cpp" />
+    <ClCompile Include="src\generation\ChunkGenerator.cpp" />
     <ClCompile Include="src\instrumentation\instrumentor.cpp" />
     <ClCompile Include="src\io\PngLoader.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
@@ -660,7 +658,6 @@
     <ClInclude Include="src\filesystem\FileSystem.h" />
     <ClInclude Include="src\gamethread\GameThread.h" />
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
-    <ClInclude Include="src\generation\FlatWorldGenerator.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.h" />
     <ClInclude Include="src\generation\stages\IWorldGenerationStage.h" />
@@ -668,9 +665,7 @@
     <ClInclude Include="src\generation\WorldDataGenerator.h" />
     <ClInclude Include="src\generation\WorldGenerationBlackboard.h" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
-    <ClInclude Include="src\generation\IWorldGenerator.h" />
-    <ClInclude Include="src\generation\WorldGeneratorFactory.h" />
-    <ClInclude Include="src\generation\WorldGeneratorType.h" />
+    <ClInclude Include="src\generation\ChunkGenerator.h" />
     <ClInclude Include="src\instrumentation\instrumentor.h" />
     <ClInclude Include="src\io\PngLoader.h" />
     <ClInclude Include="src\item\ArmorItem.h" />

@@ -14,7 +14,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "generation/IWorldGenerator.h"
+#include "generation/ChunkGenerator.h"
 #include <Vorb/graphics/GLProgram.h>
 
 constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[TERRAIN_QUADTREE_MAX_LOD] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths

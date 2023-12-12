@@ -1,7 +1,7 @@
 #pragma once
 
 class Mesh;
-class IWorldGenerator;
+class ChunkGenerator;
 
 #include "world/ChunkID.h"
 #include "util/SpatialGrid2D.h"
@@ -24,7 +24,7 @@ class CloudMeshManager
 {
 public:
     friend class CloudRenderer;
-    CloudMeshManager(IWorldGenerator& worldGenerator);
+    CloudMeshManager(ChunkGenerator& worldGenerator);
     ~CloudMeshManager();
 
     void frameUpdate(const f32v2& loadCenter);
@@ -43,7 +43,7 @@ private:
     std::vector<i32v2> mCloudSpawnOffsets;
     std::unordered_map<i32 /*yOffset*/, i32 /*xOffset*/> mCloudBoundsCheckMap;
     SpatialGrid2D mSpatialGrid2D;
-    IWorldGenerator& mWorldGenerator;
+    ChunkGenerator& mWorldGenerator;
     i32v2 mLastCenterPosition;
     // This is actually genius - TODO: Can this be used for chunks?
     f32 mDx = 0.0f;

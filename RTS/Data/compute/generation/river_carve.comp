@@ -68,7 +68,7 @@ void main() {
         distToSegment(worldPosPoints[3], riverSegments[0].xy, riverSegments[0].zw)
     };
     
-    // Get closest distances to river points
+    // Get closest distances to river segments (skip first)
     for (uint i = groupData.z + 1; i < groupData.z + groupData.w; ++i) {
         const vec4 segment = riverSegments[i];
         for (uint j = 0; j < 4; ++j) {
@@ -79,17 +79,15 @@ void main() {
     
     // Store results
     for (uint j = 0; j < 4; ++j) {
+        // Preturb with noise
         const float noiseOffset = (texture(NoiseTexture, worldPosPoints[j] * 0.02).r) * 2.5;
         
         const float prevHeight = heightData[heightIndices[j]];
         const float dist = minDists[j] + noiseOffset;
         float lerpVal = 1.0 - clamp(dist / MAX_INFLUENCE_DIST, 0.0, 1.0);
         
-        // Preturb with noise
         float targetHeight = max(prevHeight - 45.0, -7.0);
         float finalHeight = mix(prevHeight, targetHeight, smoothstep(0.0, 1.0, lerpVal));
-        
-        //finalHeight = mix(finalHeight, noiseOffset, 0.9999);
         
         heightData[heightIndices[j]] = finalHeight;
         imageStore(heightImage, ivec2(worldPosPoints[j]), vec4(clamp((finalHeight + 127.0) - 100.0, 0.0, 255.0) / 255.0, 0.0, 0.0, 0.0));

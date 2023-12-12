@@ -6,7 +6,7 @@
 #include "world/Chunk.h"
 #include "world/ecosystem/FishEcosystem.h"
 #include "pathfinding/NavWorld.h"
-#include "generation/IWorldGenerator.h"
+#include "generation/ChunkGenerator.h"
 
 #include "visibility/VisibilityManager.h"
 

@@ -3,8 +3,6 @@
 #include "tile/TileHandle.h"
 #include "network/WorldNetMode.h"
 
-#include "generation/WorldGeneratorType.h"
-
 #include "world/WorldEvents.h"
 
 class HostWorldData;
@@ -21,7 +19,7 @@ class PhysicsWorld;
 class StructureManager;
 class TimeOfDayManager;
 class TileContainerRepository;
-class IWorldGenerator;
+class ChunkGenerator;
 class BiomeGrid;
 class HostSimContext;
 class CombatContext;
@@ -36,7 +34,7 @@ class WeatherManager;
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
 class World {
 public:
-    World(WorldNetMode netMode, ui32 worldWidthTiles, WorldGeneratorType generatorType, HostWorldData* hostWorldData);
+    World(WorldNetMode netMode, ui32 worldWidthTiles, HostWorldData* hostWorldData);
     ~World();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(World);
@@ -65,7 +63,7 @@ public:
     StructureManager& getStructureManager() const { return *mStructureManager; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
-    IWorldGenerator& getWorldGenerator() const { return *mWorldGenerator; }
+    ChunkGenerator& getWorldGenerator() const { return *mChunkGenerator; }
     CombatContext& getCombatContext() const { return *mCombatContext; }
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
@@ -128,7 +126,7 @@ private:
     // Cities
     std::unique_ptr<CityGraph> mCities;
     // Generation
-    std::unique_ptr<IWorldGenerator> mWorldGenerator;
+    std::unique_ptr<ChunkGenerator> mChunkGenerator;
     // Combat
     std::unique_ptr<CombatContext> mCombatContext;
     // Stockpiles

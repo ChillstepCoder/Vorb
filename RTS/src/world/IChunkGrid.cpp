@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "IChunkGrid.h"
 
-#include "generation/IWorldGenerator.h"
+#include "generation/ChunkGenerator.h"
 #include "world/World.h"
 #include "tile/TileContainerRepository.h"
 

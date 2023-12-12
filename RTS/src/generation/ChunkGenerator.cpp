@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "IWorldGenerator.h"
+#include "ChunkGenerator.h"
 
 #include "definitions/BiomeDef.h"
 
@@ -18,16 +18,16 @@
 #include "generation/WorldGenerationData.h"
 
 
-IWorldGenerator::IWorldGenerator(World& world) : mWorld(world) {
+ChunkGenerator::ChunkGenerator(World& world) : mWorld(world) {
     mWorldCenter = f32v2(mWorld.getWidthTiles() * 0.5f);
 }
 
-IWorldGenerator::~IWorldGenerator() {
+ChunkGenerator::~ChunkGenerator() {
 
 }
 
 
-Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
     assert(grass);
 
     if (biomeDef) {
@@ -51,7 +51,7 @@ Tile IWorldGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3
     return Tile();
 }
 
-Tile IWorldGenerator::generateTilePlains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTilePlains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     TileRepository& tileRepo = TileRepository::get();
     static TileID baseTree = tileRepo.getTileID(CStrToken("tree_a"));
     static TileID pineTree = tileRepo.getTileID(CStrToken("tree_pine"));
@@ -92,7 +92,7 @@ Tile IWorldGenerator::generateTilePlains(const f32v2& worldPos, f32 height, Tile
     return tile;
 }
 
-Tile IWorldGenerator::generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     generateTileGrass(worldPos, height, grass);
     TileRepository& tileRepo = TileRepository::get();
     static TileID rock_small = tileRepo.getTileID(CStrToken("rock_small"));
@@ -106,7 +106,7 @@ Tile IWorldGenerator::generateTileMountains(const f32v2& worldPos, f32 height, T
     return tile;
 }
 
-Tile IWorldGenerator::generateTileForests(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileForests(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     TileRepository& tileRepo = TileRepository::get();
     static TileID baseTree = tileRepo.getTileID(CStrToken("tree_a"));
     static TileID pineTree = tileRepo.getTileID(CStrToken("tree_pine"));
@@ -146,7 +146,7 @@ Tile IWorldGenerator::generateTileForests(const f32v2& worldPos, f32 height, Til
     return tile;
 }
 
-Tile IWorldGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
 
     TileRepository& tileRepo = TileRepository::get();
     static TileID hotspring01 = tileRepo.getTileID(CStrToken("hotspring_01"));
@@ -173,7 +173,7 @@ Tile IWorldGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, 
     return tile;
 }
 
-void IWorldGenerator::generateChunk(Chunk& chunk) {
+void ChunkGenerator::generateChunk(Chunk& chunk) {
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();
@@ -251,7 +251,7 @@ void IWorldGenerator::generateChunk(Chunk& chunk) {
     chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
 }
 
-void IWorldGenerator::generateTileGrass(const f32v2& worldPos, f32 height, TileGrass* grass) {
+void ChunkGenerator::generateTileGrass(const f32v2& worldPos, f32 height, TileGrass* grass) {
     static constexpr TileGrassID defaultGrass = 0; // TODO: DIFFERENT
 
     constexpr f32 MAX_GRASS_HEIGHT = 45.0f;

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "IHeightmapGrid.h"
 
-#include "generation/IWorldGenerator.h"
+#include "generation/ChunkGenerator.h"
 
 #include "util/IntersectionUtil.h"
 

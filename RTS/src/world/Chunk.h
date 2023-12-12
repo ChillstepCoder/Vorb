@@ -65,7 +65,7 @@ class Chunk {
 	friend class World;
 	friend class IWorldGrid;
 	friend class WorldEditorPanel;
-	friend class IWorldGenerator;
+	friend class ChunkGenerator;
 	friend class ITileContainerMesher;
     friend class IChunkGrid;
     friend class CliChunkGrid;
