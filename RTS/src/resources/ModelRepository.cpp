@@ -135,12 +135,28 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             MeshOperations::setAllNormals(*rawMeshPtr, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
         }
 
+        f32 minX = FLT_MAX;
+        f32 maxX = -FLT_MAX;
+        f32 minY = FLT_MAX;
+        f32 maxY = -FLT_MAX;
+        f32 minZ = FLT_MAX;
+        f32 maxZ = -FLT_MAX;
+
         // TODO: Handle other submeshes?
         for (int renderPassType = 0; renderPassType < e_count(MaterialRenderPassType); ++renderPassType) {
             RawSubMesh& combinedMeshData = rawMeshPtr->mCombinedMeshData[renderPassType];
             if (combinedMeshData.mVertices.empty()) {
                 continue;
             }
+            for (auto& vert : combinedMeshData.mVertices) {
+                if (vert.pos.x < minX) minX = vert.pos.x;
+                if (vert.pos.x > maxX) maxX = vert.pos.x;
+                if (vert.pos.y < minY) minY = vert.pos.y;
+                if (vert.pos.y > maxY) maxY = vert.pos.y;
+                if (vert.pos.z < minZ) minZ = vert.pos.z;
+                if (vert.pos.z > maxZ) maxZ = vert.pos.z;
+            }
+
             loadContext.meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials);
             // Apply scale if needed
             if (def.mScale != 1.0f) {
@@ -167,6 +183,14 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             Mesh& newMesh = *def.mMeshes[def.mNumMeshes - 1];
             newMesh.setRenderPass((MaterialRenderPassType)renderPassType);
         }
+
+        minX *= def.mScale;
+        maxX *= def.mScale;
+        minY *= def.mScale;
+        maxY *= def.mScale;
+        minZ *= def.mScale;
+        maxZ *= def.mScale;
+        def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
 
         // Make sure we have proper submesh data linked
         if (def.mNumMeshes != def.mSubmeshesData.size()) {

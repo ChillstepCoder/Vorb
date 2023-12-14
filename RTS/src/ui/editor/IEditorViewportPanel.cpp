@@ -31,8 +31,8 @@
 std::unique_ptr<vg::GBuffer> IEditorViewportPanel::sGBuffers[3];
 
 IEditorViewportPanel::IEditorViewportPanel() {
-    positioner = std::make_unique<CameraPositioner_FirstPerson>(f32v3(0.0f, -5.0f, 1.5f), f32v3(0.0f, 0.0f, 0.5f), f32v3(0.0f, 0.0f, 1.0f));
-    camera = std::make_unique<SimpleCamera>(*positioner);
+    mCameraPositioner = std::make_unique<CameraPositioner_FirstPerson>(f32v3(0.0f, -5.0f, 1.5f), f32v3(0.0f, 0.0f, 0.5f), f32v3(0.0f, 0.0f, 1.0f));
+    mCamera = std::make_unique<SimpleCamera>(*mCameraPositioner);
 
     glCreateVertexArrays(1, &mGridVao);
 }
@@ -52,7 +52,7 @@ void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
 
     const MaterialShaderDef* shader = getShader();
     if (shader) {
-        renderGrid(camera->getViewProjectionMatrix());
+        renderGrid(mCamera->getViewProjectionMatrix());
 
         ui32 textureUnit;
         MaterialRenderer::bindMaterialShaderForRender(*shader, &textureUnit);
@@ -103,13 +103,13 @@ void IEditorViewportPanel::clearFramebuffers() {
 void IEditorViewportPanel::renderSkybox() {
     if (mSkybox->tryGetCubemap()) {
         if (mShowSkyboxIrradiance) {
-            mSkybox->renderIrradianceDebug(camera->getViewProjectionMatrixNoTranslation());
+            mSkybox->renderIrradianceDebug(mCamera->getViewProjectionMatrixNoTranslation());
         }
         else if (mShowSkyboxPrecomputedMap) {
-            mSkybox->renderPrecomputedMapDebug(camera->getViewProjectionMatrixNoTranslation(), mPrecomputedLOD);
+            mSkybox->renderPrecomputedMapDebug(mCamera->getViewProjectionMatrixNoTranslation(), mPrecomputedLOD);
         }
         else {
-            mSkybox->render(camera->getViewProjectionMatrixNoTranslation());
+            mSkybox->render(mCamera->getViewProjectionMatrixNoTranslation());
         }
     }
 }
@@ -308,16 +308,16 @@ void IEditorViewportPanel::updateAndRenderTweakers() {
 void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
 
     // Controls
-    positioner->movement_.forward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_W);
-    positioner->movement_.backward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
-    positioner->movement_.left_ = vui::InputDispatcher::key.isKeyPressed(VKEY_A);
-    positioner->movement_.right_ = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
-    positioner->movement_.up_ = vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE);
-    positioner->movement_.down_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LALT);
-    positioner->movement_.fastSpeed_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT);
+    mCameraPositioner->movement_.forward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_W);
+    mCameraPositioner->movement_.backward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
+    mCameraPositioner->movement_.left_ = vui::InputDispatcher::key.isKeyPressed(VKEY_A);
+    mCameraPositioner->movement_.right_ = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
+    mCameraPositioner->movement_.up_ = vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE);
+    mCameraPositioner->movement_.down_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LALT);
+    mCameraPositioner->movement_.fastSpeed_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT);
 
     // TODO: Deltatime
-    positioner->update(1.0f / 60.0f, f32v2(ImGui::GetMousePos().x / ImGui::GetWindowWidth(), ImGui::GetMousePos().y / ImGui::GetWindowHeight()), ImGui::IsMouseDown(ImGuiMouseButton_Right), aspectRatio);
+    mCameraPositioner->update(1.0f / 60.0f, f32v2(ImGui::GetMousePos().x / ImGui::GetWindowWidth(), ImGui::GetMousePos().y / ImGui::GetWindowHeight()), ImGui::IsMouseDown(ImGuiMouseButton_Right), aspectRatio);
 }
 
 void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
@@ -367,20 +367,20 @@ void IEditorViewportPanel::renderGrid(const f32m4& VP) {
 }
 
 f32v3 IEditorViewportPanel::getCameraPosition() const {
-    assert(camera);
-    return camera->getPosition();
+    assert(mCamera);
+    return mCamera->getPosition();
 }
 
 f32v3 IEditorViewportPanel::getCameraDirection() const {
-    return camera->getDirection();
+    return mCamera->getDirection();
 }
 
 f32v3 IEditorViewportPanel::getCameraRight() const {
-    return camera->getRight();
+    return mCamera->getRight();
 }
 
 f32v3 IEditorViewportPanel::getCameraUp() const {
-    return camera->getUp();
+    return mCamera->getUp();
 }
 
 void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {
@@ -394,7 +394,7 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader,
         const f32m4 modelMatrix(1.0f);
         glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &(modelMatrix[0][0]));
     }
-    glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+    glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &(mCamera->getViewProjectionMatrix()[0][0]));
 
     if (mDrawMode == EditorViewportDrawMode::PBRTest) {
         glUniform1f(shader->getUniform("unAmbient"), mAmbient);
@@ -404,7 +404,7 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader,
         glUniform1f(shader->getUniform("unSunIntensity"), mSunIntensity);
         f32v3 lightDir = glm::normalize(f32v3(mLightDir.x, -1.0f, mLightDir.y));
         glUniform3fv(shader->getUniform("unLightDir"), 1, &lightDir.x);
-        glUniform3fv(shader->getUniform("unCameraPos"), 1, &camera->getPosition()[0]);
+        glUniform3fv(shader->getUniform("unCameraPos"), 1, &mCamera->getPosition()[0]);
         glUniform3fv(shader->getUniform("unSunColor"), 1, &mLightColor.x);
         glUniform1i(shader->getUniform("unOverrideMR"), mOverrideMetallicRoughness);
         if (const VGUniform* un = shader->tryGetUniform("unHeightScale")) {

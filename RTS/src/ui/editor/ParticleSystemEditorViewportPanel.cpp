@@ -450,11 +450,11 @@ void ParticleSystemEditorViewportPanel::updateAndRenderBottomControls() {
 }
 
 void ParticleSystemEditorViewportPanel::renderMesh() {
-    renderGrid(camera->getViewProjectionMatrix());
+    renderGrid(mCamera->getViewProjectionMatrix());
 
     // Render preview system
     if (mPreviewSystem) {
-        mPreviewSystem->updateAndRenderEditor(mCurrentElapsedSec, camera->getViewProjectionMatrix(), mShowEmitters);
+        mPreviewSystem->updateAndRenderEditor(mCurrentElapsedSec, mCamera->getViewProjectionMatrix(), mShowEmitters);
     }
 }
 

@@ -10,6 +10,7 @@ LineMesh::~LineMesh() {
 }
 
 void LineMesh::initialize(const std::vector<LineVertex>& vertices) {
+    mNumVertices = vertices.size();
     if (mVao) {
         glDeleteBuffers(1, &mVbo);
     }
@@ -37,19 +38,19 @@ void LineMesh::bind() {
 }
 
 void LineMesh::drawLineStrip(int start, ui32 count) const {
-    assert(count);
+    assert(mNumVertices && count <= mNumVertices);
     assert(mVao);
-    glDrawArrays(GL_LINE_STRIP, start, count);
+    glDrawArrays(GL_LINE_STRIP, start, count ? count : mNumVertices);
 }
 
 void LineMesh::drawPoints(int start, ui32 count) const {
-    assert(count);
+    assert(mNumVertices && count <= mNumVertices);
     assert(mVao);
-    glDrawArrays(GL_POINTS, start, count);
+    glDrawArrays(GL_POINTS, start, count ? count : mNumVertices);
 }
 
 void LineMesh::drawLines(int start, ui32 count) const {
-    assert(count);
+    assert(mNumVertices && count <= mNumVertices);
     assert(mVao);
-    glDrawArrays(GL_LINES, start, count);
+    glDrawArrays(GL_LINES, start, count ? count : mNumVertices * 2);
 }

@@ -85,8 +85,8 @@ protected:
     void postProcessEdgeTest();
 
     // Shared with all?
-    std::unique_ptr<CameraPositioner_FirstPerson> positioner;
-    std::unique_ptr<SimpleCamera> camera;
+    std::unique_ptr<CameraPositioner_FirstPerson> mCameraPositioner;
+    std::unique_ptr<SimpleCamera> mCamera;
 
     AssetHandlePtr<MaterialShaderDef> mGridMaterial;
     VGVertexArray mGridVao = 0;

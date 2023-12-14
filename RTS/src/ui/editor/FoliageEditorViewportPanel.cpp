@@ -91,7 +91,7 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     }
 
     Camera3D camera3D;
-    camera3D.copyFromSimpleCamera(*camera);
+    camera3D.copyFromSimpleCamera(*mCamera);
     
     UboHelpers::uploadCameraUbo(RenderContext::getInstance().getCameraUbo(), camera3D);
     if (mGrassMeshes.begin()->get()->mMesh.isValid()) {
@@ -99,7 +99,7 @@ void FoliageEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     }
 
     vg::DepthState::NONE.set();
-    renderGrid(camera->getViewProjectionMatrix());
+    renderGrid(mCamera->getViewProjectionMatrix());
 
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();

@@ -59,7 +59,7 @@ bool BiomeEditorViewportPanel::updateAndRender(f32 elapsedSec) {
 
     // Tell the world to follow our camera
     if (mEditorWorld) {
-        const f32v2 cameraPos = camera->getPosition();
+        const f32v2 cameraPos = mCamera->getPosition();
         World* editorWorld = mEditorWorld.get();
         GameThreadTasks::getInstance().addGenericTaskWithCapture([cameraPos, editorWorld](GameThread&, void* vWorld) {
             //assert(editorWorld == static_cast<IWorld*>(vWorld));
@@ -138,7 +138,7 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 void BiomeEditorViewportPanel::onEnter() {
     if (!mEditorWorld) {
         initializeWorld();
-        positioner->setPosition(mEditorWorld->getDefaultSpawn());
+        mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());
     }
 
     GameThreadTasks::getInstance().setActiveEditorWorld(mEditorWorld.get());

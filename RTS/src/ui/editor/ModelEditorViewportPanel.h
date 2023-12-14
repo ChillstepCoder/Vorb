@@ -4,6 +4,8 @@
 
 #include "definitions/ModelDef.h"
 
+class LineMesh;
+
 class ModelEditorViewportPanel : public AssetEditorViewportPanel<ModelDef>
 {
 public:
@@ -24,5 +26,6 @@ private:
     bool mShowSingle = false;
     int mSingleIndex = 0;
 
+    std::unique_ptr<LineMesh> mAABBMesh;
 };
 

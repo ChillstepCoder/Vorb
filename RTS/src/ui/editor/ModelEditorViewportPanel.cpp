@@ -9,6 +9,7 @@
 #include "rendering/MaterialUtils.h"
 #include "rendering/Mesh/MeshDrawer.h"
 #include "rendering/post_process/ShadowDetail.h"
+#include "rendering/mesh/LineMesh.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -97,6 +98,7 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
+      
         const MaterialShaderDef* shader = getShader();
         if (mShowSingle) {
             mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
@@ -111,12 +113,28 @@ void ModelEditorViewportPanel::renderMesh() {
             int x = 1;
             const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
             for (int l = e_cast(MeshLODLevel::Highest) + 1; l < e_count(MeshLODLevel); ++l) {
-                glUniform4f(shader->getUniform("unPosOffset"), x, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
+                glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
                 for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
                     MeshDrawer::draw(mAssetData->getMesh(i).mGpuData, MeshLODLevel(i));
                 }
                 ++x;
             }
+        }
+
+        // Render AABB
+        AssetHandlePtr<MaterialShaderDef> handle = MaterialShaderRepository::get().getAssetHandle(CStrToken("simple_color"));
+        if (const MaterialShaderDef* def = handle->tryGetLoadedAsset()) {
+            if (!mAABBMesh) {
+                mAABBMesh = std::make_unique<LineMesh>();
+            }
+            std::vector<LineVertex> aabbVerts;
+            LineMeshBuilders::addAABBLines(aabbVerts, mAssetData->mAABB, color4(1.0f, 0.0f, 0.0f, 0.5f));
+            mAABBMesh->initialize(aabbVerts);
+
+            MaterialRenderer::bindMaterialShaderForRender(*def);
+            glUniformMatrix4fv(def->getUniform("unVP"), 1, false, &(mCamera->getViewProjectionMatrix()[0][0]));
+            mAABBMesh->bind();
+            mAABBMesh->drawLines(0);
         }
     }
 }

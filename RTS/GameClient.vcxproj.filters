@@ -945,6 +945,9 @@
     <ClCompile Include="src\weather\WeatherManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2298,6 +2301,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\weather\WeatherManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\ModelBillboardLodManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

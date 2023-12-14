@@ -393,6 +393,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
+    <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp" />
     <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp" />
     <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
@@ -775,6 +776,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
+    <ClInclude Include="src\rendering\model\ModelBillboardLodManager.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
     <ClInclude Include="src\rendering\model\MaterialRenderPassType.h" />
     <ClInclude Include="src\rendering\model\ModelUtil.h" />

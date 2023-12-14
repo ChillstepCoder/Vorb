@@ -57,12 +57,13 @@ public:
     SoftAssetReference mRigName = AssetType::Rig;
     SoftAssetReference mMachineName = AssetType::AnimMachine;
     f32 mScale = 1.0f;
-    f32 mLodDistance0 = 65.f;
-    f32 mLodDistance1 = 125.f;
-    f32 mLodDistance2 = 500.f;
-    f32 mLodDistance3 = 1000.f;
+    f32 mLodDistance0 = 45.f;
+    f32 mLodDistance1 = 90.f;
+    f32 mLodDistance2 = 150.f;
+    f32 mLodDistance3 = 400.f;
     f32 mBoundingSphereRadius = 10.0f;
     ShadowModelDetail mShadowDetail = ShadowModelDetail::High;
+    f32AABB3 mAABB; // Calculated from mesh data
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
     //ModelDrawInfo mDrawInfo; // TODO: USE
