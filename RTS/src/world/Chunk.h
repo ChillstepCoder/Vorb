@@ -60,6 +60,20 @@ public:
 	std::unordered_map<TileContainerID, TileContainerRef> structureContainerRefs;
 };
 
+
+// TODO: Use
+class SimulatedChunk {
+public:
+
+	struct SimBiomeContents {
+		//BiomeUniqueID biomeId;
+		
+	};
+
+	//std::vector<ChunkHarvestableTile> mHarvestableTiles[e_cast(TileHarvestable::COUNT)];
+};
+
+
 // TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
 	friend class World;

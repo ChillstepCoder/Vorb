@@ -100,6 +100,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
     GLuint transformIndex = 0;
     for (auto&& it = mModelBatchesThisFrame.begin(); it != mModelBatchesThisFrame.end();) {
         auto& [modelId, batch] = *it;
+        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelId);
         if (batch.mVisibleIndices.size() > 0) {
 
             // Allocate draw commands
@@ -127,36 +128,36 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
             for (ui32 index : batch.mVisibleIndices) {
                 const DynamicModelInstanceState& dynamicModel = dynamicModels[index];
                 // Set transform for this instance
-                transformsArray[transformIndex] = MathUtil::createTransformMatrix(dynamicModel.position, dynamicModel.orientation);
-                for (auto& meshData : batch.mMeshData) {
-                    MeshLODDrawInfo* drawInfos = meshData.drawInfos;
-                    DrawElementsIndirectCommand& cmd = meshData.drawCommands->appendCommand();
-                    // build draw command
-                    cmd.instanceCount_ = 1;
-                    cmd.baseInstance_ = transformOffset + transformIndex;
-                    cmd.baseVertex_ = 0;
-                    MeshLODDrawInfo drawInfo, drawInfoShadow;
-                    f32 distance2 = glm::length2(dynamicModel.position - camera.getPosition());
-                    if ((distance2 < SQ(sDebugOptions.mLodDistances[0])) || sDebugOptions.mDisableLOD) {
-                        drawInfo = drawInfos[0];
-                        drawInfoShadow = drawInfos[1];
+                if (camera.sphereIsVisible(dynamicModel.position, lodParams.boundingSphereRadius)) {
+                    const f32 distance2 = glm::length2(dynamicModel.position - camera.getPosition());
+                    if (distance2 < lodParams.lodDistancesSQ[3]) {
+                        transformsArray[transformIndex] = MathUtil::createTransformMatrix(dynamicModel.position, dynamicModel.orientation);
+                        for (auto& meshData : batch.mMeshData) {
+                            MeshLODDrawInfo* drawInfos = meshData.drawInfos;
+                            DrawElementsIndirectCommand& cmd = meshData.drawCommands->appendCommand();
+                            // build draw command
+                            cmd.instanceCount_ = 1;
+                            cmd.baseInstance_ = transformOffset + transformIndex;
+                            cmd.baseVertex_ = 0;
+                            MeshLODDrawInfo drawInfo;
+                            if (distance2 < lodParams.lodDistancesSQ[0] || sDebugOptions.mDisableLOD) {
+                                drawInfo = drawInfos[0];
+                            }
+                            else if (distance2 < lodParams.lodDistancesSQ[1]) {
+                                drawInfo = drawInfos[1];
+                            }
+                            else if (distance2 < lodParams.lodDistancesSQ[2]) {
+                                drawInfo = drawInfos[2];
+                            }
+                            else {
+                                drawInfo = drawInfos[3];
+                            }
+                            cmd.count_ = drawInfo.indexCount;
+                            cmd.firstIndex_ = drawInfo.startIndex;
+                        } // meshData
+                        ++transformIndex;
                     }
-                    else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
-                        drawInfo = drawInfos[1];
-                        drawInfoShadow = drawInfos[2];
-                    }
-                    else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
-                        drawInfo = drawInfos[2];
-                        drawInfoShadow = drawInfos[3];
-                    }
-                    else {
-                        drawInfo = drawInfos[3];
-                        drawInfoShadow = drawInfos[3];
-                    }
-                    cmd.count_ = drawInfo.indexCount;
-                    cmd.firstIndex_ = drawInfo.startIndex;
-                } // meshData
-                ++transformIndex;
+                }
             } // modelIndex
 
             // Upload draw commands

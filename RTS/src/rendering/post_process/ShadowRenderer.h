@@ -3,7 +3,7 @@
 class Camera3D;
 class MaterialShaderDef;
 
-#include "rendering/post_process/ShadowLodDetail.h"
+#include "rendering/post_process/ShadowDetail.h"
 #include "ShadowPassShaderData.h"
 #include "resources/asset/AssetHandleBundle.h"
 
@@ -31,7 +31,7 @@ public:
     const f32m4* getShadowFrustumMatrices() const { return mLightVP; }
     const f32* getShadowCascadePlaneDistances() const { return mPlaneDistances; }
     const VGTexture getShadowMap() const;
-    const f32 getMaxDistance(ShadowLodDetail detail) const;
+    const f32 getMaxDistance(ShadowDetail detail) const;
     const f32v3& getLastUpdatedSunPosition() const { return mLastUpdatedSunPosition; }
 
     bool shouldUpdateShadowsThisFrame() const { return mShouldUpdateShadowsThisFrame; }

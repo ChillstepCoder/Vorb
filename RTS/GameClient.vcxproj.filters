@@ -534,7 +534,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\post_process\ShadowLodDetail.cpp">
+    <ClCompile Include="src\rendering\post_process\ShadowDetail.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\EditorRoot.cpp">
@@ -1673,7 +1673,7 @@
     <ClInclude Include="src\rendering\model\StaticModelInstance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h">
+    <ClInclude Include="src\rendering\post_process\ShadowDetail.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\EditorRoot.h">

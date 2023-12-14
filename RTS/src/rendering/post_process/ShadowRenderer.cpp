@@ -409,7 +409,7 @@ const VGTexture ShadowRenderer::getShadowMap() const {
     return mShadowMapGBuffer->getAlbedoTexture();
 }
 
-const f32 ShadowRenderer::getMaxDistance(ShadowLodDetail detail) const {
+const f32 ShadowRenderer::getMaxDistance(ShadowDetail detail) const {
     return Shadows::getMaxDistance(mPlaneDistances, detail);
 }
 

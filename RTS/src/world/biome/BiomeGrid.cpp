@@ -8,6 +8,8 @@ BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
     mSpatialGrid.init(BIOME_VERTEX_STRIDE, widthVerts);
     mTotalVertices = SQ(widthVerts);
     mGrid = std::make_unique<BiomeVertex[]>(mTotalVertices);
+    LOG_DEBUG("Biome grid allocated {} mb of data", (mTotalVertices * sizeof(BiomeVertex)) / 1024.f / 1024.f);
+
 }
 
 BiomeGrid::~BiomeGrid() {

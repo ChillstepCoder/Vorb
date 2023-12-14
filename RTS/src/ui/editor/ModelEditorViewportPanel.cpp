@@ -8,7 +8,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/Mesh/MeshDrawer.h"
-#include "rendering/post_process/ShadowLodDetail.h"
+#include "rendering/post_process/ShadowDetail.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -67,7 +67,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
                 ModelSubmeshData& subMeshData = mAssetData->mSubmeshesData[mSingleIndex];
 
-                ImguiUtil::EnumCombo("Wind Type", subMeshData.windType);
+                changed |= ImguiUtil::EnumCombo("Wind Type", subMeshData.windType);
                   
                 ImGui::Separator();
             }
@@ -81,6 +81,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 
     if (changed) {
         mDirtyModelData = true;
+        ModelRepository::get().onAssetChangedByEditor(mAssetData->getID());
     }
     
     ImGui::EndChild();
@@ -96,13 +97,25 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
+        const MaterialShaderDef* shader = getShader();
         if (mShowSingle) {
             mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
             MeshDrawer::draw(mAssetData->getMesh(mSingleIndex).mGpuData, MeshLODLevel(mLod));
         }
         else {
+            // First LOD
+            glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
             for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
                 MeshDrawer::draw(mAssetData->getMesh(i).mGpuData, MeshLODLevel(mLod));
+            }
+            int x = 1;
+            const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
+            for (int l = e_cast(MeshLODLevel::Highest) + 1; l < e_count(MeshLODLevel); ++l) {
+                glUniform4f(shader->getUniform("unPosOffset"), x, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
+                for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+                    MeshDrawer::draw(mAssetData->getMesh(i).mGpuData, MeshLODLevel(i));
+                }
+                ++x;
             }
         }
     }

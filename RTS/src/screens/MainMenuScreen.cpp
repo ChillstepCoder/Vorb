@@ -50,11 +50,11 @@ void MainMenuScreen::destroy(const vui::GameTime& gameTime)
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
     LOG_CRITICAL("===Diplaying TODO Messages===");
-    LOG_CRITICAL("  TODO: Make terrain color match grass color");
     LOG_CRITICAL("  TODO: Optimize character renderer with UBO");
-    LOG_CRITICAL("  TODO: Conan package manager");
     LOG_CRITICAL("  TODO: Update cmake");
     LOG_CRITICAL("  TODO: Custom allocator for std::string/nString");
+    LOG_CRITICAL("  TODO: Automatically downgrade to 4.0 opengl if needed");
+    LOG_CRITICAL("  TODO: Alternative to bindless extension");
     // TODO: Easeings utils https://easings.net/
     // TODO: Cool character customization? https://www.youtube.com/watch?v=A-P0llMckSw
     // TODO: Vertex pooling https://nickmcd.me/2021/04/04/high-performance-voxel-engine/

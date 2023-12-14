@@ -7,7 +7,7 @@
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderRepository.h"
-#include "rendering/post_process/ShadowLodDetail.h"
+#include "rendering/post_process/ShadowDetail.h"
 #include "rendering/RenderContext.h"
 #include "rendering/post_process/ShadowPassShaderData.h"
 #include "options/DebugOptions.h"

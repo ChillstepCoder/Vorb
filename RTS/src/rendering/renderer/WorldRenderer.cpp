@@ -545,7 +545,7 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
             //glCullFace(GL_FRONT);
             // TODO: Why is this labeled as terrain?
             if (!sDebugOptions.mDisableTerrain) {
-                mTileContainerRenderer->renderWorldShadows(mCurrentWorldRenderDataManager->getTileContainerMeshManager().getStaticMeshes(), mShadowRenderer->getShaderData(), *mCamera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+                mTileContainerRenderer->renderWorldShadows(mCurrentWorldRenderDataManager->getTileContainerMeshManager().getStaticMeshes(), mShadowRenderer->getShaderData(), *mCamera, mShadowRenderer->getMaxDistance(ShadowDetail::High));
             }
 
             // Instanced models
@@ -556,7 +556,7 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
 
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(mShadowRenderer->getShaderData(), mCurrentWorldRenderDataManager->getCloudMeshManager(), *mCamera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
+                mCloudRenderer->renderCloudShadows(mShadowRenderer->getShaderData(), mCurrentWorldRenderDataManager->getCloudMeshManager(), *mCamera, mShadowRenderer->getMaxDistance(ShadowDetail::Highest));
             }
 
             //const CityGraph& cities = sWorld->getCityGraph();

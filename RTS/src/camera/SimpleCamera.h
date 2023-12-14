@@ -38,7 +38,7 @@ public:
     f32 getFov() const { return positioner_->getFov(); }
 
     inline static constexpr f32 ZNEAR = 0.1f;
-    inline static constexpr f32 ZFAR = 100.0f;
+    inline static constexpr f32 ZFAR = 20000.0f;
 private:
     const SimpleCameraPositionerInterface* positioner_;
 };

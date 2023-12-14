@@ -56,6 +56,8 @@ public:
 
     virtual bool saveAsset(AssetID assetId) = 0;
 
+    virtual void onAssetChangedByEditor(AssetID assetId) {};
+
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 

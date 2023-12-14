@@ -112,6 +112,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             assert(instanceData.mMesh);
 
             ModelID modelId = it.first;
+            const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelId);
             const Mesh& mesh = *instanceData.mMesh;
             MeshLODDrawInfo drawInfos[4];
             for (int i = 0; i < 4; ++i) {
@@ -184,8 +185,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     uniformData.lodDistancesSQ[0] = FLT_MAX;
                 }
                 else {
-                    for (int i = 0; i < 3; ++i) {
-                        uniformData.lodDistancesSQ[i] = SQ(sDebugOptions.mLodDistances[i]);
+                    for (int i = 0; i < 4; ++i) {
+                        uniformData.lodDistancesSQ[i] = lodParams.lodDistancesSQ[i];
                     }
                 }
                 for (int i = 0; i < 4; ++i) {
@@ -230,38 +231,54 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     const f32m4& transform = instanceData.mInstanceTransforms[i];
                     // Columns are first
                     const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
-                    if (camera.sphereIsVisible(pos, 10.0f)) {
+                    // TODO: Real bounding sphere
+                    if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
                         cmd.instanceCount_ = 1;
                         cmdShadow.instanceCount_ = 1;
                         cmd.baseInstance_ = i;
                         cmdShadow.baseInstance_ = i;
                         cmd.baseVertex_ = 0;
                         cmdShadow.baseVertex_ = 0;
-                        MeshLODDrawInfo drawInfo, drawInfoShadow;
+                        MeshLODDrawInfo drawInfo;
                         f32 distance2 = glm::length2(pos - camera.getPosition());
-                        if ((distance2 < SQ(sDebugOptions.mLodDistances[0])) || sDebugOptions.mDisableLOD) {
+                        if ((distance2 < lodParams.lodDistancesSQ[0]) || sDebugOptions.mDisableLOD) {
                             drawInfo = drawInfos[0];
-                            drawInfoShadow = drawInfos[1];
-                            ++shadowCount;
+                            if (lodParams.shadowLodDetail > ShadowModelDetail::None) {
+                                cmdShadow.count_ = drawInfos[1].indexCount;
+                                cmdShadow.firstIndex_ = drawInfos[1].startIndex;
+                                ++shadowCount;
+                            }
                         }
-                        else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
+                        else if (distance2 < lodParams.lodDistancesSQ[1]) {
                             drawInfo = drawInfos[1];
-                            drawInfoShadow = drawInfos[2];
-                            ++shadowCount;
+                            if (lodParams.shadowLodDetail > ShadowModelDetail::Low) {
+                                cmdShadow.count_ = drawInfos[2].indexCount;
+                                cmdShadow.firstIndex_ = drawInfos[2].startIndex;
+                                ++shadowCount;
+                            }
                         }
-                        else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
+                        else if (distance2 < lodParams.lodDistancesSQ[2]) {
                             drawInfo = drawInfos[2];
-                            drawInfoShadow = drawInfos[3];
-                            ++shadowCount;
+                            if (lodParams.shadowLodDetail > ShadowModelDetail::Medium) {
+                                cmdShadow.count_ = drawInfos[3].indexCount;
+                                cmdShadow.firstIndex_ = drawInfos[3].startIndex;
+                                ++shadowCount;
+                            }
+                        }
+                        else if (distance2 < lodParams.lodDistancesSQ[3]) {
+                            drawInfo = drawInfos[3];
+                            if (lodParams.shadowLodDetail == ShadowModelDetail::High) {
+                                cmdShadow.count_ = drawInfos[3].indexCount; // ?
+                                cmdShadow.firstIndex_ = drawInfos[3].startIndex;
+                                ++shadowCount;
+                            }
                         }
                         else {
-                            drawInfo = drawInfos[3];
-                            drawInfoShadow = drawInfos[3];
+                            // TODO: Billboard
+                            continue;
                         }
                         cmd.count_ = drawInfo.indexCount;
                         cmd.firstIndex_ = drawInfo.startIndex;
-                        cmdShadow.count_ = drawInfoShadow.indexCount;
-                        cmdShadow.firstIndex_ = drawInfoShadow.startIndex;
                         ++activeCount;
                     }
                 }

@@ -122,11 +122,11 @@ namespace YmlSerializer {
         bool changed = false;
         if constexpr (std::is_floating_point_v<First>) {
             // Handle floating point types (e.g., float, double)
-            changed |= ImGui::SliderFloat(label.data(), reinterpret_cast<float*>(&value), 0.0f, 100.0f);
+            changed |= ImGui::SliderFloat(label.data(), reinterpret_cast<float*>(&value), 0.0f, 10000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         }
         else if constexpr (std::is_integral_v<First>) {
             // Handle integral types (e.g., int, unsigned int)
-            changed |= ImGui::SliderInt(label.data(), reinterpret_cast<int*>(&value), 0, 100);
+            changed |= ImGui::SliderInt(label.data(), reinterpret_cast<int*>(&value), 0, 1000);
         }
         else if constexpr (std::is_enum_v<First>) {
             changed |= ImguiUtil::EnumCombo<First>(label.data(), value);

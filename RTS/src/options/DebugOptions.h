@@ -157,7 +157,6 @@ struct DebugOptions {
     // Game settings
     f32 mLoadRangeSq;
     f32 mLoadRange;
-    f32 mLodDistances[3];
     // Camera settings
     f32 mFoV;
     f32 mZFar;

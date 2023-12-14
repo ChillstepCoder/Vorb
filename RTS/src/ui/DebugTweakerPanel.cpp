@@ -413,7 +413,6 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::Checkbox("Hide Dynamic Models", &sDebugOptions.mHideDynamicModels);
         ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
         ImGui::Checkbox("CPU Culling", &sDebugOptions.mDisableGPUCulling);
-        ImGui::SliderFloat3("LOD Distances", sDebugOptions.mLodDistances, 0.0f, 1000.0f);
         ImGui::Separator();
     }
     if (ImGui::CollapsingHeader("Fish")) {

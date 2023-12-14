@@ -49,6 +49,10 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
     loadModelInternal(def, newName, filePath);
 }
 
+void ModelRepository::onAssetChangedByEditor(AssetID id) {
+    updateModelFlyweightData(id);
+}
+
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
@@ -57,7 +61,6 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
 
         LOG_TRACE("Loading model {}", filePath.getCString());
 
-        YmlSerializer::readFileData(readFileToString(filePath), def);
 
         if (!def.mModelName.isValid()) {
             panic("Model file missing model name - {}", filePath.getString());
@@ -285,4 +288,24 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
         }
         iStart[renderPassIndex] += subMesh.mVertices.size();
     }
+}
+
+void ModelRepository::onRegisteredAsset(AssetID id) {
+    ModelDef& def = *mAssets[id];
+    YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
+    mLODParameters.resize(mAssets.size());
+    updateModelFlyweightData(id);
+}
+
+void ModelRepository::onAllAssetTypesRegistered() {
+    mLODParameters.shrink_to_fit();
+}
+void ModelRepository::updateModelFlyweightData(AssetID id) {
+    ModelDef& def = *mAssets[id];
+    mLODParameters[id].lodDistancesSQ[0] = SQ(def.mLodDistance0);
+    mLODParameters[id].lodDistancesSQ[1] = SQ(def.mLodDistance1);
+    mLODParameters[id].lodDistancesSQ[2] = SQ(def.mLodDistance2);
+    mLODParameters[id].lodDistancesSQ[3] = SQ(def.mLodDistance1);
+    mLODParameters[id].boundingSphereRadius = def.mBoundingSphereRadius;
+    mLODParameters[id].shadowLodDetail = def.mShadowDetail;
 }

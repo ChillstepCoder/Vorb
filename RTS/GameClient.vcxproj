@@ -401,7 +401,7 @@
     <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
-    <ClCompile Include="src\rendering\post_process\ShadowLodDetail.cpp" />
+    <ClCompile Include="src\rendering\post_process\ShadowDetail.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp" />
@@ -789,7 +789,7 @@
     <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
-    <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />
+    <ClInclude Include="src\rendering\post_process\ShadowDetail.h" />
     <ClInclude Include="src\rendering\post_process\ShadowPassShaderData.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\GrassBillboardMesh.h" />

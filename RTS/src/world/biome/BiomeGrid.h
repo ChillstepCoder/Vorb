@@ -1,10 +1,13 @@
 #pragma once
 
+#include "tile/TileHarvestable.h"
+
 #include "util/SpatialGrid2D.h"
 #include "definitions/BiomeDef.h"
 
 // TODO: BiomeConstants
 constexpr i32 BIOME_VERTEX_STRIDE = 8;
+constexpr int MAX_PRIMARY_RESOURCES_PER_BIOME = 4;
 
 enum class BiomeFlags : ui8 {
     BASE_BIOME = BIT(0),
@@ -16,6 +19,8 @@ struct BiomeVertex {
         return distanceFromRoot == 0;
     }
 
+    // approx when used by simulation, made exact by active chunks
+    ui8 biomeResourceAmountsRemaining[MAX_PRIMARY_RESOURCES_PER_BIOME] = {}; // Only 64 tiles per vertex so [0-64]
     ui8 biomeUniqueId = UINT8_MAX;
     BitFlags<BiomeFlags> biomeFlags;
     ui16 distanceFromRoot = 0;
@@ -56,5 +61,14 @@ private:
     SpatialGrid2D mSpatialGrid;
     // Used by terrain to look up biome info
     VGTexture mBiomeTexture = 0;
+
+    struct BiomePrimaryResourceInfo {
+        TileHarvestable type;
+        ui8 avgMaxInstancesPerBiomeVertex; //[0-64]
+        std::pair<TileID, f32/*probability*/> possibleTiles[4];
+    };
+
+    // Stores which primary resources exist in each biome
+    TileHarvestable mBiomePrimaryResourcesLookup[MAX_PRIMARY_RESOURCES_PER_BIOME][e_count(BiomeUniqueID)];
 };
 

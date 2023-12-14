@@ -207,9 +207,17 @@ void IChunkGrid::setWorldAndAllocateChunks(World& world) {
     mWidthChunks = world.getWidthChunks();
     mTotalChunks = SQ(mWidthChunks);
     mAliveChunkBits.resizeAndZero(mTotalChunks);
-    mNeighborBits = std::unique_ptr<ui8[]>(new ui8[mTotalChunks]);
+    mNeighborBits = std::make_unique<ui8[]>(mTotalChunks);
     memset(mNeighborBits.get(), 0, sizeof(ui8) * mTotalChunks);
-    mChunks = std::unique_ptr<Chunk[]>(new Chunk[mTotalChunks]);
+    mChunks = std::make_unique<Chunk[]>(mTotalChunks);
+
+    f32 chunksSize = mTotalChunks * sizeof(Chunk) / 1024.f;
+    LOG_DEBUG("Chunk grid allocated {} kb of chunks", chunksSize);
+    f32 simSize = mTotalChunks * sizeof(SimulatedChunk) / 1024.f;
+    LOG_DEBUG("                     {} kb of simulated chunks", simSize);
+    //f32 worstCaseTileData = 0.5f * mTotalChunks * CHUNK_SIZE * sizeof(SimulatedChunk::ChunkHarvestableTile) / 1024.f;
+    //LOG_DEBUG("                     {} kb of est sim tile data", worstCaseTileData);
+    LOG_DEBUG("                     {} mb total", (chunksSize + simSize /*+ worstCaseTileData*/) / 1024.f);
     for (ChunkID i = 0; i < mTotalChunks; ++i) {
         mChunks[i].init(world, i, getWorldPosXYFromChunkID(i));
     }

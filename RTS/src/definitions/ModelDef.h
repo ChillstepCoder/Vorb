@@ -3,7 +3,7 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/model/ModelConst.h"
 #include "rendering/model/MaterialRenderPassType.h"
-#include "rendering/post_process/ShadowLodDetail.h"
+#include "rendering/post_process/ShadowDetail.h"
 
 #include <ozz/animation/runtime/skeleton.h>
 
@@ -57,8 +57,12 @@ public:
     SoftAssetReference mRigName = AssetType::Rig;
     SoftAssetReference mMachineName = AssetType::AnimMachine;
     f32 mScale = 1.0f;
-    f32 mBoundingSphereRadius = 5.0f; // TODO: FLYWEIGHT THIS
-    ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
+    f32 mLodDistance0 = 65.f;
+    f32 mLodDistance1 = 125.f;
+    f32 mLodDistance2 = 500.f;
+    f32 mLodDistance3 = 1000.f;
+    f32 mBoundingSphereRadius = 10.0f;
+    ShadowModelDetail mShadowDetail = ShadowModelDetail::High;
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
     //ModelDrawInfo mDrawInfo; // TODO: USE
@@ -68,6 +72,10 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mRigName, "rig"sv),
     make_field(o.mMachineName, "machine"sv),
     make_field(o.mScale, "scale"sv),
+    make_field(o.mLodDistance0, "lod_dst_0"sv),
+    make_field(o.mLodDistance1, "lod_dst_1"sv),
+    make_field(o.mLodDistance2, "lod_dst_2"sv),
+    make_field(o.mLodDistance3, "lod_dst_3"sv),
     make_field(o.mBoundingSphereRadius, "bound_sphere"sv),
     make_field(o.mShadowDetail, "shadow_detail"sv),
     make_field(o.mForceNormalsUp, "force_normals_up"sv),

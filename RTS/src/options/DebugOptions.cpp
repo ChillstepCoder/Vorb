@@ -151,7 +151,6 @@ DebugOptions::DebugOptions() :
     // Game settings
     mLoadRangeSq(SQ(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT)),
     mLoadRange(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT),
-    mLodDistances{65.0f, 125.0f, 500.0f},
     // Camera settings
     mFoV(80.0f),
     mZFar(200000.0f),

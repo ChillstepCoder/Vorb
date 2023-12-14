@@ -297,12 +297,12 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
-    const char* glsl_version = "#version 450";
+    const char* glsl_version = "#version 440";
     // Make sure we are using the right gl version (4.5)
     const ui32 minor = getGLMinorVersion();
     const ui32 major = getGLMajorVersion();
     VORB_LOG_INFO("Initializing opengl for imgui with minor {} and major {}", minor, major);
-    assert(minor == 6 && major == 4 && "App.config needs opengl set to 4.6\n");
+    //assert(minor == 6 && major == 4 && "App.config needs opengl set to 4.6\n");
     ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(m_window), m_glc);
     ImGui_ImplOpenGL3_Init(glsl_version);
 #endif
