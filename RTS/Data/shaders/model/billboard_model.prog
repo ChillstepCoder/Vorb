@@ -1,0 +1,2 @@
+vert: billboard_model.vert
+frag: billboard_model.frag

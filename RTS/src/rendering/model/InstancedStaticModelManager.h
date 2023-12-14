@@ -16,6 +16,7 @@ class Camera3D;
 class InstancedStaticModelGatherer;
 class ModelRepository;
 class MaterialShaderDef;
+class ModelBillboardLodManager;
 
 DECL_VG(class GLProgram);
 
@@ -85,5 +86,7 @@ private:
     boost::container::flat_map<TileContainerID, boost::container::flat_set<ModelID>> mPendingInstanceForContainer;
 
     AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
+
+    std::unique_ptr<ModelBillboardLodManager> mBillboardLodManager;
 };
 

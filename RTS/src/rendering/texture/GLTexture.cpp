@@ -30,10 +30,7 @@ GLTexture& GLTexture::operator=(GLTexture&& o)
 }
 
 GLTexture::~GLTexture() {
-    if (mHandleBindless) {
-        glMakeTextureHandleNonResidentARB(mHandleBindless);
-        glDeleteTextures(1, &mHandle);
-    }
+    destroy();
 }
 
 void GLTexture::init(GLuint handle, vg::TextureTarget type, const ui32v2& dims) {

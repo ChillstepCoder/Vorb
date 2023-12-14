@@ -127,6 +127,5 @@ private:
     VGBuffer mGlobalUbo = 0;
     VGBuffer mCameraUbo = 0;
 
-
 };
 

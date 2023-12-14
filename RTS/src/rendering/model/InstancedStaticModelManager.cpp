@@ -12,6 +12,7 @@
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
+#include "rendering/model/ModelBillboardLodManager.h"
 
 #include "camera/Camera3D.h"
 
@@ -75,6 +76,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
     mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("culling_and_lod"));
+    mBillboardLodManager = std::make_unique<ModelBillboardLodManager>();
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
