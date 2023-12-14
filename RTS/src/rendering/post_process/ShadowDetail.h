@@ -21,13 +21,15 @@ enum class ShadowModelDetail : ui8 {
     None,
     Low,
     Medium,
-    High
+    High,
+    Highest
 };
 SERIALIZABLE_ENUM_SAME_NAME(ShadowModelDetail,
     pair{ ShadowModelDetail::None, "none"sv},
     pair{ ShadowModelDetail::Low, "low"sv },
     pair{ ShadowModelDetail::Medium, "medium"sv },
     pair{ ShadowModelDetail::High, "high"sv },
+    pair{ ShadowModelDetail::Highest, "highest"sv },
 );
 
 namespace Shadows {

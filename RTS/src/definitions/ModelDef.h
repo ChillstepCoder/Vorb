@@ -57,10 +57,10 @@ public:
     SoftAssetReference mRigName = AssetType::Rig;
     SoftAssetReference mMachineName = AssetType::AnimMachine;
     f32 mScale = 1.0f;
-    f32 mLodDistance0 = 45.f;
-    f32 mLodDistance1 = 90.f;
-    f32 mLodDistance2 = 150.f;
-    f32 mLodDistance3 = 400.f;
+    f32 mLodDistance0 = 50.f;
+    f32 mLodDistance1 = 100.f;
+    f32 mLodDistance2 = 300.f;
+    f32 mLodDistance3 = 800.f;
     f32 mBoundingSphereRadius = 10.0f;
     ShadowModelDetail mShadowDetail = ShadowModelDetail::High;
     f32AABB3 mAABB; // Calculated from mesh data

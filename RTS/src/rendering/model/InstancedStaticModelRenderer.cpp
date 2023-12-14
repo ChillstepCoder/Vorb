@@ -65,37 +65,41 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
     const VGUniform windUniform = def->getUniform("unWindType");
     glUniform1f(def->getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
     for (auto& [modelId, instanceData] : modelInstances) {
-        if (!instanceData.mDrawCommands) {
-            continue;
+        for (int m = 0; m < instanceData.mMeshCount; ++m) {
+            if (!instanceData.mDrawCommands[m]) {
+                break;
+            }
+            const Mesh& mesh = *(instanceData.mMesh[m]);
+
+            if (mesh.getRenderPass() == passType) {
+                // Copy draw commands
+                GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommands[m];
+                if (!drawCommands.getNumActiveCommands()) {
+                    continue;
+                }
+
+                glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
+
+                // Bind our transforms every frame as we could be using different instanced static model managers
+                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
+
+                // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
+                //// Make sure we created a fence for this instance
+                //assert(instanceData.mFenceSync);
+                //// Make sure all compute commands are finished
+                //while (true) {
+                //    const GLenum res = glClientWaitSync(instanceData.mFenceSync, GL_SYNC_FLUSH_COMMANDS_BIT, 100);
+                //    if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) break;
+                //}
+                //glDeleteSync(instanceData.mFenceSync);
+                //instanceData.mFenceSync = 0;
+
+                //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
+                //assert(totalCommands == drawCommands.mDrawCommands.size());
+                MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
+                break;
+            }
         }
-
-        // Copy draw commands
-        GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommands;
-        if (!drawCommands.getNumActiveCommands()) {
-            continue;
-        }
-
-        const Mesh& mesh = *instanceData.mMesh;
-
-        glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
-
-        // Bind our transforms every frame as we could be using different instanced static model managers
-        GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
-
-        // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-        //// Make sure we created a fence for this instance
-        //assert(instanceData.mFenceSync);
-        //// Make sure all compute commands are finished
-        //while (true) {
-        //    const GLenum res = glClientWaitSync(instanceData.mFenceSync, GL_SYNC_FLUSH_COMMANDS_BIT, 100);
-        //    if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) break;
-        //}
-        //glDeleteSync(instanceData.mFenceSync);
-        //instanceData.mFenceSync = 0;
-
-        //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
-        //assert(totalCommands == drawCommands.mDrawCommands.size());
-        MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
     }
     
     // TODO: Material specific
@@ -103,7 +107,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
-void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
 
     if (!mShaderAssets.areAllAssetsLoaded()) {
@@ -116,24 +120,23 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap* mo
 
     MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperShader);
     glUniformMatrix4fv(mShadowMapperShader->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
-    for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
-        for (auto& [modelId, instanceData] : modelInstances[ri]) {
-            if (!instanceData.mDrawCommands) {
+
+    for (auto& [modelId, instanceData] : modelInstances) {
+        for (int m = 0; m < instanceData.mMeshCount; ++m) {
+            if (!instanceData.mDrawCommandsShadows[m]) {
                 continue;
             }
-            // TODO: Have a no shadow render type?
 
-            GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
+            // TODO: Have a no shadow render type?
+            GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommandsShadows[m];
             if (!drawCommands.getNumActiveCommands()) {
                 continue;
             }
 
-            const Mesh& mesh = *instanceData.mMesh;
-
+            const Mesh& mesh = *instanceData.mMesh[m];
             MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
         }
     }
-
     // TODO: Material specific
     glEnable(GL_CULL_FACE);
     checkGlError("InstancedStaticModelRenderer::renderModelShadows");

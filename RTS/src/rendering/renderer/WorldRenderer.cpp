@@ -184,7 +184,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
 
     MaterialRepository::get().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Default), *mCamera, MaterialRenderPassType::Default);
+    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Default);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
 
     // Fish
@@ -195,7 +195,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Smudge
     {
         mSmudgeRenderer->beginSmudgePass(activeGBuffer);
-        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMapForRenderPass(MaterialRenderPassType::Smudge), *mCamera, MaterialRenderPassType::Smudge);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Smudge);
         mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Smudge);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             glDisable(GL_CULL_FACE);
@@ -551,7 +551,7 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
             // Instanced models
             MaterialRepository::get().bindMaterialBuffer();
             if (!sDebugOptions.mHideModels) {
-                mStaticModelRenderer->renderModelShadows(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getAllModelInstanceMaps(), mShadowRenderer->getShaderData(), *mCamera);
+                mStaticModelRenderer->renderModelShadows(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), mShadowRenderer->getShaderData(), *mCamera);
             }
 
             // TODO: Frustum cull

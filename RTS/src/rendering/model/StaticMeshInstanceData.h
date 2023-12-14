@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rendering/model/MaterialRenderPassType.h"
+
 class GLDrawCommandBuffer;
 class Mesh;
 
@@ -41,12 +43,13 @@ public:
 
     std::vector<f32m4> mInstanceTransforms;
     std::vector<ModelInstanceOwner> mInstanceOwners;
-    std::unique_ptr<GLDrawCommandBuffer> mDrawCommands;
-    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows;
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
-    const Mesh* mMesh = nullptr;
+    const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};
+    int mMeshCount = 0;
 
     // TODO: Investigate why, hardware? Driver? - Compact GPU culled indirect buffer is actually slower due to atomic operation and cpu-gpu sync
     // std::unique_ptr<GLIndirectBuffer> mOutDrawCommands;

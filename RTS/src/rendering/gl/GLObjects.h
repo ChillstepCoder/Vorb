@@ -94,6 +94,8 @@ public:
         : mIndirectBuffer(maxDrawCommands, sizeof(DrawElementsIndirectCommand)) {
     }
 
+    // TODO: POOL ALLOCATE
+
     void frameBegin() {
         mDrawCommands =
             std::span<DrawElementsIndirectCommand>(

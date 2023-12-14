@@ -50,7 +50,7 @@ public:
 
     void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
-    bool getInstancesAtPosition(LiteTileHandle tileHandle, OUT TileModelInstance* outInstances[e_cast(MaterialRenderPassType::COUNT)]);
+    TileModelInstance* getInstanceAtPosition(LiteTileHandle tileHandle);
     bool hasInstanceAtPosition(LiteTileHandle tileHandle);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
@@ -63,19 +63,19 @@ public:
 
     void onTileDamagedEvent(const TileContainerEvent& evnt);
 
-    const ModelInstanceMap& getModelInstanceMapForRenderPass(MaterialRenderPassType renderPassType) const { return mModelsToInstances[e_cast(renderPassType)]; }
-    const ModelInstanceMap* getAllModelInstanceMaps() const { return mModelsToInstances; }
+    // TODO: This is more data than the renderer needs?
+    const ModelInstanceMap& getModelInstanceMap() const { return mModelsToInstances; }
 private:
     void updatePendingModelDefs();
     void addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform);
 
     void updateAnimatedModels(f32 elapsedSec);
-    void removeTileModelInstanceInternal(int renderPassIndex, TileModelInstance& instance);
+    void removeTileModelInstanceInternal(TileModelInstance& instance);
     void decrefModelDef(ModelID modelId, int decCount);
 
     boost::container::flat_map<LiteTileHandle, StaticMeshAnimation> mAnimatedInstances;
-    ModelInstanceMap mModelsToInstances[e_count(MaterialRenderPassType)];
-    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels[e_count(MaterialRenderPassType)];
+    ModelInstanceMap mModelsToInstances;
+    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 
     // Refcount ModelDefs
