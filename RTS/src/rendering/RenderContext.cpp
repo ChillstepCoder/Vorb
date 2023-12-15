@@ -46,6 +46,7 @@
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/UboHelpers.h"
 #include "rendering/particle/CPUParticleSystem.h"
+#include "rendering/model/ModelBillboardLodManager.h"
 #include "weather/CloudMeshManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -155,6 +156,9 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 {
     // State init
     GameRenderStateManager::initInstance();
+
+    // Billboard LOD
+    mModelBillboardLodBuilder = std::make_unique<ModelBillboardLodBuilder>();
 
     // Make sure we can filter cubemaps properly
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);

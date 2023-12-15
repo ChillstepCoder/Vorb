@@ -20,6 +20,7 @@ class ItemRenderer;
 class LightRenderer;
 class MaterialShaderDef;
 class Mesh;
+class ModelBillboardLodBuilder;
 class ParticleSystemRenderer;
 class WorldRenderState;
 class ShadowRenderer;
@@ -78,6 +79,8 @@ public:
     const Camera3D* getCamera() const { return &mCamera; }
     CameraController* getCameraController() const { return mCameraController; }
 
+    ModelBillboardLodBuilder& getModelBillboardLodBuilder() const { return *mModelBillboardLodBuilder; }
+
     // Renderers
     TileContainerRenderer& getTileContainerRenderer() const;
     CharacterRenderer& getCharacterRenderer() const;
@@ -114,6 +117,7 @@ private:
     // World
     World* mActiveWorld = nullptr;
     std::unique_ptr<WorldRenderer> mWorldRenderer;
+    std::unique_ptr<ModelBillboardLodBuilder> mModelBillboardLodBuilder;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

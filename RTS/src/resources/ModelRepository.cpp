@@ -6,9 +6,11 @@
 #include "definitions/AnimMachineDef.h"
 #include "resources/RigRepository.h"
 #include "resources/AnimMachineRepository.h"
+#include "rendering/RenderContext.h"
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/mesh/MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/model/ModelBillboardLodManager.h"
 
 #include "resources/MaterialRepository.h"
 
@@ -17,8 +19,6 @@
 #include <ozz/animation/runtime/skeleton.h>
 
 #include "rendering/mesh/fbx2raw.inl"
-
-
 
 class FBXLoadContext {
 public:
@@ -214,6 +214,9 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         mFbxSdkMutex.lock();
         loadContextPtr.reset();
         mFbxSdkMutex.unlock();
+
+        RenderContext::getInstance().getModelBillboardLodBuilder().initTextureForModel(assetId);
+
         return true;
     },
         def.getID(),
@@ -329,7 +332,7 @@ void ModelRepository::updateModelFlyweightData(AssetID id) {
     mLODParameters[id].lodDistancesSQ[0] = SQ(def.mLodDistance0);
     mLODParameters[id].lodDistancesSQ[1] = SQ(def.mLodDistance1);
     mLODParameters[id].lodDistancesSQ[2] = SQ(def.mLodDistance2);
-    mLODParameters[id].lodDistancesSQ[3] = SQ(def.mLodDistance1);
+    mLODParameters[id].lodDistancesSQ[3] = SQ(def.mLodDistance3);
     mLODParameters[id].boundingSphereRadius = def.mBoundingSphereRadius;
     mLODParameters[id].shadowLodDetail = def.mShadowDetail;
 }

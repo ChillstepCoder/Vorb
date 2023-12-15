@@ -4,13 +4,14 @@
 #include "resources/TextureRepository.h"
 #include "resources/ModelRepository.h"
 
-ModelBillboardLodManager::ModelBillboardLodManager() {
-    mBillboardTextures.reserve(ModelRepository::get().getNumRegisteredAssets());
+ModelBillboardLodManager::ModelBillboardLodManager(const std::unordered_map<AssetID, GLTexture>& billboardTextures) :
+    mBillboardTextures(billboardTextures) {
+
 }
 
 ModelBillboardLodManager::~ModelBillboardLodManager() = default;
 
-void ModelBillboardLodManager::initTextureForModelIfNeeded(AssetID modelID) {
+void ModelBillboardLodBuilder::initTextureForModel(AssetID modelID) {
     assert(!mBillboardTextures.contains(modelID));
 
     // TODO: DXT Compressed as well
@@ -19,7 +20,7 @@ void ModelBillboardLodManager::initTextureForModelIfNeeded(AssetID modelID) {
     gli::texture2d texture(gli::FORMAT_RGBA8_UNORM_PACK8, extent);
 
     color4 pixelColor = color::Red;
-    for (int i = 0; i < texture.size() * 4; ++i) {
+    for (int i = 0; i < texture.size(); ++i) {
         ((color4*)texture.data())[i] = pixelColor;
     }
 

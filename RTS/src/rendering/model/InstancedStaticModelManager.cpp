@@ -6,6 +6,7 @@
 #include "resources/TileRepository.h"
 #include "tile/TileContainer.h"
 
+#include "rendering/RenderContext.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/model/ModelUtil.h"
@@ -76,7 +77,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
     mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("culling_and_lod"));
-    mBillboardLodManager = std::make_unique<ModelBillboardLodManager>();
+    mBillboardLodManager = std::make_unique<ModelBillboardLodManager>(RenderContext::getInstance().getModelBillboardLodBuilder().getBillboardTextures());
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
