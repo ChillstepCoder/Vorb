@@ -7,7 +7,6 @@ layout(location = 1) in float vDepth;
 
 out vec3 fPosition;
 out vec2 fUV;
-out vec2 fScreenUV;
 out float fDepth;
 out float fCameraDist;
 

@@ -20,7 +20,7 @@ void ModelBillboardLodBuilder::initTextureForModel(AssetID modelID) {
     gli::texture2d texture(gli::FORMAT_RGBA8_UNORM_PACK8, extent);
 
     color4 pixelColor = color::Red;
-    for (int i = 0; i < texture.size(); ++i) {
+    for (int i = 0; i < texture.size() / 4; ++i) {
         ((color4*)texture.data())[i] = pixelColor;
     }
 

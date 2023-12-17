@@ -168,6 +168,8 @@ void main() {
 	oMetallicRoughness.g = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3; // Roughness
     // TODO: Cosine curve so only shore is wet?
     oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
+    // Increase total roughness (talia request)
+    oMetallicRoughness.g = min(oMetallicRoughness.g + 0.5, 1.0);
     
     oColor.a = 1.0; // AO?
     

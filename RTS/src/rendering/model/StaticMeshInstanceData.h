@@ -50,6 +50,7 @@ public:
     ui32 mFirstDirtyInstance = UINT32_MAX;
     const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};
     int mMeshCount = 0;
+    bool mMeshCastsShadow[e_count(MaterialRenderPassType)] = {};
 
     // TODO: Investigate why, hardware? Driver? - Compact GPU culled indirect buffer is actually slower due to atomic operation and cpu-gpu sync
     // std::unique_ptr<GLIndirectBuffer> mOutDrawCommands;

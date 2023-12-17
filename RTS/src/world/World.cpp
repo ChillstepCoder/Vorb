@@ -60,7 +60,15 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
 
     // Host vs Client objects
     switch (netMode) {
-        case WorldNetMode::Editor:
+        case WorldNetMode::Editor: {
+            assert(hostWorldData);
+            mHeightmapGrid = std::move(hostWorldData->heightmapGrid);
+            mBiomeGrid = std::move(hostWorldData->biomeGrid);
+            mChunkGrid = std::make_unique<SrvChunkGrid>();
+            mEcs = std::make_unique<CliEntityComponentSystem>(*this);
+            mEffectContext = std::make_unique<CliEffectContext>(*this);
+            break;
+        }
         case WorldNetMode::Client: {
             assert(!hostWorldData);
             mHeightmapGrid = std::make_unique<CliHeightmapGrid>(worldWidthTiles);
@@ -124,9 +132,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
 }
 
 World::~World() {
-    if (mDidBegin) {
-        dispatchOnWorldEnd(*this);
-    }
+    
 }
 
 void World::onWorldBegin(const f32v2& loadCenter) {
@@ -218,6 +224,35 @@ void World::tick(f32 elapsedSec) {
 
     // Rendering
     updateRenderState();
+}
+
+void World::shutdown() {
+    if (mDidBegin) {
+        dispatchOnWorldEnd(*this);
+    }
+    mBiomeGrid.reset();
+    mEcs.reset();
+    mEffectContext.reset();
+    mHostSimContext.reset();
+    mTimeOfDayManager.reset();
+    mCities.reset();
+    mStructureManager.reset();
+    mPhysWorld.reset();
+    mChunkGenerator.reset();
+    mCombatContext.reset();
+    mItemStockpileRegistry.reset();
+    mFishEcosystem.reset();
+    mVisibilityManager.reset();
+    mWeatherManager.reset();
+    mNavWorld.reset();
+    mChunkGrid.reset();
+    mHeightmapGrid.reset();
+    mTileContainerRepository.reset();
+
+    // Render thread needs to remove resources
+    while (RenderThreadTasks::getInstance().getQueuedShutdownTasksApprox()) {
+        Sleep(1);
+    }
 }
 
 f32v3 World::getDefaultSpawn() const {

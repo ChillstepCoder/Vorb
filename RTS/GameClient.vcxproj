@@ -530,6 +530,7 @@
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
     <ClCompile Include="src\world\WorldContextObject.cpp" />
+    <ClCompile Include="src\world\WorldDestroyer.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -983,6 +984,7 @@
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\WorldContextObject.h" />
     <ClInclude Include="src\world\WorldDefaults.h" />
+    <ClInclude Include="src\world\WorldDestroyer.h" />
     <ClInclude Include="src\world\WorldEvents.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
   </ItemGroup>

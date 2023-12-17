@@ -24,6 +24,7 @@ public:
     static GameThreadTasks& getInstance();
     static bool exists();
 
+
     // Tasks
     void addGenericTask(GameFunction func, void* data) { mGameThreadProcs.enqueue(std::make_pair(func, data)); }
     void addGenericTaskWithCapture(GameFunctionWithCapture func, void* data) { mGameThreadFuncProcs.enqueue(std::make_pair(func, data)); }
@@ -31,7 +32,6 @@ public:
     void addHideLocalPlayerModelTask(bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);
     void addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
-    void setActiveEditorWorld(World* editorWorld);
 
     size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx() + mGameThreadFuncProcs.size_approx(); }
 
@@ -43,6 +43,7 @@ private:
     moodycamel::ConcurrentQueue<std::pair<GameFunction, void*>> mGameThreadProcs;
     moodycamel::ConcurrentQueue<std::pair<GameFunctionWithCapture, void*>> mGameThreadFuncProcs;
     World& mMainGameWorld;
+
 
     static GameThreadTasks* sInstance;
 };

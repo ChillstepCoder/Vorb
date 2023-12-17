@@ -37,6 +37,8 @@ public:
     GrassMeshManager(World& world);
     ~GrassMeshManager();
 
+    void shutdown();
+
     struct TrackedChunk {
         std::unique_ptr<ChunkGrassQuadtree> quadtree;
         const Chunk* chunk;

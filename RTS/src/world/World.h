@@ -42,6 +42,8 @@ public:
     virtual void onWorldBegin(const f32v2& loadCenter);
     virtual void tick(f32 elapsedSec);
 
+    void shutdown();
+
     // World info
     virtual WorldNetMode getNetMode() const { return mNetMode; }
     bool isEditorWorld() const { return getNetMode() == WorldNetMode::Editor; }

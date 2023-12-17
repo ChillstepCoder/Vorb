@@ -100,9 +100,3 @@ void GameThreadTasks::addEntityCreateTask(const f32v3& pos, StrToken typeToken, 
         delete createData;
     }, (void*)createData));
 }
-
-void GameThreadTasks::setActiveEditorWorld(World* editorWorld) {
-    mGameThreadProcs.enqueue(std::make_pair([](GameThread& gameThread, void* vData) {
-        gameThread.setActiveEditorWorld(static_cast<World*>(vData));
-    }, (void*)editorWorld));
-}

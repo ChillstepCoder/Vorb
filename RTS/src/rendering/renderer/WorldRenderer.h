@@ -59,6 +59,7 @@ public:
 
     // Assets
     WorldRenderDataManager& getRenderDataManagerForWorld(const World& world);
+    void removeRenderDataManagerForWorld(const World& world);
 
     void selectNextDebugShader();
     StrToken getCurrentPassthroughRenderStageName() const;

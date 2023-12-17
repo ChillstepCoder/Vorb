@@ -162,7 +162,7 @@ void TileContainerMeshManager::initEventHandlers(World& world) {
     });
 
     tileContainerRepository.addDestroyListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
-        assert(containerEvent.container->getRefCount() == 0); // It must not be in a mesher task
+        assert(containerEvent.container->getRefCount() <= 1); // It must not be in a mesher task
         mTileContainersToRemove.enqueue(containerEvent.container->getId());
     });
 }

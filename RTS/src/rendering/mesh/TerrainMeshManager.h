@@ -14,6 +14,8 @@ public:
     TerrainMeshManager(World& world);
     ~TerrainMeshManager();
 
+    void shutdown();
+
     void frameUpdate(const f32v2& loadCenter, f32 elapsedSec);
 
     void addTerrainMesh(const TerrainMesh* mesh) { ASSERT_RENDER_THREAD(); mTerrainMeshes.insert(mesh); }

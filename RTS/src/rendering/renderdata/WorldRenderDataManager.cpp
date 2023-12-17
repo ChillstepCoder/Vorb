@@ -19,11 +19,16 @@ WorldRenderDataManager::WorldRenderDataManager(World& world) : mWorld(world) {
     mGrassMeshManager = std::make_unique<GrassMeshManager>(mWorld);
     mInstancedStaticModelManager = std::make_unique<InstancedStaticModelManager>();
     mTileContainerMeshManager = std::make_unique<TileContainerMeshManager>(mWorld , *mInstancedStaticModelManager);
-
 }
 
 WorldRenderDataManager::~WorldRenderDataManager() {
 
+}
+
+void WorldRenderDataManager::shutdown() {
+    // Some things will crash if destroyed in destructor and must be destroyed before the world is
+    mGrassMeshManager->shutdown();
+    mTerrainMeshManager->shutdown();
 }
 
 void WorldRenderDataManager::tickGameThread() {

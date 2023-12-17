@@ -24,6 +24,10 @@ GrassMeshManager::~GrassMeshManager() {
 
 }
 
+void GrassMeshManager::shutdown() {
+    std::vector<TrackedChunk>().swap(mTrackedChunks);
+}
+
 void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();

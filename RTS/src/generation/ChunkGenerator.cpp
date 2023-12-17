@@ -174,7 +174,7 @@ Tile ChunkGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f
         }
     }
 
-    generateTileGrass(worldPos, height, grass);
+    //generateTileGrass(worldPos, height, grass);
 
     return tile;
 }

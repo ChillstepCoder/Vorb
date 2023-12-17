@@ -14,6 +14,8 @@ public:
     WorldRenderDataManager(World& world);
     ~WorldRenderDataManager();
 
+    void shutdown();
+
     void tickGameThread();
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 

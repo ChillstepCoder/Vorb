@@ -102,6 +102,8 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mHDRLightGBuffer = std::make_unique<vg::GBuffer>(screenResolution);
     mHDRLightGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
+
+
     initEventHandlers();
 }
 
@@ -184,7 +186,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
 
     MaterialRepository::get().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Default);
+    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Default, nullptr);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
 
     // Fish
@@ -195,7 +197,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Smudge
     {
         mSmudgeRenderer->beginSmudgePass(activeGBuffer);
-        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Smudge);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Smudge, nullptr);
         mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Smudge);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             glDisable(GL_CULL_FACE);
@@ -483,6 +485,14 @@ WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const World&
     return *it->second;
 }
 
+void WorldRenderer::removeRenderDataManagerForWorld(const World& world) {
+    std::lock_guard lock(mRenderDataManagersMutex);
+    auto&& it = mRenderDataManagers.find(&world);
+    if (it != mRenderDataManagers.end()) {
+        mRenderDataManagers.erase(it);
+    }
+}
+
 void WorldRenderer::selectNextDebugShader() {
     ++mPassthroughRenderMode;
     if (mPassthroughRenderMode >= mPassthroughMaterials.size()) {
@@ -511,11 +521,23 @@ void WorldRenderer::initEventHandlers() {
         mStaticModelRenderer->onWorldBegin(world);
     });
     // TODO: We should do this on the render thread somehow
-    //IWorld::addOnWorldEndListener(mWorldEventListeners, [this](IWorld& world) {
-    //    std::lock_guard lock(mRenderDataManagersMutex);
-    //    mRenderDataManagers.erase(&world);
-    //    // TODO: What if we are still holding on to the handle?
-    //});
+    World::addOnWorldEndListener(mWorldEventListeners, [this](World& world) {
+        RenderThreadTasks::getInstance().addShutdownTask([this, &world]() {
+            WorldRenderDataManager* mgr = nullptr;
+            {
+                std::lock_guard lock(mRenderDataManagersMutex);
+                auto&& it = mRenderDataManagers.find(&world);
+                if (it != mRenderDataManagers.end()) {
+                    mgr = it->second.get();
+                }
+            }
+            // Have to pull out of critical section as nested calls might lock mutex
+            if (mgr) {
+                mgr->shutdown();
+            }
+        });
+        // TODO: What if we are still holding on to the handle?
+    });
 }
 
 void WorldRenderer::renderPassSky() {
@@ -607,11 +629,17 @@ void WorldRenderer::renderPassTransparent(f32 elapsedSec) {
     if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
         glEnable(GL_DEPTH_CLAMP);
         mTerrainRenderer->renderWater(*mCamera, mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainWaterMeshes(), *cubeMap);
+
+        // Model water
+        vg::DepthState::READ.set();
+        vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Water, cubeMap);
+        vg::BlendState::restorePrevious();
         glDisable(GL_DEPTH_CLAMP);
     }
 
-    // Light transparent layer
 
+    // Light transparent layer
 
 }
 

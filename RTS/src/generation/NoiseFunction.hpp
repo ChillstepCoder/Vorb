@@ -16,6 +16,7 @@ SERIALIZABLE_ENUM_SAME_NAME(NoiseFunctionType,
 
 class NoiseFunction {
 public:
+    NoiseFunction() = default;
     NoiseFunction(StrToken label, NoiseFunctionType type, int octaves, f64 persistence, f64 frequency, f64v2 posOffset, f64 amplitude = 1.0, f64 heightOffset = 0.0) :
         label(label),
         type(type),

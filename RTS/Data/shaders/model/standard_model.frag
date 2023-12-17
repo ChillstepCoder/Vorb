@@ -31,7 +31,6 @@ void main() {
     float metallic;
     float roughness;
     getMaterialPixelInfo(fMaterialIndex, uv, color, normal, ao, metallic, roughness, fTint);
-
     tryDiscardTransparentPixel(color.a);
 	
 	// Normal to tangent space
@@ -52,7 +51,7 @@ void main() {
     oColor.rgb = color.rgb;
     
     // =========== Snow ===========
-    oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));
+    oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 4.0, 1.0));
     
     oColor.a = ao;
     

@@ -196,6 +196,22 @@ namespace YmlSerializer {
 #define YML_WRITE_DEF(...) inline void write(c4::yml::NodeRef* n, __VA_ARGS__ const& o)
 #define YML_READ_DEF(...) inline bool read(c4::yml::ConstNodeRef const& n, __VA_ARGS__* target)
 
+#define YML_WRITE_DEF_PTR(type) \
+    YML_WRITE_DEF(std::unique_ptr<type>) { \
+        if (o) { \
+            ryml::NodeRef& nr = *n; \
+            nr.append_child() << *o; \
+        } \
+    }
+
+#define YML_READ_DEF_PTR(type) \
+    YML_READ_DEF(std::unique_ptr<type>) { \
+        (*target) = std::make_unique<type>(); \
+        n >> (*target); \
+        return true; \
+    } 
+
+
 // Usage: SERIALIZABLE_SIMPLE(Type, make_field(o.Value1, "value_name1"sv), make_field(o.Value2, ...)
 #define SERIALIZABLE_SIMPLE(Type, ...) \
     YML_WRITE_DEF(Type) { \

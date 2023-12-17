@@ -423,8 +423,11 @@ void RenderContext::updateCamera(f32 frameAlpha) {
 void RenderContext::updateRenderThreadProcs() {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
-    constexpr f32 MAX_PROCESS_TIME_MS = 16.0f;
+
+    RenderThreadTasks& instance = RenderThreadTasks::getInstance();
     std::pair<RenderFunction, void*> proc;
+
+    constexpr f32 MAX_PROCESS_TIME_MS = 16.0f;
     PreciseTimer timer;
     // TODO: Use optik for profiling?
     do {
@@ -440,6 +443,7 @@ void RenderContext::updateRenderThreadProcs() {
         std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
     }
     checkGlError("updateRenderThreadProcs");
+
 }
 
 void RenderContext::renderPassWorldDebug(const Camera3D& camera) const {

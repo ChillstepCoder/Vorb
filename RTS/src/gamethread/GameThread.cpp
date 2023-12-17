@@ -5,6 +5,7 @@
 #include "network/srv/GameServer.h"
 
 #include "world/World.h"
+#include "world/WorldDestroyer.h"
 
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/PhysicsComponent.h"
@@ -52,6 +53,7 @@ void GameThread::destroyInstance() {
 
 void GameThread::setActiveEditorWorld(World* editorWorld)
 {
+    std::lock_guard lock(mActiveEditorWorldMutex);
     mActiveEditorWorld = editorWorld;
     if (GameRenderStateManager::exists()) {
         if (mActiveEditorWorld) {
@@ -61,6 +63,13 @@ void GameThread::setActiveEditorWorld(World* editorWorld)
             GameRenderStateManager::getInstance().setActiveWorld(&mWorld);
         }
     }
+}
+
+void GameThread::updateAllProcs() {
+    ASSERT_GAME_THREAD();
+    do {
+        updateProcs();
+    } while (GameThreadTasks::getInstance().mGameThreadProcs.size_approx() || GameThreadTasks::getInstance().mGameThreadFuncProcs.size_approx());
 }
 
 void GameThread::mainFunc() {
@@ -103,6 +112,12 @@ void GameThread::mainFunc() {
 void GameThread::tick() {
 
     updateProcs();
+    // If a world is shutting down, handle it here
+    if (World* destroyedWorld = WorldDestroyer::gameThreadUpdate()) {
+        if (destroyedWorld == &mWorld) {
+            LOG_CRITICAL("Destroyed main game world");
+        }
+    }
 
     // Update functions
     switch (mNetMode) {
@@ -117,9 +132,12 @@ void GameThread::tick() {
             break;
     }
 
-    if (mActiveEditorWorld) {
-        const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
-        mActiveEditorWorld->tick(timeStep);
+    {
+        std::lock_guard lock(mActiveEditorWorldMutex);
+        if (mActiveEditorWorld) {
+            const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
+            mActiveEditorWorld->tick(timeStep);
+        }
     }
 }
 
@@ -186,7 +204,7 @@ void GameThread::updateProcs()
         }
     }
     if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
+        std::cout << timer.stop() << " ms *** GAME SPIKE WARNING ***\n";
     }
 }
 

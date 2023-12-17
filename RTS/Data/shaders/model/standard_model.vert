@@ -41,7 +41,7 @@ void main() {
     fSnow = max(normal.z, 0.0) * unSnowLevel;
     
     vec4 adjustedPosition = vPosition;
-    adjustedPosition.z += fSnow * 0.5f;
+    adjustedPosition.z += fSnow * 0.25f;
     
     vec4 trueWorldPos = (vModelMatrix * adjustedPosition);
     vec3 modelRoot = vModelMatrix[3].xyz;

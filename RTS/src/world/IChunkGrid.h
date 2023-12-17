@@ -20,6 +20,7 @@ class IChunkGrid
 {
 public:
     IChunkGrid();
+    virtual ~IChunkGrid();
 
     void onWorldBegin(const f32v2& loadCenter);
     void tick(const f32v2& loadCenter);

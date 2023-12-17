@@ -80,8 +80,8 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
     float mountainDist = standardNoise(posInputSeeded.yzx, 5, 0.000166, 0.6, vec2(0, 0), 4.0, -0.15) * seaHeightMultMountains;
     if (mountainDist > 0.0) {
         float mountainWeight = min(mountainDist, 1.0);
-        float mountainHeight = cellularNoise3D(posInputSeeded.zxy, 3, 0.00157, 0.65, vec2(0, 0), 300.0, 0.0);
-        float mountainDetail = ridgedNoise(posInputSeeded.zxy, 6, 0.001, 0.6, vec2(0, 0), 64.0, 0.0);
+        float mountainHeight = cellularNoise3D(posInputSeeded.zxy, 5, 0.00157, 0.65, vec2(0, 0), 300.0, 0.0);
+        float mountainDetail = ridgedNoise(posInputSeeded.zxy, 8, 0.001, 0.6, vec2(0, 0), 64.0, 0.0);
         height += (mountainHeight + mountainDetail) * mountainWeight * seaHeightMult;
         bestWeight = mountainWeight;
         bestBiome = BIOME_MOUNTAINS;

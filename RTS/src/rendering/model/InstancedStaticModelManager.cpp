@@ -129,7 +129,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 PROFILE_SCOPE("Indirect Buffer");
                 for (int m = 0; m < instanceData.mMeshCount; ++m) {
                     instanceData.mDrawCommands[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
-                    instanceData.mDrawCommandsShadows[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
+                    if (instanceData.mMeshCastsShadow[m]) {
+                        instanceData.mDrawCommandsShadows[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
+                    }
 
                 }
                 // TODO: Only if the mesh is a shadow caster!
@@ -180,7 +182,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         for (int m = 0; m < instanceData.mMeshCount; ++m) {
             instanceData.mDrawCommands[m]->frameBegin();
             // TODO: Only if the mesh is a shadow caster!
-            instanceData.mDrawCommandsShadows[m]->frameBegin();
+            if (instanceData.mDrawCommandsShadows[m]) {
+                instanceData.mDrawCommandsShadows[m]->frameBegin();
+            }
         }
         // TODO: Only if the mesh is a shadow caster!
 
@@ -258,7 +262,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     if (sDebugOptions.mDisableLOD) [[unlikely]] {
                         for (int m = 0; m < instanceData.mMeshCount; ++m) {
                             setCommand(instanceData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
-                            setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
+                            if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
+                                setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
+                            }
                         }
                     }
 
@@ -273,7 +279,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::High) {
                             for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
+                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
+                                }
                             }
                         }
                     }
@@ -283,7 +291,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::Medium) {
                             for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
+                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
+                                }
                             }
                         }
                     }
@@ -293,7 +303,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::Low) {
                             for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][2]);
+                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][2]);
+                                }
                             }
                         }
                     }
@@ -303,7 +315,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::None) {
                             for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
+                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
+                                }
                             }
                         }
                     }
@@ -312,10 +326,11 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             for (int m = 0; m < instanceData.mMeshCount; ++m) {
                 instanceData.mDrawCommands[m]->setNumActiveCommands(activeCount[m]);
                 instanceData.mDrawCommands[m]->uploadDrawCommands();
-                instanceData.mDrawCommandsShadows[m]->setNumActiveCommands(shadowCount[m]);
-                instanceData.mDrawCommandsShadows[m]->uploadDrawCommands();
+                if (instanceData.mDrawCommandsShadows[m]) {
+                    instanceData.mDrawCommandsShadows[m]->setNumActiveCommands(shadowCount[m]);
+                    instanceData.mDrawCommandsShadows[m]->uploadDrawCommands();
+                }
             }
-
         }
 
         // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
@@ -509,6 +524,7 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
         for (int m = 0; m < instanceData.mMeshCount; ++m) {
             const Mesh& mesh = modelDefPtr->getMesh(m);
             instanceData.mMesh[m] = &mesh;
+            instanceData.mMeshCastsShadow[m] = mesh.castsShadow();
         }
     }
 }
@@ -712,6 +728,7 @@ void InstancedStaticModelManager::updatePendingModelDefs() {
             for (int m = 0; m < instanceData.mMeshCount; ++m) {
                 const Mesh& mesh = def->getMesh(m);
                 instanceData.mMesh[m] = &mesh;
+                instanceData.mMeshCastsShadow[m] = mesh.castsShadow();
             }
             // Add all instances
             for (PendingModelInstance& pendingInstance : it->second) {
@@ -747,6 +764,7 @@ void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& 
     for (int m = 0; m < instanceData.mMeshCount; ++m) {
         const Mesh& mesh = modelDef.getMesh(m);
         instanceData.mMesh[m] = &mesh;
+        instanceData.mMeshCastsShadow[m] = mesh.castsShadow();
     }
 }
 

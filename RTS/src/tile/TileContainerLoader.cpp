@@ -53,6 +53,9 @@ void TileContainerLoader::loadChunk(TileContainer& container)
         // Begin nav load
         if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {
             navWorld->markContainerNavDirty(chunk->mTileContainer);
+        } else {
+            // TODO: THIS IS ONLY FOR EDITOR WORLD
+            chunk->mTileContainer->setDidInitNav();
         }
 
         // Begin vis load

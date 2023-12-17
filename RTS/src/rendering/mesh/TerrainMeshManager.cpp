@@ -32,6 +32,10 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 }
 
+void TerrainMeshManager::shutdown() {
+    std::vector<HeightmapTerrainQuadtree>().swap(mTerrainTrees);
+}
+
 void TerrainMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
 

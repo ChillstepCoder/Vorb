@@ -1,6 +1,8 @@
 #pragma once
 #include "IEditorViewportPanel.h"
 
+#include "definitions/BiomeDef.h"
+
 class Chunk;
 class World;
 class EditorWorldInterfaceController;
@@ -29,6 +31,8 @@ protected:
     std::unique_ptr<World> mEditorWorld;
     std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
 	bool mLeftMousePressed = false;
+
+	BiomeUniqueID mSelectedBiome = BiomeUniqueID::Plains;
 
 	VGTexture mBiomeTexture;
 };

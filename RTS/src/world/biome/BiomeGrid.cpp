@@ -3,6 +3,8 @@
 
 #include "resources/BiomeRepository.h"
 
+#include "rendering/RenderThreadTasks.h"
+
 BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
     const ui32 widthVerts = worldWidthTiles / BIOME_VERTEX_STRIDE;
     mSpatialGrid.init(BIOME_VERTEX_STRIDE, widthVerts);
@@ -13,9 +15,10 @@ BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
 }
 
 BiomeGrid::~BiomeGrid() {
-    ASSERT_RENDER_THREAD();
     if (mBiomeTexture) {
-        glDeleteTextures(1, &mBiomeTexture);
+        RenderThreadTasks::getInstance().addShutdownTask([biomeTexture = mBiomeTexture]() {
+            glDeleteTextures(1, &biomeTexture);
+        });
     }
 };
 

@@ -130,6 +130,10 @@ public:
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
     void bindModelTransformAttribs() const;
 
+    bool castsShadow() const {
+        return mRenderPassType != MaterialRenderPassType::Water;
+    }
+
     // Override allocation to use boost::singleton_pool DOESNT WORK WITH POLYMORPHISM
     //static void* operator new(size_t count);
     //static void operator delete(void* pointer, size_t size);

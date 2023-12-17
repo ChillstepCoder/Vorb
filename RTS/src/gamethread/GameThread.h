@@ -27,6 +27,8 @@ public:
     const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
 
     void setActiveEditorWorld(World* editorWorld);
+
+    void updateAllProcs();
 private:
     void mainFunc();
     void tick();
@@ -35,6 +37,7 @@ private:
     void updateProcs();
     void initWorld();
 
+    std::mutex mActiveEditorWorldMutex;
     World* mActiveEditorWorld = nullptr;
     World& mWorld;
     std::atomic_bool mIsRunning = false;

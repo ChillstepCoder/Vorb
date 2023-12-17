@@ -127,5 +127,8 @@ void GLDrawCommandBuffer::uploadDrawCommands() {
 
 void GLDrawCommandBuffer::multiDrawElementsIndirect(GLenum mode, GLenum type) const {
     GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, getHandle());
-    glMultiDrawElementsIndirect(mode, type, (void*)getByteOffsetLastFlush(), (GLsizei)getNumActiveCommands(), 0);
+    void* byteOffset = (void*)getByteOffsetLastFlush();
+    checkGlError("InstancedStaticModelRenderer::renderModelPass::B");
+    glMultiDrawElementsIndirect(mode, type, byteOffset, (GLsizei)mNumActiveCommands, 0);
+    checkGlError("InstancedStaticModelRenderer::renderModelPass::C");
 }

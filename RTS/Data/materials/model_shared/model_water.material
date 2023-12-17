@@ -1,3 +1,4 @@
-albedo: default
+albedo: model_water
 normal: GENERATE
 sampler_state: LINEAR_CLAMP_MIPMAP
+render_pass: water

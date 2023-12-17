@@ -40,7 +40,13 @@ bool isChunkInLoadRange(const f32v2& worldPos, const f32v2& loadCenter) {
     return distSq <= sDebugOptions.mLoadRangeSq;
 }
 
-IChunkGrid::IChunkGrid() {
+IChunkGrid::IChunkGrid() = default;
+
+IChunkGrid::~IChunkGrid() {
+    // Decref all chunks before destroying them
+    for (ChunkID id : mActiveChunks) {
+        mChunks[id].decRef();
+    }
 }
 
 void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
