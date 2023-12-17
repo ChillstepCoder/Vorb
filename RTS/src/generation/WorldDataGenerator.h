@@ -9,17 +9,6 @@ class BiomeGrid;
 class IWorldGenerationStage;
 class WorldGenerationBlackboard;
 
-enum class WorldGenerationState {
-    None,
-    GeneratingBaseHeightmapAndBiomes,
-    SeedCorruptedBiomes,
-    PropagatingBiomes,
-    DetectPeaks,
-    CarveRivers,
-    Done,
-    COUNT
-};
-
 // Generates full world data on the GPU, with some back and forth with CPU
 // Stage 1 - Generate base height on GPU as well as base biomes via noise
 // Stage 2 - Seed corrupted biomes on CPU (Can be done in parallel with stage 1)
@@ -38,10 +27,9 @@ public:
     // Call before generating agian
     void cleanup();
 
-    WorldGenerationState update();
+    bool update();
 
     // ========== Accessors ==========
-    WorldGenerationState getState() const { return mState; }
     VGBuffer getHeightSSBO() const { return mHeightSSBO; }
     VGTexture getHeightTexture() const { return mHeightTexture; }
     VGBuffer getBiomeSSBO() const { return mBiomeSSBO; }
@@ -72,7 +60,6 @@ private:
     ui32 mCurrentStageIndex = 0;
 
     std::unique_ptr<WorldGenerationBlackboard> mBlackboard;
-    WorldGenerationState mState;
     HostWorldData* mWorldData = nullptr;
     WorldGenerationData mGenerationData;
 
@@ -85,6 +72,7 @@ private:
     VGTexture mBiomeTexture = 0;
     GLfloat* mMappedHeights = nullptr;
     ui32* mMappedBiomes = nullptr;
+    bool mFinished = false;
 
     std::vector<ui32v2> mPeakPositions;
     moodycamel::ConcurrentQueue<ui32v2> mPeakPositionsQueue;

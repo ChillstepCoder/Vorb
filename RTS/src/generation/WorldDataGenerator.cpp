@@ -33,7 +33,7 @@ WorldDataGenerator::~WorldDataGenerator() {
 }
 
 void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void()> onFinished) {
-    assert(mState == WorldGenerationState::None && "Make sure cleanup was called before generating again");
+    assert(!mFinished && "Make sure cleanup was called before generating again");
     
     mWorldData = &worldData;
     mGenerationData = generationData;
@@ -42,8 +42,6 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
     initResourcesIfNeeded(resolution);
 
     mOnFinished = onFinished;
-
-    mState = WorldGenerationState::GeneratingBaseHeightmapAndBiomes;
 
     mBlackboard = std::make_unique<WorldGenerationBlackboard>(mWorldData->heightmapGrid->getWidthPatches());
 
@@ -64,21 +62,20 @@ void WorldDataGenerator::cleanup() {
     }
     std::vector<std::unique_ptr<IWorldGenerationStage>>().swap(mStages);
 
-    // Abort current stage
-    mState = WorldGenerationState::None;
+    mFinished = false;
 }
 
-WorldGenerationState WorldDataGenerator::update() {
+bool WorldDataGenerator::update() {
 
-    if (mState == WorldGenerationState::Done) {
-        return mState;
+    if (mFinished) {
+        return true;
     }
     if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
         if (stage->update()) {
             ++mCurrentStageIndex;
             if (mCurrentStageIndex >= mStages.size()) {
                 onCompletelyFinished();
-                return mState;
+                return true;
             }
             else {
                 // Deallocate prev stage and trigger next one
@@ -88,29 +85,7 @@ WorldGenerationState WorldDataGenerator::update() {
         }
     }
 
-    switch (mState)
-    {
-        case WorldGenerationState::None:
-            break;
-        case WorldGenerationState::GeneratingBaseHeightmapAndBiomes:
-            break;
-        case WorldGenerationState::SeedCorruptedBiomes:
-            break;
-        case WorldGenerationState::PropagatingBiomes:
-            break;
-        case WorldGenerationState::DetectPeaks:
-            break;
-        case WorldGenerationState::CarveRivers:
-            break;
-        case WorldGenerationState::Done:
-            break;
-        default:
-            panic("Unhandled state in WorldDataGPUGenerator::update");
-            break;
-    }
-    static_assert(e_count(WorldGenerationState) == 7);
-
-    return mState;
+    return false;
 }
 
 
@@ -169,5 +144,5 @@ void WorldDataGenerator::initResourcesIfNeeded(i32 resolution)
 
 void WorldDataGenerator::onCompletelyFinished() {
     mOnFinished();
-    mState = WorldGenerationState::Done;
+    mFinished = true;
 }
