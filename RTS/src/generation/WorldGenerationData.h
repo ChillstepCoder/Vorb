@@ -34,6 +34,7 @@ struct WorldGenerationData {
     f32 mContinentRadiusSq = SQ(mContinentRadius);
     char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";
     f32 mSeedHashed = getSeedHash("default");
+    i32 mBiomeGrowPassCount = 30;
 
     static constexpr f32 getSeedHash(const char seed[MAX_WORLD_GEN_SEED_SIZE]) {
         int hash = 2047471739; // Starting value (Random huge prime)

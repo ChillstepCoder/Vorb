@@ -1,12 +1,7 @@
 
 #include "util/noise/snoise3.glsl"
 #include "util/noise/cellular3d.glsl"
-
-
-const int BIOME_PLAINS = 0;
-const int BIOME_MOUNTAINS = 1;
-const int BIOME_FOREST = 2;
-const int BIOME_HOTSPRINGS = 3;
+#include "const/biome_ids.glsl"
 
 const float MOUNTAIN_BLEND = 0.3;
 const float SEA_BLEND_TO_BIOME = 0.1;
@@ -17,12 +12,12 @@ const float PLAINS_PRIORITY = 0.1;
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(r8, binding = 0) uniform writeonly image2D heightImage;
-layout(std430, binding = 0) writeonly buffer HeightData
+layout(std430, binding = 0) writeonly restrict buffer HeightData
 {
     float heightData[];
 };
 layout(r8, binding = 1) uniform writeonly image2D biomeImage;
-layout(std430, binding = 1) writeonly buffer BiomeData
+layout(std430, binding = 1) writeonly restrict buffer BiomeData
 {
     uint biomeData[];
 };
@@ -67,7 +62,7 @@ float cutNoiseAtStep(float noiseVal, float stepVal) {
 
 int generateBiomes(inout float height, vec3 posInputSeeded) {
     float bestWeight = 0.0;
-    int bestBiome = 255;
+    int bestBiome = BIOME_OCEAN;
     
     if (height <= 0.0) {
         return bestBiome;

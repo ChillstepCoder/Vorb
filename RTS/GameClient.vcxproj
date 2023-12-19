@@ -302,6 +302,7 @@
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.cpp" />
+    <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\IWorldGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\RiverGenerationStage.cpp" />
     <ClCompile Include="src\generation\WorldDataGenerator.cpp" />
@@ -662,6 +663,7 @@
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.h" />
+    <ClInclude Include="src\generation\stages\HistoryGenerationStage.h" />
     <ClInclude Include="src\generation\stages\IWorldGenerationStage.h" />
     <ClInclude Include="src\generation\stages\RiverGenerationStage.h" />
     <ClInclude Include="src\generation\WorldDataGenerator.h" />

@@ -55,6 +55,10 @@ public:
         return mGen.xoroshiro64x();
     }
 
+    ui32 getRandomUIntInRange(ui32 min, ui32 max) {
+        return mGen.xoroshiro64x_Range<ui32>(min, max);
+    }
+
     fastPRNG::fastXS32 mGen;
     ui32 mSeed;
 };

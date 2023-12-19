@@ -24,7 +24,7 @@ public:
 
     const char* getCurrentStageName() const;
 
-    // Call before generating agian
+    // Call before generating again
     void cleanup();
 
     bool update();

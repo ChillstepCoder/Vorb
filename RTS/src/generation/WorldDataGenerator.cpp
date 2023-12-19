@@ -9,6 +9,7 @@
 
 #include "generation/stages/BaseHeightmapAndBiomeGenerationStage.h"
 #include "generation/stages/RiverGenerationStage.h"
+#include "generation/stages/HistoryGenerationStage.h"
 #include "generation/WorldGenerationBlackboard.h"
 
 WorldDataGenerator::WorldDataGenerator() = default;
@@ -95,6 +96,7 @@ void WorldDataGenerator::initStages() {
 
     mStages.emplace_back(std::make_unique<BaseHeightmapAndBiomeGenerationStage>(*this));
     mStages.emplace_back(std::make_unique<RiverGenerationStage>(*this));
+    mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this));
 
     mCurrentStageIndex = 0;
     mStages[0]->begin();

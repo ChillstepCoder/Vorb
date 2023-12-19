@@ -4,20 +4,22 @@
 
 // For now match .biome files
 enum class BiomeUniqueID : ui8 {
-    Plains = 0,
-    Mountains = 1,
-    Forest = 2,
-    Hotsprings = 3,
+    Ocean = 0,
+    Plains = 1,
+    Mountains = 2,
+    Forest = 3,
+    Hotsprings = 4,
     COUNT,
     INVALID = UINT8_MAX
 };
 SERIALIZABLE_ENUM_SAME_NAME(BiomeUniqueID,
+    pair{ BiomeUniqueID::Ocean, "Ocean"sv },
     pair{ BiomeUniqueID::Plains, "Plains"sv },
     pair{ BiomeUniqueID::Mountains, "Mountains"sv },
     pair{ BiomeUniqueID::Forest, "Forest"sv },
     pair{ BiomeUniqueID::Hotsprings, "Hotsprings"sv }
 );
-static_assert(e_count(BiomeUniqueID) == 4);
+static_assert(e_count(BiomeUniqueID) == 5);
 
 const ui8 INVALID_BIOME_ID = UINT8_MAX;
 

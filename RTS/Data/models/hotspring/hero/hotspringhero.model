@@ -1,0 +1,9 @@
+model: hotspringhero.fbx
+rig: ''
+machine: ''
+scale: 1.6
+bound_sphere: 5
+shadow_detail: highest
+force_normals_up: 0
+submesh_data:
+  - wind: none

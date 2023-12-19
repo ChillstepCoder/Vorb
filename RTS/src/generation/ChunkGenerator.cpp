@@ -33,6 +33,8 @@ Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 
     if (biomeDef) {
 
         switch (biomeDef->uniqueId) {
+            case BiomeUniqueID::Ocean:
+                return Tile();
             case BiomeUniqueID::Plains:
                 return generateTilePlains(worldPos, height, grass, biomeDef);
             case BiomeUniqueID::Mountains:
@@ -45,7 +47,7 @@ Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 
                 break;
 
         }
-        static_assert(e_count(BiomeUniqueID) == 4);
+        static_assert(e_count(BiomeUniqueID) == 5);
     }
 
     return Tile();
@@ -157,19 +159,25 @@ Tile ChunkGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f
     TileRepository& tileRepo = TileRepository::get();
     static TileID hotspring01 = tileRepo.getTileID(CStrToken("hotspring_01"));
     static TileID hotspringCh01 = tileRepo.getTileID(CStrToken("hotspring_ch01"));
+    static TileID hotspringhero = tileRepo.getTileID(CStrToken("hotspringhero"));
 
 
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
-    constexpr f32 TREE_DENSITY = 0.01f;
+    constexpr f32 TREE_DENSITY = 0.0005f;
     if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY) {
-        if (Random::getThreadSafef(worldPos.x * 20.353f, worldPos.y * -54.25f) < 0.3f) {
-            tile.mainLayer = hotspringCh01;
+        if (Random::getThreadSafef(worldPos.x * 10.353f, worldPos.y * -554.25f) < 0.1f) {
+            tile.mainLayer = hotspringhero;
+        }
+        else if (Random::getThreadSafef(worldPos.x * 20.353f, worldPos.y * -54.25f) < 0.2f) {
+            tile.mainLayer = hotspringhero;
         }
         *grass = TileGrass();
     }
     else if (normal.z < 0.65f) {
-        if (Random::getThreadSafef(worldPos.y, worldPos.x) < 0.65f) {
-            tile.mainLayer = hotspring01;
+        if (Random::getThreadSafef(worldPos.x * 10.353f, worldPos.y * -554.25f) < 0.0125f) {
+            tile.mainLayer = hotspringhero;
+        } else if (Random::getThreadSafef(worldPos.y, worldPos.x) < 0.025f) {
+            tile.mainLayer = hotspringhero;
             *grass = TileGrass();
         }
     }

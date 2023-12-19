@@ -951,6 +951,9 @@
     <ClCompile Include="src\world\WorldDestroyer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2310,6 +2313,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldDestroyer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generation\stages\HistoryGenerationStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -243,6 +243,9 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         mGenData.mSeedHashed = mGenData.getSeedHash(mGenData.mSeed);
         mIsDirty = true;
     }
+    if (ImGui::SliderInt("Biome Grow Passes", &mGenData.mBiomeGrowPassCount, 0, 80)) {
+        mIsDirty = true;
+    }
     ImGui::SameLine();
     if (ImGui::Button("Randomize")) {
         RandomGenerator randGen(std::chrono::system_clock::now().time_since_epoch().count() % (ui64)UINT32_MAX);

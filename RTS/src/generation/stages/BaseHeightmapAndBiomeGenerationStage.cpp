@@ -162,7 +162,6 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                     for (i32 y = 0; y < BIOME_VERT_WIDTH_PER_PATCH; ++y) {
                         const i32 yPos = biomeRootXY.y + y;
                         for (i32 x = 0; x < BIOME_VERT_WIDTH_PER_PATCH; ++x) {
-                            BiomeVertex newVertex;
                             const ui32 index = yPos * mBiomeGrid->getWidthVertices() + biomeRootXY.x + x;
                             BiomeVertex& vertex = mBiomeGrid->getVertexForGeneration(index);
                             vertex.biomeUniqueId = mMappedBiomes[index];

@@ -1,16 +1,10 @@
 
 #include "util/noise/snoise3.glsl"
+#include "const/biome_ids.glsl"
 
 in vec2 fUV;
 
 out vec4 fColor;
-
-const vec3 BIOME_COLORS[4] = {
-    vec3(1.0, 0.0, 0.0), // PLAINS
-    vec3(1.0, 0.0, 1.0), // MOUNTAINS
-    vec3(0.0, 1.0, 0.0), // FOREST
-    vec3(0.0, 1.0, 1.0), // HOT SPRINGS
-};
 
 uniform vec2 unSpawnPoint = vec2(0.5);
 uniform float unZoom = 1.0;
@@ -60,9 +54,7 @@ void main() {
     // Biome
     if (unShowBiomes) {
         int biome = int(round(texture(biomeTexture, fUV).r * 255.0)); 
-        if (biome < 4) {
-            fColor.rgb = mix(fColor.rgb, BIOME_COLORS[biome], 0.5);
-        }
+        fColor.rgb = mix(fColor.rgb, BIOME_COLORS[biome], 0.5);
     }
     
     // Spawn cursor

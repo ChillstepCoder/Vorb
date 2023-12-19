@@ -4,17 +4,17 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(r8, binding = 0) uniform writeonly image2D heightImage;
-layout(std430, binding = 0) buffer HeightData
+layout(std430, binding = 0) restrict buffer HeightData
 {
     float heightData[];
 };
 
-layout(std430, binding = 1) readonly buffer RiverPoints
+layout(std430, binding = 1) readonly restrict buffer RiverPoints
 {
     vec4 riverSegments[];
 };
 
-layout(std430, binding = 2) readonly buffer WorkGroupData
+layout(std430, binding = 2) readonly restrict buffer WorkGroupData
 {
     uvec4 workGroupData[]; // CellPos.xy, SegmentStart, NumSegments
 };
