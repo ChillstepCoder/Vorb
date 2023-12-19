@@ -2,7 +2,11 @@
 
 #include "generation/NoiseFunction.hpp"
 
+#include "world/biome/BiomeCorruptions.h"
+
 // .biome file names should match exactly
+// Corrupt biomes should be _B and _C and always come
+// directly after the base biome in alphabetical order
 enum class BiomeUniqueID : ui8 {
     Ocean = 0,
     Plains = 1,
@@ -37,7 +41,7 @@ SERIALIZABLE_ENUM_SAME_NAME(BiomeUniqueID,
 );
 static_assert(e_count(BiomeUniqueID) == 13);
 
-const ui8 INVALID_BIOME_ID = UINT8_MAX;
+constexpr ui8 INVALID_BIOME_ID = e_cast(BiomeUniqueID::INVALID);
 
 struct BiomePossibleTile {
     SoftAssetReference tile = AssetType::Tile;
@@ -79,11 +83,14 @@ public:
     f32 priority = 0.0f; // ??
     nString displayName = "UNKNOWN";
     SoftAssetReference colorMapTexture = AssetType::Texture;
-    SoftAssetReference parentBiome = AssetType::Biome;
+    // If a sub biome, this will be set by file. If corrupt, this will be set automatically
+    SoftAssetReference parentBiomeRef = AssetType::Biome;
+    BiomeDef* parentBiome = nullptr;
+    BiomeDef* corruptVersions[e_count(BiomeCorruptions)] = {};
+    BiomeCorruptions corruptType = BiomeCorruptions::COUNT;
     // Index in the color map texture array
     ui32 colorMapTextureIndex = 0;
-    bool isCorruption = false;
-    bool canBeSpreadTo = false;
+    bool isCorruptable = false;
     color3 debugColor = color3(255, 255, 255);
     // Tile spawning
     std::vector<BiomeTileGenCategory> tileGenCategories;
@@ -92,9 +99,8 @@ SERIALIZABLE_SIMPLE(BiomeDef,
     make_field(o.priority, "priority"sv),
     make_field(o.displayName, "name"sv),
     make_field(o.colorMapTexture, "col_map"sv),
-    make_field(o.parentBiome, "parent"sv),
-    make_field(o.isCorruption, "is_corrupt"sv),
-    make_field(o.canBeSpreadTo, "can_be_spread_to"sv),
+    make_field(o.parentBiomeRef, "parent"sv),
+    make_field(o.isCorruptable, "corruptable"sv),
     make_field(o.debugColor, "dbg_col"sv),
     make_field(o.tileGenCategories, "categories"sv)
 );

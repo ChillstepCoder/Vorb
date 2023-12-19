@@ -1,0 +1,4 @@
+name: Plains
+col_map: plains_cmap
+corruptable: true
+dbg_col: [128, 128, 0]

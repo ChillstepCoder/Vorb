@@ -40,6 +40,7 @@ protected:
     ui32* mMappedBiomes = nullptr;
 
     f32 mWorldSeed = 0.f;
+    ui32 mWorldSeedInt = 0;
     ui32 mTotalHeightPatches = 0;
 
     // Shared by all stages, represents one whole generation

@@ -5,6 +5,8 @@
 #include "generation/WorldGenerationData.h"
 #include "generation/WorldGenerationBlackboard.h"
 
+#include "resources/BiomeRepository.h"
+
 #include "rendering/MaterialShaderRepository.h"
 #include "math/Random.h"
 
@@ -14,12 +16,14 @@ constexpr ui32 ROWS_PER_ROW_BLOCK = 16;
 constexpr ui32 ROW_BLOCKS_PER_COMPUTE = 8;
 void HistoryGenerationStage::begin()
 {
-    RandomGenerator generator(ui32(mWorldSeed * 100.0f) + 1523u);
+    RandomGenerator generator(ui32(mWorldSeedInt) + 1523u);
 
     // Initialize desired event counts
     std::map<HistoryEventType, ui32> desiredHistoryEventCounts;
-    desiredHistoryEventCounts[HistoryEventType::BanshiraSpawn] = generator.getRandomUIntInRange(3, 6);
-    desiredHistoryEventCounts[HistoryEventType::ChernobogSpawn] = generator.getRandomUIntInRange(3, 6);
+    desiredHistoryEventCounts[HistoryEventType::BanshiraSpawn] 
+        = generator.getRandomUIntInRange(mGenerationData.mCorruptSpawnCountRange.x, mGenerationData.mCorruptSpawnCountRange.y);
+    desiredHistoryEventCounts[HistoryEventType::ChernobogSpawn] 
+        = generator.getRandomUIntInRange(mGenerationData.mCorruptSpawnCountRange.x, mGenerationData.mCorruptSpawnCountRange.y);
 
     // Add all events
     for (auto& [eventType, desiredCount] : desiredHistoryEventCounts) {
@@ -56,6 +60,7 @@ bool HistoryGenerationStage::update() {
 
     if (!allEventsTriggered) {
         mHistoryProgress += mTickTime;
+        ++mTickCount;
         while (mNextEventIndex < mHistoryEvents.size() && mHistoryEvents[mNextEventIndex].time <= mHistoryProgress) {
             handleHistoryEvent(mHistoryEvents[mNextEventIndex]);
             ++mNextEventIndex;
@@ -75,14 +80,44 @@ bool HistoryGenerationStage::update() {
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
     switch (event.type) {
         case HistoryEventType::ChernobogSpawn:
+            handleCorruptSpawn(BiomeCorruptions::Chernobog);
             break;
         case HistoryEventType::BanshiraSpawn:
+            handleCorruptSpawn(BiomeCorruptions::Banshira);
             break;
         default:
             panic("Unhandled history event type");
     }
     assert(e_count(HistoryEventType) == 2);
 
+}
+
+void HistoryGenerationStage::handleCorruptSpawn(BiomeCorruptions type) {
+    // For now, generate a random coordinate and search for land
+    RandomGenerator generator(mWorldSeedInt + 9853 + mTickCount);
+    constexpr ui32 MAX_RETRY_COUNT = 16;
+    ui32 retryCount = 0;
+    const ui32 widthVerts = mBiomeGrid->getWidthVertices();
+    BiomeRepository& repo = BiomeRepository::get();
+    do {
+        ui32 x = generator.getRandomUIntInRange(widthVerts * .05, widthVerts * .95);
+        ui32 y = generator.getRandomUIntInRange(widthVerts * .05, widthVerts * .95);
+        BiomeVertex& vert = mBiomeGrid->getVertexForGeneration(y * widthVerts + x);
+        const BiomeDef& def = repo.getBiomeFromUniqueID(vert.biomeUniqueId);
+        if (def.isCorruptable) {
+            vert.biomeUniqueId = def.corruptVersions[e_cast(type)]->uniqueId;
+            vert.biomeFlags.clearBit(BiomeFlags::BASE_BIOME);
+
+            // Update gpu data
+            glTextureSubImage2D(mBiomeTexture, 0, x, y, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &vert.biomeUniqueId);
+            mMappedBiomes[y * widthVerts + x] = (ui32)vert.biomeUniqueId;
+            glFlushMappedNamedBufferRange(mBiomeSSBO, y * widthVerts + x, sizeof(ui32));
+            LOG_CRITICAL("Added corrupt biome at {} {}", x * BIOME_VERTEX_STRIDE, y * BIOME_VERTEX_STRIDE);
+            checkGlError("HistoryGenerationStage::handleCorruptSpawn");
+            return;
+        }
+    } while (retryCount++ < MAX_RETRY_COUNT);
+    LOG_CRITICAL("FAILED TO ADD CORRUPT BIOME");
 }
 
 void HistoryGenerationStage::updateBiomes()
@@ -151,7 +186,6 @@ void HistoryGenerationStage::growBiomesStep() {
 }
 
 void HistoryGenerationStage::downloadBiomes() {
-    PreciseTimer timer;
     bool isOdd = mCurBiomeGrowPass.isOdd;
     const ui32 widthVerts = mBiomeGrid->getWidthVertices();
     // Padded by 8 with checkerboard pattern
@@ -162,10 +196,9 @@ void HistoryGenerationStage::downloadBiomes() {
         for (i32 x = 8 + ((y + isOdd) % 2); x < widthVerts - 8; x += 2) {
             const ui32 index = yStride + x;
             BiomeVertex& vertex = mBiomeGrid->getVertexForGeneration(index);
-            vertex.biomeUniqueId = mMappedBiomes[index];
+            vertex.biomeUniqueId = BiomeUniqueID(mMappedBiomes[index]);
         }
     }
-    LOG_CRITICAL("Finished in {} ms", timer.stop());
 }
 
 BiomeGrowPass::~BiomeGrowPass() {

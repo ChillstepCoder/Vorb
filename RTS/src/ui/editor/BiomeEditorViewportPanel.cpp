@@ -229,7 +229,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     worldData.biomeGrid = std::make_unique<BiomeGrid>(worldData.worldWidth);
     worldData.biomeGrid->setBiomeTexture(mBiomeTexture);
     for (int v = 0; v < worldData.biomeGrid->getTotalVertices(); ++v) {
-        worldData.biomeGrid->getVertexForGeneration(v).biomeUniqueId = biomeId;
+        worldData.biomeGrid->getVertexForGeneration(v).biomeUniqueId = mSelectedBiome;
     }
 
     //mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());

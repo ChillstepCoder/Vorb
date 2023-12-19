@@ -1,0 +1,4 @@
+name: Forest
+col_map: forest_cmap
+corruptable: true
+dbg_col: [0, 128, 0]

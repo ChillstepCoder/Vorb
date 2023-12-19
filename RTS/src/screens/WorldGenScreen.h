@@ -79,7 +79,7 @@ protected:
     bool mIsDirty = false;
 
     // Controls
-    bool mShowBiomes = false;
+    bool mShowBiomes = true;
     bool mShowHeight = false;
     bool mShowRivers = false;
 

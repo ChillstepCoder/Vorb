@@ -1,2 +1,3 @@
-name: Mountains
+name: Chernobog Mountains
 col_map: mountains_cmap
+dbg_col: [128, 128, 255]

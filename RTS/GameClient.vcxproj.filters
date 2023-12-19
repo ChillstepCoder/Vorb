@@ -2318,6 +2318,9 @@
     <ClInclude Include="src\generation\stages\HistoryGenerationStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\biome\BiomeCorruptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

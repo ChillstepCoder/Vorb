@@ -1,0 +1,4 @@
+name: Hot Springs
+col_map: hotsprings_cmap
+corruptable: true
+dbg_col: [0, 128, 128]

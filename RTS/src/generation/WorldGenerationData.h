@@ -34,7 +34,9 @@ struct WorldGenerationData {
     f32 mContinentRadiusSq = SQ(mContinentRadius);
     char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";
     f32 mSeedHashed = getSeedHash("default");
-    i32 mBiomeGrowPassCount = 30;
+    ui32 mSeedInt = getSeedInt(getSeedHash("default"));
+    i32v2 mCorruptSpawnCountRange = i32v2(300, 400);
+    i32 mBiomeGrowPassCount = 40;
 
     static constexpr f32 getSeedHash(const char seed[MAX_WORLD_GEN_SEED_SIZE]) {
         int hash = 2047471739; // Starting value (Random huge prime)
@@ -48,6 +50,9 @@ struct WorldGenerationData {
         // Bound the seed so it doesn't damage GPU precision with large numbers
         // Returns numbers in (-32768.5, 32768.5)
         return hash / ((f32)INT_MAX / 65535.0f);
+    }
+    static constexpr ui32 getSeedInt(f32 seedHashed) {
+        return ui32(seedHashed * 10000.0f);
     }
 
     bool mIsDirty = false;

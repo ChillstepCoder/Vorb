@@ -15,13 +15,15 @@ public:
     StrToken getAssetExtension() const override { return CStrToken("biome"); }
     const char* const getAssetTypeDisplayName() const override { return "Biome"; }
 
-    const BiomeDef& getBiomeFromUniqueID(ui32 uniqueId) { return getLoadedOrUnloadedAsset(mUniqueIDMap[uniqueId]); }
+    const BiomeDef& getBiomeFromUniqueID(BiomeUniqueID uniqueId) { return getLoadedOrUnloadedAsset(mUniqueIDMap[e_cast(uniqueId)]); }
     VGTexture getBiomeColorMapsArrayTexture() const { return mBiomeColorMapsArrayTexture; }
     VGBuffer getBiomeColorMapsShaderLookupBuffer() const { return mBiomeColorMapsShaderLookupBuffer; }
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;
     void onAllAssetTypesRegistered() override;
+
+    void linkCorruptedBiomes();
     void generateBiomesGLSLFile();
 
     // Allow us to persist biome data consistently by

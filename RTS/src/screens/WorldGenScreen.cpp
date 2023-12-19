@@ -241,9 +241,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     }
     if (ImGui::InputText("Seed", mGenData.mSeed, MAX_WORLD_GEN_SEED_SIZE)) {
         mGenData.mSeedHashed = mGenData.getSeedHash(mGenData.mSeed);
-        mIsDirty = true;
-    }
-    if (ImGui::SliderInt("Biome Grow Passes", &mGenData.mBiomeGrowPassCount, 0, 80)) {
+        mGenData.mSeedInt = mGenData.getSeedInt(mGenData.mSeedHashed);
         mIsDirty = true;
     }
     ImGui::SameLine();
@@ -254,6 +252,13 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         }
         mGenData.mSeed[MAX_WORLD_GEN_SEED_SIZE - 1] = '\0';
         mGenData.mSeedHashed = mGenData.getSeedHash(mGenData.mSeed);
+        mGenData.mSeedInt = mGenData.getSeedInt(mGenData.mSeedHashed);
+        mIsDirty = true;
+    }
+    if (ImGui::SliderInt2("Corrupt Count Range", &mGenData.mCorruptSpawnCountRange.x, 0, 600)) {
+        mIsDirty = true;
+    }
+    if (ImGui::SliderInt("Biome Grow Passes", &mGenData.mBiomeGrowPassCount, 0, 128)) {
         mIsDirty = true;
     }
     if (ImGui::SliderFloat("Continent Radius", &mGenData.mContinentRadius, 1000.0f, 16000.0f, "%.1f")) {

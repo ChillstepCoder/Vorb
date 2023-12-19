@@ -21,7 +21,7 @@ struct BiomeVertex {
 
     // approx when used by simulation, made exact by active chunks
     ui8 biomeResourceAmountsRemaining[MAX_PRIMARY_RESOURCES_PER_BIOME] = {}; // Only 64 tiles per vertex so [0-64]
-    ui8 biomeUniqueId = 0;
+    BiomeUniqueID biomeUniqueId = BiomeUniqueID::Ocean;
     BitFlags<BiomeFlags> biomeFlags;
     ui16 distanceFromRoot = 0;
     ui32 rootVertexIndex = 0;

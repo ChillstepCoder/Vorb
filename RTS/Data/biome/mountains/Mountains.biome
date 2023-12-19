@@ -1,0 +1,4 @@
+name: Mountains
+col_map: mountains_cmap
+corruptable: true
+dbg_col: [128, 128, 128]

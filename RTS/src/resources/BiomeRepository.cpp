@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "BiomeRepository.h"
 
+#include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 #include "util/GlobalEnumNameMap.h"
 
@@ -106,13 +107,53 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     glCreateBuffers(1, &mBiomeColorMapsShaderLookupBuffer);
     glNamedBufferStorage(mBiomeColorMapsShaderLookupBuffer, sizeof(ui32) * ssboData.size(), ssboData.data(), 0);
 
+    linkCorruptedBiomes();
+
     // TODO: Load custom mapping file so we can persist biome IDs for mods?
 
     generateBiomesGLSLFile();
 }
 
+void BiomeRepository::linkCorruptedBiomes() {
+    // Link corruptions automatically
+    const auto& enumNameMap = getGlobalEnumNameMap<BiomeUniqueID>();
+    for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
+        const AssetID assetId = mUniqueIDMap[uniqueId];
+        BiomeDef& def = *mAssets[assetId];
+        static_assert(e_count(BiomeCorruptions) == 2);
+        if (def.isCorruptable) {
+            std::string_view baseName = enumNameMap.at(BiomeUniqueID(uniqueId));
+            if (uniqueId + e_count(BiomeCorruptions) >= mUniqueIDMap.size()) {
+                panic("Bounds overflow in biome map with corruptable biomes when evaluating {}", baseName);
+            }
+            // Make sure we have both children in the enum
+            std::string_view banshiraName = enumNameMap.at(BiomeUniqueID(uniqueId + 1));
+            std::string_view chernobogName = enumNameMap.at(BiomeUniqueID(uniqueId + 2));
+            if (std::memcmp(baseName.data(), banshiraName.data(), baseName.size()) != 0 || banshiraName.back() != 'B') {
+                panic("Biome {} corruptable but next biome {} does not match required name {}_B", baseName, banshiraName, baseName);
+            }
+            if (std::memcmp(baseName.data(), chernobogName.data(), baseName.size()) != 0 || chernobogName.back() != 'C') {
+                panic("Biome {} corruptable but next biome {} does not match required name {}_C", baseName, chernobogName, baseName);
+            }
+            BiomeDef& banshira = *mAssets[mUniqueIDMap[uniqueId + 1]];
+            BiomeDef& chernobog = *mAssets[mUniqueIDMap[uniqueId + 2]];
+            def.corruptVersions[e_cast(BiomeCorruptions::Banshira)] = mAssets[mUniqueIDMap[uniqueId + 1]].get();
+            def.corruptVersions[e_cast(BiomeCorruptions::Chernobog)] = mAssets[mUniqueIDMap[uniqueId + 2]].get();
+            for (int i = 0; i < e_count(BiomeCorruptions); ++i) {
+                BiomeDef& child = *def.corruptVersions[i];
+                assert(!child.parentBiomeRef.isValid() || child.parentBiomeRef.name == def.getName());
+                child.parentBiomeRef.name = def.getName();
+                child.parentBiome = &def;
+                child.corruptType = BiomeCorruptions(i);
+            }
+        }
+    }
+}
+
+// TODO: Apparently these constants may consume register memory which may actually negatively impact performance! We may
+// instead want to put them in a UBO
 void BiomeRepository::generateBiomesGLSLFile() {
-    nString fileData = "//This file is generated at runtime by code, do not edit it\n";
+    nString fileData = "//This file is generated at runtime by code, do not edit it (TODO: Turn this into a UBO For better perf)\n";
     if (mAssetRegistry.size() != e_count(BiomeUniqueID)) {
         panic("Number of biome data files is {} which does not match the code enum count of {}", mAssetRegistry.size(), e_count(BiomeUniqueID));
     }
@@ -124,22 +165,40 @@ void BiomeRepository::generateBiomesGLSLFile() {
     }
 
     // Write biome spreadable
-    fileData += "\nconst bool BIOME_SPREADABLE[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
+    fileData += "\nconst uint BIOME_CORRUPTION[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
     for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
         const AssetID assetId = mUniqueIDMap[uniqueId];
         const BiomeDef& def = *mAssets[assetId];
-        fileData += "    " + def.isCorruption ? "true" : "false" + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+        fileData += "    " + nString(def.corruptType == BiomeCorruptions::COUNT ? "0" : std::to_string((int)def.corruptType + 1)) + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
     }
     fileData += "};\n";
 
-    //  Write biome overridable
-    fileData += "\nconst bool BIOME_OVERRIDABLE[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
+    // Write biome transforms
+    static_assert(e_count(BiomeCorruptions) == 2 && "Ensure this handles new corruption");
+    fileData += "\nconst uvec3 BIOME_TRANSFORM[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
     for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
         const AssetID assetId = mUniqueIDMap[uniqueId];
         const BiomeDef& def = *mAssets[assetId];
-        fileData += "    " + def.canBeSpreadTo ? "true" : "false" + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+        const nString idStr = std::to_string(e_cast(def.uniqueId));
+        if (def.isCorruptable) {
+            const nString banshiraIdStr = std::to_string(e_cast(def.corruptVersions[e_cast(BiomeCorruptions::Banshira)]->uniqueId));
+            const nString chernobogIdStr = std::to_string(e_cast(def.corruptVersions[e_cast(BiomeCorruptions::Chernobog)]->uniqueId));
+            fileData += "    uvec3(" + idStr + "," + banshiraIdStr + "," + chernobogIdStr + "), // " + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+        }
+        else {
+            fileData += "    uvec3(" + idStr + "," + idStr + "," + idStr + "), // " + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+        }
     }
     fileData += "};\n";
+
+    ////  Write biome overridable
+    //fileData += "\nconst bool BIOME_OVERRIDABLE[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
+    //for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
+    //    const AssetID assetId = mUniqueIDMap[uniqueId];
+    //    const BiomeDef& def = *mAssets[assetId];
+    //    fileData += "    " + nString(def.isCorruptable ? "true" : "false") + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+    //}
+    //fileData += "};\n";
 
     // Write biome colors
     fileData += "\nconst vec3 BIOME_COLORS[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
@@ -151,7 +210,16 @@ void BiomeRepository::generateBiomesGLSLFile() {
     }
     fileData += "};\n";
 
-    if (!mIoManager.writeStringToFile(vio::Path("data/shaders/biome_ids.glsl"), fileData)) {
-        panic("Could not write biome_ids.glsl file");
+    vio::Path filePath = ResourceManager::get().getResourceRoot() / vio::Path("shaders/const/biome_ids.glsl");
+    if (!mIoManager.resolvePath(filePath, filePath)) {
+        panic("Could not resolve {}", filePath.getCString());
     }
+
+    std::ofstream outStream(filePath.getStdPath());
+
+    if (!outStream) {
+        panic("Error opening {}", filePath.getCString());
+    }
+
+    outStream << fileData;
 }

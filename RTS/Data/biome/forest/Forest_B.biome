@@ -1,2 +1,3 @@
-name: Chernobog Forest
+name: Banshira Forest
 col_map: forest_cmap
+dbg_col: [255, 64, 0]

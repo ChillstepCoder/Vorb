@@ -45,14 +45,14 @@ void main() {
     // Spread biome
     const uint prevBiome = biomeData[idx];
     const uint randomDir = rand_xorshift(unSeed + idx * 3) % 4;
-    uint biome = biomeData[int(idx) + OFFSETS[randomDir]];
+    uint spreadingBiome = biomeData[int(idx) + OFFSETS[randomDir]];
     
-    const bool canSpread = BIOME_SPREADABLE[biome] && BIOME_OVERRIDABLE[prevBiome];
-    
-    biome = mix(prevBiome, biome, canSpread);
-    biomeData[idx] = biome;
+    const uint corruption = BIOME_CORRUPTION[spreadingBiome];
+    const uint newBiome = BIOME_TRANSFORM[prevBiome][corruption];
+
+    biomeData[idx] = newBiome;
     
     // Calculate pixel coordinates
     const ivec2 bxy = ivec2(idx % unBiomeMapWidth, idx / unBiomeMapWidth);
-    imageStore(biomeImage, bxy, vec4(float(biome) / 255.0, 0.0, 0.0, 0.0));
+    imageStore(biomeImage, bxy, vec4(float(newBiome) / 255.0, 0.0, 0.0, 0.0));
 }

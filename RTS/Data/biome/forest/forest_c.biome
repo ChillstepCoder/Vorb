@@ -1,2 +1,3 @@
 name: Chernobog Forest
 col_map: forest_cmap
+dbg_col: [0, 100, 200]

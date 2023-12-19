@@ -56,7 +56,7 @@ public:
     }
 
     ui32 getRandomUIntInRange(ui32 min, ui32 max) {
-        return mGen.xoroshiro64x_Range<ui32>(min, max);
+        return min + (getRandomUint() % (max - min));
     }
 
     fastPRNG::fastXS32 mGen;

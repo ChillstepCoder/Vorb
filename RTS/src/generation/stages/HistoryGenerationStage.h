@@ -1,5 +1,6 @@
 #pragma once
 #include "IWorldGenerationStage.h"
+#include "world/biome/BiomeCorruptions.h"
 
 enum class HistoryEventType {
     ChernobogSpawn,
@@ -34,8 +35,7 @@ public:
 private:
     // History events
     void handleHistoryEvent(HistoryEvent& event);
-    void handleChernobogSpawn();
-    void handleBanshiraSpawn();
+    void handleCorruptSpawn(BiomeCorruptions type);
     
     void updateBiomes();
     void growBiomesStep();
@@ -43,6 +43,7 @@ private:
 
     f32 mHistoryProgress = 0.0f; // [0,1]
     f32 mTickTime = 0.01f;
+    ui32 mTickCount = 0;
     ui32 mNextEventIndex = 0;
     // Sorted by time
     std::vector<HistoryEvent> mHistoryEvents;

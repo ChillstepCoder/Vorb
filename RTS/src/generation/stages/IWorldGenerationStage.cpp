@@ -12,6 +12,7 @@ IWorldGenerationStage::IWorldGenerationStage(WorldDataGenerator& generator)
     mHeightGrid = mWorldData->heightmapGrid.get();
     mBiomeGrid = mWorldData->biomeGrid.get();
     mWorldSeed = mGenerationData.mSeedHashed;
+    mWorldSeedInt = mGenerationData.mSeedInt;
     mTotalHeightPatches = mWorldData->heightmapGrid->getTotalPatches();
     mMappedHeights = mGenerator.getMappedHeights();
     mMappedBiomes = mGenerator.getMappedBiomes();

@@ -135,8 +135,8 @@ void WorldDataGenerator::initResourcesIfNeeded(i32 resolution)
         const ui32 biomesSizeBytes = biomeGrid->getTotalVertices() * sizeof(ui32);
         assert(!mBiomeSSBO);
         glCreateBuffers(1, &mBiomeSSBO);
-        glNamedBufferStorage(mBiomeSSBO, biomesSizeBytes, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-        mMappedBiomes = (ui32*)glMapNamedBufferRange(mBiomeSSBO, 0, biomesSizeBytes, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        glNamedBufferStorage(mBiomeSSBO, biomesSizeBytes, nullptr, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        mMappedBiomes = (ui32*)glMapNamedBufferRange(mBiomeSSBO, 0, biomesSizeBytes, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
         glCreateTextures(GL_TEXTURE_2D, 1, &mBiomeTexture);
         const ui32 bWidth = biomeGrid->getWidthVertices();
         glTextureStorage2D(mBiomeTexture, 1, GL_R8, bWidth, bWidth);
