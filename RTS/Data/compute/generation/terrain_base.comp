@@ -62,7 +62,7 @@ float cutNoiseAtStep(float noiseVal, float stepVal) {
 
 int generateBiomes(inout float height, vec3 posInputSeeded) {
     float bestWeight = 0.0;
-    int bestBiome = BIOME_OCEAN;
+    int bestBiome = BIOME_Ocean;
     
     if (height <= 0.0) {
         return bestBiome;
@@ -79,7 +79,7 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
         float mountainDetail = ridgedNoise(posInputSeeded.zxy, 8, 0.001, 0.6, vec2(0, 0), 64.0, 0.0);
         height += (mountainHeight + mountainDetail) * mountainWeight * seaHeightMult;
         bestWeight = mountainWeight;
-        bestBiome = BIOME_MOUNTAINS;
+        bestBiome = BIOME_Mountains;
     }
     
     // Mountains take things over
@@ -90,7 +90,7 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
         nonMountainWeight = min(nonMountainWeight, 1.0);
         height += plainsHeight * nonMountainWeight * seaHeightMult;
         if (nonMountainWeight > bestWeight) {
-            bestBiome = BIOME_PLAINS;
+            bestBiome = BIOME_Plains;
             bestWeight = 0.0;
         }
     
@@ -101,7 +101,7 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
         forestWeight = clamp(forestWeight, 0.0, 1.0);
         height += forestHeight * forestWeight * seaHeightMult;
         if (forestWeight > bestWeight) {
-            bestBiome = BIOME_FOREST;
+            bestBiome = BIOME_Forest;
             bestWeight = forestWeight;
         }
         
@@ -117,7 +117,7 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
         springsHeight = floor(springsHeight / 2.0) * 2.0;
         height += springsHeight;
         if (springsWeight > bestWeight) {
-            bestBiome = BIOME_HOTSPRINGS;
+            bestBiome = BIOME_Hotsprings;
             bestWeight = springsWeight;
         }
     }

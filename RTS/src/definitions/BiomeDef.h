@@ -2,7 +2,7 @@
 
 #include "generation/NoiseFunction.hpp"
 
-// For now match .biome files
+// .biome file names should match exactly
 enum class BiomeUniqueID : ui8 {
     Ocean = 0,
     Plains = 1,
@@ -74,19 +74,27 @@ class BiomeDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(BiomeDef);
 
+    // Assigned based on name
     BiomeUniqueID uniqueId = BiomeUniqueID::INVALID;
     f32 priority = 0.0f; // ??
     nString displayName = "UNKNOWN";
     SoftAssetReference colorMapTexture = AssetType::Texture;
+    SoftAssetReference parentBiome = AssetType::Biome;
     // Index in the color map texture array
     ui32 colorMapTextureIndex = 0;
+    bool isCorruption = false;
+    bool canBeSpreadTo = false;
+    color3 debugColor = color3(255, 255, 255);
     // Tile spawning
     std::vector<BiomeTileGenCategory> tileGenCategories;
 };
 SERIALIZABLE_SIMPLE(BiomeDef,
-    make_field(o.uniqueId, "id"sv),
     make_field(o.priority, "priority"sv),
     make_field(o.displayName, "name"sv),
     make_field(o.colorMapTexture, "col_map"sv),
+    make_field(o.parentBiome, "parent"sv),
+    make_field(o.isCorruption, "is_corrupt"sv),
+    make_field(o.canBeSpreadTo, "can_be_spread_to"sv),
+    make_field(o.debugColor, "dbg_col"sv),
     make_field(o.tileGenCategories, "categories"sv)
 );

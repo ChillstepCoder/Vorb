@@ -2,6 +2,9 @@
 #include "BiomeRepository.h"
 
 #include "resources/TextureRepository.h"
+#include "util/GlobalEnumNameMap.h"
+
+#include <vorb/io/IOManager.h>
 
 constexpr int COLOR_MAP_DIM_X = 128;
 constexpr int COLOR_MAP_DIM_Y = 256;
@@ -18,6 +21,20 @@ void BiomeRepository::onRegisteredAsset(AssetID id) {
     assert(id < UINT8_MAX);
 
     BiomeDef& def = *mAssets[id];
+    { // Assigne unique ID
+        const auto& enumNameMap = getGlobalEnumNameMap<BiomeUniqueID>();
+        const nString uniqueName = mAssetRegistry[id].mFilePath.getFileNameNoExtension();
+        for (auto&& it : enumNameMap) {
+            if (it.second == uniqueName) {
+                def.uniqueId = it.first;
+                break;
+            }
+        }
+        if (def.uniqueId == BiomeUniqueID::INVALID) {
+            panic("Biome {} file name does not match any code enum name", mAssetRegistry[id].mFilePath.getString());
+        }
+    }
+
     YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
     if (e_cast(def.uniqueId) == UINT32_MAX) {
         panic("Biome {} has no id", mAssetRegistry[id].mFilePath.getString());
@@ -89,5 +106,52 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     glCreateBuffers(1, &mBiomeColorMapsShaderLookupBuffer);
     glNamedBufferStorage(mBiomeColorMapsShaderLookupBuffer, sizeof(ui32) * ssboData.size(), ssboData.data(), 0);
 
-    // TODO: Load mapping file so we can persist biome IDs for mods?
+    // TODO: Load custom mapping file so we can persist biome IDs for mods?
+
+    generateBiomesGLSLFile();
+}
+
+void BiomeRepository::generateBiomesGLSLFile() {
+    nString fileData = "//This file is generated at runtime by code, do not edit it\n";
+    if (mAssetRegistry.size() != e_count(BiomeUniqueID)) {
+        panic("Number of biome data files is {} which does not match the code enum count of {}", mAssetRegistry.size(), e_count(BiomeUniqueID));
+    }
+
+    // Write biome const ints
+    const auto& enumNameMap = getGlobalEnumNameMap<BiomeUniqueID>();
+    for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
+        fileData += "const int BIOME_" + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + " = " + std::to_string(uniqueId) + ";\n";
+    }
+
+    // Write biome spreadable
+    fileData += "\nconst bool BIOME_SPREADABLE[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
+    for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
+        const AssetID assetId = mUniqueIDMap[uniqueId];
+        const BiomeDef& def = *mAssets[assetId];
+        fileData += "    " + def.isCorruption ? "true" : "false" + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+    }
+    fileData += "};\n";
+
+    //  Write biome overridable
+    fileData += "\nconst bool BIOME_OVERRIDABLE[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
+    for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
+        const AssetID assetId = mUniqueIDMap[uniqueId];
+        const BiomeDef& def = *mAssets[assetId];
+        fileData += "    " + def.canBeSpreadTo ? "true" : "false" + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+    }
+    fileData += "};\n";
+
+    // Write biome colors
+    fileData += "\nconst vec3 BIOME_COLORS[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
+    for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
+        const AssetID assetId = mUniqueIDMap[uniqueId];
+        const BiomeDef& def = *mAssets[assetId];
+        const f32v3 debugColorf(def.debugColor.r / 255.0f, def.debugColor.g / 255.0f, def.debugColor.b / 255.0f);
+        fileData += "    vec3(" + std::to_string(debugColorf.r) + ", " + std::to_string(debugColorf.g) + ", " + std::to_string(debugColorf.b) + "), // " + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+    }
+    fileData += "};\n";
+
+    if (!mIoManager.writeStringToFile(vio::Path("data/shaders/biome_ids.glsl"), fileData)) {
+        panic("Could not write biome_ids.glsl file");
+    }
 }

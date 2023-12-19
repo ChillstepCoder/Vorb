@@ -22,6 +22,7 @@ protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;
     void onAllAssetTypesRegistered() override;
+    void generateBiomesGLSLFile();
 
     // Allow us to persist biome data consistently by
     // assigning a static ID per biome

@@ -32,6 +32,7 @@ Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 
 
     if (biomeDef) {
 
+        // TODO: Data driven generation
         switch (biomeDef->uniqueId) {
             case BiomeUniqueID::Ocean:
                 return Tile();
@@ -47,7 +48,7 @@ Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 
                 break;
 
         }
-        static_assert(e_count(BiomeUniqueID) == 5);
+        static_assert(e_count(BiomeUniqueID) == 13);
     }
 
     return Tile();

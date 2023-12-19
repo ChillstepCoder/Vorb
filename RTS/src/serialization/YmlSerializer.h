@@ -230,6 +230,21 @@ namespace YmlSerializer {
         return YmlSerializer::updateAndRenderImgui<Type>(__VA_ARGS__); \
     }
 
+YML_WRITE_DEF(color3) {
+    ryml::NodeRef& nr = *n;
+    nr |= ryml::SEQ;
+    nr |= ryml::_WIP_STYLE_FLOW_SL;
+    for (int i = 0; i < 3; ++i) {
+        nr.append_child() << o[i];
+    }
+}
+YML_READ_DEF(color3) {
+    if (n.num_children() != 3) return false;
+    int i = 0;
+    for (auto const ch : n)
+        ch >> (*target)[i++];
+    return true;
+}
 YML_WRITE_DEF(color4) {
     ryml::NodeRef& nr = *n;
     nr |= ryml::SEQ;
