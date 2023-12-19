@@ -6,20 +6,36 @@
 enum class BiomeUniqueID : ui8 {
     Ocean = 0,
     Plains = 1,
-    Mountains = 2,
-    Forest = 3,
-    Hotsprings = 4,
+    Plains_B = 2,
+    Plains_C = 3,
+    Mountains = 4,
+    Mountains_B = 5,
+    Mountains_C = 6,
+    Forest = 7,
+    Forest_B = 8,
+    Forest_C = 9,
+    Hotsprings = 10,
+    Hotsprings_B = 11,
+    Hotsprings_C = 12,
     COUNT,
     INVALID = UINT8_MAX
 };
 SERIALIZABLE_ENUM_SAME_NAME(BiomeUniqueID,
-    pair{ BiomeUniqueID::Ocean, "Ocean"sv },
-    pair{ BiomeUniqueID::Plains, "Plains"sv },
-    pair{ BiomeUniqueID::Mountains, "Mountains"sv },
-    pair{ BiomeUniqueID::Forest, "Forest"sv },
-    pair{ BiomeUniqueID::Hotsprings, "Hotsprings"sv }
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Ocean),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Plains),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Plains_B),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Plains_C),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Mountains),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Mountains_B),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Mountains_C),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Forest),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Forest_B),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Forest_C),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Hotsprings),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Hotsprings_B),
+    ENUM_FIELD_SIMPLE(BiomeUniqueID, Hotsprings_C),
 );
-static_assert(e_count(BiomeUniqueID) == 5);
+static_assert(e_count(BiomeUniqueID) == 13);
 
 const ui8 INVALID_BIOME_ID = UINT8_MAX;
 

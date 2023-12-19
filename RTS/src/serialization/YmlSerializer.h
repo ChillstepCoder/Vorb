@@ -88,6 +88,8 @@ namespace c4::yml { \
 
 // Usage: MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
 #define SERIALIZABLE_ENUM_SAME_NAME(Type, ...) SERIALIZABLE_ENUM(Type, Type, __VA_ARGS__)
+// Usage: MyType, EnumName
+#define ENUM_FIELD_SIMPLE(type, name) pair{ type::name, #name##sv }
 
 namespace YmlSerializer {
     template<typename T>
