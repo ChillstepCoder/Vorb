@@ -55,6 +55,7 @@ void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
     LOG_CRITICAL("  TODO: Custom allocator for std::string/nString");
     LOG_CRITICAL("  TODO: Automatically downgrade to 4.0 opengl if needed");
     LOG_CRITICAL("  TODO: Alternative to bindless extension");
+    // TODO: VCPERF to optimize compile times https://github.com/microsoft/vcperf
     // TODO: Easeings utils https://easings.net/
     // TODO: Cool character customization? https://www.youtube.com/watch?v=A-P0llMckSw
     // TODO: Vertex pooling https://nickmcd.me/2021/04/04/high-performance-voxel-engine/

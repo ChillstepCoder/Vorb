@@ -49,7 +49,7 @@ BiomeEditorViewportPanel::~BiomeEditorViewportPanel()
 }
 
 bool BiomeEditorViewportPanel::updateAndRender(f32 elapsedSec) {
-   
+
     bool isOpen = true;
     ImGui::Begin("Biome Editor", &isOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
 
