@@ -36,7 +36,7 @@ struct WorldGenerationData {
     f32 mSeedHashed = getSeedHash("default");
     ui32 mSeedInt = getSeedInt(getSeedHash("default"));
     i32v2 mCorruptSpawnCountRange = i32v2(300, 400);
-    i32 mBiomeGrowPassCount = 40;
+    i32 mBiomeGrowPassCount = 5;
 
     static constexpr f32 getSeedHash(const char seed[MAX_WORLD_GEN_SEED_SIZE]) {
         int hash = 2047471739; // Starting value (Random huge prime)

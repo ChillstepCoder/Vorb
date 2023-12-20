@@ -29,6 +29,9 @@ void WorldRenderDataManager::shutdown() {
     // Some things will crash if destroyed in destructor and must be destroyed before the world is
     mGrassMeshManager->shutdown();
     mTerrainMeshManager->shutdown();
+    mTileContainerMeshManager->shutdown();
+
+    mDidShutdown = true;
 }
 
 void WorldRenderDataManager::tickGameThread() {
@@ -37,6 +40,8 @@ void WorldRenderDataManager::tickGameThread() {
 }
 
 void WorldRenderDataManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
+    assert(!mDidShutdown);
+
     ASSERT_RENDER_THREAD();
     mInstancedStaticModelManager->frameUpdate(camera, elapsedSec);
 

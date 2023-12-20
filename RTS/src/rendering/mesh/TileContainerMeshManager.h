@@ -20,6 +20,8 @@ public:
 
     void frameUpdate();
 
+    void shutdown();
+
     static void updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders);
 
     // Accessors

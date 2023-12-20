@@ -34,6 +34,7 @@ TerrainMeshManager::~TerrainMeshManager() {
 
 void TerrainMeshManager::shutdown() {
     std::vector<HeightmapTerrainQuadtree>().swap(mTerrainTrees);
+    mHeightmapGridListeners.reset();
 }
 
 void TerrainMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {

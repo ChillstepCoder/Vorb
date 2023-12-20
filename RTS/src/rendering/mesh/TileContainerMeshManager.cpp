@@ -32,6 +32,10 @@ TileContainerMeshManager::~TileContainerMeshManager()
 {
 }
 
+void TileContainerMeshManager::shutdown() {
+    mTileContainerListeners.reset();
+}
+
 void TileContainerMeshManager::frameUpdate()
 {
     PROFILE_FUNCTION();

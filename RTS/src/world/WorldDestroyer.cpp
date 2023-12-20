@@ -20,8 +20,8 @@ void WorldDestroyer::shutdownWorld(World& world) {
         RenderContext::getInstance().updateRenderThreadProcs();
     } while (RenderThreadTasks::getInstance().getQueuedProcsApprox());
 
-    std::lock_guard lock(mShutdownWorldMutex);
     {
+        std::lock_guard lock(mShutdownWorldMutex);
         assert(!mCurrentlyShuttingDownWorld);
         mCurrentlyShuttingDownWorld = &world;
     }

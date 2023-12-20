@@ -35,5 +35,7 @@ private:
     std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;
     std::unique_ptr<GrassMeshManager> mGrassMeshManager;
     std::unique_ptr<CloudMeshManager> mCloudManager;
+
+    bool mDidShutdown = false;
 };
 
