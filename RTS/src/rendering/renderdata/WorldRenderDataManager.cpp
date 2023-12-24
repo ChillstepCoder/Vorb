@@ -40,7 +40,9 @@ void WorldRenderDataManager::tickGameThread() {
 }
 
 void WorldRenderDataManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
-    assert(!mDidShutdown);
+    if (mDidShutdown) {
+        return;
+    }
 
     ASSERT_RENDER_THREAD();
     mInstancedStaticModelManager->frameUpdate(camera, elapsedSec);

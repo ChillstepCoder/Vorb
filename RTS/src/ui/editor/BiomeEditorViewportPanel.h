@@ -22,6 +22,8 @@ public:
     void onEnter() override;
     void onExit() override;
 
+	void setCurrentAsset(AssetID assetId) override;
+
 protected:
 	void renderCenterPanel(i32AABB2* outImageRect) override;
 	void postCenterPanelRender(const i32AABB2& imageRect) override;
@@ -35,7 +37,7 @@ protected:
     std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
 	bool mLeftMousePressed = false;
 
-	BiomeUniqueID mSelectedBiome = BiomeUniqueID::Plains;
+	BiomeUniqueID mSelectedBiome = BiomeUniqueID::Ocean;
 
 	VGTexture mBiomeTexture;
 };

@@ -45,6 +45,7 @@ public:
     // template <bool THREAD_SAFE>
     const BiomeDef* getBiomeDefAtPoint(f32v2 worldPos) const;
 
+    // We will manage the lifetime of the texture
     void setBiomeTexture(VGTexture biomeTexture) { mBiomeTexture = biomeTexture; }
     // Safe to call from render thread
     VGTexture getBiomeTexture() const { return mBiomeTexture; }
