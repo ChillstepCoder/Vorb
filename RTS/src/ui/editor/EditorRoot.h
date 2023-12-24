@@ -52,7 +52,6 @@ private:
     std::unique_ptr<TileEditorPanel> mTileEditorPanel;
     // Viewport panels
     std::map<AssetType, std::unique_ptr<AssetEditorViewportPanelBase>> mAssetEditorPanels;
-    std::unique_ptr<BiomeEditorViewportPanel> mBiomeEditorViewportPanel;
 
     std::unique_ptr<ContentBrowserPanel> mContentBrowserPanel;
 

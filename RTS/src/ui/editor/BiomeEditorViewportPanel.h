@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditorViewportPanel.h"
+#include "ui/editor/AssetEditorViewportPanel.h"
 
 #include "definitions/BiomeDef.h"
 
@@ -9,19 +9,22 @@ class EditorWorldInterfaceController;
 
 DECL_VG(class GBuffer);
 
-class BiomeEditorViewportPanel : public IEditorViewportPanel
+class BiomeEditorViewportPanel : public AssetEditorViewportPanel<BiomeDef>
 {
 public:
 	BiomeEditorViewportPanel();
 	~BiomeEditorViewportPanel();
-	bool updateAndRender(f32 elapsedSec) override;
+	void updateAndRenderInternal(f32 elapsedSec) override;
 	void updateAndRenderPrimaryControls(f32 ySize) override;
+
+    const char* getViewportWindowName() const override { return "Biome Editor"; }
 
     void onEnter() override;
     void onExit() override;
 
 protected:
 	void renderCenterPanel(i32AABB2* outImageRect) override;
+	void postCenterPanelRender(const i32AABB2& imageRect) override;
 
 	VGTexture getFinalOutputTexture() override;
 

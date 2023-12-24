@@ -48,21 +48,8 @@ BiomeEditorViewportPanel::~BiomeEditorViewportPanel()
 
 }
 
-bool BiomeEditorViewportPanel::updateAndRender(f32 elapsedSec) {
-
-    bool isOpen = true;
-    ImGui::Begin("Biome Editor", &isOpen, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-
-    ImVec2 mouseDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-    f32v2 imageDims = f32v2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-    if (imageDims.x < 1 || imageDims.y < 1) {
-        ImGui::End();
-        return isOpen;
-    }
-
-    updateCamera(imageDims.x / imageDims.y);
-
+void BiomeEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
+   
     // Tell the world to follow our camera
     if (mEditorWorld) {
         const f32v2 cameraPos = mCamera->getPosition();
@@ -72,63 +59,6 @@ bool BiomeEditorViewportPanel::updateAndRender(f32 elapsedSec) {
             editorWorld->setLoadCenter(cameraPos);
         }, (void*)editorWorld);
     }
-
-    //if (mCurrentMaterial.isValid()) {
-    //    ImGui::Text(mCurrentMaterial.name.c_str());
-    //}
-    //else {
-    //    ImGui::Text("NO MATERIAL");
-    //}
-
-    // Lazy init so we don't use GPU memory when not in editor
-    // Lazy init resources
-    updateFramebufferAndLazyInit(imageDims);
-
-    glDisable(GL_CULL_FACE);
-    vg::DepthState::FULL.set();
-
-    i32AABB2 imageRect;
-    renderCenterPanel(&imageRect);
-
-    // Check if the mouse just clicked on the image
-    bool clickedLeft = false;
-    bool releasedLeft = false;
-    if (ImGui::IsItemHovered()) {
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            clickedLeft = true;
-            mLeftMousePressed = true;
-        }
-        else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left) && mLeftMousePressed) {
-            releasedLeft = true;
-            mLeftMousePressed = false;
-        }
-    }
-    else if (mLeftMousePressed) {
-        releasedLeft = true;
-        mLeftMousePressed = false;
-    }
-    ImGui::End();
-
-    if (mWorldInterfaceController) {
-        // Force mouse position to the panel mouse position as we are squishing the viewport into this panel
-        const f32v2 mousePos(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-        const f32v2 mouseOffset = mousePos - f32v2(imageRect.pos.x, imageRect.pos.y);
-        const f32v2 mouseOffsetNormalized = mouseOffset / f32v2(imageRect.dims.x, imageRect.dims.y);
-        const f32v2 viewportMousePos = mouseOffsetNormalized * f32v2(mWorldInterfaceController->getGameWindow()->getViewportDims());
-        mWorldInterfaceController->setMousePosition(viewportMousePos);
-
-        if (clickedLeft) {
-            vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, true);
-        }
-        else if (releasedLeft) {
-            vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, false);
-        }
-
-        mWorldInterfaceController->update();
-        mWorldInterfaceController->renderUI();
-    }
-
-    return isOpen;
 }
 
 void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
@@ -196,6 +126,47 @@ void BiomeEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     vg::GBuffer::unuse();
 
     renderCenterPanelImage(outImageRect, sGBuffers[0]->getAlbedoTexture());
+}
+
+void BiomeEditorViewportPanel::postCenterPanelRender(const i32AABB2& imageRect)
+{
+    if (mWorldInterfaceController) {
+
+        // Check if the mouse just clicked on the image
+        bool clickedLeft = false;
+        bool releasedLeft = false;
+        if (ImGui::IsItemHovered()) {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                clickedLeft = true;
+                mLeftMousePressed = true;
+            }
+            else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left) && mLeftMousePressed) {
+                releasedLeft = true;
+                mLeftMousePressed = false;
+            }
+        }
+        else if (mLeftMousePressed) {
+            releasedLeft = true;
+            mLeftMousePressed = false;
+        }
+
+        // Force mouse position to the panel mouse position as we are squishing the viewport into this panel
+        const f32v2 mousePos(ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+        const f32v2 mouseOffset = mousePos - f32v2(imageRect.pos.x, imageRect.pos.y);
+        const f32v2 mouseOffsetNormalized = mouseOffset / f32v2(imageRect.dims.x, imageRect.dims.y);
+        const f32v2 viewportMousePos = mouseOffsetNormalized * f32v2(mWorldInterfaceController->getGameWindow()->getViewportDims());
+        mWorldInterfaceController->setMousePosition(viewportMousePos);
+
+        if (clickedLeft) {
+            vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, true);
+        }
+        else if (releasedLeft) {
+            vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, false);
+        }
+
+        mWorldInterfaceController->update();
+        mWorldInterfaceController->renderUI();
+    }
 }
 
 VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()

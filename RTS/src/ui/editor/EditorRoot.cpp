@@ -50,8 +50,8 @@ EditorRoot::EditorRoot() {
     mAssetEditorPanels[AssetType::Fish] = std::make_unique<FishingEditorViewportPanel>();
     mAssetEditorPanels[AssetType::ParticleSystem] = std::make_unique<ParticleSystemEditorViewportPanel>();
     mAssetEditorPanels[AssetType::Item] = std::make_unique<ItemEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::Biome] = std::make_unique<BiomeEditorViewportPanel>();
 
-    mBiomeEditorViewportPanel = std::make_unique<BiomeEditorViewportPanel>();
     mContentBrowserPanel = std::make_unique<ContentBrowserPanel>(ResourceManager::get().getResourceRoot().getStdPath());
 
     // Initialize inputs
@@ -223,15 +223,11 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
                     tryOpenAssetForEdit(desc);
                     break;
                 }
-                case TileEditorPanelResultCode::EDIT_BIOME:
-                    // TODO: Biome
-                    openBiomeForEdit();
-                    break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_count(TileEditorPanelResultCode) == 3);
+            static_assert(e_count(TileEditorPanelResultCode) == 2);
 
         }
         if (mActiveCenterPanel) {
@@ -266,10 +262,6 @@ bool EditorRoot::tryOpenAssetForEdit(AssetDescriptor desc)
     it->second->setCurrentAsset(desc.id);
     setActiveCenterPanel(it->second.get());
     return true;
-}
-
-void EditorRoot::openBiomeForEdit() {
-    setActiveCenterPanel(mBiomeEditorViewportPanel.get());
 }
 
 void EditorRoot::setActiveCenterPanel(IEditorViewportPanel* newCenterPanel)

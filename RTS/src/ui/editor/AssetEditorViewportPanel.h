@@ -37,7 +37,10 @@ public:
 
         updateAndRenderInternal(elapsedSec);
 
-        renderCenterPanel(nullptr);
+        i32AABB2 imageRect;
+        renderCenterPanel(&imageRect);
+
+        postCenterPanelRender(imageRect);
 
         ImGui::End();
         return isOpen;
@@ -55,6 +58,7 @@ public:
     }
 
     virtual void updateAndRenderInternal(f32 elapsedSec) { UNUSED(elapsedSec); }
+    virtual void postCenterPanelRender(const i32AABB2& imageRect) { UNUSED(imageRect); };
       
     virtual void updateAndRenderSaveButton() {
         if (ImGui::Button("Save")) {

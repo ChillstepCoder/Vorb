@@ -320,7 +320,9 @@ void TileEditorPanel::updateAndRenderBiomeTab(TileEditorPanelResult& result) {
     if (ImGui::BeginTabItem("Biome")) {
         ImGui::Text("Biome");
         if (ImGui::Button("Open Editor")) {
-            result.first = TileEditorPanelResultCode::EDIT_BIOME;
+            result.first = TileEditorPanelResultCode::EDIT_ASSET;
+            // TODO: Specific?
+            result.second = AssetDescriptor{ 0, AssetType::Biome };
         }
         ImGui::EndTabItem();
     }

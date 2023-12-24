@@ -15,7 +15,6 @@ DECL_VG(class GBuffer);
 enum class TileEditorPanelResultCode {
     NONE,
     EDIT_ASSET,
-    EDIT_BIOME,
     COUNT
 };
 
