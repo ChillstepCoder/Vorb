@@ -7,6 +7,7 @@
 #include "options/DebugOptions.h"
 
 #include "world/World.h"
+#include "world/WorldDestroyer.h"
 #include "ui/editor/EditorRoot.h"
 #include "ui/editor/IEditorViewportPanel.h"
 #include "ui/minigame/LocalMinigameContext.h"
@@ -50,15 +51,18 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedS
     }
 
     if (mPauseMenuPanel) {
+        bool destroyWorld = false;
         PauseMenuPanelResult result = mPauseMenuPanel->updateAndRender();
         switch (result) {
             case PauseMenuPanelResult::RESUME:
                 break;
             case PauseMenuPanelResult::EXIT_TO_MENU:
                 GameplayScreenGlobalState::isQuittingToMenu = true;
+                destroyWorld = true;
                 break;
             case PauseMenuPanelResult::EXIT_TO_DESKTOP:
                 GameplayScreenGlobalState::isQuittingToDesktop = true;
+                destroyWorld = true;
                 break;
             default:
                 break;
@@ -66,6 +70,9 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedS
         }
         if (result != PauseMenuPanelResult::NONE) {
             mPauseMenuPanel.reset();
+        }
+        if (destroyWorld) {
+            World::shutdownAllWorlds();
         }
     }
 

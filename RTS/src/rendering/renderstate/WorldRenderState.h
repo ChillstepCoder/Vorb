@@ -46,10 +46,10 @@ public:
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
     const std::vector<DynamicModelInstanceState>& getDynamicModels() const { return mDynamicModels; }
-    World* getWorld() const { return mWorld; }
+    WorldID getWorldId() const { return mWorldId; }
 private:
     // ======================== Game State  ========================
-    World* mWorld;
+    WorldID mWorldId = 0;
     f32v2 mWorldLoadCenter;
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;

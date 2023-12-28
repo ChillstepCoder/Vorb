@@ -265,6 +265,7 @@ void RenderContext::initPostLoad() {
     // Visual logging
     VisualLogger::setDefaultFont(&Services::ResourceManager::ref().getFontRepository().getFont("titilium_semibold"));
 
+    initEvents();
 }
 
 void RenderContext::beginFrame(const WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha) {
@@ -309,7 +310,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mCurrentFrameElapsedSec = elapsedSec;
     mCameraController = &cameraController;
     mCurrentRenderState = &renderState;
-    mActiveWorld = renderState.getWorld();
+    
+    mActiveWorld = World::tryGetWorld(renderState.getWorldId());
     if (!mActiveWorld) {
         return;
     }
@@ -418,6 +420,14 @@ void RenderContext::updateCamera(f32 frameAlpha) {
     else {
         sDebugOptions.mIsCameraUnderwater = true;
     }
+}
+
+void RenderContext::initEvents()
+{
+    /*World::registerWorldListeners(mWorldEventListeners);
+    World::addOnWorldEndRenderThreadListener(mWorldEventListeners, [this](World& world) {
+
+    });*/
 }
 
 void RenderContext::updateRenderThreadProcs() {

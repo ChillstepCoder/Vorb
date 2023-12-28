@@ -5,6 +5,8 @@
 
 #include "world/WorldEvents.h"
 
+#include <shared_mutex>
+
 class HostWorldData;
 class Structure;
 class Camera3D;
@@ -29,7 +31,6 @@ class WorldRenderState;
 class VisibilityManager;
 class WeatherManager;
 
-
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
 class World {
@@ -43,6 +44,7 @@ public:
     virtual void tick(f32 elapsedSec);
 
     void shutdown();
+    static void shutdownAllWorlds();
 
     // World info
     virtual WorldNetMode getNetMode() const { return mNetMode; }
@@ -54,6 +56,7 @@ public:
     ui32 getWidthTiles() const { return mWidthTiles; }
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
     ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH; }
+    WorldID getId() const { return mId; }
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
@@ -91,10 +94,13 @@ public:
     // Structures
     std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
 
-    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldBegin, WORLD_EVENT_TYPE::OnWorldBegin, World&);
-    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEnd, WORLD_EVENT_TYPE::OnWorldEnd, World&);
+    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldBeginGameThread, WORLD_EVENT_TYPE::OnWorldBeginGameThread, World&);
+    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEndGameThread, WORLD_EVENT_TYPE::OnWorldEndGameThread, World&);
+    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEndRenderThread, WORLD_EVENT_TYPE::OnWorldEndRenderThread, World&);
 
+    static World* tryGetWorld(WorldID id);
 private:
+    WorldID mId = 0;
     // TODO: WorldRenderStateManager?
     void updateRenderState();
     void updateEntitiesRenderState(WorldRenderState& renderState);
@@ -147,6 +153,9 @@ private:
     std::unique_ptr<NavWorld> mNavWorld;
 
     STATIC_EVENT_DISPATCHER_DEF(World);
+
+    inline static std::shared_mutex sWorldsMutex;
+    inline static std::unordered_map<WorldID, World*> sWorlds;
 };
 
 extern std::unique_ptr<World> sGameWorld;

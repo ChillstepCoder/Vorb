@@ -34,6 +34,7 @@
 #include "rendering/renderer/GrassRenderer.h"
 #include "rendering/renderer/OverlayRenderer.h"
 #include "rendering/renderstate/WorldRenderState.h"
+#include "rendering/renderstate/GameRenderStateManager.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/Skybox.h"
 #include "rendering/StencilBufferIDs.h"
@@ -135,12 +136,25 @@ void WorldRenderer::initPostLoad() {
 }
 
 void WorldRenderer::onBeginFrame(const WorldRenderState* renderState, f32v3 playerPos) {
-    if (!renderState->getWorld()) {
+
+    World* world = World::tryGetWorld(renderState->getWorldId());
+    if (!world) {
+        setActiveWorld(nullptr);
         return;
     }
-    if (mActiveWorld != renderState->getWorld()) {
-        setActiveWorld(renderState->getWorld());
+    if (mActiveWorld != world) {
+        if (GameRenderStateManager::getInstance().isActiveWorld(world)) {
+            setActiveWorld(world);
+        }
+        else {
+            setActiveWorld(nullptr);
+            return;
+        }
     }
+
+    // This happens when a world is shutting down. The render state may have a world pointer
+    // but it can be invalid due to being shut down
+   
 
     {
         std::lock_guard lock(mRenderDataManagersMutex);
@@ -509,34 +523,29 @@ StrToken WorldRenderer::getCurrentPassthroughRenderStageName() const
 }
 
 void WorldRenderer::initEventHandlers() {
-    World::registerWorldListeners(mWorldEventListeners);
-    World::addOnWorldBeginListener(mWorldEventListeners, [this](World& world) {
+    World::registerWorldListeners(mEventHandles.worldEventListeners);
+    World::addOnWorldBeginGameThreadListener(mEventHandles.worldEventListeners, [this](World& world) {
         std::lock_guard lock(mRenderDataManagersMutex);
         mRenderDataManagers.insert(
-           std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
-       ).first->second.get();
-        mCharacterRenderer->onWorldBegin(world);
-        mTerrainRenderer->onWorldBegin(world);
-        mGrassRenderer->onWorldBegin(world);
-        mStaticModelRenderer->onWorldBegin(world);
+            std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
+        );
     });
-    // TODO: We should do this on the render thread somehow
-    World::addOnWorldEndListener(mWorldEventListeners, [this](World& world) {
-        RenderThreadTasks::getInstance().addShutdownTask([this, &world]() {
-            WorldRenderDataManager* mgr = nullptr;
-            {
-                std::lock_guard lock(mRenderDataManagersMutex);
-                auto&& it = mRenderDataManagers.find(&world);
-                if (it != mRenderDataManagers.end()) {
-                    mgr = it->second.get();
-                }
+    World::addOnWorldEndRenderThreadListener(mEventHandles.worldEventListeners, [this](World& world) {
+        WorldRenderDataManager* mgr = nullptr;
+        {
+            std::lock_guard lock(mRenderDataManagersMutex);
+            auto&& it = mRenderDataManagers.find(&world);
+            if (it != mRenderDataManagers.end()) {
+                mgr = it->second.get();
             }
-            // Have to pull out of critical section as nested calls might lock mutex
-            if (mgr) {
-                mgr->shutdown();
-            }
-        });
+        }
+        // Have to pull out of critical section as nested calls might lock mutex
+        if (mgr) {
+            mgr->shutdown();
+        }
         // TODO: What if we are still holding on to the handle?
+
+        mEventHandles.skillsComponentListeners.reset();
     });
 }
 
@@ -656,17 +665,30 @@ void WorldRenderer::setActiveWorld(World* world) {
     mActiveWorld = world;
 
     // Skill events
-    SkillsComponentSystem& skillsSystem = mActiveWorld->getECS().mSkillsSystem;
-    skillsSystem.registerSkillsComponentSystemListeners(mEventHandles.mSkillsComponentListeners);
-    skillsSystem.addActivateListener(mEventHandles.mSkillsComponentListeners, [world](SkillEvent skillEvent) {
-        ASSERT_GAME_THREAD();
-        SkillsComponent& skillsCmp = world->getECS().mRegistry.get<SkillsComponent>(skillEvent.mEntity);
-        const SkillDef* skill = skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->tryGetLoadedAsset();
-        if (skill) {
-            RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skill->mAnimID);
-        }
-        else {
-            LOG_WARN("Tried to play skill animation for skill slot {} but skill was not loaded", (int)skillEvent.mSkillSlot);
-        }
-    });
+    // TODO: This maybe shouldn't be  here?
+    if (mActiveWorld) {
+
+        // TODO: Rename -> setActiveWorld
+        mCharacterRenderer->onWorldBegin(*mActiveWorld);
+        mTerrainRenderer->onWorldBegin(*mActiveWorld);
+        mGrassRenderer->onWorldBegin(*mActiveWorld);
+        mStaticModelRenderer->onWorldBegin(*mActiveWorld);
+
+        SkillsComponentSystem& skillsSystem = mActiveWorld->getECS().mSkillsSystem;
+        skillsSystem.registerSkillsComponentSystemListeners(mEventHandles.skillsComponentListeners);
+        skillsSystem.addActivateListener(mEventHandles.skillsComponentListeners, [world](SkillEvent skillEvent) {
+            ASSERT_GAME_THREAD();
+            SkillsComponent& skillsCmp = world->getECS().mRegistry.get<SkillsComponent>(skillEvent.mEntity);
+            const SkillDef* skill = skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->tryGetLoadedAsset();
+            if (skill) {
+                RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skill->mAnimID);
+            }
+            else {
+                LOG_WARN("Tried to play skill animation for skill slot {} but skill was not loaded", (int)skillEvent.mSkillSlot);
+            }
+        });
+    }
+    else {
+        mEventHandles.skillsComponentListeners.reset();
+    }
 }

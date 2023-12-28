@@ -98,8 +98,7 @@ void BiomeEditorViewportPanel::onEnter() {
         UIContext::getInstance().dispatchEditorWorldSet(evnt);
     }
 
-    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(sApp->getWindow(), *mEditorWorld, *RenderContext::getInstance().getCameraController());
-    mWorldInterfaceController->init();
+    initializeController();
 }
 
 void BiomeEditorViewportPanel::onExit() {
@@ -126,18 +125,23 @@ void BiomeEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
     const RenderContext& renderContext = RenderContext::getInstance();
     mActiveGBuffer = &renderContext.getActiveGBuffer();
     mActiveGBuffer->use();
-    renderContext.getWorldRenderer().renderWorld(
-        renderContext.getCamera(), renderContext.getRenderData(), mActiveGBuffer, renderContext.getCurrentFrameAlpha(), renderContext.getCurrentFrameElapsedSec(), sGBuffers[0].get()
-    );
+    if (!mShuttingDownWorld) {
+        renderContext.getWorldRenderer().renderWorld(
+            renderContext.getCamera(), renderContext.getRenderData(), mActiveGBuffer, renderContext.getCurrentFrameAlpha(), renderContext.getCurrentFrameElapsedSec(), sGBuffers[0].get()
+        );
+    }
 
     vg::DepthState::NONE.set();
 
-    renderContext.renderPassWorldDebug(*renderContext.getCamera());
+    if (!mShuttingDownWorld) {
+        renderContext.renderPassWorldDebug(*renderContext.getCamera());
+    }
     renderGrid(renderContext.getCamera()->getVPMatrix());
 
     vg::GBuffer::unuse();
 
     renderCenterPanelImage(outImageRect, sGBuffers[0]->getAlbedoTexture());
+
 }
 
 void BiomeEditorViewportPanel::postCenterPanelRender(const i32AABB2& imageRect)
@@ -175,9 +179,10 @@ void BiomeEditorViewportPanel::postCenterPanelRender(const i32AABB2& imageRect)
         else if (releasedLeft) {
             vui::InputDispatcher::injectMouseButtonEvent(viewportMousePos.x, viewportMousePos.y, vui::MouseButton::LEFT, 1, false);
         }
-
-        mWorldInterfaceController->update();
-        mWorldInterfaceController->renderUI();
+    }
+    if (mShuttingDownWorld) {
+        // We only need 1 frame to delay after world shutdown
+        mShuttingDownWorld = false;
     }
 }
 
@@ -192,6 +197,8 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 void BiomeEditorViewportPanel::initializeWorld() {
 
     if (mEditorWorld) {
+        mShuttingDownWorld = true; // Will be cleared on frame begin
+        mWorldInterfaceController.reset();
         WorldDestroyer::shutdownWorld(*mEditorWorld);
         mEditorWorld.reset();
     }
@@ -223,4 +230,9 @@ void BiomeEditorViewportPanel::initializeWorld() {
         editorWorld->onWorldBegin(f32v2(0.0f));
         GameThread::getInstance().setActiveEditorWorld(editorWorld);
     }, (void*)mEditorWorld.get());
+}
+
+void BiomeEditorViewportPanel::initializeController() {
+    mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(sApp->getWindow(), *mEditorWorld, *RenderContext::getInstance().getCameraController());
+    mWorldInterfaceController->init();
 }

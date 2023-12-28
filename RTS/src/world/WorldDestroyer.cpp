@@ -6,6 +6,7 @@
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
+#include "rendering/renderstate/GameRenderStateManager.h"
 #include "gamethread/GameThread.h"
 #include "gamethread/GameThreadTasks.h"
 
@@ -14,11 +15,17 @@ static std::atomic_bool finishedGameThreadShutdown;
 void WorldDestroyer::shutdownWorld(World& world) {
     ASSERT_RENDER_THREAD(); // Render thread is responsible for driving world shutdown
 
+    LOG_DEBUG("Shutting down world {}", (void*)&world);
+
     finishedGameThreadShutdown = false;
+
+    world.dispatchOnWorldEndRenderThread(world);
 
     do {
         RenderContext::getInstance().updateRenderThreadProcs();
     } while (RenderThreadTasks::getInstance().getQueuedProcsApprox());
+
+    GameRenderStateManager::getInstance().setActiveWorld(nullptr);
 
     {
         std::lock_guard lock(mShutdownWorldMutex);
@@ -37,6 +44,8 @@ void WorldDestroyer::shutdownWorld(World& world) {
     RenderThreadTasks::getInstance().processShutdownTasks(); // One more for good measure
 
     RenderContext::getInstance().getWorldRenderer().removeRenderDataManagerForWorld(world);
+
+    LOG_DEBUG("Finished shutdown");
 }
 
 World* WorldDestroyer::gameThreadUpdate() {

@@ -45,9 +45,16 @@
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
 
+static WorldID sWorldId = 0;
 std::unique_ptr<World> sGameWorld;
 
 World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netMode) {
+    mId = ++sWorldId;
+    {
+        std::lock_guard lock(sWorldsMutex);
+        sWorlds[mId] = this;
+    }
+
     constexpr ui32 MIN_WORLD_WIDTH_TILES = TERRAIN_QUADTREE_WIDTH;
     const ui32 worldWidthTiles = hostWorldData->worldWidth;
     assert(worldWidthTiles < MAX_WORLD_WIDTH_TILES);
@@ -128,11 +135,13 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
         Services::NavThread::ref().init(*mNavWorld);
     }
 
+    LOG_DEBUG("Allocated world 0x%08x net mode {}", (void*)this, e_cast(netMode));
+
     static_assert(e_count(WorldNetMode) == 3);
 }
 
 World::~World() {
-    
+    LOG_DEBUG("Deallocating world 0x%08x", (void*)this);
 }
 
 void World::onWorldBegin(const f32v2& loadCenter) {
@@ -149,7 +158,7 @@ void World::onWorldBegin(const f32v2& loadCenter) {
     GameRenderStateManager::getInstance().setActiveWorld(this);
 
     // Notify everyone
-    dispatchOnWorldBegin(*this);
+    dispatchOnWorldBeginGameThread(*this);
 
     // Initialize player last
     if (!isEditorWorld()) {
@@ -228,8 +237,14 @@ void World::tick(f32 elapsedSec) {
 
 void World::shutdown() {
     if (mDidBegin) {
-        dispatchOnWorldEnd(*this);
+        dispatchOnWorldEndGameThread(*this);
     }
+
+    {
+        std::lock_guard lock(sWorldsMutex);
+        sWorlds.erase(mId);
+    }
+
     mBiomeGrid.reset();
     mEcs.reset();
     mEffectContext.reset();
@@ -252,6 +267,18 @@ void World::shutdown() {
     // Render thread needs to remove resources
     while (RenderThreadTasks::getInstance().getQueuedShutdownTasksApprox()) {
         Sleep(1);
+    }
+}
+
+void World::shutdownAllWorld()
+{
+    World* worldToDestroy;
+    while (sWorlds.size()) {
+        {
+            std::lock_guard lock(sWorldsMutex);
+            worldToDestroy = sWorlds.begin()->second;
+        }
+        worldToDestroy->shutdown();
     }
 }
 
@@ -362,6 +389,15 @@ std::vector<Structure*> World::tryGetStructuresAtWorldPos(const i32v2& worldPos)
     return mStructureManager->tryGetStructuresAtWorldPos(worldPos);
 }
 
+World* World::tryGetWorld(WorldID id) {
+    std::shared_lock lock(sWorldsMutex);
+    auto&& it = sWorlds.find(id);
+    if (it != sWorlds.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 void World::updateRenderState() {
 
     RenderContext::getInstance().tickGameThread(*this);
@@ -384,7 +420,7 @@ void World::updateRenderState() {
     }
 
     // Acquire render state
-    renderState.mWorld = this;
+    renderState.mWorldId = mId;
     renderState.mWorldLoadCenter = getLoadCenter();
     renderState.mCameraOwningEntityPos = cameraEntityPos;
 

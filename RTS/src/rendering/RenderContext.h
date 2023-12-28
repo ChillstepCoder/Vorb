@@ -2,6 +2,7 @@
 
 #include "GlobalRenderData.h"
 #include "camera/Camera3D.h"
+#include "world/WorldEvents.h"
 
 class AmbientOcclusionPostProcess;
 class CameraController;
@@ -93,11 +94,11 @@ public:
 
     // Callable from world renderer
     void renderPassWorldDebug(const Camera3D& camera) const;
-
     
     void updateRenderThreadProcs();
 private:
     void updateCamera(f32 frameAlpha);
+    void initEvents();
 
     // Render passes
     void renderPassUI(const Camera3D& camera, const WorldRenderState& renderState);
@@ -116,6 +117,7 @@ private:
 
     // World
     World* mActiveWorld = nullptr;
+    //WorldListeners mWorldEventListeners;
     std::unique_ptr<WorldRenderer> mWorldRenderer;
     std::unique_ptr<ModelBillboardLodBuilder> mModelBillboardLodBuilder;
 

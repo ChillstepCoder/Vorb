@@ -31,11 +31,13 @@ protected:
 	VGTexture getFinalOutputTexture() override;
 
 	void initializeWorld();
+	void initializeController();
 
 	vg::GBuffer* mActiveGBuffer = nullptr;
     std::unique_ptr<World> mEditorWorld;
     std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
 	bool mLeftMousePressed = false;
+	bool mShuttingDownWorld = false;
 
 	BiomeUniqueID mSelectedBiome = BiomeUniqueID::Ocean;
 
