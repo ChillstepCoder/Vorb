@@ -48,6 +48,17 @@ void WorldDestroyer::shutdownWorld(World& world) {
     LOG_DEBUG("Finished shutdown");
 }
 
+void WorldDestroyer::shutdownAllWorlds() {
+    World* worldToDestroy;
+    while (World::sWorlds.size()) {
+        {
+            std::lock_guard lock(World::sWorldsMutex);
+            worldToDestroy = World::sWorlds.begin()->second;
+        }
+        shutdownWorld(*worldToDestroy);
+    }
+}
+
 World* WorldDestroyer::gameThreadUpdate() {
     World* worldToKill = nullptr;
     {

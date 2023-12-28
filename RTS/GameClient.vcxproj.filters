@@ -954,6 +954,9 @@
     <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\DataAssetRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2319,6 +2322,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\biome\BiomeCorruptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\DataAssetRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\TileDistributionDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\TileDistributionRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

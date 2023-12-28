@@ -148,6 +148,7 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_EULER_DEFAULT_ZYX;BT_ENABLE_PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalOptions>/Bt+ %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;Bullet3Common_vs2010_x64_debug.lib;Bullet3Dynamics_vs2010_x64_debug.lib;Bullet3Geometry_vs2010_x64_debug.lib;Bullet3Collision_vs2010_x64_debug.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib</AdditionalDependencies>
@@ -432,6 +433,7 @@
     <ClCompile Include="src\resources\asset\SoftAssetReference.cpp" />
     <ClCompile Include="src\resources\BiomeRepository.cpp" />
     <ClCompile Include="src\resources\CubemapRepository.cpp" />
+    <ClCompile Include="src\resources\DataAssetRepository.cpp" />
     <ClCompile Include="src\resources\EffectRepository.cpp" />
     <ClCompile Include="src\resources\FishRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
@@ -598,6 +600,7 @@
     <ClInclude Include="src\definitions\rendering\TextureDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
     <ClInclude Include="src\definitions\SkillDef.h" />
+    <ClInclude Include="src\definitions\TileDistributionDef.h" />
     <ClInclude Include="src\definitions\TileGrassDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
@@ -838,6 +841,7 @@
     <ClInclude Include="src\resources\asset\SoftAssetReference.h" />
     <ClInclude Include="src\resources\BiomeRepository.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
+    <ClInclude Include="src\resources\DataAssetRepository.h" />
     <ClInclude Include="src\resources\EffectRepository.h" />
     <ClInclude Include="src\resources\FishRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
@@ -851,6 +855,7 @@
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\resources\SkillRepository.h" />
     <ClInclude Include="src\resources\TextureRepository.h" />
+    <ClInclude Include="src\resources\TileDistributionRepository.h" />
     <ClInclude Include="src\resources\TileGrassRepository.h" />
     <ClInclude Include="src\resources\TileRepository.h" />
     <ClInclude Include="src\screens\GameplayScreen.h" />

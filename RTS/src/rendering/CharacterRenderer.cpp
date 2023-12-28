@@ -47,9 +47,12 @@ CharacterRenderer::~CharacterRenderer() {
 
 void CharacterRenderer::onWorldBegin(World& world) {
     ASSERT_GAME_THREAD();
-    mRegisteredECS = &world.getECS().mRegistry;
-    mRegisteredECS->on_construct<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelConstruct>(this);
-    mRegisteredECS->on_destroy<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelDestroy>(this);
+    // Only register once
+    if (!mRegisteredECS) {
+        mRegisteredECS = &world.getECS().mRegistry;
+        mRegisteredECS->on_construct<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelConstruct>(this);
+        mRegisteredECS->on_destroy<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelDestroy>(this);
+    }
 }
 
 void CharacterRenderer::frameBegin() {

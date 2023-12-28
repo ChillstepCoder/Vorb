@@ -37,7 +37,7 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() = default;
 
-void InstancedStaticModelRenderer::onWorldBegin(World& world) {
+void InstancedStaticModelRenderer::setActiveWorld(World& world) {
     mWeatherManager = &world.getWeatherManager();
 }
 

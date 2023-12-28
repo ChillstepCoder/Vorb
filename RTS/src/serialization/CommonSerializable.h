@@ -30,25 +30,24 @@ YML_READ_DEF(SoftAssetReference) {
     return true;
 }
 
-
-// ASSET TYPE
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
-    pair{ AssetType::Tile, "tile"sv },
-    pair{ AssetType::ParticleSystem, "particle_system"sv },
-    pair{ AssetType::Effect, "effect"sv },
-    pair{ AssetType::Texture, "texture"sv },
-    pair{ AssetType::Cubemap, "cubemap"sv },
-    pair{ AssetType::Brush, "brush"sv },
-    pair{ AssetType::Material, "material"sv },
-    pair{ AssetType::Rig, "rig"sv },
-    pair{ AssetType::Animation, "animation"sv },
-    pair{ AssetType::AnimMachine, "anim_machine"sv },
-    pair{ AssetType::Model, "model"sv },
-    pair{ AssetType::Skill, "skill"sv },
-    pair{ AssetType::Item, "item"sv },
-    pair{ AssetType::Fish, "fish"sv },
-    pair{ AssetType::MaterialShader, "material_shader"sv },
-    pair{ AssetType::TileGrass, "tile_grass"sv },
-    pair{ AssetType::Biome, "biome"sv },
-)
-static_assert(e_count(AssetType) == 17);
+    ENUM_FIELD_SIMPLE(AssetType, Tile),
+    ENUM_FIELD_SIMPLE(AssetType, ParticleSystem),
+    ENUM_FIELD_SIMPLE(AssetType, Effect),
+    ENUM_FIELD_SIMPLE(AssetType, Texture),
+    ENUM_FIELD_SIMPLE(AssetType, Cubemap),
+    ENUM_FIELD_SIMPLE(AssetType, Brush),
+    ENUM_FIELD_SIMPLE(AssetType, Material),
+    ENUM_FIELD_SIMPLE(AssetType, Rig),
+    ENUM_FIELD_SIMPLE(AssetType, Animation),
+    ENUM_FIELD_SIMPLE(AssetType, AnimMachine),
+    ENUM_FIELD_SIMPLE(AssetType, Model),
+    ENUM_FIELD_SIMPLE(AssetType, Skill),
+    ENUM_FIELD_SIMPLE(AssetType, Item),
+    ENUM_FIELD_SIMPLE(AssetType, Fish),
+    ENUM_FIELD_SIMPLE(AssetType, MaterialShader),
+    ENUM_FIELD_SIMPLE(AssetType, TileGrass),
+    ENUM_FIELD_SIMPLE(AssetType, Biome),
+    ENUM_FIELD_SIMPLE(AssetType, TileDistribution)
+);
+static_assert(e_count(AssetType) == 18);

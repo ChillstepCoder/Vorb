@@ -25,6 +25,7 @@
 #include "definitions/rendering/TextureDef.h"
 #include "definitions/SkillDef.h"
 #include "definitions/TileGrassDef.h"
+#include "definitions/TileDistributionDef.h"
 #include "item/ItemDef.h"
 #include "tile/Tile.h"
 
@@ -106,13 +107,16 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
         case AssetType::Biome:
             assetButton<BiomeDef>(assetRef);
             break;
+        case AssetType::TileDistribution:
+            assetButton<TileDistributionDef>(assetRef);
+            break;
         case AssetType::NONE:
         default:
             panic("Unhandled asset type {} in SoftAssetReference::updateAndRenderSoftAssetReference", e_cast(assetRef.assetType));
             break;
 
     }
-    static_assert(e_count(AssetType) == 17);
+    static_assert(e_count(AssetType) == 18);
 
     auto&& it = sAssetSelectorPopup.find(&assetRef);
     if (it != sAssetSelectorPopup.end()) {

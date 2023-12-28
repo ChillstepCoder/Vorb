@@ -1,19 +1,19 @@
 startup:
-  - [loading, texture]
-  - [integrate_brdf, material_shader]
-  - [cubemap_irradiance, material_shader]
-  - [prefilter_ggx, material_shader]
-  - [terrain_base, material_shader]
-  - [river_carve, material_shader]
-  - [biome_grow, material_shader]
-  - [perlin_noise, texture]
+  - [loading, Texture]
+  - [integrate_brdf, MaterialShader]
+  - [cubemap_irradiance, MaterialShader]
+  - [prefilter_ggx, MaterialShader]
+  - [terrain_base, MaterialShader]
+  - [river_carve, MaterialShader]
+  - [biome_grow, MaterialShader]
+  - [perlin_noise, Texture]
 preload:
-#  - [*, material] #uncomment to force generate all .dds
-  - [*, material_shader]
-  - [cloud_color, material]
-  - [cloud_sil, material]
-  - [van_gogh_2, material]
-  - [cell_noise, material]
-  - [grass_terrain, material]
-  - [mountain, material]
-  - [*, model] #DEVELOPMENT ONLY?
+#  - [*, Material] #uncomment to force generate all .dds
+  - [*, MaterialShader]
+  - [cloud_color, Material]
+  - [cloud_sil, Material]
+  - [van_gogh_2, Material]
+  - [cell_noise, Material]
+  - [grass_terrain, Material]
+  - [mountain, Material]
+  - [*, Model] #DEVELOPMENT ONLY?

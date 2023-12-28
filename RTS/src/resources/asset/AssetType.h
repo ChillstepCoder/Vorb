@@ -18,6 +18,7 @@ enum class AssetType : ui8 {
     MaterialShader,
     TileGrass,
     Biome,
+    TileDistribution,
     NONE,
     COUNT = NONE
 };

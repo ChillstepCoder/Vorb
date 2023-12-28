@@ -32,7 +32,7 @@ TerrainRenderer::TerrainRenderer() {
     mWaterPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_pbr"));
 }
 
-void TerrainRenderer::onWorldBegin(World& world) {
+void TerrainRenderer::setActiveWorld(World& world) {
     mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
     mInverseWorldWidth = (f32)(1.0 / (f64)world.getWidthTiles());
     mWeatherManager = &world.getWeatherManager();

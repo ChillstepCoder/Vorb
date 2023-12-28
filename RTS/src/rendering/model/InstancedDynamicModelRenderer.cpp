@@ -173,6 +173,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
             it = mModelBatchesThisFrame.erase(it);
         }
     }
+    // TODO: Had a crash here (0 == 273)
     assert(transformIndex == totalTransforms);
     mTransformsBuffer->flushDataAndIncrementFrame(totalTransforms);
 }

@@ -26,6 +26,7 @@
 #include "resources/FontRepository.h"
 #include "resources/FishRepository.h"
 #include "resources/ParticleSystemRepository.h"
+#include "resources/TileDistributionRepository.h"
 #include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
 #include "editor/EditorResources.h"
@@ -82,7 +83,8 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(MaterialShaderRepository, AssetType::MaterialShader);
     REGISTER_ASSET_REPO(TileGrassRepository, AssetType::TileGrass);
     REGISTER_ASSET_REPO(BiomeRepository, AssetType::Biome);
-    static_assert(e_count(AssetType) == 17);
+    REGISTER_ASSET_REPO(TileDistributionRepository, AssetType::TileDistribution);
+    static_assert(e_count(AssetType) == 18);
 
     // Add other extensions
     mExtensionToAssetRepository[CStrToken("comp")] = &MaterialShaderRepository::get();

@@ -17,7 +17,7 @@ class TerrainRenderer
 public:
     TerrainRenderer();
 
-    void onWorldBegin(World& world);
+    void setActiveWorld(World& world);
 
     void renderTerrain(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& terrainMeshes);
     void renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const CubemapDef& skyCubeMap);

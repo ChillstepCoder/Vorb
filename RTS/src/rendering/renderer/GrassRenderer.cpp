@@ -43,7 +43,7 @@ GrassRenderer::~GrassRenderer() {
 
 }
 
-void GrassRenderer::onWorldBegin(World& world) {
+void GrassRenderer::setActiveWorld(World& world) {
     mBiomeTexture = world.getBiomeGrid().getBiomeTexture();
     mInverseWorldWidth = (f32)(1.0 / (f64)world.getWidthTiles());
     mWeatherManager = &world.getWeatherManager();

@@ -72,7 +72,7 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedS
             mPauseMenuPanel.reset();
         }
         if (destroyWorld) {
-            World::shutdownAllWorlds();
+            WorldDestroyer::shutdownAllWorlds();
         }
     }
 

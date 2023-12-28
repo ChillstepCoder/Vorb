@@ -28,7 +28,7 @@ public:
     GrassRenderer();
     ~GrassRenderer();
 
-    void onWorldBegin(World& world);
+    void setActiveWorld(World& world);
 
     void renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes);
 

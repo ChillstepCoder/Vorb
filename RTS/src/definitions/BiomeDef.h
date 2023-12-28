@@ -52,9 +52,10 @@ SERIALIZABLE_SIMPLE(BiomePossibleTile,
     make_field(o.weight, "weight"sv)
 );
 
-// Optional noise function
-YML_WRITE_DEF_PTR(NoiseFunction);
-YML_READ_DEF_PTR(NoiseFunction);
+
+
+// TODO: Have a generic DataAssetRepository for things like Distributions and such.
+// Pure data assets dont need a complicated loader and can be always loaded
 
 struct BiomeTileGenCategory {
     std::vector<BiomePossibleTile> tiles;

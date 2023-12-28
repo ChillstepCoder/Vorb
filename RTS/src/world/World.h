@@ -34,6 +34,7 @@ class WeatherManager;
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
 class World {
+    friend class WorldDestroyer;
 public:
     World(WorldNetMode netMode, HostWorldData* hostWorldData);
     ~World();

@@ -529,6 +529,8 @@ void WorldRenderer::initEventHandlers() {
         mRenderDataManagers.insert(
             std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
         );
+        mCharacterRenderer->onWorldBegin(world);
+
     });
     World::addOnWorldEndRenderThreadListener(mEventHandles.worldEventListeners, [this](World& world) {
         WorldRenderDataManager* mgr = nullptr;
@@ -669,10 +671,9 @@ void WorldRenderer::setActiveWorld(World* world) {
     if (mActiveWorld) {
 
         // TODO: Rename -> setActiveWorld
-        mCharacterRenderer->onWorldBegin(*mActiveWorld);
-        mTerrainRenderer->onWorldBegin(*mActiveWorld);
-        mGrassRenderer->onWorldBegin(*mActiveWorld);
-        mStaticModelRenderer->onWorldBegin(*mActiveWorld);
+        mTerrainRenderer->setActiveWorld(*mActiveWorld);
+        mGrassRenderer->setActiveWorld(*mActiveWorld);
+        mStaticModelRenderer->setActiveWorld(*mActiveWorld);
 
         SkillsComponentSystem& skillsSystem = mActiveWorld->getECS().mSkillsSystem;
         skillsSystem.registerSkillsComponentSystemListeners(mEventHandles.skillsComponentListeners);

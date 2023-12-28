@@ -77,7 +77,7 @@ public:
     f64 amplitude = 1.0;
     f64 heightOffset = 0.0;
 };
-SERIALIZABLE_SIMPLE(NoiseFunction,
+SERIALIZABLE_IMGUI_CONTROLLED(NoiseFunction,
     make_field(o.label, "label"),
     make_field(o.type, "type"),
     make_field(o.octaves, "octaves"),
@@ -87,3 +87,7 @@ SERIALIZABLE_SIMPLE(NoiseFunction,
     make_field(o.amplitude, "amplitude"),
     make_field(o.heightOffset, "heightOffset")
 )
+
+// Optional noise function ptr
+YML_WRITE_DEF_PTR(NoiseFunction);
+YML_READ_DEF_PTR(NoiseFunction);

@@ -270,17 +270,6 @@ void World::shutdown() {
     }
 }
 
-void World::shutdownAllWorld()
-{
-    World* worldToDestroy;
-    while (sWorlds.size()) {
-        {
-            std::lock_guard lock(sWorldsMutex);
-            worldToDestroy = sWorlds.begin()->second;
-        }
-        worldToDestroy->shutdown();
-    }
-}
 
 f32v3 World::getDefaultSpawn() const {
     return f32v3(mWidthTiles * mDefaultPlayerSpawnUV.x, mWidthTiles * mDefaultPlayerSpawnUV.y, 20.0f);

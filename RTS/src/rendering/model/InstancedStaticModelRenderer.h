@@ -18,7 +18,7 @@ public:
     InstancedStaticModelRenderer();
     ~InstancedStaticModelRenderer();
 
-    void onWorldBegin(World& world);
+    void setActiveWorld(World& world);
 
     void renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap);
     void renderModelShadows(const ModelInstanceMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera);
