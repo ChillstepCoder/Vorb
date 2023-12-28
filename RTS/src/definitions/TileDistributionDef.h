@@ -8,7 +8,7 @@ public:
 
     f32 spacing = 1.0f;
     f32 probability = 1.0f;
-    f32 offset = f32v2(0.0f);
+    f32v2 offset = f32v2(0.0f);
     std::unique_ptr<NoiseFunction> distFunc;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(TileDistributionDef,

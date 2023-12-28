@@ -2,15 +2,8 @@
 
 #include "resources/IAssetRepository.h"
 
-struct conststr
-{
-    const char* const p;
-    template<std::size_t N>
-    constexpr conststr(const char(&a)[N]) : p(a)/*, sz(N - 1) */ {}
-};
-
 // For simple "always loaded" data assets
-template <typename T, AssetType ASSET_TYPE, conststr EXTENSION>
+template <typename T, AssetType ASSET_TYPE, StringLiteral EXTENSION>
 class DataAssetRepository : public IAssetRepository<T>
 {
 public:
@@ -28,8 +21,8 @@ public:
 
     DEFAULT_ASSET_SAVE_FUNC();
 
-    StrToken getAssetExtension() const override { return CStrToken(EXTENSION.p); }
-    const char* const getAssetTypeDisplayName() const override { return EXTENSION.p; }
+    StrToken getAssetExtension() const override { return CStrToken(EXTENSION.value); }
+    const char* const getAssetTypeDisplayName() const override { return EXTENSION.value; }
 
 protected:
 
