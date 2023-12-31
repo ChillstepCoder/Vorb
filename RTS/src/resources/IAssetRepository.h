@@ -474,10 +474,10 @@ namespace AssetUtil {
 
 #define DEFAULT_ASSET_SAVE_FUNC() \
 virtual bool saveAsset(AssetID assetId) override { \
-    const auto& def = *mAssets[assetId];  \
-    vio::Path filePath = getAssetFilePath(assetId); \
+    const auto& def = *this->mAssets[assetId];  \
+    vio::Path filePath = this->getAssetFilePath(assetId); \
     if (filePath.isNull()) { \
-        panic("Missing filepath for {} {} while saving", getAssetTypeDisplayName(), def.getName().toString()); \
+        panic("Missing filepath for {} {} while saving", this->getAssetTypeDisplayName(), def.getName().toString()); \
     } \
     ryml::Tree tree; \
     ryml::NodeRef root = tree.rootref(); \
@@ -486,9 +486,9 @@ virtual bool saveAsset(AssetID assetId) override { \
     std::stringstream ss; \
     ss << tree; \
     nString str = ss.str(); \
-    const bool success = saveAssetContents(def, filePath, str.c_str(), str.size()); \
+    const bool success = this->saveAssetContents(def, filePath, str.c_str(), str.size()); \
     if (!success) { \
-        LOG_CRITICAL("Failed to save {} {}", getAssetTypeDisplayName(), def.getName().toString()); \
+        LOG_CRITICAL("Failed to save {} {}", this->getAssetTypeDisplayName(), def.getName().toString()); \
     } \
     return success; \
 }

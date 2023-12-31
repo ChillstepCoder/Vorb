@@ -6,7 +6,7 @@ class EffectDef : public IAsset {
 public:
     friend class EffectRepository;
 
-    DEFAULT_ASSET_CONSTRUCTOR(EffectDef);
+    DEFAULT_ASSET_CONSTRUCTOR(EffectDef, AssetType::Effect);
 
     //StrToken mSFXName;
     //int priority

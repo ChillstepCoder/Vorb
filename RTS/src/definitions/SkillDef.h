@@ -79,7 +79,7 @@ constexpr ui32 MAX_SKILL_TRIGGERS = 4;
 
 class SkillDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(SkillDef);
+    DEFAULT_ASSET_CONSTRUCTOR(SkillDef, AssetType::Skill);
 
     ui32 mSkillId;
     f32 mDuration;

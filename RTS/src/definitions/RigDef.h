@@ -21,7 +21,7 @@ typedef const ozz::animation::Animation* ConstOzzAnimationPtr;
 
 class RigDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(RigDef);
+    DEFAULT_ASSET_CONSTRUCTOR(RigDef, AssetType::Rig);
 
     std::map<StrToken, ui32> mNameToAnimationIndex;
     std::unique_ptr<ConstOzzAnimationPtr[]> mAnimations;

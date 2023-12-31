@@ -42,7 +42,7 @@ struct MaterialDesc {
 
 class MaterialDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(MaterialDef);
+    DEFAULT_ASSET_CONSTRUCTOR(MaterialDef, AssetType::Material);
 
     StrToken albedoTexture;
     StrToken normalTexture;

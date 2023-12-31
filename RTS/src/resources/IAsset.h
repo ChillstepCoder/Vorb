@@ -4,8 +4,10 @@
 
 class IAssetRepositoryBase;
 
-#define DEFAULT_ASSET_CONSTRUCTOR(Type) \
-    Type(StrToken name, AssetID id) : IAsset(name, id) {};
+#define DEFAULT_ASSET_CONSTRUCTOR(Type, EType) \
+    Type(StrToken name, AssetID id) : IAsset(name, id) {}; \
+    AssetType getAssetType() const override { return EType; } \
+    inline static constexpr AssetType ASSET_TYPE = EType;
 
 class AssetHandleBundle;
 class AssetHandleBase;
@@ -21,6 +23,7 @@ public:
     void setName(StrToken name) { mName = name; }
 
     AssetID getID() const { return mID; }
+    virtual AssetType getAssetType() const = 0;
 
     bool isDirty() const { return mDirty; }
     void setDirty(bool val) const { mDirty = val; }

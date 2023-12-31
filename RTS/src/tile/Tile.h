@@ -103,7 +103,7 @@ constexpr int MAX_TILE_MATERIAL_SLOTS = 8;
 // This def is accessed quite commonly
 class TileDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(TileDef);
+    DEFAULT_ASSET_CONSTRUCTOR(TileDef, AssetType::Tile);
 
     f32v3 dims = f32v3(1.0f);
    // TileCollider collider;

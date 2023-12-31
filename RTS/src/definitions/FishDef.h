@@ -55,7 +55,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(FishingMinigameFishData,
 
 class FishDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(FishDef);
+    DEFAULT_ASSET_CONSTRUCTOR(FishDef, AssetType::Fish);
 
     SoftAssetReference mItemRef = AssetType::Item;
     SoftAssetReference mModelRef = AssetType::Model;

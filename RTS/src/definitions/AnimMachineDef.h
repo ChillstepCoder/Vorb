@@ -12,7 +12,7 @@ namespace ozz {
 // Make sure order and contents of the animation machine name and animation arrays are the same
 class AnimMachineDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(AnimMachineDef);
+    DEFAULT_ASSET_CONSTRUCTOR(AnimMachineDef, AssetType::AnimMachine);
 
     union {
         struct {

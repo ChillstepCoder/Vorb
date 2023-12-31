@@ -4,7 +4,7 @@
 
 class TileDistributionDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(TileDistributionDef);
+    DEFAULT_ASSET_CONSTRUCTOR(TileDistributionDef, AssetType::TileDistribution);
 
     f32 spacing = 1.0f;
     f32 probability = 1.0f;

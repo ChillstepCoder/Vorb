@@ -8,7 +8,7 @@
 
 class TileGrassDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(TileGrassDef);
+    DEFAULT_ASSET_CONSTRUCTOR(TileGrassDef, AssetType::TileGrass);
 
     StrToken mAlphaMaskTextureName;
     StrToken mTextureName;

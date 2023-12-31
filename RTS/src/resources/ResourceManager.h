@@ -65,6 +65,17 @@ public:
     AssetMetadata getAssetMetadata(AssetDescriptor desc);
     AssetMetadata tryGetAssetMetadataForPath(const std::filesystem::path& path);
 
+    template <IsAssetType T>
+    static AssetHandlePtr<T> getAssetHandle(AssetID id) {
+        IAssetRepositoryBase& repo = get().getAssetRepository(T::getAssetType());
+        return static_unique_pointer_cast<AssetHandle<T>>(repo.getAssetHandleBase(id));
+    }
+    template <IsAssetType T>
+    static AssetHandlePtr<T> getAssetHandle(StrToken assetName) {
+        IAssetRepositoryBase& repo = get().getAssetRepository(T::getAssetType());
+        return static_unique_pointer_cast<AssetHandle<T>>(repo.getAssetHandleBase(assetName));
+    }
+
 private:
     void gatherRecursive(const vio::Path& folderPath);
     void preloadFiles();

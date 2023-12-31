@@ -126,6 +126,9 @@ namespace YmlSerializer {
             // Handle floating point types (e.g., float, double)
             changed |= ImGui::SliderFloat(label.data(), reinterpret_cast<float*>(&value), 0.0f, 10000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         }
+        else if constexpr (std::is_same_v<First, bool>) {
+            changed |= ImGui::Checkbox(label.data(), &value);
+        }
         else if constexpr (std::is_integral_v<First>) {
             // Handle integral types (e.g., int, unsigned int)
             changed |= ImGui::SliderInt(label.data(), reinterpret_cast<int*>(&value), 0, 1000);
@@ -171,6 +174,16 @@ namespace YmlSerializer {
         }
         else if constexpr (std::is_same_v<First, SoftAssetReference>) {
             changed |= ImguiUtil::updateAndRenderSoftAssetReference(label.data(), value );
+        }
+        else if constexpr (std::is_same_v<First, color3>) {
+            float colorf[3] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f };
+            changed |= ImGui::ColorEdit3(label.data(), colorf, ImGuiColorEditFlags_Uint8);
+            value = color3((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f));
+        }
+        else if constexpr (std::is_same_v<First, color4>) {
+            float colorf[4] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f, value.a / 255.0f };
+            changed |= ImGui::ColorEdit4(label.data(), colorf, ImGuiColorEditFlags_Uint8);
+            value = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
         // Add more type checks if needed
         return changed | updateAndRenderImgui<T>(rest...);

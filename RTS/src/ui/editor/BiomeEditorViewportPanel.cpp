@@ -68,6 +68,11 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     if (ImguiUtil::EnumCombo("Selected Biome", mSelectedBiome)) {
         initializeWorld();
     }
+    bool changed = false;
+    if (mAssetData) {
+        ImGui::Text("Biome: %s", mAssetData->displayName.c_str());
+        changed |= updateAndRenderImguiControls(*mAssetData);
+    }
 
     ImGui::Separator();
     updateAndRenderSharedControls();

@@ -45,7 +45,7 @@ struct MaterialTextureInput {
 
 class MaterialShaderDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(MaterialShaderDef);
+    DEFAULT_ASSET_CONSTRUCTOR(MaterialShaderDef, AssetType::MaterialShader);
 
     void use(OUT ui32& nextAvailableTextureIndex) const;
     void useCompute() const;

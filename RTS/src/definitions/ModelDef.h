@@ -36,7 +36,7 @@ struct ModelDrawInfo {
 // in a ModelBatch
 class ModelDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(ModelDef);
+    DEFAULT_ASSET_CONSTRUCTOR(ModelDef, AssetType::Model);
 
     VORB_NON_COPYABLE_BUT_MOVABLE(ModelDef);
 

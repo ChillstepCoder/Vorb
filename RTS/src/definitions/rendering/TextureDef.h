@@ -8,7 +8,7 @@
 
 class TextureDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(TextureDef);
+    DEFAULT_ASSET_CONSTRUCTOR(TextureDef, AssetType::Texture);
 
     VGTexture getTextureHandle() const { return gpuTexture.getHandle(); }
 

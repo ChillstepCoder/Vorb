@@ -51,7 +51,7 @@ class ItemDef : public IAsset {
     friend class ItemRenderer;
     friend class ItemStockpile;
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(ItemDef);
+    DEFAULT_ASSET_CONSTRUCTOR(ItemDef, AssetType::Item);
 
     // TODO: Remove accessors
     f32 getValue() const { return mValue; }

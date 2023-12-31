@@ -3,6 +3,7 @@
 #include "generation/NoiseFunction.hpp"
 
 #include "world/biome/BiomeCorruptions.h"
+#include "definitions/TileDistributionDef.h"
 
 // .biome file names should match exactly
 // Corrupt biomes should be _B and _C and always come
@@ -59,16 +60,16 @@ SERIALIZABLE_SIMPLE(BiomePossibleTile,
 
 struct BiomeTileGenCategory {
     std::vector<BiomePossibleTile> tiles;
-    std::unique_ptr<NoiseFunction> densityFunction;
+    SoftAssetReference distribution = AssetType::TileDistribution;
     f32 minHeight = 0.0f;
     f32 maxHeight = FLT_MAX;
-    f32 spacing = 2.0f; // If 0 means eval every tile
+    f32 spacing = 2.0f; // 0 means eval every tile
     // Probability of spawning a tile in this category if passing density + spacing check
     f32 probability = 1.0f;
 };
-SERIALIZABLE_SIMPLE(BiomeTileGenCategory,
+SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
     make_field(o.tiles, "tiles"sv),
-    make_field(o.densityFunction, "dens_f"sv),
+    make_field(o.distribution, "dist"sv),
     make_field(o.minHeight, "min_h"sv),
     make_field(o.maxHeight, "max_h"sv),
     make_field(o.spacing, "spacing"sv),
@@ -77,7 +78,7 @@ SERIALIZABLE_SIMPLE(BiomeTileGenCategory,
 
 class BiomeDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(BiomeDef);
+    DEFAULT_ASSET_CONSTRUCTOR(BiomeDef, AssetType::Biome);
 
     // Assigned based on name
     BiomeUniqueID uniqueId = BiomeUniqueID::INVALID;
@@ -96,7 +97,7 @@ public:
     // Tile spawning
     std::vector<BiomeTileGenCategory> tileGenCategories;
 };
-SERIALIZABLE_SIMPLE(BiomeDef,
+SERIALIZABLE_IMGUI_CONTROLLED(BiomeDef,
     make_field(o.priority, "priority"sv),
     make_field(o.displayName, "name"sv),
     make_field(o.colorMapTexture, "col_map"sv),
