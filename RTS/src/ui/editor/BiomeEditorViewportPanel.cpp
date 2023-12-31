@@ -13,6 +13,7 @@
 
 #include "resources/ResourceManager.h"
 
+#include "ui/imgui_controls/ObjectVector.h"
 #include "ui/imgui_controls/EnumCombo.h"
 
 #include "world/World.h"
@@ -65,13 +66,29 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Biome Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Biome Editor Controls");
 
-    if (ImguiUtil::EnumCombo("Selected Biome", mSelectedBiome)) {
+    if (ImguiUtil::updateAndRenderSoftAssetReference("Biome", mSelectedBiome)) {
         initializeWorld();
     }
     bool changed = false;
     if (mAssetData) {
         ImGui::Text("Biome: %s", mAssetData->displayName.c_str());
+        updateAndRenderSaveButton();
         changed |= updateAndRenderImguiControls(*mAssetData);
+        // Tile gen categories
+        changed |= ImguiUtil::ObjectVector<BiomeTileGenCategory>("Categories", mAssetData->tileGenCategories,
+            [](BiomeTileGenCategory& o) {
+                bool changed = false;
+                changed |= updateAndRenderImguiControls(o);
+                changed |= ImguiUtil::ObjectVector<BiomePossibleTile>("Tiles", o.tiles,
+                    [](BiomePossibleTile& o) {
+                        bool changed = false;
+                        changed |= updateAndRenderImguiControls(o);
+                        return changed;
+                    }
+                );
+                return changed;
+            }
+        );
     }
 
     ImGui::Separator();
@@ -84,24 +101,17 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 void BiomeEditorViewportPanel::onEnter() {
 
     if (mAssetData) {
-        mSelectedBiome = mAssetData->uniqueId;
+        mSelectedBiome.name = mAssetData->getName();
+
+        if (!mEditorWorld) {
+            initializeWorld();
+        }
+        else {
+            GameThread::getInstance().setActiveEditorWorld(mEditorWorld.get());
+        }
     }
 
-    if (!mEditorWorld) {
-        initializeWorld();
-        mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());
-    }
-    else {
-        GameThread::getInstance().setActiveEditorWorld(mEditorWorld.get());
-    }
-
-    {
-        // Dispatch editor world
-        UIContextEvent evnt;
-        evnt.eventType = UIContextEventType::EditorWorldSet;
-        evnt.mWorld = mEditorWorld.get();
-        UIContext::getInstance().dispatchEditorWorldSet(evnt);
-    }
+    
 
     initializeController();
 }
@@ -122,7 +132,7 @@ void BiomeEditorViewportPanel::onExit() {
 void BiomeEditorViewportPanel::setCurrentAsset(AssetID assetId) {
     AssetEditorViewportPanel<BiomeDef>::setCurrentAsset(assetId);
     if (mAssetData) {
-        mSelectedBiome = mAssetData->uniqueId;
+        mSelectedBiome.name = mAssetData->getName();
     }
 }
 
@@ -213,7 +223,9 @@ void BiomeEditorViewportPanel::initializeWorld() {
     // Always create new, biome grid will destroy old one
     glCreateTextures(GL_TEXTURE_2D, 1, &mBiomeTexture);
     glTextureStorage2D(mBiomeTexture, 1, GL_R8, 1, 1); // Just one pixel
-    const ui8 biomeId = e_cast(mSelectedBiome);
+
+    const BiomeDef& def = ResourceManager::getAssetHandle<BiomeDef>(mSelectedBiome.name)->getLoadedAsset();
+    const ui8 biomeId = e_cast(def.uniqueId);
     glTextureSubImage2D(mBiomeTexture, 0, 0, 0, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &biomeId); // Set default biome
 
     HostWorldData worldData;
@@ -223,18 +235,17 @@ void BiomeEditorViewportPanel::initializeWorld() {
     worldData.biomeGrid = std::make_unique<BiomeGrid>(worldData.worldWidth);
     worldData.biomeGrid->setBiomeTexture(mBiomeTexture);
     for (int v = 0; v < worldData.biomeGrid->getTotalVertices(); ++v) {
-        worldData.biomeGrid->getVertexForGeneration(v).biomeUniqueId = mSelectedBiome;
+        worldData.biomeGrid->getVertexForGeneration(v).biomeUniqueId = def.uniqueId;
     }
 
     //mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
     mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, &worldData);
 
-    GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
-        World* editorWorld = static_cast<World*>(vWorld);
-        editorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
-        editorWorld->onWorldBegin(f32v2(0.0f));
-        GameThread::getInstance().setActiveEditorWorld(editorWorld);
-    }, (void*)mEditorWorld.get());
+    mEditorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
+    mEditorWorld->onWorldBegin(f32v2(0.0f));
+    GameThread::getInstance().setActiveEditorWorld(mEditorWorld.get());
+    
+    mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());
 }
 
 void BiomeEditorViewportPanel::initializeController() {

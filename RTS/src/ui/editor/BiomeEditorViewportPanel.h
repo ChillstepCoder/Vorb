@@ -39,7 +39,7 @@ protected:
 	bool mLeftMousePressed = false;
 	bool mShuttingDownWorld = false;
 
-	BiomeUniqueID mSelectedBiome = BiomeUniqueID::Ocean;
+	SoftAssetReference mSelectedBiome = AssetType::Biome;
 
 	VGTexture mBiomeTexture;
 };

@@ -53,16 +53,24 @@ void GameThread::destroyInstance() {
 
 void GameThread::setActiveEditorWorld(World* editorWorld)
 {
-    std::lock_guard lock(mActiveEditorWorldMutex);
-    mActiveEditorWorld = editorWorld;
-    if (GameRenderStateManager::exists()) {
-        if (mActiveEditorWorld) {
-            GameRenderStateManager::getInstance().setActiveWorld(mActiveEditorWorld);
-        }
-        else {
-            GameRenderStateManager::getInstance().setActiveWorld(&mWorld);
+    {
+        std::lock_guard lock(mActiveEditorWorldMutex);
+        mActiveEditorWorld = editorWorld;
+        if (GameRenderStateManager::exists()) {
+            if (mActiveEditorWorld) {
+                GameRenderStateManager::getInstance().setActiveWorld(mActiveEditorWorld);
+            }
+            else {
+                GameRenderStateManager::getInstance().setActiveWorld(&mWorld);
+            }
         }
     }
+
+    // Dispatch editor world
+    UIContextEvent evnt;
+    evnt.eventType = UIContextEventType::EditorWorldSet;
+    evnt.mWorld = mEditorWorld.get();
+    UIContext::getInstance().dispatchEditorWorldSet(evnt);
 }
 
 void GameThread::updateAllProcs() {

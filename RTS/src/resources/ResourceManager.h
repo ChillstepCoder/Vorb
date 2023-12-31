@@ -67,12 +67,12 @@ public:
 
     template <IsAssetType T>
     static AssetHandlePtr<T> getAssetHandle(AssetID id) {
-        IAssetRepositoryBase& repo = get().getAssetRepository(T::getAssetType());
+        IAssetRepositoryBase& repo = get().getAssetRepository(T::ASSET_TYPE);
         return static_unique_pointer_cast<AssetHandle<T>>(repo.getAssetHandleBase(id));
     }
     template <IsAssetType T>
     static AssetHandlePtr<T> getAssetHandle(StrToken assetName) {
-        IAssetRepositoryBase& repo = get().getAssetRepository(T::getAssetType());
+        IAssetRepositoryBase& repo = get().getAssetRepository(T::ASSET_TYPE);
         return static_unique_pointer_cast<AssetHandle<T>>(repo.getAssetHandleBase(assetName));
     }
 

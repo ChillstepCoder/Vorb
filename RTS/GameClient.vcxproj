@@ -864,6 +864,7 @@
     <ClInclude Include="src\screens\WorldGenScreen.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
+    <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />
     <ClInclude Include="src\visibility\VisibilityManager.h" />

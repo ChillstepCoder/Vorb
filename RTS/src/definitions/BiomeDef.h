@@ -46,28 +46,28 @@ constexpr ui8 INVALID_BIOME_ID = e_cast(BiomeUniqueID::INVALID);
 
 struct BiomePossibleTile {
     SoftAssetReference tile = AssetType::Tile;
-    f32 weight = 0.0f;
+    f32 weight = 1.0f;
 };
-SERIALIZABLE_SIMPLE(BiomePossibleTile,
+SERIALIZABLE_IMGUI_CONTROLLED(BiomePossibleTile,
     make_field(o.tile, "tile"sv),
     make_field(o.weight, "weight"sv)
 );
-
-
 
 // TODO: Have a generic DataAssetRepository for things like Distributions and such.
 // Pure data assets dont need a complicated loader and can be always loaded
 
 struct BiomeTileGenCategory {
+    nString name = "NewCategory";
     std::vector<BiomePossibleTile> tiles;
     SoftAssetReference distribution = AssetType::TileDistribution;
-    f32 minHeight = 0.0f;
-    f32 maxHeight = FLT_MAX;
+    f32 minHeight = 0.1f;
+    f32 maxHeight = 10000.0f;
     f32 spacing = 2.0f; // 0 means eval every tile
     // Probability of spawning a tile in this category if passing density + spacing check
     f32 probability = 1.0f;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
+    make_field(o.name, "name"sv),
     make_field(o.tiles, "tiles"sv),
     make_field(o.distribution, "dist"sv),
     make_field(o.minHeight, "min_h"sv),
@@ -81,9 +81,9 @@ public:
     DEFAULT_ASSET_CONSTRUCTOR(BiomeDef, AssetType::Biome);
 
     // Assigned based on name
+    nString displayName = "UNKNOWN";
     BiomeUniqueID uniqueId = BiomeUniqueID::INVALID;
     f32 priority = 0.0f; // ??
-    nString displayName = "UNKNOWN";
     SoftAssetReference colorMapTexture = AssetType::Texture;
     // If a sub biome, this will be set by file. If corrupt, this will be set automatically
     SoftAssetReference parentBiomeRef = AssetType::Biome;
@@ -98,8 +98,8 @@ public:
     std::vector<BiomeTileGenCategory> tileGenCategories;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(BiomeDef,
-    make_field(o.priority, "priority"sv),
     make_field(o.displayName, "name"sv),
+    make_field(o.priority, "priority"sv),
     make_field(o.colorMapTexture, "col_map"sv),
     make_field(o.parentBiomeRef, "parent"sv),
     make_field(o.isCorruptable, "corruptable"sv),
