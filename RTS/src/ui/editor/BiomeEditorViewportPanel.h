@@ -32,6 +32,7 @@ protected:
 
 	void initializeWorld();
 	void initializeController();
+	void updateActiveEditorWorld(World* world);
 
 	vg::GBuffer* mActiveGBuffer = nullptr;
     std::unique_ptr<World> mEditorWorld;

@@ -65,12 +65,6 @@ void GameThread::setActiveEditorWorld(World* editorWorld)
             }
         }
     }
-
-    // Dispatch editor world
-    UIContextEvent evnt;
-    evnt.eventType = UIContextEventType::EditorWorldSet;
-    evnt.mWorld = mEditorWorld.get();
-    UIContext::getInstance().dispatchEditorWorldSet(evnt);
 }
 
 void GameThread::updateAllProcs() {

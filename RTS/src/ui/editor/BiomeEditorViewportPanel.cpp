@@ -107,17 +107,23 @@ void BiomeEditorViewportPanel::onEnter() {
             initializeWorld();
         }
         else {
-            GameThread::getInstance().setActiveEditorWorld(mEditorWorld.get());
+            updateActiveEditorWorld(mEditorWorld.get());
         }
     }
 
     
 
-    initializeController();
 }
 
 void BiomeEditorViewportPanel::onExit() {
-    GameThread::getInstance().setActiveEditorWorld(nullptr);
+
+    if (mEditorWorld) {
+        mShuttingDownWorld = true; // Will be cleared on frame begin
+        WorldDestroyer::shutdownWorld(*mEditorWorld);
+        mEditorWorld.reset();
+    }
+
+    updateActiveEditorWorld(nullptr);
     {
         // Dispatch editor world
         UIContextEvent evnt;
@@ -125,8 +131,6 @@ void BiomeEditorViewportPanel::onExit() {
         evnt.mWorld = nullptr;
         UIContext::getInstance().dispatchEditorWorldSet(evnt);
     }
-
-    mWorldInterfaceController.reset();
 }
 
 void BiomeEditorViewportPanel::setCurrentAsset(AssetID assetId) {
@@ -238,17 +242,40 @@ void BiomeEditorViewportPanel::initializeWorld() {
         worldData.biomeGrid->getVertexForGeneration(v).biomeUniqueId = def.uniqueId;
     }
 
+    // TODO: Replace with proper GPU gen
+    for (int v = 0; v < worldData.heightmapGrid->getTotalPatches(); ++v) {
+        HeightmapPatch& patch = worldData.heightmapGrid->getPatchForGeneration(v);
+        for (int i = 0; i < HEIGHTMAP_VERT_SIZE_PER_PATCH; ++i) {
+            patch.setHeightAtNoClamp(i, 1.0f);
+        }
+    }
+
     //mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
     mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, &worldData);
 
     mEditorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
     mEditorWorld->onWorldBegin(f32v2(0.0f));
-    GameThread::getInstance().setActiveEditorWorld(mEditorWorld.get());
-    
+    updateActiveEditorWorld(mEditorWorld.get());
+
     mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());
 }
 
 void BiomeEditorViewportPanel::initializeController() {
     mWorldInterfaceController = std::make_unique<EditorWorldInterfaceController>(sApp->getWindow(), *mEditorWorld, *RenderContext::getInstance().getCameraController());
     mWorldInterfaceController->init();
+}
+
+void BiomeEditorViewportPanel::updateActiveEditorWorld(World* world) {
+    GameThread::getInstance().setActiveEditorWorld(world);
+
+    // Dispatch editor world
+    UIContextEvent evnt;
+    evnt.eventType = UIContextEventType::EditorWorldSet;
+    evnt.mWorld = world;
+    UIContext::getInstance().dispatchEditorWorldSet(evnt);
+
+    mWorldInterfaceController.reset();
+    if (world) {
+        initializeController();
+    }
 }
