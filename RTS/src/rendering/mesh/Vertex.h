@@ -34,7 +34,7 @@ struct alignas(16) StaticModelVertex {
     ui32 tangentPacked;
     i16v2 uvsPacked;
     color4 color;
-    ui16 materialId;
+    ui16 materialId; // Optional
     ui8 windInfluence;
 
     // TODO: Pre-packed normals/tangent
@@ -85,7 +85,6 @@ public:
     ui32 tangentPacked;
     i16v2 uvsPacked;
     color4 color;
-    ui16 materialId;
     // TODO: ui16 weights?
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
@@ -94,6 +93,6 @@ public:
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::SKINNED_MODEL; }
 };
-static_assert(sizeof(SkinnedModelVertex) == 64, "16 byte alignment needed");
+static_assert(sizeof(SkinnedModelVertex) == 48, "16 byte alignment needed");
 
 extern constexpr size_t getVertexSize(VertexType type);

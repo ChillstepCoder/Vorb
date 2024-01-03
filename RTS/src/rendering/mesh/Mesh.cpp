@@ -19,10 +19,11 @@ void Mesh::destroy() {
     mGpuData.destroy();
 }
 
-void Mesh::bindModelTransformAttribs() const {
+void Mesh::bindModelAttribs() const {
     assert(mGpuData.mVao);
-    if (!mHasModelTransformsAttribsBound) [[unlikely]] {
-        mHasModelTransformsAttribsBound = true;
+    if (!mHasModelAttribsBound) [[unlikely]] {
+        mHasModelAttribsBound = true;
+        // Transforms
         glEnableVertexArrayAttrib(mGpuData.mVao, 7);
         glEnableVertexArrayAttrib(mGpuData.mVao, 8);
         glEnableVertexArrayAttrib(mGpuData.mVao, 9);
@@ -36,6 +37,12 @@ void Mesh::bindModelTransformAttribs() const {
         glVertexArrayAttribBinding(mGpuData.mVao, 9, MODEL_TRANSFORMS_BINDING_POINT);
         glVertexArrayAttribBinding(mGpuData.mVao, 10, MODEL_TRANSFORMS_BINDING_POINT);
         glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 1);
+
+        // Variants
+        //glEnableVertexArrayAttrib(mGpuData.mVao, 11);
+        //glVertexArrayAttribIFormat(mGpuData.mVao, 11, 1, GL_UNSIGNED_BYTE, 0);
+        //glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANTS_BINDING_POINT);
+        //glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, 1);
     }
 }
 

@@ -9,3 +9,5 @@ textures:
     uniform: CellNoise
   - name: turbulent_noise
     uniform: TurbulentNoise
+  - name: cliff_base
+    uniform: CliffTexture

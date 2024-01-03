@@ -18,6 +18,7 @@ public:
 
     AssetHandleBasePtr getAssetHandleBase(AssetID id);
     AssetHandleBasePtr getAssetHandleBase(StrToken assetName);
+    AssetHandleBasePtr tryGetAssetHandleBase(StrToken assetName);
 
     virtual AssetType getAssetType() const = 0;
 
@@ -184,6 +185,13 @@ public:
     }
     AssetHandlePtr<T> getAssetHandle(AssetID id) {
         return static_unique_pointer_cast<AssetHandle<T>>(getAssetHandleBase(id));
+    }
+    AssetHandlePtr<T> tryGetAssetHandle(StrToken assetName) {
+        AssetHandleBasePtr basePtr = tryGetAssetHandleBase(assetName);
+        if (!basePtr) {
+            return nullptr;
+        }
+        return static_unique_pointer_cast<AssetHandle<T>>(basePtr);
     }
     // Note that if you do not have a handle, this could become invalid!
     const T* tryGetLoadedAsset(StrToken assetName) {

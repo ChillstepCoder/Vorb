@@ -785,6 +785,7 @@
     <ClInclude Include="src\rendering\model\ModelBillboardLodManager.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
     <ClInclude Include="src\rendering\model\MaterialRenderPassType.h" />
+    <ClInclude Include="src\rendering\model\ModelSubmeshData.h" />
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />

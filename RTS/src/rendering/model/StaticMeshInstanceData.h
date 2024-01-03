@@ -42,10 +42,12 @@ public:
     StaticMeshInstanceData();
 
     std::vector<f32m4> mInstanceTransforms;
+    std::vector<ui8> mInstanceVariants;
     std::vector<ModelInstanceOwner> mInstanceOwners;
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
     VGBuffer mTransformsVbo = 0;
+    VGBuffer mVariantsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
     const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};

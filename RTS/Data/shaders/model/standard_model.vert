@@ -7,12 +7,12 @@ uniform float unSnowLevel;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in uint vMaterialIndex;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 layout(location = 7) in mat4 vModelMatrix;
+layout(location = 8) in uint vMaterialIndex;
 
 out vec2 fUV;
 flat out uint fMaterialIndex;

@@ -51,6 +51,36 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
 
 void ModelRepository::onAssetChangedByEditor(AssetID id) {
     updateModelFlyweightData(id);
+    updateModelVariantData(id);
+}
+
+void ModelRepository::updateModelVariantData(AssetID id) {
+    ModelDef& def = *mAssets[id];
+    def.mVariantsGpuData.resize(def.mSubmeshesData.size());
+
+    if (def.mVariants.empty()) {
+        for (auto& gpuData : def.mVariantsGpuData) {
+            gpuData.resize(0);
+        }
+    }
+
+    // Ensure no size mismatch
+    for (size_t i = 0; i < def.mVariants.size(); ++i) {
+        ModelVariantData& varData = def.mVariants[i];
+        varData.submeshMaterials.resize(def.mSubmeshesData.size(), AssetType::Material);
+    }
+
+    // Copy all variant materials to GPU data
+    for (size_t submeshIndex = 0; submeshIndex < def.mVariantsGpuData.size(); ++submeshIndex) {
+        ModelVariantGpuDataContainer& gpuData = def.mVariantsGpuData[submeshIndex];
+        gpuData.resize(def.mVariants.size());
+
+        for (size_t variantIndex = 0; variantIndex < def.mVariants.size(); ++variantIndex) {
+            ModelVariantData& variantData = def.mVariants[variantIndex];
+
+            gpuData[variantIndex].material = variantData.submeshMaterials[submeshIndex].getAssetID();
+        }
+    }
 }
 
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
@@ -103,12 +133,16 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     std::shared_ptr<FBXLoadContext> loadContextPtr = std::make_shared<FBXLoadContext>(modelPath.getCString());
     mFbxSdkMutex.unlock();
     const int materialCount = loadContextPtr->sceneLoader.scene()->GetMaterialCount();
-    rawMeshPtr->mMaterials.resize(materialCount);
+    rawMeshPtr->mMaterialSlots.resize(materialCount);
     for (int i = 0; i < materialCount; ++i) {
         FbxSurfaceMaterial* fbxMaterial = loadContextPtr->sceneLoader.scene()->GetMaterial(i);
         assert(fbxMaterial);
-        rawMeshPtr->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
-        def.addDependency(materialRepo.getAssetHandle(StrToken(rawMeshPtr->mMaterials[i].materialName)));
+        rawMeshPtr->mMaterialSlots[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
+        AssetHandlePtr<MaterialDef> materialHandle = materialRepo.getAssetHandle(StrToken(rawMeshPtr->mMaterialSlots[i].materialName));
+        if (materialHandle) {
+            rawMeshPtr->mMaterialSlots[i].materialDef = &materialRepo.getLoadedOrUnloadedAsset(materialHandle->getAssetID());
+            def.addDependency(std::move(materialHandle));
+        }
     }
 
     AssetLoader::getInstance().requestAssetLoadWithDependencies([this, rawMeshPtr, materialCount]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
@@ -122,11 +156,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             if (def.mMachineName.isValid()) {
                 def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineName.name);
             }
-        }
-
-        // Materials
-        for (int i = 0; i < materialCount; ++i) {
-            rawMeshPtr->mMaterials[i].materialDef = &def.getDependencies()->getLoadedAsset<MaterialDef>(StrToken(rawMeshPtr->mMaterials[i].materialName));
         }
 
         // Load model to raw
@@ -157,7 +186,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                 if (vert.pos.z > maxZ) maxZ = vert.pos.z;
             }
 
-            loadContext.meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials);
+            loadContext.meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterialSlots);
             // Apply scale if needed
             if (def.mScale != 1.0f) {
                 MeshOperations::applyScale(loadContext.meshData[def.mNumMeshes], def.mScale);
@@ -215,6 +244,8 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         loadContextPtr.reset();
         mFbxSdkMutex.unlock();
 
+        updateModelVariantData(def.getID());
+
         RenderContext::getInstance().getModelBillboardLodBuilder().initTextureForModel(assetId);
 
         return true;
@@ -255,7 +286,7 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
         RawSubMesh& subMesh = rawFbxMesh.mSubMeshes.emplace_back();
 
         ControlPointsRemap remap;
-        if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.sceneLoader.converter(), &remap, subMesh, rawFbxMesh.mMaterials, skeleton == nullptr)) {
+        if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.sceneLoader.converter(), &remap, subMesh, rawFbxMesh.mMaterialSlots, skeleton == nullptr)) {
             panic("Failed to read submesh for: {}", filePath.getString());
         }
 
@@ -275,9 +306,9 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
         }
 
         if (subMesh.mVertices.size()) {
-            const int materialIndex = subMesh.mVertices[0].materialIndex;
-            assert(rawFbxMesh.mMaterials[materialIndex].materialDef);
-            const MaterialRenderPassType renderPass = rawFbxMesh.mMaterials[materialIndex].materialDef->renderPass;
+            const int materialIndex = subMesh.mVertices[0].materialSlotIndex;
+            assert(rawFbxMesh.mMaterialSlots[materialIndex].materialDef);
+            const MaterialRenderPassType renderPass = rawFbxMesh.mMaterialSlots[materialIndex].materialDef->renderPass;
             totalVertices[e_cast(renderPass)] += subMesh.mVertices.size();
             totalIndices[e_cast(renderPass)] += subMesh.mIndices.size();
         }
@@ -290,8 +321,8 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
     if (hasSkin) {
         assert(numMeshes == 1 && "Currently skinned meshes must be a single submesh only");
         const RawSubMesh& baseSubMesh = rawFbxMesh.mSubMeshes[0];
-        const int baseMaterialIndex = baseSubMesh.mVertices[0].materialIndex;
-        const MaterialRenderPassType baseRenderPass = rawFbxMesh.mMaterials[baseMaterialIndex].materialDef->renderPass;
+        const int baseMaterialIndex = baseSubMesh.mVertices[0].materialSlotIndex;
+        const MaterialRenderPassType baseRenderPass = rawFbxMesh.mMaterialSlots[baseMaterialIndex].materialDef->renderPass;
         rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mHasSkin = hasSkin;
         rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mSkeletonData = std::move(rawFbxMesh.mSubMeshes[0].mSkeletonData);
     }
@@ -305,8 +336,8 @@ void ModelRepository::loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMes
     int iStart[e_count(MaterialRenderPassType)] = {};
     for (int m = 0; m < numMeshes; ++m) {
         const RawSubMesh& subMesh = rawFbxMesh.mSubMeshes[m];
-        const int materialIndex = subMesh.mVertices[0].materialIndex;
-        const int renderPassIndex = e_cast(rawFbxMesh.mMaterials[materialIndex].materialDef->renderPass);
+        const int materialIndex = subMesh.mVertices[0].materialSlotIndex;
+        const int renderPassIndex = e_cast(rawFbxMesh.mMaterialSlots[materialIndex].materialDef->renderPass);
         for (int j = 0; j < subMesh.mVertices.size(); ++j) {
             rawFbxMesh.mCombinedMeshData[renderPassIndex].mVertices[v[renderPassIndex]++] = subMesh.mVertices[j];
         }

@@ -48,7 +48,6 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
             const RawMeshVertex& rawVert = meshData.vertices[i];
             SkinnedModelVertex& myVert = verts[i];
             myVert.pos = rawVert.pos;
-            myVert.materialId = materialIds[rawVert.materialIndex];
             assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
             myVert.uvsPacked = PackUVs(rawVert.uvs);
             myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
@@ -74,7 +73,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawVert.tangent,
                 uvs,
                 rawVert.color,
-                materialIds[rawVert.materialIndex],
+                materialIds[rawVert.materialSlotIndex], // Note that this is overridden by material variants system and is now defunct
                 0
             );
         }

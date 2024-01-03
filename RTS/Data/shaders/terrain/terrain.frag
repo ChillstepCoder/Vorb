@@ -6,6 +6,7 @@
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
+uniform sampler2D CliffTexture;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
@@ -14,6 +15,10 @@ uniform float unWavyMult = 0.167;
 uniform float unSquaresIntensity = 0.5;
 uniform float unSquaresPeriod = 0.187;
 uniform float unBlendMult = 0.037;
+uniform float unColorMapScale = 0.005;
+uniform float unCliffBlendHardness = 80.0;
+uniform float unCliffAmount = 0.2;
+uniform float unCliffZMult = 1.2;
 
 // Config
 uniform int unDebugLines = 0;
@@ -27,6 +32,7 @@ in vec2 fBiomeUV;
 in vec2 fUV;
 in mat3 fTBN;
 in float fSnow;
+in vec3 fNormal;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
@@ -106,7 +112,7 @@ float getTerrainDistanceFactor(float distance) {
     return min(distance * 0.001, 1.0);
 }
 
-vec3 getTerrainColor(vec2 terrainUvs, int biome, float distanceFactor) {
+vec3 getTerrainColor(vec2 terrainUvs, int biome) {
     float detailValue = texture(GrassTexture, terrainUvs * 10.0).r * unDetailTextureStrength;
     float u = getBiomeColorGradientUCoord(terrainUvs);
     float v = detailValue;
@@ -114,7 +120,27 @@ vec3 getTerrainColor(vec2 terrainUvs, int biome, float distanceFactor) {
     return texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
 }
 
+float getLuminance(vec3 color) {
+    return (0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b);
+}
 
+// https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#38e5
+vec3 getTriPlanarBlend(vec3 norm, float lumaX, float lumaY) {
+	// Asymmetric Triplanar Blend
+    vec3 blend = vec3(0.0); // Blend for sides only
+    vec2 xyBlend = normalize(abs(norm.xy));
+    blend.xy = max(vec2(0.0), xyBlend - vec2(0.67));
+    blend.xy /= max(0.00001, dot(blend.xy, vec2(1,1)));// Blend for top
+    
+    // Turbulent noise is from biome_util.glsl
+    float noiseBlend = (texture(TurbulentNoise, fUV * 4.0).r * 2.0 - 1.0) * 4.0;
+    
+    // Luminance of cliff affects blend
+    noiseBlend += max(lumaX * blend.x, lumaY * blend.y) * 15.0;
+    blend.z = clamp((abs(norm.z) - unCliffAmount) * unCliffBlendHardness + noiseBlend, 0.0, 1.0);
+    blend.xy *= (1.0 - blend.z);
+    return blend;
+}
 
 // =========== MAIN ===========
 void main() {
@@ -131,7 +157,31 @@ void main() {
     // === Terrain Color ===
     float distance = length(fPosition.xy);
     float distanceFactor = getTerrainDistanceFactor(distance);
-    oColor.rgb = getTerrainColor(fUV, biome, distanceFactor);
+    oColor.rgb = getTerrainColor(fUV, biome);
+    
+    
+    // =========== Cliff color ===========
+    vec2 xyUV = fUV.xy;
+    float heightV = fHeight * unColorMapScale;
+    const float CLOSE_MULT = 10.0;
+    const float FAR_MULT = 0.3;
+    xyUV *= CLOSE_MULT;
+    heightV *= CLOSE_MULT;
+    heightV *= unCliffZMult;
+    vec3 xSampleClose = texture(CliffTexture, vec2(xyUV.y, heightV)).rgb;
+    vec3 ySampleClose = texture(CliffTexture, vec2(xyUV.x, heightV)).rgb;
+    
+    // Far
+    xyUV *= FAR_MULT;
+    heightV *= FAR_MULT;
+    vec3 xSampleFar = texture(CliffTexture, vec2(xyUV.y, heightV)).rgb;
+    vec3 ySampleFar = texture(CliffTexture, vec2(xyUV.x, heightV)).rgb;
+    
+    vec3 weights = getTriPlanarBlend(colorNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose));
+    vec3 cliffClose = weights.x * xSampleClose + weights.y * ySampleClose;
+    vec3 cliffFar = weights.x * xSampleFar + weights.y * ySampleFar;
+    float cliffDistFactor = min(distance * 0.01, 1.0);
+    oColor.rgb = oColor.rgb * weights.z + mix(cliffClose, cliffFar, cliffDistFactor);
     
     // =========== Distance stylized color ===========
     float FLAT_REDUCE_MULT = 1.0;
@@ -194,5 +244,5 @@ void main() {
             oColor.rgb = vec3(0.0);
         }
     }
-
+    //oColor.rgb = 0.0001 * oColor.rgb + oNormal.rgb;//fNormal.rgb * 0.5 + 0.5;
 }

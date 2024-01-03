@@ -30,8 +30,6 @@ struct ModelDrawInfo {
     f32 mBoundingSphereRadius = 10.0f;
 };
 
-
-
 // Modeldef contains all information about a 3D model including its location
 // in a ModelBatch
 class ModelDef : public IAsset {
@@ -66,6 +64,12 @@ public:
     f32AABB3 mAABB; // Calculated from mesh data
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
+
+    // Variants
+    std::vector<ModelVariantData> mVariants;
+    std::vector<ModelVariantGpuDataContainer> mVariantsGpuData; // One per submesh
+    ModelVariantSelectType mVariantSelectType = ModelVariantSelectType::Random;
+    f32 mVariantSelectScale = 1.0f; // Used for Voronoi select
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
@@ -80,5 +84,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mBoundingSphereRadius, "bound_sphere"sv),
     make_field(o.mShadowDetail, "shadow_detail"sv),
     make_field(o.mForceNormalsUp, "force_normals_up"sv),
-    make_field(o.mSubmeshesData, "submesh_data"sv)
+    make_field(o.mVariants, "variants"sv),
+    make_field(o.mVariantSelectType, "variant_type"sv),
+    make_field(o.mVariantSelectScale, "variant_scale"sv)
 );

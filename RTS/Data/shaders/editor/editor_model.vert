@@ -9,7 +9,6 @@ uniform vec3 unCameraPos;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in int vMaterialIndex;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
@@ -26,11 +25,15 @@ out vec3 fNormal;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 
+uniform int unMaterialIndex;
+
 
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = vMaterialIndex;
+    
+    // TODO: Do in fragment shader?
+    fMaterialIndex = unMaterialIndex;
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);

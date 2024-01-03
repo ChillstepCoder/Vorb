@@ -262,12 +262,13 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     }
                     else if (tileData.shape == TileShape::MODEL) {
                         f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
+                        ui8 variantIndex = 0;
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
+                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI, variantIndex);
                         }
                         else {
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, getModelRotationAtPosition(worldPos));
+                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, getModelRotationAtPosition(worldPos), variantIndex);
                         }
                         if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
                             physics.addTrackedStaticRigidBody(index, worldPos, tileData.collisionShapeID);

@@ -56,3 +56,11 @@ AssetHandleBasePtr IAssetRepositoryBase::getAssetHandleBase(AssetID id) {
     aquireAssetHandle(id, *handle);
     return handle;
 }
+
+AssetHandleBasePtr IAssetRepositoryBase::tryGetAssetHandleBase(StrToken assetName) {
+    auto it = mAssetLookup.find(assetName);
+    if (it == mAssetLookup.end()) {
+        return nullptr;
+    }
+    return getAssetHandleBase(it->second);
+}

@@ -59,6 +59,9 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBiomeBlendFrequency"), sDebugOptions.mBiomeBlendFrequency);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unDetailTextureStrength"), sDebugOptions.mTerrainDetailTextureStrength);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffBlendHardness"), sDebugOptions.mTerrainCliffBlendHardness);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffAmount"), sDebugOptions.mTerrainCliffAmount);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffZMult"), sDebugOptions.mTerrainCliffZMult);
 
     VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");

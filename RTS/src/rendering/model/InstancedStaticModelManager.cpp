@@ -83,6 +83,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
 InstancedStaticModelManager::~InstancedStaticModelManager() {
     for (auto& it : mModelsToInstances) {
         GL.glDeleteBuffers(1, &it.second.mTransformsVbo);
+        GL.glDeleteBuffers(1, &it.second.mVariantsVbo);
     }
 }
 
@@ -107,7 +108,9 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             }
             if (instanceData.mTransformsVbo) {
                 GL.glDeleteBuffers(1, &instanceData.mTransformsVbo);
+                GL.glDeleteBuffers(1, &instanceData.mVariantsVbo);
                 instanceData.mTransformsVbo = 0;
+                instanceData.mVariantsVbo = 0;
             }
             continue;
         }
@@ -140,26 +143,37 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             // Allocate VBO
             {
                 PROFILE_SCOPE("VBO");
-                // GPU buffer is larger to accomidate the work group size, or we get corruption
+                // GPU buffer is larger to accommodate the work group size, or we get corruption
                 const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
                 const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * instanceData.mInstanceTransforms.size();
                 // Transform takes up 4 binding points
                 if (instanceData.mTransformsVbo == 0) {
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
+                    GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
                     for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                        instanceData.mMesh[m]->bindModelTransformAttribs();
+                        instanceData.mMesh[m]->bindModelAttribs();
                     }
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
+                    if (instanceData.mInstanceVariants.size()) {
+                        GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * instanceData.mInstanceVariants.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+                        GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
+                    }
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else if (gpuBufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
                     //LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
                     // Grow to new size
                     GL.glDeleteBuffers(1, &instanceData.mTransformsVbo);
+                    GL.glDeleteBuffers(1, &instanceData.mVariantsVbo);
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
+                    GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
+                    if (instanceData.mInstanceVariants.size()) {
+                        GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * instanceData.mInstanceVariants.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+                        GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
+                    }
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else {
@@ -171,6 +185,15 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         cpuBufferSizeBytes - instanceData.mFirstDirtyInstance * sizeof(f32m4),
                         instanceData.mInstanceTransforms.data() + instanceData.mFirstDirtyInstance
                     );
+                    if (instanceData.mInstanceVariants.size()) {
+                        // TODO: FIX
+                        /*   glNamedBufferSubData(
+                               instanceData.mVariantsVbo,
+                               instanceData.mFirstDirtyInstance * sizeof(ui8),
+                               (sizeof(ui8) * instanceData.mInstanceVariants.size()) - instanceData.mFirstDirtyInstance * sizeof(ui8),
+                               instanceData.mInstanceVariants.data() + instanceData.mFirstDirtyInstance
+                           );*/
+                    }
                 }
             }
 
@@ -507,6 +530,7 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
             instanceData.mFirstDirtyInstance = startIndex;
         }
         instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
+        instanceData.mInstanceVariants.resize(startIndex + sourceInstances.size());
         instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
         instanceData.mMeshCount = modelDefPtr->getNumMeshes();
         // Store per tile references
@@ -514,6 +538,7 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
             size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
             instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
+            //instanceData.mInstanceVariants[instanceIndex] = modelDefPtr.mVariants;
             instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
             TileModelPositionKey positionKey{ modelInstance.tileIndex };
             assert(tileContainerModels.find(positionKey) == tileContainerModels.end());

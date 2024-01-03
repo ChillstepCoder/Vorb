@@ -4,6 +4,7 @@
 
 class SoftAssetReference {
 public:
+    SoftAssetReference() = default;
     SoftAssetReference(AssetType assetType) : assetType(assetType) {};
 
     SoftAssetReference& operator=(const SoftAssetReference& other) {
@@ -19,7 +20,7 @@ public:
     AssetID getAssetID() const;
     
     StrToken name;
-    const AssetType assetType;
+    const AssetType assetType = AssetType::NONE;
 };
 
 namespace ImguiUtil {

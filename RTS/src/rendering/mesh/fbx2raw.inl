@@ -277,7 +277,7 @@ namespace fbx2raw {
                 RawMeshVertex& vertex = subMesh.mVertices.emplace_back(RawMeshVertex{});
                 vertex.pos = f32v3(position.x, position.y, position.z);
                 vertex.normal = f32v3(normal.x, normal.y, normal.z);
-                vertex.materialIndex = materialIndex;
+                vertex.materialSlotIndex = materialIndex;
                 if (element_uvs) {
                     vertex.uvs = f32v2(uv.x, uv.y);
                 }

@@ -39,6 +39,7 @@ public:
     const ModelLodParams& getLodParams(AssetID id) const { return mLODParameters[id]; }
 
     void onAssetChangedByEditor(AssetID id) override;
+    void updateModelVariantData(AssetID id);
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 

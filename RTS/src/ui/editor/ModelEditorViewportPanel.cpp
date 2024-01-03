@@ -68,7 +68,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
                 ModelSubmeshData& subMeshData = mAssetData->mSubmeshesData[mSingleIndex];
 
-                changed |= ImguiUtil::EnumCombo("Wind Type", subMeshData.windType);
+                changed |= updateAndRenderImguiControls(subMeshData);
                   
                 ImGui::Separator();
             }

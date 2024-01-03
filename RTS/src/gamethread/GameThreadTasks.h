@@ -5,7 +5,7 @@ class TileContainer;
 class World;
 
 typedef void(*GameFunction)(class GameThread& gameThread, void*);
-typedef std::function<void(GameThread&, void*)> GameFunctionWithCapture;
+typedef std::function<void(GameThread&)> GameFunctionWithCapture;
 
 class GameThreadTasks
 {
@@ -27,7 +27,7 @@ public:
 
     // Tasks
     void addGenericTask(GameFunction func, void* data) { mGameThreadProcs.enqueue(std::make_pair(func, data)); }
-    void addGenericTaskWithCapture(GameFunctionWithCapture func, void* data) { mGameThreadFuncProcs.enqueue(std::make_pair(func, data)); }
+    void addGenericTaskWithCapture(GameFunctionWithCapture func) { mGameThreadFuncProcs.enqueue(func); }
     void addCameraPickTeleportTask(const f32v3& camPos, const f32v3& camDir);
     void addHideLocalPlayerModelTask(bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);
@@ -41,7 +41,7 @@ private:
     //  TODO: Priority queues? One high priority queue can be  exhausted faster  than  lower  priority queues, use for input and such
     // Many queues can make up a "Scheduler"  which can try to balance thread time?
     moodycamel::ConcurrentQueue<std::pair<GameFunction, void*>> mGameThreadProcs;
-    moodycamel::ConcurrentQueue<std::pair<GameFunctionWithCapture, void*>> mGameThreadFuncProcs;
+    moodycamel::ConcurrentQueue<GameFunctionWithCapture> mGameThreadFuncProcs;
     World& mMainGameWorld;
 
 

@@ -163,6 +163,10 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Detail Texture Str", &sDebugOptions.mTerrainDetailTextureStrength, 0.0f, 1.0f);
         ImGui::SliderFloat("Biome Blend Scale", &sDebugOptions.mBiomeBlendScale, 0.0f, 10.0f);
         ImGui::SliderFloat("Biome Blend Freq", &sDebugOptions.mBiomeBlendFrequency, 0.0f, 10.0f);
+        ImGui::SliderFloat("Cliff Blend Hardness", &sDebugOptions.mTerrainCliffBlendHardness, 1.0f, 100.0f);
+        ImGui::SliderFloat("Cliff Amount", &sDebugOptions.mTerrainCliffAmount, 0.0f, 0.65f);
+        ImGui::SliderFloat("Cliff Z Mult", &sDebugOptions.mTerrainCliffZMult, 1.0f, 2.0f);
+
         ImGui::Separator();
         ImGui::NewLine();
         ImGui::BeginChild("Terrain Funcs", ImVec2(0.0f, 0.0f));

@@ -54,11 +54,9 @@ void BiomeEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
     // Tell the world to follow our camera
     if (mEditorWorld) {
         const f32v2 cameraPos = mCamera->getPosition();
-        World* editorWorld = mEditorWorld.get();
-        GameThreadTasks::getInstance().addGenericTaskWithCapture([cameraPos, editorWorld](GameThread&, void* vWorld) {
-            //assert(editorWorld == static_cast<IWorld*>(vWorld));
+        GameThreadTasks::getInstance().addGenericTaskWithCapture([cameraPos, editorWorld = mEditorWorld.get()](GameThread&) {
             editorWorld->setLoadCenter(cameraPos);
-        }, (void*)editorWorld);
+        });
     }
 }
 
@@ -246,7 +244,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     for (int v = 0; v < worldData.heightmapGrid->getTotalPatches(); ++v) {
         HeightmapPatch& patch = worldData.heightmapGrid->getPatchForGeneration(v);
         for (int i = 0; i < HEIGHTMAP_VERT_SIZE_PER_PATCH; ++i) {
-            patch.setHeightAtNoClamp(i, 1.0f);
+            patch.setHeightAtNoClamp(i, 10.0f);
         }
     }
 
@@ -254,7 +252,11 @@ void BiomeEditorViewportPanel::initializeWorld() {
     mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, &worldData);
 
     mEditorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
-    mEditorWorld->onWorldBegin(f32v2(0.0f));
+
+    GameThreadTasks::getInstance().addGenericTaskWithCapture([editorWorld = mEditorWorld.get()](GameThread&) {
+        editorWorld->onWorldBegin(f32v2(0.0f));
+    });
+
     updateActiveEditorWorld(mEditorWorld.get());
 
     mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());

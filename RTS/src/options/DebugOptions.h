@@ -49,6 +49,9 @@ struct DebugOptions {
     f32 mTerrainSquaresIntensity;
     f32 mTerrainBlendMult;
     f32 mTerrainDetailTextureStrength;
+    f32 mTerrainCliffBlendHardness;
+    f32 mTerrainCliffAmount;
+    f32 mTerrainCliffZMult;
     f32 mBiomeBlendScale;
     f32 mBiomeBlendFrequency;
     bool mDisableTerrain;

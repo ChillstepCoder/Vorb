@@ -1,18 +1,9 @@
 #pragma once
 
-#include "rendering/mesh/MeshConst.h"
 #include "rendering/mesh/VertexType.h"
 #include "rendering/mesh/MeshSkeletonData.h"
 #include "rendering/model/MaterialRenderPassType.h"
-
-struct ModelSubmeshData {
-    MeshWindType windType;
-};
-SERIALIZABLE_SIMPLE(ModelSubmeshData,
-    make_field(o.windType, "wind"sv)
-);
-
-
+#include "rendering/model/ModelSubmeshData.h"
 
 struct MeshLODData {
 
@@ -128,7 +119,7 @@ public:
     void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
     const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
-    void bindModelTransformAttribs() const;
+    void bindModelAttribs() const;
 
     bool castsShadow() const {
         return mRenderPassType != MaterialRenderPassType::Water;
@@ -145,7 +136,7 @@ protected:
     BoundingSphere         mBoundingSphere;  ///< Optional
     MaterialRenderPassType mRenderPassType = MaterialRenderPassType::Default;
     const ModelSubmeshData* mSubmeshData = nullptr;
-    mutable bool mHasModelTransformsAttribsBound = false; // Used by instanced model renderers
+    mutable bool mHasModelAttribsBound = false; // Used by instanced model renderers
 };
 
 class TerrainMesh : public Mesh {

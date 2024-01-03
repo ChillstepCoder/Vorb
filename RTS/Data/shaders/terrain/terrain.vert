@@ -15,6 +15,7 @@ out vec2 fUV;
 out vec2 fBiomeUV;
 out mat3 fTBN;
 out float fSnow;
+out vec3 fNormal;
 
 const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
 
@@ -28,6 +29,7 @@ void main() {
     vec3 tangent = cross(binormal, normal);
     // TODO: TANGENT???
 	fTBN = mat3(TANGENT, binormal, normal);
+    fNormal = normal;
     
     fSnow = normal.z * unSnowLevel;
     worldPos.z += fSnow * 0.5f;

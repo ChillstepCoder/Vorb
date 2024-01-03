@@ -2336,6 +2336,9 @@
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\model\ModelSubmeshData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
