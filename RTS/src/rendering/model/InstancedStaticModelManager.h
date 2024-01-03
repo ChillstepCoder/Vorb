@@ -37,6 +37,7 @@ struct PendingModelInstance {
     TileContainerID containerId;
     TileIndex tileIndex;
     f32m4 transform;
+    ui8 variantIndex;
 };
 
 // TODO: RENAME InstancedStaticMeshManager
@@ -48,7 +49,7 @@ public:
 
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
-    void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation);
+    void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
     TileModelInstance* getInstanceAtPosition(LiteTileHandle tileHandle);
     bool hasInstanceAtPosition(LiteTileHandle tileHandle);
@@ -67,7 +68,7 @@ public:
     const ModelInstanceMap& getModelInstanceMap() const { return mModelsToInstances; }
 private:
     void updatePendingModelDefs();
-    void addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform);
+    void addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex);
 
     void updateAnimatedModels(f32 elapsedSec);
     void removeTileModelInstanceInternal(TileModelInstance& instance);

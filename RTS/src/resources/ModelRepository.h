@@ -39,7 +39,6 @@ public:
     const ModelLodParams& getLodParams(AssetID id) const { return mLODParameters[id]; }
 
     void onAssetChangedByEditor(AssetID id) override;
-    void updateModelVariantData(AssetID id);
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 
@@ -49,6 +48,8 @@ private:
     void onRegisteredAsset(AssetID id) override;
     void onAllAssetTypesRegistered() override;
     void updateModelFlyweightData(AssetID id);
+    void updateModelVariantData(AssetID id);
+    void updateMaterialDependencies(AssetID id);
 
     std::mutex mRawModelsMutex;
     std::map<StrToken, std::unique_ptr<FBXRawMesh>> mRawModels;

@@ -25,6 +25,7 @@ private:
     int mLod = 0;
     bool mShowSingle = false;
     int mSingleIndex = 0;
+    int mVariantIndex = 0;
 
     std::unique_ptr<LineMesh> mAABBMesh;
 };

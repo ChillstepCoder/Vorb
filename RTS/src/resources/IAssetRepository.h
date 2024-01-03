@@ -191,7 +191,7 @@ public:
         if (!basePtr) {
             return nullptr;
         }
-        return static_unique_pointer_cast<AssetHandle<T>>(basePtr);
+        return static_unique_pointer_cast<AssetHandle<T>>(std::move(basePtr));
     }
     // Note that if you do not have a handle, this could become invalid!
     const T* tryGetLoadedAsset(StrToken assetName) {

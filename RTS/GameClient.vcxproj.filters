@@ -2339,6 +2339,9 @@
     <ClInclude Include="src\rendering\model\ModelSubmeshData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\BufferBindingPoints.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

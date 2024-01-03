@@ -8,6 +8,7 @@ public:
     virtual ~AssetHandleBase() = default;
 
     AssetID getAssetID() const { return mAssetID; }
+    StrToken getName() const { return mAssetName; }
 
     bool isValid() const { return mAssetName.isValid(); }
     virtual bool isLoaded() const = 0;

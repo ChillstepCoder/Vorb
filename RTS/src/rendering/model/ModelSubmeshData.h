@@ -12,7 +12,8 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelSubmeshData,
 );
 
 struct ModelVariantGpuData {
-    ui16 material;
+    // TODO: We could bitpack 4 bytes into one of these?
+    ui32 material;
 };
 
 using ModelVariantGpuDataContainer = std::vector<ModelVariantGpuData>;

@@ -5,36 +5,42 @@
 
 namespace ImguiUtil {
     template <typename T>
-    bool ObjectVector(const char* label, std::vector<T>& objects, std::function<bool(T& o)> controlFunc) {
+    bool ObjectVector(const char* label, std::vector<T>& objects, std::function<bool(T& o, ui32 i)> controlFunc, bool resizable = true, T defaultValue = T()) {
         bool changed = false;
         ImGui::Separator();
         ImGui::Text(label);
-        if (ImGui::Button("Add")) {
-            objects.emplace_back();
+
+        if (resizable) {
+            if (ImGui::Button("Add")) {
+                objects.emplace_back(defaultValue);
+                changed = true;
+            }
         }
         ImGui::Indent();
         for (ui32 i = 0; i < objects.size(); ++i) {
             ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
             ImGui::PushID(i);
             bool isDeleted = false;
-            if (ImGui::Button("X")) {
-                isDeleted = true;
-            }
-            if (i > 0) {
-                ImGui::SameLine();
-                if (ImGui::Button("^")) {
-                    std::swap(objects[i], objects[i - 1]);
-                    changed = true;
+            if (resizable) {
+                if (ImGui::Button("X")) {
+                    isDeleted = true;
+                }
+                if (i > 0) {
+                    ImGui::SameLine();
+                    if (ImGui::Button("^")) {
+                        std::swap(objects[i], objects[i - 1]);
+                        changed = true;
+                    }
+                }
+                if (i < objects.size() - 1) {
+                    ImGui::SameLine();
+                    if (ImGui::Button("v")) {
+                        std::swap(objects[i], objects[i + 1]);
+                        changed = true;
+                    }
                 }
             }
-            if (i < objects.size() - 1) {
-                ImGui::SameLine();
-                if (ImGui::Button("v")) {
-                    std::swap(objects[i], objects[i + 1]);
-                    changed = true;
-                }
-            }
-            changed |= controlFunc(objects[i]);
+            changed |= controlFunc(objects[i], i);
             ImGui::PopID();
             if (isDeleted) {
                 objects.erase(objects.begin() + i);

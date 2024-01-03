@@ -74,11 +74,11 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
         changed |= updateAndRenderImguiControls(*mAssetData);
         // Tile gen categories
         changed |= ImguiUtil::ObjectVector<BiomeTileGenCategory>("Categories", mAssetData->tileGenCategories,
-            [](BiomeTileGenCategory& o) {
+            [](BiomeTileGenCategory& o, ui32) {
                 bool changed = false;
                 changed |= updateAndRenderImguiControls(o);
                 changed |= ImguiUtil::ObjectVector<BiomePossibleTile>("Tiles", o.tiles,
-                    [](BiomePossibleTile& o) {
+                    [](BiomePossibleTile& o, ui32) {
                         bool changed = false;
                         changed |= updateAndRenderImguiControls(o);
                         return changed;

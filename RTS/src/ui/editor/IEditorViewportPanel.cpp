@@ -184,122 +184,125 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
         "Wireframe", // Always last
     };
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12);
-    if (mShowDrawModeDropdown) {
-        if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
-            for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
-                bool isSelected = e_cast(mDrawMode) == i;
-                ImGui::Selectable(drawModes[i], &isSelected);
+    if (ImGui::CollapsingHeader("Editor Controls")) {
+        if (mShowDrawModeDropdown) {
+            if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
+                for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
+                    bool isSelected = e_cast(mDrawMode) == i;
+                    ImGui::Selectable(drawModes[i], &isSelected);
 
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                    mDrawMode = (EditorViewportDrawMode)i;
-                }
-            }
-            ImGui::EndCombo();
-        }
-    }
-
-    // Skybox
-    // TODO: Cache this?
-    std::vector<StrToken> cubemapNames;
-    CubemapRepository& cubemapRepo = CubemapRepository::get();
-    cubemapNames.reserve(cubemapRepo.getNumRegisteredAssets() + 1);
-    cubemapNames.emplace_back("NONE");
-    cubemapRepo.forEachRegisteredAsset([&](CubemapDef* def, const AssetMetadata& entry) {
-        cubemapNames.emplace_back(entry.mName);
-        return false;
-    });
-    
-    if (mSkybox) {
-        ui32 nameSize = 0;
-        char nameBuffer[MAX_CHARS_IN_STRTOKEN];
-        cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
-        if (ImGui::BeginCombo("Skybox", nameBuffer)) {
-            for (size_t i = 0; i < cubemapNames.size(); ++i) {
-                bool isSelected = mSelectedSkyboxIndex == i;
-
-                cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
-                ImGui::Selectable(nameBuffer, &isSelected);
-
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                    mSelectedSkyboxIndex = i;
-                    if (i == 0) {
-                        mSkybox->setCubemap(nullptr);
-                    }
-                    else {
-                        mSkybox->setCubemap(cubemapRepo.getAssetHandle(cubemapNames[i]));
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                        mDrawMode = (EditorViewportDrawMode)i;
                     }
                 }
+                ImGui::EndCombo();
             }
-            ImGui::EndCombo();
         }
+
+        // Skybox
+        // TODO: Cache this?
+        std::vector<StrToken> cubemapNames;
+        CubemapRepository& cubemapRepo = CubemapRepository::get();
+        cubemapNames.reserve(cubemapRepo.getNumRegisteredAssets() + 1);
+        cubemapNames.emplace_back("NONE");
+        cubemapRepo.forEachRegisteredAsset([&](CubemapDef* def, const AssetMetadata& entry) {
+            cubemapNames.emplace_back(entry.mName);
+            return false;
+        });
+
+        if (mSkybox) {
+            ui32 nameSize = 0;
+            char nameBuffer[MAX_CHARS_IN_STRTOKEN];
+            cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
+            if (ImGui::BeginCombo("Skybox", nameBuffer)) {
+                for (size_t i = 0; i < cubemapNames.size(); ++i) {
+                    bool isSelected = mSelectedSkyboxIndex == i;
+
+                    cubemapNames[mSelectedSkyboxIndex].toString(nameBuffer, &nameSize);
+                    ImGui::Selectable(nameBuffer, &isSelected);
+
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                        mSelectedSkyboxIndex = i;
+                        if (i == 0) {
+                            mSkybox->setCubemap(nullptr);
+                        }
+                        else {
+                            mSkybox->setCubemap(cubemapRepo.getAssetHandle(cubemapNames[i]));
+                        }
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        if (mSelectedSkyboxIndex != 0) {
+            ImGui::Checkbox("Skybox Irradiance", &mShowSkyboxIrradiance);
+            if (mShowSkyboxIrradiance) {
+                mShowSkyboxPrecomputedMap = false;
+            }
+            ImGui::Checkbox("Skybox Precomputed map", &mShowSkyboxPrecomputedMap);
+            if (mShowSkyboxPrecomputedMap) {
+                ImGui::SliderInt("Level", &mPrecomputedLOD, 0, 10);
+                mShowSkyboxIrradiance = false;
+            }
+        }
+
+        // Grid
+        ImGui::Checkbox("Show Grid", &mRenderGrid);
+
+        // Culling
+        ImGui::Checkbox("Disable Backface Cull", &mDisableBackfaceCulling);
+
+        // Transform
+        ImGui::SliderFloat("Yaw", &mYaw, 0.0f, M_2_PIF);
+        ImGui::Checkbox("Rotate 90", &mRotate90);
     }
-
-    if (mSelectedSkyboxIndex != 0) {
-        ImGui::Checkbox("Skybox Irradiance", &mShowSkyboxIrradiance);
-        if (mShowSkyboxIrradiance) {
-            mShowSkyboxPrecomputedMap = false;
-        }
-        ImGui::Checkbox("Skybox Precomputed map", &mShowSkyboxPrecomputedMap);
-        if (mShowSkyboxPrecomputedMap) {
-            ImGui::SliderInt("Level", &mPrecomputedLOD, 0, 10);
-            mShowSkyboxIrradiance = false;
-        }
-    }
-
-    // Grid
-    ImGui::Checkbox("Show Grid", &mRenderGrid);
-
-    // Culling
-    ImGui::Checkbox("Disable Backface Cull", &mDisableBackfaceCulling);
-
-    // Transform
-    ImGui::SliderFloat("Yaw", &mYaw, 0.0f, M_2_PIF);
-    ImGui::Checkbox("Rotate 90", &mRotate90);
 }
 
 void IEditorViewportPanel::updateAndRenderTweakers() {
 
     ImGui::Separator();
-
-    // Blend test controls
-    if (mDrawMode == EditorViewportDrawMode::BlendTest) {
-        ImGui::SliderInt("Blend Passes", &mBlendTestPasses, 0, 15);
-        ImGui::SliderFloat("Blend Radius", &mBlendTestRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Blend Norm Threshold", &mBlendTestNormThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Blend Depth Threshold", &mBlendTestDepthThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderInt("Blend Display", &mBlendTestDisplayMode, 0, 2);
-        ImGui::Checkbox("Show Variance", &mBlendTestShowVariance);
-        ImGui::Checkbox("Show Edges", &mBlendTestShowEdges);
-        ImGui::Checkbox("Disable", &mBlendTestDisable);
-    }
-    else if (mDrawMode == EditorViewportDrawMode::EdgeTest) {
-        ImGui::SliderFloat("Edge Test Threshold", &mEdgeTestThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Edge Depth Threshold", &mEdgeTestDepthThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderInt("Edge Display", &mEdgeTestDisplayMode, 0, 2);
-        ImGui::SliderInt("Edge Size", &mEdgeSize, 1, 15);
-        ImGui::SliderInt("Edge Blur Passes", &mEdgeBlendPasses, 0, 15);
-        ImGui::SliderFloat("Edge Blur Radius", &mEdgeBlendRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::Checkbox("Show Edges", &mEdgeTestShowEdges);
-        ImGui::Checkbox("Disable", &mEdgeTestDisable);
-    }
-    else if (mDrawMode == EditorViewportDrawMode::PBRTest) {
-        ImGui::Checkbox("Set Metallic Roughness", &mOverrideMetallicRoughness);
-        if (mOverrideMetallicRoughness) {
-            ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
-            ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
-            ImGui::Separator();
+    if (ImGui::CollapsingHeader("Render Options")) {
+        // Blend test controls
+        if (mDrawMode == EditorViewportDrawMode::BlendTest) {
+            ImGui::SliderInt("Blend Passes", &mBlendTestPasses, 0, 15);
+            ImGui::SliderFloat("Blend Radius", &mBlendTestRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Blend Norm Threshold", &mBlendTestNormThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Blend Depth Threshold", &mBlendTestDepthThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderInt("Blend Display", &mBlendTestDisplayMode, 0, 2);
+            ImGui::Checkbox("Show Variance", &mBlendTestShowVariance);
+            ImGui::Checkbox("Show Edges", &mBlendTestShowEdges);
+            ImGui::Checkbox("Disable", &mBlendTestDisable);
         }
-        ImGui::SliderFloat("Height Scale", &mHeightScale, 0.0f, 3.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Ambient", &mAmbient, 0.0f, 3.0f, "%.3f");
-        ImGui::SliderFloat("Exposure", &mExposure, 0.0f, 3.0f, "%.3f");
-        ImGui::SliderFloat("Sun Intensity", &mSunIntensity, 0.0f, 25.0f, "%.3f");
-        ImGui::SliderFloat2("Sun Dir", &mLightDir.x, -2.0f, 2.0f);
-        ImGui::ColorPicker3("Sun Color", &mLightColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::Checkbox("Array View", &mRenderArray);
-        if (mRenderArray) {
-            ImGui::Checkbox("Preview Follow Axis", &mFollowAxis);
+        else if (mDrawMode == EditorViewportDrawMode::EdgeTest) {
+            ImGui::SliderFloat("Edge Test Threshold", &mEdgeTestThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Edge Depth Threshold", &mEdgeTestDepthThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderInt("Edge Display", &mEdgeTestDisplayMode, 0, 2);
+            ImGui::SliderInt("Edge Size", &mEdgeSize, 1, 15);
+            ImGui::SliderInt("Edge Blur Passes", &mEdgeBlendPasses, 0, 15);
+            ImGui::SliderFloat("Edge Blur Radius", &mEdgeBlendRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::Checkbox("Show Edges", &mEdgeTestShowEdges);
+            ImGui::Checkbox("Disable", &mEdgeTestDisable);
+        }
+        else if (mDrawMode == EditorViewportDrawMode::PBRTest) {
+            ImGui::Checkbox("Set Metallic Roughness", &mOverrideMetallicRoughness);
+            if (mOverrideMetallicRoughness) {
+                ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
+                ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
+                ImGui::Separator();
+            }
+            ImGui::SliderFloat("Height Scale", &mHeightScale, 0.0f, 3.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Ambient", &mAmbient, 0.0f, 3.0f, "%.3f");
+            ImGui::SliderFloat("Exposure", &mExposure, 0.0f, 3.0f, "%.3f");
+            ImGui::SliderFloat("Sun Intensity", &mSunIntensity, 0.0f, 25.0f, "%.3f");
+            ImGui::SliderFloat2("Sun Dir", &mLightDir.x, -2.0f, 2.0f);
+            ImGui::ColorPicker3("Sun Color", &mLightColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+            ImGui::Checkbox("Array View", &mRenderArray);
+            if (mRenderArray) {
+                ImGui::Checkbox("Preview Follow Axis", &mFollowAxis);
+            }
         }
     }
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Make sure you don't need any property editors");

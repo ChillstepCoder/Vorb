@@ -26,15 +26,15 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
     rv.mLodData = meshData.lodData;
 
     // Grab material IDs from material names
-    std::vector<MaterialID> materialIds;
-    materialIds.resize(rawMaterials.size());
+    std::vector<MaterialID> defaultMaterials;
+    defaultMaterials.resize(rawMaterials.size());
     for (int i = 0; i < rawMaterials.size(); ++i) {
         const StrToken materialName = StrToken(rawMaterials[i].materialName);
-        if (rawMaterials[i].materialDef) {
-            materialIds[i] = (MaterialID)rawMaterials[i].materialDef->getID();
+        if (rawMaterials[i].defaultMaterialDef) {
+            defaultMaterials[i] = (MaterialID)rawMaterials[i].defaultMaterialDef->getID();
         }
         else {
-            materialIds[i] = materialRepo.getMaterialId(materialName);
+            defaultMaterials[i] = materialRepo.getMaterialId(materialName);
         }
     }
 
@@ -73,7 +73,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawVert.tangent,
                 uvs,
                 rawVert.color,
-                materialIds[rawVert.materialSlotIndex], // Note that this is overridden by material variants system and is now defunct
+                defaultMaterials[rawVert.materialSlotIndex], // Note that this is overridden by material variants system and is now defunct
                 0
             );
         }

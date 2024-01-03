@@ -39,10 +39,10 @@ void Mesh::bindModelAttribs() const {
         glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 1);
 
         // Variants
-        //glEnableVertexArrayAttrib(mGpuData.mVao, 11);
-        //glVertexArrayAttribIFormat(mGpuData.mVao, 11, 1, GL_UNSIGNED_BYTE, 0);
-        //glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANTS_BINDING_POINT);
-        //glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, 1);
+        glEnableVertexArrayAttrib(mGpuData.mVao, 11);
+        glVertexArrayAttribIFormat(mGpuData.mVao, 11, 1, GL_UNSIGNED_BYTE, 0);
+        glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANTS_BINDING_POINT);
+        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, 1);
     }
 }
 

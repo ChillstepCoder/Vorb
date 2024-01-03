@@ -19,7 +19,7 @@ struct alignas(16) RawMeshVertex {
 // Loaded from a model Not intended to be uploaded to GPU except for editor render
 struct FBXRawMaterialData {
     nString materialName;
-    const MaterialDef* materialDef = nullptr;
+    const MaterialDef* defaultMaterialDef = nullptr;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     f32v4 specularColor = { 1.0f, 1.0f, 1.0f, 1.0f };

@@ -14,6 +14,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include "ui/ImguiUtil.hpp"
+#include "ui/imgui_controls/ObjectVector.h"
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
@@ -34,23 +35,13 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::BeginChild("Model Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Model Editor Controls");
     ImGui::Separator();
-    updateAndRenderSharedControls();
-    ImGui::Separator();
 
     bool changed = false;
 
     if (mAssetData) {
         ImGui::Text("Name: %s", mAssetData->getName().toString().c_str());
         updateAndRenderSaveButton();
-        changed |= updateAndRenderImguiControls(*mAssetData);
 
-        ImGui::SliderInt("LOD", &mLod, e_cast(MeshLODLevel::Highest), e_cast(MeshLODLevel::Lowest));
-        // TODO: Tooltip button utility
-        ImGui::SameLine(); ImGui::Button("?");
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-        {
-            ImGui::SetTooltip("LOD is auto generated");
-        }
         ImGui::Text("MeshCount %d", mAssetData->getNumMeshes());
         int polyCount = 0;
         for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
@@ -58,6 +49,19 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
             polyCount += mesh.mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3;
         }
         ImGui::Text("Polygons %d", polyCount);
+
+        if (ImGui::CollapsingHeader("Properties")) {
+            changed |= updateAndRenderImguiControls(*mAssetData);
+
+            ImGui::SliderInt("LOD", &mLod, e_cast(MeshLODLevel::Highest), e_cast(MeshLODLevel::Lowest));
+            // TODO: Tooltip button utility
+            ImGui::SameLine(); ImGui::Button("?");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            {
+                ImGui::SetTooltip("LOD is auto generated");
+            }
+        }
+
         ImGui::Separator();
         if (mAssetData->getNumMeshes()) {
             ImGui::Checkbox("Edit Submesh", &mShowSingle);
@@ -69,14 +73,33 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ModelSubmeshData& subMeshData = mAssetData->mSubmeshesData[mSingleIndex];
 
                 changed |= updateAndRenderImguiControls(subMeshData);
-                  
+
                 ImGui::Separator();
+            }
+            ImGui::Separator();
+            if (ImGui::CollapsingHeader("Variants")) {
+                ImGui::SliderInt("Preview Variant", &mVariantIndex, 0, mAssetData->mVariants.size());
+                // Variant controls
+                changed |= ImguiUtil::ObjectVector<ModelVariantData>("Variants", mAssetData->mVariants,
+                    [](ModelVariantData& o, ui32) {
+                        bool changed = false;
+                        changed |= updateAndRenderImguiControls(o);
+                        changed |= ImguiUtil::ObjectVector<SoftAssetReference>("Materials", o.submeshMaterials,
+                            [](SoftAssetReference& o, ui32 i) {
+                                return ImguiUtil::updateAndRenderSoftAssetReference(std::to_string(i).c_str(), o);
+                            }, false /*resizable*/
+                        );
+                        return changed;
+                    }
+                );
             }
         }
         else {
             ImGui::Text("*EMPTY MODEL*");
         }
-
+        ImGui::Separator();
+        updateAndRenderSharedControls();
+        ImGui::Separator();
         updateAndRenderTweakers();
     }
 
@@ -100,22 +123,33 @@ void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
       
         const MaterialShaderDef* shader = getShader();
+
+        glUniform1i(shader->getUniform("unVariantIndex"), mVariantIndex);
+        glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
         if (mShowSingle) {
             mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
-            MeshDrawer::draw(mAssetData->getMesh(mSingleIndex).mGpuData, MeshLODLevel(mLod));
+            Mesh& mesh = mAssetData->getMesh(mSingleIndex);
+            assert(mesh.mVariantDataUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+            MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
         }
         else {
             // First LOD
-            glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
             for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-                MeshDrawer::draw(mAssetData->getMesh(i).mGpuData, MeshLODLevel(mLod));
+                Mesh& mesh = mAssetData->getMesh(i);
+                assert(mesh.mVariantDataUbo);
+                glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+                MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
             }
             int x = 1;
             const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
             for (int l = e_cast(MeshLODLevel::Highest) + 1; l < e_count(MeshLODLevel); ++l) {
                 glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
                 for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-                    MeshDrawer::draw(mAssetData->getMesh(i).mGpuData, MeshLODLevel(i));
+                    Mesh& mesh = mAssetData->getMesh(i);
+                    assert(mesh.mVariantDataUbo);
+                    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+                    MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
                 }
                 ++x;
             }

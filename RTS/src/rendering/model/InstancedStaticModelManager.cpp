@@ -146,7 +146,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 // GPU buffer is larger to accommodate the work group size, or we get corruption
                 const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
                 const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * instanceData.mInstanceTransforms.size();
-                // Transform takes up 4 binding points
+                assert(instanceData.mInstanceVariants.size() == instanceData.mInstanceTransforms.size());
                 if (instanceData.mTransformsVbo == 0) {
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
                     GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
@@ -155,10 +155,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     }
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    if (instanceData.mInstanceVariants.size()) {
-                        GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * instanceData.mInstanceVariants.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-                        GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
-                    }
+                    GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else if (gpuBufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
@@ -170,10 +168,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    if (instanceData.mInstanceVariants.size()) {
-                        GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * instanceData.mInstanceVariants.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-                        GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
-                    }
+                    GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else {
@@ -185,15 +181,12 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         cpuBufferSizeBytes - instanceData.mFirstDirtyInstance * sizeof(f32m4),
                         instanceData.mInstanceTransforms.data() + instanceData.mFirstDirtyInstance
                     );
-                    if (instanceData.mInstanceVariants.size()) {
-                        // TODO: FIX
-                        /*   glNamedBufferSubData(
-                               instanceData.mVariantsVbo,
-                               instanceData.mFirstDirtyInstance * sizeof(ui8),
-                               (sizeof(ui8) * instanceData.mInstanceVariants.size()) - instanceData.mFirstDirtyInstance * sizeof(ui8),
-                               instanceData.mInstanceVariants.data() + instanceData.mFirstDirtyInstance
-                           );*/
-                    }
+                    glNamedBufferSubData(
+                        instanceData.mVariantsVbo,
+                        instanceData.mFirstDirtyInstance * sizeof(ui8),
+                        (sizeof(ui8) * instanceData.mInstanceVariants.size()) - instanceData.mFirstDirtyInstance * sizeof(ui8),
+                        instanceData.mInstanceVariants.data() + instanceData.mFirstDirtyInstance
+                    );
                 }
             }
 
@@ -368,7 +361,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
     updateAnimatedModels(elapsedSec);
 }
 
-void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation) {
+void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex) {
     ASSERT_RENDER_THREAD();
 
     AssetHandle<ModelDef>* assetHandle;
@@ -385,14 +378,14 @@ void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containe
     }
     
     if (!assetHandle->isLoaded()) {
-        mPendingInstances[modelId].emplace_back(PendingModelInstance{ containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation) });
+        mPendingInstances[modelId].emplace_back(PendingModelInstance{ containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex });
         mPendingInstanceForContainer[containerId].emplace(modelId);
         return;
     }
     const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
     assert(modelDefPtr);
 
-    addInstanceAtPositionInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation));
+    addInstanceAtPositionInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex);
 }
 
 void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
@@ -509,7 +502,7 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
             pending.reserve(pending.size() + sourceInstances.size());
             for (size_t i = 0; i < sourceInstances.size(); ++i) {
                 const StaticModelInstance& modelInstance = sourceInstances[i];
-                pending.emplace_back(PendingModelInstance{ gatherer.mContainerID, modelInstance.tileIndex, modelInstance.matrix });
+                pending.emplace_back(PendingModelInstance{ gatherer.mContainerID, modelInstance.tileIndex, modelInstance.matrix, modelInstance.variantIndex });
             }
             mPendingInstanceForContainer[gatherer.mContainerID].emplace(modelId);
 
@@ -538,7 +531,7 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
             size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
             instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            //instanceData.mInstanceVariants[instanceIndex] = modelDefPtr.mVariants;
+            instanceData.mInstanceVariants[instanceIndex] = modelInstance.variantIndex;
             instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
             TileModelPositionKey positionKey{ modelInstance.tileIndex };
             assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
@@ -691,7 +684,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 manager->removeInstanceAtPosition(containerId, index);
             }
             for (auto&& addEvent : editPtr->addEvents) {
-                manager->addInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(addEvent.worldPosition));
+                manager->addInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/);
             }
             delete editPtr;
         }, editPtr);
@@ -757,7 +750,7 @@ void InstancedStaticModelManager::updatePendingModelDefs() {
             }
             // Add all instances
             for (PendingModelInstance& pendingInstance : it->second) {
-                addInstanceAtPositionInternal(*def, pendingInstance.containerId, pendingInstance.tileIndex, pendingInstance.transform);
+                addInstanceAtPositionInternal(*def, pendingInstance.containerId, pendingInstance.tileIndex, pendingInstance.transform, pendingInstance.variantIndex);
             }
             it = mPendingInstances.erase(it);
         }
@@ -767,7 +760,7 @@ void InstancedStaticModelManager::updatePendingModelDefs() {
     }
 }
 
-void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform) {
+void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex) {
 
     StaticMeshInstanceData& instanceData = mModelsToInstances[modelDef.getID()];
 
@@ -777,6 +770,7 @@ void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& 
     }
     // Store per tile references
     instanceData.mInstanceTransforms.emplace_back(transform);
+    instanceData.mInstanceVariants.emplace_back(variantIndex);
     instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
     SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[containerId];
 
@@ -875,6 +869,8 @@ void InstancedStaticModelManager::removeTileModelInstanceInternal(TileModelInsta
     // Replace this instance with back instance
     instanceData.mInstanceTransforms[instanceIndex] = std::move(instanceData.mInstanceTransforms.back());
     instanceData.mInstanceTransforms.pop_back();
+    instanceData.mInstanceVariants[instanceIndex] = std::move(instanceData.mInstanceVariants.back());
+    instanceData.mInstanceVariants.pop_back();
     instanceData.mInstanceOwners[instanceIndex] = backOwner;
     instanceData.mInstanceOwners.pop_back();
 

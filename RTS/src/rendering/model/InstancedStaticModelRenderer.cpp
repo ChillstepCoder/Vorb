@@ -142,9 +142,13 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
                     glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
                 }
 
+                // Variant data
+                assert(mesh.mVariantDataUbo);
+                glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+
                 // Bind our transforms every frame as we could be using different instanced static model managers
                 GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
-                //GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
+                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
 
                 // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
                 //// Make sure we created a fence for this instance

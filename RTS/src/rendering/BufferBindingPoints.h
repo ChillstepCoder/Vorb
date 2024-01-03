@@ -1,0 +1,26 @@
+#pragma once
+
+
+// ================= SSBO Binding points =================
+constexpr GLuint BUFFER_BASE_GLOBAL_UBO = 0; // Always bound
+constexpr GLuint BUFFER_BASE_GLOBAL_MATERIAL_SSBO = 1; // Always bound
+constexpr GLuint BUFFER_BASE_MESH_UBO = 2;
+constexpr GLuint BUFFER_BASE_MESH_SSBO = 3;
+
+constexpr GLuint BUFFER_BASE_MODEL_VARIANT_DATA_UBO = 4;
+
+constexpr GLuint BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO = 4;
+
+constexpr GLuint BUFFER_BASE_PARTICLE_POSITIONS_SSBO = 4;
+constexpr GLuint BUFFER_BASE_PARTICLE_SCALES_SSBO = 5;
+constexpr GLuint BUFFER_BASE_PARTICLE_COLORS_SSBO = 6;
+constexpr GLuint BUFFER_BASE_PARTICLE_HDR_COLORS_SSBO = 7;
+constexpr GLuint BUFFER_BASE_PARTICLE_MATERIALS_SSBO = 8;
+
+constexpr GLuint BUFFER_BASE_GRASS_UBO = 9;
+constexpr GLuint BUFFER_BASE_CAMERA_UBO = 10;
+constexpr GLuint BUFFER_BASE_PARTICLE_ROTATIONS_SSBO = 11;
+
+// ================= VAO Binding points =================
+constexpr GLuint MODEL_TRANSFORMS_BINDING_POINT = 2;
+constexpr GLuint MODEL_VARIANTS_BINDING_POINT = 3;

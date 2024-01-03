@@ -1,6 +1,7 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
 #include "util/uv.glsl"
+#include "model/model_variant.glsl"
 
 uniform int unWindType = 0;
 uniform float unSnowLevel;
@@ -12,7 +13,7 @@ layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 layout(location = 7) in mat4 vModelMatrix;
-layout(location = 8) in uint vMaterialIndex;
+layout(location = 11) in uint vVariantIndex;
 
 out vec2 fUV;
 flat out uint fMaterialIndex;
@@ -25,7 +26,7 @@ out float fSnow;
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = vMaterialIndex;
+    fMaterialIndex = inVariantData[vVariantIndex].material;
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);

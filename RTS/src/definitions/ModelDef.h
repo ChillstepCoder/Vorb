@@ -68,8 +68,7 @@ public:
     // Variants
     std::vector<ModelVariantData> mVariants;
     std::vector<ModelVariantGpuDataContainer> mVariantsGpuData; // One per submesh
-    ModelVariantSelectType mVariantSelectType = ModelVariantSelectType::Random;
-    f32 mVariantSelectScale = 1.0f; // Used for Voronoi select
+    std::vector<GLBuffer> mVariantsGpuBuffers; // One per submesh
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
@@ -84,7 +83,5 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mBoundingSphereRadius, "bound_sphere"sv),
     make_field(o.mShadowDetail, "shadow_detail"sv),
     make_field(o.mForceNormalsUp, "force_normals_up"sv),
-    make_field(o.mVariants, "variants"sv),
-    make_field(o.mVariantSelectType, "variant_type"sv),
-    make_field(o.mVariantSelectScale, "variant_scale"sv)
+    make_field(o.mVariants, "variants"sv)
 );

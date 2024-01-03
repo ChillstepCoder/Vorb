@@ -114,7 +114,7 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
         springsWeight = clamp(springsWeight, 0.0, 1.0);
         springsHeight = springsHeight * springsWeight * seaHeightMult;
         // Step function
-        springsHeight = floor(springsHeight / 2.0) * 2.0;
+        springsHeight = mix(floor(springsHeight / 2.0) * 2.0, springsHeight, 0.25);
         height += springsHeight;
         if (springsWeight > bestWeight) {
             bestBiome = BIOME_Hotsprings;

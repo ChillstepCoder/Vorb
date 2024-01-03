@@ -274,7 +274,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
         materialGpuData.flags = (MaterialFlags_CastShadow * (int)materialDef.castsShadow) | (MaterialFlags_ReceiveShadow * (int)materialDef.receivesShadow);
 
         // Finish with GPU lambda after dependant textures loaded
-        assetLoader.requestAssetLoadWithDependencies(nullptr, [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+        assetLoader.requestAssetLoadWithDependencies(nullptr, [&, tokenName]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
             MaterialDef& materialDef = *static_cast<MaterialDef*>(assetDataPtr);
             MaterialLoadUserData& loadData = std::any_cast<MaterialLoadUserData&>(userData);
             // TODO: Evaluate if we should always be using this. This fixes crash when dimensions are not divisible by 4

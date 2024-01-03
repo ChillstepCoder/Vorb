@@ -1,6 +1,7 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
 #include "util/uv.glsl"
+#include "model/model_variant.glsl"
 
 uniform mat4 unM;
 uniform mat4 unVP;
@@ -25,7 +26,7 @@ out vec3 fNormal;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 
-uniform int unMaterialIndex;
+uniform int unVariantIndex;
 
 
 void main() {
@@ -33,7 +34,7 @@ void main() {
     fUV = unpackUV(vUV);
     
     // TODO: Do in fragment shader?
-    fMaterialIndex = unMaterialIndex;
+    fMaterialIndex = inVariantData[unVariantIndex].material;
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);

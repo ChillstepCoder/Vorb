@@ -721,6 +721,7 @@
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
+    <ClInclude Include="src\rendering\BufferBindingPoints.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\character\CharacterAnimator.h" />

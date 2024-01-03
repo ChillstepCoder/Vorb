@@ -131,6 +131,7 @@ public:
 
     // TODO: Protected
     MeshGpuData            mGpuData;
+    VGBuffer               mVariantDataUbo = 0; // Managed by ModelDef
 protected:
     f32v3                  mPosition = f32v3(0.0f);
     BoundingSphere         mBoundingSphere;  ///< Optional
