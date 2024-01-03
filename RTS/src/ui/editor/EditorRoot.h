@@ -10,7 +10,7 @@ DECL_VG(class GBuffer);
 class DebugTweakerPanel;
 class WorldEditorPanel;
 class Camera3D;
-class TileEditorPanel;
+class AssetSelectPanel;
 class ModelDef;
 struct TileGrassDef;
 struct FishDef;
@@ -49,7 +49,7 @@ private:
     // Subpanels
     std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
     std::unique_ptr<WorldEditorPanel> mWorldEditorPanel;
-    std::unique_ptr<TileEditorPanel> mTileEditorPanel;
+    std::unique_ptr<AssetSelectPanel> mTileEditorPanel;
     // Viewport panels
     std::map<AssetType, std::unique_ptr<AssetEditorViewportPanelBase>> mAssetEditorPanels;
 

@@ -540,7 +540,7 @@
     <ClCompile Include="src\ui\editor\EditorRoot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\editor\TileEditorPanel.cpp">
+    <ClCompile Include="src\ui\editor\AssetSelectPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp">
@@ -1691,7 +1691,7 @@
     <ClInclude Include="src\ui\editor\EditorRoot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\editor\TileEditorPanel.h">
+    <ClInclude Include="src\ui\editor\AssetSelectPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h">
@@ -2340,6 +2340,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\BufferBindingPoints.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\TileDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

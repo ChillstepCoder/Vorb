@@ -493,7 +493,7 @@
     <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Selection\EditorSelectionManager.cpp" />
-    <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
+    <ClCompile Include="src\ui\editor\AssetSelectPanel.cpp" />
     <ClCompile Include="src\ui\ImguiUtil.cpp" />
     <ClCompile Include="src\ui\minigame\FishingMinigame.cpp" />
     <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp" />
@@ -600,6 +600,7 @@
     <ClInclude Include="src\definitions\rendering\TextureDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
     <ClInclude Include="src\definitions\SkillDef.h" />
+    <ClInclude Include="src\definitions\TileDef.h" />
     <ClInclude Include="src\definitions\TileDistributionDef.h" />
     <ClInclude Include="src\definitions\TileGrassDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
@@ -921,7 +922,7 @@
     <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Selection\EditorSelectionManager.h" />
     <ClInclude Include="src\ui\editor\Settings\EditorSettings.h" />
-    <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
+    <ClInclude Include="src\ui\editor\AssetSelectPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\imgui_controls\EnumCombo.h" />
     <ClInclude Include="src\ui\minigame\FishingMinigame.h" />

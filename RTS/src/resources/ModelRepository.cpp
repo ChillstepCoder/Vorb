@@ -347,6 +347,7 @@ void ModelRepository::onRegisteredAsset(AssetID id) {
 void ModelRepository::onAllAssetTypesRegistered() {
     mLODParameters.shrink_to_fit();
 }
+
 void ModelRepository::updateModelFlyweightData(AssetID id) {
     ModelDef& def = *mAssets[id];
     mLODParameters[id].lodDistancesSQ[0] = SQ(def.mLodDistance0);
@@ -357,7 +358,6 @@ void ModelRepository::updateModelFlyweightData(AssetID id) {
     mLODParameters[id].shadowLodDetail = def.mShadowDetail;
 }
 
-
 void ModelRepository::updateModelVariantData(AssetID id) {
     ASSERT_RENDER_THREAD();
 
@@ -367,6 +367,9 @@ void ModelRepository::updateModelVariantData(AssetID id) {
 
     if (def.mVariants.empty()) {
         def.mVariants.resize(1); // Must have a single variant at least
+    }
+    else if (def.mVariants.size() > MAX_MODEL_VARIANTS) {
+        def.mVariants.resize(MAX_MODEL_VARIANTS);
     }
 
     // Ensure no size mismatch

@@ -3,7 +3,7 @@
 
 #include "editor/WorldEditorPanel.h"
 #include "ui/DebugTweakerPanel.h"
-#include "ui/editor/TileEditorPanel.h"
+#include "ui/editor/AssetSelectPanel.h"
 #include "ui/editor/ModelEditorViewportPanel.h"
 #include "ui/editor/MaterialEditorViewportPanel.h"
 #include "ui/editor/BiomeEditorViewportPanel.h"
@@ -41,7 +41,7 @@ EditorRoot::EditorRoot() {
     // Initialize panels
     mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>();
     mWorldEditorPanel = std::make_unique<WorldEditorPanel>();
-    mTileEditorPanel = std::make_unique<TileEditorPanel>();
+    mTileEditorPanel = std::make_unique<AssetSelectPanel>();
 
     // Asset editors
     mAssetEditorPanels[AssetType::Model] = std::make_unique<ModelEditorViewportPanel>();
@@ -197,7 +197,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             ImGui::Begin("Secondary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
             rightPanelWidth = ImGui::GetCurrentWindowRead()->Size.x;
 
-            TileEditorPanelResult result;
+            AssetSelectPanelResult result;
             static f32 ySize1 = ImGui::GetContentRegionAvail().y * 0.5f;
             static f32 ySize2 = ySize1;
             // With model editor open we render controls panel
@@ -216,18 +216,17 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
 
             switch (result.first)
             {
-                case TileEditorPanelResultCode::NONE:
+                case AssetSelectPanelResultCode::NONE:
                     break;
-                case TileEditorPanelResultCode::EDIT_ASSET: {
-                    AssetDescriptor desc = std::get<AssetDescriptor>(result.second);
-                    tryOpenAssetForEdit(desc);
+                case AssetSelectPanelResultCode::EDIT_ASSET: {
+                    tryOpenAssetForEdit(result.second);
                     break;
                 }
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_count(TileEditorPanelResultCode) == 2);
+            static_assert(e_count(AssetSelectPanelResultCode) == 2);
 
         }
         if (mActiveCenterPanel) {

@@ -12,7 +12,7 @@ class ModelRepository;
 
 class FishRepository : public IAssetRepository<FishDef>
 {
-    friend class TileEditorPanel;
+    friend class AssetSelectPanel;
 public:
     ASSET_REPOSITORY_COMMON_CODE(FishRepository, FishDef, AssetType::Fish)
 

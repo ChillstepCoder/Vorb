@@ -2,7 +2,7 @@
 
 #include "rendering/mesh/MeshConst.h"
 
-constexpr ui32 MAX_MODEL_VARIANTS = 8;
+constexpr ui32 MAX_MODEL_VARIANTS = 16;
 
 struct ModelSubmeshData {
     MeshWindType windType;
@@ -28,10 +28,10 @@ SERIALIZABLE_ENUM_SAME_NAME(ModelVariantSelectType,
 );
 
 struct ModelVariantData {
-    std::vector<SoftAssetReference> submeshMaterials; 
-    f32 weight = 1.0f;
+    StrToken displayName = CStrToken("new_variant");
+    std::vector<SoftAssetReference> submeshMaterials;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelVariantData,
-    make_field(o.submeshMaterials, "submesh_mats"sv),
-    make_field(o.weight, "weight"sv)
+    make_field(o.displayName, "name"sv),
+    make_field(o.submeshMaterials, "submesh_mats"sv)
 );

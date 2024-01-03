@@ -8,7 +8,7 @@
 
 
 class TileGrassRepository : public IAssetRepository<TileGrassDef> {
-    friend class TileEditorPanel;
+    friend class AssetSelectPanel;
 public:
     ASSET_REPOSITORY_COMMON_CODE(TileGrassRepository, TileGrassDef, AssetType::TileGrass)
 

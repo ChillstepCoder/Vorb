@@ -183,6 +183,10 @@ Tile ChunkGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f
         }
     }
 
+    if (tile.mainLayer == hotspringhero) {
+        tile.mainLayerVariant = rand() % 4;
+    }
+
     //generateTileGrass(worldPos, height, grass);
 
     return tile;

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "TileEditorPanel.h"
+#include "AssetSelectPanel.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
@@ -28,15 +28,15 @@ ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideab
 | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
 | ImGuiTableFlags_SizingFixedFit;
 
-TileEditorPanel::TileEditorPanel() {
+AssetSelectPanel::AssetSelectPanel() {
 }
 
-TileEditorPanel::~TileEditorPanel() {
+AssetSelectPanel::~AssetSelectPanel() {
 }
 
-TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
+AssetSelectPanelResult AssetSelectPanel::updateAndRender(float ySize) {
 
-    TileEditorPanelResult returnValue = std::make_pair(TileEditorPanelResultCode::NONE, TileEditorPanelResultVariant{});
+    AssetSelectPanelResult returnValue = std::make_pair(AssetSelectPanelResultCode::NONE, AssetDescriptor{});
 
     ImGui::BeginChild("Tile Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Tile Editor");
@@ -60,7 +60,7 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
 // =====================================================================================
 // =                                    MODELS                                         =
 // =====================================================================================
-void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
+void AssetSelectPanel::updateAndRenderModelsTab(AssetSelectPanelResult& result) {
     if (ImGui::BeginTabItem("Models")) {
         constexpr f32 FIXED_WIDTH = 75.0f;
 
@@ -108,7 +108,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
                 // Action
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.first = AssetSelectPanelResultCode::EDIT_ASSET;
                     result.second = entry.mDescriptor;
                 }
 
@@ -125,7 +125,7 @@ void TileEditorPanel::updateAndRenderModelsTab(TileEditorPanelResult& result) {
 // =====================================================================================
 // =                                    MATERIALS                                      =
 // =====================================================================================
-void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
+void AssetSelectPanel::updateAndRenderMaterialsTab(AssetSelectPanelResult& result)
 {
     static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("material_preview"));
     const MaterialShaderDef* previewShader = shaderDef->tryGetLoadedAsset();
@@ -202,7 +202,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 ImGui::TableSetColumnIndex(3);
                 if (def) {
                     if (ImGui::Button("Edit")) {
-                        result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                        result.first = AssetSelectPanelResultCode::EDIT_ASSET;
                         result.second = entry.mDescriptor;
                     }
                 }
@@ -225,7 +225,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
     }
 }
 
-void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
+void AssetSelectPanel::updateAndRenderFoliageTab(AssetSelectPanelResult& result) {
 
     static AssetHandlePtr<MaterialShaderDef> shaderDef = MaterialShaderRepository::get().getAssetHandle(CStrToken("material_preview"));
     const MaterialShaderDef* previewShader = shaderDef->tryGetLoadedAsset();
@@ -300,7 +300,7 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
                 // Action
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.first = AssetSelectPanelResultCode::EDIT_ASSET;
                     result.second = entry.mDescriptor;
                 }
 
@@ -316,11 +316,11 @@ void TileEditorPanel::updateAndRenderFoliageTab(TileEditorPanelResult& result) {
     }
 }
 
-void TileEditorPanel::updateAndRenderBiomeTab(TileEditorPanelResult& result) {
+void AssetSelectPanel::updateAndRenderBiomeTab(AssetSelectPanelResult& result) {
     if (ImGui::BeginTabItem("Biome")) {
         ImGui::Text("Biome");
         if (ImGui::Button("Open Editor")) {
-            result.first = TileEditorPanelResultCode::EDIT_ASSET;
+            result.first = AssetSelectPanelResultCode::EDIT_ASSET;
             // TODO: Specific?
             result.second = AssetDescriptor{ 0, AssetType::Biome };
         }
@@ -328,7 +328,7 @@ void TileEditorPanel::updateAndRenderBiomeTab(TileEditorPanelResult& result) {
     }
 }
 
-void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
+void AssetSelectPanel::updateAndRenderFishingTab(AssetSelectPanelResult& result)
 {
     if (ImGui::BeginTabItem("Fishing")) {
 
@@ -376,7 +376,7 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.first = AssetSelectPanelResultCode::EDIT_ASSET;
                     result.second = entry.mDescriptor;
                 }
                 ImGui::PopID();
@@ -389,11 +389,11 @@ void TileEditorPanel::updateAndRenderFishingTab(TileEditorPanelResult& result)
     }
 }
 
-void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result) {
+void AssetSelectPanel::updateAndRenderParticlesTab(AssetSelectPanelResult& result) {
     if (ImGui::BeginTabItem("Particles")) {
         ImGui::Text("Particle Systems");
         if (ImGui::Button("Open Editor")) {
-            result.first = TileEditorPanelResultCode::EDIT_ASSET;
+            result.first = AssetSelectPanelResultCode::EDIT_ASSET;
             result.second = AssetDescriptor{ .id = 0, .assetType = AssetType::ParticleSystem };
         }
 
@@ -441,7 +441,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
                 // Action
                 ImGui::TableSetColumnIndex(2);
                 if (ImGui::Button("Edit")) {
-                    result.first = TileEditorPanelResultCode::EDIT_ASSET;
+                    result.first = AssetSelectPanelResultCode::EDIT_ASSET;
                     result.second = entry.mDescriptor;
                 }
 
@@ -455,7 +455,7 @@ void TileEditorPanel::updateAndRenderParticlesTab(TileEditorPanelResult& result)
     }
 }
 
-VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShaderDef* shader, int previewIndex, const MaterialGpuData& materialData) {
+VGTexture AssetSelectPanel::renderMaterialPreview(const MaterialShaderDef* shader, int previewIndex, const MaterialGpuData& materialData) {
     // Allocate new gbuffer if needed
     assert(previewIndex <= (int)mMaterialPreviewGBuffers.size());
     if (previewIndex == (int)mMaterialPreviewGBuffers.size()) {

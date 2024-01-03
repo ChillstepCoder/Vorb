@@ -22,7 +22,7 @@ struct ModelLodParams {
 };
 
 class ModelRepository : public IAssetRepository<ModelDef> {
-    friend class TileEditorPanel; // TODO: Remove?
+    friend class AssetSelectPanel; // TODO: Remove?
 public:
     ASSET_REPOSITORY_COMMON_CODE(ModelRepository, ModelDef, AssetType::Model)
 
