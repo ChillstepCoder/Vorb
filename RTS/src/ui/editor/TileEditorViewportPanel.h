@@ -13,4 +13,5 @@ public:
 private:
     const MaterialShaderDef* getShader() override;
     void renderMesh() override;
+    int mVariantIndex = 0;
 };

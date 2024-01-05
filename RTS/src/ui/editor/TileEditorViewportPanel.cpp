@@ -28,6 +28,9 @@ void TileEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
             }
         }
         if (mAssetData->modelRef.isValid() && ImGui::CollapsingHeader("Model Variants")) {
+
+            ImGui::SliderInt("Preview Variant", &mVariantIndex, 0, mAssetData->modelVariants.size() - 1);
+
             const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(mAssetData->modelRef.getAssetID());
             if (ImguiUtil::ObjectVector<ui8>("Variant Indices", mAssetData->modelVariants, [&modelDef](ui8& v, ui32 i) {
                 int vi = v;
@@ -63,8 +66,8 @@ void TileEditorViewportPanel::renderMesh() {
     if (mAssetData) {
         if (mAssetData->modelRef.isValid()) {
             const MaterialShaderDef* shader = getShader();
-            glUniform1i(shader->getUniform("unVariantIndex"), 0);
             glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
+            glUniform1i(shader->getUniform("unVariantIndex"), mAssetData->modelVariants[mVariantIndex]);
             AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->modelRef.getAssetHandle());
             if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
                 for (int i = 0; i < modelDef->getNumMeshes(); ++i) {

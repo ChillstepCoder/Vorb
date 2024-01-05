@@ -2,6 +2,7 @@
 
 #include "generation/WorldGenerationData.h"
 
+class TilingVoronoiMap;
 class World;
 class Tile;
 class Chunk;
@@ -19,17 +20,21 @@ public:
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }
     World& getWorld() const { return mWorld; }
 protected:
-    virtual Tile generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
 
-    Tile generateTilePlains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileForests(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileHotsprings(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
+    virtual Tile generateTileAtPos(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
+
+    Tile generateTilePlains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
+    Tile generateTileMountains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
+    Tile generateTileForests(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
+    Tile generateTileHotsprings(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
    
-    void generateTileGrass(const f32v2& worldPos, f32 height, TileGrass* grass);
+    void generateTileGrass(f32v2 worldPos, f32 height, TileGrass* grass);
     
     World& mWorld;
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;
+    
+    // Voronoi variant clustering
+    std::unique_ptr<TilingVoronoiMap> mVoronoiMap;
 };
 

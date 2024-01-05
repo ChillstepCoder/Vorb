@@ -30,7 +30,9 @@ public:
     virtual bool isAssetRegistered(StrToken name) const = 0;
     virtual AssetID tryGetRegisteredAssetID(StrToken name) const = 0;
     virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
-    virtual void onAllAssetTypesRegistered() {}
+    virtual void onAllAssetTypesRegistered() {
+        fixupAssets();
+    }
     virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
 
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
@@ -57,8 +59,14 @@ public:
 
     virtual bool saveAsset(AssetID assetId) = 0;
 
-    virtual void onAssetChangedByEditor(AssetID assetId) {};
+    virtual void onAssetChangedByEditor(AssetID assetId) { fixupAsset(assetId); };
+    virtual void fixupAsset(AssetID assetId) {};
 
+    void fixupAssets() {
+        for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
+            fixupAsset(id);
+        }
+    }
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
 

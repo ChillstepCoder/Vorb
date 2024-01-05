@@ -37,7 +37,7 @@ public:
 private:
     AssetLoadFunc getAssetLoadFunc() override { return nullptr; } // TODO:?
     void onRegisteredAsset(AssetID id) override;
-    void onAllAssetTypesRegistered() override;
+    void fixupAsset(AssetID id) override;
 
     CollisionShapeRepository& mCollisionShapeCache;
 

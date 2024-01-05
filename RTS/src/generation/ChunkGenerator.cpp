@@ -17,17 +17,19 @@
 #include "generation/NoiseFunction.hpp"
 #include "generation/WorldGenerationData.h"
 
+#include "util/TilingVoronoiMap.h"
+
 
 ChunkGenerator::ChunkGenerator(World& world) : mWorld(world) {
     mWorldCenter = f32v2(mWorld.getWidthTiles() * 0.5f);
+    mVoronoiMap = std::make_unique<TilingVoronoiMap>(256, 16);
 }
 
 ChunkGenerator::~ChunkGenerator() {
 
 }
 
-
-Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileAtPos(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
     assert(grass);
 
     if (biomeDef) {
@@ -54,7 +56,7 @@ Tile ChunkGenerator::generateTileAtPos(const f32v2& worldPos, f32 height, f32v3 
     return Tile();
 }
 
-Tile ChunkGenerator::generateTilePlains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTilePlains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     TileRepository& tileRepo = TileRepository::get();
     static TileID baseTree = tileRepo.getTileID(CStrToken("tree_a"));
     static TileID pineTree = tileRepo.getTileID(CStrToken("tree_pine"));
@@ -95,7 +97,7 @@ Tile ChunkGenerator::generateTilePlains(const f32v2& worldPos, f32 height, TileG
     return tile;
 }
 
-Tile ChunkGenerator::generateTileMountains(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileMountains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     generateTileGrass(worldPos, height, grass);
     TileRepository& tileRepo = TileRepository::get();
     static TileID rockIds[5] = {
@@ -115,7 +117,7 @@ Tile ChunkGenerator::generateTileMountains(const f32v2& worldPos, f32 height, Ti
     return tile;
 }
 
-Tile ChunkGenerator::generateTileForests(const f32v2& worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileForests(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
     TileRepository& tileRepo = TileRepository::get();
     static TileID baseTree = tileRepo.getTileID(CStrToken("tree_a"));
     static TileID pineTree = tileRepo.getTileID(CStrToken("tree_pine"));
@@ -132,16 +134,18 @@ Tile ChunkGenerator::generateTileForests(const f32v2& worldPos, f32 height, Tile
         constexpr f32 TREE_DENSITY = 0.05f;
         constexpr f32 BUSH_DENSITY = 0.013f;
         if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY * fadeMult) {
-            if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.42f) {
-                tile.mainLayer = baseTree;
+            if (height > 0.1f) {
+                if (Random::getThreadSafef(worldPos.x * -90.353f, worldPos.y * 5.25f) < 0.42f) {
+                    tile.mainLayer = baseTree;
+                }
+                else if (Random::getThreadSafef(worldPos.x * 20.353f, worldPos.y * -54.25f) < 0.3f) {
+                    tile.mainLayer = birchTree;
+                }
+                else {
+                    tile.mainLayer = pineTree;
+                }
+                *grass = TileGrass();
             }
-            else if (Random::getThreadSafef(worldPos.x * 20.353f, worldPos.y * -54.25f) < 0.3f) {
-                tile.mainLayer = birchTree;
-            }
-            else {
-                tile.mainLayer = pineTree;
-            }
-            *grass = TileGrass();
         }
         else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {
             tile.mainLayer = bush2;
@@ -155,7 +159,7 @@ Tile ChunkGenerator::generateTileForests(const f32v2& worldPos, f32 height, Tile
     return tile;
 }
 
-Tile ChunkGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
+Tile ChunkGenerator::generateTileHotsprings(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
 
     TileRepository& tileRepo = TileRepository::get();
     static TileID hotspring01 = tileRepo.getTileID(CStrToken("hotspring_01"));
@@ -184,7 +188,7 @@ Tile ChunkGenerator::generateTileHotsprings(const f32v2& worldPos, f32 height, f
     }
 
     if (tile.mainLayer == hotspringhero) {
-        tile.mainLayerVariant = rand() % 4;
+        tile.mainLayerVariant = rand() % 6;
     }
 
     //generateTileGrass(worldPos, height, grass);
@@ -270,7 +274,7 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
     chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
 }
 
-void ChunkGenerator::generateTileGrass(const f32v2& worldPos, f32 height, TileGrass* grass) {
+void ChunkGenerator::generateTileGrass(f32v2 worldPos, f32 height, TileGrass* grass) {
     static constexpr TileGrassID defaultGrass = 0; // TODO: DIFFERENT
 
     constexpr f32 MAX_GRASS_HEIGHT = 45.0f;

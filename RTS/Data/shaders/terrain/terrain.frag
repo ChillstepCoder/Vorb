@@ -215,7 +215,7 @@ void main() {
     vec3 normalClose = getTriplanarNormal(surfaceNormal, vec2(xyUVClose.y, heightVClose), vec2(xyUVClose.x, heightVClose), weights);
     vec3 normalFar = getTriplanarNormal(surfaceNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
     vec3 finalNormal = mix(normalClose, normalFar, cliffDistFactor);
-    finalNormal = mix(finalNormal, surfaceNormal, max(fSnow, 1.0));
+    finalNormal = mix(finalNormal, surfaceNormal, min(fSnow, 1.0));
     oNormal.rgb = (finalNormal + 1.0) * 0.5;
 
 	//oNormal.rgb = oNormal.rgb * 0.00001 + (surfaceNormal + 1.0) * 0.5;

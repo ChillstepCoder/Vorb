@@ -53,58 +53,69 @@ void TileRepository::onRegisteredAsset(AssetID id) {
             def.navBlockerType = NavBlockerType::MEDIUM;
         }
     }
+
+    // For now all tiles are always loaded
+    mLoadedAssets[id]->store(true);
 }
 
-void TileRepository::onAllAssetTypesRegistered() {
-    // Item drops
-    // Item drops. Items are always loaded so we wont track dependencies
-    ItemRepository& itemRepo = ItemRepository::get();
+void TileRepository::fixupAsset(AssetID id) {
+
+    if (mTileRecipes.size() != mAssets.size()) {
+        mTileRecipes.resize(mAssets.size());
+    }
+
     MaterialRepository& materialRepo = MaterialRepository::get();
-    for (size_t i = 0; i < mAssets.size(); ++i) {
-        TileDef& def = *mAssets[i];
-        for (size_t i = 0; i < def.itemDrops.size(); ++i) {
-            def.itemDrops[i].id = itemRepo.getAssetID(def.itemDrops[i].itemName);
-        }
-        
-        // Recipes
-        Recipe& recipe = mTileRecipes.emplace_back();
-        recipe.mItemCount = def.recipeData.size();
-        recipe.mItems = std::make_unique_for_overwrite<ItemStack[]>(recipe.mItemCount);
-        for (ui32 i = 0; i < recipe.mItemCount; ++i) {
-            recipe.mItems[i].quantity = def.recipeData[i].count;
-            recipe.mItems[i].id = itemRepo.getAssetID(def.recipeData[i].itemName);
-        }
+    ItemRepository& itemRepo = ItemRepository::get();
+    TileDef& def = *mAssets[id];
+    for (size_t i = 0; i < def.itemDrops.size(); ++i) {
+        def.itemDrops[i].id = itemRepo.getAssetID(def.itemDrops[i].itemName);
+    }
 
-        // Model
-        if (def.modelRef.isValid()) {
-            def.modelId = def.modelRef.getAssetID();
-            def.shape = TileShape::MODEL;
-        }
-        else {
-            assert(def.materialNames.size());
-            assert(def.materialNames.size() < MAX_TILE_MATERIAL_SLOTS);
-            def.materialData.resize(def.materialNames.size());
-            for (size_t j = 0; j < def.materialNames.size(); ++j) {
-                assert(def.materialNames[j].isValid());
-                def.materialData[j] = materialRepo.getMaterialDesc(def.materialNames[j]);
-            };
-        }
+    // Recipes
+    Recipe& recipe = mTileRecipes[id];
+    recipe.mItemCount = def.recipeData.size();
+    recipe.mItems = std::make_unique_for_overwrite<ItemStack[]>(recipe.mItemCount);
+    for (ui32 i = 0; i < recipe.mItemCount; ++i) {
+        recipe.mItems[i].quantity = def.recipeData[i].count;
+        recipe.mItems[i].id = itemRepo.getAssetID(def.recipeData[i].itemName);
+    }
 
-        // Nav bits
-        if (def.shape == TileShape::STAIRS) {
-            def.navMask = 0b01000010; // SOUTH and NORTH access
-            def.heightOffsetSouth = STAIR_TILE_HEIGHT + 0.1f;
-            def.heightOffsetNorth = 0.0f;
-            def.heightOffsetWest = 0.0f;
-            def.heightOffsetEast = 0.0f;
+    // Model
+    if (def.modelRef.isValid()) {
+        def.modelId = def.modelRef.getAssetID();
+        def.shape = TileShape::MODEL;
+
+        // Make sure the model variant is valid
+        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(def.modelId);
+        for (auto it = def.modelVariants.begin(); it != def.modelVariants.end(); ++it) {
+            if (*it >= modelDef.mVariants.size()) {
+                LOG_ERROR("Had to remove invalid model variant {} from tile {} - referencing model {}", *it, def.getName().toString().c_str(), modelDef.getName().toString().c_str());
+                *it = 0;
+            }
         }
-        else {
-            def.heightOffsetSouth = 0.0f;
-            def.heightOffsetWest = 0.0f;
-            def.heightOffsetEast = 0.0f;
-            def.heightOffsetNorth = 0.0f;
-        }
-        // For now all tiles are always loaded
-        mLoadedAssets[i]->store(true);
+    }
+    else {
+        assert(def.materialNames.size());
+        assert(def.materialNames.size() < MAX_TILE_MATERIAL_SLOTS);
+        def.materialData.resize(def.materialNames.size());
+        for (size_t j = 0; j < def.materialNames.size(); ++j) {
+            assert(def.materialNames[j].isValid());
+            def.materialData[j] = materialRepo.getMaterialDesc(def.materialNames[j]);
+        };
+    }
+
+    // Nav bits
+    if (def.shape == TileShape::STAIRS) {
+        def.navMask = 0b01000010; // SOUTH and NORTH access
+        def.heightOffsetSouth = STAIR_TILE_HEIGHT + 0.1f;
+        def.heightOffsetNorth = 0.0f;
+        def.heightOffsetWest = 0.0f;
+        def.heightOffsetEast = 0.0f;
+    }
+    else {
+        def.heightOffsetSouth = 0.0f;
+        def.heightOffsetWest = 0.0f;
+        def.heightOffsetEast = 0.0f;
+        def.heightOffsetNorth = 0.0f;
     }
 }
