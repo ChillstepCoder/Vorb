@@ -40,6 +40,7 @@ namespace ImguiUtil {
                     }
                 }
             }
+            ImGui::Text(std::to_string(i).c_str());
             changed |= controlFunc(objects[i], i);
             ImGui::PopID();
             if (isDeleted) {

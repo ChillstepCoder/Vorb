@@ -28,7 +28,6 @@ out vec3 fFragPosTangent;
 
 uniform int unVariantIndex;
 
-
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);

@@ -5,6 +5,10 @@
 #include "rendering/Mesh/MeshDrawer.h"
 #include "rendering/MaterialShaderDef.h"
 
+#include "resources/ModelRepository.h"
+
+#include "ui/imgui_controls/ObjectVector.h"
+
 void TileEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 {
     ImGui::BeginChild("Tile Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
@@ -12,26 +16,50 @@ void TileEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     updateAndRenderSharedControls();
     ImGui::Separator();
 
+    bool changed = false;
+
     if (mAssetData) {
         ImGui::Text(mAssetData->getName().toString().c_str());
         updateAndRenderSaveButton();
         ImGui::Separator();
-        if (updateAndRenderImguiControls(*mAssetData)) {
-            // Mark dirty
-            LOG_CRITICAL("TODO MARK DIRTY");
+        if (ImGui::CollapsingHeader("Properties")) {
+            if (updateAndRenderImguiControls(*mAssetData)) {
+                changed = true;
+            }
+        }
+        if (mAssetData->modelRef.isValid() && ImGui::CollapsingHeader("Model Variants")) {
+            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(mAssetData->modelRef.getAssetID());
+            if (ImguiUtil::ObjectVector<ui8>("Variant Indices", mAssetData->modelVariants, [&modelDef](ui8& v, ui32 i) {
+                int vi = v;
+                bool changed = ImGui::SliderInt(std::to_string(i).c_str(), &vi, 0, modelDef.mVariants.size() - 1);
+                v = (ui8)vi;
+                return changed;
+            }, true, 0)) {
+                changed = true;
+            }
+        }
+    }
+
+    if (changed) {
+        if (mAssetData->modelRef.isValid()) {
+            // Always at least one
+            if (mAssetData->modelVariants.size() == 0) {
+                mAssetData->modelVariants.push_back(0);
+            }
+        }
+        else {
+            mAssetData->modelVariants.clear();
         }
     }
 
     ImGui::EndChild();
 }
 
-const MaterialShaderDef* TileEditorViewportPanel::getShader()
-{
+const MaterialShaderDef* TileEditorViewportPanel::getShader() {
     return getModelRenderShader();
 }
 
-void TileEditorViewportPanel::renderMesh()
-{
+void TileEditorViewportPanel::renderMesh() {
     if (mAssetData) {
         if (mAssetData->modelRef.isValid()) {
             const MaterialShaderDef* shader = getShader();
@@ -43,6 +71,7 @@ void TileEditorViewportPanel::renderMesh()
                     modelDef->getMesh(i).unbindModelAttribs(); // Editor doesnt use these
                     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, modelDef->getMesh(i).mVariantDataUbo);
                     MeshDrawer::draw(modelDef->getMesh(i).mGpuData, MeshLODLevel(0));
+                    modelDef->getMesh(i).bindModelAttribs(); // Main game does
                 }
             }
         }

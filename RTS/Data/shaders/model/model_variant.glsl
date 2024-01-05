@@ -1,3 +1,4 @@
+// Note that std140 pads this to a vec4
 struct VariantData {
     uint material;
 };

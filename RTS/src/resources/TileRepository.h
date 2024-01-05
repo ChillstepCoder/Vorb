@@ -29,7 +29,7 @@ public:
 
     TileID getTileID(StrToken name) { return (TileID)getAssetID(name); }
 
-    bool saveAsset(AssetID assetId) override { panic("Cannot save tiles yet"); }
+    DEFAULT_ASSET_SAVE_FUNC();
 
     StrToken getAssetExtension() const override { return CStrToken("tile"); }
     const char* const getAssetTypeDisplayName() const override { return "Tile"; }

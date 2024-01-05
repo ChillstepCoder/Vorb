@@ -11,9 +11,10 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelSubmeshData,
     make_field(o.windType, "wind"sv)
 );
 
-struct ModelVariantGpuData {
-    // TODO: We could bitpack 4 bytes into one of these?
+// Matches std140 layout
+struct alignas(ui32v4) ModelVariantGpuData {
     ui32 material;
+    ui32 padding[3];
 };
 
 using ModelVariantGpuDataContainer = std::vector<ModelVariantGpuData>;

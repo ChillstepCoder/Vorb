@@ -41,11 +41,13 @@ void assetButton(SoftAssetReference& assetRef) {
 
 bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef) {
 
-    ImGui::PushID(label);
+    ImGui::PushID(&assetRef);
     bool changed = false;
 
     ImGui::Separator();
-    ImGui::Text(label);
+    if (label) {
+        ImGui::Text(label);
+    }
 
     switch (assetRef.assetType) {
         case AssetType::Tile:

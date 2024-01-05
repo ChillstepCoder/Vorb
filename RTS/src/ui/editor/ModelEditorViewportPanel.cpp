@@ -78,7 +78,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
             }
             ImGui::Separator();
             if (ImGui::CollapsingHeader("Variants")) {
-                ImGui::SliderInt("Preview Variant", &mVariantIndex, 0, mAssetData->mVariants.size());
+                ImGui::SliderInt("Preview Variant", &mVariantIndex, 0, mAssetData->mVariants.size() - 1);
                 // Variant controls
                 changed |= ImguiUtil::ObjectVector<ModelVariantData>("Variants", mAssetData->mVariants,
                     [](ModelVariantData& o, ui32) {
@@ -86,11 +86,11 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                         changed |= updateAndRenderImguiControls(o);
                         changed |= ImguiUtil::ObjectVector<SoftAssetReference>("Materials", o.submeshMaterials,
                             [](SoftAssetReference& o, ui32 i) {
-                                return ImguiUtil::updateAndRenderSoftAssetReference(std::to_string(i).c_str(), o);
+                                return ImguiUtil::updateAndRenderSoftAssetReference(nullptr, o);
                             }, false /*resizable*/
                         );
                         return changed;
-                    }
+                    }, true /*resizable*/, mAssetData->mVariants[0]
                 );
             }
         }
@@ -132,6 +132,7 @@ void ModelEditorViewportPanel::renderMesh() {
             assert(mesh.mVariantDataUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
+            mesh.bindModelAttribs(); // Main game does
         }
         else {
             for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
@@ -140,6 +141,7 @@ void ModelEditorViewportPanel::renderMesh() {
                 assert(mesh.mVariantDataUbo);
                 glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
                 MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
+                mesh.bindModelAttribs(); // Main game does
             }
             int x = 1;
             const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
@@ -151,6 +153,7 @@ void ModelEditorViewportPanel::renderMesh() {
                     assert(mesh.mVariantDataUbo);
                     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
                     MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
+                    mesh.bindModelAttribs(); // Main game does
                 }
                 ++x;
             }
