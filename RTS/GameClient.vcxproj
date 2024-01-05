@@ -454,6 +454,7 @@
     <ClCompile Include="src\screens\ScreenState.cpp" />
     <ClCompile Include="src\screens\WorldGenScreen.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
+    <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
     <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
     <ClCompile Include="src\visibility\VisibilityGraph.cpp" />
     <ClCompile Include="src\visibility\VisibilityManager.cpp" />
@@ -588,6 +589,7 @@
     <ClInclude Include="src\debugging\VisualLogger.h" />
     <ClInclude Include="src\definitions\AnimationDef.h" />
     <ClInclude Include="src\definitions\AnimMachineDef.h" />
+    <ClInclude Include="src\definitions\AssetDefinitions.h" />
     <ClInclude Include="src\definitions\BiomeDef.h" />
     <ClInclude Include="src\definitions\BrushDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
@@ -867,6 +869,7 @@
     <ClInclude Include="src\screens\WorldGenScreen.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
+    <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />

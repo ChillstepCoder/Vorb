@@ -32,6 +32,7 @@ void main() {
     fNormal = normal;
     
     fSnow = normal.z * unSnowLevel;
+    fSnow += clamp((vertexPos.z - 50.0) * 0.025 * normal.z, 0.0, 3.0);
     worldPos.z += fSnow * 0.5f;
 	
     fUV = unUVRoot + vPosition.xy * unColorMapScale;

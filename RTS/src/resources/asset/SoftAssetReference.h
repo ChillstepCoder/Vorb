@@ -12,6 +12,7 @@ public:
     nString toString() const { return name.toString(); }
     AssetHandleBasePtr getAssetHandle() const;
     AssetID getAssetID() const;
+    AssetDescriptor getAssetDescriptor() const { return AssetDescriptor{ .id = getAssetID(), .assetType = assetType, }; }
     
     StrToken name;
     AssetType assetType = AssetType::NONE;

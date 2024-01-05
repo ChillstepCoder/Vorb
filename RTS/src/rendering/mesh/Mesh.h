@@ -120,6 +120,7 @@ public:
     const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
     void bindModelAttribs() const;
+    void unbindModelAttribs() const;
 
     bool castsShadow() const {
         return mRenderPassType != MaterialRenderPassType::Water;

@@ -3,6 +3,7 @@
 
 #include "definitions/ModelDef.h"
 #include "rendering/Mesh/MeshDrawer.h"
+#include "rendering/MaterialShaderDef.h"
 
 void ItemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Item Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
@@ -29,10 +30,17 @@ const MaterialShaderDef* ItemEditorViewportPanel::getShader() {
 
 void ItemEditorViewportPanel::renderMesh() {
     if (mAssetData) {
-        AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->mModelRef.getAssetHandle());
-        if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
-            for (int i = 0; i < modelDef->getNumMeshes(); ++i) {
-                MeshDrawer::draw(modelDef->getMesh(i).mGpuData, MeshLODLevel(0));
+        if (mAssetData->mModelRef.isValid()) {
+            AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->mModelRef.getAssetHandle());
+            const MaterialShaderDef* shader = getShader();
+            glUniform1i(shader->getUniform("unVariantIndex"), 0);
+            glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
+            if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
+                for (int i = 0; i < modelDef->getNumMeshes(); ++i) {
+                    modelDef->getMesh(i).unbindModelAttribs(); // Editor doesnt use these
+                    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, modelDef->getMesh(i).mVariantDataUbo);
+                    MeshDrawer::draw(modelDef->getMesh(i).mGpuData, MeshLODLevel(0));
+                }
             }
         }
     }

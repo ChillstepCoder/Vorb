@@ -9,6 +9,7 @@ namespace ImguiAssetThumbnails {
         return nullptr;
     }
 
+    std::function<void(AssetID, f32v2)> getThumbnailFunction(AssetType assetType);
 
     // Specialize for each asset type
     template<>

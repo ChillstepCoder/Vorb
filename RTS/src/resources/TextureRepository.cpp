@@ -184,7 +184,7 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
         TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
 
         // Default properties
-        textureDef.samplerState = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP;
+        textureDef.samplerState = &vg::sSamplerStates.LINEAR_WRAP_MIPMAP;
         textureDef.flipV = false;
 
         // If this is registered as a material, use the material sampler state

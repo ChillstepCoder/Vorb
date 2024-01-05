@@ -7,6 +7,7 @@
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform sampler2D CliffTexture;
+uniform sampler2D CliffNormal;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
@@ -104,7 +105,6 @@ vec3 computeNormal() {
     // TODO: NORMAL MAPPING
     vec3 normal = vec3(0.0, 0.0, 1.0);
 	normal = normalize(fTBN * normal);
-	oNormal.rgb = (normal + 1.0) * 0.5;
     return normal;
 }
 
@@ -141,6 +141,37 @@ vec3 getTriPlanarBlend(vec3 norm, float lumaX, float lumaY) {
     blend.xy *= (1.0 - blend.z);
     return blend;
 }
+vec3 getTriplanarNormal(vec3 surfaceNorm, vec2 uvX, vec2 uvY, vec3 blend) {
+    // Whiteout blend
+
+    // Tangent space normal maps
+    vec3 tnormalX = texture(CliffNormal, uvX).rgb * 2.0 - vec3(1.0);
+    vec3 tnormalY = texture(CliffNormal, uvY).rgb * 2.0 - vec3(1.0);
+    vec3 tnormalZ = vec3(0.0, 0.0, 1.0);
+
+    // Swizzle world normals into tangent space and apply Whiteout blend
+    tnormalX = vec3(
+        tnormalX.xy + surfaceNorm.zy,
+        abs(tnormalX.z) * surfaceNorm.x
+    );
+    tnormalY = vec3(
+        tnormalY.xy + surfaceNorm.xz,
+        abs(tnormalY.z) * surfaceNorm.y
+    );
+    tnormalZ = vec3(
+        tnormalZ.xy + surfaceNorm.xy,
+        abs(tnormalZ.z) * surfaceNorm.z
+    );
+
+    // Swizzle tangent normals to match world orientation and triblend
+    vec3 worldNormal = normalize(
+        tnormalX.zyx * blend.x +
+        tnormalY.xzy * blend.y +
+        tnormalZ.xyz * blend.z
+    );
+    
+    return worldNormal.xyz;
+}
 
 // =========== MAIN ===========
 void main() {
@@ -149,7 +180,7 @@ void main() {
     computeCrossfade();
     
     // === Normals ===
-    vec3 colorNormal = computeNormal();
+    vec3 surfaceNormal = computeNormal();
     
     // === Biome ===
     int biome = getBiome(fBiomeUV);
@@ -159,40 +190,46 @@ void main() {
     float distanceFactor = getTerrainDistanceFactor(distance);
     oColor.rgb = getTerrainColor(fUV, biome);
     
-    
     // =========== Cliff color ===========
-    vec2 xyUV = fUV.xy;
-    float heightV = fHeight * unColorMapScale;
     const float CLOSE_MULT = 10.0;
-    const float FAR_MULT = 0.3;
-    xyUV *= CLOSE_MULT;
-    heightV *= CLOSE_MULT;
-    heightV *= unCliffZMult;
-    vec3 xSampleClose = texture(CliffTexture, vec2(xyUV.y, heightV)).rgb;
-    vec3 ySampleClose = texture(CliffTexture, vec2(xyUV.x, heightV)).rgb;
+    const float FAR_MULT = 3.0;
+    vec2 xyUVClose = fUV.xy * CLOSE_MULT;
+    vec2 xyUVFar = fUV.xy * FAR_MULT;
+    float heightV = fHeight * unColorMapScale * unCliffZMult;
+    float heightVClose = heightV * CLOSE_MULT;
+    float heightVFar = heightV * FAR_MULT;
+    vec3 xSampleClose = texture(CliffTexture, vec2(xyUVClose.y, heightVClose)).rgb;
+    vec3 ySampleClose = texture(CliffTexture, vec2(xyUVClose.x, heightVClose)).rgb;
     
     // Far
-    xyUV *= FAR_MULT;
-    heightV *= FAR_MULT;
-    vec3 xSampleFar = texture(CliffTexture, vec2(xyUV.y, heightV)).rgb;
-    vec3 ySampleFar = texture(CliffTexture, vec2(xyUV.x, heightV)).rgb;
+    vec3 xSampleFar = texture(CliffTexture, vec2(xyUVFar.y, heightVFar)).rgb;
+    vec3 ySampleFar = texture(CliffTexture, vec2(xyUVFar.x, heightVFar)).rgb;
     
-    vec3 weights = getTriPlanarBlend(colorNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose));
+    vec3 weights = getTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose));
     vec3 cliffClose = weights.x * xSampleClose + weights.y * ySampleClose;
     vec3 cliffFar = weights.x * xSampleFar + weights.y * ySampleFar;
     float cliffDistFactor = min(distance * 0.01, 1.0);
     oColor.rgb = oColor.rgb * weights.z + mix(cliffClose, cliffFar, cliffDistFactor);
     
+    // =========== Output Normals ===========
+    vec3 normalClose = getTriplanarNormal(surfaceNormal, vec2(xyUVClose.y, heightVClose), vec2(xyUVClose.x, heightVClose), weights);
+    vec3 normalFar = getTriplanarNormal(surfaceNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
+    vec3 finalNormal = mix(normalClose, normalFar, cliffDistFactor);
+    finalNormal = mix(finalNormal, surfaceNormal, max(fSnow, 1.0));
+    oNormal.rgb = (finalNormal + 1.0) * 0.5;
+
+	//oNormal.rgb = oNormal.rgb * 0.00001 + (surfaceNormal + 1.0) * 0.5;
+    
     // =========== Distance stylized color ===========
     float FLAT_REDUCE_MULT = 1.0;
     float GRANULARITY_MULT = unWavyMult;
-    float GRANULARITY = 12.0 * GRANULARITY_MULT * (1.0 - colorNormal.z * FLAT_REDUCE_MULT);
+    float GRANULARITY = 12.0 * GRANULARITY_MULT * (1.0 - surfaceNormal.z * FLAT_REDUCE_MULT);
     float UV_MOD_MULT = unSquaresPeriod;
     float uvMod = 0.5 + (triangularWave(fUV.x * UV_MOD_MULT) + triangularWave(fUV.y * UV_MOD_MULT)) * unSquaresIntensity * 2.0;
     float HEIGHT_ADD = (fHeight * uvMod) * 0.024 * unHeightMult * 2.0;
-    colorNormal = vec3(abs(colorNormal.x) * GRANULARITY + HEIGHT_ADD, abs(colorNormal.y) * GRANULARITY + HEIGHT_ADD, colorNormal.z * GRANULARITY);
+    surfaceNormal = vec3(abs(surfaceNormal.x) * GRANULARITY + HEIGHT_ADD, abs(surfaceNormal.y) * GRANULARITY + HEIGHT_ADD, surfaceNormal.z * GRANULARITY);
     
-    float totalNormal = colorNormal.x + colorNormal.y;
+    float totalNormal = surfaceNormal.x + surfaceNormal.y;
     
     float lowIndex = round(totalNormal);
     //float lowIndex = floor(totalNormal);

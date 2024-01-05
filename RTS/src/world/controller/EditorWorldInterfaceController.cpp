@@ -43,14 +43,15 @@ void EditorWorldInterfaceController::update()
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_N)) {
         // TODO: ITEMFactory
 
-        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
+        // TODO: Enable again
+        /*GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
             World* world = static_cast<World*>(vWorld);
             ItemID id = ItemRepository::get().getAssetID(CStrToken("wood_raw"));
             ItemStack newStack(id, 1);
             f32v3 velocity = f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 4.0f);
             EntityFactory::createItemProjectile(*world, world->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), velocity, newStack);
             sDebugOptions.mCities = !sDebugOptions.mCities;
-        }, (void*)mWorld);
+        }, (void*)mWorld);*/
     }
 
     if (mIsQuerying && mWorldObjectQuery && mWorldObjectQuery->isValid()) {

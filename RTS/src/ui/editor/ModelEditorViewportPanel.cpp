@@ -123,20 +123,20 @@ void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
       
         const MaterialShaderDef* shader = getShader();
-
         glUniform1i(shader->getUniform("unVariantIndex"), mVariantIndex);
         glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
         if (mShowSingle) {
             mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
             Mesh& mesh = mAssetData->getMesh(mSingleIndex);
+            mesh.unbindModelAttribs(); // Editor doesnt use these
             assert(mesh.mVariantDataUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
         }
         else {
-            // First LOD
             for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
                 Mesh& mesh = mAssetData->getMesh(i);
+                mesh.unbindModelAttribs(); // Editor doesnt use these
                 assert(mesh.mVariantDataUbo);
                 glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
                 MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
@@ -147,6 +147,7 @@ void ModelEditorViewportPanel::renderMesh() {
                 glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
                 for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
                     Mesh& mesh = mAssetData->getMesh(i);
+                    mesh.unbindModelAttribs(); // Editor doesnt use these
                     assert(mesh.mVariantDataUbo);
                     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
                     MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));

@@ -89,7 +89,6 @@ enum class VisibilityBlockerType : ui8 {
 
 constexpr int MAX_TILE_MATERIAL_SLOTS = 8;
 
-
 // TODO: separate certain data into multiple arrays because right now every TileData lookup is a cache miss
 // For example we only look up path weight when constructing the nav  graph, why not  have it in a separate vector?
 // Same with materialData. Does it really need to be here?
@@ -109,9 +108,10 @@ public:
     std::vector<StrToken> materialNames;
     std::vector<MaterialDesc> materialData;
     TileTextureMethod textureMethod;
-    StrToken destroyEffect;
-    StrToken modelName;
+    SoftAssetReference destroyEffectRef = AssetType::Effect;
+    SoftAssetReference modelRef = AssetType::Model;
     ModelID modelId = INVALID_MODEL_ID;
+    std::vector<ui8> modelVariants;
     ui16 maxHealth = 100;
     ui8 layer = e_cast(TileLayer::Main);
     TileShape shape = TileShape::BLOCK;
@@ -133,15 +133,16 @@ public:
     std::vector<ItemDrop> itemDrops;
     std::vector<ItemInputDef> recipeData;
 };
-SERIALIZABLE_SIMPLE(TileDef,
+SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.dims, "dims"),
     make_field(o.collisionShapeType, "col_shape"),
     make_field(o.collisionHalfExtents, "col_half_dims"),
     make_field(o.harvestable, "harvestable"),
     make_field(o.materialNames, "materials"),
     make_field(o.textureMethod, "texture_method"),
-    make_field(o.destroyEffect, "destroy_effect"),
-    make_field(o.modelName, "model"),
+    make_field(o.destroyEffectRef, "destroy_effect"),
+    make_field(o.modelRef, "model"),
+    make_field(o.modelVariants, "model_variants"),
     make_field(o.maxHealth, "max_health"),
     make_field(o.layer, "layer"),
     make_field(o.shape, "shape"),

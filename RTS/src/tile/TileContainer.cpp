@@ -450,8 +450,8 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
 
         // Optional VFX
         const TileDef& destroyedTile = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
-        if (destroyedTile.destroyEffect.isValid()) {
-            mWorld.getEffectContext().playParticleEffectAtPoint(destroyedTile.destroyEffect, impactPosition, ParticleSystemInputs(), BitFlags<EffectCreateFlags>());
+        if (destroyedTile.destroyEffectRef.isValid()) {
+            mWorld.getEffectContext().playParticleEffectAtPoint(destroyedTile.destroyEffectRef.name, impactPosition, ParticleSystemInputs(), BitFlags<EffectCreateFlags>());
         }
 
         std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;

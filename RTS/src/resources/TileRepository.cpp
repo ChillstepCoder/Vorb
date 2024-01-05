@@ -76,8 +76,8 @@ void TileRepository::onAllAssetTypesRegistered() {
         }
 
         // Model
-        if (def.modelName.isValid()) {
-            def.modelId = ModelRepository::get().getAssetID(def.modelName);
+        if (def.modelRef.isValid()) {
+            def.modelId = def.modelRef.getAssetID();
             def.shape = TileShape::MODEL;
         }
         else {

@@ -11,3 +11,5 @@ textures:
     uniform: TurbulentNoise
   - name: cliff_base
     uniform: CliffTexture
+  - name: cliff_base_n
+    uniform: CliffNormal

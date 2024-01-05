@@ -59,6 +59,10 @@ float cutNoiseAtStep(float noiseVal, float stepVal) {
     return noiseVal * step(stepVal, noiseVal);
 }
 
+float smootherstep(float edge0, float edge1, float x) {
+    x = clamp((x - edge0)/(edge1 - edge0), 0., 1.);
+    return x * x * x * (x * (x * 6. - 15.) + 10.);
+}
 
 int generateBiomes(inout float height, vec3 posInputSeeded) {
     float bestWeight = 0.0;
@@ -107,14 +111,16 @@ int generateBiomes(inout float height, vec3 posInputSeeded) {
         
         // Hot springs
         float springsDist = standardNoise(posInputSeeded.zxy, 6, 0.001, 0.6, vec2(1000.0, 0), 3.0, -0.25);
-        float springsHeight = standardNoise(posInputSeeded, 2, 0.01, 0.65, vec2(0, 0), 20.0, -0.5);
+        float springsHeight = standardNoise(posInputSeeded, 3, 0.008, 0.65, vec2(0, 0), 26.0, -0.5);
         float springsWeight = nonMountainWeight * springsDist;
         // Springs lower priority
         springsWeight *= (1.0 - bestWeight);
         springsWeight = clamp(springsWeight, 0.0, 1.0);
         springsHeight = springsHeight * springsWeight * seaHeightMult;
-        // Step function
-        springsHeight = mix(floor(springsHeight / 2.0) * 2.0, springsHeight, 0.25);
+        // Smooth stepped function
+        const float stepDistance = 3.0;
+        float steppedHeight = floor(springsHeight / stepDistance) * stepDistance;
+        springsHeight = steppedHeight + smootherstep(0.0, stepDistance, springsHeight - steppedHeight) * stepDistance;
         height += springsHeight;
         if (springsWeight > bestWeight) {
             bestBiome = BIOME_Hotsprings;

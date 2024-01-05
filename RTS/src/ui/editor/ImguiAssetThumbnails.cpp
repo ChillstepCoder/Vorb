@@ -4,8 +4,58 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "definitions/AssetDefinitions.h"
+
 #include "Resources/TextureRepository.h"
 #include "Resources/MaterialRepository.h"
+
+
+std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(AssetType assetType) {
+    switch (assetType) {
+        case AssetType::Tile:
+            return getThumbnailFunction<TileDef>();
+        case AssetType::ParticleSystem:
+            return getThumbnailFunction<ParticleSystemDef>();
+        case AssetType::Effect:
+            return getThumbnailFunction<EffectDef>();
+        case AssetType::Texture:
+            return getThumbnailFunction<TextureDef>();
+        case AssetType::Cubemap:
+            return getThumbnailFunction<CubemapDef>();
+        case AssetType::Brush:
+            return getThumbnailFunction<BrushDef>();
+        case AssetType::Material:
+            return getThumbnailFunction<MaterialDef>();
+        case AssetType::Rig:
+            return getThumbnailFunction<RigDef>();
+        case AssetType::Animation:
+            return getThumbnailFunction<AnimationDef>();
+        case AssetType::AnimMachine:
+            return getThumbnailFunction<AnimMachineDef>();
+        case AssetType::Model:
+            return getThumbnailFunction<ModelDef>();
+        case AssetType::Skill:
+            return getThumbnailFunction<SkillDef>();
+        case AssetType::Item:
+            return getThumbnailFunction<ItemDef>();
+        case AssetType::Fish:
+            return getThumbnailFunction<FishDef>();
+        case AssetType::MaterialShader:
+            return getThumbnailFunction<MaterialShaderDef>();
+        case AssetType::TileGrass:
+            return getThumbnailFunction<TileGrassDef>();
+        case AssetType::Biome:
+            return getThumbnailFunction<BiomeDef>();
+        case AssetType::TileDistribution:
+            return getThumbnailFunction<TileDistributionDef>();
+        case AssetType::NONE:
+        default:
+            panic("Unhandled asset type {} in ImguiAssetThumbnails::getThumbnailFunction", e_cast(assetType));
+            break;
+
+    }
+    static_assert(e_count(AssetType) == 18);
+}
 
 template<>
 std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction<MaterialDef>() {

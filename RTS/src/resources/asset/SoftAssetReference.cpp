@@ -4,30 +4,14 @@
 #include "ui/ImguiUtil.hpp"
 #include "ui/editor/ImguiAssetThumbnails.h"
 #include "ui/UIContext.h"
+#include "ui/editor/EditorRoot.h"
 #include "resources/asset/AssetType.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/IAssetRepository.h"
 
 #include "rendering/material/MaterialData.h"
-#include "definitions/AnimationDef.h"
-#include "definitions/AnimMachineDef.h"
-#include "definitions/BiomeDef.h"
-#include "definitions/BrushDef.h"
-#include "definitions/BuildingDef.h"
-#include "definitions/BusinessDef.h"
-#include "definitions/EffectDef.h"
-#include "definitions/FishDef.h"
-#include "definitions/RigDef.h"
-#include "definitions/ModelDef.h"
-#include "definitions/ParticleSystemDef.h"
-#include "definitions/rendering/CubemapDef.h"
-#include "definitions/rendering/TextureDef.h"
-#include "definitions/SkillDef.h"
-#include "definitions/TileGrassDef.h"
-#include "definitions/TileDistributionDef.h"
-#include "item/ItemDef.h"
-#include "tile/Tile.h"
+#include "definitions/AssetDefinitions.h"
 
 static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
 static std::map<SoftAssetReference*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
@@ -35,9 +19,17 @@ static std::map<SoftAssetReference*, std::unique_ptr<ImguiUtil::AssetSelectorPop
 template <typename T>
 void assetButton(SoftAssetReference& assetRef) {
     IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
-    if (ImGui::Button(repo.getAssetTypeDisplayName())) {
-        sAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
-        sAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<T>(), THUMBNAIL_SIZE);
+    if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0,0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
+        // If it was a middle click, navigate to the asset if it is valid
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle)) {
+            if (assetRef.isValid()) {
+                UIContext::getInstance().getEditorRoot().tryOpenAssetForEdit(assetRef.getAssetDescriptor());
+            }
+        }
+        else {
+            sAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
+            sAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<T>(), THUMBNAIL_SIZE);
+        }
     }
     ImGui::SameLine();
     ImGui::Text(assetRef.name.isValid() ? assetRef.name.toString().c_str() : "NONE");

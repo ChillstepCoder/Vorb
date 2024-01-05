@@ -46,6 +46,15 @@ void Mesh::bindModelAttribs() const {
     }
 }
 
+void Mesh::unbindModelAttribs() const {
+    mHasModelAttribsBound = false;
+    glDisableVertexArrayAttrib(mGpuData.mVao, 7);
+    glDisableVertexArrayAttrib(mGpuData.mVao, 8);
+    glDisableVertexArrayAttrib(mGpuData.mVao, 9);
+    glDisableVertexArrayAttrib(mGpuData.mVao, 10);
+    glDisableVertexArrayAttrib(mGpuData.mVao, 11);
+}
+
 void MeshGpuData::destroy() {
     if (mVao) {
         // glDeleteBuffers silently ignores 0
