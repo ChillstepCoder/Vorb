@@ -5,7 +5,6 @@ const vec2 vertices[3]=vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1, 3));
 
 uniform mat4 unInverseVP;
 uniform vec2 unPosition = vec2(0.0);
-uniform vec2 unSpawnPoint = vec2(0.5);
 
 // Output
 out vec2 fUV;

@@ -306,6 +306,7 @@
     <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\IWorldGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\RiverGenerationStage.cpp" />
+    <ClCompile Include="src\generation\TileDistributionSampler.cpp" />
     <ClCompile Include="src\generation\WorldDataGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGenerationBlackboard.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
@@ -674,6 +675,7 @@
     <ClInclude Include="src\generation\stages\HistoryGenerationStage.h" />
     <ClInclude Include="src\generation\stages\IWorldGenerationStage.h" />
     <ClInclude Include="src\generation\stages\RiverGenerationStage.h" />
+    <ClInclude Include="src\generation\TileDistributionSampler.h" />
     <ClInclude Include="src\generation\WorldDataGenerator.h" />
     <ClInclude Include="src\generation\WorldGenerationBlackboard.h" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
@@ -874,6 +876,7 @@
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
+    <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\TilingVoronoiMap.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />

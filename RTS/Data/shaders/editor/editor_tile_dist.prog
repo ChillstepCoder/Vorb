@@ -1,2 +1,2 @@
-vert: pass_through.vert
+vert: editor_tile_dist.vert
 frag: editor_tile_dist.frag
