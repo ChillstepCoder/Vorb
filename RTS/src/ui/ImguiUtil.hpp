@@ -295,7 +295,7 @@ namespace ImguiUtil {
 
                     for (size_t i : mSortedIndices) {
                         if (mFilterStatus[i]) {
-                            ImGui::PushID(i);
+                            ImGui::PushID(i + 33);
                             ImGui::TableNextRow(ImGuiTableRowFlags_None, mThumbnailFunc ? mThumbnailSize.y : 0);
                             // Select
                             ImGui::TableSetColumnIndex(0);

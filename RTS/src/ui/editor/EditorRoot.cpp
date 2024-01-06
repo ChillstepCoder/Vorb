@@ -12,6 +12,7 @@
 #include "ui/editor/ParticleSystemEditorViewportPanel.h"
 #include "ui/editor/ItemEditorViewportPanel.h"
 #include "ui/editor/TileEditorViewportPanel.h"
+#include "ui/editor/TileDistributionEditorViewportPanel.h"
 #include "ui/editor/ContentBrowserPanel.h"
 #include "options/DebugOptions.h"
 
@@ -53,6 +54,7 @@ EditorRoot::EditorRoot() {
     mAssetEditorPanels[AssetType::Item] = std::make_unique<ItemEditorViewportPanel>();
     mAssetEditorPanels[AssetType::Biome] = std::make_unique<BiomeEditorViewportPanel>();
     mAssetEditorPanels[AssetType::Tile] = std::make_unique<TileEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::TileDistribution] = std::make_unique<TileDistributionEditorViewportPanel>();
 
     mContentBrowserPanel = std::make_unique<ContentBrowserPanel>(ResourceManager::get().getResourceRoot().getStdPath());
 

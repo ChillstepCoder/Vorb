@@ -1,0 +1,2 @@
+vert: pass_through.vert
+frag: editor_tile_dist.frag

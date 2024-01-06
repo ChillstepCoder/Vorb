@@ -3,8 +3,7 @@
 
 #include "item/ItemDef.h"
 
-class ItemEditorViewportPanel : public AssetEditorViewportPanel<ItemDef>
-{
+class ItemEditorViewportPanel : public AssetEditorViewportPanel<ItemDef> {
 public:
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
