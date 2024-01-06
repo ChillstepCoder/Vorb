@@ -455,6 +455,7 @@
     <ClCompile Include="src\screens\WorldGenScreen.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
+    <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
     <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
     <ClCompile Include="src\visibility\VisibilityGraph.cpp" />
     <ClCompile Include="src\visibility\VisibilityManager.cpp" />
@@ -871,6 +872,7 @@
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
+    <ClInclude Include="src\util\TilingVoronoiMap.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />
     <ClInclude Include="src\visibility\VisibilityManager.h" />

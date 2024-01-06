@@ -168,7 +168,7 @@ Tile ChunkGenerator::generateTileHotsprings(f32v2 worldPos, f32 height, f32v3 no
 
 
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
-    constexpr f32 TREE_DENSITY = 0.0005f;
+    constexpr f32 TREE_DENSITY = 0.005f;
     if (Random::getThreadSafef(worldPos.y, worldPos.x) < TREE_DENSITY) {
         if (Random::getThreadSafef(worldPos.x * 10.353f, worldPos.y * -554.25f) < 0.1f) {
             tile.mainLayer = hotspringhero;
@@ -188,7 +188,8 @@ Tile ChunkGenerator::generateTileHotsprings(f32v2 worldPos, f32 height, f32v3 no
     }
 
     if (tile.mainLayer == hotspringhero) {
-        tile.mainLayerVariant = rand() % 6;
+        i32v2 point = mVoronoiMap->getVoronoiPointAtTile(i32v2(worldPos), 1.0f);
+        tile.mainLayerVariant = Random::getThreadSafe(point.x, point.y) % 6;
     }
 
     //generateTileGrass(worldPos, height, grass);

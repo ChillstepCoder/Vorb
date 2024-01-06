@@ -1,7 +1,7 @@
 #pragma once
 class TilingVoronoiMap {
 public:
-    TilingVoronoiMap(ui32 width, ui32 numCells);
+    TilingVoronoiMap(ui32 width, f32 minDist);
     i32v2 getVoronoiPointAtTile(i32v2 tilePosWorld, float voronoiScale);
 
 private:
