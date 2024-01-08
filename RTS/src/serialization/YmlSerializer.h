@@ -123,15 +123,28 @@ namespace YmlSerializer {
         const std::string_view label = first.key;
         bool changed = false;
         if constexpr (std::is_floating_point_v<First>) {
-            // Handle floating point types (e.g., float, double)
-            changed |= ImGui::SliderFloat(label.data(), reinterpret_cast<float*>(&value), 0.0f, 10000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            float v = value;
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
+            changed |= ImGui::InputFloat(label.data(), &v);
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.75f);
+            ImGui::SameLine();
+            ImGui::PushID("11"); changed |= ImGui::SliderFloat(label.data(), &v, 0.0f, 1000.0f, "%.4f", ImGuiSliderFlags_Logarithmic); ImGui::PopID();
+            ImGui::PopItemWidth(); ImGui::PopItemWidth();
+            value = v;
         }
         else if constexpr (std::is_same_v<First, bool>) {
             changed |= ImGui::Checkbox(label.data(), &value);
         }
         else if constexpr (std::is_integral_v<First>) {
             // Handle integral types (e.g., int, unsigned int)
-            changed |= ImGui::SliderInt(label.data(), reinterpret_cast<int*>(&value), 0, 1000);
+            int v = value;
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
+            changed |= ImGui::InputInt(label.data(), &v);
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.75f);
+            ImGui::SameLine();
+            ImGui::PushID("22"); changed |= ImGui::SliderInt(label.data(), &v, 0, 16); ImGui::PopID();
+            ImGui::PopItemWidth(); ImGui::PopItemWidth();
+            value = v;
         }
         else if constexpr (std::is_enum_v<First>) {
             changed |= ImguiUtil::EnumCombo<First>(label.data(), value);

@@ -8,13 +8,6 @@ class DataAssetRepository : public IAssetRepository<T>
 {
 public:
     using IAssetRepository<T>::IAssetRepository;
-    static void initInstance(vio::IOManager& ioManager) {
-        IAssetRepository<T>::sInstance = std::make_unique<DataAssetRepository>(ioManager);
-    }
-    inline static DataAssetRepository<T, ASSET_TYPE, EXTENSION>& get() {
-        assert(IAssetRepository<T>::sInstance);
-        return (DataAssetRepository&)*IAssetRepository<T>::sInstance;
-    } 
     AssetType getAssetType() const override {
         return ASSET_TYPE;
     }
@@ -27,10 +20,11 @@ public:
 protected:
 
     void onRegisteredAsset(AssetID id) override {
-        T& def = *IAssetRepository<T>::mAssets[id];
-        const vio::Path& filePath = IAssetRepository<T>::mAssetRegistry[id].mFilePath;
-        YmlSerializer::readFileData(IAssetRepository<T>::readFileToString(filePath), def);
-        IAssetRepository<T>::mLoadedAssets[id]->store(true);
+        T& def = *this->mAssets[id];
+        const vio::Path& filePath = this->mAssetRegistry[id].mFilePath;
+        YmlSerializer::readFileData(this->readFileToString(filePath), def);
+        this->mLoadedAssets[id]->store(true);
+        this->fixupAsset(id);
     }
 
     AssetLoadFunc getAssetLoadFunc() override { panic("Data asset repo tried to call Load Func"); return nullptr; }

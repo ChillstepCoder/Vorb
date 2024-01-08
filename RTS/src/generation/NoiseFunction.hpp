@@ -26,9 +26,9 @@ public:
         posOffset(posOffset),
         amplitude(amplitude),
         heightOffset(heightOffset) { }
-    virtual ~NoiseFunction() = default;
+    ~NoiseFunction() = default;
 
-    virtual f64 compute(f64 x, f64 y) const {
+    f64 compute(f64 x, f64 y) const {
         switch (type) {
             case NoiseFunctionType::Standard: {
                 return (Noise::fractal(octaves, persistence, frequency, x + posOffset.x, y + posOffset.y) + heightOffset) * amplitude;
@@ -68,9 +68,27 @@ public:
         return (Noise::fractal(octaves, persistence, frequency, x + posOffset.x, y + posOffset.y) + heightOffset) * amplitude;
     }
 
+    f64v2 getRange() const {
+        switch (type) {
+            case NoiseFunctionType::Standard: {
+                return f64v2(-1.0 + heightOffset, 1.0 + heightOffset) * amplitude;
+            }
+            case NoiseFunctionType::Ridged: {
+                return f64v2(0.0 + heightOffset, 1.0 + heightOffset) * amplitude;
+            }
+            case NoiseFunctionType::Cellular: {
+                return f64v2(-1.0 + heightOffset, 1.0 + heightOffset) * amplitude;
+            }
+            default:
+                break;
+        }
+        static_assert(e_count(NoiseFunctionType) == 3);
+        return f32v2(-1.0f, 1.0f) * (f32)amplitude;
+    }
+
     StrToken label;
     NoiseFunctionType type = NoiseFunctionType::Standard;
-    int octaves = 5;
+    int octaves = 3;
     f64 persistence = 0.7f;
     f64 frequency = 0.001f;
     f64v2 posOffset = f64v2(0.0);

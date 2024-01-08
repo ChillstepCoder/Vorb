@@ -448,6 +448,7 @@
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\resources\SkillRepository.cpp" />
     <ClCompile Include="src\resources\TextureRepository.cpp" />
+    <ClCompile Include="src\resources\TileDistributionRepository.cpp" />
     <ClCompile Include="src\resources\TileGrassRepository.cpp" />
     <ClCompile Include="src\resources\TileRepository.cpp" />
     <ClCompile Include="src\screens\GameplayScreen.cpp" />

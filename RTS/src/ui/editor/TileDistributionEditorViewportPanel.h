@@ -11,6 +11,7 @@ public:
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
     const char* getViewportWindowName() const override { return "Tile Distribution Editor"; }
+    void postCenterPanelRender(const i32AABB2&) override;
 
 private:
     void renderMesh() override;
@@ -18,10 +19,15 @@ private:
     AssetHandlePtr<MaterialShaderDef> mImageShader;
     VGTexture mThresholdTexture = 0;
     VGTexture mSpawnTexture = 0;
-    bool mShowThreshold = true;
+    bool mShowThreshold = false;
     bool mShowSpawns = true;
+    bool mTryPrecalc = true;
     bool mDirtyView = true;
+    bool mSkipPrecalc = false;
     float mDensityMult = 0.5f;
     i32v2 mTileOffset = {};
+    f64 mLastGenerationTimeMs = 0.0;
+    i32 mLastTextureSize = 128;
+    i32 mTextureSize = 128;
 };
 
