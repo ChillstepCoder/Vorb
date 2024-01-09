@@ -7,20 +7,13 @@ constexpr ui32 ALL_BITS_SET = UINT32_MAX;
 constexpr ui32 MOST_SIGNIFICANT_HALF_BITS_SET = 0xFFFF0000u;
 constexpr ui32 BIT_SHIFT = 5; // equivalent to * or / BITS_PER_ELEMENT
 
-BitArray::BitArray()
-{
-
-}
-
+BitArray::BitArray() = default;
 BitArray::BitArray(ui32 numBits)
 {
     resizeAndZero(numBits);
 }
 
-BitArray::~BitArray()
-{
-
-}
+BitArray::~BitArray() = default;
 
 void BitArray::resize(ui32 numBits) {
     mData.resize(size_t((numBits + (BITS_PER_ELEMENT - 1)) / BITS_PER_ELEMENT));

@@ -3,6 +3,7 @@
 
 #include "definitions/TileDistributionDef.h"
 #include "rendering/MaterialShaderDef.h"
+#include "generation/TileDistributionPreviewTexture.h"
 
 class TileDistributionEditorViewportPanel : public AssetEditorViewportPanel<TileDistributionDef> {
 public:
@@ -16,9 +17,7 @@ public:
 private:
     void renderMesh() override;
 
-    AssetHandlePtr<MaterialShaderDef> mImageShader;
-    VGTexture mThresholdTexture = 0;
-    VGTexture mSpawnTexture = 0;
+    TileDistributionPreviewTexture mPreviewTexture;
     bool mShowThreshold = false;
     bool mShowSpawns = true;
     bool mTryPrecalc = true;

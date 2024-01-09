@@ -272,7 +272,21 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
                                 }
                             }
 
-                            ImGui::MenuItem("INSERT ASSETS");
+							if (ImGui::BeginMenu("Asset")) {
+								for (int i = 0; i < e_count(AssetType); ++i) {
+									const AssetType aType = (AssetType)i;
+									if (ImGui::MenuItem(ENUM_CSTR(AssetType, aType))) {
+										const nString fileName = nString("new_asset.") + ResourceManager::get().getAssetExtension(aType).toString();
+										std::filesystem::path filepath = FileSystem::getUniqueFileName(mRootPath / m_CurrentDirectory->FilePath / fileName);
+										std::ofstream outfile(filepath);
+										if (outfile.is_open()) {
+											Refresh();
+											LOG_DEBUG("Created file {}", filepath.string().c_str());
+										}
+									}
+                                }
+                                ImGui::EndMenu();
+							}
 
                             ImGui::EndMenu();
                         }
@@ -365,6 +379,44 @@ std::shared_ptr<DirectoryInfo> ContentBrowserPanel::GetDirectory(const std::file
     }
 
     return nullptr;
+}
+
+void ContentBrowserPanel::navigateTo(const std::filesystem::path& filepath) {
+	std::filesystem::path directoryPath;
+	if (FileSystem::isDirectory(filepath)) {
+		directoryPath = filepath;
+	}
+	else {
+		directoryPath = filepath.parent_path();
+	}
+	directoryPath = std::filesystem::relative(directoryPath, mRootPath);
+
+	std::shared_ptr<DirectoryInfo> directory = findDirectory(directoryPath);
+	if (directory) {
+		ChangeDirectory(directory);
+	}
+	else {
+		LOG_ERROR("Could not find directory {} in content ContentBrowserPanel::navigateTo", filepath.string().c_str());
+	}
+	
+}
+
+std::shared_ptr<DirectoryInfo> findDirectoryRecursive(const std::shared_ptr<DirectoryInfo>& root, const std::filesystem::path& directoryPath) {
+    for (const auto& subdir : root->SubDirectories) {
+		const DirectoryInfoPtr& dir = subdir.second;
+		if (dir->FilePath == directoryPath) {
+			return dir;
+		}
+		DirectoryInfoPtr rv = findDirectoryRecursive(dir, directoryPath);
+		if (rv) {
+			return rv;
+		}
+    }
+	return nullptr;
+}
+
+std::shared_ptr<DirectoryInfo> ContentBrowserPanel::findDirectory(const std::filesystem::path& directoryPath) {
+	return findDirectoryRecursive(m_BaseDirectory, directoryPath);
 }
 
 void ContentBrowserPanel::RenderDirectoryHierarchy(std::shared_ptr<DirectoryInfo>& directory)
@@ -466,22 +518,6 @@ void ContentBrowserPanel::RenderDirectoryHierarchy(std::shared_ptr<DirectoryInfo
 				if (created)
 					Refresh();
 			}
-
-			if (ImGui::MenuItem("Material")) {
-				//CreateAssetInDirectory<MaterialAsset>("New Material.hmaterial", directory);
-				panic("TODO");
-			}
-
-			if (ImGui::MenuItem("Physics Material")) {
-				//CreateAssetInDirectory<PhysicsMaterial>("New Physics Material.hpm", directory, 0.6f, 0.6f, 0.0f);
-                panic("TODO");
-            }
-
-			if (ImGui::MenuItem("Sound Config")) {
-                //CreateAssetInDirectory<SoundConfig>("New Sound Config.hsoundc", directory);
-                panic("TODO");
-            }
-
 			ImGui::EndMenu();
 		}
 

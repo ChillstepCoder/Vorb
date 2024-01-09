@@ -972,6 +972,9 @@
     <ClCompile Include="src\resources\TileDistributionRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\generation\TileDistributionPreviewTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2376,6 +2379,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\DitherMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generation\TileDistributionPreviewTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

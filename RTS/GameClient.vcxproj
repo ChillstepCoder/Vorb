@@ -306,6 +306,7 @@
     <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\IWorldGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\RiverGenerationStage.cpp" />
+    <ClCompile Include="src\generation\TileDistributionPreviewTexture.cpp" />
     <ClCompile Include="src\generation\TileDistributionSampler.cpp" />
     <ClCompile Include="src\generation\WorldDataGenerator.cpp" />
     <ClCompile Include="src\generation\WorldGenerationBlackboard.cpp" />
@@ -676,6 +677,7 @@
     <ClInclude Include="src\generation\stages\HistoryGenerationStage.h" />
     <ClInclude Include="src\generation\stages\IWorldGenerationStage.h" />
     <ClInclude Include="src\generation\stages\RiverGenerationStage.h" />
+    <ClInclude Include="src\generation\TileDistributionPreviewTexture.h" />
     <ClInclude Include="src\generation\TileDistributionSampler.h" />
     <ClInclude Include="src\generation\WorldDataGenerator.h" />
     <ClInclude Include="src\generation\WorldGenerationBlackboard.h" />

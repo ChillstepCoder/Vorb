@@ -142,6 +142,7 @@ void WorldGenScreen::update(const vui::GameTime& gameTime) {
 
     // Update tasks
     Services::Threadpool::ref().mainThreadUpdate();
+    RenderContext::getInstance().updateRenderThreadProcs();
 
     if (mWorldGenerator) {
         mWorldGenerator->update();

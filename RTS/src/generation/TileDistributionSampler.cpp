@@ -6,30 +6,36 @@
 #include "util/DitherMatrix.h"
 #include "math/Random.h"
 
-void TileDistributionSampler::buildPrecalcData(TileDistributionDef& dist) {
-    dist.precalculatedDistribution.resizeAndZero(SQ(PRECALCILATED_TILE_DISTRIBUTION_WIDTH));
+constexpr i32 PRECALC_TILE_DIST_WIDTH = 256;
+constexpr i32 MAX_FORCE_ITERATIONS = 1;
 
-    for (i32 y = 0, yoff = 0; y < PRECALCILATED_TILE_DISTRIBUTION_WIDTH; ++y, yoff += PRECALCILATED_TILE_DISTRIBUTION_WIDTH) {
-        for (i32 x = 0; x < PRECALCILATED_TILE_DISTRIBUTION_WIDTH; ++x) {
-            const i32v2 worldPos(x, y);
-            i32v2 cellPos = (i32v2(x, y) / dist.spacing) * dist.spacing;
+void TileDistributionSampler::buildPrecalcData(TileDistributionDef& dist) {
+    PreciseTimer timer;
+    dist.precalculatedDistribution.resize(SQ(PRECALC_TILE_DIST_WIDTH));
+
+    for (i32 y = 0, yoff = 0; y < PRECALC_TILE_DIST_WIDTH; ++y, yoff += PRECALC_TILE_DIST_WIDTH) {
+        for (i32 x = 0; x < PRECALC_TILE_DIST_WIDTH; ++x) {
+            const i32v2 pos(x, y);
+            i32v2 bayerPos = (pos / dist.spacing);
+            i32v2 cellPos = bayerPos * dist.spacing;
 
             // Jitter
-            if (dist.spacing > 2) {
+            if (dist.spacing > 1 + dist.minDistance) {
                 const i32v2 oldCellPos = cellPos;
-                cellPos.x += (i32)Random::getThreadSafe(oldCellPos.x, oldCellPos.y) % (dist.spacing - 1);
-                cellPos.y += (i32)Random::getThreadSafe(oldCellPos.y, 16236 - oldCellPos.x) % (dist.spacing - 1);
-            }
-
-            // If we are not sampling valid dither matrix spot, return 0
-            if (worldPos != cellPos || Random::getThreadSafef(cellPos.y * 2, cellPos.x - 34253) > dist.probability) {
-                dist.precalculatedDistribution.setBitTo(yoff + x, true);
+                const i32 maxWiggle = (dist.spacing - dist.minDistance);
+                cellPos.x += (i32)Random::getThreadSafe(oldCellPos.x, oldCellPos.y) % maxWiggle;
+                cellPos.y += (i32)Random::getThreadSafe(oldCellPos.y, 16236 - oldCellPos.x) % maxWiggle;
+                cellPos.x += bayerPos.y % maxWiggle;
             }
             else {
-                dist.precalculatedDistribution.setBitTo(yoff + x, false);
+                cellPos.x += bayerPos.y % dist.spacing;
             }
+
+            dist.precalculatedDistribution.setBitTo(yoff + x, pos == cellPos);
         }
     }
+
+    LOG_DEBUG("TileDistributionSampler::buildPrecalcData finished  in {} ms", timer.stop());
 }
 
 bool TileDistributionSampler::sample(const TileDistributionDef& dist, i32v2 worldPos, f32 density) {
@@ -62,13 +68,19 @@ f32 TileDistributionSampler::getThresholdAtPosition(const TileDistributionDef& d
    // worldPos.x += worldPos.y * 3.34152f;
 
     // Round to nearest cell
-    i32v2 cellPos = (worldPos / dist.spacing) * dist.spacing;
+    i32v2 bayerPos = (worldPos / dist.spacing);
+    i32v2 cellPos = bayerPos * dist.spacing;
 
     // Jitter
-    if (dist.spacing > 2) {
+    if (dist.spacing > 1 + dist.minDistance) {
         const i32v2 oldCellPos = cellPos;
-        cellPos.x += (i32)Random::getThreadSafe(oldCellPos.x, oldCellPos.y) % (dist.spacing - 1);
-        cellPos.y += (i32)Random::getThreadSafe(oldCellPos.y, 16236 - oldCellPos.x) % (dist.spacing - 1);
+        const i32 maxWiggle = (dist.spacing - dist.minDistance);
+        cellPos.x += (i32)Random::getThreadSafe(oldCellPos.x, oldCellPos.y) % maxWiggle;
+        cellPos.y += (i32)Random::getThreadSafe(oldCellPos.y, 16236 - oldCellPos.x) % maxWiggle;
+        cellPos.x += bayerPos.y % maxWiggle;
+    }
+    else {
+        cellPos.x += bayerPos.y % dist.spacing;
     }
 
     // If we are not sampling valid dither matrix spot, return 0
@@ -80,7 +92,7 @@ f32 TileDistributionSampler::getThresholdAtPosition(const TileDistributionDef& d
         return FLT_MAX;
     }
 
-    const i32v2 bayerMatrixPos = cellPos % 16;
+    const i32v2 bayerMatrixPos = bayerPos % 16;
     const ui8 bayer = BAYER_MATRIX_16[bayerMatrixPos.y * 16 + bayerMatrixPos.x];
     return bayer / 255.f;
 }
@@ -92,15 +104,18 @@ f32 TileDistributionSampler::getThresholdAtPositionPrecalc(const TileDistributio
    // worldPos.x += worldPos.y * 3.34152f;
 
     // Round to nearest cell
-    worldPos %= PRECALCILATED_TILE_DISTRIBUTION_WIDTH;
+    const i32v2 precalcPos = worldPos % PRECALC_TILE_DIST_WIDTH;
     
     // If we are not sampling valid dither matrix spot, return 0
-    if (dist.precalculatedDistribution.getBit(worldPos.y * PRECALCILATED_TILE_DISTRIBUTION_WIDTH + worldPos.x)) {
+    if (!dist.precalculatedDistribution.getBit(precalcPos.y * PRECALC_TILE_DIST_WIDTH + precalcPos.x)) {
         return FLT_MAX;
     }
 
-    i32v2 cellPos = (worldPos / dist.spacing) * dist.spacing;
-    const i32v2 bayerMatrixPos = cellPos % 16;
+    if (Random::getThreadSafef(worldPos.y * 2, worldPos.x - 34253) > dist.probability) {
+        return FLT_MAX;
+    }
+
+    const i32v2 bayerMatrixPos = (precalcPos / dist.spacing) % 16;
     const ui8 bayer = BAYER_MATRIX_16[bayerMatrixPos.y * 16 + bayerMatrixPos.x];
     return bayer / 255.f;
 }

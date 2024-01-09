@@ -264,6 +264,7 @@ bool EditorRoot::tryOpenAssetForEdit(AssetDescriptor desc)
     }
     it->second->setCurrentAsset(desc.id);
     setActiveCenterPanel(it->second.get());
+    ContentBrowserPanel::Get().navigateTo(ResourceManager::get().getAssetMetadata(desc).mFilePath.getStdPath());
     return true;
 }
 

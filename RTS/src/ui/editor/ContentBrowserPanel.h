@@ -167,6 +167,8 @@ public:
 
     std::shared_ptr<DirectoryInfo> GetDirectory(const std::filesystem::path& filepath) const;
     const std::filesystem::path& getRootPath() const { return mRootPath; }
+    void navigateTo(const std::filesystem::path& filepath);
+    std::shared_ptr<DirectoryInfo> findDirectory(const std::filesystem::path& directoryPath);
 
 public:
     static ContentBrowserPanel& Get() { return *sInstance; }

@@ -61,6 +61,9 @@ public:
         assert((size_t)type < mAssetRepositories.size());
         return *mAssetRepositories[e_cast(type)];
     }
+    StrToken getAssetExtension(AssetType type) {
+        return getAssetRepository(type).getAssetExtension();
+    }
     AssetDescriptor registerOrGetRegisteredAsset(const std::filesystem::path& path);
     AssetMetadata getAssetMetadata(AssetDescriptor desc);
     AssetMetadata tryGetAssetMetadataForPath(const std::filesystem::path& path);

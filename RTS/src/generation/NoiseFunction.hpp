@@ -57,7 +57,7 @@ public:
                     amp *= persistence;
                 }
 
-                return (total / maxAmplitude) * amplitude;
+                return ((total / maxAmplitude) + heightOffset) * amplitude;
                 break;
             }
             default:

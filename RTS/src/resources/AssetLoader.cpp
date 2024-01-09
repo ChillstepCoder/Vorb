@@ -85,6 +85,9 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
                 LOG_TRACE("    Finished load on render thread {} {}", postData->mAssetID, postData->mPath.getCString());
                 postData->mIsFinishedFlagPtr->store(true);
             }
+            else {
+                LOG_WARN("    Finished load on render thread {} {} but no flag!", postData->mAssetID, postData->mPath.getCString());
+            }
         }
         delete postData;
     }, postData);
