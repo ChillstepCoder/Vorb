@@ -65,6 +65,7 @@ public:
     UniqueId64 GetUUID() const { return mUUID; }
     ItemType GetType() const { return mType; }
     const std::string& GetName() const { return mFileName; }
+    const nString& GetPrevName() const { return mPrevFileName; }
 
     VGTexture getIcon() const { return mIcon; }
 
@@ -76,7 +77,7 @@ public:
     void SetDisplayNameFromFileName();
 
 protected:
-    virtual void OnRenamed(const nString& newName) { mFileName = newName; }
+    virtual void OnRenamed(const nString& newName) { mPrevFileName = mFileName; mFileName = newName; }
     virtual void RenderCustomContextItems(CBItemActionResult& actionResult) {}
     virtual void UpdateDrop(CBItemActionResult& actionResult) {}
 
@@ -87,6 +88,7 @@ protected:
     UniqueId64 mUUID;
     std::string mDisplayName;
     std::string mFileName;
+    std::string mPrevFileName;
     VGTexture mIcon;
 
     bool mIsRenaming = false;
@@ -147,6 +149,7 @@ private:
 
 private:
     AssetMetadata m_AssetInfo;
+    std::filesystem::path mPath;
 };
 
 using ContentBrowserItemPtr = std::shared_ptr<ContentBrowserItem>;

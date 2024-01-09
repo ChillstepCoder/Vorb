@@ -35,6 +35,7 @@ public:
     }
     virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
 
+
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
 
     AssetMetadata tryGetMetadata(StrToken name) const {
@@ -66,6 +67,22 @@ public:
         for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
             fixupAsset(id);
         }
+    }
+
+    virtual AssetHandleBasePtr reloadAsset(AssetID id) {
+        return nullptr;
+    }
+
+    // TODO: DOES NOT FIX REFERENCES!
+    void renameAsset(AssetDescriptor prevDesc, const std::filesystem::path& newPath) {
+        StrToken newName(newPath.stem().string());
+        auto it = mAssetLookup.find(prevDesc.getName());
+        if (it == mAssetLookup.end()) return;
+        mAssetLookup.erase(it);
+        mAssetLookup[newName] = prevDesc.id;
+        AssetMetadata& metaData = mAssetRegistry[prevDesc.id];
+        metaData.mName = newName;
+        metaData.mFilePath = newPath;
     }
 protected:
     IAssetRepositoryBase(vio::IOManager& ioManager) : mIoManager(ioManager) {}
@@ -275,7 +292,7 @@ public:
         if (it == mAssetLookup.end()) return INVALID_ASSET_ID;
         return it->second;
     }
-    AssetHandleBasePtr reloadAsset(AssetID id) {
+    AssetHandleBasePtr reloadAsset(AssetID id) override {
         // TODO: Cleanup first?
         onRegisteredAsset(id);
         onAllAssetTypesRegistered(); // TODO: MIGHT CAUSE PROBLEMS if this is implemented to not clean itself up

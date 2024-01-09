@@ -227,15 +227,14 @@ namespace YmlSerializer {
 #define YML_WRITE_DEF_PTR(type) \
     YML_WRITE_DEF(std::unique_ptr<type>) { \
         if (o) { \
-            ryml::NodeRef& nr = *n; \
-            nr.append_child() << *o; \
+            *n << *o; \
         } \
     }
 
 #define YML_READ_DEF_PTR(type) \
     YML_READ_DEF(std::unique_ptr<type>) { \
         (*target) = std::make_unique<type>(); \
-        n >> (*target); \
+        n >> *(*target); \
         return true; \
     } 
 

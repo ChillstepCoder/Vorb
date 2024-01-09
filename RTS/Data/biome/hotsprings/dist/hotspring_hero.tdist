@@ -1,0 +1,13 @@
+spacing: 1
+min_dist: 1
+prob: 1
+offset: [0,0]
+dist:
+  label: ''
+  type: std
+  octaves: 3
+  persistence: 0.699999988079071
+  frequency: 0.0010000000474974513
+  posOffset: [0,0]
+  amplitude: 1
+  heightOffset: 0

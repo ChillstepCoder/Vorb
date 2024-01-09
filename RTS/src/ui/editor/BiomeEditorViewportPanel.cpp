@@ -64,9 +64,6 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Biome Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Biome Editor Controls");
 
-    if (ImguiUtil::updateAndRenderSoftAssetReference("Biome", mSelectedBiome)) {
-        initializeWorld();
-    }
     bool changed = false;
     if (mAssetData) {
         ImGui::Text("Biome: %s", mAssetData->displayName.c_str());
@@ -99,8 +96,6 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 void BiomeEditorViewportPanel::onEnter() {
 
     if (mAssetData) {
-        mSelectedBiome.name = mAssetData->getName();
-
         if (!mEditorWorld) {
             initializeWorld();
         }
@@ -134,7 +129,7 @@ void BiomeEditorViewportPanel::onExit() {
 void BiomeEditorViewportPanel::setCurrentAsset(AssetID assetId) {
     AssetEditorViewportPanel<BiomeDef>::setCurrentAsset(assetId);
     if (mAssetData) {
-        mSelectedBiome.name = mAssetData->getName();
+        initializeWorld();
     }
 }
 
@@ -212,12 +207,14 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 }
 
 void BiomeEditorViewportPanel::initializeWorld() {
-
     if (mEditorWorld) {
         mShuttingDownWorld = true; // Will be cleared on frame begin
         mWorldInterfaceController.reset();
         WorldDestroyer::shutdownWorld(*mEditorWorld);
         mEditorWorld.reset();
+    }
+    if (!mAssetData) {
+        return;
     }
 
     LOG_INFO("Initializing Editor World...");
@@ -226,7 +223,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     glCreateTextures(GL_TEXTURE_2D, 1, &mBiomeTexture);
     glTextureStorage2D(mBiomeTexture, 1, GL_R8, 1, 1); // Just one pixel
 
-    const BiomeDef& def = ResourceManager::getAssetHandle<BiomeDef>(mSelectedBiome.name)->getLoadedAsset();
+    const BiomeDef& def = *mAssetData;
     const ui8 biomeId = e_cast(def.uniqueId);
     glTextureSubImage2D(mBiomeTexture, 0, 0, 0, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &biomeId); // Set default biome
 

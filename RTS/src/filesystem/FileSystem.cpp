@@ -77,7 +77,9 @@ bool FileSystem::rename(const std::filesystem::path& oldFilepath, const std::fil
 
 bool FileSystem::renameFilename(const std::filesystem::path& oldFilepath, const std::string& newName)
 {
-    std::filesystem::path newPath = fmt::format("{0}\\{1}{2}", oldFilepath.parent_path().string(), newName, oldFilepath.extension().string());
+    // Remove any extension in new name
+    std::filesystem::path newNameAsPath = newName;
+    std::filesystem::path newPath = fmt::format("{0}\\{1}{2}", oldFilepath.parent_path().string(), newNameAsPath.stem().string(), oldFilepath.extension().string());
     return rename(oldFilepath, newPath);
 }
 

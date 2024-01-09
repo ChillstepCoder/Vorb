@@ -11,7 +11,6 @@
 // TODO: REMOVE???
 #include "ui/editor/ContentBrowserPanel.h"
 
-#include <Vorb/ui/InputDispatcher.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -107,7 +106,7 @@ CBItemActionResult ContentBrowserItem::OnRender()
         ImGui::SetKeyboardFocusHere();
         ImGui::InputText("##rename", s_RenameBuffer, MAX_INPUT_BUFFER_LENGTH);
 
-        if (ImGui::IsItemDeactivatedAfterEdit() || vui::InputDispatcher::key.isKeyPressed(VKEY_KP_ENTER)) {
+        if (ImGui::IsItemDeactivatedAfterEdit() || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter))) {
             Rename(s_RenameBuffer);
             mIsRenaming = false;
             SetDisplayNameFromFileName();
@@ -202,7 +201,7 @@ CBItemActionResult ContentBrowserItem::OnRender()
 
     if (!mIsRenaming)
     {
-        if (vui::InputDispatcher::key.isKeyPressed(VKEY_F2) && isSelected && isFocused)
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F2)) && isSelected && isFocused)
             StartRenaming();
     }
 
@@ -294,7 +293,7 @@ CBItemActionResult ContentBrowserItem::OnRender()
             bool skipBecauseDragging = mIsDragging && isSelected;
             if (action && !skipBecauseDragging)
             {
-                if (isSelected && vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) && !mJustSelected)
+                if (isSelected && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) && !mJustSelected)
                 {
                     result.Set(ContentBrowserAction::Deselected, true);
                 }
@@ -308,10 +307,10 @@ CBItemActionResult ContentBrowserItem::OnRender()
                     mJustSelected = true;
                 }
 
-                if (!vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) && !vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT) && mJustSelected)
+                if (!ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) && !ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)) && mJustSelected)
                     result.Set(ContentBrowserAction::ClearSelections, true);
 
-                if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT))
+                if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftShift)))
                     result.Set(ContentBrowserAction::SelectToHere, true);
             }
         }
@@ -532,31 +531,49 @@ bool ContentBrowserAsset::Move(const std::filesystem::path& destination)
 
 void ContentBrowserAsset::OnRenamed(const std::string& newName)
 {
+    std::filesystem::path filepath = m_AssetInfo.mFilePath.getStdPath();
+    if (newName == filepath.filename().string()) {
+        return;
+    }
+    ContentBrowserItem::OnRenamed(newName);
     //FileSystem::skipNextFileSystemChange();
 
-    std::filesystem::path filepath = m_AssetInfo.mFilePath.getStdPath();
     const std::string extension = filepath.extension().string();
-    std::filesystem::path newFilepath = fmt::format("{0}\\{1}{2}", filepath.parent_path().string(), newName, extension);
+    std::filesystem::path newFilepath = fmt::format("{0}\\{1}", filepath.parent_path().string(), newName);
+    if (newFilepath.stem().empty()) {
+        panic("ERROR: Filename cannot be empty!");
+    }
+    if (std::filesystem::path(newFilepath).extension().string() != extension) {
+        panic("ERROR: You cannot change a file extension for an asset!");
+    }
 
-    std::string targetName = fmt::format("{0}{1}", newName, extension);
-    if (Utils::toLower(targetName) == Utils::toLower(filepath.filename().string()))
+    // Case change requires a temp rename
+    bool didRenameTmp = false;
+    const nString prevFileName = filepath.filename().string();
+    if (Utils::toLower(newName) == Utils::toLower(prevFileName))
     {
         FileSystem::renameFilename(filepath, "temp-rename");
         filepath = fmt::format("{0}\\temp-rename{1}", filepath.parent_path().string(), extension);
+        didRenameTmp = true;
     }
 
     //FileSystem::skipNextFileSystemChange();
 
     if (FileSystem::renameFilename(filepath, newName))
     {
-        // TODO: Update AssetManager with new name
-       // auto& metadata = Project::GetEditorAssetManager()->GetMetadata(m_AssetInfo.Handle);
-       // Project::GetEditorAssetManager()->OnAssetRenamed(m_AssetInfo.Handle, newFilepath);
+        ResourceManager::renameAsset(GetAssetInfo().mDescriptor, newFilepath);
+        m_AssetInfo.mFilePath = newFilepath;
+        m_AssetInfo.mName = StrToken(Utils::removeExtension(newFilepath.stem().string()));
     }
     else
     {
+        // Restore
+        if (didRenameTmp) {
+            FileSystem::renameFilename(filepath, prevFileName);
+        }
         LOG_CRITICAL("Couldn't rename {} to {}!", filepath.filename().string(), newName);
     }
+    mIsRenaming = false;
 }
 
 void ContentBrowserAsset::RenderCustomContextItems(CBItemActionResult& actionResult)

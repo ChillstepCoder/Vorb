@@ -269,6 +269,10 @@ AssetDescriptor ResourceManager::registerOrGetRegisteredAsset(const std::filesys
     StrToken assetName(pathString.data(), pathString.size());
     if (!repo.isAssetRegistered(assetName)) {
         repo.registerAssetPath(vio::Path(path));
+
+        if (mHasGathered) {
+            repo.onAllAssetTypesRegistered();
+        }
     }
     return AssetDescriptor{ .id=repo.getAssetID(assetName), .assetType=type };
 }

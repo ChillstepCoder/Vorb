@@ -79,6 +79,14 @@ public:
         return static_unique_pointer_cast<AssetHandle<T>>(repo.getAssetHandleBase(assetName));
     }
 
+    static void reloadAsset(AssetDescriptor desc) {
+        IAssetRepositoryBase& repo = get().getAssetRepository(desc.assetType);
+        repo.reloadAsset(desc.id);
+    }
+    static void renameAsset(AssetDescriptor prevDesc, const std::filesystem::path& newPath) {
+        IAssetRepositoryBase& repo = get().getAssetRepository(prevDesc.assetType);
+        repo.renameAsset(prevDesc, newPath);
+    }
 private:
     void gatherRecursive(const vio::Path& folderPath);
     void preloadFiles();

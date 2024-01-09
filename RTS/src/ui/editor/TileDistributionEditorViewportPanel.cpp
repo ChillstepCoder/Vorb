@@ -13,6 +13,11 @@ TileDistributionEditorViewportPanel::~TileDistributionEditorViewportPanel() {
 void TileDistributionEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::BeginChild("Tile Distribution Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
+    if (mAssetWasChanged) {
+        mDirtyView = true;
+        mAssetWasChanged = false;
+    }
+
     bool changed = false;
     if (mAssetData) {
         ImGui::Text(mAssetData->getName().toString().c_str());

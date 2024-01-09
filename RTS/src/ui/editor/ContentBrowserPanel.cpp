@@ -280,8 +280,10 @@ bool ContentBrowserPanel::updateAndRender(f32 elapsedSec, bool* isOpen) {
 										std::filesystem::path filepath = FileSystem::getUniqueFileName(mRootPath / m_CurrentDirectory->FilePath / fileName);
 										std::ofstream outfile(filepath);
 										if (outfile.is_open()) {
-											Refresh();
 											LOG_DEBUG("Created file {}", filepath.string().c_str());
+											outfile.close();
+                                            ResourceManager::get().registerOrGetRegisteredAsset(filepath);
+                                            Refresh();
 										}
 									}
                                 }
@@ -723,7 +725,6 @@ void ContentBrowserPanel::RenderItems()
 {
 	m_IsAnyItemHovered = false;
 
-	// TODO(Peter): This method of handling actions isn't great... It's starting to become spaghetti...
 	for (auto& item : m_CurrentItems)
 	{
 		item->OnRenderBegin();
@@ -763,10 +764,12 @@ void ContentBrowserPanel::RenderItems()
 		if (result.IsSet(ContentBrowserAction::Copy))
 			m_CopiedAssets.select(item->GetUUID());
 
-		if (result.IsSet(ContentBrowserAction::Reload)) {
-			//AssetManager::ReloadData(item->GetUUID());
-			panic("TODO");
-		}
+        if (item->GetType() == ContentBrowserItem::ItemType::Asset) {
+            if (result.IsSet(ContentBrowserAction::Reload)) {
+                std::shared_ptr<ContentBrowserAsset> assetItem = static_pointer_cast<ContentBrowserAsset>(item);
+				ResourceManager::reloadAsset(assetItem->GetAssetInfo().mDescriptor);
+            }
+        }
 
 		if (result.IsSet(ContentBrowserAction::OpenDeleteDialogue) && !item->IsRenaming())
 		{
@@ -808,6 +811,7 @@ void ContentBrowserPanel::RenderItems()
 		if (result.IsSet(ContentBrowserAction::Renamed))
 		{
 			EditorSelectionManager::deselectAll(EditorSelectionContext::ContentBrowser);
+
 			Refresh();
 			SortItemList();
 
@@ -829,6 +833,7 @@ void ContentBrowserPanel::RenderItems()
 			{
 				std::shared_ptr<ContentBrowserAsset> assetItem = static_pointer_cast<ContentBrowserAsset>(item);
 				UIContext::getInstance().getEditorRoot().tryOpenAssetForEdit(assetItem->GetAssetInfo().mDescriptor);
+				break;
 			}
 		}
 
@@ -926,13 +931,13 @@ void ContentBrowserPanel::UpdateInput()
 	if (!m_IsContentBrowserHovered)
 		return;
 
-	if ((!m_IsAnyItemHovered && ImGui::IsMouseDown(ImGuiMouseButton_Left)) || vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE))
+	if ((!m_IsAnyItemHovered && ImGui::IsMouseDown(ImGuiMouseButton_Left)) || ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
 		ClearSelections();
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_DELETE) && EditorSelectionManager::getSelectionCount(EditorSelectionContext::ContentBrowser) > 0)
+	if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Delete)) && EditorSelectionManager::getSelectionCount(EditorSelectionContext::ContentBrowser) > 0)
 		ImGui::OpenPopup("Delete");
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_F5))
+	if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)))
 		Refresh();
 }
 
@@ -1160,12 +1165,12 @@ void ContentBrowserPanel::RenderDeleteDialogue()
 
 		if (!rightButtonHovered)
 		{
-			rightButtonHovered = vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT);
+			rightButtonHovered = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_RightArrow));
 			leftButtonHovered = !rightButtonHovered;
 		}
 		if (!leftButtonHovered)
 		{
-			leftButtonHovered = vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT);
+			leftButtonHovered = ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_LeftArrow));
 			rightButtonHovered = !leftButtonHovered;
 		}
 

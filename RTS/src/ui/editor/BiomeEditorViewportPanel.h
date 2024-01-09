@@ -40,8 +40,6 @@ protected:
 	bool mLeftMousePressed = false;
 	bool mShuttingDownWorld = false;
 
-	SoftAssetReference mSelectedBiome = AssetType::Biome;
-
 	VGTexture mBiomeTexture;
 };
 
