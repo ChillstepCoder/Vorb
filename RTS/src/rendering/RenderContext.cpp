@@ -362,13 +362,6 @@ void RenderContext::endFrame() {
     ImGui::EndFrame();
 }
 
-void RenderContext::tickGameThread(World& world) {
-    WorldRenderDataManager* renderDataManager = mWorldRenderer->tryGetRenderDataManagerForWorld(world);
-    if (renderDataManager) {
-        renderDataManager->tickGameThread();
-    }
-}
-
 void RenderContext::selectNextDebugShader() {
     mWorldRenderer->selectNextDebugShader();
 }

@@ -49,6 +49,8 @@ static WorldID sWorldId = 0;
 std::unique_ptr<World> sGameWorld;
 
 World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netMode) {
+    PreciseTimer timer;
+    LOG_DEBUG("Allocating world 0x%08x net mode {}", (void*)this, e_cast(netMode));
     mId = ++sWorldId;
     {
         std::lock_guard lock(sWorldsMutex);
@@ -125,9 +127,13 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     // Weather
     mWeatherManager = std::make_unique<WeatherManager>(*this);
 
+    LOG_DEBUG("Systems allocated in {}", timer.stop()); timer.start();
+
     // Initialize world data
     mChunkGrid->setWorldAndAllocateChunks(*this);
     mHeightmapGrid->setWorld(*this);
+
+    LOG_DEBUG("Chunks allocated in {}", timer.stop());
 
     // Nav
     if (mNetMode == WorldNetMode::Host) {
@@ -135,7 +141,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
         Services::NavThread::ref().init(*mNavWorld);
     }
 
-    LOG_DEBUG("Allocated world 0x%08x net mode {}", (void*)this, e_cast(netMode));
+    LOG_DEBUG("Finished allocating world 0x%08x net mode {}", (void*)this, e_cast(netMode));
 
     static_assert(e_count(WorldNetMode) == 3);
 }
@@ -389,7 +395,6 @@ World* World::tryGetWorld(WorldID id) {
 
 void World::updateRenderState() {
 
-    RenderContext::getInstance().tickGameThread(*this);
     if (!GameRenderStateManager::getInstance().isActiveWorld(this)) {
         return;
     }

@@ -421,10 +421,11 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
 
 btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape, CollisionGroup group) {
     PROFILE_FUNCTION();
+    ASSERT_GAME_THREAD();
     btTransform startTransform;
     const f32 halfHeight = getShapeHalfHeight(shape);
     startTransform.setOrigin(btVector3(position.x, position.y, position.z + halfHeight)); // TODO: not always offset up?
-    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+    //startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
     btVector3 localInertia(0, 0, 0);
@@ -441,7 +442,6 @@ btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID own
     assert(ownerTilePosition <= INVALID_PHYSICS_USER_INDEX && "Tile index overflow in createRigidBody");
     object->setUserIndex3(ownerTilePosition);
 
-    ASSERT_GAME_THREAD();
     mDynamicsWorld->addCollisionObject(object, BIT_CAST(group), collisionMasks[e_cast(group)]);
     object->setActivationState(DISABLE_SIMULATION);
    
@@ -681,6 +681,8 @@ int PhysicsWorld::queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* o
 
         bool process(const btBroadphaseProxy* proxy) override {
 
+            if (numResults >= maxResults) return false;
+
             PhysicsQueryResult& rs = results[numResults];
             rs.mCollisionObject = static_cast<btCollisionObject*>(proxy->m_clientObject);
 
@@ -702,7 +704,6 @@ int PhysicsWorld::queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* o
                 // Terrain ignored here
             }
 
-            if (numResults >= maxResults) return false;
             return true;
         }
 

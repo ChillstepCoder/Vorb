@@ -64,8 +64,6 @@ public:
     void renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
-    void tickGameThread(World& world);
-
     void selectNextDebugShader();
 
     VGBuffer getCameraUbo() const { return mCameraUbo; }

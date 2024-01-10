@@ -37,8 +37,11 @@
 
 #include "ui/UIContext.h"
 
+#include "rendering/MaterialShaderDef.h"
+
 constexpr ui32 EDITOR_CHUNK_GRID_WIDTH = 2; // nxn grid
 constexpr ui32 NUM_EDITOR_CHUNKS = SQ(EDITOR_CHUNK_GRID_WIDTH);
+constexpr int LOCAL_GROUP_SIZE = 16;
 
 BiomeEditorViewportPanel::BiomeEditorViewportPanel() {
 
@@ -46,7 +49,11 @@ BiomeEditorViewportPanel::BiomeEditorViewportPanel() {
 
 BiomeEditorViewportPanel::~BiomeEditorViewportPanel()
 {
-
+    if (mHeightSSBO) {
+        glUnmapNamedBuffer(mHeightSSBO);
+        glDeleteBuffers(1, &mHeightSSBO);
+        mHeightSSBO = 0;
+    }
 }
 
 void BiomeEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
@@ -207,11 +214,14 @@ VGTexture BiomeEditorViewportPanel::getFinalOutputTexture()
 }
 
 void BiomeEditorViewportPanel::initializeWorld() {
+    PreciseTimer timer, timer2;
     if (mEditorWorld) {
         mShuttingDownWorld = true; // Will be cleared on frame begin
         mWorldInterfaceController.reset();
         WorldDestroyer::shutdownWorld(*mEditorWorld);
         mEditorWorld.reset();
+        LOG_CRITICAL("Shutdown in {}", timer.stop());
+        timer.start();
     }
     if (!mAssetData) {
         return;
@@ -237,18 +247,16 @@ void BiomeEditorViewportPanel::initializeWorld() {
         worldData.biomeGrid->getVertexForGeneration(v).biomeUniqueId = def.uniqueId;
     }
 
-    // TODO: Replace with proper GPU gen
-    for (int v = 0; v < worldData.heightmapGrid->getTotalPatches(); ++v) {
-        HeightmapPatch& patch = worldData.heightmapGrid->getPatchForGeneration(v);
-        for (int i = 0; i < HEIGHTMAP_VERT_SIZE_PER_PATCH; ++i) {
-            patch.setHeightAtNoClamp(i, 10.0f);
-        }
-    }
+    LOG_CRITICAL("Set biomes {}", timer.stop()); timer.start();
 
+    generateHeightmap(worldData);
+
+    LOG_CRITICAL("Heightmap {}", timer.stop()); timer.start();
     //mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
     mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, &worldData);
 
     mEditorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
+    LOG_CRITICAL("Allocate world {}", timer.stop()); timer.start();
 
     GameThreadTasks::getInstance().addGenericTaskWithCapture([editorWorld = mEditorWorld.get()](GameThread&) {
         editorWorld->onWorldBegin(f32v2(0.0f));
@@ -257,6 +265,72 @@ void BiomeEditorViewportPanel::initializeWorld() {
     updateActiveEditorWorld(mEditorWorld.get());
 
     mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());
+    LOG_CRITICAL("Finish {}", timer2.stop());
+}
+
+void BiomeEditorViewportPanel::generateHeightmap(HostWorldData& worldData)
+{
+    IHeightmapGrid* heightGrid = worldData.heightmapGrid.get();
+    if (!mHeightSSBO) {
+        // Terrain
+        const ui32 totalPatches = heightGrid->getTotalPatches();
+        assert(!mHeightSSBO);
+        glCreateBuffers(1, &mHeightSSBO);
+        glNamedBufferStorage(mHeightSSBO, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        mMappedHeights = (GLfloat*)glMapNamedBufferRange(mHeightSSBO, 0, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    }
+
+    const int patchLocalGroupWidth = HEIGHTMAP_VERT_WIDTH_PER_PATCH / LOCAL_GROUP_SIZE;
+    const ui32 widthPatches = worldData.heightmapGrid->getWidthPatches();
+
+    const MaterialShaderDef* def = ResourceManager::getAssetHandle<MaterialShaderDef>(CStrToken("editor_biome_height"))->tryGetLoadedAsset();
+    if (!def) {
+        panic("editor_biome_height.comp was not loaded. Make sure it exists and is in assets.preload");
+    }
+
+    def->useCompute();
+    glProgramUniform1f(def->mProgram.getID(), def->getUniform("unSeed"), mWorldSeed);
+    glProgramUniform1i(def->mProgram.getID(), def->getUniform("unBiome"), e_cast(mAssetData->uniqueId));
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mHeightSSBO);
+
+    const f32v2 rootPos = heightGrid->getSpatialGrid2D().getWorldPosXYFromID(0);
+    const i32v2 vertXY = heightGrid->getSpatialGrid2D().getGridXYFromID(0) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+
+    glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unPatchWorldPos"), 1, &rootPos.x);
+    glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), widthPatches * (ui32)HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    glProgramUniform2i(def->mProgram.getID(), def->getUniform("unVertexOffset"), vertXY.x, vertXY.y);
+
+    // Dispatch compute
+    constexpr i32 MAX_COMPUTE_SIZE = 65535; // Minimum as according to openGL spec
+    if (MAX_COMPUTE_SIZE < patchLocalGroupWidth * heightGrid->getTotalPatches()) {
+        panic("Heightmap gen compute attempted to dispatch {} groups, but max is {}", patchLocalGroupWidth * widthPatches, MAX_COMPUTE_SIZE);
+    }
+    glDispatchCompute(patchLocalGroupWidth * widthPatches, patchLocalGroupWidth * widthPatches, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    mFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    glFinish();
+
+    while (glClientWaitSync(mFence, GL_SYNC_FLUSH_COMMANDS_BIT, 100) != GL_ALREADY_SIGNALED) {
+        std::this_thread::yield();
+    }
+
+    // Copy data
+    for (int py = 0; py < widthPatches; ++py) {
+        const int sourceYOffset = py * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+        for (int px = 0; px < widthPatches; ++px) {
+            const int sourceXOffset = py * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+            HeightmapPatch& patch = worldData.heightmapGrid->getPatchForGeneration(py * widthPatches + px);
+            for (int y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
+                for (int x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
+                    const int targetIndex = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x;
+                    const int sourceIndex = sourceYOffset + y * widthPatches * HEIGHTMAP_VERT_WIDTH_PER_PATCH + sourceXOffset + x;
+                    patch.setHeightAtNoClamp(targetIndex, mMappedHeights[sourceIndex]);
+                }
+            }
+        }
+    }
 }
 
 void BiomeEditorViewportPanel::initializeController() {

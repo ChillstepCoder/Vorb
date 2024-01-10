@@ -34,11 +34,6 @@ void WorldRenderDataManager::shutdown() {
     mDidShutdown = true;
 }
 
-void WorldRenderDataManager::tickGameThread() {
-    ASSERT_GAME_THREAD();
-    const f32v2 loadCenter = mWorld.getLoadCenter();
-}
-
 void WorldRenderDataManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     if (mDidShutdown) {
         return;

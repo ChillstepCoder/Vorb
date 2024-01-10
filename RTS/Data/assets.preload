@@ -6,6 +6,7 @@ startup:
   - [terrain_base, MaterialShader]
   - [river_carve, MaterialShader]
   - [biome_grow, MaterialShader]
+  - [editor_biome_height, MaterialShader]
   - [perlin_noise, Texture]
 preload:
 #  - [*, Material] #uncomment to force generate all .dds

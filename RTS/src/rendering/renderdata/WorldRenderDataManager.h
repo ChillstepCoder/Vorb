@@ -16,7 +16,6 @@ public:
 
     void shutdown();
 
-    void tickGameThread();
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
     // Accessors

@@ -1,0 +1,70 @@
+
+#include "generation/height_gen.glsl"
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(std430, binding = 0) writeonly restrict buffer HeightData
+{
+    float heightData[];
+};
+
+uniform int unBiome = BIOME_Ocean;
+uniform bool unIncludeBaseHeight = true;
+uniform float unMultiplier = 1.0;
+
+uniform float unSeed = 0;
+uniform uint unYStride;
+uniform ivec2 unVertexOffset;
+uniform vec2 unPatchWorldPos;
+
+void main() {   
+    const uint idx = gl_GlobalInvocationID.x;
+    const uint idy = gl_GlobalInvocationID.y;
+    
+    const vec3 posInputSeeded = vec3(unPatchWorldPos.x + float(idx) * HEIGHT_VERTEX_SPACING, unPatchWorldPos.y + float(idy) * HEIGHT_VERTEX_SPACING, unSeed);
+    
+      // Base height
+    float height = 0.0f;
+    if (unIncludeBaseHeight) {
+        height += computeBaseHeight(posInputSeeded);
+    }
+    
+    int bestBiome = unBiome;
+    float bestWeight = 0.0;
+    
+    switch (unBiome) {
+        case BIOME_Ocean:
+            height += -100.0;
+            break;
+        case BIOME_Plains:
+        case BIOME_Plains_B:
+        case BIOME_Plains_C:
+            applyPlainsHeight(posInputSeeded, 1.0, unMultiplier, height, bestWeight, bestBiome);
+            break;
+        case BIOME_Mountains:
+        case BIOME_Mountains_B:
+        case BIOME_Mountains_C:
+            applyMountainHeight(posInputSeeded, 1.0, unMultiplier, height, bestWeight, bestBiome);
+            break;
+        case BIOME_Forest:
+        case BIOME_Forest_B:
+        case BIOME_Forest_C:
+            applyForestHeight(posInputSeeded, 1.0, 1.0, unMultiplier, height, bestWeight, bestBiome);
+            break;
+        case BIOME_Hotsprings:
+        case BIOME_Hotsprings_B:
+        case BIOME_Hotsprings_C:
+            applyHotSpringsHeight(posInputSeeded, 1.0, 1.0, unMultiplier, height, bestWeight, bestBiome);
+            break;
+        default:
+            height = 1.0;
+    }
+        
+    //height = 0.0001 * height + float(idx) * 0.1;
+    const float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
+
+    // Store height
+    ivec2 hxy = ivec2(unVertexOffset.x + idx, unVertexOffset.y + idy);
+    uint heightIndex = hxy.y * unYStride + hxy.x;
+    heightData[heightIndex] = finalHeight;
+}

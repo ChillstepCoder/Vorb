@@ -6,6 +6,7 @@
 class Chunk;
 class World;
 class EditorWorldInterfaceController;
+class HostWorldData;
 
 DECL_VG(class GBuffer);
 
@@ -31,6 +32,7 @@ protected:
 	VGTexture getFinalOutputTexture() override;
 
 	void initializeWorld();
+	void generateHeightmap(HostWorldData& worldData);
 	void initializeController();
 	void updateActiveEditorWorld(World* world);
 
@@ -39,7 +41,11 @@ protected:
     std::unique_ptr<EditorWorldInterfaceController> mWorldInterfaceController;
 	bool mLeftMousePressed = false;
 	bool mShuttingDownWorld = false;
+	f32 mWorldSeed = 18424.0f;
 
 	VGTexture mBiomeTexture;
+	VGBuffer mHeightSSBO = 0;
+	GLfloat* mMappedHeights = nullptr;
+	GLsync mFence = 0;
 };
 
