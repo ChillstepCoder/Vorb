@@ -185,6 +185,8 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
     const TileContainerMeshManager& tileContainerMeshManager = mCurrentWorldRenderDataManager->getTileContainerMeshManager();
 
+    vg::DepthState::FULL.set();
+    vg::BlendState::set(vg::BlendStateType::REPLACE);
     // Mark everything we draw as geometry
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
@@ -497,6 +499,17 @@ WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const World&
         panic("Missing world in WorldRenderer::getRenderDataManagerForWorld");
     }
     return *it->second;
+}
+
+WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const World& world)
+{
+    WorldID id = world.getId();
+    std::lock_guard lock(mRenderDataManagersMutex);
+    auto&& it = mRenderDataManagers.find(&world);
+    if (it == mRenderDataManagers.end()) {
+        nullptr;
+    }
+    return it->second.get();
 }
 
 void WorldRenderer::removeRenderDataManagerForWorld(const World& world) {

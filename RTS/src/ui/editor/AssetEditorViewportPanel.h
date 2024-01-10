@@ -53,6 +53,7 @@ public:
         }
         else {
             mAssetHandle = IAssetRepository<T>::getInstance().getAssetHandle(assetId);
+            mAssetData = const_cast<T*>(mAssetHandle->tryGetLoadedAsset());
         }
         mAssetWasChanged = true;
     }

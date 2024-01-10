@@ -326,10 +326,9 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mActiveGBuffer->use();
     mCurrentFramebufferDims = mActiveGBuffer->getSize();
 
-    // Clear screen
+
     vg::DepthState::FULL.set();
     vg::BlendState::set(vg::BlendStateType::REPLACE);
-
     if (sDebugOptions.mWireframe) {
         glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | (GL_STENCIL_BUFFER_BIT * USE_STENCIL));
@@ -364,8 +363,10 @@ void RenderContext::endFrame() {
 }
 
 void RenderContext::tickGameThread(World& world) {
-    WorldRenderDataManager& renderDataManager = mWorldRenderer->getRenderDataManagerForWorld(world);
-    renderDataManager.tickGameThread();
+    WorldRenderDataManager* renderDataManager = mWorldRenderer->tryGetRenderDataManagerForWorld(world);
+    if (renderDataManager) {
+        renderDataManager->tickGameThread();
+    }
 }
 
 void RenderContext::selectNextDebugShader() {

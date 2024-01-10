@@ -59,6 +59,7 @@ public:
 
     // Assets
     WorldRenderDataManager& getRenderDataManagerForWorld(const World& world);
+    WorldRenderDataManager* tryGetRenderDataManagerForWorld(const World& world);
     void removeRenderDataManagerForWorld(const World& world);
 
     void selectNextDebugShader();

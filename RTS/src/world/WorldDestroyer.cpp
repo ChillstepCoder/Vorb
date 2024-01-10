@@ -18,12 +18,13 @@ void WorldDestroyer::shutdownWorld(World& world) {
     LOG_DEBUG("Shutting down world {}", (void*)&world);
 
     finishedGameThreadShutdown = false;
-
-    world.dispatchOnWorldEndRenderThread(world);
+    GameThread::getInstance().setActiveEditorWorld(nullptr);
 
     do {
         RenderContext::getInstance().updateRenderThreadProcs();
     } while (RenderThreadTasks::getInstance().getQueuedProcsApprox());
+
+    world.dispatchOnWorldEndRenderThread(world);
 
     GameRenderStateManager::getInstance().setActiveWorld(nullptr);
 
@@ -67,10 +68,14 @@ World* WorldDestroyer::gameThreadUpdate() {
     }
     if (worldToKill) {
         // Flush the game thread queue
-        GameThread::getInstance().updateAllProcs();
+        do {
+            GameThread::getInstance().updateAllProcs();
+            Sleep(64); // Let the render thread produce a few more tasks
+        } while (GameThreadTasks::getInstance().getQueuedProcsApprox());
 
-        GameThread::getInstance().setActiveEditorWorld(nullptr);
         worldToKill->shutdown();
+
+        Sleep(64);
 
         // Flush the game thread queue again for good measure
         GameThread::getInstance().updateAllProcs();

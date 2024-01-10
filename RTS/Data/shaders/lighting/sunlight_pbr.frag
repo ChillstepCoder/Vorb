@@ -49,10 +49,9 @@ void main() {
     vec3 sunColor = getCurrentSunColor(preset, SunColor, SunHeight);
     float ambient = getAmbientFactor(preset, unAmbient, SunHeight);
     oColor.rgb = PBR(worldPos, albedoAo.rgb, normal, metallicRoughness.r, metallicRoughness.g, ao, shadow, ambient, unExposure[preset], sunColor, SunPosition, vec3(0.0));
-    
+    vec3 prevColor = oColor.rgb;
     // Haze (TODO: Final tonemap?)
     vec3 hazeColor = texture(GradientTexture, vec2(0.5, max(SunHeight, 0.0))).rgb;
     oColor.rgb = applyHaze(oColor.rgb, worldPos, preset, hazeColor);
     oColor.rgb = gammaEncode(oColor.rgb, unGamma[preset]);
-    //oColor.rgb = 0.0001 * oColor.rgb + sunColor;
 }
