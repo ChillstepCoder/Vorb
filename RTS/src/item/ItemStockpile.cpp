@@ -66,7 +66,7 @@ ItemStockpile::ItemStockpile(World& world, ItemStockpileID id, const i32AABB2& a
 
 ItemStockpile::~ItemStockpile() {
     // TODO: can we make this more elegant
-    if (IS_SHUTTING_DOWN) return;
+    if (mWorld.isShuttingDown()) return;
     assert(mRefCount == 0);
 
     dispatchDestroy(ItemStockpileEvent{ this, INVALID_ITEM_ID });

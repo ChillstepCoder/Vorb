@@ -47,5 +47,6 @@ protected:
 	VGBuffer mHeightSSBO = 0;
 	GLfloat* mMappedHeights = nullptr;
 	GLsync mFence = 0;
+	f32 mStartHeight = 0.f;
 };
 

@@ -69,7 +69,7 @@ private:
 
     World& mWorld;
     moodycamel::ConcurrentQueue<std::pair<ChunkID, bool /*startTracking*/>> mChunkTrackChanges;
-
+    bool mDidShutDown = false;
 
     ThreadSafeDirtySet<std::pair<ChunkID, i16v2>> mDirtyPositions;
 

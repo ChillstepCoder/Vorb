@@ -46,6 +46,7 @@ public:
 
     void shutdown();
     static void shutdownAllWorlds();
+    bool isShuttingDown() const { return mIsShuttingDown; }
 
     // World info
     virtual WorldNetMode getNetMode() const { return mNetMode; }
@@ -108,6 +109,7 @@ private:
     void updateDebugRenderState(WorldRenderState& renderState);
 
     bool mDidBegin = false;
+    bool mIsShuttingDown = false;
 
     // World info
     WorldNetMode mNetMode;

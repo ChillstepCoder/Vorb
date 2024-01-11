@@ -19,6 +19,8 @@ public:
     ChunkGrassQuadtree(const Chunk& mChunk);
     ~ChunkGrassQuadtree();
 
+    void shutdown();
+
     ui32 getRefCount() const { return mRefCount; }
     const f32v3 getWorldPos3D() const { return f32v3(mWorldPos.x, mWorldPos.y, 0.0f); }
 

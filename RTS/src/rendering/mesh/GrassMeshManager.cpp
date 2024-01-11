@@ -25,12 +25,18 @@ GrassMeshManager::~GrassMeshManager() {
 }
 
 void GrassMeshManager::shutdown() {
-    std::vector<TrackedChunk>().swap(mTrackedChunks);
+    for (TrackedChunk& trackedChunk : mTrackedChunks) {
+        if (trackedChunk.quadtree) {
+            trackedChunk.quadtree->shutdown();
+        }
+    }
+    mDidShutDown = true;
 }
 
 void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
+    assert(!mDidShutDown);
 
     {
         constexpr size_t BULK_SIZE = 64;

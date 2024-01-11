@@ -29,17 +29,18 @@ TerrainMeshManager::TerrainMeshManager(World& world) : mWorld(world) {
 }
 
 TerrainMeshManager::~TerrainMeshManager() {
-
+    // TODO: Crash here due to mHeightmapGridListeners during world destroy
 }
 
 void TerrainMeshManager::shutdown() {
-    std::vector<HeightmapTerrainQuadtree>().swap(mTerrainTrees);
     mHeightmapGridListeners.reset();
+    mDidShutdown = true;
 }
 
 void TerrainMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
 
+    assert(!mDidShutdown);
     // Dirty nodes
     constexpr size_t BULK_SIZE = 128;
     DirtyTreeNode dirtyNodes[BULK_SIZE];

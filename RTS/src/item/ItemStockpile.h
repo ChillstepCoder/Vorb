@@ -85,6 +85,7 @@ public:
         --mRefCount;
     }
     ui32 getRefCount() const { return mRefCount; }
+    World& getWorld() const { return mWorld; }
 
     // Events
     STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Create, ItemStockpileEventType::Create, const ItemStockpileEvent&);

@@ -16,6 +16,7 @@ public:
     HeightmapTerrainQuadtree(World& world, const f32v2& worldPosition);
     ~HeightmapTerrainQuadtree();
 
+
     VORB_NON_COPYABLE_BUT_MOVABLE(HeightmapTerrainQuadtree);
 
     void markDirty();

@@ -59,8 +59,7 @@ void main() {
         default:
             height = 1.0;
     }
-        
-    //height = 0.0001 * height + float(idx) * 0.1;
+    
     const float finalHeight = clamp(height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
 
     // Store height

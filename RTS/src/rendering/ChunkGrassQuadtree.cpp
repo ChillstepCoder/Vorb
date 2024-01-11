@@ -66,9 +66,14 @@ ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), Flat
 ChunkGrassQuadtree::~ChunkGrassQuadtree()
 {
     // Free all meshes on active nodes
-    for (auto&& i : mActiveNodes) {
-        freeMeshForPatch(i);
+    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+        freeMeshForPatch(mActiveNodes[i]);
     }
+}
+
+void ChunkGrassQuadtree::shutdown() {
+    // Prevent calling freeMeshForPatch on destructor as shutdown takes care of it
+    mNumActiveNodes = 0;
 }
 
 bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) {

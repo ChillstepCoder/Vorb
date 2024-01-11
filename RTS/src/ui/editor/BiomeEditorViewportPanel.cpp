@@ -264,16 +264,18 @@ void BiomeEditorViewportPanel::initializeWorld() {
 
     updateActiveEditorWorld(mEditorWorld.get());
 
-    mCameraPositioner->setPosition(mEditorWorld->getDefaultSpawn());
+    f32v3 startPos = mEditorWorld->getDefaultSpawn();
+    startPos.z = mStartHeight;
+    mCameraPositioner->setPosition(startPos);
     LOG_CRITICAL("Finish {}", timer2.stop());
 }
 
 void BiomeEditorViewportPanel::generateHeightmap(HostWorldData& worldData)
 {
     IHeightmapGrid* heightGrid = worldData.heightmapGrid.get();
+    const ui32 totalPatches = heightGrid->getTotalPatches();
     if (!mHeightSSBO) {
         // Terrain
-        const ui32 totalPatches = heightGrid->getTotalPatches();
         assert(!mHeightSSBO);
         glCreateBuffers(1, &mHeightSSBO);
         glNamedBufferStorage(mHeightSSBO, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH * totalPatches, nullptr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
@@ -317,20 +319,25 @@ void BiomeEditorViewportPanel::generateHeightmap(HostWorldData& worldData)
     }
 
     // Copy data
+    const int sourceYStride = HEIGHTMAP_VERT_WIDTH_PER_PATCH * widthPatches;
     for (int py = 0; py < widthPatches; ++py) {
-        const int sourceYOffset = py * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+        const int sourceYOffset = py * sourceYStride * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
         for (int px = 0; px < widthPatches; ++px) {
-            const int sourceXOffset = py * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+            const int sourceXOffset = px * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
             HeightmapPatch& patch = worldData.heightmapGrid->getPatchForGeneration(py * widthPatches + px);
             for (int y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
                 for (int x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
                     const int targetIndex = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x;
-                    const int sourceIndex = sourceYOffset + y * widthPatches * HEIGHTMAP_VERT_WIDTH_PER_PATCH + sourceXOffset + x;
+                    const int sourceIndex = sourceYOffset + y * sourceYStride + sourceXOffset + x;
                     patch.setHeightAtNoClamp(targetIndex, mMappedHeights[sourceIndex]);
                 }
             }
         }
     }
+
+    // Get middlemost vertex
+    mStartHeight = mMappedHeights[(sourceYStride / 2) + (sourceYStride / 2) * sourceYStride] + 3.0f;
+    LOG_DEBUG("Finished generateHeightmap");
 }
 
 void BiomeEditorViewportPanel::initializeController() {

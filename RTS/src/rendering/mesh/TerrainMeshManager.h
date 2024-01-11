@@ -43,6 +43,7 @@ private:
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     IHeightmapGridListeners mHeightmapGridListeners;
     World& mWorld;
+    bool mDidShutdown = false;
 
     ui32 mWidthTerrainTrees = 0;
     std::vector<HeightmapTerrainQuadtree> mTerrainTrees;

@@ -154,14 +154,20 @@ void WorldRenderer::onBeginFrame(const WorldRenderState* renderState, f32v3 play
 
     // This happens when a world is shutting down. The render state may have a world pointer
     // but it can be invalid due to being shut down
-   
-
     {
         std::lock_guard lock(mRenderDataManagersMutex);
         auto&& it = mRenderDataManagers.find(mActiveWorld);
-        assert(it != mRenderDataManagers.end());
-        mCurrentWorldRenderDataManager = it->second.get();
+        if (it == mRenderDataManagers.end()) {
+            if (mActiveWorld) {
+                setActiveWorld(nullptr);
+            }
+            return;
+        }
+        else {
+            mCurrentWorldRenderDataManager = it->second.get();
+        }
     }
+
 
     mRenderState = renderState;
     mPlayerPos = playerPos;
@@ -507,16 +513,18 @@ WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const Wor
     std::lock_guard lock(mRenderDataManagersMutex);
     auto&& it = mRenderDataManagers.find(&world);
     if (it == mRenderDataManagers.end()) {
-        nullptr;
+        return nullptr;
     }
     return it->second.get();
 }
 
 void WorldRenderer::removeRenderDataManagerForWorld(const World& world) {
-    std::lock_guard lock(mRenderDataManagersMutex);
-    auto&& it = mRenderDataManagers.find(&world);
-    if (it != mRenderDataManagers.end()) {
-        mRenderDataManagers.erase(it);
+    {
+        std::lock_guard lock(mRenderDataManagersMutex);
+        auto&& it = mRenderDataManagers.find(&world);
+        if (it != mRenderDataManagers.end()) {
+            mRenderDataManagers.erase(it);
+        }
     }
 }
 

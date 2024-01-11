@@ -16,7 +16,8 @@ void WorldDestroyer::shutdownWorld(World& world) {
     ASSERT_RENDER_THREAD(); // Render thread is responsible for driving world shutdown
 
     LOG_DEBUG("Shutting down world {}", (void*)&world);
-
+    // REPLACE IS_SHUTTING_DOWN
+    world.mIsShuttingDown = true;
     finishedGameThreadShutdown = false;
     GameThread::getInstance().setActiveEditorWorld(nullptr);
 
@@ -24,9 +25,9 @@ void WorldDestroyer::shutdownWorld(World& world) {
         RenderContext::getInstance().updateRenderThreadProcs();
     } while (RenderThreadTasks::getInstance().getQueuedProcsApprox());
 
-    world.dispatchOnWorldEndRenderThread(world);
-
     GameRenderStateManager::getInstance().setActiveWorld(nullptr);
+
+    world.dispatchOnWorldEndRenderThread(world);
 
     {
         std::lock_guard lock(mShutdownWorldMutex);
@@ -67,18 +68,26 @@ World* WorldDestroyer::gameThreadUpdate() {
         worldToKill = mCurrentlyShuttingDownWorld;
     }
     if (worldToKill) {
-        // Flush the game thread queue
-        do {
-            GameThread::getInstance().updateAllProcs();
-            Sleep(64); // Let the render thread produce a few more tasks
-        } while (GameThreadTasks::getInstance().getQueuedProcsApprox());
+        // Flush the game thread queue with many iterations of flush because threads can be still running
+        // I know this isn't clean... but it will do for now
+        for (int i = 0; i < 4; ++i) {
+            do {
+                GameThread::getInstance().updateAllProcs();
+                Services::Threadpool::ref().mainThreadUpdate();
+                Sleep(16); // Let the render thread produce a few more tasks
+            } while (GameThreadTasks::getInstance().getQueuedProcsApprox() ||
+                     Services::Threadpool::ref().getTasksSizeApprox() ||
+                     Services::Threadpool::ref().getNumRunningThreads());
+
+            // Let the render thread finish its stuff too
+            while (RenderThreadTasks::getInstance().getQueuedProcsApprox()) {
+                Sleep(4);
+            }
+        }
 
         worldToKill->shutdown();
 
-        Sleep(64);
-
-        // Flush the game thread queue again for good measure
-        GameThread::getInstance().updateAllProcs();
+        Sleep(32);
 
         {
             std::lock_guard lock(mShutdownWorldMutex);

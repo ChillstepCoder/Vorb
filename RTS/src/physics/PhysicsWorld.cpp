@@ -52,6 +52,7 @@ int collisionMasks[e_cast(CollisionGroup::COUNT)] = {
 static_assert(e_cast(CollisionGroup::COUNT) == 4);
 
 PhysicsWorld::PhysicsWorld(World& world, CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository), mWorld(world) {
+    PROFILE_FUNCTION();
 
     /// collision configuration contains default setup for memory , collision setup . Advanced users can create their own configuration .
     mCollisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
@@ -80,7 +81,7 @@ PhysicsWorld::PhysicsWorld(World& world, CollisionShapeRepository& shapeReposito
 }
 
 PhysicsWorld::~PhysicsWorld() {
-
+    PROFILE_FUNCTION();
     //cleanup in the reverse order of creation/initialization
 
     //remove the rigidbodies from the dynamics world and delete them
@@ -234,6 +235,7 @@ void PhysicsWorld::removeTrackedStaticCollisionObjectAtPosition(TileContainerID 
 
 void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
 {
+    PROFILE_FUNCTION();
     auto&& it = mTileContainerPhysicsData.find(container);
     if (it != mTileContainerPhysicsData.end()) {
         deleteStaticPhysicsMesh(std::move(it->second.mStaticMesh));
@@ -268,9 +270,10 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     TileContainerPhysicsData* physicsData;
     deletePhysicsForTileContainer(meshBuilder.getOwnerTileContainerID());
     {
-        std::lock_guard lock(mStepSimulationMutex);
+        //std::lock_guard lock(mStepSimulationMutex); // UNSURE WHY THIS WAS HERE...
         physicsData = &mTileContainerPhysicsData[tileContainerId];
     }
+
     StaticPhysicsMesh& staticMesh = physicsData->mStaticMesh;
     // Cache the vertex and index data because bullet uses our memory rather than a copy
     // TODO: Compress this? Because its a vector it may have extra capacity
@@ -442,6 +445,7 @@ btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID own
     assert(ownerTilePosition <= INVALID_PHYSICS_USER_INDEX && "Tile index overflow in createRigidBody");
     object->setUserIndex3(ownerTilePosition);
 
+    // TODO: This does a fucking linear search over every physics object in the world while in debug mode
     mDynamicsWorld->addCollisionObject(object, BIT_CAST(group), collisionMasks[e_cast(group)]);
     object->setActivationState(DISABLE_SIMULATION);
    

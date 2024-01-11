@@ -13,8 +13,15 @@ static std::shared_mutex sThreadNameMutex;
 
 extern void setThreadName(const char* name) {
     // Write access
-    std::lock_guard lock(sThreadNameMutex);
-    sThreadNames[std::this_thread::get_id()] = name;
+    {
+        std::lock_guard lock(sThreadNameMutex);
+        sThreadNames[std::this_thread::get_id()] = name;
+    }
+    const size_t cSize = strlen(name) + 1;
+    size_t outSize;
+    wchar_t wc[64];
+    mbstowcs_s(&outSize, wc, cSize, name, 64);
+    SetThreadDescription(GetCurrentThread(), wc);
 }
 
 extern nString getThreadName(const std::thread::id& id) {

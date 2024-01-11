@@ -16,6 +16,7 @@ ItemReservation::ItemReservation(ItemStockpile* stockpile, ItemID id, std::vecto
 }
 
 ItemReservation::~ItemReservation() {
+    // mStockpile->mWorld.isShuttingDown?
     if (IS_SHUTTING_DOWN) {
         return;
     }
