@@ -16,6 +16,7 @@
 
 #include "generation/NoiseFunction.hpp"
 #include "generation/WorldGenerationData.h"
+#include "generation/TileDistributionSampler.h"
 
 #include "util/TilingVoronoiMap.h"
 
@@ -54,6 +55,36 @@ Tile ChunkGenerator::generateTileAtPos(f32v2 worldPos, f32 height, f32v3 normal,
     }
 
     return Tile();
+}
+
+Tile ChunkGenerator::generateTileAtPosNew(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef) {
+
+    // TODO: Biome specific
+    generateTileGrass(worldPos, height, grass);
+
+    // TODO: Blend density somehow? Density gradient calculated from neighbors + bilinear interpolation?
+    const f32 DENSITY = 1.0f;
+
+    Tile tile;
+    int categoryIndex = 0; // For logging
+    for (const OptimizedBiomeTileGenCategoryData& category : biomeDef->tileGenerationData) {
+        if (!category.distributionPtr || !category.tiles.size()) [[unlikely]] {
+            LOG_ERROR("Biome category {} for biome {} is missing distribution or tiles.", categoryIndex, biomeDef->displayName);
+            ++categoryIndex;
+            continue;
+        }
+        if (TileDistributionSampler::sample(*category.distributionPtr, i32v2(worldPos), DENSITY, category.probabilityMult)) {
+            const f32 randomRoll = Random::getThreadSafef(worldPos.y, worldPos.x);
+            for (auto& possibleTile : category.tiles) {
+                if (randomRoll <= possibleTile.weightThreshold) {
+                    tile.mainLayer = possibleTile.tileId;
+                    return tile;
+                }
+            }
+        }
+        ++categoryIndex;
+    }
+    return tile;
 }
 
 Tile ChunkGenerator::generateTilePlains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef) {
@@ -197,6 +228,8 @@ Tile ChunkGenerator::generateTileHotsprings(f32v2 worldPos, f32 height, f32v3 no
     return tile;
 }
 
+#define NEW_METHOD 1
+
 void ChunkGenerator::generateChunk(Chunk& chunk) {
     PROFILE_FUNCTION();
 
@@ -233,7 +266,13 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
         const f32 height = centerHeights[i];
         TileGrass grass;
-        Tile tile = generateTileAtPos(tilePosWorld, height, centerNormals[i], &grass, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
+        Tile tile;
+        if constexpr (NEW_METHOD) {
+            tile = generateTileAtPosNew(tilePosWorld, height, centerNormals[i], &grass, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
+        }
+        else {
+            tile = generateTileAtPos(tilePosWorld, height, centerNormals[i], &grass, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
+        }
         tile.groundZOffset = height;
         const f32 baseZPos = height;
         if (baseZPos + 1.0f > maxHeight) {

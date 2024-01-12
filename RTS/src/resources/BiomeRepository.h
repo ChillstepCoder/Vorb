@@ -18,6 +18,8 @@ public:
     const BiomeDef& getBiomeFromUniqueID(BiomeUniqueID uniqueId) { return getLoadedOrUnloadedAsset(mUniqueIDMap[e_cast(uniqueId)]); }
     VGTexture getBiomeColorMapsArrayTexture() const { return mBiomeColorMapsArrayTexture; }
     VGBuffer getBiomeColorMapsShaderLookupBuffer() const { return mBiomeColorMapsShaderLookupBuffer; }
+
+    void fixupAsset(AssetID id) override;
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;

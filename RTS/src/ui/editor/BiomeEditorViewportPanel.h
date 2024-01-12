@@ -35,6 +35,7 @@ protected:
 	void generateHeightmap(HostWorldData& worldData);
 	void initializeController();
 	void updateActiveEditorWorld(World* world);
+	void resetCamera();
 
 	vg::GBuffer* mActiveGBuffer = nullptr;
     std::unique_ptr<World> mEditorWorld;
@@ -48,5 +49,7 @@ protected:
 	GLfloat* mMappedHeights = nullptr;
 	GLsync mFence = 0;
 	f32 mStartHeight = 0.f;
+	f32 mHeightOffset = 0.f;
+	bool mFirstEntry = true;
 };
 

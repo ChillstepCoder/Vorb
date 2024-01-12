@@ -3,6 +3,8 @@
 
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
+
+#include "definitions/TileDistributionDef.h"
 #include "util/GlobalEnumNameMap.h"
 
 #include <vorb/io/IOManager.h>
@@ -112,6 +114,8 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     // TODO: Load custom mapping file so we can persist biome IDs for mods?
 
     generateBiomesGLSLFile();
+
+    fixupAssets();
 }
 
 void BiomeRepository::linkCorruptedBiomes() {
@@ -222,4 +226,46 @@ void BiomeRepository::generateBiomesGLSLFile() {
     }
 
     outStream << fileData;
+}
+
+void BiomeRepository::fixupAsset(AssetID id) {
+    BiomeDef& def = *mAssets[id];
+    def.tileGenerationData.resize(def.tileGenCategories.size());
+    for (size_t categoryIndex = 0; categoryIndex < def.tileGenCategories.size(); ++categoryIndex) {
+        BiomeTileGenCategory& category = def.tileGenCategories[categoryIndex];
+        OptimizedBiomeTileGenCategoryData& genData = def.tileGenerationData[categoryIndex];
+        if (category.distribution.isValid()) {
+            genData.distributionPtr = &ResourceManager::getAssetHandle<TileDistributionDef>(category.distribution.getAssetID())->getLoadedAsset();
+        }
+        else {
+            genData.distributionPtr = nullptr;
+        }
+        genData.minHeight = category.minHeight;
+        genData.maxHeight = category.maxHeight;
+        genData.probabilityMult = category.probabilityMult;
+        genData.tiles.resize(category.tiles.size());
+        f32 totalWeight = 0.0f;
+        for (auto& tile : category.tiles) {
+            totalWeight += tile.weight;
+        }
+        f32 cumulative = 0.0f;
+        for (size_t i = 0; i < category.tiles.size(); ++i) {
+            const BiomePossibleTile& tile = category.tiles[i];
+            const f32 weight = tile.weight / totalWeight;
+            genData.tiles[i].weightThreshold = cumulative + weight;
+            if (tile.tile.isValid()) {
+                genData.tiles[i].tileId = tile.tile.getAssetID();
+                if (genData.tiles[i].tileId == INVALID_ASSET_ID) {
+                    genData.tiles[i].tileId = TILE_ID_NONE;
+                    LOG_ERROR("Tile {} in biome {} in category {} has invalid tile reference assigned", i, def.getName().toString(), category.name);
+                }
+            }
+            else {
+                genData.tiles[i].tileId = TILE_ID_NONE;
+                LOG_WARN("Tile {} in biome {} in category {} has no tile assigned", i, def.getName().toString(), category.name);
+            }
+            assert(cumulative + weight <= 1.001f); // Epsilon
+            cumulative += weight;
+        }
+    }
 }

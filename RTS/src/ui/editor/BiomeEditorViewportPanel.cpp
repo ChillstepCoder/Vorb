@@ -12,6 +12,7 @@
 #include "world/controller/EditorWorldInterfaceController.h"
 
 #include "resources/ResourceManager.h"
+#include "resources/BiomeRepository.h"
 
 #include "ui/imgui_controls/ObjectVector.h"
 #include "ui/imgui_controls/EnumCombo.h"
@@ -75,6 +76,15 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     if (mAssetData) {
         ImGui::Text("Biome: %s", mAssetData->displayName.c_str());
         updateAndRenderSaveButton();
+        if (ImGui::Button("Regenerate World")) {
+            initializeWorld();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset Camera")) {
+            resetCamera();
+        }
+        ImGui::SliderFloat("Height Offset", &mHeightOffset, -100.f, 100.f);
+        ImGui::Separator();
         changed |= updateAndRenderImguiControls(*mAssetData);
         // Tile gen categories
         changed |= ImguiUtil::ObjectVector<BiomeTileGenCategory>("Categories", mAssetData->tileGenCategories,
@@ -93,6 +103,10 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
         );
     }
 
+    if (changed) {
+        BiomeRepository::get().onAssetChangedByEditor(mAssetData->getID());
+    }
+
     ImGui::Separator();
     updateAndRenderSharedControls();
     ImGui::Separator();
@@ -101,7 +115,10 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 }
 
 void BiomeEditorViewportPanel::onEnter() {
-
+    if (mFirstEntry) {
+        resetCamera();
+        mFirstEntry = false;
+    }
     if (mAssetData) {
         if (!mEditorWorld) {
             initializeWorld();
@@ -110,9 +127,6 @@ void BiomeEditorViewportPanel::onEnter() {
             updateActiveEditorWorld(mEditorWorld.get());
         }
     }
-
-    
-
 }
 
 void BiomeEditorViewportPanel::onExit() {
@@ -264,9 +278,11 @@ void BiomeEditorViewportPanel::initializeWorld() {
 
     updateActiveEditorWorld(mEditorWorld.get());
 
-    f32v3 startPos = mEditorWorld->getDefaultSpawn();
-    startPos.z = mStartHeight;
-    mCameraPositioner->setPosition(startPos);
+    const f32v3 camPos = mCameraPositioner->getPosition();
+    if (camPos.z < mStartHeight) {
+        mCameraPositioner->setPosition(f32v3(camPos.x, camPos.y, mStartHeight));
+    }
+
     LOG_CRITICAL("Finish {}", timer2.stop());
 }
 
@@ -358,4 +374,10 @@ void BiomeEditorViewportPanel::updateActiveEditorWorld(World* world) {
     if (world) {
         initializeController();
     }
+}
+
+void BiomeEditorViewportPanel::resetCamera() {
+    f32v3 startPos = mEditorWorld->getDefaultSpawn();
+    startPos.z = mStartHeight;
+    mCameraPositioner->setPosition(startPos);
 }

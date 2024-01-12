@@ -1,4 +1,23 @@
 name: Mountains
+priority: 0
 col_map: mountains_cmap
-corruptable: true
-dbg_col: [128, 128, 128]
+parent: ''
+corruptable: 1
+dbg_col: [128,128,128]
+categories:
+  - name: SmallRocks
+    tiles:
+      - tile: rock_med_01
+        weight: 1
+      - tile: rock_med_02
+        weight: 1
+      - tile: rock_small_01
+        weight: 1
+      - tile: rock_small_02
+        weight: 1
+      - tile: rock_xsmall_01
+        weight: 1
+    dist: small_rock
+    min_h: 0.1
+    max_h: 10000
+    prob: 1

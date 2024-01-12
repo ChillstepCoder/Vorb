@@ -73,6 +73,19 @@ SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
     make_field(o.probabilityMult, "prob"sv)
 );
 
+struct TileWithWeightThreshold {
+    TileID tileId;
+    f32 weightThreshold;
+};
+
+struct OptimizedBiomeTileGenCategoryData {
+    std::vector<TileWithWeightThreshold> tiles;
+    const TileDistributionDef* distributionPtr = nullptr;
+    f32 minHeight;
+    f32 maxHeight;
+    f32 probabilityMult;
+};
+
 class BiomeDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(BiomeDef, AssetType::Biome);
@@ -93,6 +106,8 @@ public:
     color3 debugColor = color3(255, 255, 255);
     // Tile spawning
     std::vector<BiomeTileGenCategory> tileGenCategories;
+    // Efficient generation data, created by BiomeRepository::fixupAsset
+    std::vector<OptimizedBiomeTileGenCategoryData> tileGenerationData;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(BiomeDef,
     make_field(o.displayName, "name"sv),

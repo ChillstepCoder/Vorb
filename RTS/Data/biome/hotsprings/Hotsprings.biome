@@ -1,4 +1,15 @@
 name: Hot Springs
+priority: 0
 col_map: hotsprings_cmap
-corruptable: true
-dbg_col: [0, 128, 128]
+parent: ''
+corruptable: 1
+dbg_col: [0,128,128]
+categories:
+  - name: Hero
+    tiles:
+      - tile: hotspringhero
+        weight: 1
+    dist: hotspring_hero
+    min_h: 0.1
+    max_h: 10000
+    prob: 1

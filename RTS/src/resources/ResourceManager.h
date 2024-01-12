@@ -87,6 +87,10 @@ public:
         IAssetRepositoryBase& repo = get().getAssetRepository(prevDesc.assetType);
         repo.renameAsset(prevDesc, newPath);
     }
+    static AssetID getAssetID(StrToken assetName, AssetType assetType) {
+        IAssetRepositoryBase& repo = get().getAssetRepository(assetType);
+        return repo.getAssetID(assetName);
+    }
 private:
     void gatherRecursive(const vio::Path& folderPath);
     void preloadFiles();

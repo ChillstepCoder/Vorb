@@ -1,5 +1,5 @@
-spacing: 1
-min_dist: 1
+spacing: 12
+min_dist: 4
 prob: 1
 offset: [0,0]
 dist:

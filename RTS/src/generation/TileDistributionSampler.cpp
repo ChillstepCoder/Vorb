@@ -39,6 +39,7 @@ void TileDistributionSampler::buildPrecalcData(TileDistributionDef& dist) {
 }
 
 bool TileDistributionSampler::sample(const TileDistributionDef& dist, i32v2 worldPos, f32 density, f32 probabilityMult) {
+    worldPos += dist.offset;
     const f32 threshold = getThresholdAtPosition(dist, worldPos, probabilityMult);
     if (threshold >= FLT_MAX) {
        return false;
