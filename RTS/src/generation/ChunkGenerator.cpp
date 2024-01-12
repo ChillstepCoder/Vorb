@@ -78,6 +78,9 @@ Tile ChunkGenerator::generateTileAtPosNew(f32v2 worldPos, f32 height, f32v3 norm
             for (auto& possibleTile : category.tiles) {
                 if (randomRoll <= possibleTile.weightThreshold) {
                     tile.mainLayer = possibleTile.tileId;
+
+                    // Select variant
+
                     return tile;
                 }
             }

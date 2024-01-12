@@ -6,9 +6,11 @@
 namespace ImguiUtil {
     template <typename T>
     bool ObjectVector(const char* label, std::vector<T>& objects, std::function<bool(T& o, ui32 i)> controlFunc, bool resizable = true, T defaultValue = T()) {
+        if (!ImGui::TreeNode(label)) {
+            return false;
+        }
+
         bool changed = false;
-        ImGui::Separator();
-        ImGui::Text(label);
 
         if (resizable) {
             if (ImGui::Button("Add")) {
@@ -18,11 +20,11 @@ namespace ImguiUtil {
         }
         ImGui::Indent();
         for (ui32 i = 0; i < objects.size(); ++i) {
-            ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
             ImGui::PushID(i);
+            ImGui::SeparatorText(std::to_string(i).c_str());
             bool isDeleted = false;
             if (resizable) {
-                if (ImGui::Button("X")) {
+                if (ImGui::Button("Delete")) {
                     isDeleted = true;
                 }
                 if (i > 0) {
@@ -40,18 +42,16 @@ namespace ImguiUtil {
                     }
                 }
             }
-            ImGui::Text(std::to_string(i).c_str());
             changed |= controlFunc(objects[i], i);
             ImGui::PopID();
             if (isDeleted) {
                 objects.erase(objects.begin() + i);
                 changed = true;
             }
-            // Draw a border around the group
-            ImGui::GetWindowDrawList()->AddRect(frameMin, ImGui::GetItemRectMax(), IM_COL32(255, 255, 255, 128));
         }
         ImGui::Unindent();
         ImGui::Separator();
+        ImGui::TreePop();
         return changed;
     }
 

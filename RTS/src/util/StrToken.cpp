@@ -68,7 +68,7 @@ inline constexpr const char sStrtokenDecodeTable[64] = {
     '{',  // 60
     '}',  // 61
     '|',  // 62
-    '\"',  // 63
+    '_',  // 63
 };
 
 StrToken::StrToken(const nString& str) : mTokenHigh(0ull), mTokenLow(0ull) {

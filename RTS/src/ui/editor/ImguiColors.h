@@ -24,5 +24,6 @@ namespace ImguiColors {
         constexpr auto selection = IM_COL32(237, 192, 119, 255);
         constexpr auto selectionMuted = IM_COL32(237, 201, 142, 23);
         constexpr auto backgroundPopup = IM_COL32(50, 50, 50, 255);
+        constexpr auto error = IM_COL32(200, 15, 25, 255);
     }
 }

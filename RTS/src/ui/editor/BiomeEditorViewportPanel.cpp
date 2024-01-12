@@ -84,23 +84,45 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
             resetCamera();
         }
         ImGui::SliderFloat("Height Offset", &mHeightOffset, -100.f, 100.f);
-        ImGui::Separator();
-        changed |= updateAndRenderImguiControls(*mAssetData);
-        // Tile gen categories
-        changed |= ImguiUtil::ObjectVector<BiomeTileGenCategory>("Categories", mAssetData->tileGenCategories,
-            [](BiomeTileGenCategory& o, ui32) {
+        if (ImGui::CollapsingHeader("Properties")) {
+            changed |= updateAndRenderImguiControls(*mAssetData);
+            // Tile gen categories
+            changed |= ImguiUtil::ObjectVector<BiomeTileGenCategory>("Categories", mAssetData->tileGenCategories,
+                [](BiomeTileGenCategory& o, ui32) {
                 bool changed = false;
                 changed |= updateAndRenderImguiControls(o);
                 changed |= ImguiUtil::ObjectVector<BiomePossibleTile>("Tiles", o.tiles,
                     [](BiomePossibleTile& o, ui32) {
-                        bool changed = false;
+                    bool changed = false;
+                    if (ImGui::TreeNode("Distribution")) {
                         changed |= updateAndRenderImguiControls(o);
+                        ImGui::TreePop();
+                    }
+                    if (!o.tile.isValid()) {
                         return changed;
                     }
-                );
+                    AssetHandlePtr<TileDef> tileDefHandle = static_unique_pointer_cast<AssetHandle<TileDef>>(o.tile.getAssetHandle());
+                    if (!tileDefHandle) {
+                        ImGui::Text("!!!INVALID REFERENCE!!!");
+                        return changed;
+                    }
+                    else {
+                        const TileDef& tileDef = tileDefHandle->getLoadedAsset();
+                        ImGui::Text("%s Variant Count: %d", tileDef.displayName.c_str(), tileDef.modelVariants.size());
+                        changed |= ImguiUtil::ObjectVector<BiomePossibleVariant>("Variants", o.variants,
+                            [](BiomePossibleVariant& o, ui32) {
+                            return updateAndRenderImguiControls(o);
+                        });
+                        // Fix up any invalid variants
+                        for (auto& variant : o.variants) {
+                            variant.tileVariantIndex = glm::clamp(variant.tileVariantIndex, (ui32)0, (ui32)tileDef.modelVariants.size());
+                        }
+                        return changed;
+                    }
+                });
                 return changed;
-            }
-        );
+            });
+        }
     }
 
     if (changed) {
@@ -345,14 +367,14 @@ void BiomeEditorViewportPanel::generateHeightmap(HostWorldData& worldData)
                 for (int x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
                     const int targetIndex = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x;
                     const int sourceIndex = sourceYOffset + y * sourceYStride + sourceXOffset + x;
-                    patch.setHeightAtNoClamp(targetIndex, mMappedHeights[sourceIndex]);
+                    patch.setHeightAtNoClamp(targetIndex, mMappedHeights[sourceIndex] + mHeightOffset);
                 }
             }
         }
     }
 
     // Get middlemost vertex
-    mStartHeight = mMappedHeights[(sourceYStride / 2) + (sourceYStride / 2) * sourceYStride] + 3.0f;
+    mStartHeight = mMappedHeights[(sourceYStride / 2) + (sourceYStride / 2) * sourceYStride] + 3.0f + mHeightOffset;
     LOG_DEBUG("Finished generateHeightmap");
 }
 

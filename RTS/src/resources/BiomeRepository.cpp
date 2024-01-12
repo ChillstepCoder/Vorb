@@ -4,6 +4,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 
+#include "definitions/TileDef.h"
 #include "definitions/TileDistributionDef.h"
 #include "util/GlobalEnumNameMap.h"
 
@@ -230,6 +231,8 @@ void BiomeRepository::generateBiomesGLSLFile() {
 
 void BiomeRepository::fixupAsset(AssetID id) {
     BiomeDef& def = *mAssets[id];
+
+    // Construct cache + lookup friendly data for fast generation passes
     def.tileGenerationData.resize(def.tileGenCategories.size());
     for (size_t categoryIndex = 0; categoryIndex < def.tileGenCategories.size(); ++categoryIndex) {
         BiomeTileGenCategory& category = def.tileGenCategories[categoryIndex];
@@ -244,28 +247,69 @@ void BiomeRepository::fixupAsset(AssetID id) {
         genData.maxHeight = category.maxHeight;
         genData.probabilityMult = category.probabilityMult;
         genData.tiles.resize(category.tiles.size());
+        genData.allVariants.resize(0);
         f32 totalWeight = 0.0f;
         for (auto& tile : category.tiles) {
             totalWeight += tile.weight;
         }
+        if (totalWeight == 0.0f) totalWeight = 0.01f; // Prevent / 0
         f32 cumulative = 0.0f;
         for (size_t i = 0; i < category.tiles.size(); ++i) {
-            const BiomePossibleTile& tile = category.tiles[i];
+            BiomePossibleTile& tile = category.tiles[i];
             const f32 weight = tile.weight / totalWeight;
-            genData.tiles[i].weightThreshold = cumulative + weight;
+            PossibleTileGeneration& tileGen = genData.tiles[i];
+            tileGen.weightThreshold = cumulative + weight;
             if (tile.tile.isValid()) {
-                genData.tiles[i].tileId = tile.tile.getAssetID();
-                if (genData.tiles[i].tileId == INVALID_ASSET_ID) {
-                    genData.tiles[i].tileId = TILE_ID_NONE;
+                tileGen.tileId = tile.tile.getAssetID();
+                if (tileGen.tileId == INVALID_ASSET_ID) {
+                    tileGen.tileId = TILE_ID_NONE;
                     LOG_ERROR("Tile {} in biome {} in category {} has invalid tile reference assigned", i, def.getName().toString(), category.name);
                 }
             }
             else {
-                genData.tiles[i].tileId = TILE_ID_NONE;
+                tileGen.tileId = TILE_ID_NONE;
                 LOG_WARN("Tile {} in biome {} in category {} has no tile assigned", i, def.getName().toString(), category.name);
             }
+
             assert(cumulative + weight <= 1.001f); // Epsilon
             cumulative += weight;
+
+            // Variants
+            if (tileGen.tileId != TILE_ID_NONE) {
+                const TileDef& tileDef = ResourceManager::getAssetHandle<TileDef>(tileGen.tileId)->getLoadedAsset();
+                tileGen.variantCount = tileDef.modelVariants.empty() ? 0 : tile.variants.size();
+                tileGen.variantSelectionType = tile.variantSelectionType;
+                if (tileGen.variantCount) {
+                    tileGen.variantStartIndex = genData.allVariants.size();
+                    genData.allVariants.resize(genData.allVariants.size() + tileGen.variantCount);
+                    f32 totalVarWeight = 0.0f;
+                    f32 cumulativeVar = 0.0f;
+                    for (size_t j = tileGen.variantStartIndex; j < genData.allVariants.size(); ++j) {
+                        BiomePossibleVariant& tileVariant = tile.variants[j - tileGen.variantStartIndex];
+                        totalVarWeight += tileVariant.weight;
+                        VariantWithWeightThreshold& variant = genData.allVariants[j];
+                        if (tileVariant.tileVariantIndex >= tileDef.modelVariants.size()) {
+                            LOG_ERROR("Tile variant index {} in biome {} in category {} for tile {} is out of bounds ({})", tileVariant.tileVariantIndex, def.getName().toString(), category.name, tileDef.getName().toString(), tileDef.modelVariants.size());
+                            tileVariant.tileVariantIndex = tileDef.modelVariants.size() - 1;
+                        }
+                        variant.modelVariant = tileDef.modelVariants[tileVariant.tileVariantIndex];
+                    }
+                    if (totalVarWeight == 0.0f) totalVarWeight = 0.01f; // Prevent / 0
+                    for (size_t j = tileGen.variantStartIndex; j < genData.allVariants.size(); ++j) {
+                        VariantWithWeightThreshold& variant = genData.allVariants[j];
+                        const f32 varWeight = tile.weight / totalVarWeight;
+                        variant.weightThreshold = cumulativeVar + varWeight;
+                        assert(cumulativeVar + varWeight <= 1.001f); // Epsilon
+                        cumulativeVar += varWeight;
+                    }
+                }
+            }
+            else {
+                tileGen.variantCount = 0;
+                tileGen.variantStartIndex = 0;
+                tileGen.variantSelectionType = TileVariantSelectionType::Random;
+            }
         }
+        genData.allVariants.shrink_to_fit();
     }
 }

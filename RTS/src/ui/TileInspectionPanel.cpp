@@ -49,7 +49,7 @@ inline void showTileLayerMainThread(const char* format, int layer, const TileHan
         ImGui::Text(format, id, "NONE");
     }
     else {
-        ImGui::Text(format, id, TileRepository::get().getLoadedOrUnloadedAsset(id).name.c_str());
+        ImGui::Text(format, id, TileRepository::get().getLoadedOrUnloadedAsset(id).displayName.c_str());
     }
 }
 

@@ -129,7 +129,7 @@ public:
         };
         f32 heightOffsets[4];
     };
-    std::string name;
+    std::string displayName;
     std::vector<ItemDrop> itemDrops;
     std::vector<ItemInputDef> recipeData;
 };
@@ -149,7 +149,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.pathWeight, "path_weight"),
     make_field(o.navMask, "nav_mask"),
     make_field(o.blocksVisibility, "block_vis"),
-    make_field(o.name, "name"),
+    make_field(o.displayName, "name"),
     make_field(o.itemDrops, "item_drops"),
     make_field(o.recipeData, "recipe")
 );

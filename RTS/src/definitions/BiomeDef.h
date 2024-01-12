@@ -44,13 +44,36 @@ static_assert(e_count(BiomeUniqueID) == 13);
 
 constexpr ui8 INVALID_BIOME_ID = e_cast(BiomeUniqueID::INVALID);
 
+enum class TileVariantSelectionType : ui8 {
+    Random,
+    Voronoi
+};
+SERIALIZABLE_ENUM_SAME_NAME(TileVariantSelectionType,
+    ENUM_FIELD_SIMPLE(TileVariantSelectionType, Random),
+    ENUM_FIELD_SIMPLE(TileVariantSelectionType, Voronoi)
+);
+
+struct BiomePossibleVariant {
+    ui32 tileVariantIndex = 0;
+    f32 weight = 1.0f;
+};
+SERIALIZABLE_IMGUI_CONTROLLED(BiomePossibleVariant,
+    make_field(o.tileVariantIndex, "var"sv),
+    make_field(o.weight, "weight"sv)
+);
+
 struct BiomePossibleTile {
     SoftAssetReference tile = AssetType::Tile;
     f32 weight = 1.0f;
+    TileVariantSelectionType variantSelectionType = TileVariantSelectionType::Random;
+    std::vector<BiomePossibleVariant> variants;
+    
 };
 SERIALIZABLE_IMGUI_CONTROLLED(BiomePossibleTile,
     make_field(o.tile, "tile"sv),
-    make_field(o.weight, "weight"sv)
+    make_field(o.weight, "weight"sv),
+    make_field(o.variantSelectionType, "var_sel"sv),
+    make_field(o.variants, "var_ind"sv)
 );
 
 // TODO: Have a generic DataAssetRepository for things like Distributions and such.
@@ -73,13 +96,25 @@ SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
     make_field(o.probabilityMult, "prob"sv)
 );
 
-struct TileWithWeightThreshold {
+struct PossibleTileGeneration {
     TileID tileId;
+    TileVariantSelectionType variantSelectionType;
+    ui8 variantCount;
+    f32 weightThreshold;
+    ui32 variantStartIndex;
+};
+static_assert(sizeof(PossibleTileGeneration) == 12, "Keep small");
+
+struct VariantWithWeightThreshold {
+    ui8 modelVariant;
     f32 weightThreshold;
 };
+static_assert(sizeof(VariantWithWeightThreshold) == 8, "Keep small");
 
+// Cache + lookup friendly structure created by BiomeRepository::fixupAsset
 struct OptimizedBiomeTileGenCategoryData {
-    std::vector<TileWithWeightThreshold> tiles;
+    std::vector<PossibleTileGeneration> tiles;
+    std::vector<VariantWithWeightThreshold> allVariants; // Cache friendly list
     const TileDistributionDef* distributionPtr = nullptr;
     f32 minHeight;
     f32 maxHeight;

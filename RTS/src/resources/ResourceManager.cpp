@@ -128,6 +128,10 @@ void ResourceManager::setResourceRoot(const vio::Path& resourceRoot, const vio::
 
 void ResourceManager::gatherFiles() {
 
+    StrToken testToken1("hotspring_hero");
+    LOG_CRITICAL("{}", testToken1.toString());
+
+
     PreciseTimer timer;
     
     mRoomFiles.clear();

@@ -97,6 +97,7 @@ public:
 private:
     void updateCamera(f32 frameAlpha);
     void initEvents();
+    void initImguiStyle();
 
     // Render passes
     void renderPassUI(const Camera3D& camera, const WorldRenderState& renderState);

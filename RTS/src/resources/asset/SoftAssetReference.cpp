@@ -19,6 +19,7 @@ static std::map<SoftAssetReference*, std::unique_ptr<ImguiUtil::AssetSelectorPop
 template <typename T>
 void assetButton(SoftAssetReference& assetRef) {
     IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
+    ImguiUtil::ScopedColor color(ImGuiCol_Button, assetRef.isValid() ? ImguiColors::Theme::highlight : ImguiColors::Theme::error);
     if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0,0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
         // If it was a middle click, navigate to the asset if it is valid
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle)) {
@@ -29,6 +30,12 @@ void assetButton(SoftAssetReference& assetRef) {
         else {
             sAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
             sAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<T>(), THUMBNAIL_SIZE);
+        }
+    }
+    ImGui::SameLine();
+    if (assetRef.isValid()) {
+        if (ImGui::Button("x")) {
+            assetRef.name = StrToken();
         }
     }
     ImGui::SameLine();
@@ -44,9 +51,9 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
     ImGui::PushID(&assetRef);
     bool changed = false;
 
-    ImGui::Separator();
     if (label) {
         ImGui::Text(label);
+        ImGui::SameLine();
     }
 
     switch (assetRef.assetType) {
@@ -126,7 +133,6 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
     }
 
     ImGui::PopID();
-    ImGui::Separator();
 
     return changed;
 }
