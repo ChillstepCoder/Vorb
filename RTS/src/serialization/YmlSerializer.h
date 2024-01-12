@@ -125,7 +125,7 @@ namespace YmlSerializer {
         if constexpr (std::is_floating_point_v<First>) {
             float v = value;
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
-            changed |= ImGui::InputFloat(nullptr, &v);
+            changed |= ImGui::InputFloat("", &v);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.7f);
             ImGui::SameLine();
             ImGui::PushID("11"); changed |= ImGui::SliderFloat(label.data(), &v, 0.0f, 1000.0f, "%.4f", ImGuiSliderFlags_Logarithmic); ImGui::PopID();
@@ -139,7 +139,7 @@ namespace YmlSerializer {
             // Handle integral types (e.g., int, unsigned int)
             int v = value;
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
-            changed |= ImGui::InputInt(nullptr, &v);
+            changed |= ImGui::InputInt("", &v);
             ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.7f);
             ImGui::SameLine();
             ImGui::PushID("22"); changed |= ImGui::SliderInt(label.data(), &v, 0, 16); ImGui::PopID();
