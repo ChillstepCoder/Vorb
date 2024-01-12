@@ -36,9 +36,9 @@ void TileDistributionPreviewTexture::generate(const TileDistributionDef& def, i3
         worldPos.y = tilePosCorner.y + y;
         for (ui32 x = 0; x < mTextureSize; x++) {
             worldPos.x = tilePosCorner.x + x;
-            const f32 val = glm::min(TileDistributionSampler::getThresholdAtPosition(def, worldPos), 1.0f);
+            const f32 val = glm::min(TileDistributionSampler::getThresholdAtPosition(def, worldPos, 1.0f), 1.0f);
             const ui8 byteVal = val * 255;
-            sSpawnData[y * mTextureSize + x] = TileDistributionSampler::sample(def, worldPos, densityMult) ? 255u : 0u;
+            sSpawnData[y * mTextureSize + x] = TileDistributionSampler::sample(def, worldPos, densityMult, 1.0f) ? 255u : 0u;
             sColorData[y * mTextureSize + x] = byteVal;
         }
     }

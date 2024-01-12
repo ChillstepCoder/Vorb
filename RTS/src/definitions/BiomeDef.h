@@ -62,9 +62,7 @@ struct BiomeTileGenCategory {
     SoftAssetReference distribution = AssetType::TileDistribution;
     f32 minHeight = 0.1f;
     f32 maxHeight = 10000.0f;
-    f32 spacing = 2.0f; // 0 means eval every tile
-    // Probability of spawning a tile in this category if passing density + spacing check
-    f32 probability = 1.0f;
+    f32 probabilityMult = 1.0f;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
     make_field(o.name, "name"sv),
@@ -72,8 +70,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
     make_field(o.distribution, "dist"sv),
     make_field(o.minHeight, "min_h"sv),
     make_field(o.maxHeight, "max_h"sv),
-    make_field(o.spacing, "spacing"sv),
-    make_field(o.probability, "prob"sv)
+    make_field(o.probabilityMult, "prob"sv)
 );
 
 class BiomeDef : public IAsset {

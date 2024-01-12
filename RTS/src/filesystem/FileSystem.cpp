@@ -46,8 +46,14 @@ bool FileSystem::move(const std::filesystem::path& oldFilepath, const std::files
 {
     if (FileSystem::exists(newFilepath))
         return false;
-
-    std::filesystem::rename(oldFilepath, newFilepath);
+    
+    try {
+        std::filesystem::rename(oldFilepath, newFilepath);
+    }
+    catch (const std::filesystem::filesystem_error& e) {
+        LOG_CRITICAL("File system move error: {}", e.what());
+        return false;
+    }
     return true;
 }
 

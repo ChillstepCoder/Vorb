@@ -229,12 +229,19 @@ namespace YmlSerializer {
         if (o) { \
             *n << *o; \
         } \
+        else { \
+            *n << ""; \
+        } \
     }
 
 #define YML_READ_DEF_PTR(type) \
     YML_READ_DEF(std::unique_ptr<type>) { \
-        (*target) = std::make_unique<type>(); \
-        n >> *(*target); \
+        if (n.is_map()) { \
+            (*target) = std::make_unique<type>(); \
+            n >> *(*target); \
+        } else { \
+            (*target) = nullptr; \
+        } \
         return true; \
     } 
 

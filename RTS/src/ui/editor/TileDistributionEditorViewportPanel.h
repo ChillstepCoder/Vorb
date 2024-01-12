@@ -23,7 +23,7 @@ private:
     bool mTryPrecalc = true;
     bool mDirtyView = true;
     bool mSkipPrecalc = false;
-    float mDensityMult = 0.5f;
+    float mDensityMult = 1.0f;
     i32v2 mTileOffset = {};
     f64 mLastGenerationTimeMs = 0.0;
     i32 mLastTextureSize = 128;

@@ -1,4 +1,31 @@
 name: Plains
+priority: 0
 col_map: plains_cmap
-corruptable: true
-dbg_col: [128, 128, 0]
+parent: ''
+corruptable: 1
+dbg_col: [128,128,0]
+categories:
+  - name: Bushes
+    tiles:
+      - tile: bush_g
+        weight: 1
+      - tile: bush_med
+        weight: 1
+      - tile: bush_small
+        weight: 1
+    dist: plains_bush
+    min_h: 0.1
+    max_h: 10000
+    prob: 1
+  - name: Trees
+    tiles:
+      - tile: tree_pine
+        weight: 1
+      - tile: tree_birch
+        weight: 1
+      - tile: tree_a
+        weight: 1
+    dist: plains_tree
+    min_h: 0.1
+    max_h: 10000
+    prob: 1

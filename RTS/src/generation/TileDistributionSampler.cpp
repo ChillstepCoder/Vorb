@@ -38,8 +38,8 @@ void TileDistributionSampler::buildPrecalcData(TileDistributionDef& dist) {
     LOG_DEBUG("TileDistributionSampler::buildPrecalcData finished  in {} ms", timer.stop());
 }
 
-bool TileDistributionSampler::sample(const TileDistributionDef& dist, i32v2 worldPos, f32 density) {
-    const f32 threshold = getThresholdAtPosition(dist, worldPos);
+bool TileDistributionSampler::sample(const TileDistributionDef& dist, i32v2 worldPos, f32 density, f32 probabilityMult) {
+    const f32 threshold = getThresholdAtPosition(dist, worldPos, probabilityMult);
     if (threshold >= FLT_MAX) {
        return false;
     };
@@ -61,7 +61,7 @@ bool TileDistributionSampler::samplePrecalc(const TileDistributionDef& dist, i32
 }
 
 
-f32 TileDistributionSampler::getThresholdAtPosition(const TileDistributionDef& dist, i32v2 worldPos) {
+f32 TileDistributionSampler::getThresholdAtPosition(const TileDistributionDef& dist, i32v2 worldPos, f32 probabilityMult) {
     assert(dist.spacing >= 0);
 
     // Offset for less patterned results
@@ -88,7 +88,7 @@ f32 TileDistributionSampler::getThresholdAtPosition(const TileDistributionDef& d
         return FLT_MAX;
     }
 
-    if (Random::getThreadSafef(cellPos.y * 2, cellPos.x - 34253) > dist.probability) {
+    if (Random::getThreadSafef(cellPos.y * 2, cellPos.x - 34253) > dist.probability * probabilityMult) {
         return FLT_MAX;
     }
 
