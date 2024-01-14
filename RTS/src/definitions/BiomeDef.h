@@ -46,7 +46,8 @@ constexpr ui8 INVALID_BIOME_ID = e_cast(BiomeUniqueID::INVALID);
 
 enum class TileVariantSelectionType : ui8 {
     Random,
-    Voronoi
+    Voronoi,
+    COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(TileVariantSelectionType,
     ENUM_FIELD_SIMPLE(TileVariantSelectionType, Random),
@@ -106,7 +107,7 @@ struct PossibleTileGeneration {
 static_assert(sizeof(PossibleTileGeneration) == 12, "Keep small");
 
 struct VariantWithWeightThreshold {
-    ui8 modelVariant;
+    ui8 tileVariant;
     f32 weightThreshold;
 };
 static_assert(sizeof(VariantWithWeightThreshold) == 8, "Keep small");

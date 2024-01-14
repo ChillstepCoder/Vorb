@@ -6,6 +6,7 @@
 #include "rendering/MaterialShaderDef.h"
 
 #include "resources/ModelRepository.h"
+#include "resources/TileRepository.h"
 
 #include "ui/imgui_controls/ObjectVector.h"
 
@@ -44,15 +45,7 @@ void TileEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     }
 
     if (changed) {
-        if (mAssetData->modelRef.isValid()) {
-            // Always at least one
-            if (mAssetData->modelVariants.size() == 0) {
-                mAssetData->modelVariants.push_back(0);
-            }
-        }
-        else {
-            mAssetData->modelVariants.clear();
-        }
+        TileRepository::get().onAssetChangedByEditor(mAssetData->getID());
     }
 
     ImGui::EndChild();

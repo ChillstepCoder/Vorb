@@ -106,8 +106,13 @@ void WorldEditorPanel::update(World* world, const Camera3D& camera, const f32v3&
 
     {
         PROFILE_SCOPE("Tile picking");
-        mHitResult = mDeferredPhysicsPick.getLastPickResult();
-        world->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+        if (mDeferredPhysicsPick && mDeferredPhysicsPick->isDone()) {
+            mHitResult = mDeferredPhysicsPick->getLastPickResult();
+            world->getPhysicsWorld().pickDeferred(mDeferredPhysicsPick.get(), camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+        } else if (!mDeferredPhysicsPick) {
+            mDeferredPhysicsPick = std::make_unique<DeferredPhysicsPick>();
+            world->getPhysicsWorld().pickDeferred(mDeferredPhysicsPick.get(), camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+        }
     }
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {

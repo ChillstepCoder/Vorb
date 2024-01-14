@@ -93,8 +93,14 @@ void TileRepository::fixupAsset(AssetID id) {
                 *it = 0;
             }
         }
+
+        // Always at least one
+        if (def.modelVariants.size() == 0) {
+            def.modelVariants.push_back(0);
+        }
     }
     else {
+        def.modelVariants.clear();
         assert(def.materialNames.size());
         assert(def.materialNames.size() < MAX_TILE_MATERIAL_SLOTS);
         def.materialData.resize(def.materialNames.size());

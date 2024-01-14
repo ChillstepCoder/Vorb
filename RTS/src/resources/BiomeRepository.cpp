@@ -292,7 +292,7 @@ void BiomeRepository::fixupAsset(AssetID id) {
                             LOG_ERROR("Tile variant index {} in biome {} in category {} for tile {} is out of bounds ({})", tileVariant.tileVariantIndex, def.getName().toString(), category.name, tileDef.getName().toString(), tileDef.modelVariants.size());
                             tileVariant.tileVariantIndex = tileDef.modelVariants.size() - 1;
                         }
-                        variant.modelVariant = tileDef.modelVariants[tileVariant.tileVariantIndex];
+                        variant.tileVariant = tileVariant.tileVariantIndex;
                     }
                     if (totalVarWeight == 0.0f) totalVarWeight = 0.01f; // Prevent / 0
                     for (size_t j = tileGen.variantStartIndex; j < genData.allVariants.size(); ++j) {

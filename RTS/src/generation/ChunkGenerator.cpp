@@ -80,6 +80,29 @@ Tile ChunkGenerator::generateTileAtPosNew(f32v2 worldPos, f32 height, f32v3 norm
                     tile.mainLayer = possibleTile.tileId;
 
                     // Select variant
+                    if (possibleTile.variantCount) {
+                        f32 variantRoll = 0.0f;
+                        switch (possibleTile.variantSelectionType) {
+                            case TileVariantSelectionType::Random: {
+                                variantRoll = Random::getThreadSafef(worldPos.y, worldPos.x);
+                                break;
+                            }
+                            case TileVariantSelectionType::Voronoi: {
+                                const i32v2 point = mVoronoiMap->getVoronoiPointAtTile(i32v2(worldPos), 1.0f);
+                                variantRoll = Random::getThreadSafef(point.x, point.y);
+                                break;
+                            }
+                        }
+
+                        for (size_t i = possibleTile.variantStartIndex; i < possibleTile.variantStartIndex + possibleTile.variantCount; ++i) {
+                            const VariantWithWeightThreshold& variant = category.allVariants[i];
+                            if (variantRoll <= variant.weightThreshold) {
+                                tile.mainLayerVariant = variant.tileVariant;
+                                break;
+                            }
+                        }
+                    }
+                    static_assert(e_count(TileVariantSelectionType) == 2);
 
                     return tile;
                 }

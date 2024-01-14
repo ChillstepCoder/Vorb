@@ -112,7 +112,7 @@ private:
     mutable TileGrassID mSelectedGrass = 0;
 
     mutable StrToken mSelectedEntity;
-    DeferredPhysicsPick mDeferredPhysicsPick;
+    std::unique_ptr<DeferredPhysicsPick> mDeferredPhysicsPick;
     PhysHitResult mHitResult;
     TickingTimer mUpdateTimer = TickingTimer(WORLD_EDITOR_UPDATE_RATE_MS);
 

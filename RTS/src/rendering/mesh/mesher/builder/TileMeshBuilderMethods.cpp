@@ -264,7 +264,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
                         ui8 variantIndex = 0;
                         if (layerIndex == TILE_LAYER_MAIN) [[likely]] {
-                            variantIndex = tiles.mTiles[index].getMainLayerVariant();
+                            variantIndex = tileData.modelVariants[tiles.mTiles[index].getMainLayerVariant()];
                         }
                         else {
                             // Should be impossible?
