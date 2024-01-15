@@ -3,7 +3,6 @@
 #include "faction/IFactionManager.h"
 #include "faction/CliFactionManager.h"
 
-#include <shared_mutex>
 
 class HostFactionManager : public IFactionManager
 {

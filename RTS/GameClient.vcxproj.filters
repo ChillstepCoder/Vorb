@@ -981,10 +981,16 @@
     <ClCompile Include="src\world\simulation\host\SimECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\simulation\host\component\CityComponents.cpp">
+    <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\faction\FactionManager.cpp">
+    <ClCompile Include="src\faction\HostFactionManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\faction\IFactionManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\faction\CliFactionManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2402,13 +2408,19 @@
     <ClInclude Include="src\world\simulation\host\SimECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\host\component\CityComponents.h">
+    <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\faction\FactionManager.h">
+    <ClInclude Include="src\faction\HostFactionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\faction\Faction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\faction\IFactionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\faction\CliFactionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

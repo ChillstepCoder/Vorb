@@ -299,7 +299,9 @@
     <ClCompile Include="src\extern\bc7enc\bc7decomp.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7enc.cpp" />
     <ClCompile Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.cpp" />
-    <ClCompile Include="src\faction\FactionManager.cpp" />
+    <ClCompile Include="src\faction\CliFactionManager.cpp" />
+    <ClCompile Include="src\faction\HostFactionManager.cpp" />
+    <ClCompile Include="src\faction\IFactionManager.cpp" />
     <ClCompile Include="src\filesystem\FileSystem.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
@@ -533,7 +535,7 @@
     <ClCompile Include="src\world\IHeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
-    <ClCompile Include="src\world\simulation\host\component\CityComponents.cpp" />
+    <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
     <ClCompile Include="src\world\simulation\host\SimECS.cpp" />
     <ClCompile Include="src\world\simulation\host\SimThread.cpp" />
@@ -671,8 +673,10 @@
     <ClInclude Include="src\extern\bc7enc\rgbcx_table4.h" />
     <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.h" />
     <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialogConfig.h" />
+    <ClInclude Include="src\faction\CliFactionManager.h" />
     <ClInclude Include="src\faction\Faction.h" />
-    <ClInclude Include="src\faction\FactionManager.h" />
+    <ClInclude Include="src\faction\HostFactionManager.h" />
+    <ClInclude Include="src\faction\IFactionManager.h" />
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\filesystem\FileSystem.h" />
@@ -1006,7 +1010,7 @@
     <ClInclude Include="src\world\IHeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
-    <ClInclude Include="src\world\simulation\host\component\CityComponents.h" />
+    <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h" />
     <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
     <ClInclude Include="src\world\simulation\host\SimECS.h" />
     <ClInclude Include="src\world\simulation\host\SimThread.h" />

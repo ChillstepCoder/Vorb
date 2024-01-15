@@ -1,6 +1,13 @@
 #include "stdafx.h"
 #include "CliFactionManager.h"
 
+CliFactionManager::CliFactionManager(World& world) : IFactionManager(world)
+{
+
+}
+
+CliFactionManager::~CliFactionManager() = default;
+
 void CliFactionManager::addFaction(Faction faction) {
     {
         std::lock_guard lock(mFactionsMutex);
@@ -32,10 +39,10 @@ i8 CliFactionManager::getDefaultFactionRelation(FactionIDPair factions) {
     BitFlags<FactionTraits> t1, t2;
     {
         std::shared_lock lock(mFactionsMutex);
-        auto&& it1 = mFactions.find(factions.first);
+        auto&& it1 = mFactions.find(factions.x);
         assert(it1 != mFactions.end());
         t1 = it1->second.traits;
-        auto&& it2 = mFactions.find(factions.second);
+        auto&& it2 = mFactions.find(factions.y);
         assert(it2 != mFactions.end());
         t2 = it2->second.traits;
     }

@@ -3,7 +3,7 @@
 #include "world/WorldContextObject.h"
 #include "faction/Faction.h"
 
-typedef std::pair<FactionID, FactionID> FactionIDPair;
+typedef ui32v2 FactionIDPair;
 constexpr i8 MAX_RELATION = 100;
 constexpr i8 MIN_RELATION = -100;
 
@@ -18,7 +18,7 @@ public:
 
 protected:
     FactionIDPair getOrderedFactionIDs(FactionID faction1, FactionID faction2) {
-        return faction1 < faction2 ? std::make_pair(faction1, faction2) : std::make_pair(faction2, faction1);
+        return faction1 < faction2 ? FactionIDPair(faction1, faction2) : FactionIDPair(faction2, faction1);
     }
 };
 
