@@ -1,13 +1,13 @@
-spacing: 12
-min_dist: 4
+spacing: 6
+min_dist: 5
 prob: 1
 offset: [0,0]
 dist:
   label: ''
   type: std
-  octaves: 3
+  octaves: 2
   persistence: 0.699999988079071
-  frequency: 0.0010000000474974513
+  frequency: 0.0020000000949949026
   posOffset: [0,0]
   amplitude: 1
-  heightOffset: 0
+  heightOffset: 0.6000000238418579

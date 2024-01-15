@@ -86,6 +86,7 @@ struct BiomeTileGenCategory {
     SoftAssetReference distribution = AssetType::TileDistribution;
     f32 minHeight = 0.1f;
     f32 maxHeight = 10000.0f;
+    f32v2 slopeRange = f32v2(0.0f, 1.0f); // 0 = flat, 1 = vertical
     f32 probabilityMult = 1.0f;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
@@ -94,6 +95,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(BiomeTileGenCategory,
     make_field(o.distribution, "dist"sv),
     make_field(o.minHeight, "min_h"sv),
     make_field(o.maxHeight, "max_h"sv),
+    make_field(o.slopeRange, "slope_r"sv),
     make_field(o.probabilityMult, "prob"sv)
 );
 
@@ -119,6 +121,7 @@ struct OptimizedBiomeTileGenCategoryData {
     const TileDistributionDef* distributionPtr = nullptr;
     f32 minHeight;
     f32 maxHeight;
+    f32v2 slopeRange;
     f32 probabilityMult;
 };
 

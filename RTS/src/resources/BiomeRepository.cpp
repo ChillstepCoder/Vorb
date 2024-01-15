@@ -245,6 +245,8 @@ void BiomeRepository::fixupAsset(AssetID id) {
         }
         genData.minHeight = category.minHeight;
         genData.maxHeight = category.maxHeight;
+        // Invert for generation since we use normal
+        genData.slopeRange = f32v2(1.0f) - category.slopeRange;
         genData.probabilityMult = category.probabilityMult;
         genData.tiles.resize(category.tiles.size());
         genData.allVariants.resize(0);
