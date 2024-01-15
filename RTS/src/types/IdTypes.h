@@ -32,3 +32,7 @@ typedef ui32 LiteChunkID;
 constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;
 
 typedef ui32 WorldID;
+constexpr WorldID INVALID_WORLD_ID = UINT32_MAX;
+
+typedef ui32 FactionID;
+constexpr ui32 INVALID_FACTION_ID = UINT32_MAX;

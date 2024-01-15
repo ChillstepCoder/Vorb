@@ -12,6 +12,7 @@ public:
     World& getWorld() const { return mWorld; }
     WorldNetMode getNetMode() const;
     bool isEditor() const;
+    bool isHost() const;
 protected:
     World& mWorld;
 };

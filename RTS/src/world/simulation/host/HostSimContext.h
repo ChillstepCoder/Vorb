@@ -7,6 +7,8 @@
 
 #include "util/BitArray.h"
 
+class SimThread;
+
 // What needs to simulate:
 // 1. Businesses (economy) (Includes GovernmentBusiness?)
 // 2. Characters
@@ -90,6 +92,7 @@ public:
 class HostSimContext : public WorldContextObject {
 public:
     HostSimContext(World& world);
+    ~HostSimContext();
 
 private:
     //ChunkSimulator mSimulator;
@@ -111,6 +114,7 @@ private:
 
     // TODO: Boost flat unordered map
     std::unordered_map<CityUID, SimCity> mCities;
+    std::unique_ptr<SimThread> mSimThread;
 
 
     // 1 hundredth of a second (100 centiseconds = 1 second)

@@ -17,6 +17,7 @@ class IEntityComponentSystem;
 class IHeightmapGrid;
 class ItemStockpileRegistry;
 class IEffectContext;
+class IFactionManager;
 class PhysicsWorld;
 class StructureManager;
 class TimeOfDayManager;
@@ -51,6 +52,7 @@ public:
     // World info
     virtual WorldNetMode getNetMode() const { return mNetMode; }
     bool isEditorWorld() const { return getNetMode() == WorldNetMode::Editor; }
+    bool isHostWorld() const { return getNetMode() == WorldNetMode::Host; }
     f32v3 getDefaultSpawn() const;
     f32v2 getWorldCenter() const { return f32v2(mWidthTiles * 0.5f); }
     f32v2 getLoadCenter() const;
@@ -78,6 +80,7 @@ public:
     VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
     WeatherManager& getWeatherManager() const { return *mWeatherManager; }
     HostSimContext& getHostSimContext() const { assert(mHostSimContext); return *mHostSimContext; }
+    IFactionManager& getFactionManager() const { return *mFactionManager; }
 
     // Optional system accessors 
     NavWorld* tryGetNavWorld() const { return mNavWorld.get(); }
@@ -150,6 +153,8 @@ private:
     std::unique_ptr<VisibilityManager> mVisibilityManager;
     // Weather
     std::unique_ptr<WeatherManager> mWeatherManager;
+    // Factions 
+    std::unique_ptr<IFactionManager> mFactionManager;
     // Simulation (HOST ONLY)
     std::unique_ptr<HostSimContext> mHostSimContext;
     // Nav world (OPTIONAL)

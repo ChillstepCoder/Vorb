@@ -14,31 +14,6 @@ class BuildingDescriptionRepository;
 class Building;
 class World;
 
-//
-//enum class MarketStallType {
-//    PRODUCE,
-//    MEAT,
-//    FISH,
-//    CHEESE,
-//    WEAPONS,
-//    ARMOR,
-//    TRINKETS,
-//    CLOTHES,
-//    WOOD,
-//};
-//
-//
-//enum class FurnitureType {
-//    CHAIR,
-//    TABLE,
-//    BED,
-//    BARREL,
-//    DRAWERS,
-//    CUPBOARDS,
-//    DRESSER,
-//    STOVE,
-//    CHEST,
-//};
 
 struct CityTileData {
     ui8 isOccupied : 1;

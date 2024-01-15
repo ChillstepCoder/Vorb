@@ -10,3 +10,7 @@ WorldNetMode WorldContextObject::getNetMode() const {
 bool WorldContextObject::isEditor() const {
     return mWorld.isEditorWorld();
 }
+
+bool WorldContextObject::isHost() const {
+    return mWorld.isHostWorld();
+}

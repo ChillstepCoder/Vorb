@@ -33,6 +33,7 @@
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "weather/WeatherManager.h"
+#include "faction/HostFactionManager.h"
 
 #include "visibility/VisibilityManager.h"
 #include "visibility/VisibilityThread.h"
@@ -85,6 +86,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
+            mFactionManager = std::make_unique<CliFactionManager>(*this);
             break;
         }
         case WorldNetMode::Host: {
@@ -96,6 +98,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);
             mHostSimContext = std::make_unique<HostSimContext>(*this);
+            mFactionManager = std::make_unique<HostFactionManager>(*this);
             break;
         }
         default:
