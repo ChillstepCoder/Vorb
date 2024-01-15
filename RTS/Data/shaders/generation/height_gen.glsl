@@ -69,7 +69,7 @@ float getForestDist(vec3 xyPosAndSeed) {
     return standardNoise(xyPosAndSeed.yxz, 6, 0.0005, 0.6, vec2(-1000.0, 0), 5.0, -0.2);
 }
 void applyForestHeight(vec3 xyPosAndSeed, float forestDist, float nonMountainWeight, float multiplier, inout float height, inout float bestWeight, inout int bestBiome) {
-    const float forestHeight = standardNoise(xyPosAndSeed, 3, 0.05, 0.65, vec2(0, 0), 5.0, 0.0);
+    const float forestHeight = standardNoise(xyPosAndSeed, 3, 0.025, 0.65, vec2(0, 0), 5.0, 0.0);
     float forestWeight = nonMountainWeight * forestDist;
     forestWeight = clamp(forestWeight, 0.0, 1.0);
     height += forestHeight * forestWeight * multiplier;

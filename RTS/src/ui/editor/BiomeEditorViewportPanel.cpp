@@ -94,6 +94,12 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                 changed |= ImguiUtil::ObjectVector<BiomePossibleTile>("Tiles", o.tiles,
                     [](BiomePossibleTile& o, ui32) {
                     bool changed = false;
+                    if (o.tile.name.isValid()) {
+                        ImGui::Text(o.tile.name.toString().c_str());
+                    }
+                    else {
+                        ImGui::Text("INVALID");
+                    }
                     if (ImGui::TreeNode("Distribution")) {
                         changed |= updateAndRenderImguiControls(o);
                         ImGui::TreePop();

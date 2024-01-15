@@ -428,7 +428,8 @@ btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID own
     btTransform startTransform;
     const f32 halfHeight = getShapeHalfHeight(shape);
     startTransform.setOrigin(btVector3(position.x, position.y, position.z + halfHeight)); // TODO: not always offset up?
-    //startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+    // REQUIRED to set the rotation or the basis will be invalid
+    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
     btVector3 localInertia(0, 0, 0);
@@ -671,6 +672,7 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
 
 void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) {
     deferredPick->setQueryFlags(queryFlags);
+    deferredPick->clearDone();
     mDeferredPicks.enqueue(std::pair<PickParams, DeferredPhysicsPick*>(PickParams{rayStart, rayEnd, pickTypes}, deferredPick));
 }
 

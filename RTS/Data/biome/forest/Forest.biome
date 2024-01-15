@@ -7,12 +7,14 @@ dbg_col: [0,128,0]
 categories:
   - name: Trees
     tiles:
-      - tile: tree_a
-        weight: 1
       - tile: tree_birch
-        weight: 1
+        weight: 0.2
+        var_sel: Random
+        var_ind: []
       - tile: tree_pine
         weight: 1
+        var_sel: Random
+        var_ind: []
     dist: dense_tree
     min_h: 0.1
     max_h: 10000
@@ -21,10 +23,16 @@ categories:
     tiles:
       - tile: bush_g
         weight: 1
+        var_sel: Random
+        var_ind: []
       - tile: bush_med
         weight: 1
+        var_sel: Random
+        var_ind: []
       - tile: bush_small
         weight: 1
+        var_sel: Random
+        var_ind: []
     dist: forest_bush
     min_h: 0.1
     max_h: 10000

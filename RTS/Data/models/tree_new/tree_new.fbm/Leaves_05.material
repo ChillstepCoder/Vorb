@@ -1,4 +1,0 @@
-albedo: Leaves_Diffuse
-normal: Leaves_Normal
-sampler_state: LINEAR_CLAMP_MIPMAP
-render_pass: smudge

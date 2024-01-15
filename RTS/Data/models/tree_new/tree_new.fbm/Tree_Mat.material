@@ -1,5 +1,0 @@
-albedo: DM_Base_color
-normal: DM_Normal_OpenGL
-ao: DM_Mixed_AO
-rough: DM_Roughness
-sampler_state: LINEAR_CLAMP_MIPMAP
