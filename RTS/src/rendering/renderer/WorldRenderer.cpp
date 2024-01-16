@@ -367,6 +367,14 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
 }
 
+f32v3 helperGetWorldPosWithHeight(f32v2 worldPos, World* activeWorld) {
+    f32v3 rv;
+    rv.x = worldPos.x;
+    rv.y = worldPos.y;
+    rv.z = activeWorld->getHeightmapGrid().computeHeightAtPoint<true>(worldPos);
+    return rv;
+}
+
 void WorldRenderer::renderDebug() {
     if (!mActiveWorld) {
         return;
@@ -393,8 +401,8 @@ void WorldRenderer::renderDebug() {
 
     mEcsRenderer->renderBusinessDebug(*mActiveWorld, *mCamera);
 
-
     if (sDebugOptions.mChunkBoundaries) {
+        DebugRenderer::reserveLines(mRenderState->getDebugChunks().size() * 16);
         for (const auto& chunkDebugState : mRenderState->getDebugChunks()) {
             color4 color = COLOR_WHITE;
             if (chunkDebugState.mList == DebugChunkListIndex::DESTROYING) {
@@ -422,14 +430,28 @@ void WorldRenderer::renderDebug() {
                 }
             }
 
-            const f32v2 worldPos = chunkDebugState.mWorldPos;
-            DebugRenderer::drawWireQuad(worldPos, f32v2(CHUNK_WIDTH), color);
+            f32v3 worldPosA, worldPosB;
+            worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos, mActiveWorld);
+            worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, 0.0f), mActiveWorld);
+            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
 
+            worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, 0.0f), mActiveWorld);
+            worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, CHUNK_WIDTH), mActiveWorld);
+            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+
+            worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, CHUNK_WIDTH), mActiveWorld);
+            worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(0.0f, CHUNK_WIDTH), mActiveWorld);
+            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+
+            worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(0.0f, CHUNK_WIDTH), mActiveWorld);
+            worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos, mActiveWorld);
+            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+          
             // Count refs
             constexpr f32 REF_BOX_WIDTH = 1.0f;
             constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / (ui32)REF_BOX_WIDTH;
             for (int i = 0; i < chunkDebugState.mRefCount; ++i) {
-                DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
+                DebugRenderer::drawWireQuad(f32v2(chunkDebugState.mWorldPos) + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
             }
         }
     }

@@ -86,6 +86,7 @@ inline std::unique_ptr<TO> static_unique_pointer_cast(std::unique_ptr<FROM>&& ol
 }
 
 
+// Less verbose std::unique_ptr<T[]>
 template<typename T>
 class UniqueArray {
 

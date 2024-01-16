@@ -53,6 +53,7 @@ protected:
     void updateMouseInput();
 
     void debugDrawRivers();
+    void debugDrawChunkLines();
 
     bool mRebuildDockspace = true;
     bool mCancelled = false;
@@ -82,12 +83,14 @@ protected:
     bool mShowBiomes = true;
     bool mShowHeight = false;
     bool mShowRivers = false;
+    bool mShowChunks = false;
 
     // Debug rendering
-    AssetHandlePtr<MaterialShaderDef> mRiverDebugShader;
+    AssetHandlePtr<MaterialShaderDef> mDebugLineShader;
     std::unique_ptr<LineMesh> mRiverDebugMesh;
     std::unique_ptr<LineMesh> mRiverDebugVisitedMesh;
     std::unique_ptr<LineMesh> mRiverDebugLocalGroupMesh;
+    std::unique_ptr<LineMesh> mChunkDebugMesh;
 
     PreciseTimer mGenTimer;
 };

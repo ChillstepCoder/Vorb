@@ -1011,6 +1011,7 @@
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
     <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h" />
+    <ClInclude Include="src\world\simulation\host\component\SimComponents.h" />
     <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
     <ClInclude Include="src\world\simulation\host\SimECS.h" />
     <ClInclude Include="src\world\simulation\host\SimThread.h" />

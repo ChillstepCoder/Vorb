@@ -89,7 +89,7 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
     mFrameTimer.start();
     mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
-    mRiverDebugShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("river_gen_lines"));
+    mDebugLineShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("river_gen_lines"));
 
     mMapScreenGBuffer = std::make_unique<vg::GBuffer>(SCREEN_TEXTURE_RES, SCREEN_TEXTURE_RES);
     mMapScreenGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
@@ -218,6 +218,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
     ImGui::Checkbox("Show Height", &mShowHeight);
     ImGui::Checkbox("Show Rivers", &mShowRivers);
+    ImGui::Checkbox("Show Chunks", &mShowChunks);
     ImGui::Separator();
     if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("Start Game")) {
@@ -423,7 +424,9 @@ void WorldGenScreen::renderMapView() {
     if (mShowRivers) {
         debugDrawRivers();
     }
-
+    if (mShowChunks) {
+        debugDrawChunkLines();
+    }
 
 
     mMapScreenGBuffer->unuse();
@@ -537,7 +540,7 @@ void WorldGenScreen::debugDrawRivers() {
             mRiverDebugLocalGroupMesh->initialize(groupQuads);
         }
 
-        const MaterialShaderDef* def = mRiverDebugShader->tryGetLoadedAsset();
+        const MaterialShaderDef* def = mDebugLineShader->tryGetLoadedAsset();
         if (def) {
             MaterialRenderer::bindMaterialShaderForRender(*def);
 
@@ -573,5 +576,41 @@ void WorldGenScreen::debugDrawRivers() {
                 }
             }
         }
+    }
+}
+
+void WorldGenScreen::debugDrawChunkLines()
+{
+    if (!mChunkDebugMesh) {
+        mChunkDebugMesh = std::make_unique<LineMesh>();
+        const f32 worldWidthChunks = mWorldData->worldWidth / CHUNK_WIDTH;
+        const f32 step = 2.0f / worldWidthChunks;
+        const color4 cellColor = color4(0, 50, 100, 100);
+
+        std::vector<LineVertex> pathLines;
+        pathLines.reserve((worldWidthChunks + 1) * 4);
+      
+        for (ui32 x = 0; x <= worldWidthChunks; ++x) {
+            pathLines.emplace_back(LineVertex{ f32v3(-1.0f + step * x, -1.0f, 0.0f), cellColor });
+            pathLines.emplace_back(LineVertex{ f32v3(-1.0f + step * x, 1.0f, 0.0f), cellColor });
+        }
+        for (ui32 y = 0; y <= worldWidthChunks; ++y) {
+            pathLines.emplace_back(LineVertex{ f32v3(-1.0f, -1.0f + step * y, 0.0f), cellColor });
+            pathLines.emplace_back(LineVertex{ f32v3(1.0f, -1.0f + step * y, 0.0f), cellColor });
+        }
+ 
+        mChunkDebugMesh->initialize(pathLines);
+    }
+
+    const MaterialShaderDef* def = mDebugLineShader->tryGetLoadedAsset();
+    if (def) {
+        MaterialRenderer::bindMaterialShaderForRender(*def);
+
+        glEnable(GL_LINE_SMOOTH); // Antialiasing
+        glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+        glUniform2f(def->getUniform("unCameraPos"), mCamera->getPosition().x, mCamera->getPosition().y);
+        glLineWidth(2.0f + mCamera->getZoom());
+        mChunkDebugMesh->bind();
+        mChunkDebugMesh->drawLines();
     }
 }

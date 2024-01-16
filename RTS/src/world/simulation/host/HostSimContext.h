@@ -17,12 +17,6 @@ class SimThread;
 
 // Can range from a simple hamlet to a sprawling metropolis
 
-typedef ui16 BusinessID; // No more than 65535 businesses per city
-typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
-typedef ui64 CharacterUID;
-typedef ui64 BuildingUID;
-typedef i32 TimestampCentisec;
-
 enum class SimCharacterStatus : ui8 {
     Idle,
     Working,
@@ -88,11 +82,20 @@ public:
     std::vector<CharacterUID> mResidents;
 };
 
+// Always active even if player is in a full chunk
+struct SimPlayer {
+    f32v3 mLastKnownPosition;
+    ServerPlayerID mPlayerId;
+};
 
 class HostSimContext : public WorldContextObject {
 public:
     HostSimContext(World& world);
     ~HostSimContext();
+
+    void registerPlayer(ServerPlayerID playerId, f32v3 startPos);
+    void setPlayerPosition(ServerPlayerID, f32v3 pos);
+    void removePlayer(ServerPlayerID playerId);
 
 private:
     //ChunkSimulator mSimulator;
@@ -106,16 +109,26 @@ private:
     std::unordered_map<CharacterUID, SimCharacter> mSimCharacters;
 
     // Chunks
-    UniqueArray<SimChunkState> mStates;
-    UniqueArray<SimChunkData> mData;
-    BitArray mSimulatingChunks;
+    UniqueArray<SimChunkData> mChunkData;
+    BitArray mChunkStates; // Pack SimChunkState into 2 bits per element
+    BitArray mSimulatingChunks; // Chunks with SimChunkState = simulating for fast find first set bit
+    // TODO: Flat set?
+    std::unordered_set<ChunkID> mFullChunks; // Only store full chunks in here, usually not very many
 
     ui32 mSimChunkCount = 0;
+    ui32 mTotalChunks;
 
     // TODO: Boost flat unordered map
     std::unordered_map<CityUID, SimCity> mCities;
     std::unique_ptr<SimThread> mSimThread;
 
+    // One per player, creates load zones.
+    // NOTE: For sending NPCs to full chunks, we manage them and notify the game thread when
+    // it is receiving a fully simulated entity. We may still manage AI decisions here with shared data that
+    // the game thread can read.
+    // When full  NPCs want to come to the sim world they make a request and sleep until we respond.
+    // If they are tring to join a full chunk, we will just tell them to unblock and continue simulating
+    std::vector<SimPlayer> mPlayers;
 
     // 1 hundredth of a second (100 centiseconds = 1 second)
     // We simulate in centiseconds because we do not need fine simulation granularity

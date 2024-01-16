@@ -18,9 +18,9 @@ public:
     // Call before drawing
     void bind();
 
-    void drawLineStrip(int start, ui32 count = 0) const;
-    void drawPoints(int start, ui32 count = 0) const;
-    void drawLines(int start, ui32 count = 0) const;
+    void drawLineStrip(int start = 0, ui32 count = 0) const;
+    void drawPoints(int start = 0, ui32 count = 0) const;
+    void drawLines(int start = 0, ui32 count = 0) const;
 
     VGBuffer mVao = 0;
     VGBuffer mVbo = 0;

@@ -1,9 +1,19 @@
 #pragma once
 
-// Owned by the Simulation Thread ECS
+// Lightweight, fast access for simulation
+struct SettlementSimComponent {
 
-struct SettlementComponent {
+};
+
+struct SettlementAdjacencyData {
+    entt::entity settlementEntity = entt::null;
+    f32 approxMovementCost = 0.0f; // Updated periodically
+};
+
+// Heavyweight, less accesses needed
+struct SettlementDetailsComponent {
     std::vector<ChunkID> ownedChunks;
+    std::vector<SettlementAdjacencyData> neighborSettlements;
 };
 
 struct FactionOwnershipComponent {

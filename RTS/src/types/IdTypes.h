@@ -36,3 +36,13 @@ constexpr WorldID INVALID_WORLD_ID = UINT32_MAX;
 
 typedef ui32 FactionID;
 constexpr ui32 INVALID_FACTION_ID = UINT32_MAX;
+
+typedef ui32 ServerPlayerID;
+
+typedef i32 TimestampCentisec;
+
+// UIDs
+typedef ui16 BusinessID; // No more than 65535 businesses per city
+typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
+typedef ui64 CharacterUID;
+typedef ui64 BuildingUID;

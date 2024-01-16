@@ -2423,6 +2423,9 @@
     <ClInclude Include="src\faction\CliFactionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\simulation\host\component\SimComponents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
