@@ -230,7 +230,7 @@ void GameThread::initWorld()
 
     // Begin world
     // TODO: Better pos?
-    mWorld.onWorldBegin(mWorld.getWorldCenter());
+    mWorld.onWorldBeginGame(mWorld.getWorldCenter());
 
     // Start world rendering
     //mRenderContext->onWorldBegin();

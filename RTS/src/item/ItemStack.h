@@ -23,14 +23,11 @@ static_assert(e_count(InventoryBagType) == 6, "Update def");
 static_assert(e_count(InventoryBagType) <= 8, "Must fit in 3 bits");
 
 enum class ItemQuality : ui8 {
-    Terrible,  //-3
-    Poor,      //-2
-    Lesser,    //-1
     Standard,  // 0
-    Good,      //+1
-    Quality ,  //+2
-    Perfect,   //+3
-    Legendary, //+4
+    Uncommon,  //+1
+    Rare,      //+2
+    Exotic,    //+3
+    Legendary, //+4 < Can only be crafted out of exotic ingredients + ace minigame
     COUNT
 };
 static_assert(e_count(ItemQuality) <= 8, "Must fit in 3 bits");
@@ -49,6 +46,14 @@ enum class ItemBehaviorModifier : ui8 {
 };
 static_assert(e_count(ItemBehaviorModifier) <= 32, "Must fit in 5 bits");
 
+enum class ItemStackFlags : ui8 {
+    Junk, //< Get rid of at earliest convenience
+    Important,
+    Stolen,
+    TERM
+};
+static_assert(e_cast(ItemStackFlags::TERM) < 0b11111, "Fit in 5 bits (See ItemStack::flags)");
+
 // Maximum stack size is 4,294,967,295 
 struct ItemStack {
     ItemStack() = default;
@@ -64,8 +69,10 @@ struct ItemStack {
     ItemQuality quality : 3 = ItemQuality::Standard;
     ItemBehaviorModifier behaviorModifier : 5 = ItemBehaviorModifier::None;
     InventoryBagType bagType : 3 = InventoryBagType::COUNT;
-    ui8 flags : 5 = 0;
+    ItemStackFlags flags : 5 = {};
+    ui16 durability = UINT16_MAX;
+    ui16 taskReservedCount = 0; // Amount reserved for current task
 
     bool isNull() const { return quantity == 0; }
 };
-static_assert(sizeof(ItemStack) == 8);
+static_assert(sizeof(ItemStack) == 12);

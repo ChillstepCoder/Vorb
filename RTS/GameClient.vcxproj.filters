@@ -993,6 +993,9 @@
     <ClCompile Include="src\faction\CliFactionManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\simulation\host\StoryTeller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2424,6 +2427,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\component\SimComponents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\SimTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\PersonalityComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\StoryTeller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

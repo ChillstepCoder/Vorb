@@ -74,76 +74,76 @@ void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
 }
 
 void HarvestItemsTask::harvestItem(World& world, entt::registry& registry, entt::entity agent, TileHandle targetTileHandle) {
-    ASSERT_GAME_THREAD();
+    //ASSERT_GAME_THREAD();
 
-    assert(targetTileHandle.isValid());
-    PositionComponent& posCmp = registry.get<PositionComponent>(agent);
-    TileLayer layer;
-    if (!world.terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
-        // Try again
-        findItem(registry, agent);
-        return;
-    }
+    //assert(targetTileHandle.isValid());
+    //PositionComponent& posCmp = registry.get<PositionComponent>(agent);
+    //TileLayer layer;
+    //if (!world.terrainTileHasHarvestable(targetTileHandle.getWorldPos2D(), mTargetHarvestable, &layer)) {
+    //    // Try again
+    //    findItem(registry, agent);
+    //    return;
+    //}
 
-    // Interact
-    if (targetTileHandle.getTile().hasFlagsMaskAny(e_cast(TileFlags::IS_INTERACTING) | e_cast(TileFlags::IS_RESOURCE_RESERVED))) {
-        // Someone else is using this tile
-        // Try again
-        findItem(registry, agent);
-        return;
-    }
+    //// Interact
+    //if (targetTileHandle.getTile().hasFlagsMaskAny(e_cast(TileFlags::IS_INTERACTING) | e_cast(TileFlags::IS_RESOURCE_RESERVED))) {
+    //    // Someone else is using this tile
+    //    // Try again
+    //    findItem(registry, agent);
+    //    return;
+    //}
 
-    constexpr int INTERACT_TICKS = 60;
-    TimedTileInteractComponent& interact = registry.emplace<TimedTileInteractComponent>(
-        agent,
-        targetTileHandle,
-        e_cast(layer),
-        INTERACT_TICKS,
-        0,
-        [&registry, agent, this](bool success, TimedTileInteractComponent& cmp) {
-        ASSERT_GAME_THREAD();
+    //constexpr int INTERACT_TICKS = 60;
+    //TimedTileInteractComponent& interact = registry.emplace<TimedTileInteractComponent>(
+    //    agent,
+    //    targetTileHandle,
+    //    e_cast(layer),
+    //    INTERACT_TICKS,
+    //    0,
+    //    [&registry, agent, this](bool success, TimedTileInteractComponent& cmp) {
+    //    ASSERT_GAME_THREAD();
 
-        // TODO: Handle failure
-        assert(success);
+    //    // TODO: Handle failure
+    //    assert(success);
 
-        // TODO: Interact lock???
-        auto&& tileRef = cmp.mInteractTile;
-        //if (tileHandle.tile.layers[cmp.mTileLayer])
-        TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
-        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
-        // Destroy tile
-        tileRef->container->clearTileFlag(tileRef->index, TileFlags::IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
-        tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+    //    // TODO: Interact lock???
+    //    auto&& tileRef = cmp.mInteractTile;
+    //    //if (tileHandle.tile.layers[cmp.mTileLayer])
+    //    TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
+    //    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
+    //    // Destroy tile
+    //    tileRef->container->clearTileFlag(tileRef->index, TileFlags::IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
+    //    tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
 
-        // Award loot
-        InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-        for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
-            const ItemDrop& drop = tileData.itemDrops[i];
-            ItemStack stack;
-            if (drop.countRange.y <= drop.countRange.x) {
-                stack.quantity = drop.countRange.y;
-            }
-            else {
-                stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
-            }
-            stack.id = drop.id;
-            invCmp.tryAddItemStackToWorkingStorage(stack, WorkStorageID::HAULING);
+    //    // Award loot
+    //    InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+    //    for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
+    //        const ItemDrop& drop = tileData.itemDrops[i];
+    //        ItemStack stack;
+    //        if (drop.countRange.y <= drop.countRange.x) {
+    //            stack.quantity = drop.countRange.y;
+    //        }
+    //        else {
+    //            stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
+    //        }
+    //        stack.id = drop.id;
+    //        invCmp.tryAddItemStackToWorkingStorage(stack, WorkStorageID::HAULING);
 
-            if (stack.id == mItemId) {
-                mCurrentCount += stack.quantity;
-                if (mCurrentCount >= mTargetCount) {
-                    mState = TaskState::SUCCESS;
-                }
-            }
-            
-        }
-        // Find next
-        if (mState != TaskState::SUCCESS) {
-            findItem(registry, agent);
-        }
-    });
+    //        if (stack.id == mItemId) {
+    //            mCurrentCount += stack.quantity;
+    //            if (mCurrentCount >= mTargetCount) {
+    //                mState = TaskState::SUCCESS;
+    //            }
+    //        }
+    //        
+    //    }
+    //    // Find next
+    //    if (mState != TaskState::SUCCESS) {
+    //        findItem(registry, agent);
+    //    }
+    //});
 
-    mState = TaskState::HARVESTING;
+    //mState = TaskState::HARVESTING;
 
 }
 

@@ -301,7 +301,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     LOG_CRITICAL("Allocate world {}", timer.stop()); timer.start();
 
     GameThreadTasks::getInstance().addGenericTaskWithCapture([editorWorld = mEditorWorld.get()](GameThread&) {
-        editorWorld->onWorldBegin(f32v2(0.0f));
+        editorWorld->onWorldBeginGame(f32v2(0.0f));
     });
 
     updateActiveEditorWorld(mEditorWorld.get());

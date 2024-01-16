@@ -42,7 +42,7 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(World);
 
-    virtual void onWorldBegin(const f32v2& loadCenter);
+    virtual void onWorldBeginGame(const f32v2& loadCenter);
     virtual void tick(f32 elapsedSec);
 
     void shutdown();

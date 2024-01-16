@@ -7,15 +7,19 @@
 
 #include "world/simulation/host/component/SimComponents.h"
 #include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/StoryTeller.h"
 
 HostSimContext::HostSimContext(World& world) :
     WorldContextObject(world),
     mChunkData(world.getChunkGrid().getTotalChunks()),
     mTotalChunks(world.getChunkGrid().getTotalChunks())
 {
+
+    mStoryTeller = std::make_unique<StoryTeller>();
+    mChunkStates.resizeAndZero(mTotalChunks);
     
     mSimThread = std::make_unique<SimThread>(*this, world);
-    mChunkStates.resizeAndZero(mTotalChunks);
+
 }
 
 HostSimContext::~HostSimContext()

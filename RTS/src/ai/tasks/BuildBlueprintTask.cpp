@@ -83,51 +83,52 @@ TaskTickResult BuildBlueprintTask::tick(World& world, entt::registry& registry, 
 }
 
 bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity agent) {
-    assert(!mPlaceTilesTarget);
+    //assert(!mPlaceTilesTarget);
 
-    InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-    std::vector<ItemStack>& workingStorage = invCmp.getMutableWorkingStorage(WorkStorageID::HAULING);
-    // Find items in our inventory to build with
-    for (ItemStack& s : workingStorage) {
-        if (mPlaceTilesTarget = mBlueprint.reserveTileToPlaceItems(s.id, s.quantity)) {
-            f32v3 pos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
-            //LOG_DEBUG("FOUND TILE {} AT {}, {}, {}", mPlaceTilesTarget->mTileIndex, pos.x, pos.y, pos.z);
-            break;
-        }
-    }
+    //InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+    //std::vector<ItemStack>& workingStorage = invCmp.getMutableWorkingStorage(WorkStorageID::HAULING);
+    //// Find items in our inventory to build with
+    //for (ItemStack& s : workingStorage) {
+    //    if (mPlaceTilesTarget = mBlueprint.reserveTileToPlaceItems(s.id, s.quantity)) {
+    //        f32v3 pos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
+    //        //LOG_DEBUG("FOUND TILE {} AT {}, {}, {}", mPlaceTilesTarget->mTileIndex, pos.x, pos.y, pos.z);
+    //        break;
+    //    }
+    //}
 
-    if (!mPlaceTilesTarget) {
-        // Nothing to build!
-        return false;
-    }
-    assert(mPlaceTilesTarget->isValid());
+    //if (!mPlaceTilesTarget) {
+    //    // Nothing to build!
+    //    return false;
+    //}
+    //assert(mPlaceTilesTarget->isValid());
 
-    PositionComponent& posCmp = registry.get<PositionComponent>(agent);
-    NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
-    // TODO: Fallback to coarse path?
-    cmp.requestFinePath(posCmp.mPosition, targetWorldPos, [this](bool success) {
-        if (success) {
-            // We always check for flatten terrain first
-            mState = TaskState::FLATTEN_TERRAIN;
-        }
-        else {
-            // Path failed, lets try again
-            ++mErrorCount;
-            if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
-                LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT FAILURE", mErrorCount);
-                mState = TaskState::FAIL;
-            }
-            else {
-                LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT RETRY", mErrorCount);
-                mState = TaskState::SELECT_TILE_TO_FILL;
-                mPlaceTilesTarget.reset();
-            }
-        }
-    });
-    mState = TaskState::PATH_TO_TILE;
+    //PositionComponent& posCmp = registry.get<PositionComponent>(agent);
+    //NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
+    //const f32v3 targetWorldPos = mPlaceTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
+    //// TODO: Fallback to coarse path?
+    //cmp.requestFinePath(posCmp.mPosition, targetWorldPos, [this](bool success) {
+    //    if (success) {
+    //        // We always check for flatten terrain first
+    //        mState = TaskState::FLATTEN_TERRAIN;
+    //    }
+    //    else {
+    //        // Path failed, lets try again
+    //        ++mErrorCount;
+    //        if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
+    //            LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT FAILURE", mErrorCount);
+    //            mState = TaskState::FAIL;
+    //        }
+    //        else {
+    //            LOG_DEBUG("BuildBlueprintTask path to place items failed, error count {} - RESULT RETRY", mErrorCount);
+    //            mState = TaskState::SELECT_TILE_TO_FILL;
+    //            mPlaceTilesTarget.reset();
+    //        }
+    //    }
+    //});
+    //mState = TaskState::PATH_TO_TILE;
 
-    return true;
+    //return true;
+    return false;
 }
 
 bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entity agent) {
@@ -186,34 +187,34 @@ bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entit
 }
 
 void BuildBlueprintTask::placeItemsOnTile(entt::registry& registry, entt::entity agent) {
-    assert(mPlaceTilesTarget);
-    assert(mPlaceTilesTarget->isValid());
+    //assert(mPlaceTilesTarget);
+    //assert(mPlaceTilesTarget->isValid());
 
-    InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-    std::vector<ItemStack>& workingStorage = invCmp.getMutableWorkingStorage(WorkStorageID::HAULING);
-    size_t selectedStackIndex = UINT32_MAX;
-    for (size_t i = 0; i < workingStorage.size(); ++i) {
-        if (workingStorage[i].id == mPlaceTilesTarget->mItemId) {
-            selectedStackIndex = i;
-            break;
-        }
-    }
-    // We got pickpocketed???
-    assert(selectedStackIndex != UINT32_MAX);
-    ItemStack& sourceStack = workingStorage[selectedStackIndex];
-    mPlaceTilesTarget->fulfillFromItemStack(sourceStack);
-    mPlaceTilesTarget.reset();
-    if (sourceStack.quantity == 0) {
-        workingStorage[selectedStackIndex] = workingStorage.back();
-        workingStorage.pop_back();
-    }
+    //InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+    //std::vector<ItemStack>& workingStorage = invCmp.getMutableWorkingStorage(WorkStorageID::HAULING);
+    //size_t selectedStackIndex = UINT32_MAX;
+    //for (size_t i = 0; i < workingStorage.size(); ++i) {
+    //    if (workingStorage[i].id == mPlaceTilesTarget->mItemId) {
+    //        selectedStackIndex = i;
+    //        break;
+    //    }
+    //}
+    //// We got pickpocketed???
+    //assert(selectedStackIndex != UINT32_MAX);
+    //ItemStack& sourceStack = workingStorage[selectedStackIndex];
+    //mPlaceTilesTarget->fulfillFromItemStack(sourceStack);
+    //mPlaceTilesTarget.reset();
+    //if (sourceStack.quantity == 0) {
+    //    workingStorage[selectedStackIndex] = workingStorage.back();
+    //    workingStorage.pop_back();
+    //}
 
-    if (workingStorage.size()) {
-        // We may still have items to place
-        mState = TaskState::SELECT_TILE_TO_FILL;
-    }
-    else {
-        // No items to place
-        mState = TaskState::SELECT_TILE_TO_BUILD;
-    }
+    //if (workingStorage.size()) {
+    //    // We may still have items to place
+    //    mState = TaskState::SELECT_TILE_TO_FILL;
+    //}
+    //else {
+    //    // No items to place
+    //    mState = TaskState::SELECT_TILE_TO_BUILD;
+    //}
 }

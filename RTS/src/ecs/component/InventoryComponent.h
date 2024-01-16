@@ -39,28 +39,33 @@ struct InventoryBag {
     f32 totalCarryWeight = 0.0f;
 };
 
+enum class InventoryComponentFlags : ui16 {
+    IsSimulated = BIT(0), // If true, we are not in full mode
+    TERM
+};
+static_assert(e_cast(InventoryComponentFlags::TERM) <= 0xffff, "Must fit in 16 bits");
+
+// Shared between Sim and Game ECS
 class InventoryComponent {
 public:
 
     // Between 0 an 1. When going over total carry weight, we get encumbered.
-    f32 getEncumbermentValue(InventoryBagType bagType) const;
-    f32 getMaxCarryWeight(InventoryBagType bagType) const { return BAG_CARRY_WEIGHTS[e_cast(bagType)][mBags[e_cast(bagType)].bagTier]; }
-    f32 getTotalCarryWeight(InventoryBagType bagType) const { return mBags[e_cast(bagType)].totalCarryWeight; }
+    f32 getEncumbermentRatio(InventoryBagType bagType) const;
+    f32 getMaxCarryWeight(InventoryBagType bagType) const { return BAG_CARRY_WEIGHTS[e_cast(bagType)][mBagTiers[e_cast(bagType)]]; }
+    // Get combined weight of all items in the bag
+    f32 getTotalBagWeight(InventoryBagType bagType) const { return mBagWeights[e_cast(bagType)]; }
 
     bool addOrDropItemStack(ItemStack itemStack);
     // Returns amount removed
     int removeItemStack(ItemStack itemStack);
 
     bool canCarryItemStack(ItemStack itemStack) const;
-    bool tryAddItemStackToWorkingStorage(ItemStack itemStack, WorkStorageID workingStorageID);
-    std::vector<ItemStack>& getMutableWorkingStorage(WorkStorageID workingStorageID);
-    void eraseWorkingStorage(WorkStorageID workingStorageID);
 
 private:
     boost::container::flat_multimap<ItemID, ItemStack> mItems;
-    InventoryBag mBags[e_count(InventoryBagType)];
-    std::map<WorkStorageID, std::vector<ItemStack>> mWorkingStorage; // Maps inventory to work tasks and such (NPC ONLY)
+    f32 mBagWeights[e_count(InventoryBagType)] = {}; // Combines weight of all items
+    ui8 mBagTiers[e_count(InventoryBagType)] = {};
+    BitFlags<InventoryComponentFlags> mFlags;
 };
+static_assert(sizeof(InventoryComponent) == 56, "Keep small, shared by sim");
 
-// 88 bytes, a bit large
-//SIZER(InventoryComponent)

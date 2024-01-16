@@ -153,7 +153,7 @@ World::~World() {
     LOG_DEBUG("Deallocating world 0x%08x", (void*)this);
 }
 
-void World::onWorldBegin(const f32v2& loadCenter) {
+void World::onWorldBeginGame(const f32v2& loadCenter) {
     assert(!mDidBegin);
     mDidBegin = true;
     // Init chunks
@@ -172,6 +172,10 @@ void World::onWorldBegin(const f32v2& loadCenter) {
     // Initialize player last
     if (!isEditorWorld()) {
         mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
+    }
+
+    if (mHostSimContext) {
+        mHostSimContext->onWorldBeginGame();
     }
 
 }

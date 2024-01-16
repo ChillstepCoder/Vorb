@@ -1,8 +1,30 @@
 #pragma once
 
+// TODO: MOVE
+#include "item/ItemStack.h"
+
+enum class JobType {
+    
+};
+
+struct JobOffer {
+    entt::entity jobGiver;
+    std::vector<ItemStack> rewards;
+};
+
+enum class SettlementTier : ui8 {
+    Hamlet,
+    Village,
+    Town,
+    City,
+    Metropolis,
+    COUNT
+};
+
 // Lightweight, fast access for simulation
 struct SettlementSimComponent {
-
+    ChunkID rootChunkId;
+    SettlementTier tier = SettlementTier::Hamlet;
 };
 
 struct SettlementAdjacencyData {
@@ -14,6 +36,15 @@ struct SettlementAdjacencyData {
 struct SettlementDetailsComponent {
     std::vector<ChunkID> ownedChunks;
     std::vector<SettlementAdjacencyData> neighborSettlements;
+};
+
+struct SettlementJobBoardData {
+    i32v2 tilePos;
+    std::vector<JobOffer> jobOffers;
+};
+
+struct SettlementJobBoardsComponent {
+    std::vector<SettlementJobBoardData> jobBoards;
 };
 
 struct FactionOwnershipComponent {

@@ -8,6 +8,7 @@
 #include "util/BitArray.h"
 
 class SimThread;
+class StoryTeller;
 
 // What needs to simulate:
 // 1. Businesses (economy) (Includes GovernmentBusiness?)
@@ -52,7 +53,7 @@ public:
     SimCharacterTask mTask;
     SimCharacterStatus mStatus : 3;
     SimCharacterHealth mHealth : 3;
-    TimestampCentisec mTaskStartTime;
+    SimTimestamp mTaskStartTime;
     // TODO: Schedule?
     // TODO: Needs? (Let schedule handle it?)
     // Task Data
@@ -72,7 +73,7 @@ public:
 //SIZER(SimCharacter);
 
 typedef std::vector<SimCharacter> SimCharacterList;
-typedef std::vector<TimestampCentisec> TimestampList;
+typedef std::vector<SimTimestamp> TimestampList;
 
 class SimCity {
 public:
@@ -93,6 +94,8 @@ public:
     HostSimContext(World& world);
     ~HostSimContext();
 
+    void onWorldBeginGame();
+
     void registerPlayer(ServerPlayerID playerId, f32v3 startPos);
     void setPlayerPosition(ServerPlayerID, f32v3 pos);
     void removePlayer(ServerPlayerID playerId);
@@ -104,7 +107,7 @@ private:
     // Characters
     //UniqueArray<ChunkSimCharacterData> mCharactersInChunks;
     // TODO: This can be in seconds, and use ui16 with -= per frame
-    std::vector<TimestampCentisec> mNextCharacterTickTimes;
+    std::vector<SimTimestamp> mNextCharacterTickTimes;
     std::vector<CharacterUID> mTickingCharacters;
     std::unordered_map<CharacterUID, SimCharacter> mSimCharacters;
 
@@ -121,6 +124,7 @@ private:
     // TODO: Boost flat unordered map
     std::unordered_map<CityUID, SimCity> mCities;
     std::unique_ptr<SimThread> mSimThread;
+    std::unique_ptr<StoryTeller> mStoryTeller;
 
     // One per player, creates load zones.
     // NOTE: For sending NPCs to full chunks, we manage them and notify the game thread when
@@ -133,6 +137,6 @@ private:
     // 1 hundredth of a second (100 centiseconds = 1 second)
     // We simulate in centiseconds because we do not need fine simulation granularity
     // and we will not run out of precision unless the simulation runs for 248 days
-    TimestampCentisec mSimTimeCentiseconds = 0;
+    SimTimestamp mSimTimeCentiseconds = 0;
 };
 
