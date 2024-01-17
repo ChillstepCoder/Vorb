@@ -9,6 +9,6 @@ class HostWorldData {
 public:
     f32v2 playerStart = f32v2(0.5f); // [0, 1]
     ui32 worldWidth = 0;
-    std::unique_ptr<HostHeightmapGrid> heightmapGrid;
-    std::unique_ptr<BiomeGrid> biomeGrid;
+    std::shared_ptr<HostHeightmapGrid> heightmapGrid;
+    std::shared_ptr<BiomeGrid> biomeGrid;
 };

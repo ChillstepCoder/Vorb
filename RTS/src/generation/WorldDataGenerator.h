@@ -8,7 +8,7 @@ class HostWorldData;
 class BiomeGrid;
 class IWorldGenerationStage;
 class WorldGenerationBlackboard;
-
+class World;
 // Generates full world data on the GPU, with some back and forth with CPU
 // Stage 1 - Generate base height on GPU as well as base biomes via noise
 // Stage 2 - Seed corrupted biomes on CPU (Can be done in parallel with stage 1)
@@ -47,6 +47,7 @@ public:
         mBiomeTexture = 0;
         return tex;
     }
+    std::unique_ptr<World> releaseWorld();
 
 private:
     void initStages();
@@ -76,6 +77,8 @@ private:
 
     std::vector<ui32v2> mPeakPositions;
     moodycamel::ConcurrentQueue<ui32v2> mPeakPositionsQueue;
+
+    std::unique_ptr<World> mWorld;
 
     f32 mWorldSeed = 0.f;
 };

@@ -45,6 +45,8 @@ public:
     virtual void onWorldBeginGame(const f32v2& loadCenter);
     virtual void tick(f32 elapsedSec);
 
+    void setDefaultWorldSpawn(const f32v2& spawnUV) { mDefaultPlayerSpawnUV = spawnUV; }
+
     void shutdown();
     static void shutdownAllWorlds();
     bool isShuttingDown() const { return mIsShuttingDown; }
@@ -126,9 +128,9 @@ private:
     // Tile containers
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
     // Terrain
-    std::unique_ptr<IHeightmapGrid> mHeightmapGrid;
+    std::shared_ptr<IHeightmapGrid> mHeightmapGrid;
     // Biome
-    std::unique_ptr<BiomeGrid> mBiomeGrid;
+    std::shared_ptr<BiomeGrid> mBiomeGrid;
     // Time of day
     std::unique_ptr<TimeOfDayManager> mTimeOfDayManager;
     // ECS

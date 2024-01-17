@@ -1,9 +1,10 @@
 #include "stdafx.h"
 #include "WorldDataGenerator.h"
-
+#include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "world/biome/BiomeGrid.h"
 #include "world/host/HostWorldData.h"
+#include "world/WorldDestroyer.h"
 
 #include "rendering/MaterialShaderRepository.h"
 
@@ -63,6 +64,11 @@ void WorldDataGenerator::cleanup() {
     }
     std::vector<std::unique_ptr<IWorldGenerationStage>>().swap(mStages);
 
+    if (mWorld) {
+        WorldDestroyer::shutdownWorld(*mWorld);
+        mWorld.reset();
+    }
+
     mFinished = false;
 }
 
@@ -89,6 +95,9 @@ bool WorldDataGenerator::update() {
     return false;
 }
 
+std::unique_ptr<World> WorldDataGenerator::releaseWorld() {
+    return std::move(mWorld);
+}
 
 void WorldDataGenerator::initStages() {
 
@@ -96,7 +105,7 @@ void WorldDataGenerator::initStages() {
 
     mStages.emplace_back(std::make_unique<BaseHeightmapAndBiomeGenerationStage>(*this));
     mStages.emplace_back(std::make_unique<RiverGenerationStage>(*this));
-    mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this));
+    mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this, mWorld));
 
     mCurrentStageIndex = 0;
     mStages[0]->begin();

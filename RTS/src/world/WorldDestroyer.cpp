@@ -19,7 +19,10 @@ void WorldDestroyer::shutdownWorld(World& world) {
     // REPLACE IS_SHUTTING_DOWN
     world.mIsShuttingDown = true;
     finishedGameThreadShutdown = false;
-    GameThread::getInstance().setActiveEditorWorld(nullptr);
+
+    if (world.isEditorWorld()) {
+        GameThread::getInstance().setActiveEditorWorld(nullptr);
+    }
 
     do {
         RenderContext::getInstance().updateRenderThreadProcs();
@@ -29,10 +32,15 @@ void WorldDestroyer::shutdownWorld(World& world) {
 
     world.dispatchOnWorldEndRenderThread(world);
 
-    {
+    if (world.mDidBegin) {
         std::lock_guard lock(mShutdownWorldMutex);
         assert(!mCurrentlyShuttingDownWorld);
         mCurrentlyShuttingDownWorld = &world;
+    }
+    else {
+        // If we never began (ie. generation world), no need to shut it down on game thread
+        finishedGameThreadShutdown = true;
+        world.shutdown();
     }
 
     // Wait for game thread to shutdown the world

@@ -72,8 +72,8 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     switch (netMode) {
         case WorldNetMode::Editor: {
             assert(hostWorldData);
-            mHeightmapGrid = std::move(hostWorldData->heightmapGrid);
-            mBiomeGrid = std::move(hostWorldData->biomeGrid);
+            mHeightmapGrid = hostWorldData->heightmapGrid;
+            mBiomeGrid = hostWorldData->biomeGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
@@ -82,7 +82,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
         case WorldNetMode::Client: {
             assert(!hostWorldData);
             mHeightmapGrid = std::make_unique<CliHeightmapGrid>(worldWidthTiles);
-            mBiomeGrid = std::move(hostWorldData->biomeGrid);
+            mBiomeGrid = hostWorldData->biomeGrid;
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
@@ -91,9 +91,8 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
         }
         case WorldNetMode::Host: {
             assert(hostWorldData);
-            mDefaultPlayerSpawnUV = hostWorldData->playerStart;
-            mHeightmapGrid = std::move(hostWorldData->heightmapGrid);
-            mBiomeGrid = std::move(hostWorldData->biomeGrid);
+            mHeightmapGrid = hostWorldData->heightmapGrid;
+            mBiomeGrid = hostWorldData->biomeGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);
@@ -137,13 +136,6 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mHeightmapGrid->setWorld(*this);
 
     LOG_DEBUG("Chunks allocated in {}", timer.stop());
-
-    // Nav
-    if (mNetMode == WorldNetMode::Host) {
-        mNavWorld = std::make_unique<NavWorld>(*this);
-        Services::NavThread::ref().init(*mNavWorld);
-    }
-
     LOG_DEBUG("Finished allocating world 0x%08x net mode {}", (void*)this, e_cast(netMode));
 
     static_assert(e_count(WorldNetMode) == 3);
@@ -154,6 +146,13 @@ World::~World() {
 }
 
 void World::onWorldBeginGame(const f32v2& loadCenter) {
+
+    // Nav
+    if (mNetMode == WorldNetMode::Host) {
+        mNavWorld = std::make_unique<NavWorld>(*this);
+        Services::NavThread::ref().init(*mNavWorld);
+    }
+
     assert(!mDidBegin);
     mDidBegin = true;
     // Init chunks
@@ -278,8 +277,10 @@ void World::shutdown() {
     mTileContainerRepository.reset();
 
     // Render thread needs to remove resources
-    while (RenderThreadTasks::getInstance().getQueuedShutdownTasksApprox()) {
-        Sleep(1);
+    if (mDidBegin) {
+        while (RenderThreadTasks::getInstance().getQueuedShutdownTasksApprox()) {
+            Sleep(1);
+        }
     }
 }
 

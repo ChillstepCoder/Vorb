@@ -1,6 +1,7 @@
 #pragma once
 #include "IWorldGenerationStage.h"
 #include "world/biome/BiomeCorruptions.h"
+#include "world/World.h"
 
 enum class HistoryEventType {
     ChernobogSpawn,
@@ -21,10 +22,12 @@ struct BiomeGrowPass {
     ui32 numBlocks;
 };
 
+// Allocates the world and generates history
 class HistoryGenerationStage : public IWorldGenerationStage
 {
 public:
-    using IWorldGenerationStage::IWorldGenerationStage;
+    HistoryGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
+        IWorldGenerationStage(generator), mWorldPtr(worldPtr) {}
 
     void begin() override;
 
@@ -33,6 +36,7 @@ public:
     bool update() override;
 
 private:
+    void allocateWorld();
     // History events
     void handleHistoryEvent(HistoryEvent& event);
     void handleCorruptSpawn(BiomeCorruptions type);
@@ -53,5 +57,7 @@ private:
     int mGrowPassCount = 0;
     int mGrowPassRowBlockIndex = 0;
     int mGrowPassRowsPerPass = 0;
+
+    std::unique_ptr<World>& mWorldPtr;
 };
 

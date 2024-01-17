@@ -52,6 +52,8 @@ void HistoryGenerationStage::begin()
     // Minus 1 for padding
     mGrowPassRowsPerPass = mBiomeGrid->getWidthVertices() / ROWS_PER_ROW_BLOCK - 1;
     mGrowPassCount = mGenerationData.mBiomeGrowPassCount;
+
+    allocateWorld();
 }
 
 bool HistoryGenerationStage::update() {
@@ -75,6 +77,11 @@ bool HistoryGenerationStage::update() {
         return true;
     }
     return false;
+}
+
+void HistoryGenerationStage::allocateWorld() {
+    assert(!mWorldPtr);
+    mWorldPtr = std::make_unique<World>(WorldNetMode::Host, mWorldData);
 }
 
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
