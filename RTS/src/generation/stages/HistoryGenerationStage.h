@@ -3,6 +3,10 @@
 #include "world/biome/BiomeCorruptions.h"
 #include "world/World.h"
 
+class HostSimContext;
+
+constexpr ui64 HISTORY_GEN_DURATION_HOURS = 2;
+
 enum class HistoryEventType {
     ChernobogSpawn,
     BanshiraSpawn,
@@ -35,6 +39,8 @@ public:
 
     bool update() override;
 
+    f32 getProgress() const override { return glm::min(mHistoryProgress, 1.0f); }
+
 private:
     void allocateWorld();
     // History events
@@ -46,7 +52,7 @@ private:
     void downloadBiomes();
 
     f32 mHistoryProgress = 0.0f; // [0,1]
-    f32 mTickTime = 0.01f;
+    TimestampMs mHistoryDurationMS =  HISTORY_GEN_DURATION_HOURS * 60 * 60 * MS_PER_SECOND;
     ui32 mTickCount = 0;
     ui32 mNextEventIndex = 0;
     // Sorted by time
@@ -59,5 +65,6 @@ private:
     int mGrowPassRowsPerPass = 0;
 
     std::unique_ptr<World>& mWorldPtr;
+    HostSimContext* mHostSimContext = nullptr;
 };
 

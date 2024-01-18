@@ -83,8 +83,8 @@ void GameThread::mainFunc() {
     initWorld();
 
     // Init time
-    GameTimeManager& gameTimeManager = Services::GameTimeManager::ref();
-    gameTimeManager.init(1.0 / SERVER_TICK_RATE_HZ);
+    TimestepManager& TimestepManager = Services::TimestepManager::ref();
+    TimestepManager.init(1.0 / SERVER_TICK_RATE_HZ);
 
     // TODO: Load world data
 
@@ -94,7 +94,7 @@ void GameThread::mainFunc() {
         PROFILE_SCOPE("GameLoop");
         // Fixed timestep
         f64 sleepSec = 0.0;
-        if (gameTimeManager.tryTick(&sleepSec)) {
+        if (TimestepManager.tryTick(&sleepSec)) {
             mThreadUtilizationTimer.beginFrame();
             tick();
             // Force a thread switch if anyone is waiting
@@ -137,7 +137,7 @@ void GameThread::tick() {
     {
         std::lock_guard lock(mActiveEditorWorldMutex);
         if (mActiveEditorWorld) {
-            const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
+            const f64 timeStep = Services::TimestepManager::ref().getTimestepSec();
             mActiveEditorWorld->tick(timeStep);
         }
     }
@@ -153,7 +153,7 @@ void GameThread::tickClient() {
         assert(false);
     }
     client.setActiveWorld(&mWorld);
-    const f64 timeStep = Services::GameTimeManager::ref().getTimestep();
+    const f64 timeStep = Services::TimestepManager::ref().getTimestepSec();
     client.update(timeStep);
 
     mWorld.tick(timeStep);
@@ -175,7 +175,7 @@ void GameThread::tickHost() {
     }
 
     // Update world
-    mWorld.tick(Services::GameTimeManager::ref().getTimestep());
+    mWorld.tick(Services::TimestepManager::ref().getTimestepSec());
 
     // Update editors
     /*UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());

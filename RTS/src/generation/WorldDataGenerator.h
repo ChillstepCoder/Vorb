@@ -23,6 +23,8 @@ public:
     void beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void()> onFinished);
 
     const char* getCurrentStageName() const;
+    f32 getCurrentStageProgress() const;
+    bool isDone() const { return mFinished; }
 
     // Call before generating again
     void cleanup();

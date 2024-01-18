@@ -2,6 +2,7 @@
 #include "HistoryGenerationStage.h"
 
 #include "world/host/HostWorldData.h"
+#include "world/simulation/host/HostSimContext.h"
 #include "generation/WorldGenerationData.h"
 #include "generation/WorldGenerationBlackboard.h"
 
@@ -61,7 +62,7 @@ bool HistoryGenerationStage::update() {
     updateBiomes();
 
     if (!allEventsTriggered) {
-        mHistoryProgress += mTickTime;
+        mHistoryProgress = (f32)((f64)mHostSimContext->getSimTime() / (f64)mHistoryDurationMS);
         ++mTickCount;
         while (mNextEventIndex < mHistoryEvents.size() && mHistoryEvents[mNextEventIndex].time <= mHistoryProgress) {
             handleHistoryEvent(mHistoryEvents[mNextEventIndex]);
@@ -74,6 +75,7 @@ bool HistoryGenerationStage::update() {
         }
     }
     else if (mGrowPassCount == 0 && !mCurBiomeGrowPass.sync) {
+        mHostSimContext->endHistorySimulation();
         return true;
     }
     return false;
@@ -82,6 +84,10 @@ bool HistoryGenerationStage::update() {
 void HistoryGenerationStage::allocateWorld() {
     assert(!mWorldPtr);
     mWorldPtr = std::make_unique<World>(WorldNetMode::Host, mWorldData);
+    mHostSimContext = mWorldPtr->tryGetHostSimContext();
+    assert(mHostSimContext);
+
+    mHostSimContext->beginHistorySimulation();
 }
 
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {

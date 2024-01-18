@@ -484,7 +484,7 @@
     <ClCompile Include="src\tile\TileHarvestable.cpp" />
     <ClCompile Include="src\tile\TileUtil.cpp" />
     <ClCompile Include="src\tile\TileWallContainer.cpp" />
-    <ClCompile Include="src\time\GameTimeManager.cpp" />
+    <ClCompile Include="src\time\TimestepManager.cpp" />
     <ClCompile Include="src\time\TimeOfDayManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\editor\AssetEditorViewportPanel.cpp" />
@@ -538,8 +538,10 @@
     <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
     <ClCompile Include="src\world\simulation\host\SimECS.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp" />
     <ClCompile Include="src\world\simulation\host\SimThread.cpp" />
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
+    <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
     <ClCompile Include="src\world\simulation\SimChunk.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
@@ -925,7 +927,7 @@
     <ClInclude Include="src\tile\TileHarvestable.h" />
     <ClInclude Include="src\tile\TileUtil.h" />
     <ClInclude Include="src\tile\TileWallContainer.h" />
-    <ClInclude Include="src\time\GameTimeManager.h" />
+    <ClInclude Include="src\time\TimestepManager.h" />
     <ClInclude Include="src\time\TimeOfDayManager.h" />
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
@@ -1016,9 +1018,11 @@
     <ClInclude Include="src\world\simulation\host\component\SimComponents.h" />
     <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
     <ClInclude Include="src\world\simulation\host\SimECS.h" />
+    <ClInclude Include="src\world\simulation\host\SimImmigrationManager.h" />
     <ClInclude Include="src\world\simulation\host\SimThread.h" />
     <ClInclude Include="src\world\simulation\host\StoryTeller.h" />
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
+    <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />
     <ClInclude Include="src\world\simulation\SimChunk.h" />
     <ClInclude Include="src\world\simulation\SimTask.h" />
     <ClInclude Include="src\world\World.h" />

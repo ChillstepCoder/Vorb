@@ -302,6 +302,12 @@ void World::setLoadCenter(const f32v2& loadCenter) {
     mLoadCenter = loadCenter;
 }
 
+void World::setWorldTimeMs(ui64 newTime) {
+    // Fast forward only
+    assert(newTime > mWorldTimeMs);
+    mWorldTimeMs = newTime;
+}
+
 TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     ASSERT_GAME_THREAD();
     i32v2 worldPos2D = worldPos;

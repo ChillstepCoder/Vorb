@@ -3,7 +3,7 @@
 class HostSimContext;
 struct SimTaskData;
 
-typedef void(*SimTaskTickFunction)(HostSimContext& context, SimTaskData& task, entt::entity owner, SimTimestamp currentTime, bool wasCancelled);
+typedef void(*SimTaskTickFunction)(HostSimContext& context, SimTaskData& task, entt::entity owner, TimestampMs currentTime, bool wasCancelled);
 
 typedef ui32 SimTaskID;
 constexpr ui32 INVALID_TASK_ID = UINT32_MAX;
@@ -41,9 +41,9 @@ struct SimTaskData {
     ui8 lastStep = 0;
     i32v2 stepStartWorldPos;
     i32v2 stepEndWorldPos;
-    SimTimestamp taskStartTime;
-    SimTimestamp lastTickTime;
-    SimTimestamp estimatedEndTime;
+    TimestampMs taskStartTime;
+    TimestampMs lastTickTime;
+    TimestampMs estimatedEndTime;
     entt::entity taskWorker;
     bool isFullySimulated = false;
     BitFlags<SimTaskFlags> flags;

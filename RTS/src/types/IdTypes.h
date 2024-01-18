@@ -39,8 +39,7 @@ constexpr ui32 INVALID_FACTION_ID = UINT32_MAX;
 
 typedef ui32 ServerPlayerID;
 
-// Flexible timestamp in sim units. Can be seconds, minutes, centiseconds, ect
-typedef i32 SimTimestamp;
+typedef ui64 TimestampMs;
 
 // UIDs
 typedef ui16 BusinessID; // No more than 65535 businesses per city

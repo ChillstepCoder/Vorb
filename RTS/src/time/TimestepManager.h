@@ -1,14 +1,15 @@
 #pragma once
 
 // Time manager that implements fixed timestep for updates
-class GameTimeManager
+class TimestepManager
 {
 public:
     void init(f64 fixedTimeStepSec);
 
     bool tryTick(f64* sleepSec);
     TimeStampSec getCurrentTimeSec() const { return mTimeSec; }
-    f64 getTimestep() const { return mTimeStepSec; }
+    f64 getTimestepSec() const { return mTimeStepSec; }
+    void setTargetTimestepSec(f64 timestepSec) { mTimeStepSec = timestepSec; }
 
 private:
     f64 mTimeStepSec = 0.0; // Target timestep

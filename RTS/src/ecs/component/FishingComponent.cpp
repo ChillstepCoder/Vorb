@@ -12,7 +12,7 @@
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
-#include "time/GameTimeManager.h"
+#include "time/TimestepManager.h"
 
 #include "ui/UIContext.h"
 #include "ui/minigame/FishingMinigame.h"
@@ -45,7 +45,7 @@ FishingComponentSystem::~FishingComponentSystem() {
 
 void FishingComponentSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
 
-    mTimeStep = Services::GameTimeManager::ref().getTimestep();
+    mTimeStep = Services::TimestepManager::ref().getTimestepSec();
 
     auto view = registry.view<FishingComponent, PhysicsComponent, CharacterControlComponent>();
 

@@ -6,7 +6,7 @@
 class NavThread;
 class ResourceManager;
 class ContractManager;
-class GameTimeManager;
+class TimestepManager;
 
 class Services
 {
@@ -25,7 +25,7 @@ public:
     using NavThread = entt::service_locator<NavThread>;
     using ResourceManager = entt::service_locator<ResourceManager>;
     using ContractManager = entt::service_locator<ContractManager>;
-    using GameTimeManager = entt::service_locator<GameTimeManager>;
+    using TimestepManager = entt::service_locator<TimestepManager>;
 private:
     static void initThreads();
     static bool sUsingNav;

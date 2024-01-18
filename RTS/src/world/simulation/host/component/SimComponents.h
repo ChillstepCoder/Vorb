@@ -36,13 +36,13 @@ struct SimBrainComponent {
 static_assert(sizeof(SimBrainComponent) == 1, "Keep small for cache efficiency");
 
 struct SimInProgressTaskComponent {
-    SimTimestamp taskStepStartTime;
-    SimTimestamp taskStepEndTime;
+    TimestampMs taskStepStartTime;
+    TimestampMs taskStepEndTime;
     SimTaskHandle currentTask;
     SimTaskPriority taskPriority = SimTaskPriority::Idle;
-    ui8 padding[3];
+    ui8 padding[7];
 };
-static_assert(sizeof(SimInProgressTaskComponent) == 20, "Keep small for cache efficiency");
+static_assert(sizeof(SimInProgressTaskComponent) == 32, "Keep small for cache efficiency");
 
 struct SimNeedsComponent {
     f32 hunger = 0.0f; // [0, 1>, 1 is starving. Can go beyond 1.
@@ -59,7 +59,7 @@ struct SimGroupLeaderComponent {
 
 struct SimGroupFollowerComponent {
     entt::entity leader;
-    SimTimestamp nextFollowCheckTime; // When to check if we should keep following
+    TimestampMs nextFollowCheckTime; // When to check if we should keep following
 };
 
 // Represents a list of tasks, and who is working on them for us. Does not include tasks we are doing for ourselves

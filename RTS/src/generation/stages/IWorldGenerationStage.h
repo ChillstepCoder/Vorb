@@ -22,6 +22,8 @@ public:
 
     virtual void abort();
 
+    virtual f32 getProgress() const { return 0.0f; }
+
 protected:
     virtual void abortInternal() {};
     WorldDataGenerator& mGenerator;

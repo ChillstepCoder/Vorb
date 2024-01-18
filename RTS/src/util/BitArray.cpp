@@ -23,6 +23,10 @@ void BitArray::resizeAndZero(ui32 numBits) {
     mData.resize(size_t((numBits + (BITS_PER_ELEMENT - 1)) / BITS_PER_ELEMENT), 0);
 }
 
+void BitArray::fill(bool val) {
+    memset(mData.data(), val ? 0xFF : 0, mData.size() * sizeof(DataType));
+}
+
 void BitArray::setBit(ui32 index) {
     const ui32 i = index >> BIT_SHIFT;
     const DataType j = (DataType)(index - (i << BIT_SHIFT));

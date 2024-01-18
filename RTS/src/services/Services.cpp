@@ -4,7 +4,7 @@
 #include "pathfinding/NavThread.h"
 #include "resources/ResourceManager.h"
 #include "city/contracts/ContractManager.h"
-#include "time/GameTimeManager.h"
+#include "time/TimestepManager.h"
 
 static bool sIsInit = false;
 bool Services::sUsingNav = false;
@@ -23,7 +23,7 @@ void Services::initHost()
     sUsingNav = true;
     initThreads();
     ContractManager::set();
-    GameTimeManager::set();
+    TimestepManager::set();
 }
 
 void Services::initCli()
@@ -35,7 +35,7 @@ void Services::initCli()
 
     sUsingNav = false;
     initThreads();
-    GameTimeManager::set();
+    TimestepManager::set();
 }
 
 void Services::destroy()
@@ -47,7 +47,7 @@ void Services::destroy()
         Threadpool::reset();
         NavThread::reset();
         ContractManager::reset();
-        GameTimeManager::reset();
+        TimestepManager::reset();
     }
 }
 

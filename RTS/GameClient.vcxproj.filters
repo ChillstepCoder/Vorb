@@ -498,7 +498,7 @@
     <ClCompile Include="src\network\cli\CliMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\time\GameTimeManager.cpp">
+    <ClCompile Include="src\time\TimestepManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\RenderThreadTasks.cpp">
@@ -903,9 +903,6 @@
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\simulation\SimChunk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -994,6 +991,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\SimChunk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1658,7 +1664,7 @@
     <ClInclude Include="src\network\cli\CliMessage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\time\GameTimeManager.h">
+    <ClInclude Include="src\time\TimestepManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\RenderThreadTasks.h">
@@ -2300,9 +2306,6 @@
     <ClInclude Include="src\world\simulation\host\HostSimContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\SimChunk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2439,6 +2442,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\system\SimAISystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\SimImmigrationManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\SimChunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

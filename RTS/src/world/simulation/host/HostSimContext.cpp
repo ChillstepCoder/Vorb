@@ -4,31 +4,53 @@
 #include "world/simulation/host/SimThread.h"
 #include "world/World.h"
 #include "world/IChunkGrid.h"
+#include "world/simulation/host/SimECS.h"
 
 #include "world/simulation/host/component/SimComponents.h"
 #include "world/simulation/host/component/SettlementComponents.h"
 #include "world/simulation/host/StoryTeller.h"
+#include "world/simulation/host/SimImmigrationManager.h"
 
 HostSimContext::HostSimContext(World& world) :
     WorldContextObject(world),
     mChunkData(world.getChunkGrid().getTotalChunks()),
     mTotalChunks(world.getChunkGrid().getTotalChunks())
 {
-
     mStoryTeller = std::make_unique<StoryTeller>();
     mChunkStates.resizeAndZero(mTotalChunks);
-    
-    mSimThread = std::make_unique<SimThread>(*this, world);
-
+    mSimulatingChunks.resize(mTotalChunks);
+    mSimulatingChunks.fill(true);
+    mSimECS = std::make_unique<SimECS>(*this);
+    mImmigrationManager = std::make_unique<SimImmigrationManager>(*this);
 }
 
-HostSimContext::~HostSimContext()
-{
+HostSimContext::~HostSimContext() {
+    mSimThread.reset(); // Join
+}
 
+void HostSimContext::beginHistorySimulation() {
+    assert(!mSimThread);
+    assert(!mSimulatingHistory);
+    mSimThread = std::make_unique<SimThread>(*this, mWorld);
+    mSimThread->setState(SimThreadState::HistorySim);
+    mSimThread->setTargetTickRateMs(8.0);
+    mSimThread->setTimeScale(1000.0f);
+    mSimThread->start();
+    mSimulatingHistory = true;
+}
+
+void HostSimContext::endHistorySimulation() {
+    // TODO: We should probably join here
+    mSimThread->setState(SimThreadState::Idle);
 }
 
 void HostSimContext::onWorldBeginGame() {
-
+    if (!mSimThread) {
+        mSimThread = std::make_unique<SimThread>(*this, mWorld);
+    }
+    mSimThread->setTargetTickRateMs(60.0);
+    mSimThread->setTimeScale(1.0f);
+    mSimThread->setState(SimThreadState::GameSim);
 }
 
 void HostSimContext::registerPlayer(ServerPlayerID playerId, f32v3 startPos) {

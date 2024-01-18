@@ -50,12 +50,18 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
     initStages();
 }
 
-const char* WorldDataGenerator::getCurrentStageName() const
-{
+const char* WorldDataGenerator::getCurrentStageName() const {
     if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
         return stage->getStageName();
     }
     return "Finished Generating";
+}
+
+f32 WorldDataGenerator::getCurrentStageProgress() const {
+    if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
+        return stage->getProgress();
+    }
+    return 0.0f;
 }
 
 void WorldDataGenerator::cleanup() {

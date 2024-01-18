@@ -63,6 +63,8 @@ public:
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
     ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH; }
     WorldID getId() const { return mId; }
+    ui64 getWorldTimeMs() const { return mWorldTimeMs; }
+    void setWorldTimeMs(ui64 newTime);
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
@@ -81,7 +83,7 @@ public:
     IEffectContext& getEffectContext() const { return *mEffectContext; }
     VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
     WeatherManager& getWeatherManager() const { return *mWeatherManager; }
-    HostSimContext& getHostSimContext() const { assert(mHostSimContext); return *mHostSimContext; }
+    HostSimContext* tryGetHostSimContext() const { return mHostSimContext.get(); }
     IFactionManager& getFactionManager() const { return *mFactionManager; }
 
     // Optional system accessors 
@@ -122,6 +124,8 @@ private:
     f32v2 mLoadCenter = f32v2(0);
     ui32 mWidthTiles = 0;
     f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
+
+    ui64 mWorldTimeMs = 0; // Time since the world began
 
     // Chunks
     std::unique_ptr<IChunkGrid> mChunkGrid;

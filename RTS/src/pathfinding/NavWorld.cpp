@@ -10,7 +10,7 @@
 
 #include "tile/TileContainerRepository.h"
 
-#include "time/GameTimeManager.h"
+#include "time/TimestepManager.h"
 
 #include "city/Building.h"
 
@@ -166,7 +166,7 @@ void NavWorld::updateNavThread()
     }
 
     // Cleanup old harvestable reservations
-    const f64 timeStampNow = Services::GameTimeManager::ref().getCurrentTimeSec();
+    const f64 timeStampNow = Services::TimestepManager::ref().getCurrentTimeSec();
     for (auto it = mReservedHarvestables.begin(); it != mReservedHarvestables.end();) {
         if (it->second - timeStampNow > RESERVE_DURATION_SEC) {
             it = mReservedHarvestables.erase(it);
@@ -1395,10 +1395,10 @@ bool NavWorld::navThreadTryReserveHarvestable(LiteTileHandle position) const {
     ASSERT_NAV_THREAD();
     auto&& it = mReservedHarvestables.find(position);
     if (it == mReservedHarvestables.end()) {
-        mReservedHarvestables.insert(std::make_pair(position, Services::GameTimeManager::ref().getCurrentTimeSec()));
+        mReservedHarvestables.insert(std::make_pair(position, Services::TimestepManager::ref().getCurrentTimeSec()));
         return true;
     }
-    const f64 timeStampNow = Services::GameTimeManager::ref().getCurrentTimeSec();
+    const f64 timeStampNow = Services::TimestepManager::ref().getCurrentTimeSec();
     const f64 lifetime = timeStampNow - it->second;
     if (lifetime >= RESERVE_DURATION_SEC) {
         it->second = timeStampNow;

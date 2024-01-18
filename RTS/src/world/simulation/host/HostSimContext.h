@@ -3,12 +3,15 @@
 #include "world/WorldContextObject.h"
 
 #include "world/simulation/SimChunk.h"
+
 #include "tile/TileHarvestable.h"
 
 #include "util/BitArray.h"
 
 class SimThread;
 class StoryTeller;
+class SimECS;
+class SimImmigrationManager;
 
 // What needs to simulate:
 // 1. Businesses (economy) (Includes GovernmentBusiness?)
@@ -18,71 +21,6 @@ class StoryTeller;
 
 // Can range from a simple hamlet to a sprawling metropolis
 
-enum class SimCharacterStatus : ui8 {
-    Idle,
-    Working,
-    Dead,
-    COUNT
-};
-
-enum class SimCharacterHealth : ui8 {
-    Healthy,
-    LightlyWounded,
-    ModeratelyWounded,
-    GravelyWounded,
-    Dead,
-};
-
-enum class SimCharacterTask : ui8 {
-    Idle,
-    Gather,
-    Build,
-    Travel,
-    COUNT
-};
-
-class SimBuilding {
-public:
-    BuildingUID mUID;
-};
-
-class SimCharacter {
-public:
-    CityUID mResidentCityID;
-    BusinessID mEmployer;
-    SimCharacterTask mTask;
-    SimCharacterStatus mStatus : 3;
-    SimCharacterHealth mHealth : 3;
-    SimTimestamp mTaskStartTime;
-    // TODO: Schedule?
-    // TODO: Needs? (Let schedule handle it?)
-    // Task Data
-    union {
-        struct {
-            ChunkID targetChunk;
-            TileHarvestable targetHarvestable;
-        } mGatherTaskData;
-        struct {
-            ChunkID targetChunk;
-        } mBuildTaskData;
-        struct {
-            ChunkID targetChunk;
-        } mTravelTaskData;
-    };
-};
-//SIZER(SimCharacter);
-
-typedef std::vector<SimCharacter> SimCharacterList;
-typedef std::vector<SimTimestamp> TimestampList;
-
-class SimCity {
-public:
-    CityUID mUID;
-    entt::registry mRegistry;
-
-    std::vector<CharacterUID> mResidents;
-};
-
 // Always active even if player is in a full chunk
 struct SimPlayer {
     f32v3 mLastKnownPosition;
@@ -90,15 +28,22 @@ struct SimPlayer {
 };
 
 class HostSimContext : public WorldContextObject {
+    friend class SimThread;
 public:
     HostSimContext(World& world);
     ~HostSimContext();
+
+    void beginHistorySimulation();
+    void endHistorySimulation();
 
     void onWorldBeginGame();
 
     void registerPlayer(ServerPlayerID playerId, f32v3 startPos);
     void setPlayerPosition(ServerPlayerID, f32v3 pos);
     void removePlayer(ServerPlayerID playerId);
+
+    SimThread* tryGetSimThread() const { return mSimThread.get(); }
+    TimestampMs getSimTime() const { return mSimTime; }
 
 private:
     //ChunkSimulator mSimulator;
@@ -107,9 +52,6 @@ private:
     // Characters
     //UniqueArray<ChunkSimCharacterData> mCharactersInChunks;
     // TODO: This can be in seconds, and use ui16 with -= per frame
-    std::vector<SimTimestamp> mNextCharacterTickTimes;
-    std::vector<CharacterUID> mTickingCharacters;
-    std::unordered_map<CharacterUID, SimCharacter> mSimCharacters;
 
     // Chunks
     UniqueArray<SimChunkData> mChunkData;
@@ -118,13 +60,13 @@ private:
     // TODO: Flat set?
     std::unordered_set<ChunkID> mFullChunks; // Only store full chunks in here, usually not very many
 
-    ui32 mSimChunkCount = 0;
     ui32 mTotalChunks;
 
     // TODO: Boost flat unordered map
-    std::unordered_map<CityUID, SimCity> mCities;
     std::unique_ptr<SimThread> mSimThread;
     std::unique_ptr<StoryTeller> mStoryTeller;
+    std::unique_ptr<SimECS> mSimECS;
+    std::unique_ptr<SimImmigrationManager> mImmigrationManager;
 
     // One per player, creates load zones.
     // NOTE: For sending NPCs to full chunks, we manage them and notify the game thread when
@@ -134,9 +76,7 @@ private:
     // If they are tring to join a full chunk, we will just tell them to unblock and continue simulating
     std::vector<SimPlayer> mPlayers;
 
-    // 1 hundredth of a second (100 centiseconds = 1 second)
-    // We simulate in centiseconds because we do not need fine simulation granularity
-    // and we will not run out of precision unless the simulation runs for 248 days
-    SimTimestamp mSimTimeCentiseconds = 0;
+    std::atomic<TimestampMs> mSimTime = 0; // Time in ms since the world started, should sync with world
+    bool mSimulatingHistory = false;
 };
 

@@ -1,16 +1,14 @@
 #include "stdafx.h"
-#include "GameTimeManager.h"
+#include "TimestepManager.h"
 
 #include <yojimbo/yojimbo.h>
 
-void GameTimeManager::init(f64 fixedTimeStepSec) {
-    ASSERT_GAME_THREAD();
+void TimestepManager::init(f64 fixedTimeStepSec) {
     mTimeStepSec = fixedTimeStepSec;
     mTimeSec = yojimbo_time();
 }
 
-bool GameTimeManager::tryTick(f64* sleepSec) {
-    ASSERT_GAME_THREAD();
+bool TimestepManager::tryTick(f64* sleepSec) {
     const f64 currentTime = yojimbo_time();
     // Fixed ticks
     const f64 timeLoad = mTimeSec.load();

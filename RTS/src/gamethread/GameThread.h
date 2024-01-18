@@ -1,7 +1,7 @@
 #pragma once
 
 #include "network/WorldNetMode.h"
-#include "time/GameTimeManager.h"
+#include "time/TimestepManager.h"
 
 #include "util/Timing/ThreadUtilizationTimer.h"
 
@@ -52,5 +52,5 @@ private:
 
 // TODO: Move this
 inline TimeStampSec getCurrentTimeStamp() {
-    return Services::GameTimeManager::ref().getCurrentTimeSec();
+    return Services::TimestepManager::ref().getCurrentTimeSec();
 }

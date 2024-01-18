@@ -49,6 +49,9 @@
 #include "rendering/model/ModelBillboardLodManager.h"
 #include "weather/CloudMeshManager.h"
 
+#include "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/SimThread.h"
+
 #include "gamethread/GameThreadTasks.h"
 
 #include "screens/ScreenState.h"
@@ -576,7 +579,17 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
             // Visibility
             drawColor = sprintfThreadStats(VisibilityThread::getInstance().getThreadUtilizationTimer(), "VisThread", buffer);
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
-            yOffset += GAP_SIZE * 2.0f;
+            yOffset += GAP_SIZE;
+            // Sim
+            if (HostSimContext* simContext = mActiveWorld->tryGetHostSimContext()) {
+                if (SimThread* simThread = simContext->tryGetSimThread()) {
+                    drawColor = sprintfThreadStats(simThread->getThreadUtilizationTimer(), "SimThread", buffer);
+                    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
+                    yOffset += GAP_SIZE;
+                }
+            }
+
+            yOffset += GAP_SIZE;
         }
 
         sprintf_s(buffer, STR_BUFFER_SIZE, "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
@@ -596,6 +609,14 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
             sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
+        }
+
+        if (HostSimContext* simContext = mActiveWorld->tryGetHostSimContext()) {
+            if (SimThread* simThread = simContext->tryGetSimThread()) {
+                sprintf_s(buffer, STR_BUFFER_SIZE, "SimQueue: %d", (int)simThread->getTasksSizeApprox());
+                mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+                yOffset += GAP_SIZE;
+            }
         }
 
         sprintf_s(buffer, STR_BUFFER_SIZE, "GameQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
