@@ -1,14 +1,17 @@
 #include "stdafx.h"
 #include "SimThread.h"
 
+#include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
+#include "world/simulation/host/SimImmigrationManager.h"
+
+#include "math/Random.h"
 
 constexpr int SIM_THREAD_IDLE_SLEEP_MS = 60;
 
 SimThread::SimThread(HostSimContext& simContext, World& world) : mWorld(world), mHostSimContext(simContext)
 {
-
 }
 
 SimThread::~SimThread() {
@@ -18,6 +21,7 @@ SimThread::~SimThread() {
 void SimThread::start()
 {
     assert(!mThread);
+    mRandomGenerator = std::make_unique<RandomGenerator>(mWorld.getSeed());
     mThread = std::make_unique<std::thread>(&SimThread::simThreadFunc, this);
 }
 
@@ -86,5 +90,5 @@ void SimThread::tickSim(SimThreadState state) {
     LOG_TRACE("Sim step starting at {} seconds", (f64)mHostSimContext.mSimTime / MS_PER_SECOND);
     mHostSimContext.mSimECS->tickSimThread(mHostSimContext.mSimTime);
 
-    mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime)
+    mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime);
 }

@@ -65,6 +65,7 @@ public:
     WorldID getId() const { return mId; }
     ui64 getWorldTimeMs() const { return mWorldTimeMs; }
     void setWorldTimeMs(ui64 newTime);
+    ui32 getSeed() const { return mSeed; }
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
@@ -126,6 +127,7 @@ private:
     f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
 
     ui64 mWorldTimeMs = 0; // Time since the world began
+    ui32 mSeed = 0;
 
     // Chunks
     std::unique_ptr<IChunkGrid> mChunkGrid;

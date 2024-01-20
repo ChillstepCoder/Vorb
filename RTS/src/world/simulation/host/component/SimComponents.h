@@ -6,6 +6,8 @@
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
 #include "ecs/component/InventoryComponent.h"
 #include "ecs/component/PersonalityComponent.h"
+#include "ecs/component/AttributesComponent.h"
+#include "world/simulation/host/component/CharacterGroupComponents.h"
 
 struct SimPositionComponent {
     i32v2 position; // Usually "last known" position in tiles
@@ -15,13 +17,17 @@ struct SimCharacterComponent {
     CharacterUID characterId;
 };
 
+struct SimCharacterGenderComponent {
+    bool isFemale = false;
+};
+
 struct SimEmploymentComponent {
     entt::entity employerId; // Can be a person or business entity
 };
 
 enum class SimBrainComponentFlags : ui8 {
-    IsFollowingLeader = BIT(0),
-    IsLeader = BIT(1),
+    IsFollowingCharacterGroup = BIT(0),
+    IsCharacterGroupLeader = BIT(1),
     HasTask = BIT(2),
     InCombat = BIT(3),
     TERM
@@ -52,16 +58,6 @@ struct SimNeedsComponent {
     bool wantsWork = true;
 };
 
-// Leads a group of characters around
-struct SimGroupLeaderComponent {
-    std::vector<entt::entity> groupMembers;
-};
-
-struct SimGroupFollowerComponent {
-    entt::entity leader;
-    TimestampMs nextFollowCheckTime; // When to check if we should keep following
-};
-
 // Represents a list of tasks, and who is working on them for us. Does not include tasks we are doing for ourselves
 struct SimTaskBossComponent {
     boost::container::flat_map<SimTaskID, SimTaskData> activeTasks;
@@ -72,8 +68,15 @@ struct SimResidentComponent {
     BuildingUID homeId;
 };
 
+struct SimCharacterNameComponent {
+    const char* firstName = nullptr;
+    const char* lastName = nullptr;
+};
+
 struct SimDescriptionComponent {
-    // TODO: Allocate in one block with string_views?
-    nString name;
     nString desc;
+};
+
+struct FactionComponent {
+    FactionID factionId;
 };

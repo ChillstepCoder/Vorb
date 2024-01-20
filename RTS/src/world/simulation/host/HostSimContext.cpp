@@ -16,6 +16,7 @@ HostSimContext::HostSimContext(World& world) :
     mChunkData(world.getChunkGrid().getTotalChunks()),
     mTotalChunks(world.getChunkGrid().getTotalChunks())
 {
+    mAnalytics = std::make_unique<SimWorldAnalytics>();
     mStoryTeller = std::make_unique<StoryTeller>();
     mChunkStates.resizeAndZero(mTotalChunks);
     mSimulatingChunks.resize(mTotalChunks);
@@ -29,11 +30,14 @@ HostSimContext::~HostSimContext() {
 }
 
 void HostSimContext::beginHistorySimulation() {
+
+    mAnalytics->setDesiredPopulation(10000);
+
     assert(!mSimThread);
     assert(!mSimulatingHistory);
     mSimThread = std::make_unique<SimThread>(*this, mWorld);
     mSimThread->setState(SimThreadState::HistorySim);
-    mSimThread->setTargetTickRateMs(8.0);
+    mSimThread->setTargetTickRateMs(8.0); // TODO: Why does 1 make it slower
     mSimThread->setTimeScale(1000.0f);
     mSimThread->start();
     mSimulatingHistory = true;
@@ -76,4 +80,8 @@ void HostSimContext::removePlayer(ServerPlayerID playerId) {
             return;
         }
     }
+}
+
+RandomGenerator& HostSimContext::getSimRandomGenerator() const {
+    return mSimThread->getRandomGenerator();
 }

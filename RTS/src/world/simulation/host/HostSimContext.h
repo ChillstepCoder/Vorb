@@ -3,6 +3,7 @@
 #include "world/WorldContextObject.h"
 
 #include "world/simulation/SimChunk.h"
+#include "world/simulation/host/SimWorldAnalytics.h"
 
 #include "tile/TileHarvestable.h"
 
@@ -12,6 +13,7 @@ class SimThread;
 class StoryTeller;
 class SimECS;
 class SimImmigrationManager;
+class RandomGenerator;
 
 // What needs to simulate:
 // 1. Businesses (economy) (Includes GovernmentBusiness?)
@@ -44,7 +46,9 @@ public:
 
     SimThread* tryGetSimThread() const { return mSimThread.get(); }
     TimestampMs getSimTime() const { return mSimTime; }
-
+    SimECS& getECS() const { return *mSimECS; }
+    SimWorldAnalytics& getAnalytics() const { return *mAnalytics; }
+    RandomGenerator& getSimRandomGenerator() const;
 private:
     //ChunkSimulator mSimulator;
 
@@ -67,6 +71,7 @@ private:
     std::unique_ptr<StoryTeller> mStoryTeller;
     std::unique_ptr<SimECS> mSimECS;
     std::unique_ptr<SimImmigrationManager> mImmigrationManager;
+    std::unique_ptr<SimWorldAnalytics> mAnalytics;
 
     // One per player, creates load zones.
     // NOTE: For sending NPCs to full chunks, we manage them and notify the game thread when

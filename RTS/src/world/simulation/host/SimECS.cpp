@@ -7,9 +7,12 @@
 
 #include "world/simulation/host/system/SimAISystem.h"
 
+#include "text/NameManager.h"
+
+#include "math/Random.h"
 
 SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext) {
-
+    mAISystem = std::make_unique<SimAISystem>(hostSimContext, mRegistry);
 }
 
 SimECS::~SimECS() {
@@ -17,6 +20,8 @@ SimECS::~SimECS() {
 }
 
 void SimECS::tickSimThread(TimestampMs currentTimestamp) {
+    ASSERT_SIM_THREAD();
+
     mCurrentTickTimestamp = currentTimestamp;
     mTimeDelta = currentTimestamp - mLastTickTimestamp;
     mLastTickTimestamp = currentTimestamp;
@@ -24,6 +29,96 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     updateAI();
     updateSettlements();
 }
+
+entt::entity SimECS::createNewPerson(i32v2 worldTilePosition) {
+    ASSERT_SIM_THREAD();
+
+    entt::entity newPerson = mRegistry.create();
+    RandomGenerator& gen = mHostSimContext.getSimRandomGenerator();
+
+    const bool isFemale = gen.getRandomBool();
+
+    mRegistry.emplace<SimCharacterComponent>(newPerson, ++mUIDGenerator);
+    mRegistry.emplace<SimCharacterGenderComponent>(newPerson, isFemale);
+    mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition);
+    mRegistry.emplace<SimBrainComponent>(newPerson);
+    mRegistry.emplace<SimNeedsComponent>(newPerson);
+    mRegistry.emplace<AttributesComponent>(newPerson).init(
+        DEFAULT_HEALTH,
+        DEFAULT_STAMINA,
+        DEFAULT_BLOOD,
+        DEFAULT_MOVE_SPEED
+    );
+
+    SimCharacterNameComponent& nameCmp = mRegistry.emplace<SimCharacterNameComponent>(newPerson);
+    nameCmp.firstName = NameManager::getRandomFirstName(gen, isFemale);
+    nameCmp.lastName = NameManager::getRandomLastName(gen);
+
+    return newPerson;
+}
+
+
+entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, i32v2 targetPos) {
+    entt::entity groupEntity = createNewCharacterGroup(members, leaderIndex, CharacterGroupType::SettlerCaravan);
+    CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(groupEntity);
+    groupCmp.targetPos = targetPos;
+}
+
+void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason) {
+    CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(group);
+
+    for (auto& follower : groupCmp.groupMembers) {
+        CharacterGroupFollowerComponent& followerCmp = mRegistry.get<CharacterGroupFollowerComponent>(follower);
+
+        // TODO: resolve reasons
+        if (reason == CharacterGroupDissolveReason::GoalSuccess) {
+            switch (followerCmp.followReason) {
+                case CharacterGroupFollowerReason::None:
+                    break;
+                case CharacterGroupFollowerReason::Settler:
+                    break;
+                case CharacterGroupFollowerReason::Bodyguard:
+                    break;
+                default:
+                    assert(false);
+
+            }
+            static_assert(e_count(CharacterGroupFollowerReason) == 3, "Add resolve");
+        }
+
+        mRegistry.remove<CharacterGroupFollowerComponent>(follower);
+    }
+
+    mRegistry.destroy(group);
+}
+
+entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType) {
+    assert(leaderIndex < members.size());
+
+    entt::entity leader = members[leaderIndex];
+    CharacterGroupLeaderComponent& leaderCmp = mRegistry.get_or_emplace<CharacterGroupLeaderComponent>(leader);
+
+    entt::entity groupEntity = mRegistry.create();
+    CharacterGroupComponent& groupCmp = mRegistry.emplace<CharacterGroupComponent>(groupEntity);
+    groupCmp.leader = leader;
+    groupCmp.groupType = groupType;
+
+    // Register all members and track average movement speed of the caravan from their move speeds
+    f32 avgMoveSpeed = 0.0f;
+    groupCmp.groupMembers.reserve(members.size());
+    for (size_t i = 0; i < members.size(); ++i) {
+        groupCmp.groupMembers.push_back(members[i]);
+        mRegistry.get_or_emplace<CharacterGroupFollowerComponent>(members[i]).groupEntity = groupEntity;
+        avgMoveSpeed += mRegistry.get<AttributesComponent>(members[i]).getCurrentAttribute(AttributeType::MoveSpeed);
+    }
+    avgMoveSpeed = glm::max(avgMoveSpeed, 0.1f);
+    avgMoveSpeed /= members.size();
+    groupCmp.moveSpeed = avgMoveSpeed;
+    groupCmp.nextRefreshTime = mCurrentTickTimestamp + CHARACTER_GROUP_DEFAULT_REFRESH_INTERVAL_MS;
+
+    return groupEntity;
+}
+
 
 void SimECS::updateAI() {
     SimAISystem::tick(mRegistry, mCurrentTickTimestamp, mTimeDelta);

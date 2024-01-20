@@ -98,6 +98,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mEffectContext = std::make_unique<HostEffectContext>(*this);
             mHostSimContext = std::make_unique<HostSimContext>(*this);
             mFactionManager = std::make_unique<HostFactionManager>(*this);
+            mSeed = hostWorldData->worldSeed;
             break;
         }
         default:

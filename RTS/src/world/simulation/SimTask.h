@@ -64,3 +64,7 @@ public:
 protected:
     static SimTaskTickFunction getTickFunc();
 };
+
+class SimTaskSettleChunk {
+
+};

@@ -9,12 +9,24 @@ HostFactionManager::HostFactionManager(World& world) : IFactionManager(world), m
 
 HostFactionManager::~HostFactionManager() = default;
 
-void HostFactionManager::addFaction(Faction faction) {
+FactionID HostFactionManager::addFaction(Faction faction) {
     // TODO: Replicate to clients
-    mCliFactionManager.addFaction(faction);
+    return mCliFactionManager.addFaction(faction);
 }
 
 i8 HostFactionManager::getFactionRelation(FactionID faction1, FactionID faction2) {
     // TODO: Replicate to clients
     return mCliFactionManager.getFactionRelation(faction1, faction2);
+}
+
+void HostFactionManager::addEntitiesToFaction(entt::registry& registry, std::span<entt::entity> entities, FactionID faction) {
+    mCliFactionManager.addEntitiesToFaction(registry, entities, faction);
+}
+
+FactionID HostFactionManager::getRandomActiveFactionID() {
+    return mCliFactionManager.getRandomActiveFactionID();
+}
+
+FactionID HostFactionManager::generateRandomNewFaction() {
+    return mCliFactionManager.generateRandomNewFaction();
 }

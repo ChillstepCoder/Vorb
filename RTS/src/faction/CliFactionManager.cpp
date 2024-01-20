@@ -1,19 +1,26 @@
 #include "stdafx.h"
 #include "CliFactionManager.h"
 
-CliFactionManager::CliFactionManager(World& world) : IFactionManager(world)
-{
+#include "math/Random.h"
+#include "world/World.h"
 
+#include "world/simulation/host/component/SimComponents.h"
+
+CliFactionManager::CliFactionManager(World& world) : IFactionManager(world) {
+    mRandomGenerator = std::make_unique<RandomGenerator>(world.getSeed() ^ (world.getSeed() << 53262));
 }
 
 CliFactionManager::~CliFactionManager() = default;
 
-void CliFactionManager::addFaction(Faction faction) {
+FactionID CliFactionManager::addFaction(Faction faction) {
     {
         std::lock_guard lock(mFactionsMutex);
         mFactions[mNextFactionID] = std::move(faction);
+        mActiveFactions.emplace_back(mNextFactionID);
     }
+    FactionID rv = mNextFactionID;
     ++mNextFactionID;
+    return rv;
 }
 
 i8 CliFactionManager::getFactionRelation(FactionID faction1, FactionID faction2) {
@@ -34,6 +41,34 @@ i8 CliFactionManager::getFactionRelation(FactionID faction1, FactionID faction2)
     }
 }
 
+void CliFactionManager::addEntitiesToFaction(entt::registry& registry, std::span<entt::entity> entities, FactionID factionId) {
+
+    { // Critical section
+        std::lock_guard lock(mFactionsMutex);
+        Faction& faction = mFactions[factionId];
+        size_t startCopy = faction.members.size();
+        faction.members.resize(startCopy + entities.size());
+        memcpy(faction.members.data() + startCopy, entities.data(), entities.size_bytes());
+    }
+
+    for (entt::entity newEntity : entities) {
+        // TODO: Special event on faction switching?
+        registry.get_or_emplace<FactionComponent>(newEntity).factionId = factionId;
+    }
+}
+
+FactionID CliFactionManager::getRandomActiveFactionID() {
+    std::shared_lock lock(mFactionsMutex);
+    if (mActiveFactions.empty()) [[unlikely]] return INVALID_FACTION_ID;
+    if (mActiveFactions.size() == 1) [[unlikely]] return mActiveFactions[0];
+    return mActiveFactions[mRandomGenerator->getRandomUIntInRange(0, mActiveFactions.size() - 1)];
+}
+
+FactionID CliFactionManager::generateRandomNewFaction() {
+    Faction newFaction;
+    // TODO: Make this work properly
+    return addFaction(newFaction);
+}
 
 i8 CliFactionManager::getDefaultFactionRelation(FactionIDPair factions) {
     BitFlags<FactionTraits> t1, t2;

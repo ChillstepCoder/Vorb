@@ -6,6 +6,7 @@
 
 class World;
 class HostSimContext;
+class RandomGenerator;
 
 constexpr f64 SIM_TICK_RATE_MS = 64.0;
 
@@ -31,6 +32,7 @@ public:
     void addTask(std::function<void()> task) { mSimThreadProcs.enqueue(task); }
 
     const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
+    RandomGenerator& getRandomGenerator() { ASSERT_SIM_THREAD(); return *mRandomGenerator; }
 private:
     void simThreadFunc();
     void tickSim(SimThreadState state);
@@ -46,6 +48,7 @@ private:
     std::atomic<f32> mTargetTickRateMs = 60.0f;
     std::atomic<f32> mTimeScale = 1.0f;
     std::unique_ptr<std::thread> mThread;
+    std::unique_ptr<RandomGenerator> mRandomGenerator;
 
     moodycamel::ConcurrentQueue<std::function<void()>> mSimThreadProcs;
 };

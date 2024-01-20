@@ -1,6 +1,7 @@
 #pragma once
 
 class HostSimContext;
+class SimWorldAnalytics;
 
 class SimImmigrationManager
 {
@@ -11,7 +12,10 @@ public:
     void tickSimThread(TimestampMs currentTime);
 
 private:
+    void spawnImmigrationBySea(TimestampMs currentTime);
+
     HostSimContext& mHostSimContext;
-    TimestampMs mLastTickTimestamp = 0;
+    TimestampMs mLastImmigrationTimestamp = 0;
+    SimWorldAnalytics& mWorldAnalytics;
 };
 

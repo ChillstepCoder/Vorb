@@ -54,6 +54,9 @@ public:
     ui32 getRandomUint() {
         return mGen.xoroshiro64x();
     }
+    bool getRandomBool() {
+        return (bool)(mGen.xoroshiro64x() % 2);
+    }
 
     ui32 getRandomUIntInRange(ui32 min, ui32 max) {
         return min + (getRandomUint() % (max - min));

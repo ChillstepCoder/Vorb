@@ -7,6 +7,7 @@
 // from disk
 class HostWorldData {
 public:
+    ui32 worldSeed = 0;
     f32v2 playerStart = f32v2(0.5f); // [0, 1]
     ui32 worldWidth = 0;
     std::shared_ptr<HostHeightmapGrid> heightmapGrid;

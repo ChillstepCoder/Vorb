@@ -459,6 +459,7 @@
     <ClCompile Include="src\screens\MainMenuScreen.cpp" />
     <ClCompile Include="src\screens\ScreenState.cpp" />
     <ClCompile Include="src\screens\WorldGenScreen.cpp" />
+    <ClCompile Include="src\text\NameManager.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
@@ -535,11 +536,13 @@
     <ClCompile Include="src\world\IHeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
+    <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
     <ClCompile Include="src\world\simulation\host\SimECS.cpp" />
     <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp" />
     <ClCompile Include="src\world\simulation\host\SimThread.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimWorldAnalytics.cpp" />
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
     <ClCompile Include="src\world\simulation\SimChunk.cpp" />
@@ -889,6 +892,7 @@
     <ClInclude Include="src\screens\ScreenState.h" />
     <ClInclude Include="src\screens\WorldGenScreen.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
+    <ClInclude Include="src\text\NameManager.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
@@ -1014,12 +1018,14 @@
     <ClInclude Include="src\world\IHeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
+    <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />
     <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h" />
     <ClInclude Include="src\world\simulation\host\component\SimComponents.h" />
     <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
     <ClInclude Include="src\world\simulation\host\SimECS.h" />
     <ClInclude Include="src\world\simulation\host\SimImmigrationManager.h" />
     <ClInclude Include="src\world\simulation\host\SimThread.h" />
+    <ClInclude Include="src\world\simulation\host\SimWorldAnalytics.h" />
     <ClInclude Include="src\world\simulation\host\StoryTeller.h" />
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
     <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />

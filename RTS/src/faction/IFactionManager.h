@@ -13,8 +13,11 @@ public:
     IFactionManager(World& world) : WorldContextObject(world) {};
     virtual ~IFactionManager() = default;
 
-    virtual void addFaction(Faction faction) = 0;
+    virtual FactionID addFaction(Faction faction) = 0;
     virtual i8 getFactionRelation(FactionID faction1, FactionID faction2) = 0;
+    virtual void addEntitiesToFaction(entt::registry& registry, std::span<entt::entity> entities, FactionID faction) = 0;
+    virtual FactionID getRandomActiveFactionID() = 0;
+    virtual FactionID generateRandomNewFaction() = 0;
 
 protected:
     FactionIDPair getOrderedFactionIDs(FactionID faction1, FactionID faction2) {

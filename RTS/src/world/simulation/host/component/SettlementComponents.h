@@ -47,10 +47,6 @@ struct SettlementJobBoardsComponent {
     std::vector<SettlementJobBoardData> jobBoards;
 };
 
-struct FactionOwnershipComponent {
-    FactionID factionId;
-};
-
 //std::vector<Chunk*> mChunks;
 //std::vector<std::unique_ptr<Building>> mBuildings;
 //std::vector<std::unique_ptr<CityRoad>> mRoads;
