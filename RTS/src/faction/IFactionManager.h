@@ -18,6 +18,7 @@ public:
     virtual void addEntitiesToFaction(entt::registry& registry, std::span<entt::entity> entities, FactionID faction) = 0;
     virtual FactionID getRandomActiveFactionID() = 0;
     virtual FactionID generateRandomNewFaction() = 0;
+    virtual FactionThreadSafeData getFactionThreadSafeData(FactionID factionId) = 0;
 
 protected:
     FactionIDPair getOrderedFactionIDs(FactionID faction1, FactionID faction2) {

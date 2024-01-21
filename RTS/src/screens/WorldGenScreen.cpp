@@ -252,11 +252,18 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Text(mWorldGenerator->getCurrentStageName());
     ImU32 backgroundColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_FrameBg]);
     ImU32 foregroundColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_PlotHistogram]);
+    // Progress bar
     if (mWorldGenerator->isDone()) {
         ImGui::Spacing();
     }
     else {
-        ImGui::BufferingBar("%", mWorldGenerator->getCurrentStageProgress(), ImVec2(ImGui::GetContentRegionAvail().x, 20.0f), backgroundColor, foregroundColor);
+        f32 progress = mWorldGenerator->getCurrentStageProgress();
+        if (progress) {
+            ImGui::BufferingBar("%", mWorldGenerator->getCurrentStageProgress(), ImVec2(ImGui::GetContentRegionAvail().x, 20.0f), backgroundColor, foregroundColor);
+        }
+        else {
+            ImGui::Spacing();
+        }
     }
     ImGui::Text("%.2f ms", mFrameTimeThisFrame);
     const f32v2 playerSpawn = mWorldData->playerStart * f32(mWorldData->worldWidth);
@@ -275,6 +282,9 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Checkbox("Show Height", &mShowHeight);
     ImGui::Checkbox("Show Rivers", &mShowRivers);
     ImGui::Checkbox("Show Chunks", &mShowChunks);
+
+    mWorldGenerator->renderCurrentStageImguiControls();
+
     ImGui::Separator();
     if (mGenState == WorldGenScreenState::Done) {
         if (ImGui::Button("Start Game")) {
@@ -487,9 +497,9 @@ void WorldGenScreen::renderMapView() {
         debugDrawChunkLines();
     }
 
+    mWorldGenerator->currentStageDebugDraw();
 
     mMapScreenGBuffer->unuse();
-
 }
 
 void WorldGenScreen::updateMouseInput() {

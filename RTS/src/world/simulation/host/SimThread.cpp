@@ -6,6 +6,8 @@
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/SimImmigrationManager.h"
 
+#include "world/simulation/host/component/SimComponents.h"
+
 #include "math/Random.h"
 
 constexpr int SIM_THREAD_IDLE_SLEEP_MS = 60;
@@ -31,6 +33,27 @@ void SimThread::join() {
         mThread->join();
         mThread.reset();
     }
+}
+
+void SimThread::requestAllCharacters(std::shared_ptr<SimThreadEntityRequest> request) {
+    request->filled = false;
+    request->entities.resize(0);
+    mSimThreadProcs.enqueue([this, request]() {
+        SimECS& ecs = *mHostSimContext.mSimECS;
+        entt::registry& registry = ecs.getRegistrySimThread();
+        auto viewGroup = registry.view<SimCharacterComponent, SimPositionComponent, FactionComponent>();
+        request->entities.reserve(viewGroup.size_hint());
+        for (auto entity : viewGroup) {
+            request->entities.emplace_back(SimThreadEntityRequest::Data{
+                    entity,
+                    registry.get<SimPositionComponent>(entity).position,
+                    registry.get<FactionComponent>(entity).factionId
+                }
+            );
+        }
+
+        request->filled = true;
+    });
 }
 
 void SimThread::simThreadFunc() {
@@ -80,7 +103,7 @@ void SimThread::tickSim(SimThreadState state) {
 
 
     if (state == SimThreadState::HistorySim) {
-        mHostSimContext.mSimTime += mTimestepManager.getTimestepSec() * mTimeScale * MS_PER_SECOND;
+        mHostSimContext.mSimTime += ui64(mTargetTickRateMs * mTimeScale);
     }
     else {
         assert(mTimeScale == 1.0f);
@@ -91,4 +114,6 @@ void SimThread::tickSim(SimThreadState state) {
     mHostSimContext.mSimECS->tickSimThread(mHostSimContext.mSimTime);
 
     mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime);
+
+    LOG_TRACE(" Sim thread {} ms", mThreadUtilizationTimer.getFrameTimeMS());
 }

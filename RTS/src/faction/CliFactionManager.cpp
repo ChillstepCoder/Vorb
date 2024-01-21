@@ -70,16 +70,21 @@ FactionID CliFactionManager::generateRandomNewFaction() {
     return addFaction(newFaction);
 }
 
+FactionThreadSafeData CliFactionManager::getFactionThreadSafeData(FactionID factionId) {
+    std::lock_guard lock(mFactionsMutex);
+    return mFactions[factionId].threadSafeData;
+}
+
 i8 CliFactionManager::getDefaultFactionRelation(FactionIDPair factions) {
     BitFlags<FactionTraits> t1, t2;
     {
         std::shared_lock lock(mFactionsMutex);
         auto&& it1 = mFactions.find(factions.x);
         assert(it1 != mFactions.end());
-        t1 = it1->second.traits;
+        t1 = it1->second.threadSafeData.traits;
         auto&& it2 = mFactions.find(factions.y);
         assert(it2 != mFactions.end());
-        t2 = it2->second.traits;
+        t2 = it2->second.threadSafeData.traits;
     }
 
     // TODO: Make more complex

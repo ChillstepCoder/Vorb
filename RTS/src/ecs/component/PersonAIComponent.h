@@ -17,10 +17,6 @@ struct ResidentComponent {
     //ProfessionType profession; // Data drive?
 //};
 
-struct FactionComponent {
-
-};
-
 struct NeedsComponent {
     float hunger = 0.0f; // 0.0 = no hunger, 1.0 = dying of hunger
     float tiredness = 0.0f; // 0.0 = well rested, 1.0 = sleep deprived

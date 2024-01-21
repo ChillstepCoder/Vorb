@@ -1,6 +1,7 @@
 #pragma once
 
 class HostSimContext;
+class SimECS;
 
 struct SimBrainComponent;
 struct SimInProgressTaskComponent;

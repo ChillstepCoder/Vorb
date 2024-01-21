@@ -10,7 +10,7 @@
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
 struct SimPositionComponent {
-    i32v2 position; // Usually "last known" position in tiles
+    f32v2 position; // Usually "last known" position in tiles
 };
 
 struct SimCharacterComponent {

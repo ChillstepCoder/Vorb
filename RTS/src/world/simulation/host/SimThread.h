@@ -16,6 +16,19 @@ enum class SimThreadState : ui8 {
     GameSim
 };
 
+
+// Gets entities from the sim thread asynchronously
+struct SimThreadEntityRequest {
+
+    struct Data {
+        entt::entity entity;
+        i32v2 pos;
+        FactionID faction;
+    };
+    std::vector<Data> entities;
+    std::atomic_bool filled = false;
+};
+
 class SimThread {
 public:
     SimThread(HostSimContext& simContext, World& world);
@@ -30,6 +43,7 @@ public:
 
     size_t getTasksSizeApprox() const { return mSimThreadProcs.size_approx(); }
     void addTask(std::function<void()> task) { mSimThreadProcs.enqueue(task); }
+    void requestAllCharacters(std::shared_ptr<SimThreadEntityRequest> request);
 
     const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }
     RandomGenerator& getRandomGenerator() { ASSERT_SIM_THREAD(); return *mRandomGenerator; }

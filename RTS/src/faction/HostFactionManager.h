@@ -15,6 +15,7 @@ public:
     void addEntitiesToFaction(entt::registry& registry, std::span<entt::entity> entities, FactionID faction) override;
     FactionID getRandomActiveFactionID() override;
     FactionID generateRandomNewFaction() override;
+    FactionThreadSafeData getFactionThreadSafeData(FactionID factionId) override;
 private:
     // Host is mainly a replication layer on top of client behavior
     CliFactionManager mCliFactionManager;

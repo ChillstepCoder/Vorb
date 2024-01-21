@@ -30,7 +30,7 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     updateSettlements();
 }
 
-entt::entity SimECS::createNewPerson(i32v2 worldTilePosition) {
+entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
     ASSERT_SIM_THREAD();
 
     entt::entity newPerson = mRegistry.create();
@@ -58,10 +58,16 @@ entt::entity SimECS::createNewPerson(i32v2 worldTilePosition) {
 }
 
 
-entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, i32v2 targetPos) {
+entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, f32v2 targetPos) {
     entt::entity groupEntity = createNewCharacterGroup(members, leaderIndex, CharacterGroupType::SettlerCaravan);
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(groupEntity);
     groupCmp.targetPos = targetPos;
+
+    const f32v2 offsetToTarget = targetPos - mRegistry.get<SimPositionComponent>(groupCmp.leader).position;
+    if (offsetToTarget != f32v2(0.0f)) {
+        groupCmp.currentHeading = glm::normalize(offsetToTarget);
+    }
+    return groupEntity;
 }
 
 void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason) {
@@ -97,9 +103,13 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
 
     entt::entity leader = members[leaderIndex];
     CharacterGroupLeaderComponent& leaderCmp = mRegistry.get_or_emplace<CharacterGroupLeaderComponent>(leader);
+    mRegistry.get<SimBrainComponent>(members[leaderIndex]).flags.setBit(SimBrainComponentFlags::IsCharacterGroupLeader);
 
     entt::entity groupEntity = mRegistry.create();
     CharacterGroupComponent& groupCmp = mRegistry.emplace<CharacterGroupComponent>(groupEntity);
+
+    // Start at the leaders position
+    mRegistry.emplace<SimPositionComponent>(groupEntity).position = mRegistry.get<SimPositionComponent>(leader).position;
     groupCmp.leader = leader;
     groupCmp.groupType = groupType;
 
@@ -108,7 +118,11 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
     groupCmp.groupMembers.reserve(members.size());
     for (size_t i = 0; i < members.size(); ++i) {
         groupCmp.groupMembers.push_back(members[i]);
-        mRegistry.get_or_emplace<CharacterGroupFollowerComponent>(members[i]).groupEntity = groupEntity;
+        CharacterGroupFollowerComponent& followerCmp = mRegistry.get_or_emplace<CharacterGroupFollowerComponent>(members[i]);
+        followerCmp.groupEntity = groupEntity;
+        followerCmp.nextFollowCheckTime = mCurrentTickTimestamp + CHARACTER_GROUP_DEFAULT_FOLLOW_CHECK_INTERVAL_MS;
+        followerCmp.followerIndex = i;
+        mRegistry.get<SimBrainComponent>(members[i]).flags.setBit(SimBrainComponentFlags::IsFollowingCharacterGroup);
         avgMoveSpeed += mRegistry.get<AttributesComponent>(members[i]).getCurrentAttribute(AttributeType::MoveSpeed);
     }
     avgMoveSpeed = glm::max(avgMoveSpeed, 0.1f);
@@ -121,7 +135,7 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
 
 
 void SimECS::updateAI() {
-    SimAISystem::tick(mRegistry, mCurrentTickTimestamp, mTimeDelta);
+    mAISystem->tick(mCurrentTickTimestamp, mTimeDelta);
 }
 
 void SimECS::updateSettlements()

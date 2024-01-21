@@ -3,9 +3,10 @@
 #include "world/biome/BiomeCorruptions.h"
 #include "world/World.h"
 
+struct SimThreadEntityRequest;
 class HostSimContext;
 
-constexpr ui64 HISTORY_GEN_DURATION_HOURS = 2;
+constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 12;
 
 enum class HistoryEventType {
     ChernobogSpawn,
@@ -26,12 +27,16 @@ struct BiomeGrowPass {
     ui32 numBlocks;
 };
 
+struct WorldMarkupData {
+    
+};
+
 // Allocates the world and generates history
 class HistoryGenerationStage : public IWorldGenerationStage
 {
 public:
-    HistoryGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
-        IWorldGenerationStage(generator), mWorldPtr(worldPtr) {}
+    HistoryGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr);
+    ~HistoryGenerationStage();
 
     void begin() override;
 
@@ -41,8 +46,13 @@ public:
 
     f32 getProgress() const override { return glm::min(mHistoryProgress, 1.0f); }
 
+    void renderImguiControls() override;
+    void debugDraw() override;
+
 private:
     void allocateWorld();
+    void generateWorldMarkup();
+
     // History events
     void handleHistoryEvent(HistoryEvent& event);
     void handleCorruptSpawn(BiomeCorruptions type);
@@ -52,7 +62,7 @@ private:
     void downloadBiomes();
 
     f32 mHistoryProgress = 0.0f; // [0,1]
-    TimestampMs mHistoryDurationMS =  HISTORY_GEN_DURATION_HOURS * 60 * 60 * MS_PER_SECOND;
+    TimestampMs mHistoryDurationMS = HISTORY_GEN_DURATION_REAL_TIME_HOURS * 60 * 60 * MS_PER_SECOND;
     ui32 mTickCount = 0;
     ui32 mNextEventIndex = 0;
     // Sorted by time
@@ -63,6 +73,11 @@ private:
     int mGrowPassCount = 0;
     int mGrowPassRowBlockIndex = 0;
     int mGrowPassRowsPerPass = 0;
+
+    bool mDrawCharacters = true;
+
+    std::shared_ptr<SimThreadEntityRequest> mPrevCharacterRequest;
+    std::shared_ptr<SimThreadEntityRequest> mCurrentCharacterRequest;
 
     std::unique_ptr<World>& mWorldPtr;
     HostSimContext* mHostSimContext = nullptr;

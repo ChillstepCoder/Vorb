@@ -164,6 +164,9 @@ void TickingTimer::startFrame()
 bool TickingTimer::tryTick() {
     if (mAccumulator >= mMsPerTick) {
         mAccumulator -= mMsPerTick;
+        if (mAccumulator >= mMsPerTick) { // If we're more than one tick behind, we need to catch up
+            mAccumulator -= f64(ui64(mAccumulator / mMsPerTick)) * mMsPerTick;
+        }
         return true;
     }
     return false;

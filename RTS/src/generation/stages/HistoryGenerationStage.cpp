@@ -3,10 +3,12 @@
 
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/SimThread.h"
 #include "generation/WorldGenerationData.h"
 #include "generation/WorldGenerationBlackboard.h"
 
 #include "resources/BiomeRepository.h"
+#include "time/TimeOfDayManager.h"
 
 #include "rendering/MaterialShaderRepository.h"
 #include "math/Random.h"
@@ -15,6 +17,15 @@
 
 constexpr ui32 ROWS_PER_ROW_BLOCK = 16;
 constexpr ui32 ROW_BLOCKS_PER_COMPUTE = 8;
+
+HistoryGenerationStage::HistoryGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
+    IWorldGenerationStage(generator), mWorldPtr(worldPtr)
+{
+
+}
+
+HistoryGenerationStage::~HistoryGenerationStage() = default;
+
 void HistoryGenerationStage::begin()
 {
     RandomGenerator generator(ui32(mWorldSeedInt) + 1523u);
@@ -88,6 +99,13 @@ void HistoryGenerationStage::allocateWorld() {
     assert(mHostSimContext);
 
     mHostSimContext->beginHistorySimulation();
+}
+
+void HistoryGenerationStage::generateWorldMarkup()
+{
+    // Generates useful data that will speed up simulation, such as whether this is land, the current continent (or ocean/lake) index (disjoint set)
+    // Same resolution of the biome grid
+
 }
 
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
@@ -211,6 +229,39 @@ void HistoryGenerationStage::downloadBiomes() {
             BiomeVertex& vertex = mBiomeGrid->getVertexForGeneration(index);
             vertex.biomeUniqueId = BiomeUniqueID(mMappedBiomes[index]);
         }
+    }
+}
+
+void HistoryGenerationStage::renderImguiControls() {
+    ImGui::Text("Date Time: %s", TimeOfDayManager::convertTimestampMSToDateTime(mHostSimContext->getSimTime()).toString().c_str());
+    ImGui::Checkbox("Draw characters", &mDrawCharacters);
+}
+
+void HistoryGenerationStage::debugDraw() {
+    if (!mDrawCharacters) {
+        mCurrentCharacterRequest.reset();
+        mPrevCharacterRequest.reset();
+        return;
+    }
+
+    if (!mCurrentCharacterRequest) {
+        mCurrentCharacterRequest = std::make_shared<SimThreadEntityRequest>();
+        mWorldPtr->tryGetHostSimContext()->tryGetSimThread()->requestAllCharacters(mCurrentCharacterRequest);
+    }
+    else {
+        if (mCurrentCharacterRequest->filled) {
+            std::swap(mCurrentCharacterRequest, mPrevCharacterRequest);
+            // Re-use memory if we can
+            if (!mCurrentCharacterRequest) {
+                mCurrentCharacterRequest = std::make_shared<SimThreadEntityRequest>();
+            }
+            mWorldPtr->tryGetHostSimContext()->tryGetSimThread()->requestAllCharacters(mCurrentCharacterRequest);
+            LOG_CRITICAL("FILLED {}", mPrevCharacterRequest->entities.size());
+        }
+    }
+
+    if (mPrevCharacterRequest) {
+        // DRAW
     }
 }
 

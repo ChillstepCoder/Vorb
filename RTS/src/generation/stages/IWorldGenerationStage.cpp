@@ -37,3 +37,4 @@ void IWorldGenerationStage::abort() {
 
     abortInternal();
 }
+

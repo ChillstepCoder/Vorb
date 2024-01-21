@@ -24,6 +24,9 @@ public:
 
     virtual f32 getProgress() const { return 0.0f; }
 
+    virtual void renderImguiControls() {};
+    virtual void debugDraw() {};
+
 protected:
     virtual void abortInternal() {};
     WorldDataGenerator& mGenerator;

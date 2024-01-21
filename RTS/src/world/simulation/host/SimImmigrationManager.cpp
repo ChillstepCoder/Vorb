@@ -68,8 +68,11 @@ void SimImmigrationManager::spawnImmigrationBySea(TimestampMs currentTime) {
     }
     std::span peopleSpan(newPeopleIds, numPeople);
 
+    // TODO: REAL
+    i32v2 targetPos(16384, 16384);
+
     // Use first entity as leader
-    entt::entity groupLeader = ecs.createNewCharacterGroup(peopleSpan, 0);
+    entt::entity groupLeader = ecs.createNewSettlerCaravan(peopleSpan, 0, targetPos);
 
     factionManager.addEntitiesToFaction(ecs.getRegistrySimThread(), peopleSpan, factionId);
 

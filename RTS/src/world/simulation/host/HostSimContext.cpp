@@ -37,8 +37,8 @@ void HostSimContext::beginHistorySimulation() {
     assert(!mSimulatingHistory);
     mSimThread = std::make_unique<SimThread>(*this, mWorld);
     mSimThread->setState(SimThreadState::HistorySim);
-    mSimThread->setTargetTickRateMs(8.0); // TODO: Why does 1 make it slower
-    mSimThread->setTimeScale(1000.0f);
+    mSimThread->setTargetTickRateMs(1.0);
+    mSimThread->setTimeScale(100000.0f); // 100000x speed sim
     mSimThread->start();
     mSimulatingHistory = true;
 }

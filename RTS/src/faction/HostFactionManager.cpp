@@ -2,8 +2,7 @@
 #include "HostFactionManager.h"
 
 
-HostFactionManager::HostFactionManager(World& world) : IFactionManager(world), mCliFactionManager(world)
-{
+HostFactionManager::HostFactionManager(World& world) : IFactionManager(world), mCliFactionManager(world) {
 
 }
 
@@ -29,4 +28,8 @@ FactionID HostFactionManager::getRandomActiveFactionID() {
 
 FactionID HostFactionManager::generateRandomNewFaction() {
     return mCliFactionManager.generateRandomNewFaction();
+}
+
+FactionThreadSafeData HostFactionManager::getFactionThreadSafeData(FactionID factionId) {
+    return mCliFactionManager.getFactionThreadSafeData(factionId);
 }

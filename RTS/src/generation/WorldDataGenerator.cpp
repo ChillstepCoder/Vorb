@@ -64,6 +64,18 @@ f32 WorldDataGenerator::getCurrentStageProgress() const {
     return 0.0f;
 }
 
+void WorldDataGenerator::currentStageDebugDraw() {
+    if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
+        stage->debugDraw();
+    }
+}
+
+void WorldDataGenerator::renderCurrentStageImguiControls() {
+    if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
+        stage->renderImguiControls();
+    }
+}
+
 void WorldDataGenerator::cleanup() {
     if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
         stage->abort();

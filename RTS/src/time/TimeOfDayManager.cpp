@@ -42,3 +42,21 @@ void TimeOfDayManager::updateTimeOfDay(f32 timePassedHours) {
     );
 
 }
+
+GameDateTime TimeOfDayManager::convertTimestampMSToDateTime(TimestampMs ms) {
+    // Valheim settings
+    constexpr f64 MINUTES_PER_DAY = 21.0;
+    constexpr f64 MINUTES_PER_NIGHT = 9.0;
+    constexpr f64 MINUTES_PER_CYCLE = MINUTES_PER_NIGHT + MINUTES_PER_DAY;
+
+    constexpr f64 REAL_WORLD_MINUTES_PER_DAY = 24.0 * 60.0;
+    constexpr f64 TIME_SCALE = REAL_WORLD_MINUTES_PER_DAY / MINUTES_PER_CYCLE;
+
+    const f64 realTimeMinutes = (f64(ms / MS_PER_SECOND) * TIME_SCALE) / 60.0;
+    // Mod by 24 hours
+    GameDateTime rv;
+    rv.day = (int)floor(realTimeMinutes / REAL_WORLD_MINUTES_PER_DAY);
+    rv.timeHours = (f32)fmod(realTimeMinutes / 60.0, 24.0);
+
+    return rv;
+}

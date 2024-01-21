@@ -26,6 +26,9 @@ public:
     f32 getCurrentStageProgress() const;
     bool isDone() const { return mFinished; }
 
+    void currentStageDebugDraw();
+    void renderCurrentStageImguiControls();
+
     // Call before generating again
     void cleanup();
 

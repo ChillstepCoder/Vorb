@@ -17,6 +17,7 @@ public:
     void addEntitiesToFaction(entt::registry& registry, std::span<entt::entity> entities, FactionID factionId) override;
     FactionID getRandomActiveFactionID() override;
     FactionID generateRandomNewFaction() override;
+    FactionThreadSafeData getFactionThreadSafeData(FactionID factionId) override;
 private:
     i8 getDefaultFactionRelation(FactionIDPair factions);
 

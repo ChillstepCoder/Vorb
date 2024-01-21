@@ -1011,6 +1011,9 @@
     <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\mesh\AxisAlignedQuadMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2469,6 +2472,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\CharacterGroupType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\AxisAlignedQuadMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

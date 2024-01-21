@@ -1,5 +1,7 @@
 #pragma once
 
+#include "world/simulation/host/CharacterGroupType.h"
+
 class HostSimContext;
 class SimAISystem;
 
@@ -20,10 +22,10 @@ public:
     void tickSimThread(TimestampMs currentTimestamp);
     // Allocates bare minimum components
     // TODO: entity factory
-    entt::entity createNewPerson(i32v2 worldTilePosition);
+    entt::entity createNewPerson(f32v2 worldTilePosition);
     entt::registry& getRegistrySimThread() { ASSERT_SIM_THREAD(); return mRegistry; }
     // Returns the group entity
-    entt::entity createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, i32v2 targetPos);
+    entt::entity createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, f32v2 targetPos);
     // Destroys the group entity and triggers members to resolve the group condition
     void endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason);
 

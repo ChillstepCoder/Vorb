@@ -16,25 +16,31 @@ SimAISystem::SimAISystem(HostSimContext& simContext, entt::registry& registry) :
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     mCurrentTime = currentTime;
     mDeltaTime = deltaTime;
-
-    // Update all brains
-    auto view = mRegistry.view<SimBrainComponent, SimPositionComponent>();
-    LOG_TRACE("BRAIN COUNT %d", view.size_hint());
-    for (auto entity : view) {
-        SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
-        SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
-        if (brain.flags.isBitSet(SimBrainComponentFlags::IsFollowingCharacterGroup)) {
+    
+    { // Update all followers (Simple Logic)
+        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, CharacterGroupFollowerComponent>();
+        for (auto entity : view) {
+            SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
+            SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
             updateFollowCharacterGroup(entity, brain, pos);
         }
-        else if (brain.flags.isBitSet(SimBrainComponentFlags::HasTask)) {
-            SimInProgressTaskComponent& task = mRegistry.get<SimInProgressTaskComponent>(entity);
-            if (currentTime > task.taskStepEndTime) {
-                handleTaskComplete(entity, brain, task);
+    }
+    
+    { // Update all brains who aren't followers (Complex Logic)
+        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent>(entt::exclude<CharacterGroupFollowerComponent>);
+        LOG_TRACE("BRAIN COUNT {}", view.size_hint());
+        for (auto entity : view) {
+            SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
+            SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
+            if (brain.flags.isBitSet(SimBrainComponentFlags::HasTask)) {
+                SimInProgressTaskComponent& task = mRegistry.get<SimInProgressTaskComponent>(entity);
+                if (currentTime > task.taskStepEndTime) {
+                    handleTaskComplete(entity, brain, task);
+                }
             }
         }
     }
 }
-
 
 void SimAISystem::updateCharacterGroups() {
     std::vector<entt::entity> groupsToEnd;
@@ -84,5 +90,11 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
     // Snap to leader position
     CharacterGroupFollowerComponent& followCmp = mRegistry.get<CharacterGroupFollowerComponent>(entity);
     SimPositionComponent& groupPosition = mRegistry.get<SimPositionComponent>(followCmp.groupEntity);
-    pos.position = groupPosition.position;
+    CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(followCmp.groupEntity);
+    // In sim, we are always just stuck to the leader in a close line regardless of formation, for cheap calculation
+    pos.position = groupPosition.position - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f);
+    if (followCmp.nextFollowCheckTime >= mCurrentTime) {
+        // TODO: Check if we should keep following
+        followCmp.nextFollowCheckTime = mCurrentTime + CHARACTER_GROUP_DEFAULT_FOLLOW_CHECK_INTERVAL_MS;
+    }
 }
