@@ -1,10 +1,9 @@
 #pragma once
-// Std430 layout
+// Std430 layout. TODO: Store color seperately? We dont want HDR
 struct AxisAlignedQuadData {
     f32v2 pos;
     f32v2 dims;
-    color4 color;
-    ui8 padding[4];
+    f32v4 color;
 };
 
 class AxisAlignedQuadMesh
@@ -18,7 +17,7 @@ public:
     bool isValid() const { return mVao != 0; }
 
     // Call before drawing
-    void bind();
+    void bind(GLuint ssboIndex);
 
     void drawQuads();
 

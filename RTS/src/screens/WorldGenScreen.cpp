@@ -497,7 +497,7 @@ void WorldGenScreen::renderMapView() {
         debugDrawChunkLines();
     }
 
-    mWorldGenerator->currentStageDebugDraw();
+    mWorldGenerator->currentStageDebugDraw(*mCamera);
 
     mMapScreenGBuffer->unuse();
 }

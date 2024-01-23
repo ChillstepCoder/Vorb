@@ -308,6 +308,7 @@
     <ClCompile Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\IWorldGenerationStage.cpp" />
+    <ClCompile Include="src\generation\stages\MarkupGenerationStage.cpp" />
     <ClCompile Include="src\generation\stages\RiverGenerationStage.cpp" />
     <ClCompile Include="src\generation\TileDistributionPreviewTexture.cpp" />
     <ClCompile Include="src\generation\TileDistributionSampler.cpp" />
@@ -694,6 +695,7 @@
     <ClInclude Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.h" />
     <ClInclude Include="src\generation\stages\HistoryGenerationStage.h" />
     <ClInclude Include="src\generation\stages\IWorldGenerationStage.h" />
+    <ClInclude Include="src\generation\stages\MarkupGenerationStage.h" />
     <ClInclude Include="src\generation\stages\RiverGenerationStage.h" />
     <ClInclude Include="src\generation\TileDistributionPreviewTexture.h" />
     <ClInclude Include="src\generation\TileDistributionSampler.h" />

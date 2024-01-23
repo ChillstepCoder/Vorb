@@ -9,6 +9,7 @@ class BiomeGrid;
 class IWorldGenerationStage;
 class WorldGenerationBlackboard;
 class World;
+class OrthoCamera;
 // Generates full world data on the GPU, with some back and forth with CPU
 // Stage 1 - Generate base height on GPU as well as base biomes via noise
 // Stage 2 - Seed corrupted biomes on CPU (Can be done in parallel with stage 1)
@@ -26,7 +27,7 @@ public:
     f32 getCurrentStageProgress() const;
     bool isDone() const { return mFinished; }
 
-    void currentStageDebugDraw();
+    void currentStageDebugDraw(const OrthoCamera& camera);
     void renderCurrentStageImguiControls();
 
     // Call before generating again

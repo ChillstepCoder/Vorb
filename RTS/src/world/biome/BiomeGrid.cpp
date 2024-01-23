@@ -10,7 +10,10 @@ BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
     mSpatialGrid.init(BIOME_VERTEX_STRIDE, widthVerts);
     mTotalVertices = SQ(widthVerts);
     mGrid = std::make_unique<BiomeVertex[]>(mTotalVertices);
-    LOG_DEBUG("Biome grid allocated {} mb of data", (mTotalVertices * sizeof(BiomeVertex)) / 1024.f / 1024.f);
+    mMarkup = std::make_unique<WorldMarkupData[]>(mTotalVertices);
+    LOG_DEBUG("Biome grid allocated {} mb biome + {} mb markup", 
+        (mTotalVertices * sizeof(BiomeVertex)) / 1024.f / 1024.f,
+        (mTotalVertices * sizeof(WorldMarkupData)) / 1024.f / 1024.f);
 
 }
 
@@ -31,4 +34,12 @@ const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 worldPos) const {
     const BiomeUniqueID uniqueId = mGrid[mSpatialGrid.getIDfromGridXY(blVertex)].biomeUniqueId;
     if (uniqueId == BiomeUniqueID::INVALID) return nullptr;
     return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
+}
+
+const WorldMarkupData* BiomeGrid::getMarkupAtPoint(f32v2 worldPos) const {
+    const i32v2 blVertex = i32v2(worldPos) / BIOME_VERTEX_STRIDE;
+    if (blVertex.x < 0 || blVertex.y < 0 || blVertex.x >= (i32)mSpatialGrid.getGridWidthCells() || blVertex.y >= (i32)mSpatialGrid.getGridWidthCells()) {
+        return nullptr;
+    }
+    return &mMarkup[mSpatialGrid.getIDfromGridXY(blVertex)];
 }

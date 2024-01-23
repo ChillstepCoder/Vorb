@@ -1014,6 +1014,9 @@
     <ClCompile Include="src\rendering\mesh\AxisAlignedQuadMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\generation\stages\MarkupGenerationStage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2478,6 +2481,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\AxisAlignedQuadMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generation\stages\MarkupGenerationStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

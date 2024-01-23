@@ -12,7 +12,7 @@
 #include "math/Random.h"
 
 SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext) {
-    mAISystem = std::make_unique<SimAISystem>(hostSimContext, mRegistry);
+    mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
 }
 
 SimECS::~SimECS() {

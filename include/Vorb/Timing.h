@@ -94,6 +94,7 @@ public:
     void start();
     /// Returns time in MS
     f64 stop();
+    f64 elapsedMs() { return stop(); }
 protected:
     TimePoint m_start;
 };

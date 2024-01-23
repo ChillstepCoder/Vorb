@@ -5,6 +5,7 @@ class IHeightmapGrid;
 class HostWorldData;
 class BiomeGrid;
 class WorldGenerationBlackboard;
+class OrthoCamera;
 struct WorldGenerationData;
 
 class IWorldGenerationStage
@@ -25,7 +26,7 @@ public:
     virtual f32 getProgress() const { return 0.0f; }
 
     virtual void renderImguiControls() {};
-    virtual void debugDraw() {};
+    virtual void debugDraw(const OrthoCamera&) {};
 
 protected:
     virtual void abortInternal() {};

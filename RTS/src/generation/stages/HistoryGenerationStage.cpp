@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "HistoryGenerationStage.h"
 
+#include "world/World.h"
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimThread.h"
@@ -13,12 +14,18 @@
 #include "rendering/MaterialShaderRepository.h"
 #include "math/Random.h"
 
+#include "rendering/mesh/AxisAlignedQuadMesh.h"
+#include "rendering/MaterialShaderRepository.h"
+#include "rendering/MaterialRenderer.h"
+
+#include "camera/OrthoCamera.h"
+
 #include <random>
 
 constexpr ui32 ROWS_PER_ROW_BLOCK = 16;
 constexpr ui32 ROW_BLOCKS_PER_COMPUTE = 8;
 
-HistoryGenerationStage::HistoryGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
+HistoryGenerationStage::HistoryGenerationStage(WorldDataGenerator& generator, const std::unique_ptr<World>& worldPtr) :
     IWorldGenerationStage(generator), mWorldPtr(worldPtr)
 {
 
@@ -65,7 +72,10 @@ void HistoryGenerationStage::begin()
     mGrowPassRowsPerPass = mBiomeGrid->getWidthVertices() / ROWS_PER_ROW_BLOCK - 1;
     mGrowPassCount = mGenerationData.mBiomeGrowPassCount;
 
-    allocateWorld();
+    assert(mWorldPtr);
+    mHostSimContext = mWorldPtr->tryGetHostSimContext();
+    assert(mHostSimContext);
+    mHostSimContext->beginHistorySimulation();
 }
 
 bool HistoryGenerationStage::update() {
@@ -92,22 +102,6 @@ bool HistoryGenerationStage::update() {
     return false;
 }
 
-void HistoryGenerationStage::allocateWorld() {
-    assert(!mWorldPtr);
-    mWorldPtr = std::make_unique<World>(WorldNetMode::Host, mWorldData);
-    mHostSimContext = mWorldPtr->tryGetHostSimContext();
-    assert(mHostSimContext);
-
-    mHostSimContext->beginHistorySimulation();
-}
-
-void HistoryGenerationStage::generateWorldMarkup()
-{
-    // Generates useful data that will speed up simulation, such as whether this is land, the current continent (or ocean/lake) index (disjoint set)
-    // Same resolution of the biome grid
-
-}
-
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
     switch (event.type) {
         case HistoryEventType::ChernobogSpawn:
@@ -120,7 +114,6 @@ void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
             panic("Unhandled history event type");
     }
     assert(e_count(HistoryEventType) == 2);
-
 }
 
 void HistoryGenerationStage::handleCorruptSpawn(BiomeCorruptions type) {
@@ -237,7 +230,7 @@ void HistoryGenerationStage::renderImguiControls() {
     ImGui::Checkbox("Draw characters", &mDrawCharacters);
 }
 
-void HistoryGenerationStage::debugDraw() {
+void HistoryGenerationStage::debugDraw(const OrthoCamera& camera) {
     if (!mDrawCharacters) {
         mCurrentCharacterRequest.reset();
         mPrevCharacterRequest.reset();
@@ -250,6 +243,7 @@ void HistoryGenerationStage::debugDraw() {
     }
     else {
         if (mCurrentCharacterRequest->filled) {
+            mNeedsRebuildCharacterQuadMesh = true;
             std::swap(mCurrentCharacterRequest, mPrevCharacterRequest);
             // Re-use memory if we can
             if (!mCurrentCharacterRequest) {
@@ -261,7 +255,30 @@ void HistoryGenerationStage::debugDraw() {
     }
 
     if (mPrevCharacterRequest) {
-        // DRAW
+        if (mNeedsRebuildCharacterQuadMesh) {
+            if (!mCharacterQuadMesh) {
+                mCharacterQuadMesh = std::make_unique<AxisAlignedQuadMesh>();
+                mDebugQuadShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("map_debug_quads"));
+            }
+            std::vector<AxisAlignedQuadData> quads;
+            quads.resize(mPrevCharacterRequest->entities.size());
+            const f32v4 factionColor = color::Cyan.toVec4();
+            for (size_t i = 0; i < quads.size(); ++i) {
+                quads[i].color = factionColor; // TODO: Real Faction color
+                quads[i].dims = f32v2(0.001f);
+                quads[i].pos = (f32v2(mPrevCharacterRequest->entities[i].pos) / (f32)mWorldData->worldWidth) * 2.0f - 1.0f;
+            }
+            mCharacterQuadMesh->initialize(quads);
+        }
+        // Draw
+        const MaterialShaderDef* def = mDebugQuadShader->tryGetLoadedAsset();
+        if (def) {
+            MaterialRenderer::bindMaterialShaderForRender(*def);
+            mCharacterQuadMesh->bind(BUFFER_BASE_DEBUG_MESH_GENERIC_SSBO);
+            glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &camera.getVPMatrix()[0][0]);
+            glUniform2f(def->getUniform("unCameraPos"), camera.getPosition().x, camera.getPosition().y);
+            mCharacterQuadMesh->drawQuads();
+        }
     }
 }
 

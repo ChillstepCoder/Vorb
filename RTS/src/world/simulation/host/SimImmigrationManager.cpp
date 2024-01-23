@@ -69,7 +69,7 @@ void SimImmigrationManager::spawnImmigrationBySea(TimestampMs currentTime) {
     std::span peopleSpan(newPeopleIds, numPeople);
 
     // TODO: REAL
-    i32v2 targetPos(16384, 16384);
+    i32v2 targetPos(gen.getRandomUIntInRange(2000, 30000), gen.getRandomUIntInRange(2000, 30000));
 
     // Use first entity as leader
     entt::entity groupLeader = ecs.createNewSettlerCaravan(peopleSpan, 0, targetPos);

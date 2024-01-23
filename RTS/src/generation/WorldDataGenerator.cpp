@@ -10,6 +10,7 @@
 
 #include "generation/stages/BaseHeightmapAndBiomeGenerationStage.h"
 #include "generation/stages/RiverGenerationStage.h"
+#include "generation/stages/MarkupGenerationStage.h"
 #include "generation/stages/HistoryGenerationStage.h"
 #include "generation/WorldGenerationBlackboard.h"
 
@@ -64,9 +65,9 @@ f32 WorldDataGenerator::getCurrentStageProgress() const {
     return 0.0f;
 }
 
-void WorldDataGenerator::currentStageDebugDraw() {
+void WorldDataGenerator::currentStageDebugDraw(const OrthoCamera& camera) {
     if (IWorldGenerationStage* stage = tryGetCurrentStage()) {
-        stage->debugDraw();
+        stage->debugDraw(camera);
     }
 }
 
@@ -123,6 +124,7 @@ void WorldDataGenerator::initStages() {
 
     mStages.emplace_back(std::make_unique<BaseHeightmapAndBiomeGenerationStage>(*this));
     mStages.emplace_back(std::make_unique<RiverGenerationStage>(*this));
+    mStages.emplace_back(std::make_unique<MarkupGenerationStage>(*this, mWorld));
     mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this, mWorld));
 
     mCurrentStageIndex = 0;

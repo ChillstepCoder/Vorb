@@ -9,7 +9,7 @@ struct SimPositionComponent;
 
 class SimAISystem {
 public:
-    SimAISystem(HostSimContext& simContext, entt::registry& registry);
+    SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry);
 
     void tick(TimestampMs currentTime, TimestampMs deltaTime);
 

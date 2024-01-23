@@ -7,16 +7,20 @@
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
 
+#include "math/Random.h"
 
-SimAISystem::SimAISystem(HostSimContext& simContext, entt::registry& registry) : 
-    mSimContext(simContext), mRegistry(registry), mECS(simContext.getECS()) {
-
+SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
+    mSimContext(simContext), mRegistry(registry), mECS(ecs) {
 }
 
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     mCurrentTime = currentTime;
     mDeltaTime = deltaTime;
+
+    RandomGenerator& gen = mSimContext.getSimRandomGenerator();
     
+    updateCharacterGroups();
+
     { // Update all followers (Simple Logic)
         auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, CharacterGroupFollowerComponent>();
         for (auto entity : view) {
@@ -37,6 +41,11 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
                 if (currentTime > task.taskStepEndTime) {
                     handleTaskComplete(entity, brain, task);
                 }
+            }
+            else {
+                // TODO: REMOVE
+                pos.position.x += gen.getRandomFloatSigned() * 15.0f;
+                pos.position.y += gen.getRandomFloatSigned() * 15.0f;
             }
         }
     }
