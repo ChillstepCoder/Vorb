@@ -11,6 +11,7 @@ IWorldGenerationStage::IWorldGenerationStage(WorldDataGenerator& generator)
     assert(mWorldData);
     mHeightGrid = mWorldData->heightmapGrid.get();
     mBiomeGrid = mWorldData->biomeGrid.get();
+    mMarkupGrid = mWorldData->markupGrid.get();
     mWorldSeed = mGenerationData.mSeedHashed;
     mWorldSeedInt = mGenerationData.mSeedInt;
     mTotalHeightPatches = mWorldData->heightmapGrid->getTotalPatches();

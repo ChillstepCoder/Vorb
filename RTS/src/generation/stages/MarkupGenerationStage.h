@@ -3,6 +3,11 @@
 #include "world/biome/BiomeCorruptions.h"
 #include "world/World.h"
 
+enum class MarkupGenerationStageState {
+    InitialMarkup,
+    ChunkMarkup,
+    COUNT
+};
 
 // Allocates the world and generates markup
 class MarkupGenerationStage : public IWorldGenerationStage
@@ -19,9 +24,14 @@ public:
 
 private:
     void allocateWorld();
-    void generateWorldMarkupBlock();
+    void beginInitialMarkupGen();
+    void beginChunkMarkupGen();
+    void generateInitialMarkup();
+    void onFinished();
 
-    std::atomic_bool mThreadFinished = false;
+    MarkupGenerationStageState mState = MarkupGenerationStageState::InitialMarkup;
+    std::atomic_int mFinishedThreads = 0;
+    int mRunningThreads = 0;
     int mTotalBodies = 0;
     std::unique_ptr<World>& mWorldPtr;
     PreciseTimer mTotalTimer;

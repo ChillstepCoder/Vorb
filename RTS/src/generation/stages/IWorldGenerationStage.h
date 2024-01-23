@@ -4,6 +4,7 @@ class WorldDataGenerator;
 class IHeightmapGrid;
 class HostWorldData;
 class BiomeGrid;
+class WorldMarkupGrid;
 class WorldGenerationBlackboard;
 class OrthoCamera;
 struct WorldGenerationData;
@@ -37,6 +38,7 @@ protected:
     HostWorldData* mWorldData = nullptr;
     IHeightmapGrid* mHeightGrid = nullptr;
     BiomeGrid* mBiomeGrid = nullptr;
+    WorldMarkupGrid* mMarkupGrid = nullptr;
 
     VGBuffer mHeightSSBO = 0;
     VGTexture mHeightTexture = 0;

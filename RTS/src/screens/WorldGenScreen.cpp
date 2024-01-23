@@ -278,6 +278,31 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
             ImGui::Text("Biome: OCEAN");
         }
     }
+    if (mWorldData->markupGrid->isMarkupReady()) {
+        const WorldBodyMarkupData* data = mWorldData->markupGrid->getBodyDataAtPoint(playerSpawn);
+        if (data) {
+            nString str;
+            switch (data->bodyType) {
+                case WorldMarkupBodyType::LargeIsland:
+                    str = "Large Island";
+                    break;
+                case WorldMarkupBodyType::Island:
+                    str = "Island";
+                    break;
+                case WorldMarkupBodyType::Lake:
+                    str = "Lake";
+                    break;
+                case WorldMarkupBodyType::Ocean:
+                    str = "Ocean";
+                    break;
+                default:
+                    assert(false);
+
+            }
+            static_assert(e_count(WorldMarkupBodyType) == 4);
+            ImGui::Text("  %s - Size: %d", str.c_str(), data->sizeCells);
+        }
+    }
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
     ImGui::Checkbox("Show Height", &mShowHeight);
     ImGui::Checkbox("Show Rivers", &mShowRivers);
@@ -370,9 +395,10 @@ void WorldGenScreen::initWorldData() {
     if (!mWorldData) {
         mWorldData = std::make_unique<HostWorldData>();
         mWorldData->worldWidth = WorldDefaults::DEFAULT_WORLD_WIDTH_TILES;
-        mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
-        mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
     }
+    mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
+    mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
+    mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();

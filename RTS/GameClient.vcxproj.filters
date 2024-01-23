@@ -1017,6 +1017,9 @@
     <ClCompile Include="src\generation\stages\MarkupGenerationStage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2484,6 +2487,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\stages\MarkupGenerationStage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\markup\WorldMarkupGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

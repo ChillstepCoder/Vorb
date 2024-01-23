@@ -24,6 +24,7 @@ class TimeOfDayManager;
 class TileContainerRepository;
 class ChunkGenerator;
 class BiomeGrid;
+class WorldMarkupGrid;
 class HostSimContext;
 class CombatContext;
 class NavWorld;
@@ -70,6 +71,7 @@ public:
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
     BiomeGrid& getBiomeGrid() const { return *mBiomeGrid; }
+    WorldMarkupGrid& getMarkupGrid() const { return *mMarkupGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
     CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
@@ -137,6 +139,8 @@ private:
     std::shared_ptr<IHeightmapGrid> mHeightmapGrid;
     // Biome
     std::shared_ptr<BiomeGrid> mBiomeGrid;
+    // Markup
+    std::shared_ptr<WorldMarkupGrid> mMarkupGrid;
     // Time of day
     std::unique_ptr<TimeOfDayManager> mTimeOfDayManager;
     // ECS
