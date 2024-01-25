@@ -11,6 +11,7 @@
 #include <imgui_internal.h>
 #include "ui/ImguiUtil.hpp"
 
+
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/GBuffer.h>
@@ -26,6 +27,8 @@
 #include "rendering/ShaderLoader.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/mesh/LineMesh.h"
+#include "rendering/mesh/AxisAlignedQuadMesh.h"
+
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/ui/InputDispatcher.h>
@@ -281,6 +284,11 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     if (mWorldData->markupGrid->isMarkupReady()) {
         const WorldBodyMarkupData* data = mWorldData->markupGrid->getBodyDataAtPoint(playerSpawn);
         if (data) {
+            if (data->bodyIndex != mSelectedBody) {
+                mSelectedBody = data->bodyIndex;
+                mNeedsNewBorderMesh = true;
+            }
+
             nString str;
             switch (data->bodyType) {
                 case WorldMarkupBodyType::LargeIsland:
@@ -300,13 +308,15 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 
             }
             static_assert(e_count(WorldMarkupBodyType) == 4);
-            ImGui::Text("  %s - Size: %d", str.c_str(), data->sizeCells);
+            ImGui::Text("  %s - Size: %d", str.c_str(), data->sizeBlocks);
+            ImGui::Text("  Chunk Land Ratio: %f", mWorldData->markupGrid->getChunkMarkupAtPoint(playerSpawn)->landRatio);
         }
     }
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
     ImGui::Checkbox("Show Height", &mShowHeight);
     ImGui::Checkbox("Show Rivers", &mShowRivers);
     ImGui::Checkbox("Show Chunks", &mShowChunks);
+    ImGui::Checkbox("Show Body Border", &mShowSelectedBody);
 
     mWorldGenerator->renderCurrentStageImguiControls();
 
@@ -399,6 +409,7 @@ void WorldGenScreen::initWorldData() {
     mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
     mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
     mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth);
+    mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
@@ -482,6 +493,11 @@ void WorldGenScreen::beginWorldGeneration() {
     assert(!sGameWorld);
 
     mRiverDebugMesh.reset();
+    mRiverDebugVisitedMesh.reset();
+    mRiverDebugLocalGroupMesh.reset();
+    mCurrentBodyBorderMesh.reset();
+    mSelectedBody = UINT32_MAX;
+    mNeedsNewBorderMesh = true;
 }
 
 void WorldGenScreen::updateCamera()
@@ -521,6 +537,9 @@ void WorldGenScreen::renderMapView() {
     }
     if (mShowChunks) {
         debugDrawChunkLines();
+    }
+    if (mShowSelectedBody) {
+        debugDrawBodyBorder();
     }
 
     mWorldGenerator->currentStageDebugDraw(*mCamera);
@@ -707,5 +726,40 @@ void WorldGenScreen::debugDrawChunkLines()
         glLineWidth(2.0f + mCamera->getZoom());
         mChunkDebugMesh->bind();
         mChunkDebugMesh->drawLines();
+    }
+}
+
+void WorldGenScreen::debugDrawBodyBorder() {
+    if (mSelectedBody == UINT32_MAX) {
+        return;
+    }
+
+    if (mNeedsNewBorderMesh) {
+        if (!mCurrentBodyBorderMesh) {
+            mCurrentBodyBorderMesh = std::make_unique<AxisAlignedQuadMesh>();
+            mDebugQuadShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("map_debug_quads"));
+        }
+        const WorldBodyMarkupData& data = mWorldData->markupGrid->getBodyData(mSelectedBody);
+        std::vector<AxisAlignedQuadData> quads;
+        quads.resize(data.borderBlocks.size());
+        f32v4 borderColor = data.isLand() ? color::White.toVec4() : color::LightBlue.toVec4();
+        borderColor.a = 0.75f;
+        const f32v2 dims = f32v2((2.0f * BLOCK_WIDTH) / mWorldData->worldWidth) * 2.f; // A little bigger
+        for (size_t i = 0; i < quads.size(); ++i) {
+            quads[i].color = borderColor; // TODO: Real Faction color
+            quads[i].dims = dims;
+            quads[i].pos = (((f32v2(data.borderBlocks[i]) + 0.5f) * (f32)BLOCK_WIDTH) / (f32)mWorldData->worldWidth) * 2.0f - 1.0f;
+        }
+        mCurrentBodyBorderMesh->initialize(quads);
+        mNeedsNewBorderMesh = false;
+    }
+    // Draw
+    const MaterialShaderDef* def = mDebugQuadShader->tryGetLoadedAsset();
+    if (def) {
+        MaterialRenderer::bindMaterialShaderForRender(*def);
+        mCurrentBodyBorderMesh->bind(BUFFER_BASE_DEBUG_MESH_GENERIC_SSBO);
+        glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+        glUniform2f(def->getUniform("unCameraPos"), mCamera->getPosition().x, mCamera->getPosition().y);
+        mCurrentBodyBorderMesh->drawQuads();
     }
 }

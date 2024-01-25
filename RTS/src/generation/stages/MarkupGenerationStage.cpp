@@ -4,6 +4,8 @@
 #include "world/host/HostWorldData.h"
 #include "generation/WorldGenerationData.h"
 
+#include <boost/container/flat_map.hpp>
+
 MarkupGenerationStage::MarkupGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
     IWorldGenerationStage(generator), mWorldPtr(worldPtr)
 {
@@ -28,7 +30,7 @@ bool MarkupGenerationStage::update() {
     if (mRunningThreads == mFinishedThreads) {
         switch (mState) {
             case MarkupGenerationStageState::InitialMarkup:
-                beginChunkMarkupGen();
+                beginChunkAndBodyMarkupGen();
                 break;
             case MarkupGenerationStageState::ChunkMarkup:
                 onFinished();
@@ -52,6 +54,7 @@ void MarkupGenerationStage::allocateWorld() {
 void MarkupGenerationStage::beginInitialMarkupGen() {
     mFinishedThreads = 0;
     mRunningThreads = 1;
+    mState = MarkupGenerationStageState::InitialMarkup;
     const ui32 genID = sGenerationUID;
     Services::Threadpool::ref().addTask([this, genID]() {
         // Check for interrupt
@@ -63,9 +66,39 @@ void MarkupGenerationStage::beginInitialMarkupGen() {
     }, nullptr);
 }
 
-void MarkupGenerationStage::beginChunkMarkupGen() { 
-    // TODO: THIS
-    assert(false);
+void MarkupGenerationStage::beginChunkAndBodyMarkupGen() { 
+    constexpr ui32 JOBS = 32; // Must be POT
+    assert((mWorldData->worldWidth / CHUNK_WIDTH) >= JOBS);
+    const ui32 chunksRowsPerjob = (mWorldData->worldWidth / CHUNK_WIDTH) / JOBS;
+    mFinishedThreads = 0;
+    mRunningThreads = JOBS;
+    mState = MarkupGenerationStageState::ChunkMarkup;
+    const ui32 genID = sGenerationUID;
+    for (ui32 i = 0; i < JOBS; ++i) {
+        Services::Threadpool::ref().addTask([this, i, chunksRowsPerjob, genID]() {
+            // Check for interrupt
+            if (genID != sGenerationUID) {
+                return;
+            }
+            generateChunkMarkup(i, chunksRowsPerjob);
+            ++mFinishedThreads;
+        }, nullptr);
+    }
+
+    // Distribute body markup jobs, one per body is fine
+    assert(mBodyBorderSets.size() == mTotalBodies);
+    mRunningThreads += mTotalBodies;
+
+    for (ui32 i = 0; i < mTotalBodies; ++i) {
+        Services::Threadpool::ref().addTask([this, i, genID]() {
+            // Check for interrupt
+            if (genID != sGenerationUID) {
+                return;
+            }
+            generateBodyMarkup(i);
+            ++mFinishedThreads;
+        }, nullptr);
+    }
 }
 
 void MarkupGenerationStage::generateInitialMarkup()
@@ -80,12 +113,13 @@ void MarkupGenerationStage::generateInitialMarkup()
     assert(markupWidth == mBiomeGrid->getWidthVertices()); // THIS NEEDS TO ALWAYS BE TRUE FOR THIS PROCESS
     BitArray visited(mMarkupGrid->getTotalVertices());
     std::vector<i16v2> stack;
-    std::vector<i16v2> currentSet;
+    std::vector<ui32> currentSet;
+    std::vector<i16v2> currentBorderSet;
+    mBodyBorderSets.reserve(2000); // Usually lots of bodies
     // Blowing this reserve should be rare
     stack.reserve(mMarkupGrid->getTotalVertices());
     currentSet.reserve(mMarkupGrid->getTotalVertices());
 
-    int nodeChecks = 0;
     // Find all bodies (Water vs Land)
     i16v2 start(0, 0);
     do {
@@ -97,6 +131,8 @@ void MarkupGenerationStage::generateInitialMarkup()
         const bool groupIsWater = mBiomeGrid->getVertexForGeneration(start.y * markupWidth + start.x).isWater();
         stack.push_back(start);
         currentSet.resize(0);
+        currentBorderSet.resize(0);
+        currentBorderSet.reserve(256); // Most are < 100 but some are 10000+ like oceans or huge islands
         do {
             i16v2 pos = stack.back();
             stack.pop_back();
@@ -109,48 +145,85 @@ void MarkupGenerationStage::generateInitialMarkup()
             bool spanAbove = false;
             // Don't double process
             if (!visited.getBit(index)) {
+                bool isBorder = true; // First is always border
                 do {
-                    currentSet.push_back(pos);
+                    currentSet.push_back(index);
                     visited.setBit(index);
                     mMarkupGrid->getMarkupForGeneration(index).bodyIndex = mTotalBodies;
-                    ++nodeChecks;
-
                     if (pos.y > 0) [[likely]] {
                         if (!spanBelow && mBiomeGrid->getVertexForGeneration(index - markupWidth).isWater() == groupIsWater) {
                             stack.emplace_back(pos.x, pos.y - 1);
                             spanBelow = true;
                         }
-                        else if (spanBelow && mBiomeGrid->getVertexForGeneration(index - markupWidth).isWater() != groupIsWater) {
+                        else if (mBiomeGrid->getVertexForGeneration(index - markupWidth).isWater() != groupIsWater) {
+                            isBorder = true;
                             spanBelow = false;
                         }
+                    }
+                    else {
+                        isBorder = true;
                     }
                     if (pos.y < markupWidth - 1) [[likely]] {
                         if (!spanAbove && mBiomeGrid->getVertexForGeneration(index + markupWidth).isWater() == groupIsWater) {
                             stack.emplace_back(pos.x, pos.y + 1);
                             spanAbove = true;
                         }
-                        else if (spanAbove && mBiomeGrid->getVertexForGeneration(index + markupWidth).isWater() != groupIsWater) {
+                        else if (mBiomeGrid->getVertexForGeneration(index + markupWidth).isWater() != groupIsWater) {
+                            isBorder = true;
                             spanAbove = false;
                         }
                     }
-
+                    else {
+                        isBorder = true;
+                    }
+                    if (isBorder) {
+                        currentBorderSet.emplace_back(pos);
+                        isBorder = false;
+                    }
                     ++pos.x;
                     ++index;
                 } while (pos.x < markupWidth && mBiomeGrid->getVertexForGeneration(index).isWater() == groupIsWater);
+                // Right side border
+                const i16v2 prevPos = i16v2(pos.x - 1, pos.y);
+                assert(currentBorderSet.size());
+                // Check if already flagged as border
+                if (currentBorderSet.back() != prevPos) {
+                    currentBorderSet.emplace_back(prevPos);
+                }
             }
         } while (stack.size());
         if (currentSet.size()) {
             ++mTotalBodies;
+            mBodyBorderSets.emplace_back(std::move(currentBorderSet));
             // Set up the body
             WorldBodyMarkupData bodyData;
-            bodyData.sizeCells = currentSet.size();
+            bodyData.sizeBlocks = currentSet.size();
+
+            WorldMarkupFlags bodyBit;
             if (groupIsWater) {
                 constexpr ui32 SIZE_THRESHOLD = 65536 * 3;
-                bodyData.bodyType = bodyData.sizeCells > SIZE_THRESHOLD ? WorldMarkupBodyType::Ocean : WorldMarkupBodyType::Lake;
+                if (bodyData.sizeBlocks > SIZE_THRESHOLD) {
+                    bodyData.bodyType = WorldMarkupBodyType::Ocean;
+                    bodyBit = WorldMarkupFlags::Ocean;
+                }
+                else {
+                    bodyData.bodyType = WorldMarkupBodyType::Lake;
+                    bodyBit = WorldMarkupFlags::Lake;
+                }
             }
             else {
                 constexpr ui32 SIZE_THRESHOLD = 65536;
-                bodyData.bodyType = bodyData.sizeCells > SIZE_THRESHOLD ? WorldMarkupBodyType::LargeIsland : WorldMarkupBodyType::Island;
+                if (bodyData.sizeBlocks > SIZE_THRESHOLD) {
+                    bodyData.bodyType = WorldMarkupBodyType::LargeIsland;
+                    bodyBit = WorldMarkupFlags::LargeIsland;
+                }
+                else {
+                    bodyData.bodyType = WorldMarkupBodyType::Island;
+                    bodyBit = WorldMarkupFlags::Island;
+                }
+            }
+            for (ui32 pos : currentSet) {
+                mMarkupGrid->getMarkupForGeneration(pos).flags.setBit(bodyBit);
             }
             mMarkupGrid->addBodyFromGeneration(bodyData);
         }
@@ -163,11 +236,158 @@ void MarkupGenerationStage::generateInitialMarkup()
         }
     } while (start.y != markupWidth);
 
-    LOG_DEBUG("Markup took {} ms and found {} islands in {} checks", timer.elapsedMs(), mTotalBodies, nodeChecks);
+    mBodyChunkListMutexes = std::make_unique<std::mutex[]>(mTotalBodies);
+    LOG_DEBUG("Initial markup took {} total ms and found {} islands", timer.elapsedMs(), mTotalBodies);
     LOG_DEBUG("End markup generation");
 }
 
+void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPerJob) {
+    const ui32 worldWidthChunks = mWorldData->worldWidth / CHUNK_WIDTH;
+    const ui32 worldWidthBlocks = mWorldData->worldWidth / BLOCK_WIDTH;
+    const ui32 startChunkRow = jobIndex * chunkRowsPerJob;
+    constexpr ui32 WIDTH_BLOCKS = CHUNK_WIDTH / BLOCK_WIDTH;
+    constexpr ui32 SIZE_BLOCKS = SQ(WIDTH_BLOCKS);
+
+    // Allows us to count the number of bodies in each chunk
+    boost::container::flat_map<ui32 /*body index*/, ui32 /*count*/> bodyCounts;
+    bodyCounts.reserve(4); // This is more than we will need in almost every case
+
+    PreciseTimer timer;
+    for (ui32 chunkY = startChunkRow; chunkY < startChunkRow + chunkRowsPerJob; ++chunkY) {
+        const ui32 blockYStart = chunkY * WIDTH_BLOCKS;
+        for (ui32 chunkX = 0; chunkX < worldWidthChunks; ++chunkX) {
+            const ui32 blockXStart = chunkX * WIDTH_BLOCKS;
+
+            const ChunkID chunkID = chunkY * worldWidthChunks + chunkX;
+            WorldChunkMarkupData& chunkMarkup = mMarkupGrid->getChunkMarkupForGeneration(chunkID);
+
+            bodyCounts.clear();
+            ui32 landBlocks = 0;
+            for (ui32 bY = 0; bY < WIDTH_BLOCKS; ++bY) {
+                const ui32 blockYOffset = (blockYStart + bY) * worldWidthBlocks;
+                for (ui32 bX = 0; bX < WIDTH_BLOCKS; ++bX) {
+                    const ui32 blockIndex = blockYOffset + blockXStart + bX;
+                    WorldMarkupData& blockMarkup = mMarkupGrid->getMarkupForGeneration(blockIndex);
+                    if (blockMarkup.flags.isMaskPartiallySet(WORLD_MARKUP_FLAGS_LAND_MASK)) {
+                        ++landBlocks;
+                    }
+                    auto&& it = bodyCounts.find(blockMarkup.bodyIndex);
+                    if (it == bodyCounts.end()) [[unlikely]] {
+                        bodyCounts.emplace(blockMarkup.bodyIndex, 1);
+                    }
+                    else {
+                        ++it->second;
+                    }
+                }
+            }
+
+            ui32 highestLandCount = 0;
+            ui32 highestWaterCount = 0;
+            for (auto&& it : bodyCounts) {
+                if (mMarkupGrid->getBodyData(it.first).bodyType <= WorldMarkupBodyType::BODY_TYPE_LAND_TERM) {
+                    if (it.second > highestLandCount) {
+                        chunkMarkup.mainLandBodyIndex = it.first;
+                        highestLandCount = it.second;
+                    }
+                }
+                else {
+                    if (it.second > highestWaterCount) {
+                        chunkMarkup.mainWaterBodyIndex = it.first;
+                        highestWaterCount = it.second;
+                    }
+                }
+            }
+
+            if (chunkMarkup.mainLandBodyIndex != UINT32_MAX) {
+                WorldBodyMarkupData& bodyData = mMarkupGrid->getBodyDataForGeneration(chunkMarkup.mainLandBodyIndex);
+                assert(chunkMarkup.mainLandBodyIndex < mTotalBodies);
+                std::lock_guard lock(mBodyChunkListMutexes[chunkMarkup.mainLandBodyIndex]);
+                bodyData.chunks.emplace_back(chunkID);
+            }
+            chunkMarkup.landRatio = (f32)landBlocks / (f32)SIZE_BLOCKS;
+            chunkMarkup.settleDesirability = 0.0f; // ??? How compute
+        }
+    }
+    //LOG_DEBUG("  Row {} processed in {} ms with {} blocks {}  {}", jobIndex, timer.elapsedMs(), chunkRowsPerJob * worldWidthChunks * SIZE_BLOCKS, count, chunkRowsPerJob);
+}
+
+void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
+
+    PreciseTimer timer;
+    WorldBodyMarkupData& bodyData = mMarkupGrid->getBodyDataForGeneration(bodyIndex);
+    const ui32 widthVerts = mMarkupGrid->getWidthVertices();
+    std::vector<i16v2>& borderSet = mBodyBorderSets[bodyIndex];
+    boost::container::flat_map<ui32 /*body index*/, ui32 /*count*/> neighborBodyCounts;
+    neighborBodyCounts.reserve(6); // This is more than we will need in almost every case
+
+#define CHECK_NEIGHBOR(nIndex) \
+    const ui32 neighborBodyIndex = mMarkupGrid->getMarkupForGeneration(nIndex).bodyIndex;  \
+    if (neighborBodyIndex != bodyIndex) { \
+        auto&& it = neighborBodyCounts.find(neighborBodyIndex);  \
+        if (it == neighborBodyCounts.end()) {  \
+            neighborBodyCounts.emplace(neighborBodyIndex, 1);  \
+        }  \
+        else {  \
+            ++it->second;  \
+        }  \
+    }
+
+    // Process all border blocks
+    for (i16v2 pos : borderSet) {
+        ui32 index = pos.y * widthVerts + pos.x;
+        if (pos.x == 0) [[unlikely]] {
+            bodyData.onMapEdge = true;
+        }
+        else {
+            ui32 leftIndex = index - 1;
+            CHECK_NEIGHBOR(leftIndex);
+        }
+        if (pos.x == widthVerts - 1) [[unlikely]] {
+            bodyData.onMapEdge = true;
+        }
+        else {
+            ui32 rightIndex = index + 1;
+            CHECK_NEIGHBOR(rightIndex);
+        }
+        if (pos.y == 0) [[unlikely]] {
+            bodyData.onMapEdge = true;
+        }
+        else {
+            ui32 bottomIndex = index - widthVerts;
+            CHECK_NEIGHBOR(bottomIndex);
+        }
+        if (pos.y == widthVerts - 1) [[unlikely]] {
+            bodyData.onMapEdge = true;
+        }
+        else {
+            ui32 topIndex = index + widthVerts;
+            CHECK_NEIGHBOR(topIndex);
+        }
+    }
+
+    // Write data
+    bodyData.neighborBodies.resize(neighborBodyCounts.size());
+    size_t i = 0;
+    for (auto&& it : neighborBodyCounts) {
+        bodyData.neighborBodies[i].neighborBodyIndex = it.first;
+        bodyData.neighborBodies[i].adjacentBlocks = it.second;
+        ++i;
+    }
+    bodyData.borderBlocks = std::move(borderSet);
+    bodyData.borderBlocks.shrink_to_fit();
+
+    //static std::atomic<ui32> TOTALSIZE = 0;
+    //TOTALSIZE += bodyData.borderBlocks.size() * sizeof(i16v2);
+    //LOG_DEBUG("   {} has {} neighbors checked in {} ms with {} checks {} mb total", bodyIndex, neighborBodyCounts.size(), timer.elapsedMs(), borderSet.size(), (f64)TOTALSIZE / 1024.0 / 1024.0);
+}
+
 void MarkupGenerationStage::onFinished() {
+    // Compress body memory
+    for (ui32 i = 0; i < mMarkupGrid->getNumBodies(); ++i) {
+        mMarkupGrid->getBodyDataForGeneration(i).chunks.shrink_to_fit();
+    }
+    mBodyChunkListMutexes.reset();
+
     mMarkupGrid->setMarkupReady();
     LOG_DEBUG("Finished markup generation in {} ms with {} bodies", mTotalTimer.elapsedMs(), mTotalBodies);
 }

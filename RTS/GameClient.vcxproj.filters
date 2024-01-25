@@ -1020,6 +1020,9 @@
     <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\ownership\OwnershipGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2490,6 +2493,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\markup\WorldMarkupGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\ownership\OwnershipGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -15,6 +15,7 @@ class WorldDataGenerator;
 class MaterialShaderDef;
 class OrthoCamera;
 class LineMesh;
+class AxisAlignedQuadMesh;
 
 enum class WorldGenScreenState {
     Idle,
@@ -54,6 +55,7 @@ protected:
 
     void debugDrawRivers();
     void debugDrawChunkLines();
+    void debugDrawBodyBorder();
 
     bool mRebuildDockspace = true;
     bool mCancelled = false;
@@ -84,13 +86,18 @@ protected:
     bool mShowHeight = false;
     bool mShowRivers = false;
     bool mShowChunks = false;
+    bool mShowSelectedBody = true;
+    ui32 mSelectedBody = UINT32_MAX;
 
     // Debug rendering
     AssetHandlePtr<MaterialShaderDef> mDebugLineShader;
+    AssetHandlePtr<MaterialShaderDef> mDebugQuadShader;
     std::unique_ptr<LineMesh> mRiverDebugMesh;
     std::unique_ptr<LineMesh> mRiverDebugVisitedMesh;
     std::unique_ptr<LineMesh> mRiverDebugLocalGroupMesh;
     std::unique_ptr<LineMesh> mChunkDebugMesh;
+    std::unique_ptr<AxisAlignedQuadMesh> mCurrentBodyBorderMesh;
+    bool mNeedsNewBorderMesh = true;
 
     PreciseTimer mGenTimer;
 };

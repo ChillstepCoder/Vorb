@@ -2,6 +2,7 @@
 #include "IWorldGenerationStage.h"
 #include "world/biome/BiomeCorruptions.h"
 #include "world/World.h"
+#include <mutex>
 
 enum class MarkupGenerationStageState {
     InitialMarkup,
@@ -25,9 +26,14 @@ public:
 private:
     void allocateWorld();
     void beginInitialMarkupGen();
-    void beginChunkMarkupGen();
+    void beginChunkAndBodyMarkupGen();
     void generateInitialMarkup();
+    void generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPerJob);
+    void generateBodyMarkup(ui32 bodyIndex);
     void onFinished();
+
+    std::vector<std::vector<i16v2>> mBodyBorderSets;
+    std::unique_ptr<std::mutex[]> mBodyChunkListMutexes; // Only needed during generation so we set them up here
 
     MarkupGenerationStageState mState = MarkupGenerationStageState::InitialMarkup;
     std::atomic_int mFinishedThreads = 0;

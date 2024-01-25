@@ -16,6 +16,8 @@ constexpr float CHUNK_DIAGONAL_RADIUS = 90.51f;
 #define TILE_INDEX_X_MASK 0x7f
 #endif
 
+constexpr int BLOCK_WIDTH = 8;
+
 constexpr int SUBCHUNK_WIDTH = 16;
 constexpr int SUBCHUNK_WIDTH_SQ = SQ(SUBCHUNK_WIDTH);
 constexpr int SUBCHUNKS_PER_CHUNK_ROW = CHUNK_WIDTH / SUBCHUNK_WIDTH;

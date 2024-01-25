@@ -6,7 +6,7 @@
 #include "definitions/BiomeDef.h"
 
 // TODO: BiomeConstants
-constexpr i32 BIOME_VERTEX_STRIDE = 8;
+constexpr i32 BIOME_VERTEX_STRIDE = BLOCK_WIDTH;
 constexpr int MAX_PRIMARY_RESOURCES_PER_BIOME = 4;
 
 enum class BiomeFlags : ui8 {

@@ -75,6 +75,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mHeightmapGrid = hostWorldData->heightmapGrid;
             mBiomeGrid = hostWorldData->biomeGrid;
             mMarkupGrid = hostWorldData->markupGrid;
+            mOwnershipGrid = hostWorldData->ownershipGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
@@ -85,6 +86,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mHeightmapGrid = std::make_unique<CliHeightmapGrid>(worldWidthTiles);
             mBiomeGrid = hostWorldData->biomeGrid;
             mMarkupGrid = hostWorldData->markupGrid;
+            mOwnershipGrid = hostWorldData->ownershipGrid;
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
@@ -96,6 +98,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mHeightmapGrid = hostWorldData->heightmapGrid;
             mBiomeGrid = hostWorldData->biomeGrid;
             mMarkupGrid = hostWorldData->markupGrid;
+            mOwnershipGrid = hostWorldData->ownershipGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);

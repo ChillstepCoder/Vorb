@@ -538,6 +538,7 @@
     <ClCompile Include="src\world\IHeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp" />
+    <ClCompile Include="src\world\ownership\OwnershipGrid.cpp" />
     <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
     <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
@@ -1023,6 +1024,7 @@
     <ClInclude Include="src\world\IHeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\markup\WorldMarkupGrid.h" />
+    <ClInclude Include="src\world\ownership\OwnershipGrid.h" />
     <ClInclude Include="src\world\simulation\host\CharacterGroupType.h" />
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
     <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />

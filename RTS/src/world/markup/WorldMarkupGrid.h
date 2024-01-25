@@ -4,9 +4,10 @@
 
 constexpr i32 MARKUP_VERTEX_STRIDE = 8;
 
-enum class WorldMarkupBodyType {
+enum class WorldMarkupBodyType : ui8 {
     LargeIsland,
     Island,
+    BODY_TYPE_LAND_TERM = Island,
     Lake,
     Ocean,
     COUNT
@@ -25,8 +26,12 @@ enum class WorldMarkupFlags : ui16 {
     OffLimits = BIT(6), // Settlement owner doesn't want others to come here.
     StructurePlot = BIT(7), // A structure's plot extends here TODO: PLOTS ARE 8x8 (Basically V Rising plot but with free build)
     Road = BIT(8),
+    River = BIT(9), // TODO: USE
     TERM
 };
+
+constexpr ui16 WORLD_MARKUP_FLAGS_LAND_MASK = e_cast(WorldMarkupFlags::LargeIsland) | e_cast(WorldMarkupFlags::Island);
+constexpr ui16 WORLD_MARKUP_FLAGS_WATER_MASK = e_cast(WorldMarkupFlags::Lake) | e_cast(WorldMarkupFlags::Ocean);
 
 // City generation steps:
 // 1. (A) Large plot is made called Hamlet of Commons, shanty houses made from cheap materials. People basically get to erect tents all over it
@@ -54,21 +59,40 @@ enum class WorldMarkupFlags : ui16 {
 // River is often adjacent to the city center
 
 struct WorldMarkupData {
-    ui32 bodyIndex = UINT32_MAX; // Ocean, island, continent, ect.
-    f32 settleDesirability; // For settlement
-    entt::entity owner;
+    ui32 bodyIndex = UINT32_MAX;
     ui32 continentSize;
-    WorldMarkupFlags flags;
-    ui16 PADDING;
+    BitFlags<WorldMarkupFlags> flags;
+    //ui16 PADDING;
+};
+static_assert(sizeof(WorldMarkupData) == 12, "Keep small");
+
+struct WorldChunkMarkupData {
+    ui32 mainLandBodyIndex = UINT32_MAX;
+    ui32 mainWaterBodyIndex = UINT32_MAX;
+    f32 settleDesirability = 0.0f;
+    f32 landRatio = 0.0f; // 1.0 = full land, 0.0 = full water
 };
 
-static_assert(sizeof(WorldMarkupData) <= 20, "Keep small");
+struct WorldBodyNeighborInfo {
+    ui32 neighborBodyIndex = UINT32_MAX;
+    ui32 adjacentBlocks = 0;
+};
 
 struct WorldBodyMarkupData {
+    std::vector<i16v2> borderBlocks;
+    std::vector<WorldBodyNeighborInfo> neighborBodies;
+    std::vector<ChunkID> chunks; // Only used by land bodies, water will be empty
+    ui32 bodyIndex = 0;
     WorldMarkupBodyType bodyType;
-    ui32 sizeCells; // Cell is 8x8 tiles
+    ui32 sizeBlocks = 0; // Block is 8x8 tiles
+    bool onMapEdge = false;
+
+    bool isLand() const {
+        return bodyType <= WorldMarkupBodyType::BODY_TYPE_LAND_TERM;
+    }
 };
 
+// Markup is const data created at generation time, it cannot change
 class WorldMarkupGrid
 {
 public:
@@ -81,13 +105,28 @@ public:
     ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
 
     const WorldMarkupData* getMarkupAtPoint(f32v2 worldPos) const;
+    const WorldChunkMarkupData* getChunkMarkupAtPoint(f32v2 worldPos) const;
     const WorldBodyMarkupData* getBodyDataAtPoint(f32v2 worldPos) const;
 
     WorldMarkupData& getMarkupForGeneration(ui32 index) {
         return mMarkup[index];
+    } 
+    WorldChunkMarkupData& getChunkMarkupForGeneration(ChunkID index) {
+        return mChunkMarkup[index];
+    }
+
+    const WorldBodyMarkupData& getBodyData(ui32 bodyId) const {
+        return mBodies[bodyId];
+    }
+    WorldBodyMarkupData& getBodyDataForGeneration(ui32 bodyId) {
+        return mBodies[bodyId];
+    }
+    ui32 getNumBodies() const {
+        return mBodies.size();
     }
 
     void addBodyFromGeneration(WorldBodyMarkupData newBody) {
+        newBody.bodyIndex = mBodies.size();
         mBodies.emplace_back(newBody);
     }
     void setMarkupReady() {
@@ -101,7 +140,9 @@ private:
 
     std::vector<WorldBodyMarkupData> mBodies;
     std::unique_ptr<WorldMarkupData[]> mMarkup;
+    std::unique_ptr<WorldChunkMarkupData[]> mChunkMarkup;
     ui32 mTotalVertices;
+    ui32 mWidthChunks = 0;
     SpatialGrid2D mSpatialGrid;
     std::atomic_bool mMarkupReady = false;
 };
