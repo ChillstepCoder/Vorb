@@ -308,6 +308,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
 
             }
             static_assert(e_count(WorldMarkupBodyType) == 4);
+            ImGui::Text("  %s", data->name);
             ImGui::Text("  %s - Size: %d", str.c_str(), data->sizeBlocks);
             ImGui::Text("  Chunk Land Ratio: %f", mWorldData->markupGrid->getChunkMarkupAtPoint(playerSpawn)->landRatio);
         }
@@ -408,7 +409,7 @@ void WorldGenScreen::initWorldData() {
     }
     mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
     mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
-    mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth);
+    mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth, mWorldData->worldSeed);
     mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 

@@ -2,6 +2,12 @@
 
 #include "util/SpatialGrid2D.h"
 
+#include "boost/container/flat_map.hpp"
+
+#include "math/Random.h"
+
+class WorldNameContext;
+
 constexpr i32 MARKUP_VERTEX_STRIDE = 8;
 
 enum class WorldMarkupBodyType : ui8 {
@@ -79,9 +85,11 @@ struct WorldBodyNeighborInfo {
 };
 
 struct WorldBodyMarkupData {
+    const char* name = nullptr;
     std::vector<i16v2> borderBlocks;
     std::vector<WorldBodyNeighborInfo> neighborBodies;
     std::vector<ChunkID> chunks; // Only used by land bodies, water will be empty
+    f32v2 averagePos = f32v2(0.0f);
     ui32 bodyIndex = 0;
     WorldMarkupBodyType bodyType;
     ui32 sizeBlocks = 0; // Block is 8x8 tiles
@@ -95,8 +103,9 @@ struct WorldBodyMarkupData {
 // Markup is const data created at generation time, it cannot change
 class WorldMarkupGrid
 {
+    friend class MarkupGenerationStage;
 public:
-    WorldMarkupGrid(ui32 worldWidthTiles);
+    WorldMarkupGrid(ui32 worldWidthTiles, ui32 seed);
     ~WorldMarkupGrid();
 
     VORB_NON_COPYABLE(WorldMarkupGrid);
@@ -136,14 +145,23 @@ public:
         return mMarkupReady;
     }
 
-private:
+    const boost::container::flat_multimap<ui32, ui32 /*body index*/>& getSortedBodies() const {
+        return mLandBodiesSortedBySize;
+    }
 
+private:
+    // Sort bodies and stuff
+    void onGenerationComplete();
+
+    boost::container::flat_multimap<ui32 /*size*/, ui32 /*body index*/> mLandBodiesSortedBySize;
     std::vector<WorldBodyMarkupData> mBodies;
     std::unique_ptr<WorldMarkupData[]> mMarkup;
     std::unique_ptr<WorldChunkMarkupData[]> mChunkMarkup;
+    std::unique_ptr<WorldNameContext> mNameContext; // Elsewhere?
     ui32 mTotalVertices;
     ui32 mWidthChunks = 0;
     SpatialGrid2D mSpatialGrid;
     std::atomic_bool mMarkupReady = false;
+    RandomGenerator gen;
 };
 

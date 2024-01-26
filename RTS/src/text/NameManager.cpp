@@ -3,314 +3,84 @@
 
 #include "math/Random.h"
 
-const char* FIRST_NAMES_MALE[] = {
-    "Achatz",
-    "Reyneke",
-    "Tönnies",
-    "Börries",
-    "Johannes",
-    "Statius",
-    "Henning",
-    "Hinrik",
-    "Hans",
-    "Franz",
-    "Andreas",
-    "Cord",
-    "Marten",
-    "Conrad",
-    "Hieronymus",
-    "Henni",
-    "Heinrich",
-    "Arendt",
-    "Jasper",
-    "Jost",
-    "Bartold",
-    "Baltzer",
-    "Harmen",
-    "Claus",
-    "Bernhard",
-    "Bruno",
-    "Hermann",
-    "Peter",
-    "Sergius",
-    "Sander",
-    "Ahasver",
-    "Brand",
-    "Wolff",
-    "Carsten",
-    "Leonhard",
-    "Wilhelm",
-    "Dirick",
-    "Burchard",
-    "Liborius",
-    "Melchior",
-    "Balthasar",
-    "Dietrich",
-    "Ludwig",
-    "Wulbrand",
-    "Hilmar",
-    "Lorenz",
-    "Asmus",
-    "Vinzenz",
-    "Valentin",
-    "Michael",
-    "Siegfried",
-    "Lambert",
-    "Philipp",
-    "Albert",
-    "Alexander",
-    "Joachim",
-    "Erasmus",
-    "Michel",
-    "Nikolaus",
-    "Thorir",
-    "Erdmann",
-    "Markward",
-    "Jürgen",
-    "Markus",
-    "Hippolytus",
-    "Simon",
-    "Ewald",
-    "Clages",
-    "Ulrich",
-    "Kurt",
-    "Konrad",
-    "Barnim",
-    "Wartislaw",
-    "Bogislaw",
-    "Reynmar",
-    "Paul",
-    "Rickert",
-    "Thomas",
-    "Georg",
-    "Karl",
-    "Werner",
-    "Everhard",
-    "Emmanuel",
-    "Viktor",
-    "Felix",
-    "Daniel",
-    "Kaspar",
-    "Zacharias",
-    "Jackso",
-    "Volcmer",
-    "Arnold",
-    "Moritz",
-    "Volkwart",
-    "Erich",
-    "Albus",
-    "Dinnies",
-    "Sabellus",
-    "Otto",
-    "Tews",
-};
+#include "NameStrings.inl"
 
-const char* FIRST_NAMES_FEMALE[] = {
-    "Katharina",
-    "Margarete",
-    "Elisa",
-    "Barbara",
-    "Berta",
-    "Magdalena",
-    "Anna",
-    "Justine",
-    "Taleke",
-    "Juliane",
-    "Erdmuth",
-    "Emerentia",
-    "Engel",
-    "Gertrud",
-    "Ilsebe",
-    "Klara",
-    "Liboria",
-    "Dorothea",
-    "Tita",
-    "Ilse",
-    "Regina",
-    "Hedwig",
-    "Adelheid",
-    "Metteke",
-    "Ursula",
-    "Agneta",
-    "Christina",
-    "Maria",
-    "Susanne",
-    "Lucia",
-    "Gesa",
-    "Charlotte",
-    "Adelheid",
-    "Euphemia",
-    "Otilia",
-    "Felicitas",
-    "Lisa",
-    "Irmgard",
-    "Agnes",
-    "Apollonia",
-    "Martha",
-    "Eusebia",
-    "Eva",
-    "Isengart",
-    "Kunigunde",
-    "Guda",
-    "Amelia",
-    "Antonetta",
-    "Cordula",
-    "Susanna",
-    "Eleonora",
-    "Liboria",
-    "Kyneke",
-    "Tebbe",
-    "Hedeke",
-    "Cecislawa",
-    "Olegardis",
-    "Walburgis",
-    "Wobeke",
-    "Mynteke",
-    "Sybilla",
-    "Agnesa",
-    "Tilseke",
-    "Trude",
-    "Wendele",
-    "Judith",
-    "Euphrosina",
-    "Hippolyta",
-    "Alveke",
-    "Modesta",
-    "Benigna",
-    "Alverdis",
-    "Cecilia",
-    "Merge",
-    "Mette",
-    "Mechthild",
-    "Ottilie",
-    "Beate",
-    "Wille",
-    "Armgard",
-    "Palladia",
-    "Engelke",
-    "Sidonia",
-    "Olicke",
-    "Runne",
-    "Melusina",
-    "Elsa",
-    "Catrina",
-    "Dortia",
-    "Rixa",
-    "Sabina",
-    "Julia",
-    "Cunne",
-    "Heilweig",
-    "Esther",
-    "Gisela",
-    "Helena",
-    "Lefeken",
-    "Grete",
-};
+WorldNameContext::WorldNameContext() {
+    mAvailableLargeIslandNames.resize(std::size(LARGE_ISLAND_NAMES));
+    for (size_t i = 0; i < std::size(LARGE_ISLAND_NAMES); ++i) {
+        mAvailableLargeIslandNames[i] = i;
+    };
+    mAvailableSmallIslandNames.resize(std::size(SMALL_ISLAND_NAMES));
+    for (size_t i = 0; i < std::size(SMALL_ISLAND_NAMES); ++i) {
+        mAvailableSmallIslandNames[i] = i;
+    };
+    mAvailableLakeNames.resize(std::size(LAKE_NAMES));
+    for (size_t i = 0; i < std::size(LAKE_NAMES); ++i) {
+        mAvailableLakeNames[i] = i;
+    };
+    mAvailableOceanNames.resize(std::size(OCEAN_NAMES));
+    for (size_t i = 0; i < std::size(OCEAN_NAMES); ++i) {
+        mAvailableOceanNames[i] = i;
+    };
 
-const char* LAST_NAMES[] = {
-    "Ärtzgräber",
-    "Baol",
-    "Beck",
-    "Bender",
-    "Blanckenbeyl",
-    "Blum",
-    "Breutel",
-    "Chunius",
-    "Crommel",
-    "Culman",
-    "Drapp",
-    "Drau",
-    "Faber",
-    "Fischer",
-    "Fürck",
-    "Gertenheyer",
-    "Gros",
-    "Heuß",
-    "Maß",
-    "Hitzfeld",
-    "Holsteges",
-    "Hufeisen",
-    "Hyenerer",
-    "Keiser",
-    "Kiefer",
-    "Klapperbach",
-    "Knorr",
-    "Koch",
-    "Kraus",
-    "Zöllner",
-    "Wyndt",
-    "Brand",
-    "Wimpeling",
-    "Weller",
-    "Spitz",
-    "Vogt",
-    "Sonnenschmidt",
-    "Sohler",
-    "Saxler",
-    "Scherin",
-    "Rüthgen",
-    "Rühl",
-    "Röder",
-    "Pors",
-    "Pomereydt",
-    "Polich",
-    "Placzfus",
-    "Pellifex",
-    "Nordeck",
-    "Lotley",
-    "Leyendecker",
-    "Nonnenmacher",
-    "Klockenhencker",
-    "Kalbach",
-    "Bavemann",
-    "Beddecker",
-    "Blanckscheehn",
-    "Caroc",
-    "Colbert",
-    "Corswant",
-    "Crugher",
-    "Dachtenbicht",
-    "Dargatz",
-    "Engelbrecht",
-    "Erskein",
-    "Friso",
-    "Frobose",
-    "Glewing",
-    "Glineke",
-    "Gottschalk",
-    "Graskröger",
-    "Hagemeister",
-    "Hannemann",
-    "Middelstedt",
-    "Neuschwager",
-    "Oldehaver",
-    "Penningsdorf",
-    "Pritlevitz",
-    "Quant",
-    "Range",
-    "Saccus",
-    "Saltwedel",
-    "Schwartzerdt",
-    "Schupplenberg",
-    "Tabbert",
-    "Tarncke",
-    "Tideböhl",
-    "Uteske",
-    "Vargatz",
-    "Vlesch",
-    "Warendorp",
-    "Wikbold",
-    "Zander",
-    "Zimdars",
-    "Düvel",
-    "Großcurt",
-    "Oppermann",
-    "Wucherpfennig",
-    "Weckenesel",
-};
+}
 
-const char* NameManager::getRandomFirstName(RandomGenerator& gen, bool isFemale)
-{
+const char* WorldNameContext::getRandomUniqueSmallIslandName(RandomGenerator& gen) {
+    if (mAvailableSmallIslandNames.empty()) {
+        mAvailableSmallIslandNames.resize(std::size(SMALL_ISLAND_NAMES));
+        for (size_t i = 0; i < std::size(SMALL_ISLAND_NAMES); ++i) {
+            mAvailableSmallIslandNames[i] = i;
+        };
+    }
+    const ui32 index = gen.getRandomUIntInRange(0, mAvailableSmallIslandNames.size());
+    mAvailableSmallIslandNames[index] = mAvailableSmallIslandNames.back();
+    mAvailableSmallIslandNames.pop_back();
+    return SMALL_ISLAND_NAMES[index];
+}
+
+const char* WorldNameContext::getRandomUniqueLargeIslandName(RandomGenerator& gen) {
+    // Complete:
+    if (mAvailableLargeIslandNames.empty()) {
+        mAvailableLargeIslandNames.resize(std::size(LARGE_ISLAND_NAMES));
+        for (size_t i = 0; i < std::size(LARGE_ISLAND_NAMES); ++i) {
+            mAvailableLargeIslandNames[i] = i;
+        };
+    }
+    const ui32 index = gen.getRandomUIntInRange(0, mAvailableLargeIslandNames.size());
+    mAvailableLargeIslandNames[index] = mAvailableLargeIslandNames.back();
+    mAvailableLargeIslandNames.pop_back();
+    return LARGE_ISLAND_NAMES[index];
+}
+
+const char* WorldNameContext::getRandomUniqueLakeName(RandomGenerator& gen) {
+    // Complete
+    if (mAvailableLakeNames.empty()) {
+        mAvailableLakeNames.resize(std::size(LAKE_NAMES));
+        for (size_t i = 0; i < std::size(LAKE_NAMES); ++i) {
+            mAvailableLakeNames[i] = i;
+        };
+    }
+    const ui32 index = gen.getRandomUIntInRange(0, mAvailableLakeNames.size());
+    mAvailableLakeNames[index] = mAvailableLakeNames.back();
+    mAvailableLakeNames.pop_back();
+    return LAKE_NAMES[index];
+}
+
+const char* WorldNameContext::getRandomUniqueOceanName(RandomGenerator& gen) {
+    // Complete
+    if (mAvailableOceanNames.empty()) {
+        mAvailableOceanNames.resize(std::size(OCEAN_NAMES));
+        for (size_t i = 0; i < std::size(OCEAN_NAMES); ++i) {
+            mAvailableOceanNames[i] = i;
+        };
+    }
+    const ui32 index = gen.getRandomUIntInRange(0, mAvailableOceanNames.size());
+    mAvailableOceanNames[index] = mAvailableOceanNames.back();
+    mAvailableOceanNames.pop_back();
+    return OCEAN_NAMES[index];
+}
+
+const char* NameManager::getRandomFirstName(RandomGenerator& gen, bool isFemale) {
     if (isFemale) {
         return FIRST_NAMES_FEMALE[gen.getRandomUIntInRange(0, std::size(FIRST_NAMES_FEMALE))];
     } else {

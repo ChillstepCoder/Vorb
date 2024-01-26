@@ -331,9 +331,10 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
             ++it->second;  \
         }  \
     }
-
+    f64v2 avgPos = f64v2(0.0);
     // Process all border blocks
     for (i16v2 pos : borderSet) {
+        avgPos += f64v2(pos);
         ui32 index = pos.y * widthVerts + pos.x;
         if (pos.x == 0) [[unlikely]] {
             bodyData.onMapEdge = true;
@@ -364,7 +365,7 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
             CHECK_NEIGHBOR(topIndex);
         }
     }
-
+    avgPos /= (f64)borderSet.size();
     // Write data
     bodyData.neighborBodies.resize(neighborBodyCounts.size());
     size_t i = 0;
@@ -373,6 +374,7 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
         bodyData.neighborBodies[i].adjacentBlocks = it.second;
         ++i;
     }
+    bodyData.averagePos = f32v2(avgPos);
     bodyData.borderBlocks = std::move(borderSet);
     bodyData.borderBlocks.shrink_to_fit();
 
@@ -382,10 +384,8 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
 }
 
 void MarkupGenerationStage::onFinished() {
-    // Compress body memory
-    for (ui32 i = 0; i < mMarkupGrid->getNumBodies(); ++i) {
-        mMarkupGrid->getBodyDataForGeneration(i).chunks.shrink_to_fit();
-    }
+   
+    mMarkupGrid->onGenerationComplete();
     mBodyChunkListMutexes.reset();
 
     mMarkupGrid->setMarkupReady();

@@ -1055,6 +1055,7 @@
     <None Include="src\item\ItemReservation" />
     <None Include="src\rendering\mesh\fbx2raw.inl" />
     <None Include="src\rendering\mesh\VertexType" />
+    <None Include="src\text\NameStrings.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,9 @@
 #include "stdafx.h"
 #include "WorldMarkupGrid.h"
 
-WorldMarkupGrid::WorldMarkupGrid(ui32 worldWidthTiles)
+#include "text/NameManager.h"
+
+WorldMarkupGrid::WorldMarkupGrid(ui32 worldWidthTiles, ui32 seed) : gen(seed | seed << 16 + 2653)
 {
     const ui32 widthVerts = worldWidthTiles / MARKUP_VERTEX_STRIDE;
     mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
@@ -11,6 +13,8 @@ WorldMarkupGrid::WorldMarkupGrid(ui32 worldWidthTiles)
     mChunkMarkup = std::make_unique<WorldChunkMarkupData[]>(SQ(mWidthChunks));
     LOG_DEBUG("Markup grid allocated {} mb markup",
         (mTotalVertices * sizeof(WorldMarkupData) + sizeof(WorldChunkMarkupData) * SQ(mWidthChunks)) / 1024.f / 1024.f);
+
+    mNameContext = std::make_unique<WorldNameContext>();
 }
 
 WorldMarkupGrid::~WorldMarkupGrid() = default;
@@ -37,4 +41,30 @@ const WorldBodyMarkupData* WorldMarkupGrid::getBodyDataAtPoint(f32v2 worldPos) c
     if (!baseMarkup) return nullptr;
     if (baseMarkup->bodyIndex == UINT32_MAX) return nullptr;
     return &mBodies[baseMarkup->bodyIndex];
+}
+
+void WorldMarkupGrid::onGenerationComplete() {
+    for (auto& bodyData : mBodies) {
+        bodyData.chunks.shrink_to_fit();
+        mLandBodiesSortedBySize.emplace(bodyData.sizeBlocks, bodyData.bodyIndex);
+        // Names
+        switch (bodyData.bodyType) {
+            case WorldMarkupBodyType::LargeIsland:
+                bodyData.name = mNameContext->getRandomUniqueLargeIslandName(gen);
+                break;
+            case WorldMarkupBodyType::Island:
+                bodyData.name = mNameContext->getRandomUniqueLargeIslandName(gen);
+                break;
+            case WorldMarkupBodyType::Lake:
+                bodyData.name = mNameContext->getRandomUniqueLakeName(gen);
+                break;
+            case WorldMarkupBodyType::Ocean:
+                bodyData.name = mNameContext->getRandomUniqueOceanName(gen);
+                break;
+            default:
+                break;
+
+        }
+        static_assert(e_count(WorldMarkupBodyType) == 4);
+    }
 }

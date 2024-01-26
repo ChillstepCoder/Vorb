@@ -2505,5 +2505,8 @@
     <None Include="src\rendering\mesh\fbx2raw.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="src\text\NameStrings.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
