@@ -1,6 +1,11 @@
 #pragma once
 
 #include "util/SpatialGrid2D.h"
+#include "util/BitArray.h"
+
+#include <boost/container/flat_map.hpp>
+
+class WorldMarkupGrid;
 
 struct OwnershipData {
     entt::entity owner;
@@ -13,8 +18,16 @@ static_assert(sizeof(OwnershipData) == 8, "Keep tiny");
 class OwnershipGrid
 {
 public:
-    OwnershipGrid(ui32 worldWidthTiles);
+    OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid);
     ~OwnershipGrid();
+
+
+    void setChunkOwner(ChunkID chunkId, entt::entity owner);
+    entt::entity getChunkOwner(ChunkID chunkId) const;
+    //??
+    //std::vector<entt::entity> getChunkOwnersForBody() const;
+
+    //void onChunkOwnershipChange(ChunkID chunkId, OwnershipData oldOwner, OwnershipData newOwner);
 
     VORB_NON_COPYABLE(OwnershipGrid);
 
@@ -27,11 +40,23 @@ public:
     void setChunkSettlementOwnerData(ChunkID chunkId, OwnershipData ownerData);
     void setWorldPosEntityOwnerData(f32v2 worldPos, OwnershipData ownerData);
 
+    bool isChunkIsClaimed(ChunkID chunkId) const;
+    void claimChunk(ChunkID chunkId);
+    void unclaimChunk(ChunkID chunkId);
+
+    // Sim thread only
+    entt::entity getChunkOwner(ChunkID chunkId) const;
+    void setChunkOwner(ChunkID chunkId, entt::entity owner);
+
+    // TODO
+    //STATIC_EVENT_LISTENER_FUNCS(OwnershipGrid, Destroy, ItemStockpileEventType::Destroy, const ItemStockpileEvent&);
+    //STATIC_EVENT_DISPATCHER_DEF(OwnershipGrid);
 private:
-    // Probably tie it to each body
+    WorldMarkupGrid& mMarkupGrid;
 
     std::unique_ptr<OwnershipData[]> mBlockOwners; //8x8 blocks tiling across the world
     std::unique_ptr<OwnershipData[]> mChunkOwners;
+    BitArray mClaimedChunks; // Chunks that someone is planning to immigrate to 
     ui32 mTotalVertices = 0;
     ui32 mWidthBlocks = 0;
     ui32 mWidthChunks = 0;

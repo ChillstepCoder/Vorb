@@ -149,7 +149,7 @@ void MarkupGenerationStage::generateInitialMarkup()
                 do {
                     currentSet.push_back(index);
                     visited.setBit(index);
-                    mMarkupGrid->getMarkupForGeneration(index).bodyIndex = mTotalBodies;
+                    mMarkupGrid->getMarkupForGeneration(index).bodyId = mTotalBodies;
                     if (pos.y > 0) [[likely]] {
                         if (!spanBelow && mBiomeGrid->getVertexForGeneration(index - markupWidth).isWater() == groupIsWater) {
                             stack.emplace_back(pos.x, pos.y - 1);
@@ -271,9 +271,9 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                     if (blockMarkup.flags.isMaskPartiallySet(WORLD_MARKUP_FLAGS_LAND_MASK)) {
                         ++landBlocks;
                     }
-                    auto&& it = bodyCounts.find(blockMarkup.bodyIndex);
+                    auto&& it = bodyCounts.find(blockMarkup.bodyId);
                     if (it == bodyCounts.end()) [[unlikely]] {
-                        bodyCounts.emplace(blockMarkup.bodyIndex, 1);
+                        bodyCounts.emplace(blockMarkup.bodyId, 1);
                     }
                     else {
                         ++it->second;
@@ -286,22 +286,22 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
             for (auto&& it : bodyCounts) {
                 if (mMarkupGrid->getBodyData(it.first).bodyType <= WorldMarkupBodyType::BODY_TYPE_LAND_TERM) {
                     if (it.second > highestLandCount) {
-                        chunkMarkup.mainLandBodyIndex = it.first;
+                        chunkMarkup.mainLandBodyID = it.first;
                         highestLandCount = it.second;
                     }
                 }
                 else {
                     if (it.second > highestWaterCount) {
-                        chunkMarkup.mainWaterBodyIndex = it.first;
+                        chunkMarkup.mainWaterBodyID = it.first;
                         highestWaterCount = it.second;
                     }
                 }
             }
 
-            if (chunkMarkup.mainLandBodyIndex != UINT32_MAX) {
-                WorldBodyMarkupData& bodyData = mMarkupGrid->getBodyDataForGeneration(chunkMarkup.mainLandBodyIndex);
-                assert(chunkMarkup.mainLandBodyIndex < mTotalBodies);
-                std::lock_guard lock(mBodyChunkListMutexes[chunkMarkup.mainLandBodyIndex]);
+            if (chunkMarkup.mainLandBodyID != UINT32_MAX) {
+                WorldBodyMarkupData& bodyData = mMarkupGrid->getBodyDataForGeneration(chunkMarkup.mainLandBodyID);
+                assert(chunkMarkup.mainLandBodyID < mTotalBodies);
+                std::lock_guard lock(mBodyChunkListMutexes[chunkMarkup.mainLandBodyID]);
                 bodyData.chunks.emplace_back(chunkID);
             }
             chunkMarkup.landRatio = (f32)landBlocks / (f32)SIZE_BLOCKS;

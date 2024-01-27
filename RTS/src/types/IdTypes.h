@@ -41,9 +41,13 @@ typedef ui32 ServerPlayerID;
 
 typedef ui64 TimestampMs;
 
+typedef ui32 BodyID;
+constexpr ui32 INVALID_BODY_ID = UINT32_MAX;
+
 // UIDs
 typedef ui16 BusinessID; // No more than 65535 businesses per city
 typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
 typedef ui32 SettlementUID;
 typedef ui64 CharacterUID;
 typedef ui64 BuildingUID;
+

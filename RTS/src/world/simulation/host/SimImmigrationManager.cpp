@@ -4,18 +4,35 @@
 #include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
+#include "world/markup/WorldMarkupGrid.h"
 #include "faction/IFactionManager.h"
 
 #include "math/Random.h"
 
 constexpr ui64 MIN_TIME_BETWEEN_IMMIGRATIONS_MS = 4000;
 
-SimImmigrationManager::SimImmigrationManager(HostSimContext& simContext) : mHostSimContext(simContext), mWorldAnalytics(simContext.getAnalytics()) {
+SimImmigrationManager::SimImmigrationManager(HostSimContext& simContext) :
+    mHostSimContext(simContext), mWorldAnalytics(simContext.getAnalytics()), mMarkupGrid(simContext.getWorld().getMarkupGrid()) {
 
 }
 
 SimImmigrationManager::~SimImmigrationManager() {
 
+}
+
+void SimImmigrationManager::init() {
+    mImmigrationData.reserve(mMarkupGrid.getBodyCount());
+    for (BodyID i = 0; i < mMarkupGrid.getBodyCount(); ++i) {
+        const WorldBodyMarkupData& bodyMarkup = mMarkupGrid.getBodyData(i);
+        if (bodyMarkup.isLand()) {
+            BodyImmigrationData& data = mImmigrationData[i];
+            data.mPrioritySortedChunks.resize(bodyMarkup.chunks.size());
+            for (ui32 j = 0; j < bodyMarkup.chunks.size(); ++j) {
+                data.mPrioritySortedChunks[j] = bodyMarkup.chunks[j];
+            }
+        }
+        // TODO: SORT HIGH PRI TO END
+    }
 }
 
 void SimImmigrationManager::tickSimThread(TimestampMs currentTime) {
@@ -26,6 +43,30 @@ void SimImmigrationManager::tickSimThread(TimestampMs currentTime) {
     if (analytics.totalPopulation < analytics.desiredPopulation && timeDelta > MIN_TIME_BETWEEN_IMMIGRATIONS_MS) {
         spawnImmigrationBySea(currentTime);
     }
+}
+
+SimImmigrationManager::ImmigrationOrder SimImmigrationManager::getNextImmigrationOrder() {
+    ImmigrationOrder rv;
+    const SortedBodyMap& bodyMap = mMarkupGrid.getSortedBodies();
+
+    // Favors largest bodies
+    constexpr f32 chanceToSpawnPerBody = 0.5f;
+
+    bool spawned = false;
+    for (auto& it : bodyMap) {
+        if (mHostSimContext.getSimRandomGenerator().getRandomFloatUnsigned() <= chanceToSpawnPerBody) {
+            BodyImmigrationData& data = mImmigrationData[it.second];
+            if (data.mPrioritySortedChunks.size()) {
+                rv.targetChunk = data.mPrioritySortedChunks.back();
+                data.mPrioritySortedChunks.pop_back();
+                x;// Need edge chunks stored!
+                rv.startChunk = ; //???
+                return rv;
+            }
+        }
+    }
+
+    return rv;
 }
 
 void SimImmigrationManager::spawnImmigrationBySea(TimestampMs currentTime) {

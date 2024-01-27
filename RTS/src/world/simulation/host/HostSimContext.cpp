@@ -31,6 +31,7 @@ HostSimContext::~HostSimContext() {
 
 void HostSimContext::beginHistorySimulation() {
 
+    mImmigrationManager->init();
     mAnalytics->setDesiredPopulation(10000);
 
     assert(!mSimThread);

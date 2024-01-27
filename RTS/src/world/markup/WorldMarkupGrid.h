@@ -65,7 +65,7 @@ constexpr ui16 WORLD_MARKUP_FLAGS_WATER_MASK = e_cast(WorldMarkupFlags::Lake) | 
 // River is often adjacent to the city center
 
 struct WorldMarkupData {
-    ui32 bodyIndex = UINT32_MAX;
+    BodyID bodyId = INVALID_BODY_ID;
     ui32 continentSize;
     BitFlags<WorldMarkupFlags> flags;
     //ui16 PADDING;
@@ -73,14 +73,14 @@ struct WorldMarkupData {
 static_assert(sizeof(WorldMarkupData) == 12, "Keep small");
 
 struct WorldChunkMarkupData {
-    ui32 mainLandBodyIndex = UINT32_MAX;
-    ui32 mainWaterBodyIndex = UINT32_MAX;
+    BodyID mainLandBodyID = UINT32_MAX;
+    BodyID mainWaterBodyID = UINT32_MAX;
     f32 settleDesirability = 0.0f;
     f32 landRatio = 0.0f; // 1.0 = full land, 0.0 = full water
 };
 
 struct WorldBodyNeighborInfo {
-    ui32 neighborBodyIndex = UINT32_MAX;
+    BodyID neighborBodyIndex = UINT32_MAX;
     ui32 adjacentBlocks = 0;
 };
 
@@ -90,7 +90,7 @@ struct WorldBodyMarkupData {
     std::vector<WorldBodyNeighborInfo> neighborBodies;
     std::vector<ChunkID> chunks; // Only used by land bodies, water will be empty
     f32v2 averagePos = f32v2(0.0f);
-    ui32 bodyIndex = 0;
+    BodyID bodyIndex = 0;
     WorldMarkupBodyType bodyType;
     ui32 sizeBlocks = 0; // Block is 8x8 tiles
     bool onMapEdge = false;
@@ -100,7 +100,9 @@ struct WorldBodyMarkupData {
     }
 };
 
-// Markup is const data created at generation time, it cannot change
+typedef boost::container::flat_multimap<ui32, ui32 /*body index*/> SortedBodyMap;
+
+// Contains const data about the world. Stores BodyData, Block data, and chunk data.
 class WorldMarkupGrid
 {
     friend class MarkupGenerationStage;
@@ -123,14 +125,19 @@ public:
     WorldChunkMarkupData& getChunkMarkupForGeneration(ChunkID index) {
         return mChunkMarkup[index];
     }
+    WorldChunkMarkupData getChunkMarkup(ChunkID index) {
+        ASSERT_SIM_THREAD();
+        // TODO: THREAD SAFE
+        return mChunkMarkup[index];
+    }
 
-    const WorldBodyMarkupData& getBodyData(ui32 bodyId) const {
+    const WorldBodyMarkupData& getBodyData(BodyID bodyId) const {
         return mBodies[bodyId];
     }
-    WorldBodyMarkupData& getBodyDataForGeneration(ui32 bodyId) {
+    WorldBodyMarkupData& getBodyDataForGeneration(BodyID bodyId) {
         return mBodies[bodyId];
     }
-    ui32 getNumBodies() const {
+    ui32 getBodyCount() const {
         return mBodies.size();
     }
 
@@ -145,7 +152,7 @@ public:
         return mMarkupReady;
     }
 
-    const boost::container::flat_multimap<ui32, ui32 /*body index*/>& getSortedBodies() const {
+    const SortedBodyMap& getSortedBodies() const {
         return mLandBodiesSortedBySize;
     }
 
@@ -153,7 +160,7 @@ private:
     // Sort bodies and stuff
     void onGenerationComplete();
 
-    boost::container::flat_multimap<ui32 /*size*/, ui32 /*body index*/> mLandBodiesSortedBySize;
+    SortedBodyMap mLandBodiesSortedBySize;
     std::vector<WorldBodyMarkupData> mBodies;
     std::unique_ptr<WorldMarkupData[]> mMarkup;
     std::unique_ptr<WorldChunkMarkupData[]> mChunkMarkup;

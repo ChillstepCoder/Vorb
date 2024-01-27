@@ -39,8 +39,8 @@ const WorldChunkMarkupData* WorldMarkupGrid::getChunkMarkupAtPoint(f32v2 worldPo
 const WorldBodyMarkupData* WorldMarkupGrid::getBodyDataAtPoint(f32v2 worldPos) const {
     const WorldMarkupData* baseMarkup = getMarkupAtPoint(worldPos);
     if (!baseMarkup) return nullptr;
-    if (baseMarkup->bodyIndex == UINT32_MAX) return nullptr;
-    return &mBodies[baseMarkup->bodyIndex];
+    if (baseMarkup->bodyId == UINT32_MAX) return nullptr;
+    return &mBodies[baseMarkup->bodyId];
 }
 
 void WorldMarkupGrid::onGenerationComplete() {
