@@ -49,6 +49,7 @@ public:
     SimECS& getECS() const { return *mSimECS; }
     SimWorldAnalytics& getAnalytics() const { return *mAnalytics; }
     RandomGenerator& getSimRandomGenerator() const;
+    ui32 getWidthChunks() const;
 private:
     //ChunkSimulator mSimulator;
 

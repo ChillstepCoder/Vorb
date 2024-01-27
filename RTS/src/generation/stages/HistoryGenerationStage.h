@@ -49,7 +49,6 @@ public:
     f32 getProgress() const override { return glm::min(mHistoryProgress, 1.0f); }
 
     void renderImguiControls() override;
-    void debugDraw(const OrthoCamera& camera) override;
 
 private:
 
@@ -74,15 +73,6 @@ private:
     int mGrowPassCount = 0;
     int mGrowPassRowBlockIndex = 0;
     int mGrowPassRowsPerPass = 0;
-
-    bool mDrawCharacters = true;
-
-    std::shared_ptr<SimThreadEntityRequest> mPrevCharacterRequest;
-    std::shared_ptr<SimThreadEntityRequest> mCurrentCharacterRequest;
-
-    AssetHandlePtr<MaterialShaderDef> mDebugQuadShader;
-    std::unique_ptr<AxisAlignedQuadMesh> mCharacterQuadMesh;
-    bool mNeedsRebuildCharacterQuadMesh = true;
 
     const std::unique_ptr<World>& mWorldPtr;
     HostSimContext* mHostSimContext = nullptr;

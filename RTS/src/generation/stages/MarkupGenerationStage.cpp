@@ -48,6 +48,7 @@ bool MarkupGenerationStage::update() {
 
 void MarkupGenerationStage::allocateWorld() {
     assert(!mWorldPtr);
+    ASSERT_RENDER_THREAD(); // World ptr not thread safe rn
     mWorldPtr = std::make_unique<World>(WorldNetMode::Host, mWorldData);
 }
 
@@ -248,6 +249,8 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
     constexpr ui32 WIDTH_BLOCKS = CHUNK_WIDTH / BLOCK_WIDTH;
     constexpr ui32 SIZE_BLOCKS = SQ(WIDTH_BLOCKS);
 
+    RandomGenerator gen(mWorldData->worldSeed * jobIndex);
+
     // Allows us to count the number of bodies in each chunk
     boost::container::flat_map<ui32 /*body index*/, ui32 /*count*/> bodyCounts;
     bodyCounts.reserve(4); // This is more than we will need in almost every case
@@ -305,7 +308,8 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                 bodyData.chunks.emplace_back(chunkID);
             }
             chunkMarkup.landRatio = (f32)landBlocks / (f32)SIZE_BLOCKS;
-            chunkMarkup.settleDesirability = 0.0f; // ??? How compute
+            // TODO: How compute?
+            chunkMarkup.settleDesirability = chunkMarkup.landRatio * gen.getRandomFloatUnsigned(); 
         }
     }
     //LOG_DEBUG("  Row {} processed in {} ms with {} blocks {}  {}", jobIndex, timer.elapsedMs(), chunkRowsPerJob * worldWidthChunks * SIZE_BLOCKS, count, chunkRowsPerJob);
@@ -319,9 +323,11 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
     std::vector<i16v2>& borderSet = mBodyBorderSets[bodyIndex];
     boost::container::flat_map<ui32 /*body index*/, ui32 /*count*/> neighborBodyCounts;
     neighborBodyCounts.reserve(6); // This is more than we will need in almost every case
+    boost::container::flat_set<ChunkID> borderChunks;
+    borderChunks.reserve(16);
 
 #define CHECK_NEIGHBOR(nIndex) \
-    const ui32 neighborBodyIndex = mMarkupGrid->getMarkupForGeneration(nIndex).bodyIndex;  \
+    const ui32 neighborBodyIndex = mMarkupGrid->getMarkupForGeneration(nIndex).bodyId;  \
     if (neighborBodyIndex != bodyIndex) { \
         auto&& it = neighborBodyCounts.find(neighborBodyIndex);  \
         if (it == neighborBodyCounts.end()) {  \
@@ -334,6 +340,11 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
     f64v2 avgPos = f64v2(0.0);
     // Process all border blocks
     for (i16v2 pos : borderSet) {
+        const i32 chunkX = (pos.x * BLOCK_WIDTH) / CHUNK_WIDTH;
+        const i32 chunkY = (pos.y * BLOCK_WIDTH) / CHUNK_WIDTH;
+        ChunkID chunkId = GridIdUtil::getCellIndexFromWorldPos(ui32v2(pos) * (ui32)BLOCK_WIDTH, CHUNK_WIDTH, mMarkupGrid->mWidthChunks);
+        borderChunks.insert(chunkId);
+
         avgPos += f64v2(pos);
         ui32 index = pos.y * widthVerts + pos.x;
         if (pos.x == 0) [[unlikely]] {
@@ -377,6 +388,10 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
     bodyData.averagePos = f32v2(avgPos);
     bodyData.borderBlocks = std::move(borderSet);
     bodyData.borderBlocks.shrink_to_fit();
+    bodyData.borderChunks.reserve(borderChunks.size());
+    for (auto& c : borderChunks) {
+        bodyData.borderChunks.emplace_back(c);
+    }
 
     //static std::atomic<ui32> TOTALSIZE = 0;
     //TOTALSIZE += bodyData.borderBlocks.size() * sizeof(i16v2);

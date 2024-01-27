@@ -16,6 +16,7 @@ class MaterialShaderDef;
 class OrthoCamera;
 class LineMesh;
 class AxisAlignedQuadMesh;
+struct SimThreadEntityRequest;
 
 enum class WorldGenScreenState {
     Idle,
@@ -56,6 +57,7 @@ protected:
     void debugDrawRivers();
     void debugDrawChunkLines();
     void debugDrawBodyBorder();
+    void debugDrawCharacters();
 
     bool mRebuildDockspace = true;
     bool mCancelled = false;
@@ -87,6 +89,7 @@ protected:
     bool mShowRivers = false;
     bool mShowChunks = false;
     bool mShowSelectedBody = true;
+    bool mDrawCharacters = true;
     ui32 mSelectedBody = UINT32_MAX;
 
     // Debug rendering
@@ -97,6 +100,12 @@ protected:
     std::unique_ptr<LineMesh> mRiverDebugLocalGroupMesh;
     std::unique_ptr<LineMesh> mChunkDebugMesh;
     std::unique_ptr<AxisAlignedQuadMesh> mCurrentBodyBorderMesh;
+    std::unique_ptr<AxisAlignedQuadMesh> mCharacterQuadMesh;
+
+    std::shared_ptr<SimThreadEntityRequest> mPrevCharacterRequest;
+    std::shared_ptr<SimThreadEntityRequest> mCurrentCharacterRequest;
+
+    bool mNeedsRebuildCharacterQuadMesh = true;
     bool mNeedsNewBorderMesh = true;
 
     PreciseTimer mGenTimer;

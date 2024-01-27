@@ -2,6 +2,7 @@
 
 class HostSimContext;
 class SimWorldAnalytics;
+class WorldMarkupGrid;
 
 #include <boost/container/flat_map.hpp>
 
@@ -32,7 +33,6 @@ private:
     ImmigrationOrder getNextImmigrationOrder();
 
     void spawnImmigrationBySea(TimestampMs currentTime);
-
 
     HostSimContext& mHostSimContext;
     WorldMarkupGrid& mMarkupGrid;

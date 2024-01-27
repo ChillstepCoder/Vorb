@@ -21,15 +21,10 @@ public:
     OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid);
     ~OwnershipGrid();
 
+    VORB_NON_COPYABLE(OwnershipGrid);
 
     void setChunkOwner(ChunkID chunkId, entt::entity owner);
     entt::entity getChunkOwner(ChunkID chunkId) const;
-    //??
-    //std::vector<entt::entity> getChunkOwnersForBody() const;
-
-    //void onChunkOwnershipChange(ChunkID chunkId, OwnershipData oldOwner, OwnershipData newOwner);
-
-    VORB_NON_COPYABLE(OwnershipGrid);
 
     ui32 getTotalVertices() const { return mTotalVertices; }
     ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
@@ -43,10 +38,6 @@ public:
     bool isChunkIsClaimed(ChunkID chunkId) const;
     void claimChunk(ChunkID chunkId);
     void unclaimChunk(ChunkID chunkId);
-
-    // Sim thread only
-    entt::entity getChunkOwner(ChunkID chunkId) const;
-    void setChunkOwner(ChunkID chunkId, entt::entity owner);
 
     // TODO
     //STATIC_EVENT_LISTENER_FUNCS(OwnershipGrid, Destroy, ItemStockpileEventType::Destroy, const ItemStockpileEvent&);

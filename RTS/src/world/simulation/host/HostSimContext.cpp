@@ -86,3 +86,7 @@ void HostSimContext::removePlayer(ServerPlayerID playerId) {
 RandomGenerator& HostSimContext::getSimRandomGenerator() const {
     return mSimThread->getRandomGenerator();
 }
+
+ui32 HostSimContext::getWidthChunks() const {
+    return mWorld.getChunkGrid().getWidthChunks();
+}

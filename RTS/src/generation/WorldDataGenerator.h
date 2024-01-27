@@ -55,6 +55,11 @@ public:
     }
     std::unique_ptr<World> releaseWorld();
 
+    World* tryGetWorld() {
+        ASSERT_RENDER_THREAD(); // Not thread safe with allocate
+        return mWorld.get();
+    }
+
 private:
     void initStages();
     IWorldGenerationStage* tryGetCurrentStage() const;

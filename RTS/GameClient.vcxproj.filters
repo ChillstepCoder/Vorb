@@ -2498,6 +2498,9 @@
     <ClInclude Include="src\world\ownership\OwnershipGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\GridIdUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

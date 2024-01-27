@@ -89,6 +89,7 @@ struct WorldBodyMarkupData {
     std::vector<i16v2> borderBlocks;
     std::vector<WorldBodyNeighborInfo> neighborBodies;
     std::vector<ChunkID> chunks; // Only used by land bodies, water will be empty
+    std::vector<ChunkID> borderChunks; // Only used by land bodies, water will be empty
     f32v2 averagePos = f32v2(0.0f);
     BodyID bodyIndex = 0;
     WorldMarkupBodyType bodyType;
@@ -125,9 +126,7 @@ public:
     WorldChunkMarkupData& getChunkMarkupForGeneration(ChunkID index) {
         return mChunkMarkup[index];
     }
-    WorldChunkMarkupData getChunkMarkup(ChunkID index) {
-        ASSERT_SIM_THREAD();
-        // TODO: THREAD SAFE
+    WorldChunkMarkupData getChunkMarkup(ChunkID index) const {
         return mChunkMarkup[index];
     }
 
@@ -152,6 +151,7 @@ public:
         return mMarkupReady;
     }
 
+    // Smallest to biggest
     const SortedBodyMap& getSortedBodies() const {
         return mLandBodiesSortedBySize;
     }

@@ -18,6 +18,8 @@
 
 #include "world/World.h"
 #include "world/WorldDefaults.h"
+#include "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/SimThread.h"
 #include "generation/WorldDataGenerator.h"
 #include "generation/WorldGenerationBlackboard.h"
 
@@ -28,6 +30,8 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/mesh/LineMesh.h"
 #include "rendering/mesh/AxisAlignedQuadMesh.h"
+
+#include "time/TimeOfDayManager.h"
 
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
@@ -318,6 +322,14 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Checkbox("Show Rivers", &mShowRivers);
     ImGui::Checkbox("Show Chunks", &mShowChunks);
     ImGui::Checkbox("Show Body Border", &mShowSelectedBody);
+    World* world = mWorldGenerator->tryGetWorld();
+    if (world) {
+        HostSimContext* simContext = world->tryGetHostSimContext();
+        if (simContext) {
+            ImGui::Text("Date Time: %s", TimeOfDayManager::convertTimestampMSToDateTime(simContext->getSimTime()).toString().c_str());
+            ImGui::Checkbox("Draw characters", &mDrawCharacters);
+        }
+    }
 
     mWorldGenerator->renderCurrentStageImguiControls();
 
@@ -410,7 +422,7 @@ void WorldGenScreen::initWorldData() {
     mWorldData->heightmapGrid = std::make_unique<HostHeightmapGrid>(mWorldData->worldWidth);
     mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
     mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth, mWorldData->worldSeed);
-    mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth);
+    mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth, *mWorldData->markupGrid);
     mWorldData->worldSeed = mGenData.mSeedInt;
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();
@@ -497,6 +509,10 @@ void WorldGenScreen::beginWorldGeneration() {
     mRiverDebugVisitedMesh.reset();
     mRiverDebugLocalGroupMesh.reset();
     mCurrentBodyBorderMesh.reset();
+    mPrevCharacterRequest.reset();
+    mCurrentCharacterRequest.reset();
+    mCharacterQuadMesh.reset();
+    mNeedsRebuildCharacterQuadMesh = true;
     mSelectedBody = UINT32_MAX;
     mNeedsNewBorderMesh = true;
 }
@@ -541,6 +557,13 @@ void WorldGenScreen::renderMapView() {
     }
     if (mShowSelectedBody) {
         debugDrawBodyBorder();
+    }
+    if (mDrawCharacters) {
+        debugDrawCharacters();
+    }
+    else {
+        mCurrentCharacterRequest.reset();
+        mPrevCharacterRequest.reset();
     }
 
     mWorldGenerator->currentStageDebugDraw(*mCamera);
@@ -762,5 +785,72 @@ void WorldGenScreen::debugDrawBodyBorder() {
         glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
         glUniform2f(def->getUniform("unCameraPos"), mCamera->getPosition().x, mCamera->getPosition().y);
         mCurrentBodyBorderMesh->drawQuads();
+    }
+}
+
+void WorldGenScreen::debugDrawCharacters() {
+    World* worldPtr = mWorldGenerator->tryGetWorld();
+    if (!worldPtr) {
+        return;
+    }
+    HostSimContext* simContext = worldPtr->tryGetHostSimContext();
+    if (!simContext) {
+        return;
+    }
+    SimThread* simThread = simContext->tryGetSimThread();
+    if (!simThread) {
+        return;
+    }
+
+
+    if (!mCurrentCharacterRequest) {
+        mCurrentCharacterRequest = std::make_shared<SimThreadEntityRequest>();
+        simThread->requestAllCharacters(mCurrentCharacterRequest);
+    }
+    else {
+        if (mCurrentCharacterRequest->filled) {
+            mNeedsRebuildCharacterQuadMesh = true;
+            std::swap(mCurrentCharacterRequest, mPrevCharacterRequest);
+            // When done, characters wont be moving anymore so dont need to be rebuilt
+           
+            // Re-use memory if we can
+            if (!mCurrentCharacterRequest) {
+                mCurrentCharacterRequest = std::make_shared<SimThreadEntityRequest>();
+            } 
+            if (mGenState == WorldGenScreenState::Done) {
+                mCurrentCharacterRequest->filled = false; // Force permanently to never rebuild
+            }
+            else {
+                simThread->requestAllCharacters(mCurrentCharacterRequest);
+                LOG_CRITICAL("FILLED {}", mPrevCharacterRequest->entities.size());
+            }
+        }
+    }
+
+    if (mPrevCharacterRequest) {
+        if (mNeedsRebuildCharacterQuadMesh) {
+            if (!mCharacterQuadMesh) {
+                mCharacterQuadMesh = std::make_unique<AxisAlignedQuadMesh>();
+                mDebugQuadShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("map_debug_quads"));
+            }
+            std::vector<AxisAlignedQuadData> quads;
+            quads.resize(mPrevCharacterRequest->entities.size());
+            const f32v4 factionColor = color::Cyan.toVec4();
+            for (size_t i = 0; i < quads.size(); ++i) {
+                quads[i].color = factionColor; // TODO: Real Faction color
+                quads[i].dims = f32v2(0.001f);
+                quads[i].pos = (f32v2(mPrevCharacterRequest->entities[i].pos) / (f32)mWorldData->worldWidth) * 2.0f - 1.0f;
+            }
+            mCharacterQuadMesh->initialize(quads);
+        }
+        // Draw
+        const MaterialShaderDef* def = mDebugQuadShader->tryGetLoadedAsset();
+        if (def) {
+            MaterialRenderer::bindMaterialShaderForRender(*def);
+            mCharacterQuadMesh->bind(BUFFER_BASE_DEBUG_MESH_GENERIC_SSBO);
+            glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+            glUniform2f(def->getUniform("unCameraPos"), mCamera->getPosition().x, mCamera->getPosition().y);
+            mCharacterQuadMesh->drawQuads();
+        }
     }
 }

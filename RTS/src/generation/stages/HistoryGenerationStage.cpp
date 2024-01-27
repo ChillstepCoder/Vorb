@@ -226,60 +226,7 @@ void HistoryGenerationStage::downloadBiomes() {
 }
 
 void HistoryGenerationStage::renderImguiControls() {
-    ImGui::Text("Date Time: %s", TimeOfDayManager::convertTimestampMSToDateTime(mHostSimContext->getSimTime()).toString().c_str());
-    ImGui::Checkbox("Draw characters", &mDrawCharacters);
-}
 
-void HistoryGenerationStage::debugDraw(const OrthoCamera& camera) {
-    if (!mDrawCharacters) {
-        mCurrentCharacterRequest.reset();
-        mPrevCharacterRequest.reset();
-        return;
-    }
-
-    if (!mCurrentCharacterRequest) {
-        mCurrentCharacterRequest = std::make_shared<SimThreadEntityRequest>();
-        mWorldPtr->tryGetHostSimContext()->tryGetSimThread()->requestAllCharacters(mCurrentCharacterRequest);
-    }
-    else {
-        if (mCurrentCharacterRequest->filled) {
-            mNeedsRebuildCharacterQuadMesh = true;
-            std::swap(mCurrentCharacterRequest, mPrevCharacterRequest);
-            // Re-use memory if we can
-            if (!mCurrentCharacterRequest) {
-                mCurrentCharacterRequest = std::make_shared<SimThreadEntityRequest>();
-            }
-            mWorldPtr->tryGetHostSimContext()->tryGetSimThread()->requestAllCharacters(mCurrentCharacterRequest);
-            LOG_CRITICAL("FILLED {}", mPrevCharacterRequest->entities.size());
-        }
-    }
-
-    if (mPrevCharacterRequest) {
-        if (mNeedsRebuildCharacterQuadMesh) {
-            if (!mCharacterQuadMesh) {
-                mCharacterQuadMesh = std::make_unique<AxisAlignedQuadMesh>();
-                mDebugQuadShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("map_debug_quads"));
-            }
-            std::vector<AxisAlignedQuadData> quads;
-            quads.resize(mPrevCharacterRequest->entities.size());
-            const f32v4 factionColor = color::Cyan.toVec4();
-            for (size_t i = 0; i < quads.size(); ++i) {
-                quads[i].color = factionColor; // TODO: Real Faction color
-                quads[i].dims = f32v2(0.001f);
-                quads[i].pos = (f32v2(mPrevCharacterRequest->entities[i].pos) / (f32)mWorldData->worldWidth) * 2.0f - 1.0f;
-            }
-            mCharacterQuadMesh->initialize(quads);
-        }
-        // Draw
-        const MaterialShaderDef* def = mDebugQuadShader->tryGetLoadedAsset();
-        if (def) {
-            MaterialRenderer::bindMaterialShaderForRender(*def);
-            mCharacterQuadMesh->bind(BUFFER_BASE_DEBUG_MESH_GENERIC_SSBO);
-            glUniformMatrix4fv(def->getUniform("unVP"), 1, GL_FALSE, &camera.getVPMatrix()[0][0]);
-            glUniform2f(def->getUniform("unCameraPos"), camera.getPosition().x, camera.getPosition().y);
-            mCharacterQuadMesh->drawQuads();
-        }
-    }
 }
 
 BiomeGrowPass::~BiomeGrowPass() {
