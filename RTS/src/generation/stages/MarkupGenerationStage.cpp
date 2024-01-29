@@ -291,6 +291,7 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                     if (it.second > highestLandCount) {
                         chunkMarkup.mainLandBodyID = it.first;
                         highestLandCount = it.second;
+                        ++mMarkupGrid->mTotalLandChunks;
                     }
                 }
                 else {

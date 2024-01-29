@@ -156,6 +156,9 @@ public:
         return mLandBodiesSortedBySize;
     }
 
+    ui32 getTotalLandChunks() const {
+        return mTotalLandChunks;
+    }
 private:
     // Sort bodies and stuff
     void onGenerationComplete();
@@ -170,5 +173,6 @@ private:
     SpatialGrid2D mSpatialGrid;
     std::atomic_bool mMarkupReady = false;
     RandomGenerator gen;
+    std::atomic<ui32> mTotalLandChunks = 0;
 };
 

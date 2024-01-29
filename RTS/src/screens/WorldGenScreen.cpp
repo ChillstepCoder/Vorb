@@ -315,6 +315,9 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
             ImGui::Text("  %s", data->name);
             ImGui::Text("  %s - Size: %d", str.c_str(), data->sizeBlocks);
             ImGui::Text("  Chunk Land Ratio: %f", mWorldData->markupGrid->getChunkMarkupAtPoint(playerSpawn)->landRatio);
+            ImGui::Text("Total land chunks: %d / %d  %f",
+                mWorldData->markupGrid->getTotalLandChunks(), SQ(mWorldData->worldWidth / CHUNK_WIDTH),
+                f32(mWorldData->markupGrid->getTotalLandChunks()) / SQ(mWorldData->worldWidth / CHUNK_WIDTH));
         }
     }
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
