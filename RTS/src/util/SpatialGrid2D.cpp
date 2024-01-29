@@ -1,9 +1,16 @@
 #include "stdafx.h"
 #include "SpatialGrid2D.h"
 
-ui32 SpatialGrid2D::getIDAtWorldPos(const i32v2& worldPos) const {
+ui32 SpatialGrid2D::getIDAtWorldPos(i32v2 worldPos) const {
     assert(worldPos.x >= 0 && worldPos.y >= 0);
     return (worldPos.y / mCellWidth) * mGridWidthCells + worldPos.x / mCellWidth;
+}
+
+ui32 SpatialGrid2D::getIDAndCellOffsetAtWorldPos(i32v2 worldPos, OUT i32v2& cellOffsetTiles) const {
+    const i32v2 cellXY = worldPos / mCellWidth;
+    cellOffsetTiles = worldPos - cellXY * mCellWidth;
+    const ui32 id = cellXY.y * mGridWidthCells + cellXY.x;
+    return id;
 }
 
 i32v2 SpatialGrid2D::getWorldPosXYFromID(ui32 id) const {

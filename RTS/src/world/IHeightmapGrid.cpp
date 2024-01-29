@@ -22,10 +22,6 @@
 
 #include <boost/pool/singleton_pool.hpp>
 
-#define DECL_BOOL_TEMPLATE(signature, rest) \
-template signature<true>rest; \
-template signature<false>rest;
-
 //
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
@@ -243,6 +239,16 @@ void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f3
     setHeightAtPatch(id, vertIndex, patch.getHeightAt(vertIndex) + adjust);
 }
 
+void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, ui32 vertIndex) {
+    ASSERT_GAME_THREAD();
+    ui32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
+    const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
+    worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
+    mModifiedVertsThisTick.insert(worldPos);
+}
+
 void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     ASSERT_GAME_THREAD();
     std::set<ui32> dirtyChunks;
@@ -433,12 +439,7 @@ void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f3
         }
     }
     // Store position of this edit for later batched notify
-    ui32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
-    const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
-    worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
-    mModifiedVertsThisTick.insert(i32v2(worldPos));
+    markVertexDirty(id, vertIndex);
 }
 
 void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const {

@@ -12,6 +12,14 @@ VertexType TerrainVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribFormat(vao, 1 /*index*/, 3 /*size*/, GL_FLOAT, false, offsetof(TerrainVertex, normal));
     glVertexArrayAttribBinding(vao, 1, 0);
 
+    glEnableVertexArrayAttrib(vao, 2);
+    glVertexArrayAttribFormat(vao, 2 /*index*/, 1 /*size*/, GL_FLOAT, false, offsetof(TerrainVertex, roadIntensity));
+    glVertexArrayAttribBinding(vao, 2, 0);
+
+    glEnableVertexArrayAttrib(vao, 3);
+    glVertexArrayAttribIFormat(vao, 3 /*index*/, 1 /*size*/, GL_UNSIGNED_INT, offsetof(TerrainVertex, roadTexture));
+    glVertexArrayAttribBinding(vao, 3, 0);
+
     return VertexType::TERRAIN;
 }
 

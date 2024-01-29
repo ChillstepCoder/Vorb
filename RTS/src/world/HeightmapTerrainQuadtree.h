@@ -13,7 +13,7 @@ DECL_VG(class GLProgram);
 class HeightmapTerrainQuadtree : public FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>
 {
 public:
-    HeightmapTerrainQuadtree(World& world, const f32v2& worldPosition);
+    HeightmapTerrainQuadtree(World& world, i32v2 worldPosition);
     ~HeightmapTerrainQuadtree();
 
 

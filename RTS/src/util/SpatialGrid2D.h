@@ -7,7 +7,8 @@ public:
 
     void init(ui32 cellWidth, ui32 gridWidthCells) { mCellWidth = (i32)cellWidth; mGridWidthCells = (i32)gridWidthCells; }
 
-    ui32 getIDAtWorldPos(const i32v2& worldPos) const;
+    ui32 getIDAtWorldPos(i32v2 worldPos) const;
+    ui32 getIDAndCellOffsetAtWorldPos(i32v2 worldPos, OUT i32v2& cellOffsetTiles) const;
     i32v2 getWorldPosXYFromID(ui32 id) const;
     ui32 getSouthID(ui32 id) const { return id - mGridWidthCells; }
     ui32 getWestID(ui32 id) const { return id - 1; }

@@ -39,7 +39,6 @@ const char* WorldNameContext::getRandomUniqueSmallIslandName(RandomGenerator& ge
 }
 
 const char* WorldNameContext::getRandomUniqueLargeIslandName(RandomGenerator& gen) {
-    // Complete:
     if (mAvailableLargeIslandNames.empty()) {
         mAvailableLargeIslandNames.resize(std::size(LARGE_ISLAND_NAMES));
         for (size_t i = 0; i < std::size(LARGE_ISLAND_NAMES); ++i) {
@@ -53,7 +52,6 @@ const char* WorldNameContext::getRandomUniqueLargeIslandName(RandomGenerator& ge
 }
 
 const char* WorldNameContext::getRandomUniqueLakeName(RandomGenerator& gen) {
-    // Complete
     if (mAvailableLakeNames.empty()) {
         mAvailableLakeNames.resize(std::size(LAKE_NAMES));
         for (size_t i = 0; i < std::size(LAKE_NAMES); ++i) {
@@ -67,7 +65,6 @@ const char* WorldNameContext::getRandomUniqueLakeName(RandomGenerator& gen) {
 }
 
 const char* WorldNameContext::getRandomUniqueOceanName(RandomGenerator& gen) {
-    // Complete
     if (mAvailableOceanNames.empty()) {
         mAvailableOceanNames.resize(std::size(OCEAN_NAMES));
         for (size_t i = 0; i < std::size(OCEAN_NAMES); ++i) {
@@ -90,4 +87,24 @@ const char* NameManager::getRandomFirstName(RandomGenerator& gen, bool isFemale)
 
 const char* NameManager::getRandomLastName(RandomGenerator& gen) {
     return FIRST_NAMES_MALE[gen.getRandomUIntInRange(0, std::size(LAST_NAMES))];
+}
+
+SettlementNameContext::SettlementNameContext() {
+    mAvailableSettlementNames.resize(std::size(SETTLEMENT_NAMES));
+    for (size_t i = 0; i < std::size(SETTLEMENT_NAMES); ++i) {
+        mAvailableSettlementNames[i] = i;
+    };
+}
+
+const char* SettlementNameContext::getRandomUniqueSettlementName(RandomGenerator& gen) {
+    if (mAvailableSettlementNames.empty()) {
+        mAvailableSettlementNames.resize(std::size(SETTLEMENT_NAMES));
+        for (size_t i = 0; i < std::size(SETTLEMENT_NAMES); ++i) {
+            mAvailableSettlementNames[i] = i;
+        };
+    }
+    const ui32 index = gen.getRandomUIntInRange(0, mAvailableSettlementNames.size());
+    mAvailableSettlementNames[index] = mAvailableSettlementNames.back();
+    mAvailableSettlementNames.pop_back();
+    return SETTLEMENT_NAMES[index];
 }

@@ -5,4 +5,5 @@ enum class CharacterGroupType : ui8 {
     SettlerCaravan,
     Combat,
     TradeCaravan,
+    COUNT
 };

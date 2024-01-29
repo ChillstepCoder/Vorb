@@ -7,6 +7,8 @@
 #include "terrain/HeightmapPatch.h"
 #include "options/DebugOptions.h"
 
+#include "world/road/RoadGrid.h"
+
 #include <math.h>  /* modf */
 
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
@@ -131,14 +133,21 @@ void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& wat
     checkGlError("TerrainMeshBuilder::finishMeshes");
 }
 
-void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& worldPosTreeRoot, const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
+    i32v2 worldPosTreeRoot,
+    i32v2 cornerPosRelativeToRoot,
+    f32 totalWidth,
+    const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
+    const RoadGrid& roadGrid) {
+
+    const i32v2 worldPosPatchCorner = worldPosTreeRoot + cornerPosRelativeToRoot;
 
     // AABB calculation
     f32AABB3 aabb;
     aabb.dims.x = totalWidth;
     aabb.dims.y = totalWidth;
-    aabb.pos.x = worldPosTreeRoot.x + cornerPosRelativeToRoot.x;
-    aabb.pos.y = worldPosTreeRoot.y + cornerPosRelativeToRoot.y;
+    aabb.pos.x = worldPosPatchCorner.x;
+    aabb.pos.y = worldPosPatchCorner.y;
     f32 minZ = FLT_MAX;
     f32 maxZ = -FLT_MAX;
 
@@ -152,8 +161,11 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
     }
 
     constexpr f32 NORMAL_STRENGTH = 1.0f / 4.0f;
-    for (int y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
-        for (int x = 0; x < TERRAIN_MESH_WIDTH_VERTS; ++x) {
+    i32v2 worldPos;
+    for (i32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
+        worldPos.y = worldPosPatchCorner.y + y * quadWidth;
+        for (i32 x = 0; x < TERRAIN_MESH_WIDTH_VERTS; ++x) {
+            worldPos.x = worldPosPatchCorner.x + x * quadWidth;
             TerrainVertex& v = mTerrainVerts[y * TERRAIN_MESH_WIDTH_VERTS + x];
             f32 height = uncompressHeight(paddedHeightfield[y + 1][x + 1]);
 
@@ -164,6 +176,10 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
             v.pos.x = cornerPosRelativeToRoot.x + x * quadWidth;
             v.pos.y = cornerPosRelativeToRoot.y + y * quadWidth;
             v.pos.z = height;
+
+            const RoadPoint roadPoint = roadGrid.getRoadPointFloored<true>(worldPos);
+            v.roadIntensity = (f32)roadPoint.thickness / (f32)MAX_ROAD_THICKNESS;
+            v.roadTexture = 0;
 
             // Normal calc
             f32 fl = uncompressHeight(paddedHeightfield[y][x]); // front left
@@ -227,7 +243,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& world
     mBoundingSphere = boundingSphereFromAABB(aabb);
 }
 
-void TerrainMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void TerrainMeshBuilder::setVertsWaterFromPaddedHeightfield(i32v2 cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
 

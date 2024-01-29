@@ -3,6 +3,9 @@
 // TODO: MOVE
 #include "item/ItemStack.h"
 
+// TODO: SettlementConst?
+#include "city/CityConst.h"
+
 enum class JobType {
     
 };
@@ -30,6 +33,24 @@ struct SettlementSimComponent {
 struct SettlementAdjacencyData {
     entt::entity settlementEntity = entt::null;
     f32 approxMovementCost = 0.0f; // Updated periodically
+};
+
+struct SettlementDistrict {
+    ChunkID chunk;
+    DistrictType type;
+    std::vector<StructureID> structures;
+};
+
+struct SettlementDistrictsComponent {
+    std::vector<SettlementDistrict> districts;
+};
+
+struct SettlementRoadGraphComponent {
+    // TODO?
+};
+
+// Handles logic for growing the settlement
+struct SettlementPlannerComponent {
 };
 
 // Heavyweight, less accesses needed

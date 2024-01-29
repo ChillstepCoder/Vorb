@@ -4,6 +4,7 @@
 #include "world/biome/BiomeGrid.h"
 #include "world/markup/WorldMarkupGrid.h"
 #include "world/ownership/OwnershipGrid.h"
+#include "world/road/RoadGrid.h"
 
 // All word initialization data is here. Can either be generated or loaded
 // from disk
@@ -17,4 +18,5 @@ public:
     std::shared_ptr<BiomeGrid> biomeGrid;
     std::shared_ptr<WorldMarkupGrid> markupGrid;
     std::shared_ptr<OwnershipGrid> ownershipGrid;
+    std::shared_ptr<RoadGrid> roadGrid;
 };

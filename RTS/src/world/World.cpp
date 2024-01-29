@@ -32,6 +32,7 @@
 #include "world/ecosystem/FishEcosystem.h"
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
+#include "world/road/RoadGrid.h"
 #include "weather/WeatherManager.h"
 #include "faction/HostFactionManager.h"
 
@@ -76,6 +77,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mBiomeGrid = hostWorldData->biomeGrid;
             mMarkupGrid = hostWorldData->markupGrid;
             mOwnershipGrid = hostWorldData->ownershipGrid;
+            mRoadGrid = hostWorldData->roadGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
@@ -87,6 +89,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mBiomeGrid = hostWorldData->biomeGrid;
             mMarkupGrid = hostWorldData->markupGrid;
             mOwnershipGrid = hostWorldData->ownershipGrid;
+            mRoadGrid = hostWorldData->roadGrid;
             mChunkGrid = std::make_unique<CliChunkGrid>();
             mEcs = std::make_unique<CliEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
@@ -99,6 +102,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mBiomeGrid = hostWorldData->biomeGrid;
             mMarkupGrid = hostWorldData->markupGrid;
             mOwnershipGrid = hostWorldData->ownershipGrid;
+            mRoadGrid = hostWorldData->roadGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
             mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);

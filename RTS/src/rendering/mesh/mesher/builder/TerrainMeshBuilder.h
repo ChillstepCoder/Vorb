@@ -5,6 +5,7 @@
 #include "terrain/CompressedHeight.h"
 
 class TerrainMesh;
+class RoadGrid;
 
 class TerrainMeshBuilder
 {
@@ -12,15 +13,26 @@ public:
 
     static void initStaticIBO();
 
-    void buildFromPaddedHeightfield(const f32v2& worldPosTreeRoot, const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
-        setVertsTerrainFromPaddedHeightfield(worldPosTreeRoot, cornerPosRelativeToRoot, totalWidth, paddedHeightfield);
+    void buildFromPaddedHeightfield(
+        i32v2 worldPosTreeRoot,
+        i32v2 cornerPosRelativeToRoot,
+        f32 totalWidth,
+        const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
+        const RoadGrid& roadGrid
+    ) {
+        setVertsTerrainFromPaddedHeightfield(worldPosTreeRoot, cornerPosRelativeToRoot, totalWidth, paddedHeightfield, roadGrid);
         setVertsWaterFromPaddedHeightfield(cornerPosRelativeToRoot, totalWidth, paddedHeightfield);
     }
 
     void finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPosTreeRoot);
 private:
-    void setVertsTerrainFromPaddedHeightfield(const f32v2& worldPosTreeRoot, const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
-    void setVertsWaterFromPaddedHeightfield(const f32v2& cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
+    void setVertsTerrainFromPaddedHeightfield(
+        i32v2 worldPosTreeRoot,
+        i32v2 cornerPosRelativeToRoot,
+        f32 totalWidth,
+        const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
+        const RoadGrid& roadGrid);
+    void setVertsWaterFromPaddedHeightfield(i32v2 cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
     
     TerrainVertex mTerrainVerts[TERRAIN_MESH_SIZE_VERTS];
     WaterVertex mWaterVerts[WATER_MESH_SIZE_VERTS];

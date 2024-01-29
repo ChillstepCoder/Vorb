@@ -423,6 +423,7 @@ void WorldGenScreen::initWorldData() {
     mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
     mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth, mWorldData->worldSeed);
     mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth, *mWorldData->markupGrid);
+    mWorldData->roadGrid = std::make_shared<RoadGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();

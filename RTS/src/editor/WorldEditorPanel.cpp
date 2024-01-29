@@ -6,6 +6,7 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/Chunk.h"
 #include "world/IChunkGrid.h"
+#include "world/road/RoadGrid.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
@@ -76,7 +77,10 @@ WorldEditorPanel::WorldEditorPanel() {
         else if (event.keyCode == VKEY_6) {
             setEditMode(WorldEditorEditMode::BUILDING);
         }
-        static_assert((int)WorldEditorEditMode::COUNT == 6);
+        else if (event.keyCode == VKEY_7) {
+            setEditMode(WorldEditorEditMode::ROAD);
+        }
+        static_assert((int)WorldEditorEditMode::COUNT == 7);
        
     });
 
@@ -127,8 +131,11 @@ void WorldEditorPanel::update(World* world, const Camera3D& camera, const f32v3&
     else if (mEditMode == WorldEditorEditMode::ENTITY) {
         updateEntityEdit();
     }
+    else if (mEditMode == WorldEditorEditMode::ROAD) {
+        updateRoadEdit();
+    }
     // City edit and edit building runs on mouse up
-    static_assert((int)WorldEditorEditMode::COUNT == 6);
+    static_assert((int)WorldEditorEditMode::COUNT == 7);
 }
 
 void WorldEditorPanel::renderBrushDecals (const Camera3D& camera) const {
@@ -171,6 +178,11 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
             renderTerrainEditUI();
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("Road")) {
+            setEditMode(WorldEditorEditMode::ROAD);
+            renderRoadEditUI();
+            ImGui::EndTabItem();
+        }
         if (ImGui::BeginTabItem("Grass")) {
             setEditMode(WorldEditorEditMode::GRASS);
             renderGrassEditUI();
@@ -196,6 +208,7 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
             renderBuildingEditUI();
             ImGui::EndTabItem();
         }
+        static_assert((int)WorldEditorEditMode::COUNT == 7);
 
         ImGui::EndTabBar();
     }
@@ -338,6 +351,17 @@ void WorldEditorPanel::renderTerrainEditUI() const {
     ImGui::SliderFloat("Brush Strength", &mTerrainBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
 }
 
+void WorldEditorPanel::renderRoadEditUI() const {
+    ImGui::Text("Edit mode");
+    if (ImGui::RadioButton("Add", mRoadEditState == RoadEditState::ADD)) {
+        mRoadEditState = RoadEditState::ADD;
+    }
+    if (ImGui::RadioButton("Remove", mRoadEditState == RoadEditState::REMOVE)) {
+        mRoadEditState = RoadEditState::REMOVE;
+    }
+    ImGui::SliderFloat("Brush Size", &mRoadBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Brush Strength", &mRoadBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
+}
 
 void WorldEditorPanel::renderGrassEditUI() const {
     ImGui::Text("Edit mode");
@@ -503,7 +527,69 @@ void WorldEditorPanel::updateTerrainEdit() {
                         const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
                         const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
                         if (glm::length2(offsetToVertex) < brushSizeSq) {
-                            task->editor->editVertex(id, vertexPos, offsetToVertex, brushSettings, task->editState);
+                            task->editor->editHeightVertex(id, vertexPos, offsetToVertex, brushSettings, task->editState);
+                        }
+                    }
+                }
+
+                delete task;
+            }, task);
+        }
+    }
+}
+
+void WorldEditorPanel::updateRoadEdit()
+{
+    if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
+        return;
+    }
+
+    //PreciseTimer timer;
+    // Pick terrain
+    //std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
+    if (mHitResult.didHit()) {
+        if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
+
+            struct RoadEditTask {
+                WorldEditorPanel* editor;
+                PhysHitResult hitResult;
+                BrushSettings* brushSettings;
+                RoadEditState editState;
+                World* activeWorld;
+            };
+            RoadEditTask* task = new RoadEditTask;
+            task->editor = this;
+            task->hitResult = mHitResult;
+            task->brushSettings = mCurrentBrushSettings;
+            task->editState = mRoadEditState;
+            task->activeWorld = mActiveWorld;
+
+            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+                PROFILE_SCOPE("WorldEditorPanel::updateTerrainEdit~lambda");
+                const RoadEditTask* task = static_cast<RoadEditTask*>(vTask);
+                const PhysHitResult& hitResult = task->hitResult;
+                const BrushSettings& brushSettings = *task->brushSettings;
+
+                PreciseTimer timer;
+                // Edit the terrain with iteration
+                const f32v2 hitPosition2D(hitResult.mPosition.x, hitResult.mPosition.y);
+                const f32v2 worldPosBrushStart = hitPosition2D - f32v2(brushSettings.brushSize);
+                const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(brushSettings.brushSize);
+                const f32 brushSizeSq = SQ(brushSettings.brushSize);
+                f32v2 worldPos;
+                IHeightmapGrid& heightGrid = task->activeWorld->getHeightmapGrid();
+                RoadGrid& roadGrid = task->activeWorld->getRoadGrid();
+                for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
+                    for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
+                        HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtWorldPos(worldPos);
+                        const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
+                        const f32v2 offset = worldPos - terrainWorldPos;
+                        const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
+                        const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
+                        const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
+                        if (glm::length2(offsetToVertex) < brushSizeSq) {
+                            task->editor->editHeightVertex(id, vertexPos, offsetToVertex, brushSettings, TerrainEditState::DIRTY_ONLY);
+                            task->editor->editRoadVertex(i32v2(worldPos), offsetToVertex, brushSettings, task->editState);
                         }
                     }
                 }
@@ -671,7 +757,7 @@ void WorldEditorPanel::updateBuildingEdit() {
     }
 }
 
-void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
+void WorldEditorPanel::editHeightVertex(HeightmapPatchID id, ui32v2 vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
     assert(mActiveWorld);
 
     // Read brush data
@@ -686,16 +772,22 @@ void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, co
                 break;
             case TerrainEditState::FLATTEN_TERRAIN:
                 break;
+            case TerrainEditState::DIRTY_ONLY:
+                break;
             default:
                 assert(false);
                 break;
         }
-        static_assert((int)TerrainEditState::COUNT == 3, "Update for new edit type");
-
-        IHeightmapGrid& heightmapGrid = mActiveWorld->getHeightmapGrid();
+        static_assert((int)TerrainEditState::COUNT == 4, "Update for new edit type");
 
         const f32 adjust = strength * brush.brushStrength;
-        heightmapGrid.adjustHeightAtPatch(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
+        IHeightmapGrid& heightmapGrid = mActiveWorld->getHeightmapGrid();
+        if (editState == TerrainEditState::DIRTY_ONLY) {
+            heightmapGrid.markVertexDirty(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
+        }
+        else {
+            heightmapGrid.adjustHeightAtPatch(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
+        }
 
         // Debug render
         f32v2 chunkPos = heightmapGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
@@ -703,6 +795,24 @@ void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, co
         f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, heightmapGrid.getHeightAtVert(id, vertPos) + adjust);
         DebugRenderer::drawWireQuadThreadSafe(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
     }
+}
+
+void WorldEditorPanel::editRoadVertex(i32v2 worldPos, f32v2 offsetToVertex, const BrushSettings& brush, RoadEditState editState) {
+    RoadGrid& roadGrid = mActiveWorld->getRoadGrid();
+
+    f32 strength = getBrushStrengthAtPoint(brush, offsetToVertex);
+    f32 adjust = strength * brush.brushStrength * 20.0f;
+    switch (editState) {
+        case RoadEditState::ADD:
+            break;
+        case RoadEditState::REMOVE:
+            adjust = -adjust;
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    roadGrid.adjustRoadPointFloored(worldPos, (i32)glm::round(adjust));
 }
 
 void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {
@@ -746,6 +856,9 @@ void WorldEditorPanel::setEditMode(WorldEditorEditMode mode) const {
         case WorldEditorEditMode::TERRAIN:
             mCurrentBrushSettings = &mTerrainBrushSettings;
             break;
+        case WorldEditorEditMode::ROAD:
+            mCurrentBrushSettings = &mRoadBrushSettings;
+            break;
         case WorldEditorEditMode::GRASS:
             mCurrentBrushSettings = &mGrassBrushSettings;
             break;
@@ -758,6 +871,6 @@ void WorldEditorPanel::setEditMode(WorldEditorEditMode mode) const {
         default:
             assert(false);
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 6, "Update");
+    static_assert((int)WorldEditorEditMode::COUNT == 7, "Update");
 }
 

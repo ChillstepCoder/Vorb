@@ -6,6 +6,7 @@
 #include "world/simulation/host/component/SettlementComponents.h"
 
 #include "world/simulation/host/system/SimAISystem.h"
+#include "world/simulation/host/system/SimSettlementSystem.h"
 
 #include "text/NameManager.h"
 
@@ -13,6 +14,7 @@
 
 SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext) {
     mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
+    mSettlementSystem = std::make_unique<SimSettlementSystem>(hostSimContext, *this, mRegistry);
 }
 
 SimECS::~SimECS() {
@@ -72,16 +74,36 @@ entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, in
 
 void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason) {
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(group);
+    assert(groupCmp.leader != entt::null);
+
+    // Resolve group end
+    switch (groupCmp.groupType) {
+        case CharacterGroupType::Generic:
+            break;
+        case CharacterGroupType::SettlerCaravan:
+            mSettlementSystem->createSettlementFromGroup(group);
+            break;
+        case CharacterGroupType::Combat:
+            break;
+        case CharacterGroupType::TradeCaravan:
+            assert(false);
+            break;
+        default:
+            assert(false);
+
+    }
+    static_assert(e_count(CharacterGroupType) == 4, "Add resolve if needed");
 
     for (auto& follower : groupCmp.groupMembers) {
         CharacterGroupFollowerComponent& followerCmp = mRegistry.get<CharacterGroupFollowerComponent>(follower);
 
-        // TODO: resolve reasons
+        // Resolve character end
         if (reason == CharacterGroupDissolveReason::GoalSuccess) {
             switch (followerCmp.followReason) {
                 case CharacterGroupFollowerReason::None:
                     break;
                 case CharacterGroupFollowerReason::Settler:
+                    mSettlementSystem->createSettlementFromGroup(group);
                     break;
                 case CharacterGroupFollowerReason::Bodyguard:
                     break;
@@ -89,12 +111,13 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
                     assert(false);
 
             }
-            static_assert(e_count(CharacterGroupFollowerReason) == 3, "Add resolve");
+            static_assert(e_count(CharacterGroupFollowerReason) == 3, "Add resolve if needed");
         }
 
         mRegistry.remove<CharacterGroupFollowerComponent>(follower);
+        
     }
-
+    mRegistry.remove<CharacterGroupLeaderComponent>(groupCmp.leader);
     mRegistry.destroy(group);
 }
 

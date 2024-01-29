@@ -84,6 +84,7 @@ public:
     void setHeightAtPatch(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
     void adjustHeightAtChunk(ChunkID id, ui32 vertIndex, f32 adjust);
     void adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
+    void markVertexDirty(HeightmapPatchID id, ui32 vertIndex);
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
     f32 getHeightAtVert(i32v2 vertPos) const;

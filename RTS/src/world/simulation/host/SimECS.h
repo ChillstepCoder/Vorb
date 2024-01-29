@@ -4,6 +4,7 @@
 
 class HostSimContext;
 class SimAISystem;
+class SimSettlementSystem;
 
 enum class CharacterGroupDissolveReason : ui8 {
     None,
@@ -45,5 +46,6 @@ private:
     CharacterUID mUIDGenerator = 0;
 
     std::unique_ptr<SimAISystem> mAISystem;
+    std::unique_ptr<SimSettlementSystem> mSettlementSystem;
 };
 

@@ -38,7 +38,7 @@ void SimImmigrationManager::init() {
             // Sort high priority to the end of the stack
             std::sort(desirabilitiesSort.begin(), desirabilitiesSort.end(),
                 [](const std::pair<ui32, f32>& first, const std::pair<ui32, f32>& second) -> bool {
-                return first.second > second.second;
+                return first.second < second.second;
             });
             // Fill sorted chunks
             for (ui32 j = 0; j < bodyMarkup.chunks.size(); ++j) {
@@ -84,7 +84,12 @@ SimImmigrationManager::ImmigrationOrder SimImmigrationManager::getNextImmigratio
                 const f32v2 targetPos = GridIdUtil::getWorldPos(rv.targetChunk, CHUNK_WIDTH, widthChunks);
                 for (ChunkID chunkId : bodyMarkup.borderChunks) {
                     const f32v2 chunkPos = GridIdUtil::getWorldPos(chunkId, CHUNK_WIDTH, widthChunks);
-                    const f32 distanceSq = glm::length2(targetPos - chunkPos);
+                    f32 distanceSq = glm::length2(targetPos - chunkPos);
+                    const BodyID adjacentBodyID = mMarkupGrid.getChunkMarkup(chunkId).mainWaterBodyID;
+                    if (adjacentBodyID == INVALID_BODY_ID || mMarkupGrid.getBodyData(adjacentBodyID).bodyType != WorldMarkupBodyType::Ocean) {  
+                        // We don't want to spawn on lakes, invalid should be impossible but IDK
+                        distanceSq += SQ(32768.f);
+                    }
                     if (distanceSq < closestDistSq) {
                         rv.startChunk = chunkId;
                         closestDistSq = distanceSq;

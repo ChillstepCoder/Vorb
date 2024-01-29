@@ -85,7 +85,7 @@ class FlatQuadtree
 public:
     template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH, ui32 NODE_COUNT> friend struct QuadtreePositionTable;
 
-    FlatQuadtree(IHeightmapGrid& heightmapGrid, const f32v2& worldPos, const f32 subdivideDistances[], f32& lodDistanceOffset);
+    FlatQuadtree(IHeightmapGrid& heightmapGrid, i32v2 worldPos, const f32 subdivideDistances[], f32& lodDistanceOffset);
     virtual ~FlatQuadtree() { };
 
     // === Public Methods ===
@@ -99,7 +99,7 @@ public:
     void markLeafDirty(const i32v2& leafPos);
     void markDirty(const f32v2& editPos);
 
-    const f32v2& getWorldPos() const { return mWorldPos; }
+    const i32v2& getWorldPos() const { return mWorldPos; }
 
     // === Public Constants ===
     static constexpr ui32 NODE_COUNT = (MathUtil::intpow<MAX_DEPTH>(4) - 1) / (4 - 1);
@@ -166,19 +166,19 @@ protected:
     ui32 mNumCrossfading = 0;
     ui8 mCrossfadeActiveTable[QUADTREE_FADE_LIST_SIZE];
     f32 mCrossfadeTable[QUADTREE_FADE_LIST_SIZE]; // Shared crossfade values
-    f32v2 mWorldPos; // TODO: I hate that this isnt i32v2
+    i32v2 mWorldPos;
     const f32* mSubdivideDistancesSq;
 };
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 HeightmapPatchID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getHeightmapPatchID(ui32 patchIndex) const {
-    f32v2 pos = f32v2(PATCH_POSITIONS.data[patchIndex].xy);
+    const i32v2 pos = i32v2(PATCH_POSITIONS.data[patchIndex].xy);
     return mHeightmapGrid.getSpatialGrid2D().getIDAtWorldPos(mWorldPos + pos);
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 ChunkID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getChunkIDForPatchIndex(ui32 patchIndex) const {
-    f32v2 pos = f32v2(PATCH_POSITIONS.data[patchIndex].xy);
+    const i32v2 pos = i32v2(PATCH_POSITIONS.data[patchIndex].xy);
     return ChunkID(mWorldPos + pos);
 }
 
@@ -219,7 +219,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool 
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
-FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(IHeightmapGrid& heightmapGrid, const f32v2& worldPos, const f32 subdivideDistancesSq[], f32& lodDistanceOffset) 
+FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(IHeightmapGrid& heightmapGrid, i32v2 worldPos, const f32 subdivideDistancesSq[], f32& lodDistanceOffset) 
     : mHeightmapGrid(heightmapGrid), mWorldPos(worldPos), mSubdivideDistancesSq(subdivideDistancesSq), mLodDistanceOffset(lodDistanceOffset)
 {
     assert(mSubdivideDistancesSq[MAX_DEPTH - 1] == -FLT_MAX); // We should never subdivide at final distance
@@ -283,7 +283,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::markLeafDirty(const i32v2& leafPos) {
         // LEAF ONLY
         if (lod == FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::HIGHEST_LOD) {
             // We dont need round because mWorldPos is passed in and will have a valid whole integer
-            const i32v2 myPosition = i32v2(mWorldPos + f32v2(PATCH_POSITIONS.data[nodeIndex].xy));
+            const i32v2 myPosition = mWorldPos + i32v2(PATCH_POSITIONS.data[nodeIndex].xy);
             if (myPosition == leafPos) {
                 QuadtreePatch& patch = mNodes[nodeIndex];
                 patch.mFlags |= QUADTREE_PATCH_FLAG_DIRTY_MESH;
@@ -298,7 +298,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::markDirty(const f32v2& editPos) {
         const ui32 nodeIndex = mActiveNodes[i];
         const ui32 lod = QUADTREE_LOD_FROM_INDEX[nodeIndex];
         const f32v2 patchDims = f32v2(LOD_DIMS[lod].xy);
-        const f32v2 patchOffset = editPos - (mWorldPos + f32v2(PATCH_POSITIONS.data[nodeIndex].xy));
+        const f32v2 patchOffset = editPos - (f32v2(mWorldPos) + f32v2(PATCH_POSITIONS.data[nodeIndex].xy));
         // If edit is within our bounds, we are dirty
         if (patchOffset.x >= 0.0f && patchOffset.y >= 0.0f && patchOffset.x <= patchDims.x && patchOffset.y <= patchDims.y) {
             QuadtreePatch& patch = mNodes[nodeIndex];

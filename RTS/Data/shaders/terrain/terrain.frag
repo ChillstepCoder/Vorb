@@ -1,13 +1,13 @@
 //#include "util/hsv.glsl"
 #include "GlobalUbo.glsl"
 
-#include "util/noise/snoise3.glsl"
 #include "terrain/biome_util.glsl"
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform sampler2D CliffTexture;
 uniform sampler2D CliffNormal;
+uniform sampler2D DirtRoad;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
@@ -28,6 +28,7 @@ const float DISTANT_COLOR_EXP = 0.6;
 const float DISTANT_COLOR_INTENSITY = 0.75;
 
 in float fHeight;
+in float fRoadIntensity;
 in vec3 fPosition;
 in vec2 fBiomeUV;
 in vec2 fUV;
@@ -125,15 +126,13 @@ float getLuminance(vec3 color) {
 }
 
 // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#38e5
-vec3 getTriPlanarBlend(vec3 norm, float lumaX, float lumaY) {
+vec3 getTriPlanarBlend(vec3 norm, float lumaX, float lumaY, float noiseBlend) {
 	// Asymmetric Triplanar Blend
     vec3 blend = vec3(0.0); // Blend for sides only
     vec2 xyBlend = normalize(abs(norm.xy));
     blend.xy = max(vec2(0.0), xyBlend - vec2(0.67));
     blend.xy /= max(0.00001, dot(blend.xy, vec2(1,1)));// Blend for top
     
-    // Turbulent noise is from biome_util.glsl
-    float noiseBlend = (texture(TurbulentNoise, fUV * 4.0).r * 2.0 - 1.0) * 4.0;
     
     // Luminance of cliff affects blend
     noiseBlend += max(lumaX * blend.x, lumaY * blend.y) * 15.0;
@@ -173,6 +172,14 @@ vec3 getTriplanarNormal(vec3 surfaceNorm, vec2 uvX, vec2 uvY, vec3 blend) {
     return worldNormal.xyz;
 }
 
+vec3 heightblend(vec3 input1, float height1, vec3 input2, float height2) {
+    float BLEND_FACTOR = 0.4;
+    float height_start = max(height1, height2) - BLEND_FACTOR;
+    float level1 = max(height1 - height_start, 0);
+    float level2 = max(height2 - height_start, 0);
+    return ((input1 * level1) + (input2 * level2)) / (level1 + level2);
+}
+
 // =========== MAIN ===========
 void main() {
 	
@@ -205,7 +212,11 @@ void main() {
     vec3 xSampleFar = texture(CliffTexture, vec2(xyUVFar.y, heightVFar)).rgb;
     vec3 ySampleFar = texture(CliffTexture, vec2(xyUVFar.x, heightVFar)).rgb;
     
-    vec3 weights = getTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose));
+    
+    // Turbulent noise is from biome_util.glsl
+    float rawTurb = texture(TurbulentNoise, fUV * 4.0).r;
+    float noiseBlend = (rawTurb * 2.0 - 1.0) * 4.0;
+    vec3 weights = getTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose), noiseBlend);
     vec3 cliffClose = weights.x * xSampleClose + weights.y * ySampleClose;
     vec3 cliffFar = weights.x * xSampleFar + weights.y * ySampleFar;
     float cliffDistFactor = min(distance * 0.01, 1.0);
@@ -259,6 +270,16 @@ void main() {
     oMetallicRoughness.g = min(oMetallicRoughness.g + 0.5, 1.0);
     
     oColor.a = 1.0; // AO?
+    
+    // =========== Road ===========
+    vec3 roadSample = texture(DirtRoad, fUV * 10.0).rgb;
+    float roadLuminance = getLuminance(roadSample) * 4.0;
+    // Fake shitty height learp (Adjust based on texture?)
+    //float roadBlend = clamp(fRoadIntensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
+    float roadBlend = clamp(pow(fRoadIntensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
+    //roadBlend = fRoadIntensity;
+    oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample, roadLuminance * roadBlend);
+    //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
     
     
     // =========== Snow ===========

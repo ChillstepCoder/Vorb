@@ -44,7 +44,7 @@ struct TerrainMeshGenTaskData {
 };
 
 
-HeightmapTerrainQuadtree::HeightmapTerrainQuadtree(World& world, const f32v2& worldPosition)
+HeightmapTerrainQuadtree::HeightmapTerrainQuadtree(World& world, i32v2 worldPosition)
     : mWorld(world), FlatQuadtree(world.getHeightmapGrid(), worldPosition, TERRAIN_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mTerrainLodDistanceOffset) {
 
 }
@@ -64,9 +64,9 @@ void HeightmapTerrainQuadtree::markDirty() {
 void createTerrainAndWaterMesh(
     World& world,
     TerrainMeshBuilder& terrainBuilder,
-    const ui32v2& posStart,
+    i32v2 posStart,
     ui32 lod,
-    const f32v2& worldPos
+    i32v2 worldPos
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
@@ -82,7 +82,7 @@ void createTerrainAndWaterMesh(
             paddedHeightfield[y][x] = compressHeight(zPos);
         }
     }
-    terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield);
+    terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield, world.getRoadGrid());
 };
 
 void HeightmapTerrainQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {

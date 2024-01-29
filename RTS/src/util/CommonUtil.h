@@ -132,3 +132,7 @@ struct StringLiteral {
 
     char value[N];
 };
+
+#define DECL_BOOL_TEMPLATE(signature, rest) \
+template signature<true>rest; \
+template signature<false>rest;

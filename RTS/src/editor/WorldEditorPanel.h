@@ -13,6 +13,7 @@ class World;
 
 enum class WorldEditorEditMode {
     TERRAIN,
+    ROAD,
     GRASS,
     TILE,
     ENTITY,
@@ -25,7 +26,13 @@ enum class TerrainEditState {
     RAISE_TERRAIN,
     LOWER_TERRAIN,
     FLATTEN_TERRAIN,
+    DIRTY_ONLY,
     COUNT
+};
+
+enum class RoadEditState {
+    ADD,
+    REMOVE
 };
 
 enum class GrassEditState {
@@ -71,6 +78,7 @@ private:
     void renderMenuBar() const;
     void tryRenderBrushSelect() const;
     void renderTerrainEditUI() const;
+    void renderRoadEditUI() const;
     void renderGrassEditUI() const;
     void renderTileEditUI() const;
     void renderEntityEditUI() const;
@@ -78,13 +86,15 @@ private:
     void renderBuildingEditUI() const;
 
     void updateTerrainEdit();
+    void updateRoadEdit();
     void updateGrassEdit();
     void updateTileEdit();
     void updateEntityEdit();
     void updateCityEdit();
     void updateBuildingEdit();
 
-    void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
+    void editHeightVertex(HeightmapPatchID id, ui32v2 vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
+    void editRoadVertex(i32v2 worldPos, f32v2 offsetToVertex, const BrushSettings& brush, RoadEditState editState);
     void editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
     f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
@@ -95,8 +105,10 @@ private:
     mutable GrassEditState mGrassEditState = GrassEditState::RAISE;
     mutable CityEditState mCityEditState = CityEditState::CREATE;
     mutable BuildingEditState mBuildingEditState = BuildingEditState::CREATE;
+    mutable RoadEditState mRoadEditState = RoadEditState::ADD;
     // Brushes
     mutable BrushSettings mTerrainBrushSettings = { nullptr, UINT32_MAX, 5.0f, 0.1f };
+    mutable BrushSettings mRoadBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings mGrassBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;
     // Tile Edit

@@ -419,6 +419,7 @@
     <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\OverlayRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderer\RoadRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\GameRenderStateManager.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
@@ -539,6 +540,7 @@
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp" />
     <ClCompile Include="src\world\ownership\OwnershipGrid.cpp" />
+    <ClCompile Include="src\world\road\RoadGrid.cpp" />
     <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
     <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
@@ -549,6 +551,7 @@
     <ClCompile Include="src\world\simulation\host\SimWorldAnalytics.cpp" />
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
+    <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
     <ClCompile Include="src\world\simulation\SimChunk.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
@@ -841,6 +844,7 @@
     <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
     <ClInclude Include="src\rendering\renderer\OverlayRenderer.h" />
+    <ClInclude Include="src\rendering\renderer\RoadRenderer.h" />
     <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\DynamicModelInstanceState.h" />
@@ -904,6 +908,7 @@
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
+    <ClInclude Include="src\util\GridIdUtil.h" />
     <ClInclude Include="src\util\TilingVoronoiMap.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />
@@ -1025,6 +1030,7 @@
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\markup\WorldMarkupGrid.h" />
     <ClInclude Include="src\world\ownership\OwnershipGrid.h" />
+    <ClInclude Include="src\world\road\RoadGrid.h" />
     <ClInclude Include="src\world\simulation\host\CharacterGroupType.h" />
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
     <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />
@@ -1038,6 +1044,7 @@
     <ClInclude Include="src\world\simulation\host\StoryTeller.h" />
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
     <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />
+    <ClInclude Include="src\world\simulation\host\system\SimSettlementSystem.h" />
     <ClInclude Include="src\world\simulation\SimChunk.h" />
     <ClInclude Include="src\world\simulation\SimTask.h" />
     <ClInclude Include="src\world\World.h" />

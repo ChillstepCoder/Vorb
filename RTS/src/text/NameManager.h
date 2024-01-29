@@ -18,6 +18,15 @@ private:
     std::vector<ui32> mAvailableOceanNames;
 };
 
+class SettlementNameContext {
+public:
+    SettlementNameContext();
+
+    const char* getRandomUniqueSettlementName(RandomGenerator& gen);
+private:
+    std::vector<ui32> mAvailableSettlementNames;
+};
+
 class NameManager {
 public:
     static const char* getRandomFirstName(RandomGenerator& gen, bool isFemale);

@@ -112,7 +112,7 @@ template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::ge
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 elapsedSec)
 {
-    f32v2 mRelativeCenter = loadCenter - mWorldPos;
+    f32v2 mRelativeCenter = loadCenter - f32v2(mWorldPos);
     bool needSort = false;
     for (ui32 i = 0; i < mNumActiveNodes;) {
         ui32 index = mActiveNodes[i];
