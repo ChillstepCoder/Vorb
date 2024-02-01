@@ -33,6 +33,8 @@ namespace Random {
 
 class RandomGenerator {
 public:
+    static constexpr ui32 DEFAULT_SEED = 0xB25D9A7B; // Idk just random bits
+    RandomGenerator() : mGen(DEFAULT_SEED), mSeed(DEFAULT_SEED) {}
     RandomGenerator(ui32 seed) : mGen(seed), mSeed(seed) {}
 
     void reset() {

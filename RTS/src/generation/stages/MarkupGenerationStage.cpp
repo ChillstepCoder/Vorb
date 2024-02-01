@@ -4,6 +4,10 @@
 #include "world/host/HostWorldData.h"
 #include "generation/WorldGenerationData.h"
 
+// TODO: Remove??
+#include "generation/ChunkGenerator.h"
+#include "serialization/GameSaveManager.h"
+
 #include <boost/container/flat_map.hpp>
 
 MarkupGenerationStage::MarkupGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
@@ -292,6 +296,7 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                         chunkMarkup.mainLandBodyID = it.first;
                         highestLandCount = it.second;
                         ++mMarkupGrid->mTotalLandChunks;
+                        //mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimTileGrid().getChunkForGeneration(chunkID), *mWorldPtr);
                     }
                 }
                 else {
@@ -406,4 +411,7 @@ void MarkupGenerationStage::onFinished() {
 
     mMarkupGrid->setMarkupReady();
     LOG_DEBUG("Finished markup generation in {} ms with {} bodies", mTotalTimer.elapsedMs(), mTotalBodies);
+
+    GameSaveManager::get().saveWorldTemplate(*mWorldPtr);
+    LOG_DEBUG("MarkupGenerationStage::onFinished()");
 }

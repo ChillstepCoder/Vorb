@@ -5,6 +5,7 @@
 #include "boost/container/flat_map.hpp"
 
 #include "math/Random.h"
+#include "serialization/BitseryExt.h"
 
 class WorldNameContext;
 
@@ -69,6 +70,13 @@ struct WorldMarkupData {
     ui32 continentSize;
     BitFlags<WorldMarkupFlags> flags;
     //ui16 PADDING;
+
+    // ======================= Serialization =======================
+    BINARY_SERIALIZE() {
+        s.value4b(bodyId);
+        s.value4b(continentSize);
+        s.value2b(static_cast<ui16&>(flags));
+    }
 };
 static_assert(sizeof(WorldMarkupData) == 12, "Keep small");
 
@@ -77,14 +85,42 @@ struct WorldChunkMarkupData {
     BodyID mainWaterBodyID = UINT32_MAX;
     f32 settleDesirability = 0.0f;
     f32 landRatio = 0.0f; // 1.0 = full land, 0.0 = full water
+
+    // ======================= Serialization =======================
+    BINARY_SERIALIZE() {
+        s.value4b(mainLandBodyID);
+        s.value4b(mainWaterBodyID);
+        s.value4b(settleDesirability);
+        s.value4b(landRatio);
+    }
 };
 
 struct WorldBodyNeighborInfo {
     BodyID neighborBodyIndex = UINT32_MAX;
     ui32 adjacentBlocks = 0;
+
+    // ======================= Serialization =======================
+    BINARY_SERIALIZE() {
+        s.value4b(neighborBodyIndex);
+        s.value4b(adjacentBlocks);
+    }
 };
 
+
+// TODO: This can do all 2bv2 types
+//template<typename S>
+//void serialize(S& s, i16v2& o) {
+//    s.value2b(o.x);
+//    s.value2b(o.y);
+//}
+
 struct WorldBodyMarkupData {
+
+    bool isLand() const {
+        return bodyType <= WorldMarkupBodyType::BODY_TYPE_LAND_TERM;
+    }
+
+    // ======================= Data =======================
     const char* name = nullptr;
     std::vector<i16v2> borderBlocks;
     std::vector<WorldBodyNeighborInfo> neighborBodies;
@@ -96,8 +132,20 @@ struct WorldBodyMarkupData {
     ui32 sizeBlocks = 0; // Block is 8x8 tiles
     bool onMapEdge = false;
 
-    bool isLand() const {
-        return bodyType <= WorldMarkupBodyType::BODY_TYPE_LAND_TERM;
+    // ======================= Serialization =======================
+    BINARY_SERIALIZE() {
+        // TODO: Name somehow
+        // TODO: Probably need an ext to get i16v2 to work
+        s.ext(borderBlocks, bitsery::ext::PodStructVector{});
+        s.ext(neighborBodies, bitsery::ext::PodStructVector{});
+        s.container4b(chunks, 65536 * 4);
+        s.container4b(borderChunks, 32768 * 4);
+        // TODO: Define for vector types?
+        s.value4b(averagePos.x);
+        s.value4b(averagePos.y);
+        s.value4b(bodyIndex);
+        s.value4b(sizeBlocks);
+        s.value1b(onMapEdge);
     }
 };
 
@@ -113,7 +161,7 @@ public:
 
     VORB_NON_COPYABLE(WorldMarkupGrid);
 
-    ui32 getTotalVertices() const { return mTotalVertices; }
+    ui32 getTotalVertices() const { return mTotalMarkupVertices; }
     ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
 
     const WorldMarkupData* getMarkupAtPoint(f32v2 worldPos) const;
@@ -160,19 +208,51 @@ public:
         return mTotalLandChunks;
     }
 private:
+    void initInternal();
     // Sort bodies and stuff
     void onGenerationComplete();
 
+    // ======================= Data =======================
     SortedBodyMap mLandBodiesSortedBySize;
     std::vector<WorldBodyMarkupData> mBodies;
     std::unique_ptr<WorldMarkupData[]> mMarkup;
     std::unique_ptr<WorldChunkMarkupData[]> mChunkMarkup;
     std::unique_ptr<WorldNameContext> mNameContext; // Elsewhere?
-    ui32 mTotalVertices;
+    ui32 mTotalMarkupVertices;
+    ui32 mWidthVerts = 0;
     ui32 mWidthChunks = 0;
     SpatialGrid2D mSpatialGrid;
     std::atomic_bool mMarkupReady = false;
     RandomGenerator gen;
     std::atomic<ui32> mTotalLandChunks = 0;
+
+    // ======================= Serialization =======================
+    BINARY_SERIALIZE() {
+        bool isRead = false;
+        s.value4b(mWidthVerts);
+        if (mBodies.empty()) {
+            isRead = true;
+            initInternal();
+        }
+        else {
+            assert(mMarkupReady);
+        }
+        s.container(mBodies, 65536);
+
+        std::span<WorldMarkupData> gridSpan(mMarkup.get(), mTotalMarkupVertices);
+        s.ext(gridSpan, bitsery::ext::PodStructSpan{});
+
+        std::span<WorldChunkMarkupData> chunkSpan(mChunkMarkup.get(), SQ(mWidthChunks));
+        s.ext(gridSpan, bitsery::ext::PodStructSpan{});
+
+        if (isRead) {
+            for (auto& bodyData : mBodies) {
+                bodyData.chunks.shrink_to_fit();
+                mLandBodiesSortedBySize.emplace(bodyData.sizeBlocks, bodyData.bodyIndex);
+            }
+        }
+        // TODO: Serialize name context?
+        mMarkupReady = true;
+    }
 };
 

@@ -20,6 +20,7 @@
 #include "world/WorldDefaults.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimThread.h"
+#include "world/chunk/SimChunkTileGrid.h"
 #include "generation/WorldDataGenerator.h"
 #include "generation/WorldGenerationBlackboard.h"
 
@@ -318,6 +319,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
             ImGui::Text("Total land chunks: %d / %d  %f",
                 mWorldData->markupGrid->getTotalLandChunks(), SQ(mWorldData->worldWidth / CHUNK_WIDTH),
                 f32(mWorldData->markupGrid->getTotalLandChunks()) / SQ(mWorldData->worldWidth / CHUNK_WIDTH));
+            ImGui::Text("Sim Tile Memory Usage: %f mb", mWorldData->tileGrid->getApproxMemoryUsageBytes() / 1024.f / 1024.f);
         }
     }
     ImGui::Checkbox("Show Biomes", &mShowBiomes);
@@ -427,6 +429,7 @@ void WorldGenScreen::initWorldData() {
     mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth, mWorldData->worldSeed);
     mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth, *mWorldData->markupGrid);
     mWorldData->roadGrid = std::make_shared<RoadGrid>(mWorldData->worldWidth);
+    mWorldData->tileGrid = std::make_shared<SimChunkTileGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();

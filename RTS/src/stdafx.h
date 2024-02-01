@@ -159,11 +159,17 @@ using namespace std::literals::string_view_literals;
 // We get texture warnings if we bind a null texture. TODO: Why? (Used to bind 0 in shadow mapping)
 //#define glBindTexture(x, y) assert(y); glBindTexture(x, y)
 
+//https://github.com/fraillt/bitsery
+#include <bitsery/bitsery.h>
+#include <bitsery/adapter/buffer.h>
+#include <bitsery/traits/vector.h>
+using BBuffer = std::vector<uint8_t>;
+using BOutputAdapter = bitsery::OutputBufferAdapter<BBuffer>;
+using BInputAdapter = bitsery::InputBufferAdapter<BBuffer>;
 // TODO: Remove this by making ryml exist in vorb or removing vorb
 #include "serialization/YmlSerializer.h"
 #include "serialization/VorbSerializableDefs.h"
 #include "serialization/CommonSerializable.h"
-
 // Runs automatically at program startup
 
 #endif // stdafx_h__RTS

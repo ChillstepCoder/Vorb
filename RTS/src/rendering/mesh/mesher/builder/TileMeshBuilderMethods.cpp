@@ -161,6 +161,11 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
 
 void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContainer& tileWalls, const std::vector<Tile>& tiles, i32v3 tileDims, f32 floorHeight, ProceduralMeshBuilder& meshBuilder, std::unordered_set<MaterialID>& materialDependencies, StaticPhysicsMeshBuilder& physMesh) {
     PROFILE_FUNCTION();
+
+    if (tileWalls.isEmpty()) {
+        return;
+    }
+
     TileIndex tileIndex = 0;
     i32v3 xyz;
     TileRepository& tileRepo = TileRepository::get();

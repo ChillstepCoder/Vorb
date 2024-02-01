@@ -6,6 +6,8 @@ class TilingVoronoiMap;
 class World;
 class Tile;
 class Chunk;
+class SpatialGrid2D;
+class SimChunkTileContainer;
 class BiomeDef;
 struct TileGrass;
 
@@ -16,24 +18,20 @@ public:
     ~ChunkGenerator();
 
     void generateChunk(Chunk& chunk);
+    void generateSimChunk(SimChunkTileContainer& chunk, World& world);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }
     World& getWorld() const { return mWorld; }
 protected:
 
-    Tile generateTileAtPos(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileAtPosNew(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
-
-    Tile generateTilePlains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileMountains(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileForests(f32v2 worldPos, f32 height, TileGrass* grass, const BiomeDef* biomeDef);
-    Tile generateTileHotsprings(f32v2 worldPos, f32 height, f32v3 normal, TileGrass* grass, const BiomeDef* biomeDef);
+    Tile generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal, const BiomeDef* biomeDef);
    
-    void generateTileGrass(f32v2 worldPos, f32 height, TileGrass* grass);
+    void generateTileGrass(i32v2 worldPos, f32 height, TileGrass* grass);
     
     World& mWorld;
     f32v2 mWorldCenter;
     WorldGenerationData mGenerationData;
+    std::unique_ptr<SpatialGrid2D> mSpatialGrid;
     
     // Voronoi variant clustering
     std::unique_ptr<TilingVoronoiMap> mVoronoiMap;

@@ -110,10 +110,10 @@ void SimThread::tickSim(SimThreadState state) {
         // TODO: Grab the world time instead of incrementing sim time
     }
 
-    LOG_TRACE("Sim step starting at {} seconds", (f64)mHostSimContext.mSimTime / MS_PER_SECOND);
+    //LOG_TRACE("Sim step starting at {} seconds", (f64)mHostSimContext.mSimTime / MS_PER_SECOND);
     mHostSimContext.mSimECS->tickSimThread(mHostSimContext.mSimTime);
 
     mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime);
 
-    LOG_TRACE(" Sim thread {} ms", mThreadUtilizationTimer.getFrameTimeMS());
+    //LOG_TRACE(" Sim thread {} ms", mThreadUtilizationTimer.getFrameTimeMS());
 }

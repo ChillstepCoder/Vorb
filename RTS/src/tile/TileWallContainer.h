@@ -37,15 +37,24 @@ public:
         mTileSpatialGrid = tileSpatialGrid;
         assert(mTileSpatialGrid);
         assert(mTileSpatialGrid->getNumTiles());
-        mWalls.resize(mTileSpatialGrid->getNumTiles() * 2);
     }
     void resizeForCopy(size_t numTiles) {
         mWalls.resize(numTiles * 2);
     }
     void copyFrom(const TileWallContainer& other) {
-        assert(mWalls.size() == other.mWalls.size());
         mTileSpatialGrid = other.mTileSpatialGrid;
-        memcpy(mWalls.data(), other.mWalls.data(), mWalls.size() * sizeof(TileWall));
+        if (other.mWalls.size()) {
+            if (mWalls.empty()) allocate();
+            assert(mWalls.size() == other.mWalls.size());
+            memcpy(mWalls.data(), other.mWalls.data(), mWalls.size() * sizeof(TileWall));
+        }
+        else {
+            mWalls.clear();
+        }
+    }
+
+    bool isEmpty() const {
+        return mWalls.empty();
     }
     // TODO: Serialize
     void destroy() {
@@ -53,6 +62,7 @@ public:
         mTileSpatialGrid = nullptr;
     }
     TileWall getWallAtTile(TileIndex tileIndex, Cartesian cartesian) const {
+        if (mWalls.empty()) return TileWall();
         switch (cartesian) {
             case Cartesian::SOUTH:
                 return getSouthWallAtTile(tileIndex);
@@ -69,18 +79,22 @@ public:
         return TileWall();
     }
     TileWall getSouthWallAtTile(TileIndex tileIndex) const {
+        if (mWalls.empty()) return TileWall();
         return mWalls[tileIndex];
     }
     TileWall getWestWallAtTile(TileIndex tileIndex) const {
+        if (mWalls.empty()) return TileWall();
         return mWalls[mTileSpatialGrid->getNumTiles() + tileIndex];
     }
     TileWall getEastWallAtTile(TileIndex tileIndex) const {
+        if (mWalls.empty()) return TileWall();
         if ((tileIndex % mTileSpatialGrid->getDims().x) >= (mTileSpatialGrid->getDims().x - 1)) {
             return TileWall();
         }
         return mWalls[mTileSpatialGrid->getNumTiles() + tileIndex + 1];
     }
     TileWall getNorthWallAtTile(TileIndex tileIndex) const {
+        if (mWalls.empty()) return TileWall();
         const i32 floorStride = mTileSpatialGrid->getFloorStride();
         if (((tileIndex % floorStride) / mTileSpatialGrid->getDims().x) >= (mTileSpatialGrid->getDims().y - 1)) {
             return TileWall();
@@ -105,18 +119,22 @@ public:
         setNorthWallAtTile(index, walls[e_cast(Cartesian::NORTH)]);
     }
     void setSouthWallAtTile(TileIndex tileIndex, TileWall wall) {
+        if (mWalls.empty()) allocate();
         mWalls[tileIndex] = wall;
     }
     void setWestWallAtTile(TileIndex tileIndex, TileWall wall) {
+        if (mWalls.empty()) allocate();
         mWalls[mTileSpatialGrid->getNumTiles() + tileIndex] = wall;
     }
     void setEastWallAtTile(TileIndex tileIndex, TileWall wall) {
+        if (mWalls.empty()) allocate();
         if ((tileIndex % mTileSpatialGrid->getDims().x) >= (mTileSpatialGrid->getDims().x - 1)) {
             return;
         }
         mWalls[mTileSpatialGrid->getNumTiles() + tileIndex + 1] = wall;
     }
     void setNorthWallAtTile(TileIndex tileIndex, TileWall wall) {
+        if (mWalls.empty()) allocate();
         const i32 floorStride = mTileSpatialGrid->getFloorStride();
         if (((tileIndex % floorStride) / mTileSpatialGrid->getDims().x) >= mTileSpatialGrid->getDims().y - 1) {
             return;
@@ -144,6 +162,11 @@ public:
         }
     }
 private:
+    // Only allocate memory for walls if they exist
+    void allocate() {
+        mWalls.resize(mTileSpatialGrid->getNumTiles() * 2);
+    }
+
     // Stored horizontal then vertical
     std::vector<TileWall> mWalls;
     const TileSpatialGrid* mTileSpatialGrid = nullptr;

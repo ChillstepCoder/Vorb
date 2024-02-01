@@ -32,7 +32,6 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     
     { // Update all brains who aren't followers (Complex Logic)
         auto view = mRegistry.view<SimBrainComponent, SimPositionComponent>(entt::exclude<CharacterGroupFollowerComponent>);
-        LOG_TRACE("BRAIN COUNT {}", view.size_hint());
         for (auto entity : view) {
             SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
             SimPositionComponent& pos = view.get<SimPositionComponent>(entity);

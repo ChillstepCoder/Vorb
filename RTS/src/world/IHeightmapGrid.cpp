@@ -72,13 +72,7 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 
 
 IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH), mTotalPatches(SQ(mWidthPatches)) {
-    mHeightData = std::make_unique<HeightmapPatch[]>(mTotalPatches);
-    for (HeightmapPatchID id = 0; id < mTotalPatches; ++id) {
-        mHeightData[id].init(id);
-    }
-    mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH, mWidthPatches);
-    mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH - 1;
-    mPatchWidth = (f32)worldWidthTiles / mWidthPatches;
+    initInternal();
 }
 
 IHeightmapGrid::~IHeightmapGrid() {
@@ -404,6 +398,17 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray
         }
     }
     return meanHeight / (f32)total;
+}
+
+void IHeightmapGrid::initInternal() {
+    assert(mWidthPatches);
+    mTotalPatches = SQ(mWidthPatches);
+    mHeightData = std::make_unique<HeightmapPatch[]>(mTotalPatches);
+    for (HeightmapPatchID id = 0; id < mTotalPatches; ++id) {
+        mHeightData[id].init(id);
+    }
+    mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH, mWidthPatches);
+    mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH - 1;
 }
 
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {

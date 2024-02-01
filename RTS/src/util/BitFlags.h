@@ -10,7 +10,7 @@ concept HasUnsignedUnderlyingType = requires {
 template<HasUnsignedUnderlyingType T>
 class BitFlags {
 public:
-    BitFlags() noexcept {};
+    BitFlags() noexcept = default;
     BitFlags(typename std::underlying_type<T>::type startBits) noexcept : mBits(startBits) {};
     BitFlags(T b1) noexcept : mBits(e_cast(b1)) {};
     BitFlags(T b1, T b2) noexcept : mBits(e_cast(b1) | e_cast(b2)) {};
@@ -25,6 +25,14 @@ public:
     BitFlags<T>& operator|=(const T other) noexcept {
         mBits |= e_cast(other);
         return *this;
+    }
+
+    operator typename std::underlying_type<T>::type& () noexcept {
+        return mBits;
+    }
+
+    typename std::underlying_type<T>::type& getBits() noexcept {
+        return mBits;
     }
 
     // ============== Mutators ==============

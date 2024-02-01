@@ -6,13 +6,8 @@
 #include "rendering/RenderThreadTasks.h"
 
 BiomeGrid::BiomeGrid(ui32 worldWidthTiles) {
-    const ui32 widthVerts = worldWidthTiles / BIOME_VERTEX_STRIDE;
-    mSpatialGrid.init(BIOME_VERTEX_STRIDE, widthVerts);
-    mTotalVertices = SQ(widthVerts);
-    mGrid = std::make_unique<BiomeVertex[]>(mTotalVertices);
-    LOG_DEBUG("Biome grid allocated {} mb biome", 
-        (mTotalVertices * sizeof(BiomeVertex)) / 1024.f / 1024.f);
-
+    mWidthVerts = worldWidthTiles / BIOME_VERTEX_STRIDE;
+    initInternal();
 }
 
 BiomeGrid::~BiomeGrid() {
@@ -32,4 +27,12 @@ const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 worldPos) const {
     const BiomeUniqueID uniqueId = mGrid[mSpatialGrid.getIDfromGridXY(blVertex)].biomeUniqueId;
     if (uniqueId == BiomeUniqueID::INVALID) return nullptr;
     return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
+}
+
+void BiomeGrid::initInternal() {
+    assert(mWidthVerts);
+    mSpatialGrid.init(BIOME_VERTEX_STRIDE, mWidthVerts);
+    mGrid.resize(SQ(mWidthVerts));
+    LOG_DEBUG("Biome grid allocated {} mb biome",
+        (mGrid.size() * sizeof(BiomeVertex)) / 1024.f / 1024.f);
 }

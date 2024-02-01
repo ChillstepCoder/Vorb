@@ -4,12 +4,14 @@
 #include "world/ChunkID.h"
 #include "terrain/CompressedHeight.h"
 
+#include <bitsery/traits/array.h>
 #include <shared_mutex>
 
 class btCollisionObject;
 
 class HeightmapPatch {
     friend class IHeightmapGrid;
+    friend class GameSaveManager;
 public:
     void init(HeightmapPatchID id) { this->id = id; }
 
@@ -31,13 +33,18 @@ public:
         data[vertPos] = compressHeight(height);
     }
     const CompressedHeight* getData() const {
-        return data;
+        return data.data();
     }
+
 private:
-    CompressedHeight data[HEIGHTMAP_VERT_SIZE_PER_PATCH]; // Compressed height
+    std::array<CompressedHeight, HEIGHTMAP_VERT_SIZE_PER_PATCH> data; // Compressed height
 public:
     BoundingSphere boundingSphere;
     f32AABB3 aabb;
     HeightmapPatchID id;
     mutable std::shared_mutex mMutex;
+
+    BINARY_SERIALIZE() {
+        s.container2b(data);
+    }
 };

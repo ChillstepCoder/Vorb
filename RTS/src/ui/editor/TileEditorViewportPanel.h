@@ -8,7 +8,7 @@ class TileEditorViewportPanel : public AssetEditorViewportPanel<TileDef>
 public:
     void updateAndRenderPrimaryControls(f32 ySize) override;
 
-    const char* getViewportWindowName() const override { return "Item Editor"; }
+    const char* getViewportWindowName() const override { return "Tile Editor"; }
 
 private:
     const MaterialShaderDef* getShader() override;

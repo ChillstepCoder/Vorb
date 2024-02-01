@@ -51,3 +51,12 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, TileDistribution)
 );
 static_assert(e_count(AssetType) == 18);
+
+// Usage: s.value2b(myValue) ect...
+// See bitsery documentation
+// Put this at the BOTTOM of the class definition
+#define BINARY_SERIALIZE() \
+private: \
+  friend bitsery::Access; \
+  template <typename S>  \
+  void serialize(S& s)

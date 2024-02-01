@@ -1,1 +1,3 @@
 ./vcpkg install tinyspline
+./vcpkg install bitsery
+./vcpkg install zstd

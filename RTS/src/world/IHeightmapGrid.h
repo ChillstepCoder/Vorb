@@ -61,6 +61,7 @@ struct HeightmapPickResult {
 // TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
 class IHeightmapGrid
 {
+    friend class GameSaveManager;
 public:
     IHeightmapGrid(ui32 worldWidthTiles);
     ~IHeightmapGrid();
@@ -119,13 +120,14 @@ public:
     const SpatialGrid2D& getSpatialGrid2D() const { return mSpatialGrid2D; }
     World& getWorld() const { return *mWorld; }
     void setWorld(World& world) { mWorld = &world; }
-    f32 getPatchWidth() const { return mPatchWidth; }
+    f32 getPatchWidth() const { return HEIGHTMAP_PATCH_WIDTH; }
     ui32 getWidthPatches() const { return mWidthPatches; }
     ui32 getTotalPatches() const { return SQ(mWidthPatches); }
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
 protected:
+    void initInternal();
     void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
@@ -136,10 +138,9 @@ protected:
 
     SpatialGrid2D mSpatialGrid2D;
     std::unique_ptr<HeightmapPatch[]> mHeightData;
-    ui32 mWidthPatches;
+    ui32 mWidthPatches = 0;
     ui32 mTotalPatches;
     f32 mMaxCoordinate;
-    f32 mPatchWidth;
 
     World* mWorld = nullptr;
     //std::mutex mMutex;
@@ -148,4 +149,14 @@ protected:
     boost::container::flat_set<i32v2> mModifiedVertsThisTick;
     // Events
     EVENT_DISPATCHER_DEF(IHeightmapGrid);
+
+    BINARY_SERIALIZE() {
+        s.value4b(mWidthPatches);
+        if (!mHeightData) {
+            initInternal();
+        }
+        for (ui32 i = 0; i < mTotalPatches; ++i) {
+            s.object(mHeightData[i]);
+        }
+    }
 };

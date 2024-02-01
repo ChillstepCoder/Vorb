@@ -5,16 +5,8 @@
 
 WorldMarkupGrid::WorldMarkupGrid(ui32 worldWidthTiles, ui32 seed) : gen(seed | seed << 16 + 2653)
 {
-    const ui32 widthVerts = worldWidthTiles / MARKUP_VERTEX_STRIDE;
-    mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
-    mSpatialGrid.init(MARKUP_VERTEX_STRIDE, widthVerts);
-    mTotalVertices = SQ(widthVerts);
-    mMarkup = std::make_unique<WorldMarkupData[]>(mTotalVertices);
-    mChunkMarkup = std::make_unique<WorldChunkMarkupData[]>(SQ(mWidthChunks));
-    LOG_DEBUG("Markup grid allocated {} mb markup",
-        (mTotalVertices * sizeof(WorldMarkupData) + sizeof(WorldChunkMarkupData) * SQ(mWidthChunks)) / 1024.f / 1024.f);
-
-    mNameContext = std::make_unique<WorldNameContext>();
+    mWidthVerts = worldWidthTiles / MARKUP_VERTEX_STRIDE;
+    initInternal();
 }
 
 WorldMarkupGrid::~WorldMarkupGrid() = default;
@@ -41,6 +33,18 @@ const WorldBodyMarkupData* WorldMarkupGrid::getBodyDataAtPoint(f32v2 worldPos) c
     if (!baseMarkup) return nullptr;
     if (baseMarkup->bodyId == UINT32_MAX) return nullptr;
     return &mBodies[baseMarkup->bodyId];
+}
+
+void WorldMarkupGrid::initInternal() {
+    mWidthChunks = (mWidthVerts * MARKUP_VERTEX_STRIDE) / CHUNK_WIDTH;
+    mSpatialGrid.init(MARKUP_VERTEX_STRIDE, mWidthVerts);
+    mTotalMarkupVertices = SQ(mWidthVerts);
+    mMarkup = std::make_unique<WorldMarkupData[]>(mTotalMarkupVertices);
+    mChunkMarkup = std::make_unique<WorldChunkMarkupData[]>(SQ(mWidthChunks));
+    LOG_DEBUG("Markup grid allocated {} mb markup",
+        (mTotalMarkupVertices * sizeof(WorldMarkupData) + sizeof(WorldChunkMarkupData) * SQ(mWidthChunks)) / 1024.f / 1024.f);
+
+    mNameContext = std::make_unique<WorldNameContext>();
 }
 
 void WorldMarkupGrid::onGenerationComplete() {
