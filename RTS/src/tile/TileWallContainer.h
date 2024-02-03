@@ -2,6 +2,8 @@
 
 #include "tile/TileSpatialGrid.h"
 
+#include "serialization/BitseryExt.h"
+
 struct TileWall {
     TileID wallID = TILE_ID_NONE;
     bool isDoor = false; // TODO: Flags
@@ -170,4 +172,8 @@ private:
     // Stored horizontal then vertical
     std::vector<TileWall> mWalls;
     const TileSpatialGrid* mTileSpatialGrid = nullptr;
+
+    BINARY_SERIALIZE() {
+        s.ext(mWalls, bitsery::ext::PodStructVector{});
+    }
 };

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/container/flat_map.hpp>
+
 namespace bitsery
 {
     namespace ext
@@ -128,3 +130,96 @@ namespace bitsery
         };
     } // namespace traits
 } // namespace bitsery
+
+
+
+namespace bitsery {
+    namespace ext {
+
+        class BoostFlatMap
+        {
+        public:
+            constexpr explicit BoostFlatMap(size_t maxSize)
+                : _maxSize{ maxSize }
+            {
+            }
+
+            template<typename Ser, typename T, typename Fnc>
+            void serialize(Ser& ser, const T& obj, Fnc&& fnc) const
+            {
+                using TKey = typename T::key_type;
+                using TValue = typename T::mapped_type;
+                auto size = obj.size();
+                assert(size <= _maxSize);
+                details::writeSize(ser.adapter(), size);
+
+                for (auto& v : obj)
+                    fnc(ser, const_cast<TKey&>(v.first), const_cast<TValue&>(v.second));
+            }
+
+            template<typename Des, typename T, typename Fnc>
+            void deserialize(Des& des, T& obj, Fnc&& fnc) const
+            {
+                using TKey = typename T::key_type;
+                using TValue = typename T::mapped_type;
+
+                size_t size{};
+                details::readSize(
+                    des.adapter(),
+                    size,
+                    _maxSize,
+                    std::integral_constant<bool, Des::TConfig::CheckDataErrors>{});
+                obj.clear();
+                reserve(obj, size);
+
+                auto hint = obj.begin();
+                for (auto i = 0u; i < size; ++i) {
+                    auto key = bitsery::Access::create<TKey>();
+                    auto value = bitsery::Access::create<TValue>();
+                    fnc(des, key, value);
+                    hint = obj.emplace_hint(hint, std::move(key), std::move(value));
+                }
+            }
+
+        private:
+            template<typename Key,
+                typename T,
+                typename Hash,
+                typename KeyEqual,
+                typename Allocator>
+            void reserve(std::unordered_map<Key, T, Hash, KeyEqual, Allocator>& obj,
+                size_t size) const
+            {
+                obj.reserve(size);
+            }
+            template<typename Key,
+                typename T,
+                typename Hash,
+                typename KeyEqual,
+                typename Allocator>
+            void reserve(std::unordered_multimap<Key, T, Hash, KeyEqual, Allocator>& obj,
+                size_t size) const
+            {
+                obj.reserve(size);
+            }
+            template<typename T>
+            void reserve(T&, size_t) const
+            {
+                // for ordered container do nothing
+            }
+            size_t _maxSize;
+        };
+    }
+
+    namespace traits {
+        template<typename T>
+        struct ExtensionTraits<ext::BoostFlatMap, T>
+        {
+            using TValue = void;
+            static constexpr bool SupportValueOverload = false;
+            static constexpr bool SupportObjectOverload = false;
+            static constexpr bool SupportLambdaOverload = true;
+        };
+    }
+
+}

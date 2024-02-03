@@ -85,15 +85,13 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     BiomeGrid& biomeGrid = world.getBiomeGrid();
     WorldMarkupGrid& markupGrid = world.getMarkupGrid();
+    SimChunkTileGrid& tileGrid = world.getSimTileGrid();
     assert(heightGrid.mHeightData);
 
     // Selected based on average use case
-    // A bit over a gigabyte
-    constexpr ui32 START_SIZE = 1400000000;
+    // over 2 gigs
+    constexpr ui32 START_SIZE = 2200000000;
     templateData.reserve(START_SIZE);
-
-
-    LOG_INFO("AAA {}", templateData.capacity());
 
     // TODO: In production use bitsery::ext::Growable{} for forward/backwards compatability
     https://github.com/fraillt/bitsery/blob/master/examples/forward_backward_compatibility.cpp
@@ -115,6 +113,10 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
     timer2.start();
     s.object(markupGrid);
     LOG_CRITICAL("  MARKUP FINISH in {} ms", timer2.elapsedMs());
+    LOG_INFO("  Serializing tiles...");
+    timer2.start();
+    s.object(tileGrid);
+    LOG_CRITICAL("  TILES FINISH in {} ms", timer2.elapsedMs());
 
     s.adapter().flush();
 
@@ -129,14 +131,14 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
 void GameSaveManager::compressAndWriteFile(const fs::path& filename, const BBuffer& data) {
     BBuffer compressed(data.size());
 
-    LOG_INFO("  Compressing...");
+    LOG_INFO("  Compressing... {}", data.size() / 1024. / 1024.);
     // TODO: Dictionary compression for better speed and ratio
     size_t const cSize = ZSTD_compress(compressed.data(), compressed.size(), data.data(), data.size(), 1);
     if (ZSTD_isError(cSize)) {
         panic("ZSTD_compress failed during template save for {}", filename.string().c_str());
     }
 
-    LOG_INFO("  Saving to disk...");
+    LOG_INFO("  Saving {} to disk...", cSize / 1024. / 1024.);
     std::ofstream file(filename, std::ios::binary);
     file.write(reinterpret_cast<char*>(compressed.data()), cSize);
 }

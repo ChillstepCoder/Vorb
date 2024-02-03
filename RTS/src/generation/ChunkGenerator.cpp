@@ -185,42 +185,38 @@ void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world
         simGrid.onNewChunkAllocated();
     }
     SimChunkTileData& chunkData = *chunk.data;
-    i32v2 chunkPosWorld = mSpatialGrid->getWorldPosXYFromID(id);
-
-    // Cache all center heights
-    f32 centerHeights[CHUNK_SIZE];
-    f32v3 centerNormals[CHUNK_SIZE];
-    for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
-        const ui32 x = i & TILE_INDEX_X_MASK;
-        const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = heightGrid.computeCenterHeightAndNormalAtTile<true>(chunkPosWorld + i32v2(x, y), &centerNormals[i]);
-    }
+    const i32v2 chunkPosWorld = mSpatialGrid->getWorldPosXYFromID(id);
 
     ui32 totalTiles = 0;
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-        const f32 height = centerHeights[i];
-        Tile tile = generateTileAtPos(tilePosWorld, height, centerNormals[i], biomeGrid.getBiomeDefAtPoint(tilePosWorld));
+        f32v3 normal;
+        const f32 height = heightGrid.computeCenterHeightAndNormalAtTile<true>(chunkPosWorld + i32v2(x, y), &normal);
+        Tile tile = generateTileAtPos(tilePosWorld, height, normal, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
 
-        // TODO: Bit array instead of full tiledata lookup for cache friendlyness
         if (tile.mainLayer != TILE_ID_NONE) {
+
+            auto&& it = chunkData.tileQuantities.find(tile.mainLayer);
+            if (it == chunkData.tileQuantities.end()) [[unlikley]] {
+                chunkData.tileQuantities.emplace(tile.mainLayer, 1);
+            }
+            else {
+                ++it->second;
+            }
+
             SimTileData tileData;
-            tileData.tileIndex = i;
+            tileData.tileId = tile.mainLayer;
             tileData.variant = tile.mainLayerVariant;
-            chunkData.tileIdToTileData[tile.mainLayer].emplace_back(std::move(tileData));
-            chunkData.tileIndexToTileID[i] = tile.mainLayer;
+            chunkData.tileIndexToTileData.emplace((ui16)i, tileData);
             ++totalTiles;
         }
     }
 
     // Shrink memory
-    for (auto& [tileId, tileData] : chunkData.tileIdToTileData) {
-        tileData.shrink_to_fit();
-    }
-    chunkData.tileIdToTileData.shrink_to_fit();
-    chunkData.tileIndexToTileID.shrink_to_fit();
+    chunkData.tileIndexToTileData.shrink_to_fit();
+    chunkData.tileQuantities.shrink_to_fit();
 
     LOG_DEBUG("Generated simchunk in {} ms {} {}", timer.stop(), totalTiles, (f32)totalTiles / CHUNK_SIZE);
 }

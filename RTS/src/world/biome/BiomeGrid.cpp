@@ -20,12 +20,12 @@ BiomeGrid::~BiomeGrid() {
 
 const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 worldPos) const {
     const i32v2 blVertex = i32v2(worldPos) / BIOME_VERTEX_STRIDE;
-    if (blVertex.x < 0 || blVertex.y < 0 || blVertex.x >= (i32)mSpatialGrid.getGridWidthCells() || blVertex.y >= (i32)mSpatialGrid.getGridWidthCells()) {
+    if (blVertex.x < 0 || blVertex.y < 0 || blVertex.x >= (i32)mSpatialGrid.getGridWidthCells() || blVertex.y >= (i32)mSpatialGrid.getGridWidthCells()) [[unlikely]] {
         return nullptr;
     }
 
     const BiomeUniqueID uniqueId = mGrid[mSpatialGrid.getIDfromGridXY(blVertex)].biomeUniqueId;
-    if (uniqueId == BiomeUniqueID::INVALID) return nullptr;
+    if (uniqueId == BiomeUniqueID::INVALID) [[unlikely]] return nullptr;
     return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
 }
 

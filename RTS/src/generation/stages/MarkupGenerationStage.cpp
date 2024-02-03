@@ -296,7 +296,7 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                         chunkMarkup.mainLandBodyID = it.first;
                         highestLandCount = it.second;
                         ++mMarkupGrid->mTotalLandChunks;
-                        //mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimTileGrid().getChunkForGeneration(chunkID), *mWorldPtr);
+                        mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimTileGrid().getChunkForGeneration(chunkID), *mWorldPtr);
                     }
                 }
                 else {
