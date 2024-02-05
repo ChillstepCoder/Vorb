@@ -41,6 +41,7 @@ struct SimChunkTileData {
     BINARY_SERIALIZE() {
         s.ext(tileIndexToTileData, bitsery::ext::BoostFlatMap{CHUNK_SIZE}, [](S& s, ui16& key, SimTileData& value) {
             s.value2b(key);
+            s.value2b(value.tileId);
             ui8 v = value.variant;
             s.value1b(v);
             value.variant = v;
@@ -51,7 +52,7 @@ struct SimChunkTileData {
         if (tileQuantities.empty()) {
             for (auto& [tileIndex, tileData] : tileIndexToTileData) {
                 auto&& it = tileQuantities.find(tileData.tileId);
-                if (it == tileQuantities.end()) [[unlikley]] {
+                if (it == tileQuantities.end()) [[unlikely]] {
                     tileQuantities.emplace(tileData.tileId, 1);
                 }
                 else {
@@ -71,7 +72,7 @@ public:
     bool allocate();
     ChunkID getChunkID() const { return chunkId; }
 private:
-    std::shared_mutex mutex;
+    mutable std::shared_mutex mutex;
     std::unique_ptr<SimChunkTileData> data;
     SimChunkTileContainerState state = SimChunkTileContainerState::NONE;
     ChunkID chunkId;
@@ -81,9 +82,10 @@ private:
         if (state == SimChunkTileContainerState::NONE) {
             isRead = true;
         }
-        s.value1b(state);
+        SimChunkTileContainerState sstate = state;
+        s.value1b(sstate);
         if (isRead) {
-            if (state == SimChunkTileContainerState::Allocated) {
+            if (sstate == SimChunkTileContainerState::Allocated) {
                 allocate();
                 s.object(*data);
             }
@@ -92,6 +94,7 @@ private:
             // Write
            s.object(*data);
         }
+        state = sstate;
     }
 };
 
@@ -101,6 +104,11 @@ public:
     ~SimChunkTileGrid();
 
     ui32 getApproxMemoryUsageBytes() const;
+
+    const SimChunkTileContainer& getChunk(ChunkID chunkId) {
+        return mChunkData[chunkId];
+    }
+
     SimChunkTileContainer& getChunkForGeneration(ChunkID chunkId) {
         return mChunkData[chunkId];
     }

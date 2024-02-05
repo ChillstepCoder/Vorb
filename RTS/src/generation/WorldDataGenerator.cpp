@@ -14,6 +14,10 @@
 #include "generation/stages/HistoryGenerationStage.h"
 #include "generation/WorldGenerationBlackboard.h"
 
+#include "serialization/GameSaveManager.h"
+
+constexpr ui32 HISTORY_STAGE_INDEX = 3;
+
 WorldDataGenerator::WorldDataGenerator() = default;
 
 WorldDataGenerator::~WorldDataGenerator() {
@@ -37,7 +41,8 @@ WorldDataGenerator::~WorldDataGenerator() {
 
 void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void()> onFinished) {
     assert(!mFinished && "Make sure cleanup was called before generating again");
-    
+
+    mCurrentStageIndex = 0;
     mWorldData = &worldData;
     mGenerationData = generationData;
     mWorldSeed = generationData.mSeedHashed;
@@ -48,7 +53,19 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
 
     mBlackboard = std::make_unique<WorldGenerationBlackboard>(mWorldData->heightmapGrid->getWidthPatches());
 
+#ifdef DEBUG
+    if (GameSaveManager::get().loadWorldTemplate(*mWorldData)) {
+        mCurrentStageIndex = HISTORY_STAGE_INDEX;
+        mWorld = std::make_unique<World>(WorldNetMode::Host, mWorldData);
+        // Set biome texture
+        const ui32 bWidth = mWorldData->biomeGrid->getWidthVertices();
+        glTextureSubImage2D(mBiomeTexture, 0, 0, 0, bWidth, bWidth, GL_RED, GL_UNSIGNED_BYTE, mWorldData->biomeGrid->getBiomeData());
+        return;
+    }
+#endif
+
     initStages();
+
 }
 
 const char* WorldDataGenerator::getCurrentStageName() const {
@@ -127,8 +144,7 @@ void WorldDataGenerator::initStages() {
     mStages.emplace_back(std::make_unique<MarkupGenerationStage>(*this, mWorld));
     mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this, mWorld));
 
-    mCurrentStageIndex = 0;
-    mStages[0]->begin();
+    mStages[mCurrentStageIndex]->begin();
 }
 
 IWorldGenerationStage* WorldDataGenerator::tryGetCurrentStage() const {

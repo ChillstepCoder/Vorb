@@ -7,6 +7,21 @@
 #include "world/World.h"
 #include "world/host/HostWorldData.h"
 
+struct WorldTemplateHeaderData {
+    ui32 version = 0;
+    ui32 seed = 0;
+
+    template <typename S>
+    void serialize(S& s) {
+        s.value4b(version);
+        s.value4b(seed);
+    }
+};
+
+// Selected based on average use case
+// over 2 gigs
+constexpr ui32 START_SIZE = 2200000000;
+
 GameSaveManager::GameSaveManager() {
     mThread = std::make_unique<std::thread>(&GameSaveManager::saveThreadFunc, this);
 }
@@ -30,15 +45,77 @@ bool GameSaveManager::saveWorldTemplate(World& world) {
     saveWorldTemplateV0(world);
 }
 
-struct WorldTemplateHeaderData {
-    ui32 version = 0;
+bool GameSaveManager::loadWorldTemplate(HostWorldData& worldData) {
 
-    template <typename S>
-    void serialize(S& s) {
-        s.value4b(version);
+    const fs::path templatesFolder = getTemplatesDirectory();
+    const fs::path filePath = templatesFolder / "template.dat";
+
+    if (!fs::exists(filePath)) {
+        panic("No template found at {}", filePath.string().c_str());
+        return false;
     }
-};
 
+    LOG_INFO("Loading world template from {}", filePath.string().c_str());
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        panic("Failed to open template file {}", filePath.string().c_str());
+        return false;
+    }
+    PreciseTimer timer, timer3;
+    LOG_INFO("Loading template...");
+    size_t uncompressedSize;
+    const size_t compressedSize = (size_t)file.tellg() - sizeof(size_t);
+    BBuffer compressedData;
+    compressedData.resize(compressedSize);
+    file.seekg(0);
+    // TODO: Does not support endianness
+    file.read(reinterpret_cast<char*>(&uncompressedSize), sizeof(size_t));
+    file.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);
+    file.close();
+    LOG_INFO("   Read in {} ms", timer.elapsedMs());
+    timer.start();
+
+    BBuffer decompressed(uncompressedSize);
+    const size_t dSize = ZSTD_decompress(decompressed.data(), decompressed.size(), compressedData.data(), compressedData.size());
+    if (ZSTD_isError(dSize)) {
+        panic("ZSTD_decompress failed during template load for {}", filePath.string().c_str());
+    }
+    decompressed.resize(dSize);
+
+    LOG_INFO("   Decompress in {} ms", timer.elapsedMs());
+    timer.start();
+    WorldTemplateHeaderData header;
+    bitsery::Deserializer<BInputAdapter> d{ BInputAdapter{ decompressed.begin(), decompressed.end() } };
+    d.object(header);
+    LOG_INFO("  Deserializing heights...");
+    PreciseTimer timer2;
+    assert(worldData.heightmapGrid);
+    d.object(*worldData.heightmapGrid);
+    LOG_CRITICAL("  HEIGHT FINISH in {} ms", timer2.elapsedMs());
+    LOG_INFO("  Deserializing biomes...");
+    timer2.start();
+    assert(worldData.biomeGrid);
+    d.object(*worldData.biomeGrid);
+    LOG_CRITICAL("  BIOME FINISH in {} ms", timer2.elapsedMs());
+    LOG_INFO("  Deserializing markup...");
+    timer2.start();
+    assert(worldData.markupGrid);
+    d.object(*worldData.markupGrid);
+    LOG_CRITICAL("  MARKUP FINISH in {} ms", timer2.elapsedMs());
+    LOG_INFO("  Deserializing tiles...");
+    timer2.start();
+    assert(worldData.tileGrid);
+    d.object(*worldData.tileGrid);
+    LOG_CRITICAL("  TILES FINISH in {} ms", timer2.elapsedMs());
+    LOG_INFO("  Finished in {} ms", timer3.elapsedMs());
+
+    return true;
+}
+
+fs::path GameSaveManager::getTemplatesDirectory() {
+    fs::path currentPath = fs::current_path();
+    return currentPath / "saves" / "templates";
+}
 
 void GameSaveManager::saveThreadFunc() {
     SIM_THREAD_ID = std::this_thread::get_id();
@@ -61,8 +138,7 @@ void GameSaveManager::saveWorldTemplateV0(World& world) {
 
     LOG_INFO("  Finished in {} ms - Sending to save thread", timer.elapsedMs());
     mSaveFuncs.enqueue([this, &world, templateData = std::move(templateData)]() {
-        fs::path currentPath = fs::current_path();
-        fs::path templatesFolder = currentPath / "saves" / "templates";
+        const fs::path templatesFolder = getTemplatesDirectory();
         if (!fs::exists(templatesFolder)) {
             if (!fs::create_directories(templatesFolder)) {
                 panic("Failed to create {} directory. Insufficient permissions?", templatesFolder.string());
@@ -88,9 +164,6 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
     SimChunkTileGrid& tileGrid = world.getSimTileGrid();
     assert(heightGrid.mHeightData);
 
-    // Selected based on average use case
-    // over 2 gigs
-    constexpr ui32 START_SIZE = 2200000000;
     templateData.reserve(START_SIZE);
 
     // TODO: In production use bitsery::ext::Growable{} for forward/backwards compatability
@@ -98,6 +171,7 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
 
     WorldTemplateHeaderData header;
     header.version = version;
+    header.seed = world.getSeed();
     bitsery::Serializer<BOutputAdapter> s{ BOutputAdapter{ templateData } };
     // Serialize
     s.object(header);
@@ -140,5 +214,8 @@ void GameSaveManager::compressAndWriteFile(const fs::path& filename, const BBuff
 
     LOG_INFO("  Saving {} to disk...", cSize / 1024. / 1024.);
     std::ofstream file(filename, std::ios::binary);
+    size_t uncompressedSize = data.size();
+    // TODO: Does not support endianness
+    file.write(reinterpret_cast<char*>(&uncompressedSize), sizeof(size_t));
     file.write(reinterpret_cast<char*>(compressed.data()), cSize);
 }

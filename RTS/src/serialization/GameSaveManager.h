@@ -1,6 +1,7 @@
 #pragma once
 
 class World;
+class HostWorldData;
 
 #include "filesystem/FileSystem.h"
 
@@ -15,9 +16,11 @@ public:
     // Save on generation screen for later use
     // Returns false if we are already saving
     bool saveWorldTemplate(World& world);
+    bool loadWorldTemplate(HostWorldData& worldData);
     //void loadWorldTemplate(World& world);
 
 private:
+    fs::path getTemplatesDirectory();
     void saveThreadFunc();
 
     void saveWorldTemplateV0(World& world);

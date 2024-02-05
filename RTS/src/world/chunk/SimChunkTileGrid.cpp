@@ -31,7 +31,6 @@ bool SimChunkTileContainer::allocate() {
         state = SimChunkTileContainerState::Allocated;
         data = std::make_unique<SimChunkTileData>();
         data->tileStates.resize(CHUNK_SIZE);
-        state = SimChunkTileContainerState::Ocean; // Default
         return true;
     }
     return false;
