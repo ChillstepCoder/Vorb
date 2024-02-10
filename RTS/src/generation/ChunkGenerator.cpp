@@ -11,7 +11,6 @@
 #include "world/World.h"
 #include "world/WorldDefaults.h"
 #include "world/IHeightmapGrid.h"
-#include "world/Region.h"
 #include "world/chunk/SimChunkTileGrid.h"
 #include "resources/TileRepository.h"
 

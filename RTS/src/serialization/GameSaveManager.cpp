@@ -37,6 +37,14 @@ GameSaveManager& GameSaveManager::get() {
     return sInstance;
 }
 
+bool GameSaveManager::saveWorld(World& world, const nString& fileName)
+{
+    if (mIsSavingWorld) {
+        return false;
+    }
+    mIsSavingWorld = true;
+}
+
 bool GameSaveManager::saveWorldTemplate(World& world) {
     if (mIsSavingWorld) {
         return false;
@@ -127,6 +135,10 @@ void GameSaveManager::saveThreadFunc() {
         mSaveFuncs.wait_dequeue(func);
         func();
     }
+}
+
+void GameSaveManager::saveHeightData(World& world) {
+
 }
 
 // TODO: Unit Tests?

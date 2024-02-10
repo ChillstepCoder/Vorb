@@ -5,14 +5,9 @@
 #include "util/SpatialGrid2D.h"
 #include "definitions/BiomeDef.h"
 #include "serialization/BitseryExt.h"
+#include "world/WorldConstants.h"
 
-// TODO: BiomeConstants
-constexpr i32 BIOME_VERTEX_STRIDE = BLOCK_WIDTH;
 constexpr int MAX_PRIMARY_RESOURCES_PER_BIOME = 4;
-
-constexpr ui32 BIOME_PATCH_WIDTH_TILES = CHUNK_WIDTH * 2;
-constexpr ui32 BIOME_PATCH_WIDTH_VERTS = BIOME_PATCH_WIDTH_TILES / BIOME_VERTEX_STRIDE;
-constexpr ui32 BIOME_PATCH_SIZE_VERTS = SQ(BIOME_PATCH_WIDTH_VERTS);
 
 enum class BiomeFlags : ui8 {
     BASE_BIOME = BIT(0),
@@ -48,6 +43,8 @@ struct BiomeVertex {
 };
 static_assert(sizeof(BiomeVertex) == 8, "We are serializing as a binary blob so this must have no automatic padding");
 
+typedef std::array<BiomeVertex, BIOME_PATCH_SIZE_VERTS> BiomePatch;
+
 // Host only?
 class BiomeGrid
 {
@@ -58,28 +55,27 @@ public:
 
     VORB_NON_COPYABLE(BiomeGrid);
 
-    ui32 getTotalVertices() const { return mGrid.size(); }
-    ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
+    ui32 getTotalVertices() const { return mGrid.size() * BIOME_PATCH_SIZE_VERTS; }
+    ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells() * BIOME_PATCH_WIDTH_VERTS; }
+    ui32 getWidthPatches() const { return mSpatialGrid.getGridWidthCells(); }
+    std::array<BiomeVertex, BIOME_PATCH_SIZE_VERTS>& getPatch(i32v2 cellXY) {
+        return mGrid[mSpatialGrid.getIDfromGridXY(cellXY)];
+    }
     // template <bool THREAD_SAFE>
-    const BiomeDef* getBiomeDefAtPoint(f32v2 worldPos) const;
+    const BiomeDef* getBiomeDefAtPoint(i32v2 worldPos) const;
 
     // We will manage the lifetime of the texture
     void setBiomeTexture(VGTexture biomeTexture) { mBiomeTexture = biomeTexture; }
     // Safe to call from render thread
     VGTexture getBiomeTexture() const { return mBiomeTexture; }
 
-    BiomeVertex& getVertexForGeneration(ui32 index) {
-        return mGrid[index];
-    }
+    BiomeVertex& getVertexForGenerationFromBlockPos(i32v2 blockPos);
 
 private:
     void initInternal();
-    void setVertex(i32v2 vertexPos, BiomeVertex vertex) {
-        mGrid[vertexPos.y * getWidthVertices() + vertexPos.x] = vertex;
-    }
 
     // ======================= Data =======================
-    std::vector<BiomeVertex> mGrid;
+    std::vector<BiomePatch> mGrid;
     ui32 mWidthVerts = 0;
     SpatialGrid2D mSpatialGrid;
     // Used by terrain to look up biome info

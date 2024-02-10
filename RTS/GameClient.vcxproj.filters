@@ -93,9 +93,6 @@
     <ClCompile Include="src\services\Services.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\Region.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\generation\WorldGenerationData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1038,6 +1035,9 @@
     <ClCompile Include="src\serialization\GameSaveManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1125,9 +1125,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\services\Services.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\Region.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldDefaults.h">
@@ -2532,6 +2529,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\serialization\BitseryExt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\serialization\gamesave\WorldSaveContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\WorldConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

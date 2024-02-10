@@ -126,7 +126,7 @@ void HistoryGenerationStage::handleCorruptSpawn(BiomeCorruptions type) {
     do {
         ui32 x = generator.getRandomUIntInRange(widthVerts * .05, widthVerts * .95);
         ui32 y = generator.getRandomUIntInRange(widthVerts * .05, widthVerts * .95);
-        BiomeVertex& vert = mBiomeGrid->getVertexForGeneration(y * widthVerts + x);
+        BiomeVertex& vert = mBiomeGrid->getVertexForGenerationFromBlockPos(i32v2(x, y));
         const BiomeDef& def = repo.getBiomeFromUniqueID(vert.biomeUniqueId);
         if (def.isCorruptable) {
             vert.biomeUniqueId = def.corruptVersions[e_cast(type)]->uniqueId;
@@ -219,7 +219,7 @@ void HistoryGenerationStage::downloadBiomes() {
         const ui32 yStride = y * widthVerts;
         for (i32 x = 8 + ((y + isOdd) % 2); x < widthVerts - 8; x += 2) {
             const ui32 index = yStride + x;
-            BiomeVertex& vertex = mBiomeGrid->getVertexForGeneration(index);
+            BiomeVertex& vertex = mBiomeGrid->getVertexForGenerationFromBlockPos(i32v2(x, y));
             vertex.biomeUniqueId = BiomeUniqueID(mMappedBiomes[index]);
         }
     }

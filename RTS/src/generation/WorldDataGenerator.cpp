@@ -42,6 +42,7 @@ WorldDataGenerator::~WorldDataGenerator() {
 void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGenerationData& generationData, i32 resolution, std::function<void()> onFinished) {
     assert(!mFinished && "Make sure cleanup was called before generating again");
 
+    mSkipToHistory = 0;
     mCurrentStageIndex = 0;
     mWorldData = &worldData;
     mGenerationData = generationData;
@@ -53,14 +54,60 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
 
     mBlackboard = std::make_unique<WorldGenerationBlackboard>(mWorldData->heightmapGrid->getWidthPatches());
 
-#ifdef DEBUG
+#define LOAD_TEMPLATE 0
+#if LOAD_TEMPLATE == 1
     if (GameSaveManager::get().loadWorldTemplate(*mWorldData)) {
-        mCurrentStageIndex = HISTORY_STAGE_INDEX;
+        mSkipToHistory = true;
         mWorld = std::make_unique<World>(WorldNetMode::Host, mWorldData);
         // Set biome texture
+        std::vector <ui8> pixelData;
+
+        LOG_INFO("Updating biome texture...");
         const ui32 bWidth = mWorldData->biomeGrid->getWidthVertices();
-        glTextureSubImage2D(mBiomeTexture, 0, 0, 0, bWidth, bWidth, GL_RED, GL_UNSIGNED_BYTE, mWorldData->biomeGrid->getBiomeData());
-        return;
+        pixelData.resize(SQ(bWidth));
+        for (ui32 y = 0; y < bWidth; ++y) {
+            for (ui32 x = 0; x < bWidth; ++x) {
+                const BiomeUniqueID id = mWorldData->biomeGrid->getVertexForGenerationFromBlockPos(i32v2(x, y)).biomeUniqueId;
+                pixelData[y * bWidth + x] = (ui8)id;
+                mMappedBiomes[y * bWidth + x] = (ui32)id;
+            }
+        }
+        glFlushMappedNamedBufferRange(mBiomeSSBO, SQ(bWidth), sizeof(ui32));
+        glTextureSubImage2D(
+            mBiomeTexture,
+            0, 0, 0,
+            bWidth, bWidth,
+            GL_RED, GL_UNSIGNED_BYTE,
+            pixelData.data()
+        );
+
+        LOG_INFO("Updating height texture...");
+        const ui32 patchesWidth = mWorldData->heightmapGrid->getWidthPatches();
+        const ui32 patchWidthVerts = mWorldData->heightmapGrid->getPatchWidthVerts();
+        const ui32 tWidth = patchesWidth * patchWidthVerts;
+        pixelData.resize(SQ(tWidth));
+        // Cache efficient iterate
+        for (ui32 py = 0; py < patchesWidth; ++py) {
+            const ui32 pyOffset = py * patchWidthVerts;
+            for (ui32 px = 0; px < patchesWidth; ++px) {
+                const ui32 pxOffset = px * patchWidthVerts;
+                HeightmapPatch& patch = mWorldData->heightmapGrid->getPatchForGeneration(py * patchesWidth + px);
+                for (ui32 y = 0; y < patchWidthVerts; ++y) {
+                    for (ui32 x = 0; x < patchWidthVerts; ++x) {
+                        pixelData[(pyOffset + y) * tWidth + pxOffset + x] = (ui8)glm::clamp((patch.getHeightAt(y * patchWidthVerts + x) + 127.0f) - 100.0f, 0.0f, 255.0f);
+                    }
+                }
+            }
+        }
+        glTextureSubImage2D(
+            mHeightTexture,
+            0, 0, 0,
+            tWidth, tWidth,
+            GL_RED, GL_UNSIGNED_BYTE,
+            pixelData.data()
+        );
+
+        LOG_INFO("Done.");
     }
 #endif
 
@@ -139,9 +186,11 @@ void WorldDataGenerator::initStages() {
 
     mStages.reserve(2);
 
-    mStages.emplace_back(std::make_unique<BaseHeightmapAndBiomeGenerationStage>(*this));
-    mStages.emplace_back(std::make_unique<RiverGenerationStage>(*this));
-    mStages.emplace_back(std::make_unique<MarkupGenerationStage>(*this, mWorld));
+    if (!mSkipToHistory) {
+        mStages.emplace_back(std::make_unique<BaseHeightmapAndBiomeGenerationStage>(*this));
+        mStages.emplace_back(std::make_unique<RiverGenerationStage>(*this));
+        mStages.emplace_back(std::make_unique<MarkupGenerationStage>(*this, mWorld));
+    }
     mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this, mWorld));
 
     mStages[mCurrentStageIndex]->begin();

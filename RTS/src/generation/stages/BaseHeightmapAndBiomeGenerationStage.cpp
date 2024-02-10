@@ -127,8 +127,8 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                 const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->getPatchForGeneration(patchId);
                 f32AABB3& aabb = patch.aabb;
-                aabb.dims.x = HEIGHTMAP_PATCH_WIDTH;
-                aabb.dims.y = HEIGHTMAP_PATCH_WIDTH;
+                aabb.dims.x = HEIGHTMAP_PATCH_WIDTH_TILES;
+                aabb.dims.y = HEIGHTMAP_PATCH_WIDTH_TILES;
                 aabb.pos.x = (f32)rootPos.x;
                 aabb.pos.y = (f32)rootPos.y;
                 f32 minZ = FLT_MAX;
@@ -163,7 +163,7 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                         const i32 yPos = biomeRootXY.y + y;
                         for (i32 x = 0; x < BIOME_VERT_WIDTH_PER_PATCH; ++x) {
                             const ui32 index = yPos * mBiomeGrid->getWidthVertices() + biomeRootXY.x + x;
-                            BiomeVertex& vertex = mBiomeGrid->getVertexForGeneration(index);
+                            BiomeVertex& vertex = mBiomeGrid->getVertexForGenerationFromBlockPos(i32v2(biomeRootXY.x + x, yPos));
                             vertex.biomeUniqueId = BiomeUniqueID(mMappedBiomes[index]);
                         }
                     }

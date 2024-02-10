@@ -33,6 +33,7 @@
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/road/RoadGrid.h"
+#include "serialization/gamesave/WorldSaveContext.h"
 #include "weather/WeatherManager.h"
 #include "faction/HostFactionManager.h"
 
@@ -141,6 +142,8 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mVisibilityManager = std::make_unique<VisibilityManager>(*this);
     // Weather
     mWeatherManager = std::make_unique<WeatherManager>(*this);
+    // Save
+    mSaveContext = std::make_unique<WorldSaveContext>(*this);
 
     LOG_DEBUG("Systems allocated in {}", timer.stop()); timer.start();
 

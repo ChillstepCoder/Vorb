@@ -85,6 +85,7 @@ private:
     GLfloat* mMappedHeights = nullptr;
     ui32* mMappedBiomes = nullptr;
     bool mFinished = false;
+    bool mSkipToHistory = false;
 
     std::vector<ui32v2> mPeakPositions;
     moodycamel::ConcurrentQueue<ui32v2> mPeakPositionsQueue;

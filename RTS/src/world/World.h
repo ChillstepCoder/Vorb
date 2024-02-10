@@ -35,6 +35,7 @@ class FishEcosystem;
 class WorldRenderState;
 class VisibilityManager;
 class WeatherManager;
+class WorldSaveContext;
 
 // Represents a total game context. Multiple can exist at once, for example editor world + host world. We could also
 // potentially do seamless transitions between two host/client worlds with portals or other weirdness.
@@ -65,7 +66,7 @@ public:
     void setLoadCenter(const f32v2& loadCenter);
     ui32 getWidthTiles() const { return mWidthTiles; }
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
-    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH; }
+    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES; }
     WorldID getId() const { return mId; }
     ui64 getWorldTimeMs() const { return mWorldTimeMs; }
     void setWorldTimeMs(ui64 newTime);
@@ -183,6 +184,8 @@ private:
     std::unique_ptr<HostSimContext> mHostSimContext;
     // Nav world (OPTIONAL)
     std::unique_ptr<NavWorld> mNavWorld;
+    // Save
+    std::unique_ptr<WorldSaveContext> mSaveContext;
 
     STATIC_EVENT_DISPATCHER_DEF(World);
 

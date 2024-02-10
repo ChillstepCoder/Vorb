@@ -120,7 +120,8 @@ public:
     const SpatialGrid2D& getSpatialGrid2D() const { return mSpatialGrid2D; }
     World& getWorld() const { return *mWorld; }
     void setWorld(World& world) { mWorld = &world; }
-    f32 getPatchWidth() const { return HEIGHTMAP_PATCH_WIDTH; }
+    f32 getPatchWidthTiles() const { return HEIGHTMAP_PATCH_WIDTH_TILES; }
+    f32 getPatchWidthVerts() const { return HEIGHTMAP_VERT_WIDTH_PER_PATCH; }
     ui32 getWidthPatches() const { return mWidthPatches; }
     ui32 getTotalPatches() const { return SQ(mWidthPatches); }
 

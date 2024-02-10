@@ -170,7 +170,7 @@ namespace bitsery {
                     _maxSize,
                     std::integral_constant<bool, Des::TConfig::CheckDataErrors>{});
                 obj.clear();
-                reserve(obj, size);
+                obj.reserve(size);
 
                 auto hint = obj.begin();
                 for (auto i = 0u; i < size; ++i) {
@@ -182,31 +182,6 @@ namespace bitsery {
             }
 
         private:
-            template<typename Key,
-                typename T,
-                typename Hash,
-                typename KeyEqual,
-                typename Allocator>
-            void reserve(std::unordered_map<Key, T, Hash, KeyEqual, Allocator>& obj,
-                size_t size) const
-            {
-                obj.reserve(size);
-            }
-            template<typename Key,
-                typename T,
-                typename Hash,
-                typename KeyEqual,
-                typename Allocator>
-            void reserve(std::unordered_multimap<Key, T, Hash, KeyEqual, Allocator>& obj,
-                size_t size) const
-            {
-                obj.reserve(size);
-            }
-            template<typename T>
-            void reserve(T&, size_t) const
-            {
-                // for ordered container do nothing
-            }
             size_t _maxSize;
         };
     }

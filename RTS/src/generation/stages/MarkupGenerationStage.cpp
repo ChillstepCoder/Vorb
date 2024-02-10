@@ -133,7 +133,7 @@ void MarkupGenerationStage::generateInitialMarkup()
         if (startIndex == UINT32_MAX) [[unlikely]] break;
         start.x = startIndex % markupWidth;
         start.y = startIndex / markupWidth;
-        const bool groupIsWater = mBiomeGrid->getVertexForGeneration(start.y * markupWidth + start.x).isWater();
+        const bool groupIsWater = mBiomeGrid->getVertexForGenerationFromBlockPos(start).isWater();
         stack.push_back(start);
         currentSet.resize(0);
         currentBorderSet.resize(0);
@@ -141,8 +141,7 @@ void MarkupGenerationStage::generateInitialMarkup()
         do {
             i16v2 pos = stack.back();
             stack.pop_back();
-            const i32 startYOffset = pos.y * markupWidth;
-            while (pos.x >= 0 && mBiomeGrid->getVertexForGeneration(startYOffset + pos.x).isWater() == groupIsWater) --pos.x;
+            while (pos.x >= 0 && mBiomeGrid->getVertexForGenerationFromBlockPos(pos).isWater() == groupIsWater) --pos.x;
             ++pos.x;
 
             i32 index = pos.y * markupWidth + pos.x;
@@ -156,11 +155,11 @@ void MarkupGenerationStage::generateInitialMarkup()
                     visited.setBit(index);
                     mMarkupGrid->getMarkupForGeneration(index).bodyId = mTotalBodies;
                     if (pos.y > 0) [[likely]] {
-                        if (!spanBelow && mBiomeGrid->getVertexForGeneration(index - markupWidth).isWater() == groupIsWater) {
+                        if (!spanBelow && mBiomeGrid->getVertexForGenerationFromBlockPos(pos - i16v2(0, 1)).isWater() == groupIsWater) {
                             stack.emplace_back(pos.x, pos.y - 1);
                             spanBelow = true;
                         }
-                        else if (mBiomeGrid->getVertexForGeneration(index - markupWidth).isWater() != groupIsWater) {
+                        else if (mBiomeGrid->getVertexForGenerationFromBlockPos(pos - i16v2(0, 1)).isWater() != groupIsWater) {
                             isBorder = true;
                             spanBelow = false;
                         }
@@ -169,11 +168,11 @@ void MarkupGenerationStage::generateInitialMarkup()
                         isBorder = true;
                     }
                     if (pos.y < markupWidth - 1) [[likely]] {
-                        if (!spanAbove && mBiomeGrid->getVertexForGeneration(index + markupWidth).isWater() == groupIsWater) {
+                        if (!spanAbove && mBiomeGrid->getVertexForGenerationFromBlockPos(pos + i16v2(0, 1)).isWater() == groupIsWater) {
                             stack.emplace_back(pos.x, pos.y + 1);
                             spanAbove = true;
                         }
-                        else if (mBiomeGrid->getVertexForGeneration(index + markupWidth).isWater() != groupIsWater) {
+                        else if (mBiomeGrid->getVertexForGenerationFromBlockPos(pos + i16v2(0, 1)).isWater() != groupIsWater) {
                             isBorder = true;
                             spanAbove = false;
                         }
@@ -187,7 +186,7 @@ void MarkupGenerationStage::generateInitialMarkup()
                     }
                     ++pos.x;
                     ++index;
-                } while (pos.x < markupWidth && mBiomeGrid->getVertexForGeneration(index).isWater() == groupIsWater);
+                } while (pos.x < markupWidth && mBiomeGrid->getVertexForGenerationFromBlockPos(pos).isWater() == groupIsWater);
                 // Right side border
                 const i16v2 prevPos = i16v2(pos.x - 1, pos.y);
                 assert(currentBorderSet.size());
@@ -412,6 +411,6 @@ void MarkupGenerationStage::onFinished() {
     mMarkupGrid->setMarkupReady();
     LOG_DEBUG("Finished markup generation in {} ms with {} bodies", mTotalTimer.elapsedMs(), mTotalBodies);
 
-    GameSaveManager::get().saveWorldTemplate(*mWorldPtr);
+    GameSaveManager::get().saveWorld(*mWorldPtr, "debug_template");
     LOG_DEBUG("MarkupGenerationStage::onFinished()");
 }

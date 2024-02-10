@@ -71,7 +71,7 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 }
 
 
-IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH), mTotalPatches(SQ(mWidthPatches)) {
+IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES), mTotalPatches(SQ(mWidthPatches)) {
     initInternal();
 }
 
@@ -407,8 +407,8 @@ void IHeightmapGrid::initInternal() {
     for (HeightmapPatchID id = 0; id < mTotalPatches; ++id) {
         mHeightData[id].init(id);
     }
-    mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH, mWidthPatches);
-    mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH - 1;
+    mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH_TILES, mWidthPatches);
+    mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH_TILES - 1;
 }
 
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
@@ -466,9 +466,9 @@ f32 IHeightmapGrid::interpolateHeightAndNormalAtWorldPos(f32v2 worldPos, OUT f32
     worldPos = glm::clamp(worldPos, 0.0f, mMaxCoordinate);
 
     // Get the position and ID of this patch
-    const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH);
+    const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH_TILES, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH_TILES);
     const HeightmapPatchID blID = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
-    const i32v2 patchWorldCoords = patchGridCoords * HEIGHTMAP_PATCH_WIDTH;
+    const i32v2 patchWorldCoords = patchGridCoords * HEIGHTMAP_PATCH_WIDTH_TILES;
 
     // Get offset into the patch and the xy indices of the current quad
     const f32v2 offsetIntoPatch = worldPos - f32v2(patchWorldCoords);
@@ -625,9 +625,9 @@ template <bool THREAD_SAFE>
 f32 IHeightmapGrid::interpolateHeightAtWorldPos(f32v2 worldPos) const {
     worldPos = glm::clamp(worldPos, 0.0f, mMaxCoordinate);
     // Get the position and ID of this patch
-    const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH);
+    const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH_TILES, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH_TILES);
     const HeightmapPatchID blID = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
-    const i32v2 patchWorldCoords = patchGridCoords * HEIGHTMAP_PATCH_WIDTH;
+    const i32v2 patchWorldCoords = patchGridCoords * HEIGHTMAP_PATCH_WIDTH_TILES;
 
     // Get offset into the patch and the xy indices of the current quad
     const f32v2 offsetIntoPatch = worldPos - f32v2(patchWorldCoords);

@@ -18,21 +18,33 @@ BiomeGrid::~BiomeGrid() {
     }
 };
 
-const BiomeDef* BiomeGrid::getBiomeDefAtPoint(f32v2 worldPos) const {
-    const i32v2 blVertex = i32v2(worldPos) / BIOME_VERTEX_STRIDE;
-    if (blVertex.x < 0 || blVertex.y < 0 || blVertex.x >= (i32)mSpatialGrid.getGridWidthCells() || blVertex.y >= (i32)mSpatialGrid.getGridWidthCells()) [[unlikely]] {
+const BiomeDef* BiomeGrid::getBiomeDefAtPoint(i32v2 worldPos) const {
+
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWidthVerts * BIOME_VERTEX_STRIDE || worldPos.y >= mWidthVerts * BIOME_VERTEX_STRIDE) [[unlikely]] {
         return nullptr;
     }
 
-    const BiomeUniqueID uniqueId = mGrid[mSpatialGrid.getIDfromGridXY(blVertex)].biomeUniqueId;
+    i32v2 cellOffset;
+    ui32 id = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos, cellOffset);
+    cellOffset /= BIOME_VERTEX_STRIDE;
+
+    const BiomeUniqueID uniqueId = mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x].biomeUniqueId;
     if (uniqueId == BiomeUniqueID::INVALID) [[unlikely]] return nullptr;
     return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
 }
 
+BiomeVertex& BiomeGrid::getVertexForGenerationFromBlockPos(i32v2 blockPos) {
+    i32v2 cellOffset;
+    ui32 id = mSpatialGrid.getIDAndCellOffsetAtWorldPos(blockPos * BLOCK_WIDTH, cellOffset);
+    cellOffset /= BIOME_VERTEX_STRIDE;
+
+    return mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x];
+}
+
 void BiomeGrid::initInternal() {
     assert(mWidthVerts);
-    mSpatialGrid.init(BIOME_VERTEX_STRIDE, mWidthVerts);
-    mGrid.resize(SQ(mWidthVerts));
+    mSpatialGrid.init(BIOME_PATCH_WIDTH_VERTS * BLOCK_WIDTH, mWidthVerts / BIOME_PATCH_WIDTH_VERTS);
+    mGrid.resize(mSpatialGrid.getGridSizeCells());
     LOG_DEBUG("Biome grid allocated {} mb biome",
-        (mGrid.size() * sizeof(BiomeVertex)) / 1024.f / 1024.f);
+        (mGrid.size() * sizeof(BiomePatch)) / 1024.f / 1024.f);
 }

@@ -463,6 +463,7 @@
     <ClCompile Include="src\screens\ScreenState.cpp" />
     <ClCompile Include="src\screens\WorldGenScreen.cpp" />
     <ClCompile Include="src\serialization\GameSaveManager.cpp" />
+    <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp" />
     <ClCompile Include="src\text\NameManager.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
@@ -556,7 +557,6 @@
     <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
     <ClCompile Include="src\world\simulation\SimChunk.cpp" />
     <ClCompile Include="src\world\World.cpp" />
-    <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
     <ClCompile Include="src\world\WorldContextObject.cpp" />
@@ -905,6 +905,7 @@
     <ClInclude Include="src\screens\WorldGenScreen.h" />
     <ClInclude Include="src\serialization\BitseryExt.h" />
     <ClInclude Include="src\serialization\GameSaveManager.h" />
+    <ClInclude Include="src\serialization\gamesave\WorldSaveContext.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\NameManager.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
@@ -1053,10 +1054,10 @@
     <ClInclude Include="src\world\simulation\SimChunk.h" />
     <ClInclude Include="src\world\simulation\SimTask.h" />
     <ClInclude Include="src\world\World.h" />
-    <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
     <ClInclude Include="src\world\srv\HostHeightmapGrid.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
+    <ClInclude Include="src\world\WorldConstants.h" />
     <ClInclude Include="src\world\WorldContextObject.h" />
     <ClInclude Include="src\world\WorldDefaults.h" />
     <ClInclude Include="src\world\WorldDestroyer.h" />

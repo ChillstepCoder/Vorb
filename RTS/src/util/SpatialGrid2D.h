@@ -21,6 +21,7 @@ public:
 
     inline i32 getCellWidth() const { return mCellWidth; }
     inline i32 getGridWidthCells() const { return mGridWidthCells; }
+    inline i32 getGridSizeCells() const { return SQ(mGridWidthCells); }
 private:
     i32 mCellWidth = 0;
     i32 mGridWidthCells = 0;
