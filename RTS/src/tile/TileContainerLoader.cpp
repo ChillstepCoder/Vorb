@@ -8,6 +8,8 @@
 #include "pathfinding/NavWorld.h"
 #include "generation/ChunkGenerator.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "visibility/VisibilityManager.h"
 
 #include "tile/TileContainer.h"
@@ -24,7 +26,7 @@ void TileContainerLoader::loadChunk(TileContainer& container)
     assert(chunk);
     chunk->incRef();
 
-    Services::Threadpool::ref().addTask([chunk]() {
+    Services::Threadpool::ref().addTask([this, chunk]() {
         TileContainer& container = *chunk->mTileContainer;
         // Worker thread
         //
@@ -41,34 +43,35 @@ void TileContainerLoader::loadChunk(TileContainer& container)
         // Build visibility
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());
 
-    }, [chunk, this]() {
+        GameThreadTasks::getInstance().addGenericTask([this, chunk]() {
+            chunk->setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY); // Dormant?
+            // Ecosystem
+            chunk->getWorld().getFishEcosystem().initChunkFish(*chunk);
 
-        chunk->setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY); // Dormant?
-        // Ecosystem
-        chunk->getWorld().getFishEcosystem().initChunkFish(*chunk);
+            // Cache harvestables
+            chunk->mTileContainer->mHarvestableRegistry.refreshFromOwner();
 
-        // Cache harvestables
-        chunk->mTileContainer->mHarvestableRegistry.refreshFromOwner();
+            // Begin nav load
+            if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {
+                navWorld->markContainerNavDirty(chunk->mTileContainer);
+            }
+            else {
+                // TODO: THIS IS ONLY FOR EDITOR WORLD
+                chunk->mTileContainer->setDidInitNav();
+            }
 
-        // Begin nav load
-        if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {
-            navWorld->markContainerNavDirty(chunk->mTileContainer);
-        } else {
-            // TODO: THIS IS ONLY FOR EDITOR WORLD
-            chunk->mTileContainer->setDidInitNav();
-        }
+            // Begin vis load
+            mWorld.getVisibilityManager().initContainerVisibility(*chunk->mTileContainer);
 
-        // Begin vis load
-        mWorld.getVisibilityManager().initContainerVisibility(*chunk->mTileContainer);
+            // Tile container loaded
+            chunk->mTileContainer->setState(TileContainerState::READY);
 
-        // Tile container loaded
-        chunk->mTileContainer->setState(TileContainerState::READY);
+            // Dispatch load finished
+            TileContainerEvent loadFinishedEvent;
+            loadFinishedEvent.container = chunk->mTileContainer;
+            mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
-        // Dispatch load finished
-        TileContainerEvent loadFinishedEvent;
-        loadFinishedEvent.container = chunk->mTileContainer;
-        mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
-
-        chunk->decRef();
+            chunk->decRef();
+        });
     });
 }

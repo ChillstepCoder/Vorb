@@ -6,6 +6,9 @@
 
 #include "world/World.h"
 #include "world/host/HostWorldData.h"
+#include "serialization/gamesave/WorldSaveContext.h"
+
+#include "services/Services.h"
 
 struct WorldTemplateHeaderData {
     ui32 version = 0;
@@ -28,7 +31,8 @@ GameSaveManager::GameSaveManager() {
 
 GameSaveManager::~GameSaveManager() {
     mQuitThread = true;
-    mSaveFuncs.enqueue([]() {});
+    mDiskIOTasks.enqueue([]() {});
+    while (mIsSavingWorld) Sleep(4);
     mThread->join();
 }
 
@@ -37,12 +41,45 @@ GameSaveManager& GameSaveManager::get() {
     return sInstance;
 }
 
-bool GameSaveManager::saveWorld(World& world, const nString& fileName)
-{
+bool GameSaveManager::saveWorld(World& world, const nString& fileName, bool blockUntilFinished) {
     if (mIsSavingWorld) {
         return false;
     }
+    PreciseTimer timer2;
+    LOG_INFO("Saving world {}", fileName.c_str());
     mIsSavingWorld = true;
+    mCurrentWorldSaveContext = &world.getSaveContext();
+    mCurrentWorldSaveContext->beginSave(getSavesDirectory() / fileName);
+
+    mCurrentWorldSaveContext->registerWorldSaveListeners(mSaveEventListeners);
+    mCurrentWorldSaveContext->addSaveEndListener(mSaveEventListeners, [this](const WorldSaveEvent& e) {
+        mSaveEventListeners.reset();
+        mIsSavingWorld = false;
+    });
+
+    WorldMarkupGrid& markupGrid = world.getMarkupGrid();
+    SimChunkTileGrid& tileGrid = world.getSimTileGrid();
+
+    PreciseTimer timer;
+    mCurrentWorldSaveContext->saveHeights();
+    LOG_DEBUG("Heights took {} ms", timer.stop()); timer.start();
+    mCurrentWorldSaveContext->saveBiomes();
+    LOG_DEBUG("Biomes took {} ms", timer.stop()); timer.start();
+    mCurrentWorldSaveContext->saveChunks();
+    LOG_DEBUG("Chunks took {} ms", timer.stop()); timer.start();
+    mCurrentWorldSaveContext->saveMarkupIfNotAlreadySaved();
+    LOG_DEBUG("Markup took {} ms", timer.stop()); timer.start();
+
+    LOG_INFO("World serialize took {} ms", timer2.stop());
+
+    // We can now finish saving
+    mCurrentWorldSaveContext->notifyAllDataRegistered();
+
+    if (blockUntilFinished) {
+        while (mIsSavingWorld) {
+            Sleep(4);
+        }
+    }
 }
 
 bool GameSaveManager::saveWorldTemplate(World& world) {
@@ -120,19 +157,29 @@ bool GameSaveManager::loadWorldTemplate(HostWorldData& worldData) {
     return true;
 }
 
+void GameSaveManager::notifyWorldSaveFinished() {
+    assert(mIsSavingWorld);
+    mIsSavingWorld = false;
+    // TODO: Dispatch event?
+}
+
+fs::path GameSaveManager::getSavesDirectory() {
+    fs::path currentPath = fs::current_path();
+    return currentPath / "saves" / "world";
+}
+
 fs::path GameSaveManager::getTemplatesDirectory() {
     fs::path currentPath = fs::current_path();
     return currentPath / "saves" / "templates";
 }
 
 void GameSaveManager::saveThreadFunc() {
-    SIM_THREAD_ID = std::this_thread::get_id();
-    setThreadName("Sim");
+    setThreadName("Disk IO");
 
     constexpr size_t BULK_DEQUEUE_COUNT = 64;
     std::function<void()> func;
     while (!mQuitThread.load()) {
-        mSaveFuncs.wait_dequeue(func);
+        mDiskIOTasks.wait_dequeue(func);
         func();
     }
 }
@@ -149,7 +196,7 @@ void GameSaveManager::saveWorldTemplateV0(World& world) {
     serializeWorldTemplateData(world, templateData, 0);
 
     LOG_INFO("  Finished in {} ms - Sending to save thread", timer.elapsedMs());
-    mSaveFuncs.enqueue([this, &world, templateData = std::move(templateData)]() {
+    mDiskIOTasks.enqueue([this, &world, templateData = std::move(templateData)]() {
         const fs::path templatesFolder = getTemplatesDirectory();
         if (!fs::exists(templatesFolder)) {
             if (!fs::create_directories(templatesFolder)) {
@@ -174,7 +221,6 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
     BiomeGrid& biomeGrid = world.getBiomeGrid();
     WorldMarkupGrid& markupGrid = world.getMarkupGrid();
     SimChunkTileGrid& tileGrid = world.getSimTileGrid();
-    assert(heightGrid.mHeightData);
 
     templateData.reserve(START_SIZE);
 

@@ -504,9 +504,8 @@ void WorldEditorPanel::updateTerrainEdit() {
             task->editState = mTerrainEditState;
             task->activeWorld = mActiveWorld;
 
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+            GameThreadTasks::getInstance().addGenericTask([task]() {
                 PROFILE_SCOPE("WorldEditorPanel::updateTerrainEdit~lambda");
-                const TerrainEditTask* task = static_cast<TerrainEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
                 const BrushSettings& brushSettings = *task->brushSettings;
 
@@ -533,7 +532,7 @@ void WorldEditorPanel::updateTerrainEdit() {
                 }
 
                 delete task;
-            }, task);
+            });
         }
     }
 }
@@ -564,9 +563,8 @@ void WorldEditorPanel::updateRoadEdit()
             task->editState = mRoadEditState;
             task->activeWorld = mActiveWorld;
 
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+            GameThreadTasks::getInstance().addGenericTask([task]() {
                 PROFILE_SCOPE("WorldEditorPanel::updateTerrainEdit~lambda");
-                const RoadEditTask* task = static_cast<RoadEditTask*>(vTask);
                 const PhysHitResult& hitResult = task->hitResult;
                 const BrushSettings& brushSettings = *task->brushSettings;
 
@@ -595,7 +593,7 @@ void WorldEditorPanel::updateRoadEdit()
                 }
 
                 delete task;
-            }, task);
+            });
         }
     }
 }
@@ -623,8 +621,7 @@ void WorldEditorPanel::updateGrassEdit() {
             task->editState = mGrassEditState;
             task->selectedGrass = mSelectedGrass;
 
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
-                const GrassEditTask* task = static_cast<GrassEditTask*>(vTask);
+            GameThreadTasks::getInstance().addGenericTask([task]() {
                 const PhysHitResult& hitResult = task->hitResult;
                 const BrushSettings& brushSettings = *task->brushSettings;
                 World* world = task->editor->mActiveWorld;
@@ -655,7 +652,7 @@ void WorldEditorPanel::updateGrassEdit() {
                 }
 
             delete task;
-            }, task);
+            });
         }
     }
 }
@@ -675,8 +672,7 @@ void WorldEditorPanel::updateTileEdit() {
 
             typedef std::tuple<ChunkID, TileIndex, TileID, World*> TaskTuple;
             TaskTuple* taskData = new TaskTuple(chunkID, tileIndex, mSelectedTile, mActiveWorld);
-            GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
-                TaskTuple* taskData = (TaskTuple*)v;
+            GameThreadTasks::getInstance().addGenericTask([taskData]() {
                 ChunkID chunkId = std::get<0>(*taskData);
                 Chunk& chunk = std::get<3>(*taskData)->getChunkGrid().getChunk(chunkId);
                 if (chunk.isDataReady()) {
@@ -686,7 +682,7 @@ void WorldEditorPanel::updateTileEdit() {
                     tileContainer.setTileLayer(tileIndex, data);
                 }
                 delete taskData;
-            }, taskData);
+            });
         }
     }
     else {
@@ -698,8 +694,10 @@ void WorldEditorPanel::updateTileEdit() {
 }
 
 void WorldEditorPanel::updateEntityEdit() {
-    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && mSelectedEntity.isValid()) {
-        GameThreadTasks::getInstance().addEntityCreateTask(mHitResult.mPosition, mSelectedEntity, true);
+    if (mActiveWorld) {
+        if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && mSelectedEntity.isValid()) {
+            GameThreadTasks::getInstance().addEntityCreateTask(*mActiveWorld, mHitResult.mPosition, mSelectedEntity, true);
+        }
     }
 }
 
@@ -714,11 +712,10 @@ void WorldEditorPanel::updateCityEdit() {
         CityCreateTask* task = new CityCreateTask;
         task->worldPos = f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y);
         task->world = mActiveWorld;
-        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
-            CityCreateTask* task = static_cast<CityCreateTask*>(vTask);
+        GameThreadTasks::getInstance().addGenericTask([task]() {
             task->world->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
             delete task;
-        }, task);
+        });
     }
 }
 
@@ -740,8 +737,7 @@ void WorldEditorPanel::updateBuildingEdit() {
         task->selectedBuildingId = mSelectedBuilding;
         task->world = mActiveWorld;
 
-        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
-            BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
+        GameThreadTasks::getInstance().addGenericTask([task]() {
             const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
             BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
             const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
@@ -752,7 +748,7 @@ void WorldEditorPanel::updateBuildingEdit() {
             }
             CityBuilder::debugBuildInstant(*bp);
             delete task;
-        }, task);
+        });
 
     }
 }

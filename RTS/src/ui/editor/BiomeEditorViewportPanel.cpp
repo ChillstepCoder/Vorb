@@ -62,7 +62,7 @@ void BiomeEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) {
     // Tell the world to follow our camera
     if (mEditorWorld) {
         const f32v2 cameraPos = mCamera->getPosition();
-        GameThreadTasks::getInstance().addGenericTaskWithCapture([cameraPos, editorWorld = mEditorWorld.get()](GameThread&) {
+        GameThreadTasks::getInstance().addGenericTask([cameraPos, editorWorld = mEditorWorld.get()]() {
             editorWorld->setLoadCenter(cameraPos);
         });
     }
@@ -301,7 +301,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     mEditorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);
     LOG_CRITICAL("Allocate world {}", timer.stop()); timer.start();
 
-    GameThreadTasks::getInstance().addGenericTaskWithCapture([editorWorld = mEditorWorld.get()](GameThread&) {
+    GameThreadTasks::getInstance().addGenericTask([editorWorld = mEditorWorld.get()]() {
         editorWorld->onWorldBeginGame(f32v2(0.0f));
     });
 

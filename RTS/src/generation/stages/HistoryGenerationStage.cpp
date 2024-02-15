@@ -136,12 +136,10 @@ void HistoryGenerationStage::handleCorruptSpawn(BiomeCorruptions type) {
             glTextureSubImage2D(mBiomeTexture, 0, x, y, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &vert.biomeUniqueId);
             mMappedBiomes[y * widthVerts + x] = (ui32)vert.biomeUniqueId;
             glFlushMappedNamedBufferRange(mBiomeSSBO, y * widthVerts + x, sizeof(ui32));
-            LOG_CRITICAL("Added corrupt biome at {} {}", x * BIOME_VERTEX_STRIDE, y * BIOME_VERTEX_STRIDE);
             checkGlError("HistoryGenerationStage::handleCorruptSpawn");
             return;
         }
     } while (retryCount++ < MAX_RETRY_COUNT);
-    LOG_CRITICAL("FAILED TO ADD CORRUPT BIOME");
 }
 
 void HistoryGenerationStage::updateBiomes()

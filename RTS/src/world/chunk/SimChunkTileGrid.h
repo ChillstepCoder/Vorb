@@ -65,6 +65,7 @@ struct SimChunkTileData {
 };
 
 class SimChunkTileContainer {
+    friend class WorldSaveContext;
     friend class SimChunkTileGrid;
     friend class ChunkGenerator;
 public:
@@ -76,29 +77,29 @@ private:
     std::unique_ptr<SimChunkTileData> data;
     SimChunkTileContainerState state = SimChunkTileContainerState::NONE;
     ChunkID chunkId;
+    mutable std::atomic_flag isSaveUpToDate = ATOMIC_FLAG_INIT;
 
-    BINARY_SERIALIZE() {
-        bool isRead = false;
-        if (state == SimChunkTileContainerState::NONE) {
-            isRead = true;
+    BINARY_SERIALIZE();
+    BINARY_SERIALIZE_INPUT() {
+        s.value1b(state);
+        if (state == SimChunkTileContainerState::Allocated) {
+            allocate();
+            s.object(*data);
         }
-        SimChunkTileContainerState sstate = state;
-        s.value1b(sstate);
-        if (isRead) {
-            if (sstate == SimChunkTileContainerState::Allocated) {
-                allocate();
-                s.object(*data);
-            }
-        }
-        else if (data) {
-            // Write
-           s.object(*data);
-        }
-        state = sstate;
     }
+    BINARY_SERIALIZE_OUTPUT() {
+        s.value1b(state);
+        if (data) {
+            s.object(*data);
+        }
+    }
+
+private:
+    
 };
 
 class SimChunkTileGrid {
+    friend class WorldSaveContext;
 public:
     SimChunkTileGrid(ui32 worldWidthTiles);
     ~SimChunkTileGrid();

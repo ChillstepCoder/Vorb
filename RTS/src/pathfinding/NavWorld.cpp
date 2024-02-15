@@ -115,12 +115,12 @@ void NavWorld::updateNavThread()
                     if (externalEdges) {
                         delete externalEdges;
                     }
-                }, nullptr);
+                });
             }
             else {
                 Services::Threadpool::ref().addTask([this, container]() {
                     buildNavGraphForContainer(*container, nullptr);
-                }, nullptr);
+                });
             }
         }
     }

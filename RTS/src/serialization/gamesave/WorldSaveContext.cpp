@@ -2,13 +2,471 @@
 #include "WorldSaveContext.h"
 
 #include "world/World.h"
+#include "world/host/HostWorldData.h"
+// TODO: DiskIOThread
+#include "serialization/GameSaveManager.h"
+
+//https://github.com/facebook/zstd
+#include <zstd.h>
+
+const char* REGION_EXTENSION = ".rdat";
 
 WorldSaveContext::WorldSaveContext(World& world) :
-    mWorld(world),
-    mHeightHeader(mWorld.getWidthTiles()),
-    mBiomeFiles(mWorld.getWidthTiles()) {
-    LOG_INFO("  Height region count: {} - Patches Per Region - {}", mHeightHeader.getRegionCount(), mHeightHeader.getPatchesPerRegion());
-    LOG_INFO("  Biome region count: {} - Patches Per Region - {}", mBiomeFiles.getRegionCount(), mBiomeFiles.getPatchesPerRegion());
+    mWorld(world) {
+    mRegionFileClusters[e_cast(RegionType::Height)] = RegionFileCluster(mWorld.getWidthTiles(), HEIGHTMAP_PATCH_WIDTH_TILES, HEIGHT_REGION_WIDTH_PATCHES, "height", 1024);
+    mRegionFileClusters[e_cast(RegionType::Biome)] = RegionFileCluster(mWorld.getWidthTiles(), BIOME_PATCH_WIDTH_TILES, BIOME_REGION_WIDTH_PATCHES, "biome", 64);
+    mRegionFileClusters[e_cast(RegionType::Chunk)] = RegionFileCluster(mWorld.getWidthTiles(), CHUNK_WIDTH, CHUNK_REGION_WIDTH_CHUNKS, "chunk", 1024);
+
+    LOG_INFO("  Height region count: {} - Patches Per Region - {}", mRegionFileClusters[e_cast(RegionType::Height)].getRegionCount(), mRegionFileClusters[e_cast(RegionType::Height)].getPatchesPerRegion());
+    LOG_INFO("  Biome region count: {} - Patches Per Region - {}", mRegionFileClusters[e_cast(RegionType::Biome)].getRegionCount(), mRegionFileClusters[e_cast(RegionType::Biome)].getPatchesPerRegion());
+    LOG_INFO("  Chunk region count: {} - Chunks Per Region - {}", mRegionFileClusters[e_cast(RegionType::Chunk)].getRegionCount(), mRegionFileClusters[e_cast(RegionType::Chunk)].getPatchesPerRegion());
+    static_assert(e_count(RegionType) == 3);
 }
 
 WorldSaveContext::~WorldSaveContext() = default;
+
+void WorldSaveContext::beginSave(const fs::path& savePath) {
+    assert(mCurrentSavePath.empty());
+    mCurrentSavePath = savePath;
+}
+
+void WorldSaveContext::saveHeights() {
+    assert(!mCurrentSavePath.empty());
+
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+    assert(heightGrid.mHeightData);
+    const ui32 regionCount = getRegionCount(RegionType::Height);
+    for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
+        ui32 pendingThisRegion = 0;
+        forEachPatchInRegion(RegionType::Height, regionId, [this, &heightGrid, &pendingThisRegion](ui32 heightmapPatchID, RegionPatchID regionPatchId) {
+            HeightmapPatch& patch = heightGrid.mHeightData[heightmapPatchID];
+            if (patch.isSaveUpToDate.test_and_set() == false) {
+                constexpr ui32 SSIZE = HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight);
+                BBuffer buffer(SSIZE);
+                const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(buffer, patch);
+                buffer.resize(writtenBytes);
+                assert(writtenBytes == SSIZE);
+                addRegionPatchCompressAndSaveTask(RegionType::Height, regionPatchId, std::move(buffer));
+                ++pendingThisRegion;
+            }
+        });
+        if (pendingThisRegion) {
+            notifyRegionDataIncoming(RegionType::Height, regionId, pendingThisRegion);
+        }
+    }
+}
+
+void WorldSaveContext::saveBiomes() {
+    BiomeGrid& biomeGrid = mWorld.getBiomeGrid();
+    const ui32 regionCount = getRegionCount(RegionType::Biome);
+    for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
+        ui32 pendingThisRegion = 0;
+        forEachPatchInRegion(RegionType::Biome, regionId, [this, &biomeGrid, &pendingThisRegion](ui32 biomePatchId, RegionPatchID regionPatchId) {
+            BiomePatch& patch = biomeGrid.mGrid[biomePatchId];
+            if (biomeGrid.mPatchSavesUpToDate[biomePatchId].test_and_set() == false) {
+                const ui32 SSIZE = patch.size() * sizeof(BiomeVertex) + 4;
+                BBuffer buffer(SSIZE);
+                bitsery::Serializer<BOutputAdapter> s{ BOutputAdapter{ buffer } };
+                std::span<BiomeVertex> bSpan(patch.data(), patch.size());
+                s.ext(bSpan, bitsery::ext::PodStructSpan{});
+                s.adapter().flush();
+                buffer.resize(s.adapter().writtenBytesCount());
+                assert(buffer.size() == SSIZE);
+                addRegionPatchCompressAndSaveTask(RegionType::Biome, regionPatchId, std::move(buffer));
+                ++pendingThisRegion;
+            }
+        });
+        if (pendingThisRegion) {
+            notifyRegionDataIncoming(RegionType::Biome, regionId, pendingThisRegion);
+        }
+    }
+}
+
+void WorldSaveContext::saveChunks() {
+    SimChunkTileGrid& simGrid = mWorld.getSimTileGrid();
+    const ui32 regionCount = getRegionCount(RegionType::Chunk);
+    for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
+        ui32 pendingThisRegion = 0;
+        forEachPatchInRegion(RegionType::Chunk, regionId, [this, &simGrid, &pendingThisRegion](ui32 simChunkId, RegionPatchID regionPatchId) {
+            SimChunkTileContainer& patch = simGrid.mChunkData[simChunkId];
+            if (patch.isSaveUpToDate.test_and_set() == false) {
+                BBuffer buffer;
+                // TODO: Re-evaluate later
+                buffer.reserve(24000);
+                const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(buffer, patch);
+                /*if (writtenBytes > 24000) [[unlikely]] {
+                    LOG_CRITICAL(" B {}", writtenBytes);
+                }*/
+                buffer.resize(writtenBytes);
+                buffer.shrink_to_fit();
+                addRegionPatchCompressAndSaveTask(RegionType::Chunk, regionPatchId, std::move(buffer));
+                ++pendingThisRegion;
+            }
+        });
+        if (pendingThisRegion) {
+            notifyRegionDataIncoming(RegionType::Chunk, regionId, pendingThisRegion);
+        }
+    }
+}
+
+void WorldSaveContext::saveMarkupIfNotAlreadySaved() {
+    fs::path savePath = mCurrentSavePath / "markup" / "mkp.dat";
+    // Markup is const so only should be saved initially
+    if (fs::exists(savePath)) {
+        return;
+    }
+
+    if (!fs::exists(savePath.parent_path())) {
+        if (!fs::create_directories(savePath.parent_path())) {
+             panic("Failed to create {} directory. Insufficient permissions?", savePath.parent_path().string());
+        }
+    }
+
+    WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
+    // 500MB usually more than enough
+    BBuffer buffer(500000000);
+    const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(buffer, markupGrid);
+    buffer.resize(writtenBytes);
+
+    ++mTotalIncomingData;
+    Services::Threadpool::ref().addTask([this, buffer = std::move(buffer), savePath = std::move(savePath)]() {
+        BBuffer compressed = compressData(buffer);
+        GameSaveManager::get().addDiskIOTask([this, compressed = std::move(compressed), savePath = std::move(savePath)]() {
+            
+            // Dump markup to disk
+            std::ofstream file(savePath, std::ios::binary);
+            if (!file.is_open()) {
+                panic("Failed to open markup file for writing: {}", savePath.string());
+            }
+            file.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
+            file.close();
+
+            if (mAllIncomingDataRegistered && ++mTotalSavedData == mTotalIncomingData) {
+                // Mark done
+                endSave();
+            }
+        });
+    });
+}
+
+void WorldSaveContext::notifyAllDataRegistered() {
+    assert(!mAllIncomingDataRegistered);
+    mAllIncomingDataRegistered = true;
+    // Pretty unlikely but possible for small saves
+    if (mTotalSavedData == mTotalIncomingData) {
+        endSave();
+    }
+}
+
+ui32 WorldSaveContext::getRegionCount(RegionType type) const {
+    return mRegionFileClusters[e_cast(type)].getRegionCount();
+}
+
+void WorldSaveContext::forEachPatchInAllRegions(RegionType type, std::function<void(ui32 patchId, RegionPatchID regionPatchId)> callback) {
+    RegionFileCluster& cluster = mRegionFileClusters[e_cast(type)];
+    const ui32 regionCount = cluster.getRegionCount();
+    for (RegionID i = 0; i < regionCount; ++i) {
+        forEachPatchInRegion(type, i, callback);
+    }
+}
+
+// TODO: Evaluate if templated functor is better https://stackoverflow.com/questions/18365532/should-i-pass-an-stdfunction-by-const-reference
+void WorldSaveContext::forEachPatchInRegion(RegionType type, RegionID regionId, std::function<void(ui32 patchId, RegionPatchID regionPatchId)> callback) {
+    RegionFileCluster& cluster = mRegionFileClusters[e_cast(type)];
+    const ui32 worldWidthRegions = cluster.getWorldWidthRegions();
+    const ui32 regionWidthPatches = cluster.getRegionWidthPatches();
+    const ui32 worldWidthPatches = worldWidthRegions * regionWidthPatches;
+    const ui32 regionXOff = (regionId / worldWidthRegions) * regionWidthPatches;
+    const ui32 regionYOff = (regionId % worldWidthRegions) * regionWidthPatches;
+    for (ui32 y = 0; y < regionWidthPatches; ++y) {
+        const ui32 patchY = regionYOff + y;
+        for (ui32 x = 0; x < regionWidthPatches; ++x) {
+            const ui32 patchId = patchY * worldWidthPatches + regionXOff + x;
+            callback(patchId, RegionPatchID{ regionId, y * regionWidthPatches + x });
+        }
+    };
+    static_assert(e_count(RegionType) == 3);
+}
+
+void WorldSaveContext::notifyRegionDataIncoming(RegionType type, RegionID regionId, ui32 count) {
+    RegionFileClusterWriteContext& writeContext = mWriteContexts[e_cast(type)];
+    mTotalIncomingData += count;
+    bool shouldDispatchIO = false;
+    {
+        RegionPendingWriteData* writeData;
+
+        std::lock_guard lock(writeContext.mutex);
+        auto&& it = writeContext.pendingWriteData.find(regionId);
+        if (it != writeContext.pendingWriteData.end()) {
+            writeData = &it->second;
+            // Check if we already have all regions ready
+            if (writeData->pendingWrites.size() == count) {
+                shouldDispatchIO = true;
+            }
+        }
+        else {
+            writeData = &writeContext.pendingWriteData.emplace(regionId, RegionPendingWriteData{}).first->second;
+            writeData->pendingWrites.reserve(mRegionFileClusters[e_cast(type)].getPatchesPerRegion());
+        }
+        assert(writeData->incomingWrites == 0);
+        writeData->incomingWrites = count;
+        
+    }
+    if (shouldDispatchIO) {
+        dispatchRegionSaveTask(type, regionId);
+    }
+}
+
+void WorldSaveContext::onRegionPatchDataReady(RegionType type, RegionPatchID patchId, BBuffer&& bbuffer) {
+    RegionFileClusterWriteContext& writeContext = mWriteContexts[e_cast(type)];
+    bool shouldDispatchIO = false;
+    {
+        RegionPendingWriteData* writeData;
+
+        std::lock_guard lock(writeContext.mutex);
+        auto&& it = writeContext.pendingWriteData.find(patchId.regionId);
+        if (it != writeContext.pendingWriteData.end()) {
+            writeData = &it->second;
+            // Check if we already have all regions ready
+            if (writeData->pendingWrites.size() + 1 == writeData->incomingWrites) {
+                shouldDispatchIO = true;
+            }
+        }
+        else {
+            writeData = &writeContext.pendingWriteData.emplace(patchId.regionId, RegionPendingWriteData{}).first->second;
+            writeData->pendingWrites.reserve(mRegionFileClusters[e_cast(type)].getPatchesPerRegion());
+        }
+
+        writeData->pendingWrites.emplace(patchId.regionPatchIndex, std::move(bbuffer));
+    }
+    if (shouldDispatchIO) {
+        dispatchRegionSaveTask(type, patchId.regionId);
+    }
+}
+
+void WorldSaveContext::dispatchRegionSaveTask(RegionType type, RegionID regionId) {
+    // TODO: This could just be DiskIOThread interface instead of a backreference to GameSaveManager
+    GameSaveManager::get().addDiskIOTask([this, type, regionId = regionId]() {
+        updateRegionFile(type, regionId);
+
+        RegionFileClusterWriteContext& writeContext = mWriteContexts[e_cast(type)];
+        RegionPendingWriteData& writeData = writeContext.pendingWriteData[regionId];
+        mTotalSavedData += writeData.pendingWrites.size();
+        //LOG_INFO("Save {} {} {} {}", (int)type, mTotalSavedData, mTotalIncomingData, writeData.pendingWrites.size());
+        if (mAllIncomingDataRegistered && mTotalSavedData == mTotalIncomingData) {
+            // Mark done
+            endSave();
+        }
+    });
+}
+
+void WorldSaveContext::addRegionPatchCompressAndSaveTask(RegionType type, RegionPatchID regionPatchId, BBuffer&& bbuffer) {
+    Services::Threadpool::ref().addTask([this, buffer = std::move(bbuffer), type, regionPatchId]() mutable {
+        BBuffer compressed;
+        if (buffer.size() > 0) {
+            compressed = compressData(buffer);
+            BBuffer().swap(buffer);
+        }
+        onRegionPatchDataReady(type, regionPatchId, std::move(compressed));
+    });
+}
+
+BBuffer WorldSaveContext::compressData(const BBuffer& bbuffer) {
+    BBuffer compressed(ZSTD_compressBound(bbuffer.size()));
+    // TODO: Dictionary compression for better speed and ratio
+    size_t const cSize = ZSTD_compress(compressed.data(), compressed.size(), bbuffer.data(), bbuffer.size(), 1);
+    if (ZSTD_isError(cSize)) {
+        panic("ZSTD_compress failed during height save");
+    }
+    else {
+        compressed.resize(cSize);
+    }
+    // Improves speed by preventing too much memory from being held at once
+    compressed.shrink_to_fit();
+    return compressed;
+}
+
+DeserializedRegionFileData WorldSaveContext::readRegionFile(std::fstream& file, ui32 fileSize) {
+    if (!file.is_open() || !fileSize) {
+        return DeserializedRegionFileData();
+    }
+
+    DeserializedRegionFileData data;
+    data.fileBytes.resize(fileSize);
+    file.seekg(0);
+    file.read(reinterpret_cast<char*>(data.fileBytes.data()), fileSize);
+    bitsery::quickDeserialization(BInputAdapter{ data.fileBytes.begin(), fileSize }, data.header);
+    return data;
+}
+
+i32 getDesiredPages(size_t bufferSize, ui32 pageSize) {
+    return (bufferSize == 0) ? 0 : (i32)((bufferSize + pageSize - 1) / pageSize);
+}
+
+void WorldSaveContext::updateRegionFile(RegionType type, RegionID regionId) {
+    RegionFileCluster& fileCluster = mRegionFileClusters[e_cast(type)];
+    RegionFileClusterWriteContext& writeContext = mWriteContexts[e_cast(type)];
+    RegionPendingWriteData& writeData = writeContext.pendingWriteData[regionId];
+    RegionFileHeader& header = fileCluster.mRegionHeaders[regionId];
+    const ui32 pageSize = fileCluster.getPageSize();
+    const ui32 headerSizeBytes = header.getHeaderSerializeSizeBytes();
+    //TODO: Detect if file must be resized, save file data to disk
+    //TODO: Only append starting at the first dirty patch instead of rewriting the whole file
+    const fs::path directoryPath = mCurrentSavePath / fileCluster.folderName;
+    if (!fs::exists(directoryPath)) {
+        if (!fs::create_directories(directoryPath)) {
+            panic("Failed to create {} directory. Insufficient permissions?", directoryPath.string());
+        }
+    }
+
+    fs::path regionPath = directoryPath / (std::to_string(regionId) + REGION_EXTENSION);
+
+    RegionPatchIndex firstDirtyAllocation = UINT32_MAX;
+    ui32 totalDesiredPages = 0;
+
+    // Detect first dirty allocation position
+    for (auto& [patchId, buffer] : writeData.pendingWrites) {
+        const i32 desiredPages = getDesiredPages(buffer.size(), pageSize);
+        totalDesiredPages += desiredPages;
+        RegionPatchDesc& desc = header.patches[patchId];
+        // We only shrink allocation if we are a whole page smaller to prevent ping ponging
+        if (firstDirtyAllocation == UINT32_MAX && (desiredPages > desc.mAllocatedPages || desiredPages < desc.mAllocatedPages - 1)) [[unlikely]] {
+            firstDirtyAllocation = patchId;
+        }
+    }
+
+    // Remove files that are empty
+    if (totalDesiredPages == 0) {
+        fs::remove(regionPath);
+        return;
+    }
+
+    const ui32 totalDesiredFileSize = headerSizeBytes + totalDesiredPages * pageSize;
+
+    std::fstream file;
+    if (firstDirtyAllocation == UINT32_MAX) {
+        assert(fs::exists(regionPath));
+        file.open(regionPath, std::ios::binary | std::ios::in | std::ios::out);
+        // Case 1: Simple and fast - no reallocations are needed, we can just serialize dirty parts and update sizes
+        // this case ideally is usually what happens thanks to PAGE_SIZE being large enough
+        for (auto& [patchId, buffer] : writeData.pendingWrites) {
+            RegionPatchDesc& desc = header.patches[patchId];
+            desc.mAllocatedBytes = buffer.size();
+            file.seekp(desc.mStartByte);
+            file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+        }
+    }
+    else {
+        // Case 2: We need to reallocate parts of the file
+        // Resize the file if needed and open
+        DeserializedRegionFileData previousFileData;
+        const bool fileExisted = fs::exists(regionPath);
+        if (!fileExisted || totalDesiredFileSize >= fs::file_size(regionPath)) {
+            if (fileExisted) {
+                file.open(regionPath, std::ios::binary | std::ios::in | std::ios::out);
+                previousFileData = readRegionFile(file, fs::file_size(regionPath)); 
+            }
+            else {
+                file.open(regionPath, std::ios::binary | std::ios::out);
+            }
+            if (!file.is_open()) {
+                panic("Failed to open region file for writing: {}", regionPath.string());
+            }
+            file.seekp(totalDesiredFileSize - 1);
+            file.write("", 1);
+            file.flush();
+        }
+        else {
+            file.open(regionPath, std::ios::binary | std::ios::in | std::ios::out);
+            if (!file.is_open()) {
+                panic("Failed to open region file for writing: {}", regionPath.string());
+            }
+            previousFileData = readRegionFile(file, fs::file_size(regionPath));
+            if (totalDesiredFileSize != fs::file_size(regionPath)) {
+                fs::resize_file(regionPath, totalDesiredFileSize);
+            }
+        }
+
+        // Helper for writing previous unmodified patch data to disk
+        auto writePreviousPatchData = [&file, &previousFileData, pageSize](RegionFileHeader& header, ui32& startByte, ui32 startPatchId, ui32 termPatchId) {
+            for (ui32 prev = startPatchId; prev < termPatchId; ++prev) {
+                RegionPatchDesc& prevDesc = header.patches[prev];
+                prevDesc = previousFileData.header.patches[prev];
+                prevDesc.mStartByte = startByte;
+                if (prevDesc.mAllocatedPages) {
+                    std::span<uint8_t> prevBytes = previousFileData.getPatchBytes(prev);
+                    file.seekp(startByte);
+                    file.write(reinterpret_cast<char*>(prevBytes.data()), prevBytes.size());
+                    startByte += prevDesc.mAllocatedPages * pageSize;
+                }
+            }
+        };
+
+        ui32 unmodifiedStartPatchId = 0;
+        ui32 startByte = headerSizeBytes;
+        for (auto& [patchId, buffer] : writeData.pendingWrites) {
+            RegionPatchDesc& desc = header.patches[patchId];
+            desc.mAllocatedBytes = buffer.size();
+            desc.mStartByte = startByte;
+            if (patchId < firstDirtyAllocation) {
+                // Just write directly if we haven't resized yet
+                file.seekp(startByte);
+                file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+            }
+            else {
+                // Write unmodified patches from previous file
+                if (previousFileData.isValid()) {
+                    writePreviousPatchData(header, startByte, unmodifiedStartPatchId, patchId);
+                }
+                // Write dirty patch
+                desc.mAllocatedPages = getDesiredPages(buffer.size(), pageSize);
+                if (desc.mAllocatedPages) {
+                    file.seekp(startByte);
+                    file.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+
+                    startByte += desc.mAllocatedPages * pageSize;
+                }
+                else {
+                    assert(desc.mAllocatedBytes == 0);
+                }
+            }
+            unmodifiedStartPatchId = patchId + 1;
+        }
+        // Write trailing patches
+        if (previousFileData.isValid()) {
+            writePreviousPatchData(header, startByte, unmodifiedStartPatchId, header.patches.size());
+        }
+    }
+    
+    // Update header last
+    // Serialize the entire header every time
+    // TODO: Is seeking and updating dirty more efficient?
+    BBuffer headerBuffer;
+    headerBuffer.resize(headerSizeBytes);
+    const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(headerBuffer, header);
+    assert(writtenBytes == headerSizeBytes);
+    file.seekp(0);
+    file.write(reinterpret_cast<char*>(headerBuffer.data()), headerSizeBytes);
+}
+
+void WorldSaveContext::endSave() {
+    // In case we end save on main thread and in worker thread (very rare race condition)
+    std::lock_guard lock(mEndSaveMutex);
+
+    if (mCurrentSavePath.empty()) {
+        return;
+    }
+
+    WorldSaveEvent evnt;
+    evnt.savePath = mCurrentSavePath;
+
+    std::swap(mPrevSavePath, mCurrentSavePath);
+    mCurrentSavePath.clear();
+    mAllIncomingDataRegistered = false;
+
+    for (auto&& context : mWriteContexts) {
+        std::lock_guard lock(context.mutex);
+        context.pendingWriteData.clear();
+    }
+    dispatchSaveEnd(evnt);
+}

@@ -60,3 +60,13 @@ private: \
   friend bitsery::Access; \
   template <typename S>  \
   void serialize(S& s)
+
+// Must have BINARY_SERIALIZE(); defined first.
+#define BINARY_SERIALIZE_INPUT() \
+  template <> \
+  void serialize<bitsery::Deserializer<BInputAdapter>>(bitsery::Deserializer<BInputAdapter>& s)
+
+// Must have BINARY_SERIALIZE(); defined first.
+#define BINARY_SERIALIZE_OUTPUT() \
+  template <> \
+  void serialize<bitsery::Serializer<BOutputAdapter>>(bitsery::Serializer<BOutputAdapter>& s)

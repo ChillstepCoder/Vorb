@@ -22,7 +22,7 @@ vcore::ThreadPool::~ThreadPool() {
         mWorkers[i]->mStop.store(true);
     }
     for (size_t i = 0; i < mWorkers.size(); i++) {
-        addTask(nullptr, nullptr);
+        addTask(nullptr);
         --mActiveThreads;
     }
 
@@ -34,43 +34,22 @@ vcore::ThreadPool::~ThreadPool() {
 
 void vcore::ThreadPool::clearTasks() {
     // Dequeue all tasks
-    ThreadPoolTaskProcs task[256];
+    std::function<void()> task[256];
     while (mTasks.try_dequeue_bulk(task, 256));
 }
 
-void vorb::core::ThreadPool::mainThreadUpdate() {
-    std::function<void()> proc;
-    // TODO: bulk dequeue?
-    constexpr unsigned MAX_MS = 6;
-    PreciseTimer timer;
-    // TODO: Use optik for profiling
-    while (mMainThreadProcs.try_dequeue(proc)) {
-        proc();
-        if (timer.stop() > MAX_MS) {
-            break;
-        }
-    }
-    //std::cout << "Main thread processed " << i << " tasks in " << timer.stop() << " ms\n";
-    if (timer.stop() > 20.0f) {
-        LOG_WARN("{} ms ***THREADPOOL SPIKE WARNING***", timer.stop());
-    }
-}
-
 void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
-    ThreadPoolTaskProcs task;
+    std::function<void()> task;
     while (!thisThread->mStop.load()) {
         // Note that threads will be stuck waiting here until the process ends
         mTasks.wait_dequeue(task);
         ++mRunningThreads;
         // No task pointer means the thread should stop
-        if (!task.first) {
+        if (!task) {
             --mRunningThreads;
             return;
         }
-        task.first();
-        if (task.second) {
-            mMainThreadProcs.enqueue(std::move(task.second));
-        }
+        task();
         --mRunningThreads;
     }
     thisThread->mActive = false;
@@ -81,7 +60,7 @@ void vorb::core::ThreadPool::setSize(ui32 size) {
     if (diff < 0) {
         for (ui32 i = 0; i < (ui32)(-diff); ++i) {
             --mActiveThreads;
-            addTask(nullptr, nullptr);
+            addTask(nullptr);
         }
         return;
     }

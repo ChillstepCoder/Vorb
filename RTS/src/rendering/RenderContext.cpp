@@ -597,7 +597,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         yOffset += GAP_SIZE;
 
         if (Services::isUsingNav()) {
-            sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + (int)Services::NavThread::ref().getMainThreadQueuedProcsApprox());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
 
@@ -606,7 +606,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
             yOffset += GAP_SIZE;
         }
         else {
-            sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
+            sprintf_s(buffer, STR_BUFFER_SIZE, "MainQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
             mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
             yOffset += GAP_SIZE;
         }

@@ -43,6 +43,7 @@ public:
     f32AABB3 aabb;
     HeightmapPatchID id;
     mutable std::shared_mutex mMutex;
+    mutable std::atomic_flag isSaveUpToDate = ATOMIC_FLAG_INIT;
 
     BINARY_SERIALIZE() {
         s.container2b(data);

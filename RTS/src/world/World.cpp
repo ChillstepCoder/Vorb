@@ -209,9 +209,6 @@ void World::tick(f32 elapsedSec) {
         }
     }
 
-    // Update services
-    Services::Threadpool::ref().mainThreadUpdate();
-
     // Update pending assets
     AssetLoader::getInstance().update();
 

@@ -34,8 +34,6 @@
 #include "Vorb/IThreadPoolTask.h"
 
 
-using ThreadPoolTaskProcs = std::pair<std::function<void()>, std::function<void()>>;
-
 namespace vorb {
     namespace core {
 
@@ -44,16 +42,13 @@ namespace vorb {
             ThreadPool(ui32 size);
             ~ThreadPool();
 
-            void mainThreadUpdate();
-
             /// Clears all unprocessed tasks from the task queue
             void clearTasks();
 
             /// Adds a task to the task queue
             /// @param task: The task to add
-            /// TODO: Remove mainProc
-            void addTask(std::function<void()>&& workerProc, std::function<void()>&& mainProc) {
-                mTasks.enqueue(std::make_pair(std::move(workerProc), std::move(mainProc)));
+            inline void addTask(std::function<void()> workerProc) {
+                mTasks.enqueue(workerProc);
             }
 
             /// Add an array of tasks to the task queue
@@ -66,7 +61,6 @@ namespace vorb {
             /// Getters
             i32 getNumWorkers() const { return mWorkers.size(); }
             size_t getTasksSizeApprox() const { return mTasks.size_approx(); }
-            size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }
 
             // Adjust number of running threads
             void setSize(ui32 size);
@@ -105,8 +99,7 @@ namespace vorb {
             void workerThreadFunc(WorkerThread* thisThread);
 
             /// Lock free task queues
-            moodycamel::BlockingConcurrentQueue<ThreadPoolTaskProcs> mTasks; ///< Holds tasks to execute
-            moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs; ///< Contains functions to run on main thread after complete
+            moodycamel::BlockingConcurrentQueue<std::function<void()>> mTasks; ///< Holds tasks to execute
            
             std::vector <std::unique_ptr<WorkerThread>> mWorkers; ///< All the worker threads
             std::atomic_int mActiveThreads = 0;

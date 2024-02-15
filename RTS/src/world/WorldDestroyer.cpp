@@ -81,7 +81,6 @@ World* WorldDestroyer::gameThreadUpdate() {
         for (int i = 0; i < 4; ++i) {
             do {
                 GameThread::getInstance().updateAllProcs();
-                Services::Threadpool::ref().mainThreadUpdate();
                 Sleep(16); // Let the render thread produce a few more tasks
             } while (GameThreadTasks::getInstance().getQueuedProcsApprox() ||
                      Services::Threadpool::ref().getTasksSizeApprox() ||

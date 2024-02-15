@@ -262,7 +262,7 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
             manager->mGeneratingBatches.erase(it);
             delete data;
         }, data);
-    }, nullptr);
+    });
 }
 
 void CloudMeshManager::destroyCloudBatch(CloudBatch& batch)

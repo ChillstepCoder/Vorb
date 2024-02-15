@@ -62,8 +62,7 @@ void RiverGenerationStage::begin()
             generateRiverPath(i);
 
             ++mNumFinishedRiverPaths;
-        },
-        nullptr);
+        });
     }
 }
 
@@ -152,7 +151,7 @@ bool RiverGenerationStage::update() {
             }
 
             mGeneratingPasses = false;
-        }, nullptr);
+        });
 
     }
 
@@ -488,7 +487,7 @@ void RiverGenerationStage::onPassFinished(RiverGenerationPass& pass) {
                 patch.boundingSphere = boundingSphereFromAABB(aabb);
 
                 ++mFinishedHeightDownloads;
-            }, nullptr);
+            });
         }
     }
 }

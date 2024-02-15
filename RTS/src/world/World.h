@@ -95,6 +95,7 @@ public:
     WeatherManager& getWeatherManager() const { return *mWeatherManager; }
     HostSimContext* tryGetHostSimContext() const { return mHostSimContext.get(); }
     IFactionManager& getFactionManager() const { return *mFactionManager; }
+    WorldSaveContext& getSaveContext() const { return *mSaveContext; }
 
     // Optional system accessors 
     NavWorld* tryGetNavWorld() const { return mNavWorld.get(); }

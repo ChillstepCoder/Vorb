@@ -241,6 +241,7 @@ void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, ui32 vertIndex) {
     worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
     worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
     mModifiedVertsThisTick.insert(worldPos);
+    mHeightData[id].isSaveUpToDate.clear();
 }
 
 void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {

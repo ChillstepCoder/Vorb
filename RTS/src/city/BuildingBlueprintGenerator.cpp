@@ -3,6 +3,8 @@
 #include "BuildingDescriptionRepository.h"
 #include "BuildingBlueprint.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "city/CityBuilder.h"
 
 #include "resources/TileRepository.h"
@@ -164,12 +166,12 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
         else {
             bPtr->flags.setBit(BuildingBlueprintFlags::BLUEPRINT_FLAG_FAILED_TO_GENERATE);
         }
-
-    }, [&, bPtr]() {
-        // Main thread
-        mGeneratingBuildings.erase(bPtr);
-        bPtr->isGenerating = false;
-        mCityBuilder.addBlueprintToBuildAndPreprocess(bPtr);
+        GameThreadTasks::getInstance().addGenericTask([this, bPtr]() {
+            // Main thread
+            mGeneratingBuildings.erase(bPtr);
+            bPtr->isGenerating = false;
+            mCityBuilder.addBlueprintToBuildAndPreprocess(bPtr);
+        });
     });
     return bp;
 }

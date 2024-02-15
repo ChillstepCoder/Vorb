@@ -31,12 +31,11 @@ void WorldObjectQuery::query(const WorldObjectQueryPtr& ptr) {
         mIsQuerying = true;
         // Copy our handle on the heap so it cannot be destroyed even if the original WorldObjectQuery is destroyed
         WorldObjectQueryPtr* threadHandle = new WorldObjectQueryPtr(ptr);
-        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vHandle) {
-            WorldObjectQueryPtr* threadHandle = static_cast<WorldObjectQueryPtr*>(vHandle);
+        GameThreadTasks::getInstance().addGenericTask([threadHandle]() {
             (*threadHandle)->queryInternal();
             (*threadHandle)->mIsQuerying = false;
             delete threadHandle;
-        }, threadHandle);
+        });
     }
 }
 

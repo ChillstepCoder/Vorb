@@ -169,7 +169,7 @@ void ItemRenderer::updateDirtyStockpileMeshes() const {
     for (auto&& stockpile : dirtyStockpiles) {
         Services::Threadpool::ref().addTask([this, stockpile]() {
             updateStockpileQuadMesh(*stockpile);
-        }, nullptr);
+        });
     }
 }
 

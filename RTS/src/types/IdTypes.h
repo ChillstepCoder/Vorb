@@ -3,6 +3,9 @@
 typedef ui32 ModelID;
 constexpr ModelID INVALID_MODEL_ID = UINT32_MAX;
 
+typedef ui32 RegionID;
+constexpr RegionID INVALID_REGION_ID = UINT32_MAX;
+
 typedef GLuint64 TextureHandle;
 typedef ui16 MaterialID;
 constexpr ui16 INVALID_MATERIAL_ID = UINT16_MAX;

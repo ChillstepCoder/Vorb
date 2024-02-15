@@ -123,7 +123,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
             // Free resources
             delete taskData;
         }, taskData);
-    }, nullptr);
+    });
    
 }
 

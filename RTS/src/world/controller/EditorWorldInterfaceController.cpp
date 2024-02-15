@@ -144,11 +144,6 @@ void EditorWorldInterfaceController::initEvents() {
     vui::InputDispatcher::mouse.registerMouseListeners(mMouseListeners);
 
     vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& event) {
-        // Wait for initialization to prevent crash from input
-        // TODO: Move this higher? We could still crash in another listener...
-        if (!GameThreadTasks::exists()) {
-            return;
-        }
 
         // View toggle
         if (event.keyCode == VKEY_B && event.mod.lShift) {
@@ -172,11 +167,11 @@ void EditorWorldInterfaceController::initEvents() {
         else if (event.keyCode == VKEY_U) {
             if (sDebugOptions.mCameraMode == CameraMode::MMO) {
                 sDebugOptions.mCameraMode = CameraMode::FIRST_PERSON;
-                GameThreadTasks::getInstance().addHideLocalPlayerModelTask(true);
+                GameThreadTasks::getInstance().addHideLocalPlayerModelTask(*mWorld, true);
             }
             else {
                 sDebugOptions.mCameraMode = CameraMode::MMO;
-                GameThreadTasks::getInstance().addHideLocalPlayerModelTask(false);
+                GameThreadTasks::getInstance().addHideLocalPlayerModelTask(*mWorld, false);
             }
         }
         else if (event.keyCode == VKEY_F && event.mod.lShift) {
@@ -188,15 +183,14 @@ void EditorWorldInterfaceController::initEvents() {
             }
         }
         else if (event.keyCode == VKEY_P && event.mod.lShift) {
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vWorld) {
-                World* world = static_cast<World*>(vWorld);
+            GameThreadTasks::getInstance().addGenericTask([world = mWorld]() {
                 if (world->getPhysicsWorld().isProfiling()) {
                     world->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
                 }
                 else {
                     world->getPhysicsWorld().startB3Profiling();
                 }
-            }, (void*)mWorld);
+            });
         }
         else if (event.keyCode == VKEY_ESCAPE) {
             UIContext::getInstance().toggleMainMenu();
@@ -235,7 +229,7 @@ void EditorWorldInterfaceController::initEvents() {
         if (event.button == vui::MouseButton::LEFT) {
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
-                GameThreadTasks::getInstance().addCameraPickTeleportTask(mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
+                GameThreadTasks::getInstance().addCameraPickTeleportTask(*mWorld, mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
             }
             else {
                 if (mRightClickInteractPopup) {
@@ -272,9 +266,8 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             typedef std::pair<World*, TileHandle> TaskData;
             TaskData* taskData = new TaskData(mWorld, mSelectedTileHandle);
             if (mSelectedTileHandle.isValid()) {
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
+                GameThreadTasks::getInstance().addGenericTask([data = taskData]() {
                     // TODO: Small race condition here if tile handle changes or chunk is destroyed
-                    TaskData* data = static_cast<TaskData*>(vTaskData);
                     const TileHandle& tileHandle = data->second;
                     if (tileHandle.isValid()) {
                         IEntityComponentSystem& ecs = data->first->getECS();
@@ -283,49 +276,45 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                         cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), nullptr);
                     }
                     delete data;
-                }, (void*)taskData);
+                });
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     TileContainer* container = tileHandlePtr->getMutableContainer();
                     container->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Ground, TILE_ID_NONE);
                     container->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TILE_ID_NONE);
                     delete tileHandlePtr;
-                }, tileHandlePtr);
+                });
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("tree_a")));
                     delete tileHandlePtr;
-                }, tileHandlePtr);
+                });
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("bush_med")));
                     delete tileHandlePtr;
-                }, tileHandlePtr);
+                });
             }
         }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("rock1")));
                     delete tileHandlePtr;
-                }, tileHandlePtr);
+                });
             }
         }
         else if (result & INTERACT_MENU_RESULT_INSPECT) {
@@ -395,25 +384,23 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD) {
             if (mSelectedTileHandle.isValid()) {
-                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* worldPtr) {
-                    World* world = static_cast<World*>(worldPtr);
+                GameThreadTasks::getInstance().addGenericTask([world = mWorld]() {
                     IEntityComponentSystem& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                     cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
-                }, mWorld);
+                });
             }
         }
         else if (result & INTERACT_MENU_RESULT_REBUILD_NAVMESH) {
             std::pair<TileHandle, World*>* taskData = new std::pair<TileHandle, World*>(mSelectedTileHandle, mWorld);
             TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* taskPtr) {
-                std::pair<TileHandle, World*>* taskData = static_cast<std::pair<TileHandle, World*>*>(taskPtr);
+            GameThreadTasks::getInstance().addGenericTask([taskData]() {
                 World* world = static_cast<World*>(taskData->second);
                 if (NavWorld* navWorld = world->tryGetNavWorld()) {
                     navWorld->markContainerNavDirty(taskData->first.getMutableContainer());
                 }
-            }, taskData);
+            });
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 16, "update");
 

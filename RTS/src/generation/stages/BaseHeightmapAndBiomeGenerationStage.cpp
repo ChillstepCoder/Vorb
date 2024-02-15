@@ -169,7 +169,7 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                     }
                 }
                 ++mFinishedPatchesThisStep;
-            }, nullptr);
+            });
         }
     }
 

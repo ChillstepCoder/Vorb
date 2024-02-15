@@ -24,6 +24,8 @@
 #include "generation/WorldDataGenerator.h"
 #include "generation/WorldGenerationBlackboard.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/RenderContext.h"
 
@@ -197,7 +199,7 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
 void WorldGenScreen::update(const vui::GameTime& gameTime) {
 
     // Update tasks
-    Services::Threadpool::ref().mainThreadUpdate();
+    GameThreadTasks::getInstance().updateMainThread();
     RenderContext::getInstance().updateRenderThreadProcs();
 
     if (mWorldGenerator) {
@@ -829,7 +831,6 @@ void WorldGenScreen::debugDrawCharacters() {
             }
             else {
                 simThread->requestAllCharacters(mCurrentCharacterRequest);
-                LOG_CRITICAL("FILLED {}", mPrevCharacterRequest->entities.size());
             }
         }
     }

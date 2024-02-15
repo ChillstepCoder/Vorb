@@ -48,6 +48,7 @@ typedef std::array<BiomeVertex, BIOME_PATCH_SIZE_VERTS> BiomePatch;
 // Host only?
 class BiomeGrid
 {
+    friend class WorldSaveContext;
     friend class WorldDataGenerator;
 public:
     BiomeGrid(ui32 worldWidthTiles);
@@ -76,6 +77,7 @@ private:
 
     // ======================= Data =======================
     std::vector<BiomePatch> mGrid;
+    std::unique_ptr<std::atomic_flag[]> mPatchSavesUpToDate;
     ui32 mWidthVerts = 0;
     SpatialGrid2D mSpatialGrid;
     // Used by terrain to look up biome info

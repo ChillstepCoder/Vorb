@@ -45,6 +45,7 @@ void BiomeGrid::initInternal() {
     assert(mWidthVerts);
     mSpatialGrid.init(BIOME_PATCH_WIDTH_VERTS * BLOCK_WIDTH, mWidthVerts / BIOME_PATCH_WIDTH_VERTS);
     mGrid.resize(mSpatialGrid.getGridSizeCells());
+    mPatchSavesUpToDate = std::make_unique<std::atomic_flag[]>(mSpatialGrid.getGridSizeCells());
     LOG_DEBUG("Biome grid allocated {} mb biome",
         (mGrid.size() * sizeof(BiomePatch)) / 1024.f / 1024.f);
 }

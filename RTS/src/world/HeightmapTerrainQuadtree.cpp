@@ -120,14 +120,14 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
             taskData->isAnyMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
 
             // Back to the main thread to update state
-            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
-                TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
+            GameThreadTasks::getInstance().addGenericTask([taskData]() {
+                
                 taskData->owner->onMeshFinished(taskData->patchIndex, taskData->isAnyMeshValid);
                 // Free resources
                 delete taskData;
-            }, taskData);
+            });
         }, taskData);
-    }, nullptr);
+    });
 }
 
 void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex) {

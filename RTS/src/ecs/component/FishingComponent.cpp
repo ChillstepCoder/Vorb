@@ -224,7 +224,7 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
                 mLocalPlayerControlLocked = true;
 
                 UIContext::getInstance().getMinigameContext().beginFishingMinigame(fishDef, mLocalPlayerMinigameGameThreadData.get(), [this, entity, &registry, &world](const FishingMinigameResult& result) {
-                    GameThreadTasks::getInstance().addGenericTaskWithCapture([this, entity, result, &registry, &world](GameThread&) {
+                    GameThreadTasks::getInstance().addGenericTask([this, entity, result, &registry, &world]() {
                         FishingComponent& fishingCmp = registry.get<FishingComponent>(entity);
                         if (result.result == MinigameResultType::Success) {
                             fishingCmp.mState = FishingComponentState::Success;

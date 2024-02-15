@@ -906,6 +906,7 @@
     <ClInclude Include="src\serialization\BitseryExt.h" />
     <ClInclude Include="src\serialization\GameSaveManager.h" />
     <ClInclude Include="src\serialization\gamesave\WorldSaveContext.h" />
+    <ClInclude Include="src\serialization\gamesave\WorldSaveEventType.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\NameManager.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />

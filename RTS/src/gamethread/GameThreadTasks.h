@@ -4,47 +4,35 @@ class StaticPhysicsMeshBuilder;
 class TileContainer;
 class World;
 
-typedef void(*GameFunction)(class GameThread& gameThread, void*);
-typedef std::function<void(GameThread&)> GameFunctionWithCapture;
+typedef std::function<void()> GameFunction;
 
 class GameThreadTasks
 {
     friend class GameThread;
-protected:
-    GameThreadTasks(World& mainGameWorld);
-    ~GameThreadTasks();
-
+private:
+    GameThreadTasks() = default;
 public:
     GameThreadTasks(GameThreadTasks& other) = delete;
     void operator=(const GameThreadTasks&) = delete;
 
-protected:
-    static GameThreadTasks& initInstance(World& world);
-public:
     static GameThreadTasks& getInstance();
-    static bool exists();
 
+    void updateMainThread();
 
     // Tasks
-    void addGenericTask(GameFunction func, void* data) { mGameThreadProcs.enqueue(std::make_pair(func, data)); }
-    void addGenericTaskWithCapture(GameFunctionWithCapture func) { mGameThreadFuncProcs.enqueue(func); }
-    void addCameraPickTeleportTask(const f32v3& camPos, const f32v3& camDir);
-    void addHideLocalPlayerModelTask(bool hide);
+    void addGenericTask(GameFunction func) { mGameThreadFuncProcs.enqueue(func); }
+    void addCameraPickTeleportTask(World& world, const f32v3& camPos, const f32v3& camDir);
+    void addHideLocalPlayerModelTask(World& world, bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);
-    void addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
+    void addEntityCreateTask(World& world, const f32v3& pos, StrToken typeToken, bool shouldReplicate);
 
-    size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx() + mGameThreadFuncProcs.size_approx(); }
+    size_t getQueuedProcsApprox() const { return mGameThreadFuncProcs.size_approx(); }
 
 private:
     // Task queue
     // TODO: Clear task queues on destroy?
     //  TODO: Priority queues? One high priority queue can be  exhausted faster  than  lower  priority queues, use for input and such
     // Many queues can make up a "Scheduler"  which can try to balance thread time?
-    moodycamel::ConcurrentQueue<std::pair<GameFunction, void*>> mGameThreadProcs;
-    moodycamel::ConcurrentQueue<GameFunctionWithCapture> mGameThreadFuncProcs;
-    World& mMainGameWorld;
-
-
-    static GameThreadTasks* sInstance;
+    moodycamel::ConcurrentQueue<GameFunction> mGameThreadFuncProcs;
 };
 

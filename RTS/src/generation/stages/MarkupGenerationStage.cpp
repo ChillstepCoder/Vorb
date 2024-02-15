@@ -68,7 +68,7 @@ void MarkupGenerationStage::beginInitialMarkupGen() {
         }
         generateInitialMarkup();
         ++mFinishedThreads;
-    }, nullptr);
+    });
 }
 
 void MarkupGenerationStage::beginChunkAndBodyMarkupGen() { 
@@ -87,7 +87,7 @@ void MarkupGenerationStage::beginChunkAndBodyMarkupGen() {
             }
             generateChunkMarkup(i, chunksRowsPerjob);
             ++mFinishedThreads;
-        }, nullptr);
+        });
     }
 
     // Distribute body markup jobs, one per body is fine
@@ -102,7 +102,7 @@ void MarkupGenerationStage::beginChunkAndBodyMarkupGen() {
             }
             generateBodyMarkup(i);
             ++mFinishedThreads;
-        }, nullptr);
+        });
     }
 }
 
@@ -411,6 +411,7 @@ void MarkupGenerationStage::onFinished() {
     mMarkupGrid->setMarkupReady();
     LOG_DEBUG("Finished markup generation in {} ms with {} bodies", mTotalTimer.elapsedMs(), mTotalBodies);
 
-    GameSaveManager::get().saveWorld(*mWorldPtr, "debug_template");
-    LOG_DEBUG("MarkupGenerationStage::onFinished()");
+    PreciseTimer timer;
+    GameSaveManager::get().saveWorld(*mWorldPtr, "debug_template", true /*blockUntilFinished*/);
+    LOG_DEBUG("Save took {} ms", timer.stop());
 }

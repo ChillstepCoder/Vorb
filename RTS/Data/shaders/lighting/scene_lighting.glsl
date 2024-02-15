@@ -98,7 +98,8 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
 	// =====================================================
     float trueWorldZ = worldPos.z + CameraPos.z;
     
-    float zAdjust = step(0.0, -trueWorldZ) * -trueWorldZ;
+    // Increase haze the deeper we go
+    float zAdjust = max(0.0, -trueWorldZ);
     vec3 hazeWorldPos = worldPos + vec3(0.0, 0.0, zAdjust);
     
     float hazeDistance = length(hazeWorldPos) / unHazeDivisor[preset] + unHazeDivisor[preset] * isSky;

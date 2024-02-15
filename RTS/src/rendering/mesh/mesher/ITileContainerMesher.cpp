@@ -63,5 +63,5 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
         if (heightData) {
             delete[] heightData;
         }
-    }, nullptr);
+    });
 }

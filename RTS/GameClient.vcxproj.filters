@@ -2537,6 +2537,9 @@
     <ClInclude Include="src\world\WorldConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\serialization\gamesave\WorldSaveEventType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
