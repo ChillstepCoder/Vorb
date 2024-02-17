@@ -254,7 +254,6 @@ void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world
             tileData.variant = tile.mainLayerVariant;
             chunkData.tileIndexToTileData.emplace((ui16)i, tileData);
             ++totalTiles;
-            chunkData.tileStates[i] = SimTileState::Tile;
         }
     }
 

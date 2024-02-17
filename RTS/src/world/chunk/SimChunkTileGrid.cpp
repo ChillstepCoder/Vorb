@@ -11,7 +11,7 @@ SimChunkTileGrid::~SimChunkTileGrid() {
 }
 
 ui32 SimChunkTileGrid::getApproxMemoryUsageBytes() const {
-   return mTotalChunks * sizeof(SimChunkTileContainer) + mTotalSimulatingChunks * (sizeof(SimChunkTileData) + CHUNK_SIZE * sizeof(SimTileState));
+   return mTotalChunks * sizeof(SimChunkTileContainer) + mTotalSimulatingChunks * (sizeof(SimChunkTileData));
 }
 
 void SimChunkTileGrid::initInternal() {
@@ -30,7 +30,6 @@ bool SimChunkTileContainer::allocate() {
     if (state != SimChunkTileContainerState::Allocated) {
         state = SimChunkTileContainerState::Allocated;
         data = std::make_unique<SimChunkTileData>();
-        data->tileStates.resize(CHUNK_SIZE);
         return true;
     }
     return false;

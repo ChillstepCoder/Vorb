@@ -1,15 +1,14 @@
 #include "stdafx.h"
 #include "ScreenState.h"
 
-ServerType MainMenuScreenGlobalState::serverType = ServerType::NONE;
-nString MainMenuScreenGlobalState::hostIP;
-
 bool GameplayScreenGlobalState::isQuittingToMenu = false;
 bool GameplayScreenGlobalState::isQuittingToDesktop = false;
 
 void MainMenuScreenGlobalState::initDefaults() {
     serverType = ServerType::NONE;
     hostIP = "";
+    startGameType = StartGameType::NewWorld;
+    loadWorldPath.clear();
 }
 
 void MainMenuScreenGlobalState::setJoin(const nString& targetHostIp) {

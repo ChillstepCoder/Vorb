@@ -18,6 +18,7 @@ public:
     // Save on generation screen for later use
     // Returns false if we are already saving
     bool saveWorld(World& world, const nString& fileName, bool blockUntilFinished);
+    bool loadWorld(World& outWorld, const fs::path& savePath);
     bool saveWorldTemplate(World& world);
     bool loadWorldTemplate(HostWorldData& worldData);
     //void loadWorldTemplate(World& world);
@@ -25,8 +26,8 @@ public:
     void addDiskIOTask(std::function<void()> func) { mDiskIOTasks.enqueue(func); }
 
     void notifyWorldSaveFinished();
-private:
     fs::path getSavesDirectory();
+private:
     fs::path getTemplatesDirectory();
     void saveThreadFunc();
 

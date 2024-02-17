@@ -49,7 +49,6 @@ bool GameSaveManager::saveWorld(World& world, const nString& fileName, bool bloc
     LOG_INFO("Saving world {}", fileName.c_str());
     mIsSavingWorld = true;
     mCurrentWorldSaveContext = &world.getSaveContext();
-    mCurrentWorldSaveContext->beginSave(getSavesDirectory() / fileName);
 
     mCurrentWorldSaveContext->registerWorldSaveListeners(mSaveEventListeners);
     mCurrentWorldSaveContext->addSaveEndListener(mSaveEventListeners, [this](const WorldSaveEvent& e) {
@@ -57,29 +56,21 @@ bool GameSaveManager::saveWorld(World& world, const nString& fileName, bool bloc
         mIsSavingWorld = false;
     });
 
-    WorldMarkupGrid& markupGrid = world.getMarkupGrid();
-    SimChunkTileGrid& tileGrid = world.getSimTileGrid();
-
-    PreciseTimer timer;
-    mCurrentWorldSaveContext->saveHeights();
-    LOG_DEBUG("Heights took {} ms", timer.stop()); timer.start();
-    mCurrentWorldSaveContext->saveBiomes();
-    LOG_DEBUG("Biomes took {} ms", timer.stop()); timer.start();
-    mCurrentWorldSaveContext->saveChunks();
-    LOG_DEBUG("Chunks took {} ms", timer.stop()); timer.start();
-    mCurrentWorldSaveContext->saveMarkupIfNotAlreadySaved();
-    LOG_DEBUG("Markup took {} ms", timer.stop()); timer.start();
-
+    mCurrentWorldSaveContext->saveWorld(getSavesDirectory() / fileName);
     LOG_INFO("World serialize took {} ms", timer2.stop());
-
-    // We can now finish saving
-    mCurrentWorldSaveContext->notifyAllDataRegistered();
 
     if (blockUntilFinished) {
         while (mIsSavingWorld) {
-            Sleep(4);
+            Sleep(16);
         }
     }
+}
+
+bool GameSaveManager::loadWorld(World& outWorld, const fs::path& savePath) {
+    if (mIsSavingWorld) {
+        return false;
+    }
+    return outWorld.getSaveContext().loadWorld(savePath);
 }
 
 bool GameSaveManager::saveWorldTemplate(World& world) {

@@ -11,6 +11,22 @@
 
 const char* REGION_EXTENSION = ".rdat";
 
+std::span<uint8_t> DeserializedRegionFileData::getPatchBytes(ui32 patchId) {
+    if (!isValid()) return {};
+    assert(header.patches.size() > patchId);
+    auto& patch = header.patches[patchId];
+    return std::span<uint8_t>(fileBytes.data() + patch.mStartByte, (size_t)patch.mAllocatedBytes);
+}
+
+void DeserializedRegionFileData::forEachPatch(std::function<void(ui32, std::span<uint8_t>)> func) {
+    assert(isValid());
+    if (!isValid()) return;
+    for (ui32 i = 0; i < header.patches.size(); i++) {
+        auto& patch = header.patches[i];
+        func(i, std::span<uint8_t>(fileBytes.data() + patch.mStartByte, (size_t)patch.mAllocatedBytes));
+    }
+}
+
 WorldSaveContext::WorldSaveContext(World& world) :
     mWorld(world) {
     mRegionFileClusters[e_cast(RegionType::Height)] = RegionFileCluster(mWorld.getWidthTiles(), HEIGHTMAP_PATCH_WIDTH_TILES, HEIGHT_REGION_WIDTH_PATCHES, "height", 1024);
@@ -25,9 +41,67 @@ WorldSaveContext::WorldSaveContext(World& world) :
 
 WorldSaveContext::~WorldSaveContext() = default;
 
-void WorldSaveContext::beginSave(const fs::path& savePath) {
+void WorldSaveContext::saveWorld(const fs::path& savePath) {
     assert(mCurrentSavePath.empty());
     mCurrentSavePath = savePath;
+
+    WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
+    SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
+
+    PreciseTimer timer;
+    saveHeights();
+    LOG_DEBUG("Heights took {} ms", timer.stop()); timer.start();
+    saveBiomes();
+    LOG_DEBUG("Biomes took {} ms", timer.stop()); timer.start();
+    saveChunks();
+    LOG_DEBUG("Chunks took {} ms", timer.stop()); timer.start();
+    saveMarkupIfNotAlreadySaved();
+    LOG_DEBUG("Markup took {} ms", timer.stop()); timer.start();
+
+
+    // We can now finish saving
+    notifyAllDataRegistered();
+}
+
+bool WorldSaveContext::loadWorld(const fs::path& loadPath)
+{
+    mCurrentLoadPath = loadPath;
+    assert(mCurrentSavePath.empty());
+
+    {
+        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+        fs::path heightPath = mCurrentLoadPath / mRegionFileClusters[e_cast(RegionType::Height)].folderName;
+        if (!fs::exists(heightPath)) {
+            panic("Could not find world heights {}", heightPath.string());
+        }
+        std::fstream file(heightPath, std::ios::binary | std::ios::in);
+        if (!file.is_open()) {
+            panic("Failed to open region file for reading: {}", heightPath.string());
+        }
+        DeserializedRegionFileData fileData = readRegionFile(file, fs::file_size(heightPath));
+        fileData.forEachPatch([this, &heightGrid](ui32 patchId, std::span<uint8_t> compressedBytes) {
+            ++mRunningLoadThreads;
+            Services::Threadpool::ref().addTask([this, &heightGrid, patchId, compressedBytes]() {
+                HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
+                std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
+                
+                decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
+
+                // Which to use?
+                //bitsery::Deserializer<BInputAdapter> d{ BInputAdapter{ dst.begin(), dst.end() } };
+                 bitsery::quickDeserialization(BInputAdapter{ dst.begin(), sizeof(dst)}, patch.getDataForDecompression());
+                --mRunningLoadThreads;
+            });
+        });
+    }
+
+    // Let saves finish
+    while (mRunningLoadThreads) {
+        Sleep(16);
+    }
+
+    mCurrentLoadPath.clear();
+    return false;
 }
 
 void WorldSaveContext::saveHeights() {
@@ -90,15 +164,19 @@ void WorldSaveContext::saveChunks() {
         forEachPatchInRegion(RegionType::Chunk, regionId, [this, &simGrid, &pendingThisRegion](ui32 simChunkId, RegionPatchID regionPatchId) {
             SimChunkTileContainer& patch = simGrid.mChunkData[simChunkId];
             if (patch.isSaveUpToDate.test_and_set() == false) {
+                // Oceans are implicit
+                if (patch.getState() == SimChunkTileContainerState::Ocean) {
+                    return;
+                }
                 BBuffer buffer;
                 // TODO: Re-evaluate later
-                buffer.reserve(24000);
+                //buffer.reserve(24000);
                 const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(buffer, patch);
-                /*if (writtenBytes > 24000) [[unlikely]] {
-                    LOG_CRITICAL(" B {}", writtenBytes);
-                }*/
-                buffer.resize(writtenBytes);
-                buffer.shrink_to_fit();
+                //if (writtenBytes > 24000) [[unlikely]] {
+                //    LOG_CRITICAL(" B {}", writtenBytes);
+                //}
+                //buffer.resize(writtenBytes);
+                //buffer.shrink_to_fit();
                 addRegionPatchCompressAndSaveTask(RegionType::Chunk, regionPatchId, std::move(buffer));
                 ++pendingThisRegion;
             }
@@ -286,6 +364,45 @@ BBuffer WorldSaveContext::compressData(const BBuffer& bbuffer) {
     return compressed;
 }
 
+void WorldSaveContext::decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes)
+{
+
+}
+
+BBuffer WorldSaveContext::decompressDataStreamed(const std::span<uint8_t> compressed, size_t reserveCount) {
+    // Streaming decompression
+    // https://raw.githack.com/facebook/zstd/release/doc/zstd_manual.html#Chapter9
+    ZSTD_DStream* zds = ZSTD_createDStream();
+    size_t recommendedSize = ZSTD_initDStream(zds);
+    
+    BBuffer decompressed;
+    decompressed.reserve(std::max(reserveCount, recommendedSize));
+    decompressed.resize(recommendedSize);
+
+    ZSTD_outBuffer output;
+    output.dst = decompressed.data();
+    output.pos = 0;
+    output.size = recommendedSize;
+    ZSTD_inBuffer input;
+    input.pos = 0;
+    input.size = compressed.size();
+    input.src = compressed.data();
+    while (ui32 moreRequested = ZSTD_decompressStream(zds, &output, &input)) {
+        if (ZSTD_isError(moreRequested)) [[unlikely]] {
+            LOG_CRITICAL("DECOMPRESSION ERROR: {} {}", ZSTD_getErrorName(moreRequested), "(TODO: Handle this better)");
+            return BBuffer();
+        }
+        decompressed.resize(decompressed.size() + moreRequested);
+        output.size = moreRequested;
+    }
+
+    decompressed.resize(output.pos);
+    decompressed.shrink_to_fit();
+
+    ZSTD_freeDStream(zds);
+    return decompressed;
+}
+
 DeserializedRegionFileData WorldSaveContext::readRegionFile(std::fstream& file, ui32 fileSize) {
     if (!file.is_open() || !fileSize) {
         return DeserializedRegionFileData();
@@ -470,3 +587,4 @@ void WorldSaveContext::endSave() {
     }
     dispatchSaveEnd(evnt);
 }
+

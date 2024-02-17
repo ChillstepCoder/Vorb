@@ -11,23 +11,14 @@
 
 enum class SimChunkTileContainerState : ui8 {
     NONE,
-    Wilderness, // Unloaded, no tiles
+    //Wilderness, // Unloaded, no tiles
     Ocean, // Never loaded on sim layer
     Allocated // Tiles are loaded into memory
 };
 
-// Flags instead?
-enum class SimTileState : ui8 {
-    Empty,
-    Tile,
-    Structure,
-    Blocked, // Blocked by other tile
-    COUNT
-};
-
 struct SimTileData {
     TileID tileId;
-    ui8 variant : 4 = {};
+    ui8 variant;
     ui8 padding;
 };
 static_assert(sizeof(SimTileData) == 4);
@@ -36,19 +27,19 @@ struct SimChunkTileData {
     boost::container::flat_map<ui16, SimTileData> tileIndexToTileData;
     boost::container::flat_map<TileID, ui32> tileQuantities;
     TileWallContainer tileWalls; // Most chunks don't have walls
-    std::vector<SimTileState> tileStates; // Flags instead?
 
-    BINARY_SERIALIZE() {
-        s.ext(tileIndexToTileData, bitsery::ext::BoostFlatMap{CHUNK_SIZE}, [](S& s, ui16& key, SimTileData& value) {
+    BINARY_SERIALIZE();
+    template <typename T>
+    inline void sharedSerialize(T& s) {
+        s.ext(tileIndexToTileData, bitsery::ext::BoostFlatMap{CHUNK_SIZE}, [](T& s, ui16& key, SimTileData& value) {
             s.value2b(key);
             s.value2b(value.tileId);
-            ui8 v = value.variant;
-            s.value1b(v);
-            value.variant = v;
+            s.value1b(value.variant);
         });
         s.object(tileWalls);
-        s.container1b(tileStates, CHUNK_SIZE);
-
+    }
+    BINARY_SERIALIZE_INPUT() {
+        sharedSerialize(s);
         if (tileQuantities.empty()) {
             for (auto& [tileIndex, tileData] : tileIndexToTileData) {
                 auto&& it = tileQuantities.find(tileData.tileId);
@@ -62,6 +53,9 @@ struct SimChunkTileData {
             tileQuantities.shrink_to_fit();
         }
     }
+    BINARY_SERIALIZE_OUTPUT() {
+        sharedSerialize(s);
+    }
 };
 
 class SimChunkTileContainer {
@@ -72,6 +66,7 @@ public:
     // Return true if it wasnt already allocated
     bool allocate();
     ChunkID getChunkID() const { return chunkId; }
+    SimChunkTileContainerState getState() const { return state; }
 private:
     mutable std::shared_mutex mutex;
     std::unique_ptr<SimChunkTileData> data;

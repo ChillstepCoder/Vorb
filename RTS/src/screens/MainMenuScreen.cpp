@@ -12,6 +12,7 @@
 #include <backends/imgui_impl_sdl2.h>
 #include <backends/imgui_impl_opengl3.h>
 
+#include "serialization/GameSaveManager.h"
 
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
@@ -62,11 +63,12 @@ void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
     // TODO: Spatial hash grid? https://github.com/simondevyoutube/Quick_3D_MMORPG/blob/main/client/shared/spatial-hash-grid.mjs
     // TODO: Tile based deferred rendering? https://leifnode.com/2015/05/tiled-deferred-shading/
     // TODO: Visibility buffer? http://filmicworlds.com/blog/visibility-buffer-rendering-with-material-graphs/
+    refreshSavesList();
 }
 
 void MainMenuScreen::onExit(const vui::GameTime& gameTime)
 {
-
+    clearTextInputBuffer();
 }
 
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
@@ -105,6 +107,13 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
         case MainMenuState::MAIN:
             drawMainState();
             break;
+        case MainMenuState::SINGLEPLAYER:
+            drawSingleplayerState();
+            break;
+        case MainMenuState::NEW_WORLD_FROM_TEMPLATE:
+        case MainMenuState::LOAD_WORLD:
+            drawLoadWorldState();
+            break;
         case MainMenuState::MULTIPLAYER:
             drawMultiplayerState();
             break;
@@ -132,7 +141,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
             break;
 
     }
-    static_assert(e_cast(MainMenuState::COUNT) == 9);
+    static_assert(e_cast(MainMenuState::COUNT) == 13);
 
     ImGui::End();
 
@@ -142,6 +151,19 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     ImGui::EndFrame();
 }
 
+void MainMenuScreen::refreshSavesList() {
+    mSavePaths.clear();
+    fs::path savesDir = GameSaveManager::get().getSavesDirectory();
+    if (!fs::exists(savesDir)) {
+        return;
+    }
+    // TODO: Validate by checking for a specific subfile w metadata
+    for (auto const& dir_entry : std::filesystem::directory_iterator{ savesDir }) {
+        if (fs::is_directory(dir_entry)) {
+            mSavePaths.emplace_back(dir_entry);
+        }
+    }
+}
 
 void MainMenuScreen::attemptConnect(ServerType serverType) {
     mTargetHostAddress = yojimbo::Address(mTargetHostIP.c_str(), DEFAULT_SERVER_PORT);
@@ -163,8 +185,7 @@ void MainMenuScreen::attemptConnect(ServerType serverType) {
 void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Singleplayer", buttonSize)) {
-        clearTextInputBuffer();
-        m_state = vui::ScreenState::CHANGE_NEXT;
+        mState = MainMenuState::SINGLEPLAYER;
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Multiplayer", buttonSize)) {
@@ -177,6 +198,51 @@ void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Exit", buttonSize)) {
         m_state = vui::ScreenState::EXIT_APPLICATION;
+    }
+}
+
+void MainMenuScreen::drawSingleplayerState() {
+    ImGui::Text("Singleplayer");
+    ImGui::Spacing();
+    if (ImguiUtil::ButtonCenteredOnLine("New world", buttonSize)) {
+        MainMenuScreenGlobalState::startGameType = StartGameType::NewWorld;
+        m_state = vui::ScreenState::CHANGE_NEXT;
+    }
+    if (mSavePaths.size()) {
+        ImGui::Spacing();
+        if (ImguiUtil::ButtonCenteredOnLine("New world from template", buttonSize)) {
+            refreshSavesList();
+            MainMenuScreenGlobalState::startGameType = StartGameType::NewWorldFromTemplate; // TODO: Change
+            mState = MainMenuState::NEW_WORLD_FROM_TEMPLATE;
+        }
+        ImGui::Spacing();
+        if (ImguiUtil::ButtonCenteredOnLine("Load world", buttonSize)) {
+            refreshSavesList();
+            MainMenuScreenGlobalState::startGameType = StartGameType::LoadWorld; // TODO: Change
+            mState = MainMenuState::LOAD_WORLD;
+        }
+    }
+    ImGui::Spacing();
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
+        mState = MainMenuState::MAIN;
+    }
+}
+
+void MainMenuScreen::drawLoadWorldState() {
+    ImGui::Text("Select world");
+    ImGui::Spacing();
+    ImGui::SeparatorText("Worlds");
+    ImVec2 size = ImGui::GetContentRegionAvail();
+    for (auto& path : mSavePaths) {
+        if (ImGui::Button(path.stem().string().c_str(), ImVec2(size.x, 0))) {
+            MainMenuScreenGlobalState::loadWorldPath = path;
+            m_state = vorb::ui::ScreenState::CHANGE_NEXT;
+        }
+    }
+    ImGui::Separator();
+    ImGui::Spacing();
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
+        mState = MainMenuState::SINGLEPLAYER;
     }
 }
 
@@ -253,16 +319,19 @@ void MainMenuScreen::drawHostState() {
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("LAN", buttonSize)) {
         MainMenuScreenGlobalState::setHostLan();
+        MainMenuScreenGlobalState::startGameType = StartGameType::NewWorld; // TODO: Change
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Online", buttonSize)) {
         MainMenuScreenGlobalState::setHostOnline();
+        MainMenuScreenGlobalState::startGameType = StartGameType::NewWorld; // TODO: Change
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("DEV", buttonSize)) {
         MainMenuScreenGlobalState::setHostDev();
+        MainMenuScreenGlobalState::startGameType = StartGameType::NewWorld; // TODO: Change
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
@@ -301,6 +370,7 @@ void MainMenuScreen::drawWaitingJoinState() {
     if (client.isConnected()) {
         // Join host game
         MainMenuScreenGlobalState::setJoin(mTargetHostIP);
+        MainMenuScreenGlobalState::startGameType = StartGameType::NewWorld; // TODO: Change
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
 }

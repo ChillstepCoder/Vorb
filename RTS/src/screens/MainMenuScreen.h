@@ -4,10 +4,16 @@
 #include <yojimbo/yojimbo.h>
 #include "network/NetworkConst.h"
 
+#include "filesystem/FileSystem.h"
+
 class App;
 
 enum class MainMenuState {
     MAIN,
+    SINGLEPLAYER,
+    NEW_WORLD,
+    NEW_WORLD_FROM_TEMPLATE,
+    LOAD_WORLD,
     MULTIPLAYER,
     JOIN,
     LAN_JOIN,
@@ -39,9 +45,12 @@ public:
     virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
+    void refreshSavesList();
     void attemptConnect(ServerType serverType);
 
     void drawMainState();
+    void drawSingleplayerState();
+    void drawLoadWorldState();
     void drawMultiplayerState();
     void drawJoinState();
     void drawLanJoinState();
@@ -60,5 +69,7 @@ private:
     double mConnectingStart = 0.0;
     double mConnTimer = 0.0;
     char mTextInputBuffer[256];
+
+    std::vector<fs::path> mSavePaths;
 };
 

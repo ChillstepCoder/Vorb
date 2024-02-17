@@ -103,12 +103,8 @@ struct DeserializedRegionFileData {
 
     bool isValid() const { return fileBytes.size() != 0; }
 
-    std::span<uint8_t> getPatchBytes(ui32 patchId) {
-        if (!isValid()) return {};
-        assert(header.patches.size() > patchId);
-        auto& patch = header.patches[patchId];
-        return std::span<uint8_t>(fileBytes.data() + patch.mStartByte, (size_t)patch.mAllocatedBytes);
-    }
+    std::span<uint8_t> getPatchBytes(ui32 patchId);
+    void forEachPatch(std::function<void(ui32, std::span<uint8_t>)> func);
 };
 
 // Caches world specific save data such as regions and such
@@ -117,7 +113,13 @@ public:
      WorldSaveContext(World& world);
     ~WorldSaveContext();
 
-    void beginSave(const fs::path& savePath);
+    void saveWorld(const fs::path& savePath);
+    bool loadWorld(const fs::path& loadPath);
+
+    EVENT_LISTENER_FUNCS(WorldSave, SaveBegin, WorldSaveEventType::SaveBegin, const WorldSaveEvent&);
+    EVENT_LISTENER_FUNCS(WorldSave, SaveEnd, WorldSaveEventType::SaveEnd, const WorldSaveEvent&);
+
+private:
     void saveHeights();
     void saveBiomes();
     void saveChunks();
@@ -131,11 +133,6 @@ public:
     void forEachPatchInAllRegions(RegionType type, std::function<void(ui32 patchId, RegionPatchID regionPatchId)> callback);
     void forEachPatchInRegion(RegionType type, RegionID regionId, std::function<void(ui32 patchId, RegionPatchID regionPatchId)> callback);
 
-    EVENT_LISTENER_FUNCS(WorldSave, SaveBegin, WorldSaveEventType::SaveBegin, const WorldSaveEvent&);
-    EVENT_LISTENER_FUNCS(WorldSave, SaveEnd, WorldSaveEventType::SaveEnd, const WorldSaveEvent&);
-
-private:
-
     // Call this when we know exactly how many onRegionPatchDataReady calls we expect
     void notifyRegionDataIncoming(RegionType type, RegionID regionId, ui32 count);
     // Call count per region should match the previously specified count
@@ -144,12 +141,17 @@ private:
 
     void addRegionPatchCompressAndSaveTask(RegionType type, RegionPatchID regionPatchId, BBuffer&& bbuffer);
     BBuffer compressData(const BBuffer& bbuffer);
+    void decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes);
+    BBuffer decompressDataStreamed(const std::span<uint8_t> compressed, size_t reserveCount);
 
     DeserializedRegionFileData readRegionFile(std::fstream& file, ui32 fileSize);
     void updateRegionFile(RegionType type, RegionID regionId);
     void endSave();
 
+
+    // ====================== Data ======================
     World& mWorld;
+    fs::path mCurrentLoadPath;
     fs::path mCurrentSavePath;
     fs::path mPrevSavePath;
 
@@ -159,7 +161,7 @@ private:
     std::atomic_bool mAllIncomingDataRegistered = false;
     std::atomic<ui32> mTotalSavedData = 0;
     std::atomic<ui32> mTotalIncomingData = 0;
-    std::atomic_int mRunningSaveThreads = 0;
+    std::atomic_int mRunningLoadThreads = 0;
     std::mutex mEndSaveMutex;
 
     EVENT_DISPATCHER_DEF(WorldSave);

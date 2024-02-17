@@ -16,6 +16,8 @@
 
 #include "serialization/GameSaveManager.h"
 
+#include "screens/ScreenState.h"
+
 constexpr ui32 HISTORY_STAGE_INDEX = 3;
 
 WorldDataGenerator::WorldDataGenerator() = default;
@@ -54,11 +56,13 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
 
     mBlackboard = std::make_unique<WorldGenerationBlackboard>(mWorldData->heightmapGrid->getWidthPatches());
 
-#define LOAD_TEMPLATE 0
-#if LOAD_TEMPLATE == 1
-    if (GameSaveManager::get().loadWorldTemplate(*mWorldData)) {
-        mSkipToHistory = true;
+    if (MainMenuScreenGlobalState::startGameType == StartGameType::NewWorldFromTemplate) {
         mWorld = std::make_unique<World>(WorldNetMode::Host, mWorldData);
+
+        if (!GameSaveManager::get().loadWorld(*mWorld, MainMenuScreenGlobalState::loadWorldPath)) {
+            panic("Failed to load world template {}", MainMenuScreenGlobalState::loadWorldPath.string());
+        }
+        mSkipToHistory = true;
         // Set biome texture
         std::vector <ui8> pixelData;
 
@@ -109,8 +113,9 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
 
         LOG_INFO("Done.");
     }
-#endif
-
+    else {
+        assert(MainMenuScreenGlobalState::startGameType == StartGameType::NewWorld);
+    }
     initStages();
 
 }

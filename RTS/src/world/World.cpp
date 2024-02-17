@@ -53,7 +53,7 @@ std::unique_ptr<World> sGameWorld;
 
 World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netMode) {
     PreciseTimer timer;
-    LOG_DEBUG("Allocating world 0x%08x net mode {}", (void*)this, e_cast(netMode));
+    LOG_DEBUG("Allocating world {} net mode {}", (void*)this, e_cast(netMode));
     mId = ++sWorldId;
     {
         std::lock_guard lock(sWorldsMutex);
@@ -152,7 +152,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mHeightmapGrid->setWorld(*this);
 
     LOG_DEBUG("Chunks allocated in {}", timer.stop());
-    LOG_DEBUG("Finished allocating world 0x%08x net mode {}", (void*)this, e_cast(netMode));
+    LOG_DEBUG("Finished allocating world {} net mode {}", (void*)this, e_cast(netMode));
 
     static_assert(e_count(WorldNetMode) == 3);
 }

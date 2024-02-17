@@ -7,10 +7,18 @@
 
 #include "world/host/HostWorldData.h"
 
+#include "filesystem/FileSystem.h"
+
 enum class RegisteredScreens {
     MainMenu = 0,
     WorldGen = 1,
     Gameplay = 2,
+};
+
+enum class StartGameType {
+    NewWorld,
+    NewWorldFromTemplate,
+    LoadWorld
 };
 
 class MainMenuScreenGlobalState {
@@ -25,8 +33,10 @@ public:
     static bool isHosting() { return hostIP.empty() && serverType != ServerType::NONE; }
     static bool isClient() { return !hostIP.empty(); }
 
-    static ServerType serverType;
-    static nString hostIP;
+    inline static ServerType serverType = ServerType::NONE;
+    inline static nString hostIP;
+    inline static StartGameType startGameType = StartGameType::NewWorld;
+    inline static fs::path loadWorldPath;
 };
 
 class GameplayScreenGlobalState {
