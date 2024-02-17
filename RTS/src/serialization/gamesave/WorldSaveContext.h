@@ -35,7 +35,6 @@ struct RegionFileHeader {
     ui32 version = 0;
     std::vector<RegionPatchDesc> patches;
 
-    ui32 getHeaderSerializeSizeBytes() const { return patches.size() * sizeof(RegionPatchDesc) + sizeof(version) + 4 /*ext size field*/; }
     BINARY_SERIALIZE() {
         s.value4b(version);
         s.ext(patches, bitsery::ext::PodStructVector{});
@@ -82,7 +81,8 @@ public:
     ui32 getRegionWidthTiles() const { return mRegionWidthTiles; }
     ui32 getWorldWidthRegions() const { return mWidthRegions; }
     ui32 getPageSize() const { return mPageSize; }
-
+    static_assert(sizeof(RegionFileHeader) == 40, "Check if this is still true");
+    ui32 getHeaderSerializeSizeBytes() const { return getPatchesPerRegion() * sizeof(RegionPatchDesc) + sizeof(ui32) + 4 /*ext size field*/; }
 private:
     std::vector<RegionFileHeader> mRegionHeaders;
     ui32 mRegionWidthPatches;
@@ -165,7 +165,7 @@ private:
     void decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes);
     BBuffer decompressDataStreamed(const std::span<uint8_t> compressed, size_t reserveCount);
 
-    DeserializedRegionFileData readRegionFile(std::fstream& file, ui32 fileSize);
+    DeserializedRegionFileData readRegionFile(std::fstream& file, ui32 fileSize, RegionType type);
     void updateRegionFile(RegionType type, RegionID regionId);
     void endSave();
 

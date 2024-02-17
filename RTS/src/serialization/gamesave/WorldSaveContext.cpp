@@ -96,20 +96,26 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath) {
 
 void WorldSaveContext::saveWorldDesc() {
     std::ofstream file(mCurrentSavePath / "world.desc", std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        panic("World save could not open world.desc for write");
+    }
     BBuffer bbuffer;
     WorldDesc desc{ .worldWidth=mWorld.getWidthTiles() };
-    bitsery::quickSerialization<BOutputAdapter>(bbuffer, WorldDesc{ mWorld.getWidthTiles() });
-    file.write(reinterpret_cast<const char*>(bbuffer.data()), bbuffer.size());
+    const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(bbuffer, WorldDesc{ mWorld.getWidthTiles() });
+    file.write(reinterpret_cast<const char*>(bbuffer.data()), writtenBytes);
 }
 
 WorldSaveContext::WorldDesc WorldSaveContext::loadWorldDesc() {
     const fs::path descPath = mCurrentLoadPath / "world.desc";
     if (!fs::exists(descPath)) {
-        panic("World save missing world.desc");
+        panic("World load missing world.desc");
     }
     BBuffer bbuffer(fs::file_size(descPath));
 
     std::ifstream file(descPath, std::ios::binary);
+    if (!file.is_open()) {
+        panic("World load could not open world.desc");
+    }
     file.read(reinterpret_cast<char*>(bbuffer.data()), bbuffer.size());
     WorldDesc desc;
     auto state = bitsery::quickDeserialization(BInputAdapter{ bbuffer.data(), bbuffer.size()}, desc);
@@ -231,10 +237,10 @@ void WorldSaveContext::saveChunks() {
                 // TODO: Re-evaluate later
                 //buffer.reserve(24000);
                 const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(buffer, patch);
+                buffer.resize(writtenBytes);
                 //if (writtenBytes > 24000) [[unlikely]] {
                 //    LOG_CRITICAL(" B {}", writtenBytes);
                 //}
-                //buffer.resize(writtenBytes);
                 //buffer.shrink_to_fit();
                 addRegionPatchCompressAndSaveTask(RegionType::Chunk, regionPatchId, std::move(buffer));
                 ++pendingThisRegion;
@@ -335,7 +341,7 @@ void WorldSaveContext::loadMarkupSynchronous() {
 
 void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(DeserializedRegionFileData&&, RegionID)> func) {
     RegionFileCluster& fileCluster = mRegionFileClusters[e_cast(type)];
-    const fs::path directoryPath = mCurrentSavePath / fileCluster.folderName;
+    const fs::path directoryPath = mCurrentLoadPath / fileCluster.folderName;
     if (!fs::exists(directoryPath)) {
         panic("{} directory does not exist. Insufficient permissions?", directoryPath.string());
     }
@@ -494,9 +500,8 @@ BBuffer WorldSaveContext::compressData(const BBuffer& bbuffer) {
     return compressed;
 }
 
-void WorldSaveContext::decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes)
-{
-
+void WorldSaveContext::decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes) {
+    assert(false);
 }
 
 BBuffer WorldSaveContext::decompressDataStreamed(const std::span<uint8_t> compressed, size_t reserveCount) {
@@ -533,16 +538,16 @@ BBuffer WorldSaveContext::decompressDataStreamed(const std::span<uint8_t> compre
     return decompressed;
 }
 
-DeserializedRegionFileData WorldSaveContext::readRegionFile(std::fstream& file, ui32 fileSize) {
+DeserializedRegionFileData WorldSaveContext::readRegionFile(std::fstream& file, ui32 fileSize, RegionType type) {
     if (!file.is_open() || !fileSize) {
         return DeserializedRegionFileData();
     }
+    RegionFileCluster& fileCluster = mRegionFileClusters[e_cast(type)];
 
     DeserializedRegionFileData data;
     data.fileBytes.resize(fileSize);
-    file.seekg(0);
     file.read(reinterpret_cast<char*>(data.fileBytes.data()), fileSize);
-    auto state = bitsery::quickDeserialization(BInputAdapter{ data.fileBytes.data(), data.header.getHeaderSerializeSizeBytes() }, data.header);
+    auto state = bitsery::quickDeserialization(BInputAdapter{ data.fileBytes.data(), fileCluster.getHeaderSerializeSizeBytes()}, data.header);
     assert(state.first == bitsery::ReaderError::NoError && state.second);
     return data;
 }
@@ -557,7 +562,7 @@ void WorldSaveContext::updateRegionFile(RegionType type, RegionID regionId) {
     RegionPendingWriteData& writeData = writeContext.pendingWriteData[regionId];
     RegionFileHeader& header = fileCluster.mRegionHeaders[regionId];
     const ui32 pageSize = fileCluster.getPageSize();
-    const ui32 headerSizeBytes = header.getHeaderSerializeSizeBytes();
+    const ui32 headerSizeBytes = fileCluster.getHeaderSerializeSizeBytes();
     //TODO: Detect if file must be resized, save file data to disk
     //TODO: Only append starting at the first dirty patch instead of rewriting the whole file
     const fs::path directoryPath = mCurrentSavePath / fileCluster.folderName;
