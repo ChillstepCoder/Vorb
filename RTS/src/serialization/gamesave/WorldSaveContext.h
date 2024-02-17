@@ -120,6 +120,14 @@ public:
     EVENT_LISTENER_FUNCS(WorldSave, SaveEnd, WorldSaveEventType::SaveEnd, const WorldSaveEvent&);
 
 private:
+    struct WorldDesc {
+        ui32 worldWidth;
+
+        BINARY_SERIALIZE() {
+            s.value4b(worldWidth);
+        }
+    };
+
     void saveWorldDesc();
     WorldDesc loadWorldDesc();
 
@@ -127,11 +135,16 @@ private:
     void loadHeights();
 
     void saveBiomes();
+    void loadBiomes();
+
     void saveChunks();
+    void loadChunks();
 
+    fs::path getMarkupFilePath() const;
     void saveMarkupIfNotAlreadySaved();
+    void loadMarkupSynchronous();
 
-    void loadRegionsForType(RegionType type, std::function<void(std::span<uint8_t>, RegionID, ui32)> patchFunc);
+    void loadRegionsForType(RegionType type, std::function<void(DeserializedRegionFileData&&, RegionID)> func);
 
     // Call after finished with all save functions
     void notifyAllDataRegistered();

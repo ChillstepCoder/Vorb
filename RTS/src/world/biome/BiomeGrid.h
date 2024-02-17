@@ -44,6 +44,11 @@ struct BiomeVertex {
 static_assert(sizeof(BiomeVertex) == 8, "We are serializing as a binary blob so this must have no automatic padding");
 
 typedef std::array<BiomeVertex, BIOME_PATCH_SIZE_VERTS> BiomePatch;
+template <typename S>
+void serialize(S& s, BiomePatch& p) {
+    std::span<BiomeVertex> spn(p.data(), p.size());
+    s.ext(spn, bitsery::ext::PodStructSpan{});
+}
 
 // Host only?
 class BiomeGrid
@@ -71,6 +76,7 @@ public:
     VGTexture getBiomeTexture() const { return mBiomeTexture; }
 
     BiomeVertex& getVertexForGenerationFromBlockPos(i32v2 blockPos);
+    BiomePatch& getPatchForLoad(ui32 patchId) { return mGrid[patchId]; }
 
 private:
     void initInternal();
@@ -94,7 +100,8 @@ private:
 
     // ======================= Serialization =======================
     BINARY_SERIALIZE() {
-        s.value4b(mWidthVerts);
+        // TODO: This  is  redundant, PodStructVector will dump the size and we have world widthtiles
+        s.value4b(mWidthVerts); 
         if (mGrid.empty()) {
             initInternal();
         }

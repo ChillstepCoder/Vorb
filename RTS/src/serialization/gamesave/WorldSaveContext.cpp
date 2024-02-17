@@ -11,14 +11,6 @@
 
 const char* REGION_EXTENSION = ".rdat";
 
-struct WorldDesc {
-    ui32 worldWidth;
-
-    BINARY_SERIALIZE() {
-        s.serialize(worldWidth);
-    }
-};
-
 std::span<uint8_t> DeserializedRegionFileData::getPatchBytes(ui32 patchId) {
     if (!isValid()) return {};
     assert(header.patches.size() > patchId);
@@ -72,8 +64,8 @@ void WorldSaveContext::saveWorld(const fs::path& savePath) {
     notifyAllDataRegistered();
 }
 
-bool WorldSaveContext::loadWorld(const fs::path& loadPath)
-{
+bool WorldSaveContext::loadWorld(const fs::path& loadPath) {
+    PreciseTimer totalTimer;
     mCurrentLoadPath = loadPath;
     assert(mCurrentSavePath.empty());
 
@@ -81,13 +73,23 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath)
     // TODO: Allow other sizes
     assert(mWorld.getWidthTiles() == desc.worldWidth);
 
+    PreciseTimer timer;
     loadHeights();
+    LOG_DEBUG("Heights took {} ms", timer.stop()); timer.start();
+    loadBiomes();
+    LOG_DEBUG("Biomes took {} ms", timer.stop()); timer.start();
+    loadChunks();
+    LOG_DEBUG("Chunks took {} ms", timer.stop()); timer.start();
+    loadMarkupSynchronous();
+    LOG_DEBUG("Markup took {} ms", timer.stop()); timer.start();
 
     // Let saves finish
     while (mRunningLoadThreads) {
         Sleep(16);
     }
 
+    LOG_DEBUG("Waited for {} ms", timer.stop());
+    LOG_DEBUG("Load took {} ms", totalTimer.stop());
     mCurrentLoadPath.clear();
     return false;
 }
@@ -100,7 +102,7 @@ void WorldSaveContext::saveWorldDesc() {
     file.write(reinterpret_cast<const char*>(bbuffer.data()), bbuffer.size());
 }
 
-WorldDesc WorldSaveContext::loadWorldDesc() {
+WorldSaveContext::WorldDesc WorldSaveContext::loadWorldDesc() {
     const fs::path descPath = mCurrentLoadPath / "world.desc";
     if (!fs::exists(descPath)) {
         panic("World save missing world.desc");
@@ -142,11 +144,24 @@ void WorldSaveContext::saveHeights() {
 }
 
 void WorldSaveContext::loadHeights() {
+    loadRegionsForType(RegionType::Height, [this](DeserializedRegionFileData&& fileData, RegionID regionId) {
+        ++mRunningLoadThreads;
+        Services::Threadpool::ref().addTask([this, fileData=std::move(fileData)]() mutable {
+            fileData.forEachPatch([this](ui32 patchId, std::span<uint8_t> compressedBytes) {
+                IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
 
-    x;
-    loadRegionsForType(RegionType::Height, []() {
+                HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
+                std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
 
-    })
+                decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
+                bitsery::quickDeserialization(BInputAdapter{ dst.data(), sizeof(dst) }, patch);
+
+                // Clean
+                patch.isSaveUpToDate.test_and_set();
+            });
+            --mRunningLoadThreads;
+        });
+    });
 }
 
 void WorldSaveContext::saveBiomes() {
@@ -173,6 +188,31 @@ void WorldSaveContext::saveBiomes() {
             notifyRegionDataIncoming(RegionType::Biome, regionId, pendingThisRegion);
         }
     }
+}
+
+void WorldSaveContext::loadBiomes() {
+    loadRegionsForType(RegionType::Biome, [this](DeserializedRegionFileData&& fileData, RegionID regionId) {
+        ++mRunningLoadThreads;
+        Services::Threadpool::ref().addTask([this, fileData = std::move(fileData)]() mutable {
+            fileData.forEachPatch([this](ui32 patchId, std::span<uint8_t> compressedBytes) {
+                BiomeGrid& biomeGrid = mWorld.getBiomeGrid();
+                BiomePatch& patch = biomeGrid.getPatchForLoad(patchId);
+
+                const ui32 RSIZE = patch.size() * sizeof(BiomeVertex) + 4;
+
+                // TODO: Convert to static!
+                BBuffer buffer = decompressDataStreamed(compressedBytes, RSIZE);
+                if (buffer.size() > RSIZE) {
+                    LOG_CRITICAL("Biome buffer reserve {} less than result {}", RSIZE, buffer.size());
+                }
+                bitsery::quickDeserialization(BInputAdapter{ buffer.data(), buffer.size()}, patch);
+
+                // Clean
+                biomeGrid.mPatchSavesUpToDate[patchId].test_and_set();
+            });
+            --mRunningLoadThreads;
+        });
+    });
 }
 
 void WorldSaveContext::saveChunks() {
@@ -206,8 +246,35 @@ void WorldSaveContext::saveChunks() {
     }
 }
 
+void WorldSaveContext::loadChunks() {
+    loadRegionsForType(RegionType::Chunk, [this](DeserializedRegionFileData&& fileData, RegionID regionId) {
+        ++mRunningLoadThreads;
+        Services::Threadpool::ref().addTask([this, fileData = std::move(fileData)]() mutable {
+            fileData.forEachPatch([this](ui32 patchId, std::span<uint8_t> compressedBytes) {
+                SimChunkTileGrid& simGrid = mWorld.getSimTileGrid();
+                SimChunkTileContainer& patch = simGrid.mChunkData[patchId];
+
+                // TODO: Evaluate reserve
+                BBuffer buffer = decompressDataStreamed(compressedBytes, 2000);
+                bitsery::quickDeserialization(BInputAdapter{ buffer.data(), buffer.size()}, patch);
+
+                // Clean
+                patch.isSaveUpToDate.test_and_set();
+            });
+            --mRunningLoadThreads;
+        });
+    });
+}
+
+// 500MB usually more than enough
+constexpr size_t MARKUP_RESERVE = 500000000;
+
+fs::path WorldSaveContext::getMarkupFilePath() const {
+    return mCurrentSavePath / "markup" / "mkp.dat";
+}
+
 void WorldSaveContext::saveMarkupIfNotAlreadySaved() {
-    fs::path savePath = mCurrentSavePath / "markup" / "mkp.dat";
+    const fs::path savePath = getMarkupFilePath();
     // Markup is const so only should be saved initially
     if (fs::exists(savePath)) {
         return;
@@ -220,8 +287,7 @@ void WorldSaveContext::saveMarkupIfNotAlreadySaved() {
     }
 
     WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
-    // 500MB usually more than enough
-    BBuffer buffer(500000000);
+    BBuffer buffer(MARKUP_RESERVE);
     const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(buffer, markupGrid);
     buffer.resize(writtenBytes);
 
@@ -245,8 +311,29 @@ void WorldSaveContext::saveMarkupIfNotAlreadySaved() {
         });
     });
 }
-x;
-void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(std::span<uint8_t>, RegionID, ui32)> func) {
+
+void WorldSaveContext::loadMarkupSynchronous() {
+    const fs::path savePath = getMarkupFilePath();
+    // Markup is const so only should be saved initially
+    if (!fs::exists(savePath)) {
+        panic("Markup path {} not found during world load", savePath.string());
+    }
+
+    WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
+    BBuffer compressed(fs::file_size(savePath));
+    std::ifstream file(savePath, std::ios::binary);
+    if (!file.is_open()) {
+        panic("Failed to open markup file for reading: {}", savePath.string());
+    }
+    file.read(reinterpret_cast<char*>(compressed.data()), compressed.size());
+    file.close();
+
+    const std::span<uint8_t> compressedBytes(compressed.data(), compressed.size());
+    BBuffer buffer = decompressDataStreamed(compressedBytes, MARKUP_RESERVE);
+    bitsery::quickDeserialization(BInputAdapter{ buffer.data(), buffer.size() }, markupGrid);
+}
+
+void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(DeserializedRegionFileData&&, RegionID)> func) {
     RegionFileCluster& fileCluster = mRegionFileClusters[e_cast(type)];
     const fs::path directoryPath = mCurrentSavePath / fileCluster.folderName;
     if (!fs::exists(directoryPath)) {
@@ -266,18 +353,7 @@ void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(st
             panic("Failed to open region file for reading: {}", regionPath.string());
         }
         DeserializedRegionFileData fileData = readRegionFile(file, fs::file_size(regionPath));
-        fileData.forEachPatch([this, &heightGrid](ui32 patchId, std::span<uint8_t> compressedBytes) {
-            ++mRunningLoadThreads;
-
-            Services::Threadpool::ref().addTask([this, &heightGrid, patchId, compressedBytes]() {
-                HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
-                std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
-
-                decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
-                bitsery::quickDeserialization(BInputAdapter{ dst.data(), sizeof(dst) }, patch);
-                --mRunningLoadThreads;
-            });
-        });
+        func(std::move(fileData), regionId);
     }
 }
 
