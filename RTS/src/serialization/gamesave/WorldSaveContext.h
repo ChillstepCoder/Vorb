@@ -120,10 +120,18 @@ public:
     EVENT_LISTENER_FUNCS(WorldSave, SaveEnd, WorldSaveEventType::SaveEnd, const WorldSaveEvent&);
 
 private:
+    void saveWorldDesc();
+    WorldDesc loadWorldDesc();
+
     void saveHeights();
+    void loadHeights();
+
     void saveBiomes();
     void saveChunks();
+
     void saveMarkupIfNotAlreadySaved();
+
+    void loadRegionsForType(RegionType type, std::function<void(std::span<uint8_t>, RegionID, ui32)> patchFunc);
 
     // Call after finished with all save functions
     void notifyAllDataRegistered();

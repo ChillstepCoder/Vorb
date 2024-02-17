@@ -165,7 +165,7 @@ using namespace std::literals::string_view_literals;
 #include <bitsery/traits/vector.h>
 using BBuffer = std::vector<uint8_t>;
 using BOutputAdapter = bitsery::OutputBufferAdapter<BBuffer>;
-using BInputAdapter = bitsery::InputBufferAdapter<std::span<uint8_t>>;
+using BInputAdapter = bitsery::InputBufferAdapter<uint8_t*>;
 // TODO: Remove this by making ryml exist in vorb or removing vorb
 #include "serialization/YmlSerializer.h"
 #include "serialization/VorbSerializableDefs.h"

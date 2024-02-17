@@ -11,6 +11,14 @@
 
 const char* REGION_EXTENSION = ".rdat";
 
+struct WorldDesc {
+    ui32 worldWidth;
+
+    BINARY_SERIALIZE() {
+        s.serialize(worldWidth);
+    }
+};
+
 std::span<uint8_t> DeserializedRegionFileData::getPatchBytes(ui32 patchId) {
     if (!isValid()) return {};
     assert(header.patches.size() > patchId);
@@ -49,6 +57,7 @@ void WorldSaveContext::saveWorld(const fs::path& savePath) {
     SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
 
     PreciseTimer timer;
+    saveWorldDesc();
     saveHeights();
     LOG_DEBUG("Heights took {} ms", timer.stop()); timer.start();
     saveBiomes();
@@ -68,32 +77,11 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath)
     mCurrentLoadPath = loadPath;
     assert(mCurrentSavePath.empty());
 
-    {
-        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-        fs::path heightPath = mCurrentLoadPath / mRegionFileClusters[e_cast(RegionType::Height)].folderName;
-        if (!fs::exists(heightPath)) {
-            panic("Could not find world heights {}", heightPath.string());
-        }
-        std::fstream file(heightPath, std::ios::binary | std::ios::in);
-        if (!file.is_open()) {
-            panic("Failed to open region file for reading: {}", heightPath.string());
-        }
-        DeserializedRegionFileData fileData = readRegionFile(file, fs::file_size(heightPath));
-        fileData.forEachPatch([this, &heightGrid](ui32 patchId, std::span<uint8_t> compressedBytes) {
-            ++mRunningLoadThreads;
-            Services::Threadpool::ref().addTask([this, &heightGrid, patchId, compressedBytes]() {
-                HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
-                std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
-                
-                decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
+    WorldDesc desc = loadWorldDesc();
+    // TODO: Allow other sizes
+    assert(mWorld.getWidthTiles() == desc.worldWidth);
 
-                // Which to use?
-                //bitsery::Deserializer<BInputAdapter> d{ BInputAdapter{ dst.begin(), dst.end() } };
-                 bitsery::quickDeserialization(BInputAdapter{ dst.begin(), sizeof(dst)}, patch.getDataForDecompression());
-                --mRunningLoadThreads;
-            });
-        });
-    }
+    loadHeights();
 
     // Let saves finish
     while (mRunningLoadThreads) {
@@ -102,6 +90,29 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath)
 
     mCurrentLoadPath.clear();
     return false;
+}
+
+void WorldSaveContext::saveWorldDesc() {
+    std::ofstream file(mCurrentSavePath / "world.desc", std::ios::binary | std::ios::trunc);
+    BBuffer bbuffer;
+    WorldDesc desc{ .worldWidth=mWorld.getWidthTiles() };
+    bitsery::quickSerialization<BOutputAdapter>(bbuffer, WorldDesc{ mWorld.getWidthTiles() });
+    file.write(reinterpret_cast<const char*>(bbuffer.data()), bbuffer.size());
+}
+
+WorldDesc WorldSaveContext::loadWorldDesc() {
+    const fs::path descPath = mCurrentLoadPath / "world.desc";
+    if (!fs::exists(descPath)) {
+        panic("World save missing world.desc");
+    }
+    BBuffer bbuffer(fs::file_size(descPath));
+
+    std::ifstream file(descPath, std::ios::binary);
+    file.read(reinterpret_cast<char*>(bbuffer.data()), bbuffer.size());
+    WorldDesc desc;
+    auto state = bitsery::quickDeserialization(BInputAdapter{ bbuffer.data(), bbuffer.size()}, desc);
+    assert(state.first == bitsery::ReaderError::NoError && state.second);
+    return desc;
 }
 
 void WorldSaveContext::saveHeights() {
@@ -128,6 +139,14 @@ void WorldSaveContext::saveHeights() {
             notifyRegionDataIncoming(RegionType::Height, regionId, pendingThisRegion);
         }
     }
+}
+
+void WorldSaveContext::loadHeights() {
+
+    x;
+    loadRegionsForType(RegionType::Height, []() {
+
+    })
 }
 
 void WorldSaveContext::saveBiomes() {
@@ -225,6 +244,41 @@ void WorldSaveContext::saveMarkupIfNotAlreadySaved() {
             }
         });
     });
+}
+x;
+void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(std::span<uint8_t>, RegionID, ui32)> func) {
+    RegionFileCluster& fileCluster = mRegionFileClusters[e_cast(type)];
+    const fs::path directoryPath = mCurrentSavePath / fileCluster.folderName;
+    if (!fs::exists(directoryPath)) {
+        panic("{} directory does not exist. Insufficient permissions?", directoryPath.string());
+    }
+
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+    assert(heightGrid.mHeightData);
+    const ui32 regionCount = getRegionCount(type);
+    for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
+        fs::path regionPath = directoryPath / (std::to_string(regionId) + REGION_EXTENSION);
+        if (!fs::exists(regionPath)) {
+            panic("Could not find world heights {}", regionPath.string());
+        }
+        std::fstream file(regionPath, std::ios::binary | std::ios::in);
+        if (!file.is_open()) {
+            panic("Failed to open region file for reading: {}", regionPath.string());
+        }
+        DeserializedRegionFileData fileData = readRegionFile(file, fs::file_size(regionPath));
+        fileData.forEachPatch([this, &heightGrid](ui32 patchId, std::span<uint8_t> compressedBytes) {
+            ++mRunningLoadThreads;
+
+            Services::Threadpool::ref().addTask([this, &heightGrid, patchId, compressedBytes]() {
+                HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
+                std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
+
+                decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
+                bitsery::quickDeserialization(BInputAdapter{ dst.data(), sizeof(dst) }, patch);
+                --mRunningLoadThreads;
+            });
+        });
+    }
 }
 
 void WorldSaveContext::notifyAllDataRegistered() {
@@ -412,7 +466,8 @@ DeserializedRegionFileData WorldSaveContext::readRegionFile(std::fstream& file, 
     data.fileBytes.resize(fileSize);
     file.seekg(0);
     file.read(reinterpret_cast<char*>(data.fileBytes.data()), fileSize);
-    bitsery::quickDeserialization(BInputAdapter{ data.fileBytes.begin(), fileSize }, data.header);
+    auto state = bitsery::quickDeserialization(BInputAdapter{ data.fileBytes.data(), data.header.getHeaderSerializeSizeBytes() }, data.header);
+    assert(state.first == bitsery::ReaderError::NoError && state.second);
     return data;
 }
 

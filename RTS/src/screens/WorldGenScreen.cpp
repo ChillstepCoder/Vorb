@@ -606,7 +606,6 @@ void WorldGenScreen::updateMouseInput() {
         uv.y = 1.0 - uv.y;
         f32v2 worldPos = mCamera->screenToWorld(uv * 2.0f - 1.0f);
         mWorldData->playerStart = (worldPos + 1.0f) * 0.5f;
-        LOG_INFO("{} {} {} {}", cursorPosPixels.x, cursorPosPixels.y, mWorldData->playerStart.x, mWorldData->playerStart.y);
     }
 }
 

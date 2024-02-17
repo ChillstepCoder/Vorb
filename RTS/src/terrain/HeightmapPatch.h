@@ -36,9 +36,6 @@ public:
         return data.data();
     }
 
-    std::array<CompressedHeight, HEIGHTMAP_VERT_SIZE_PER_PATCH>& getDataForDecompression() {
-        return data;
-    }
 private:
     std::array<CompressedHeight, HEIGHTMAP_VERT_SIZE_PER_PATCH> data; // Compressed height
 public:
