@@ -411,8 +411,7 @@ void MarkupGenerationStage::onFinished() {
     mMarkupGrid->setMarkupReady();
     LOG_DEBUG("Finished markup generation in {} ms with {} bodies", mTotalTimer.elapsedMs(), mTotalBodies);
 
-    PreciseTimer timer;
     // Only save when not a loaded world
-    GameSaveManager::get().saveWorld(*mWorldPtr, "debug_template", true /*blockUntilFinished*/);
-    LOG_DEBUG("Save took {} ms", timer.stop());
+    LOG_DEBUG("Saving template");
+    GameSaveManager::get().saveWorld(*mWorldPtr, "debug_template", false /*blockUntilFinished*/);
 }
