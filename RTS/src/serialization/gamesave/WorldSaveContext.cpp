@@ -36,6 +36,13 @@ void WorldSaveContext::saveWorld(const fs::path& savePath) {
     assert(mCurrentSavePath.empty());
     mCurrentSavePath = savePath;
 
+    if (!fs::exists(mCurrentSavePath)) {
+        if (!fs::create_directories(mCurrentSavePath)) {
+            panic("Failed to create {} directory. Insufficient permissions?", mCurrentSavePath.string());
+        }
+    }
+
+
     WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
     SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
 
@@ -86,6 +93,7 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath) {
 }
 
 void WorldSaveContext::saveWorldDesc() {
+    
     std::ofstream file(mCurrentSavePath / "world.desc", std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
         panic("World save could not open world.desc for write");
@@ -733,6 +741,9 @@ void WorldSaveContext::endSave() {
         std::lock_guard lock(context.mutex);
         context.pendingWriteData.clear();
     }
+
+    LOG_DEBUG("Save finished");
     dispatchSaveEnd(evnt);
+
 }
 

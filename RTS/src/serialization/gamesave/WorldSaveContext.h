@@ -40,7 +40,6 @@ struct RegionFileHeader {
         s.ext(patches, bitsery::ext::PodStructVector{});
     }
 };
-
 enum class RegionType {
     Height,
     Biome,
@@ -81,7 +80,6 @@ public:
     ui32 getRegionWidthTiles() const { return mRegionWidthTiles; }
     ui32 getWorldWidthRegions() const { return mWidthRegions; }
     ui32 getPageSize() const { return mPageSize; }
-    static_assert(sizeof(RegionFileHeader) == 40, "Check if this is still true");
     ui32 getHeaderSerializeSizeBytes() const { return getPatchesPerRegion() * sizeof(RegionPatchDesc) + sizeof(ui32) + 4 /*ext size field*/; }
 private:
     std::vector<RegionFileHeader> mRegionHeaders;

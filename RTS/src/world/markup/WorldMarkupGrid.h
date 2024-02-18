@@ -128,8 +128,8 @@ struct WorldBodyMarkupData {
     std::vector<ChunkID> borderChunks; // Only used by land bodies, water will be empty
     f32v2 averagePos = f32v2(0.0f);
     BodyID bodyIndex = 0;
-    WorldMarkupBodyType bodyType;
     ui32 sizeBlocks = 0; // Block is 8x8 tiles
+    WorldMarkupBodyType bodyType;
     bool onMapEdge = false;
 
     // ======================= Serialization =======================
@@ -140,11 +140,11 @@ struct WorldBodyMarkupData {
         s.ext(neighborBodies, bitsery::ext::PodStructVector{});
         s.container4b(chunks, 65536 * 4);
         s.container4b(borderChunks, 32768 * 4);
-        // TODO: Define for vector types?
         s.value4b(averagePos.x);
         s.value4b(averagePos.y);
         s.value4b(bodyIndex);
         s.value4b(sizeBlocks);
+        s.value1b(bodyType);
         s.value1b(onMapEdge);
     }
 };
@@ -204,9 +204,6 @@ public:
         return mLandBodiesSortedBySize;
     }
 
-    ui32 getTotalLandChunks() const {
-        return mTotalLandChunks;
-    }
 private:
     void initInternal();
     // Sort bodies and stuff
@@ -224,35 +221,37 @@ private:
     SpatialGrid2D mSpatialGrid;
     std::atomic_bool mMarkupReady = false;
     RandomGenerator gen;
-    std::atomic<ui32> mTotalLandChunks = 0;
 
     // ======================= Serialization =======================
-    BINARY_SERIALIZE() {
-        bool isRead = false;
-        s.value4b(mWidthVerts);
-        if (mBodies.empty()) {
-            isRead = true;
-            initInternal();
-        }
-        else {
-            assert(mMarkupReady);
-        }
+
+    template <typename S>
+    void sharedSerialize(S& s) {
         s.container(mBodies, 65536);
 
         std::span<WorldMarkupData> gridSpan(mMarkup.get(), mTotalMarkupVertices);
         s.ext(gridSpan, bitsery::ext::PodStructSpan{});
 
         std::span<WorldChunkMarkupData> chunkSpan(mChunkMarkup.get(), SQ(mWidthChunks));
-        s.ext(gridSpan, bitsery::ext::PodStructSpan{});
+        s.ext(chunkSpan, bitsery::ext::PodStructSpan{});
+    }
+    BINARY_SERIALIZE();
+    BINARY_SERIALIZE_INPUT() {
+        s.value4b(mWidthVerts);
 
-        if (isRead) {
-            for (auto& bodyData : mBodies) {
-                bodyData.chunks.shrink_to_fit();
-                mLandBodiesSortedBySize.emplace(bodyData.sizeBlocks, bodyData.bodyIndex);
-            }
+        initInternal();
+
+        sharedSerialize(s);
+
+        for (auto& bodyData : mBodies) {
+            bodyData.chunks.shrink_to_fit();
+            mLandBodiesSortedBySize.emplace(bodyData.sizeBlocks, bodyData.bodyIndex);
         }
         // TODO: Serialize name context?
         mMarkupReady = true;
+    }
+    BINARY_SERIALIZE_OUTPUT() {
+        s.value4b(mWidthVerts);
+        sharedSerialize(s);
     }
 };
 
