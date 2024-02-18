@@ -54,3 +54,9 @@ typedef ui32 SettlementUID;
 typedef ui64 CharacterUID;
 typedef ui64 BuildingUID;
 
+constexpr ui16 INVALID_BUSINESS_ID = UINT16_MAX; static_assert(sizeof(BusinessID) == sizeof(ui16));
+constexpr ui32 INVALID_CITY_UID = UINT32_MAX; static_assert(sizeof(CityUID) == sizeof(ui32));
+constexpr ui32 INVALID_SETTLEMENT_UID = UINT32_MAX; static_assert(sizeof(SettlementUID) == sizeof(ui32));
+constexpr ui64 INVALID_BUILDING_UID = UINT64_MAX; static_assert(sizeof(BuildingUID) == sizeof(ui64));
+constexpr ui64 INVALID_CHARACTER_UID = UINT64_MAX; static_assert(sizeof(CharacterUID) == sizeof(ui64));
+
