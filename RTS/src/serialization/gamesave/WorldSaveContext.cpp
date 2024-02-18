@@ -18,15 +18,6 @@ std::span<uint8_t> DeserializedRegionFileData::getPatchBytes(ui32 patchId) {
     return std::span<uint8_t>(fileBytes.data() + patch.mStartByte, (size_t)patch.mAllocatedBytes);
 }
 
-void DeserializedRegionFileData::forEachPatch(std::function<void(ui32, std::span<uint8_t>)> func) {
-    assert(isValid());
-    if (!isValid()) return;
-    for (ui32 i = 0; i < header.patches.size(); i++) {
-        auto& patch = header.patches[i];
-        func(i, std::span<uint8_t>(fileBytes.data() + patch.mStartByte, (size_t)patch.mAllocatedBytes));
-    }
-}
-
 WorldSaveContext::WorldSaveContext(World& world) :
     mWorld(world) {
     mRegionFileClusters[e_cast(RegionType::Height)] = RegionFileCluster(mWorld.getWidthTiles(), HEIGHTMAP_PATCH_WIDTH_TILES, HEIGHT_REGION_WIDTH_PATCHES, "height", 1024);
@@ -91,7 +82,7 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath) {
     LOG_DEBUG("Waited for {} ms", timer.stop());
     LOG_DEBUG("Load took {} ms", totalTimer.stop());
     mCurrentSavePath.clear();
-    return false;
+    return true;
 }
 
 void WorldSaveContext::saveWorldDesc() {
@@ -152,13 +143,14 @@ void WorldSaveContext::saveHeights() {
 void WorldSaveContext::loadHeights() {
     loadRegionsForType(RegionType::Height, [this](DeserializedRegionFileData&& fileData, RegionID regionId) {
         ++mRunningLoadThreads;
-        Services::Threadpool::ref().addTask([this, fileData=std::move(fileData)]() mutable {
-            fileData.forEachPatch([this](ui32 patchId, std::span<uint8_t> compressedBytes) {
+        Services::Threadpool::ref().addTask([this, regionId, fileData=std::move(fileData)]() mutable {
+            forEachPatchInRegion(RegionType::Height, regionId, [this, regionId, &fileData](ui32 patchId, RegionPatchID regionPatchId) {
                 IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
 
                 HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
                 std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
 
+                std::span<uint8_t> compressedBytes = fileData.getPatchBytes(regionPatchId.regionPatchIndex);
                 size_t decompressedSize = decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
                 assert(decompressedSize == sizeof(dst));
                 bitsery::quickDeserialization(BInputAdapter{ dst.data(), sizeof(dst) }, patch);
@@ -200,13 +192,15 @@ void WorldSaveContext::saveBiomes() {
 void WorldSaveContext::loadBiomes() {
     loadRegionsForType(RegionType::Biome, [this](DeserializedRegionFileData&& fileData, RegionID regionId) {
         ++mRunningLoadThreads;
-        Services::Threadpool::ref().addTask([this, fileData = std::move(fileData)]() mutable {
-            fileData.forEachPatch([this](ui32 patchId, std::span<uint8_t> compressedBytes) {
+        Services::Threadpool::ref().addTask([this, regionId, fileData = std::move(fileData)]() mutable {
+            forEachPatchInRegion(RegionType::Biome, regionId, [this, regionId, &fileData](ui32 patchId, RegionPatchID regionPatchId) {
                 BiomeGrid& biomeGrid = mWorld.getBiomeGrid();
                 BiomePatch& patch = biomeGrid.getPatchForLoad(patchId);
 
                 const ui32 RSIZE = patch.size() * sizeof(BiomeVertex) + 4;
 
+
+                std::span<uint8_t> compressedBytes = fileData.getPatchBytes(regionPatchId.regionPatchIndex);
                 // TODO: Convert to static!
                 BBuffer buffer = decompressDataStreamed(compressedBytes, RSIZE);
                 if (buffer.size() > RSIZE) {
@@ -256,14 +250,15 @@ void WorldSaveContext::saveChunks() {
 void WorldSaveContext::loadChunks() {
     loadRegionsForType(RegionType::Chunk, [this](DeserializedRegionFileData&& fileData, RegionID regionId) {
         ++mRunningLoadThreads;
-        Services::Threadpool::ref().addTask([this, fileData = std::move(fileData)]() mutable {
-            fileData.forEachPatch([this](ui32 patchId, std::span<uint8_t> compressedBytes) {
+        Services::Threadpool::ref().addTask([this, regionId, fileData = std::move(fileData)]() mutable {
+            forEachPatchInRegion(RegionType::Chunk, regionId, [this, regionId, &fileData](ui32 patchId, RegionPatchID regionPatchId) {
                 SimChunkTileGrid& simGrid = mWorld.getSimTileGrid();
                 SimChunkTileContainer& patch = simGrid.mChunkData[patchId];
 
+                std::span<uint8_t> compressedBytes = fileData.getPatchBytes(regionPatchId.regionPatchIndex);
                 // TODO: Evaluate reserve
                 BBuffer buffer = decompressDataStreamed(compressedBytes, 2000);
-                bitsery::quickDeserialization(BInputAdapter{ buffer.data(), buffer.size()}, patch);
+                bitsery::quickDeserialization(BInputAdapter{ buffer.data(), buffer.size() }, patch);
 
                 // Clean
                 patch.isSaveUpToDate.test_and_set();

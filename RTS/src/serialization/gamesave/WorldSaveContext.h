@@ -104,7 +104,6 @@ struct DeserializedRegionFileData {
     bool isValid() const { return fileBytes.size() != 0; }
 
     std::span<uint8_t> getPatchBytes(ui32 patchId);
-    void forEachPatch(std::function<void(ui32, std::span<uint8_t>)> func);
 };
 
 // Caches world specific save data such as regions and such
