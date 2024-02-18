@@ -162,7 +162,7 @@ private:
 
     void addRegionPatchCompressAndSaveTask(RegionType type, RegionPatchID regionPatchId, BBuffer&& bbuffer);
     BBuffer compressData(const BBuffer& bbuffer);
-    void decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes);
+    size_t decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes);
     BBuffer decompressDataStreamed(const std::span<uint8_t> compressed, size_t reserveCount);
 
     DeserializedRegionFileData readRegionFile(std::fstream& file, ui32 fileSize, RegionType type);
@@ -172,7 +172,6 @@ private:
 
     // ====================== Data ======================
     World& mWorld;
-    fs::path mCurrentLoadPath;
     fs::path mCurrentSavePath;
     fs::path mPrevSavePath;
 

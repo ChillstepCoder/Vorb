@@ -42,6 +42,8 @@ struct SimChunkTileData {
         sharedSerialize(s);
         if (tileQuantities.empty()) {
             for (auto& [tileIndex, tileData] : tileIndexToTileData) {
+                x;
+                //LOG_DEBUG("{} {}", tileIndex, tileData.tileId);
                 auto&& it = tileQuantities.find(tileData.tileId);
                 if (it == tileQuantities.end()) [[unlikely]] {
                     tileQuantities.emplace(tileData.tileId, 1);

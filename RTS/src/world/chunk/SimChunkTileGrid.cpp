@@ -27,10 +27,11 @@ void SimChunkTileGrid::initInternal() {
 
 bool SimChunkTileContainer::allocate() {
     std::lock_guard lock(mutex);
-    if (state != SimChunkTileContainerState::Allocated) {
+    if (!data) {
         state = SimChunkTileContainerState::Allocated;
         data = std::make_unique<SimChunkTileData>();
         return true;
     }
+    assert(state == SimChunkTileContainerState::Allocated);
     return false;
 }

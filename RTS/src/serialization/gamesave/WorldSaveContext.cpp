@@ -66,8 +66,8 @@ void WorldSaveContext::saveWorld(const fs::path& savePath) {
 
 bool WorldSaveContext::loadWorld(const fs::path& loadPath) {
     PreciseTimer totalTimer;
-    mCurrentLoadPath = loadPath;
     assert(mCurrentSavePath.empty());
+    mCurrentSavePath = loadPath;
 
     WorldDesc desc = loadWorldDesc();
     // TODO: Allow other sizes
@@ -90,7 +90,7 @@ bool WorldSaveContext::loadWorld(const fs::path& loadPath) {
 
     LOG_DEBUG("Waited for {} ms", timer.stop());
     LOG_DEBUG("Load took {} ms", totalTimer.stop());
-    mCurrentLoadPath.clear();
+    mCurrentSavePath.clear();
     return false;
 }
 
@@ -106,7 +106,7 @@ void WorldSaveContext::saveWorldDesc() {
 }
 
 WorldSaveContext::WorldDesc WorldSaveContext::loadWorldDesc() {
-    const fs::path descPath = mCurrentLoadPath / "world.desc";
+    const fs::path descPath = mCurrentSavePath / "world.desc";
     if (!fs::exists(descPath)) {
         panic("World load missing world.desc");
     }
@@ -159,7 +159,8 @@ void WorldSaveContext::loadHeights() {
                 HeightmapPatch& patch = heightGrid.getPatchForGeneration(patchId);
                 std::array<uint8_t, HEIGHTMAP_VERT_SIZE_PER_PATCH * sizeof(CompressedHeight)> dst;
 
-                decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
+                size_t decompressedSize = decompressDataStatic(compressedBytes, dst.data(), sizeof(dst));
+                assert(decompressedSize == sizeof(dst));
                 bitsery::quickDeserialization(BInputAdapter{ dst.data(), sizeof(dst) }, patch);
 
                 // Clean
@@ -341,7 +342,7 @@ void WorldSaveContext::loadMarkupSynchronous() {
 
 void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(DeserializedRegionFileData&&, RegionID)> func) {
     RegionFileCluster& fileCluster = mRegionFileClusters[e_cast(type)];
-    const fs::path directoryPath = mCurrentLoadPath / fileCluster.folderName;
+    const fs::path directoryPath = mCurrentSavePath / fileCluster.folderName;
     if (!fs::exists(directoryPath)) {
         panic("{} directory does not exist. Insufficient permissions?", directoryPath.string());
     }
@@ -358,7 +359,7 @@ void WorldSaveContext::loadRegionsForType(RegionType type, std::function<void(De
         if (!file.is_open()) {
             panic("Failed to open region file for reading: {}", regionPath.string());
         }
-        DeserializedRegionFileData fileData = readRegionFile(file, fs::file_size(regionPath));
+        DeserializedRegionFileData fileData = readRegionFile(file, fs::file_size(regionPath), type);
         func(std::move(fileData), regionId);
     }
 }
@@ -490,7 +491,7 @@ BBuffer WorldSaveContext::compressData(const BBuffer& bbuffer) {
     // TODO: Dictionary compression for better speed and ratio
     size_t const cSize = ZSTD_compress(compressed.data(), compressed.size(), bbuffer.data(), bbuffer.size(), 1);
     if (ZSTD_isError(cSize)) {
-        panic("ZSTD_compress failed during height save");
+        panic("ZSTD_compress failed");
     }
     else {
         compressed.resize(cSize);
@@ -500,38 +501,54 @@ BBuffer WorldSaveContext::compressData(const BBuffer& bbuffer) {
     return compressed;
 }
 
-void WorldSaveContext::decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes) {
-    assert(false);
+size_t WorldSaveContext::decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes) {
+    size_t resultCount = ZSTD_decompress(dst, dstSizeBytes, compressed.data(), compressed.size());
+    if (ZSTD_isError(resultCount)) {
+        panic("ZSTD_decompress failed");
+    }
+    return resultCount;
 }
 
 BBuffer WorldSaveContext::decompressDataStreamed(const std::span<uint8_t> compressed, size_t reserveCount) {
     // Streaming decompression
     // https://raw.githack.com/facebook/zstd/release/doc/zstd_manual.html#Chapter9
     ZSTD_DStream* zds = ZSTD_createDStream();
-    size_t recommendedSize = ZSTD_initDStream(zds);
+    size_t recommendedSize = ZSTD_DStreamOutSize();
+
+    ZSTD_initDStream(zds);
     
     BBuffer decompressed;
-    decompressed.reserve(std::max(reserveCount, recommendedSize));
-    decompressed.resize(recommendedSize);
+    decompressed.reserve(reserveCount);
 
-    ZSTD_outBuffer output;
-    output.dst = decompressed.data();
-    output.pos = 0;
-    output.size = recommendedSize;
+    // TODO: This is pretty big
+    BBuffer streamingBuffer(recommendedSize);
     ZSTD_inBuffer input;
     input.pos = 0;
     input.size = compressed.size();
     input.src = compressed.data();
-    while (ui32 moreRequested = ZSTD_decompressStream(zds, &output, &input)) {
-        if (ZSTD_isError(moreRequested)) [[unlikely]] {
-            LOG_CRITICAL("DECOMPRESSION ERROR: {} {}", ZSTD_getErrorName(moreRequested), "(TODO: Handle this better)");
+    size_t lastRet = 0;
+    while (input.pos < input.size) {
+        ZSTD_outBuffer output = { streamingBuffer.data(), streamingBuffer.size(), 0 };
+
+        size_t const ret = ZSTD_decompressStream(zds, &output, &input);
+        if (ZSTD_isError(ret)) [[unlikely]] {
+            LOG_CRITICAL("DECOMPRESSION ERROR: {} {}", ZSTD_getErrorName(ret), "(TODO: Handle this better)");
             return BBuffer();
         }
-        decompressed.resize(decompressed.size() + moreRequested);
-        output.size = moreRequested;
+
+        decompressed.insert(decompressed.end(), streamingBuffer.begin(), streamingBuffer.begin() + output.pos);
+        lastRet = ret;
     }
 
-    decompressed.resize(output.pos);
+    if (lastRet != 0) {
+        /* The last return value from ZSTD_decompressStream did not end on a
+         * frame, but we reached the end of the file! We assume this is an
+         * error, and the input was truncated.
+         */
+        LOG_CRITICAL("DECOMPRESSION EOF before end of stream: {}", lastRet);
+        return BBuffer();
+    }
+
     decompressed.shrink_to_fit();
 
     ZSTD_freeDStream(zds);
@@ -617,7 +634,7 @@ void WorldSaveContext::updateRegionFile(RegionType type, RegionID regionId) {
         if (!fileExisted || totalDesiredFileSize >= fs::file_size(regionPath)) {
             if (fileExisted) {
                 file.open(regionPath, std::ios::binary | std::ios::in | std::ios::out);
-                previousFileData = readRegionFile(file, fs::file_size(regionPath)); 
+                previousFileData = readRegionFile(file, fs::file_size(regionPath), type);
             }
             else {
                 file.open(regionPath, std::ios::binary | std::ios::out);
@@ -634,7 +651,7 @@ void WorldSaveContext::updateRegionFile(RegionType type, RegionID regionId) {
             if (!file.is_open()) {
                 panic("Failed to open region file for writing: {}", regionPath.string());
             }
-            previousFileData = readRegionFile(file, fs::file_size(regionPath));
+            previousFileData = readRegionFile(file, fs::file_size(regionPath), type);
             if (totalDesiredFileSize != fs::file_size(regionPath)) {
                 fs::resize_file(regionPath, totalDesiredFileSize);
             }
