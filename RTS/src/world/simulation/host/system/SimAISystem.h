@@ -17,11 +17,14 @@ private:
     void updateCharacterGroups();
     void handleTaskComplete(entt::entity entity, SimBrainComponent& brain, SimInProgressTaskComponent& taskCmp);
     void updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos);
+    void onEntityEnterNewChunk(entt::entity entity);
 
+    World& mWorld;
     entt::registry& mRegistry;
     HostSimContext& mSimContext;
     SimECS& mECS;
     TimestampMs mCurrentTime = 0;
     TimestampMs mDeltaTime = 0;
+    ui32 mWorldWidthChunks = 0;
 };
 

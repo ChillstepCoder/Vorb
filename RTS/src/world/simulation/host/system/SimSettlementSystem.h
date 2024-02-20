@@ -11,7 +11,7 @@ public:
 
     void tick(TimestampMs currentTime, TimestampMs deltaTime);
 
-    void createSettlementFromGroup(entt::entity groupEntity);
+    bool tryCreateSettlementFromGroup(entt::entity groupEntity);
 private:
 
     std::unique_ptr<SettlementNameContext> mNameContext;

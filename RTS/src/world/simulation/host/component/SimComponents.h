@@ -10,7 +10,15 @@
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
 struct SimPositionComponent {
+
+    // Return true if we are in a new chunk
+    bool updatePosition(f32v2 newPosition, ui32 worldWidthChunks);
+    f32v2 getPosition() const { return position; }
+    ChunkID getChunk() const { return; }
+
+private:
     f32v2 position; // Usually "last known" position in tiles
+    ChunkID chunk;
 };
 
 struct SimCharacterComponent {

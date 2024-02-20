@@ -1038,6 +1038,9 @@
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\simulation\host\component\SimComponents.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">

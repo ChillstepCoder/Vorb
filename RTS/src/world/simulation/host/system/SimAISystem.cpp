@@ -10,7 +10,8 @@
 #include "math/Random.h"
 
 SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
-    mSimContext(simContext), mRegistry(registry), mECS(ecs) {
+    mWorld(simContext.getWorld()), mSimContext(simContext), mRegistry(registry), mECS(ecs) {
+    mWorldWidthChunks = mWorld.getWidthChunks();
 }
 
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
@@ -21,15 +22,7 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     
     updateCharacterGroups();
 
-    { // Update all followers (Simple Logic)
-        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, CharacterGroupFollowerComponent>();
-        for (auto entity : view) {
-            SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
-            SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
-            updateFollowCharacterGroup(entity, brain, pos);
-        }
-    }
-    
+  
     { // Update all brains who aren't followers (Complex Logic)
         auto view = mRegistry.view<SimBrainComponent, SimPositionComponent>(entt::exclude<CharacterGroupFollowerComponent>);
         for (auto entity : view) {
@@ -84,6 +77,15 @@ void SimAISystem::updateCharacterGroups() {
         }
     }
 
+    { // Update all followers (Simple Logic)
+        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, CharacterGroupFollowerComponent>();
+        for (auto entity : view) {
+            SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
+            SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
+            updateFollowCharacterGroup(entity, brain, pos);
+        }
+    }
+
     // TODO: Only end group if its the type that wants to end on reach target!
     for (entt::entity group : groupsToEnd) {
         mECS.endCharacterGroup(group, CharacterGroupDissolveReason::GoalSuccess);
@@ -99,10 +101,19 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
     CharacterGroupFollowerComponent& followCmp = mRegistry.get<CharacterGroupFollowerComponent>(entity);
     SimPositionComponent& groupPosition = mRegistry.get<SimPositionComponent>(followCmp.groupEntity);
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(followCmp.groupEntity);
-    // In sim, we are always just stuck to the leader in a close line regardless of formation, for cheap calculation
-    pos.position = groupPosition.position - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f);
+
     if (followCmp.nextFollowCheckTime >= mCurrentTime) {
         // TODO: Check if we should keep following
         followCmp.nextFollowCheckTime = mCurrentTime + CHARACTER_GROUP_DEFAULT_FOLLOW_CHECK_INTERVAL_MS;
     }
+
+    // In sim, we are always just stuck to the leader in a close line regardless of formation, for cheap calculation
+    if (pos.updatePosition(groupPosition.getPosition() - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f), mWorldWidthChunks)) {
+        onEntityEnterNewChunk(entity);
+    }
+}
+
+void SimAISystem::onEntityEnterNewChunk(entt::entity entity) {
+    SimPositionComponent& pos = mRegistry.get<SimPositionComponent>(entity);
+    ChunkID id = pos.getChunk();
 }

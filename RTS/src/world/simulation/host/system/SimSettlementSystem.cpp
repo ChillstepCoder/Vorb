@@ -4,6 +4,8 @@
 #include "world/simulation/host/component/SimComponents.h"
 #include "world/simulation/host/component/SettlementComponents.h"
 
+#include "world/simulation/host/HostSimContext.h"
+
 #include "text/NameManager.h"
 
 SimSettlementSystem::SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
@@ -17,7 +19,12 @@ void SimSettlementSystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     //RandomGenerator& gen = mSimContext.getSimRandomGenerator();
 }
 
-void SimSettlementSystem::createSettlementFromGroup(entt::entity groupEntity) {
+bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity) {
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(groupEntity);
     assert(groupCmp.leader != entt::null);
+
+    SimPositionComponent& posCmp = mRegistry.get<SimPositionComponent>(groupCmp.leader);
+
+    World& world = mSimContext.getWorld();
+    OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
 }

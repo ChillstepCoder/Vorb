@@ -66,7 +66,7 @@ public:
     void setLoadCenter(const f32v2& loadCenter);
     ui32 getWidthTiles() const { return mWidthTiles; }
     ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
-    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES; }
+    ui32 getWidthHeightmapPatches() const { return mWidthChunks; }
     WorldID getId() const { return mId; }
     ui64 getWorldTimeMs() const { return mWorldTimeMs; }
     void setWorldTimeMs(ui64 newTime);
@@ -134,6 +134,7 @@ private:
     mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
     ui32 mWidthTiles = 0;
+    ui32 mWidthChunks = 0;
     f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
 
     ui64 mWorldTimeMs = 0; // Time since the world began
