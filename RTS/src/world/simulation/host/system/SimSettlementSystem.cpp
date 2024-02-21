@@ -30,4 +30,5 @@ bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity)
     World& world = mSimContext.getWorld();
     OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
     //x;
+    return true;
 }

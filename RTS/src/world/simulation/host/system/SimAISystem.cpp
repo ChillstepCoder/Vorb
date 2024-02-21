@@ -14,6 +14,12 @@ SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry
     mWorld(simContext.getWorld()), mSimContext(simContext), mRegistry(registry), mECS(ecs) {
     mWorldWidthChunks = mWorld.getWidthChunks();
     mEntitiesInChunks.resize(SQ(mWorldWidthChunks));
+
+    // Prevent allocations
+    constexpr ui32 LIST_RESERVE_COUNT = 64;
+    for (auto& list : mEntitiesInChunks) {
+        list.reserve(LIST_RESERVE_COUNT);
+    }
     
     ecs.registerSimECSListeners(mECSEventListeners);
     ecs.addEntityCreatedListener(mECSEventListeners, [this](SimECSEvent e) {
@@ -95,7 +101,13 @@ void SimAISystem::updateCharacterGroups() {
             constexpr f32 COMPLETE_DISTANCE = 8.f;
             
             const f32 moveDistance = glm::min(distanceToTarget, glm::max(group.moveSpeed * (mDeltaTime / MS_PER_SECOND), minMoveStep));
-            const f32v2 newPosition = i32v2(glm::round(f32v2(leaderPos.position) + (offsetToTarget / distanceToTarget) * moveDistance));
+            f32v2 newPosition;
+            if (distanceToTarget < 0.0001f) [[unlikely]] {
+                newPosition = group.targetPos;
+            }
+            else {
+                newPosition = i32v2(glm::round(f32v2(leaderPos.position) + (offsetToTarget / distanceToTarget) * moveDistance));
+            }
             setEntityPosition(group.leader, newPosition);
             setEntityPosition(groupEntity, newPosition);
 

@@ -62,53 +62,83 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
         if (!GameSaveManager::get().loadWorld(*mWorld, MainMenuScreenGlobalState::loadWorldPath)) {
             panic("Failed to load world template {}", MainMenuScreenGlobalState::loadWorldPath.string());
         }
-        mSkipToHistory = true;
-        // Set biome texture
-        std::vector <ui8> pixelData;
 
-        LOG_INFO("Updating biome texture...");
-        const ui32 bWidth = mWorldData->biomeGrid->getWidthVertices();
-        pixelData.resize(SQ(bWidth));
-        for (ui32 y = 0; y < bWidth; ++y) {
-            for (ui32 x = 0; x < bWidth; ++x) {
-                const BiomeUniqueID id = mWorldData->biomeGrid->getVertexForGenerationFromBlockPos(i32v2(x, y)).biomeUniqueId;
-                pixelData[y * bWidth + x] = (ui8)id;
-                mMappedBiomes[y * bWidth + x] = (ui32)id;
-            }
+        // Asychronous build texture pixel data, as it is a lot of pixels and can take a while for a single thread
+        std::vector <ui8> biomePixelData;
+        std::vector <ui8> heightPixelData;
+        std::atomic_int runningTasks = 0;
+        constexpr ui32 NUM_BIOME_TASKS = 8; // Must be power of two
+        constexpr ui32 NUM_HEIGHT_TASKS = 16; // Must be power of two
+
+        BiomeGrid& biomeGrid = *mWorldData->biomeGrid;
+        const ui32 bWidth = biomeGrid.getWidthVertices();
+        IHeightmapGrid& heightGrid = *mWorldData->heightmapGrid;
+        const ui32 patchesWidth = heightGrid.getWidthPatches();
+        const ui32 patchWidthVerts = heightGrid.getPatchWidthVerts();
+        const ui32 tWidth = patchesWidth * patchWidthVerts;
+
+        biomePixelData.resize(SQ(bWidth));
+        heightPixelData.resize(SQ(tWidth));
+
+        LOG_INFO("Updating biome + height textures...");
+        PreciseTimer timer;
+        // Biome
+        const ui32 B_ROWS = bWidth / NUM_BIOME_TASKS;
+        const ui32 T_ROWS = patchesWidth / NUM_HEIGHT_TASKS;
+        assert(B_ROWS > 0);
+        assert(T_ROWS > 0);
+        for (ui32 i = 0; i < NUM_BIOME_TASKS; ++i) {
+            ++runningTasks;
+            Services::Threadpool::ref().addTask([this, &runningTasks, &biomePixelData, B_ROWS, start = i * B_ROWS, &biomeGrid, bWidth]() {
+                for (ui32 y = start; y < start + B_ROWS; ++y) {
+                    for (ui32 x = 0; x < bWidth; ++x) {
+                        const BiomeUniqueID id = biomeGrid.getVertexForGenerationFromBlockPos(i32v2(x, y)).biomeUniqueId;
+                        biomePixelData[y * bWidth + x] = (ui8)id;
+                        mMappedBiomes[y * bWidth + x] = (ui32)id;
+                    }
+                }
+                --runningTasks;
+            });
         }
+        for (ui32 i = 0; i < NUM_HEIGHT_TASKS; ++i) {
+            ++runningTasks;
+            Services::Threadpool::ref().addTask([this, &runningTasks, &heightPixelData, T_ROWS, start = i * T_ROWS, tWidth, patchesWidth, patchWidthVerts, &heightGrid]() {
+                // Cache efficient iterate
+                for (ui32 py = start; py < start + T_ROWS; ++py) {
+                    const ui32 pyOffset = py * patchWidthVerts;
+                    for (ui32 px = 0; px < patchesWidth; ++px) {
+                        const ui32 pxOffset = px * patchWidthVerts;
+                        HeightmapPatch& patch = heightGrid.getPatchForGeneration(py * patchesWidth + px);
+                        for (ui32 y = 0; y < patchWidthVerts; ++y) {
+                            for (ui32 x = 0; x < patchWidthVerts; ++x) {
+                                heightPixelData[(pyOffset + y) * tWidth + pxOffset + x] = (ui8)glm::clamp((patch.getHeightAt(y * patchWidthVerts + x) + 127.0f) - 100.0f, 0.0f, 255.0f);
+                            }
+                        }
+                    }
+                }
+                --runningTasks;
+            });
+        }
+        do {
+            Sleep(16);
+        } while (runningTasks);
+
+        mSkipToHistory = true;
+        LOG_DEBUG("  Took {} ms", timer.stop());
         glFlushMappedNamedBufferRange(mBiomeSSBO, SQ(bWidth), sizeof(ui32));
         glTextureSubImage2D(
             mBiomeTexture,
             0, 0, 0,
             bWidth, bWidth,
             GL_RED, GL_UNSIGNED_BYTE,
-            pixelData.data()
+            biomePixelData.data()
         );
-
-        LOG_INFO("Updating height texture...");
-        const ui32 patchesWidth = mWorldData->heightmapGrid->getWidthPatches();
-        const ui32 patchWidthVerts = mWorldData->heightmapGrid->getPatchWidthVerts();
-        const ui32 tWidth = patchesWidth * patchWidthVerts;
-        pixelData.resize(SQ(tWidth));
-        // Cache efficient iterate
-        for (ui32 py = 0; py < patchesWidth; ++py) {
-            const ui32 pyOffset = py * patchWidthVerts;
-            for (ui32 px = 0; px < patchesWidth; ++px) {
-                const ui32 pxOffset = px * patchWidthVerts;
-                HeightmapPatch& patch = mWorldData->heightmapGrid->getPatchForGeneration(py * patchesWidth + px);
-                for (ui32 y = 0; y < patchWidthVerts; ++y) {
-                    for (ui32 x = 0; x < patchWidthVerts; ++x) {
-                        pixelData[(pyOffset + y) * tWidth + pxOffset + x] = (ui8)glm::clamp((patch.getHeightAt(y * patchWidthVerts + x) + 127.0f) - 100.0f, 0.0f, 255.0f);
-                    }
-                }
-            }
-        }
         glTextureSubImage2D(
             mHeightTexture,
             0, 0, 0,
             tWidth, tWidth,
             GL_RED, GL_UNSIGNED_BYTE,
-            pixelData.data()
+            heightPixelData.data()
         );
 
         LOG_INFO("Done.");

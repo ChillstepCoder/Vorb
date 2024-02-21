@@ -44,43 +44,43 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
             ++categoryIndex;
             continue;
         }
-            if (normal.z <= category.slopeRange.x && normal.z >= category.slopeRange.y) {
-                if (TileDistributionSampler::sample(*category.distributionPtr, worldPos, DENSITY, category.probabilityMult)) {
-                    const f32 randomRoll = Random::getThreadSafef(worldPos.y, worldPos.x);
-                    for (auto& possibleTile : category.tiles) {
-                        if (randomRoll <= possibleTile.weightThreshold) {
-                            tile.mainLayer = possibleTile.tileId;
+        if (normal.z <= category.slopeRange.x && normal.z >= category.slopeRange.y) {
+            if (TileDistributionSampler::sample(*category.distributionPtr, worldPos, DENSITY, category.probabilityMult)) {
+                const f32 randomRoll = Random::getThreadSafef(worldPos.y, worldPos.x);
+                for (auto& possibleTile : category.tiles) {
+                    if (randomRoll <= possibleTile.weightThreshold) {
+                        tile.mainLayer = possibleTile.tileId;
 
-                            // Select variant
-                            if (possibleTile.variantCount) {
-                                f32 variantRoll = 0.0f;
-                                switch (possibleTile.variantSelectionType) {
-                                    case TileVariantSelectionType::Random: {
-                                        variantRoll = Random::getThreadSafef(worldPos.y, worldPos.x);
-                                        break;
-                                    }
-                                    case TileVariantSelectionType::Voronoi: {
-                                        const i32v2 point = mVoronoiMap->getVoronoiPointAtTile(worldPos, 1.0f);
-                                        variantRoll = Random::getThreadSafef(point.x, point.y);
-                                        break;
-                                    }
+                        // Select variant
+                        if (possibleTile.variantCount) {
+                            f32 variantRoll = 0.0f;
+                            switch (possibleTile.variantSelectionType) {
+                                case TileVariantSelectionType::Random: {
+                                    variantRoll = Random::getThreadSafef(worldPos.y, worldPos.x);
+                                    break;
                                 }
-
-                                for (size_t i = possibleTile.variantStartIndex; i < possibleTile.variantStartIndex + possibleTile.variantCount; ++i) {
-                                    const VariantWithWeightThreshold& variant = category.allVariants[i];
-                                    if (variantRoll <= variant.weightThreshold) {
-                                        tile.mainLayerVariant = variant.tileVariant;
-                                        break;
-                                    }
+                                case TileVariantSelectionType::Voronoi: {
+                                    const i32v2 point = mVoronoiMap->getVoronoiPointAtTile(worldPos, 1.0f);
+                                    variantRoll = Random::getThreadSafef(point.x, point.y);
+                                    break;
                                 }
                             }
-                            static_assert(e_count(TileVariantSelectionType) == 2);
 
-                            return tile;
+                            for (size_t i = possibleTile.variantStartIndex; i < possibleTile.variantStartIndex + possibleTile.variantCount; ++i) {
+                                const VariantWithWeightThreshold& variant = category.allVariants[i];
+                                if (variantRoll <= variant.weightThreshold) {
+                                    tile.mainLayerVariant = variant.tileVariant;
+                                    break;
+                                }
+                            }
                         }
+                        static_assert(e_count(TileVariantSelectionType) == 2);
+
+                        return tile;
                     }
                 }
             }
+        }
         ++categoryIndex;
     }
     return tile;
@@ -237,7 +237,9 @@ void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world
         const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
         f32v3 normal;
         const f32 height = heightGrid.computeCenterHeightAndNormalAtTile<true>(chunkPosWorld + i32v2(x, y), &normal);
-        Tile tile = generateTileAtPos(tilePosWorld, height, normal, biomeGrid.getBiomeDefAtPoint(tilePosWorld));
+        const BiomeDef* def = biomeGrid.getBiomeDefAtPoint(tilePosWorld);
+        assert(def);
+        Tile tile = generateTileAtPos(tilePosWorld, height, normal, def);
 
         if (tile.mainLayer != TILE_ID_NONE) {
 
@@ -261,7 +263,7 @@ void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world
     chunkData.tileIndexToTileData.shrink_to_fit();
     chunkData.tileQuantities.shrink_to_fit();
 
-    LOG_DEBUG("Generated simchunk in {} ms {} {} {}", timer.stop(), totalTiles, (f32)totalTiles / CHUNK_SIZE, chunkData.tileIndexToTileData.size());
+    //LOG_DEBUG("Generated simchunk in {} ms {} {} {}", timer.stop(), totalTiles, (f32)totalTiles / CHUNK_SIZE, chunkData.tileIndexToTileData.size());
 }
 
 void ChunkGenerator::generateTileGrass(i32v2 worldPos, f32 height, TileGrass* grass) {

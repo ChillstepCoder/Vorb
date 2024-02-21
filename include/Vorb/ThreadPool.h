@@ -66,6 +66,8 @@ namespace vorb {
             void setSize(ui32 size);
             int getSize() const { return mActiveThreads; }
             int getNumRunningThreads() const { return mRunningThreads; }
+
+            bool isRunning() const { return mRunningThreads || getTasksSizeApprox(); }
         private:
             VORB_NON_COPYABLE(ThreadPool);
             // Typedef for func ptr

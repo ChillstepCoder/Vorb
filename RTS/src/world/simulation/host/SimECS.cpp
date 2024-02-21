@@ -137,7 +137,8 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
     CharacterGroupComponent& groupCmp = mRegistry.emplace<CharacterGroupComponent>(groupEntity);
 
     // Start at the leaders position
-    mRegistry.emplace<SimPositionComponent>(groupEntity).position = mRegistry.get<SimPositionComponent>(leader).position;
+    const SimPositionComponent& leaderPos = mRegistry.get<SimPositionComponent>(leader);
+    mRegistry.emplace<SimPositionComponent>(groupEntity, leaderPos.position, leaderPos.chunk);
     groupCmp.leader = leader;
     groupCmp.groupType = groupType;
 

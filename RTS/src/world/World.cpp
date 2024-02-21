@@ -70,7 +70,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     if (mWidthTiles < MIN_WORLD_WIDTH_TILES) {
         mWidthTiles = MIN_WORLD_WIDTH_TILES;
     }
-    mWidthChunks = mWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES;
+    mWidthChunks = mWidthTiles / CHUNK_WIDTH;
 
     // Host vs Client objects
     switch (netMode) {

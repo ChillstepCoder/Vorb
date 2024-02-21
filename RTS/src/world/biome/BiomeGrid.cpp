@@ -29,7 +29,9 @@ const BiomeDef* BiomeGrid::getBiomeDefAtPoint(i32v2 worldPos) const {
     cellOffset /= BIOME_VERTEX_STRIDE;
 
     const BiomeUniqueID uniqueId = mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x].biomeUniqueId;
-    if (uniqueId == BiomeUniqueID::INVALID) [[unlikely]] return nullptr;
+    if (uniqueId == BiomeUniqueID::INVALID) [[unlikely]] {
+        return nullptr;
+    }
     return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
 }
 
