@@ -1,7 +1,7 @@
 #pragma once
 
 #include "world/ChunkState.h"
-#include "world/ChunkID.h"
+#include "world/GridID.h"
 
 #include "character/CharacterConst.h"
 #include "rendering/renderstate/CharacterRenderState.h"

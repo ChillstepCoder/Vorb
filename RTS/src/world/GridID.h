@@ -4,7 +4,6 @@
 
 typedef ui32 GridIdType;
 constexpr GridIdType GRID_ID_INVALID = UINT32_MAX;
-constexpr GridIdType CHUNK_ID_INVALID = GRID_ID_INVALID;
 
 template<ui32 GRIDWIDTH, ui32 CELLWIDTH>
 struct GridID {
@@ -79,8 +78,5 @@ protected:
         id = pos.y * GRIDWIDTH + pos.x;
     }
 };
-
-//typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
-//typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
 
 

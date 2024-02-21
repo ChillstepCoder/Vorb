@@ -1,8 +1,11 @@
 #pragma once
 
+// TODO: This is a heavy include
 #include "tile/TileHandle.h"
+
 #include "network/WorldNetMode.h"
 
+#include "tile/TileHarvestable.h"
 #include "world/WorldEvents.h"
 
 #include <shared_mutex>
@@ -65,12 +68,13 @@ public:
     f32v2 getLoadCenter() const;
     void setLoadCenter(const f32v2& loadCenter);
     ui32 getWidthTiles() const { return mWidthTiles; }
-    ui32 getWidthChunks() const { return mWidthTiles / CHUNK_WIDTH; }
-    ui32 getWidthHeightmapPatches() const { return mWidthChunks; }
+    ui32 getWidthChunks() const { return mWidthChunks; }
+    ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES; }
     WorldID getId() const { return mId; }
     ui64 getWorldTimeMs() const { return mWorldTimeMs; }
     void setWorldTimeMs(ui64 newTime);
     ui32 getSeed() const { return mSeed; }
+    inline ChunkID getChunkIDAtWorldPos(f32v2 worldPos) const { return (worldPos.y / CHUNK_WIDTH) * mWidthChunks + (worldPos.x / CHUNK_WIDTH); }
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
@@ -103,7 +107,7 @@ public:
     // Tile Accessors
     TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
-    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
+    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const;
 

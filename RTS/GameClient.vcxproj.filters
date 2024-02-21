@@ -1038,9 +1038,6 @@
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\simulation\host\component\SimComponents.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1295,7 +1292,7 @@
     <ClInclude Include="src\world\WorldObjectQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\ChunkID.h">
+    <ClInclude Include="src\world\GridID.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h">
@@ -2541,6 +2538,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\serialization\gamesave\WorldSaveEventType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\SimECSEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\SimEntityType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

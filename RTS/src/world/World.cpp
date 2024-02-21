@@ -19,6 +19,7 @@
 #include "structure/Structure.h"
 #include "structure/StructureManager.h"
 #include "tile/TileContainerRepository.h"
+#include "tile/TileHandle.h"
 #include "time/TimeOfDayManager.h"
 #include "world/Chunk.h"
 #include "world/biome/BiomeGrid.h"
@@ -368,6 +369,10 @@ TileHandle World::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
         return chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
     }
     return TileHandle();
+}
+
+TileHandle World::getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const {
+    return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y));
 }
 
 bool World::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "item/ItemStockpile.h"
-#include "world/ChunkID.h"
+#include "world/GridID.h"
 #include "world/World.h"
 
 class ItemStockpileRegistry {

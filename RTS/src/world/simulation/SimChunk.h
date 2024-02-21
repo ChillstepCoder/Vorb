@@ -1,6 +1,6 @@
 #pragma once
 
-#include "World/ChunkID.h"
+#include "World/GridID.h"
 #include "boost/container/flat_set.hpp"
 
 enum class SimChunkState : ui8 {

@@ -46,7 +46,7 @@ void SimThread::requestAllCharacters(std::shared_ptr<SimThreadEntityRequest> req
         for (auto entity : viewGroup) {
             request->entities.emplace_back(SimThreadEntityRequest::Data{
                     entity,
-                    registry.get<SimPositionComponent>(entity).position,
+                    registry.get<SimPositionComponent>(entity).getPosition(),
                     registry.get<FactionComponent>(entity).factionId
                 }
             );

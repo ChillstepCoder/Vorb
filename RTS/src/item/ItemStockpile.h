@@ -2,7 +2,7 @@
 
 #include "ItemDef.h"
 
-#include "world/ChunkID.h"
+#include "world/GridID.h"
 #include "util/BitArray.h"
 #include "ItemStockpileEvent.h"
 #include "tile/TileHandle.h"

@@ -1,23 +1,29 @@
 #pragma once
 
+#include "world/simulation/host/SimECSEvents.h"
+
 class HostSimContext;
 class SimECS;
+class World;
 
 struct SimBrainComponent;
 struct SimInProgressTaskComponent;
 struct SimPositionComponent;
+
+typedef std::vector<entt::entity> SimChunkEntityList;
 
 class SimAISystem {
 public:
     SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry);
 
     void tick(TimestampMs currentTime, TimestampMs deltaTime);
+    void setEntityPosition(entt::entity e, f32v2 newPosition);
 
 private:
     void updateCharacterGroups();
     void handleTaskComplete(entt::entity entity, SimBrainComponent& brain, SimInProgressTaskComponent& taskCmp);
     void updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos);
-    void onEntityEnterNewChunk(entt::entity entity);
+    void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
 
     World& mWorld;
     entt::registry& mRegistry;
@@ -26,5 +32,8 @@ private:
     TimestampMs mCurrentTime = 0;
     TimestampMs mDeltaTime = 0;
     ui32 mWorldWidthChunks = 0;
+
+    std::vector<SimChunkEntityList> mEntitiesInChunks;
+    SimECSListeners mECSEventListeners;
 };
 

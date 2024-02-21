@@ -4,7 +4,9 @@
 #include "world/simulation/host/component/SimComponents.h"
 #include "world/simulation/host/component/SettlementComponents.h"
 
+#include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
+#include "world/ownership/OwnershipGrid.h"
 
 #include "text/NameManager.h"
 
@@ -27,4 +29,5 @@ bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity)
 
     World& world = mSimContext.getWorld();
     OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
+    //x;
 }

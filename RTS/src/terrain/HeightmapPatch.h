@@ -1,7 +1,7 @@
 #pragma once
 
 #include "world/TerrainConstants.h"
-#include "world/ChunkID.h"
+#include "world/GridID.h"
 #include "terrain/CompressedHeight.h"
 
 #include <bitsery/traits/array.h>

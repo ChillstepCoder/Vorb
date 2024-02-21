@@ -12,7 +12,9 @@
 
 #include "math/Random.h"
 
-SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext) {
+#include "world/World.h"
+
+SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()) {
     mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
     mSettlementSystem = std::make_unique<SimSettlementSystem>(hostSimContext, *this, mRegistry);
 }
@@ -42,7 +44,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
 
     mRegistry.emplace<SimCharacterComponent>(newPerson, ++mUIDGenerator);
     mRegistry.emplace<SimCharacterGenderComponent>(newPerson, isFemale);
-    mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition);
+    mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition, mWorld.getChunkIDAtWorldPos(worldTilePosition));
     mRegistry.emplace<SimBrainComponent>(newPerson);
     mRegistry.emplace<SimNeedsComponent>(newPerson);
     mRegistry.emplace<AttributesComponent>(newPerson).init(
@@ -56,6 +58,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
     nameCmp.firstName = NameManager::getRandomFirstName(gen, isFemale);
     nameCmp.lastName = NameManager::getRandomLastName(gen);
 
+    dispatchEntityCreated(SimECSEvent{ newPerson, SimEntityType::Person });
     return newPerson;
 }
 
@@ -69,6 +72,8 @@ entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, in
     if (offsetToTarget != f32v2(0.0f)) {
         groupCmp.currentHeading = glm::normalize(offsetToTarget);
     }
+
+    dispatchEntityCreated(SimECSEvent{ groupEntity, SimEntityType::Group });
     return groupEntity;
 }
 
@@ -81,7 +86,7 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
         case CharacterGroupType::Generic:
             break;
         case CharacterGroupType::SettlerCaravan:
-            mSettlementSystem->createSettlementFromGroup(group);
+            assert(mSettlementSystem->tryCreateSettlementFromGroup(group));
             break;
         case CharacterGroupType::Combat:
             break;
@@ -103,7 +108,6 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
                 case CharacterGroupFollowerReason::None:
                     break;
                 case CharacterGroupFollowerReason::Settler:
-                    mSettlementSystem->createSettlementFromGroup(group);
                     break;
                 case CharacterGroupFollowerReason::Bodyguard:
                     break;
@@ -115,8 +119,9 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
         }
 
         mRegistry.remove<CharacterGroupFollowerComponent>(follower);
-        
     }
+
+    dispatchEntityDestroyed(SimECSEvent{ group, SimEntityType::Group });
     mRegistry.remove<CharacterGroupLeaderComponent>(groupCmp.leader);
     mRegistry.destroy(group);
 }

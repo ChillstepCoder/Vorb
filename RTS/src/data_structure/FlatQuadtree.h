@@ -6,7 +6,7 @@ DECL_VG(class GLProgram);
 
 #include "data_structure/QuadtreeSettings.h"
 #include "world/IHeightmapGrid.h"
-#include "world/ChunkID.h"
+#include "world/GridID.h"
 
 // Lookup tables are generated via this
 constexpr ui32 ABSOLUTE_MAX_QUADTREE_DEPTH = 5u;

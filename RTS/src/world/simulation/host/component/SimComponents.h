@@ -10,15 +10,18 @@
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
 struct SimPositionComponent {
+    friend class SimECS;
+    friend class SimAISystem;
+    SimPositionComponent() = default;
+    SimPositionComponent(f32v2 position, ChunkID chunk) : position(position), chunk(chunk) {}
 
     // Return true if we are in a new chunk
-    bool updatePosition(f32v2 newPosition, ui32 worldWidthChunks);
     f32v2 getPosition() const { return position; }
-    ChunkID getChunk() const { return; }
+    ChunkID getChunk() const { return chunk; }
 
 private:
     f32v2 position; // Usually "last known" position in tiles
-    ChunkID chunk;
+    ChunkID chunk = INVALID_CHUNK_ID;
 };
 
 struct SimCharacterComponent {

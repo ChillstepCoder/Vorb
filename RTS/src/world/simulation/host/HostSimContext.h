@@ -50,6 +50,7 @@ public:
     SimWorldAnalytics& getAnalytics() const { return *mAnalytics; }
     RandomGenerator& getSimRandomGenerator() const;
     ui32 getWidthChunks() const;
+
 private:
     //ChunkSimulator mSimulator;
 

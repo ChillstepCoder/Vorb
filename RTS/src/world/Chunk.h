@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ChunkID.h"
+#include "GridID.h"
 #include "tile/TileHandle.h"
 #include "tile/TileContainer.h"
 

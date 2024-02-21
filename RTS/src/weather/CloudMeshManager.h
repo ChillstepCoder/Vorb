@@ -3,7 +3,7 @@
 class Mesh;
 class ChunkGenerator;
 
-#include "world/ChunkID.h"
+#include "world/GridID.h"
 #include "util/SpatialGrid2D.h"
 
 #include "resources/asset/AssetHandleBundle.h"
