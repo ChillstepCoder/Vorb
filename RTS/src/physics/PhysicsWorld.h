@@ -64,6 +64,7 @@ enum class CollisionGroup {
     COUNT = 4 // KEEP UP TO DATE
 };
 
+// TODO: Replace with jolt https://github.com/jrouwe/JoltPhysics
 class PhysicsWorld
 {
 public:

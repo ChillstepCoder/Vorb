@@ -75,8 +75,8 @@ struct SimTaskBossComponent {
 };
 
 struct SimResidentComponent {
-    SettlementUID settlementId;
-    BuildingUID homeId;
+    entt::entity settlementEntity = entt::null;
+    BuildingUID homeId = INVALID_BUILDING_UID;
 };
 
 struct SimCharacterNameComponent {

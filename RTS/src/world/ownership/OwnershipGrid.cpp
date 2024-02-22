@@ -43,8 +43,13 @@ OwnershipData OwnershipGrid::getWorldPosEntityOwnerData(f32v2 worldPos) const {
     return mBlockOwners[blockPos.y * mWidthBlocks + blockPos.x];
 }
 
+bool OwnershipGrid::isChunkOwnedBySettlement(ChunkID chunkId) const {
+    return mChunkOwners[chunkId].owner != entt::null;
+}
+
 void OwnershipGrid::setChunkSettlementOwnerData(ChunkID chunkId, OwnershipData ownerData) {
     mChunkOwners[chunkId] = ownerData;
+    mClaimedChunks.setBit(chunkId);
 }
 
 void OwnershipGrid::setWorldPosEntityOwnerData(f32v2 worldPos, OwnershipData ownerData) {

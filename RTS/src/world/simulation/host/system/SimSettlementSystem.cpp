@@ -26,9 +26,57 @@ bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity)
     assert(groupCmp.leader != entt::null);
 
     SimPositionComponent& posCmp = mRegistry.get<SimPositionComponent>(groupCmp.leader);
+    ChunkID rootChunk = posCmp.getChunk();
 
     World& world = mSimContext.getWorld();
     OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
-    //x;
+
+    if (ownershipGrid.isChunkOwnedBySettlement(rootChunk)) {
+        return false;
+    }
+
+    // Create entity
+    entt::entity settlementEntity = createSettlementEntity(rootChunk, groupCmp.leader, groupCmp.groupMembers);
+
     return true;
+}
+
+entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt::entity leader, std::vector<entt::entity>& people) {
+    World& world = mSimContext.getWorld();
+    OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
+
+    entt::entity settlementEntity = mRegistry.create();
+
+    OwnershipData ownerData;
+    ownerData.owner = settlementEntity;
+    ownerData.propertyValue = 100.0f;
+    ownershipGrid.setChunkSettlementOwnerData(rootChunk, ownerData);
+
+    // Add components
+    SettlementDetailsComponent& detailsCmp = mRegistry.emplace<SettlementDetailsComponent>(settlementEntity);
+    detailsCmp.ownedChunks.emplace_back(rootChunk);
+
+    SettlementSimComponent& simCmp = mRegistry.emplace<SettlementSimComponent>(settlementEntity);
+    simCmp.uid = mUIDGen++;
+    simCmp.rootChunkId = rootChunk;
+    simCmp.tier = SettlementTier::Hamlet;
+
+    mRegistry.emplace<SettlementDistrictsComponent>(settlementEntity);
+    mRegistry.emplace<SettlementPlannerComponent>(settlementEntity);
+    mRegistry.emplace<SettlementJobBoardsComponent>(settlementEntity); 
+    mRegistry.emplace<SettlementStructuresComponent>(settlementEntity);
+    mRegistry.emplace<SettlementWorkOrdersComponent>(settlementEntity);
+    mRegistry.emplace<SettlementQuartermasterComponent>(settlementEntity);
+    // TODO Adjacency
+
+    // Assign people
+    SettlementPeopleComponent& peopleCmp = mRegistry.emplace<SettlementPeopleComponent>(settlementEntity);
+    peopleCmp.leader = leader;
+    peopleCmp.people = people;
+    for (auto& person : people) {
+        SimResidentComponent& residentCmp = mRegistry.get_or_emplace<SimResidentComponent>(person);
+        residentCmp.settlementEntity = settlementEntity;
+    }
+
+    return settlementEntity;
 }

@@ -27,6 +27,7 @@ enum class SettlementTier : ui8 {
 // Lightweight, fast access for simulation
 struct SettlementSimComponent {
     ChunkID rootChunkId;
+    SettlementUID uid;
     SettlementTier tier = SettlementTier::Hamlet;
 };
 
@@ -66,6 +67,37 @@ struct SettlementJobBoardData {
 
 struct SettlementJobBoardsComponent {
     std::vector<SettlementJobBoardData> jobBoards;
+};
+
+struct SettlementPeopleComponent {
+    entt::entity leader = entt::null;
+    std::vector<entt::entity> people;
+};
+
+struct SettlementQuartermasterComponent {
+    entt::entity quartermasterCharacter = entt::null;
+    std::vector<StructureID> storageStructures;
+};
+
+enum class StructureFlags : ui8 {
+    SettlementStorage = BIT(0)
+};
+
+struct StructureData {
+    ChunkID rootChunkID;
+    i32AABB2 aabb;
+    entt::entity settlementEntity = entt::null;
+    StructureFlags flags = {};
+    //std::vector<i32v2> entranceLocations;
+};
+
+struct SettlementStructuresComponent {
+    std::vector<StructureData> structureData;
+    std::vector<StructureID> freeStructureIDs;
+};
+
+struct SettlementWorkOrdersComponent {
+
 };
 
 //std::vector<Chunk*> mChunks;

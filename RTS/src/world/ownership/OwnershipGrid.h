@@ -8,8 +8,8 @@
 class WorldMarkupGrid;
 
 struct OwnershipData {
-    entt::entity owner;
-    f32 propertyValue;
+    entt::entity owner = entt::null;
+    f32 propertyValue = 0.0f;
 };
 static_assert(sizeof(OwnershipData) == 8, "Keep tiny");
 
@@ -31,6 +31,7 @@ public:
 
     OwnershipData getChunkSettlementOwnerData(ChunkID chunkId) const;
     OwnershipData getWorldPosEntityOwnerData(f32v2 worldPos) const;
+    bool isChunkOwnedBySettlement(ChunkID chunkId) const;
 
     void setChunkSettlementOwnerData(ChunkID chunkId, OwnershipData ownerData);
     void setWorldPosEntityOwnerData(f32v2 worldPos, OwnershipData ownerData);

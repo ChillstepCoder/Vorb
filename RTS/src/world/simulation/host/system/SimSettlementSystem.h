@@ -13,7 +13,7 @@ public:
 
     bool tryCreateSettlementFromGroup(entt::entity groupEntity);
 private:
-
+    entt::entity createSettlementEntity(ChunkID rootChunk, entt::entity leader, std::vector<entt::entity>& people);
     std::unique_ptr<SettlementNameContext> mNameContext;
 
     entt::registry& mRegistry;
@@ -21,5 +21,6 @@ private:
     SimECS& mECS;
     TimestampMs mCurrentTime = 0;
     TimestampMs mDeltaTime = 0;
+    SettlementUID mUIDGen = 0; // TODO: Serialize this
 };
 
