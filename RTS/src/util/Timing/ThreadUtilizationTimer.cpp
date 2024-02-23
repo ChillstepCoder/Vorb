@@ -28,6 +28,8 @@ void ThreadUtilizationTimer::beginFrame() {
         const f32 prevFrameTimeMS = mCurrentFrameTimeMS;
         mCurrentFrameTimeMS = vmath::lerp(prevFrameTimeMS, f32((f64)frameTimeNS / NS_PER_MS), AVG_LERP_TIME);
         const f32 prevUtilization = mCurrentUtilizationPercentage;
+        // TODO: This is not right, because a single frame with a massive sleep followed by a single tick frame will average together 1:1 and become 50% instead of averaging over
+        // the total time
         mCurrentUtilizationPercentage = vmath::lerp(prevUtilization, (f32)(100.0 * (1.0 - percentageTimeSleeping)), AVG_LERP_PERCENT);
         assert(mCurrentUtilizationPercentage <= 100.0f);
     }

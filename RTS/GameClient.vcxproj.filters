@@ -1038,6 +1038,9 @@
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\simulation\host\settlement\SettlementPlanner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2544,6 +2547,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\SimEntityType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\settlement\SettlementPlanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\component\StructureComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

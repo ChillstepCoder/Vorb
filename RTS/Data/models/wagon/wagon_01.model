@@ -1,0 +1,15 @@
+model: wagon_01.fbx
+rig: ''
+machine: ''
+scale: 1
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 10
+shadow_detail: highest
+force_normals_up: 0
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [wagon_01_top,wagon_01_axle,wagon_01_base,wagon_01_base_bot]

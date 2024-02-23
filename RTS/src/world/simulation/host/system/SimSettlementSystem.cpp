@@ -3,6 +3,7 @@
 
 #include "world/simulation/host/component/SimComponents.h"
 #include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/settlement/SettlementPlanner.h"
 
 #include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
@@ -10,18 +11,36 @@
 
 #include "text/NameManager.h"
 
+constexpr TimestampMs UPDATE_INTERVAL = 5000;
+
 SimSettlementSystem::SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
     mSimContext(simContext), mRegistry(registry), mECS(ecs) {
+
+    mPlanner = std::make_unique<SettlementPlanner>(registry);
 }
+
+SimSettlementSystem::~SimSettlementSystem() = default;
 
 void SimSettlementSystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     mCurrentTime = currentTime;
     mDeltaTime = deltaTime;
 
+    if (mCurrentTime >= mNextUpdateTime) {
+        LOG_DEBUG("Updating settlements {}", mCurrentTime);
+        auto view = mRegistry.view<SettlementSimComponent, SettlementPlannerComponent>();
+        for (entt::entity entity : view) {
+            mPlanner->updatePlanner(entity, currentTime, deltaTime);
+        }
+
+        mNextUpdateTime = mCurrentTime + UPDATE_INTERVAL;
+    }
     //RandomGenerator& gen = mSimContext.getSimRandomGenerator();
 }
 
 bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity) {
+    LOG_CRITICAL("OWNERSHIP FAIL IN tryCreateSettlementFromGroup");
+    return true; // TODO FIX
+
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(groupEntity);
     assert(groupCmp.leader != entt::null);
 
@@ -32,7 +51,8 @@ bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity)
     OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
 
     if (ownershipGrid.isChunkOwnedBySettlement(rootChunk)) {
-        return false;
+        LOG_CRITICAL("OWNERSHIP FAIL IN tryCreateSettlementFromGroup");
+        //return false;
     }
 
     // Create entity

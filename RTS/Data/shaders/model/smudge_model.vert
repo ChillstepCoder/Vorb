@@ -1,18 +1,20 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
 #include "util/uv.glsl"
+#include "model/model_variant.glsl"
 
 uniform int unWindType = 0;
 uniform float unSnowLevel;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in uint vMaterialIndex;
+layout(location = 2) in uint vMaterialSlot;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 layout(location = 7) in mat4 vModelMatrix;
+layout(location = 11) in uint vVariantIndex;
 
 out vec2 fUV;
 flat out uint fMaterialIndex;
@@ -24,7 +26,7 @@ out vec3 fFragPosTangent;
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = vMaterialIndex;
+    fMaterialIndex = inVariantData[vVariantIndex].materials[vMaterialSlot];
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);

@@ -8,8 +8,6 @@ class World;
 class HostSimContext;
 class RandomGenerator;
 
-constexpr f64 SIM_TICK_RATE_MS = 64.0;
-
 enum class SimThreadState : ui8 {
     Idle,
     HistorySim,
@@ -53,7 +51,6 @@ private:
 
     World& mWorld;
     HostSimContext& mHostSimContext;
-    TickingTimer mSimTimer = TickingTimer(SIM_TICK_RATE_MS, SIM_TICK_RATE_MS * 2.0);
     ThreadUtilizationTimer mThreadUtilizationTimer;
     TimestepManager mTimestepManager;
 

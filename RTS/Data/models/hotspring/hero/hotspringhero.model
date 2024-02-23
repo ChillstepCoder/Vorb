@@ -12,25 +12,25 @@ force_normals_up: 0
 variants:
   - name: new_variant
     submesh_mats:
-      - hotspringhero
-      - model_water
+      - [hotspringhero,'','','']
+      - [model_water,'','','']
   - name: new_variant
     submesh_mats:
-      - hotspringh_brwn
-      - model_water
+      - [hotspringh_brwn,'','','']
+      - [model_water,'','','']
   - name: new_variant
     submesh_mats:
-      - hotspringh_brwn2
-      - model_water
+      - [hotspringh_brwn2,'','','']
+      - [model_water,'','','']
   - name: new_variant
     submesh_mats:
-      - hotspringh_brwn3
-      - model_water
+      - [hotspringh_brwn3,'','','']
+      - [model_water,'','','']
   - name: new_variant
     submesh_mats:
-      - hotspringh_w
-      - model_water
+      - [hotspringh_w,'','','']
+      - [model_water,'','','']
   - name: new_variant
     submesh_mats:
-      - hotspringh_g
-      - model_water
+      - [hotspringh_g,'','','']
+      - [model_water,'','','']

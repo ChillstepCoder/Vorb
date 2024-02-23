@@ -24,7 +24,8 @@ public:
 
     static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
         RawSubMesh& subMesh,
-        const std::vector<FBXRawMaterialData>& rawMaterials
+        const std::vector<FBXRawMaterialData>& rawMaterials,
+        std::vector<ui16>* rawMaterialIdToSlots = nullptr // For static model loading
     );
 
     static void uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh);

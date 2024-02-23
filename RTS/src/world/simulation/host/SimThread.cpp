@@ -96,11 +96,12 @@ void SimThread::tickSim(SimThreadState state) {
     {
         f64 sleepSec = 0.0f;
         if (!mTimestepManager.tryTick(&sleepSec)) {
+            mThreadUtilizationTimer.beginSleep();
             Sleep(sleepSec * MS_PER_SECOND);
+            mThreadUtilizationTimer.endSleep();
             return;
         }
     }
-
 
     if (state == SimThreadState::HistorySim) {
         mHostSimContext.mSimTime += ui64(mTargetTickRateMs * mTimeScale);

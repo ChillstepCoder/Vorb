@@ -16,7 +16,7 @@
 #include <fbxsdk/core/base/fbxstring.h>
 #include <fbxsdk/scene/geometry/fbxlayer.h>
 
-MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials) {
+MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials, std::vector<ui16>* rawMaterialIdToSlots) {
 
     MeshCpuData rv;
     MaterialRepository& materialRepo = MaterialRepository::get();
@@ -61,8 +61,38 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
         StaticModelVertex* verts = new StaticModelVertex[rv.mVertsCount];
         rv.mVertsPtr = verts;
         rv.mVertexType = VertexType::STATIC_MODEL;
+
+        // Slots
+        std::vector<ui16> rawMaterialIdSlotMapping;
+        // If we have specified slots, use them
+        if (rawMaterialIdToSlots) {
+            rawMaterialIdSlotMapping = *rawMaterialIdToSlots;
+        }
+        else {
+            rawMaterialIdSlotMapping.reserve(4);
+        }
+       
         for (int i = 0; i < rv.mVertsCount; ++i) {
             const RawMeshVertex& rawVert = meshData.vertices[i];
+
+            // Assign slot index
+            ui16 materialSlot = UINT16_MAX;
+            for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
+                if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
+                    verts[i].materialSlot = (ui16)slotIndex;
+                    materialSlot = (ui16)slotIndex;
+                    break;
+                }
+            }
+            if (materialSlot == UINT16_MAX) [[unlikely]] {
+                // Assign new slot
+                if (rawMaterialIdSlotMapping.size() >= 4) [[unlikely]] {
+                    panic("Submesh with more than 4 materials found");
+                }
+                materialSlot = (ui16)rawMaterialIdSlotMapping.size();
+                rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
+            }
+
             StaticModelVertex& myVert = verts[i];
             f32v2 uvs;
             uvs.x = glm::clamp(rawVert.uvs.x, 0.0f, 1.0f);
@@ -73,7 +103,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawVert.tangent,
                 uvs,
                 rawVert.color,
-                defaultMaterials[rawVert.materialSlotIndex], // Note that this is overridden by material variants system and is now defunct
+                materialSlot,
                 0
             );
         }

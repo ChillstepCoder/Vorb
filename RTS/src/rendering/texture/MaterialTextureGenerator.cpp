@@ -210,7 +210,7 @@ gli::texture2d MaterialTextureGenerator::combineAoRoughnessMetallicTextureData(c
         dims = ui32v2(ao.extent().x, ao.extent().y);
     }
     else if (!roughness.empty()) {
-        dims = ui32v2(ao.extent().x, ao.extent().y);
+        dims = ui32v2(roughness.extent().x, roughness.extent().y);
     }
     else if (!metallic.empty()) {
         dims = ui32v2(metallic.extent().x, metallic.extent().y);

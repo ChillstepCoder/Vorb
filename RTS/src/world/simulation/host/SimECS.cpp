@@ -30,8 +30,8 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     mTimeDelta = currentTimestamp - mLastTickTimestamp;
     mLastTickTimestamp = currentTimestamp;
     
-    updateAI();
-    updateSettlements();
+    mAISystem->tick(mCurrentTickTimestamp, mTimeDelta);
+    mSettlementSystem->tick(mCurrentTickTimestamp, mTimeDelta);
 }
 
 entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
@@ -160,14 +160,4 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
     groupCmp.nextRefreshTime = mCurrentTickTimestamp + CHARACTER_GROUP_DEFAULT_REFRESH_INTERVAL_MS;
 
     return groupEntity;
-}
-
-
-void SimECS::updateAI() {
-    mAISystem->tick(mCurrentTickTimestamp, mTimeDelta);
-}
-
-void SimECS::updateSettlements()
-{
-
 }

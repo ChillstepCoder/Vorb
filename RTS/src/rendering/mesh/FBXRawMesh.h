@@ -11,7 +11,7 @@ struct alignas(16) RawMeshVertex {
     f32v3 tangent;
     f32v2 uvs;
     color4 color;
-    ui16 materialSlotIndex;
+    ui16 rawMaterialIndex;
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
 };
@@ -53,7 +53,7 @@ struct RawSubMesh {
 // can be exported or converted into proper GPU meshes.
 class FBXRawMesh {
 public:
-    std::vector<FBXRawMaterialData> mMaterialSlots;
+    std::vector<FBXRawMaterialData> mMaterials;
     std::vector<RawSubMesh> mSubMeshes;
     RawSubMesh mCombinedMeshData[e_count(MaterialRenderPassType)];
 };

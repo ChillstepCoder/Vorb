@@ -53,7 +53,7 @@ void HostSimContext::onWorldBeginGame() {
     if (!mSimThread) {
         mSimThread = std::make_unique<SimThread>(*this, mWorld);
     }
-    mSimThread->setTargetTickRateMs(60.0);
+    mSimThread->setTargetTickRateMs(200.0);
     mSimThread->setTimeScale(1.0f);
     mSimThread->setState(SimThreadState::GameSim);
 }

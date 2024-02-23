@@ -8,7 +8,9 @@ public:
     ThreadUtilizationTimer();
 
     void beginFrame();
+    // Call before calling Sleep()
     void beginSleep();
+    // Call after calling Sleep()
     void endSleep();
 
     f32 getUtilizationPercentage() const { return mCurrentUtilizationPercentage; }

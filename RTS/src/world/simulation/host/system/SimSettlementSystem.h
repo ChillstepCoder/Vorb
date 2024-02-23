@@ -3,11 +3,13 @@
 class HostSimContext;
 class SimECS;
 class SettlementNameContext;
+class SettlementPlanner;
 
 class SimSettlementSystem
 {
 public:
     SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry);
+    ~SimSettlementSystem();
 
     void tick(TimestampMs currentTime, TimestampMs deltaTime);
 
@@ -22,5 +24,8 @@ private:
     TimestampMs mCurrentTime = 0;
     TimestampMs mDeltaTime = 0;
     SettlementUID mUIDGen = 0; // TODO: Serialize this
+
+    TimestampMs mNextUpdateTime = 0;
+    std::unique_ptr<SettlementPlanner> mPlanner;
 };
 

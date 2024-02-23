@@ -37,9 +37,6 @@ public:
 private:
     entt::entity createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType);
 
-    void updateAI();
-    void updateSettlements();
-
     entt::registry mRegistry;
     TimestampMs mCurrentTickTimestamp = 0;
     TimestampMs mTimeDelta = 0;

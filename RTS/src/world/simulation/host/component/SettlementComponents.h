@@ -52,6 +52,7 @@ struct SettlementRoadGraphComponent {
 
 // Handles logic for growing the settlement
 struct SettlementPlannerComponent {
+
 };
 
 // Heavyweight, less accesses needed
@@ -77,23 +78,12 @@ struct SettlementPeopleComponent {
 struct SettlementQuartermasterComponent {
     entt::entity quartermasterCharacter = entt::null;
     std::vector<StructureID> storageStructures;
+    boost::container::flat_map<ItemID, ui32v2> itemCountsVsDesired;
 };
 
-enum class StructureFlags : ui8 {
-    SettlementStorage = BIT(0)
-};
-
-struct StructureData {
-    ChunkID rootChunkID;
-    i32AABB2 aabb;
-    entt::entity settlementEntity = entt::null;
-    StructureFlags flags = {};
-    //std::vector<i32v2> entranceLocations;
-};
 
 struct SettlementStructuresComponent {
-    std::vector<StructureData> structureData;
-    std::vector<StructureID> freeStructureIDs;
+    std::vector<entt::entity> allStructureEntities;
 };
 
 struct SettlementWorkOrdersComponent {

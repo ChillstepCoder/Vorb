@@ -34,11 +34,14 @@ struct alignas(16) StaticModelVertex {
     ui32 tangentPacked;
     i16v2 uvsPacked;
     color4 color;
-    ui16 materialId; // Optional
+    union {
+        ui16 materialSlot; // Used by models
+        ui16 materialId; // Used by procedural mesh builder
+    };
     ui8 windInfluence;
 
     // TODO: Pre-packed normals/tangent
-    void build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, MaterialID materialId, ui8 windInfluence);
+    void build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence);
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::STATIC_MODEL; }

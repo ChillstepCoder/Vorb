@@ -8,6 +8,7 @@ uniform float unSnowLevel;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
+layout(location = 2) in uint vMaterialSlot;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
@@ -26,7 +27,7 @@ out float fSnow;
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = inVariantData[vVariantIndex].material;
+    fMaterialIndex = inVariantData[vVariantIndex].materials[vMaterialSlot];
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);

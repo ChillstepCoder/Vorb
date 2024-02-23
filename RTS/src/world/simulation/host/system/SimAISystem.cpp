@@ -70,10 +70,14 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
 }
 
 void SimAISystem::setEntityPosition(entt::entity e, f32v2 newPosition) {
+
+    // TODO: FIX
+    newPosition = glm::clamp(newPosition, 0.0f, 32767.f);
+
     SimPositionComponent& posCmp = mRegistry.get<SimPositionComponent>(e);
     posCmp.position = newPosition;
     ChunkID prevChunk = posCmp.chunk;
-    posCmp.chunk = (newPosition.y / CHUNK_WIDTH) * mWorldWidthChunks + newPosition.x / CHUNK_WIDTH;
+    posCmp.chunk = ui32(newPosition.y / CHUNK_WIDTH) * mWorldWidthChunks + ui32(newPosition.x / CHUNK_WIDTH);
     if (prevChunk != posCmp.chunk) [[unlikely]] {
         onEntityEnterNewChunk(e, prevChunk, posCmp.chunk);
     }

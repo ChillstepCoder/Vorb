@@ -548,6 +548,7 @@
     <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
+    <ClCompile Include="src\world\simulation\host\settlement\SettlementPlanner.cpp" />
     <ClCompile Include="src\world\simulation\host\SimECS.cpp" />
     <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp" />
     <ClCompile Include="src\world\simulation\host\SimThread.cpp" />
@@ -1043,7 +1044,9 @@
     <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />
     <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h" />
     <ClInclude Include="src\world\simulation\host\component\SimComponents.h" />
+    <ClInclude Include="src\world\simulation\host\component\StructureComponents.h" />
     <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
+    <ClInclude Include="src\world\simulation\host\settlement\SettlementPlanner.h" />
     <ClInclude Include="src\world\simulation\host\SimECS.h" />
     <ClInclude Include="src\world\simulation\host\SimECSEvents.h" />
     <ClInclude Include="src\world\simulation\host\SimEntityType.h" />
