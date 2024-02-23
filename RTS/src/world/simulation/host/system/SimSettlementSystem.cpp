@@ -38,8 +38,6 @@ void SimSettlementSystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
 }
 
 bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity) {
-    LOG_CRITICAL("OWNERSHIP FAIL IN tryCreateSettlementFromGroup");
-    return true; // TODO FIX
 
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(groupEntity);
     assert(groupCmp.leader != entt::null);
@@ -51,8 +49,8 @@ bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity)
     OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
 
     if (ownershipGrid.isChunkOwnedBySettlement(rootChunk)) {
-        LOG_CRITICAL("OWNERSHIP FAIL IN tryCreateSettlementFromGroup");
-        //return false;
+        LOG_CRITICAL("Ownership fail in SimSettlementSystem::tryCreateSettlementFromGroup");
+        return false;
     }
 
     // Create entity

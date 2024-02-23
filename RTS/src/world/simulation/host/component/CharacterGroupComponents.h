@@ -35,6 +35,7 @@ struct CharacterGroupComponent {
     CharacterGroupType groupType = CharacterGroupType::Generic;
     CharacterGroupFormationType formation = CharacterGroupFormationType::Line3xN;
     f32v2 targetPos = f32v2(0.0f);
+    ChunkID targetChunk = INVALID_CHUNK_ID;
     f32v2 currentHeading = f32v2(1.0f, 0.0f);
     f32 moveSpeed = 1.0f; // Percentage of default character movement speed
     TimestampMs nextRefreshTime = 0;

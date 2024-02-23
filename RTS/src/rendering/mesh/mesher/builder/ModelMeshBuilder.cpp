@@ -94,14 +94,11 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
             }
 
             StaticModelVertex& myVert = verts[i];
-            f32v2 uvs;
-            uvs.x = glm::clamp(rawVert.uvs.x, 0.0f, 1.0f);
-            uvs.y = glm::clamp(rawVert.uvs.y, 0.0f, 1.0f);
             myVert.build(
                 rawVert.pos,
                 rawVert.normal,
                 rawVert.tangent,
-                uvs,
+                rawVert.uvs,
                 rawVert.color,
                 materialSlot,
                 0

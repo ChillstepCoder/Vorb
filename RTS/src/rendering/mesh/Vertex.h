@@ -22,7 +22,7 @@ inline constexpr uint32_t Pack_INT_2_10_10_10_REV(const f32v3& vec3) {
     return Pack_INT_2_10_10_10_REV(vec3.x, vec3.y, vec3.z, 0.0f);
 }
 
-constexpr f32 UV_MAX_RANGE = 8.0f;
+constexpr f32 UV_MAX_RANGE = 8.0f; //[-8, 8]
 inline i16v2 PackUVs(const f32v2& uvs) {
     return i16v2(std::nearbyint((uvs.x / UV_MAX_RANGE) * INT16_MAX), std::nearbyint((uvs.y / UV_MAX_RANGE) * INT16_MAX));
 }

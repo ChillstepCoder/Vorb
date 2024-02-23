@@ -28,7 +28,7 @@ public:
     entt::entity createNewPerson(f32v2 worldTilePosition);
     entt::registry& getRegistrySimThread() { ASSERT_SIM_THREAD(); return mRegistry; }
     // Returns the group entity
-    entt::entity createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, f32v2 targetPos);
+    entt::entity createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, ChunkID targetChunk);
     // Destroys the group entity and triggers members to resolve the group condition
     void endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason);
 

@@ -5,7 +5,7 @@
 
 OwnershipGrid::OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid) : mMarkupGrid(markupGrid){
     mWidthBlocks = worldWidthTiles / BLOCK_WIDTH;
-    mWidthChunks = mWidthBlocks / CHUNK_SIZE;
+    mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
     mSpatialGrid.init(BLOCK_WIDTH, mWidthBlocks);
     mTotalVertices = SQ(mWidthBlocks);
     mBlockOwners = std::make_unique<OwnershipData[]>(mTotalVertices);

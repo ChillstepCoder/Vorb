@@ -103,14 +103,16 @@ void SimThread::tickSim(SimThreadState state) {
         }
     }
 
-    if (state == SimThreadState::HistorySim) {
-        mHostSimContext.mSimTime += ui64(mTargetTickRateMs * mTimeScale);
+    switch (state) {
+        case SimThreadState::HistorySim:
+        case SimThreadState::GameSim:
+            // TODO: Grab the world time instead of incrementing sim time?
+            mHostSimContext.mSimTime += ui64(mTargetTickRateMs * mTimeScale);
+            break;
+        default:
+            assert(mTimeScale == 1.0f);
+            break;
     }
-    else {
-        assert(mTimeScale == 1.0f);
-        // TODO: Grab the world time instead of incrementing sim time
-    }
-
     //LOG_TRACE("Sim step starting at {} seconds", (f64)mHostSimContext.mSimTime / MS_PER_SECOND);
     mHostSimContext.mSimECS->tickSimThread(mHostSimContext.mSimTime);
 

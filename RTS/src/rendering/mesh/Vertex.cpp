@@ -40,7 +40,6 @@ VertexType WaterVertex::bindVertexAttribs(VGBuffer vao) {
 void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence) {
     this->pos = pos;
     this->materialId = materialIdOrSlot;
-    //assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
     this->uvsPacked = PackUVs(uvs);
     this->normalPacked = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
     this->tangentPacked = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);

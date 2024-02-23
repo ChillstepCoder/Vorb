@@ -13,4 +13,5 @@ void SettlementPlanner::updatePlanner(entt::entity settlementEntity, TimestampMs
     SettlementQuartermasterComponent& quartermasterCmp = mRegistry.get<SettlementQuartermasterComponent>(settlementEntity);
     //SettlementWorkOrdersComponent& workOrdersCmp = mRegistry.get<SettlementWorkOrdersComponent>(settlementEntity);
 
+
 }

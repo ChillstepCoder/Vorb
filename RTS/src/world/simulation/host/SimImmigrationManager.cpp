@@ -5,6 +5,7 @@
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
 #include "world/markup/WorldMarkupGrid.h"
+#include "world/ownership/OwnershipGrid.h"
 #include "faction/IFactionManager.h"
 
 #include "math/Random.h"
@@ -62,7 +63,7 @@ void SimImmigrationManager::tickSimThread(TimestampMs currentTime) {
 SimImmigrationManager::ImmigrationOrder SimImmigrationManager::getNextImmigrationOrder() {
     ImmigrationOrder rv;
     const SortedBodyMap& bodyMap = mMarkupGrid.getSortedBodies();
-
+    OwnershipGrid& ownershipGrid = mHostSimContext.getWorld().getOwnershipGrid();
     // Favors largest bodies
     constexpr f32 chanceToSpawnPerBody = 0.5f;
 
@@ -78,6 +79,9 @@ SimImmigrationManager::ImmigrationOrder SimImmigrationManager::getNextImmigratio
                 const WorldBodyMarkupData& bodyMarkup = mMarkupGrid.getBodyData(it->second);
                 rv.targetChunk = data.mPrioritySortedChunks.back();
                 data.mPrioritySortedChunks.pop_back();
+                if (ownershipGrid.isChunkIsClaimed(rv.targetChunk)) {
+                    continue;
+                }
                 // Find closest edge chunk
                 f32 closestDistSq = FLT_MAX;
                 const ui32 widthChunks = mHostSimContext.getWidthChunks();
@@ -125,7 +129,7 @@ void SimImmigrationManager::spawnImmigrationBySea(TimestampMs currentTime) {
     }
     const ui32 widthChunks = mHostSimContext.getWidthChunks();
     const f32v2 startPos = GridIdUtil::getWorldPosCenter(immigrationOrder.startChunk, CHUNK_WIDTH, widthChunks);
-    const f32v2 targetPos = GridIdUtil::getWorldPosCenter(immigrationOrder.targetChunk, CHUNK_WIDTH, widthChunks);
+    mHostSimContext.getWorld().getOwnershipGrid().claimChunk(immigrationOrder.targetChunk);
 
     // TODO: More intelligent probability based on number of existing factions
     if (gen.getRandomBool()) {
@@ -152,7 +156,7 @@ void SimImmigrationManager::spawnImmigrationBySea(TimestampMs currentTime) {
     std::span peopleSpan(newPeopleIds, numPeople);
 
     // Use first entity as leader
-    entt::entity groupLeader = ecs.createNewSettlerCaravan(peopleSpan, 0, targetPos);
+    entt::entity groupLeader = ecs.createNewSettlerCaravan(peopleSpan, 0, immigrationOrder.targetChunk);
 
     factionManager.addEntitiesToFaction(ecs.getRegistrySimThread(), peopleSpan, factionId);
 

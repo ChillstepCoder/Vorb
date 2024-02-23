@@ -63,10 +63,12 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
 }
 
 
-entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, f32v2 targetPos) {
+entt::entity SimECS::createNewSettlerCaravan(std::span<entt::entity> members, int leaderIndex, ChunkID targetChunk) {
     entt::entity groupEntity = createNewCharacterGroup(members, leaderIndex, CharacterGroupType::SettlerCaravan);
     CharacterGroupComponent& groupCmp = mRegistry.get<CharacterGroupComponent>(groupEntity);
+    const f32v2 targetPos = GridIdUtil::getWorldPosCenter(targetChunk, CHUNK_WIDTH, mWorld.getWidthChunks());
     groupCmp.targetPos = targetPos;
+    groupCmp.targetChunk = targetChunk;
 
     const f32v2 offsetToTarget = targetPos - mRegistry.get<SimPositionComponent>(groupCmp.leader).position;
     if (offsetToTarget != f32v2(0.0f)) {
