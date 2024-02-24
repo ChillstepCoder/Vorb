@@ -158,7 +158,8 @@ void TileContainerMeshManager::initEventHandlers(World& world) {
 
     tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
         updateTileContainerMesh(*containerEvent.container);
-        //mInstancedStaticModelRenderer.onContainerEditEvent(containerEvent);
+        // THIS HAS BEEN DEPRECATED BECAUSE ITS RUNNING THE GATHERER AGAIN ANYWAYS?
+        //mInstancedStaticModelManager.onContainerEditEvent(containerEvent);
     });
 
     tileContainerRepository.addTileDamagedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {

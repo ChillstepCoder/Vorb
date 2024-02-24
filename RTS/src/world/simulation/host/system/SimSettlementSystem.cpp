@@ -95,6 +95,8 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
         SimResidentComponent& residentCmp = mRegistry.get_or_emplace<SimResidentComponent>(person);
         residentCmp.settlementEntity = settlementEntity;
     }
+    // TODO: Homeless families...
+    peopleCmp.homelessCount = peopleCmp.people.size();
 
     return settlementEntity;
 }

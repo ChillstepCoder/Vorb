@@ -102,15 +102,16 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
         return;
     }
 
+    // Set all tile ground positions
+    std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
+    for (ui32 index = 0; index < CHUNK_SIZE; ++index) {
+        tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
+    }
+
     std::shared_lock lock(simData.mutex);
     assert(simData.data);
     SimChunkTileData& simChunkTileData = *simData.data;
-    std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
     for (auto& [index, data] : simChunkTileData.tileIndexToTileData) {
-
-        const ui32 x = index & TILE_INDEX_X_MASK;
-        const ui32 y = index >> TILE_INDEX_Y_SHIFT;
-        tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(chunkPosWorld + i32v2(x, y));
         tiles[index].mainLayer = data.tileId;
         tiles[index].mainLayerVariant = data.variant;
 
@@ -130,87 +131,6 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
     chunk.mAABB.height = 50; // ???
 }
 
-
-void ChunkGenerator::generateChunkOld(Chunk& chunk) {
-    PROFILE_FUNCTION();
-
-    TileRepository& tileRepo = TileRepository::get();
-    IHeightmapGrid& heightGrid = chunk.getWorld().getHeightmapGrid();
-    BiomeGrid& biomeGrid = chunk.getWorld().getBiomeGrid();
-
-    // Allocate tiles if needed
-    chunk.mTileContainer->allocateData();
-    ChunkID id = chunk.getChunkID();
-    const i32v2 chunkPosWorld = chunk.getWorldPos();
-
-    // Cache all center heights
-    f32 centerHeights[CHUNK_SIZE];
-    f32v3 centerNormals[CHUNK_SIZE];
-    for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
-        const ui32 x = i & TILE_INDEX_X_MASK;
-        const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        centerHeights[i] = heightGrid.computeCenterHeightAndNormalAtTile<true>(chunkPosWorld + i32v2(x, y), &centerNormals[i]);
-    }
-
-    // Large objects
-    /*for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
-        TryGenerateLargeObjectAtPoint()
-    }*/
-
-    // Small objects
-
-    f32 maxHeight = 1.0f;
-    std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
-    for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
-        const ui32 x = i & TILE_INDEX_X_MASK;
-        const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-        const f32 height = centerHeights[i];
-        TileGrass grass;
-        // TODO: Biome specific
-        const BiomeDef* biomeDef = biomeGrid.getBiomeDefAtPoint(tilePosWorld);
-        generateTileGrass(tilePosWorld, height, &grass); // TODO: USE BIOME
-        Tile tile = generateTileAtPos(tilePosWorld, height, centerNormals[i], biomeDef);
-        tile.groundZOffset = height;
-        const f32 baseZPos = height;
-        if (baseZPos + 1.0f > maxHeight) {
-            maxHeight = baseZPos + 1.0f;
-        }
-        // TODO: Bit array instead of full tiledata lookup for cache friendlyness
-        if (tile.mainLayer != TILE_ID_NONE) {
-            const NavBlockerType navBlockerType = tileRepo.getLoadedOrUnloadedAsset(tile.mainLayer).navBlockerType;
-            if (navBlockerType != NavBlockerType::NONE) {
-                // Set blocked flags
-                if (chunk.mTileContainer->tryBlockAdjTilesFromGeneration(i, navBlockerType)) {
-                    TileFlagType prevFlags = tiles[i].tileFlags.getBits();
-                    tiles[i] = std::move(tile);
-                    tiles[i].tileFlags.setBits((TileFlags)prevFlags);
-                }
-                else {
-                    tile.mainLayer = TILE_ID_NONE; // Clear the main layer since it wont fit
-                    TileFlagType prevFlags = tiles[i].tileFlags.getBits();
-                    tiles[i] = std::move(tile);
-                    tiles[i].tileFlags.setBits((TileFlags)prevFlags);
-                }
-            }
-            else {
-                TileFlagType prevFlags = tiles[i].tileFlags.getBits();
-                tiles[i] = std::move(tile);
-                tiles[i].tileFlags.setBits((TileFlags)prevFlags);
-            }
-        }
-        else {
-            // Make sure we don't obliterate blocked flags
-            TileFlagType prevFlags = tiles[i].tileFlags.getBits();
-            tiles[i] = std::move(tile);
-            tiles[i].tileFlags.setBits((TileFlags)prevFlags);
-        }
-        chunk.mGrass[i] = grass;
-    }
-    // TODO: uhhhh?
-    // TODO: use heightData.bounding sphere?
-    chunk.mAABB.height = (i32)floor(maxHeight + 1.0f - chunk.mAABB.z); // Subtracting Z because we want to add the depth underground to the total height
-}
 
 void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world) {
     PROFILE_FUNCTION();

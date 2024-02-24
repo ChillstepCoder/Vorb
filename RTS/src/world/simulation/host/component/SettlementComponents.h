@@ -73,6 +73,7 @@ struct SettlementJobBoardsComponent {
 struct SettlementPeopleComponent {
     entt::entity leader = entt::null;
     std::vector<entt::entity> people;
+    ui32 homelessCount = 0;
 };
 
 struct SettlementQuartermasterComponent {
@@ -84,6 +85,7 @@ struct SettlementQuartermasterComponent {
 
 struct SettlementStructuresComponent {
     std::vector<entt::entity> allStructureEntities;
+
 };
 
 struct SettlementWorkOrdersComponent {
