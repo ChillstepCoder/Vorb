@@ -14,6 +14,8 @@ public:
     void tick(TimestampMs currentTime, TimestampMs deltaTime);
 
     bool tryCreateSettlementFromGroup(entt::entity groupEntity);
+
+
 private:
     entt::entity createSettlementEntity(ChunkID rootChunk, entt::entity leader, std::vector<entt::entity>& people);
     std::unique_ptr<SettlementNameContext> mNameContext;

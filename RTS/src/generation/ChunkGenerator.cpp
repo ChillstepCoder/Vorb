@@ -104,7 +104,7 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
 
     // Set all tile ground positions
     std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
-    for (ui32 index = 0; index < CHUNK_SIZE; ++index) {
+    for (i32 index = 0; index < CHUNK_SIZE; ++index) {
         tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
     }
 

@@ -4,6 +4,7 @@
 #include "world/simulation/host/component/SimComponents.h"
 #include "world/simulation/host/component/SettlementComponents.h"
 #include "world/simulation/host/settlement/SettlementPlanner.h"
+#include "world/simulation/host/SimECS.h"
 
 #include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
@@ -97,6 +98,11 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     }
     // TODO: Homeless families...
     peopleCmp.homelessCount = peopleCmp.people.size();
+
+    mECS.dispatchEntityCreated(SimECSEvent{ settlementEntity, SimEntityType::Settlement });
+
+    // Initialize planner state (TODO: Event listener?)
+    mPlanner->onSettlementCreated(settlementEntity, mCurrentTime);
 
     return settlementEntity;
 }

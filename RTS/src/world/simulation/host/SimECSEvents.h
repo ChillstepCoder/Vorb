@@ -4,7 +4,8 @@
 
 enum class SimECSEventType {
     EntityCreated,
-    EntityDestroyed
+    EntityDestroyed,
+    SettlementCreated
 };
 struct SimECSEvent {
     entt::entity entity;
