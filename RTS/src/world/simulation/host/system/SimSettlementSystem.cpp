@@ -66,10 +66,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
 
     entt::entity settlementEntity = mRegistry.create();
 
-    OwnershipData ownerData;
-    ownerData.owner = settlementEntity;
-    ownerData.propertyValue = 100.0f;
-    ownershipGrid.setChunkSettlementOwnerData(rootChunk, ownerData);
+    ownershipGrid.setChunkSettlementOwner(rootChunk, settlementEntity);
 
     // Add components
     SettlementDetailsComponent& detailsCmp = mRegistry.emplace<SettlementDetailsComponent>(settlementEntity);
@@ -86,6 +83,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SettlementStructuresComponent>(settlementEntity);
     mRegistry.emplace<SettlementWorkOrdersComponent>(settlementEntity);
     mRegistry.emplace<SettlementQuartermasterComponent>(settlementEntity);
+    mRegistry.emplace< SettlementRoadNetworkComponent>(settlementEntity);
     // TODO Adjacency
 
     // Assign people

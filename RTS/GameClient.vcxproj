@@ -543,7 +543,7 @@
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp" />
     <ClCompile Include="src\world\ownership\OwnershipGrid.cpp" />
-    <ClCompile Include="src\world\road\RoadNetwork.cpp" />
+    <ClCompile Include="src\world\road\SettlementRoadNetwork.cpp" />
     <ClCompile Include="src\world\road\RoadGrid.cpp" />
     <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
     <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
@@ -1031,6 +1031,7 @@
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
     <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
     <ClInclude Include="src\world\controller\IWorldInterfaceController.h" />
+    <ClInclude Include="src\world\CoordinateTypes.h" />
     <ClInclude Include="src\world\ecosystem\FishEcosystem.h" />
     <ClInclude Include="src\world\host\HostWorldData.h" />
     <ClInclude Include="src\world\IChunkGrid.h" />
@@ -1040,7 +1041,7 @@
     <ClInclude Include="src\world\markup\WorldMarkupGrid.h" />
     <ClInclude Include="src\world\ownership\OwnershipGrid.h" />
     <ClInclude Include="src\world\road\RoadGrid.h" />
-    <ClInclude Include="src\world\road\RoadNetwork.h" />
+    <ClInclude Include="src\world\road\SettlementRoadNetwork.h" />
     <ClInclude Include="src\world\simulation\host\CharacterGroupType.h" />
     <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
     <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />

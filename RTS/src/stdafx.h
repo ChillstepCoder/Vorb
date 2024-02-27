@@ -94,6 +94,7 @@ template <typename Stream> bool netSerialize(Stream& stream);
 
 // Const
 #include "physics/PhysicsConst.h"
+#include "world/CoordinateTypes.h"
 #include "world/ChunkConst.h"
 
 // Corner winding

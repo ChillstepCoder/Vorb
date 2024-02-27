@@ -1,26 +1,6 @@
 #pragma once
 
-// Comment out for larger chunks
-// #define USE_SMALL_CHUNK_WIDTH
-constexpr int CHUNK_WIDTH = 128;
-static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
-constexpr float CHUNK_DIAGONAL_RADIUS = 90.51f;
-#define TILE_INDEX_Y_SHIFT 7
-#define TILE_INDEX_X_MASK 0x7f
 
-constexpr int BLOCK_WIDTH = 8;
-
-constexpr int SUBCHUNK_WIDTH = 16;
-constexpr int SUBCHUNK_WIDTH_SQ = SQ(SUBCHUNK_WIDTH);
-constexpr int SUBCHUNKS_PER_CHUNK_ROW = CHUNK_WIDTH / SUBCHUNK_WIDTH;
-constexpr int SUBCHUNKS_PER_CHUNK = SQ(SUBCHUNKS_PER_CHUNK_ROW);
-/*
-constexpr int MIN_SUBCHUNKS_PER_CHUNK_ROW = CHUNK_WIDTH / SUBCHUNK_WIDTH;
-constexpr int MIN_SUBCHUNKS_PER_CHUNK = SQ(MIN_SUBCHUNKS_PER_CHUNK_ROW);*/
-
-constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
-constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
-constexpr int PADDED_CHUNK_WIDTH = CHUNK_WIDTH + 2;
 
 typedef ui16 SubchunkIndex;
 constexpr ui32 MAX_TILE_CONTAINER_WIDTH = CHUNK_WIDTH;

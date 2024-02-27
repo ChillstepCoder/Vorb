@@ -4,15 +4,10 @@
 #include "world/markup/WorldMarkupGrid.h"
 
 OwnershipGrid::OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid) : mMarkupGrid(markupGrid){
-    mWidthBlocks = worldWidthTiles / BLOCK_WIDTH;
+    mWidthDTiles = worldWidthTiles / DTILE_WIDTH;
     mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
-    mSpatialGrid.init(BLOCK_WIDTH, mWidthBlocks);
-    mTotalVertices = SQ(mWidthBlocks);
-    mBlockOwners = std::make_unique<OwnershipData[]>(mTotalVertices);
-    mChunkOwners = std::make_unique<OwnershipData[]>(SQ(mWidthChunks));
-    LOG_DEBUG("Ownership grid allocated {} mb data",
-        ((mTotalVertices + SQ(mWidthChunks)) * sizeof(OwnershipData)) / 1024.f / 1024.f);
-
+    mTotalDTiles = SQ(mWidthDTiles);
+    mChunkOwners = std::make_unique<ChunkOwnershipData[]>(SQ(mWidthChunks));
     mClaimedChunks.resizeAndZero(SQ(mWidthChunks));
 }
 
@@ -28,35 +23,62 @@ entt::entity OwnershipGrid::getChunkOwner(ChunkID chunkId) const {
     return mChunkOwners[chunkId].owner;
 }
 
-OwnershipData OwnershipGrid::getChunkSettlementOwnerData(ChunkID chunkId) const {
+const ChunkOwnershipData& OwnershipGrid::getChunkSettlementOwnerData(ChunkID chunkId) const {
     ASSERT_SIM_THREAD();
     return mChunkOwners[chunkId];
 }
 
-OwnershipData OwnershipGrid::getWorldPosEntityOwnerData(f32v2 worldPos) const {
-    worldPos /= BLOCK_WIDTH;
-    i32v2 blockPos = i32v2(worldPos);
-    
-    if (blockPos.x < 0 || blockPos.y < 0 || blockPos.x >= mWidthBlocks || blockPos.y >= mWidthBlocks) [[unlikely]] {
-        return OwnershipData();
+const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(i32v2 dtilePosWorld) const {
+    if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
+        return nullptr;
     }
-    return mBlockOwners[blockPos.y * mWidthBlocks + blockPos.x];
+    const ChunkID chunkId = (dtilePosWorld.y / CHUNK_WIDTH_DTILES) * mWidthChunks + (dtilePosWorld.x / CHUNK_WIDTH_DTILES);
+
+    ChunkOwnershipData& data = mChunkOwners[chunkId];
+    if (!data.dtileData) {
+        return nullptr;
+    }
+    return &data.dtileData[(dtilePosWorld.y % CHUNK_WIDTH_DTILES) * CHUNK_WIDTH_DTILES + dtilePosWorld.x % CHUNK_WIDTH_DTILES];
+}
+
+const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(ChunkID chunkId, DTileIndex dtileIndex) const {
+    ChunkOwnershipData& data = mChunkOwners[chunkId];
+    if (!data.dtileData) {
+        return nullptr;
+    }
+    return &data.dtileData[dtileIndex];
 }
 
 bool OwnershipGrid::isChunkOwnedBySettlement(ChunkID chunkId) const {
     return mChunkOwners[chunkId].owner != entt::null;
 }
 
-void OwnershipGrid::setChunkSettlementOwnerData(ChunkID chunkId, OwnershipData ownerData) {
-    mChunkOwners[chunkId] = ownerData;
+void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner) {
+    ChunkOwnershipData& data = mChunkOwners[chunkId];
+    data.owner = owner;
+    allocateTileDataIfNeeded(data);
     mClaimedChunks.setBit(chunkId);
 }
 
-void OwnershipGrid::setWorldPosEntityOwnerData(f32v2 worldPos, OwnershipData ownerData) {
-    worldPos /= BLOCK_WIDTH;
-    i32v2 blockPos = i32v2(worldPos);
-    assert(blockPos.x >= 0 && blockPos.y >= 0 && blockPos.x < mWidthBlocks && blockPos.y < mWidthBlocks);
-    mBlockOwners[blockPos.y * mWidthBlocks + blockPos.x] = ownerData;
+void OwnershipGrid::setDTileOwner(i32v2 dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned) {
+    if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
+        LOG_CRITICAL("Tried to set dtile owner at world pos {} {} OUT OF BOUNDS", dtilePosWorld.x, dtilePosWorld.y);
+        return;
+    }
+    const ChunkID chunkId = (dtilePosWorld.y / CHUNK_WIDTH_DTILES) * mWidthChunks + (dtilePosWorld.x / CHUNK_WIDTH_DTILES);
+
+    ChunkOwnershipData& data = mChunkOwners[chunkId];
+    allocateTileDataIfNeeded(data);
+    DTileOwnershipData& tileData = data.dtileData[(dtilePosWorld.y % CHUNK_WIDTH_DTILES) * CHUNK_WIDTH_DTILES + dtilePosWorld.x % CHUNK_WIDTH_DTILES];
+    tileData.owner = owner;
+    tileData.ownerObjectId = ownerObjectId;
+    tileData.ownerObjectType = type;
+    if (isSettlementOwned) {
+        tileData.flags.setBit(DTileOwnershipFlags::OwnedBySettlement);
+    }
+    else {
+        tileData.flags.clearBit(DTileOwnershipFlags::OwnedBySettlement);
+    }
 }
 
 bool OwnershipGrid::isChunkIsClaimed(ChunkID chunkId) const {
@@ -74,4 +96,12 @@ void OwnershipGrid::unclaimChunk(ChunkID chunkId) {
     ASSERT_SIM_THREAD();
     assert(mClaimedChunks.getBit(chunkId));
     mClaimedChunks.clearBit(chunkId);
+}
+
+bool OwnershipGrid::allocateTileDataIfNeeded(ChunkOwnershipData& data) {
+    if (!data.dtileData) {
+        data.dtileData = std::make_unique<DTileOwnershipData[]>(CHUNK_SIZE);
+        return true;
+    }
+    return false;
 }

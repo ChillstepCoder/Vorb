@@ -23,8 +23,10 @@ SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry
     
     ecs.registerSimECSListeners(mECSEventListeners);
     ecs.addEntityCreatedListener(mECSEventListeners, [this](SimECSEvent e) {
-        SimPositionComponent& p = mRegistry.get<SimPositionComponent>(e.entity);
-        mEntitiesInChunks[p.chunk].push_back(e.entity);
+        if (e.type != SimEntityType::Settlement) [[likely]] {
+            SimPositionComponent& p = mRegistry.get<SimPositionComponent>(e.entity);
+            mEntitiesInChunks[p.chunk].push_back(e.entity);
+        }
     });
 
     ecs.addEntityDestroyedListener(mECSEventListeners, [this](SimECSEvent e) {

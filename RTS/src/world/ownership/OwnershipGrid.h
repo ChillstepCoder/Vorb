@@ -7,14 +7,34 @@
 
 class WorldMarkupGrid;
 
-struct OwnershipData {
-    entt::entity owner = entt::null;
-    f32 propertyValue = 0.0f;
+enum class DTileOwnerObjectType : ui8 {
+    None,
+    Plot,
+    RoadEdge,
+    Structure,
+    COUNT
 };
-static_assert(sizeof(OwnershipData) == 8, "Keep tiny");
 
-// Keeps track of which entities own which blocks and chunks
-// Block is 8x8, chunk is 128x128
+enum class DTileOwnershipFlags : ui8 {
+    OwnedBySettlement = BIT(0), // True if owner is of entity type settlement
+};
+struct DTileOwnershipData {
+    entt::entity owner = entt::null;
+    ui16 ownerObjectId = UINT16_MAX;
+    DTileOwnerObjectType ownerObjectType = DTileOwnerObjectType::None;
+    BitFlags<DTileOwnershipFlags> flags = {};
+};
+static_assert(sizeof(DTileOwnershipData) == 8, "Keep small");
+
+struct ChunkOwnershipData {
+    entt::entity owner = entt::null;
+    //ui32 padding; // TODO: Use?
+    std::unique_ptr<DTileOwnershipData[]> dtileData = nullptr;
+};
+static_assert(sizeof(ChunkOwnershipData) == 16, "Keep small");
+
+// Keeps track of which entities own which DTiles and chunks
+// DTile is 2x2, chunk is 128x128
 class OwnershipGrid
 {
 public:
@@ -26,15 +46,16 @@ public:
     void setChunkOwner(ChunkID chunkId, entt::entity owner);
     entt::entity getChunkOwner(ChunkID chunkId) const;
 
-    ui32 getTotalVertices() const { return mTotalVertices; }
-    ui32 getWidthVertices() const { return mSpatialGrid.getGridWidthCells(); }
+    ui32 getTotalDTiles() const { return mTotalDTiles; }
+    ui32 getWidthDTiles() const { return mWidthDTiles; }
 
-    OwnershipData getChunkSettlementOwnerData(ChunkID chunkId) const;
-    OwnershipData getWorldPosEntityOwnerData(f32v2 worldPos) const;
+    const ChunkOwnershipData& getChunkSettlementOwnerData(ChunkID chunkId) const;
+    const DTileOwnershipData* tryGetDTileOwnerData(i32v2 dtilePosWorld) const;
+    const DTileOwnershipData* tryGetDTileOwnerData(ChunkID chunkId, DTileIndex tileIndex) const;
     bool isChunkOwnedBySettlement(ChunkID chunkId) const;
 
-    void setChunkSettlementOwnerData(ChunkID chunkId, OwnershipData ownerData);
-    void setWorldPosEntityOwnerData(f32v2 worldPos, OwnershipData ownerData);
+    void setChunkSettlementOwner(ChunkID chunkId, entt::entity owner);
+    void setDTileOwner(i32v2 dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned);
 
     bool isChunkIsClaimed(ChunkID chunkId) const;
     void claimChunk(ChunkID chunkId);
@@ -44,14 +65,14 @@ public:
     //STATIC_EVENT_LISTENER_FUNCS(OwnershipGrid, Destroy, ItemStockpileEventType::Destroy, const ItemStockpileEvent&);
     //STATIC_EVENT_DISPATCHER_DEF(OwnershipGrid);
 private:
+    bool allocateTileDataIfNeeded(ChunkOwnershipData& data);
+
     WorldMarkupGrid& mMarkupGrid;
 
-    std::unique_ptr<OwnershipData[]> mBlockOwners; //8x8 blocks tiling across the world
-    std::unique_ptr<OwnershipData[]> mChunkOwners;
+    std::unique_ptr<ChunkOwnershipData[]> mChunkOwners;
     BitArray mClaimedChunks; // Chunks that someone is planning to immigrate to 
-    ui32 mTotalVertices = 0;
-    ui32 mWidthBlocks = 0;
+    ui32 mTotalDTiles = 0;
+    ui32 mWidthDTiles = 0;
     ui32 mWidthChunks = 0;
-    SpatialGrid2D mSpatialGrid;
 };
 

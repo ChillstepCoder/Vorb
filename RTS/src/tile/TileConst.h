@@ -3,6 +3,7 @@
 typedef ui16 TileID;
 typedef ui32 TileContainerID;
 typedef ui32 TileIndex;
+typedef ui32 DTileIndex;
 constexpr TileIndex INVALID_TILE_INDEX = UINT32_MAX;
 constexpr TileContainerID INVALID_TILE_CONTAINER_ID = UINT32_MAX;
 

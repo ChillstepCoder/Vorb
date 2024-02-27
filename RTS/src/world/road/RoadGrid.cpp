@@ -4,9 +4,9 @@
 // For ROAD_VERTEX_STRIDE
 #include "world/TerrainConstants.h"
 
-RoadGrid::RoadGrid(ui32 worldWidthTiles) : mWorldWidthTiles(worldWidthTiles) {
-    mWidthCells = worldWidthTiles / ROAD_GRID_CELL_WIDTH_TILES;
-    mSpatialGrid.init(ROAD_GRID_CELL_WIDTH_TILES, mWidthCells);
+RoadGrid::RoadGrid(ui32 worldWidthTiles) : mWorldWidthDTiles(worldWidthTiles / 2) {
+    mWidthCells = worldWidthTiles / ROAD_GRID_CELL_WIDTH_POINTS;
+    mSpatialGrid.init(ROAD_GRID_CELL_WIDTH_POINTS, mWidthCells);
     mTotalCells = SQ(mWidthCells);
     mRoadData = std::make_unique<RoadGridCell[]>(mTotalCells);
     LOG_DEBUG("Road grid allocated {} mb data",
@@ -17,13 +17,12 @@ RoadGrid::RoadGrid(ui32 worldWidthTiles) : mWorldWidthTiles(worldWidthTiles) {
 RoadGrid::~RoadGrid() = default;
 
 template <bool THREAD_SAFE>
-RoadPoint RoadGrid::getRoadPointFloored(i32v2 worldPos) const {
-    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthTiles || worldPos.y >= mWorldWidthTiles) [[unlikely]] {
+RoadPoint RoadGrid::getRoadPoint(DTileCoord worldPos) const {
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return RoadPoint();
     }
     i32v2 cellOffset;
-    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos, cellOffset);
-    cellOffset /= ROAD_POINT_STRIDE;
+    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
     RoadGridCell& cell = mRoadData[cellId];
     if constexpr (THREAD_SAFE) {
         std::shared_lock lock(cell.mutex);
@@ -38,17 +37,16 @@ RoadPoint RoadGrid::getRoadPointFloored(i32v2 worldPos) const {
         return cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x];
     }
 }
-DECL_BOOL_TEMPLATE(RoadPoint RoadGrid::getRoadPointFloored, (i32v2 worldPos) const)
+DECL_BOOL_TEMPLATE(RoadPoint RoadGrid::getRoadPoint, (DTileCoord worldPos) const)
 
-void RoadGrid::setRoadPointFloored(i32v2 worldPos, RoadPoint point) {
-    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthTiles || worldPos.y >= mWorldWidthTiles) [[unlikely]] {
+void RoadGrid::setRoadPoint(DTileCoord worldPos, RoadPoint point) {
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return;
     }
     i32v2 cellOffset;
-    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos, cellOffset);
-    cellOffset /= ROAD_POINT_STRIDE;
+    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
     RoadGridCell& cell = mRoadData[cellId];
-    std::shared_lock lock(mRoadData[cellId].mutex);
+    std::lock_guard lock(mRoadData[cellId].mutex);
     if (cell.points == nullptr) {
         // Lazy allocate to reduce memory usage
         cell.points = std::make_unique<RoadPoint[]>(ROAD_GRID_CELL_SIZE_POINTS);
@@ -56,17 +54,16 @@ void RoadGrid::setRoadPointFloored(i32v2 worldPos, RoadPoint point) {
     cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x] = point;
 }
 
-void RoadGrid::adjustRoadPointFloored(i32v2 worldPos, i32 adjust) {
+void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
     i32v2 cellOffset;
-    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos, cellOffset);
-    cellOffset /= ROAD_POINT_STRIDE;
+    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
     RoadGridCell& cell = mRoadData[cellId];
-    std::shared_lock lock(mRoadData[cellId].mutex);
+    std::lock_guard lock(mRoadData[cellId].mutex);
     if (cell.points == nullptr) {
         // Lazy allocate to reduce memory usage
         cell.points = std::make_unique<RoadPoint[]>(ROAD_GRID_CELL_SIZE_POINTS);
     }
     RoadPoint& point = cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x];
-    point.thickness = (ui8)glm::clamp((i32)point.thickness + adjust, 0, (i32)MAX_ROAD_THICKNESS);
+    point.strength = (ui8)glm::clamp((i32)point.strength + adjust, 0, (i32)MAX_ROAD_STRENGTH);
 }
 
