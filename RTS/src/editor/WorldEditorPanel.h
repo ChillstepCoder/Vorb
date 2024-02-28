@@ -93,7 +93,7 @@ private:
     void updateCityEdit();
     void updateBuildingEdit();
 
-    void editHeightVertex(HeightmapPatchID id, ui32v2 vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
+    void editHeightVertex(HeightmapPatchID id, DTileCoord vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
     void editRoadVertex(i32v2 worldPos, f32v2 offsetToVertex, const BrushSettings& brush, RoadEditState editState);
     void editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
     f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);

@@ -30,6 +30,7 @@ constexpr int PADDED_CHUNK_WIDTH = CHUNK_WIDTH + 2;
 template<typename Derived>
 class CoordinateBase {
 protected:
+    explicit CoordinateBase(i32 xy) : v(xy) {}
     explicit CoordinateBase(i32 x, i32 y) : v(x, y) {}
     explicit CoordinateBase(i32v2 value) : v(value) {}
 public:
@@ -75,6 +76,7 @@ class ChunkCoord;
 class TileCoord : public CoordinateBase<TileCoord> {
 public:
     TileCoord() : CoordinateBase() {}
+    explicit TileCoord(i32 xy) : CoordinateBase(xy) {}
     explicit TileCoord(i32 tileX, i32 tileY) : CoordinateBase(tileX, tileY) {}
     explicit TileCoord(i32v2 tilePos) : CoordinateBase(tilePos) {};
     explicit TileCoord(const DTileCoord& other);
@@ -90,6 +92,7 @@ public:
 class DTileCoord : public CoordinateBase<DTileCoord> {
 public:
     DTileCoord() : CoordinateBase() {}
+    explicit DTileCoord(i32 xy) : CoordinateBase(xy) {}
     explicit DTileCoord(i32 tileX, i32 tileY) : CoordinateBase(tileX, tileY) {}
     explicit DTileCoord(i32v2 tilePos) : CoordinateBase(tilePos) {};
     explicit DTileCoord(const TileCoord& other);
@@ -106,6 +109,7 @@ public:
 class BlockCoord : public CoordinateBase<BlockCoord> {
 public:
     BlockCoord() : CoordinateBase() {}
+    explicit BlockCoord(i32 xy) : CoordinateBase(xy) {}
     explicit BlockCoord(i32 blockX, i32 blockY) : CoordinateBase(blockX, blockY) {}
     explicit BlockCoord(i32v2 blockPos) : CoordinateBase(blockPos) {}
     explicit BlockCoord(const TileCoord& other);
@@ -122,6 +126,7 @@ public:
 class SubchunkCoord : public CoordinateBase<SubchunkCoord> {
 public:
     SubchunkCoord() : CoordinateBase() {}
+    explicit SubchunkCoord(i32 xy) : CoordinateBase(xy) {}
     explicit SubchunkCoord(i32 subchunkX, i32 subchunkY) : CoordinateBase(subchunkX, subchunkY) {}
     explicit SubchunkCoord(i32v2 subchunkPos) : CoordinateBase(subchunkPos) {}
     explicit SubchunkCoord(const TileCoord& other);
@@ -138,6 +143,7 @@ public:
 class ChunkCoord : public CoordinateBase<ChunkCoord> {
 public:
     ChunkCoord() : CoordinateBase() {}
+    explicit ChunkCoord(i32 xy) : CoordinateBase(xy) {}
     explicit ChunkCoord(i32 chunkX, i32 chunkY) : CoordinateBase(chunkX, chunkY) {}
     explicit ChunkCoord(i32v2 chunkPos) : CoordinateBase(chunkPos) {}
     explicit ChunkCoord(const TileCoord& other);

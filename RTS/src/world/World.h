@@ -75,6 +75,7 @@ public:
     void setWorldTimeMs(ui64 newTime);
     ui32 getSeed() const { return mSeed; }
     inline ChunkID getChunkIDAtWorldPos(f32v2 worldPos) const { return (worldPos.y / CHUNK_WIDTH) * mWidthChunks + (worldPos.x / CHUNK_WIDTH); }
+    inline TileCoord getChunkWorldPos(ChunkID id) const { return TileCoord((id % mWidthChunks) * CHUNK_WIDTH, (id / mWidthChunks) * CHUNK_WIDTH); }
 
     // System Accessors 
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }

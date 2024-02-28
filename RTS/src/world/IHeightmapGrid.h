@@ -88,8 +88,8 @@ public:
     void markVertexDirty(HeightmapPatchID id, ui32 vertIndex);
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
-    f32 getHeightAtVert(i32v2 vertPos) const;
-    f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
+    f32 getHeightAtVert(DTileCoord vertPos) const;
+    f32 getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) const;
 
     template <bool THREAD_SAFE>
     f32 computeHeightAtPoint(const f32v2& worldPos) const;

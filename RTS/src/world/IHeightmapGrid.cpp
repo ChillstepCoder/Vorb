@@ -259,15 +259,15 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     }
 }
 
-f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const {
+f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) const {
     ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
     assert(vertPos.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH && vertPos.y < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     return patch.getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
 }
 
-f32 IHeightmapGrid::getHeightAtVert(i32v2 vertPos) const {
-    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
+    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     return mHeightData[id].getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);

@@ -15,26 +15,26 @@ struct RoadVertex {
         = {{INVALID_ROAD_EDGE,INVALID_ROAD_VERTEX},{INVALID_ROAD_EDGE,INVALID_ROAD_VERTEX},{INVALID_ROAD_EDGE,INVALID_ROAD_VERTEX},{INVALID_ROAD_EDGE,INVALID_ROAD_VERTEX}};
 };
 
+// TODO: RoadGrid needs access to this
 enum class RoadType : ui8 {
     Dirt,
-    Stone,
     COUNT
 };
 
 struct RoadEdgeDetails {
+    std::vector<DTileCoord> roadVertsNeedingConstruct;
     std::vector<StructureID> attachedStructures; // TODO Store attach point so its easy to split roads?
-    RoadVertex verts[2];
+    RoadVertexID verts[2];
     ui8 widthTiles[2]; // Allow taper
     RoadType roadType;
-    ui16 roadPointCount;
-    ui16 roadPointsNeedingConstruct;
+    ui16 roadVertCount;
 };
 
 class SettlementRoadNetwork {
 public:
     // Returns false if no roads could be created
     bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
-    bool tryAddNewRoadSegment(World& world, entt::entity settlement, RoadVertexID baseVertexId, DTileCoord targetPos, ui8 baseWidth, ui8 endWidth);
+    bool tryAddNewRoadSegment(World& world, entt::entity settlement, RoadType roadType, RoadVertexID baseVertexId, DTileCoord targetPos, ui8 baseWidth, ui8 endWidth);
 
 
 private:

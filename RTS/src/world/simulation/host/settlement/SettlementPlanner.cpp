@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "SettlementPlanner.h"
 
+#include "world/World.h"
 #include "world/simulation/host/component/SettlementComponents.h"
 
 // Cart bones
@@ -43,7 +44,7 @@
 //    - Roads can collide with each other, and will attempt to do so with pathfinding to create circles. (Needs elaboration)
 
 
-SettlementPlanner::SettlementPlanner(entt::registry& registry) : mRegistry(registry) {
+SettlementPlanner::SettlementPlanner(World& world, entt::registry& registry) : mWorld(world), mRegistry(registry) {
 
 }
 
@@ -51,8 +52,11 @@ void SettlementPlanner::onSettlementCreated(entt::entity settlementEntity, Times
     mLastThinkTime = currentTime;
 
     SettlementSimComponent& simCmp = mRegistry.get<SettlementSimComponent>(settlementEntity);
+    TileCoord worldPosCenter = mWorld.getChunkWorldPos(simCmp.rootChunkId) + TileCoord(CHUNK_WIDTH / 2);
 
     // Create roads
+    SettlementRoadNetworkComponent& roadCmp = mRegistry.get<SettlementRoadNetworkComponent>(settlementEntity);
+    roadCmp.network.tryInitAtWorldPos(mWorld, settlementEntity, DTileCoord(worldPosCenter));
 }
 
 void SettlementPlanner::updatePlanner(entt::entity settlementEntity, TimestampMs currentTime, TimestampMs deltaTime) {

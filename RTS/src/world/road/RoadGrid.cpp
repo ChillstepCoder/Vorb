@@ -54,6 +54,24 @@ void RoadGrid::setRoadPoint(DTileCoord worldPos, RoadPoint point) {
     cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x] = point;
 }
 
+void RoadGrid::setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint point) {
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
+        return;
+    }
+    i32v2 cellOffset;
+    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
+    RoadGridCell& cell = mRoadData[cellId];
+    std::lock_guard lock(mRoadData[cellId].mutex);
+    if (cell.points == nullptr) {
+        // Lazy allocate to reduce memory usage
+        cell.points = std::make_unique<RoadPoint[]>(ROAD_GRID_CELL_SIZE_POINTS);
+    }
+    RoadPoint& existing = cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x];
+    if (point.strength > existing.strength || point.type != existing.type) {
+        existing = point;
+    }
+}
+
 void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
     i32v2 cellOffset;
     const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);

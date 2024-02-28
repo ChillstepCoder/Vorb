@@ -171,7 +171,7 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 
     CityRoad& road = *mCity.mRoads[roadId];
     // TODO: Other types of paths
-    if (road.type != RoadType::PAVED) {
+    if (road.type != OLDRoadType::PAVED) {
         LOG_WARN("Invalid road type built");
         return;
     }

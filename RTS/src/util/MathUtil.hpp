@@ -83,21 +83,23 @@ namespace MathUtil {
         return velocity;
     }
 
-    inline float computePointToLineSegmentDistanceSQ(f32v2 p, f32v2 p1, f32v2 p2) {
+    inline std::pair<float /*distSq*/, float /*time*/> computePointToLineSegmentDistanceSQAndT(f32v2 p, f32v2 p1, f32v2 p2) {
         f32v2 diff = p2 - p1;
 
         // Check if the line segment is a point
         if (diff.x == 0 && diff.y == 0)
-            return glm::length(p - p1);
+            return std::make_pair(glm::length(p - p1), 0.0f);
 
         // Calculate the t that minimizes the distance
         float t = glm::dot(p - p1, diff) / glm::dot(diff, diff);
 
         // If the t is outside the segment use the endpoint
-        if (t < 0) {
+        if (t < 0.f) {
+            t = 0.f;
             diff = p - p1;
         }
-        else if (t > 1) {
+        else if (t > 1.f) {
+            t = 1.f;
             diff = p - p2;
         }
         else {
@@ -106,7 +108,10 @@ namespace MathUtil {
             diff = p - projection;
         }
 
-        return glm::length2(diff);
+        return std::make_pair(glm::length2(diff), t);
+    }
+    inline float computePointToLineSegmentDistanceSQ(f32v2 p, f32v2 p1, f32v2 p2) {
+        return computePointToLineSegmentDistanceSQAndT(p, p1, p2).first;
     }
 
     namespace Easing {

@@ -522,8 +522,8 @@ void WorldEditorPanel::updateTerrainEdit() {
                         HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtWorldPos(worldPos);
                         const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
                         const f32v2 offset = worldPos - terrainWorldPos;
-                        const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
-                        const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
+                        const DTileCoord vertexPos = DTileCoord(offset / (f32)HEIGHTMAP_QUAD_SIZE);
+                        const f32v2 vertexPosWorld = f32v2(vertexPos.v) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
                         const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
                         if (glm::length2(offsetToVertex) < brushSizeSq) {
                             task->editor->editHeightVertex(id, vertexPos, offsetToVertex, brushSettings, task->editState);
@@ -582,8 +582,8 @@ void WorldEditorPanel::updateRoadEdit()
                         HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtWorldPos(worldPos);
                         const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
                         const f32v2 offset = worldPos - terrainWorldPos;
-                        const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
-                        const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
+                        const DTileCoord vertexPos(offset / (f32)HEIGHTMAP_QUAD_SIZE);
+                        const f32v2 vertexPosWorld = f32v2(vertexPos.v) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
                         const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
                         if (glm::length2(offsetToVertex) < brushSizeSq) {
                             task->editor->editHeightVertex(id, vertexPos, offsetToVertex, brushSettings, TerrainEditState::DIRTY_ONLY);
@@ -753,7 +753,7 @@ void WorldEditorPanel::updateBuildingEdit() {
     }
 }
 
-void WorldEditorPanel::editHeightVertex(HeightmapPatchID id, ui32v2 vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
+void WorldEditorPanel::editHeightVertex(HeightmapPatchID id, DTileCoord vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
     assert(mActiveWorld);
 
     // Read brush data

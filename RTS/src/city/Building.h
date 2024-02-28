@@ -45,9 +45,9 @@ private:
     //ItemTradeManager mTradeManager; // TODO: This is a large copy and we pass building by value
 };
 
-enum class RoadType {
-    DIRT,
-    PAVED
+enum class OLDRoadType : ui8 {
+    DIRT = 0,
+    PAVED = 1
 };
 
 struct CityRoad {
@@ -56,7 +56,7 @@ struct CityRoad {
     i32AABB2 aabb;
     ui32 width;
     ui32 length;
-    RoadType type = RoadType::PAVED;
+    OLDRoadType type = OLDRoadType::PAVED;
     RoadID id;
     AXIS_2D axis;
 

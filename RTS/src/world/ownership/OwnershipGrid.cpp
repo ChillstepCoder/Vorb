@@ -28,7 +28,7 @@ const ChunkOwnershipData& OwnershipGrid::getChunkSettlementOwnerData(ChunkID chu
     return mChunkOwners[chunkId];
 }
 
-const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(i32v2 dtilePosWorld) const {
+const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(DTileCoord dtilePosWorld) const {
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
         return nullptr;
     }
@@ -47,6 +47,14 @@ const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(ChunkID chunkId, D
         return nullptr;
     }
     return &data.dtileData[dtileIndex];
+}
+
+bool OwnershipGrid::isDTileOwned(DTileCoord dtilePosWorld) const {
+    const DTileOwnershipData* data = tryGetDTileOwnerData(dtilePosWorld);
+    if (!data) {
+        return false;
+    }
+    return data->owner != entt::null;
 }
 
 bool OwnershipGrid::isChunkOwnedBySettlement(ChunkID chunkId) const {

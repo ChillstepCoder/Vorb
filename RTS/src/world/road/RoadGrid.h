@@ -30,6 +30,8 @@ public:
     RoadPoint getRoadPoint(DTileCoord worldPos) const;
 
     void setRoadPoint(DTileCoord worldPos, RoadPoint point);
+    // Only sets the road point if it is either a different type, or higher intensity that what already exists
+    void setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint point);
     void adjustRoadPoint(DTileCoord worldPos, i32 adjust);
 
 private:

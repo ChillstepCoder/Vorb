@@ -50,8 +50,10 @@ public:
     ui32 getWidthDTiles() const { return mWidthDTiles; }
 
     const ChunkOwnershipData& getChunkSettlementOwnerData(ChunkID chunkId) const;
-    const DTileOwnershipData* tryGetDTileOwnerData(i32v2 dtilePosWorld) const;
+    const DTileOwnershipData* tryGetDTileOwnerData(DTileCoord dtilePosWorld) const;
     const DTileOwnershipData* tryGetDTileOwnerData(ChunkID chunkId, DTileIndex tileIndex) const;
+    bool isDTileOwned(DTileCoord dtilePosWorld) const;
+
     bool isChunkOwnedBySettlement(ChunkID chunkId) const;
 
     void setChunkSettlementOwner(ChunkID chunkId, entt::entity owner);

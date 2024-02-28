@@ -17,7 +17,7 @@ constexpr TimestampMs UPDATE_INTERVAL = 5000;
 SimSettlementSystem::SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
     mSimContext(simContext), mRegistry(registry), mECS(ecs) {
 
-    mPlanner = std::make_unique<SettlementPlanner>(registry);
+    mPlanner = std::make_unique<SettlementPlanner>(mSimContext.getWorld(), registry);
 }
 
 SimSettlementSystem::~SimSettlementSystem() = default;
@@ -83,7 +83,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SettlementStructuresComponent>(settlementEntity);
     mRegistry.emplace<SettlementWorkOrdersComponent>(settlementEntity);
     mRegistry.emplace<SettlementQuartermasterComponent>(settlementEntity);
-    mRegistry.emplace< SettlementRoadNetworkComponent>(settlementEntity);
+    mRegistry.emplace<SettlementRoadNetworkComponent>(settlementEntity);
     // TODO Adjacency
 
     // Assign people
