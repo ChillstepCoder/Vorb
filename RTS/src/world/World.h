@@ -68,6 +68,7 @@ public:
     f32v2 getLoadCenter() const;
     void setLoadCenter(const f32v2& loadCenter);
     ui32 getWidthTiles() const { return mWidthTiles; }
+    ui32 getWidthDTiles() const { return mWidthDTiles; }
     ui32 getWidthChunks() const { return mWidthChunks; }
     ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES; }
     WorldID getId() const { return mId; }
@@ -139,6 +140,7 @@ private:
     mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
     ui32 mWidthTiles = 0;
+    ui32 mWidthDTiles = 0;
     ui32 mWidthChunks = 0;
     f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
 

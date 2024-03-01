@@ -5,8 +5,9 @@
 constexpr int CHUNK_WIDTH = 128;
 static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
 constexpr float CHUNK_DIAGONAL_RADIUS = 90.51f;
+#define TILE_INDEX_CHUNK_MODULO_MASK 0x7f
 #define TILE_INDEX_Y_SHIFT 7
-#define TILE_INDEX_X_MASK 0x7f
+#define TILE_INDEX_X_MASK TILE_INDEX_CHUNK_MODULO_MASK
 // DoubleTile
 // Grid used for roads, height, land ownership, and plots
 constexpr int DTILE_WIDTH = 2;
@@ -57,6 +58,8 @@ public:
     Derived operator*(const i32& other) const { return Derived(v * other ); }
     Derived operator/(const i32& other) const { return Derived(v / other ); }
 
+    ui32 toGridIDType(ui32 gridWidth) const { return v.y * gridWidth + v.x; }
+
     union {
         i32v2 v;
         struct {
@@ -83,6 +86,13 @@ public:
     explicit TileCoord(const BlockCoord& other);
     explicit TileCoord(const SubchunkCoord& other);
     explicit TileCoord(const ChunkCoord& other);
+
+    // Gets relative position within chunk
+    TileIndex toChunkTileIndex() const {
+        const i32v2 relativePos(v.x & TILE_INDEX_CHUNK_MODULO_MASK, v.y & TILE_INDEX_CHUNK_MODULO_MASK);
+        return (relativePos.y << TILE_INDEX_Y_SHIFT) | relativePos.x;
+    }
+    inline std::pair<ChunkID, TileIndex> toChunkTileIndexAndChunkID(ui32 worldWidthChunks) const;
 };
 
 // 2x2 tiles, but offset by 1. I.e., 
@@ -188,6 +198,10 @@ inline ChunkCoord::ChunkCoord(const TileCoord& other) : CoordinateBase(other.v >
 inline ChunkCoord::ChunkCoord(const DTileCoord& other) : CoordinateBase(other.v >> 6) {}
 inline ChunkCoord::ChunkCoord(const BlockCoord& other) : CoordinateBase(other.v >> 4) {}
 inline ChunkCoord::ChunkCoord(const SubchunkCoord& other) : CoordinateBase(other.v >> 3) {}
+
+inline std::pair<ChunkID, TileIndex> TileCoord::toChunkTileIndexAndChunkID(ui32 worldWidthChunks) const {
+    return std::pair<TileIndex, ChunkID>(ChunkCoord(*this).toGridIDType(worldWidthChunks), toChunkTileIndex());
+}
 
 static_assert(CHUNK_WIDTH == 128);
 static_assert(SUBCHUNK_WIDTH == 16);

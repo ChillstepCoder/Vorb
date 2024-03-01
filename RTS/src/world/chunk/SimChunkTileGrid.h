@@ -16,14 +16,53 @@ enum class SimChunkTileContainerState : ui8 {
     Allocated // Tiles are loaded into memory
 };
 
+enum class SimTileDataFlags : ui8 {
+    Reserved = BIT(0)
+};
+
 struct SimTileData {
     TileID tileId;
     ui8 variant;
-    ui8 padding;
+    BitFlags<SimTileDataFlags> flags;
+
+    auto operator<=>(const SimTileData&) const = default;
+    bool isNull() const { return tileId == TILE_ID_NONE && flags.getBits() == 0; }
 };
 static_assert(sizeof(SimTileData) == 4);
 
-struct SimChunkTileData {
+// Lock a sim tile with intent to modify, so it can't be modified or used by anyone else
+class SimTileDataWriteReservation {
+    friend class SimChunkTileGrid;
+public:
+    SimTileDataWriteReservation() = delete;
+    ~SimTileDataWriteReservation();
+private:
+    SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ui16 tileIndex, SimTileData data);
+public:
+
+    POOLED_ALLOC_DECL();
+
+    // Freely modify this and then release or destroy the reservation
+    SimTileData reservedCopy;
+
+    void copyBackAndRelease();
+    void cancelReservation() { mDidRelease = true; }
+private:
+    SimChunkTileGrid* mGrid = nullptr;
+    ui16 mTileIndex;
+    ChunkID mChunk;
+    bool mDidRelease = false;
+};
+typedef std::unique_ptr<SimTileDataWriteReservation> SimTileDataWriteReservationPtr;
+
+class SimChunkTileData {
+    friend class SimChunkTileGrid;
+    friend class SimChunkTileContainer;
+    friend class ChunkGenerator;
+private:
+    void incrementTileQuantity(TileID id, ui32 quantity);
+    void decrementTileQuantity(TileID id, ui32 quantity);
+
     boost::container::flat_map<ui16, SimTileData> tileIndexToTileData;
     boost::container::flat_map<TileID, ui32> tileQuantities;
     TileWallContainer tileWalls; // Most chunks don't have walls
@@ -67,6 +106,7 @@ public:
     bool allocate();
     ChunkID getChunkID() const { return chunkId; }
     SimChunkTileContainerState getState() const { return state; }
+    bool isAllocated() const { return state == SimChunkTileContainerState::Allocated; }
 private:
     mutable std::shared_mutex mutex;
     std::unique_ptr<SimChunkTileData> data;
@@ -88,9 +128,6 @@ private:
             s.object(*data);
         }
     }
-
-private:
-    
 };
 
 class SimChunkTileGrid {
@@ -108,6 +145,10 @@ public:
     SimChunkTileContainer& getChunkForGeneration(ChunkID chunkId) {
         return mChunkData[chunkId];
     }
+
+    SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(ChunkID chunkId, TileIndex tileIndex);
+    SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(TileCoord tileCoord);
+    void releaseTileDataReservationAndCopyData(SimTileDataWriteReservation& reservation);
 
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }

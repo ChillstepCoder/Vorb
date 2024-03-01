@@ -37,6 +37,10 @@ public:
     RandomGenerator() : mGen(DEFAULT_SEED), mSeed(DEFAULT_SEED) {}
     RandomGenerator(ui32 seed) : mGen(seed), mSeed(seed) {}
 
+    void setSeed(ui32 seed) {
+        mSeed = seed;
+        mGen = fastPRNG::fastXS32(seed);
+    }
     void reset() {
         mGen = fastPRNG::fastXS32(mSeed);
     }
@@ -60,8 +64,8 @@ public:
         return (bool)(mGen.xoroshiro64x() % 2);
     }
 
-    ui32 getRandomUIntInRange(ui32 min, ui32 max) {
-        return min + (getRandomUint() % (max - min));
+    ui32 getRandomUIntInRange(ui32 minInclusive, ui32 maxExclusive) {
+        return minInclusive + (getRandomUint() % (maxExclusive - minInclusive));
     }
 
     fastPRNG::fastXS32 mGen;

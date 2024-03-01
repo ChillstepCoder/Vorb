@@ -92,6 +92,9 @@ template <typename Stream> bool netSerialize(Stream& stream);
 
 #include "instrumentation/instrumentor.h"
 
+// Tiles
+#include "tile/TileConst.h"
+
 // Const
 #include "physics/PhysicsConst.h"
 #include "world/CoordinateTypes.h"
@@ -99,9 +102,6 @@ template <typename Stream> bool netSerialize(Stream& stream);
 
 // Corner winding
 #include "util/Winding.h"
-
-// Tiles
-#include "tile/TileConst.h"
 
 // Items
 #include "item/ItemConst.h"

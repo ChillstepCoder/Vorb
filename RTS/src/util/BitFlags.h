@@ -27,6 +27,8 @@ public:
         return *this;
     }
 
+    auto operator<=>(const BitFlags<T>&) const = default;
+
     operator typename std::underlying_type<T>::type& () noexcept {
         return mBits;
     }
