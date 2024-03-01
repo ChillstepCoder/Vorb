@@ -35,18 +35,21 @@ class SimTileDataWriteReservation {
     friend class SimChunkTileGrid;
 public:
     SimTileDataWriteReservation() = delete;
-    ~SimTileDataWriteReservation();
-private:
     SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ui16 tileIndex, SimTileData data);
-public:
+    ~SimTileDataWriteReservation();
 
     POOLED_ALLOC_DECL();
 
-    // Freely modify this and then release or destroy the reservation
-    SimTileData reservedCopy;
+    ui16 getTileIndex() const { return mTileIndex; }
+    ChunkID getChunkID() const { return mChunk; }
+    SimChunkTileGrid* getSimChunkGrid() const { return mGrid; }
+    bool didRelease() const { return mDidRelease; }
 
     void copyBackAndRelease();
     void cancelReservation() { mDidRelease = true; }
+
+    // Freely modify this and then release or destroy the reservation
+    SimTileData reservedCopy;
 private:
     SimChunkTileGrid* mGrid = nullptr;
     ui16 mTileIndex;

@@ -110,6 +110,13 @@ public:
     explicit DTileCoord(const SubchunkCoord& other);
     explicit DTileCoord(const ChunkCoord& other);
 
+    void getCoveredTileCoords(OUT TileCoord coords[4]) {
+        coords[3] = TileCoord(*this);
+        coords[2] = coords[3] - TileCoord(1, 0);
+        coords[1] = coords[3] - TileCoord(0, 1);
+        coords[0] = coords[3] - TileCoord(1, 1);
+    }
+
     i32v2 toTilePos() const { return v << 1; }
     static DTileCoord fromTilePos(i32v2 tilePos) { return DTileCoord(i32v2((tilePos.x + 1) >> 1, (tilePos.y + 1) >> 1)); }
 };

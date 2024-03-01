@@ -34,9 +34,9 @@ SimTileDataWriteReservationPtr SimChunkTileGrid::tryReserveTileDataAtPosIfNotEmp
     return nullptr;
 }
 
-SimTileDataWriteReservationPtr SimChunkTileGrid::tryReserveTileDataAtPosIfNotEmpty(TileCoord tileCoord) const {
+SimTileDataWriteReservationPtr SimChunkTileGrid::tryReserveTileDataAtPosIfNotEmpty(TileCoord tileCoord) {
     const auto[chunkId, tileIndex] = tileCoord.toChunkTileIndexAndChunkID(mWidthChunks);
-    tryReserveTileDataAtPosIfNotEmpty(chunkId, tileIndex);
+    return tryReserveTileDataAtPosIfNotEmpty(chunkId, tileIndex);
 }
 
 void SimChunkTileGrid::releaseTileDataReservationAndCopyData(SimTileDataWriteReservation& reservation) {
@@ -112,8 +112,7 @@ SimTileDataWriteReservation::SimTileDataWriteReservation(SimChunkTileGrid& grid,
     mGrid(&grid),
     mChunk(chunk),
     mTileIndex(tileIndex),
-    reservedCopy(data)
-{
+    reservedCopy(data) {
 
 }
 
