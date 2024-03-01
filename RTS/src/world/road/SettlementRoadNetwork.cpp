@@ -186,18 +186,19 @@ bool SettlementRoadNetwork::tryAddNewRoadSegment(World& world, entt::entity sett
         if (distanceSq <= SQ(desiredThickness)) {
             const f32 distance = sqrtf(distanceSq);
             const f32 strength = glm::min((desiredThickness - distance) / BLEND_THICKNESS, 1.0f);
-            roadGrid.setRoadPointIfHigherIntensity(pos, RoadPoint{ .strength = ui8(strength * 255), .type = e_cast(roadType) });
-        }
-        // Clear tile if needed
-        TileCoord tCoordsThisDTile[4];
-        pos.getCoveredTileCoords(tCoordsThisDTile);
-        for (int i = 0; i < 4; ++i) {
-            if (SimTileDataWriteReservationPtr writeLock = tileGrid.tryReserveTileDataAtPosIfNotEmpty(tCoordsThisDTile[i])) {
-                writeLock->reservedCopy.tileId = TILE_ID_NONE;
-                writeLock.reset();
+            if (roadGrid.setRoadPointIfHigherIntensity(pos, RoadPoint{ .strength = ui8(strength * 255), .type = e_cast(roadType) })) {
+                // Clear tile if needed
+                TileCoord tCoordsThisDTile[4];
+                pos.getCoveredTileCoords(tCoordsThisDTile);
+                for (int i = 0; i < 4; ++i) {
+                    if (SimTileDataWriteReservationPtr writeLock = tileGrid.tryReserveTileDataAtPosIfNotEmpty(tCoordsThisDTile[i])) {
+                        writeLock->reservedCopy.tileId = TILE_ID_NONE;
+                        writeLock.reset();
+                    }
+                }
             }
+        
         }
-
     }
     std::vector<DTileCoord>().swap(newEdge.roadVertsNeedingConstruct);
     return true;

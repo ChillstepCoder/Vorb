@@ -54,9 +54,9 @@ void RoadGrid::setRoadPoint(DTileCoord worldPos, RoadPoint point) {
     cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x] = point;
 }
 
-void RoadGrid::setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint point) {
+bool RoadGrid::setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint point) {
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
-        return;
+        return false;
     }
     i32v2 cellOffset;
     const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
@@ -69,7 +69,9 @@ void RoadGrid::setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint poin
     RoadPoint& existing = cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x];
     if (point.strength > existing.strength || point.type != existing.type) {
         existing = point;
+        return true;
     }
+    return false;
 }
 
 void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
