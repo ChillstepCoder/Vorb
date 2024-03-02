@@ -1,6 +1,6 @@
-spacing: 4
-min_dist: 2
-prob: 1
+spacing: 5
+min_dist: 3
+prob: 0.8
 offset: [0,0]
 dist:
   label: ''

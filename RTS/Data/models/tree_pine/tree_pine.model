@@ -1,9 +1,16 @@
 model: tree_pine.fbx
 rig: ''
 machine: ''
-scale: 1
+scale: 2
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 10
 shadow_detail: highest
 force_normals_up: 0
-submesh_data:
-  - wind: tree_trunk
-  - wind: tree_leaves
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [tree_02_bark,'','','']
+      - [tree_02_leaf,'','','']
