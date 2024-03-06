@@ -67,6 +67,9 @@ public:
     ui32 getRandomUIntInRange(ui32 minInclusive, ui32 maxExclusive) {
         return minInclusive + (getRandomUint() % (maxExclusive - minInclusive));
     }
+    i32 getRandomIntInRange(i32 minInclusive, i32 maxExclusive) {
+        return minInclusive + (i32)(getRandomUint() % ui32(maxExclusive - minInclusive));
+    }
 
     fastPRNG::fastXS32 mGen;
     ui32 mSeed;

@@ -26,7 +26,7 @@ protected:
 
     Tile generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal, const BiomeDef* biomeDef);
    
-    void generateTileGrass(i32v2 worldPos, f32 height, TileGrass* grass);
+    TileGrass generateTileGrass(i32v2 worldPos, f32 height, f32 intensityMult);
     
     World& mWorld;
     f32v2 mWorldCenter;

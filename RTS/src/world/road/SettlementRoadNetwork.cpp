@@ -32,10 +32,10 @@ bool SettlementRoadNetwork::tryInitAtWorldPos(World& world, entt::entity settlem
     constexpr ui32 ROAD_WIDTH_START = 5;
     constexpr ui32 ROAD_WIDTH_END = 3;
     RoadType roadType = RoadType::Dirt;
-    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(INITIAL_LENGTH, -INITIAL_LENGTH), ROAD_WIDTH_START, ROAD_WIDTH_END);
-    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(INITIAL_LENGTH, INITIAL_LENGTH), ROAD_WIDTH_START, ROAD_WIDTH_END);
-    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(-INITIAL_LENGTH, -INITIAL_LENGTH), ROAD_WIDTH_START, ROAD_WIDTH_END);
-    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(-INITIAL_LENGTH, INITIAL_LENGTH), ROAD_WIDTH_START, ROAD_WIDTH_END);
+    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(0, -INITIAL_LENGTH), ROAD_WIDTH_START, ROAD_WIDTH_END);
+    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(0, INITIAL_LENGTH), ROAD_WIDTH_START, ROAD_WIDTH_END);
+    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(-INITIAL_LENGTH, 0), ROAD_WIDTH_START, ROAD_WIDTH_END);
+    addedCount += (i32)tryAddNewRoadSegment(world, settlement, roadType, 0, dTilePos - DTileCoord(INITIAL_LENGTH, 0), ROAD_WIDTH_START, ROAD_WIDTH_END);
 
     for (ui32 i = 0; i < 32; ++i) {
         tryExtrudeRandomRoadSegment(world, settlement, roadType, ROAD_WIDTH_END, INITIAL_LENGTH * 0.6f);
@@ -51,6 +51,28 @@ bool SettlementRoadNetwork::tryAddNewRoadSegment(World& world, entt::entity sett
     if (targetPos.x <= 0 || targetPos.y <= 0 || targetPos.x >= world.getWidthDTiles() - 1 || targetPos.y >= world.getWidthDTiles() - 1) [[unlikely]] {
         return false;
     }
+
+    constexpr ui32 POINT_COUNT = 4;
+    DTileCoord roadPoints[POINT_COUNT];
+    roadPoints[0] = baseVertex.pos;
+    roadPoints[POINT_COUNT - 1] = targetPos;
+    for (int i = 1; i < POINT_COUNT - 1; ++i) {
+        // generate intermediate points
+        roadPoints[i] = DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(baseVertex.pos.v), f32v2(targetPos.v), f32(i) / (POINT_COUNT - 1)))));
+        roadPoints[i].x += randomGenerator.getRandomIntInRange(-2, 2);
+        roadPoints[i].y += randomGenerator.getRandomIntInRange(-2, 2);
+    }
+
+    auto getDistanceSqToRoad = [&](DTileCoord pos) -> f32 {
+        f32 closestSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, roadPoints[0].v, roadPoints[1].v);
+        for (int i = 1; i < POINT_COUNT - 1; ++i) {
+            f32 distSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, roadPoints[i].v, roadPoints[i + 1].v);
+            if (distSq < closestSq) {
+                closestSq = distSq;
+            }
+        }
+        return closestSq;
+    };
 
     // Check if this vertex has any room for more edges
     ui32 baseVertexNextEdgeIndex = UINT32_MAX;
@@ -105,7 +127,7 @@ bool SettlementRoadNetwork::tryAddNewRoadSegment(World& world, entt::entity sett
         for (pos.x = aabb.pos.x; pos.x < maxCoord.x; ++pos.x) {
 
             if (heightGrid.getHeightAtVert(pos) <= 0.0f) {
-                const f32 distanceSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, baseVertex.pos.v, targetPos.v);
+                const f32 distanceSq = getDistanceSqToRoad(pos);
                 // If this is too close to road center, cancel the road
                 if (distanceSq < MIN_ROAD_DIST) {
                     return false;
@@ -124,7 +146,7 @@ bool SettlementRoadNetwork::tryAddNewRoadSegment(World& world, entt::entity sett
                 // If there is a road owned here
                 if (ownerData->owner != entt::null) {
                     
-                    const f32 distanceSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, baseVertex.pos.v, targetPos.v);
+                    const f32 distanceSq = getDistanceSqToRoad(pos);
                     // Road is invalid if it is too close to another road that is not connected to our root vertex
                     if (distanceSq < MIN_ROAD_DIST) {
                         if (ownerData->owner == settlement) {
@@ -181,10 +203,17 @@ bool SettlementRoadNetwork::tryAddNewRoadSegment(World& world, entt::entity sett
     f32 baseWidthf(baseWidth);
     f32 endWidthf(endWidth);
     for (DTileCoord pos : newEdge.roadVertsNeedingConstruct) {
-        auto [distanceSq, time] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, baseVertex.pos.v, targetPos.v);
-        f32 desiredThickness = lerp(baseWidthf, endWidthf, time) * 0.5f;
-        if (distanceSq <= SQ(desiredThickness)) {
-            const f32 distance = sqrtf(distanceSq);
+        auto [closestSq, closestT] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, roadPoints[0].v, roadPoints[1].v);
+        for (int i = 1; i < POINT_COUNT - 1; ++i) {
+            auto [distanceSq, time] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, roadPoints[i].v, roadPoints[i + 1].v);
+            if (distanceSq < closestSq) {
+                closestSq = distanceSq;
+                closestT = time;
+            }
+        }
+        f32 desiredThickness = lerp(baseWidthf, endWidthf, closestT) * 0.5f;
+        if (closestSq <= SQ(desiredThickness)) {
+            const f32 distance = sqrtf(closestSq);
             const f32 strength = glm::min((desiredThickness - distance) / BLEND_THICKNESS, 1.0f);
             if (roadGrid.setRoadPointIfHigherIntensity(pos, RoadPoint{ .strength = ui8(strength * 255), .type = e_cast(roadType) })) {
                 // Clear tile if needed
@@ -277,4 +306,74 @@ bool SettlementRoadNetwork::tryExtrudeRandomRoadSegment(World& world, entt::enti
     const f32 bendAngleRad = randomGenerator.getRandomFloatSigned() * M_PI_2F;
     const f32v2 newNormal = MathUtil::rotateVector2DRad(prevEdge.normalDir, bendAngleRad);
     return tryAddNewRoadSegment(world, settlement, roadType, leafVertexId, leafVertex.pos + DTileCoord(i32v2(newNormal * length)), prevEdge.widthTiles[1], width);
+}
+
+bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius) {
+    if (mSectors.empty()) [[unlikely]] {
+        mSectors.emplace_back(center, desiredRadius);
+        return true;
+    }
+    SettlementSectorID closestSector = INVALID_SECTOR_ID;
+    f32 closestDistSq = FLT_MAX;
+    for (size_t i = 0; i < mSectors.size(); ++i) {
+        const SettlementSector& sector = mSectors[i];
+        f32 distSq = glm::distance2(sector.center.v, center.v);
+        if (distSq < SQ(sector.desiredRadius + desiredRadius)) {
+             return false;
+        }
+        if (distSq < closestDistSq) {
+            closestDistSq = distSq;
+            closestSector = i;
+        }
+    }
+
+    SettlementSector newSector(center, desiredRadius);
+
+    // Create a road between new sector and closest other sector
+   
+    mSectors.emplace_back(center, desiredRadius);
+    return true;
+}
+
+//https://stackoverflow.com/questions/14307158/how-do-you-check-for-intersection-between-a-line-segment-and-a-line-ray-emanatin
+std::optional<f32> GetRayToLineSegmentIntersection(f32v2 rayOrigin, f32v2 rayDirection, f32v2 point1, f32v2 point2)
+{
+    f32v2 v1 = rayOrigin - point1;
+    f32v2 v2 = point2 - point1;
+    f32v2 v3 = f32v2(-rayDirection.y, rayDirection.x);
+
+
+    f32 dot = glm::dot(v2, v3);
+    if (abs(dot) < 0.000001)
+        return std::nullopt;
+
+    f32 t1 = MathUtil::crossProduct2d(v2, v1) / dot;
+    f32 t2 = glm::dot(v1, v3) / dot;
+
+    if (t1 >= 0.0 && (t2 >= 0.0 && t2 <= 1.0))
+        return t1;
+
+    return std::nullopt;
+}
+
+std::optional<float> intersectInfiniteLineWithSegment(f32v2 p, f32v2 normal, f32v2 s[2]) {
+    f32v2 d = s[1] - s[0]; // Direction vector of the segment
+    float det = glm::cross(normal, d); // Determinant for checking parallel lines
+
+    if (det == 0) return std::nullopt; // Lines are parallel, no intersection
+
+    f32v2 diff = p - s[0];
+    float u = glm::cross(diff, normal) / det;
+    float t = glm::cross(diff, d) / det;
+
+    if (u >= 0 && u <= 1) return t; // Intersection within the segment bounds
+
+    return std::nullopt; // No valid intersection
+}
+
+std::optional<RoadSegmentHitResult> SettlementRoadNetworkNew::traceAgainstRoadSegments(DTileCoord start, DTileCoord end) {
+    for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
+        RoadSegment& segment = roadSegments[id];
+        if (MathUtil::)
+    }
 }

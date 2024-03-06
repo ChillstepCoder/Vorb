@@ -6,6 +6,7 @@
 template <typename Stream> \
 bool ClassName::netSerialize(Stream& stream) { \
     __VA_ARGS__ \
+    return true; \
 } \
 template bool ClassName::netSerialize<yojimbo::ReadStream>(yojimbo::ReadStream& stream); \
 template bool ClassName::netSerialize<yojimbo::WriteStream>(yojimbo::WriteStream& stream); \

@@ -28,6 +28,7 @@ public:
         heightOffset(heightOffset) { }
     ~NoiseFunction() = default;
 
+    // [-1,1]
     f64 compute(f64 x, f64 y) const {
         switch (type) {
             case NoiseFunctionType::Standard: {

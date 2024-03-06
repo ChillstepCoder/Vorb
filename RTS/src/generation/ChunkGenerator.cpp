@@ -12,6 +12,7 @@
 #include "world/WorldDefaults.h"
 #include "world/IHeightmapGrid.h"
 #include "world/chunk/SimChunkTileGrid.h"
+#include "world/road/RoadGrid.h"
 #include "resources/TileRepository.h"
 
 #include "generation/NoiseFunction.hpp"
@@ -87,10 +88,18 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
 }
 
 void ChunkGenerator::generateChunk(Chunk& chunk) {
-    SimChunkTileGrid& simGrid = chunk.getWorld().getSimTileGrid();
+    World& world = chunk.getWorld();
+    SimChunkTileGrid& simGrid = world.getSimTileGrid();
     const SimChunkTileContainer& simData = simGrid.getChunk(chunk.getChunkID());
+
+    if (world.isEditorWorld()) [[unlikely]] {
+        // Need to generate the sim chunk first on editor worlds, as we did not generate history
+        generateSimChunk(simGrid.getChunkForGeneration(chunk.getChunkID()), world);
+    }
+
     TileRepository& tileRepo = TileRepository::get();
-    IHeightmapGrid& heightGrid = chunk.getWorld().getHeightmapGrid();
+    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
+    RoadGrid& roadGrid = world.getRoadGrid();
     const i32v2 chunkPosWorld = chunk.getWorldPos();
 
     // Allocate tiles if needed
@@ -102,10 +111,13 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
         return;
     }
 
-    // Set all tile ground positions
+    // Set all tile ground positions and generate grass
     std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
     for (i32 index = 0; index < CHUNK_SIZE; ++index) {
-        tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
+        const TileCoord coord(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
+        tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(coord.v);
+        const f32 roadGrassMult = f32(255 - roadGrid.getRoadPoint<true>(DTileCoord(coord)).strength) / 255.f;
+        chunk.mGrass[index] = generateTileGrass(coord.v, tiles[index].groundZOffset, SQ(roadGrassMult) /*Steeper falloff*/);
     }
 
     std::shared_lock lock(simData.mutex);
@@ -114,6 +126,7 @@ void ChunkGenerator::generateChunk(Chunk& chunk) {
     for (auto& [index, data] : simChunkTileData.tileIndexToTileData) {
         tiles[index].mainLayer = data.tileId;
         tiles[index].mainLayerVariant = data.variant;
+        chunk.mGrass[index] = TileGrass();
 
         // TODO: Not ideal
         //const NavBlockerType navBlockerType = tileRepo.getLoadedOrUnloadedAsset(data.tileId).navBlockerType;
@@ -186,18 +199,26 @@ void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world
     //LOG_DEBUG("Generated simchunk in {} ms {} {} {}", timer.stop(), totalTiles, (f32)totalTiles / CHUNK_SIZE, chunkData.tileIndexToTileData.size());
 }
 
-void ChunkGenerator::generateTileGrass(i32v2 worldPos, f32 height, TileGrass* grass) {
+TileGrass ChunkGenerator::generateTileGrass(i32v2 worldPos, f32 height, f32 intensityMult) {
     static constexpr TileGrassID defaultGrass = 0; // TODO: DIFFERENT
-
+    static constexpr TileGrassID tmpSecondGrass = 1; // TODO: DIFFERENT
+    
+    TileGrass rv;
     constexpr f32 MAX_GRASS_HEIGHT = 45.0f;
-    if (height < MAX_GRASS_HEIGHT) {
+    if (height < MAX_GRASS_HEIGHT && intensityMult > 0.0f) {
         //f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
 
         constexpr f32 GRASS_SCALE = 2.0f;
         constexpr f32 GRASS_OFFSET = 0.45f;
         const f32 grassNoise = mGenerationData.mGrassNoise.compute(worldPos.x, worldPos.y);
-        const ui8 density = (ui8)glm::clamp(glm::round((grassNoise * GRASS_SCALE + GRASS_OFFSET) * 255.0f), 0.0f, 255.0f);
-        grass->grassIDs[0] = defaultGrass;
-        grass->densities[0] = density;
+        f32 baseGrassDensity = glm::round(grassNoise * GRASS_SCALE + GRASS_OFFSET);
+        const ui8 density = (ui8)glm::clamp((baseGrassDensity * 255.0f), 0.0f, 255.0f);
+        rv.grassIDs[0] = defaultGrass;
+        rv.densities[0] = density * intensityMult;
+        // TODO: TMP
+        const ui8 density2 = (ui8)glm::clamp((glm::max((f32)baseGrassDensity, 0.0f) * (f32)mGenerationData.mGrassNoise.compute(worldPos.x + 2000.0f, worldPos.y + 2000.0f)) * 255.0f, 0.0f, 255.0f);
+        rv.grassIDs[1] = tmpSecondGrass;
+        rv.densities[1] = density2 * intensityMult;
     }
+    return rv;
 }

@@ -87,9 +87,11 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
     switch (groupCmp.groupType) {
         case CharacterGroupType::Generic:
             break;
-        case CharacterGroupType::SettlerCaravan:
-            assert(mSettlementSystem->tryCreateSettlementFromGroup(group));
+        case CharacterGroupType::SettlerCaravan: {
+            const bool didCreate = mSettlementSystem->tryCreateSettlementFromGroup(group);
+            assert(didCreate);
             break;
+        }
         case CharacterGroupType::Combat:
             break;
         case CharacterGroupType::TradeCaravan:

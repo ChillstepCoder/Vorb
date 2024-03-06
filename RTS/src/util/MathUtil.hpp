@@ -271,6 +271,10 @@ namespace MathUtil {
 
         return matrix;
     }
+
+    inline f32 crossProduct2d(f32v2 v1, f32v2 v2) {
+        return (v1.x * v2.y) - (v1.y * v2.x);
+    }
 }
 
 #define DECL_VEC2_LESS(T) \
