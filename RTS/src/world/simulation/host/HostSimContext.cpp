@@ -90,3 +90,7 @@ RandomGenerator& HostSimContext::getSimRandomGenerator() const {
 ui32 HostSimContext::getWidthChunks() const {
     return mWorld.getChunkGrid().getWidthChunks();
 }
+
+void HostSimContext::debugRender(f32v3 cameraPos) const {
+    mSimECS->debugRender(cameraPos);
+}

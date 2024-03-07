@@ -5,7 +5,7 @@
 
 // TODO: SettlementConst?
 #include "city/CityConst.h"
-#include "world/road/SettlementRoadNetwork.h"
+#include "world/road/SettlementLayoutManager.h"
 
 enum class JobType {
     
@@ -93,9 +93,9 @@ struct SettlementWorkOrdersComponent {
 
 };
 
-struct SettlementRoadNetworkComponent {
+struct SettlementLayoutComponent {
     i32v2 rootPos;
-    SettlementRoadNetwork network;
+    SettlementLayoutManager manager;
 };
 
 //std::vector<Chunk*> mChunks;

@@ -103,8 +103,8 @@ class DTileCoord : public CoordinateBase<DTileCoord> {
 public:
     DTileCoord() : CoordinateBase() {}
     explicit DTileCoord(i32 xy) : CoordinateBase(xy) {}
-    explicit DTileCoord(i32 tileX, i32 tileY) : CoordinateBase(tileX, tileY) {}
-    explicit DTileCoord(i32v2 tilePos) : CoordinateBase(tilePos) {};
+    explicit DTileCoord(i32 x, i32 y) : CoordinateBase(x, y) {}
+    explicit DTileCoord(i32v2 pos) : CoordinateBase(pos) {};
     explicit DTileCoord(const TileCoord& other);
     explicit DTileCoord(const BlockCoord& other);
     explicit DTileCoord(const SubchunkCoord& other);

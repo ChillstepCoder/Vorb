@@ -8,16 +8,17 @@ enum class IntersectionHitShape {
     AABB,
     TRIANGLE,
     SPHERE,
-    RAY
+    RAY,
+    SEGMENT,
+    LINE
 };
 
-// https://noonat.github.io/intersect/#aabb-vs-segment
 struct IntersectionHit2D {
     f32v2 position;
     f32v2 delta; // overlap distances
     f32v2 normal;
-    ui32v2 tilePos;
-    f32 time = 0.0f; // Defined only for segment and sweep
+    f32 timeSource = 0.0f; // Defined only for segment and sweep
+    f32 timeTarget = 0.0f; // Time on the hit ray segment
     IntersectionHitShape shape = IntersectionHitShape::NO_HIT;
 
     bool didHit() { return shape != IntersectionHitShape::NO_HIT; }

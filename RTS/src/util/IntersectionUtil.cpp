@@ -28,6 +28,7 @@ bool IntersectionUtil::segmentSegmentIntersect(const f32v2& a1, const f32v2& a2,
 
     return true;
 }
+
 //https://stackoverflow.com/questions/99353/how-to-test-if-a-line-segment-intersects-an-axis-aligned-rectange-in-2d
 bool IntersectionUtil::segmentAABBIntersectBoolean(const f32v2& aabbMin, const f32v2& aabbMax, const f32v2& p1, const f32v2& p2) {
     // Find min and max X for the segment
@@ -114,7 +115,7 @@ IntersectionHit2D IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const
     }
 
     IntersectionHit2D hit;
-    hit.time = vmath::clamp(nearTime, 0.0f, 1.0f);
+    hit.timeSource = vmath::clamp(nearTime, 0.0f, 1.0f);
     if (nearTimeX > nearTimeY) {
         hit.normal.x = -signX;
         hit.normal.y = 0;
@@ -124,10 +125,10 @@ IntersectionHit2D IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const
         hit.normal.y = -signY;
     }
 
-    hit.delta.x = (1.0f - hit.time) * -offset.x;
-    hit.delta.y = (1.0f - hit.time) * -offset.y;
-    hit.position.x = pos.x + offset.x * hit.time;
-    hit.position.y = pos.y + offset.y * hit.time;
+    hit.delta.x = (1.0f - hit.timeSource) * -offset.x;
+    hit.delta.y = (1.0f - hit.timeSource) * -offset.y;
+    hit.position.x = pos.x + offset.x * hit.timeSource;
+    hit.position.y = pos.y + offset.y * hit.timeSource;
     hit.shape = IntersectionHitShape::AABB;
     return hit;
 }
@@ -218,10 +219,146 @@ IntersectionHit2D IntersectionUtil::rayRayIntersect(const f32v2& p1, const f32v2
 
     if (u >= 0.0f && v >= 0.0f) {
         rv.shape = IntersectionHitShape::RAY;
-        rv.position = p1 * u;
-        rv.time = u;
+        rv.position = p1 + r1 * u;
+        rv.timeSource = u;
+        rv.timeTarget = v;
     }
 
+    return rv;
+}
+
+IntersectionHit2D IntersectionUtil::segmentSegmentIntersect(f32v2 s1, f32v2 s2, f32v2 t1, f32v2 t2) {
+    IntersectionHit2D rv;
+    const f32v2 r1 = s2 - s1;
+    const f32v2 r2 = t2 - t1;
+
+    const f32 dx = t1.x - s1.x;
+    const f32 dy = t1.y - s1.y;
+    const f32 det = r2.x * r1.y - r2.y * r1.x;
+    if (det == 0) {
+        return rv;
+    }
+    const f32 u = (dy * r2.x - dx * r2.y) / det;
+    const f32 v = (dy * r1.x - dx * r1.y) / det;
+
+    if (u >= 0.0f && u <= 1.0f && v >= 0.0f && v <= 1.0f) {
+        rv.shape = IntersectionHitShape::SEGMENT;
+        rv.position = s1 + r1 * u;
+        rv.timeSource = u;
+        rv.timeTarget = v;
+    }
+
+    return rv;
+}
+
+IntersectionHit2D IntersectionUtil::segmentRayIntersect(f32v2 s1, f32v2 s2, f32v2 t, f32v2 r) {
+    IntersectionHit2D rv;
+    const f32v2 r1 = s2 - s1;
+
+    const f32 dx = t.x - s1.x;
+    const f32 dy = t.y - s1.y;
+    const f32 det = r.x * r1.y - r.y * r1.x;
+    if (det == 0) {
+        return rv;
+    }
+    const f32 u = (dy * r.x - dx * r.y) / det;
+    const f32 v = (dy * r1.x - dx * r1.y) / det;
+
+    if (u >= 0.0f && u <= 1.0f && v >= 0.0f) {
+        rv.shape = IntersectionHitShape::RAY;
+        rv.position = s1 + r1 * u;
+        rv.timeSource = u;
+        rv.timeTarget = v;
+    }
+
+    return rv;
+}
+
+IntersectionHit2D IntersectionUtil::raySegmentIntersect(f32v2 s, f32v2 r, f32v2 t1, f32v2 t2) {
+    IntersectionHit2D hit = segmentRayIntersect(t1, t2, s, r);
+    if (hit.didHit()) {
+        std::swap(hit.timeSource, hit.timeTarget);
+        hit.shape = IntersectionHitShape::SEGMENT;
+    }
+    return hit;
+}
+
+IntersectionHit2D IntersectionUtil::rayLineIntersect(f32v2 s, f32v2 r, f32v2 t, f32v2 n) {
+    IntersectionHit2D rv;
+
+    const f32 dx = t.x - s.x;
+    const f32 dy = t.y - s.y;
+    const f32 det = n.x * r.y - n.y * r.x;
+    if (det == 0) {
+        return rv;
+    }
+    const f32 u = (dy * n.x - dx * n.y) / det;
+
+    if (u >= 0.0f) {
+        rv.shape = IntersectionHitShape::LINE;
+        rv.position = s + r * u;
+        rv.timeSource = u;
+        rv.timeTarget = (dy * r.x - dx * r.y) / det;
+    }
+
+    return rv;
+}
+
+IntersectionHit2D IntersectionUtil::lineRayIntersect(f32v2 s, f32v2 n, f32v2 t, f32v2 r) {
+    IntersectionHit2D hit = rayLineIntersect(t, r, s, n);
+    if (hit.didHit()) {
+        std::swap(hit.timeSource, hit.timeTarget);
+        hit.shape = IntersectionHitShape::RAY;
+    }
+    return hit;
+}
+
+IntersectionHit2D IntersectionUtil::segmentLineIntersect(f32v2 s1, f32v2 s2, f32v2 t, f32v2 n) {
+    IntersectionHit2D rv;
+    const f32v2 r1 = s2 - s1;
+
+    const f32 dx = t.x - s1.x;
+    const f32 dy = t.y - s1.y;
+    const f32 det = n.x * r1.y - n.y * r1.x;
+    if (det == 0) {
+        return rv;
+    }
+    const f32 u = (dy * n.x - dx * n.y) / det;
+
+    if (u >= 0.0f && u <= 1.0f) {
+        rv.shape = IntersectionHitShape::LINE;
+        rv.position = s1 + r1 * u;
+        rv.timeSource = u;
+        rv.timeTarget = (dy * r1.x - dx * r1.y) / det;
+    }
+
+    return rv;
+}
+
+IntersectionHit2D IntersectionUtil::lineSegmentIntersect(f32v2 s, f32v2 n, f32v2 s1, f32v2 s2) {
+    IntersectionHit2D hit = segmentLineIntersect(s1, s2, s, n);
+    if (hit.didHit()) {
+        std::swap(hit.timeSource, hit.timeTarget);
+        hit.shape = IntersectionHitShape::LINE;
+    }
+    return hit;
+}
+
+IntersectionHit2D IntersectionUtil::lineLineIntersect(f32v2 s, f32v2 n1, f32v2 t, f32v2 n2) {
+    IntersectionHit2D rv;
+
+    const f32 dx = t.x - s.x;
+    const f32 dy = t.y - s.y;
+    const f32 det = n2.x * n1.y - n2.y * n1.x;
+    if (det == 0) {
+        return rv;
+    }
+    const f32 u = (dy * n2.x - dx * n2.y) / det;
+
+    rv.shape = IntersectionHitShape::LINE;
+    rv.position = s + n1 * u;
+    rv.timeSource = u;
+    rv.timeTarget = (dy * n1.x - dx * n1.y) / det;
     return rv;
 }
 

@@ -1041,7 +1041,7 @@
     <ClCompile Include="src\world\simulation\host\settlement\SettlementPlanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\road\SettlementRoadNetwork.cpp">
+    <ClCompile Include="src\world\road\SettlementLayoutManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2558,7 +2558,7 @@
     <ClInclude Include="src\world\simulation\host\component\StructureComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\road\SettlementRoadNetwork.h">
+    <ClInclude Include="src\world\road\SettlementLayoutManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\CoordinateTypes.h">

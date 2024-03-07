@@ -83,7 +83,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SettlementStructuresComponent>(settlementEntity);
     mRegistry.emplace<SettlementWorkOrdersComponent>(settlementEntity);
     mRegistry.emplace<SettlementQuartermasterComponent>(settlementEntity);
-    mRegistry.emplace<SettlementRoadNetworkComponent>(settlementEntity);
+    mRegistry.emplace<SettlementLayoutComponent>(settlementEntity);
     // TODO Adjacency
 
     // Assign people

@@ -32,6 +32,8 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     
     mAISystem->tick(mCurrentTickTimestamp, mTimeDelta);
     mSettlementSystem->tick(mCurrentTickTimestamp, mTimeDelta);
+
+    debugRenderInternal();
 }
 
 entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
@@ -128,6 +130,41 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
     dispatchEntityDestroyed(SimECSEvent{ group, SimEntityType::Group });
     mRegistry.remove<CharacterGroupLeaderComponent>(groupCmp.leader);
     mRegistry.destroy(group);
+}
+
+void SimECS::debugRender(f32v3 cameraPos) const {
+    std::lock_guard lock(mDebugRenderMutex);
+    mDebugCameraPos = cameraPos;
+}
+
+void SimECS::debugRenderInternal() const {
+    f32v3 cameraPos;
+    { // Critical section
+        std::lock_guard lock(mDebugRenderMutex);
+        cameraPos = mDebugCameraPos;
+    }
+    if (cameraPos.x == FLT_MAX) {
+        return;
+    }
+
+    // Draw closest one
+    auto view = mRegistry.view<const SettlementSimComponent, const SettlementLayoutComponent>();
+    f32 closestDistSq = FLT_MAX;
+    const SettlementLayoutComponent* closestLayoutCmp = nullptr;
+    for (entt::entity entity : view) {
+        const SettlementSimComponent& settlementCmp = view.get<const SettlementSimComponent>(entity);
+        const SettlementLayoutComponent& layoutCmp = view.get<const SettlementLayoutComponent>(entity);
+        f32v2 worldPos = mWorld.getChunkWorldPos(settlementCmp.rootChunkId).v;
+        f32 distSq = glm::distance2(f32v2(cameraPos), worldPos);
+        if (distSq < closestDistSq) {
+            closestDistSq = distSq;
+            closestLayoutCmp = &layoutCmp;
+        }
+    }
+    if (closestLayoutCmp) {
+        closestLayoutCmp->manager.debugDraw();
+    }
+
 }
 
 entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType) {

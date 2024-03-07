@@ -55,8 +55,8 @@ void SettlementPlanner::onSettlementCreated(entt::entity settlementEntity, Times
     TileCoord worldPosCenter = mWorld.getChunkWorldPos(simCmp.rootChunkId) + TileCoord(CHUNK_WIDTH / 2);
 
     // Create roads
-    SettlementRoadNetworkComponent& roadCmp = mRegistry.get<SettlementRoadNetworkComponent>(settlementEntity);
-    roadCmp.network.tryInitAtWorldPos(mWorld, settlementEntity, DTileCoord(worldPosCenter));
+    SettlementLayoutComponent& roadCmp = mRegistry.get<SettlementLayoutComponent>(settlementEntity);
+    roadCmp.manager.tryInitAtWorldPos(mWorld, settlementEntity, DTileCoord(worldPosCenter));
 }
 
 void SettlementPlanner::updatePlanner(entt::entity settlementEntity, TimestampMs currentTime, TimestampMs deltaTime) {

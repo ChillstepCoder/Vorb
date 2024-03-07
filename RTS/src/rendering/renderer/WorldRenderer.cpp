@@ -8,6 +8,9 @@
 #include "ecs/component/SkillsComponent.h"
 #include "effect/IEffectContext.h"
 
+// For debug rendering
+#include "world/simulation/host/HostSimContext.h"
+
 #include "debugging/DebugRenderer.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/ChunkGrassQuadtree.h"
@@ -392,6 +395,10 @@ void WorldRenderer::renderDebug() {
     }
     else {
         mCityDebugRenderer->clearMeshes();
+    }
+
+    if (const HostSimContext* simContext = mActiveWorld->tryGetHostSimContext()) {
+        simContext->debugRender(mCamera->getPosition());
     }
 
     // Structure debug

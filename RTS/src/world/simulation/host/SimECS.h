@@ -34,7 +34,11 @@ public:
 
     EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
     EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
+
+    // DEBUGGING
+    void debugRender(f32v3 cameraPos) const;
 private:
+    void debugRenderInternal() const;
     entt::entity createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType);
 
     entt::registry mRegistry;
@@ -49,6 +53,10 @@ private:
 
     std::unique_ptr<SimAISystem> mAISystem;
     std::unique_ptr<SimSettlementSystem> mSettlementSystem;
+
+    // TODO: Strip in release?
+    mutable std::mutex mDebugRenderMutex;
+    mutable f32v3 mDebugCameraPos = f32v3(FLT_MAX);
 
     EVENT_DISPATCHER_DEF(SimECS);
 };

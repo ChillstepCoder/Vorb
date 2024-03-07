@@ -51,6 +51,9 @@ public:
     RandomGenerator& getSimRandomGenerator() const;
     ui32 getWidthChunks() const;
 
+    // DEBUGGING
+    void debugRender(f32v3 cameraPos) const;
+
 private:
     //ChunkSimulator mSimulator;
 
