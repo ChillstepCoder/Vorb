@@ -292,7 +292,7 @@ void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
 
     i16v2 currentNode = (path.startPoint / GRANULARITY) * GRANULARITY;
     const i16v2 startNode = currentNode;
-    f32 currentHeight = mHeightGrid->getHeightAtVert(DTileCoord(currentNode));
+    f32 currentHeight = mHeightGrid->getHeightAtVert<false>(DTileCoord(currentNode));
     allNodes[currentNode] = NodeInfo(currentNode, 0, currentHeight);
 
     size_t numChecks = 0;
@@ -309,10 +309,10 @@ void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
         const i16v2 right = currentNode + i16v2(GRANULARITY, 0);
         const i16v2 up = currentNode + i16v2(0, GRANULARITY);
         std::pair<i16v2, f32> neighbors[4] = {
-            std::pair{down, mHeightGrid->getHeightAtVert(DTileCoord(down))}, // Down
-            std::pair{left, mHeightGrid->getHeightAtVert(DTileCoord(left))}, // Left
-            std::pair{right,  mHeightGrid->getHeightAtVert(DTileCoord(right))},  // Right
-            std::pair{up,  mHeightGrid->getHeightAtVert(DTileCoord(up))}   // Up
+            std::pair{down, mHeightGrid->getHeightAtVert<false>(DTileCoord(down))}, // Down
+            std::pair{left, mHeightGrid->getHeightAtVert<false>(DTileCoord(left))}, // Left
+            std::pair{right,  mHeightGrid->getHeightAtVert<false>(DTileCoord(right))},  // Right
+            std::pair{up,  mHeightGrid->getHeightAtVert<false>(DTileCoord(up))}   // Up
         };
 
         f32 bestChildHeight = FLT_MAX;

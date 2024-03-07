@@ -350,7 +350,7 @@ IntersectionHit2D IntersectionUtil::lineLineIntersect(f32v2 s, f32v2 n1, f32v2 t
     const f32 dx = t.x - s.x;
     const f32 dy = t.y - s.y;
     const f32 det = n2.x * n1.y - n2.y * n1.x;
-    if (det == 0) {
+    if (abs(det) <= 0.0001f) {
         return rv;
     }
     const f32 u = (dy * n2.x - dx * n2.y) / det;

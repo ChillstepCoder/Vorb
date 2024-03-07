@@ -83,12 +83,13 @@ private:
 class SettlementLayoutManager {
 public:
     bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
-    bool tryAddSector(World& world, entt::entity settlement, DTileCoord center, f32 desiredRadius);
+    bool tryAddSector(entt::entity settlement, DTileCoord center, f32 desiredRadius);
 
     void debugDraw() const;
 
     std::vector<SettlementSector> mSectors;
     std::vector<ui32> mOpenSectors; // Sectors that have at least one road edge to infinity
     SettlementRoadNetworkNew mRoadNetwork;
+    World* mWorld = nullptr;
     DTileCoord mRootPos;
 };

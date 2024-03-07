@@ -88,6 +88,7 @@ public:
     void markVertexDirty(HeightmapPatchID id, ui32 vertIndex);
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
+    template<bool THREAD_SAFE>
     f32 getHeightAtVert(DTileCoord vertPos) const;
     f32 getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) const;
 

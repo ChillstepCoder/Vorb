@@ -259,18 +259,21 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     }
 }
 
+template <bool THREAD_SAFE>
+f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
+    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    return mHeightData[id].getHeightAt<THREAD_SAFE>(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
+}
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::getHeightAtVert, (DTileCoord vertPos) const)
+
+
 f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) const {
     ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
     assert(vertPos.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH && vertPos.y < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     return patch.getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
-}
-
-f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
-    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
-    vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    return mHeightData[id].getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
 }
 
 template <bool THREAD_SAFE>
