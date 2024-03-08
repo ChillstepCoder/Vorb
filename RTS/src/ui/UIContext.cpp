@@ -42,9 +42,9 @@ void UIContext::updateEditors(World* world, const Camera3D& camera, const f32v3&
     mEditorRoot->updateEditors(world, camera, mousePickRay);
 }
 
-void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
+void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec, const Camera3D& camera) {
     
-    mEditorRoot->updateAndRenderUI(activeGBuffer, elapsedSec);
+    mEditorRoot->updateAndRenderUI(activeGBuffer, elapsedSec, camera);
     
     if (mTileInspectionPanel) {
         mTileInspectionPanel->updateAndRender();

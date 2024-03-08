@@ -57,10 +57,20 @@ struct VisualLogTextData {
     f32 glyphHeight;
 };
 
+enum class VisualLogCategory : ui8 {
+    Building,
+    Settlement,
+    COUNT
+};
+SERIALIZABLE_ENUM_SAME_NAME(VisualLogCategory,
+    ENUM_FIELD_SIMPLE(VisualLogCategory, Building),
+    ENUM_FIELD_SIMPLE(VisualLogCategory, Settlement)
+);
+
 class VisualLog {
     friend class VisualLogger;
 public:
-    VisualLog(const nString& name);
+    VisualLog(const nString& name, VisualLogCategory category, bool isHiddenInUI);
     ~VisualLog();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(VisualLog);
@@ -68,6 +78,8 @@ public:
     // TODO: Pool allocator?
 
     void setRootPos(const f32v3& rootPos) { mRootPos = rootPos; }
+    // Allows you to have a fake root position when using world space coordinates for the log. Added to RootPos (typically 0)
+    void setCameraDistanceCheckPosOffset(const f32v3& posOffset) { mCameraDistanceCheckPosOffset = posOffset; }
     void reserve(ui32 shapeCount);
     void nextStep(const nString& stepName);
 
@@ -84,6 +96,7 @@ public:
     void render(const f32v3 cameraPos, const f32m4& viewMatrix);
 
     void setUserString(const nString& userString) { mUserString = userString; }
+    void setIsHiddenInUI(bool isHiddenInUI) { mIsHiddenInUI = isHiddenInUI; }
 
 private:
     void buildMesh();
@@ -100,8 +113,10 @@ private:
     bool mRenderSingleStep = true;
     bool mRenderSingleShape = false;
     bool mDirtyRender = true;
+    bool mIsHiddenInUI = false;
 
     f32v3 mRootPos = f32v3(0.0f);
+    f32v3 mCameraDistanceCheckPosOffset = f32v3(0.0f);
     ui32 mNumQuads = 0;
     ui32 mNumLines = 0;
     ui32 mNumArrows = 0;
@@ -110,20 +125,23 @@ private:
     Mesh mTextMesh;
     nString mName;
     nString mUserString;
+    VisualLogCategory mCategory;
 
     inline static const Font* sDefaultFont = nullptr;
 };
 
 class VisualLogger {
 public:
-    static VisualLog* tryGetNewVisualLog(const nString& name);
-    static void renderImgui();
+    static VisualLog* tryGetNewVisualLog(const nString& name, VisualLogCategory category, bool isHidden);
+    static void renderImgui(f32v3 cameraPos);
 
     static void renderActiveLogs(const f32v3 cameraPos, const f32m4& viewMatrix);
     
-    static std::vector<std::unique_ptr<VisualLog>> sVisualLogs;
+    static std::map<VisualLogCategory, std::vector<std::unique_ptr<VisualLog>>> sVisualLogs;
+    static std::vector<bool> sFirstCategoryOpen; // For unhiding first log in category
 
     static void setDefaultFont(const Font* font) { VisualLog::sDefaultFont = font; }
+    static void unHideClosestLogInCategory(f32v3 cameraPos, VisualLogCategory category);
 
 private:
     static void deleteLog(VisualLog* log);

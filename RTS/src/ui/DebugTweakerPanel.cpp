@@ -104,7 +104,7 @@ void setDefaultTheme() {
 
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
+void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio, f32v3 cameraPos)
 {
     IEntityComponentSystem& ecs = world.getECS();
 
@@ -455,7 +455,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
     }
 
     if (ImGui::CollapsingHeader("Visual Logs")) {
-        VisualLogger::renderImgui();
+        VisualLogger::renderImgui(cameraPos);
         ImGui::Separator();
     }
 

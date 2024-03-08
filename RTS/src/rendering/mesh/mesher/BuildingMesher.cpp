@@ -369,7 +369,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
 
     // Debug log
-    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building", VisualLogCategory::Building, false);
     if (visLog) {
         visLog->setRootPos(tileContainer.getTileSpatialGrid().getWorldPos3D());
         visLog->nextStep("AABB");

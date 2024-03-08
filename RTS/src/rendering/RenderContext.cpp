@@ -707,5 +707,5 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         mSb->end();
         mSb->render(mScreenResolution, &vg::sSamplerStates.LINEAR_WRAP);
     }
-    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer, mCurrentFrameElapsedSec);
+    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer, mCurrentFrameElapsedSec, camera);
 }

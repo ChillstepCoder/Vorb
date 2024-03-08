@@ -15,6 +15,7 @@
 #include "ui/editor/TileDistributionEditorViewportPanel.h"
 #include "ui/editor/ContentBrowserPanel.h"
 #include "options/DebugOptions.h"
+#include "camera/Camera3D.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -91,7 +92,7 @@ void EditorRoot::updateEditors(World* world, const Camera3D& camera, const f32v3
     }
 }
 
-void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec) {
+void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec, const Camera3D& camera) {
     if (sDebugOptions.mShowEditor) {
 
         { // Dockspace
@@ -188,7 +189,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             // If active center panel wants to render over tweaker UI, let it
             if (!mActiveCenterPanel || !mActiveCenterPanel->updateAndRenderTertiaryControls(ySize1)) {
                 if (world) {
-                    mDebugTweakerPanel->updateAndRender(*world, activeGBuffer, ySize2, vui::InputDispatcher::window.getCurrentAspectRatio());
+                    mDebugTweakerPanel->updateAndRender(*world, activeGBuffer, ySize2, vui::InputDispatcher::window.getCurrentAspectRatio(), camera.getPosition());
                 }
             }
 

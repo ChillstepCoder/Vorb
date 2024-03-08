@@ -22,11 +22,14 @@
 
 #include "rendering/gl/GL.h"
 
-std::vector<std::unique_ptr<VisualLog>> VisualLogger::sVisualLogs;
+std::map<VisualLogCategory, std::vector<std::unique_ptr<VisualLog>>> VisualLogger::sVisualLogs;
+std::vector<bool> VisualLogger::sFirstCategoryOpen = std::vector<bool>(e_count(VisualLogCategory), true);
+
+
 std::mutex VisualLogger::sMutex;
 AssetHandlePtr<MaterialShaderDef> sMaterialHandle;
 
-VisualLog::VisualLog(const nString& name) : mName(name) {
+VisualLog::VisualLog(const nString& name, VisualLogCategory category, bool isHiddenInUI) : mName(name), mCategory(category), mIsHiddenInUI(isHiddenInUI) {
     if (!sMaterialHandle) {
         sMaterialHandle = MaterialShaderRepository::get().getAssetHandle(CStrToken("text_billboard"));
     }
@@ -402,19 +405,19 @@ void VisualLog::buildMesh() {
     mDirtyRender = false;
 }
 
-VisualLog* VisualLogger::tryGetNewVisualLog(const nString& name) {
+VisualLog* VisualLogger::tryGetNewVisualLog(const nString& name, VisualLogCategory category, bool isHidden) {
     if (!sDebugOptions.mEnableVisualLogs) {
         return nullptr;
     }
 
     std::lock_guard<std::mutex> lock(sMutex);
-    VisualLog& newLog = *sVisualLogs.emplace_back(std::make_unique<VisualLog>(name));
+    VisualLog& newLog = *sVisualLogs[category].emplace_back(std::make_unique<VisualLog>(name, category, isHidden));
     return &newLog;
 }
 
-void VisualLogger::renderImgui() {
+void VisualLogger::renderImgui(f32v3 cameraPos) {
 
-    static ui32 sSelected = UINT32_MAX;
+    static std::pair<VisualLogCategory, ui32> sSelected = { {}, UINT32_MAX };
     static bool sAnimate = false;
     static int sAnimationSpeed = 32;
     static TickingTimer sAnimationTimer = TickingTimer(32);
@@ -431,34 +434,61 @@ void VisualLogger::renderImgui() {
         }
         ImGui::Separator();
     }
-    ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
 
     std::lock_guard<std::mutex> lock(sMutex);
-    for (size_t i = 0; i < sVisualLogs.size(); ++i) {
-        ImGui::PushID(999 + i);
-        const VisualLog& log = *sVisualLogs[i];
-        if (!log.mFinishedBuilding) {
-            ImGui::PopID();
-            continue;
-        }
-
-        ImGui::TableNextColumn();
-        const ui32 prevSelected = sSelected;
-        if (ImGui::RadioButton(log.mName.c_str(), sSelected == (ui32)i)) {
-            sSelected = (ui32)i;
-            if (prevSelected < sVisualLogs.size()) {
-                sVisualLogs[prevSelected]->mShouldRender = false;
+    for (auto&& it : sVisualLogs) {
+        if (ImGui::TreeNode(ENUM_CSTR(VisualLogCategory, it.first))) {
+            // Auto unhide the first category
+            if (sFirstCategoryOpen[e_cast(it.first)]) {
+                sFirstCategoryOpen[e_cast(it.first)] = false;
+                unHideClosestLogInCategory(cameraPos, it.first);
             }
-            sVisualLogs[sSelected]->mShouldRender = true;
+            ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+            i32 hiddenCount = 0;
+            auto& logs = it.second;
+            for (size_t i = 0; i < logs.size(); ++i) {
+                const VisualLog& log = *logs[i];
+                if (log.mIsHiddenInUI) {
+                    ++hiddenCount;
+                    continue;
+                }
+                ImGui::PushID(999 + i);
+                if (!log.mFinishedBuilding) {
+                    ImGui::PopID();
+                    continue;
+                }
+
+                ImGui::TableNextColumn();
+                const std::pair<VisualLogCategory, ui32> prevSelected = sSelected;
+                if (ImGui::RadioButton(log.mName.c_str(), sSelected.first == it.first && sSelected.second == (ui32)i)) {
+                    sSelected.first = it.first;
+                    sSelected.second = (ui32)i;
+                    if (prevSelected.second != UINT32_MAX && prevSelected.second < sVisualLogs[prevSelected.first].size()) {
+                        sVisualLogs[prevSelected.first][prevSelected.second]->mShouldRender = false;
+                    }
+                    logs[i]->mShouldRender = true;
+                }
+                ImGui::TableNextColumn();
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
+            if (hiddenCount) {
+                if (ImGui::Button("Unhide Closest")) {
+                    unHideClosestLogInCategory(cameraPos, it.first);
+                }
+                ImGui::Text("Hidden count %d", hiddenCount);
+            }
+            ImGui::TreePop();
         }
-        ImGui::TableNextColumn();
-        ImGui::PopID();
     }
-    ImGui::EndTable();
 
     // Info about selected
-    if (sSelected < sVisualLogs.size()) {
-        VisualLog& log = *sVisualLogs[sSelected];
+    if (sSelected.second == UINT32_MAX) {
+        return;
+    }
+    auto& logs = sVisualLogs[sSelected.first];
+    if (sSelected.second < logs.size()) {
+        VisualLog& log = *logs[sSelected.second];
         ImGui::Separator();
         ImGui::Text(log.mName.c_str());
         if (log.mUserString.size()) {
@@ -555,19 +585,41 @@ void VisualLogger::renderImgui() {
 void VisualLogger::renderActiveLogs(const f32v3 cameraPos, const f32m4& viewMatrix) {
 
     std::lock_guard<std::mutex> lock(sMutex);
-    for (auto&& log : sVisualLogs) {
-        if (log->mShouldRender) {
-            log->render(cameraPos, viewMatrix);
+    for (auto&& it : sVisualLogs) {
+        for (auto&& log : it.second) {
+            if (log->mShouldRender) {
+                log->render(cameraPos, viewMatrix);
+            }
         }
     }
 }
 
-void VisualLogger::deleteLog(VisualLog* log) {
+void VisualLogger::unHideClosestLogInCategory(f32v3 cameraPos, VisualLogCategory category) {
+    std::vector<std::unique_ptr<VisualLog>>& logs = sVisualLogs[category];
+    f32 closestDistSq = FLT_MAX;
+    VisualLog* closestLog = nullptr;
+    for (auto& log : logs) {
+        if (log->mIsHiddenInUI) {
+            f32v3 pos = log->mRootPos + log->mCameraDistanceCheckPosOffset;
+            f32 distSq = glm::distance2(pos, cameraPos);
+            if (distSq < closestDistSq) {
+                closestDistSq = distSq;
+                closestLog = log.get();
+            }
+        }
+    }
+    if (closestLog) {
+        closestLog->mIsHiddenInUI = false;
+    }
+}
 
-    for (size_t i = 0; i < sVisualLogs.size(); ++i) {
-        if (sVisualLogs[i].get() == log) {
-            sVisualLogs[i] = std::move(sVisualLogs.back());
-            sVisualLogs.pop_back();
+void VisualLogger::deleteLog(VisualLog* log) {
+    assert(log);
+    std::vector<std::unique_ptr<VisualLog>>& logs = sVisualLogs[log->mCategory];
+    for (size_t i = 0; i < logs.size(); ++i) {
+        if (logs[i].get() == log) {
+            logs[i] = std::move(logs.back());
+            logs.pop_back();
             return;
         }
     }

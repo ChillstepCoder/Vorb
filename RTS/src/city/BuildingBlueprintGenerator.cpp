@@ -236,7 +236,7 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
 
 bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo) {
 
-    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(bPtr->randomGen->mSeed));
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(bPtr->randomGen->mSeed), VisualLogCategory::Building, false);
     if (visLog) {
         visLog->setRootPos(f32v3(bPtr->mTileSpatialGrid.getWorldPos3D()));
         const i32v3 dims = bPtr->mTileSpatialGrid.getDims();

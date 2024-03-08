@@ -7,6 +7,7 @@ constexpr RoadEdgeID INVALID_ROAD_EDGE = std::numeric_limits<RoadEdgeID>::max();
 
 class World;
 class RandomGenerator;
+class VisualLog;
 
 // TODO: RoadGrid needs access to this
 enum class RoadType : ui8 {
@@ -35,6 +36,7 @@ struct RoadSegment {
     std::vector<std::pair<RoadEdgeID, f32/*time*/>> attachedEdges;
     std::vector<DTileCoord> segmentVerts;
     f32v2 direction;
+    f32 length;
     RoadSegmentType segmentType = RoadSegmentType::InfiniteLine;
     ui8 widthTiles[2]; // Allow taper
     bool infiniteEdges[2]; // Whether each vertex implicitly extends to infinity
@@ -68,7 +70,8 @@ class SettlementRoadNetworkNew {
     friend class SettlementLayoutManager;
 private:
     // Return true if we hit ANY segment, ignores infinite edges
-    bool simpleTraceAgainstSolidRoadSegments(DTileCoord start, DTileCoord end);
+    bool simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end);
+    bool simpleTraceAgainstSolidRoadSegmentsWithExclusions(DTileCoord start, DTileCoord end, std::span<RoadSegmentID> exclusions);
     // Trace an infinite line to all solid and infinite segments and get closest hit in each direction
     // Returns std::pair<negative, positive> where hitSegmentId == INVALID_ROAD_SEGMENT if no hit
     std::pair<RoadSegmentHitResult, RoadSegmentHitResult> getClosestHitsToAnySegmentInEachDirection(DTileCoord start, f32v2 dir);
@@ -79,6 +82,7 @@ private:
 
     std::vector<RoadSegment> roadSegments;
     RandomGenerator randomGenerator;
+    VisualLog* mCurrentVisLog = nullptr;
 };
 
 // TODO: Inside SettlementLayoutComponent
@@ -94,4 +98,5 @@ public:
     SettlementRoadNetworkNew mRoadNetwork;
     World* mWorld = nullptr;
     DTileCoord mRootPos;
+    VisualLog* mCurrentVisLog = nullptr;
 };

@@ -2,12 +2,12 @@
 
 // This must match layout of GlobalUbo.glsl for fast data store copy
 struct CameraMatrices {
-    f32m4 V;
-    f32m4 inverseV;
-    f32m4 P;
-    f32m4 inverseP;
-    f32m4 VP;
-    f32m4 inverseVP;
+    f32m4 V = f32m4(1.f);
+    f32m4 inverseV = f32m4(1.f);
+    f32m4 P = f32m4(1.f);
+    f32m4 inverseP = f32m4(1.f);
+    f32m4 VP = f32m4(1.f);
+    f32m4 inverseVP = f32m4(1.f);
 };
 
 class ICamera {
