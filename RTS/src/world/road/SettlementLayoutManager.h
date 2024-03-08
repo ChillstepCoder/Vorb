@@ -74,6 +74,7 @@ private:
     bool tryAddRoadBetweenSectorPoints(World& world, entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width);
 
     bool tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment);
+    void updateRoadSegmentType(RoadSegment& segment);
 
     std::vector<RoadSegment> roadSegments;
     RandomGenerator randomGenerator;

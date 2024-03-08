@@ -114,23 +114,18 @@ void SettlementLayoutManager::debugDraw() const {
         f32v3 sectorWorldPos = getWorldPosAtDTilePos(sector.center);
         DebugRenderer::drawWireQuadThreadSafe(sectorWorldPos - WIDTH * 0.5f, WIDTH, color::Red, FRAME_COUNT);
     }
-    size_t i = 0;
     for (auto& segment : mRoadNetwork.roadSegments) {
         color4 color = color::Yellow;
-        if (i == 1) {
-            color = color::Red;
-        }
-        else if (i == 2) {
-            color = color::Blue;
-        }
-        else if (i == 3) {
-            color = color::Green;
-        }
-
         f32v3 worldPosA = getWorldPosAtDTilePos(segment.segmentVerts[0]);
         f32v3 worldPosB = getWorldPosAtDTilePos(segment.segmentVerts.back());
+        f32v3 infiniteRayOffset = glm::normalize(worldPosB - worldPosA);
         DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color, FRAME_COUNT);
-        ++i;
+        if (segment.infiniteEdges[0]) {
+            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::Cyan, FRAME_COUNT);
+        }
+        if (segment.infiniteEdges[1]) {
+            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::Cyan, FRAME_COUNT);
+        }
     }
 }
 
@@ -306,7 +301,7 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
     //}
 
     std::vector<DTileCoord>& verts = newSegment.segmentVerts;
-    const DTileCoord baseVertex = verts[0];
+    const DTileCoord startVertex = verts[0];
     const DTileCoord endVertex = verts.back();
 
     auto getDistanceSqToRoad = [](DTileCoord pos, std::vector<DTileCoord>& verts) -> f32 {
@@ -322,25 +317,25 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
 
 
     i32 aabbPadding = (i32)glm::max(newSegment.widthTiles[0], newSegment.widthTiles[1]);
-    DTileCoord offset = endVertex - baseVertex;
+    DTileCoord offset = endVertex - startVertex;
     i32AABB2 aabb;
     DTileCoord xSpan;
     DTileCoord ySpan;
-    if (baseVertex.x < endVertex.x) {
-        xSpan.x = baseVertex.x - aabbPadding;
+    if (startVertex.x < endVertex.x) {
+        xSpan.x = startVertex.x - aabbPadding;
         xSpan.y = endVertex.x + aabbPadding;
     }
     else {
         xSpan.x = endVertex.x - aabbPadding;
-        xSpan.y = baseVertex.x + aabbPadding;
+        xSpan.y = startVertex.x + aabbPadding;
     }
-    if (baseVertex.y < endVertex.y) {
-        ySpan.x = baseVertex.y - aabbPadding;
+    if (startVertex.y < endVertex.y) {
+        ySpan.x = startVertex.y - aabbPadding;
         ySpan.y = endVertex.y + aabbPadding;
     }
     else {
         ySpan.x = endVertex.y - aabbPadding;
-        ySpan.y = baseVertex.y + aabbPadding;
+        ySpan.y = startVertex.y + aabbPadding;
     }
 
     aabb.pos = i32v2(xSpan.x, ySpan.x);
@@ -407,7 +402,19 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
     newSegment.roadPointsNeedingConstruct.shrink_to_fit();
 
     // Connect new road to other segments and block infinite edges
-
+    // BaseVertex
+    // EndVertex
+    for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
+        RoadSegment& otherSegment = roadSegments[id];
+        if (otherSegment.segmentVerts[0] == startVertex) {
+            otherSegment.infiniteEdges[0] = false;
+            updateRoadSegmentType(otherSegment);
+        }
+        else if (otherSegment.segmentVerts.back() == endVertex) {
+            otherSegment.infiniteEdges[1] = false;
+            updateRoadSegmentType(otherSegment);
+        }
+    }
 
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
@@ -446,4 +453,19 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
     // ==================== END DEBUG ====================
     roadSegments.emplace_back(std::move(newSegment));
     return true;
+}
+
+void SettlementRoadNetworkNew::updateRoadSegmentType(RoadSegment& segment) {
+    if (segment.infiniteEdges[0] == false) {
+        if (segment.infiniteEdges[1] == false) {
+            segment.segmentType = RoadSegmentType::Segment;
+        }
+        else {
+            segment.segmentType = RoadSegmentType::PositiveRay;
+        }
+    } else if (segment.infiniteEdges[1] == false) {
+        segment.segmentType = RoadSegmentType::NegativeRay;
+    } else [[unlikely]] {
+        segment.segmentType = RoadSegmentType::InfiniteLine;
+    }
 }

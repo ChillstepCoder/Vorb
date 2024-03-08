@@ -57,6 +57,12 @@ public:
     Derived operator-(const Derived& other) const { return Derived(v - other.v ); }
     Derived operator*(const i32& other) const { return Derived(v * other ); }
     Derived operator/(const i32& other) const { return Derived(v / other ); }
+    auto operator<=>(const CoordinateBase<Derived>& other) const;
+
+    // Assuming operator== is needed explicitly due to lack of support in i32v2
+    bool operator==(const CoordinateBase<Derived>& other) const {
+        return v.x == other.v.x && v.y == other.v.y;
+    }
 
     ui32 toGridIDType(ui32 gridWidth) const { return v.y * gridWidth + v.x; }
 
