@@ -34,6 +34,7 @@ struct RoadSegment {
     std::vector<StructureID> attachedStructures; // TODO Store attach point so its easy to split roads?
     std::vector<std::pair<RoadEdgeID, f32/*time*/>> attachedEdges;
     std::vector<DTileCoord> segmentVerts;
+    f32v2 direction;
     RoadSegmentType segmentType = RoadSegmentType::InfiniteLine;
     ui8 widthTiles[2]; // Allow taper
     bool infiniteEdges[2]; // Whether each vertex implicitly extends to infinity

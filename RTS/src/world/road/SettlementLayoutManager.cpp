@@ -118,7 +118,7 @@ void SettlementLayoutManager::debugDraw() const {
         color4 color = color::Yellow;
         f32v3 worldPosA = getWorldPosAtDTilePos(segment.segmentVerts[0]);
         f32v3 worldPosB = getWorldPosAtDTilePos(segment.segmentVerts.back());
-        f32v3 infiniteRayOffset = glm::normalize(worldPosB - worldPosA);
+        f32v3 infiniteRayOffset(segment.direction.x, segment.direction.y, 0.0f);
         DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color, FRAME_COUNT);
         if (segment.infiniteEdges[0]) {
             DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::Cyan, FRAME_COUNT);
@@ -283,6 +283,8 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
         return false;
     }
    
+    newSegment.direction = glm::normalize(f32v2(newSegment.segmentVerts.back().v - newSegment.segmentVerts[0].v));
+
     return tryPlaceRoadInternal(world, settlement, std::move(newSegment));
 }
 
@@ -402,19 +404,44 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
     newSegment.roadPointsNeedingConstruct.shrink_to_fit();
 
     // Connect new road to other segments and block infinite edges
-    // BaseVertex
-    // EndVertex
+    constexpr f32 DOT_THRESHOLD = 0.93969262078; // cos(20) degrees is the threshold for blocking an infinite edge
     for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
         RoadSegment& otherSegment = roadSegments[id];
-        if (otherSegment.segmentVerts[0] == startVertex) {
-            otherSegment.infiniteEdges[0] = false;
-            updateRoadSegmentType(otherSegment);
+        if (startVertex == otherSegment.segmentVerts[0]) {
+            // Base vertices are overlapping, so if they are pointing in opposite dir, block the infinite edges
+            if (glm::dot(newSegment.direction, otherSegment.direction) < -DOT_THRESHOLD) {
+                otherSegment.infiniteEdges[0] = false;
+                newSegment.infiniteEdges[0] = false;
+                updateRoadSegmentType(otherSegment);
+            }
         }
-        else if (otherSegment.segmentVerts.back() == endVertex) {
-            otherSegment.infiniteEdges[1] = false;
-            updateRoadSegmentType(otherSegment);
+        else if (endVertex == otherSegment.segmentVerts[0]) {
+            // End vertex overlaps base, so if they are in same dir, block the infinite edges
+            if (glm::dot(newSegment.direction, otherSegment.direction) > DOT_THRESHOLD) {
+                otherSegment.infiniteEdges[0] = false;
+                newSegment.infiniteEdges[1] = false;
+                updateRoadSegmentType(otherSegment);
+            }
+        }
+        if (startVertex == otherSegment.segmentVerts.back()) {
+            // Base vertex overlaps other end, so if they are in same dir, block the infinite edges
+            if (glm::dot(newSegment.direction, otherSegment.direction) > DOT_THRESHOLD) {
+                otherSegment.infiniteEdges[1] = false;
+                newSegment.infiniteEdges[0] = false;
+                updateRoadSegmentType(otherSegment);
+            }
+        }
+        else if (endVertex == otherSegment.segmentVerts.back()) {
+            // End vertices overlap, so if they are pointing away from each other, block the infinite edges
+            if (glm::dot(newSegment.direction, otherSegment.direction) < -DOT_THRESHOLD) {
+                otherSegment.infiniteEdges[1] = false;
+                newSegment.infiniteEdges[1] = false;
+                updateRoadSegmentType(otherSegment);
+            }
         }
     }
+
+    updateRoadSegmentType(newSegment);
 
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
