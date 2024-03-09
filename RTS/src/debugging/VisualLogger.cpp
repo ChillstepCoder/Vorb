@@ -225,8 +225,8 @@ void VisualLog::buildMesh() {
 
     ui32 i = 0;
     const ui32 end = mRenderStepInfo[mSelectedRenderStep].startIndex + mShapesToRender;
-    if (mRenderSingleShape) {
-        i = end - 1;
+    if (mRenderNShapes) {
+        i = std::max(end - mNShapes, mRenderStepInfo[mSelectedRenderStep].startIndex);
     } else if (mRenderSingleStep) {
         i = mRenderStepInfo[mSelectedRenderStep].startIndex;
     }
@@ -503,8 +503,13 @@ void VisualLogger::renderImgui(f32v3 cameraPos) {
         if (ImGui::Checkbox("Render single step", &log.mRenderSingleStep)) {
             log.mDirtyRender = true;
         }
-        if (ImGui::Checkbox("Render single shape", &log.mRenderSingleShape)) {
+        if (ImGui::Checkbox("Render N shapes", &log.mRenderNShapes)) {
             log.mDirtyRender = true;
+        }
+        if (log.mRenderNShapes) {
+            if (ImGui::SliderInt("N", &log.mNShapes, 1, 16)) {
+                log.mDirtyRender = true;
+            }
         }
         ImGui::Text("%s", log.mRenderStepInfo[log.mSelectedRenderStep].stepName.c_str());
         if (log.mRenderStepInfo.size() > 1) {

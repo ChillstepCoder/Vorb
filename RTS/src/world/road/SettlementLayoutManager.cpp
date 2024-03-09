@@ -55,7 +55,7 @@ void helperAddVisLogFilledQuadAtPos(VisualLog* log, f32v2 p, f32v2 size, World* 
 void helperAddTextAtPos(VisualLog* log, f32v2 p, const std::string& text, World* world, color4 color) {
     if (log) {
         const f32v3 pos = helperGetWorldPosFrom2DPos(p, world);
-        log->addText(text, pos, 1.0f, f32v2(0.0f, 1.0f), color);
+        log->addText(text, pos, 2.0f, f32v2(0.0f, 2.5f), color);
     }
 }
 
@@ -389,16 +389,19 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
             if (hit.timeTarget <= 0.0f) {
                 // Hit infinite negative edge, snap back
                 vertToSnap = hitSegment.segmentVerts[0];
+                helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::Blue);
             }
             else if (hit.timeTarget >= 1.0f) {
                 // Hit infinite positive edge, snap back
                 vertToSnap = hitSegment.segmentVerts.back();
+                helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::Blue);
             }
             else {
                 // Hit somewhere on the solid segment
                 // TODO: Need to do trace against subsegment?
                 f32v2 hitSegOffset(hitSegment.segmentVerts.back().v - hitSegment.segmentVerts[0].v);
                 vertToSnap = DTileCoord(i32v2(glm::round(f32v2(hitSegment.segmentVerts[0].v) + hitSegOffset * hit.timeTarget)));
+                helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::LightBlue);
             }
             exclusionList[exclusionSize++] = hit.hitSegmentId;
         }

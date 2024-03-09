@@ -110,8 +110,9 @@ private:
     // Drawing
     int mSelectedRenderStep = 0;
     int mShapesToRender = 0;
+    int mNShapes = 1;
     bool mRenderSingleStep = true;
-    bool mRenderSingleShape = false;
+    bool mRenderNShapes = false;
     bool mDirtyRender = true;
     bool mIsHiddenInUI = false;
 
