@@ -15,11 +15,17 @@
 #include "debugging/VisualLogger.h"
 
 f32v3 helperGetWorldPosFromDTileCoord(DTileCoord pos, World* world) {
+    if (pos.x < 0 || pos.y < 0 || pos.x > world->getWidthDTiles() || pos.y > world->getWidthDTiles()) [[unlikely]] {
+        return f32v3(0.0f);
+    }
     const f32 z = world->getHeightmapGrid().getHeightAtVert<true>(pos);
     const i32v2 tilePosA = pos.toTilePos();
     return f32v3(tilePosA.x, tilePosA.y, z);
 };
 f32v3 helperGetWorldPosFrom2DPos(f32v2 pos, World* world) {
+    if (pos.x < 0 || pos.y < 0 || pos.x > world->getWidthTiles() || pos.y > world->getWidthTiles()) [[unlikely]] {
+        return f32v3(0.0f);
+    }
     const f32 z = world->getHeightmapGrid().computeHeightAtPoint<true>(pos);
     return f32v3(pos.x, pos.y, z);
 };
@@ -95,6 +101,8 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
     addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS * 3.3f), DESIRED_RADIUS);
     addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 2.0f, (i32)PADDED_RADIUS * 4.3f), DESIRED_RADIUS);
+    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)PADDED_RADIUS), DESIRED_RADIUS);
+    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
    
     if (mCurrentVisLog) {
         visLog->finish();
@@ -350,8 +358,10 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
 
     // Rotate offset so it is a a cell border between our two sectors
     offsetf = MathUtil::rotateVector2DRad(offsetf, M_PI_2F);
+    const DTileCoord startRoadPos1 = DTileCoord(f32v2(midPoint.v) - offsetf * 0.5f);
+    const DTileCoord startRoadPos2 = DTileCoord(f32v2(midPoint.v) + offsetf * 0.5f);
 
-    helperAddVisLogLineBetweenCoords(mCurrentVisLog, DTileCoord(f32v2(midPoint.v) - offsetf * 0.5f), DTileCoord(f32v2(midPoint.v) + offsetf * 0.5f), &world, color4(1.0f, 1.0f, 1.0f, 0.5f));
+    helperAddVisLogLineBetweenCoords(mCurrentVisLog, startRoadPos1, startRoadPos2, &world, color4(1.0f, 1.0f, 1.0f, 0.5f));
 
     auto[negHit, posHit] = getClosestHitsToAnySegmentInEachDirection(midPoint, offsetf);
     constexpr f32 MAX_TIME = 400.0f;
@@ -378,21 +388,28 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
     newSegment.segmentVerts.resize(2);
     newSegment.roadType = roadType;
 
-    RoadSegmentID exclusionList[2];
-    ui32 exclusionSize = 0;
+    // List of roads we need to check that we aren't overlapping
+    RoadSegment* checkOverlapList[2];
+    ui32 overlapCheckCount = 0;
+    // If we snap twice, it means we have an additional fallback behavior to try on failure
+    f32v2 infiniteHitTilePositions[2];
+    ui32 infiniteEdgeSnapCount = 0;
     auto setVertexPositionBasedOnHit = [&](RoadSegmentHitResult hit, DTileCoord& vertToSnap, f32 dirMult) {
         if (hit.hitSegmentId != INVALID_ROAD_SEGMENT_ID) {
             RoadSegment& hitSegment = roadSegments[hit.hitSegmentId];
-            helperAddVisLogFilledQuadAtPos(mCurrentVisLog, f32v2(TileCoord(hitSegment.segmentVerts[0]).v) + hitSegment.direction * hit.timeTarget * hitSegment.length * 2.0f, f32v2(2.0f), &world, color::Yellow);
-            helperAddTextAtPos(mCurrentVisLog, f32v2(TileCoord(hitSegment.segmentVerts[0]).v) + hitSegment.direction * hit.timeTarget * hitSegment.length * 2.0f, std::to_string(hit.timeTarget), &world, color::Yellow);
+            const f32v2 hitPoint = f32v2(TileCoord(hitSegment.segmentVerts[0]).v) + hitSegment.direction * hit.timeTarget * hitSegment.length * 2.0f;
+            helperAddVisLogFilledQuadAtPos(mCurrentVisLog, hitPoint, f32v2(2.0f), &world, color::Yellow);
+            helperAddTextAtPos(mCurrentVisLog, hitPoint, std::to_string(hit.timeTarget), &world, color::Yellow);
             helperAddVisLogLineBetweenCoords(mCurrentVisLog, hitSegment.segmentVerts[0], hitSegment.segmentVerts.back(), &world, color::Yellow);
             if (hit.timeTarget <= 0.0f) {
                 // Hit infinite negative edge, snap back
+                infiniteHitTilePositions[infiniteEdgeSnapCount++] = hitPoint;
                 vertToSnap = hitSegment.segmentVerts[0];
                 helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::Blue);
             }
             else if (hit.timeTarget >= 1.0f) {
                 // Hit infinite positive edge, snap back
+                infiniteHitTilePositions[infiniteEdgeSnapCount++] = hitPoint;
                 vertToSnap = hitSegment.segmentVerts.back();
                 helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::Blue);
             }
@@ -402,8 +419,10 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
                 f32v2 hitSegOffset(hitSegment.segmentVerts.back().v - hitSegment.segmentVerts[0].v);
                 vertToSnap = DTileCoord(i32v2(glm::round(f32v2(hitSegment.segmentVerts[0].v) + hitSegOffset * hit.timeTarget)));
                 helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::LightBlue);
+            
+                // This can result in us completely overlapping the segment, so we need to check for that
+                checkOverlapList[overlapCheckCount++] = &hitSegment;
             }
-            exclusionList[exclusionSize++] = hit.hitSegmentId;
         }
         else {
             vertToSnap = DTileCoord(i32v2(glm::round(f32v2(midPoint.v) + dirMult * offsetf * 0.5f)));
@@ -412,38 +431,99 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
     setVertexPositionBasedOnHit(negHit, newSegment.segmentVerts[0], -1.0f);
     setVertexPositionBasedOnHit(posHit, newSegment.segmentVerts.back(), 1.0f);
 
-    if (newSegment.segmentVerts[0].v == newSegment.segmentVerts.back().v) {
-        helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(3.0f), &world, color::Red);
-        // LOG_CRITICAL("ZERO LENGTH ROAD SEGMENT DETECTED");
-        // return false;
-        newSegment.segmentVerts[0] = DTileCoord(f32v2(midPoint.v) - offsetf * 0.5f);
-        newSegment.segmentVerts.back() = DTileCoord(f32v2(midPoint.v) + offsetf * 0.5f);
-    }
-    helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(2.0f), &world, color::LightGreen);
-    helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts.back(), f32v2(2.0f), &world, color::LightGreen);
-
-    f32v2 offset = f32v2(newSegment.segmentVerts.back().v - newSegment.segmentVerts[0].v);
-    newSegment.length = glm::length(offset);
-    newSegment.direction = offset / newSegment.length;
-
-    // Check collision against any roads that aren't our target connecting roads
-    if (simpleTraceAgainstSolidRoadSegments(
-        f32v2(newSegment.segmentVerts[0].v) + newSegment.direction * 0.5f, f32v2(newSegment.segmentVerts.back().v) - newSegment.direction * 0.5f/*, std::span<RoadSegmentID>(exclusionList, exclusionSize)*/)) {
-        helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSegment.segmentVerts[0], newSegment.segmentVerts.back(), &world, color::Black);
-        return false;
-    }
-
-
+    // Helpers
     auto worldBoundsCheck = [&](i32v2 pos) -> bool {
         if (pos.x <= 0 || pos.y <= 0 || pos.x >= world.getWidthDTiles() - 1 || pos.y >= world.getWidthDTiles() - 1) [[unlikely]] {
             return false;
         }
         return true;
     };
-    if (!worldBoundsCheck(newSegment.segmentVerts[0].v) || !worldBoundsCheck(newSegment.segmentVerts[1].v)) [[unlikely]] {
-        return false;
+    auto segmentIsValid = [this, sector1Pos, sector2Pos, &worldBoundsCheck](f32v2 v1, f32v2 v2, f32v2 dir) -> bool {
+        // Check if our segment is between the two sectors
+        IntersectionHit2D hit = IntersectionUtil::segmentSegmentIntersect(v1, v2, sector1Pos.v, sector2Pos.v);
+        if (!hit.didHit()) {
+            return false;
+        }
+        // Check collision against any roads that aren't our target connecting roads
+        if (simpleTraceAgainstSolidRoadSegments(v1 + dir * 0.5f, v2 - dir * 0.5f)) {
+            return false;
+        }
+        if (!worldBoundsCheck(v1) || !worldBoundsCheck(v2)) [[unlikely]] {
+            return false;
+        }
+        return true;
+    };
+    
+    bool needTryFallback = false;
+
+    if (newSegment.segmentVerts[0].v == newSegment.segmentVerts.back().v) {
+        // Both verts collapsed to a single point, a common failure case.
+        // We can do a fallback by not collapsing each of the verts one at a time and checking validity
+        assert(overlapCheckCount == 0);
+        // If we didn't snap on both ends, we can't try the alternate fallback
+        if (infiniteEdgeSnapCount < 2) {
+            helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(3.0f), &world, color::Red);
+            return false;
+        }
+        helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(3.0f), &world, color::Orange);
+        
+        needTryFallback = true;
+    }
+    else {
+        // Standard case, check validity and overlaps
+        const f32v2 offset = f32v2(newSegment.segmentVerts.back().v - newSegment.segmentVerts[0].v);
+        newSegment.length = glm::length(offset);
+        newSegment.direction = offset / newSegment.length;
+
+        // Its possible we collapse on top of another segment, this checks that
+        constexpr f32 OVERLAP_DOT_THRESHOLD = 0.99619469809; // About cos(5deg)
+        for (ui32 c = 0; c < overlapCheckCount; ++c) {
+            RoadSegment& segment = *checkOverlapList[c];
+            if (abs(glm::dot(newSegment.direction, segment.direction)) > OVERLAP_DOT_THRESHOLD) {
+                helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSegment.segmentVerts[0], newSegment.segmentVerts.back(), &world, color::DarkRed);
+                needTryFallback = true;
+                break;
+            }
+        }
+
+        if (!needTryFallback && !segmentIsValid(newSegment.segmentVerts[0].v, newSegment.segmentVerts.back().v, newSegment.direction)) {
+            helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSegment.segmentVerts[0], newSegment.segmentVerts.back(), &world, color::Black);
+            needTryFallback = true;
+        }
     }
    
+    if (needTryFallback) {
+        // Alternate fallback
+        // Try first fallback
+        f32v2 v1 = startRoadPos1.v/*infiniteHitTilePositions[0] * 0.5f*/;
+        f32v2 v2 = newSegment.segmentVerts.back().v;
+
+        if (segmentIsValid(v1, v2, glm::normalize(v2 - v1))) {
+            // Round to nearest tilecoord
+            newSegment.segmentVerts[0] = DTileCoord(i32v2(glm::round(v1)));
+            helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(2.0f), &world, color::LightPink);
+        }
+        else {
+            // Try second fallback
+            v1 = newSegment.segmentVerts[0].v;
+            v2 = startRoadPos2.v/*infiniteHitTilePositions[1] * 0.5f*/;
+            if (segmentIsValid(v1, v2, glm::normalize(v2 - v1))) {
+                newSegment.segmentVerts.back() = DTileCoord(i32v2(glm::round(v2)));
+                helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts.back(), f32v2(2.0f), &world, color::LightPink);
+            }
+            else {
+                helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSegment.segmentVerts[0], newSegment.segmentVerts.back(), &world, color::DarkGray);
+                return false;
+            }
+        }
+        const f32v2 offset = f32v2(newSegment.segmentVerts.back().v - newSegment.segmentVerts[0].v);
+        newSegment.length = glm::length(offset);
+        newSegment.direction = offset / newSegment.length;
+    }
+
+    helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(2.0f), &world, color::LightGreen);
+    helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts.back(), f32v2(2.0f), &world, color::LightGreen);
+
     DTileCoord start = newSegment.segmentVerts[0];
     DTileCoord end = newSegment.segmentVerts.back();
     const bool place = tryPlaceRoadInternal(world, settlement, std::move(newSegment));

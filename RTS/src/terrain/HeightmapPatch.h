@@ -12,6 +12,7 @@ class btCollisionObject;
 class HeightmapPatch {
     friend class IHeightmapGrid;
     friend class GameSaveManager;
+    friend class WorldSaveContext;
 public:
     void init(HeightmapPatchID id) { this->id = id; }
 
@@ -42,6 +43,7 @@ public:
     BoundingSphere boundingSphere;
     f32AABB3 aabb;
     HeightmapPatchID id;
+private:
     mutable std::shared_mutex mMutex;
     mutable std::atomic_flag isSaveUpToDate = ATOMIC_FLAG_INIT;
 
