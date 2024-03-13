@@ -101,20 +101,42 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     ui32 addedCount = 0;
 
     addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS * 3.3f), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 2.0f, (i32)PADDED_RADIUS * 4.3f), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS * 3.3f), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 2.0f, (i32)PADDED_RADIUS * 4.3f), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)PADDED_RADIUS), DESIRED_RADIUS);
+    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
    
+    for (ui32 i = 0; i < 32; ++i) {
+        addedCount += tryAddNewRandomSector(settlement);
+    }
+
     if (mCurrentVisLog) {
         visLog->finish();
         mCurrentVisLog = nullptr;
         mRoadNetwork.mCurrentVisLog = nullptr;
     }
     return addedCount > 1;
+}
+
+bool SettlementLayoutManager::tryAddNewRandomSector(entt::entity settlement) {
+    const f32 desiredRadius = 16.f + mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * 8.0f;
+    constexpr ui32 TRY_COUNT = 16;
+    for (ui32 i = 0; i < TRY_COUNT; ++i) {
+        const ui32 sectorIndex = mRoadNetwork.randomGenerator.getRandomUIntInRange(0, mSectors.size());
+        const SettlementSector& sector = mSectors[sectorIndex];
+        const f32 distance = sector.desiredRadius + desiredRadius + 2.0f;
+        const f32 angle = mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
+        // TODO: GetNormalDir util
+        const f32v2 offset = MathUtil::rotateVector2DRad(f32v2(distance, 0.0f), angle);
+        const DTileCoord newPos = sector.center + DTileCoord(i32v2(glm::round(offset)));
+        if (tryAddSector(settlement, newPos, desiredRadius)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord center, f32 desiredRadius) {
@@ -124,10 +146,6 @@ bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord c
         return true;
     }
 
-    if (mCurrentVisLog) {
-        mCurrentVisLog->nextStep("Sector Attempt - " + std::to_string(mSectors.size()));
-        helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, center, f32v2(3.0f), mWorld, color::Green);
-    }
 
     // Sort all sectors
     boost::container::flat_multimap<f32 /*distSq*/, SettlementSectorID> sectorDistances;
@@ -139,6 +157,11 @@ bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord c
              return false;
         }
         sectorDistances.emplace(distSq, i);
+    }
+
+    if (mCurrentVisLog) {
+        mCurrentVisLog->nextStep("Sector Attempt - " + std::to_string(mSectors.size()));
+        helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, center, f32v2(3.0f), mWorld, color::Green);
     }
 
     SettlementSector newSector(center, desiredRadius, mSectors.size());
@@ -485,7 +508,11 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
     if (newSegment.segmentVerts[0].v == newSegment.segmentVerts.back().v) {
         // Both verts collapsed to a single point, a common failure case.
         // We can do a fallback by not collapsing each of the verts one at a time and checking validity
-        assert(overlapCheckCount == 0);
+
+        // Rare failure case, just fail
+        if (overlapCheckCount != 0) {
+            return false;
+        }
         // If we didn't snap on both ends, we can't try the alternate fallback
         if (infiniteEdgeSnapCount < 2) {
             helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(3.0f), &world, color::Red);

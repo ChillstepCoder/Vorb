@@ -98,6 +98,7 @@ private:
 class SettlementLayoutManager {
 public:
     bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
+    bool tryAddNewRandomSector(entt::entity settlement);
     bool tryAddSector(entt::entity settlement, DTileCoord center, f32 desiredRadius);
 
     void debugDraw() const;
