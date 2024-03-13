@@ -64,6 +64,15 @@ struct RoadSegmentHitResult {
     RoadSegmentID hitSegmentId = INVALID_ROAD_SEGMENT_ID;
     f32 timeSource;
     f32 timeTarget;
+
+    bool isValid() const { return hitSegmentId != INVALID_ROAD_SEGMENT_ID; }
+};
+
+struct RoadSegmentIntersectBestHits {
+    RoadSegmentHitResult negativeSegmentHit;
+    RoadSegmentHitResult negativeInfiniteHit;
+    RoadSegmentHitResult positiveSegmentHit;
+    RoadSegmentHitResult positiveInfiniteHit;
 };
 
 class SettlementRoadNetworkNew {
@@ -74,7 +83,7 @@ private:
     bool simpleTraceAgainstSolidRoadSegmentsWithExclusions(DTileCoord start, DTileCoord end, std::span<RoadSegmentID> exclusions);
     // Trace an infinite line to all solid and infinite segments and get closest hit in each direction
     // Returns std::pair<negative, positive> where hitSegmentId == INVALID_ROAD_SEGMENT if no hit
-    std::pair<RoadSegmentHitResult, RoadSegmentHitResult> getClosestHitsToAnySegmentInEachDirection(DTileCoord start, f32v2 dir);
+    RoadSegmentIntersectBestHits getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir);
     bool tryAddRoadBetweenSectorPoints(World& world, entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width);
 
     bool tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment);

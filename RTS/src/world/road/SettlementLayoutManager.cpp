@@ -14,6 +14,11 @@
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
 
+// Helper
+bool isInfiniteTime(f32 time) {
+    return time < 0.0f || time > 1.0f;
+}
+
 f32v3 helperGetWorldPosFromDTileCoord(DTileCoord pos, World* world) {
     if (pos.x < 0 || pos.y < 0 || pos.x > world->getWidthDTiles() || pos.y > world->getWidthDTiles()) [[unlikely]] {
         return f32v3(0.0f);
@@ -138,7 +143,7 @@ bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord c
 
     SettlementSector newSector(center, desiredRadius, mSectors.size());
 
-    constexpr ui32 DESIRED_ROAD_WIDTH = 3;
+    constexpr ui32 DESIRED_ROAD_WIDTH = 5;
 
     // Create a road between new sector and closest other sectors
     auto it = sectorDistances.begin();
@@ -302,23 +307,40 @@ bool SettlementRoadNetworkNew::simpleTraceAgainstSolidRoadSegmentsWithExclusions
     return false;
 }
 
-std::pair<RoadSegmentHitResult, RoadSegmentHitResult> SettlementRoadNetworkNew::getClosestHitsToAnySegmentInEachDirection(DTileCoord start, f32v2 dir) {
-    f32v2 closestTimeEachDir(FLT_MAX, FLT_MAX);
-    std::pair<RoadSegmentHitResult, RoadSegmentHitResult> closestHitEachDir;
+RoadSegmentIntersectBestHits SettlementRoadNetworkNew::getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir) {
+    f32v2 closestSegmentTimeEachDir(FLT_MAX, FLT_MAX);
+    f32v2 closestInfiniteTimeEachDir(FLT_MAX, FLT_MAX);
+    RoadSegmentIntersectBestHits bestHits;
     IntersectionHit2D hit;
     // Helper
     auto checkIsBestHit = [&](RoadSegmentID id) {
         if (hit.didHit()) {
-            if (hit.timeSource < 0) {
-                if (-hit.timeSource < closestTimeEachDir.x) {
-                    closestTimeEachDir.x = -hit.timeSource;
-                    closestHitEachDir.first = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
+            if (isInfiniteTime(hit.timeTarget)) {
+                if (hit.timeSource < 0) {
+                    if (-hit.timeSource < closestInfiniteTimeEachDir.x) {
+                        closestInfiniteTimeEachDir.x = -hit.timeSource;
+                        bestHits.negativeInfiniteHit = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
+                    }
+                }
+                else {
+                    if (hit.timeSource < closestInfiniteTimeEachDir.y) {
+                        closestInfiniteTimeEachDir.y = hit.timeSource;
+                        bestHits.positiveInfiniteHit = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
+                    }
                 }
             }
             else {
-                if (hit.timeSource < closestTimeEachDir.y) {
-                    closestTimeEachDir.y = hit.timeSource;
-                    closestHitEachDir.second = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
+                if (hit.timeSource < 0) {
+                    if (-hit.timeSource < closestSegmentTimeEachDir.x) {
+                        closestSegmentTimeEachDir.x = -hit.timeSource;
+                        bestHits.negativeSegmentHit = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
+                    }
+                }
+                else {
+                    if (hit.timeSource < closestSegmentTimeEachDir.y) {
+                        closestSegmentTimeEachDir.y = hit.timeSource;
+                        bestHits.positiveSegmentHit = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
+                    }
                 }
             }
         }
@@ -350,7 +372,7 @@ std::pair<RoadSegmentHitResult, RoadSegmentHitResult> SettlementRoadNetworkNew::
                 break;
         }
     }
-    return closestHitEachDir;
+    return bestHits;
 }
 
 bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width) {
@@ -363,19 +385,23 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
 
     helperAddVisLogLineBetweenCoords(mCurrentVisLog, startRoadPos1, startRoadPos2, &world, color4(1.0f, 1.0f, 1.0f, 0.5f));
 
-    auto[negHit, posHit] = getClosestHitsToAnySegmentInEachDirection(midPoint, offsetf);
+    RoadSegmentIntersectBestHits bestHits = getBestRoadSegmentHitsForNewPlacement(midPoint, offsetf);
+    // TODO: Fallback to second best
+    RoadSegmentHitResult bestNegative = bestHits.negativeSegmentHit.isValid() ? bestHits.negativeSegmentHit : bestHits.negativeInfiniteHit;
+    RoadSegmentHitResult bestPositive = bestHits.positiveSegmentHit.isValid() ? bestHits.positiveSegmentHit : bestHits.positiveInfiniteHit;
+
     constexpr f32 MAX_TIME = 400.0f;
     // Make sure our hit didn't happen too far away
     // TODO: Also time target?
-    if (abs(negHit.timeSource) > MAX_TIME)  {
-        negHit.hitSegmentId = INVALID_ROAD_SEGMENT_ID;
+    if (abs(bestNegative.timeSource) > MAX_TIME)  {
+        bestNegative.hitSegmentId = INVALID_ROAD_SEGMENT_ID;
     }
-    if (abs(posHit.timeSource) > MAX_TIME) {
-        posHit.hitSegmentId = INVALID_ROAD_SEGMENT_ID;
+    if (abs(bestPositive.timeSource) > MAX_TIME) {
+        bestPositive.hitSegmentId = INVALID_ROAD_SEGMENT_ID;
     }
     // First segment doesn't have to connect to anything
     if (roadSegments.size()) [[likely]] {
-        if (negHit.hitSegmentId == INVALID_ROAD_SEGMENT_ID && posHit.hitSegmentId == INVALID_ROAD_SEGMENT_ID) {
+        if (!bestNegative.isValid() && !bestPositive.isValid()) {
             return false;
         }
     }
@@ -428,8 +454,8 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
             vertToSnap = DTileCoord(i32v2(glm::round(f32v2(midPoint.v) + dirMult * offsetf * 0.5f)));
         }
     };
-    setVertexPositionBasedOnHit(negHit, newSegment.segmentVerts[0], -1.0f);
-    setVertexPositionBasedOnHit(posHit, newSegment.segmentVerts.back(), 1.0f);
+    setVertexPositionBasedOnHit(bestNegative, newSegment.segmentVerts[0], -1.0f);
+    setVertexPositionBasedOnHit(bestPositive, newSegment.segmentVerts.back(), 1.0f);
 
     // Helpers
     auto worldBoundsCheck = [&](i32v2 pos) -> bool {
@@ -533,21 +559,22 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
 
 bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment) {
     // Assume bounds have been checked
+    constexpr ui32 POINT_COUNT = 4;
 
-    //constexpr ui32 POINT_COUNT = 4;
-    //DTileCoord roadPoints[POINT_COUNT];
-    //roadPoints[0] = baseVertex.pos;
-    //roadPoints[POINT_COUNT - 1] = targetPos;
-    //for (int i = 1; i < POINT_COUNT - 1; ++i) {
-    //    // generate intermediate points
-    //    roadPoints[i] = DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(baseVertex.pos.v), f32v2(targetPos.v), f32(i) / (POINT_COUNT - 1)))));
-    //    roadPoints[i].x += randomGenerator.getRandomIntInRange(-2, 2);
-    //    roadPoints[i].y += randomGenerator.getRandomIntInRange(-2, 2);
-    //}
-
+    // Expand to the point count
     std::vector<DTileCoord>& verts = newSegment.segmentVerts;
+    assert(verts.size() == 2);
+    verts.resize(POINT_COUNT);
+    verts.back() = verts[1]; // 1 was previous last
     const DTileCoord startVertex = verts[0];
     const DTileCoord endVertex = verts.back();
+
+    for (int i = 1; i < POINT_COUNT - 1; ++i) {
+        // generate intermediate points
+        verts[i] = DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(startVertex.v), f32v2(endVertex.v), f32(i) / (POINT_COUNT - 1)))));
+        verts[i].x += randomGenerator.getRandomIntInRange(-2, 2);
+        verts[i].y += randomGenerator.getRandomIntInRange(-2, 2);
+    }
 
     auto getDistanceSqToRoad = [](DTileCoord pos, std::vector<DTileCoord>& verts) -> f32 {
         f32 closestSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, verts[0].v, verts[1].v);
