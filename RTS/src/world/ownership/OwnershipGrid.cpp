@@ -57,8 +57,16 @@ bool OwnershipGrid::isDTileOwned(DTileCoord dtilePosWorld) const {
     return data->owner != entt::null;
 }
 
-bool OwnershipGrid::isChunkOwnedBySettlement(ChunkID chunkId) const {
+bool OwnershipGrid::isChunkOwnedByAnySettlement(ChunkID chunkId) const {
     return mChunkOwners[chunkId].owner != entt::null;
+}
+
+bool OwnershipGrid::isChunkOwnedBySettlement(ChunkID chunkId, entt::entity settlementId) const {
+    return mChunkOwners[chunkId].owner == settlementId;
+}
+
+entt::entity OwnershipGrid::getChunkSettlementOwner(ChunkID chunkId) const {
+    return mChunkOwners[chunkId].owner;
 }
 
 void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner) {

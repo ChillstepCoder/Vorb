@@ -49,7 +49,7 @@ bool SimSettlementSystem::tryCreateSettlementFromGroup(entt::entity groupEntity)
     World& world = mSimContext.getWorld();
     OwnershipGrid& ownershipGrid = world.getOwnershipGrid();
 
-    if (ownershipGrid.isChunkOwnedBySettlement(rootChunk)) {
+    if (ownershipGrid.isChunkOwnedByAnySettlement(rootChunk)) {
         LOG_CRITICAL("Ownership fail in SimSettlementSystem::tryCreateSettlementFromGroup");
         return false;
     }

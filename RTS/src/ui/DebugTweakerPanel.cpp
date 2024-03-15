@@ -404,6 +404,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::Checkbox("Show Navgraph", &sDebugOptions.mShowNavGraph);
         ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mShowNavGraphUpdates);
         ImGui::Checkbox("Show Business Debug", &sDebugOptions.mShowBusinessDebug);
+        ImGui::Checkbox("Show Settlement Debug", &sDebugOptions.mShowSettlementDebug);
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths); 
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);

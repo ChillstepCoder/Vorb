@@ -109,7 +109,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)PADDED_RADIUS), DESIRED_RADIUS);
     //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
    
-    for (ui32 i = 0; i < 32; ++i) {
+    for (ui32 i = 0; i < 64; ++i) {
         addedCount += tryAddNewRandomSector(settlement);
     }
 
@@ -123,7 +123,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
 
 bool SettlementLayoutManager::tryAddNewRandomSector(entt::entity settlement) {
     const f32 desiredRadius = 16.f + mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * 8.0f;
-    constexpr ui32 TRY_COUNT = 16;
+    constexpr ui32 TRY_COUNT = 8;
     for (ui32 i = 0; i < TRY_COUNT; ++i) {
         const ui32 sectorIndex = mRoadNetwork.randomGenerator.getRandomUIntInRange(0, mSectors.size());
         const SettlementSector& sector = mSectors[sectorIndex];
@@ -140,6 +140,19 @@ bool SettlementLayoutManager::tryAddNewRandomSector(entt::entity settlement) {
 }
 
 bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord center, f32 desiredRadius) {
+
+    { // Handle ownership
+        ChunkCoord chunkPos(center);
+        OwnershipGrid& ownerGrid = mWorld->getOwnershipGrid();
+        ChunkID chunkId = chunkPos.toGridIDType(mWorld->getWidthChunks());
+        const entt::entity prevChunkOwner = ownerGrid.getChunkSettlementOwner(chunkId);
+        if (prevChunkOwner == entt::null) {
+            ownerGrid.setChunkSettlementOwner(chunkId, settlement);
+        }
+        else if (prevChunkOwner != settlement) {
+            return false;
+        }
+    }
 
     if (mSectors.empty()) [[unlikely]] {
         mSectors.emplace_back(center, desiredRadius, mSectors.size());
@@ -203,9 +216,6 @@ bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord c
 }
 
 void SettlementLayoutManager::debugDraw() const {
-    // TODO: RE-ENABLE WITH TOGGLE
-    return;
-
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     TileCoord pos(mRootPos);
     const f32 WORLD_Z = 5.0f;
@@ -226,8 +236,8 @@ void SettlementLayoutManager::debugDraw() const {
     ui32 i = 0;
     for (auto& segment : mRoadNetwork.roadSegments) {
         color4 color = color::Yellow;
-        f32v3 worldPosA = getWorldPosAtDTilePos(segment.segmentVerts[0]) + f32v3(0.0f, 0.0f, i);
-        f32v3 worldPosB = getWorldPosAtDTilePos(segment.segmentVerts.back()) + f32v3(0.0f, 0.0f, i);
+        f32v3 worldPosA = getWorldPosAtDTilePos(segment.segmentVerts[0]);
+        f32v3 worldPosB = getWorldPosAtDTilePos(segment.segmentVerts.back());
         f32v3 infiniteRayOffset(segment.direction.x, segment.direction.y, 0.0f);
         DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color, FRAME_COUNT);
         if (segment.infiniteEdges[0]) {
@@ -280,57 +290,8 @@ bool SettlementRoadNetworkNew::simpleTraceAgainstSolidRoadSegments(f32v2 start, 
     return false;
 }
 
-bool SettlementRoadNetworkNew::simpleTraceAgainstSolidRoadSegmentsWithExclusions(DTileCoord start, DTileCoord end, std::span<RoadSegmentID> exclusions) {
-    for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
-        bool exclude = false;
-        for (RoadSegmentID exclusion : exclusions) {
-            if (exclusion == id) [[unlikely]] {
-                exclude = true;
-                break;
-            }
-        }
-        if (exclude) [[unlikely]] {
-            continue;
-        }
-        RoadSegment& segment = roadSegments[id];
-        IntersectionHit2D hit;
-        i32v2 t1 = segment.segmentVerts[0].v;
-        i32v2 t2 = segment.segmentVerts.back().v;
-        switch (segment.segmentType) {
-            case RoadSegmentType::Segment:
-                hit = IntersectionUtil::segmentSegmentIntersect(start.v, end.v, t1, t2);
-                if (hit.didHit()) {
-                    return true;
-                }
-                break;
-            case RoadSegmentType::PositiveRay:
-                hit = IntersectionUtil::segmentRayIntersect(start.v, end.v, t1, t2 - t1);
-                if (hit.didHit() && hit.timeTarget <= 1.0f) {
-                    return true;
-                }
-                break;
-            case RoadSegmentType::NegativeRay:
-                hit = IntersectionUtil::segmentRayIntersect(start.v, end.v, t2, t1 - t2);
-                if (hit.didHit() && hit.timeTarget <= 1.0f) {
-                    return true;
-                }
-                break;
-            case RoadSegmentType::InfiniteLine:
-                hit = IntersectionUtil::segmentLineIntersect(start.v, end.v, t1, t2 - t1);
-                if (hit.didHit() && hit.timeTarget >= 0.0f && hit.timeTarget <= 1.0f) {
-                    return true;
-                }
-                break;
-            default:
-                assert(false);
-                break;
-
-        }
-    }
-    return false;
-}
-
 RoadSegmentIntersectBestHits SettlementRoadNetworkNew::getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir) {
+    constexpr f32 MAX_INFINITE_DISTANCE = 200.0f;
     f32v2 closestSegmentTimeEachDir(FLT_MAX, FLT_MAX);
     f32v2 closestInfiniteTimeEachDir(FLT_MAX, FLT_MAX);
     RoadSegmentIntersectBestHits bestHits;
@@ -339,20 +300,28 @@ RoadSegmentIntersectBestHits SettlementRoadNetworkNew::getBestRoadSegmentHitsFor
     auto checkIsBestHit = [&](RoadSegmentID id) {
         if (hit.didHit()) {
             if (isInfiniteTime(hit.timeTarget)) {
+                RoadSegment& hitSegment = roadSegments[id];
                 if (hit.timeSource < 0) {
-                    if (-hit.timeSource < closestInfiniteTimeEachDir.x) {
+                    if (-hit.timeSource < closestInfiniteTimeEachDir.x && -hit.timeSource * hitSegment.length < MAX_INFINITE_DISTANCE) {
                         closestInfiniteTimeEachDir.x = -hit.timeSource;
                         bestHits.negativeInfiniteHit = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
                     }
                 }
                 else {
-                    if (hit.timeSource < closestInfiniteTimeEachDir.y) {
+                    if (hit.timeSource < closestInfiniteTimeEachDir.y && (hit.timeSource - 1.0f) * hitSegment.length < MAX_INFINITE_DISTANCE) {
                         closestInfiniteTimeEachDir.y = hit.timeSource;
                         bestHits.positiveInfiniteHit = RoadSegmentHitResult{ .hitSegmentId = id, .timeSource = hit.timeSource, .timeTarget = hit.timeTarget };
                     }
                 }
             }
             else {
+                // Clamp to tip to prevent nubs
+                if (hit.timeTarget > 0.85f) {
+                    hit.timeTarget = 1.0f;
+                }
+                else if (hit.timeTarget < 0.15f) {
+                    hit.timeTarget = 0.0f;
+                }
                 if (hit.timeSource < 0) {
                     if (-hit.timeSource < closestSegmentTimeEachDir.x) {
                         closestSegmentTimeEachDir.x = -hit.timeSource;

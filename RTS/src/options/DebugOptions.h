@@ -107,6 +107,7 @@ struct DebugOptions {
     bool mShowDynamicPhysics;
     bool mShowPhysicsActions;
     bool mShowBusinessDebug;
+    bool mShowSettlementDebug;
     bool mShowEditor;
     bool mShowPaths;
     bool mDebugFishEcosystem;

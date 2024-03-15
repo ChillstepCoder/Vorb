@@ -80,7 +80,6 @@ class SettlementRoadNetworkNew {
 private:
     // Return true if we hit ANY segment, ignores infinite edges
     bool simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end);
-    bool simpleTraceAgainstSolidRoadSegmentsWithExclusions(DTileCoord start, DTileCoord end, std::span<RoadSegmentID> exclusions);
     // Trace an infinite line to all solid and infinite segments and get closest hit in each direction
     // Returns std::pair<negative, positive> where hitSegmentId == INVALID_ROAD_SEGMENT if no hit
     RoadSegmentIntersectBestHits getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir);

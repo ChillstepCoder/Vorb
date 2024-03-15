@@ -54,7 +54,10 @@ public:
     const DTileOwnershipData* tryGetDTileOwnerData(ChunkID chunkId, DTileIndex tileIndex) const;
     bool isDTileOwned(DTileCoord dtilePosWorld) const;
 
-    bool isChunkOwnedBySettlement(ChunkID chunkId) const;
+    bool isChunkOwnedByAnySettlement(ChunkID chunkId) const;
+    bool isChunkOwnedBySettlement(ChunkID chunkId, entt::entity settlementId) const;
+    // Returns entt::null if no owner
+    entt::entity getChunkSettlementOwner(ChunkID chunkId) const;
 
     void setChunkSettlementOwner(ChunkID chunkId, entt::entity owner);
     void setDTileOwner(i32v2 dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned);

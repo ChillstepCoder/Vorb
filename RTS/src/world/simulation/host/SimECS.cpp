@@ -14,6 +14,8 @@
 
 #include "world/World.h"
 
+#include "options/DebugOptions.h"
+
 SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()) {
     mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
     mSettlementSystem = std::make_unique<SimSettlementSystem>(hostSimContext, *this, mRegistry);
@@ -133,8 +135,14 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
 }
 
 void SimECS::debugRender(f32v3 cameraPos) const {
-    std::lock_guard lock(mDebugRenderMutex);
-    mDebugCameraPos = cameraPos;
+    if (sDebugOptions.mShowSettlementDebug) {
+        std::lock_guard lock(mDebugRenderMutex);
+        mDebugCameraPos = cameraPos;
+    }
+    else {
+        std::lock_guard lock(mDebugRenderMutex);
+        mDebugCameraPos.x = FLT_MAX;
+    }
 }
 
 void SimECS::debugRenderInternal() const {
