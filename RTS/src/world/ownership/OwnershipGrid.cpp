@@ -76,7 +76,7 @@ void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner)
     mClaimedChunks.setBit(chunkId);
 }
 
-void OwnershipGrid::setDTileOwner(i32v2 dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned) {
+void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned) {
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
         LOG_CRITICAL("Tried to set dtile owner at world pos {} {} OUT OF BOUNDS", dtilePosWorld.x, dtilePosWorld.y);
         return;

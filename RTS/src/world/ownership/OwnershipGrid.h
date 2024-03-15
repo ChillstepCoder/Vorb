@@ -60,7 +60,7 @@ public:
     entt::entity getChunkSettlementOwner(ChunkID chunkId) const;
 
     void setChunkSettlementOwner(ChunkID chunkId, entt::entity owner);
-    void setDTileOwner(i32v2 dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned);
+    void setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned);
 
     bool isChunkIsClaimed(ChunkID chunkId) const;
     void claimChunk(ChunkID chunkId);

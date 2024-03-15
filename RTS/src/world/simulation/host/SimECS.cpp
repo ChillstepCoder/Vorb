@@ -93,7 +93,9 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
             break;
         case CharacterGroupType::SettlerCaravan: {
             const bool didCreate = mSettlementSystem->tryCreateSettlementFromGroup(group);
-            assert(didCreate);
+            if (!didCreate) {
+                LOG_CRITICAL("TODO: SETTLERS MUST FIND NEW SETTLE TARGET!");
+            }
             break;
         }
         case CharacterGroupType::Combat:

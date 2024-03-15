@@ -2,9 +2,6 @@
 
 #include "math/Random.h"
 
-typedef ui16 RoadEdgeID;
-constexpr RoadEdgeID INVALID_ROAD_EDGE = std::numeric_limits<RoadEdgeID>::max();
-
 class World;
 class RandomGenerator;
 class VisualLog;
@@ -14,10 +11,6 @@ enum class RoadType : ui8 {
     Dirt,
     COUNT
 };
-
-
-typedef ui32 SettlementSectorID;
-constexpr SettlementSectorID INVALID_SECTOR_ID = std::numeric_limits<SettlementSectorID>::max();
 
 typedef ui32 RoadSegmentID;
 constexpr RoadSegmentID INVALID_ROAD_SEGMENT_ID = std::numeric_limits<RoadSegmentID>::max();
@@ -30,10 +23,15 @@ enum class RoadSegmentType : ui8 {
     COUNT
 };
 
+struct RoadPointNeedingConstruct {
+    DTileCoord pos;
+    f32 strength;
+};
+
 struct RoadSegment {
-    std::vector<DTileCoord> roadPointsNeedingConstruct;
+    std::vector<RoadPointNeedingConstruct> roadPointsNeedingConstruct;
     std::vector<StructureID> attachedStructures; // TODO Store attach point so its easy to split roads?
-    std::vector<std::pair<RoadEdgeID, f32/*time*/>> attachedEdges;
+    std::vector<std::pair<RoadSegmentID, f32/*time*/>> attachedEdges;
     std::vector<DTileCoord> segmentVerts;
     f32v2 direction;
     f32 length;
@@ -41,23 +39,6 @@ struct RoadSegment {
     ui8 widthTiles[2]; // Allow taper
     bool infiniteEdges[2]; // Whether each vertex implicitly extends to infinity
     RoadType roadType;
-};
-
-// Minimum span for quick tracing
-//struct RoadSegmentTraceInfo {
-//    DTileCoord verts[2];
-//    bool infiniteEdges[2] = {};
-//    RoadSegmentType type;
-//};
-
-struct SettlementSector {
-    SettlementSector() = default;
-    SettlementSector(DTileCoord center, f32 desiredRadius, SettlementSectorID id) : center(center), desiredRadius(desiredRadius), id(id) {}
-
-    std::vector<std::pair<ui32 /*sectionId*/, RoadEdgeID>> neighborSections;
-    DTileCoord center;
-    f32 desiredRadius;
-    SettlementSectorID id;
 };
 
 struct RoadSegmentHitResult {
@@ -75,7 +56,8 @@ struct RoadSegmentIntersectBestHits {
     RoadSegmentHitResult positiveInfiniteHit;
 };
 
-class SettlementRoadNetworkNew {
+
+class SettlementRoadNetwork {
     friend class SettlementLayoutManager;
 private:
     // Return true if we hit ANY segment, ignores infinite edges
@@ -90,22 +72,5 @@ private:
 
     std::vector<RoadSegment> roadSegments;
     RandomGenerator randomGenerator;
-    VisualLog* mCurrentVisLog = nullptr;
-};
-
-// TODO: Inside SettlementLayoutComponent
-class SettlementLayoutManager {
-public:
-    bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
-    bool tryAddNewRandomSector(entt::entity settlement);
-    bool tryAddSector(entt::entity settlement, DTileCoord center, f32 desiredRadius);
-
-    void debugDraw() const;
-
-    std::vector<SettlementSector> mSectors;
-    std::vector<ui32> mOpenSectors; // Sectors that have at least one road edge to infinity
-    SettlementRoadNetworkNew mRoadNetwork;
-    World* mWorld = nullptr;
-    DTileCoord mRootPos;
     VisualLog* mCurrentVisLog = nullptr;
 };

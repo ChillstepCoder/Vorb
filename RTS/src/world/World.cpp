@@ -324,6 +324,13 @@ void World::setWorldTimeMs(ui64 newTime) {
     mWorldTimeMs = newTime;
 }
 
+SimECS* World::tryGetSimECS() const {
+    if (!mHostSimContext) {
+        return nullptr;
+    }
+    return &mHostSimContext->getECS();
+}
+
 TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     ASSERT_GAME_THREAD();
     i32v2 worldPos2D = worldPos;

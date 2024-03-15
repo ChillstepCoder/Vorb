@@ -32,6 +32,7 @@ class SimChunkTileGrid;
 class OwnershipGrid;
 class WorldMarkupGrid;
 class HostSimContext;
+class SimECS;
 class CombatContext;
 class NavWorld;
 class FishEcosystem;
@@ -100,6 +101,7 @@ public:
     VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
     WeatherManager& getWeatherManager() const { return *mWeatherManager; }
     HostSimContext* tryGetHostSimContext() const { return mHostSimContext.get(); }
+    SimECS* tryGetSimECS() const;
     IFactionManager& getFactionManager() const { return *mFactionManager; }
     WorldSaveContext& getSaveContext() const { return *mSaveContext; }
 

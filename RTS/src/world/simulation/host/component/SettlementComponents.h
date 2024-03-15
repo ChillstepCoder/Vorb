@@ -5,7 +5,7 @@
 
 // TODO: SettlementConst?
 #include "city/CityConst.h"
-#include "world/road/SettlementLayoutManager.h"
+#include "world/settlement/SettlementLayoutManager.h"
 
 enum class JobType {
     

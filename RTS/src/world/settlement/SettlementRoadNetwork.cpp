@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "SettlementLayoutManager.h"
+#include "SettlementRoadNetwork.h"
 
 #include "world/World.h"
 #include "world/ownership/OwnershipGrid.h"
@@ -14,243 +14,9 @@
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
 
-// Helper
-bool isInfiniteTime(f32 time) {
-    return time < 0.0f || time > 1.0f;
-}
+#include "world/settlement/SettlementDebugHelpers.inl"
 
-f32v3 helperGetWorldPosFromDTileCoord(DTileCoord pos, World* world) {
-    if (pos.x < 0 || pos.y < 0 || pos.x > world->getWidthDTiles() || pos.y > world->getWidthDTiles()) [[unlikely]] {
-        return f32v3(0.0f);
-    }
-    const f32 z = world->getHeightmapGrid().getHeightAtVert<true>(pos);
-    const i32v2 tilePosA = pos.toTilePos();
-    return f32v3(tilePosA.x, tilePosA.y, z);
-};
-f32v3 helperGetWorldPosFrom2DPos(f32v2 pos, World* world) {
-    if (pos.x < 0 || pos.y < 0 || pos.x > world->getWidthTiles() || pos.y > world->getWidthTiles()) [[unlikely]] {
-        return f32v3(0.0f);
-    }
-    const f32 z = world->getHeightmapGrid().computeHeightAtPoint<true>(pos);
-    return f32v3(pos.x, pos.y, z);
-};
-
-void helperAddVisLogLineBetweenCoords(VisualLog* log, DTileCoord a, DTileCoord b, World* world, color4 color) {
-    if (log) {
-        log->addLineBetweenPoints(helperGetWorldPosFromDTileCoord(a, world), helperGetWorldPosFromDTileCoord(b, world), color);
-    }
-}
-
-void helperAddVisLogFilledQuadAtCoord(VisualLog* log, DTileCoord p, f32v2 size, World* world, color4 color) {
-    if (log) {
-        const f32v3 pos = helperGetWorldPosFromDTileCoord(p, world);
-        const f32v3 s3d(size.x, size.y, 0.0f);
-        log->addFilledQuad(pos - s3d * 0.5f, size, color);
-    }
-}
-
-void helperAddVisLogLineBetweenPos(VisualLog* log, f32v2 a, f32v2 b, World* world, color4 color) {
-    if (log) {
-        log->addLineBetweenPoints(helperGetWorldPosFrom2DPos(a, world), helperGetWorldPosFrom2DPos(b, world), color);
-    }
-}
-
-void helperAddVisLogFilledQuadAtPos(VisualLog* log, f32v2 p, f32v2 size, World* world, color4 color) {
-    if (log) {
-        const f32v3 pos = helperGetWorldPosFrom2DPos(p, world);
-        const f32v3 s3d(size.x, size.y, 0.0f);
-        log->addFilledQuad(pos - s3d * 0.5f, size, color);
-    }
-}
-
-void helperAddTextAtPos(VisualLog* log, f32v2 p, const std::string& text, World* world, color4 color) {
-    if (log) {
-        const f32v3 pos = helperGetWorldPosFrom2DPos(p, world);
-        log->addText(text, pos, 2.0f, f32v2(0.0f, 2.5f), color);
-    }
-}
-
-bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos) {
-
-    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Settlement: " + std::to_string(dTilePos.v.x) + "," + std::to_string(dTilePos.v.y), VisualLogCategory::Settlement, true);
-    if (visLog) {
-        const TileCoord tPos(dTilePos);
-        visLog->setCameraDistanceCheckPosOffset(f32v3(tPos.x, tPos.y, 0.0f));
-        mCurrentVisLog = visLog;
-        mRoadNetwork.mCurrentVisLog = visLog;
-    }
-
-    mWorld = &world;
-    mRootPos = dTilePos;
-    assert(mSectors.empty());
-    mRoadNetwork.randomGenerator.setSeed(RandomGenerator::DEFAULT_SEED * (ui32)settlement + dTilePos.x ^ dTilePos.y);
-    mSectors.reserve(64);
-    mOpenSectors.reserve(64);
-    mRoadNetwork.roadSegments.reserve(64);
-
-    constexpr i32 INITIAL_LENGTH = 32;
-    RoadGrid& roadGrid = world.getRoadGrid();
-    OwnershipGrid& ownerGrid = world.getOwnershipGrid();
-
-    DTileCoord a(i32v2(45));
-    DTileCoord b(i32v2(55));
-    DTileCoord c = a + b;
-    
-    constexpr f32 DESIRED_RADIUS = 16.f;
-    constexpr f32 PADDED_RADIUS = DESIRED_RADIUS + 1.0f;
-    ui32 addedCount = 0;
-
-    addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS * 3.3f), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 2.0f, (i32)PADDED_RADIUS * 4.3f), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-   
-    for (ui32 i = 0; i < 64; ++i) {
-        addedCount += tryAddNewRandomSector(settlement);
-    }
-
-    if (mCurrentVisLog) {
-        visLog->finish();
-        mCurrentVisLog = nullptr;
-        mRoadNetwork.mCurrentVisLog = nullptr;
-    }
-    return addedCount > 1;
-}
-
-bool SettlementLayoutManager::tryAddNewRandomSector(entt::entity settlement) {
-    const f32 desiredRadius = 16.f + mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * 8.0f;
-    constexpr ui32 TRY_COUNT = 8;
-    for (ui32 i = 0; i < TRY_COUNT; ++i) {
-        const ui32 sectorIndex = mRoadNetwork.randomGenerator.getRandomUIntInRange(0, mSectors.size());
-        const SettlementSector& sector = mSectors[sectorIndex];
-        const f32 distance = sector.desiredRadius + desiredRadius + 2.0f;
-        const f32 angle = mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
-        // TODO: GetNormalDir util
-        const f32v2 offset = MathUtil::rotateVector2DRad(f32v2(distance, 0.0f), angle);
-        const DTileCoord newPos = sector.center + DTileCoord(i32v2(glm::round(offset)));
-        if (tryAddSector(settlement, newPos, desiredRadius)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool SettlementLayoutManager::tryAddSector(entt::entity settlement, DTileCoord center, f32 desiredRadius) {
-
-    { // Handle ownership
-        ChunkCoord chunkPos(center);
-        OwnershipGrid& ownerGrid = mWorld->getOwnershipGrid();
-        ChunkID chunkId = chunkPos.toGridIDType(mWorld->getWidthChunks());
-        const entt::entity prevChunkOwner = ownerGrid.getChunkSettlementOwner(chunkId);
-        if (prevChunkOwner == entt::null) {
-            ownerGrid.setChunkSettlementOwner(chunkId, settlement);
-        }
-        else if (prevChunkOwner != settlement) {
-            return false;
-        }
-    }
-
-    if (mSectors.empty()) [[unlikely]] {
-        mSectors.emplace_back(center, desiredRadius, mSectors.size());
-        return true;
-    }
-
-
-    // Sort all sectors
-    boost::container::flat_multimap<f32 /*distSq*/, SettlementSectorID> sectorDistances;
-    sectorDistances.reserve(mSectors.size());
-    for (SettlementSectorID i = 0; i < mSectors.size(); ++i) {
-        const SettlementSector& sector = mSectors[i];
-        const f32 distSq = glm::distance2(f32v2(sector.center.v), f32v2(center.v));
-        if (distSq < SQ(sector.desiredRadius + desiredRadius)) {
-             return false;
-        }
-        sectorDistances.emplace(distSq, i);
-    }
-
-    if (mCurrentVisLog) {
-        mCurrentVisLog->nextStep("Sector Attempt - " + std::to_string(mSectors.size()));
-        helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, center, f32v2(3.0f), mWorld, color::Green);
-    }
-
-    SettlementSector newSector(center, desiredRadius, mSectors.size());
-
-    constexpr ui32 DESIRED_ROAD_WIDTH = 5;
-
-    // Create a road between new sector and closest other sectors
-    auto it = sectorDistances.begin();
-    constexpr ui32 MAX_ROADS_ADDED = 3;
-    bool didAddRoad = false;
-    for (ui32 i = 0; i < MAX_ROADS_ADDED && it != sectorDistances.end(); ++i, ++it) {
-        const SettlementSector& otherSector = mSectors[it->second];
-        if (!mRoadNetwork.simpleTraceAgainstSolidRoadSegments(newSector.center.v, otherSector.center.v)) {
-            helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSector.center, otherSector.center, mWorld, color::Green);
-            // Clear line of sight to other sector, now try making a road
-            const f32 distanceRatio = newSector.desiredRadius / (newSector.desiredRadius + otherSector.desiredRadius);
-            didAddRoad |= mRoadNetwork.tryAddRoadBetweenSectorPoints(
-                *mWorld,
-                settlement,
-                newSector.center,
-                otherSector.center,
-                DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(newSector.center.v), f32v2(otherSector.center.v), distanceRatio)))),
-                RoadType::Dirt,
-                DESIRED_ROAD_WIDTH
-            );
-        }
-        else {
-            helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSector.center, otherSector.center, mWorld, color::Red);
-        }
-    }
-
-    // Sector must have added one road or it is invalid
-    if (!didAddRoad) {
-        return false;
-    }
-   
-    mSectors.emplace_back(std::move(newSector));
-    return true;
-}
-
-void SettlementLayoutManager::debugDraw() const {
-    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
-    TileCoord pos(mRootPos);
-    const f32 WORLD_Z = 5.0f;
-    f32v3 worldPos(pos.x, pos.y, WORLD_Z);
-    const f32v3 WIDTH(3.0f, 3.0f, 0.0f);
-    const ui32 FRAME_COUNT = 32;
-    DebugRenderer::drawWireQuadThreadSafe(worldPos - WIDTH * 0.5f, WIDTH, color::Green, FRAME_COUNT);
-
-    auto getWorldPosAtDTilePos = [&](DTileCoord pos) -> f32v3 {
-        f32 z = heightGrid.getHeightAtVert<true>(pos);
-        i32v2 tilePosA = pos.toTilePos();
-        return f32v3(tilePosA.x, tilePosA.y, z);
-    };
-    for (auto& sector : mSectors) {
-        f32v3 sectorWorldPos = getWorldPosAtDTilePos(sector.center);
-        DebugRenderer::drawWireQuadThreadSafe(sectorWorldPos - WIDTH * 0.5f, WIDTH, color::Red, FRAME_COUNT);
-    }
-    ui32 i = 0;
-    for (auto& segment : mRoadNetwork.roadSegments) {
-        color4 color = color::Yellow;
-        f32v3 worldPosA = getWorldPosAtDTilePos(segment.segmentVerts[0]);
-        f32v3 worldPosB = getWorldPosAtDTilePos(segment.segmentVerts.back());
-        f32v3 infiniteRayOffset(segment.direction.x, segment.direction.y, 0.0f);
-        DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color, FRAME_COUNT);
-        if (segment.infiniteEdges[0]) {
-            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::Cyan, FRAME_COUNT);
-        }
-        if (segment.infiniteEdges[1]) {
-            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::Cyan, FRAME_COUNT);
-        }
-        ++i;
-    }
-}
-
-bool SettlementRoadNetworkNew::simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end) {
+bool SettlementRoadNetwork::simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end) {
     for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
         RoadSegment& segment = roadSegments[id];
         IntersectionHit2D hit;
@@ -290,7 +56,7 @@ bool SettlementRoadNetworkNew::simpleTraceAgainstSolidRoadSegments(f32v2 start, 
     return false;
 }
 
-RoadSegmentIntersectBestHits SettlementRoadNetworkNew::getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir) {
+RoadSegmentIntersectBestHits SettlementRoadNetwork::getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir) {
     constexpr f32 MAX_INFINITE_DISTANCE = 200.0f;
     f32v2 closestSegmentTimeEachDir(FLT_MAX, FLT_MAX);
     f32v2 closestInfiniteTimeEachDir(FLT_MAX, FLT_MAX);
@@ -367,7 +133,7 @@ RoadSegmentIntersectBestHits SettlementRoadNetworkNew::getBestRoadSegmentHitsFor
     return bestHits;
 }
 
-bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width) {
+bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(World& world, entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width) {
     f32v2 offsetf(sector2Pos.v - sector1Pos.v);
 
     // Rotate offset so it is a a cell border between our two sectors
@@ -385,7 +151,7 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
     constexpr f32 MAX_TIME = 400.0f;
     // Make sure our hit didn't happen too far away
     // TODO: Also time target?
-    if (abs(bestNegative.timeSource) > MAX_TIME)  {
+    if (abs(bestNegative.timeSource) > MAX_TIME) {
         bestNegative.hitSegmentId = INVALID_ROAD_SEGMENT_ID;
     }
     if (abs(bestPositive.timeSource) > MAX_TIME) {
@@ -437,7 +203,7 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
                 f32v2 hitSegOffset(hitSegment.segmentVerts.back().v - hitSegment.segmentVerts[0].v);
                 vertToSnap = DTileCoord(i32v2(glm::round(f32v2(hitSegment.segmentVerts[0].v) + hitSegOffset * hit.timeTarget)));
                 helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, vertToSnap, f32v2(2.0f), &world, color::LightBlue);
-            
+
                 // This can result in us completely overlapping the segment, so we need to check for that
                 checkOverlapList[overlapCheckCount++] = &hitSegment;
             }
@@ -471,7 +237,7 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
         }
         return true;
     };
-    
+
     bool needTryFallback = false;
 
     if (newSegment.segmentVerts[0].v == newSegment.segmentVerts.back().v) {
@@ -488,7 +254,7 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
             return false;
         }
         helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, newSegment.segmentVerts[0], f32v2(3.0f), &world, color::Orange);
-        
+
         needTryFallback = true;
     }
     else {
@@ -513,7 +279,7 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
             needTryFallback = true;
         }
     }
-   
+
     if (needTryFallback) {
         // Alternate fallback
         // Try first fallback
@@ -553,7 +319,7 @@ bool SettlementRoadNetworkNew::tryAddRoadBetweenSectorPoints(World& world, entt:
     return place;
 }
 
-bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment) {
+bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment) {
     // Assume bounds have been checked
     constexpr ui32 POINT_COUNT = 4;
 
@@ -616,9 +382,13 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
 
     i32v2 maxCoord = aabb.pos + aabb.dims;
 
-    std::vector<DTileCoord> roadVertsThisEdge;
+    std::vector<RoadPointNeedingConstruct> roadVertsThisEdge;
     roadVertsThisEdge.reserve(128);
 
+    const f32 baseWidthf(newSegment.widthTiles[0]);
+    const f32 endWidthf(newSegment.widthTiles[1]);
+
+    constexpr f32 BLEND_THICKNESS = 1.0f;
     constexpr f32 MIN_ROAD_DIST = SQ(1.5f);
     DTileCoord pos;
     for (pos.y = aabb.pos.y; pos.y < maxCoord.y; ++pos.y) {
@@ -633,9 +403,24 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
                 continue;
             }
 
+            auto [closestSq, closestT] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, verts[0].v, verts[1].v);
+            for (int i = 1; i < verts.size() - 1; ++i) {
+                auto [distanceSq, time] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, verts[i].v, verts[i + 1].v);
+                if (distanceSq < closestSq) {
+                    closestSq = distanceSq;
+                    closestT = time;
+                }
+            }
+            f32 desiredThickness = lerp(baseWidthf, endWidthf, closestT) * 0.5f;
+            if (closestSq > SQ(desiredThickness)) {
+                continue;
+            }
+            const f32 distance = sqrtf(closestSq);
+            const f32 strength = glm::min((desiredThickness - distance) / BLEND_THICKNESS, 1.0f);
+
             RoadPoint point = roadGrid.getRoadPoint<true>(pos);
             if (point.type == 0) {
-                roadVertsThisEdge.emplace_back(pos);
+                roadVertsThisEdge.emplace_back(RoadPointNeedingConstruct{ pos, strength });
                 continue;
             }
             // Get distance to line segment and check if its too close.
@@ -660,7 +445,7 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
                     }
                 }
                 else {
-                    roadVertsThisEdge.emplace_back(pos);
+                    roadVertsThisEdge.emplace_back(RoadPointNeedingConstruct{ pos, strength });
                 }
             }
         }
@@ -709,46 +494,41 @@ bool SettlementRoadNetworkNew::tryPlaceRoadInternal(World& world, entt::entity s
 
     updateRoadSegmentType(newSegment);
 
+    // Set ownership
+    for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
+        if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(p.pos)) {
+            if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
+                ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, UINT16_MAX, true);
+            }
+        }
+        else {
+            ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, UINT16_MAX, true);
+        }
+    }
+
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
     SimChunkTileGrid& tileGrid = world.getSimTileGrid();
-    constexpr f32 BLEND_THICKNESS = 1.0f;
-    f32 baseWidthf(newSegment.widthTiles[0]);
-    f32 endWidthf(newSegment.widthTiles[1]);
-    for (DTileCoord pos : newSegment.roadPointsNeedingConstruct) {
-        auto [closestSq, closestT] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, verts[0].v, verts[1].v);
-        for (int i = 1; i < verts.size() - 1; ++i) {
-            auto [distanceSq, time] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, verts[i].v, verts[i + 1].v);
-            if (distanceSq < closestSq) {
-                closestSq = distanceSq;
-                closestT = time;
-            }
-        }
-        f32 desiredThickness = lerp(baseWidthf, endWidthf, closestT) * 0.5f;
-        if (closestSq <= SQ(desiredThickness)) {
-            const f32 distance = sqrtf(closestSq);
-            const f32 strength = glm::min((desiredThickness - distance) / BLEND_THICKNESS, 1.0f);
-            if (roadGrid.setRoadPointIfHigherIntensity(pos, RoadPoint{ .strength = ui8(strength * 255), .type = e_cast(newSegment.roadType) })) {
-                // Clear tile if needed
-                TileCoord tCoordsThisDTile[4];
-                pos.getCoveredTileCoords(tCoordsThisDTile);
-                for (int i = 0; i < 4; ++i) {
-                    if (SimTileDataWriteReservationPtr writeLock = tileGrid.tryReserveTileDataAtPosIfNotEmpty(tCoordsThisDTile[i])) {
-                        writeLock->reservedCopy.tileId = TILE_ID_NONE;
-                        writeLock.reset();
-                    }
+    for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
+        if (roadGrid.setRoadPointIfHigherIntensity(p.pos, RoadPoint{ .strength = ui8(p.strength * 255), .type = e_cast(newSegment.roadType) })) {
+            // Clear tile if needed
+            TileCoord tCoordsThisDTile[4];
+            p.pos.getCoveredTileCoords(tCoordsThisDTile);
+            for (int i = 0; i < 4; ++i) {
+                if (SimTileDataWriteReservationPtr writeLock = tileGrid.tryReserveTileDataAtPosIfNotEmpty(tCoordsThisDTile[i])) {
+                    writeLock->reservedCopy.tileId = TILE_ID_NONE;
+                    writeLock.reset();
                 }
             }
-
         }
     }
-    std::vector<DTileCoord>().swap(newSegment.roadPointsNeedingConstruct);
+    std::vector<RoadPointNeedingConstruct>().swap(newSegment.roadPointsNeedingConstruct);
     // ==================== END DEBUG ====================
     roadSegments.emplace_back(std::move(newSegment));
     return true;
 }
 
-void SettlementRoadNetworkNew::updateRoadSegmentType(RoadSegment& segment) {
+void SettlementRoadNetwork::updateRoadSegmentType(RoadSegment& segment) {
     if (segment.infiniteEdges[0] == false) {
         if (segment.infiniteEdges[1] == false) {
             segment.segmentType = RoadSegmentType::Segment;
@@ -756,9 +536,11 @@ void SettlementRoadNetworkNew::updateRoadSegmentType(RoadSegment& segment) {
         else {
             segment.segmentType = RoadSegmentType::PositiveRay;
         }
-    } else if (segment.infiniteEdges[1] == false) {
+    }
+    else if (segment.infiniteEdges[1] == false) {
         segment.segmentType = RoadSegmentType::NegativeRay;
-    } else [[unlikely]] {
+    }
+    else [[unlikely]] {
         segment.segmentType = RoadSegmentType::InfiniteLine;
     }
 }

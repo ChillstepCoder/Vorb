@@ -223,6 +223,12 @@ void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*
 }
 
 
+void DebugRenderer::reserveLinesThreadSafe(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
+    std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
+    auto&& lines = sNewLinesThreadSafe[std::make_pair(lifeTime, id)];
+    lines.reserve(lines.size() + count);
+}
+
 void DebugRenderer::drawAABB(const i32AABB3& aabb, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     f32AABB3 aabbf;
     aabbf.pos = aabb.pos;

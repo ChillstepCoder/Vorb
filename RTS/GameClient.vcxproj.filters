@@ -1041,7 +1041,10 @@
     <ClCompile Include="src\world\simulation\host\settlement\SettlementPlanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\road\SettlementLayoutManager.cpp">
+    <ClCompile Include="src\world\settlement\SettlementLayoutManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\settlement\SettlementRoadNetwork.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2558,10 +2561,13 @@
     <ClInclude Include="src\world\simulation\host\component\StructureComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\road\SettlementLayoutManager.h">
+    <ClInclude Include="src\world\CoordinateTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\CoordinateTypes.h">
+    <ClInclude Include="src\world\settlement\SettlementLayoutManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -2572,6 +2578,9 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="src\text\NameStrings.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="src\world\settlement\SettlementDebugHelpers.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

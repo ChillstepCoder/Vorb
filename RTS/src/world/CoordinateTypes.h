@@ -123,6 +123,9 @@ public:
     }
 
     i32v2 toTilePos() const { return v << 1; }
+    // x,y,w,h
+    i32v4 toTileAABB() const { return i32v4((v.x << 1) - 1, (v.y << 1) - 1, 2, 2); }
+    static constexpr i32 getRowLengthPerChunk() { return CHUNK_WIDTH >> 1; }
     static DTileCoord fromTilePos(i32v2 tilePos) { return DTileCoord(i32v2((tilePos.x + 1) >> 1, (tilePos.y + 1) >> 1)); }
 };
 
@@ -140,6 +143,7 @@ public:
     explicit BlockCoord(const ChunkCoord& other);
 
     i32v2 toTilePos() const { return v << 3; }
+    static constexpr i32 getRowLengthPerChunk() { return CHUNK_WIDTH >> 3; }
     static BlockCoord fromTilePos(i32v2 tilePos) { return BlockCoord(tilePos >> 3); }
 };
 
