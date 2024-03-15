@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/container_hash/hash.hpp>
+
 // Comment out for larger chunks
 // #define USE_SMALL_CHUNK_WIDTH
 constexpr int CHUNK_WIDTH = 128;
@@ -74,6 +76,19 @@ public:
     };
 };
 
+namespace std {
+    template<typename T>
+    class hash<CoordinateBase<T>> {
+    public:
+        size_t operator()(const CoordinateBase<T>& v) const {
+            size_t seed = 0;
+            boost::hash_combine(seed, v.x);
+            boost::hash_combine(seed, v.y);
+            return seed;
+        }
+    };
+}
+
 class TileCoord;
 class DTileCoord;
 class BlockCoord;
@@ -128,6 +143,16 @@ public:
     static constexpr i32 getRowLengthPerChunk() { return CHUNK_WIDTH >> 1; }
     static DTileCoord fromTilePos(i32v2 tilePos) { return DTileCoord(i32v2((tilePos.x + 1) >> 1, (tilePos.y + 1) >> 1)); }
 };
+
+namespace std {
+    template<>
+    class hash<DTileCoord> {
+    public:
+        size_t operator()(const DTileCoord& v) const {
+            return std::hash<CoordinateBase<DTileCoord>>()(v);
+        }
+    };
+}
 
 // 8x8 tiles
 // Used by Biomes

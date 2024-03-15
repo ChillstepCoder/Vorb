@@ -29,10 +29,10 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     assert(mSimEcs);
     mRootPos = dTilePos;
     assert(mSectors.empty());
-    mRoadNetwork.randomGenerator.setSeed(RandomGenerator::DEFAULT_SEED * (ui32)settlement + dTilePos.x ^ dTilePos.y);
+    mRoadNetwork.mRandomGenerator.setSeed(RandomGenerator::DEFAULT_SEED * (ui32)settlement + dTilePos.x ^ dTilePos.y);
     mSectors.reserve(64);
     mOpenSectors.reserve(64);
-    mRoadNetwork.roadSegments.reserve(64);
+    mRoadNetwork.mRoadSegments.reserve(64);
 
     constexpr i32 INITIAL_LENGTH = 32;
     RoadGrid& roadGrid = world.getRoadGrid();
@@ -68,13 +68,13 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
 }
 
 bool SettlementLayoutManager::tryAddNewRandomSector() {
-    const f32 desiredRadius = 16.f + mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * 8.0f;
+    const f32 desiredRadius = 16.f + mRoadNetwork.mRandomGenerator.getRandomFloatUnsigned() * 8.0f;
     constexpr ui32 TRY_COUNT = 8;
     for (ui32 i = 0; i < TRY_COUNT; ++i) {
-        const ui32 sectorIndex = mRoadNetwork.randomGenerator.getRandomUIntInRange(0, mSectors.size());
+        const ui32 sectorIndex = mRoadNetwork.mRandomGenerator.getRandomUIntInRange(0, mSectors.size());
         const SettlementSector& sector = mSectors[sectorIndex];
         const f32 distance = sector.desiredRadius + desiredRadius + 2.0f;
-        const f32 angle = mRoadNetwork.randomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
+        const f32 angle = mRoadNetwork.mRandomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
         // TODO: GetNormalDir util
         const f32v2 offset = MathUtil::rotateVector2DRad(f32v2(distance, 0.0f), angle);
         const DTileCoord newPos = sector.center + DTileCoord(i32v2(glm::round(offset)));
@@ -202,13 +202,16 @@ void SettlementLayoutManager::debugDraw() const {
                         case DTileOwnerObjectType::RoadEdge:
                             dcolor = color::RoyalBlue;
                             break;
+                        case DTileOwnerObjectType::RoadPlotSeed:
+                            dcolor = color::HotPink;
+                            break;
                         case DTileOwnerObjectType::Structure:
                             dcolor = color::DarkGreen;
                             break;
                         default:
                             break;
                     }
-                    static_assert(e_count(DTileOwnerObjectType) == 4);
+                    static_assert(e_count(DTileOwnerObjectType) == 5);
 
                     DebugRenderer::drawWireQuadThreadSafe(aabbWorldPos, f32v2(aabb.z, aabb.w), dcolor, FRAME_COUNT);
                 }
@@ -224,12 +227,11 @@ void SettlementLayoutManager::debugDraw() const {
     
     // Roads
     ui32 i = 0;
-    for (auto& segment : mRoadNetwork.roadSegments) {
-        color4 color = color::Yellow;
+    for (auto& segment : mRoadNetwork.mRoadSegments) {
         f32v3 worldPosA = helperGetWorldPosFromDTileCoord(segment.segmentVerts[0], mWorld);
         f32v3 worldPosB = helperGetWorldPosFromDTileCoord(segment.segmentVerts.back(), mWorld);
         f32v3 infiniteRayOffset(segment.direction.x, segment.direction.y, 0.0f);
-        DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color, FRAME_COUNT);
+        DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color::Yellow, FRAME_COUNT);
         if (segment.infiniteEdges[0]) {
             DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::Cyan, FRAME_COUNT);
         }
@@ -237,5 +239,19 @@ void SettlementLayoutManager::debugDraw() const {
             DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::Cyan, FRAME_COUNT);
         }
         ++i;
+    }
+
+    // External roads
+    for (auto& [segmentId, edges] : mRoadNetwork.mExternalRoadSegments) {
+        const RoadSegment& segment = mRoadNetwork.mRoadSegments[segmentId];
+        const f32v3 infiniteRayOffset(segment.direction.x * 2.0f, segment.direction.y * 2.0f, 0.0f);
+        if (edges.first) {
+            const f32v3 worldPosA = helperGetWorldPosFromDTileCoord(segment.segmentVerts[0], mWorld);
+            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
+        }
+        if (edges.second) {
+            const f32v3 worldPosB = helperGetWorldPosFromDTileCoord(segment.segmentVerts.back(), mWorld);
+            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
+        }
     }
 }

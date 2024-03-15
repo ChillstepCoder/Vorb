@@ -7,7 +7,6 @@
 #include "world/IHeightmapGrid.h"
 #include "world/chunk/SimChunkTileGrid.h"
 
-#include "util/IntersectionHit.h"
 #include "util/IntersectionUtil.h"
 #include "util/MathUtil.hpp"
 
@@ -17,43 +16,50 @@
 #include "world/settlement/SettlementDebugHelpers.inl"
 
 bool SettlementRoadNetwork::simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end) {
-    for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
-        RoadSegment& segment = roadSegments[id];
-        IntersectionHit2D hit;
-        i32v2 t1 = segment.segmentVerts[0].v;
-        i32v2 t2 = segment.segmentVerts.back().v;
-        switch (segment.segmentType) {
-            case RoadSegmentType::Segment:
-                hit = IntersectionUtil::segmentSegmentIntersect(start, end, t1, t2);
-                if (hit.didHit()) {
-                    return true;
-                }
-                break;
-            case RoadSegmentType::PositiveRay:
-                hit = IntersectionUtil::segmentRayIntersect(start, end, t1, t2 - t1);
-                if (hit.didHit() && hit.timeTarget <= 1.0f) {
-                    return true;
-                }
-                break;
-            case RoadSegmentType::NegativeRay:
-                hit = IntersectionUtil::segmentRayIntersect(start, end, t2, t1 - t2);
-                if (hit.didHit() && hit.timeTarget <= 1.0f) {
-                    return true;
-                }
-                break;
-            case RoadSegmentType::InfiniteLine:
-                hit = IntersectionUtil::segmentLineIntersect(start, end, t1, t2 - t1);
-                if (hit.didHit() && hit.timeTarget >= 0.0f && hit.timeTarget <= 1.0f) {
-                    return true;
-                }
-                break;
-            default:
-                assert(false);
-                break;
-
+    for (RoadSegmentID id = 0; id < mRoadSegments.size(); ++id) {
+        IntersectionHit2D hit = simpleTraceAgainstSolidRoadSegment(start, end, mRoadSegments[id]);
+        if (hit.didHit()) {
+            return true;
         }
     }
     return false;
+}
+
+IntersectionHit2D SettlementRoadNetwork::simpleTraceAgainstSolidRoadSegment(f32v2 start, f32v2 end, const RoadSegment& segment) {
+    IntersectionHit2D hit;
+    i32v2 t1 = segment.segmentVerts[0].v;
+    i32v2 t2 = segment.segmentVerts.back().v;
+    switch (segment.segmentType) {
+        case RoadSegmentType::Segment:
+            hit = IntersectionUtil::segmentSegmentIntersect(start, end, t1, t2);
+            if (hit.didHit()) {
+                return hit;
+            }
+            break;
+        case RoadSegmentType::PositiveRay:
+            hit = IntersectionUtil::segmentRayIntersect(start, end, t1, t2 - t1);
+            if (hit.didHit() && hit.timeTarget <= 1.0f) {
+                return hit;
+            }
+            break;
+        case RoadSegmentType::NegativeRay:
+            hit = IntersectionUtil::segmentRayIntersect(start, end, t2, t1 - t2);
+            if (hit.didHit() && hit.timeTarget <= 1.0f) {
+                return hit;
+            }
+            break;
+        case RoadSegmentType::InfiniteLine:
+            hit = IntersectionUtil::segmentLineIntersect(start, end, t1, t2 - t1);
+            if (hit.didHit() && hit.timeTarget >= 0.0f && hit.timeTarget <= 1.0f) {
+                return hit;
+            }
+            break;
+        default:
+            assert(false);
+            break;
+
+    }
+    return IntersectionHit2D();
 }
 
 RoadSegmentIntersectBestHits SettlementRoadNetwork::getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir) {
@@ -66,7 +72,7 @@ RoadSegmentIntersectBestHits SettlementRoadNetwork::getBestRoadSegmentHitsForNew
     auto checkIsBestHit = [&](RoadSegmentID id) {
         if (hit.didHit()) {
             if (isInfiniteTime(hit.timeTarget)) {
-                RoadSegment& hitSegment = roadSegments[id];
+                RoadSegment& hitSegment = mRoadSegments[id];
                 if (hit.timeSource < 0) {
                     if (-hit.timeSource < closestInfiniteTimeEachDir.x && -hit.timeSource * hitSegment.length < MAX_INFINITE_DISTANCE) {
                         closestInfiniteTimeEachDir.x = -hit.timeSource;
@@ -103,8 +109,8 @@ RoadSegmentIntersectBestHits SettlementRoadNetwork::getBestRoadSegmentHitsForNew
             }
         }
     };
-    for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
-        RoadSegment& segment = roadSegments[id];
+    for (RoadSegmentID id = 0; id < mRoadSegments.size(); ++id) {
+        RoadSegment& segment = mRoadSegments[id];
         i32v2 t1 = segment.segmentVerts[0].v;
         i32v2 t2 = segment.segmentVerts.back().v;
 
@@ -158,7 +164,7 @@ bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(World& world, entt::en
         bestPositive.hitSegmentId = INVALID_ROAD_SEGMENT_ID;
     }
     // First segment doesn't have to connect to anything
-    if (roadSegments.size()) [[likely]] {
+    if (mRoadSegments.size()) [[likely]] {
         if (!bestNegative.isValid() && !bestPositive.isValid()) {
             return false;
         }
@@ -180,7 +186,7 @@ bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(World& world, entt::en
     ui32 infiniteEdgeSnapCount = 0;
     auto setVertexPositionBasedOnHit = [&](RoadSegmentHitResult hit, DTileCoord& vertToSnap, f32 dirMult) {
         if (hit.hitSegmentId != INVALID_ROAD_SEGMENT_ID) {
-            RoadSegment& hitSegment = roadSegments[hit.hitSegmentId];
+            RoadSegment& hitSegment = mRoadSegments[hit.hitSegmentId];
             const f32v2 hitPoint = f32v2(TileCoord(hitSegment.segmentVerts[0]).v) + hitSegment.direction * hit.timeTarget * hitSegment.length * 2.0f;
             helperAddVisLogFilledQuadAtPos(mCurrentVisLog, hitPoint, f32v2(2.0f), &world, color::Yellow);
             helperAddTextAtPos(mCurrentVisLog, hitPoint, std::to_string(hit.timeTarget), &world, color::Yellow);
@@ -334,21 +340,9 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
     for (int i = 1; i < POINT_COUNT - 1; ++i) {
         // generate intermediate points
         verts[i] = DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(startVertex.v), f32v2(endVertex.v), f32(i) / (POINT_COUNT - 1)))));
-        verts[i].x += randomGenerator.getRandomIntInRange(-2, 2);
-        verts[i].y += randomGenerator.getRandomIntInRange(-2, 2);
+        verts[i].x += mRandomGenerator.getRandomIntInRange(-2, 2);
+        verts[i].y += mRandomGenerator.getRandomIntInRange(-2, 2);
     }
-
-    auto getDistanceSqToRoad = [](DTileCoord pos, std::vector<DTileCoord>& verts) -> f32 {
-        f32 closestSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, verts[0].v, verts[1].v);
-        for (int i = 1; i < verts.size() - 1; ++i) {
-            f32 distSq = MathUtil::computePointToLineSegmentDistanceSQ(pos.v, verts[i].v, verts[i + 1].v);
-            if (distSq < closestSq) {
-                closestSq = distSq;
-            }
-        }
-        return closestSq;
-    };
-
 
     i32 aabbPadding = (i32)glm::max(newSegment.widthTiles[0], newSegment.widthTiles[1]);
     DTileCoord offset = endVertex - startVertex;
@@ -385,6 +379,9 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
     std::vector<RoadPointNeedingConstruct> roadVertsThisEdge;
     roadVertsThisEdge.reserve(128);
 
+    std::unordered_set<DTileCoord> coveredPlotSeeds;
+    coveredPlotSeeds.reserve(32);
+
     const f32 baseWidthf(newSegment.widthTiles[0]);
     const f32 endWidthf(newSegment.widthTiles[1]);
 
@@ -394,15 +391,6 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
     for (pos.y = aabb.pos.y; pos.y < maxCoord.y; ++pos.y) {
         for (pos.x = aabb.pos.x; pos.x < maxCoord.x; ++pos.x) {
 
-            if (heightGrid.getHeightAtVert<true>(pos) <= 0.0f) {
-                const f32 distanceSq = getDistanceSqToRoad(pos, verts);
-                // If this is too close to road center, cancel the road
-                if (distanceSq < MIN_ROAD_DIST) {
-                    return false;
-                }
-                continue;
-            }
-
             auto [closestSq, closestT] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, verts[0].v, verts[1].v);
             for (int i = 1; i < verts.size() - 1; ++i) {
                 auto [distanceSq, time] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, verts[i].v, verts[i + 1].v);
@@ -411,31 +399,34 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
                     closestT = time;
                 }
             }
-            f32 desiredThickness = lerp(baseWidthf, endWidthf, closestT) * 0.5f;
+
+            const f32 desiredThickness = lerp(baseWidthf, endWidthf, closestT) * 0.5f;
             if (closestSq > SQ(desiredThickness)) {
                 continue;
             }
-            const f32 distance = sqrtf(closestSq);
-            const f32 strength = glm::min((desiredThickness - distance) / BLEND_THICKNESS, 1.0f);
 
-            RoadPoint point = roadGrid.getRoadPoint<true>(pos);
-            if (point.type == 0) {
-                roadVertsThisEdge.emplace_back(RoadPointNeedingConstruct{ pos, strength });
+            if (heightGrid.getHeightAtVert<true>(pos) <= 0.0f) {
+                // If this is too close to road center, cancel the road
+                if (closestSq < MIN_ROAD_DIST) {
+                    return false;
+                }
                 continue;
             }
+
             // Get distance to line segment and check if its too close.
             // TODO: A road
             if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(pos)) {
                 // If there is a road owned here
                 if (ownerData->owner != entt::null) {
-
-                    const f32 distanceSq = getDistanceSqToRoad(pos, verts);
                     // Road is invalid if it is too close to another road that is not connected to our root vertex
-                    if (distanceSq < MIN_ROAD_DIST) {
+                    if (closestSq < MIN_ROAD_DIST) {
                         if (ownerData->owner == settlement) {
                             // TODO: Instead of just overlapping every road edge, we should be smarter...
                             //       Roads should merge and stuff
-                            if (ownerData->ownerObjectType != DTileOwnerObjectType::RoadEdge) {
+                            if (ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed) {
+                                coveredPlotSeeds.emplace(pos);
+                            }
+                            else if (ownerData->ownerObjectType != DTileOwnerObjectType::RoadEdge) {
                                 return false;
                             }
                         }
@@ -444,10 +435,10 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
                         }
                     }
                 }
-                else {
-                    roadVertsThisEdge.emplace_back(RoadPointNeedingConstruct{ pos, strength });
-                }
             }
+            const f32 distance = sqrtf(closestSq);
+            const f32 strength = glm::min((desiredThickness - distance) / BLEND_THICKNESS, 1.0f);
+            roadVertsThisEdge.emplace_back(RoadPointNeedingConstruct{ pos, strength });
         }
     }
 
@@ -456,8 +447,8 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
 
     // Connect new road to other segments and block infinite edges
     constexpr f32 DOT_THRESHOLD = 0.93969262078; // cos(20) degrees is the threshold for blocking an infinite edge
-    for (RoadSegmentID id = 0; id < roadSegments.size(); ++id) {
-        RoadSegment& otherSegment = roadSegments[id];
+    for (RoadSegmentID id = 0; id < mRoadSegments.size(); ++id) {
+        RoadSegment& otherSegment = mRoadSegments[id];
         if (startVertex == otherSegment.segmentVerts[0]) {
             // Base vertices are overlapping, so if they are pointing in opposite dir, block the infinite edges
             if (glm::dot(newSegment.direction, otherSegment.direction) < -DOT_THRESHOLD) {
@@ -494,8 +485,22 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
 
     updateRoadSegmentType(newSegment);
 
-    // Set ownership
+    // TODO: Remove plot seeds we are covering
+    for (DTileCoord coveredSeed : coveredPlotSeeds) {
+        // TODO: remove this road plot from its segment?
+    }
+
+    std::unordered_set<DTileCoord> possiblePlotSeeds;
+    possiblePlotSeeds.reserve(newSegment.length * (glm::max(newSegment.widthTiles[0], newSegment.widthTiles[1])) + 1);
+
+    // Set ownership and track possible plot seeds
     for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
+
+        possiblePlotSeeds.emplace(p.pos - DTileCoord(0, 1)); // Down
+        possiblePlotSeeds.emplace(p.pos - DTileCoord(1, 0)); // Left
+        possiblePlotSeeds.emplace(p.pos + DTileCoord(1, 0)); // Right
+        possiblePlotSeeds.emplace(p.pos + DTileCoord(0, 1)); // Up
+
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(p.pos)) {
             if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
                 ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, UINT16_MAX, true);
@@ -505,6 +510,23 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
             ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, UINT16_MAX, true);
         }
     }
+
+    // Set plot seeds
+    for (DTileCoord s : possiblePlotSeeds) {
+        if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(s)) {
+            if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
+                ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, UINT16_MAX, true);
+                newSegment.plotSeeds.emplace(s);
+            }
+        }
+        else {
+            ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, UINT16_MAX, true);
+            newSegment.plotSeeds.emplace(s);
+        }
+    }
+
+    // Block other external roads
+    refreshExternalRoadsInternal(newSegment);
 
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
@@ -524,7 +546,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
     }
     std::vector<RoadPointNeedingConstruct>().swap(newSegment.roadPointsNeedingConstruct);
     // ==================== END DEBUG ====================
-    roadSegments.emplace_back(std::move(newSegment));
+    mRoadSegments.emplace_back(std::move(newSegment));
     return true;
 }
 
@@ -543,4 +565,56 @@ void SettlementRoadNetwork::updateRoadSegmentType(RoadSegment& segment) {
     else [[unlikely]] {
         segment.segmentType = RoadSegmentType::InfiniteLine;
     }
+}
+
+void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment) {
+    constexpr f32 CAST_DISTANCE = 2000.0f;
+    // Block any other external roads with new road
+    for (auto it = mExternalRoadSegments.begin(); it != mExternalRoadSegments.end();) {
+        auto& [segmentId, edges] = *it;
+        RoadSegment& externalSegment = mRoadSegments[segmentId];
+        if (edges.first) {
+            // Negative
+            f32v2 v1 = f32v2(externalSegment.segmentVerts[0].v) - externalSegment.direction * 0.5f; // Subtract small padding to ignore intersecting roads at tip
+            f32v2 v2 = externalSegment.direction * -CAST_DISTANCE + v1;
+            IntersectionHit2D hit = simpleTraceAgainstSolidRoadSegment(v1, v2, newSegment);
+            if (hit.didHit()) {
+                edges.first = false;
+                continue;
+            }
+        }
+        if (edges.second) {
+            // Positive
+            f32v2 v1 = f32v2(externalSegment.segmentVerts.back().v) + externalSegment.direction * 0.5f; // Add small padding to ignore intersecting roads at tip
+            f32v2 v2 = externalSegment.direction * CAST_DISTANCE + v1;
+            IntersectionHit2D hit = simpleTraceAgainstSolidRoadSegment(v1, v2, newSegment);
+            if (hit.didHit()) {
+                edges.second = false;
+                continue;
+            }
+        }
+        if (!edges.first && !edges.second) {
+            it = mExternalRoadSegments.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    // Check if new road is external
+    std::pair<bool, bool> external = { false, false };
+    // Negative
+    if (!simpleTraceAgainstSolidRoadSegments(f32v2(newSegment.segmentVerts[0].v), f32v2(newSegment.segmentVerts[0].v) - newSegment.direction * CAST_DISTANCE)) {
+        external.first = true;
+    }
+    // Positive
+    if (!simpleTraceAgainstSolidRoadSegments(f32v2(newSegment.segmentVerts.back().v), f32v2(newSegment.segmentVerts.back().v) + newSegment.direction * CAST_DISTANCE)) {
+        external.second = true;
+    }
+
+    if (external.first || external.second) {
+        // New segment has not been added yet so its ID is the road segments list size
+        mExternalRoadSegments.emplace(mRoadSegments.size(), external);
+    }
+
 }

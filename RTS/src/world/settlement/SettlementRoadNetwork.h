@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/Random.h"
+#include "util/IntersectionHit.h"
 
 class World;
 class RandomGenerator;
@@ -29,6 +30,7 @@ struct RoadPointNeedingConstruct {
 };
 
 struct RoadSegment {
+    std::unordered_set<DTileCoord> plotSeeds;
     std::vector<RoadPointNeedingConstruct> roadPointsNeedingConstruct;
     std::vector<StructureID> attachedStructures; // TODO Store attach point so its easy to split roads?
     std::vector<std::pair<RoadSegmentID, f32/*time*/>> attachedEdges;
@@ -62,6 +64,7 @@ class SettlementRoadNetwork {
 private:
     // Return true if we hit ANY segment, ignores infinite edges
     bool simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end);
+    IntersectionHit2D simpleTraceAgainstSolidRoadSegment(f32v2 start, f32v2 end, const RoadSegment& segment);
     // Trace an infinite line to all solid and infinite segments and get closest hit in each direction
     // Returns std::pair<negative, positive> where hitSegmentId == INVALID_ROAD_SEGMENT if no hit
     RoadSegmentIntersectBestHits getBestRoadSegmentHitsForNewPlacement(DTileCoord start, f32v2 dir);
@@ -69,8 +72,11 @@ private:
 
     bool tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment);
     void updateRoadSegmentType(RoadSegment& segment);
+    void refreshExternalRoadsInternal(RoadSegment& newSegment);
 
-    std::vector<RoadSegment> roadSegments;
-    RandomGenerator randomGenerator;
+    std::vector<RoadSegment> mRoadSegments;
+    // Represents road segments that should connect to other cities or extend to more districts
+    boost::container::flat_map<RoadSegmentID, std::pair<bool, bool>> mExternalRoadSegments;
+    RandomGenerator mRandomGenerator;
     VisualLog* mCurrentVisLog = nullptr;
 };

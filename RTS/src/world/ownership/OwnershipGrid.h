@@ -11,6 +11,7 @@ enum class DTileOwnerObjectType : ui8 {
     None,
     Plot,
     RoadEdge,
+    RoadPlotSeed,
     Structure,
     COUNT
 };

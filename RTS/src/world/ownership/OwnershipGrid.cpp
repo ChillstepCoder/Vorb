@@ -29,6 +29,7 @@ const ChunkOwnershipData& OwnershipGrid::getChunkSettlementOwnerData(ChunkID chu
 }
 
 const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(DTileCoord dtilePosWorld) const {
+    ASSERT_SIM_THREAD();
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
         return nullptr;
     }
@@ -42,6 +43,7 @@ const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(DTileCoord dtilePo
 }
 
 const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(ChunkID chunkId, DTileIndex dtileIndex) const {
+    ASSERT_SIM_THREAD();
     ChunkOwnershipData& data = mChunkOwners[chunkId];
     if (!data.dtileData) {
         return nullptr;
@@ -50,6 +52,7 @@ const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(ChunkID chunkId, D
 }
 
 bool OwnershipGrid::isDTileOwned(DTileCoord dtilePosWorld) const {
+    ASSERT_SIM_THREAD();
     const DTileOwnershipData* data = tryGetDTileOwnerData(dtilePosWorld);
     if (!data) {
         return false;
@@ -58,18 +61,22 @@ bool OwnershipGrid::isDTileOwned(DTileCoord dtilePosWorld) const {
 }
 
 bool OwnershipGrid::isChunkOwnedByAnySettlement(ChunkID chunkId) const {
+    ASSERT_SIM_THREAD();
     return mChunkOwners[chunkId].owner != entt::null;
 }
 
 bool OwnershipGrid::isChunkOwnedBySettlement(ChunkID chunkId, entt::entity settlementId) const {
+    ASSERT_SIM_THREAD();
     return mChunkOwners[chunkId].owner == settlementId;
 }
 
 entt::entity OwnershipGrid::getChunkSettlementOwner(ChunkID chunkId) const {
+    ASSERT_SIM_THREAD();
     return mChunkOwners[chunkId].owner;
 }
 
 void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner) {
+    ASSERT_SIM_THREAD();
     ChunkOwnershipData& data = mChunkOwners[chunkId];
     data.owner = owner;
     allocateTileDataIfNeeded(data);
@@ -77,6 +84,7 @@ void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner)
 }
 
 void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned) {
+    ASSERT_SIM_THREAD();
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
         LOG_CRITICAL("Tried to set dtile owner at world pos {} {} OUT OF BOUNDS", dtilePosWorld.x, dtilePosWorld.y);
         return;
