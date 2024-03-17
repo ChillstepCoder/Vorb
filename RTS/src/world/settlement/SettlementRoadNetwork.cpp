@@ -1,11 +1,14 @@
 #include "stdafx.h"
 #include "SettlementRoadNetwork.h"
 
+#include "math/Random.h"
 #include "world/World.h"
 #include "world/ownership/OwnershipGrid.h"
 #include "world/road/RoadGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "world/chunk/SimChunkTileGrid.h"
+
+#include "world/settlement/SettlementPlotManager.h"
 
 #include "util/IntersectionUtil.h"
 #include "util/MathUtil.hpp"
@@ -14,6 +17,44 @@
 #include "debugging/VisualLogger.h"
 
 #include "world/settlement/SettlementDebugHelpers.inl"
+
+i32AABB2 getAABBFromRoadSegment(ui8 startWidth, ui8 endWidth, DTileCoord startPos, DTileCoord endPos) {
+    i32 aabbPadding = (i32)glm::max(startWidth, endWidth);
+    DTileCoord offset = endPos - startPos;
+    i32AABB2 aabb;
+    DTileCoord xSpan;
+    DTileCoord ySpan;
+    if (startPos.x < endPos.x) {
+        xSpan.x = startPos.x - aabbPadding;
+        xSpan.y = endPos.x + aabbPadding;
+    }
+    else {
+        xSpan.x = endPos.x - aabbPadding;
+        xSpan.y = startPos.x + aabbPadding;
+    }
+    if (startPos.y < endPos.y) {
+        ySpan.x = startPos.y - aabbPadding;
+        ySpan.y = endPos.y + aabbPadding;
+    }
+    else {
+        ySpan.x = endPos.y - aabbPadding;
+        ySpan.y = startPos.y + aabbPadding;
+    }
+
+    aabb.pos = i32v2(xSpan.x, ySpan.x);
+    aabb.dims = i32v2(xSpan.y - xSpan.x, ySpan.y - ySpan.x);
+    return aabb;
+}
+
+SettlementRoadNetwork::SettlementRoadNetwork(RandomGenerator& randomGenerator) : mRandomGenerator(randomGenerator) {
+
+}
+
+SettlementRoadNetwork::~SettlementRoadNetwork() = default;
+
+void SettlementRoadNetwork::init(SettlementPlotManager& plotManager) {
+    mPlotManager = &plotManager;
+}
 
 bool SettlementRoadNetwork::simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end) {
     for (RoadSegmentID id = 0; id < mRoadSegments.size(); ++id) {
@@ -329,6 +370,8 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
     // Assume bounds have been checked
     constexpr ui32 POINT_COUNT = 4;
 
+    const RoadSegmentID newSegmentId = mRoadSegments.size();
+
     // Expand to the point count
     std::vector<DTileCoord>& verts = newSegment.segmentVerts;
     assert(verts.size() == 2);
@@ -344,37 +387,14 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
         verts[i].y += mRandomGenerator.getRandomIntInRange(-2, 2);
     }
 
-    i32 aabbPadding = (i32)glm::max(newSegment.widthTiles[0], newSegment.widthTiles[1]);
-    DTileCoord offset = endVertex - startVertex;
-    i32AABB2 aabb;
-    DTileCoord xSpan;
-    DTileCoord ySpan;
-    if (startVertex.x < endVertex.x) {
-        xSpan.x = startVertex.x - aabbPadding;
-        xSpan.y = endVertex.x + aabbPadding;
-    }
-    else {
-        xSpan.x = endVertex.x - aabbPadding;
-        xSpan.y = startVertex.x + aabbPadding;
-    }
-    if (startVertex.y < endVertex.y) {
-        ySpan.x = startVertex.y - aabbPadding;
-        ySpan.y = endVertex.y + aabbPadding;
-    }
-    else {
-        ySpan.x = endVertex.y - aabbPadding;
-        ySpan.y = startVertex.y + aabbPadding;
-    }
-
-    aabb.pos = i32v2(xSpan.x, ySpan.x);
-    aabb.dims = i32v2(xSpan.y - xSpan.x, ySpan.y - ySpan.x);
+    const i32AABB2 aabb = getAABBFromRoadSegment(newSegment.widthTiles[0], newSegment.widthTiles[1], startVertex, endVertex);
 
     // Loop through the AABB and check for if it is owned already
     OwnershipGrid& ownerGrid = world.getOwnershipGrid();
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     RoadGrid& roadGrid = world.getRoadGrid();
 
-    i32v2 maxCoord = aabb.pos + aabb.dims;
+    const i32v2 maxCoord = aabb.pos + aabb.dims;
 
     std::vector<RoadPointNeedingConstruct> roadVertsThisEdge;
     roadVertsThisEdge.reserve(128);
@@ -485,9 +505,9 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
 
     updateRoadSegmentType(newSegment);
 
-    // TODO: Remove plot seeds we are covering
+    // Remove plot seeds we are covering
     for (DTileCoord coveredSeed : coveredPlotSeeds) {
-        // TODO: remove this road plot from its segment?
+        mPlotManager->removePlotSeed(coveredSeed);
     }
 
     std::unordered_set<DTileCoord> possiblePlotSeeds;
@@ -502,12 +522,12 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
         possiblePlotSeeds.emplace(p.pos + DTileCoord(0, 1)); // Up
 
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(p.pos)) {
-            if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
-                ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, UINT16_MAX, true);
+            if (ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed) {
+                ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, newSegmentId, true);
             }
         }
         else {
-            ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, UINT16_MAX, true);
+            ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, newSegmentId, true);
         }
     }
 
@@ -515,18 +535,18 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(World& world, entt::entity sett
     for (DTileCoord s : possiblePlotSeeds) {
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(s)) {
             if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
-                ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, UINT16_MAX, true);
-                newSegment.plotSeeds.emplace(s);
+                ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId, true);
+                mPlotManager->addPlotSeed(s);
             }
         }
         else {
-            ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, UINT16_MAX, true);
-            newSegment.plotSeeds.emplace(s);
+            ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId, true);
+            mPlotManager->addPlotSeed(s);
         }
     }
 
-    // Block other external roads
-    refreshExternalRoadsInternal(newSegment);
+    // Block other external roads and place ours
+    refreshExternalRoadsInternal(world, newSegment, settlement);
 
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
@@ -567,8 +587,35 @@ void SettlementRoadNetwork::updateRoadSegmentType(RoadSegment& segment) {
     }
 }
 
-void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment) {
+void SettlementRoadNetwork::refreshExternalRoadsInternal(World& world, RoadSegment& newSegment, entt::entity settlement) {
     constexpr f32 CAST_DISTANCE = 2000.0f;
+    OwnershipGrid& ownerGrid = world.getOwnershipGrid();
+    // Helper
+    auto clearBlocked = [this, &ownerGrid](RoadSegmentID segmentId, int index) {
+        // Remove all blocked edges
+        auto it = mExternalRoadSegmentBlockedTiles.find(segmentId);
+        assert(it != mExternalRoadSegmentBlockedTiles.end());
+        for (ExternalRoadSegmentBlockedTile& blockedTile : it->second[index]) {
+            DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerDataForEditSimThread(blockedTile.pos);
+            assert(ownerData);
+            if (ownerData->ownerObjectType == DTileOwnerObjectType::ExternalRoadBlocked) {
+                if (--ownerData->userData == 0) {
+                    // TODO: This can rarely result in seeds not being restored if we have a ref count,
+                    // probably fine...
+                    if (blockedTile.wasPlotSeed) {
+                        ownerData->ownerObjectType = DTileOwnerObjectType::RoadPlotSeed;
+                        // TODO: This can parent plot seeds from other roads onto us, but thats honestly probably OK?
+                        ownerData->userData = segmentId;
+                        mPlotManager->addPlotSeed(blockedTile.pos);
+                    }
+                    else {
+                        ownerData->ownerObjectType = DTileOwnerObjectType::None;
+                    }
+                }
+            }
+        }
+        it->second[index].clear();
+    };
     // Block any other external roads with new road
     for (auto it = mExternalRoadSegments.begin(); it != mExternalRoadSegments.end();) {
         auto& [segmentId, edges] = *it;
@@ -580,6 +627,7 @@ void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment
             IntersectionHit2D hit = simpleTraceAgainstSolidRoadSegment(v1, v2, newSegment);
             if (hit.didHit()) {
                 edges.first = false;
+                clearBlocked(segmentId, 0);
                 continue;
             }
         }
@@ -590,10 +638,12 @@ void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment
             IntersectionHit2D hit = simpleTraceAgainstSolidRoadSegment(v1, v2, newSegment);
             if (hit.didHit()) {
                 edges.second = false;
+                clearBlocked(segmentId, 1);
                 continue;
             }
         }
         if (!edges.first && !edges.second) {
+
             it = mExternalRoadSegments.erase(it);
         }
         else {
@@ -612,9 +662,57 @@ void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment
         external.second = true;
     }
 
+    // Helper
+    auto addBlockedRoad = [this, &ownerGrid, settlement](std::vector<ExternalRoadSegmentBlockedTile>& blockedList, ui8 width, DTileCoord startPos, DTileCoord endPos, RoadSegmentID segmentId) {
+        const i32AABB2 aabb = getAABBFromRoadSegment(width, width, startPos, endPos);
+        const i32v2 maxCoord = aabb.pos + aabb.dims;
+        const f32 desiredThickness = f32(width) * 0.5f + 1.0f; // Add a little extra
+        DTileCoord pos;
+        for (pos.y = aabb.pos.y; pos.y < maxCoord.y; ++pos.y) {
+            for (pos.x = aabb.pos.x; pos.x < maxCoord.x; ++pos.x) {
+                auto [closestSq, closestT] = MathUtil::computePointToLineSegmentDistanceSQAndT(pos.v, startPos.v, endPos.v);
+                if (closestSq <= SQ(desiredThickness)) {
+                    if (DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerDataForEditSimThread(pos)) {
+                        if (ownerData->ownerObjectType == DTileOwnerObjectType::ExternalRoadBlocked) {
+                            // Refcount
+                            ++ownerData->userData;
+                            blockedList.emplace_back(ExternalRoadSegmentBlockedTile{ pos, false });
+                        }
+                        else if (ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed) {
+                            mPlotManager->removePlotSeed(pos);
+                            blockedList.emplace_back(ExternalRoadSegmentBlockedTile{ pos, true });
+                            ownerData->ownerObjectType = DTileOwnerObjectType::ExternalRoadBlocked;
+                            ownerData->userData = 1;
+                        }
+                        else if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
+                            ownerGrid.setDTileOwner(pos, settlement, DTileOwnerObjectType::ExternalRoadBlocked, 1, true);
+                            blockedList.emplace_back(ExternalRoadSegmentBlockedTile{ pos, false });
+                        }
+                    }
+                    else {
+                        ownerGrid.setDTileOwner(pos, settlement, DTileOwnerObjectType::ExternalRoadBlocked, 1, true);
+                    }
+                }
+            }
+        }
+    };
+
+    constexpr f32 BLOCK_CAST_DISTANCE = 30.0f;
     if (external.first || external.second) {
         // New segment has not been added yet so its ID is the road segments list size
-        mExternalRoadSegments.emplace(mRoadSegments.size(), external);
-    }
+        const RoadSegmentID newSegmentId = mRoadSegments.size();
+        mExternalRoadSegments.emplace(newSegmentId, external);
+        auto& blockedTilesList = mExternalRoadSegmentBlockedTiles[newSegmentId];
 
+        if (external.first) {
+            const DTileCoord startPos = newSegment.segmentVerts[0];
+            const DTileCoord endPos = DTileCoord(i32v2(glm::round(f32v2(startPos.v) - newSegment.direction * BLOCK_CAST_DISTANCE)));
+            addBlockedRoad(blockedTilesList[0], newSegment.widthTiles[0], startPos, endPos, newSegmentId);
+        }
+        if (external.second) {
+            const DTileCoord startPos = newSegment.segmentVerts.back();
+            const DTileCoord endPos = DTileCoord(i32v2(glm::round(f32v2(startPos.v) + newSegment.direction * BLOCK_CAST_DISTANCE)));
+            addBlockedRoad(blockedTilesList[1], newSegment.widthTiles[1], startPos, endPos, newSegmentId);
+        }
+    }
 }

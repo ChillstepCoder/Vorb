@@ -10,9 +10,10 @@ class WorldMarkupGrid;
 enum class DTileOwnerObjectType : ui8 {
     None,
     Plot,
-    RoadEdge,
-    RoadPlotSeed,
-    Structure,
+    RoadEdge, // UserData = RoadSegmentID
+    RoadPlotSeed, // UserData = RoadSegmentID
+    Structure, 
+    ExternalRoadBlocked, // UserData = blockCount (Multiple roads can cover same index)
     COUNT
 };
 
@@ -21,7 +22,7 @@ enum class DTileOwnershipFlags : ui8 {
 };
 struct DTileOwnershipData {
     entt::entity owner = entt::null;
-    ui16 ownerObjectId = UINT16_MAX;
+    ui16 userData = UINT16_MAX; // Different use case based on object type
     DTileOwnerObjectType ownerObjectType = DTileOwnerObjectType::None;
     BitFlags<DTileOwnershipFlags> flags = {};
 };
@@ -51,6 +52,7 @@ public:
     ui32 getWidthDTiles() const { return mWidthDTiles; }
 
     const ChunkOwnershipData& getChunkSettlementOwnerData(ChunkID chunkId) const;
+    DTileOwnershipData* tryGetDTileOwnerDataForEditSimThread(DTileCoord dtilePosWorld);
     const DTileOwnershipData* tryGetDTileOwnerData(DTileCoord dtilePosWorld) const;
     const DTileOwnershipData* tryGetDTileOwnerData(ChunkID chunkId, DTileIndex tileIndex) const;
     bool isDTileOwned(DTileCoord dtilePosWorld) const;
@@ -61,7 +63,7 @@ public:
     entt::entity getChunkSettlementOwner(ChunkID chunkId) const;
 
     void setChunkSettlementOwner(ChunkID chunkId, entt::entity owner);
-    void setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned);
+    void setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData, bool isSettlementOwned);
 
     bool isChunkIsClaimed(ChunkID chunkId) const;
     void claimChunk(ChunkID chunkId);

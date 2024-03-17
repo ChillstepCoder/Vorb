@@ -13,14 +13,27 @@
 
 #include "world/settlement/SettlementDebugHelpers.inl"
 
+#include "world/settlement/SettlementPlotManager.h"
+#include "world/settlement/SettlementRoadNetwork.h"
+
+SettlementLayoutManager::SettlementLayoutManager() = default;
+SettlementLayoutManager::~SettlementLayoutManager() = default;
+
+SettlementLayoutManager::SettlementLayoutManager(SettlementLayoutManager&& o) = default;
+SettlementLayoutManager& SettlementLayoutManager::operator=(SettlementLayoutManager&& o) = default;
+
 bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos) {
+
+    mRoadNetwork = std::make_unique<SettlementRoadNetwork>(mRandomGenerator);
+    mPlotManager = std::make_unique<SettlementPlotManager>(mRandomGenerator);
+    mRoadNetwork->init(*mPlotManager);
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Settlement: " + std::to_string(dTilePos.v.x) + "," + std::to_string(dTilePos.v.y), VisualLogCategory::Settlement, true);
     if (visLog) {
         const TileCoord tPos(dTilePos);
         visLog->setCameraDistanceCheckPosOffset(f32v3(tPos.x, tPos.y, 0.0f));
         mCurrentVisLog = visLog;
-        mRoadNetwork.mCurrentVisLog = visLog;
+        mRoadNetwork->mCurrentVisLog = visLog;
     }
 
     mWorld = &world;
@@ -29,19 +42,15 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     assert(mSimEcs);
     mRootPos = dTilePos;
     assert(mSectors.empty());
-    mRoadNetwork.mRandomGenerator.setSeed(RandomGenerator::DEFAULT_SEED * (ui32)settlement + dTilePos.x ^ dTilePos.y);
+    mRandomGenerator.setSeed(RandomGenerator::DEFAULT_SEED * (ui32)settlement + dTilePos.x ^ dTilePos.y);
     mSectors.reserve(64);
     mOpenSectors.reserve(64);
-    mRoadNetwork.mRoadSegments.reserve(64);
+    mRoadNetwork->mRoadSegments.reserve(64);
 
     constexpr i32 INITIAL_LENGTH = 32;
     RoadGrid& roadGrid = world.getRoadGrid();
     OwnershipGrid& ownerGrid = world.getOwnershipGrid();
 
-    DTileCoord a(i32v2(45));
-    DTileCoord b(i32v2(55));
-    DTileCoord c = a + b;
-    
     constexpr f32 DESIRED_RADIUS = 16.f;
     constexpr f32 PADDED_RADIUS = DESIRED_RADIUS + 1.0f;
     ui32 addedCount = 0;
@@ -62,19 +71,19 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     if (mCurrentVisLog) {
         visLog->finish();
         mCurrentVisLog = nullptr;
-        mRoadNetwork.mCurrentVisLog = nullptr;
+        mRoadNetwork->mCurrentVisLog = nullptr;
     }
     return addedCount > 1;
 }
 
 bool SettlementLayoutManager::tryAddNewRandomSector() {
-    const f32 desiredRadius = 16.f + mRoadNetwork.mRandomGenerator.getRandomFloatUnsigned() * 8.0f;
+    const f32 desiredRadius = 16.f + mRandomGenerator.getRandomFloatUnsigned() * 8.0f;
     constexpr ui32 TRY_COUNT = 8;
     for (ui32 i = 0; i < TRY_COUNT; ++i) {
-        const ui32 sectorIndex = mRoadNetwork.mRandomGenerator.getRandomUIntInRange(0, mSectors.size());
+        const ui32 sectorIndex = mRandomGenerator.getRandomUIntInRange(0, mSectors.size());
         const SettlementSector& sector = mSectors[sectorIndex];
         const f32 distance = sector.desiredRadius + desiredRadius + 2.0f;
-        const f32 angle = mRoadNetwork.mRandomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
+        const f32 angle = mRandomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
         // TODO: GetNormalDir util
         const f32v2 offset = MathUtil::rotateVector2DRad(f32v2(distance, 0.0f), angle);
         const DTileCoord newPos = sector.center + DTileCoord(i32v2(glm::round(offset)));
@@ -134,11 +143,11 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius)
     bool didAddRoad = false;
     for (ui32 i = 0; i < MAX_ROADS_ADDED && it != sectorDistances.end(); ++i, ++it) {
         const SettlementSector& otherSector = mSectors[it->second];
-        if (!mRoadNetwork.simpleTraceAgainstSolidRoadSegments(newSector.center.v, otherSector.center.v)) {
+        if (!mRoadNetwork->simpleTraceAgainstSolidRoadSegments(newSector.center.v, otherSector.center.v)) {
             helperAddVisLogLineBetweenCoords(mCurrentVisLog, newSector.center, otherSector.center, mWorld, color::Green);
             // Clear line of sight to other sector, now try making a road
             const f32 distanceRatio = newSector.desiredRadius / (newSector.desiredRadius + otherSector.desiredRadius);
-            didAddRoad |= mRoadNetwork.tryAddRoadBetweenSectorPoints(
+            didAddRoad |= mRoadNetwork->tryAddRoadBetweenSectorPoints(
                 *mWorld,
                 mSettlementEntity,
                 newSector.center,
@@ -208,10 +217,13 @@ void SettlementLayoutManager::debugDraw() const {
                         case DTileOwnerObjectType::Structure:
                             dcolor = color::DarkGreen;
                             break;
+                        case DTileOwnerObjectType::ExternalRoadBlocked:
+                            dcolor = color::DarkGray;
+                            break;
                         default:
                             break;
                     }
-                    static_assert(e_count(DTileOwnerObjectType) == 5);
+                    static_assert(e_count(DTileOwnerObjectType) == 6);
 
                     DebugRenderer::drawWireQuadThreadSafe(aabbWorldPos, f32v2(aabb.z, aabb.w), dcolor, FRAME_COUNT);
                 }
@@ -227,7 +239,7 @@ void SettlementLayoutManager::debugDraw() const {
     
     // Roads
     ui32 i = 0;
-    for (auto& segment : mRoadNetwork.mRoadSegments) {
+    for (auto& segment : mRoadNetwork->mRoadSegments) {
         f32v3 worldPosA = helperGetWorldPosFromDTileCoord(segment.segmentVerts[0], mWorld);
         f32v3 worldPosB = helperGetWorldPosFromDTileCoord(segment.segmentVerts.back(), mWorld);
         f32v3 infiniteRayOffset(segment.direction.x, segment.direction.y, 0.0f);
@@ -242,8 +254,8 @@ void SettlementLayoutManager::debugDraw() const {
     }
 
     // External roads
-    for (auto& [segmentId, edges] : mRoadNetwork.mExternalRoadSegments) {
-        const RoadSegment& segment = mRoadNetwork.mRoadSegments[segmentId];
+    for (auto& [segmentId, edges] : mRoadNetwork->mExternalRoadSegments) {
+        const RoadSegment& segment = mRoadNetwork->mRoadSegments[segmentId];
         const f32v3 infiniteRayOffset(segment.direction.x * 2.0f, segment.direction.y * 2.0f, 0.0f);
         if (edges.first) {
             const f32v3 worldPosA = helperGetWorldPosFromDTileCoord(segment.segmentVerts[0], mWorld);

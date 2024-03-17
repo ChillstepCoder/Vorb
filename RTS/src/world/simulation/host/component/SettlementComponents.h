@@ -93,6 +93,7 @@ struct SettlementWorkOrdersComponent {
 
 };
 
+// Handles plots, roads, structures
 struct SettlementLayoutComponent {
     i32v2 rootPos;
     SettlementLayoutManager manager;

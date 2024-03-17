@@ -1,20 +1,17 @@
 #pragma once
 
-#include "math/Random.h"
 #include "util/IntersectionHit.h"
 
 class World;
 class RandomGenerator;
 class VisualLog;
+class SettlementPlotManager;
 
 // TODO: RoadGrid needs access to this
 enum class RoadType : ui8 {
     Dirt,
     COUNT
 };
-
-typedef ui32 RoadSegmentID;
-constexpr RoadSegmentID INVALID_ROAD_SEGMENT_ID = std::numeric_limits<RoadSegmentID>::max();
 
 enum class RoadSegmentType : ui8 {
     Segment,
@@ -30,8 +27,7 @@ struct RoadPointNeedingConstruct {
 };
 
 struct RoadSegment {
-    std::unordered_set<DTileCoord> plotSeeds;
-    std::vector<RoadPointNeedingConstruct> roadPointsNeedingConstruct;
+    std::vector<RoadPointNeedingConstruct> roadPointsNeedingConstruct; // TODO: Move out? This eventually becomes permanently empty
     std::vector<StructureID> attachedStructures; // TODO Store attach point so its easy to split roads?
     std::vector<std::pair<RoadSegmentID, f32/*time*/>> attachedEdges;
     std::vector<DTileCoord> segmentVerts;
@@ -58,10 +54,19 @@ struct RoadSegmentIntersectBestHits {
     RoadSegmentHitResult positiveInfiniteHit;
 };
 
+struct ExternalRoadSegmentBlockedTile {
+    DTileCoord pos;
+    bool wasPlotSeed;
+};
 
+// Handles roads and generates plot seeds
 class SettlementRoadNetwork {
     friend class SettlementLayoutManager;
+public:
+    SettlementRoadNetwork(RandomGenerator& randomGenerator);
+    ~SettlementRoadNetwork();
 private:
+    void init(SettlementPlotManager& plotManager);
     // Return true if we hit ANY segment, ignores infinite edges
     bool simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end);
     IntersectionHit2D simpleTraceAgainstSolidRoadSegment(f32v2 start, f32v2 end, const RoadSegment& segment);
@@ -72,11 +77,13 @@ private:
 
     bool tryPlaceRoadInternal(World& world, entt::entity settlement, RoadSegment&& newSegment);
     void updateRoadSegmentType(RoadSegment& segment);
-    void refreshExternalRoadsInternal(RoadSegment& newSegment);
+    void refreshExternalRoadsInternal(World& world, RoadSegment& newSegment, entt::entity settlement);
 
     std::vector<RoadSegment> mRoadSegments;
     // Represents road segments that should connect to other cities or extend to more districts
     boost::container::flat_map<RoadSegmentID, std::pair<bool, bool>> mExternalRoadSegments;
-    RandomGenerator mRandomGenerator;
+    std::map<RoadSegmentID, std::vector<ExternalRoadSegmentBlockedTile>[2]> mExternalRoadSegmentBlockedTiles;
+    RandomGenerator& mRandomGenerator;
     VisualLog* mCurrentVisLog = nullptr;
+    SettlementPlotManager* mPlotManager = nullptr;
 };

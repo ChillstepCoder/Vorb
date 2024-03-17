@@ -1,51 +1,54 @@
 #pragma once
 
 typedef ui32 ModelID;
-constexpr ModelID INVALID_MODEL_ID = UINT32_MAX;
+constexpr ModelID INVALID_MODEL_ID = std::numeric_limits<ModelID>::max();
 
 typedef ui32 RegionID;
-constexpr RegionID INVALID_REGION_ID = UINT32_MAX;
+constexpr RegionID INVALID_REGION_ID = std::numeric_limits<RegionID>::max();
 
 typedef GLuint64 TextureHandle;
 typedef ui16 MaterialID;
-constexpr ui16 INVALID_MATERIAL_ID = UINT16_MAX;
+constexpr ui16 INVALID_MATERIAL_ID = std::numeric_limits<MaterialID>::max();
 
 typedef ui32 StructureID;
-constexpr StructureID INVALID_STRUCTURE_ID = UINT32_MAX;
+constexpr StructureID INVALID_STRUCTURE_ID = std::numeric_limits<StructureID>::max();
 
 typedef ui32 ItemStockpileID;
-constexpr ItemStockpileID INVALID_ITEM_STOCKPILE_ID = UINT32_MAX;
+constexpr ItemStockpileID INVALID_ITEM_STOCKPILE_ID = std::numeric_limits<ItemStockpileID>::max();
 
 typedef ui32 ContractID;
-constexpr ContractID INVALID_CONTRACT_ID = UINT32_MAX;
+constexpr ContractID INVALID_CONTRACT_ID = std::numeric_limits<ContractID>::max();
 
 typedef ui32 ParticleID;
-constexpr ParticleID INVALID_PARTICLE_ID = UINT32_MAX;
+constexpr ParticleID INVALID_PARTICLE_ID = std::numeric_limits<ParticleID>::max();
 
 typedef ui32 AssetID;
-constexpr AssetID INVALID_ASSET_ID = UINT32_MAX;
+constexpr AssetID INVALID_ASSET_ID = std::numeric_limits<AssetID>::max();
 
 typedef ui8 TileGrassID;
-constexpr TileGrassID INVALID_TILE_GRASS_ID = UINT8_MAX;
+constexpr TileGrassID INVALID_TILE_GRASS_ID = std::numeric_limits<TileGrassID>::max();
 constexpr ui32 MAX_TILE_GRASS_IDS = 0xff;
 
 typedef ui32 HeightmapPatchID;
 typedef ui32 ChunkID;
 typedef ui32 LiteChunkID;
-constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;
+constexpr ui32 INVALID_CHUNK_ID = std::numeric_limits<ChunkID>::max();
 
 typedef ui32 WorldID;
-constexpr WorldID INVALID_WORLD_ID = UINT32_MAX;
+constexpr WorldID INVALID_WORLD_ID = std::numeric_limits<WorldID>::max();
 
 typedef ui32 FactionID;
-constexpr ui32 INVALID_FACTION_ID = UINT32_MAX;
+constexpr ui32 INVALID_FACTION_ID = std::numeric_limits<FactionID>::max();
 
 typedef ui32 ServerPlayerID;
 
 typedef ui64 TimestampMs;
 
 typedef ui32 BodyID;
-constexpr ui32 INVALID_BODY_ID = UINT32_MAX;
+constexpr ui32 INVALID_BODY_ID = std::numeric_limits<BodyID>::max();
+
+typedef ui32 RoadSegmentID;
+constexpr RoadSegmentID INVALID_ROAD_SEGMENT_ID = std::numeric_limits<RoadSegmentID>::max();
 
 // UIDs
 typedef ui16 BusinessID; // No more than 65535 businesses per city
@@ -54,9 +57,9 @@ typedef ui32 SettlementUID;
 typedef ui64 CharacterUID;
 typedef ui64 BuildingUID;
 
-constexpr ui16 INVALID_BUSINESS_ID = UINT16_MAX; static_assert(sizeof(BusinessID) == sizeof(ui16));
-constexpr ui32 INVALID_CITY_UID = UINT32_MAX; static_assert(sizeof(CityUID) == sizeof(ui32));
-constexpr ui32 INVALID_SETTLEMENT_UID = UINT32_MAX; static_assert(sizeof(SettlementUID) == sizeof(ui32));
-constexpr ui64 INVALID_BUILDING_UID = UINT64_MAX; static_assert(sizeof(BuildingUID) == sizeof(ui64));
-constexpr ui64 INVALID_CHARACTER_UID = UINT64_MAX; static_assert(sizeof(CharacterUID) == sizeof(ui64));
+constexpr ui16 INVALID_BUSINESS_ID = std::numeric_limits<BusinessID>::max(); static_assert(sizeof(BusinessID) == sizeof(ui16));
+constexpr ui32 INVALID_CITY_UID = std::numeric_limits<CityUID>::max(); static_assert(sizeof(CityUID) == sizeof(ui32));
+constexpr ui32 INVALID_SETTLEMENT_UID = std::numeric_limits<SettlementUID>::max(); static_assert(sizeof(SettlementUID) == sizeof(ui32));
+constexpr ui64 INVALID_BUILDING_UID = std::numeric_limits<BuildingUID>::max(); static_assert(sizeof(BuildingUID) == sizeof(ui64));
+constexpr ui64 INVALID_CHARACTER_UID = std::numeric_limits<CharacterUID>::max(); static_assert(sizeof(CharacterUID) == sizeof(ui64));
 

@@ -28,6 +28,20 @@ const ChunkOwnershipData& OwnershipGrid::getChunkSettlementOwnerData(ChunkID chu
     return mChunkOwners[chunkId];
 }
 
+DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerDataForEditSimThread(DTileCoord dtilePosWorld) {
+    ASSERT_SIM_THREAD();
+    if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
+        return nullptr;
+    }
+    const ChunkID chunkId = (dtilePosWorld.y / CHUNK_WIDTH_DTILES) * mWidthChunks + (dtilePosWorld.x / CHUNK_WIDTH_DTILES);
+
+    ChunkOwnershipData& data = mChunkOwners[chunkId];
+    if (!data.dtileData) {
+        return nullptr;
+    }
+    return &data.dtileData[(dtilePosWorld.y % CHUNK_WIDTH_DTILES) * CHUNK_WIDTH_DTILES + dtilePosWorld.x % CHUNK_WIDTH_DTILES];
+}
+
 const DTileOwnershipData* OwnershipGrid::tryGetDTileOwnerData(DTileCoord dtilePosWorld) const {
     ASSERT_SIM_THREAD();
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
@@ -83,7 +97,7 @@ void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner)
     mClaimedChunks.setBit(chunkId);
 }
 
-void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 ownerObjectId, bool isSettlementOwned) {
+void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData, bool isSettlementOwned) {
     ASSERT_SIM_THREAD();
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
         LOG_CRITICAL("Tried to set dtile owner at world pos {} {} OUT OF BOUNDS", dtilePosWorld.x, dtilePosWorld.y);
@@ -95,7 +109,7 @@ void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, 
     allocateTileDataIfNeeded(data);
     DTileOwnershipData& tileData = data.dtileData[(dtilePosWorld.y % CHUNK_WIDTH_DTILES) * CHUNK_WIDTH_DTILES + dtilePosWorld.x % CHUNK_WIDTH_DTILES];
     tileData.owner = owner;
-    tileData.ownerObjectId = ownerObjectId;
+    tileData.userData = userData;
     tileData.ownerObjectType = type;
     if (isSettlementOwned) {
         tileData.flags.setBit(DTileOwnershipFlags::OwnedBySettlement);

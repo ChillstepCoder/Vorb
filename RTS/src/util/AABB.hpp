@@ -1,119 +1,99 @@
 #pragma once
 
-struct i32AABB3 {
-    i32AABB3() = default;
-    i32AABB3(i32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};
-    i32AABB3(i32 x, i32 y, i32 z, i32 width, i32 depth, i32 height) : x(x), y(y), z(z), width(width), depth(depth), height(height) {};
+template<typename T, int Dimensions>
+struct AABB;
 
-    i32& operator[](int i) { return data[i]; }
+template<typename T>
+using VVec2 = glm::vec<2, T, glm::defaultp>; // Assuming these are defined elsewhere.
+template<typename T>
+using VVec3 = glm::vec<3, T, glm::defaultp>;
+template<typename T>
+using VVec4 = glm::vec<4, T, glm::defaultp>;
 
-    i32v3 getCenter() const { return pos + dims / 2; }
-    i32 getMaxX() const { return x + width; }
-    i32 getMaxY() const { return y + depth; }
-    i32 getMaxZ() const { return z + height; }
-    i32 getMax(i32 d) const { return pos[d] + dims[d]; }
+template<typename T>
+struct AABB<T, 2> {
+    AABB() = default;
+    AABB(T v) : x(v), y(v), width(v), depth(v) {}
+    AABB(T x, T y, T width, T depth) : x(x), y(y), width(width), depth(depth) {}
+    template<typename U>
+    AABB(const AABB<U, 3>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)), width(static_cast<T>(other.width)), depth(static_cast<T>(other.depth)) {}
 
-    union {
-        i32 data[6];
-        struct {
-            union {
-                struct {
-                    i32 x;
-                    i32 y;
-                    i32 z;
-                };
-                i32v3 pos;
-            };
-            union {
-                struct {
-                    i32 width;
-                    i32 depth;
-                    i32 height;
-                };
-                i32v3 dims;
-            };
-        };
-    };
-};
+    T& operator[](int i) { return data[i]; }
+    bool operator==(const AABB& other) const { return x == other.x && y == other.y && width == other.width && depth == other.depth; }
 
-struct i32AABB2 {
-    i32AABB2() = default;
-    i32AABB2(i32 v) : x(v), y(v), width(v), depth(v) {};
-    i32AABB2(i32 x, i32 y, i32 width, i32 depth) : x(x), y(y), width(width), depth(depth) {};
-    i32AABB2(const i32AABB3& other) : x(other.x), y(other.y), width(other.width), depth(other.depth) {};
-
-    i32& operator[](int i) { return data[i]; }
-    bool operator==(const i32AABB2& other) { return data == other.data; }
-
-    const i32v2& getBottomLeft() const { return pos; }
-    i32v2 getCenter() const { return pos + dims / 2i32; }
-    i32v2 getTopLeft() const { return pos + i32v2(0, dims.y); };
-    i32v2 getTopRight() const { return pos + dims; };
-    i32v2 getBottomRight() const { return pos + i32v2(dims.x, 0); };
-    void getCorners(i32v2 aabbCorners[4]) const {
+    VVec2<T> getBottomLeft() const { return pos; }
+    VVec2<T> getCenter() const { return pos + dims / T(2); }
+    VVec2<T> getTopLeft() const { return pos + VVec2<T>(0, dims.y); }
+    VVec2<T> getTopRight() const { return pos + dims; }
+    VVec2<T> getBottomRight() const { return pos + VVec2<T>(dims.x, 0); }
+    void getCorners(VVec2<T> aabbCorners[4]) const {
         aabbCorners[0] = { x, y };
         aabbCorners[1] = { x + width, y };
         aabbCorners[2] = { x, y + depth };
         aabbCorners[3] = { x + width, y + depth };
     }
+    inline bool pointIsWithin(VVec2<T> point) {
+        return point.x >= x && point.y >= y && point.x < x + width && point.y < y + depth;
+    }
 
     union {
-        i32v4 data;
+        VVec4<T> data;
         struct {
             union {
                 struct {
-                    i32 x;
-                    i32 y;
+                    T x, y;
                 };
-                i32v2 pos;
+                VVec2<T> pos;
             };
             union {
                 struct {
-                    i32 width;
-                    i32 depth;
+                    T width, depth;
                 };
-                i32v2 dims;
+                VVec2<T> dims;
             };
         };
     };
 };
 
-struct f32AABB3 {
-    f32AABB3() = default;
-    f32AABB3(f32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};
-    f32AABB3(f32 x, f32 y, f32 z, f32 width, f32 depth, f32 height) : x(x), y(y), z(z), width(width), depth(depth), height(height) {};
-    f32AABB3(f32v3 pos, f32v3 dims) : pos(pos), dims(dims) {};
+template<typename T>
+struct AABB<T, 3> {
+    AABB() = default;
+    AABB(T v) : x(v), y(v), z(v), width(v), depth(v), height(v) {}
+    AABB(T x, T y, T z, T width, T depth, T height) : x(x), y(y), z(z), width(width), depth(depth), height(height) {}
+    AABB(VVec3<T> pos, VVec3<T> dims) : pos(pos), dims(dims) {}
 
-    f32& operator[](int i) { return data[i]; }
+    T& operator[](int i) { return data[i]; }
 
-    f32v3 getCenter() const { return pos + dims / 2.0f; }
-    f32 getMaxX() const { return x + width; }
-    f32 getMaxY() const { return y + depth; }
-    f32 getMaxZ() const { return z + height; }
-    f32 getMax(ui32 d) const { return pos[d] + dims[d]; }
+    VVec3<T> getCenter() const { return pos + dims / T(2); }
+    T getMaxX() const { return x + width; }
+    T getMaxY() const { return y + depth; }
+    T getMaxZ() const { return z + height; }
+    T getMax(T d) const { return pos[d] + dims[d]; }
 
     union {
-        f32 data[6];
+        T data[6];
         struct {
             union {
                 struct {
-                    f32 x;
-                    f32 y;
-                    f32 z;
+                    T x, y, z;
                 };
-                f32v3 pos;
+                VVec3<T> pos;
             };
             union {
                 struct {
-                    f32 width;
-                    f32 depth;
-                    f32 height;
+                    T width, depth, height;
                 };
-                f32v3 dims;
+                VVec3<T> dims;
             };
         };
     };
 };
+using i16AABB2 = AABB<i16, 2>;
+using i16AABB3 = AABB<i16, 3>;
+using i32AABB2 = AABB<i32, 2>;
+using i32AABB3 = AABB<i32, 3>;
+using f32AABB2 = AABB<f32, 2>;
+using f32AABB3 = AABB<f32, 3>;
 
 struct BoundingSphere {
     f32v3 center = f32v3(0.0f);

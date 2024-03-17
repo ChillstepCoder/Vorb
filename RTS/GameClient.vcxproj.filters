@@ -1047,6 +1047,9 @@
     <ClCompile Include="src\world\settlement\SettlementRoadNetwork.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\settlement\SettlementPlotManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2568,6 +2571,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\settlement\SettlementPlotManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,8 +1,12 @@
 #pragma once
 
-#include "SettlementRoadNetwork.h"
+#include "math/Random.h"
 
+class World;
+class SettlementRoadNetwork;
+class SettlementPlotManager;
 class SimECS;
+class VisualLog;
 
 typedef ui32 SettlementSectorID;
 constexpr SettlementSectorID INVALID_SECTOR_ID = std::numeric_limits<SettlementSectorID>::max();
@@ -27,6 +31,14 @@ struct SettlementSector {
 // TODO: Inside SettlementLayoutComponent
 class SettlementLayoutManager {
 public:
+    SettlementLayoutManager();
+    ~SettlementLayoutManager();
+    // move must be defined in cpp due to std::unique_ptrs
+    SettlementLayoutManager(SettlementLayoutManager&& o);
+    SettlementLayoutManager& operator=(SettlementLayoutManager&& o);
+
+    VORB_NON_COPYABLE(SettlementLayoutManager);
+
     bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
     bool tryAddNewRandomSector();
     bool tryAddSector(DTileCoord center, f32 desiredRadius);
@@ -35,10 +47,12 @@ public:
 
     std::vector<SettlementSector> mSectors;
     std::vector<ui32> mOpenSectors; // Sectors that have at least one road edge to infinity
-    SettlementRoadNetwork mRoadNetwork;
+    std::unique_ptr<SettlementPlotManager> mPlotManager;
+    std::unique_ptr<SettlementRoadNetwork> mRoadNetwork;
     entt::entity mSettlementEntity = entt::null;
     World* mWorld = nullptr;
     SimECS* mSimEcs = nullptr;
     DTileCoord mRootPos;
     VisualLog* mCurrentVisLog = nullptr;
+    RandomGenerator mRandomGenerator;
 };
