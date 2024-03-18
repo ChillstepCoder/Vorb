@@ -2576,6 +2576,9 @@
     <ClInclude Include="src\world\settlement\SettlementPlotManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\settlement\SettlementZone.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

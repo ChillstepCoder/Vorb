@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr ui16 MAX_ITEM_RESERVATION_SIZE = 65536;
+constexpr ui16 MAX_ITEM_RESERVATION_SIZE = UINT16_MAX;
 
 enum class InventoryBagType : ui8 {
     Resources,

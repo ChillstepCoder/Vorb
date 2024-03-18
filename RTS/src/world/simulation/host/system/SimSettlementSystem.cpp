@@ -66,11 +66,12 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
 
     entt::entity settlementEntity = mRegistry.create();
 
-    ownershipGrid.setChunkSettlementOwner(rootChunk, settlementEntity);
+    // This will add a ChunkOwnershipComponent
+    // TODO: What if already owned?
+    ownershipGrid.setChunkOwner(rootChunk, settlementEntity);
 
     // Add components
     SettlementDetailsComponent& detailsCmp = mRegistry.emplace<SettlementDetailsComponent>(settlementEntity);
-    detailsCmp.ownedChunks.emplace_back(rootChunk);
 
     SettlementSimComponent& simCmp = mRegistry.emplace<SettlementSimComponent>(settlementEntity);
     simCmp.uid = mUIDGen++;

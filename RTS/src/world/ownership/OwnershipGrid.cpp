@@ -3,7 +3,12 @@
 
 #include "world/markup/WorldMarkupGrid.h"
 
-OwnershipGrid::OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid) : mMarkupGrid(markupGrid){
+#include "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/SimECS.h"
+#include "world/simulation/host/component/SettlementComponents.h"
+
+OwnershipGrid::OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid) 
+    : mMarkupGrid(markupGrid) {
     mWidthDTiles = worldWidthTiles / DTILE_WIDTH;
     mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
     mTotalDTiles = SQ(mWidthDTiles);
@@ -13,9 +18,9 @@ OwnershipGrid::OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid) 
 
 OwnershipGrid::~OwnershipGrid() = default;
 
-void OwnershipGrid::setChunkOwner(ChunkID chunkId, entt::entity owner) {
-    ASSERT_SIM_THREAD();
-    mChunkOwners[chunkId].owner = owner;
+void OwnershipGrid::init(HostSimContext& simContext) {
+    mSimContext = &simContext;
+    mSimECS = &simContext.getECS();
 }
 
 entt::entity OwnershipGrid::getChunkOwner(ChunkID chunkId) const {
@@ -89,12 +94,39 @@ entt::entity OwnershipGrid::getChunkSettlementOwner(ChunkID chunkId) const {
     return mChunkOwners[chunkId].owner;
 }
 
-void OwnershipGrid::setChunkSettlementOwner(ChunkID chunkId, entt::entity owner) {
+void OwnershipGrid::setChunkOwner(ChunkID chunkId, entt::entity owner) {
     ASSERT_SIM_THREAD();
     ChunkOwnershipData& data = mChunkOwners[chunkId];
-    data.owner = owner;
-    allocateTileDataIfNeeded(data);
-    mClaimedChunks.setBit(chunkId);
+    if (data.owner != owner) {
+        entt::registry& registry = mSimECS->getRegistrySimThread();
+        if (data.owner != entt::null) {
+            // Remove from old owner
+            ChunkOwnershipComponent& cmp = registry.get<ChunkOwnershipComponent>(data.owner);
+            for (size_t i = 0; i < cmp.ownedChunks.size(); ++i) {
+                if (cmp.ownedChunks[i] == chunkId) {
+                    cmp.ownedChunks[i] = cmp.ownedChunks.back();
+                    cmp.ownedChunks.pop_back();
+                    break;
+                }
+            }
+        }
+        registry.get_or_emplace<ChunkOwnershipComponent>(owner).ownedChunks.emplace_back(chunkId);
+        data.owner = owner;
+        allocateTileDataIfNeeded(data);
+        mClaimedChunks.setBit(chunkId);
+    }
+}
+
+void OwnershipGrid::setChunkOwnerIfUnowned(ChunkID chunkId, entt::entity owner) {
+    ASSERT_SIM_THREAD();
+    ChunkOwnershipData& data = mChunkOwners[chunkId];
+    if (data.owner == entt::null) {
+        entt::registry& registry = mSimECS->getRegistrySimThread();
+        registry.get_or_emplace<ChunkOwnershipComponent>(owner).ownedChunks.emplace_back(chunkId);
+        data.owner = owner;
+        allocateTileDataIfNeeded(data);
+        mClaimedChunks.setBit(chunkId);
+    }
 }
 
 void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData, bool isSettlementOwned) {
@@ -105,8 +137,10 @@ void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, 
     }
     const ChunkID chunkId = (dtilePosWorld.y / CHUNK_WIDTH_DTILES) * mWidthChunks + (dtilePosWorld.x / CHUNK_WIDTH_DTILES);
 
+    // Claim the chunk
+    setChunkOwnerIfUnowned(chunkId, owner);
+
     ChunkOwnershipData& data = mChunkOwners[chunkId];
-    allocateTileDataIfNeeded(data);
     DTileOwnershipData& tileData = data.dtileData[(dtilePosWorld.y % CHUNK_WIDTH_DTILES) * CHUNK_WIDTH_DTILES + dtilePosWorld.x % CHUNK_WIDTH_DTILES];
     tileData.owner = owner;
     tileData.userData = userData;

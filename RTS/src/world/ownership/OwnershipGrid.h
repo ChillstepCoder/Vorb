@@ -6,6 +6,8 @@
 #include <boost/container/flat_map.hpp>
 
 class WorldMarkupGrid;
+class HostSimContext;
+class SimECS;
 
 enum class DTileOwnerObjectType : ui8 {
     None,
@@ -43,9 +45,10 @@ public:
     OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid);
     ~OwnershipGrid();
 
+    void init(HostSimContext& simContext);
+
     VORB_NON_COPYABLE(OwnershipGrid);
 
-    void setChunkOwner(ChunkID chunkId, entt::entity owner);
     entt::entity getChunkOwner(ChunkID chunkId) const;
 
     ui32 getTotalDTiles() const { return mTotalDTiles; }
@@ -62,7 +65,8 @@ public:
     // Returns entt::null if no owner
     entt::entity getChunkSettlementOwner(ChunkID chunkId) const;
 
-    void setChunkSettlementOwner(ChunkID chunkId, entt::entity owner);
+    void setChunkOwner(ChunkID chunkId, entt::entity owner);
+    void setChunkOwnerIfUnowned(ChunkID chunkId, entt::entity owner);
     void setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData, bool isSettlementOwned);
 
     bool isChunkIsClaimed(ChunkID chunkId) const;
@@ -76,6 +80,8 @@ private:
     bool allocateTileDataIfNeeded(ChunkOwnershipData& data);
 
     WorldMarkupGrid& mMarkupGrid;
+    HostSimContext* mSimContext = nullptr;
+    SimECS* mSimECS = nullptr;
 
     std::unique_ptr<ChunkOwnershipData[]> mChunkOwners;
     BitArray mClaimedChunks; // Chunks that someone is planning to immigrate to 

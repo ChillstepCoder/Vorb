@@ -59,8 +59,13 @@ public:
     Derived operator-(const Derived& other) const { return Derived(v - other.v ); }
     Derived operator*(const i32& other) const { return Derived(v * other ); }
     Derived operator/(const i32& other) const { return Derived(v / other ); }
-    auto operator<=>(const CoordinateBase<Derived>& other) const;
 
+    bool operator<(const CoordinateBase<Derived>& other) const {
+        if (v.x < other.v.x) return true;
+        if (v.x > other.v.x) return false;
+        if (v.y < other.v.y) return true;
+        return false;
+    }
     bool operator==(const CoordinateBase<Derived>& other) const {
         return v.x == other.v.x && v.y == other.v.y;
     }

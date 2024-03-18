@@ -156,10 +156,14 @@ void VisualLog::addText(const nString& str, const f32v3& rootPosition, f32 glyph
 }
 
 void VisualLog::finish() {
-    assert(mRenderStepInfo.size());
-    mRenderStepInfo.back().end();
+    if (mRenderStepInfo.size()) [[likely]] {
+        mRenderStepInfo.back().end();
+        mShapesToRender = mRenderStepInfo[0].shapeCount;
+    }
+    else {
+        mShapesToRender = 0;
+    }
     mSelectedRenderStep = 0;
-    mShapesToRender = mRenderStepInfo[0].shapeCount;
     mFinishedBuilding = true;
     mDirtyRender = true;
 }

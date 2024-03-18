@@ -12,7 +12,7 @@ public:
      * @param g: Green value
      * @param b: Blue value
      */
-    ColorRGB8(ui8 r, ui8 g, ui8 b) :
+    constexpr ColorRGB8(ui8 r, ui8 g, ui8 b) :
         r(r), g(g), b(b) {
         // Empty
     }
@@ -24,7 +24,7 @@ public:
      * @param g: Green value
      * @param b: Blue value
      */
-    explicit ColorRGB8(i32 r, i32 g, i32 b) : ColorRGB8(static_cast<ui8>(r), static_cast<ui8>(g), static_cast<ui8>(b)) {
+    constexpr explicit ColorRGB8(i32 r, i32 g, i32 b) : ColorRGB8(static_cast<ui8>(r), static_cast<ui8>(g), static_cast<ui8>(b)) {
         // Empty
     }
     /*! @brief Construct a color from floating point values
@@ -36,7 +36,7 @@ public:
      * @param g: Green value
      * @param b: Blue value
      */
-    explicit ColorRGB8(f32 r, f32 g, f32 b) : ColorRGB8(
+    constexpr explicit ColorRGB8(f32 r, f32 g, f32 b) : ColorRGB8(
         static_cast<ui8>(r * 255.0f),
         static_cast<ui8>(g * 255.0f),
         static_cast<ui8>(b * 255.0f)) {
@@ -113,21 +113,21 @@ typedef ColorRGB8 color3; ///< Shortened name for ColorRGB8
 struct ColorRGBA8 {
 public:
 
-    ColorRGBA8() : r(0), g(0), b(0), a(255) {
+    constexpr ColorRGBA8() : r(0), g(0), b(0), a(255) {
         // Empty
     }
-    ColorRGBA8(ui8 v) :
+    constexpr ColorRGBA8(ui8 v) :
         r(v), g(v), b(v), a(0xffu) {
         // Empty
     }
-    ColorRGBA8(ui8 r, ui8 g, ui8 b, ui8 a = 0xffu) :
+    constexpr ColorRGBA8(ui8 r, ui8 g, ui8 b, ui8 a = 0xffu) :
         r(r), g(g), b(b), a(a) {
         // Empty
     }
-    explicit ColorRGBA8(i32 r, i32 g, i32 b, i32 a = 255) : ColorRGBA8((ui8)r, (ui8)g, (ui8)b, (ui8)a) {
+    constexpr explicit ColorRGBA8(i32 r, i32 g, i32 b, i32 a = 255) : ColorRGBA8((ui8)r, (ui8)g, (ui8)b, (ui8)a) {
         // Empty
     }
-    explicit ColorRGBA8(f32 r, f32 g, f32 b, f32 a = 1.0f) : ColorRGBA8(
+    constexpr explicit ColorRGBA8(f32 r, f32 g, f32 b, f32 a = 1.0f) : ColorRGBA8(
         ((ui8)(r * 255.0f)),
         ((ui8)(g * 255.0f)),
         ((ui8)(b * 255.0f)),
@@ -135,7 +135,7 @@ public:
         // Empty
     }
 
-    explicit ColorRGBA8(f32v4 inpt) : ColorRGBA8(
+    constexpr explicit ColorRGBA8(f32v4 inpt) : ColorRGBA8(
         ((ui8)(inpt.r * 255.0f)),
         ((ui8)(inpt.g * 255.0f)),
         ((ui8)(inpt.b * 255.0f)),

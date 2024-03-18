@@ -22,10 +22,14 @@ SettlementLayoutManager::~SettlementLayoutManager() = default;
 SettlementLayoutManager::SettlementLayoutManager(SettlementLayoutManager&& o) = default;
 SettlementLayoutManager& SettlementLayoutManager::operator=(SettlementLayoutManager&& o) = default;
 
+constexpr f32 INITIAL_GOVERNMENT_RADIUS = 60.f;
+
 bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos) {
 
-    mRoadNetwork = std::make_unique<SettlementRoadNetwork>(mRandomGenerator);
-    mPlotManager = std::make_unique<SettlementPlotManager>(mRandomGenerator);
+    mSettlementOrientation = MathUtil::rotateVector2DRad(f32v2(1.0f, 0.0f), mRandomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>());
+
+    mRoadNetwork = std::make_unique<SettlementRoadNetwork>(world, mRandomGenerator);
+    mPlotManager = std::make_unique<SettlementPlotManager>(world, mRandomGenerator);
     mRoadNetwork->init(*mPlotManager);
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Settlement: " + std::to_string(dTilePos.v.x) + "," + std::to_string(dTilePos.v.y), VisualLogCategory::Settlement, true);
@@ -47,15 +51,17 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     mOpenSectors.reserve(64);
     mRoadNetwork->mRoadSegments.reserve(64);
 
-    constexpr i32 INITIAL_LENGTH = 32;
     RoadGrid& roadGrid = world.getRoadGrid();
     OwnershipGrid& ownerGrid = world.getOwnershipGrid();
 
-    constexpr f32 DESIRED_RADIUS = 16.f;
-    constexpr f32 PADDED_RADIUS = DESIRED_RADIUS + 1.0f;
-    ui32 addedCount = 0;
+    //constexpr f32 DESIRED_RADIUS = INITIAL_GOVERNMENT_RADIUS;
+    //constexpr f32 PADDED_RADIUS = DESIRED_RADIUS + 1.0f;
 
-    addedCount += (i32)tryAddSector(dTilePos + DTileCoord(PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
+    if (!tryAddSector(dTilePos, INITIAL_GOVERNMENT_RADIUS, SettlementZone::Government)) [[unlikely]] {
+        panic("Failed to add first sector for settlement");
+    }
+    ui32 addedCount = 1;
+
     //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
     //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
     //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
@@ -77,24 +83,38 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
 }
 
 bool SettlementLayoutManager::tryAddNewRandomSector() {
-    const f32 desiredRadius = 16.f + mRandomGenerator.getRandomFloatUnsigned() * 8.0f;
+    assert(mSectors.size());
+
+    // Just to determine direction
+    constexpr f32 initialRadius = 32.f;
     constexpr ui32 TRY_COUNT = 8;
     for (ui32 i = 0; i < TRY_COUNT; ++i) {
         const ui32 sectorIndex = mRandomGenerator.getRandomUIntInRange(0, mSectors.size());
         const SettlementSector& sector = mSectors[sectorIndex];
-        const f32 distance = sector.desiredRadius + desiredRadius + 2.0f;
+        const f32 initialDistance = sector.desiredRadius + initialRadius;
         const f32 angle = mRandomGenerator.getRandomFloatUnsigned() * glm::two_pi<f32>();
-        // TODO: GetNormalDir util
-        const f32v2 offset = MathUtil::rotateVector2DRad(f32v2(distance, 0.0f), angle);
-        const DTileCoord newPos = sector.center + DTileCoord(i32v2(glm::round(offset)));
-        if (tryAddSector(newPos, desiredRadius)) {
+        const f32v2 offset = MathUtil::getNormalVectorFromAngleRad(angle) * initialDistance;
+        DTileCoord newPos = sector.center + DTileCoord(i32v2(glm::round(offset)));
+        // Second zone must always be government
+        SettlementZone desiredZone = SettlementZone::Government;
+        f32 desiredRadius = INITIAL_GOVERNMENT_RADIUS;
+        if (mSectors.size() > 1) [[likely]] {
+            auto p = getDesiredZoneAndRadiusAtCoord(newPos);
+            desiredZone = p.first;
+            desiredRadius = p.second;
+        }
+        // Adjust distance
+        const f32 distanceAdjustScale = (sector.desiredRadius + desiredRadius + 1.0f) / initialDistance;
+        // Recalculate pos
+        newPos = sector.center + DTileCoord(i32v2(glm::round(offset * distanceAdjustScale)));
+        if (tryAddSector(newPos, desiredRadius, desiredZone)) {
             return true;
         }
     }
     return false;
 }
 
-bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius) {
+bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius, SettlementZone zone) {
 
     { // Handle ownership
         ChunkCoord chunkPos(center);
@@ -102,9 +122,7 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius)
         ChunkID chunkId = chunkPos.toGridIDType(mWorld->getWidthChunks());
         const entt::entity prevChunkOwner = ownerGrid.getChunkSettlementOwner(chunkId);
         if (prevChunkOwner == entt::null) {
-            ownerGrid.setChunkSettlementOwner(chunkId, mSettlementEntity);
-            entt::registry& registry = mSimEcs->getRegistrySimThread();
-            registry.get<SettlementDetailsComponent>(mSettlementEntity).ownedChunks.emplace_back(chunkId);
+            ownerGrid.setChunkOwner(chunkId, mSettlementEntity);
         }
         else if (prevChunkOwner != mSettlementEntity) {
             return false;
@@ -112,7 +130,7 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius)
     }
 
     if (mSectors.empty()) [[unlikely]] {
-        mSectors.emplace_back(center, desiredRadius, mSectors.size());
+        mSectors.emplace_back(center, desiredRadius, mSectors.size(), zone);
         return true;
     }
 
@@ -133,7 +151,7 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius)
         helperAddVisLogFilledQuadAtCoord(mCurrentVisLog, center, f32v2(3.0f), mWorld, color::Green);
     }
 
-    SettlementSector newSector(center, desiredRadius, mSectors.size());
+    SettlementSector newSector(center, desiredRadius, mSectors.size(), zone);
 
     constexpr ui32 DESIRED_ROAD_WIDTH = 5;
 
@@ -148,13 +166,13 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius)
             // Clear line of sight to other sector, now try making a road
             const f32 distanceRatio = newSector.desiredRadius / (newSector.desiredRadius + otherSector.desiredRadius);
             didAddRoad |= mRoadNetwork->tryAddRoadBetweenSectorPoints(
-                *mWorld,
                 mSettlementEntity,
                 newSector.center,
                 otherSector.center,
                 DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(newSector.center.v), f32v2(otherSector.center.v), distanceRatio)))),
                 RoadType::Dirt,
-                DESIRED_ROAD_WIDTH
+                DESIRED_ROAD_WIDTH,
+                zone
             );
         }
         else {
@@ -186,7 +204,7 @@ void SettlementLayoutManager::debugDraw() const {
     DebugRenderer::drawWireQuadThreadSafe(rootWorldPos - WIDTH * 0.5f, WIDTH, color::Green, FRAME_COUNT);
 
     // Chunk borders
-    const auto& ownedChunks = registry.get<SettlementDetailsComponent>(mSettlementEntity).ownedChunks;
+    const auto& ownedChunks = registry.get<ChunkOwnershipComponent>(mSettlementEntity).ownedChunks;
     constexpr f32 DEFAULT_Z = 1.0f;
     constexpr i32 chunkRowLengthDTiles = DTileCoord::getRowLengthPerChunk();
     DebugRenderer::reserveLinesThreadSafe(SQ(chunkRowLengthDTiles) * ownedChunks.size() * 4, FRAME_COUNT);
@@ -199,7 +217,7 @@ void SettlementLayoutManager::debugDraw() const {
             for (i32 x = 0; x < chunkRowLengthDTiles; ++x) {
                 DTileCoord coord(dTileCoord.v + i32v2(x, y));
                 const DTileOwnershipData* dtileOwnerData = ownerGrid.tryGetDTileOwnerData(coord);
-                if (dtileOwnerData && dtileOwnerData->ownerObjectType != DTileOwnerObjectType::None) {
+                if (dtileOwnerData && dtileOwnerData->ownerObjectType != DTileOwnerObjectType::None && dtileOwnerData->owner == mSettlementEntity) {
                     const i32v4 aabb = coord.toTileAABB();
                     f32v3 aabbWorldPos = helperGetWorldPosFrom2DPos(f32v2(aabb.x, aabb.y), mWorld);
                     aabbWorldPos.z -= 1.0f;
@@ -208,11 +226,16 @@ void SettlementLayoutManager::debugDraw() const {
                         case DTileOwnerObjectType::Plot:
                             dcolor = color::LawnGreen;
                             break;
-                        case DTileOwnerObjectType::RoadEdge:
-                            dcolor = color::RoyalBlue;
+                        case DTileOwnerObjectType::RoadEdge: {
+                            const RoadSegment& segment = mRoadNetwork->mRoadSegments[dtileOwnerData->userData];
+                            dcolor = getSettlementZoneDebugColor(segment.zone);
                             break;
+                        }
                         case DTileOwnerObjectType::RoadPlotSeed:
-                            dcolor = color::HotPink;
+                            dcolor = getSettlementZoneDebugColor(mPlotManager->getPlotSeedZone(coord));
+                            dcolor.r = dcolor.r * 0.5f;
+                            dcolor.g = dcolor.g * 0.5f;
+                            dcolor.b = dcolor.b * 0.5f;
                             break;
                         case DTileOwnerObjectType::Structure:
                             dcolor = color::DarkGreen;
@@ -234,7 +257,7 @@ void SettlementLayoutManager::debugDraw() const {
     // Sector centers
     for (auto& sector : mSectors) {
         f32v3 sectorWorldPos = helperGetWorldPosFromDTileCoord(sector.center, mWorld);
-        DebugRenderer::drawWireQuadThreadSafe(sectorWorldPos - WIDTH * 0.5f, WIDTH, color::Red, FRAME_COUNT);
+        DebugRenderer::drawWireQuadThreadSafe(sectorWorldPos - WIDTH * 0.5f, WIDTH, getSettlementZoneDebugColor(sector.zone), FRAME_COUNT);
     }
     
     // Roads
@@ -266,4 +289,25 @@ void SettlementLayoutManager::debugDraw() const {
             DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
         }
     }
+}
+
+std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusAtCoord(DTileCoord coord) {
+    constexpr f32 RURAL_RADIUS = 250.0f;
+
+    const f32v2 offsetFromRoot((coord - mRootPos).v);
+    const f32 offsetLength = glm::length(offsetFromRoot);
+    // Beyond certain radius always rural
+    if (offsetLength > RURAL_RADIUS) {
+        return std::make_pair(SettlementZone::Rural, 64.0f);
+    }
+
+    const f32v2 offsetNormal = offsetFromRoot / offsetLength;
+    const f32 dot = glm::dot(offsetNormal, mSettlementOrientation);
+    // Oscillate between residential and commercial in a circle
+    constexpr f32 FREQ = M_PIF * 3.0f; // USE WHOLE NUMBER
+    constexpr f32 COMMERCIAL_CUTOFF = -0.1f; // Larger number = more residential
+    if (cos((dot + 1.0f) * FREQ) >= COMMERCIAL_CUTOFF) {
+        return std::make_pair(SettlementZone::UrbanResidential, 22.0f);
+    }
+    return std::make_pair(SettlementZone::UrbanCommercial, 22.0f);
 }

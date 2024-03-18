@@ -71,6 +71,10 @@ namespace MathUtil {
         rv.y = in.x * sn + in.y * cs;
         return rv;
     }
+    // Angle 0 is +X, 90 is +Y, 180 is -X, 270 is -Y
+    inline f32v2 getNormalVectorFromAngleRad(float angleRad) {
+        return f32v2(cosf(angleRad), sinf(angleRad));
+    }
     inline f32v2 rotateVector2D(const f32v2& in, float angleDeg) {
         return rotateVector2DRad(in, DEG_TO_RAD(angleDeg));
     }

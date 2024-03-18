@@ -1,12 +1,14 @@
 #pragma once
 
 #include "math/Random.h"
+#include "world/settlement/SettlementZone.h"
 
 class World;
 class SettlementRoadNetwork;
 class SettlementPlotManager;
 class SimECS;
 class VisualLog;
+
 
 typedef ui32 SettlementSectorID;
 constexpr SettlementSectorID INVALID_SECTOR_ID = std::numeric_limits<SettlementSectorID>::max();
@@ -20,12 +22,14 @@ constexpr SettlementSectorID INVALID_SECTOR_ID = std::numeric_limits<SettlementS
 
 struct SettlementSector {
     SettlementSector() = default;
-    SettlementSector(DTileCoord center, f32 desiredRadius, SettlementSectorID id) : center(center), desiredRadius(desiredRadius), id(id) {}
+    SettlementSector(DTileCoord center, f32 desiredRadius, SettlementSectorID id, SettlementZone zone) :
+        center(center), desiredRadius(desiredRadius), id(id), zone(zone) {}
 
     std::vector<std::pair<ui32 /*sectionId*/, RoadSegmentID>> neighborSections;
     DTileCoord center;
     f32 desiredRadius;
     SettlementSectorID id;
+    SettlementZone zone;
 };
 
 // TODO: Inside SettlementLayoutComponent
@@ -41,9 +45,12 @@ public:
 
     bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
     bool tryAddNewRandomSector();
-    bool tryAddSector(DTileCoord center, f32 desiredRadius);
+    bool tryAddSector(DTileCoord center, f32 desiredRadius, SettlementZone zone);
 
     void debugDraw() const;
+
+private:
+    std::pair<SettlementZone, f32> getDesiredZoneAndRadiusAtCoord(DTileCoord coord);
 
     std::vector<SettlementSector> mSectors;
     std::vector<ui32> mOpenSectors; // Sectors that have at least one road edge to infinity
@@ -55,4 +62,5 @@ public:
     DTileCoord mRootPos;
     VisualLog* mCurrentVisLog = nullptr;
     RandomGenerator mRandomGenerator;
+    f32v2 mSettlementOrientation; // Settlement growth follows a directional pattern
 };

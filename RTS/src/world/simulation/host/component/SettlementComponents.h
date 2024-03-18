@@ -56,9 +56,12 @@ struct SettlementPlannerComponent {
 
 };
 
+struct ChunkOwnershipComponent {
+    std::vector<ChunkID> ownedChunks;
+};
+
 // Heavyweight, less accesses needed
 struct SettlementDetailsComponent {
-    std::vector<ChunkID> ownedChunks;
     std::vector<SettlementAdjacencyData> neighborSettlements;
 };
 

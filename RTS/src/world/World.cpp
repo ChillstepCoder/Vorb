@@ -123,6 +123,8 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     }
     static_assert(e_count(WorldNetMode) == 3);
     
+    assert(mHostSimContext); // TODO: FIX MULTIPLAYER
+    mOwnershipGrid->init(*mHostSimContext);
     // Tile Containers
     mTileContainerRepository = std::make_unique<TileContainerRepository>(*this);
     // Time of day
