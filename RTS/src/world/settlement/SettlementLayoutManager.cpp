@@ -74,6 +74,12 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
         addedCount += tryAddNewRandomSector();
     }
 
+    for (ui32 i = 0; i < 16; ++i) {
+        SettlementPlotRequest request;
+        request.zone = SettlementZone::UrbanCommercial;
+        mPlotManager->tryGenerateNewPlot(request, settlement);
+    }
+
     if (mCurrentVisLog) {
         visLog->finish();
         mCurrentVisLog = nullptr;
@@ -288,6 +294,14 @@ void SettlementLayoutManager::debugDraw() const {
             const f32v3 worldPosB = helperGetWorldPosFromDTileCoord(segment.segmentVerts.back(), mWorld);
             DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
         }
+    }
+
+    // Plots
+    const std::vector<SettlementPlot>& plots = mPlotManager->getPlots();
+    for (const SettlementPlot& plot : plots) {
+        DTileCoord root(plot.aabbDTile.pos);
+        const f32v3 worldPosA = helperGetWorldPosFromDTileCoord(root, mWorld);
+        DebugRenderer::drawWireQuadThreadSafe(worldPosA, f32v2(plot.aabbDTile.dims), color::Magenta, FRAME_COUNT);
     }
 }
 

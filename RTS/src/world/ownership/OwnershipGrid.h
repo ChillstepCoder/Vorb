@@ -67,7 +67,7 @@ public:
 
     void setChunkOwner(ChunkID chunkId, entt::entity owner);
     void setChunkOwnerIfUnowned(ChunkID chunkId, entt::entity owner);
-    void setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData, bool isSettlementOwned);
+    void setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData);
 
     bool isChunkIsClaimed(ChunkID chunkId) const;
     void claimChunk(ChunkID chunkId);

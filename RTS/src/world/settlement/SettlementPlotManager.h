@@ -42,11 +42,13 @@ public:
 
     const SettlementPlot& getPlot(SettlementPlotID id) const { return mPlots[id]; }
     // Returns INVALID_SETTLEMENT_PLOT_ID on failure
-    SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request);
+    SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner);
     
+    const std::vector<SettlementPlot>& getPlots() const { return mPlots; }
+
 private:
-    SettlementPlotID tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, DTileCoord seed);
-    SettlementPlotID allocateNewPlot(std::span<DTileCoord> coords, SettlementZone zone, i32AABB2 aabbDTile);
+    SettlementPlotID tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, DTileCoord seed, entt::entity owner);
+    SettlementPlotID allocateNewPlot(std::span<DTileCoord> coords, SettlementZone zone, i32AABB2 aabbDTile, entt::entity owner);
     // TODO: DISTRICTING
     std::vector<SettlementPlot> mPlots;
     //std::map<SettlementZone, std::vector<SettlementPlotID>> mFreePlots; // Use?

@@ -526,11 +526,11 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(p.pos)) {
             // If not already owned by a road, own it with this road
             if (ownerData->ownerObjectType != DTileOwnerObjectType::RoadEdge) {
-                ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, newSegmentId, true);
+                ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, newSegmentId);
             }
         }
         else {
-            ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, newSegmentId, true);
+            ownerGrid.setDTileOwner(p.pos, settlement, DTileOwnerObjectType::RoadEdge, newSegmentId);
         }
     }
 
@@ -538,12 +538,12 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     for (DTileCoord s : possiblePlotSeeds) {
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(s)) {
             if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
-                ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId, true);
+                ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId);
                 mPlotManager->addPlotSeed(s, newSegment.zone);
             }
         }
         else {
-            ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId, true);
+            ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId);
             mPlotManager->addPlotSeed(s, newSegment.zone);
         }
     }
@@ -695,12 +695,12 @@ void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment
                             ownerData->userData = 1;
                         }
                         else if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
-                            ownerGrid.setDTileOwner(pos, settlement, DTileOwnerObjectType::ExternalRoadBlocked, 1, true);
+                            ownerGrid.setDTileOwner(pos, settlement, DTileOwnerObjectType::ExternalRoadBlocked, 1);
                             blockedList.emplace_back(ExternalRoadSegmentBlockedTile{ pos, false });
                         }
                     }
                     else {
-                        ownerGrid.setDTileOwner(pos, settlement, DTileOwnerObjectType::ExternalRoadBlocked, 1, true);
+                        ownerGrid.setDTileOwner(pos, settlement, DTileOwnerObjectType::ExternalRoadBlocked, 1);
                     }
                 }
             }

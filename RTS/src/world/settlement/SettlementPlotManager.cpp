@@ -48,7 +48,7 @@ SettlementZone SettlementPlotManager::getPlotSeedZone(DTileCoord pos) const {
     return SettlementZone::COUNT;
 }
 
-SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request) {
+SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner) {
     ASSERT_SIM_THREAD();
 
     auto it = mPlotSeeds.find(request.zone);
@@ -66,7 +66,7 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
             continue;
         }*/
         //sClosedSeedSet.insert(hash);
-        SettlementPlotID plotId = tryGeneratePlotAtSeedInternal(request, c);
+        SettlementPlotID plotId = tryGeneratePlotAtSeedInternal(request, c, owner);
         if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
             return plotId;
         }
@@ -76,7 +76,7 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
-SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, DTileCoord seed) {
+SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, DTileCoord seed, entt::entity owner) {
     OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const i32 worldWidthDTiles = mWorld.getWidthDTiles();
@@ -86,40 +86,52 @@ SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(Settlement
     std::vector<DTileCoord> validPoints;
     validPoints.reserve(request.maximumSize + 1);
 
-    x; // COMPUTE AABB
-    i32AABB2 aabb;
+    i32 minX = INT32_MAX;
+    i32 maxX = INT32_MIN;
+    i32 minY = INT32_MAX;
+    i32 maxY = INT32_MIN;
 
     bool startValid = false;
     DTileCoord start = seed;
-    for (i32 x = 0; x < request.maximumWidth; ++x) {
-        DTileCoord newCoord(start.x + x, start.y);
-        if (newCoord.x >= worldWidthDTiles) [[unlikely]] {
-            if (!startValid) continue;
-            break;
-        }
-        if (heightGrid.getHeightAtVert<true>(newCoord) <= -1.0f) {
-            // No plots on deep water (for now)
-            if (!startValid) continue;
-            break;
-        }
-        if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(newCoord)) {
-            // We can only cover empty or plot seed tiles
-            if (!(ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed)) {
+    for (i32 y = 0; y < request.maximumWidth; ++y) {
+        for (i32 x = 0; x < request.maximumWidth; ++x) {
+            DTileCoord newCoord(start.x + x, start.y + y);
+            if (newCoord.x >= worldWidthDTiles) [[unlikely]] {
                 if (!startValid) continue;
                 break;
             }
+            if (heightGrid.getHeightAtVert<true>(newCoord) <= -1.0f) {
+                // No plots on deep water (for now)
+                if (!startValid) continue;
+                break;
+            }
+            if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(newCoord)) {
+                // We can only cover empty or plot seed tiles
+                if (!(ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed)) {
+                    if (!startValid) continue;
+                    break;
+                }
+            }
+
+            startValid = true;
+            validPoints.emplace_back(newCoord);
+            if (newCoord.x < minX) minX = newCoord.x;
+            if (newCoord.x > maxX) maxX = newCoord.x;
+            if (newCoord.y < minY) minY = newCoord.y;
+            if (newCoord.y > maxY) maxY = newCoord.y;
+
+            if (validPoints.size() == request.maximumSize) {
+                return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, i32AABB2(minX, minY, maxX - minX, maxY - minY), owner);
+            }
         }
-        startValid = true;
-        validPoints.emplace_back(newCoord);
-        if (validPoints.size() == request.maximumSize) {
-            return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, aabb);
-        }
+        startValid = false;
     }
 
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
-SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> coords, SettlementZone zone, i32AABB2 aabbDTile) {
+SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> coords, SettlementZone zone, i32AABB2 aabbDTile, entt::entity owner) {
+    OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     SettlementPlotID id = mPlots.size();
     SettlementPlot& newPlot = mPlots.emplace_back();
     newPlot.zone = zone;
@@ -129,6 +141,7 @@ SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> co
         const i32 x = c.x - aabbDTile.pos.x;
         const i32 y = c.y - aabbDTile.pos.y;
         newPlot.ownedDTiles.setBit(y * aabbDTile.width + x);
+        ownerGrid.setDTileOwner(c, owner, DTileOwnerObjectType::Plot, id);
     }
     return id;
 }

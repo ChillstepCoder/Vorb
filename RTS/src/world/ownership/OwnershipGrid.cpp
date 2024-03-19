@@ -129,7 +129,7 @@ void OwnershipGrid::setChunkOwnerIfUnowned(ChunkID chunkId, entt::entity owner) 
     }
 }
 
-void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData, bool isSettlementOwned) {
+void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, DTileOwnerObjectType type, ui16 userData) {
     ASSERT_SIM_THREAD();
     if (dtilePosWorld.x < 0 || dtilePosWorld.y < 0 || dtilePosWorld.x >= mWidthDTiles || dtilePosWorld.y >= mWidthDTiles) [[unlikely]] {
         LOG_CRITICAL("Tried to set dtile owner at world pos {} {} OUT OF BOUNDS", dtilePosWorld.x, dtilePosWorld.y);
@@ -145,7 +145,7 @@ void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, 
     tileData.owner = owner;
     tileData.userData = userData;
     tileData.ownerObjectType = type;
-    if (isSettlementOwned) {
+    if (owner != entt::null && mSimECS->getRegistrySimThread().try_get<SettlementDetailsComponent>(owner)) {
         tileData.flags.setBit(DTileOwnershipFlags::OwnedBySettlement);
     }
     else {
