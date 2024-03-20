@@ -74,11 +74,11 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
         addedCount += tryAddNewRandomSector();
     }
 
-    for (ui32 i = 0; i < 16; ++i) {
-        SettlementPlotRequest request;
-        request.zone = SettlementZone::UrbanCommercial;
-        mPlotManager->tryGenerateNewPlot(request, settlement);
-    }
+    /* for (ui32 i = 0; i < 16; ++i) {
+         SettlementPlotRequest request;
+         request.zone = SettlementZone::UrbanCommercial;
+         mPlotManager->tryGenerateNewPlot(request, settlement);
+     }*/
 
     if (mCurrentVisLog) {
         visLog->finish();
@@ -237,12 +237,29 @@ void SettlementLayoutManager::debugDraw() const {
                             dcolor = getSettlementZoneDebugColor(segment.zone);
                             break;
                         }
-                        case DTileOwnerObjectType::RoadPlotSeed:
-                            dcolor = getSettlementZoneDebugColor(mPlotManager->getPlotSeedZone(coord));
-                            dcolor.r = dcolor.r * 0.5f;
-                            dcolor.g = dcolor.g * 0.5f;
-                            dcolor.b = dcolor.b * 0.5f;
+                        case DTileOwnerObjectType::RoadPlotSeed: {
+                            const PlotSeed seed = mPlotManager->getPlotSeed(coord);
+                            switch (seed.dir) {
+                                case PlotSeedDir::SouthWest:
+                                    dcolor = color::Blue;
+                                    break;
+                                case PlotSeedDir::SouthEast:
+                                    dcolor = color::Red;
+                                    break;
+                                case PlotSeedDir::NorthWest:
+                                    dcolor = color::LightBlue;
+                                    break;
+                                case PlotSeedDir::NorthEast:
+                                    dcolor = color::Pink;
+                                    break;
+                                case PlotSeedDir::NONE:
+                                    dcolor = color::Black;
+                                    break;
+                                default:
+                                    break;
+                            }
                             break;
+                        }
                         case DTileOwnerObjectType::Structure:
                             dcolor = color::DarkGreen;
                             break;

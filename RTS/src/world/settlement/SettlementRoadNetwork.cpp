@@ -512,16 +512,37 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
         mPlotManager->removePlotSeed(coveredSeed);
     }
 
-    std::unordered_set<DTileCoord> possiblePlotSeeds;
+    std::unordered_set<PlotSeed> possiblePlotSeeds;
     possiblePlotSeeds.reserve(newSegment.length * (glm::max(newSegment.widthTiles[0], newSegment.widthTiles[1])) + 1);
+
+    // Used for determining which direction to branch
+    // [-pi, pi]
+    const f32 baseAngle = MathUtil::yawFromDirection(newSegment.direction);
+    const f32v2 rightDir = MathUtil::rotateVector2DRad(newSegment.direction, M_PI_2F);
+
+    auto getPlotSeedDir = [rightDir, &verts](DTileCoord c) -> PlotSeedDir{
+        const f32v2 offsetFromBase = c.v - verts[0].v;
+        if (glm::dot(offsetFromBase, rightDir) > 0.0f) {
+            // Right
+            // TODO: REST
+            return PlotSeedDir::SouthEast;
+        }
+        else {
+            // Left
+            return PlotSeedDir::SouthWest;
+        }
+    };
 
     // Set ownership and track possible plot seeds
     for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
-
-        possiblePlotSeeds.emplace(p.pos - DTileCoord(0, 1)); // Down
-        possiblePlotSeeds.emplace(p.pos - DTileCoord(1, 0)); // Left
-        possiblePlotSeeds.emplace(p.pos + DTileCoord(1, 0)); // Right
-        possiblePlotSeeds.emplace(p.pos + DTileCoord(0, 1)); // Up
+        const DTileCoord down = p.pos - DTileCoord(0, 1);
+        const DTileCoord left = p.pos - DTileCoord(1, 0);
+        const DTileCoord right = p.pos + DTileCoord(1, 0);
+        const DTileCoord up = p.pos + DTileCoord(0, 1);
+        possiblePlotSeeds.emplace(PlotSeed{ down, getPlotSeedDir(down) }); // Down
+        possiblePlotSeeds.emplace(PlotSeed{ left, getPlotSeedDir(left) }); // Left
+        possiblePlotSeeds.emplace(PlotSeed{ right, getPlotSeedDir(right) }); // Right
+        possiblePlotSeeds.emplace(PlotSeed{ up, getPlotSeedDir(up) }); // Up
 
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(p.pos)) {
             // If not already owned by a road, own it with this road
@@ -535,16 +556,16 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     }
 
     // Set plot seeds
-    for (DTileCoord s : possiblePlotSeeds) {
-        if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(s)) {
+    for (PlotSeed s : possiblePlotSeeds) {
+        if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(s.pos)) {
             if (ownerData->ownerObjectType == DTileOwnerObjectType::None) {
-                ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId);
-                mPlotManager->addPlotSeed(s, newSegment.zone);
+                ownerGrid.setDTileOwner(s.pos, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId);
+                mPlotManager->addPlotSeed(s.pos, newSegment.zone, s.dir);
             }
         }
         else {
-            ownerGrid.setDTileOwner(s, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId);
-            mPlotManager->addPlotSeed(s, newSegment.zone);
+            ownerGrid.setDTileOwner(s.pos, settlement, DTileOwnerObjectType::RoadPlotSeed, newSegmentId);
+            mPlotManager->addPlotSeed(s.pos, newSegment.zone, s.dir);
         }
     }
 
@@ -609,7 +630,8 @@ void SettlementRoadNetwork::refreshExternalRoadsInternal(RoadSegment& newSegment
                         ownerData->ownerObjectType = DTileOwnerObjectType::RoadPlotSeed;
                         // TODO: This can parent plot seeds from other roads onto us, but thats honestly probably OK?
                         ownerData->userData = segmentId;
-                        mPlotManager->addPlotSeed(blockedTile.pos, newSegment.zone);
+                        // TODO: Select the dir and segmentId based on nearby road!
+                        mPlotManager->addPlotSeed(blockedTile.pos, newSegment.zone, PlotSeedDir::SouthEast /*TODO: WRONG*/);
                     }
                     else {
                         ownerData->ownerObjectType = DTileOwnerObjectType::None;

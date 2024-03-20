@@ -13,21 +13,24 @@ SettlementPlotManager::SettlementPlotManager(World& world, RandomGenerator& rand
 
 }
 
-void SettlementPlotManager::addPlotSeed(DTileCoord pos, SettlementZone zone) {
+void SettlementPlotManager::addPlotSeed(DTileCoord pos, SettlementZone zone, PlotSeedDir dir) {
     ASSERT_SIM_THREAD();
     assert(!mPlotSeedToZone.contains(pos));
     mPlotSeedToZone.emplace(pos, zone);
-    mPlotSeeds[zone].emplace_back(pos);
+    mPlotSeeds[zone].emplace_back(PlotSeed{ pos, dir });
 }
 
 void SettlementPlotManager::removePlotSeed(DTileCoord pos) {
     ASSERT_SIM_THREAD();
     auto it = mPlotSeedToZone.find(pos);
-    assert(it != mPlotSeedToZone.end());
+    if (it == mPlotSeedToZone.end()) [[unlikely]] {
+        return;
+    }
     auto it2 = mPlotSeeds.find(it->second);
-    std::vector<DTileCoord>& seeds = it2->second;
+    assert(it2 != mPlotSeeds.end());
+    std::vector<PlotSeed>& seeds = it2->second;
     for (size_t i = 0; i < seeds.size(); ++i) {
-        if (seeds[i] == pos) {
+        if (seeds[i].pos == pos) {
             seeds[i] = seeds.back();
             seeds.pop_back();
             if (seeds.empty()) {
@@ -48,6 +51,20 @@ SettlementZone SettlementPlotManager::getPlotSeedZone(DTileCoord pos) const {
     return SettlementZone::COUNT;
 }
 
+PlotSeed SettlementPlotManager::getPlotSeed(DTileCoord pos) const {
+    auto it = mPlotSeedToZone.find(pos);
+    if (it != mPlotSeedToZone.end()) [[likely]] {
+        auto it2 = mPlotSeeds.find(it->second);
+        assert(it2 != mPlotSeeds.end());
+        for (const PlotSeed& s : it2->second) {
+            if (s.pos == pos) {
+                return s;
+            }
+        }
+    }
+    return PlotSeed();
+}
+
 SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner) {
     ASSERT_SIM_THREAD();
 
@@ -59,9 +76,9 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
     //sClosedSeedSet.clear();
     //sClosedSeedSet.reserve(256);
 
-    std::vector<DTileCoord>& seeds = it->second;
-    for (DTileCoord c : seeds) {
-        const ui32 hash = c.y * worldWidthDTiles + c.x;
+    std::vector<PlotSeed>& seeds = it->second;
+    for (PlotSeed c : seeds) {
+        const ui32 hash = c.pos.y * worldWidthDTiles + c.pos.x;
         /*if (sClosedSeedSet.contains(hash)) {
             continue;
         }*/
@@ -76,7 +93,7 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
-SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, DTileCoord seed, entt::entity owner) {
+SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner) {
     OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const i32 worldWidthDTiles = mWorld.getWidthDTiles();
@@ -92,7 +109,7 @@ SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(Settlement
     i32 maxY = INT32_MIN;
 
     bool startValid = false;
-    DTileCoord start = seed;
+    DTileCoord start = seed.pos;
     for (i32 y = 0; y < request.maximumWidth; ++y) {
         for (i32 x = 0; x < request.maximumWidth; ++x) {
             DTileCoord newCoord(start.x + x, start.y + y);
@@ -141,7 +158,15 @@ SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> co
         const i32 x = c.x - aabbDTile.pos.x;
         const i32 y = c.y - aabbDTile.pos.y;
         newPlot.ownedDTiles.setBit(y * aabbDTile.width + x);
-        ownerGrid.setDTileOwner(c, owner, DTileOwnerObjectType::Plot, id);
+        if (DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerDataForEditSimThread(c)) {
+            if (ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed) {
+                removePlotSeed(c);
+            }
+            ownerGrid.setDTileDataOwner(ownerData, owner, DTileOwnerObjectType::Plot, id);
+        }
+        else {
+            ownerGrid.setDTileOwner(c, owner, DTileOwnerObjectType::Plot, id);
+        }
     }
     return id;
 }

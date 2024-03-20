@@ -153,6 +153,23 @@ void OwnershipGrid::setDTileOwner(DTileCoord dtilePosWorld, entt::entity owner, 
     }
 }
 
+void OwnershipGrid::setDTileDataOwner(DTileOwnershipData* tileData, entt::entity owner, DTileOwnerObjectType type, ui16 userData) {
+    ASSERT_SIM_THREAD();
+    
+    // Claim the chunk
+    //setChunkOwnerIfUnowned(chunkId, owner);
+
+    tileData->owner = owner;
+    tileData->userData = userData;
+    tileData->ownerObjectType = type;
+    if (owner != entt::null && mSimECS->getRegistrySimThread().try_get<SettlementDetailsComponent>(owner)) {
+        tileData->flags.setBit(DTileOwnershipFlags::OwnedBySettlement);
+    }
+    else {
+        tileData->flags.clearBit(DTileOwnershipFlags::OwnedBySettlement);
+    }
+}
+
 bool OwnershipGrid::isChunkIsClaimed(ChunkID chunkId) const {
     ASSERT_SIM_THREAD();
     return mClaimedChunks.getBit(chunkId);
