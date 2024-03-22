@@ -19,6 +19,8 @@ enum class AssetType : ui8 {
     TileGrass,
     Biome,
     TileDistribution,
+    Building,
+    Room,
     NONE,
     COUNT = NONE
 };

@@ -5,7 +5,7 @@
 
 constexpr ui8 STATE_SEPARATOR_CHAR = '|';
 
-void BuildingGrammar::buildFromStrings(const Array<nString>& strings) {
+void BuildingGrammar::buildFromStrings(const std::vector<nString>& strings) {
     assert(strings.size() < 0xff); // Convert to ui8
     mNumRules = (ui8)strings.size();
     size_t dataIndex = 0;

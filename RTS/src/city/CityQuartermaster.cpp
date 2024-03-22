@@ -8,7 +8,7 @@
 
 #include "city/BuildingBlueprint.h"
 #include "resources/ResourceManager.h"
-#include "BuildingDescriptionRepository.h"
+#include "BuildingRepository.h"
 
 CityQuartermaster::CityQuartermaster(City& city) : mCity(city) {
 
@@ -24,9 +24,9 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
     const i32v3& rootPos = bp.mTileSpatialGrid.getWorldPos3D();
     const i32v3& bpDims = bp.mTileSpatialGrid.getDims();
-    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
+    RoomRepository& roomRepo = RoomRepository::get();
     for (auto&& room : bp.rooms) {
-        const RoomDef& def = buildingRepo.getRoomDefFromID(room.roomDefId);
+        const RoomDef& def = roomRepo.getLoadedOrUnloadedAsset(room.roomDefId);
         if (def.roomType == RoomType::STOCKPILE) {
             int index = 0;
             assert(room.aabb.dims.x < CHUNK_WIDTH && room.aabb.dims.y < CHUNK_WIDTH);

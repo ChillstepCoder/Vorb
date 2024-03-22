@@ -19,7 +19,7 @@ struct CityGrammarRule {
 
 class BuildingGrammar {
 public:
-    void buildFromStrings(const Array<nString>& strings);
+    void buildFromStrings(const std::vector<nString>& strings);
     // Input/output vector will be presized
     void buildRoomGraph(OUT std::vector<RoomNode>& graph, RandomGenerator& randGen) const;
 

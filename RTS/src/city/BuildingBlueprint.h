@@ -9,7 +9,7 @@
 class Building;
 class BuildingBlueprint;
 class World;
-struct BuildingDef;
+class BuildingDef;
 struct Recipe;
 struct TileHandle;
 class RandomGenerator;
@@ -28,8 +28,6 @@ enum class BlueprintTileType : ui8 {
 static_assert(int(BlueprintTileType::TYPES) < (1 << 6)); // TODO: Why did we have 1 << 6 here?
 
 // TODO: Cellular automata rule iteration for room fixup
-typedef ui32 BuildingBlueprintId;
-#define INVALID_BLUEPRINT_ID UINT32_MAX
 
 struct BlueprintTileItemData {
     ItemID mItemId;
@@ -132,7 +130,6 @@ public:
     const Recipe* tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
-    BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
     ui32 tilesBuilt = 0;
     ui32 totalTilesToBuild = 0;
     entt::entity mOwnerEntity = INVALID_ENTITY;

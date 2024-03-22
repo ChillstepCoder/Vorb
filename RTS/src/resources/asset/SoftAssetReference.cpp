@@ -111,13 +111,19 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
         case AssetType::TileDistribution:
             assetButton<TileDistributionDef>(assetRef);
             break;
+        case AssetType::Building:
+            assetButton<BuildingDef>(assetRef);
+            break;
+        case AssetType::Room:
+            assetButton<RoomDef>(assetRef);
+            break;
         case AssetType::NONE:
         default:
             panic("Unhandled asset type {} in SoftAssetReference::updateAndRenderSoftAssetReference", e_cast(assetRef.assetType));
             break;
 
     }
-    static_assert(e_count(AssetType) == 18);
+    static_assert(e_count(AssetType) == 20);
 
     auto&& it = sAssetSelectorPopup.find(&assetRef);
     if (it != sAssetSelectorPopup.end()) {

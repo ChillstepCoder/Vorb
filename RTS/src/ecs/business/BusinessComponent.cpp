@@ -9,7 +9,7 @@
 
 #include "world/World.h"
 #include "resources/ResourceManager.h"
-#include "city/BuildingDescriptionRepository.h"
+#include "city/BuildingRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
 #include "item/ItemStockpile.h"
 #include "resources/TileRepository.h"
@@ -176,7 +176,7 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
         City& city = *cmp.mCity;
         CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props, entity);
         if (plot) {
-            const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
+            const BuildingRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
             city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName, BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE);
             ownershipCmp.mOwnedPlots.push_back(plot);
         }

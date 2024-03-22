@@ -10,7 +10,7 @@ class CityBuilder;
 class CityResidentManager;
 class CityBusinessManager;
 class CityQuartermaster;
-class BuildingDescriptionRepository;
+class BuildingRepository;
 class Building;
 class World;
 

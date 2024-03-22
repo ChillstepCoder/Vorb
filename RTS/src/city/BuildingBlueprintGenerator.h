@@ -9,7 +9,6 @@
 class VisualLog;
 class World;
 class CityBuilder;
-class BuildingDescriptionRepository;
 struct RoomNode;
 
 constexpr ui32 MAX_EXTERIOR_WALL_RUN_LENGTH = 8; // TODO: Enforce this
@@ -17,23 +16,20 @@ constexpr ui32 MAX_EXTERIOR_WALL_RUN_LENGTH = 8; // TODO: Enforce this
 class BuildingBlueprintGenerator
 {
 public:
-    BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
-    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilderDEPRECATED(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
-
-    VORB_NON_COPYABLE(BuildingBlueprintGenerator);
-
+    BuildingBlueprintGenerator() = delete;
+  
     //static void tryGenerateBlueprintASync(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
-    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
+    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
 
     static void generatePossibleWindowPermutations();
 private:
 
-    static bool tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo);
+    static bool tryGenerateBlueprintInternal(BuildingBlueprint* bPtr);
     // Graph Generation
     static void addPublicRoomsToGraph(BuildingBlueprint& bp);
     static void assignPublicRooms(BuildingBlueprint& bp);
     static void addPrivateRoomsToGraph(BuildingBlueprint& bp);
-    static void initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo);
+    static void initRooms(BuildingBlueprint& bp);
     static void placeRooms(BuildingBlueprint& bp, VisualLog* visLog);
     static void allocateTileData(BuildingBlueprint& bp);
     static void expandRooms(BuildingBlueprint& bp, VisualLog* visLog);
@@ -49,13 +45,6 @@ private:
     static void placeWindows(BuildingBlueprint& bp, VisualLog* visLog);
 
     static void postProcessBlueprint(BuildingBlueprint& bp);
-
-    static BuildingBlueprintId getNextBuildingID();
-
-    BuildingDescriptionRepository& mBuildingRepo;
-    CityBuilder& mCityBuilder;
-    std::set<BuildingBlueprint*> mGeneratingBuildings;
-    static BuildingBlueprintId sCurrentId;
 
     inline static std::vector<std::vector<bool>> sPossibleWindowPermutations[MAX_EXTERIOR_WALL_RUN_LENGTH + 1];
 };

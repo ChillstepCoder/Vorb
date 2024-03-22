@@ -10,7 +10,7 @@ class AnimationRepository;
 class AnimMachineRepository;
 class BiomeRepository;
 class BrushRepository;
-class BuildingDescriptionRepository;
+class BuildingRepository;
 class BusinessRepository;
 class CollisionShapeRepository;
 class CraftingRepository;
@@ -36,7 +36,7 @@ public:
     void gatherFiles();
     void loadFiles();
 
-    BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
+    BuildingRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     FontRepository& getFontRepository() const { return *mFontRepository; }
@@ -97,14 +97,12 @@ private:
 
     // Tasks
     // TODO: ResourceLoader?
-    std::vector<vio::Path> mRoomFiles;
-    std::vector<vio::Path> mBuildingFiles;
     std::vector<vio::Path> mEntityFiles;
     std::vector<vio::Path> mRecipeFiles;
     std::vector<vio::Path> mBusinessFiles;
     std::vector<vio::Path> mFontFiles;
 
-    std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
+    std::unique_ptr<BuildingRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;

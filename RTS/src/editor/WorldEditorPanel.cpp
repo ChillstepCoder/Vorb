@@ -22,7 +22,7 @@
 #include "city/City.h"
 #include "city/BuildingBlueprintGenerator.h"
 #include "city/CityBuilder.h"
-#include "city/BuildingDescriptionRepository.h"
+#include "city/BuildingRepository.h"
 
 #include "gamethread/GameThreadTasks.h"
 
@@ -457,13 +457,14 @@ void WorldEditorPanel::renderBuildingEditUI() const {
 
     ImGui::Separator();
     ImGui::Text("Building select");
-    const std::vector<BuildingDef> buildings = Services::ResourceManager::ref().getBuildingDescriptionRepository().getBuildingDefs();
+    BuildingRepository& buildingRepo = BuildingRepository::get();
+    const std::vector<AssetMetadata>& buildingMetadata = buildingRepo.getAssetRegistry();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    for (size_t i = 0; i < buildings.size(); ++i) {
-        const BuildingDef& buildingDef = buildings[i];
+    for (size_t i = 0; i < buildingMetadata.size(); ++i) {
+        const BuildingDef& buildingDef = buildingRepo.getLoadedOrUnloadedAsset(buildingMetadata[i].getId());
         ImGui::TableNextColumn();
         char buf[64];
-        buildingDef.nameToken.toString(buf, nullptr);
+        buildingDef.getName().toString(buf, nullptr);
         if (ImGui::RadioButton(buf, mSelectedBuilding == (ui32)i)) {
             mSelectedBuilding = (ui32)i;
         }
@@ -472,7 +473,7 @@ void WorldEditorPanel::renderBuildingEditUI() const {
         //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
     }
     ImGui::EndTable();
-    const BuildingDef& selectedDef = buildings[mSelectedBuilding];
+    const BuildingDef& selectedDef = buildingRepo.getLoadedOrUnloadedAsset(buildingMetadata[mSelectedBuilding].getId());
     mPlotDims.x = glm::clamp(mPlotDims.x, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
     mPlotDims.y = glm::clamp(mPlotDims.y, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
     ImGui::DragInt2("Plot Dims (x,y)", &mPlotDims.x, 0.5f, selectedDef.widthRange.x, selectedDef.widthRange.y);
@@ -739,9 +740,9 @@ void WorldEditorPanel::updateBuildingEdit() {
 
         GameThreadTasks::getInstance().addGenericTask([task]() {
             const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
-            BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
+            BuildingRepository& buildingRepo = BuildingRepository::get();
             const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
-            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(*task->world, buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0), Random::getCachedRandom());
+            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(*task->world, buildingRepo.getLoadedOrUnloadedAsset(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0), Random::getCachedRandom());
             if (!bp) {
                 assert(false);
                 return;

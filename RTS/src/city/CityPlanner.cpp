@@ -3,14 +3,13 @@
 #include "CityPlanner.h"
 #include "City.h"
 #include "CityPlotter.h"
-#include "BuildingDescriptionRepository.h"
+#include "BuildingRepository.h"
 #include "city/BuildingBlueprintGenerator.h"
 
 #include "math/Random.h"
 
 #include "world/World.h"
 #include "resources/ResourceManager.h"
-
 
 // TODO: T1 City requires
 // Lumberjacks, wooden buildings, fishing, multi-agent jobs (woodcutting, ect)
@@ -39,13 +38,13 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     assert(!plot.mPendingBlueprint);
 
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
-    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
+    BuildingRepository& buildingRepo = BuildingRepository::get();
 
     const float sizeAlpha = Random::xorshf96f();
 
     // Generate floorplan size
     // TODO: Dont just spam lumbermill
-    const BuildingDef& desc = buildingRepo.getBuildingDef(StrToken(buildingDescriptionName));
+    const BuildingDef& desc = buildingRepo.getLoadedOrUnloadedAsset(StrToken(buildingDescriptionName));
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.dims);
     // TODO:  aspect ratio
@@ -62,21 +61,23 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     else if (plot.neighborRoads[e_cast(Cartesian::NORTH)] != INVALID_ROAD_ID) {
         dir = Cartesian::SOUTH;
     }
-    plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilder(mCity.getWorld(), desc, sizeAlpha, dir, plotDims, rootPos, plot.mOwnerEntity, flags, Random::getCachedRandom());
+    //plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilderDEPRECATED(mCity.getWorld(), desc, sizeAlpha, dir, plotDims, rootPos, plot.mOwnerEntity, flags, Random::getCachedRandom());
     plot.mPendingBlueprint->plotIndex = plot.plotIndex;
+    panic("CityPlanner::generatePlanForPlotAsyncThenSendToBuilder DEPRECATED");
 }
 
 void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
-    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
-    LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->mTileSpatialGrid.getDims().x);
-    for (auto&& node : bp->rooms) {
-        char nameBuf[64];
-        buildingRepo.getNameFromRoomDefID(node.roomDefId).toString(nameBuf, nullptr);
-        LOG_DEBUG("   node {} {} {}", nameBuf, node.offsetFromZero.x, node.offsetFromZero.y);
-        for (int i = 0; i < node.numChildren; ++i) {
-            const int childIndex = (int)node.childRooms[i];
-            buildingRepo.getNameFromRoomDefID(bp->rooms[childIndex].roomDefId).toString(nameBuf, nullptr);
-            LOG_DEBUG("    child - {} type - {}", childIndex, nameBuf);
-        }
-    }
+    /*  const BuildingRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
+      LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->mTileSpatialGrid.getDims().x);
+      for (auto&& node : bp->rooms) {
+          char nameBuf[64];
+          buildingRepo.getNameFromRoomDefID(node.roomDefId).toString(nameBuf, nullptr);
+          LOG_DEBUG("   node {} {} {}", nameBuf, node.offsetFromZero.x, node.offsetFromZero.y);
+          for (int i = 0; i < node.numChildren; ++i) {
+              const int childIndex = (int)node.childRooms[i];
+              buildingRepo.getNameFromRoomDefID(bp->rooms[childIndex].roomDefId).toString(nameBuf, nullptr);
+              LOG_DEBUG("    child - {} type - {}", childIndex, nameBuf);
+          }
+      }*/
+    assert(false);
 }

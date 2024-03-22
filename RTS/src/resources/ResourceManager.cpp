@@ -6,7 +6,7 @@
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/ShaderLoader.h"
 #include "city/Building.h"
-#include "city/BuildingDescriptionRepository.h"
+#include "city/BuildingRepository.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"
@@ -84,12 +84,13 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TileGrassRepository, AssetType::TileGrass);
     REGISTER_ASSET_REPO(BiomeRepository, AssetType::Biome);
     REGISTER_ASSET_REPO(TileDistributionRepository, AssetType::TileDistribution);
-    static_assert(e_count(AssetType) == 18);
+    REGISTER_ASSET_REPO(BuildingRepository, AssetType::Building);
+    REGISTER_ASSET_REPO(RoomRepository, AssetType::Room);
+    static_assert(e_count(AssetType) == 20);
 
     // Add other extensions
     mExtensionToAssetRepository[CStrToken("comp")] = &MaterialShaderRepository::get();
 
-    mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager);
@@ -134,8 +135,6 @@ void ResourceManager::gatherFiles() {
 
     PreciseTimer timer;
     
-    mRoomFiles.clear();
-    mBuildingFiles.clear();
     mEntityFiles.clear();
     mRecipeFiles.clear();
     mBusinessFiles.clear();
@@ -177,18 +176,7 @@ void ResourceManager::loadFiles() {
         repo.setDefaultMaterialID(MaterialRepository::get().getMaterialId(CStrToken("particle_v0"/*"soft_particle"*/)));
     }
 
-    // Load Rooms
     {
-        ScopedTimer timer("City load");
-        for (auto&& entry : mRoomFiles) {
-            mBuildingRepository->loadRoomDescriptionFile(entry);
-        }
-
-        // Load Buildings
-        for (auto&& entry : mBuildingFiles) {
-            mBuildingRepository->loadBuildingDescriptionFile(entry);
-        }
-
         // Load business definitions
         for (auto&& entry : mBusinessFiles) {
             mBusinessRepository->loadBusinessFile(entry);
@@ -333,12 +321,6 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             auto&& it = mExtensionToAssetRepository.find(extensionToken);
             if (it != mExtensionToAssetRepository.end()) {
                 it->second->registerAssetPath(entry);
-            }
-            else if (fileHasExtension(entry, ".room")) {
-                mRoomFiles.emplace_back(entry);
-            }
-            else if (fileHasExtension(entry, ".bldg")) {
-                mBuildingFiles.emplace_back(entry);
             }
             else if (fileHasExtension(entry, ".vert")) {
                 ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);

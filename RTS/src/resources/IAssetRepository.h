@@ -287,6 +287,7 @@ public:
     inline bool isAssetRegistered(StrToken name) const override {
         return mAssetLookup.find(name) != mAssetLookup.end();
     }
+    // Returns INVALID_ASSET_ID on fail
     inline AssetID tryGetRegisteredAssetID(StrToken name) const override {
         auto&& it = mAssetLookup.find(name);
         if (it == mAssetLookup.end()) return INVALID_ASSET_ID;

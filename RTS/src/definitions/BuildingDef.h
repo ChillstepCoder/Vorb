@@ -8,9 +8,13 @@ enum class BuildingFunction : ui16 {
     NONE,
     RESIDENCE,
     LUMBERMILL,
-    TYPES
+    COUNT
 };
-KEG_ENUM_DECL(BuildingFunction);
+SERIALIZABLE_ENUM_SAME_NAME(BuildingFunction,
+    pair{ BuildingFunction::NONE, "none"sv },
+    pair{ BuildingFunction::RESIDENCE, "stockpile"sv },
+    pair{ BuildingFunction::LUMBERMILL, "shop"sv },
+);
 
 enum class RoomType : ui16 {
     NONE,
@@ -21,44 +25,98 @@ enum class RoomType : ui16 {
     KITCHEN,
     DINING_ROOM,
     BEDROOM,
-    TYPES
+    COUNT
 };
-KEG_ENUM_DECL(RoomType);
+SERIALIZABLE_ENUM_SAME_NAME(RoomType,
+    pair{ RoomType::NONE, "none"sv},
+    pair{ RoomType::STOCKPILE, "stockpile"sv},
+    pair{ RoomType::SHOP, "shop"sv},
+    pair{ RoomType::WORKSHOP, "workshop"sv},
+    pair{ RoomType::LAVATORY, "lavatory"sv},
+    pair{ RoomType::KITCHEN, "kitchen"sv},
+    pair{ RoomType::DINING_ROOM, "dining_room"sv },
+    pair{ RoomType::BEDROOM, "bedroom"sv }
+);
 
-struct RoomDef {
-    StrToken nameToken;
-    RoomDefID id;
+class RoomDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(RoomDef, AssetType::Room);
+
     RoomType roomType = RoomType::NONE;
     ui8 minWidth = 2;
     ui8 maxWidth = 12;
     f32 stairsChance = 0.0f;
     bool canStairsConnect = true;
 };
-KEG_TYPE_DECL(RoomDef);
+SERIALIZABLE_IMGUI_CONTROLLED(RoomDef,
+    make_field(o.roomType, "type"sv),
+    make_field(o.minWidth, "min_width"sv),
+    make_field(o.maxWidth, "max_width"sv),
+    make_field(o.stairsChance, "stairs_chance"sv),
+    make_field(o.canStairsConnect, "stairs_connect"sv)
+);
 
+struct PossibleRoomFileData {
+    StrToken name;
+    ui32v2 countRange = ui32v2(1, 100);
+    f32 weight = 1.0f;
+};
+SERIALIZABLE_IMGUI_CONTROLLED(PossibleRoomFileData,
+    make_field(o.name, "name"sv),
+    make_field(o.countRange, "count_range"sv),
+    make_field(o.weight, "weight"sv)
+);
+
+// Bathrooms, closets, ect
+struct PossibleSubRoomFileData {
+    StrToken name;
+    ui32v2 countRange = ui32v2(0, 1);
+    std::vector<StrToken> parentRooms;
+};
+SERIALIZABLE_IMGUI_CONTROLLED(PossibleSubRoomFileData,
+    make_field(o.name, "name"sv),
+    make_field(o.countRange, "count_range"sv),
+    make_field(o.parentRooms, "parent_rooms"sv)
+);
 
 struct PossibleSubRoom {
-    RoomDefID id;
+    AssetID id;
     ui32v2 countRange = ui32v2(0, 1);
-    std::vector<RoomDefID> parentRoomIDs;
+    std::vector<AssetID> parentRoomIDs; // TODO: Static array instead of vector?
 };
 struct PossibleRoom {
-    RoomDefID id;
+    AssetID id;
     ui32v2 countRange;
     f32 weight;
 };
-struct BuildingDef {
-    StrToken nameToken;
-    BuildingTypeID id = UINT16_MAX;
+class BuildingDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(BuildingDef, AssetType::Building);
+
     ui32v2 widthRange = f32v2(10, 30);
     ui32v2 publicRoomCountRange = ui32v2(1, 3);
     ui32v2 privateRoomCountRange = ui32v2(1, 3);
     ui32v2 employeeCountRange = ui32v2(0);
-    f32 minAspectRatio = 0.5f;
-    BuildingGrammar publicGrammar;
+    f32 minAspectRatio = 0.5f; // TODO: Remove or use?
+    BuildingGrammar publicGrammar; // Not serialized
     BuildingFunction function = BuildingFunction::NONE;
-    // TODO: More cache friendly combination?
-    std::vector<PossibleRoom> publicRooms;
-    std::vector<PossibleRoom> privateRooms;
-    std::vector<PossibleSubRoom> subRooms;
+    std::vector<PossibleRoom> publicRooms; // Not serialized
+    std::vector<PossibleRoom> privateRooms; // Not serialized
+    std::vector<PossibleSubRoom> subRooms; // Not serialized
+    std::vector<PossibleRoomFileData> publicRoomFileData;
+    std::vector<PossibleRoomFileData> privateRoomFileData;
+    std::vector<PossibleSubRoomFileData> subRoomFileData;
+    std::vector<nString> publicRoomGrammarStrings;
 };
+SERIALIZABLE_IMGUI_CONTROLLED(BuildingDef,
+    make_field(o.widthRange, "width_range"sv),
+    make_field(o.publicRoomCountRange, "public_room_count_range"sv),
+    make_field(o.privateRoomCountRange, "private_room_count_range"sv),
+    make_field(o.employeeCountRange, "employs"sv),
+    make_field(o.minAspectRatio, "minAspectRatio"sv),
+    make_field(o.function, "function"sv),
+    make_field(o.publicRoomFileData, "public_rooms"sv),
+    make_field(o.privateRoomFileData, "private_rooms"sv),
+    make_field(o.subRoomFileData, "sub_rooms"sv),
+    make_field(o.publicRoomGrammarStrings, "public_room_grammars"sv)
+);

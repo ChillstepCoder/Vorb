@@ -48,9 +48,11 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, MaterialShader),
     ENUM_FIELD_SIMPLE(AssetType, TileGrass),
     ENUM_FIELD_SIMPLE(AssetType, Biome),
-    ENUM_FIELD_SIMPLE(AssetType, TileDistribution)
+    ENUM_FIELD_SIMPLE(AssetType, TileDistribution),
+    ENUM_FIELD_SIMPLE(AssetType, Building),
+    ENUM_FIELD_SIMPLE(AssetType, Room),
 );
-static_assert(e_count(AssetType) == 18);
+static_assert(e_count(AssetType) == 20);
 
 // Usage: s.value2b(myValue) ect...
 // See bitsery documentation

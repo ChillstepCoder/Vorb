@@ -19,4 +19,4 @@
 #include "definitions/TileDistributionDef.h"
 #include "item/ItemDef.h"
 
-static_assert(e_count(AssetType) == 18, "Add all includes here");
+static_assert(e_count(AssetType) == 20, "Add all includes here");

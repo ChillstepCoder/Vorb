@@ -1,6 +1,6 @@
 #pragma once
 
-struct RoomDef;
+class RoomDef;
 
 #include "util/GridEdge.h"
 #include "tile/Stairs.h"

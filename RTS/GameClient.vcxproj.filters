@@ -207,7 +207,7 @@
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\BuildingDescriptionRepository.cpp">
+    <ClCompile Include="src\city\BuildingRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\city\BuildingBlueprint.cpp">
@@ -274,9 +274,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\definitions\BusinessDef.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\definitions\BuildingDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\pathfinding\NavPath.cpp">
@@ -1319,7 +1316,7 @@
     <ClInclude Include="src\city\BuildingBlueprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\BuildingDescriptionRepository.h">
+    <ClInclude Include="src\city\BuildingRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\BitArray.h">

@@ -17,5 +17,5 @@ namespace ImguiAssetThumbnails {
     template<>
     std::function<void(AssetID, f32v2)> getThumbnailFunction<TextureDef>();
 
-    static_assert(e_count(AssetType) == 18);
+    static_assert(e_count(AssetType) == 20);
 };

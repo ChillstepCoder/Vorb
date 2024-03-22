@@ -230,7 +230,7 @@
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprint.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
-    <ClCompile Include="src\city\BuildingDescriptionRepository.cpp" />
+    <ClCompile Include="src\city\BuildingRepository.cpp" />
     <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp" />
     <ClCompile Include="src\city\City.cpp" />
     <ClCompile Include="src\city\CityBuilder.cpp" />
@@ -253,7 +253,6 @@
     <ClCompile Include="src\debugging\ValueTweaker.cpp" />
     <ClCompile Include="src\debugging\VisualLogger.cpp" />
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
-    <ClCompile Include="src\definitions\BuildingDef.cpp" />
     <ClCompile Include="src\definitions\BusinessDef.cpp" />
     <ClCompile Include="src\definitions\EffectDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
@@ -587,7 +586,7 @@
     <ClInclude Include="src\city\BuildingBlueprint.h" />
     <ClInclude Include="src\city\BuildingBlueprintFlags.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
-    <ClInclude Include="src\city\BuildingDescriptionRepository.h" />
+    <ClInclude Include="src\city\BuildingRepository.h" />
     <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
     <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
     <ClInclude Include="src\city\City.h" />

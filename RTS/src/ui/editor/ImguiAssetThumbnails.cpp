@@ -48,13 +48,17 @@ std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(A
             return getThumbnailFunction<BiomeDef>();
         case AssetType::TileDistribution:
             return getThumbnailFunction<TileDistributionDef>();
+        case AssetType::Building:
+            return getThumbnailFunction<BuildingDef>();
+        case AssetType::Room:
+            return getThumbnailFunction<RoomDef>();
         case AssetType::NONE:
         default:
             panic("Unhandled asset type {} in ImguiAssetThumbnails::getThumbnailFunction", e_cast(assetType));
             break;
 
     }
-    static_assert(e_count(AssetType) == 18);
+    static_assert(e_count(AssetType) == 20);
 }
 
 template<>

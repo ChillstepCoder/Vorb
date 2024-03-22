@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "BuildingBlueprintGenerator.h"
-#include "BuildingDescriptionRepository.h"
+#include "BuildingRepository.h"
 #include "BuildingBlueprint.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -31,8 +31,6 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA),
     color4(0.5f, 0.5f, 0.5f, ROOM_COLOR_ALPHA),
 };
-
-BuildingBlueprintId BuildingBlueprintGenerator::sCurrentId = 0;
 
 void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4* inputColor/* = nullptr*/) {
     visLog.nextStep("Final Floorplan");
@@ -65,7 +63,7 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
 
         // Room name
         char buf[64];
-        node.roomDef->nameToken.toString(buf, nullptr);
+        node.roomDef->getName().toString(buf, nullptr);
         visLog.addText(buf, f32v3(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
         ++i;
     }
@@ -138,47 +136,9 @@ RUNTIME_INIT_FUNC(generateWindowPermutations) {
     BuildingBlueprintGenerator::generatePossibleWindowPermutations();
 }
 
-BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder) :
-    mBuildingRepo(buildingRepo),
-    mCityBuilder(cityBuilder)
-{
-    generatePossibleWindowPermutations();
-}
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed)
-{
-    assert(desc.publicRoomCountRange.y != 0.0f);
-
-    // TODO: This seems inefficient
-    std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(world, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
-    assert(plotSize.x > 2 && plotSize.y > 2);
-    BuildingBlueprint* bPtr = bp.get();
-    mGeneratingBuildings.insert(bPtr);
-    
-    Services::Threadpool::ref().addTask([this, &world, bPtr, &desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed]() {
-        PROFILE_FUNCTION("Generate blueprint async");
-        std::unique_ptr<BuildingBlueprint> newBP = tryGenerateBlueprintSynchronous(world, mBuildingRepo, desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags, seed);
-        if (newBP) {
-            // TODO: If we destroy the original we are fucked
-            // Copy the result to the output bp
-            *bPtr = std::move(*newBP);
-        }
-        else {
-            bPtr->flags.setBit(BuildingBlueprintFlags::BLUEPRINT_FLAG_FAILED_TO_GENERATE);
-        }
-        GameThreadTasks::getInstance().addGenericTask([this, bPtr]() {
-            // Main thread
-            mGeneratingBuildings.erase(bPtr);
-            bPtr->isGenerating = false;
-            mCityBuilder.addBlueprintToBuildAndPreprocess(bPtr);
-        });
-    });
-    return bp;
-}
-
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed) {
     PROFILE_FUNCTION();
-    BuildingBlueprintId id = getNextBuildingID(); // TODO: Move this to game thread only so we dont need to lock?
     constexpr ui32 maxFailCount = 5;
     ui32 failCount = 0;
     // Get new seed each fail
@@ -189,8 +149,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::tryGenerateBluepr
         bp->generationSeed = seed;
         bp->randomGen = std::make_unique<RandomGenerator>(seed);
         assert(plotSize.x > 2 && plotSize.y > 2);
-        bp->id = id;
-        if (tryGenerateBlueprintInternal(bp.get(), buildingRepo)) {
+        if (tryGenerateBlueprintInternal(bp.get())) {
             if (failCount > 0) {
                 LOG_DEBUG("Finished building with fail count {}", failCount);
             }
@@ -234,7 +193,7 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
     static_assert(MAX_EXTERIOR_WALL_RUN_LENGTH == 8);
 }
 
-bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo) {
+bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint* bPtr) {
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(bPtr->randomGen->mSeed), VisualLogCategory::Building, false);
     if (visLog) {
@@ -249,12 +208,13 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprint*
     addPrivateRoomsToGraph(*bPtr);
 
     // Assign roomDefs
+    RoomRepository& roomRepo = RoomRepository::get();
     for (auto& room : bPtr->rooms) {
-        room.roomDef = &buildingRepo.getRoomDefFromID(room.roomDefId);
+        room.roomDef = &roomRepo.getLoadedOrUnloadedAsset(room.roomDefId);
     }
 
     // Rooms
-    initRooms(*bPtr, buildingRepo);
+    initRooms(*bPtr);
     placeRooms(*bPtr, visLog);
     allocateTileData(*bPtr);
     expandRooms(*bPtr, visLog);
@@ -483,7 +443,7 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                     visLog->addLineBetweenPoints(childPos, parentPos, color);
 
                     char buf[64];
-                    child.roomDef->nameToken.toString(buf, nullptr);
+                    child.roomDef->getName().toString(buf, nullptr);
                     visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
                 }
                 placeChildrenRecursive(bp, &child, availableWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
@@ -523,7 +483,7 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                 const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * floorHeight);
                 visLog->addLineBetweenPoints(childPos, parentPos, color);
                 char buf[64];
-                child.roomDef->nameToken.toString(buf, nullptr);
+                child.roomDef->getName().toString(buf, nullptr);
                 visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * floorHeight), 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
             }
             assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
@@ -533,12 +493,13 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
     }
 }
 
-void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo) {
+void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp) {
+    RoomRepository& roomRepo = RoomRepository::get();
     for (size_t i = 0; i < bp.rooms.size(); ++i) {
         RoomNode& room = bp.rooms[i];
         room.id = (RoomNodeID)i;
 
-        const RoomDef& desc = buildingRepo.getRoomDefFromID(room.roomDefId);
+        const RoomDef& desc = roomRepo.getLoadedOrUnloadedAsset(room.roomDefId);
         room.desiredWidth = (i32)round(lerp((f32)desc.minWidth, (f32)desc.maxWidth, bp.sizeAlpha));
         room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
@@ -585,7 +546,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     // We will generate to the right, then will rotate the coordinates around based on the cartesian
     if (visLog) {
         char buf[64];
-        root->roomDef->nameToken.toString(buf, nullptr);
+        root->roomDef->getName().toString(buf, nullptr);
         visLog->addText(buf, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.mTileSpatialGrid.getFloorHeight()), 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
     }
     placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, dims, visLog);
@@ -1391,7 +1352,7 @@ bool BuildingBlueprintGenerator::validateRoomsArentEmpty(BuildingBlueprint& bp, 
         if (room.tilePositions.empty()) {
             if (visLog) {
                 char buf[64];
-                room.roomDef->nameToken.toString(buf, nullptr);
+                room.roomDef->getName().toString(buf, nullptr);
                 visLog->addText("INVALID ROOM: " + std::string(buf), f32v3(0.0f), 1.0f, f32v2(0.0f, 1.0f), COLOR_RED);
             }
             return false;
@@ -2165,15 +2126,4 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
 
     computeOwnedTilesOnFirstFloor(bp);
     // TODO: Sort bp.tilesToBuild by distance from entrances
-}
-
-BuildingBlueprintId BuildingBlueprintGenerator::getNextBuildingID() {
-    static std::mutex sMutex;
-    std::lock_guard lock(sMutex);
-    ++sCurrentId;
-    // Will this ever happen? maybe...
-    if (sCurrentId == INVALID_BLUEPRINT_ID) {
-        sCurrentId = 0;
-    }
-    return sCurrentId;
 }
