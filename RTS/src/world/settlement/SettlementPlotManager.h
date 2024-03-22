@@ -20,13 +20,15 @@ struct SettlementPlot {
     RoadSegmentID connectedRoad;
     BitFlags<PlotFlags> flags;
     SettlementZone zone;
+    entt::entity owner = entt::null;
+    StructureID structure = INVALID_STRUCTURE_ID;
     //ui8 padding[2];
 };
 
 struct SettlementPlotRequest {
     i32 minimumWidth = 5;
     i32 maximumWidth = 10;
-    i32 minimumSize = SQ(5);
+    i32 minimumSize = SQ(6);
     i32 maximumSize = SQ(10);
     SettlementZone zone;
     // DTileCoord desiredProximity (for generating close to forests?)
@@ -69,7 +71,9 @@ public:
     SettlementZone getPlotSeedZone(DTileCoord pos) const;
     PlotSeed getPlotSeed(DTileCoord pos) const;
 
+    SettlementPlot& getPlot(SettlementPlotID id) { return mPlots[id]; }
     const SettlementPlot& getPlot(SettlementPlotID id) const { return mPlots[id]; }
+
     // Returns INVALID_SETTLEMENT_PLOT_ID on failure
     SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog);
     

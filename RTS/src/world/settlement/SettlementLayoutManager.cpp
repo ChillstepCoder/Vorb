@@ -79,7 +79,10 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     for (ui32 i = 0; i < 16; ++i) {
         SettlementPlotRequest request;
         request.zone = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
-        mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
+        SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
+        if (newPlotID != INVALID_SETTLEMENT_PLOT_ID) {
+            SettlementPlot& newPlot = mPlotManager->getPlot(newPlotID);
+        }
     }
 
     if (mCurrentVisLog) {
@@ -320,7 +323,7 @@ void SettlementLayoutManager::debugDraw() const {
     for (const SettlementPlot& plot : plots) {
         DTileCoord root(plot.aabbDTile.pos);
         const f32v3 worldPosA = helperGetWorldPosFromDTileCoord(root, mWorld);
-        DebugRenderer::drawWireQuadThreadSafe(worldPosA, f32v2(plot.aabbDTile.dims), color::Magenta, FRAME_COUNT);
+        DebugRenderer::drawWireQuadThreadSafe(worldPosA, f32v2(plot.aabbDTile.dims) * (f32)DTILE_WIDTH, color::Magenta, FRAME_COUNT);
     }
 }
 

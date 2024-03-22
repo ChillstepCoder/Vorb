@@ -97,93 +97,152 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
+i32v2 PLOT_EXPAND_OFFSETS[4] = {
+    { 0, -1}, // SOUTH
+    {-1,  0}, // WEST
+    { 1,  0}, // EAST
+    { 0,  1}  // NORTH
+};
+
+i32v2 PLOT_ITERATE_OFFSETS[4] = {
+    { 1,  0}, // SOUTH
+    { 0,  1}, // WEST
+    { 0,  1}, // EAST
+    { 1,  0}  // NORTH
+};
+
+bool tryExpandPlotInDir(Cartesian dir, i32AABB2& aabb, std::vector<DTileCoord>& validPoints, World& world, i32 minExpandWidth, VisualLog* visLog) {
+
+    OwnershipGrid& ownerGrid = world.getOwnershipGrid();
+    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
+    const size_t startValidPointsSize = validPoints.size();
+    const i32 worldWidthDTiles = world.getWidthDTiles();
+
+    i32AABB2 newAABB = aabb;
+    DTileCoord iterPos;
+    i32 length;
+    switch (dir) {
+        case Cartesian::SOUTH:
+            --newAABB.pos.y;
+            length = newAABB.width;
+            iterPos.v = newAABB.pos;
+            ++newAABB.depth;
+            break;
+        case Cartesian::WEST:
+            --newAABB.pos.x;
+            length = newAABB.depth;
+            iterPos.v = newAABB.pos;
+            ++newAABB.width;
+            break;
+        case Cartesian::EAST:
+            length = newAABB.depth;
+            iterPos.v = newAABB.pos;
+            iterPos.x += newAABB.width;
+            ++newAABB.width;
+            break;
+        case Cartesian::NORTH:
+            length = newAABB.width;
+            iterPos.v = newAABB.pos;
+            iterPos.y += newAABB.depth;
+            ++newAABB.depth;
+            break;
+        default:
+            assert(false);
+            break;
+    }
+
+    // Check if we can expand in this direction
+    const i32v2& iterateOffset = PLOT_ITERATE_OFFSETS[e_cast(dir)];
+    // i32 tilesAdded = 0;
+    bool isValid = false;
+    i32 bestRun = 0;
+    i32 currentRun = 0;
+    for (int j = 0; j < length; ++j) {
+        if (iterPos.x < 0 || iterPos.x >= worldWidthDTiles || iterPos.y < 0 || iterPos.y >= worldWidthDTiles) [[unlikely]] {
+            isValid = false;
+            break;
+        }
+        if (heightGrid.getHeightAtVert<true>(iterPos) <= -1.0f) {
+            // No plots on deep water (for now)
+            currentRun = 0;
+            continue;
+        }
+        if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(iterPos)) {
+            // Blocked fails the whole plot attempt
+            if (ownerData->ownerObjectType == DTileOwnerObjectType::ExternalRoadBlocked) {
+                isValid = false;
+                break;
+            }
+            // We can only cover empty or plot seed tiles but this is not a failure case
+            if (!(ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed)) {
+                currentRun = 0;
+                continue;
+            }
+        }
+        isValid = true;
+        if (++currentRun > bestRun) {
+            bestRun = currentRun;
+        }
+        validPoints.emplace_back(iterPos);
+        // Step
+        iterPos.v += iterateOffset;
+    }
+    if (!isValid || bestRun < minExpandWidth) {
+        validPoints.resize(startValidPointsSize);
+        return false;
+    }
+    aabb = newAABB;
+    return true;
+}
+
 SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, OPT VisualLog* vislog) {
     OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const i32 worldWidthDTiles = mWorld.getWidthDTiles();
-    // Simple scan line search, possibly bad
-    // We first search to the right. If fail, retry and search to the left.
-    // TODO: Cache this memory?
+
     std::vector<DTileCoord> validPoints;
     validPoints.reserve(request.maximumSize + 1);
 
-    i32 minX = INT32_MAX;
-    i32 maxX = INT32_MIN;
-    i32 minY = INT32_MAX;
-    i32 maxY = INT32_MIN;
+    i32AABB2 aabb(seed.pos.x, seed.pos.y, 1, 1);
 
-    // Select direction based on the direction of the plot seed. We want to slide up against the road
-    // we are stemming off of
-    i32 xDir;
-    i32 yDir;
-    switch (seed.dir) {
-        case PlotSeedDir::SouthWest:
-            xDir = -1;
-            yDir = 1;
-            break;
-        case PlotSeedDir::SouthEast:
-            xDir = 1;
-            yDir = 1;
-            break;
-        case PlotSeedDir::NorthWest:
-            xDir = -1;
-            yDir = -1;
-            break;
-        case PlotSeedDir::NorthEast:
-            xDir = 1;
-            yDir = -1;
-            break;
-        default:
-            assert(false);
-            return INVALID_SETTLEMENT_PLOT_ID;
-    }
+    i32 validDirCount = 4;
+    bool validDirs[4] = { true, true, true, true };
 
-    bool startValid = false;
-    DTileCoord start = seed.pos;
-    i32 startX = 0;
-    for (i32 y = 0; y != request.maximumWidth * yDir; y += yDir) {
-        // Failure case from previous iteration, need to end early and not keep going
-        //if (startX == request.maximumWidth * xDir) break;
-        for (i32 x = startX; x != request.maximumWidth * xDir; x += xDir) {
-            DTileCoord newCoord(start.x + x, start.y + y);
-            if (newCoord.x < 0 || newCoord.x >= worldWidthDTiles || newCoord.y < 0 || newCoord.y >= worldWidthDTiles) [[unlikely]] {
-                break;
-            }
-            if (heightGrid.getHeightAtVert<true>(newCoord) <= -1.0f) {
-                // No plots on deep water (for now)
-                if (vislog) vislog->addWireQuad(helperGetWorldPosFromDTileCoord(newCoord, &mWorld), f32v2(1.0f), color::Red);
-                startX = x + xDir;
-                if (!startValid) continue;
-                break;
-            }
-            if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(newCoord)) {
-                // We can only cover empty or plot seed tiles
-                if (!(ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed)) {
-                    if (vislog) vislog->addWireQuad(helperGetWorldPosFromDTileCoord(newCoord, &mWorld), f32v2(1.0f), color::Red);
-                    startX = x + xDir;
-                    if (!startValid) continue;
+    // Make sure we have consecutive runs that are large enough
+    int currentMaxWidth = 1;
+    do {
+        const i32 minExpandRunWidth = glm::min(currentMaxWidth, request.minimumWidth);
+        for (i32 i = 0; i <= (i32)Cartesian::NORTH; ++i) {
+            if (validDirs[i]) {
+                if (!tryExpandPlotInDir((Cartesian)i, aabb, validPoints, mWorld, minExpandRunWidth, vislog)) {
+                    validDirs[i] = false;
+                    --validDirCount;
+                }
+                else if (validPoints.size() >= request.maximumSize) {
+                    // We expanded beyond maximum size
+                    validDirCount = 0;
                     break;
                 }
-            }
-            if (vislog) vislog->addWireQuad(helperGetWorldPosFromDTileCoord(newCoord, &mWorld), f32v2(1.0f), color::LightGreen);
-            startValid = true;
-            validPoints.emplace_back(newCoord);
-            if (newCoord.x < minX) minX = newCoord.x;
-            if (newCoord.x > maxX) maxX = newCoord.x;
-            if (newCoord.y < minY) minY = newCoord.y;
-            if (newCoord.y > maxY) maxY = newCoord.y;
-
-            if (validPoints.size() == request.maximumSize) {
-                const i32AABB2 aabb(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
-                return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, aabb, owner);
+                else {
+                    // Enable retry expanding to our neighbor directions since we may have opened up a new valid run to push into
+                    const Cartesian* neighbors = CARTESIAN_NEIGHBORS[i];
+                    for (int j = 0; j < 2; ++j) {
+                        if (!validDirs[e_cast(neighbors[j])]) {
+                            validDirs[e_cast(neighbors[j])] = true;
+                            ++validDirCount;
+                        }
+                    }
+                }
             }
         }
-        startValid = false;
-    }
+        ++currentMaxWidth;
+    } while (validDirCount);
+
     if (validPoints.size() >= request.minimumSize) {
-        const i32AABB2 aabb(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
+        // TODO: Detect disjoint nodes and remove them?
         return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, aabb, owner);
     }
+  
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
@@ -194,6 +253,7 @@ SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> co
     newPlot.zone = zone;
     newPlot.aabbDTile = aabbDTile;
     newPlot.ownedDTiles.resizeAndZero(aabbDTile.width * aabbDTile.depth);
+    newPlot.owner = owner;
     for (DTileCoord c : coords) {
         const i32 x = c.x - aabbDTile.pos.x;
         const i32 y = c.y - aabbDTile.pos.y;

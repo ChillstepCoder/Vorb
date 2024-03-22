@@ -718,15 +718,15 @@ inline f32 getPressureValue(const RoomNode& room) {
 constexpr ui8 ITER_STEP = 2;
 constexpr ui8 MAX_WALL_LENGTH = 64;
 
-i32v2 WALL_EXPAND_OFFSETS[4] = {
+const i32v2 WALL_EXPAND_OFFSETS[4] = {
     { 0, -1}, // SOUTH
     {-1,  0}, // WEST
     { 1,  0}, // EAST
     { 0,  1}  // NORTH
 };
 
-i32v2 WALL_ITERATE_OFFSETS[4] = {
-    { 1,  1}, // SOUTH
+const i32v2 WALL_ITERATE_OFFSETS[4] = {
+    { 1,  0}, // SOUTH
     { 0,  1}, // WEST
     { 0,  1}, // EAST
     { 1,  0}  // NORTH
