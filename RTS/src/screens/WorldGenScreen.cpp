@@ -457,7 +457,8 @@ void WorldGenScreen::updateDockspace()
         viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
-        assert(viewport->Size.x != 0 && viewport->Size.y != 0);
+        // TODO: This asserts when you minimize the window
+        //assert(viewport->Size.x != 0 && viewport->Size.y != 0);
         ImGui::SetNextWindowViewport(viewport->ID);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);

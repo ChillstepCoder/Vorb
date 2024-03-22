@@ -5,6 +5,7 @@
 
 class RandomGenerator;
 class World;
+class VisualLog;
 
 enum class PlotFlags : ui8 {
     Owned,
@@ -70,12 +71,12 @@ public:
 
     const SettlementPlot& getPlot(SettlementPlotID id) const { return mPlots[id]; }
     // Returns INVALID_SETTLEMENT_PLOT_ID on failure
-    SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner);
+    SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog);
     
     const std::vector<SettlementPlot>& getPlots() const { return mPlots; }
 
 private:
-    SettlementPlotID tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner);
+    SettlementPlotID tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, OPT VisualLog* vislog);
     SettlementPlotID allocateNewPlot(std::span<DTileCoord> coords, SettlementZone zone, i32AABB2 aabbDTile, entt::entity owner);
     // TODO: DISTRICTING
     std::vector<SettlementPlot> mPlots;

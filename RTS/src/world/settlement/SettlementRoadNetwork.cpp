@@ -520,16 +520,33 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     const f32 baseAngle = MathUtil::yawFromDirection(newSegment.direction);
     const f32v2 rightDir = MathUtil::rotateVector2DRad(newSegment.direction, M_PI_2F);
 
-    auto getPlotSeedDir = [rightDir, &verts](DTileCoord c) -> PlotSeedDir{
+    auto getPlotSeedDir = [rightDir, &verts, baseAngle](DTileCoord c) -> PlotSeedDir{
         const f32v2 offsetFromBase = c.v - verts[0].v;
         if (glm::dot(offsetFromBase, rightDir) > 0.0f) {
             // Right
-            // TODO: REST
-            return PlotSeedDir::SouthEast;
+            if (baseAngle < -M_PI_2F) {
+                return PlotSeedDir::SouthEast;
+            }
+            else if (baseAngle < 0.0f) {
+                return PlotSeedDir::NorthEast;
+            }
+            else if (baseAngle > M_PI_2F) {
+                return PlotSeedDir::SouthWest;
+            }
+            return PlotSeedDir::NorthWest;
         }
         else {
             // Left
-            return PlotSeedDir::SouthWest;
+            if (baseAngle < -M_PI_2F) {
+                return PlotSeedDir::NorthWest;
+            }
+            else if (baseAngle < 0.0f) {
+                return PlotSeedDir::SouthWest;
+            }
+            else if (baseAngle > M_PI_2F) {
+                return PlotSeedDir::NorthEast;
+            }
+            return PlotSeedDir::SouthEast;
         }
     };
 

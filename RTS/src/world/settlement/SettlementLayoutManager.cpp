@@ -73,12 +73,14 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     for (ui32 i = 0; i < 16; ++i) {
         addedCount += tryAddNewRandomSector();
     }
-
-    /* for (ui32 i = 0; i < 16; ++i) {
-         SettlementPlotRequest request;
-         request.zone = SettlementZone::UrbanCommercial;
-         mPlotManager->tryGenerateNewPlot(request, settlement);
-     }*/
+    if (mCurrentVisLog) {
+        mCurrentVisLog->nextStep("Plots");
+    }
+    for (ui32 i = 0; i < 16; ++i) {
+        SettlementPlotRequest request;
+        request.zone = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
+        mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
+    }
 
     if (mCurrentVisLog) {
         visLog->finish();
@@ -323,13 +325,13 @@ void SettlementLayoutManager::debugDraw() const {
 }
 
 std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusAtCoord(DTileCoord coord) {
-    constexpr f32 RURAL_RADIUS = 250.0f;
+    constexpr f32 RURAL_RADIUS = 150.0f;
 
     const f32v2 offsetFromRoot((coord - mRootPos).v);
     const f32 offsetLength = glm::length(offsetFromRoot);
     // Beyond certain radius always rural
     if (offsetLength > RURAL_RADIUS) {
-        return std::make_pair(SettlementZone::Rural, 64.0f);
+        return std::make_pair(SettlementZone::Rural, 40.f);
     }
 
     const f32v2 offsetNormal = offsetFromRoot / offsetLength;
@@ -338,7 +340,7 @@ std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusA
     constexpr f32 FREQ = M_PIF * 3.0f; // USE WHOLE NUMBER
     constexpr f32 COMMERCIAL_CUTOFF = -0.1f; // Larger number = more residential
     if (cos((dot + 1.0f) * FREQ) >= COMMERCIAL_CUTOFF) {
-        return std::make_pair(SettlementZone::UrbanResidential, 22.0f);
+        return std::make_pair(SettlementZone::UrbanResidential, 16.0f);
     }
-    return std::make_pair(SettlementZone::UrbanCommercial, 22.0f);
+    return std::make_pair(SettlementZone::UrbanCommercial, 16.0f);
 }

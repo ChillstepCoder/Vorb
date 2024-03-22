@@ -7,6 +7,10 @@
 #include "world/ownership/OwnershipGrid.h"
 #include "world/IHeightmapGrid.h"
 
+#include "debugging/VisualLogger.h"
+
+#include "world/settlement/SettlementDebugHelpers.inl"
+
 static std::unordered_set<i32> sClosedSeedSet;
 
 SettlementPlotManager::SettlementPlotManager(World& world, RandomGenerator& randomGenerator) : mWorld(world), mRandomGenerator(randomGenerator) {
@@ -65,7 +69,7 @@ PlotSeed SettlementPlotManager::getPlotSeed(DTileCoord pos) const {
     return PlotSeed();
 }
 
-SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner) {
+SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog) {
     ASSERT_SIM_THREAD();
 
     auto it = mPlotSeeds.find(request.zone);
@@ -83,7 +87,7 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
             continue;
         }*/
         //sClosedSeedSet.insert(hash);
-        SettlementPlotID plotId = tryGeneratePlotAtSeedInternal(request, c, owner);
+        SettlementPlotID plotId = tryGeneratePlotAtSeedInternal(request, c, owner, visLog);
         if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
             return plotId;
         }
@@ -93,7 +97,7 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
-SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner) {
+SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, OPT VisualLog* vislog) {
     OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const i32 worldWidthDTiles = mWorld.getWidthDTiles();
@@ -108,28 +112,60 @@ SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(Settlement
     i32 minY = INT32_MAX;
     i32 maxY = INT32_MIN;
 
+    // Select direction based on the direction of the plot seed. We want to slide up against the road
+    // we are stemming off of
+    i32 xDir;
+    i32 yDir;
+    switch (seed.dir) {
+        case PlotSeedDir::SouthWest:
+            xDir = -1;
+            yDir = 1;
+            break;
+        case PlotSeedDir::SouthEast:
+            xDir = 1;
+            yDir = 1;
+            break;
+        case PlotSeedDir::NorthWest:
+            xDir = -1;
+            yDir = -1;
+            break;
+        case PlotSeedDir::NorthEast:
+            xDir = 1;
+            yDir = -1;
+            break;
+        default:
+            assert(false);
+            return INVALID_SETTLEMENT_PLOT_ID;
+    }
+
     bool startValid = false;
     DTileCoord start = seed.pos;
-    for (i32 y = 0; y < request.maximumWidth; ++y) {
-        for (i32 x = 0; x < request.maximumWidth; ++x) {
+    i32 startX = 0;
+    for (i32 y = 0; y != request.maximumWidth * yDir; y += yDir) {
+        // Failure case from previous iteration, need to end early and not keep going
+        //if (startX == request.maximumWidth * xDir) break;
+        for (i32 x = startX; x != request.maximumWidth * xDir; x += xDir) {
             DTileCoord newCoord(start.x + x, start.y + y);
-            if (newCoord.x >= worldWidthDTiles) [[unlikely]] {
-                if (!startValid) continue;
+            if (newCoord.x < 0 || newCoord.x >= worldWidthDTiles || newCoord.y < 0 || newCoord.y >= worldWidthDTiles) [[unlikely]] {
                 break;
             }
             if (heightGrid.getHeightAtVert<true>(newCoord) <= -1.0f) {
                 // No plots on deep water (for now)
+                if (vislog) vislog->addWireQuad(helperGetWorldPosFromDTileCoord(newCoord, &mWorld), f32v2(1.0f), color::Red);
+                startX = x + xDir;
                 if (!startValid) continue;
                 break;
             }
             if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(newCoord)) {
                 // We can only cover empty or plot seed tiles
                 if (!(ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed)) {
+                    if (vislog) vislog->addWireQuad(helperGetWorldPosFromDTileCoord(newCoord, &mWorld), f32v2(1.0f), color::Red);
+                    startX = x + xDir;
                     if (!startValid) continue;
                     break;
                 }
             }
-
+            if (vislog) vislog->addWireQuad(helperGetWorldPosFromDTileCoord(newCoord, &mWorld), f32v2(1.0f), color::LightGreen);
             startValid = true;
             validPoints.emplace_back(newCoord);
             if (newCoord.x < minX) minX = newCoord.x;
@@ -138,12 +174,16 @@ SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(Settlement
             if (newCoord.y > maxY) maxY = newCoord.y;
 
             if (validPoints.size() == request.maximumSize) {
-                return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, i32AABB2(minX, minY, maxX - minX, maxY - minY), owner);
+                const i32AABB2 aabb(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
+                return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, aabb, owner);
             }
         }
         startValid = false;
     }
-
+    if (validPoints.size() >= request.minimumSize) {
+        const i32AABB2 aabb(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
+        return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, aabb, owner);
+    }
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
