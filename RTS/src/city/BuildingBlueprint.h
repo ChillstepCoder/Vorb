@@ -83,10 +83,20 @@ public:
 };
 typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 
+class BuildingBlueprintGenerationContext {
+public:
+    BuildingBlueprintGenerationContext(BuildingBlueprint& blueprint);;
+    ~BuildingBlueprintGenerationContext();
+
+    BuildingBlueprint& blueprint;
+    std::unique_ptr<RandomGenerator> randomGen;
+    ui32 generationSeed = 0;
+};
+
 class BuildingBlueprint {
 public:
     BuildingBlueprint() = default;
-    BuildingBlueprint(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
     ~BuildingBlueprint();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
@@ -111,7 +121,6 @@ public:
     f32 mDesiredTerrainFlattenHeight = 0.0f;
     // End construction
 
-    World* world = nullptr;
     Building* building = nullptr;
     const BuildingDef* desc = nullptr;
     float sizeAlpha;
@@ -137,8 +146,4 @@ public:
     bool isBuilding = false;
     BitFlags<BuildingBlueprintFlags> flags;
     ui32 refCount = 0;
-
-    // TODO: can we store this stuff in a separate generation structure?
-    std::unique_ptr<RandomGenerator> randomGen;
-    ui32 generationSeed = 0;
 };

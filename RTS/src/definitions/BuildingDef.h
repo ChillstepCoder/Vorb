@@ -43,15 +43,13 @@ public:
     DEFAULT_ASSET_CONSTRUCTOR(RoomDef, AssetType::Room);
 
     RoomType roomType = RoomType::NONE;
-    ui8 minWidth = 2;
-    ui8 maxWidth = 12;
+    ui8v2 widthRange = ui8v2(2, 12);
     f32 stairsChance = 0.0f;
     bool canStairsConnect = true;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(RoomDef,
     make_field(o.roomType, "type"sv),
-    make_field(o.minWidth, "min_width"sv),
-    make_field(o.maxWidth, "max_width"sv),
+    make_field(o.widthRange, "width_r"sv),
     make_field(o.stairsChance, "stairs_chance"sv),
     make_field(o.canStairsConnect, "stairs_connect"sv)
 );

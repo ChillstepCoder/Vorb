@@ -19,32 +19,42 @@ public:
     BuildingBlueprintGenerator() = delete;
   
     //static void tryGenerateBlueprintASync(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
-    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(World& world, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
+    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(
+        World& world,
+        const BuildingDef& desc,
+        float sizeAlpha,
+        Cartesian entrySide,
+        i32v2 plotSize,
+        const i32v3& worldPosRoot,
+        entt::entity ownerEntity,
+        BuildingBlueprintFlags flags,
+        ui32 seed
+    );
 
     static void generatePossibleWindowPermutations();
 private:
 
-    static bool tryGenerateBlueprintInternal(BuildingBlueprint* bPtr);
+    static bool tryGenerateBlueprintInternal(BuildingBlueprintGenerationContext& context);
     // Graph Generation
-    static void addPublicRoomsToGraph(BuildingBlueprint& bp);
-    static void assignPublicRooms(BuildingBlueprint& bp);
-    static void addPrivateRoomsToGraph(BuildingBlueprint& bp);
-    static void initRooms(BuildingBlueprint& bp);
-    static void placeRooms(BuildingBlueprint& bp, VisualLog* visLog);
-    static void allocateTileData(BuildingBlueprint& bp);
-    static void expandRooms(BuildingBlueprint& bp, VisualLog* visLog);
-    static void roomCleanup(BuildingBlueprint& bp, VisualLog* visLog);
-    static void computeRoomAABBs(BuildingBlueprint& bp, VisualLog* visLog);
-    static bool validateRoomsArentEmpty(BuildingBlueprint& bp, VisualLog* visLog);
-    static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
-    static void placeWalls(BuildingBlueprint& bp, VisualLog* visLog);
-    static void placeDoors(BuildingBlueprint& bp, VisualLog* visLog);
-    static void buildRoomInteriorEdges(BuildingBlueprint& bp, VisualLog* visLog);
-    static void placeStairs(BuildingBlueprint& bp, VisualLog* visLog);
-    static void buildExteriorWallRuns(BuildingBlueprint& bp, VisualLog* visLog);
-    static void placeWindows(BuildingBlueprint& bp, VisualLog* visLog);
+    static void addPublicRoomsToGraph(BuildingBlueprintGenerationContext& context);
+    static void assignPublicRooms(BuildingBlueprintGenerationContext& context);
+    static void addPrivateRoomsToGraph(BuildingBlueprintGenerationContext& context);
+    static void initRooms(BuildingBlueprintGenerationContext& context);
+    static void placeRooms(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void allocateTileData(BuildingBlueprintGenerationContext& context);
+    static void expandRooms(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void roomCleanup(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void computeRoomAABBs(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static bool validateRoomsArentEmpty(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void initRoomWalls(BuildingBlueprintGenerationContext& context, RoomNode& room);
+    static void placeWalls(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void placeDoors(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void buildRoomInteriorEdges(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void placeStairs(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void buildExteriorWallRuns(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void placeWindows(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
 
-    static void postProcessBlueprint(BuildingBlueprint& bp);
+    static void postProcessBlueprint(BuildingBlueprintGenerationContext& context);
 
     inline static std::vector<std::vector<bool>> sPossibleWindowPermutations[MAX_EXTERIOR_WALL_RUN_LENGTH + 1];
 };

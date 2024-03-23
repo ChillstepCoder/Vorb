@@ -107,3 +107,12 @@ template<size_t N>
 inline consteval StrToken CStrToken(const char(&str)[N]) {
     return StrToken(str, false /*Allows us to select the consteval constructor*/);
 }
+
+template<>
+struct std::formatter<StrToken> : std::formatter<std::string> {
+    template<typename FormatContext>
+    auto format(const StrToken& str, FormatContext& ctx) const -> decltype(ctx.out()) {
+        // Directly format the string representation of StrToken
+        return std::formatter<std::string>::format(str.toString(), ctx);
+    }
+};

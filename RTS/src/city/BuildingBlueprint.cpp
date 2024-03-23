@@ -7,7 +7,6 @@
 #include "math/Random.h"
 
 BuildingBlueprint::BuildingBlueprint(
-    World& world,
     const BuildingDef& desc,
     float sizeAlpha,
     Cartesian entrySide,
@@ -16,7 +15,7 @@ BuildingBlueprint::BuildingBlueprint(
     entt::entity ownerEntity,
     BuildingBlueprintFlags flags
 ) :
-    world(&world), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), mOwnerEntity(ownerEntity), flags(flags) {
+    desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), mOwnerEntity(ownerEntity), flags(flags) {
     TileRepository& tileRepo = TileRepository::get();
     // We will reinitialize later with the proper Z dimensions
     mTileSpatialGrid.init(worldPosRoot, i32v3(dims.x, dims.y, 1), 3);
@@ -237,3 +236,7 @@ bool BuildTileBlueprintHandle::tick(f32 buildProgressIncrease) {
     }
     return false;
 }
+
+BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(BuildingBlueprint& blueprint) : blueprint(blueprint) {}
+
+BuildingBlueprintGenerationContext::~BuildingBlueprintGenerationContext() = default;

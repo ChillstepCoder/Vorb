@@ -44,7 +44,7 @@ void BuildingRepository::onAllAssetTypesRegistered() {
             newRoom.countRange = roomFileData.countRange;
             newRoom.parentRoomIDs.resize(roomFileData.parentRooms.size());
             for (size_t j = 0; j < roomFileData.parentRooms.size(); ++j) {
-                StrToken parentName = roomFileData.parentRooms[i];
+                StrToken parentName = roomFileData.parentRooms[j];
                 newRoom.parentRoomIDs[j] = RoomRepository::getInstance().tryGetRegisteredAssetID(parentName);
                 if (newRoom.parentRoomIDs[j] == INVALID_ASSET_ID) {
                     panic("Invalid subroom parent room def {} on building {}", parentName, def.getName());

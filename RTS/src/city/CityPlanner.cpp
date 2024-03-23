@@ -20,7 +20,7 @@
 CityPlanner::CityPlanner(City& city)
     : mCity(city)
 {
-    mBlueprintGenerator = std::make_unique<BuildingBlueprintGenerator>(Services::ResourceManager::ref().getBuildingDescriptionRepository(), mCity.getCityBuilder());
+    //mBlueprintGenerator = std::make_unique<BuildingBlueprintGenerator>(Services::ResourceManager::ref().getBuildingDescriptionRepository(), mCity.getCityBuilder());
 }
 
 void CityPlanner::update() {
