@@ -59,10 +59,9 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
     mBlueprintsToBuild.push_back(blueprint);
 }
 
-Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
+Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
-    assert(bp.world);
 
     TileRepository& tileRepo = TileRepository::get();
 
@@ -72,12 +71,12 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     BitArray& tilesNeedingTerrainFlatten = bp.tilesNeedingTerrainFlatten;
 
     // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = bp.world->getHeightmapGrid();
+    IHeightmapGrid& grid = world.getHeightmapGrid();
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), tilesNeedingTerrainFlatten));
 
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(bp.world->getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
+    Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
@@ -160,7 +159,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     loadFinishedEvent.container = &tileContainer;
     tileContainer.getWorld().getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
-    finishBuilding(*newBuilding, bp);
+    finishBuilding(world, *newBuilding, bp);
 
     return newBuilding;
 }
@@ -190,7 +189,6 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 
 void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     ASSERT_GAME_THREAD();
-    assert(bp.world == &mCity.getWorld());
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = mCity.getWorld().getHeightmapGrid();
@@ -204,7 +202,7 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     }
 }
 
-void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint) {
+void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint) {
     building.mFunction = blueprint.desc->function;
     building.mPlotIndex = blueprint.plotIndex;
     building.mDoorTiles = blueprint.exteriorDoors;
@@ -215,15 +213,13 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     building.getTileContainer()->setState(TileContainerState::READY);
 
     // Navmesh
-    if (NavWorld* navWorld = blueprint.world->tryGetNavWorld()) {
+    if (NavWorld* navWorld = world.tryGetNavWorld()) {
         navWorld->markContainerNavDirty(building.mTileContainer);
     }
 
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
-    assert(blueprint->world == &mCity.getWorld());
-
     auto view = mCity.getWorld().getECS().mRegistry.view<BusinessBuildComponent>();
     bool success = false;
     // Find a business who can take on this build job

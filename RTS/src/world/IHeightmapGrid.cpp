@@ -167,16 +167,16 @@ void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeig
     ASSERT_GAME_THREAD();
     const HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
     const i32v2 offset = i32v2(worldPos) - mSpatialGrid2D.getWorldPosXYFromID(id);
-    const ui32 vertX = (ui32)offset.x / HEIGHTMAP_QUAD_SIZE;
-    const ui32 vertY = (ui32)offset.y / HEIGHTMAP_QUAD_SIZE;
-    const ui32 vertIndex = vertX + vertY * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    const i32 vertX = offset.x / HEIGHTMAP_QUAD_SIZE;
+    const i32 vertY = offset.y / HEIGHTMAP_QUAD_SIZE;
+    const i32 vertIndex = vertX + vertY * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
 
     // TODO: Handle triangle rotation instead of always flattening the entire quad
 
     // Bottom left
     setHeightAtPatch(id, vertIndex, height, dir);
     // Bottom right
-    if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
+    if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1) {
         setHeightAtPatch(id, vertIndex + 1, height, dir);
     }
     else {
@@ -184,7 +184,7 @@ void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeig
     }
 
     // Top Left
-    if (vertY < HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
+    if (vertY < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1) {
         setHeightAtPatch(id, vertIndex + HEIGHTMAP_VERT_WIDTH_PER_PATCH, height, dir);
     }
     else {
@@ -192,20 +192,20 @@ void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeig
     }
 
     // Top Right
-    if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH && vertY < HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
+    if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1 && vertY < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1) {
         setHeightAtPatch(id, vertIndex + HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1, height, dir);
     }
     else {
         HeightmapPatchID nextId = id;
         ui32 nextIndex = vertIndex;
-        if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
+        if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1) {
             ++nextIndex;
         }
         else {
             nextIndex = nextIndex + 1 - HEIGHTMAP_VERT_WIDTH_PER_PATCH;
             nextId = mSpatialGrid2D.getEastID(nextId);
         }
-        if (vertY < HEIGHTMAP_QUAD_WIDTH_PER_PATCH) {
+        if (vertY < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1) {
             nextIndex += HEIGHTMAP_VERT_WIDTH_PER_PATCH;
         }
         else {

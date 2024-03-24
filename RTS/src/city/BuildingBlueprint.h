@@ -118,7 +118,6 @@ public:
     std::vector<ItemStack> requiredItemsToBuild;
     std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
     std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
-    f32 mDesiredTerrainFlattenHeight = 0.0f;
     // End construction
 
     Building* building = nullptr;

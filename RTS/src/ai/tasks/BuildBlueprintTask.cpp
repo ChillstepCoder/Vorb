@@ -33,7 +33,6 @@ BuildBlueprintTask::BuildBlueprintTask(BuildingBlueprint& blueprint, AgentTaskFi
     : mBlueprint(blueprint)
     , IAgentTask(finishedFunc) {
 
-    assert(mBlueprint.world);
 }
 
 BuildBlueprintTask::~BuildBlueprintTask() {
@@ -132,23 +131,24 @@ bool BuildBlueprintTask::selectTileToFill(entt::registry& registry, entt::entity
 }
 
 bool BuildBlueprintTask::tryFlattenTerrain(entt::registry& registry, entt::entity agent) {
-    assert(mPlaceTilesTarget);
-    assert(mPlaceTilesTarget->isValid());
+    //assert(mPlaceTilesTarget);
+    //assert(mPlaceTilesTarget->isValid());
 
-    // Only first floor
-    const i32v2& dims2D = mBlueprint.mTileSpatialGrid.getDims2D();
-    if (mPlaceTilesTarget->mTileIndex >= dims2D.x * dims2D.y) {
-        return false;
-    }
+    //// Only first floor
+    //const i32v2& dims2D = mBlueprint.mTileSpatialGrid.getDims2D();
+    //if (mPlaceTilesTarget->mTileIndex >= dims2D.x * dims2D.y) {
+    //    return false;
+    //}
 
-    if (mBlueprint.tilesNeedingTerrainFlatten.getBit(mPlaceTilesTarget->mTileIndex)) {
-        mBlueprint.tilesNeedingTerrainFlatten.clearBit(mPlaceTilesTarget->mTileIndex);
+    //if (mBlueprint.tilesNeedingTerrainFlatten.getBit(mPlaceTilesTarget->mTileIndex)) {
+    //    mBlueprint.tilesNeedingTerrainFlatten.clearBit(mPlaceTilesTarget->mTileIndex);
 
-        IHeightmapGrid& grid = mBlueprint.world->getHeightmapGrid();
-        f32v3 tileWorldPos = mBlueprint.mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
-        grid.setHeightAtWorldPos(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
-        return true;
-    }
+    //    IHeightmapGrid& grid = mBlueprint.world->getHeightmapGrid();
+    //    f32v3 tileWorldPos = mBlueprint.mTileSpatialGrid.getTileBaseWorldPos3D(mPlaceTilesTarget->mTileIndex);
+    //    grid.setHeightAtWorldPos(tileWorldPos, mBlueprint.mDesiredTerrainFlattenHeight);
+    //    return true;
+    //}
+    //return false;
     return false;
 }
 

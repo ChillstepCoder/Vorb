@@ -20,7 +20,6 @@ public:
   
     //static void tryGenerateBlueprintASync(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
     static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(
-        World& world,
         const BuildingDef& desc,
         float sizeAlpha,
         Cartesian entrySide,
@@ -45,8 +44,8 @@ private:
     static void expandRooms(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void roomCleanup(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void computeRoomAABBs(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
-    static bool validateRoomsArentEmpty(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
-    static void initRoomWalls(BuildingBlueprintGenerationContext& context, RoomNode& room);
+    static bool validateRoomsArentEmpty(BuildingBlueprint& bp, VisualLog* visLog);
+    static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
     static void placeWalls(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void placeDoors(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void buildRoomInteriorEdges(BuildingBlueprintGenerationContext& context, VisualLog* visLog);

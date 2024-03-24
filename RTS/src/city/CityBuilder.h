@@ -4,6 +4,7 @@ class City;
 class CityPlanner;
 class BuildingBlueprint;
 class Building;
+class World;
 
 #include "city/CityConst.h"
 
@@ -20,12 +21,12 @@ public:
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
     void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
 
-    static Building* debugBuildInstant(BuildingBlueprint& bp);
+    static Building* debugBuildInstant(World& world, BuildingBlueprint& bp);
     void debugBuildRoadInstant(RoadID roadId);
 
 private:
     void preprocessBlueprint(BuildingBlueprint& bp);
-    static void finishBuilding(Building& building, BuildingBlueprint& blueprint);
+    static void finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint);
     bool trySendBuildingJob(BuildingBlueprint* blueprint);
 
     City& mCity;

@@ -6,7 +6,6 @@
 #include "ecs/component/OwnershipComponent.h"
 
 #include "world/World.h"
-#include "world/IHeightmapGrid.h"
 
 #include "city/contracts/ContractManager.h"
 
@@ -41,11 +40,6 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::e
         required.quantityRequired = stack.quantity;
     }
     assert(mBlueprint.totalTilesToBuild);
-    assert(mBlueprint.world);
-
-    // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = mBlueprint.world->getHeightmapGrid();
-    mBlueprint.mDesiredTerrainFlattenHeight = round(grid.computeMeanHeightAtAABB(i32AABB2(mBlueprint.mTileSpatialGrid.getAABB()), mBlueprint.tilesNeedingTerrainFlatten)) - 0.005f;
 
     // Initialize building data
     mBlueprint.building->getTileContainer()->allocateOwnedTiles();
