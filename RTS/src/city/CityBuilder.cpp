@@ -4,7 +4,7 @@
 #include "City.h"
 #include "city/CityQuartermaster.h"
 #include "CityPlanner.h"
-#include "BuildingBlueprint.h"
+#include "BuildingBlueprintGenerationContext.h"
 #include "tile/TileContainerRepository.h"
 
 #include "pathfinding/NavThread.h"
@@ -25,7 +25,6 @@
 #include "BuildingBlueprintGenerator.h"
 
 
-
 CityBuilder::CityBuilder(City& city)
     : mCity(city)
 {
@@ -35,7 +34,7 @@ CityBuilder::CityBuilder(City& city)
 void CityBuilder::update() {
 
     while (mBlueprintsToBuild.size()) {
-        BuildingBlueprint* nextBp = mBlueprintsToBuild.front();
+        BuildingBlueprintGenerationContext* nextBp = mBlueprintsToBuild.front();
         // Try send this off to a contractor
         if (trySendBuildingJob(nextBp)) {
             mBlueprintsToBuild.pop_front();
@@ -52,14 +51,15 @@ void CityBuilder::update() {
     }
 }
 
-void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint) {
-    assert(!blueprint->isBuilding);
-    blueprint->isBuilding = true;
-    preprocessBlueprint(*blueprint);
-    mBlueprintsToBuild.push_back(blueprint);
+void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprintGenerationContext* blueprint) {
+    assert(false);
+    /*  assert(!blueprint->isBuilding);
+      blueprint->isBuilding = true;
+      preprocessBlueprint(*blueprint);
+      mBlueprintsToBuild.push_back(blueprint);*/
 }
 
-Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
+Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprintGenerationContext& bp) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 
@@ -68,7 +68,7 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     PreciseTimer timer;
     const i32v2& worldPos = bp.mTileSpatialGrid.getWorldPos2D();
 
-    BitArray& tilesNeedingTerrainFlatten = bp.tilesNeedingTerrainFlatten;
+    BitArray& tilesNeedingTerrainFlatten = bp.ownedTilesFirstFloor;
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = world.getHeightmapGrid();
@@ -187,24 +187,23 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
     }
 }
 
-void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
+void CityBuilder::preprocessBlueprint(BuildingBlueprintGenerationContext& bp) {
     ASSERT_GAME_THREAD();
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = mCity.getWorld().getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.tilesNeedingTerrainFlatten));
-
-    bp.building = static_cast<Building*>(mCity.getWorld().getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
-    // Force ready so we can place tiles
-    bp.building->getTileContainer()->setState(TileContainerState::READY);
-    if (bp.flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
-        mCity.getCityQuartermaster().createStockpilesForBlueprint(bp);
-    }
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.ownedTilesFirstFloor));
+    //assert(false);
+    //bp.building = static_cast<Building*>(mCity.getWorld().getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
+    //// Force ready so we can place tiles
+    //bp.building->getTileContainer()->setState(TileContainerState::READY);
+    //if (bp.flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
+    //    mCity.getCityQuartermaster().createStockpilesForBlueprint(bp);
+    //}
 }
 
-void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint) {
+void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprintGenerationContext& blueprint) {
     building.mFunction = blueprint.desc->function;
-    building.mPlotIndex = blueprint.plotIndex;
     building.mDoorTiles = blueprint.exteriorDoors;
     assert(building.mDoorTiles.size());
     assert(building.mRooms.size());
@@ -219,7 +218,7 @@ void CityBuilder::finishBuilding(World& world, Building& building, BuildingBluep
 
 }
 
-bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
+bool CityBuilder::trySendBuildingJob(BuildingBlueprintGenerationContext* blueprint) {
     auto view = mCity.getWorld().getECS().mRegistry.view<BusinessBuildComponent>();
     bool success = false;
     // Find a business who can take on this build job

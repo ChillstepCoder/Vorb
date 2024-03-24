@@ -226,7 +226,7 @@ private:
 
     // Tile data
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
-    TileWallContainer mTileWallsContainer;
+    TileWallContainer mTileWallsContainer; // TODO: Pointer so we remove from chunk
     TileItemContainer mTileItemContainer;
 
     // Visibility

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CityPlot.h"
 
-#include "BuildingBlueprint.h"
+#include "BuildingBlueprintGenerationContext.h"
 
 CityPlot::CityPlot()
 {

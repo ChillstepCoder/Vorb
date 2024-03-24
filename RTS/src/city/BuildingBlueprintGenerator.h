@@ -4,7 +4,8 @@
 // Algorithm inspired by - Jess Martin. Procedural house generation: A method for dynamically generating floor plans. In Symposium on Interactive 3D Graphics and Games. Citeseer, 2006
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.97.4544&rep=rep1&type=pdf
 
-#include "BuildingBlueprint.h"
+#include "world/settlement/building/BuildingBlueprint.h"
+#include "BuildingBlueprintGenerationContext.h"
 
 class VisualLog;
 class World;
@@ -19,7 +20,7 @@ public:
     BuildingBlueprintGenerator() = delete;
   
     //static void tryGenerateBlueprintASync(World& world, BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags, ui32 seed);
-    static std::unique_ptr<BuildingBlueprint> tryGenerateBlueprintSynchronous(
+    static BuildingBlueprintPtr tryGenerateBlueprintSynchronous(
         const BuildingDef& desc,
         float sizeAlpha,
         Cartesian entrySide,
@@ -44,8 +45,8 @@ private:
     static void expandRooms(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void roomCleanup(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void computeRoomAABBs(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
-    static bool validateRoomsArentEmpty(BuildingBlueprint& bp, VisualLog* visLog);
-    static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
+    static bool validateRoomsArentEmpty(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
+    static void initRoomWalls(BuildingBlueprintGenerationContext& context, RoomNode& room);
     static void placeWalls(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void placeDoors(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void buildRoomInteriorEdges(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
@@ -54,6 +55,7 @@ private:
     static void placeWindows(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
 
     static void postProcessBlueprint(BuildingBlueprintGenerationContext& context);
+    static BuildingBlueprintPtr finalizeBlueprint(BuildingBlueprintGenerationContext& context);
 
     inline static std::vector<std::vector<bool>> sPossibleWindowPermutations[MAX_EXTERIOR_WALL_RUN_LENGTH + 1];
 };

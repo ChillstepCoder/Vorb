@@ -11,7 +11,7 @@ enum class CityBlockSize {
 };
 
 struct CityDistrict;
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 
 struct CityPlot {
     CityPlot();
@@ -41,7 +41,7 @@ struct CityPlot {
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
     bool isFree = true;
-    std::unique_ptr<BuildingBlueprint> mPendingBlueprint = nullptr;
+    std::unique_ptr<BuildingBlueprintGenerationContext> mPendingBlueprint = nullptr;
 
     // TODO: More?
     RoadID neighborRoads[CARTESIAN_COUNT] = { INVALID_ROAD_ID, INVALID_ROAD_ID, INVALID_ROAD_ID, INVALID_ROAD_ID };

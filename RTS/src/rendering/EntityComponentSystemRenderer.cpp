@@ -44,7 +44,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(World& world, const Came
 
 		auto view = ecs.mRegistry.view<BusinessBuildComponent>();
 		for (auto entity : view) {
-			BuildingBlueprint* bp = ecs.mRegistry.get<BusinessBuildComponent>(entity).mCurrentBlueprint;
+			BuildingBlueprintGenerationContext* bp = ecs.mRegistry.get<BusinessBuildComponent>(entity).mCurrentBlueprint;
 			if (bp) {
 				CityDebugRenderer::renderBlueprintDebug(*bp, mFramesPerDebugDraw);
 			}

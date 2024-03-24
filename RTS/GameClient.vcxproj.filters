@@ -210,7 +210,7 @@
     <ClCompile Include="src\city\BuildingRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\BuildingBlueprint.cpp">
+    <ClCompile Include="src\city\BuildingBlueprintGenerationContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\BitArray.cpp">
@@ -1313,7 +1313,7 @@
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\BuildingBlueprint.h">
+    <ClInclude Include="src\city\BuildingBlueprintGenerationContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\BuildingRepository.h">
@@ -2574,6 +2574,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\settlement\SettlementZone.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\settlement\building\BuildingBlueprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

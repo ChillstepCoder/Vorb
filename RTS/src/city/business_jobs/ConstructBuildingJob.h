@@ -3,7 +3,7 @@
 #include "IBusinessJob.h"
 #include "item/ItemStack.h"
 
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 class World;
 struct OwnershipComponent;
 
@@ -35,7 +35,7 @@ struct JobRequiredItems {
 class ConstructBuildingJob : public IBusinessJob
 {
 public:
-	ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity);
+	ConstructBuildingJob(BuildingBlueprintGenerationContext& blueprint, entt::entity businessEntity);
 	~ConstructBuildingJob();
 
 	bool tick(entt::registry& registry, entt::entity business) override;
@@ -47,7 +47,7 @@ public:
 private:
 	void tryReserveItems(JobRequiredItems& item, OwnershipComponent& ownerCmp);
 
-	BuildingBlueprint& mBlueprint;
+	BuildingBlueprintGenerationContext& mBlueprint;
     std::vector<JobRequiredItems> mRequiredItems;
 	ui32 mTotalResourcesReserved = 0;
 	

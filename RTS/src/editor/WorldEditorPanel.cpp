@@ -742,7 +742,7 @@ void WorldEditorPanel::updateBuildingEdit() {
             const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
             BuildingRepository& buildingRepo = BuildingRepository::get();
             const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
-            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0), Random::getCachedRandom());
+            std::unique_ptr<BuildingBlueprintGenerationContext> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0), Random::getCachedRandom());
             if (!bp) {
                 assert(false);
                 return;

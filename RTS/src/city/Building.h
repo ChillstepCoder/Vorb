@@ -33,7 +33,6 @@ public:
 private:
    
     std::vector<RoomNode> mRooms;
-    CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId = INVALID_BUILDING_ID;
 

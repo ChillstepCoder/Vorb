@@ -749,7 +749,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Build
     if (!concavePoly.is_simple()) {
         // TODO: This has happened recently, not sure why
         LOG_CRITICAL("Input polygon to CGAL::optimal_convex_partition_2 is not simple: ");
-        assert(false);
+        DebugBreak();
         bool firstPoint = true;
         f32v2 prevPoint;
         // Vislog

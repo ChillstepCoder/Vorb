@@ -1,11 +1,11 @@
 #pragma once
 
 #include "IAgentTask.h"
-#include "city/BuildingBlueprint.h"
+#include "city/BuildingBlueprintGenerationContext.h"
 
 struct BuildBlueprintTask : public IAgentTask {
 public:
-    BuildBlueprintTask(BuildingBlueprint& blueprint, AgentTaskFinishedFunc finishedFunc);
+    BuildBlueprintTask(BuildingBlueprintGenerationContext& blueprint, AgentTaskFinishedFunc finishedFunc);
     ~BuildBlueprintTask();
 
     // TODO:s Override allocation to use boost::singleton_pool
@@ -32,7 +32,7 @@ protected:
         FAIL
     };
 
-    BuildingBlueprint& mBlueprint;
+    BuildingBlueprintGenerationContext& mBlueprint;
     TileIndex mTargetTileIndex;
     TaskState mState = TaskState::SELECT_TILE_TO_FILL;
     PlaceTileBlueprintItemsHandlePtr mPlaceTilesTarget;

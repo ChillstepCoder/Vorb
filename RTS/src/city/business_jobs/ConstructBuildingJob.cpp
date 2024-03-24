@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ConstructBuildingJob.h"
 
-#include "city/BuildingBlueprint.h"
+#include "city/BuildingBlueprintGenerationContext.h"
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 
@@ -29,20 +29,22 @@ JobRequiredItems::~JobRequiredItems() {
 }
 
 
-ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint, entt::entity businessEntity) : mBlueprint(blueprint), IBusinessJob(businessEntity) {
-    assert(!mBlueprint.isGenerating);
-    // Track required items internally
-    mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
-    for (size_t i = 0; i < mRequiredItems.size(); ++i) {
-        JobRequiredItems& required = mRequiredItems[i];
-        ItemStack& stack = mBlueprint.requiredItemsToBuild[i];
-        required.id = stack.id;
-        required.quantityRequired = stack.quantity;
-    }
-    assert(mBlueprint.totalTilesToBuild);
+ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprintGenerationContext& blueprint, entt::entity businessEntity) : mBlueprint(blueprint), IBusinessJob(businessEntity) {
+    assert(false);
+    //assert(!mBlueprint.isGenerating);
+    //// Track required items internally
+    //mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
+    //for (size_t i = 0; i < mRequiredItems.size(); ++i) {
+    //    JobRequiredItems& required = mRequiredItems[i];
+    //    ItemStack& stack = mBlueprint.requiredItemsToBuild[i];
+    //    required.id = stack.id;
+    //    required.quantityRequired = stack.quantity;
+    //}
+    //assert(mBlueprint.totalTilesToBuild);
 
-    // Initialize building data
-    mBlueprint.building->getTileContainer()->allocateOwnedTiles();
+    //// Initialize building data
+    //assert(false);
+    //mBlueprint.building->getTileContainer()->allocateOwnedTiles();
 }
 
 ConstructBuildingJob::~ConstructBuildingJob() {
@@ -96,15 +98,16 @@ IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::registry& registr
 
             // Ship
             constexpr f32 SHIPMENT_COMPLETE_RADIUS = 20.0f;
-            TileHandle targetHandle = mBlueprint.getTileHandle(0); // TODO: BETTER
-            PathToTargetTaskPtr shipTask = std::make_unique<PathToTargetTask>(mBlueprint.getTileHandle(0), SHIPMENT_COMPLETE_RADIUS, nullptr);
-            
-            // Build
-            BuildBlueprintTaskPtr buildTask = std::make_unique<BuildBlueprintTask>(mBlueprint, nullptr);
+            assert(false);
+            //TileHandle targetHandle = mBlueprint.getTileHandle(0); // TODO: BETTER
+            //PathToTargetTaskPtr shipTask = std::make_unique<PathToTargetTask>(mBlueprint.getTileHandle(0), SHIPMENT_COMPLETE_RADIUS, nullptr);
+            //
+            //// Build
+            //BuildBlueprintTaskPtr buildTask = std::make_unique<BuildBlueprintTask>(mBlueprint, nullptr);
 
-            // Link
-            shipTask->setNextTask(std::move(buildTask));
-            gatherTask->setNextTask(std::move(shipTask));
+            //// Link
+            //shipTask->setNextTask(std::move(buildTask));
+            //gatherTask->setNextTask(std::move(shipTask));
 
             return std::move(gatherTask);
         }

@@ -6,7 +6,7 @@
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 
-#include "city/BuildingBlueprint.h"
+#include "city/BuildingBlueprintGenerationContext.h"
 #include "resources/ResourceManager.h"
 #include "BuildingRepository.h"
 
@@ -18,7 +18,7 @@ CityQuartermaster::~CityQuartermaster() {
 
 }
 
-void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
+void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprintGenerationContext& bp) {
 
     bool ownershipMask[CHUNK_SIZE];
 

@@ -16,7 +16,7 @@
 class City;
 class ItemStockpile;
 class ConstructBuildingJob;
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 struct BusinessDef;
 
 typedef std::unique_ptr<IBusinessJob> IBusinessJobPtr;
@@ -60,7 +60,7 @@ struct BusinessGatherComponent {
 // Construct
 struct BusinessBuildComponent {
     ui32 mPriority;
-    BuildingBlueprint* mCurrentBlueprint = nullptr;
+    BuildingBlueprintGenerationContext* mCurrentBlueprint = nullptr;
     ConstructBuildingJob* mCurrentJob = nullptr;
 };
 

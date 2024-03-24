@@ -228,7 +228,7 @@
     <ClCompile Include="src\camera\OrthoCamera.cpp" />
     <ClCompile Include="src\camera\SimpleCamera.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
-    <ClCompile Include="src\city\BuildingBlueprint.cpp" />
+    <ClCompile Include="src\city\BuildingBlueprintGenerationContext.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\city\BuildingRepository.cpp" />
     <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp" />
@@ -583,7 +583,7 @@
     <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\character\CharacterConst.h" />
     <ClInclude Include="src\city\Building.h" />
-    <ClInclude Include="src\city\BuildingBlueprint.h" />
+    <ClInclude Include="src\city\BuildingBlueprintGenerationContext.h" />
     <ClInclude Include="src\city\BuildingBlueprintFlags.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\BuildingRepository.h" />
@@ -1042,6 +1042,7 @@
     <ClInclude Include="src\world\markup\WorldMarkupGrid.h" />
     <ClInclude Include="src\world\ownership\OwnershipGrid.h" />
     <ClInclude Include="src\world\road\RoadGrid.h" />
+    <ClInclude Include="src\world\settlement\building\BuildingBlueprint.h" />
     <ClInclude Include="src\world\settlement\SettlementLayoutManager.h" />
     <ClInclude Include="src\world\settlement\SettlementPlotManager.h" />
     <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h" />

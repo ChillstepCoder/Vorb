@@ -31,8 +31,8 @@ struct TileWalls {
     };
 };
 
-// TODO: Extract file
 // Holds walls for a TileContainer. The +x and +y outermost edges cannot have walls
+// TODO: This could be replaced with an RLE based container for much smaller memory footprint?
 class TileWallContainer {
 public:
     void init(const TileSpatialGrid* tileSpatialGrid) {

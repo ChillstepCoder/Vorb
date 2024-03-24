@@ -3,7 +3,7 @@
 
 #include "city/City.h"
 #include "city/CityBuilder.h"
-#include "city/BuildingBlueprint.h"
+#include "city/BuildingBlueprintGenerationContext.h"
 
 #include "ecs/component/OwnershipComponent.h"
 

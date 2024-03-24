@@ -29,7 +29,7 @@ void BuildBlueprintTask::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-BuildBlueprintTask::BuildBlueprintTask(BuildingBlueprint& blueprint, AgentTaskFinishedFunc finishedFunc)
+BuildBlueprintTask::BuildBlueprintTask(BuildingBlueprintGenerationContext& blueprint, AgentTaskFinishedFunc finishedFunc)
     : mBlueprint(blueprint)
     , IAgentTask(finishedFunc) {
 

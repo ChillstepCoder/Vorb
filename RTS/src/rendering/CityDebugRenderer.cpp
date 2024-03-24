@@ -8,7 +8,7 @@
 #include "city/CityPlanner.h"
 #include "city/CityPlotter.h"
 #include "city/CityQuartermaster.h"
-#include "city/BuildingBlueprint.h"
+#include "city/BuildingBlueprintGenerationContext.h"
 #include "item/ItemStockpile.h"
 
 constexpr int DEBUG_ID_CITY = 123;
@@ -29,7 +29,7 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(0.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA),
 };
 
-void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, int lifetime, color4* inputColor/* = nullptr*/) {
+void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprintGenerationContext& bp, int lifetime, color4* inputColor/* = nullptr*/) {
     PROFILE_FUNCTION();
     const f32v3 bpRootPos(bp.mTileSpatialGrid.getWorldPos3D());
     const i32v2& dims = bp.mTileSpatialGrid.getDims2D();

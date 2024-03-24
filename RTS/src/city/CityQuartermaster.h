@@ -1,7 +1,7 @@
 #pragma once
 
 class City;
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 
 #include "item/ItemStockpile.h"
 
@@ -14,7 +14,7 @@ public:
     CityQuartermaster(City& city);
     ~CityQuartermaster();
 
-    void createStockpilesForBlueprint(BuildingBlueprint& bp);
+    void createStockpilesForBlueprint(BuildingBlueprintGenerationContext& bp);
 
     // creates an unowned stockpile, returns false if conflicts with existing stockpile
     bool tryCreateCityStockpileAt(const i32AABB2& aabb, entt::entity ownerEntity);

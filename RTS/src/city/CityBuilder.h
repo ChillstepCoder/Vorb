@@ -2,7 +2,7 @@
 
 class City;
 class CityPlanner;
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 class Building;
 class World;
 
@@ -19,18 +19,18 @@ public:
 
     void update();
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
-    void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
+    void addBlueprintToBuildAndPreprocess(BuildingBlueprintGenerationContext* blueprint);
 
-    static Building* debugBuildInstant(World& world, BuildingBlueprint& bp);
+    static Building* debugBuildInstant(World& world, BuildingBlueprintGenerationContext& bp);
     void debugBuildRoadInstant(RoadID roadId);
 
 private:
-    void preprocessBlueprint(BuildingBlueprint& bp);
-    static void finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint);
-    bool trySendBuildingJob(BuildingBlueprint* blueprint);
+    void preprocessBlueprint(BuildingBlueprintGenerationContext& bp);
+    static void finishBuilding(World& world, Building& building, BuildingBlueprintGenerationContext& blueprint);
+    bool trySendBuildingJob(BuildingBlueprintGenerationContext* blueprint);
 
     City& mCity;
-    std::list<BuildingBlueprint*> mBlueprintsToBuild;
+    std::list<BuildingBlueprintGenerationContext*> mBlueprintsToBuild;
     std::vector<RoadID> mRoadsToBuild;
 
 };

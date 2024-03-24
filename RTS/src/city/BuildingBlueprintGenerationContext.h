@@ -7,7 +7,7 @@
 #include "item/ItemStack.h"
 
 class Building;
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 class World;
 class BuildingDef;
 struct Recipe;
@@ -60,7 +60,7 @@ public:
     bool isValid() const { return mBlueprint != nullptr; }
     void fulfillFromItemStack(ItemStack& stack);
 
-    BuildingBlueprint* mBlueprint = nullptr;
+    BuildingBlueprintGenerationContext* mBlueprint = nullptr;
     TileIndex mTileIndex;
     ItemID mItemId;
     ui16 mPromisedItemCount = 0;
@@ -78,56 +78,43 @@ public:
 
     bool isValid() const { return mBlueprint != nullptr; }
 
-    BuildingBlueprint* mBlueprint = nullptr;
+    BuildingBlueprintGenerationContext* mBlueprint = nullptr;
     TileIndex mTileIndex;
 };
 typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 
 class BuildingBlueprintGenerationContext {
 public:
-    BuildingBlueprintGenerationContext(BuildingBlueprint& blueprint);;
+    BuildingBlueprintGenerationContext() = default;
+    BuildingBlueprintGenerationContext(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, BuildingBlueprintFlags flags);
     ~BuildingBlueprintGenerationContext();
 
-    BuildingBlueprint& blueprint;
-    std::unique_ptr<RandomGenerator> randomGen;
-    ui32 generationSeed = 0;
-};
-
-class BuildingBlueprint {
-public:
-    BuildingBlueprint() = default;
-    BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, const i32v3& worldPosRoot, entt::entity ownerEntity, BuildingBlueprintFlags flags);
-    ~BuildingBlueprint();
-
-    VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprint);
-
-    TileHandle getTileHandle(TileIndex tileIndex) const;
+    VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprintGenerationContext);
 
     // Indexing
     TileSpatialGrid mTileSpatialGrid;
 
+    // TODO: Use in another context
     // For construction
-    PlaceTileBlueprintItemsHandlePtr reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount);
-    void cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHandle& handle);
-    BuildTileBlueprintHandlePtr reserveTileToBuild(entt::entity builderEntity, const f32v3& entityPosition);
-    void endTileToBuild(BuildTileBlueprintHandle& handle);
+    //PlaceTileBlueprintItemsHandlePtr reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount);
+    //void cancelReserveTileToPlaceItems(PlaceTileBlueprintItemsHandle& handle);
+    //BuildTileBlueprintHandlePtr reserveTileToBuild(entt::entity builderEntity, const f32v3& entityPosition);
+    //void endTileToBuild(BuildTileBlueprintHandle& handle);
 
-    std::map<ItemID, std::deque<TileIndex>> tilesNeedingItems; // Pull from back first
-    std::vector<TileIndex> tilesReadyToBuild;
-    std::vector<BlueprintTileItemData> tileItemData;
+    //std::map<ItemID, std::deque<TileIndex>> tilesNeedingItems; // Pull from back first
+    //std::vector<TileIndex> tilesReadyToBuild;
+    //std::vector<BlueprintTileItemData> tileItemData;
     std::vector<ItemStack> requiredItemsToBuild;
-    std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
-    std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
+    //std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
+    //std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
     // End construction
 
-    Building* building = nullptr;
     const BuildingDef* desc = nullptr;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::WEST;
     ui32 floorCount = 1u;
-    CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
-    BitArray tilesNeedingTerrainFlatten;
+    BitArray ownedTilesFirstFloor;
     std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTileType> tiles;
@@ -138,11 +125,11 @@ public:
     const Recipe* tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
-    ui32 tilesBuilt = 0;
-    ui32 totalTilesToBuild = 0;
-    entt::entity mOwnerEntity = INVALID_ENTITY;
-    bool isGenerating = true;
-    bool isBuilding = false;
+    ui32 totalTiles = 0;
+    ui32 totalWalls = 0;
     BitFlags<BuildingBlueprintFlags> flags;
-    ui32 refCount = 0;
+
+    std::unique_ptr<RandomGenerator> randomGen;
+    ui32 generationSeed = 0;
 };
+//SIZER(BuildingBlueprint);

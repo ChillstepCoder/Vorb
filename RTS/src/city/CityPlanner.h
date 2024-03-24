@@ -37,7 +37,7 @@ public:
     CityPlot* tryPurchasePlot(const PlotRequestProps& props, entt::entity newOwner);
     void generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, const nString& buildingDescriptionName, BuildingBlueprintFlags flags);
 
-    void debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const;
+    void debugPrintBlueprint(std::unique_ptr<BuildingBlueprintGenerationContext>& bp) const;
 private:
 
 

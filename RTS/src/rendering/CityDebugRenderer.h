@@ -4,7 +4,7 @@ class CityPlanner;
 class CityBuilder;
 class CityPlotter;
 class CityQuartermaster;
-class BuildingBlueprint;
+class BuildingBlueprintGenerationContext;
 
 class CityDebugRenderer
 {
@@ -17,7 +17,7 @@ public:
     void finishRenderFrame();
     void clearMeshes();
 
-    static void renderBlueprintDebug(BuildingBlueprint& bp, int lifetime, color4* inputColor = nullptr);
+    static void renderBlueprintDebug(BuildingBlueprintGenerationContext& bp, int lifetime, color4* inputColor = nullptr);
 
     bool mNeedsMeshes = true;
 };

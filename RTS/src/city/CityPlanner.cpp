@@ -62,11 +62,11 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
         dir = Cartesian::SOUTH;
     }
     //plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilderDEPRECATED(mCity.getWorld(), desc, sizeAlpha, dir, plotDims, rootPos, plot.mOwnerEntity, flags, Random::getCachedRandom());
-    plot.mPendingBlueprint->plotIndex = plot.plotIndex;
+    //plot.mPendingBlueprint->plotIndex = plot.plotIndex;
     panic("CityPlanner::generatePlanForPlotAsyncThenSendToBuilder DEPRECATED");
 }
 
-void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
+void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprintGenerationContext>& bp) const {
     /*  const BuildingRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
       LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->mTileSpatialGrid.getDims().x);
       for (auto&& node : bp->rooms) {
