@@ -2181,37 +2181,36 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     bp->itemComposition = std::make_unique<ItemStack[]>(bp->itemCompositionCount);
     memcpy(bp->itemComposition.get(), context.requiredItemsToBuild.data(), sizeof(ItemStack) * bp->itemCompositionCount); // TODO: if we used vector or ptr we could just std::move...
 
-    // TODO: FINISH
+    bp->tileTargetCount = context.totalTiles;
+    bp->tileTargets = std::make_unique<BuildingBlueprintTileTarget[]>(bp->tileTargetCount);
 
+    bp->wallTargetCount = context.totalWalls;
+    bp->wallTargets = std::make_unique<BuildingBlueprintWallTarget[]>(bp->wallTargetCount);
+
+    i32 wallN = 0;
+    i32 tileN = 0;
+    // TODO: FINISH
     for (TileIndex tileIndex = 0; tileIndex < (TileIndex)context.tiles.size(); ++tileIndex) {
         // TODO: Bitindex
         const BlueprintTileType type = context.tiles[tileIndex];
 
         TileWall walls[2];
         context.walls.getSouthAndWestWallsAtTile(walls, tileIndex);
+        if (walls[0].isValid()) {
+            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[0].wallID, Cartesian::SOUTH };
+        }
+        if (walls[1].isValid()) {
+            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[1].wallID, Cartesian::WEST };
+        }
         // Copy walls
         if (type != BlueprintTileType::NONE) {
-            // Flatten heightmap
-            if (z == 0) {
-                f32v2 tileWorldPos = worldPos + i32v2(x, y);
-                // Epsilon to prevent z fighting
-                grid.setHeightAtWorldPos(tileWorldPos, meanHeight - 0.005f);
-            }
 
             // Stairs are processed below
             if (type != BlueprintTileType::STAIRS) {
-                const TileID tileId = bp.tileIDs[e_cast(type)];
+                const TileID tileId = context.tileIDs[e_cast(type)];
                 if (tileId != TILE_ID_NONE) {
-                    Tile& tile = tiles[tileIndex];
-                    // We dont add to mean height here because tile height is relative to the floor of this tile layer
-                    //const f32 height = 0.0f;
-                    const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileId);
-                    tile.layers[data.layer] = (TileID)data.getID();
-                    //tile.groundZOffset = height;
-                    //assert(false); // Set building structure pointer
-                    // TODO: always set ground position?
+                    bp->tileTargets[tileN++] = BuildingBlueprintTileTarget{ tileIndex, tileId };
                 }
-                tileContainer.onTileChanged(tileIndex);
             }
             // INTERSECT TERRAIN
             // TODO: Intersect terrain
@@ -2222,14 +2221,15 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
             //container.setTileGroundZPosition(handle.index, height);
         }
     }
-
+    assert(tileN == bp->tileTargetCount);
+    assert(wallN == bp->wallTargetCount);
     // Copy room data
     //newBuilding->mRooms = std::move(bp.rooms);
 
     // Set stairs tiles
     TileID stairsTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS)];
     TileID stairsFlatTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
-    for (auto& stairsVec : bp.stairs) {
+    for (auto& stairsVec : context.stairs) {
         for (auto& stairPiece : stairsVec) {
             const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
             // Place stair steps

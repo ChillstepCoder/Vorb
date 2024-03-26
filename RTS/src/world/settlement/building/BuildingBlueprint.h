@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tile/Stairs.h"
+
 struct BuildingBlueprintTileTarget {
     TileIndex tileIndex;
     TileID id;
@@ -7,6 +9,7 @@ struct BuildingBlueprintTileTarget {
 };
 
 struct BuildingBlueprintWallTarget {
+    TileIndex tileIndex;
     TileID id;
     Cartesian dir;
     // ui8 runLength // TODO: RLE Compression
@@ -22,12 +25,16 @@ public:
     std::unique_ptr<BuildingBlueprintWallTarget[]> wallTargets;
     // Required items to build
     std::unique_ptr<ItemStack[]> itemComposition; // TODO: Maybe this should be flexible... maybe we dont care what items are used? Room specific tiles? ect.
+    // Each stair tile
+    std::unique_ptr<StairPiece[]> stairPieces;
     i32 itemCompositionCount;
     i32 wallTargetCount;
     i32 tileTargetCount;
+    i32 stairPieceCount;
     DTileCoord worldPosRootDTile;
     i32v2 dimsDTile;
     i32 floorCount;
+
 };
 //SIZER(BuildingBlueprint);
 

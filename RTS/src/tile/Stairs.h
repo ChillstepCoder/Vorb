@@ -11,5 +11,6 @@ struct StairPiece {
     bool isLastPiece : 1;
     bool isBuilt : 1;
     bool isReserved : 1;
-    Cartesian dir;
+    Cartesian dir : 4;
+    //ui8 padding?;
 };
