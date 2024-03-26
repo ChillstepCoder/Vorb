@@ -155,7 +155,7 @@ std::unique_ptr<BuildingBlueprintGenerationContext> BuildingBlueprintGenerator::
     RandomGenerator seedMutator(seed);
 
     do {
-        BuildingBlueprintGenerationContext context(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, ownerEntity, flags);
+        BuildingBlueprintGenerationContext context(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, flags);
         context.generationSeed = seed;
         context.randomGen = std::make_unique<RandomGenerator>(seed);
         assert(plotSize.x > 2 && plotSize.y > 2);
@@ -2175,7 +2175,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
 BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBlueprintGenerationContext& context) {
     BuildingBlueprintPtr bp = std::make_unique<BuildingBlueprint>();
     bp->floorCount = context.floorCount;
-
+    bp->worldPosRootDTile = context.rootPosDTileCoord;
     // Items
     bp->itemCompositionCount = context.requiredItemsToBuild.size();
     bp->itemComposition = std::make_unique<ItemStack[]>(bp->itemCompositionCount);
@@ -2212,13 +2212,6 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
                     bp->tileTargets[tileN++] = BuildingBlueprintTileTarget{ tileIndex, tileId };
                 }
             }
-            // INTERSECT TERRAIN
-            // TODO: Intersect terrain
-            //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
-            //TileContainer& container = *handle.getMutableContainer();
-            //container.addTile(handle.index, TileRepository::getTileData(tileId));
-            ////assert(false); // Set building structure pointer
-            //container.setTileGroundZPosition(handle.index, height);
         }
     }
     assert(tileN == bp->tileTargetCount);
@@ -2227,19 +2220,20 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     //newBuilding->mRooms = std::move(bp.rooms);
 
     // Set stairs tiles
-    TileID stairsTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS)];
-    TileID stairsFlatTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
+    bp->stairPieceCount = 0;
     for (auto& stairsVec : context.stairs) {
-        for (auto& stairPiece : stairsVec) {
-            const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
-            // Place stair steps
-            const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
-            const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
-            Tile& tile = tiles[stairPiece.pos];
-            tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
-            tile.setGroundZOffset(tilePos.z + heightAdd);
-            tile.setOrientation(stairPiece.dir, TileLayer::Main);
-            tileContainer.onTileChanged(stairPiece.pos);
-        }
+        bp->stairPieceCount += stairsVec.size();
     }
+
+    bp->stairPieces = std::make_unique<StairPiece[]>(bp->stairPieceCount);
+    ui32 startIndex = 0;
+    for (auto& stairsVec : context.stairs) {
+        memcpy(&bp->stairPieces[startIndex], stairsVec.data(), sizeof(StairPiece) * stairsVec.size());
+        startIndex += stairsVec.size();
+    }
+
+    x;
+    bp->ownedDTiles;
+
+    return bp;
 }

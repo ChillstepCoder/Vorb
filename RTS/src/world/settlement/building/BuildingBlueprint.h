@@ -1,5 +1,6 @@
 #pragma once
 
+#include "item/ItemStack.h"
 #include "tile/Stairs.h"
 
 struct BuildingBlueprintTileTarget {
@@ -27,9 +28,9 @@ public:
     std::unique_ptr<ItemStack[]> itemComposition; // TODO: Maybe this should be flexible... maybe we dont care what items are used? Room specific tiles? ect.
     // Each stair tile
     std::unique_ptr<StairPiece[]> stairPieces;
-    i32 itemCompositionCount;
-    i32 wallTargetCount;
     i32 tileTargetCount;
+    i32 wallTargetCount;
+    i32 itemCompositionCount;
     i32 stairPieceCount;
     DTileCoord worldPosRootDTile;
     i32v2 dimsDTile;
