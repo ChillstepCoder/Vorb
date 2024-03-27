@@ -86,7 +86,7 @@ typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 class BuildingBlueprintGenerationContext {
 public:
     BuildingBlueprintGenerationContext() = default;
-    BuildingBlueprintGenerationContext(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dimsDTile, DTileCoord worldPosRoot, BuildingBlueprintFlags flags);
+    BuildingBlueprintGenerationContext(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 dimsDTile, DTileCoord worldPosRoot, BuildingBlueprintFlags flags);
     ~BuildingBlueprintGenerationContext();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprintGenerationContext);
@@ -116,7 +116,8 @@ public:
 
     DTileCoord rootPosDTileCoord;
     i32v2 dimsDTile;
-    BitArray ownedTilesFirstFloor;
+    BitArray ownedDTiles;
+    BitArray solidTilesFirstFloor;
     std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTileType> tiles;

@@ -474,9 +474,9 @@ void WorldEditorPanel::renderBuildingEditUI() const {
     }
     ImGui::EndTable();
     const BuildingDef& selectedDef = buildingRepo.getLoadedOrUnloadedAsset(buildingMetadata[mSelectedBuilding].getId());
-    mPlotDims.x = glm::clamp(mPlotDims.x, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
-    mPlotDims.y = glm::clamp(mPlotDims.y, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
-    ImGui::DragInt2("Plot Dims (x,y)", &mPlotDims.x, 0.5f, selectedDef.widthRange.x, selectedDef.widthRange.y);
+    mPlotDimsDTile.x = glm::clamp(mPlotDimsDTile.x, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
+    mPlotDimsDTile.y = glm::clamp(mPlotDimsDTile.y, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
+    ImGui::DragInt2("Plot Dims (x,y)", &mPlotDimsDTile.x, 0.5f, selectedDef.widthRange.x, selectedDef.widthRange.y);
 }
 
 void WorldEditorPanel::updateTerrainEdit() {
@@ -724,31 +724,20 @@ void WorldEditorPanel::updateBuildingEdit() {
     assert(mActiveWorld);
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
-        f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        ui32v2 createPos(floor(worldPos.x), floor(worldPos.y));
+        const i32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
+        const DTileCoord createPos = DTileCoord::fromTilePos(worldPos);
 
-        struct BuildingEditCreateTask {
-            i32AABB2 aabb;
-            ui32 selectedBuildingId;
-            World* world;
-        };
-        BuildingEditCreateTask* task = new BuildingEditCreateTask;
-        task->aabb.pos = createPos;
-        task->aabb.dims = mPlotDims;
-        task->selectedBuildingId = mSelectedBuilding;
-        task->world = mActiveWorld;
-
-        GameThreadTasks::getInstance().addGenericTask([task]() {
-            const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
+        GameThreadTasks::getInstance().addGenericTask([createPos, buildingId = mSelectedBuilding, dims = mPlotDimsDTile, world = mActiveWorld]() {
+            //const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
             BuildingRepository& buildingRepo = BuildingRepository::get();
-            const i32v3 rootPos(task->aabb.pos.x, task->aabb.pos.y, meanHeight);
-            std::unique_ptr<BuildingBlueprintGenerationContext> bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, rootPos, INVALID_ENTITY, BuildingBlueprintFlags(0), Random::getCachedRandom());
+            BitArray ownedDTiles(dims.x * dims.y);
+            ownedDTiles.setAllBits();
+            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(buildingId), 1.0f /*?*/, Cartesian::WEST, createPos, dims, ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom());
             if (!bp) {
                 assert(false);
                 return;
             }
-            CityBuilder::debugBuildInstant(*task->world, *bp);
-            delete task;
+            CityBuilder::debugBuildInstant(*world, *bp);
         });
 
     }

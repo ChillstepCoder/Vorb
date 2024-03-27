@@ -38,8 +38,8 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprintGeneration
                     ownershipMask[index++] = (bp.ownerArray[ty * bpDims.x + tx] == room.id);
                 }
             }
-          
-            tryCreateCityStockpileAt(room.aabb, ownershipMask, bp.mOwnerEntity);
+            assert(false);
+            //tryCreateCityStockpileAt(room.aabb, ownershipMask, bp.mOwnerEntity);
         }
     }
 }

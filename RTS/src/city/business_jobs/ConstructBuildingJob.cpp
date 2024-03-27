@@ -76,7 +76,9 @@ bool ConstructBuildingJob::tick(entt::registry& registry, entt::entity business)
 }
 
 float ConstructBuildingJob::getProgress() const {
-    return (f32)mBlueprint.tilesBuilt / (f32)mBlueprint.totalTilesToBuild;
+    assert(false);
+    //return (f32)mBlueprint.tilesBuilt / (f32)mBlueprint.totalTilesToBuild;
+    return 0;
 }
 
 IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::registry& registry, entt::entity worker) {

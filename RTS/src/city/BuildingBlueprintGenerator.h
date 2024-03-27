@@ -24,9 +24,9 @@ public:
         const BuildingDef& desc,
         float sizeAlpha,
         Cartesian entrySide,
-        i32v2 plotSize,
-        const i32v3& worldPosRoot,
-        entt::entity ownerEntity,
+        DTileCoord worldPosRoot,
+        i32v2 plotSizeDTiles,
+        const BitArray& ownedDTiles,
         BuildingBlueprintFlags flags,
         ui32 seed
     );

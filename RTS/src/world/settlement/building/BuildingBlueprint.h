@@ -2,6 +2,9 @@
 
 #include "item/ItemStack.h"
 #include "tile/Stairs.h"
+#include "util/BitArray.h"
+
+class BuildingDef;
 
 struct BuildingBlueprintTileTarget {
     TileIndex tileIndex;
@@ -19,6 +22,10 @@ struct BuildingBlueprintWallTarget {
 // Minimal data representation of a building
 class BuildingBlueprint {
 public:
+
+    BitArray computeSolidTilesFirstFloor() const;
+    bool isFinished() const { return desc != nullptr; }
+
     BitArray ownedDTiles;
     // Sorted by build priority back to front, so first floor tiles at the end
     std::unique_ptr<BuildingBlueprintTileTarget[]> tileTargets;
@@ -28,15 +35,20 @@ public:
     std::unique_ptr<ItemStack[]> itemComposition; // TODO: Maybe this should be flexible... maybe we dont care what items are used? Room specific tiles? ect.
     // Each stair tile
     std::unique_ptr<StairPiece[]> stairPieces;
+    const BuildingDef* desc = nullptr;
     i32 tileTargetCount;
     i32 wallTargetCount;
     i32 itemCompositionCount;
     i32 stairPieceCount;
     DTileCoord worldPosRootDTile;
     i32v2 dimsDTile;
+    i32 floorHeight;
     i32 floorCount;
+    TileID stairsTileID;
+    TileID stairsFlatTileID;
 
 };
+
 //SIZER(BuildingBlueprint);
 
 typedef std::unique_ptr<BuildingBlueprint> BuildingBlueprintPtr;

@@ -15,8 +15,9 @@ struct AABB<T, 2> {
     AABB() = default;
     AABB(T v) : x(v), y(v), width(v), depth(v) {}
     AABB(T x, T y, T width, T depth) : x(x), y(y), width(width), depth(depth) {}
+    AABB(VVec2<T> pos, VVec2<T> dims) : pos(pos), dims(dims) {}
     template<typename U>
-    AABB(const AABB<U, 3>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)), width(static_cast<T>(other.width)), depth(static_cast<T>(other.depth)) {}
+    AABB(const AABB<U, 2>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)), width(static_cast<T>(other.width)), depth(static_cast<T>(other.depth)) {}
 
     T& operator[](int i) { return data[i]; }
     bool operator==(const AABB& other) const { return x == other.x && y == other.y && width == other.width && depth == other.depth; }

@@ -10,15 +10,15 @@ BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
     const BuildingDef& desc,
     float sizeAlpha,
     Cartesian entrySide,
-    ui32v2 dims,
+    i32v2 dimsDTile,
     DTileCoord worldPosRoot,
     BuildingBlueprintFlags flags
 ) :
-    rootPosDTileCoord(worldPosRoot), dimsDTile(dims), desc(&desc), entrySide(entrySide), flags(flags) {
+    rootPosDTileCoord(worldPosRoot), dimsDTile(dimsDTile), desc(&desc), entrySide(entrySide), flags(flags) {
     TileRepository& tileRepo = TileRepository::get();
     const i32v2 tilePos2D = worldPosRoot.toTilePos();
     // We will reinitialize later with the proper Z dimensions
-    mTileSpatialGrid.init(i32v3(tilePos2D.x, tilePos2D.y, 0), i32v3(dims.x, dims.y, 1), 3);
+    mTileSpatialGrid.init(i32v3(tilePos2D.x, tilePos2D.y, 0), i32v3(dimsDTile.x * DTILE_WIDTH, dimsDTile.y * DTILE_WIDTH, 1), 3);
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
     tileIDs[e_cast(BlueprintTileType::FLOOR)] = tileRepo.getTileID(CStrToken("bricks_01"));
@@ -232,4 +232,5 @@ bool BuildTileBlueprintHandle::tick(f32 buildProgressIncrease) {
          return true;
      }
      return false;*/
+    return false;
 }

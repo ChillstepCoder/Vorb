@@ -119,7 +119,7 @@ private:
     mutable bool mDidPlaceTile = false;
     // Building Edit
     mutable ui32 mSelectedBuilding = 0;
-    mutable i32v2 mPlotDims = i32v2(16);
+    mutable i32v2 mPlotDimsDTile = i32v2(8);
     // Grass edit
     mutable TileGrassID mSelectedGrass = 0;
 

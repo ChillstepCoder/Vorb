@@ -137,13 +137,13 @@ RUNTIME_INIT_FUNC(generateWindowPermutations) {
 }
 
 
-std::unique_ptr<BuildingBlueprintGenerationContext> BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(
+BuildingBlueprintPtr BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(
     const BuildingDef& desc,
     float sizeAlpha,
     Cartesian entrySide,
-    i32v2 plotSize,
-    const i32v3& worldPosRoot,
-    entt::entity ownerEntity,
+    DTileCoord worldPosRoot,
+    i32v2 plotSizeDTiles,
+    const BitArray& ownedDTiles,
     BuildingBlueprintFlags flags,
     ui32 seed
 ) {
@@ -155,10 +155,10 @@ std::unique_ptr<BuildingBlueprintGenerationContext> BuildingBlueprintGenerator::
     RandomGenerator seedMutator(seed);
 
     do {
-        BuildingBlueprintGenerationContext context(desc, sizeAlpha, entrySide, plotSize, worldPosRoot, flags);
+        BuildingBlueprintGenerationContext context(desc, sizeAlpha, entrySide, plotSizeDTiles, worldPosRoot, flags);
         context.generationSeed = seed;
         context.randomGen = std::make_unique<RandomGenerator>(seed);
-        assert(plotSize.x > 2 && plotSize.y > 2);
+        assert(plotSizeDTiles.x > 2 && plotSizeDTiles.y > 2);
         if (tryGenerateBlueprintInternal(context)) {
             if (failCount > 0) {
                 LOG_DEBUG("Finished building with fail count {}", failCount);
@@ -1003,9 +1003,6 @@ void BuildingBlueprintGenerator::allocateTileData(BuildingBlueprintGenerationCon
     context.tiles.resize((size_t)context.floorCount * dims2D.x * dims2D.y, BlueprintTileType::NONE);
     context.walls.init(&context.mTileSpatialGrid);
     context.ownerArray.resize(context.tiles.size(), INVALID_ROOM_ID);
-    // Construction data
-    context.tileItemDataHandles.resize(context.tiles.size());
-    context.tileBuildData.resize(context.tiles.size());
 }
 
 void BuildingBlueprintGenerator::expandRooms(BuildingBlueprintGenerationContext& context, VisualLog* visLog) {
@@ -1306,7 +1303,6 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprintGenerationCon
         room.tilePositions.reserve(room.size);
     }
 
-    context.tileItemData.reserve(context.tiles.size() / 2);
     const i32v3& rootPos = context.mTileSpatialGrid.getWorldPos3D();
     const i32v3& dims = context.mTileSpatialGrid.getDims();
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
@@ -2076,25 +2072,6 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprintGenerationContext
     }
 }
 
-void computeOwnedTilesOnFirstFloor(BuildingBlueprintGenerationContext& context) {
-    
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
-    context.ownedTilesFirstFloor = BitArray(floorDims.x * floorDims.y);
-    for (ui32 y = 0; y < floorDims.y; ++y) {
-        for (ui32 x = 0; x < floorDims.x; ++x) {
-            const ui32 tileIndex = y * floorDims.x + x;
-            const BlueprintTileType type = context.tiles[tileIndex];
-            if (type != BlueprintTileType::NONE) {
-
-                const TileID tileId = context.tileIDs[e_cast(type)];
-                if (tileId != TILE_ID_NONE) {
-                    context.ownedTilesFirstFloor.setBitTo(tileIndex, true);
-                }
-            }
-        }
-    }
-}
-
 void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGenerationContext& context) {
     // Tally required items
     std::map<ItemID, ui32> requiredItems;
@@ -2167,14 +2144,12 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
     for (auto&& it : requiredItems) {
         context.requiredItemsToBuild.emplace_back(it.first, it.second);
     }
-
-    computeOwnedTilesOnFirstFloor(context);
-    // TODO: Sort context.tilesToBuild by distance from entrances
 }
 
 BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBlueprintGenerationContext& context) {
     BuildingBlueprintPtr bp = std::make_unique<BuildingBlueprint>();
     bp->floorCount = context.floorCount;
+    bp->floorHeight = context.mTileSpatialGrid.getFloorHeight();
     bp->worldPosRootDTile = context.rootPosDTileCoord;
     // Items
     bp->itemCompositionCount = context.requiredItemsToBuild.size();
@@ -2225,6 +2200,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
         bp->stairPieceCount += stairsVec.size();
     }
 
+
     bp->stairPieces = std::make_unique<StairPiece[]>(bp->stairPieceCount);
     ui32 startIndex = 0;
     for (auto& stairsVec : context.stairs) {
@@ -2232,8 +2208,10 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
         startIndex += stairsVec.size();
     }
 
-    x;
-    bp->ownedDTiles;
+    bp->stairsTileID = context.tileIDs[e_cast(BlueprintTileType::STAIRS)];
+    bp->stairsFlatTileID = context.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
+    bp->desc = context.desc;
 
+    bp->ownedDTiles = std::move(context.ownedDTiles);
     return bp;
 }

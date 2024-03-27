@@ -9,6 +9,7 @@ constexpr TileContainerID INVALID_TILE_CONTAINER_ID = UINT32_MAX;
 
 constexpr TileID TILE_ID_NONE = UINT16_MAX;
 inline bool isTileNone(TileID tile) { return tile == TILE_ID_NONE; }
+inline bool isTileValid(TileID tile) { return tile < TILE_ID_NONE; }
 
 constexpr int TILE_LAYER_GROUND = 0;
 constexpr int TILE_LAYER_MAIN = 1;

@@ -56,6 +56,9 @@ bool BitArray::getBit(ui32 index) const {
 void BitArray::zeroAllBits() {
     memset(mData.data(), 0, mData.size() * sizeof(DataType));
 }
+void BitArray::setAllBits() {
+    memset(mData.data(), 0xff, mData.size() * sizeof(DataType));
+}
 
 ui32 BitArray::getIndexOfFirstSetBit(ui32 startIndex) const {
     ui32 startByte = startIndex >> BIT_SHIFT;

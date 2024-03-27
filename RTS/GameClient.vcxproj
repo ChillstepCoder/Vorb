@@ -543,6 +543,7 @@
     <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp" />
     <ClCompile Include="src\world\ownership\OwnershipGrid.cpp" />
     <ClCompile Include="src\world\road\RoadGrid.cpp" />
+    <ClCompile Include="src\world\settlement\building\BuildingBlueprint.cpp" />
     <ClCompile Include="src\world\settlement\SettlementLayoutManager.cpp" />
     <ClCompile Include="src\world\settlement\SettlementPlotManager.cpp" />
     <ClCompile Include="src\world\settlement\SettlementRoadNetwork.cpp" />

@@ -156,7 +156,8 @@ bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entit
 
     PositionComponent& posCmp = registry.get<PositionComponent>(agent);
     const f32v3 position = posCmp.mPosition;
-    mBuildTilesTarget = mBlueprint.reserveTileToBuild(agent, position);
+    assert(false);
+    //mBuildTilesTarget = mBlueprint.reserveTileToBuild(agent, position);
     if (!mBuildTilesTarget) {
         return false;
     }

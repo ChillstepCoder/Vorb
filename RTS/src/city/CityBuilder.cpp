@@ -4,7 +4,7 @@
 #include "City.h"
 #include "city/CityQuartermaster.h"
 #include "CityPlanner.h"
-#include "BuildingBlueprintGenerationContext.h"
+#include "world/settlement/building/BuildingBlueprint.h"
 #include "tile/TileContainerRepository.h"
 
 #include "pathfinding/NavThread.h"
@@ -34,7 +34,7 @@ CityBuilder::CityBuilder(City& city)
 void CityBuilder::update() {
 
     while (mBlueprintsToBuild.size()) {
-        BuildingBlueprintGenerationContext* nextBp = mBlueprintsToBuild.front();
+        BuildingBlueprint* nextBp = mBlueprintsToBuild.front();
         // Try send this off to a contractor
         if (trySendBuildingJob(nextBp)) {
             mBlueprintsToBuild.pop_front();
@@ -51,28 +51,29 @@ void CityBuilder::update() {
     }
 }
 
-void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprintGenerationContext* blueprint) {
-    assert(false);
+void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint) {
+    assert(false);BuildingBlueprint
     /*  assert(!blueprint->isBuilding);
       blueprint->isBuilding = true;
       preprocessBlueprint(*blueprint);
       mBlueprintsToBuild.push_back(blueprint);*/
 }
 
-Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprintGenerationContext& bp) {
+Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 
     TileRepository& tileRepo = TileRepository::get();
 
     PreciseTimer timer;
-    const i32v2& worldPos = bp.mTileSpatialGrid.getWorldPos2D();
+    const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
+    const i32AABB2 aabb(worldPos, bp.dimsDTile * DTILE_WIDTH);
 
-    BitArray& tilesNeedingTerrainFlatten = bp.ownedTilesFirstFloor;
+    BitArray tilesNeedingTerrainFlatten = bp.computeSolidTilesFirstFloor();
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = world.getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), tilesNeedingTerrainFlatten));
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
 
     // Allocate the building
     //PreciseTimer timer;
@@ -86,73 +87,50 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprintGenerati
 
     std::vector<Tile>& tiles = tileContainer.mTiles;
     std::vector<TileContainer*> dirtyNavTileContainers;
-    const i32v3& dims = bp.mTileSpatialGrid.getDims();
+    const i32v3 dims(aabb.dims.x, aabb.dims.y, bp.floorCount);
+    const i32 floorStride = dims.x * dims.y;
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
-    ui32 tileIndex = 0;
-    for (i32 z = 0; z < dims.z; ++z) {
-        for (i32 y = 0; y < dims.y; ++y) {
-            for (i32 x = 0; x < dims.x; ++x, ++tileIndex) {
-                // TODO: Bitindex
-                const BlueprintTileType type = bp.tiles[tileIndex];
-                
-                // Copy walls
-                tileContainer.mTileWallsContainer.setSouthWallAtTile(tileIndex, bp.walls.getSouthWallAtTile(tileIndex));
-                tileContainer.mTileWallsContainer.setWestWallAtTile(tileIndex, bp.walls.getWestWallAtTile(tileIndex));
-                if (type != BlueprintTileType::NONE) {
-                    // Flatten heightmap
-                    if (z == 0) {
-                        f32v2 tileWorldPos = worldPos + i32v2(x, y);
-                        // Epsilon to prevent z fighting
-                        grid.setHeightAtWorldPos(tileWorldPos, meanHeight - 0.005f);
-                    }
-
-                    tileContainer.setOwnedTile(tileIndex);
-                    // Stairs are processed below
-                    if (type != BlueprintTileType::STAIRS) {
-                        const TileID tileId = bp.tileIDs[e_cast(type)];
-                        if (tileId != TILE_ID_NONE) {
-                            Tile& tile = tiles[tileIndex];
-                            // We dont add to mean height here because tile height is relative to the floor of this tile layer
-                            //const f32 height = 0.0f;
-                            const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileId);
-                            tile.layers[data.layer] = (TileID)data.getID();
-                            //tile.groundZOffset = height;
-                            //assert(false); // Set building structure pointer
-                            // TODO: always set ground position?
-                        }
-                        tileContainer.onTileChanged(tileIndex);
-                    }
-                    // INTERSECT TERRAIN
-                    // TODO: Intersect terrain
-                    //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
-                    //TileContainer& container = *handle.getMutableContainer();
-                    //container.addTile(handle.index, TileRepository::getTileData(tileId));
-                    ////assert(false); // Set building structure pointer
-                    //container.setTileGroundZPosition(handle.index, height);
-                }
-            }
+    for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
+        BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
+        if (tileTarget.tileIndex < floorStride) {
+            i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % dims.x, tileTarget.tileIndex / dims.x);
+            // Epsilon to prevent z fighting
+            grid.setHeightAtWorldPos(tileWorldPos, meanHeight - 0.005f);
         }
+
+        assert(isTileValid(tileTarget.id));
+        Tile& tile = tiles[tileTarget.tileIndex];
+        const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
+        tile.layers[data.layer] = tileTarget.id;
+        tileContainer.onTileChanged(tileTarget.tileIndex);
+        tileContainer.setOwnedTile(tileTarget.tileIndex); // TODO: OwnedDTiles
+    }
+    x;
+    for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
+        BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
+        assert(isTileValid(wallTarget.id));
+        tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, wallTarget.id, wallTarget.dir);
     }
 
     // Copy room data
-    newBuilding->mRooms = std::move(bp.rooms);
+    //newBuilding->mRooms = std::move(bp.rooms);
 
     // Set stairs tiles
-    TileID stairsTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS)];
-    TileID stairsFlatTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
-    for (auto& stairsVec : bp.stairs) {
-        for (auto& stairPiece : stairsVec) {
-            const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
-            // Place stair steps
-            const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
-            const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
-            Tile& tile = tiles[stairPiece.pos];
-            tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
-            tile.setGroundZOffset(tilePos.z + heightAdd);
-            tile.setOrientation(stairPiece.dir, TileLayer::Main);
-            tileContainer.onTileChanged(stairPiece.pos);
-        }
+    Y;
+    TileID stairsTileId = bp.stairsTileID;
+    TileID stairsFlatTileId = bp.stairsFlatTileID;
+    for (i32 i = 0; i < bp.stairPieceCount; ++i) {
+        StairPiece& stairPiece = bp.stairPieces[i];
+        const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
+        // Place stair steps
+        const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
+        const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
+        Tile& tile = tiles[stairPiece.pos];
+        tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
+        tile.setGroundZOffset(tilePos.z + heightAdd);
+        tile.setOrientation(stairPiece.dir, TileLayer::Main);
+        tileContainer.onTileChanged(stairPiece.pos);
     }
 
     TileContainerEvent loadFinishedEvent;
@@ -187,12 +165,12 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
     }
 }
 
-void CityBuilder::preprocessBlueprint(BuildingBlueprintGenerationContext& bp) {
+void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     ASSERT_GAME_THREAD();
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = mCity.getWorld().getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.ownedTilesFirstFloor));
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.solidTilesFirstFloor));
     //assert(false);
     //bp.building = static_cast<Building*>(mCity.getWorld().getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     //// Force ready so we can place tiles
@@ -202,7 +180,8 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprintGenerationContext& bp) {
     //}
 }
 
-void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprintGenerationContext& blueprint) {
+void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint) {
+    assert(false);
     building.mFunction = blueprint.desc->function;
     building.mDoorTiles = blueprint.exteriorDoors;
     assert(building.mDoorTiles.size());
@@ -218,7 +197,7 @@ void CityBuilder::finishBuilding(World& world, Building& building, BuildingBluep
 
 }
 
-bool CityBuilder::trySendBuildingJob(BuildingBlueprintGenerationContext* blueprint) {
+bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
     auto view = mCity.getWorld().getECS().mRegistry.view<BusinessBuildComponent>();
     bool success = false;
     // Find a business who can take on this build job
@@ -226,7 +205,8 @@ bool CityBuilder::trySendBuildingJob(BuildingBlueprintGenerationContext* bluepri
         auto& cmp = view.get<BusinessBuildComponent>(entity);
         // TODO: Bidding
         if (cmp.mCurrentBlueprint == nullptr) {
-            cmp.mCurrentBlueprint = blueprint;
+            assert(false);
+            //cmp.mCurrentBlueprint = blueprint;
             success = true;
             break;
         }

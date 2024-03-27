@@ -9,6 +9,8 @@ public:
     BitArray(ui32 numBits);
     ~BitArray();
 
+    VORB_MOVABLE(BitArray);
+
     void resize(ui32 numBits);
     void resizeAndZero(ui32 numBits);
     void fill(bool val);
@@ -17,6 +19,7 @@ public:
     void setBitTo(ui32 index, bool val);
     bool getBit(ui32 index) const;
     void zeroAllBits();
+    void setAllBits();
     void freeData() { std::vector<DataType>().swap(mData); }
     // Returns UINT32_MAX on failure
     ui32 getIndexOfFirstSetBit(ui32 startIndex) const;

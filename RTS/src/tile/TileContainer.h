@@ -220,7 +220,7 @@ private:
     // Indexing
     TileSpatialGrid mTileSpatialGrid;
 
-    BitArray mOwnedTiles;
+    BitArray mOwnedTiles; // TODO: OwnedDTiles
     mutable std::shared_mutex mSharedMutex;
     mutable std::mutex mLifetimeMutex;
 
