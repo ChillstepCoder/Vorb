@@ -52,7 +52,7 @@ void CityBuilder::update() {
 }
 
 void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint) {
-    assert(false);BuildingBlueprint
+    assert(false);
     /*  assert(!blueprint->isBuilding);
       blueprint->isBuilding = true;
       preprocessBlueprint(*blueprint);
@@ -74,10 +74,10 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = world.getHeightmapGrid();
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
-
+    const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bp.floorCount * bp.floorHeight));
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
+    Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, aabb3d, bp.floorHeight));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
@@ -106,18 +106,17 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
         tileContainer.onTileChanged(tileTarget.tileIndex);
         tileContainer.setOwnedTile(tileTarget.tileIndex); // TODO: OwnedDTiles
     }
-    x;
     for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
         BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
         assert(isTileValid(wallTarget.id));
-        tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, wallTarget.id, wallTarget.dir);
+        TileWall newWall{ .wallID = wallTarget.id, .isDoor = false /*TODO: this is wrong...*/ };
+        tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, newWall, wallTarget.dir);
     }
 
     // Copy room data
     //newBuilding->mRooms = std::move(bp.rooms);
 
     // Set stairs tiles
-    Y;
     TileID stairsTileId = bp.stairsTileID;
     TileID stairsFlatTileId = bp.stairsFlatTileID;
     for (i32 i = 0; i < bp.stairPieceCount; ++i) {
@@ -167,10 +166,10 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 
 void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     ASSERT_GAME_THREAD();
-
+    assert(false);
     // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = mCity.getWorld().getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.solidTilesFirstFloor));
+   // IHeightmapGrid& grid = mCity.getWorld().getHeightmapGrid();
+   // const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.mTileSpatialGrid.getAABB(), bp.solidTilesFirstFloor));
     //assert(false);
     //bp.building = static_cast<Building*>(mCity.getWorld().getStructureManager().makeNewStructure(StructureType::Building, bp.mTileSpatialGrid.getAABB(), bp.mTileSpatialGrid.getFloorHeight()));
     //// Force ready so we can place tiles
@@ -183,7 +182,7 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
 void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint) {
     assert(false);
     building.mFunction = blueprint.desc->function;
-    building.mDoorTiles = blueprint.exteriorDoors;
+    //building.mDoorTiles = blueprint.exteriorDoors;
     assert(building.mDoorTiles.size());
     assert(building.mRooms.size());
 

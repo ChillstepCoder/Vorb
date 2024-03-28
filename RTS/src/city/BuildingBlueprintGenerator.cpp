@@ -2124,6 +2124,8 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
                 break;
             case BlueprintTileType::STAIRS:
             case BlueprintTileType::STAIRS_FLAT:
+                addRequiredItems(type);
+                break;
             case BlueprintTileType::WINDOW:
             case BlueprintTileType::FLOOR:{
                 addRequiredItems(type);
@@ -2151,6 +2153,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     bp->floorCount = context.floorCount;
     bp->floorHeight = context.mTileSpatialGrid.getFloorHeight();
     bp->worldPosRootDTile = context.rootPosDTileCoord;
+    bp->dimsDTile = context.dimsDTile;
     // Items
     bp->itemCompositionCount = context.requiredItemsToBuild.size();
     bp->itemComposition = std::make_unique<ItemStack[]>(bp->itemCompositionCount);
