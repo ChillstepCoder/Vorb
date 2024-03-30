@@ -47,6 +47,10 @@ public:
     TileID stairsTileID;
     TileID stairsFlatTileID;
 
+    bool tileIsOwned(TileIndex tileIndex) const {
+        return ownedDTiles.get(tileIndex);
+    }
+
 };
 
 //SIZER(BuildingBlueprint);

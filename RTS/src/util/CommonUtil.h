@@ -136,3 +136,21 @@ struct StringLiteral {
 #define DECL_BOOL_TEMPLATE(signature, rest) \
 template signature<true>rest; \
 template signature<false>rest;
+
+
+// 8 9 10 11
+// 4 5 6 7
+// 0 1 2 3
+// Becomes:
+// 2 2 3 3
+// 0 0 1 1
+// 0 0 1 1
+// IS NOT CORRECT FOR CHUNKS - STRUCTURES ONLY
+// REQUIRED THAT TILE DIMENSIONS ARE A MULTIPLE OF 2
+inline DTileIndex structureTileIndexToDTileIndex(TileIndex tileIndex, DTileIndex structureWidthDTiles) {
+    // Mathematical simplication doesn't help here because we use integer division, trust me I tried lol
+    // This is likely as optimized as it gets without some complex shit so don't waste your time
+    const DTileIndex dtileIndex = tileIndex >> 1;
+    const DTileIndex rowIndex = dtileIndex / structureWidthDTiles;
+    return dtileIndex - (((rowIndex)+1) >> 1) * structureWidthDTiles;
+}
