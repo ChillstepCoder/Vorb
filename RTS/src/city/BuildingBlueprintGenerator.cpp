@@ -592,12 +592,23 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
             break;
     }
 
-    // Clamp positions to be withing facade
+    // Clamp positions to be within outer facade
     for (auto&& room : context.rooms) {
-        room.offsetFromZero.x = vmath::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)dims3D.x);
-        room.offsetFromZero.y = vmath::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)dims3D.y);
+        room.offsetFromZero.x = vmath::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)dims3D.x - 1);
+        room.offsetFromZero.y = vmath::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)dims3D.y - 1);
         assert(room.offsetFromZero.x < 10000 && room.offsetFromZero.y < 10000);
     }
+
+    // Push away from unowned tiles by selecting closest owned tile
+    for (auto&& room : context.rooms) {
+        if (!context.isLocalTileIndexOwned(room.offsetFromZero)) {
+            assert(false);
+            X;
+            // TODO: Cache all owned local tiles sorted so we can not only quickly test if owned, we can also
+            // find the nearest owned tile.
+        }
+    }
+
 
     // Spread rooms apart based on circular collision
     constexpr f32 FORCE_MULT = 0.5f;

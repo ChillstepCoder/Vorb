@@ -145,12 +145,20 @@ template signature<false>rest;
 // 2 2 3 3
 // 0 0 1 1
 // 0 0 1 1
-// IS NOT CORRECT FOR CHUNKS - STRUCTURES ONLY
-// REQUIRED THAT TILE DIMENSIONS ARE A MULTIPLE OF 2
+// * IS NOT CORRECT FOR CHUNKS - STRUCTURES ONLY (X,Y,Z)
+// * REQUIRED THAT TILE DIMENSIONS ARE A MULTIPLE OF 2
 inline DTileIndex structureTileIndexToDTileIndex(TileIndex tileIndex, DTileIndex structureWidthDTiles) {
     // Mathematical simplication doesn't help here because we use integer division, trust me I tried lol
     // This is likely as optimized as it gets without some complex shit so don't waste your time
     const DTileIndex dtileIndex = tileIndex >> 1;
-    const DTileIndex rowIndex = dtileIndex / structureWidthDTiles;
-    return dtileIndex - (((rowIndex)+1) >> 1) * structureWidthDTiles;
+    const DTileIndex rowIndexPlus1 = dtileIndex / structureWidthDTiles + 1;
+    return dtileIndex - (rowIndexPlus1 >> 1) * structureWidthDTiles;
+}
+// * IS NOT CORRECT FOR CHUNKS - STRUCTURES ONLY
+// * REQUIRED THAT TILE DIMENSIONS ARE A MULTIPLE OF 2
+inline DTileIndex structureTileXYZToDTileIndex(ui32v3 tileXYZ, DTileIndex structureWidthDTiles, DTileIndex floorStrideDTiles) {
+    return tileXYZ.z * floorStrideDTiles + (tileXYZ.y << 1) * structureWidthDTiles + (tileXYZ.x << 1);
+}
+inline DTileIndex structureTileXYToDTileIndex(ui32v2 tileXY, DTileIndex structureWidthDTiles) {
+    return (tileXY.y << 1) * structureWidthDTiles + (tileXY.x << 1);
 }

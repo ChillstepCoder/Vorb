@@ -91,6 +91,9 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprintGenerationContext);
 
+    bool isLocalTileIndexOwned(TileIndex index) const;
+    bool isLocalTileIndexOwned(ui32v2 tileXY) const;
+
     // Indexing
     TileSpatialGrid mTileSpatialGrid;
 
@@ -116,6 +119,8 @@ public:
 
     DTileCoord rootPosDTileCoord;
     i32v2 dimsDTile;
+    ui32 floorStrideDTile;
+    
     BitArray ownedDTiles;
     BitArray solidTilesFirstFloor;
     std::vector<RoomNode> rooms;

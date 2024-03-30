@@ -15,6 +15,7 @@ BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
     BuildingBlueprintFlags flags
 ) :
     rootPosDTileCoord(worldPosRoot), dimsDTile(dimsDTile), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), flags(flags) {
+    floorStrideDTile = dimsDTile.y * dimsDTile.x;
     TileRepository& tileRepo = TileRepository::get();
     const i32v2 tilePos2D = worldPosRoot.toTilePos();
     // We will reinitialize later with the proper Z dimensions
@@ -33,6 +34,14 @@ BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
 }
 
 BuildingBlueprintGenerationContext::~BuildingBlueprintGenerationContext() = default;
+
+bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(TileIndex index) const {
+    return ownedDTiles.getBit(structureTileIndexToDTileIndex(index, dimsDTile.x));
+}
+bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(ui32v2 tileXY) const {
+    return ownedDTiles.getBit(structureTileXYToDTileIndex(tileXY, dimsDTile.x));
+}
+
 
 // TODO: Use in another context
 //PlaceTileBlueprintItemsHandlePtr BuildingBlueprintGenerationContext::reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount) {
