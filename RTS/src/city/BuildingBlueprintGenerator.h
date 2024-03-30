@@ -10,7 +10,7 @@
 class VisualLog;
 class World;
 class CityBuilder;
-struct RoomNode;
+struct RoomGenNode;
 
 constexpr ui32 MAX_EXTERIOR_WALL_RUN_LENGTH = 8; // TODO: Enforce this
 
@@ -46,7 +46,7 @@ private:
     static void roomCleanup(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void computeRoomAABBs(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static bool validateRoomsArentEmpty(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
-    static void initRoomWalls(BuildingBlueprintGenerationContext& context, RoomNode& room);
+    static void initRoomWalls(BuildingBlueprintGenerationContext& context, RoomGenNode& room);
     static void placeWalls(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void placeDoors(BuildingBlueprintGenerationContext& context, VisualLog* visLog);
     static void buildRoomInteriorEdges(BuildingBlueprintGenerationContext& context, VisualLog* visLog);

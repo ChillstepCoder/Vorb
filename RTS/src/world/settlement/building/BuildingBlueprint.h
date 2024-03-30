@@ -19,6 +19,20 @@ struct BuildingBlueprintWallTarget {
     // ui8 runLength // TODO: RLE Compression
 };
 
+struct BuildingBlueprintRoomNode {
+    TileIndex rootPos; // Guarenteed valid tile
+    ui16 edgeStartIndex; // Start in edges allEdges
+    ui8 numEdges;
+    //ui8 padding? ;
+};
+
+class BuildingBlueprintRoomGraph {
+    std::unique_ptr<BuildingBlueprintRoomNode[]> allNodes;
+    std::unique_ptr<ui16[]> allEdges; // Represents 1 way edge
+    ui32 nodeCount;
+    ui32 edgeCount;
+};
+
 // Minimal data representation of a building
 class BuildingBlueprint {
 public:
@@ -26,6 +40,7 @@ public:
     BitArray computeSolidTilesFirstFloor() const;
     bool isFinished() const { return desc != nullptr; }
 
+    BuildingBlueprintRoomGraph roomGraph; // TODO: Build this
     BitArray ownedDTiles;
     // Sorted by build priority back to front, so first floor tiles at the end
     std::unique_ptr<BuildingBlueprintTileTarget[]> tileTargets;
@@ -46,13 +61,13 @@ public:
     i32 floorCount;
     TileID stairsTileID;
     TileID stairsFlatTileID;
+    TileID defaultFloorID;
+    /*
 
-    bool tileIsOwned(TileIndex tileIndex) const {
-        return ownedDTiles.get(tileIndex);
-    }
+    bool tileIsOwned(DTileIndex tileIndex) const {
+        return ownedDTiles.getBit(tileIndex); WRONG
+    }*/
 
 };
-
-//SIZER(BuildingBlueprint);
 
 typedef std::unique_ptr<BuildingBlueprint> BuildingBlueprintPtr;

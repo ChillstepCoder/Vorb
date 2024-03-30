@@ -2,7 +2,7 @@
 
 struct SDL_Window;
 class Structure;
-struct RoomNode;
+struct RoomGenNode;
 class Building;
 class World;
 
@@ -52,7 +52,7 @@ public:
 
     Structure* getSelectedStructure() const { return mSelectedStructure; }
     RoomNodeID getSelectedRoomID() const { return mSelectedRoomID; }
-    const RoomNode* tryGetSelectedRoom() const;
+    const RoomGenNode* tryGetSelectedRoom() const;
     Building* tryGetSelectedBuilding() const;
     TileHandle getSelectedTileHandle() const { return mSelectedTileHandle; }
 

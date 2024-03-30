@@ -732,6 +732,13 @@ void WorldEditorPanel::updateBuildingEdit() {
             BuildingRepository& buildingRepo = BuildingRepository::get();
             BitArray ownedDTiles(dims.x * dims.y);
             ownedDTiles.setAllBits();
+            
+            /* // Interesting silhouette test
+            for (ui32 y = 0; y < dims.y / 2; ++y) {
+                for (ui32 x = 0; x < dims.x / 2; ++x) {
+                    ownedDTiles.clearBit(y * dims.x + x);
+                }
+            }*/
             BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(buildingId), 1.0f /*?*/, Cartesian::WEST, createPos, dims, ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom());
             if (!bp) {
                 assert(false);

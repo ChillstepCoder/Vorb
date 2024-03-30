@@ -50,7 +50,7 @@ void renderBlueprintDebugVislog(BuildingBlueprintGenerationContext& context, Vis
         visLog.addWireQuad(f32v3(node.aabb.x - aabb.x, node.aabb.y - aabb.y, node.floorIndex * floorHeight), node.aabb.dims, color4(color.r, color.g, color.b, 255u));
         // Draw parent line
         if (node.parentRoom != INVALID_ROOM_ID) {
-            RoomNode& parent = context.rooms[node.parentRoom];
+            RoomGenNode& parent = context.rooms[node.parentRoom];
             const f32v3 startPos(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * floorHeight);
             const f32v3 endPos(parent.offsetFromZero.x + 0.5f, parent.offsetFromZero.y + 0.5f, parent.floorIndex * floorHeight);
             if (node.isPrivate) {
@@ -76,7 +76,7 @@ void renderBlueprintDebugVislog(BuildingBlueprintGenerationContext& context, Vis
                 const TileIndex index = floorIndex + y * aabb.dims.x + x;
                 RoomNodeID id = context.ownerArray[index];
                 if (id != INVALID_ROOM_ID) {
-                    const RoomNode& room = context.rooms[id];
+                    const RoomGenNode& room = context.rooms[id];
                     const f32v2 pos = f32v2(x, y);
                     const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
                     visLog.addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
@@ -155,7 +155,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous
     RandomGenerator seedMutator(seed);
 
     do {
-        BuildingBlueprintGenerationContext context(desc, sizeAlpha, entrySide, plotSizeDTiles, worldPosRoot, flags);
+        BuildingBlueprintGenerationContext context(desc, ownedDTiles, sizeAlpha, entrySide, plotSizeDTiles, worldPosRoot, flags);
         context.generationSeed = seed;
         context.randomGen = std::make_unique<RandomGenerator>(seed);
         assert(plotSizeDTiles.x > 2 && plotSizeDTiles.y > 2);
@@ -222,6 +222,20 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprintG
     RoomRepository& roomRepo = RoomRepository::get();
     for (auto& room : context.rooms) {
         room.roomDef = &roomRepo.getLoadedOrUnloadedAsset(room.roomDefId);
+    }
+
+
+    // Debug draw footprint
+    if (visLog) {
+        visLog->nextStep("Footprint");
+        ui32 dIndex = 0;
+        for (ui32 y = 0; y < context.dimsDTile.y; ++y) {
+            for (ui32 x = 0; x < context.dimsDTile.x; ++x, ++dIndex) {
+                if (context.ownedDTiles.getBit(dIndex)) {
+                    visLog->addWireQuad(f32v3(x * 2.0f, y * 2.0f, 0.0f) + f32v3(0.1f, 0.1f, 0.0f), f32v2(1.8f), color::Green);
+                }
+            }
+        }
     }
 
     // Rooms
@@ -359,13 +373,13 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprintGenerat
     int publicIndex = context.randomGen->getRandomUint() % numPublicRooms; // Random start room to test
     int privateIndex = 0;
     for (size_t i = 0; i < privateRoomCount; ++i) {
-        RoomNode& publicRoom = context.rooms[publicIndex];
+        RoomGenNode& publicRoom = context.rooms[publicIndex];
         if (publicRoom.numChildren < MAX_CHILD_ROOMS && countLookup[privateIndex].x < countLookup[privateIndex].y) {
             // We can fit a private room here
             // Next node index is our child
             publicRoom.childRooms[publicRoom.numChildren++] = (RoomNodeID)context.rooms.size();
             // Append the room
-            RoomNode privateRoom;
+            RoomGenNode privateRoom;
             privateRoom.roomDefId = context.desc->privateRooms[privateIndex].id;
             privateRoom.parentRoom = publicIndex;
             privateRoom.isPrivate = true;
@@ -395,7 +409,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprintGenerat
     }
 }
 
-i32 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
+i32 getMaximumDepthRecursive(std::vector<RoomGenNode>& nodes, RoomGenNode* node) {
     i32 maximumChildDepth = 0;
     for (int i = 0; i < node->numChildren; ++i) {
         const i32 depth = getMaximumDepthRecursive(nodes, &nodes[node->childRooms[i]]);
@@ -406,13 +420,13 @@ i32 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
     return maximumChildDepth + 1;
 }
 
-void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomNode* node, f32 availableWidthSpan, i32 maxXOffsetPerLayer, i32v2 currentOffset, const i32v2& dims2d, VisualLog* visLog) {
+void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomGenNode* node, f32 availableWidthSpan, i32 maxXOffsetPerLayer, i32v2 currentOffset, const i32v2& dims2d, VisualLog* visLog) {
     if (node->numChildren == 0) {
         return;
     }
     
     assert(currentOffset.x < 10000 && currentOffset.y < 10000);
-    std::vector<RoomNode>& nodes = context.rooms;
+    std::vector<RoomGenNode>& nodes = context.rooms;
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
 
     // TODO: Worry about even vs odd?
@@ -421,7 +435,7 @@ void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomNod
     // Determine desired child y span
     i32 totalChildSpan = 0;
     for (int i = 0; i < node->numChildren; ++i) {
-        RoomNode& child = nodes[node->childRooms[i]];
+        RoomGenNode& child = nodes[node->childRooms[i]];
         totalChildSpan += child.desiredWidth;
         // Initialize child floor to our floor
         child.floorIndex = node->floorIndex;
@@ -433,7 +447,7 @@ void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomNod
     // Place a child above with stairs if possible
     bool didCreateStairs = false;
     for (int i = 0; i < node->numChildren; ++i) {
-        RoomNode& child = nodes[node->childRooms[i]];
+        RoomGenNode& child = nodes[node->childRooms[i]];
         // New floor TODO: Random? Statistics?
         // Never two rooms with stairs stacked on each other.
         if (node->roomDef->stairsChance && !node->connectedToParentWithStairs && child.roomDef->canStairsConnect && child.desiredWidth >= 3) {
@@ -478,7 +492,7 @@ void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomNod
         // Start at the top
         currentOffset.y -= (i32)(widthSegmentSize * (node->numChildren - 1));
         for (int i = 0; i < node->numChildren; ++i) {
-            RoomNode& child = nodes[node->childRooms[i]];
+            RoomGenNode& child = nodes[node->childRooms[i]];
             // If above, continue since we did this already
             if (child.floorIndex == node->floorIndex + 1) {
                 continue;
@@ -513,7 +527,7 @@ void BuildingBlueprintGenerator::initRooms(BuildingBlueprintGenerationContext& c
     
     RoomRepository& roomRepo = RoomRepository::get();
     for (size_t i = 0; i < context.rooms.size(); ++i) {
-        RoomNode& room = context.rooms[i];
+        RoomGenNode& room = context.rooms[i];
         room.id = (RoomNodeID)i;
 
         const RoomDef& desc = roomRepo.getLoadedOrUnloadedAsset(room.roomDefId);
@@ -534,7 +548,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
     
     if (visLog) visLog->nextStep("Place rooms");
     // Breadth first search room placement
-    RoomNode* root = &context.rooms[0];
+    RoomGenNode* root = &context.rooms[0];
     i32 maximumDepth = getMaximumDepthRecursive(context.rooms, root);
     const i32v3& dims3D = context.mTileSpatialGrid.getDims();
 
@@ -600,23 +614,37 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
     }
 
     // Push away from unowned tiles by selecting closest owned tile
-    for (auto&& room : context.rooms) {
-        if (!context.isLocalTileIndexOwned(room.offsetFromZero)) {
-            assert(false);
-            X;
-            // TODO: Cache all owned local tiles sorted so we can not only quickly test if owned, we can also
-            // find the nearest owned tile.
+    auto pushTilesAwayFromUnowned = [&]() {
+        for (auto&& room : context.rooms) {
+            if (!context.isLocalTileIndexOwned(room.offsetFromZero)) {
+                const f32v2 offstf(room.offsetFromZero);
+                f32 closestDistSQ = FLT_MAX;
+                TileIndex closestTile = INVALID_TILE_INDEX;
+                for (TileIndex t : context.ownedTilesFirstFloor) {
+                    const f32v2 xy(t % dims3D.x, t / dims3D.x);
+                    const f32 distSq = glm::distance2(offstf, xy);
+                    if (distSq < closestDistSQ) {
+                        closestDistSQ = distSq;
+                        closestTile = t;
+                    }
+                }
+                if (closestTile != INVALID_TILE_INDEX) [[likely]] {
+                    room.offsetFromZero = i32v2(closestTile % dims3D.x, closestTile / dims3D.x);
+                }
+            }
         }
-    }
+    };
 
+    // First push
+    pushTilesAwayFromUnowned();
 
     // Spread rooms apart based on circular collision
     constexpr f32 FORCE_MULT = 0.5f;
     for (int iter = 0; iter < 3; ++iter) {
         for (size_t i = 0; i < context.rooms.size() - 1; ++i) {
-            RoomNode& room1 = context.rooms[i];
+            RoomGenNode& room1 = context.rooms[i];
             for (size_t j = i + 1; j < context.rooms.size(); ++j) {
-                RoomNode& room2 = context.rooms[j];
+                RoomGenNode& room2 = context.rooms[j];
                 if (room2.floorIndex != room1.floorIndex) {
                     // Not influenced by rooms on other floors
                     continue;
@@ -631,6 +659,10 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
                     offset = f32v2(1.0f, 0.0f);
                 }
                 const f32 distance = glm::length(offset);
+                if (distance <= 0.001f) [[unlikely]] {
+                    // Exact overlap, push in a random direction
+
+                }
                 // Normalize
                 offset = offset / distance;
                 const f32 desiredDistance = (room1.desiredWidth + room2.desiredWidth) / 2.0f;
@@ -639,7 +671,8 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
                     const f32v2 pushForce = offset * ((desiredDistance - distance) * FORCE_MULT);
                     applyForceOffset(room1.offsetFromZero, -pushForce, dims3D);
                     applyForceOffset(room2.offsetFromZero, pushForce, dims3D);
-                } else if (room2.parentRoom == i) { // Magnet only to children
+                }
+                else if (room2.parentRoom == i) { // Magnet only to children
                     const f32v2 pullForce = offset * ((distance - desiredDistance) * FORCE_MULT);
                     applyForceOffset(room1.offsetFromZero, pullForce, dims3D);
                     applyForceOffset(room2.offsetFromZero, -pullForce, dims3D);
@@ -651,9 +684,9 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
     // Second spread pass aiming only at tiny distances
     for (int iter = 0; iter < 2; ++iter) {
         for (size_t i = 0; i < context.rooms.size() - 1; ++i) {
-            RoomNode& room1 = context.rooms[i];
+            RoomGenNode& room1 = context.rooms[i];
             for (size_t j = i + 1; j < context.rooms.size(); ++j) {
-                RoomNode& room2 = context.rooms[j];
+                RoomGenNode& room2 = context.rooms[j];
                 if (room2.floorIndex != room1.floorIndex) {
                     // Not influenced by rooms on other floors
                     continue;
@@ -680,19 +713,60 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
             }
         }
     }
+
+    // Second push
+    pushTilesAwayFromUnowned();
+
+    // Remove any still overlapping rooms
+    for (size_t i = 0; i < context.rooms.size() - 1; ++i) {
+        RoomGenNode& room1 = context.rooms[i];
+        if (room1.isDead() == false) {
+            for (size_t j = i + 1; j < context.rooms.size(); ++j) {
+                RoomGenNode& room2 = context.rooms[j];
+                if (room2.floorIndex != room1.floorIndex) {
+                    // Not influenced by rooms on other floors
+                    continue;
+                }
+
+                // Check overlap and remove offender
+                if (room1.offsetFromZero == room2.offsetFromZero) {
+                    // Mark children as having no parent
+                    for (ui32 c = 0; c < room2.numChildren; ++c) {
+                        context.rooms[room2.childRooms[c]].parentRoom = INVALID_ROOM_ID;
+                    }
+                    // Mark dead room
+                    room2.desiredSize = 0;
+                    if (room2.parentRoom != INVALID_ROOM_ID) {
+                        RoomGenNode& parent = context.rooms[room2.parentRoom];
+                        for (ui32 c = 0; c < parent.numChildren; ++c) {
+                            if (parent.childRooms[c] == j) {
+                                // Erase from child array
+                                parent.childRooms[c] = INVALID_ROOM_ID;
+                                for (ui32 c2 = c + 1; c < parent.numChildren; ++c) {
+                                    parent.childRooms[c2 - 1] = parent.childRooms[c2];
+                                }
+                                --parent.numChildren;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Helper
 
-inline TileIndex getIndex2DAtPos(i32v2 pos, i32v2 dims, i32 floorIndex) {
+inline TileIndex getIndex3DAtPos(i32v2 pos, i32v2 dims, i32 floorIndex) {
     return (TileIndex)(floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x);
 }
 
-inline TileIndex getIndex2DAtPos(i16v2 pos, i32v2 dims, i32 floorIndex) {
+inline TileIndex getIndex3DAtPos(i16v2 pos, i32v2 dims, i32 floorIndex) {
     return (TileIndex)(floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x);
 }
 
-inline TileIndex getIndex2DAtPos(i32 x, i32 y, i32v2 dims, i32 floorIndex) {
+inline TileIndex getIndex3DAtPos(i32 x, i32 y, i32v2 dims, i32 floorIndex) {
     return (TileIndex)(floorIndex * dims.y * dims.x + y * dims.x + x);
 }
 
@@ -701,7 +775,7 @@ inline i32v2 getPosAtIndex2D(TileIndex tileIndex, i32v2 dims) {
     return i32v2(tileIndex % dims.x, (tileIndex % floorStride) / dims.x);
 }
 
-inline f32 getPressureValue(const RoomNode& room) {
+inline f32 getPressureValue(const RoomGenNode& room) {
     return (f32)room.desiredSize / (f32)room.size;
 }
 
@@ -723,7 +797,7 @@ const i32v2 WALL_ITERATE_OFFSETS[4] = {
 };
 
 
-void expandWall(Cartesian wallDir, BuildingBlueprintGenerationContext& context, RoomNode& room, VisualLog* visLog) {
+void expandWall(Cartesian wallDir, BuildingBlueprintGenerationContext& context, RoomGenNode& room, VisualLog* visLog) {
 
     i32AABB2& roomAABB = room.aabb;
     i32v2 iterPos;
@@ -762,7 +836,7 @@ void expandWall(Cartesian wallDir, BuildingBlueprintGenerationContext& context, 
     const i32v2& iterateOffset = WALL_ITERATE_OFFSETS[e_cast(wallDir)];
     // i32 tilesAdded = 0;
     for (int j = 0; j < length; ++j) {
-        const i32 index = getIndex2DAtPos(iterPos, context.mTileSpatialGrid.getDims(), room.floorIndex);
+        const i32 index = getIndex3DAtPos(iterPos, context.mTileSpatialGrid.getDims(), room.floorIndex);
         RoomNodeID ownerId = context.ownerArray[index];
         assert(ownerId == INVALID_ROOM_ID);
         //if (ownerId != INVALID_ROOM_ID) {
@@ -784,7 +858,7 @@ void expandWall(Cartesian wallDir, BuildingBlueprintGenerationContext& context, 
 }
 
 // Only fills gaps and will not overwrite any existing walls
-void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprintGenerationContext& context, RoomNode& room, VisualLog* visLog) {
+void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprintGenerationContext& context, RoomGenNode& room, VisualLog* visLog) {
     i32AABB2& aabb = room.aabb;
     i32v2 iterPos;
     i32 length;
@@ -823,7 +897,7 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprintGenerationContext& c
     i32 tilesAdded = 0;
     for (int j = 0; j < length; ++j) {
         // Only if we aren't an overwritten wall
-        const i32 index = getIndex2DAtPos(iterPos, context.mTileSpatialGrid.getDims(), room.floorIndex);
+        const i32 index = getIndex3DAtPos(iterPos, context.mTileSpatialGrid.getDims(), room.floorIndex);
         RoomNodeID ownerId = context.ownerArray[index];
         if (ownerId == INVALID_ROOM_ID) {
             ++tilesAdded;
@@ -843,7 +917,7 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprintGenerationContext& c
     room.size += tilesAdded;
 }
 
-bool expandRoomSquare(BuildingBlueprintGenerationContext& context, RoomNode& room, VisualLog* visLog) {
+bool expandRoomSquare(BuildingBlueprintGenerationContext& context, RoomGenNode& room, VisualLog* visLog) {
 
     
     bool didExpand = false;
@@ -870,7 +944,12 @@ bool expandRoomSquare(BuildingBlueprintGenerationContext& context, RoomNode& roo
             bool canExpand = true;
             i16v2 outerPos = nextStart;
             for (int j = 0; j < wallInfo.length; ++j) {
-                const i32 index = getIndex2DAtPos(outerPos, dims, room.floorIndex);
+                const i32 index = getIndex3DAtPos(outerPos, dims, room.floorIndex);
+                if (!context.isLocalTileIndexOwned(index % context.floorStrideTile)) {
+                    // No own = no expand
+                    canExpand = false;
+                    break;
+                }
                 RoomNodeID ownerId = context.ownerArray[index];
                 if (ownerId != INVALID_ROOM_ID) {
                     canExpand = false;
@@ -896,7 +975,7 @@ bool expandRoomSquare(BuildingBlueprintGenerationContext& context, RoomNode& roo
    return didExpand;
 }
 
-bool expandRoomGaps(BuildingBlueprintGenerationContext& context, RoomNode& room, VisualLog* visLog) {
+bool expandRoomGaps(BuildingBlueprintGenerationContext& context, RoomGenNode& room, VisualLog* visLog) {
 
     bool didExpand = false;
 
@@ -925,7 +1004,13 @@ bool expandRoomGaps(BuildingBlueprintGenerationContext& context, RoomNode& room,
                 bool canExpand = false;
                 i16v2 outerPos = nextStart;
                 for (int j = 0; j < wallInfo.length; ++j) {
-                    const i32 index = getIndex2DAtPos(outerPos, dims, room.floorIndex);
+                    const i32 index = getIndex3DAtPos(outerPos, dims, room.floorIndex);
+                    if (!context.isLocalTileIndexOwned(index % context.floorStrideTile)) {
+                        // No own = no expand
+                        // TODO: Since this is gaps, can we allow expand for partial?
+                        break;
+                    }
+                    // Check if not owned by another room
                     RoomNodeID ownerId = context.ownerArray[index];
                     if (ownerId == INVALID_ROOM_ID) {
                         // We need at least one gap to expand into
@@ -962,7 +1047,7 @@ void BuildingBlueprintGenerator::placeWalls(BuildingBlueprintGenerationContext& 
     for (i32 z = 0; z < context.floorCount; ++z) {
         for (i32 y = 0; y < dims.y; ++y) {
             for (i32 x = 0; x < dims.x; ++x) {
-                const i32 index = getIndex2DAtPos(x, y, dims, z);
+                const i32 index = getIndex3DAtPos(x, y, dims, z);
                 RoomNodeID roomId = context.ownerArray[index];
                 if (roomId == INVALID_ROOM_ID) {
                     continue;
@@ -971,28 +1056,28 @@ void BuildingBlueprintGenerator::placeWalls(BuildingBlueprintGenerationContext& 
                 bool didSetWall = false;
                 TileWall walls[4];
                 // South
-                if (y == 0 || context.ownerArray[getIndex2DAtPos(x, y - 1, dims, z)] != roomId) {
+                if (y == 0 || context.ownerArray[getIndex3DAtPos(x, y - 1, dims, z)] != roomId) {
                     walls[e_cast(Cartesian::SOUTH)].wallID = context.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
                         visLog->addLineBetweenPoints(f32v3(x, y + 0.01f, z * floorHeight), f32v3(x + 1.0f, y + 0.01f, z * floorHeight), COLOR_WHITE);
                     }
                 }
                 // West
-                if (x == 0 || context.ownerArray[getIndex2DAtPos(x - 1, y, dims, z)] != roomId) {
+                if (x == 0 || context.ownerArray[getIndex3DAtPos(x - 1, y, dims, z)] != roomId) {
                     walls[e_cast(Cartesian::WEST)].wallID = context.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
                         visLog->addLineBetweenPoints(f32v3(x + 0.01f, y, z * floorHeight), f32v3(x + 0.01f, y + 1.0f, z * floorHeight), COLOR_WHITE);
                     }
                 }
                 // East
-                if (x == dims.x - 1 || context.ownerArray[getIndex2DAtPos(x + 1, y, dims, z)] != roomId) {
+                if (x == dims.x - 1 || context.ownerArray[getIndex3DAtPos(x + 1, y, dims, z)] != roomId) {
                     walls[e_cast(Cartesian::EAST)].wallID = context.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
                         visLog->addLineBetweenPoints(f32v3(x + 1.0f - 0.01f, y, z * floorHeight), f32v3(x + 1.0f - 0.01f, y + 1.0f, z * floorHeight), COLOR_WHITE);
                     }
                 }
                 // North
-                if (y == dims.y - 1 || context.ownerArray[getIndex2DAtPos(x, y + 1, dims, z)] != roomId) {
+                if (y == dims.y - 1 || context.ownerArray[getIndex3DAtPos(x, y + 1, dims, z)] != roomId) {
                     walls[e_cast(Cartesian::NORTH)].wallID = context.tileIDs[e_cast(BlueprintTileType::WALL)];
                     if (visLog) {
                         visLog->addLineBetweenPoints(f32v3(x, y + 1.0f - 0.01f, z * floorHeight), f32v3(x + 1.0f, y + 1.0f - 0.01f, z * floorHeight), COLOR_WHITE);
@@ -1031,7 +1116,7 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprintGenerationContext&
     }
     // Expand one floor at a time so that second story rooms can copy their
     // lower parent layout for easier stair placement
-    boost::container::static_vector<RoomNode*, 256> roomsOnThisFloorToExpand;
+    boost::container::static_vector<RoomGenNode*, 256> roomsOnThisFloorToExpand;
 
     for (i32 z = 0; z < context.floorCount; ++z) {
         // Collect rooms, direct copy any rooms that are connected to parent via stairs
@@ -1041,13 +1126,13 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprintGenerationContext&
                 if (room.connectedToParentWithStairs) {
                     assert(z != 0);
                     // Direct copy!
-                    RoomNode& parent = context.rooms[room.parentRoom];
+                    RoomGenNode& parent = context.rooms[room.parentRoom];
                     room.aabb = parent.aabb;
                     // Iterate over every tile on the floor to copy
                     // TODO: AABB iterate instead
                     for (i32 y = 0; y < dims.y; ++y) {
                         for (i32 x = 0; x < dims.x; ++x) {
-                            TileIndex myIndex = getIndex2DAtPos(x, y, dims, z);
+                            TileIndex myIndex = getIndex3DAtPos(x, y, dims, z);
                             TileIndex parentIndex = myIndex - dims.x * dims.y;
                             if (context.ownerArray[parentIndex] == parent.id) {
                                 context.ownerArray[myIndex] = room.id;
@@ -1247,7 +1332,7 @@ void FixupSingleRoomPieces(BuildingBlueprintGenerationContext& context, i32 x, i
 }
 
 // Sweeping Cellular Automata
-void CellularAutomataSubStepThickenPassages(BuildingBlueprintGenerationContext& context, i32 x, i32 y, i32 index, RoomNode& room) {
+void CellularAutomataSubStepThickenPassages(BuildingBlueprintGenerationContext& context, i32 x, i32 y, i32 index, RoomGenNode& room) {
 
     // Order matters here, we want to thicken ahead of us and create a wave.
     // With this order, we are allowed to modify Right, up, and ourselves, but not down or left.
@@ -1293,7 +1378,7 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprintGenerationContext&
         for (i32 z = 0; z < context.floorCount; ++z) {
             for (i32 y = 1; y < dims.y - 1; ++y) {
                 for (i32 x = 1; x < dims.x - 1; ++x) {
-                    const i32 index = getIndex2DAtPos(x, y, dims, z);
+                    const i32 index = getIndex3DAtPos(x, y, dims, z);
                     FixupSingleRoomPieces(context, x, y, index, visLog);
                 }
             }
@@ -1310,7 +1395,7 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprintGenerationCon
     // Reserve
     
     for (size_t i = 0; i < context.rooms.size(); ++i) {
-        RoomNode& room = context.rooms[i];
+        RoomGenNode& room = context.rooms[i];
         room.tilePositions.reserve(room.size);
     }
 
@@ -1355,7 +1440,7 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprintGenerationCon
 
     // Set up true AABBs and update offsetFromZero
     for (auto&& it : roomBoundsLookup) {
-        RoomNode& room = context.rooms[it.first];
+        RoomGenNode& room = context.rooms[it.first];
         // i32AABB2 oldAABB = room.aabb;
         room.aabb.pos.x = it.second.x + rootPos.x;
         room.aabb.dims.x = it.second.y - it.second.x + 1;
@@ -1374,14 +1459,14 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprintGenerationCon
     }
 
     // Remove extra memory
-    for (RoomNode& room : context.rooms) {
+    for (RoomGenNode& room : context.rooms) {
         room.tilePositions.shrink_to_fit();
     }
 
 }
 
 bool BuildingBlueprintGenerator::validateRoomsArentEmpty(BuildingBlueprintGenerationContext& context, VisualLog* visLog) {
-    for (const RoomNode& room : context.rooms) {
+    for (const RoomGenNode& room : context.rooms) {
         if (room.tilePositions.empty()) {
             if (visLog) {
                 char buf[64];
@@ -1394,9 +1479,9 @@ bool BuildingBlueprintGenerator::validateRoomsArentEmpty(BuildingBlueprintGenera
     return true;
 }
 
-void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprintGenerationContext& context, RoomNode& room)
+void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprintGenerationContext& context, RoomGenNode& room)
 {
-    const i32 index = getIndex2DAtPos(i32v2(room.offsetFromZero), context.mTileSpatialGrid.getDims2D(), room.floorIndex);
+    const i32 index = getIndex3DAtPos(i32v2(room.offsetFromZero), context.mTileSpatialGrid.getDims2D(), room.floorIndex);
     // Init root node
     room.size = 1;
     context.tiles[index] = BlueprintTileType::FLOOR;
@@ -1414,10 +1499,10 @@ struct DoorBFSNode {
     i32 index;
 };
 
-void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprintGenerationContext& context, Cartesian dir, TileIndex tileIndex, RoomNode& room, const i32v2& currentPos, BitArray& visited, BitArray& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
+void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprintGenerationContext& context, Cartesian dir, TileIndex tileIndex, RoomGenNode& room, const i32v2& currentPos, BitArray& visited, BitArray& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
     const i32v2& directionOffset = WALL_EXPAND_OFFSETS[e_cast(dir)];
     const i32v2 nextPos = currentPos + directionOffset;
-    const TileIndex nextTileIndex = getIndex2DAtPos(i32v2(nextPos), context.mTileSpatialGrid.getDims2D(), room.floorIndex);
+    const TileIndex nextTileIndex = getIndex3DAtPos(i32v2(nextPos), context.mTileSpatialGrid.getDims2D(), room.floorIndex);
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
     const i32v3& dims = context.mTileSpatialGrid.getDims();
     if (!visited.getBit(nextTileIndex)) {
@@ -1448,7 +1533,7 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
             }
             else if (!isConnected.getBit(nextOwner) && room.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
                 // Interior doors
-                RoomNode& adjacent = context.rooms[nextOwner];
+                RoomGenNode& adjacent = context.rooms[nextOwner];
                 if (adjacent.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
 
                     if (context.tiles[nextTileIndex] == BlueprintTileType::FLOOR) {
@@ -1568,7 +1653,7 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprintGenerat
         TileIndex tileIndex = room.floorIndex * floorDims.x * floorDims.y;
         for (i32 y = 0; y < floorDims.y; ++y) {
             for (i32 x = 0; x < floorDims.x; ++x) {
-                bits.setBitTo(y * floorDims.x + x, context.ownerArray[tileIndex] == room.id && context.tiles[tileIndex] == BlueprintTileType::FLOOR);
+                bits.setBitTo(y * floorDims.x + x, context.ownerArray[tileIndex] == room.id && context.tiles[tileIndex] != BlueprintTileType::NONE);
                 ++tileIndex;
             }
         }
@@ -1631,7 +1716,7 @@ bool tileBlocksDoor(TileIndex index, BuildingBlueprintGenerationContext& context
     return false;
 }
 
-bool canPlaceStairsHere(TileIndex index, BuildingBlueprintGenerationContext& context, RoomNode& child) {
+bool canPlaceStairsHere(TileIndex index, BuildingBlueprintGenerationContext& context, RoomGenNode& child) {
     const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
     const TileIndex aboveIndex = index + floorDims.x * floorDims.y;
     if (context.tiles[index] == BlueprintTileType::FLOOR &&
@@ -1667,7 +1752,7 @@ bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprintGenerationContext&
     const i32 floorIndex = index / (floorDims.x * floorDims.y);
     assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
     pos += CARTESIAN_NORMALS_2D[e_cast(dir)];
-    return context.tiles[getIndex2DAtPos(pos, floorDims, floorIndex + 1)] != BlueprintTileType::FLOOR;
+    return context.tiles[getIndex3DAtPos(pos, floorDims, floorIndex + 1)] != BlueprintTileType::FLOOR;
 }
 
 void BuildingBlueprintGenerator::placeStairs(BuildingBlueprintGenerationContext& context, VisualLog* visLog) {
@@ -1693,7 +1778,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprintGenerationContext&
             continue;
         }
 
-        RoomNode* child = nullptr;
+        RoomGenNode* child = nullptr;
         for (auto&& id : room.childRooms) {
             if (context.rooms[id].floorIndex == room.floorIndex + 1) {
                 child = &context.rooms[id];
@@ -2224,6 +2309,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
 
     bp->stairsTileID = context.tileIDs[e_cast(BlueprintTileType::STAIRS)];
     bp->stairsFlatTileID = context.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
+    bp->defaultFloorID = context.tileIDs[e_cast(BlueprintTileType::FLOOR)];
     bp->desc = context.desc;
 
     bp->ownedDTiles = std::move(context.ownedDTiles);

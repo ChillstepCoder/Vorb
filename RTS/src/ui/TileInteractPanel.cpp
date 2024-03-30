@@ -277,7 +277,7 @@ ui32 TileInteractPanel::updateAndRenderStructureTile() {
     return resultFlags;
 }
 
-const RoomNode* TileInteractPanel::tryGetSelectedRoom() const {
+const RoomGenNode* TileInteractPanel::tryGetSelectedRoom() const {
     if (!mSelectedStructure || mSelectedRoomID == INVALID_ROOM_ID) {
         return nullptr;
     }

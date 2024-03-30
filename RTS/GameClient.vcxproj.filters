@@ -1175,7 +1175,7 @@
     <ClInclude Include="src\city\BuildingGrammar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\RoomNode.h">
+    <ClInclude Include="src\city\RoomGenNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\CityConst.h">

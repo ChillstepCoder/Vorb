@@ -104,7 +104,7 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
         const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
         tile.layers[data.layer] = tileTarget.id;
         tileContainer.onTileChanged(tileTarget.tileIndex);
-        tileContainer.setOwnedTile(tileTarget.tileIndex); // TODO: OwnedDTiles
+        tileContainer.setOwnedTile(tileTarget.tileIndex); // TODO: OwnedDTiles but currently used for roofing
     }
     for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
         BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
@@ -117,8 +117,6 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     //newBuilding->mRooms = std::move(bp.rooms);
 
     // Set stairs tiles
-    TileID stairsTileId = bp.stairsTileID;
-    TileID stairsFlatTileId = bp.stairsFlatTileID;
     for (i32 i = 0; i < bp.stairPieceCount; ++i) {
         StairPiece& stairPiece = bp.stairPieces[i];
         const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
@@ -126,9 +124,11 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
         const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
         const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
         Tile& tile = tiles[stairPiece.pos];
-        tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
+        tile.groundLayer = bp.defaultFloorID;
+        tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
         tile.setGroundZOffset(tilePos.z + heightAdd);
         tile.setOrientation(stairPiece.dir, TileLayer::Main);
+        tileContainer.setOwnedTile(stairPiece.pos); // TODO: OwnedDTiles but currently used for roofing
         tileContainer.onTileChanged(stairPiece.pos);
     }
 

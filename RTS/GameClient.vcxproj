@@ -604,7 +604,7 @@
     <ClInclude Include="src\city\contracts\ContractManager.h" />
     <ClInclude Include="src\city\contracts\IContract.h" />
     <ClInclude Include="src\city\contracts\ItemShipmentContract.h" />
-    <ClInclude Include="src\city\RoomNode.h" />
+    <ClInclude Include="src\city\RoomGenNode.h" />
     <ClInclude Include="src\combat\Attack.h" />
     <ClInclude Include="src\combat\CombatContext.h" />
     <ClInclude Include="src\crafting\CraftingConst.h" />

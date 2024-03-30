@@ -3,7 +3,7 @@
 #include "BuildingBlueprintFlags.h"
 #include "tile/TileSpatialGrid.h"
 #include "tile/TileWallContainer.h"
-#include "city/RoomNode.h"
+#include "city/RoomGenNode.h"
 #include "item/ItemStack.h"
 
 class Building;
@@ -86,7 +86,7 @@ typedef std::unique_ptr<BuildTileBlueprintHandle> BuildTileBlueprintHandlePtr;
 class BuildingBlueprintGenerationContext {
 public:
     BuildingBlueprintGenerationContext() = default;
-    BuildingBlueprintGenerationContext(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 dimsDTile, DTileCoord worldPosRoot, BuildingBlueprintFlags flags);
+    BuildingBlueprintGenerationContext(const BuildingDef& desc, const BitArray& ownedDTiles, float sizeAlpha, Cartesian entrySide, i32v2 dimsDTile, DTileCoord worldPosRoot, BuildingBlueprintFlags flags);
     ~BuildingBlueprintGenerationContext();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprintGenerationContext);
@@ -119,11 +119,15 @@ public:
 
     DTileCoord rootPosDTileCoord;
     i32v2 dimsDTile;
+    i32v2 dimsTile;
     ui32 floorStrideDTile;
-    
+    ui32 floorStrideTile;
+
     BitArray ownedDTiles;
     BitArray solidTilesFirstFloor;
-    std::vector<RoomNode> rooms;
+    BitArray ownedTilesFirstFloorBits;
+    std::vector<TileIndex> ownedTilesFirstFloor;
+    std::vector<RoomGenNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTileType> tiles;
     TileWallContainer walls;

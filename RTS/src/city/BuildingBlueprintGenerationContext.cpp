@@ -8,18 +8,30 @@
 
 BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
     const BuildingDef& desc,
+    const BitArray& ownedDTiles,
     float sizeAlpha,
     Cartesian entrySide,
     i32v2 dimsDTile,
     DTileCoord worldPosRoot,
     BuildingBlueprintFlags flags
 ) :
-    rootPosDTileCoord(worldPosRoot), dimsDTile(dimsDTile), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), flags(flags) {
+    rootPosDTileCoord(worldPosRoot), dimsDTile(dimsDTile), ownedDTiles(ownedDTiles), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), flags(flags) {
     floorStrideDTile = dimsDTile.y * dimsDTile.x;
+    dimsTile = dimsDTile * DTILE_WIDTH;
+    floorStrideTile = dimsTile.x * dimsTile.y;
     TileRepository& tileRepo = TileRepository::get();
     const i32v2 tilePos2D = worldPosRoot.toTilePos();
     // We will reinitialize later with the proper Z dimensions
     mTileSpatialGrid.init(i32v3(tilePos2D.x, tilePos2D.y, 0), i32v3(dimsDTile.x * DTILE_WIDTH, dimsDTile.y * DTILE_WIDTH, 1), 3);
+    ownedTilesFirstFloor.reserve(mTileSpatialGrid.getFloorStride());
+    ownedTilesFirstFloorBits.resize(mTileSpatialGrid.getFloorStride());
+    for (TileIndex i = 0; i < floorStrideTile; ++i) {
+        const DTileIndex dt = structureTileIndexToDTileIndex(i, dimsDTile.x);
+        if (ownedDTiles.getBit(dt)) {
+            ownedTilesFirstFloor.emplace_back(i);
+            ownedTilesFirstFloorBits.setBit(i);
+        }
+    }
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
     tileIDs[e_cast(BlueprintTileType::FLOOR)] = tileRepo.getTileID(CStrToken("bricks_01"));
@@ -36,12 +48,12 @@ BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
 BuildingBlueprintGenerationContext::~BuildingBlueprintGenerationContext() = default;
 
 bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(TileIndex index) const {
-    return ownedDTiles.getBit(structureTileIndexToDTileIndex(index, dimsDTile.x));
+    assert(index < floorStrideTile);
+    return ownedTilesFirstFloorBits.getBit(index);
 }
 bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(ui32v2 tileXY) const {
-    return ownedDTiles.getBit(structureTileXYToDTileIndex(tileXY, dimsDTile.x));
+    return ownedTilesFirstFloorBits.getBit(tileXY.y * dimsTile.x + tileXY.x);
 }
-
 
 // TODO: Use in another context
 //PlaceTileBlueprintItemsHandlePtr BuildingBlueprintGenerationContext::reserveTileToPlaceItems(ItemID itemId, ui16 maxItemCount) {

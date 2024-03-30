@@ -9,6 +9,8 @@ public:
     BitArray(ui32 numBits);
     ~BitArray();
 
+    BitArray(const BitArray& o) = default;
+
     VORB_MOVABLE(BitArray);
 
     void resize(ui32 numBits);

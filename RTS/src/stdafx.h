@@ -77,6 +77,9 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "logging/ErrorLogging.h"
 #include "util/panic.h"
 
+// Tiles
+#include "tile/TileConst.h"
+
 // Utils
 #include "util/UniqueId64.h"
 #include "util/CommonUtil.h"
@@ -91,9 +94,6 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "util/StringUtils.h"
 
 #include "instrumentation/instrumentor.h"
-
-// Tiles
-#include "tile/TileConst.h"
 
 // Const
 #include "physics/PhysicsConst.h"

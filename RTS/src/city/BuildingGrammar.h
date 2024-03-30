@@ -2,7 +2,7 @@
 
 #include "CityConst.h"
 
-#include "city/RoomNode.h"
+#include "city/RoomGenNode.h"
 
 class RandomGenerator;
 
@@ -21,7 +21,7 @@ class BuildingGrammar {
 public:
     void buildFromStrings(const std::vector<nString>& strings);
     // Input/output vector will be presized
-    void buildRoomGraph(OUT std::vector<RoomNode>& graph, RandomGenerator& randGen) const;
+    void buildRoomGraph(OUT std::vector<RoomGenNode>& graph, RandomGenerator& randGen) const;
 
 private:
     // Array index is state index

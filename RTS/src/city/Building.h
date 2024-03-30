@@ -27,12 +27,12 @@ public:
     // TODO: Boost allocator
 
     const BitArray& getInteriorTilesInAABB() const { return mTileContainer->getOwnedTiles(); }
-    const std::vector<RoomNode>& getRooms() const { return mRooms; }
+    const std::vector<RoomGenNode>& getRooms() const { return mRooms; }
     const std::map<TileIndex, RoomNodeID>& getDoorTiles() const { return mDoorTiles; }
 
 private:
    
-    std::vector<RoomNode> mRooms;
+    std::vector<RoomGenNode> mRooms;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId = INVALID_BUILDING_ID;
 

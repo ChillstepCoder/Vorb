@@ -10,8 +10,16 @@ struct RoomGateInfo {
     ui32 tileIndex;
 };
 
+// Represents a continuous wall segment between two specific rooms
+struct RoomWallSegment {
+    RoomNodeID adjRooms[2] = { INVALID_ROOM_ID, INVALID_ROOM_ID }; // INVALID_ROOM_ID is outside
+    GridEdge edgeInfo;
+};
+typedef ui32 RoomWallSegmentID;
+// TODO: Remove MAX_CHILD_ROOMS
 
-struct RoomNode {
+struct RoomGenNode {
+    std::vector<RoomWallSegmentID> wallSegmentIDs; //TODO: USE
     std::vector<GridEdge> interiorEdges;
     std::vector<TileIndex> edgeWalk; // These tileindex are relative to the floor
     std::vector<TileIndex> tilePositions;
@@ -22,6 +30,7 @@ struct RoomNode {
     RoomGateInfo adjacentRooms[MAX_ADJACENT_ROOMS]; // Like child rooms, connected via door or open wall, but is not necessarily a direct child, also includes exterior doors
     RoomNodeID id = INVALID_ROOM_ID;
     i32AABB2 aabb = { 0 };
+    ui32 numEntrances = 0;
     ui16v2 offsetFromZero;
     ui16 size = 0;
     ui16 desiredSize = 0;
@@ -32,4 +41,6 @@ struct RoomNode {
     bool isPrivate = false;
     bool hasStairs = false;
     bool connectedToParentWithStairs = false;
+
+    bool isDead() const { return desiredSize == 0; }
 };

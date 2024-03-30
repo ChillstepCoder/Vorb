@@ -3,6 +3,7 @@
 struct GridEdge {
     TileIndex start;
     TileIndex end;
-    Cartesian edgeDir; // Clockwise winding
     ui16 length = 1u;
+    Cartesian edgeDir; // Clockwise winding
+    //ui8 padding;
 };
