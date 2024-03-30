@@ -229,7 +229,7 @@ void SettlementLayoutManager::debugDraw() const {
                 DTileCoord coord(dTileCoord.v + i32v2(x, y));
                 const DTileOwnershipData* dtileOwnerData = ownerGrid.tryGetDTileOwnerData(coord);
                 if (dtileOwnerData && dtileOwnerData->ownerObjectType != DTileOwnerObjectType::None && dtileOwnerData->owner == mSettlementEntity) {
-                    const i32v4 aabb = coord.toTileAABB();
+                    const i32v4 aabb = coord.toTileAABBRound();
                     f32v3 aabbWorldPos = helperGetWorldPosFrom2DPos(f32v2(aabb.x, aabb.y), mWorld);
                     aabbWorldPos.z -= 1.0f;
                     color4 dcolor = color::White;

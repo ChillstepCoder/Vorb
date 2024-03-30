@@ -177,7 +177,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
             v.pos.y = cornerPosRelativeToRoot.y + y * quadWidth;
             v.pos.z = height;
 
-            const RoadPoint roadPoint = roadGrid.getRoadPoint<true>(DTileCoord::fromTilePos(worldPos));
+            const RoadPoint roadPoint = roadGrid.getRoadPoint<true>(DTileCoord::fromTilePosRound(worldPos));
             v.roadIntensity = (f32)roadPoint.strength / (f32)MAX_ROAD_STRENGTH;
             v.roadTexture = 0;
 

@@ -725,7 +725,7 @@ void WorldEditorPanel::updateBuildingEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
         const i32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        const DTileCoord createPos = DTileCoord::fromTilePos(worldPos);
+        const DTileCoord createPos = DTileCoord::fromTilePosRound(worldPos);
 
         GameThreadTasks::getInstance().addGenericTask([createPos, buildingId = mSelectedBuilding, dims = mPlotDimsDTile, world = mActiveWorld]() {
             //const i32 meanHeight = round(task->world->getHeightmapGrid().computeMeanHeightAtAABB(task->aabb));
@@ -798,7 +798,7 @@ void WorldEditorPanel::editRoadVertex(i32v2 worldPos, f32v2 offsetToVertex, cons
             assert(false);
             break;
     }
-    roadGrid.adjustRoadPoint(DTileCoord::fromTilePos(worldPos), (i32)glm::round(adjust));
+    roadGrid.adjustRoadPoint(DTileCoord::fromTilePosRound(worldPos), (i32)glm::round(adjust));
 }
 
 void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {

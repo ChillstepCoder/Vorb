@@ -55,6 +55,7 @@ public:
     ui32 getWidthDTiles() const { return mWidthDTiles; }
 
     const ChunkOwnershipData& getChunkSettlementOwnerData(ChunkID chunkId) const;
+    // Takes a DTileFloor
     DTileOwnershipData* tryGetDTileOwnerDataForEditSimThread(DTileCoord dtilePosWorld);
     const DTileOwnershipData* tryGetDTileOwnerData(DTileCoord dtilePosWorld) const;
     const DTileOwnershipData* tryGetDTileOwnerData(ChunkID chunkId, DTileIndex tileIndex) const;

@@ -180,11 +180,10 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
 }
 
 void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint) {
-    assert(false);
     building.mFunction = blueprint.desc->function;
     //building.mDoorTiles = blueprint.exteriorDoors;
-    assert(building.mDoorTiles.size());
-    assert(building.mRooms.size());
+    //assert(building.mDoorTiles.size());
+    //assert(building.mRooms.size());
 
     // Mark ready for access
     building.getTileContainer()->setState(TileContainerState::READY);

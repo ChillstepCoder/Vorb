@@ -124,6 +124,7 @@ public:
 // a DTileCoord offset from a chunk of value 0 will exist in 4 chunks simultaneously.
 // This is convenient for things that map to terrain vertex painting, such as roads
 // Used by Height, Road, Plot, Ownership
+// Constructors by default take the round tile position rather than the floor position, corresponding to nearest height vertex
 class DTileCoord : public CoordinateBase<DTileCoord> {
 public:
     DTileCoord() : CoordinateBase() {}
@@ -144,9 +145,12 @@ public:
 
     i32v2 toTilePos() const { return v << 1; }
     // x,y,w,h
-    i32v4 toTileAABB() const { return i32v4((v.x << 1) - 1, (v.y << 1) - 1, 2, 2); }
+    i32v4 toTileAABBRound() const { return i32v4((v.x << 1) - 1, (v.y << 1) - 1, 2, 2); }
     static constexpr i32 getRowLengthPerChunk() { return CHUNK_WIDTH >> 1; }
-    static DTileCoord fromTilePos(i32v2 tilePos) { return DTileCoord(i32v2((tilePos.x + 1) >> 1, (tilePos.y + 1) >> 1)); }
+    // Used for most things except structures, corresponds to height vertex
+    static DTileCoord fromTilePosRound(i32v2 tilePos) { return DTileCoord(i32v2((tilePos.x + 1) >> 1, (tilePos.y + 1) >> 1)); }
+    // Used for structures, corresponds to 2x2 tile blocks on a subgrid such as a structure/building
+    static DTileCoord fromTilePosFloor(i32v2 tilePos) { return DTileCoord(i32v2(tilePos.x >> 1, tilePos.y >> 1)); }
 };
 
 namespace std {

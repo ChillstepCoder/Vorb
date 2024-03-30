@@ -14,7 +14,7 @@ BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
     DTileCoord worldPosRoot,
     BuildingBlueprintFlags flags
 ) :
-    rootPosDTileCoord(worldPosRoot), dimsDTile(dimsDTile), desc(&desc), entrySide(entrySide), flags(flags) {
+    rootPosDTileCoord(worldPosRoot), dimsDTile(dimsDTile), desc(&desc), sizeAlpha(sizeAlpha), entrySide(entrySide), flags(flags) {
     TileRepository& tileRepo = TileRepository::get();
     const i32v2 tilePos2D = worldPosRoot.toTilePos();
     // We will reinitialize later with the proper Z dimensions
