@@ -117,6 +117,7 @@ public:
         const i32v2 relativePos(v.x & TILE_INDEX_CHUNK_MODULO_MASK, v.y & TILE_INDEX_CHUNK_MODULO_MASK);
         return (relativePos.y << TILE_INDEX_Y_SHIFT) | relativePos.x;
     }
+    inline ChunkID toChunkID(ui32 worldWidthChunks) const;
     inline std::pair<ChunkID, TileIndex> toChunkTileIndexAndChunkID(ui32 worldWidthChunks) const;
 };
 
@@ -151,6 +152,8 @@ public:
     static DTileCoord fromTilePosRound(i32v2 tilePos) { return DTileCoord(i32v2((tilePos.x + 1) >> 1, (tilePos.y + 1) >> 1)); }
     // Used for structures, corresponds to 2x2 tile blocks on a subgrid such as a structure/building
     static DTileCoord fromTilePosFloor(i32v2 tilePos) { return DTileCoord(i32v2(tilePos.x >> 1, tilePos.y >> 1)); }
+
+    inline ChunkID toChunkID(ui32 worldWidthChunks) const;
 };
 
 namespace std {
@@ -249,8 +252,16 @@ inline ChunkCoord::ChunkCoord(const DTileCoord& other) : CoordinateBase(other.v 
 inline ChunkCoord::ChunkCoord(const BlockCoord& other) : CoordinateBase(other.v >> 4) {}
 inline ChunkCoord::ChunkCoord(const SubchunkCoord& other) : CoordinateBase(other.v >> 3) {}
 
+inline ChunkID TileCoord::toChunkID(ui32 worldWidthChunks) const {
+    return ChunkCoord(*this).toGridIDType(worldWidthChunks);
+}
+
 inline std::pair<ChunkID, TileIndex> TileCoord::toChunkTileIndexAndChunkID(ui32 worldWidthChunks) const {
     return std::pair<TileIndex, ChunkID>(ChunkCoord(*this).toGridIDType(worldWidthChunks), toChunkTileIndex());
+}
+
+inline ChunkID DTileCoord::toChunkID(ui32 worldWidthChunks) const {
+    return ChunkCoord(*this).toGridIDType(worldWidthChunks);
 }
 
 static_assert(CHUNK_WIDTH == 128);

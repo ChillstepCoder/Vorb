@@ -7,12 +7,29 @@
 
 class World;
 
-enum class CHUNK_GRID_EVENT_TYPE {
-    Create,
-    Ready,
-    Destroy
+
+class ChunkGridEvent {
+public:
+    ChunkGridEvent(Chunk& chunk) : chunk(chunk) {}
+
+    Chunk& chunk;
 };
-EVENT_DISPATCHER_TYPE(ChunkGrid, CHUNK_GRID_EVENT_TYPE, Chunk&);
+
+enum class CHUNK_GRID_EVENT_TYPE {
+    BeginActivate,
+    Ready,
+    Deactivate
+};
+EVENT_DISPATCHER_TYPE(ChunkGrid, CHUNK_GRID_EVENT_TYPE, ChunkGridEvent&);
+
+struct ChunkActivateContext {
+    std::atomic_int refCount = 1;
+};
+
+class ChunkActivationEvent : public ChunkGridEvent {
+    using ChunkGridEvent::ChunkGridEvent;
+    ChunkActivateContext* context;
+};
 
 class IWorldGrid;
 
@@ -44,16 +61,17 @@ public:
 
     ui32 getWidthChunks() const { return mWidthChunks; }
     ui32 getTotalChunks() const { return mTotalChunks; }
-    const std::vector<ChunkID>& getLoadingChunks() const { return mLoadingChunks; }
+    const std::vector<ChunkID>& getActivatingChunks() const { return mActivatingChunks; }
     const std::vector<ChunkID>& getActiveChunks() const { return mActiveChunks; }
-    const std::vector<ChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
+    const std::vector<ChunkID>& getWantDeactivateChunks() const { return mWantDeactivateChunks; }
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
 
     World& getWorld() const { return *mWorld; }
 
     // Events
-    EVENT_LISTENER_FUNCS(ChunkGrid, Ready, CHUNK_GRID_EVENT_TYPE::Ready, Chunk&);
-    EVENT_LISTENER_FUNCS(ChunkGrid, Destroy, CHUNK_GRID_EVENT_TYPE::Destroy, Chunk&);
+    EVENT_LISTENER_FUNCS_ADAPTOR(ChunkGrid, BeginActivate, CHUNK_GRID_EVENT_TYPE::BeginActivate, ChunkActivationEvent&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, Ready, CHUNK_GRID_EVENT_TYPE::Ready, ChunkGridEvent&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, Deactivate, CHUNK_GRID_EVENT_TYPE::Deactivate, ChunkGridEvent&);
 
     void setWorldAndAllocateChunks(World& world);
 protected:
@@ -91,9 +109,9 @@ protected:
     std::vector<ChunkID> mEdgeChunkPositions;
 
     // Chunk lists
-    std::vector<ChunkID> mLoadingChunks;
+    std::vector<ChunkID> mActivatingChunks;
     std::vector<ChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
-    std::vector<ChunkID> mDestroyingChunks;
+    std::vector<ChunkID> mWantDeactivateChunks;
 
     // World
     World* mWorld = nullptr;

@@ -76,15 +76,10 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     // Update all loading chunks
     updateLoadingChunks();
 
-    // Tick all active chunks
-   /* for (Chunk* chunk : mActiveChunks) {
-        tickChunk(*chunk);
-    }*/
-
     // Update all destroying chunks
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
-    for (size_t i = 0; i < mDestroyingChunks.size();) {
-        Chunk& chunk = mChunks[mDestroyingChunks[i]];
+    for (size_t i = 0; i < mWantDeactivateChunks.size();) {
+        Chunk& chunk = mChunks[mWantDeactivateChunks[i]];
 
         // Prevent a very rare race condition
         if (chunk.mTileContainer) {
@@ -94,11 +89,12 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
                 // Release height and notify only if we were ever valid
                 if (chunk.mState != ChunkState::INVALID) {
-                    dispatchDestroy(chunk);
+                    ChunkGridEvent evnt(chunk);
+                    dispatchDeactivate(evnt);
                 }
                 chunk.dispose();
-                mDestroyingChunks[i] = mDestroyingChunks.back();
-                mDestroyingChunks.pop_back();
+                mWantDeactivateChunks[i] = mWantDeactivateChunks.back();
+                mWantDeactivateChunks.pop_back();
             }
             else {
                 chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
@@ -109,11 +105,12 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
             if (chunk.getRefCount() == 0) {
                 // Release height and notify only if we were ever valid
                 if (chunk.mState != ChunkState::INVALID) {
-                    dispatchDestroy(chunk);
+                    ChunkGridEvent evnt(chunk);
+                    dispatchDeactivate(evnt);
                 }
                 chunk.dispose();
-                mDestroyingChunks[i] = mDestroyingChunks.back();
-                mDestroyingChunks.pop_back();
+                mWantDeactivateChunks[i] = mWantDeactivateChunks.back();
+                mWantDeactivateChunks.pop_back();
             }
             else {
                 ++i;
@@ -231,8 +228,8 @@ void IChunkGrid::setWorldAndAllocateChunks(World& world) {
 
 void IChunkGrid::updateLoadingChunks() {
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
-    for (size_t i = 0; i < mLoadingChunks.size();) {
-        Chunk& chunk = mChunks[mLoadingChunks[i]];
+    for (size_t i = 0; i < mActivatingChunks.size();) {
+        Chunk& chunk = mChunks[mActivatingChunks[i]];
         switch (chunk.mState) {
             case ChunkState::LOADING_TILES: {
                 ++i;
@@ -240,8 +237,8 @@ void IChunkGrid::updateLoadingChunks() {
             }
             case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY: {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
-                    mLoadingChunks[i] = mLoadingChunks.back();
-                    mLoadingChunks.pop_back();
+                    mActivatingChunks[i] = mActivatingChunks.back();
+                    mActivatingChunks.pop_back();
                     chunk.mFlags.clearBit(ChunkFlags::IN_LOAD_LIST);
                     onChunkReady(chunk);
                 }
@@ -409,7 +406,7 @@ void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
 }
 
 void IChunkGrid::addChunkToLoadList(Chunk& chunk) {
-    mLoadingChunks.emplace_back(chunk.getChunkID());
+    mActivatingChunks.emplace_back(chunk.getChunkID());
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
     chunk.mFlags.setBit(ChunkFlags::IN_LOAD_LIST);
 }
@@ -456,17 +453,17 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
     if (chunk.mTileContainer) {
         chunk.mTileContainer->mPendingDestroy = true;
     }
-    mDestroyingChunks.emplace_back(id);
+    mWantDeactivateChunks.emplace_back(id);
 }
 
 void IChunkGrid::removeChunkFromDestroyList(Chunk& chunk) {
     // TODO: Eliminate linear search? Do we care?
     ChunkID chunkId = chunk.getChunkID();
-    for (size_t i = 0; i < mDestroyingChunks.size(); ++i) {
-        if (mDestroyingChunks[i] == chunkId) {
+    for (size_t i = 0; i < mWantDeactivateChunks.size(); ++i) {
+        if (mWantDeactivateChunks[i] == chunkId) {
             // Pop and swap
-            mDestroyingChunks[i] = mDestroyingChunks.back();
-            mDestroyingChunks.pop_back();
+            mWantDeactivateChunks[i] = mWantDeactivateChunks.back();
+            mWantDeactivateChunks.pop_back();
             chunk.mFlags.clearBit(ChunkFlags::IN_DESTROY_LIST);
             break;
         }
@@ -504,11 +501,14 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 
     ChunkState state = chunk.mState;
     switch (state) {
-        case ChunkState::INVALID:
+        case ChunkState::INVALID: {
             // Begin load
-            chunk.beginLoad();
+            chunk.beginActivate();
             addChunkToLoadList(chunk);
+            ChunkActivationEvent evnt(chunk);
+            dispatchBeginActivate(evnt);
             break;
+        }
         case ChunkState::LOADING_TILES:
             panic("Tried to re-load chunk already being loaded");
             break;
@@ -529,15 +529,15 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
     static_assert(e_count(ChunkState) == 5);
 }
 
-void IChunkGrid::onChunkReady(Chunk& chunk)
-{
+void IChunkGrid::onChunkReady(Chunk& chunk) {
     assert(chunk.getTileContainer()->getState() == TileContainerState::READY);
 
     chunk.mState = ChunkState::ACTIVE;
     addChunkToActiveList(chunk);
 
     // Notify observers
-    dispatchReady(chunk);
+    ChunkGridEvent evnt(chunk);
+    dispatchReady(evnt);
     TileContainerEvent event{ chunk.mTileContainer, {} };
     mWorld->getTileContainerRepository().dispatchReady(event);
 }

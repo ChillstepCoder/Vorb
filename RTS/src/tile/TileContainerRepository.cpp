@@ -17,7 +17,7 @@ TileContainerRepository::~TileContainerRepository()
 
 TileContainer* TileContainerRepository::loadChunk(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, Chunk* owner) {
     owner->mTileContainer = allocateNewTileContainer(rootPos, dims, floorHeight, owner);
-    mLoader->loadChunk(*owner->mTileContainer);
+    mLoader->loadChunkFromSimChunk(*owner->mTileContainer);
     return owner->mTileContainer;
 }
 

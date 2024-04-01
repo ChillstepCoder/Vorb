@@ -42,7 +42,7 @@ void Chunk::init(World& world, ChunkID chunkId, i32v2 worldPos) {
     mAABB.height = 4;
 }
 
-void Chunk::beginLoad() {
+void Chunk::beginActivate() {
     assert(mState != ChunkState::LOADING_TILES);
     mState = ChunkState::LOADING_TILES;
     assert(!mTileContainer);
@@ -326,11 +326,4 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
             mTileContainer->bulkSetTileGroundZPosition(bulkEdit.data(), bulkEdit.size());
         }
     }
-}
-
-void Chunk::addStructure(Structure* structure) {
-    ASSERT_GAME_THREAD();
-    assert(isDataReady());
-    structure->incRef();
-    mStructures.emplace_back(structure->getId());
 }

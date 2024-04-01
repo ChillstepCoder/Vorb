@@ -10,10 +10,9 @@ class TileContainerLoader
 {
 public:
     TileContainerLoader(World& world);
-    void update();
 
     // Container must be initialized
-    void loadChunk(TileContainer& container);
+    void loadChunkFromSimChunk(TileContainer& container);
 
 private:
     std::unordered_map<TileContainerID, TileContainerLoadFinishedCallback> mLoadingContainers;

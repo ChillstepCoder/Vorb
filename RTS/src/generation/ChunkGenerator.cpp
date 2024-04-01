@@ -87,7 +87,7 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
     return tile;
 }
 
-void ChunkGenerator::generateChunk(Chunk& chunk) {
+void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk) {
     World& world = chunk.getWorld();
     SimChunkTileGrid& simGrid = world.getSimTileGrid();
     const SimChunkTileContainer& simData = simGrid.getChunk(chunk.getChunkID());

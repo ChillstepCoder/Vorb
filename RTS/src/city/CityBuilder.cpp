@@ -77,7 +77,7 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bp.floorCount * bp.floorHeight));
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().makeNewStructure(StructureType::Building, aabb3d, bp.floorHeight, bp.ownedDTiles));
+    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewStructure(StructureType::Building, aabb3d, bp.floorHeight, bp.ownedDTiles));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===

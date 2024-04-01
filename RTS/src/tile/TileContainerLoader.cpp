@@ -19,7 +19,7 @@
 
 TileContainerLoader::TileContainerLoader(World& world) : mWorld(world) {}
 
-void TileContainerLoader::loadChunk(TileContainer& container)
+void TileContainerLoader::loadChunkFromSimChunk(TileContainer& container)
 {
     // TODO: Go from SimulatedChunk somehow (SimulatedChunk vs SimulatedStructure)
     Chunk* chunk = container.getOwnerChunk();
@@ -38,7 +38,7 @@ void TileContainerLoader::loadChunk(TileContainer& container)
         }
 
         // Generate chunk
-        chunk->getWorld().getWorldGenerator().generateChunk(*chunk);
+        chunk->getWorld().getWorldGenerator().generateChunkFromSimChunk(*chunk);
 
         // Build visibility
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());

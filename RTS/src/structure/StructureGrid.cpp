@@ -26,12 +26,26 @@ StructureID sStructureIdGen = 0;
 
 StructureGrid::StructureGrid(World& world) : mWorld(world) {
     initEventHandlers();
+    mChunkStructureData = std::make_unique<ChunkStructureData[]>(SQ(mWorld.getWidthChunks()));
 }
 
-Structure* StructureGrid::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight, const BitArray& ownedDTiles) {
-    ASSERT_GAME_THREAD();
-    assert(ownedDTiles.getNumBits() >= (aabb.dims.x >> 1) * (aabb.dims.y >> 1));
-    i32v3 tileDims = aabb.dims;
+Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles) {
+    const DTileCoord rootDTileCoord = DTileCoord::fromTilePosRound(tileAABB.pos);
+    const ui32v2 DTileDims((tileAABB.dims.x >> 1), (tileAABB.dims.y >> 1));
+    // TODO: Cache iter positions without lock?
+    // First check if we can actually place structure here, and if so, place it with lock
+    {
+        DTileCoord iter = rootDTileCoord;
+        std::lock_guard lock(mMutex);
+        for (iter.y = rootDTileCoord.y; iter.y < rootDTileCoord.y + DTileDims.y; ++iter.y) {
+            for (iter.x = rootDTileCoord.x; iter.x < rootDTileCoord.x + DTileDims.x; ++iter.x) {
+                x;
+            }
+        }
+    }
+
+    assert(ownedDTiles.getNumBits() >= DTileDims.x * DTileDims.y);
+    i32v3 tileDims = tileAABB.dims;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
@@ -41,18 +55,15 @@ Structure* StructureGrid::makeNewStructure(StructureType type, const i32AABB3& a
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
-            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB.pos, tileDims, floorHeight, (Building*)newStructure.get());
             newStructure->mOwnedDTiles = ownedDTiles;
             break;
         }
         default:
             assert(false && "Invalid structure type");
     }
-    newStructure->mTileAABB = aabb;
+    newStructure->mTileAABB = tileAABB;
     newStructure->mId = sStructureIdGen++;
-
-    const StructureBBox newBox(StructureBoxPoint(aabb.x, aabb.y), StructureBoxPoint(aabb.x + aabb.width, aabb.y + aabb.depth));
-    mSpatialLookup.insert(StructureRegion{ newBox, newStructure->mId });
 
     Structure* rv = newStructure.get();
     {
@@ -64,13 +75,13 @@ Structure* StructureGrid::makeNewStructure(StructureType type, const i32AABB3& a
     i32v2 worldXY;
     boost::container::flat_set<Chunk*> chunkDependencies;
     chunkDependencies.reserve(4);
-    worldXY = i32v2(aabb.x, aabb.y);
+    worldXY = i32v2(tileAABB.x, tileAABB.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
-    worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y);
+    worldXY = i32v2(tileAABB.x + tileAABB.dims.x, tileAABB.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
-    worldXY = i32v2(aabb.x, aabb.y + aabb.dims.y);
+    worldXY = i32v2(tileAABB.x, tileAABB.y + tileAABB.dims.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
-    worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y + aabb.dims.y);
+    worldXY = i32v2(tileAABB.x + tileAABB.dims.x, tileAABB.y + tileAABB.dims.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
 
     assert(chunkDependencies.size() && chunkDependencies.size() <= 4);
@@ -79,7 +90,6 @@ Structure* StructureGrid::makeNewStructure(StructureType type, const i32AABB3& a
         assert(c->isDataReady());
         // Chunks increment our refcount while they are loaded
         rv->mChunkDependencies[chunkCount++] = c->getChunkID();
-        c->addStructure(rv);
     }
     while (chunkCount < 4) {
         rv->mChunkDependencies[chunkCount++] = INVALID_CHUNK_ID;
@@ -112,58 +122,62 @@ void StructureGrid::debugRender() {
     }
 }
 
-std::vector<Structure*> StructureGrid::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
-    ASSERT_GAME_THREAD();
-    std::vector<StructureRegion> overlappingStructures;
-    overlappingStructures.reserve(4);
-    // https://valelab4.ucsf.edu/svn/3rdpartypublic/boost-versions/boost_1_55_0/libs/geometry/doc/html/geometry/spatial_indexes/queries.html
-    const size_t overlapCount = mSpatialLookup.query(boost::geometry::index::intersects(StructureBoxPoint(worldPos.x, worldPos.y)), std::back_inserter(overlappingStructures));
-
-    std::vector<Structure*> rv;
-    rv.reserve(overlappingStructures.size());
-    for (auto& it : overlappingStructures) {
-        auto&& it2 = mStructures.find(it.id);
-        assert(it2 != mStructures.end());
-        rv.emplace_back(it2->second.get());
+Structure* StructureGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorld.getWidthTiles() || worldPos.y >= mWorld.getWidthTiles()) [[unlikely]] {
+        return nullptr;
     }
-    return rv;
+    const DTileCoord dTileCoord(worldPos);
+    const ChunkCoord chunkCoord(dTileCoord);
+    const DTileCoord dTileOffset = dTileCoord - DTileCoord(chunkCoord);
+    const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
+    const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
+
+    std::shared_lock lock(mMutex);
+    const ChunkStructureData& structureData = mChunkStructureData[chunkId];
+    if (!structureData.dTileStructures) {
+        return nullptr;
+    }
+    const StructureID id = structureData.dTileStructures[index];
+    if (id == INVALID_STRUCTURE_ID) {
+        return nullptr;
+    }
+    auto it = mStructures.find(id);
+    assert(it != mStructures.end());
+    return it->second.get();
 }
 
 void StructureGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
-    chunkGrid.addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
+    chunkGrid.addReadyListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
-        auto&& it = mDormantStructures.find(chunk.getChunkID());
-        if (it == mDormantStructures.end()) {
-            return;
-        }
-        std::vector<StructureID>& chunkDormantList = it->second;
-        for (StructureID structureID : chunkDormantList) {
+        Chunk& chunk = evnt.chunk;
+        const ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
+        const std::vector<StructureID>& chunkStructures = structureData.containedStructures;
+
+        std::lock_guard lock(mMutex);
+
+        for (StructureID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
             Structure* structure = it->second.get();
-            assert(structure->mChunkDependenciesUnloaded > 0);
+            structure->incRef(); // Chunk no longer needs
             if (--structure->mChunkDependenciesUnloaded == 0) {
-                assert(structure->mState != StructureState::ACTIVE);
+                // TODO: Load the structure on threadpool
                 structure->mState = StructureState::ACTIVE;
-                // TODO: OnActive?
             }
-            // Calls incref
-            chunk.addStructure(structure);
         }
-        mDormantStructures.erase(it);
     });
 
-    chunkGrid.addDestroyListener(mChunkEventListeners, [this](Chunk& chunk) {
+    chunkGrid.addDeactivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+        Chunk& chunk = evnt.chunk;
         ASSERT_GAME_THREAD();
         // Move structures to dormancy
-        const std::vector<StructureID>& chunkStructures = chunk.getStructures();
-        if (chunk.getStructures().empty()) {
-            return;
-        }
-        std::vector<StructureID>& chunkDormantList = mDormantStructures[chunk.getChunkID()];
-        chunkDormantList.reserve(chunkDormantList.size() + chunkStructures.size());
+        const ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
+        const std::vector<StructureID>& chunkStructures = structureData.containedStructures;
+
+        std::lock_guard lock(mMutex);
+
         for (StructureID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
@@ -172,9 +186,7 @@ void StructureGrid::initEventHandlers() {
             ++structure->mChunkDependenciesUnloaded;
             if (structure->mState != StructureState::SIM) {
                 structure->mState = StructureState::SIM;
-                // TODO: OnDormant?
             }
-            chunkDormantList.emplace_back(structureID);
         }
     });
 }

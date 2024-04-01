@@ -171,9 +171,9 @@ void FishEcosystem::initEventHandlers() {
     chunkGrid.registerChunkGridListeners(mChunkGridEventListeners);
     // We dont use the ready listener as IChunkGrid will directly call initChunkFish
 
-    chunkGrid.addDestroyListener(mChunkGridEventListeners, [this](Chunk& chunk) {
+    chunkGrid.addDeactivateListener(mChunkGridEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
-        disposeChunkFish(chunk);
+        disposeChunkFish(evnt.chunk);
     });
 
 }

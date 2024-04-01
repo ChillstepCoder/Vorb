@@ -97,7 +97,7 @@ public:
     // =========== Main methods  ===========
 
     void init(World& world, ChunkID chunkId, i32v2 worldPos);
-	void beginLoad();
+	void beginActivate();
 	void freeData();
 	void dispose();
 
@@ -112,7 +112,6 @@ public:
     const ChunkID& getChunkID() const { return mChunkId; }
 	const HeightmapPatchID getHeightmapPatchID() const;
     const i32AABB3& getAABB() const { return mAABB; }
-	const std::vector<StructureID>& getStructures() const { return mStructures; }
     f32v2 getTileWorldPos2D(TileIndex i) const {
         return f32v2(mAABB.pos.x + (i % CHUNK_WIDTH), mAABB.pos.y + i / CHUNK_WIDTH);
     }
@@ -172,8 +171,6 @@ public:
 	inline void decRef() const { mTileContainer->decRef(); }
     ui32 getRefCount() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
-	void addStructure(Structure* structure);
-
 	World& getWorld() const { return *mWorld; }
 
 	EVENT_LISTENER_FUNCS(Chunk, GrassEdit, ChunkEventType::GrassEdit, const ChunkEvent&);
@@ -191,7 +188,6 @@ private:
 	mutable std::shared_mutex mTileContainerLifetimeMutex;
     std::vector<TileGrass> mGrass; // Grass densities
     mutable std::shared_mutex mSharedGrassMutex;
-	std::vector<StructureID> mStructures;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	std::unique_ptr<ChunkTileContainersLookup> mTileContainersLookup;

@@ -17,7 +17,7 @@ public:
     ChunkGenerator(World& world);
     ~ChunkGenerator();
 
-    void generateChunk(Chunk& chunk);
+    void generateChunkFromSimChunk(Chunk& chunk);
     void generateSimChunk(SimChunkTileContainer& chunk, World& world);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }

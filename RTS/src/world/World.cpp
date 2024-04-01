@@ -521,9 +521,9 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
     // Chunk debug rendering
     if (sDebugOptions.mChunkBoundaries) {
         const IChunkGrid& chunkGrid = getChunkGrid();
-        const auto& loadingChunks = chunkGrid.getLoadingChunks();
+        const auto& loadingChunks = chunkGrid.getActivatingChunks();
         const auto& activeChunks = chunkGrid.getActiveChunks();
-        const auto& destroyingChunks = chunkGrid.getDestroyingChunks();
+        const auto& destroyingChunks = chunkGrid.getWantDeactivateChunks();
         renderState.mDebugChunks.resize(loadingChunks.size() + activeChunks.size() + destroyingChunks.size());
 
         int i = 0;

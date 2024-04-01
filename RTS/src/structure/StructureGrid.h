@@ -3,60 +3,64 @@
 #include "structure/Structure.h"
 #include "world/IChunkGrid.h"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
 
 class World;
 
-// TODO: 3D?
-typedef bg::model::point<i32, 2, bg::cs::cartesian> StructureBoxPoint;
-typedef bg::model::box<StructureBoxPoint> StructureBBox;
 
 typedef std::unordered_map<StructureID, std::unique_ptr<Structure>> StructureMap;
-
-struct StructureRegion {
-    StructureBBox box;
-    StructureID id;
-
-    bool operator==(const StructureRegion& rhs) const {
-        return (id == rhs.id) && (memcmp(&this->box, &rhs.box, sizeof(box)) == 0);
-    }
+struct ChunkStructureData {
+    std::vector<StructureID> containedStructures;
+    std::unique_ptr<StructureID[]> dTileStructures = nullptr;
 };
-// https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
-template <>
-struct bgi::indexable<StructureRegion>
-{
-    typedef StructureBBox result_type;
-    StructureBBox operator()(const StructureRegion& c) const { return c.box; }
-};
-
-class StructureGrid
-{
+class StructureGrid {
 public:
     StructureGrid(World& world);
     ~StructureGrid() = default;
 
-    Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight, const BitArray& ownedDTiles);
+    // Can fail if overlapping an existing structure
+    Structure* tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles);
 
     void debugRender();
 
-    // TODO: non vector
-    std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
+    // TODO: Structure could be destroyed after return! We need a structureHandle?
+    Structure* tryGetStructureAtWorldPos(TileCoord worldPos) const;
     const StructureMap& getStructures() const { ASSERT_GAME_THREAD(); return mStructures; }
 
 private:
     void initEventHandlers();
+    void addStructureToChunk(StructureID structureId, ChunkID id);
 
     World& mWorld;
     std::mutex mMutex;
-    std::unordered_map<ChunkID, std::vector<StructureID>> mDormantStructures; // Structures who depend on multiple chunks can be duplicated here
+    std::unique_ptr<ChunkStructureData[]> mChunkStructureData;
     StructureMap mStructures;
-    bgi::rtree<StructureRegion, bgi::quadratic<16>> mSpatialLookup;
     ChunkGridListeners mChunkEventListeners;
 };
 
+// OLD Spatial lookup
+// bgi::rtree<StructureRegion, bgi::quadratic<16>> mSpatialLookup;
+//
+//#include <boost/geometry.hpp>
+//#include <boost/geometry/geometries/point.hpp>
+//#include <boost/geometry/geometries/box.hpp>
+//#include <boost/geometry/index/rtree.hpp>
+//
+//namespace bg = boost::geometry;
+//namespace bgi = boost::geometry::index;
+//typedef bg::model::point<i32, 2, bg::cs::cartesian> StructureBoxPoint;
+//typedef bg::model::box<StructureBoxPoint> StructureBBox;
+//struct StructureRegion {
+//    StructureBBox box;
+//    StructureID id;
+//
+//    bool operator==(const StructureRegion& rhs) const {
+//        return (id == rhs.id) && (memcmp(&this->box, &rhs.box, sizeof(box)) == 0);
+//    }
+//};
+//// https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
+//template <>
+//struct bgi::indexable<StructureRegion>
+//{
+//    typedef StructureBBox result_type;
+//    StructureBBox operator()(const StructureRegion& c) const { return c.box; }
+//};
