@@ -22,6 +22,9 @@ public:
     i32AABB3 mAABB;
 };
 
+// Guarentees one structure can have no more than 4 chunk dependencies
+const ui32 MAX_STRUCTURE_WIDTH_DTILES = CHUNK_WIDTH_DTILES - 1;
+
 // A structure is a type of tile grid that has a base footpring and a number of floors.
 // No two structures can have overlapping tiles.
 class Structure {

@@ -59,25 +59,30 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
       mBlueprintsToBuild.push_back(blueprint);*/
 }
 
-Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
+Building* CityBuilder::debugBuildInstant(World& world, std::unique_ptr<BuildingBlueprint>& bpPtr) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 
     TileRepository& tileRepo = TileRepository::get();
 
     PreciseTimer timer;
-    const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
-    const i32AABB2 aabb(worldPos, bp.dimsDTile * DTILE_WIDTH);
+    const i32v2 worldPos = bpPtr->worldPosRootDTile.toTilePos();
+    const i32AABB2 aabb(worldPos, bpPtr->dimsDTile * DTILE_WIDTH);
 
-    BitArray tilesNeedingTerrainFlatten = bp.computeSolidTilesFirstFloor();
+    BitArray tilesNeedingTerrainFlatten = bpPtr->computeSolidTilesFirstFloor();
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = world.getHeightmapGrid();
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
-    const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bp.floorCount * bp.floorHeight));
+    const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewStructure(StructureType::Building, aabb3d, bp.floorHeight, bp.ownedDTiles));
+    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewStructure(StructureType::Building, aabb3d, bpPtr->floorHeight, bpPtr->ownedDTiles));
+    if (!newBuilding) {
+        return nullptr;
+    }
+    newBuilding->setBlueprint(std::move(bpPtr));
+    BuildingBlueprint& bp = *newBuilding->getBlueprint();
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===

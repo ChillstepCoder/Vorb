@@ -636,12 +636,10 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
                     TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(tilePos2D);
                     if (handle.isValid()) {
                         assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-                        std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(tilePos2D));
-                        for (auto&& structure : structures) {
+                        if (Structure* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(tilePos2D))) {
                             TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
                             if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
                                 rv.mTileIndex = nextHandle.tileIndex;
-                                break;
                             }
                         }
                         /*Chunk* chunk = handle.container->getOwnerChunk();

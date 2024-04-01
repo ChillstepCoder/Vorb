@@ -3,9 +3,9 @@
 #include "structure/Structure.h"
 #include "world/IChunkGrid.h"
 
+#include <shared_mutex>
 
 class World;
-
 
 typedef std::unordered_map<StructureID, std::unique_ptr<Structure>> StructureMap;
 struct ChunkStructureData {
@@ -31,7 +31,7 @@ private:
     void addStructureToChunk(StructureID structureId, ChunkID id);
 
     World& mWorld;
-    std::mutex mMutex;
+    mutable std::shared_mutex mMutex;
     std::unique_ptr<ChunkStructureData[]> mChunkStructureData;
     StructureMap mStructures;
     ChunkGridListeners mChunkEventListeners;

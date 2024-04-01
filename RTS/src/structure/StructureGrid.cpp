@@ -7,7 +7,7 @@
 
 #include "world/World.h"
 
-#include "debugging/DebugRenderer.h"'
+#include "debugging/DebugRenderer.h"
 
 #include "boost/container/flat_set.hpp"
 
@@ -32,15 +32,72 @@ StructureGrid::StructureGrid(World& world) : mWorld(world) {
 Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles) {
     const DTileCoord rootDTileCoord = DTileCoord::fromTilePosRound(tileAABB.pos);
     const ui32v2 DTileDims((tileAABB.dims.x >> 1), (tileAABB.dims.y >> 1));
-    // TODO: Cache iter positions without lock?
-    // First check if we can actually place structure here, and if so, place it with lock
-    {
-        DTileCoord iter = rootDTileCoord;
-        std::lock_guard lock(mMutex);
-        for (iter.y = rootDTileCoord.y; iter.y < rootDTileCoord.y + DTileDims.y; ++iter.y) {
-            for (iter.x = rootDTileCoord.x; iter.x < rootDTileCoord.x + DTileDims.x; ++iter.x) {
-                x;
+    assert(DTileDims.x < MAX_STRUCTURE_WIDTH_DTILES && DTileDims.y < MAX_STRUCTURE_WIDTH_DTILES);
+
+    // Cache all dtile positions pre-lock to reduce critical section load
+    DTileCoord coveredTiles[SQ(MAX_STRUCTURE_WIDTH_DTILES)];
+    ui32 coveredTilesCount = 0;
+    DTileCoord iter = rootDTileCoord;
+    for (iter.y = 0; iter.y < DTileDims.y; ++iter.y) {
+        for (iter.x = 0; iter.x < DTileDims.x; ++iter.x) {
+            if (ownedDTiles.getBit(iter.y * DTileDims.x + iter.x)) {
+                coveredTiles[coveredTilesCount++] = rootDTileCoord + iter;
             }
+        }
+    }
+
+    //  Helper
+    auto structureExists = [this](DTileCoord dTileCoord) -> bool {
+        const ChunkCoord chunkCoord(dTileCoord);
+        const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
+
+        const ChunkStructureData& structureData = mChunkStructureData[chunkId];
+        if (!structureData.dTileStructures) {
+            return false;
+        }
+        const DTileCoord dTileOffset = dTileCoord - DTileCoord(chunkCoord);
+        const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
+        const StructureID id = structureData.dTileStructures[index];
+        if (id == INVALID_STRUCTURE_ID) {
+            return false;
+        }
+        return true;
+    };
+
+    StructureID newStructureId;
+
+    // First check if we can actually place structure here, and place them in one lock
+    // Must be done this way to avoid any race conditions
+    { // Critical section
+        std::lock_guard lock(mMutex);
+        newStructureId = sStructureIdGen;
+        // Check
+        for (ui32 di = 0; di < coveredTilesCount; ++di) {
+            const DTileCoord worldCoord = coveredTiles[di];
+            if (structureExists(worldCoord)) {
+                return nullptr;
+            }
+        }
+
+        // Allocate
+        newStructureId = sStructureIdGen++;
+
+        // Place
+        for (ui32 di = 0; di < coveredTilesCount; ++di) {
+            const DTileCoord worldCoord = coveredTiles[di];
+            const ChunkCoord chunkCoord(worldCoord);
+            const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
+            ChunkStructureData& structureData = mChunkStructureData[chunkId];
+            // Initialize structure data if needed
+            if (!structureData.dTileStructures) [[unlikely]] {
+                structureData.dTileStructures = std::make_unique<StructureID[]>(CHUNK_SIZE_DTILES);
+                for (ui32 i = 0; i < CHUNK_SIZE_DTILES; ++i) {
+                    structureData.dTileStructures[i] = INVALID_STRUCTURE_ID;
+                }
+            }
+            const DTileCoord dTileOffset = worldCoord - DTileCoord(chunkCoord);
+            const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
+            structureData.dTileStructures[index] = newStructureId;
         }
     }
 
@@ -50,12 +107,10 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
     tileDims.z /= floorHeight;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
     std::unique_ptr<Structure> newStructure;
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     switch (type) {
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
-            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB.pos, tileDims, floorHeight, (Building*)newStructure.get());
             newStructure->mOwnedDTiles = ownedDTiles;
             break;
         }
@@ -63,15 +118,10 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
             assert(false && "Invalid structure type");
     }
     newStructure->mTileAABB = tileAABB;
-    newStructure->mId = sStructureIdGen++;
-
-    Structure* rv = newStructure.get();
-    {
-        std::lock_guard lock(mMutex);
-        mStructures[newStructure->mId] = std::move(newStructure);
-    }
-
+    newStructure->mId = newStructureId;
+   
     // Hook up chunk dependencies
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     i32v2 worldXY;
     boost::container::flat_set<Chunk*> chunkDependencies;
     chunkDependencies.reserve(4);
@@ -84,18 +134,33 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
     worldXY = i32v2(tileAABB.x + tileAABB.dims.x, tileAABB.y + tileAABB.dims.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
 
+    const bool isActive = true;
+
     assert(chunkDependencies.size() && chunkDependencies.size() <= 4);
     int chunkCount = 0;
     for (auto&& c : chunkDependencies) {
         assert(c->isDataReady());
         // Chunks increment our refcount while they are loaded
-        rv->mChunkDependencies[chunkCount++] = c->getChunkID();
+        newStructure->mChunkDependencies[chunkCount++] = c->getChunkID();
     }
     while (chunkCount < 4) {
-        rv->mChunkDependencies[chunkCount++] = INVALID_CHUNK_ID;
+        newStructure->mChunkDependencies[chunkCount++] = INVALID_CHUNK_ID;
     }
 
-    rv->mState = StructureState::ACTIVE;
+    Structure* rv = newStructure.get();
+    { // Write critical section
+        std::lock_guard lock(mMutex);
+        // Do this last
+        if (isActive) {
+            assert(newStructure->getType() == StructureType::Building);
+            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            rv->mState = StructureState::ACTIVE;
+        }
+        else {
+            rv->mState = StructureState::SIM;
+        }
+        mStructures[rv->mId] = std::move(newStructure);
+    }
     return rv;
 }
 
@@ -142,9 +207,13 @@ Structure* StructureGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
         return nullptr;
     }
     auto it = mStructures.find(id);
-    assert(it != mStructures.end());
+    // This can occur if we query while a structure has been placed but not fully allocated and tracked
+    if (it != mStructures.end()) [[unlikely]] {
+        return nullptr;
+    }
     return it->second.get();
 }
+
 
 void StructureGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();

@@ -65,7 +65,6 @@ void Chunk::freeData() {
     }
     std::vector<TileGrass>().swap(mGrass);
     // TODO: Serialization
-    std::vector<StructureID>().swap(mStructures);
     std::map<TileIndex, ItemStack>().swap(mItemsOnGround);
 }
 

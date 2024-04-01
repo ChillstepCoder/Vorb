@@ -21,7 +21,7 @@ public:
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
     void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
 
-    static Building* debugBuildInstant(World& world, BuildingBlueprint& bp);
+    static Building* debugBuildInstant(World& world, std::unique_ptr<BuildingBlueprint>& bpPtr);
     void debugBuildRoadInstant(RoadID roadId);
 
 private:

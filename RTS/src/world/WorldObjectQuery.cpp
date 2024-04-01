@@ -58,13 +58,10 @@ void WorldObjectQuery::queryInternal() {
         Chunk* chunk = handle.container->getOwnerChunk();
         if (chunk->isDataReady()) {
             assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
-            std::vector<Structure*> structures = mWorld.tryGetStructuresAtWorldPos(i32v2(tilePos2D));
-            for (size_t i = 0; i < structures.size(); ++i) {
-                Structure* structure = structures[i];
+            if (Structure* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(tilePos2D))) {
                 TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(mWorldPos);
                 if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
                     mTileRef.acquire(nextHandle);
-                    break;
                 }
             }
         }

@@ -744,7 +744,7 @@ void WorldEditorPanel::updateBuildingEdit() {
                 assert(false);
                 return;
             }
-            CityBuilder::debugBuildInstant(*world, *bp);
+            CityBuilder::debugBuildInstant(*world, bp);
         });
 
     }

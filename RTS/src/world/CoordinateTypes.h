@@ -17,6 +17,7 @@ constexpr int DTILE_WIDTH = 2;
 constexpr int BLOCK_WIDTH = 8;
 
 constexpr int CHUNK_WIDTH_DTILES = 128 / DTILE_WIDTH;
+constexpr int CHUNK_SIZE_DTILES = SQ(CHUNK_WIDTH_DTILES);
 
 constexpr int SUBCHUNK_WIDTH = 16;
 constexpr int SUBCHUNK_WIDTH_SQ = SQ(SUBCHUNK_WIDTH);

@@ -119,8 +119,8 @@ public:
     bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);
     void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
     
-    // Structures
-    std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
+    // Structures TODO: Needs to be StructureRef so it isnt destroyed
+    Structure* tryGetStructureAtWorldPos(TileCoord worldPos) const;
 
     STATIC_EVENT_LISTENER_FUNCS(World, OnWorldBeginGameThread, WORLD_EVENT_TYPE::OnWorldBeginGameThread, World&);
     STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEndGameThread, WORLD_EVENT_TYPE::OnWorldEndGameThread, World&);

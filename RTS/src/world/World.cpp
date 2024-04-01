@@ -342,8 +342,7 @@ TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
         assert(worldPos2D.x >= 0.0f && worldPos2D.y >= 0.0f);
-        std::vector<Structure*> structures = tryGetStructuresAtWorldPos(worldPos2D);
-        for (auto&& structure : structures) {
+        if (Structure* structure = tryGetStructureAtWorldPos(TileCoord(worldPos2D))) {
             TileHandle structureHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(worldPos);
             if (structureHandle.isValid() && structure->isTileOwned(structureHandle.tileIndex)) {
                 return structureHandle;
@@ -423,8 +422,8 @@ void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk
     }
 }
 
-std::vector<Structure*> World::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
-    return mStructureGrid->tryGetStructuresAtWorldPos(worldPos);
+Structure* World::tryGetStructureAtWorldPos(TileCoord worldPos) const {
+    return mStructureGrid->tryGetStructureAtWorldPos(worldPos);
 }
 
 World* World::tryGetWorld(WorldID id) {
