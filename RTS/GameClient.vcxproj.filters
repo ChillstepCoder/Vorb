@@ -369,7 +369,7 @@
     <ClCompile Include="src\debugging\ValueTweaker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\structure\StructureManager.cpp">
+    <ClCompile Include="src\structure\StructureGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\GridEdgeFinder.cpp">
@@ -1523,7 +1523,7 @@
     <ClInclude Include="src\debugging\ValueTweaker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\structure\StructureManager.h">
+    <ClInclude Include="src\structure\StructureGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp">

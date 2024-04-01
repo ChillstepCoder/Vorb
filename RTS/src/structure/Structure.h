@@ -13,7 +13,7 @@ enum class StructureType : ui8 {
 
 enum class StructureState : ui8 {
     ACTIVE,
-    DORMANT
+    SIM
 };
 
 class StructureSimulationData {
@@ -22,36 +22,40 @@ public:
     i32AABB3 mAABB;
 };
 
+// A structure is a type of tile grid that has a base footpring and a number of floors.
+// No two structures can have overlapping tiles.
 class Structure {
-    friend class StructureManager;
+    friend class StructureGrid;
 public:
     Structure() = default;
     virtual ~Structure() = default;
 
-    const i32AABB3& getAABB() const { return mAABB; }
+    const i32AABB3& getTileAABB() const { return mTileAABB; }
 
     StructureID getId() const { return mId; }
     StructureType getType() const { return mType; }
     TileContainer* getTileContainer() { return mTileContainer; }
     const TileContainer* getTileContainer() const { return mTileContainer; }
 
-    bool isTileOwned(TileIndex index) const { assert(mTileContainer);  return mTileContainer->isTileOwned(index); }
+    const BitArray& getOwnedDTiles() const { return mOwnedDTiles; }
+    bool isTileOwned(TileIndex index) const { return mOwnedDTiles.getBit(structureTileIndexToDTileIndex(index % (mTileAABB.width * mTileAABB.depth), mTileAABB.width >> 1)); }
 
     void incRef() { assert(mTileContainer); mTileContainer->incRef(); }
     void decRef() { assert(mTileContainer); mTileContainer->decRef(); }
 
-    const LiteChunkID* getChunkDependencies() const { return mChunkDependencies; }
+    const ChunkID* getChunkDependencies() const { return mChunkDependencies; }
     bool hasUnloadedChunkDependencies() const { return mChunkDependenciesUnloaded != 0; }
 
 protected:
+    BitArray mOwnedDTiles;
     TileContainer* mTileContainer = nullptr;
-    i32AABB3 mAABB;
+    i32AABB3 mTileAABB;
     //f32 mZPosFloor;
     //ui32 mStateArrayIndex = UINT32_MAX;
     StructureID mId = INVALID_STRUCTURE_ID;
-    LiteChunkID mChunkDependencies[4];
+    ChunkID mChunkDependencies[4];
     ui8 mChunkDependenciesUnloaded = 0;
     StructureType mType = StructureType::Building; // TODO: Different types?
-    StructureState mState = StructureState::DORMANT;
+    StructureState mState = StructureState::SIM;
     // TODO: LOD as well?
 };

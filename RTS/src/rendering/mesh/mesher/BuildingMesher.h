@@ -15,7 +15,6 @@ struct RoofContourEdgeInfo {
     bool isGable;
 };
 
-
 class BuildingMesher : public ITileContainerMesher
 {
 public:

@@ -135,13 +135,10 @@ public:
     Chunk* getOwnerChunk() const;
     Building* getOwnerBuilding() const;
 
-    static bool isTileOwned(const BitArray& ownedTiles, TileIndex index) { return ownedTiles.getNumBits() == 0 || ownedTiles.getBit(index); }
-    bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
-    const BitArray& getOwnedTiles() const { return mOwnedTiles; } // TODO: ASSERT_GAME_THREAD();
-    void allocateOwnedTiles();
-    void setOwnedTile(TileIndex index) { mOwnedTiles.setBit(index); }
-    void clearOwnedTile(TileIndex index) { mOwnedTiles.clearBit(index); }
-    void setOwnedTileTo(TileIndex index, bool isOwned) { mOwnedTiles.setBitTo(index, isOwned); }
+    bool isTileValid(TileIndex index) const { ASSERT_GAME_THREAD(); return !mTiles[index].isEmpty(); }
+    bool isTileOwned(TileIndex index) const;
+    static bool isTileOwned(const BitArray& ownedDTiles, TileIndex index2d, ui32v2 containerDimsDTiles);
+
 
     // =========== Refcount  ===========
     // Threads cannot incref while container is ready to destroy
@@ -220,7 +217,6 @@ private:
     // Indexing
     TileSpatialGrid mTileSpatialGrid;
 
-    BitArray mOwnedTiles; // TODO: OwnedDTiles
     mutable std::shared_mutex mSharedMutex;
     mutable std::mutex mLifetimeMutex;
 

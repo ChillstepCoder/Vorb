@@ -284,9 +284,11 @@ const RoomGenNode* TileInteractPanel::tryGetSelectedRoom() const {
     assert(mSelectedStructure->getType() == StructureType::Building);
 
     Building* building = static_cast<Building*>(mSelectedStructure);
-    auto&& roomGraph = building->getRooms();
+    LOG_CRITICAL("TODO: Fix TileInteractPanel::tryGetSelectedRoom");
+    /*auto&& roomGraph = building->getRooms();
     assert(mSelectedRoomID < roomGraph.size());
-    return &roomGraph[mSelectedRoomID];
+    return &roomGraph[mSelectedRoomID];*/
+    return nullptr;
 }
 
 Building* TileInteractPanel::tryGetSelectedBuilding() const {

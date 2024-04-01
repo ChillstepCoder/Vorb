@@ -1,20 +1,24 @@
 #pragma once
 
 // Should be included in RenderThreadTasks
+class TileContainer;
 
 class MeshTaskData {
 public:
     // TODO: Are we guarenteeing quads?
     MeshTaskData(
-        ContainerMeshBuilders&& builders
+        ContainerMeshBuilders&& builders,
+        const TileContainer& container
     ) : 
-        builders(std::move(builders))
+        builders(std::move(builders)),
+        container(container)
     {};
 
     void* operator new(size_t count);
     void operator delete(void* pointer, size_t size);
 
     ContainerMeshBuilders builders;
+    const TileContainer& container;
 };
 
 // TODO: We should make sure we dont build this on dedicated server as it initializes some memory

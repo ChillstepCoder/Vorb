@@ -6,6 +6,7 @@
 #include "tile/Tile.h"
 
 class TileContainer;
+class World;
 
 class ContainerMeshBuilders {
 public:
@@ -16,12 +17,13 @@ public:
 
     void addMaterial(MaterialID id) { materialDependencies.emplace(id); }
 
-    const TileContainer& container;
+    TileContainerID containerId;
     ContainerMeshDataCopy tileData;
     ProceduralMeshBuilder staticBuilder;
     ProceduralMeshBuilder dynamicBuilder;
     BillboardMeshBuilder billboardBuilder;
     InstancedStaticModelGatherer modelGatherer;
+    World& world;
     std::unordered_set<MaterialID> materialDependencies;
 };
 

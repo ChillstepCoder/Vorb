@@ -22,7 +22,7 @@ class ItemStockpileRegistry;
 class IEffectContext;
 class IFactionManager;
 class PhysicsWorld;
-class StructureManager;
+class StructureGrid;
 class TimeOfDayManager;
 class TileContainerRepository;
 class ChunkGenerator;
@@ -90,7 +90,7 @@ public:
     CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
     IEntityComponentSystem& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
-    StructureManager& getStructureManager() const { return *mStructureManager; }
+    StructureGrid& getStructureGrid() const { return *mStructureGrid; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     ChunkGenerator& getWorldGenerator() const { return *mChunkGenerator; }
@@ -172,7 +172,7 @@ private:
     // Physics
     std::unique_ptr<PhysicsWorld> mPhysWorld;
     // Structures
-    std::unique_ptr<StructureManager> mStructureManager;
+    std::unique_ptr<StructureGrid> mStructureGrid;
     // Cities
     std::unique_ptr<CityGraph> mCities;
     // Generation

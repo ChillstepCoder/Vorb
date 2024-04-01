@@ -31,7 +31,6 @@ constexpr ui32 MAX_TILE_GRASS_IDS = 0xff;
 
 typedef ui32 HeightmapPatchID;
 typedef ui32 ChunkID;
-typedef ui32 LiteChunkID;
 constexpr ui32 INVALID_CHUNK_ID = std::numeric_limits<ChunkID>::max();
 
 typedef ui32 WorldID;

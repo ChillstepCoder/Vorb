@@ -24,19 +24,14 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Building);
 
-    // TODO: Boost allocator
-
-    const BitArray& getInteriorTilesInAABB() const { return mTileContainer->getOwnedTiles(); }
-    const std::vector<RoomGenNode>& getRooms() const { return mRooms; }
-    const std::map<TileIndex, RoomNodeID>& getDoorTiles() const { return mDoorTiles; }
+    //const std::vector<RoomGenNode>& getRooms() const { return mRooms; }
 
 private:
    
-    std::vector<RoomGenNode> mRooms;
+    //std::vector<RoomGenNode> mRooms;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId = INVALID_BUILDING_ID;
 
-    std::map<TileIndex, RoomNodeID> mDoorTiles;
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
 

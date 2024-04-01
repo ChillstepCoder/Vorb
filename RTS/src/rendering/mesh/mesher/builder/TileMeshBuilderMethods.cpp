@@ -192,10 +192,9 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();
-    const TileContainer& tileContainer = builders.container;
     const ContainerMeshDataCopy& tiles = builders.tileData;
     // TODO: Do we need to handle container resize? Or is resize destroy and remake?
-    const TileSpatialGrid& spatialGrid = tileContainer.getTileSpatialGrid();
+    const TileSpatialGrid& spatialGrid = builders.tileData.spatialGrid;
     const i32v3& tileDims = spatialGrid.getDims();
     const f32v3 tileContainerWorldPos = spatialGrid.getWorldPos3D();
     const f32 floorHeight = spatialGrid.getFloorHeight();
@@ -208,7 +207,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
         for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
             for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++index) {
-                const Tile& tile = tiles.mTiles[index];
+                const Tile& tile = tiles.tiles[index];
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayers()[layerIndex];  // TODO: Thread safe when async
                     // Blocked or invalid tiles have no render (Unowned tiles should all be NONE)
@@ -221,39 +220,39 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     // Flora mesh ONLY
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
-                        const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
+                        const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
                         builders.addMaterial(tileData.materialData[0].id);
                         builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
                         // TODO: Handle other materials?
                         builders.addMaterial(tileData.materialData[0].id);
-                        TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), TileHandle(&tileContainer, index), tileData, physics);
+                        TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), tiles.tiles[index], tileData, physics);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
                         builders.addMaterial(tileData.materialData[0].id);
                         // Adjacent shapes are for culling (ONLY WORKS ON STRUCTURE WITH UNIFORM FLOOR POSITIONS)
                         TileShape adjacentShapes[4] = { TileShape::NONE, TileShape::NONE, TileShape::NONE, TileShape::NONE };
                         if (xyz.y > 0) {
-                            TileID south = tiles.mTiles[index - tileDims.x].getLayers()[layerIndex];
+                            TileID south = tiles.tiles[index - tileDims.x].getLayers()[layerIndex];
                             if (!isTileNone(south)) {
                                 adjacentShapes[e_cast(Cartesian::SOUTH)] = tileRepo.getLoadedOrUnloadedAsset(south).shape;
                             }
                         }
                         if (xyz.x > 0) {
-                            TileID west = tiles.mTiles[index - 1].getLayers()[layerIndex];
+                            TileID west = tiles.tiles[index - 1].getLayers()[layerIndex];
                             if (!isTileNone(west)) {
                                 adjacentShapes[e_cast(Cartesian::WEST)] = tileRepo.getLoadedOrUnloadedAsset(west).shape;
                             }
                         }
                         if (xyz.x < tileDims.x - 1) {
-                            TileID east = tiles.mTiles[index + 1].getLayers()[layerIndex];
+                            TileID east = tiles.tiles[index + 1].getLayers()[layerIndex];
                             if (!isTileNone(east)) {
                                 adjacentShapes[e_cast(Cartesian::EAST)] = tileRepo.getLoadedOrUnloadedAsset(east).shape;
                             }
                         }
                         if (xyz.y < tileDims.y - 1) {
-                            TileID north = tiles.mTiles[index + tileDims.x].getLayers()[layerIndex];
+                            TileID north = tiles.tiles[index + tileDims.x].getLayers()[layerIndex];
                             if (!isTileNone(north)) {
                                 adjacentShapes[e_cast(Cartesian::NORTH)] = tileRepo.getLoadedOrUnloadedAsset(north).shape;
                             }
@@ -266,14 +265,14 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation((TileLayer)layerIndex), tileData, physics);
                     }
                     else if (tileData.shape == TileShape::MODEL) {
-                        f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.mTiles[index].getGroundZOffset());
+                        f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
                         ui8 variantIndex = 0;
                         if (layerIndex == TILE_LAYER_MAIN) [[likely]] {
-                            variantIndex = tileData.modelVariants[tiles.mTiles[index].getMainLayerVariant()];
+                            variantIndex = tileData.modelVariants[tiles.tiles[index].getMainLayerVariant()];
                         }
                         else {
                             // Should be impossible?
-                            panic("Ground tile {} - {} has a model shape on a non-main layer", index, tiles.mTiles[index].getGroundID());
+                            panic("Ground tile {} - {} has a model shape on a non-main layer", index, tiles.tiles[index].getGroundID());
                         }
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
@@ -290,7 +289,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
             }
         }
     }
-    meshWallsDefault(spatialGrid, tiles.mWalls, tiles.mTiles, tileDims, floorHeight, builders.staticBuilder, builders.materialDependencies, physics);
+    meshWallsDefault(spatialGrid, tiles.walls, tiles.tiles, tileDims, floorHeight, builders.staticBuilder, builders.materialDependencies, physics);
 
     // Dynamics
     //for (auto&& dynamicTile : tileContainer.getDynamicTiles()) {
@@ -346,7 +345,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
 }
 
 
-void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
     switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
             meshBuilder.addAxisAlignedQuad(
@@ -364,14 +363,14 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
             break;
         }
         case TileTextureMethod::VERTICAL: {
-            addBlockVertical(meshBuilder, tilePos, tileHandle, tileData, physMesh);
+            addBlockVertical(meshBuilder, tilePos, tile, tileData, physMesh);
             break;
         }
         case TileTextureMethod::WORLD_TILING: {
             // todo: FIX
             //int xOff = (ui32)tilePos.x % 8;
             //int yOff = 7 - (ui32)tilePos.y % 8;
-            addBlockWorldTiling(meshBuilder, tilePos, tileHandle, tileData, physMesh);
+            addBlockWorldTiling(meshBuilder, tilePos, tile, tileData, physMesh);
             break;
         }
         case TileTextureMethod::FLORA: {
@@ -382,10 +381,9 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
     static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
-void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
 
     const MaterialDesc& materialData = tileData.materialData[0];
-    const Tile& tile = tileHandle.getTile();
 
     const f32 topZPosition = tile.getGroundZOffset();
     const f32v3 topPos(tilePos.x, tilePos.y, topZPosition);
@@ -479,8 +477,8 @@ void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder
     }
 }
 
-void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
-    const f32 topHeight = tilePos.z + tileHandle.getTile().getGroundZOffset();
+void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
+    const f32 topHeight = tilePos.z + tile.getGroundZOffset();
 
     const f32v3 botSW(tilePos);
     const f32v3 botSE(tilePos.x + 1.0f, tilePos.y, tilePos.z);
@@ -593,26 +591,26 @@ void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 
     meshBuilder.addQuadBetweenPointsWorldUV(positions, materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
     physMesh.addQuadBetweenPoints(positions);
 }
-
-void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatch* heightData, const TileHandle& tileHandle, const TileDef& tileData) {
-    //const SubTexture& texture = tileData.texture;
-
-    //f32 corners[4];
-    //mWorldGrid.computeTileCorners(heightData->data, TilePosition(chunk.getChunkID(), tileIndex), corners);
-
-    //if (isOnTerrain) {
-    //    quadMeshBuilder.addTerrainAlignedQuad(
-    //        tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
-    //        corners,
-    //        texture,
-    //        COLOR_WHITE,
-    //        mWorldGrid.areTrianglesFlippedAtTile(tileIndex)
-    //    );
-    //}
-    //else {
-    //    assert(false);
-    //}
-}
+//
+//void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatch* heightData, const TileHandle& tileHandle, const TileDef& tileData) {
+//    //const SubTexture& texture = tileData.texture;
+//
+//    //f32 corners[4];
+//    //mWorldGrid.computeTileCorners(heightData->data, TilePosition(chunk.getChunkID(), tileIndex), corners);
+//
+//    //if (isOnTerrain) {
+//    //    quadMeshBuilder.addTerrainAlignedQuad(
+//    //        tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+//    //        corners,
+//    //        texture,
+//    //        COLOR_WHITE,
+//    //        mWorldGrid.areTrianglesFlippedAtTile(tileIndex)
+//    //    );
+//    //}
+//    //else {
+//    //    assert(false);
+//    //}
+//}
 
 const i32v2 STAIR_DIR_OFFSETS[CARTESIAN_COUNT] = {
     i32v2(0, 1), // SOUTH

@@ -3,7 +3,7 @@
 #include "city/CityConst.h"
 #include "city/BuildingGrammar.h"
 
-// TODO: Move to data?
+// TODO: Move to data? Useless?
 enum class BuildingFunction : ui16 {
     NONE,
     RESIDENCE,

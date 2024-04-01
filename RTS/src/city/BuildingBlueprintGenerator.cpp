@@ -1863,22 +1863,43 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprintGenerationContext&
                     const i32v2 nextPos = getPosAtIndex2D(runs[(i32)(runStart + j + 1)], floorDims);
                     if (nextPos.x > pos.x) {
                         dir = Cartesian::EAST;
-                        assert(prevDir != Cartesian::WEST);
+                        if (prevDir == Cartesian::WEST) [[unlikely]] { // Error check
+                            if (visLog) {
+                                visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color::Black);
+                            }
+                            DebugBreak();
+                            return;
+                        }
                     }
                     else if (nextPos.y > pos.y) {
                         dir = Cartesian::NORTH;
-                        assert(prevDir != Cartesian::SOUTH);
+                        if (prevDir == Cartesian::SOUTH) [[unlikely]] { // Error check
+                            if (visLog) {
+                                visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color::Black);
+                            }
+                            DebugBreak();
+                            return;
+                        }
                     }
                     else if (nextPos.x < pos.x) {
                         dir = Cartesian::WEST;
-                        assert(prevDir != Cartesian::EAST);
+                        if (prevDir == Cartesian::EAST) [[unlikely]] { // Error check
+                            if (visLog) {
+                                visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color::Black);
+                            }
+                            DebugBreak();
+                            return;
+                        }
                     }
                     else {
                         dir = Cartesian::SOUTH;
-                        assert(prevDir != Cartesian::NORTH);
-                    }
-                    if (visLog) {
-                        visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), CARTESIAN_COLORS[e_cast(dir)]);
+                        if (prevDir == Cartesian::NORTH) [[unlikely]] { // Error check
+                            if (visLog) {
+                                visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * floorHeight), f32v2(1.0f), color::Black);
+                            }
+                            DebugBreak();
+                            return;
+                        }
                     }
                     // Store dir
                     dirs[(i32)(runStart + j)] = dir;

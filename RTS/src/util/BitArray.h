@@ -10,6 +10,7 @@ public:
     ~BitArray();
 
     BitArray(const BitArray& o) = default;
+    BitArray& operator=(const BitArray& o) = default;
 
     VORB_MOVABLE(BitArray);
 

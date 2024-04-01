@@ -35,13 +35,13 @@ struct bgi::indexable<StructureRegion>
     StructureBBox operator()(const StructureRegion& c) const { return c.box; }
 };
 
-class StructureManager
+class StructureGrid
 {
 public:
-    StructureManager(World& world);
-    ~StructureManager() = default;
+    StructureGrid(World& world);
+    ~StructureGrid() = default;
 
-    Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight);
+    Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight, const BitArray& ownedDTiles);
 
     void debugRender();
 
@@ -54,7 +54,7 @@ private:
 
     World& mWorld;
     std::mutex mMutex;
-    std::unordered_map<LiteChunkID, std::vector<StructureID>> mDormantStructures; // Structures who depend on multiple chunks can be duplicated here
+    std::unordered_map<ChunkID, std::vector<StructureID>> mDormantStructures; // Structures who depend on multiple chunks can be duplicated here
     StructureMap mStructures;
     bgi::rtree<StructureRegion, bgi::quadratic<16>> mSpatialLookup;
     ChunkGridListeners mChunkEventListeners;

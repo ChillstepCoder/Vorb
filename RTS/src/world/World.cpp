@@ -17,7 +17,7 @@
 #include "rendering/RenderThreadTasks.h"
 #include "resources/ResourceManager.h"
 #include "structure/Structure.h"
-#include "structure/StructureManager.h"
+#include "structure/StructureGrid.h"
 #include "tile/TileContainerRepository.h"
 #include "tile/TileHandle.h"
 #include "time/TimeOfDayManager.h"
@@ -132,7 +132,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     // Cities
     mCities = std::make_unique<CityGraph>(*this);
     // Structures
-    mStructureManager = std::make_unique<StructureManager>(*this);
+    mStructureGrid = std::make_unique<StructureGrid>(*this);
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
@@ -281,7 +281,7 @@ void World::shutdown() {
     mHostSimContext.reset();
     mTimeOfDayManager.reset();
     mCities.reset();
-    mStructureManager.reset();
+    mStructureGrid.reset();
     mPhysWorld.reset();
     mChunkGenerator.reset();
     mCombatContext.reset();
@@ -424,7 +424,7 @@ void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk
 }
 
 std::vector<Structure*> World::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
-    return mStructureManager->tryGetStructuresAtWorldPos(worldPos);
+    return mStructureGrid->tryGetStructuresAtWorldPos(worldPos);
 }
 
 World* World::tryGetWorld(WorldID id) {

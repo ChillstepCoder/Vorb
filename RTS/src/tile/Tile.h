@@ -84,13 +84,15 @@ static_assert(sizeof(Tile) == 12, "Keep small");
 // TODO: We have to include tile wall container because of these
 // All meshable (and visibility) data from a container, copied to prevent race conditions or mutex locks
 struct ContainerMeshDataCopy {
-    std::vector<Tile> mTiles;
-    TileWallContainer mWalls;
+    std::vector<Tile> tiles;
+    TileWallContainer walls;
+    TileSpatialGrid spatialGrid;
 };
 
 struct ContainerNavDataCopy {
-    std::vector<HarvestableSubchunkRegistry> mHarvestables;
-    std::vector<Tile> mTiles;
-    TileWallContainer mWalls;
-    BitArray mOwnedTiles;
+    std::vector<HarvestableSubchunkRegistry> harvestables; // TODO: hmmm....
+    std::vector<Tile> tiles;
+    TileWallContainer walls;
+    TileSpatialGrid spatialGrid;
+    BitArray ownedDTiles; // If empty, we own all
 };

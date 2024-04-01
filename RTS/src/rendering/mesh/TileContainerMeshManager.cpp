@@ -67,7 +67,8 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
 
     MeshTaskData* taskData =
         new MeshTaskData(
-            std::move(builders)
+            std::move(builders),
+            *containerToMesh
         );
 
     //assert(containerToMesh->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
@@ -76,9 +77,8 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         PROFILE_SCOPE("TileContainerRenderer::updateMeshFromBuilders");
 
         MeshTaskData* taskData = static_cast<MeshTaskData*>(meshTaskData);
-        const TileContainer& tileContainer = taskData->builders.container;
-        const TileContainerID id = tileContainer.getId();
-        World& world = tileContainer.getWorld();
+        const TileContainerID id = taskData->builders.containerId;
+        World& world = taskData->builders.world;
         WorldRenderDataManager& renderDataManager = context.getRenderDataManagerForWorld(world);
         TileContainerMeshManager& meshManager = renderDataManager.getTileContainerMeshManager();
         TileContainerMeshData& meshData = meshManager.getMeshDataForTileContainer(id);
@@ -97,7 +97,7 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         meshManager.removeMeshesForData(meshData);
 
         // Upload mesh buffers
-        const i32v3& worldPos3D = tileContainer.getTileSpatialGrid().getWorldPos3D();
+        const i32v3& worldPos3D = taskData->builders.tileData.spatialGrid.getWorldPos3D();
         taskData->builders.staticBuilder.finishMesh(meshData.mStaticMesh, worldPos3D);
         taskData->builders.dynamicBuilder.finishMesh(meshData.mDynamicMesh, worldPos3D);
         taskData->builders.billboardBuilder.finishMesh(meshData.mBillboardMesh, worldPos3D, 0 /*bufferFlags*/);
@@ -124,15 +124,14 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         meshData.mAssetDependencies.swap(dependencies);
 
         // Release
-        tileContainer.setDidInitMesh();
-        tileContainer.decRef();
+        taskData->container.setDidInitMesh();
+        taskData->container.decRef();
 
         delete taskData;
     }, taskData);
 }
 
-void TileContainerMeshManager::removeMeshesForData(TileContainerMeshData& meshData)
-{
+void TileContainerMeshManager::removeMeshesForData(TileContainerMeshData& meshData) {
     if (meshData.mStaticMesh != nullptr) {
         mStaticMeshes.erase(meshData.mStaticMesh.get());
         meshData.mStaticMesh.reset();

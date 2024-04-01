@@ -58,7 +58,7 @@ struct HeightmapPickResult {
     bool didHit = false;
 };
 
-// TOTAL MEMORY PRE TRIM = 839mb (903 on laptop debug mode)
+// TODO: Lookat alternate mountain gen https://www.youtube.com/watch?v=gsJHzBTPG0Y
 class IHeightmapGrid
 {
     friend class WorldSaveContext;

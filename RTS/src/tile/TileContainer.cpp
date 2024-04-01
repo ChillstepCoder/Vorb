@@ -12,6 +12,8 @@
 #include "world/World.h"
 #include "world/IChunkGrid.h"
 
+#include "city/Building.h"
+
 #include "physics/PhysicsWorld.h"
 
 TileContainer::TileContainer(World& world) : mWorld(world)
@@ -57,7 +59,6 @@ void TileContainer::freeData() {
     mTileWallsContainer.destroy();
     mTileItemContainer.destroy();
     mTileVisibilityContainer.destroy();
-    mOwnedTiles.freeData();
     mHarvestableRegistry.destroy();
 }
 
@@ -572,21 +573,28 @@ Building* TileContainer::getOwnerBuilding() const {
     return nullptr;
 }
 
-void TileContainer::allocateOwnedTiles() {
-    const i32v3& dims = mTileSpatialGrid.getDims();
-    mOwnedTiles.resizeAndZero(dims.x * dims.y * dims.z); assert(!mOwnedTiles.isEmpty());
+bool TileContainer::isTileOwned(TileIndex index) const {
+    if (mOwnerType == TileContainerOwnerType::CHUNK) return true;
+    return getOwnerBuilding()->isTileOwned(index);
+}
+
+bool TileContainer::isTileOwned(const BitArray& ownedDTiles, TileIndex index2d, ui32v2 containerDimsDTiles) {
+    if (ownedDTiles.getNumBits() == 0) return true;
+    const DTileIndex dtileIndex = structureTileIndexToDTileIndex(index2d, containerDimsDTiles.x);
+    return ownedDTiles.getBit(dtileIndex % (containerDimsDTiles.x * containerDimsDTiles.y));
 }
 
 void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const {
     assert(!IS_GAME_THREAD());
     PROFILE_SCOPE("copyDataWorkerThread::MESH");
     // Allocate outside critical section
-    dataCopy.mTiles.resize(mTiles.size());
-    dataCopy.mWalls.resizeForCopy(mTiles.size());
+    dataCopy.tiles.resize(mTiles.size());
+    dataCopy.walls.resizeForCopy(mTiles.size());
     {
         std::shared_lock lock(mSharedMutex);
-        memcpy(dataCopy.mTiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
-        dataCopy.mWalls.copyFrom(mTileWallsContainer);
+        memcpy(dataCopy.tiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
+        dataCopy.walls.copyFrom(mTileWallsContainer);
+        dataCopy.spatialGrid = mTileSpatialGrid;
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 
@@ -594,18 +602,23 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
     assert(!IS_GAME_THREAD());
     PROFILE_SCOPE("copyDataWorkerThread::NAV");
     // Allocate outside critical section
-    dataCopy.mHarvestables.resize(mHarvestableRegistry.getRegistryCount());
-    dataCopy.mTiles.resize(mTiles.size());
-    dataCopy.mWalls.resizeForCopy(mTiles.size());
-    dataCopy.mOwnedTiles.resize(mOwnedTiles.getNumBits());
+    dataCopy.harvestables.resize(mHarvestableRegistry.getRegistryCount());
+    dataCopy.tiles.resize(mTiles.size());
+    dataCopy.walls.resizeForCopy(mTiles.size());
     {
         std::shared_lock lock(mSharedMutex);
-        memcpy(dataCopy.mTiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
-        dataCopy.mWalls.copyFrom(mTileWallsContainer);
-        memcpy(dataCopy.mOwnedTiles.data(), mOwnedTiles.data(), mOwnedTiles.getNumBytes() * sizeof(ui8));
-        for (size_t i = 0; i < dataCopy.mHarvestables.size(); ++i) {
+        memcpy(dataCopy.tiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
+        dataCopy.walls.copyFrom(mTileWallsContainer);
+        for (size_t i = 0; i < dataCopy.harvestables.size(); ++i) {
             // Only copying positions cause its all we care about when navving
-            dataCopy.mHarvestables[i].mHarvestablePositions = mHarvestableRegistry.getRegistry(i).mHarvestablePositions;
+            dataCopy.harvestables[i].mHarvestablePositions = mHarvestableRegistry.getRegistry(i).mHarvestablePositions;
+        }
+        dataCopy.spatialGrid = mTileSpatialGrid;
+        if (Building* owner = getOwnerBuilding()) {
+            dataCopy.ownedDTiles = owner->getOwnedDTiles();
+        }
+        else {
+            dataCopy.ownedDTiles.resize(0);
         }
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
@@ -876,42 +889,42 @@ bool TileContainer::canPlaceAdjNavBlockerTile(TileIndex i) {
     if (offset.y == dims.y - 1) {
         return false;
     }
-
-    // Check ownership if needed
-    if (mOwnedTiles.getNumBits()) {
-        // SW
-        if (!mOwnedTiles.getBit(i - 1 - dims.x)) {
-            return false;
-        }
-        // S
-        if (!mOwnedTiles.getBit(i - dims.x)) {
-            return false;
-        }
-        // SE
-        if (!mOwnedTiles.getBit(i + 1 - dims.x)) {
-            return false;
-        }
-        // W
-        if (!mOwnedTiles.getBit(i - 1)) {
-            return false;
-        }
-        // E
-        if (!mOwnedTiles.getBit(i + 1)) {
-            return false;
-        }
-        // NW
-        if (!mOwnedTiles.getBit(i - 1 + dims.x)) {
-            return false;
-        }
-        // N
-        if (!mOwnedTiles.getBit(i + dims.x)) {
-            return false;
-        }
-        // NE
-        if (!mOwnedTiles.getBit(i + 1 + dims.x)) {
-            return false;
-        }
-    }
+    // Removed when we switched to DTile ownership
+    //// Check ownership if needed
+    //if (mOwnedTiles.getNumBits()) {
+    //    // SW
+    //    if (!mOwnedTiles.getBit(i - 1 - dims.x)) {
+    //        return false;
+    //    }
+    //    // S
+    //    if (!mOwnedTiles.getBit(i - dims.x)) {
+    //        return false;
+    //    }
+    //    // SE
+    //    if (!mOwnedTiles.getBit(i + 1 - dims.x)) {
+    //        return false;
+    //    }
+    //    // W
+    //    if (!mOwnedTiles.getBit(i - 1)) {
+    //        return false;
+    //    }
+    //    // E
+    //    if (!mOwnedTiles.getBit(i + 1)) {
+    //        return false;
+    //    }
+    //    // NW
+    //    if (!mOwnedTiles.getBit(i - 1 + dims.x)) {
+    //        return false;
+    //    }
+    //    // N
+    //    if (!mOwnedTiles.getBit(i + dims.x)) {
+    //        return false;
+    //    }
+    //    // NE
+    //    if (!mOwnedTiles.getBit(i + 1 + dims.x)) {
+    //        return false;
+    //    }
+    //}
     return true;
 }
 

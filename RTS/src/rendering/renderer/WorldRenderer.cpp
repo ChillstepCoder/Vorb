@@ -53,7 +53,7 @@
 
 #include "tile/TileContainerRepository.h"
 
-#include "structure/StructureManager.h"
+#include "structure/StructureGrid.h"
 #include "city/City.h"
 
 #include "resources/ResourceManager.h"
@@ -403,7 +403,7 @@ void WorldRenderer::renderDebug() {
 
     // Structure debug
     if (sDebugOptions.mStructureDebug) {
-        mActiveWorld->getStructureManager().debugRender();
+        mActiveWorld->getStructureGrid().debugRender();
     }
 
     mEcsRenderer->renderBusinessDebug(*mActiveWorld, *mCamera);

@@ -19,7 +19,7 @@
 #include "debugging/DebugRenderer.h"
 #include "rendering/mesh/mesher/BuildingMesher.h"
 
-#include "structure/StructureManager.h"
+#include "structure/StructureGrid.h"
 
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"
@@ -77,13 +77,12 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
     const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bp.floorCount * bp.floorHeight));
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, aabb3d, bp.floorHeight));
+    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().makeNewStructure(StructureType::Building, aabb3d, bp.floorHeight, bp.ownedDTiles));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
     //grid.flattenAABB(i32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
     TileContainer& tileContainer = *newBuilding->mTileContainer;
-    tileContainer.allocateOwnedTiles();
 
     std::vector<Tile>& tiles = tileContainer.mTiles;
     std::vector<TileContainer*> dirtyNavTileContainers;
@@ -103,8 +102,8 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
         Tile& tile = tiles[tileTarget.tileIndex];
         const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
         tile.layers[data.layer] = tileTarget.id;
+        tile.setTileFlag(TileFlags::ROOFED);
         tileContainer.onTileChanged(tileTarget.tileIndex);
-        tileContainer.setOwnedTile(tileTarget.tileIndex); // TODO: OwnedDTiles but currently used for roofing
     }
     for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
         BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
@@ -128,7 +127,7 @@ Building* CityBuilder::debugBuildInstant(World& world, BuildingBlueprint& bp) {
         tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
         tile.setGroundZOffset(tilePos.z + heightAdd);
         tile.setOrientation(stairPiece.dir, TileLayer::Main);
-        tileContainer.setOwnedTile(stairPiece.pos); // TODO: OwnedDTiles but currently used for roofing
+        tile.setTileFlag(TileFlags::ROOFED);
         tileContainer.onTileChanged(stairPiece.pos);
     }
 

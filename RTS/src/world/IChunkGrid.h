@@ -44,9 +44,9 @@ public:
 
     ui32 getWidthChunks() const { return mWidthChunks; }
     ui32 getTotalChunks() const { return mTotalChunks; }
-    const std::vector<LiteChunkID>& getLoadingChunks() const { return mLoadingChunks; }
-    const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
-    const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
+    const std::vector<ChunkID>& getLoadingChunks() const { return mLoadingChunks; }
+    const std::vector<ChunkID>& getActiveChunks() const { return mActiveChunks; }
+    const std::vector<ChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
 
     World& getWorld() const { return *mWorld; }

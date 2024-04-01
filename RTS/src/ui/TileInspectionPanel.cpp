@@ -12,6 +12,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "city/Building.h"
+
 
 #include <Vorb/ui/GameWindow.h>
 
@@ -68,7 +70,12 @@ void TileInspectionPanel::updateAndRender() {
     const i32v3 xyzOffset = container.getTileSpatialGrid().getTileXYZOffset(mTileHandle.tileIndex);
     const i32v2 xyOffset(xyzOffset.x, xyzOffset.y);
     const i32v2 worldPos2D = i32v2(xyOffset) + container.getTileSpatialGrid().getWorldPos2D();
-    const bool isOwned = container.isTileOwned(mTileHandle.tileIndex);
+    bool isOwned = true;
+    if (container.getOwnerType() == TileContainerOwnerType::BUILDING) {
+        Building* owner = container.getOwnerBuilding();
+        assert(owner);
+        isOwned = owner->isTileOwned(mTileHandle.tileIndex);
+    }
 
     // Debug tile cursor
     f32v3 worldPos3D = mTileHandle.getWorldPos3D();

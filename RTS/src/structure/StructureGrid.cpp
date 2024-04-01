@@ -1,13 +1,15 @@
 #include "stdafx.h"
 
 #include "city/Building.h"
-#include "StructureManager.h"
+#include "StructureGrid.h"
 
 #include "tile/TileContainerRepository.h"
 
 #include "world/World.h"
 
-#include "debugging/DebugRenderer.h"
+#include "debugging/DebugRenderer.h"'
+
+#include "boost/container/flat_set.hpp"
 
 // STRUCTURE LOADING
 // When a chunk that has a structure is loaded, it notifies structure manager to load the structure.
@@ -22,12 +24,13 @@
 // TODO: Serialize this
 StructureID sStructureIdGen = 0;
 
-StructureManager::StructureManager(World& world) : mWorld(world) {
+StructureGrid::StructureGrid(World& world) : mWorld(world) {
     initEventHandlers();
 }
 
-Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight) {
+Structure* StructureGrid::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight, const BitArray& ownedDTiles) {
     ASSERT_GAME_THREAD();
+    assert(ownedDTiles.getNumBits() >= (aabb.dims.x >> 1) * (aabb.dims.y >> 1));
     i32v3 tileDims = aabb.dims;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
@@ -39,12 +42,13 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
             newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            newStructure->mOwnedDTiles = ownedDTiles;
             break;
         }
         default:
             assert(false && "Invalid structure type");
     }
-    newStructure->mAABB = aabb;
+    newStructure->mTileAABB = aabb;
     newStructure->mId = sStructureIdGen++;
 
     const StructureBBox newBox(StructureBoxPoint(aabb.x, aabb.y), StructureBoxPoint(aabb.x + aabb.width, aabb.y + aabb.depth));
@@ -58,7 +62,8 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
 
     // Hook up chunk dependencies
     i32v2 worldXY;
-    std::set<Chunk*> chunkDependencies;
+    boost::container::flat_set<Chunk*> chunkDependencies;
+    chunkDependencies.reserve(4);
     worldXY = i32v2(aabb.x, aabb.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
     worldXY = i32v2(aabb.x + aabb.dims.x, aabb.y);
@@ -84,7 +89,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     return rv;
 }
 
-void StructureManager::debugRender() {
+void StructureGrid::debugRender() {
     constexpr int LIFETIME_FRAMES = 24;
     static int x = 0;
     if (x++ >= LIFETIME_FRAMES) {
@@ -95,10 +100,10 @@ void StructureManager::debugRender() {
             const Structure* s = it.second.get();
             switch (s->mState) {
                 case StructureState::ACTIVE:
-                    DebugRenderer::drawAABB(s->mAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
+                    DebugRenderer::drawAABB(s->mTileAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
                     break;
-                case StructureState::DORMANT:
-                    DebugRenderer::drawAABB(s->mAABB, DORMANT_COLOR, LIFETIME_FRAMES);
+                case StructureState::SIM:
+                    DebugRenderer::drawAABB(s->mTileAABB, DORMANT_COLOR, LIFETIME_FRAMES);
                     break;
                 default:
                     assert(false);
@@ -107,7 +112,7 @@ void StructureManager::debugRender() {
     }
 }
 
-std::vector<Structure*> StructureManager::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
+std::vector<Structure*> StructureGrid::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
     ASSERT_GAME_THREAD();
     std::vector<StructureRegion> overlappingStructures;
     overlappingStructures.reserve(4);
@@ -124,7 +129,7 @@ std::vector<Structure*> StructureManager::tryGetStructuresAtWorldPos(const i32v2
     return rv;
 }
 
-void StructureManager::initEventHandlers() {
+void StructureGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
     chunkGrid.addReadyListener(mChunkEventListeners, [this](Chunk& chunk) {
@@ -165,8 +170,8 @@ void StructureManager::initEventHandlers() {
             Structure* structure = it->second.get();
             structure->decRef(); // Chunk no longer needs
             ++structure->mChunkDependenciesUnloaded;
-            if (structure->mState != StructureState::DORMANT) {
-                structure->mState = StructureState::DORMANT;
+            if (structure->mState != StructureState::SIM) {
+                structure->mState = StructureState::SIM;
                 // TODO: OnDormant?
             }
             chunkDormantList.emplace_back(structureID);

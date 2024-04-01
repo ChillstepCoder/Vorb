@@ -112,7 +112,7 @@ static_assert(sizeof(TileFineNavData) == 8, "Keep tiny");
 // Stores all external edges for a container
 typedef std::vector<std::pair<TileIndex, Cartesian>> StructureExternalEdgeList;
 // Stores external edges mapped to chunk locations
-typedef std::map<LiteChunkID, StructureExternalEdgeList> StructureExternalEdgeListOutput;
+typedef std::map<ChunkID, StructureExternalEdgeList> StructureExternalEdgeListOutput;
 // TODO: Vector of Vector may be better here for memory footprint + iteration?
 typedef std::unordered_map<TileContainerID, StructureExternalEdgeList> ContainerTerrainDependentEdges;
 struct ContainerNavData {
@@ -219,7 +219,7 @@ private:
     bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges);
     bool trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
 
-    void markChunkContainerNavDirty(LiteChunkID chunkId);
+    void markChunkContainerNavDirty(ChunkID chunkId);
 
     //void buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir);
     //void addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
@@ -256,6 +256,6 @@ private:
 
     // Large data at the bottom
     std::unique_ptr<TileContainerID[]> mTerrainTileContainers;
-    std::unordered_map<LiteChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
+    std::unordered_map<ChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
 
 };

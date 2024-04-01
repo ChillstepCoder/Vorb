@@ -178,12 +178,12 @@ const Chunk& IChunkGrid::getChunkAtPosition(const i32v2& worldPos) const {
 
 Chunk& IChunkGrid::getChunkAtChunkOffset(const i32v2& chunkOffset) {
     assert(chunkOffset.x >= 0 && chunkOffset.y >= 0);
-    return getChunk(LiteChunkID(chunkOffset.y * mWidthChunks + chunkOffset.x));
+    return getChunk(ChunkID(chunkOffset.y * mWidthChunks + chunkOffset.x));
 }
 
 const Chunk& IChunkGrid::getChunkAtChunkOffset(const i32v2& chunkOffset) const {
     assert(chunkOffset.x >= 0 && chunkOffset.y >= 0);
-    return getChunk(LiteChunkID(chunkOffset.y * mWidthChunks + chunkOffset.x));
+    return getChunk(ChunkID(chunkOffset.y * mWidthChunks + chunkOffset.x));
 }
 
 ChunkID IChunkGrid::getChunkIDFromWorldPos(const i32v2& worldPos) const {
@@ -393,7 +393,7 @@ void IChunkGrid::addChunkToActiveList(Chunk& chunk) {
 
 void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
     // TODO: Eliminate linear search? Do we care?
-    LiteChunkID chunkId = chunk.getChunkID();
+    ChunkID chunkId = chunk.getChunkID();
     for (size_t i = 0; i < mActiveChunks.size(); ++i) {
         if (mActiveChunks[i] == chunkId) {
             // Pop and swap
@@ -427,7 +427,7 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
         removeChunkFromDormantList(chunk);
     }*/
 
-    const LiteChunkID id = chunk.getChunkID();
+    const ChunkID id = chunk.getChunkID();
     // We are destroying so we have no neighbor bits
     mNeighborBits[id] = 0;
     mAliveChunkBits.clearBit(id);
@@ -461,7 +461,7 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
 
 void IChunkGrid::removeChunkFromDestroyList(Chunk& chunk) {
     // TODO: Eliminate linear search? Do we care?
-    LiteChunkID chunkId = chunk.getChunkID();
+    ChunkID chunkId = chunk.getChunkID();
     for (size_t i = 0; i < mDestroyingChunks.size(); ++i) {
         if (mDestroyingChunks[i] == chunkId) {
             // Pop and swap
@@ -486,7 +486,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
 
     if (chunk.mFlags.isBitSet(ChunkFlags::IN_EDGE_LIST)) {
-        LiteChunkID id = chunk.getChunkID();
+        ChunkID id = chunk.getChunkID();
         for (size_t i = 0; i < mEdgeChunkPositions.size(); ++i) {
             if (mEdgeChunkPositions[i] == id) {
                 mEdgeChunkPositions[i] = mEdgeChunkPositions.back();

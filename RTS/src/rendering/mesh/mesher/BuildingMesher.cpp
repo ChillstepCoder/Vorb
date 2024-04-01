@@ -69,18 +69,18 @@ struct RoofStyle {
 };
 
 // Helper forward declare
-std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog);
-void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog);
-void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos, VisualLog* visLog);
+std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, const TileSpatialGrid& spatialGrid, f32 zPos, VisualLog* visLog);
+void buildMeshFromStraightSkeleton(const BitArray& floorRoofedTiles, SsPtr iss, const TileSpatialGrid& spatialGrid, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog);
+void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos, VisualLog* visLog);
 void addRoofTriangle(
     ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
     const MaterialDesc& materialData,
     f32 zPos
 );
-void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog);
-void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle);
-void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle);
+void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog);
+void meshRoomCeilings(ContainerMeshBuilders& meshBuilders, const RoofStyle& roofStyle);
+void meshRoomUndercarriage(ContainerMeshBuilders& meshBuilders, const RoofStyle& roofStyle);
 
 //class f32v2HashFunction {
 //public:
@@ -129,61 +129,61 @@ struct ContourVertexInfo {
     Cartesian gableDir = Cartesian::INVALID;
 };
 
-bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const i32AABB3& aabb, const ui32 floorIndex, f32 zPos, const Building& building, VisualLog* visLog) {
+bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const TileSpatialGrid& spatialGrid, const ui32 floorIndex, f32 zPos, VisualLog* visLog) {
+    const i32v2 dims = spatialGrid.getDims2D();
     // If we are out of the AABB, its a collide
-    if (start[!axis] < 0 || start[!axis] >= aabb.dims[!axis]) {
+    if (start[!axis] < 0 || start[!axis] >= dims[!axis]) {
         return true;
     }
     else {
         // Loop along our wall and check for collisions with tiles (or out of AABB)
         if (start[axis] < end[axis]) {
             for (int i = start[axis]; i <= end[axis]; ++i) {
-                if (i < 0 || i >= aabb.dims[axis]) {
+                if (i < 0 || i >= dims[axis]) {
                     return true;
                 }
                 ui32 bitIndex;
                 if (axis == 0) {
-                    bitIndex = floorIndex + start.y * aabb.dims.x + i;
+                    bitIndex = floorIndex + start.y * dims.x + i;
                     if (visLog) visLog->addWireQuad(f32v3(i, start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 else {
-                    bitIndex = floorIndex + i * aabb.dims.x + start.x;
+                    bitIndex = floorIndex + i * dims.x + start.x;
                     if (visLog) visLog->addWireQuad(f32v3(start.x, i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
-                if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
-                    return true;
-                }
+                /* if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
+                     return true;
+                 }*/
             }
         }
         else {
             for (int i = start[axis]; i >= end[axis]; --i) {
-                if (i < 0 || i >= aabb.dims[axis]) {
+                if (i < 0 || i >= dims[axis]) {
                     return true;
                 }
                 ui32 bitIndex;
                 if (axis == 0) {
-                    bitIndex = floorIndex + start.y * aabb.dims.x + i;
+                    bitIndex = floorIndex + start.y * dims.x + i;
                     if (visLog) visLog->addWireQuad(f32v3(i, start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 else {
-                    bitIndex = floorIndex + i * aabb.dims.x + start.x;
+                    bitIndex = floorIndex + i * dims.x + start.x;
                     if (visLog) visLog->addWireQuad(f32v3(start.x, i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
-                if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
-                    return true;
-                }
+                /* if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
+                     return true;
+                 }*/
             }
         }
     }
     return false;
 }
 
-void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, const Building& building, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableVertexInfo, f32v2hash>& gableVertexInfo, std::unordered_map<f32v2, ContourVertexInfo, f32v2hash>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
+void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, const TileSpatialGrid& spatialGrid, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableVertexInfo, f32v2hash>& gableVertexInfo, std::unordered_map<f32v2, ContourVertexInfo, f32v2hash>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
     gableVertexInfo.reserve(10);
     contourVertexInfo.reserve(30);
 
     // Store every tile with 3 or more adjacent walls, those will have their extrusion distance reduced in order to stop clipping + non simple polygons
-    const TileSpatialGrid& spatialGrid = building.getTileContainer()->getTileSpatialGrid();
     boost::container::flat_set<TileIndex> reduceExtrudeTiles;
     for (i32 y = 0; y < spatialGrid.getDims().y; ++y) {
         for (i32 x = 0; x < spatialGrid.getDims().x; ++x) {
@@ -299,8 +299,7 @@ void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, cons
     }
 
     // Fixup extrude positions that may be colliding with walls on above floors
-    const ui32 floorIndex = floor * building.getAABB().dims.y * building.getAABB().dims.x;
-    const i32AABB3& aabb = building.getAABB();
+    const ui32 floorIndex = floor * spatialGrid.getDims2D().y * spatialGrid.getDims2D().x;
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
         do {
@@ -330,7 +329,7 @@ void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, cons
                     // TODO: This could be simplified into functions where we pass the iteration dimension
                     if (start.x == end.x) {
                         // Y wall
-                        if (collideExtrudeWalls(start, end, 1, aabb, floorIndex, zPos, building, visLog)) {
+                        if (collideExtrudeWalls(start, end, 1, spatialGrid, floorIndex, zPos, visLog)) {
                             thisVertexInfo.extrudePos.x = it1->first.x;
                             oppositeVertexInfo.extrudePos.x = it2->first.x;
                             thisVertexInfo.extrudePos.z = 0.0f;
@@ -339,7 +338,7 @@ void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, cons
                     }
                     else {
                         // X Wall
-                        if (collideExtrudeWalls(start, end, 0, aabb, floorIndex, zPos, building, visLog)) {
+                        if (collideExtrudeWalls(start, end, 0, spatialGrid, floorIndex, zPos, visLog)) {
                             thisVertexInfo.extrudePos.y = it1->first.y;
                             oppositeVertexInfo.extrudePos.y = it2->first.y;
                             thisVertexInfo.extrudePos.z = 0.0f;
@@ -355,25 +354,24 @@ void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, cons
 
 
 void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) const {
-    initMeshAndPhysicsAsyncInternal(*building.getTileContainer(), nullptr, false, 10000 /*reserveCount*/, &building);
+    initMeshAndPhysicsAsyncInternal(*building.getTileContainer(), nullptr, false, 10000 /*reserveCount*/, nullptr);
 }
 
 void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, StaticPhysicsMeshBuilder& physicsBuilder, const void* userData) const {
+    // Build roof
     PROFILE_FUNCTION();
 
-    const Building& building = *static_cast<const Building*>(userData);
+    const TileSpatialGrid& spatialGrid = meshBuilders.tileData.spatialGrid;
 
-    const i32AABB3& aabb = building.mAABB;
+    const i32AABB3& aabb = spatialGrid.getAABB();
     // TODO: This is a race condition
-    const TileContainer& tileContainer = *building.mTileContainer;
-    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
 
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building", VisualLogCategory::Building, false);
     if (visLog) {
-        visLog->setRootPos(tileContainer.getTileSpatialGrid().getWorldPos3D());
+        visLog->setRootPos(spatialGrid.getWorldPos3D());
         visLog->nextStep("AABB");
-        visLog->addWireQuad(f32v3(0.0f), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
+        visLog->addWireQuad(f32v3(0.0f), aabb.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
 
     // Materials
@@ -389,21 +387,20 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     sRoofFacePoints.reserve(100);
 
     // ========================== Straight Skeleton ===============================
-    const ui32 floorCount = tileContainer.getTileSpatialGrid().getDims().z;
-    const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
+    const ui32 floorCount = spatialGrid.getDims().z;
+    const ui32 floorTileCount = aabb.dims.y * aabb.dims.x;
     BitArray roofedTiles;
-    roofedTiles.resize(building.mAABB.dims.x * building.mAABB.dims.y);
+    roofedTiles.resize(aabb.dims.x * aabb.dims.y);
     for (ui32 floor = 0; floor < floorCount; ++floor) {
-        const f32 zPos = (floor + 1.0f) * tileContainer.getTileSpatialGrid().getFloorHeight();
+        const f32 zPos = (floor + 1.0f) * spatialGrid.getFloorHeight();
         // TODO: Replace bitarray with bool array
         roofedTiles.zeroAllBits();
-        for (i32 y = 0; y < building.mAABB.dims.y; ++y) {
-            for (i32 x = 0; x < building.mAABB.dims.x; ++x) {
-                const ui32 floorBitIndex = y * building.mAABB.dims.x + x;
-                const ui32 buildingBitIndex = floor * floorTileCount + floorBitIndex;
+        for (i32 y = 0; y < aabb.dims.y; ++y) {
+            for (i32 x = 0; x < aabb.dims.x; ++x) {
+                const ui32 floorBitIndex = y * aabb.dims.x + x;
+                const TileIndex tileIndex = floor * floorTileCount + floorBitIndex;
                 // If we own this tile, and above us is clear, we are a roofed tile
-                if (ownedTiles.getBit(buildingBitIndex) &&
-                    (floor == floorCount - 1 || !ownedTiles.getBit(buildingBitIndex + floorTileCount))) {
+                if (meshBuilders.tileData.tiles[tileIndex].hasFlag(TileFlags::ROOFED)) {
                     roofedTiles.setBitTo(floorBitIndex, true);
                 }
             }
@@ -411,7 +408,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
 
         // Generate a list of straight skeletons
         if (visLog) visLog->nextStep("Detect roof edges " + std::to_string(floor));
-        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, zPos, visLog);
+        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, spatialGrid, zPos, visLog);
         std::vector<RoofContourEdgeInfo> contourEdges;
         contourEdges.reserve(20);
 
@@ -420,38 +417,37 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
         for (auto& ss : iss) {
 
             if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
-            buildMeshFromStraightSkeleton(roofedTiles, ss, building, meshBuilders.staticBuilder, contourEdges, roofStyle, floor, zPos, visLog);
+            buildMeshFromStraightSkeleton(roofedTiles, ss, spatialGrid, meshBuilders.staticBuilder, contourEdges, roofStyle, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
             if (visLog) visLog->nextStep("Contour " + std::to_string(floor) + " " + std::to_string(n));
-            meshRoofContourEdges(contourEdges, building, meshBuilders.staticBuilder, roofStyle, zPos, visLog);
+            meshRoofContourEdges(contourEdges, meshBuilders.staticBuilder, roofStyle, zPos, visLog);
             contourEdges.clear();
         }
     }
 
     // ========================== Room Ceilings ===============================
-    meshRoomCeilings(building, meshBuilders.staticBuilder, roofStyle);
+    meshRoomCeilings(meshBuilders, roofStyle);
 
     // ========================== Room supports ===============================
-    meshRoomUndercarriage(building, meshBuilders.staticBuilder, roofStyle);
+    meshRoomUndercarriage(meshBuilders, roofStyle);
 
 
-    physicsBuilder.setRootPos(f32v3(building.mAABB.pos));
+    physicsBuilder.setRootPos(spatialGrid.getWorldPos3D());
 
     if (visLog) visLog->finish();
 }
 
-std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
+std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, const TileSpatialGrid& spatialGrid, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
-    const i32AABB3& aabb = building.getAABB();
-    const i32v2 dims(aabb.dims.x, aabb.dims.y);
+    const i32v2 dims(spatialGrid.getDims2D());
     const ui32 totalTiles = dims.x * dims.y;
     std::vector<SsPtr> skeletons;
 
     BitArray checkedTiles;
     // Mark all unowned tiles as "checked"
-    checkedTiles.setNOT(floorOwnedTiles);
+    checkedTiles.setNOT(floorRoofedTiles);
     i32v2 cornerPos(0, 0);
    
     constexpr int MAX_ROOF_VERTICES = 8192;
@@ -473,7 +469,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
         const i32 startY = cornerPos.y = startIndex / dims.y;
         Cartesian edge = Cartesian::SOUTH; // We are guaranteed theres always a bottom edge at this corner
         // If we do not have a free tile below, it means we are an interior tile on an already skeletoned segment, so continue
-        if (cornerPos.y > 0 && floorOwnedTiles.getBit((cornerPos.y - 1) * dims.x + cornerPos.x)) {
+        if (cornerPos.y > 0 && floorRoofedTiles.getBit((cornerPos.y - 1) * dims.x + cornerPos.x)) {
             continue;
         }
 
@@ -514,7 +510,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
             }
 
             GridCell4x4 gridCell4x4;
-            gridCell4x4.constructFrom2DBitArray(floorOwnedTiles, cornerPos.x, cornerPos.y, dims.x, dims.y);
+            gridCell4x4.constructFrom2DBitArray(floorRoofedTiles, cornerPos.x, cornerPos.y, dims.x, dims.y);
 
             if (!gridCell4x4.data) {
                 assert(false && "Must be nonzero or we walked off the edge or something");
@@ -533,7 +529,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
             else if (nextEdge == Cartesian::INVALID) {
                 // Visual log
                 if (visLog) {
-                    const ui32v2& xy = building.getTileContainer()->getTileSpatialGrid().getTileXYOffset(startIndex);
+                    const ui32v2& xy = spatialGrid.getTileXYOffset(startIndex);
                     visLog->addFilledQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), COLOR_RED);
                 }
                 return skeletons;
@@ -557,17 +553,16 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorOwnedTiles, c
 }
 
 
-void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog) {
+void buildMeshFromStraightSkeleton(const BitArray& floorRoofedTiles, SsPtr iss, const TileSpatialGrid& spatialGrid, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
-    const i32AABB3& aabb = building.getAABB();
 
     // ========================== Gables and Extrudes ===============================
     // Map gable and contour vertex points so we can move all connected verts
     std::unordered_map<f32v2, GableVertexInfo, f32v2hash> gableVertexInfo;
     std::unordered_map<f32v2, ContourVertexInfo, f32v2hash> contourVertexInfo;
-    computeGablePointsAndExtrudePositions(floorOwnedTiles, building, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
+    computeGablePointsAndExtrudePositions(floorRoofedTiles, spatialGrid, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
 
 
     visLog->nextStep("Position verts + triangulate");
@@ -713,7 +708,7 @@ void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, c
 
         if (!isGable) {
 
-            triangulateRoofFacePolygons(meshBuilder, building, roofStyle, debugColorIndex, zPos, visLog);
+            triangulateRoofFacePolygons(meshBuilder, roofStyle, debugColorIndex, zPos, visLog);
         }
 
         ++debugColorIndex;
@@ -722,7 +717,7 @@ void buildMeshFromStraightSkeleton(const BitArray& floorOwnedTiles, SsPtr iss, c
 }
 
 
-void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const Building& building, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos, VisualLog* visLog) {
+void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, ui32 debugColorIndex, f32 zPos, VisualLog* visLog) {
 
     // Triangulation only works on convex polygons so we will partition the potentially concave poly into
     // separate convex polygons
@@ -1117,7 +1112,7 @@ void meshGable(VisualLog* visLog, const RoofContourEdgeInfo& edge, f32 zPos, Car
       }*/
 }
 
-void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog) {
+void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle, f32 zPos, VisualLog* visLog) {
     const f32v2 trimBoardHalfDims(TRIM_BOARD_HALF_THICKNESS);
     for (auto&& edge : contourEdges) {
         if (edge.v1 == edge.parent1 && edge.v2 == edge.parent2) {
@@ -1206,30 +1201,29 @@ void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, 
     }
 }
 
-void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle) {
+void meshRoomCeilings(ContainerMeshBuilders& meshBuilders, const RoofStyle& roofStyle) {
     constexpr f32 CEILING_THICKNESS = 0.05f;
-    const i32AABB3& aabb = building.getAABB();
-    const TileContainer& tileContainer = *building.getTileContainer();
-    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
+    const TileSpatialGrid& spatialGrid = meshBuilders.tileData.spatialGrid;
+    const i32v3 dims = spatialGrid.getDims();
     TileIndex index = 0;
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    for (ui32 z = 0; z < tileContainer.getTileSpatialGrid().getDims().z; ++z) {
-        for (ui32 y = 0; y < aabb.dims.y; ++y) {
-            for (ui32 x = 0; x < aabb.dims.x; ++x, ++index) {
-                if (ownedTiles.getBit(index)) {
+    for (ui32 z = 0; z < dims.z; ++z) {
+        for (ui32 y = 0; y < dims.y; ++y) {
+            for (ui32 x = 0; x < dims.x; ++x, ++index) {
+                if (meshBuilders.tileData.tiles[index].hasFlag(TileFlags::ROOFED)) {
                     // If were at the top or the tile above us is outside the interior, or its interior and a non air tile above us, mesh a ceiling
-                    const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
-                    if (z == tileContainer.getTileSpatialGrid().getDims().z - 1 || // If were at the top
-                        !ownedTiles.getBit(aboveIndex) // Or tile above us is an exterior tile
+                    const TileIndex aboveIndex = index + dims.x * dims.y;
+                    if (z == dims.z - 1 || // If were at the top
+                        !meshBuilders.tileData.tiles[aboveIndex].hasFlag(TileFlags::ROOFED) // Or tile above us is an exterior tile
                         /*|| !tileContainer.getTileAt(aboveIndex).isEmpty()*/) { // Or its an interior tile and not empty
                         // Mesh ceiling
-                        f32v3 startPos(x, y, tileContainer.getTileSpatialGrid().getFloorHeight() * (z + 1) - CEILING_THICKNESS);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        f32v3 startPos(x, y, spatialGrid.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
+                        meshBuilders.staticBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
                         // TODO: Cull edges appropriately
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::LEFT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::RIGHT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::FRONT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::BACK, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilders.staticBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::LEFT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilders.staticBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::RIGHT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilders.staticBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::FRONT, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
+                        meshBuilders.staticBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::BACK, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
                     }
                 }
             }
@@ -1237,30 +1231,29 @@ void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuild
     }
 }
 
-void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const RoofStyle& roofStyle) {
-    const i32AABB3& aabb = building.getAABB();
-    const TileContainer& tileContainer = *building.getTileContainer();
-    const ui32 floorStride = aabb.dims.x * aabb.dims.y;
-    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
+void meshRoomUndercarriage(ContainerMeshBuilders& meshBuilders, const RoofStyle& roofStyle) {
+    const TileSpatialGrid& spatialGrid = meshBuilders.tileData.spatialGrid;
+    const i32v3 dims = spatialGrid.getDims();
+    const ui32 floorStride = dims.x * dims.y;
     TileIndex index = 0;
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    for (i32 z = 0; z < tileContainer.getTileSpatialGrid().getDims().z; ++z) {
-        for (i32 y = 0; y < aabb.dims.y; ++y) {
-            for (i32 x = 0; x < aabb.dims.x; ++x, ++index) {
+    for (i32 z = 0; z < dims.z; ++z) {
+        for (i32 y = 0; y < dims.y; ++y) {
+            for (i32 x = 0; x < dims.x; ++x, ++index) {
                 // Check if we should start supports here, i.e. below us is outside the building
-                if (ownedTiles.getBit(index) && (z == 0 || !ownedTiles.getBit(index - floorStride))) {
+                if (meshBuilders.tileData.tiles[index].hasFlag(TileFlags::ROOFED) && (z == 0 || !meshBuilders.tileData.tiles[index - floorStride].hasFlag(TileFlags::ROOFED))) {
                     // Place floor tiles and increment X
                     const ui32 startX = x;
                     do {
                         // Disabled now since floor takes care of it
                        // const f32v3 floorPos(x, y, tileContainer.getFloorHeight() * z - 0.0001f);
                        // meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, roofStyle.primaryBoardMaterial, uvRect, COLOR_WHITE);
-                    } while (++x < aabb.dims.x && ownedTiles.getBit(++index));
+                    } while (++x < dims.x && meshBuilders.tileData.tiles[++index].hasFlag(TileFlags::ROOFED));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
-                    f32v3 startPos(startX, y + 0.5f, tileContainer.getTileSpatialGrid().getFloorHeight() * z - boardThickness - 0.0001f);
+                    f32v3 startPos(startX, y + 0.5f, spatialGrid.getFloorHeight() * z - boardThickness - 0.0001f);
                     f32v3 endPos = startPos + f32v3(x - startX, 0.0f, 0.0f);
-                    meshBuilder.addBoardBetweenPoints(startPos, endPos, f32v2(boardThickness), roofStyle.primaryBoardMaterial, f32v2(1.0f));
+                    meshBuilders.staticBuilder.addBoardBetweenPoints(startPos, endPos, f32v2(boardThickness), roofStyle.primaryBoardMaterial, f32v2(1.0f));
                 }
             }
         }

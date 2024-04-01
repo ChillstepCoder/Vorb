@@ -478,7 +478,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\structure\Structure.cpp" />
-    <ClCompile Include="src\structure\StructureManager.cpp" />
+    <ClCompile Include="src\structure\StructureGrid.cpp" />
     <ClCompile Include="src\tile\TileContainerRepository.cpp" />
     <ClCompile Include="src\tile\TileItemContainer.cpp" />
     <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
@@ -933,7 +933,7 @@
     <ClInclude Include="src\skill\SkillSlot.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\structure\Structure.h" />
-    <ClInclude Include="src\structure\StructureManager.h" />
+    <ClInclude Include="src\structure\StructureGrid.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
     <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h" />
     <ClInclude Include="src\tile\TileContainerConst.h" />

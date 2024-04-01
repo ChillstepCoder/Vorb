@@ -3,12 +3,13 @@
 #include "tile/TileContainer.h"
 
 ContainerMeshBuilders::ContainerMeshBuilders(const TileContainer& container, bool staticMeshIsOnlyQuads) :
-    container(container),
     staticBuilder(staticMeshIsOnlyQuads),
     dynamicBuilder(false),
     billboardBuilder(),
-    modelGatherer(container.getId(), f32v3(container.getTileSpatialGrid().getWorldPos3D()))
+    modelGatherer(container.getId(), f32v3(container.getTileSpatialGrid().getWorldPos3D())),
+    world(container.getWorld())
 {
+    containerId = container.getId();
     container.copyDataWorkerThread(tileData);
     materialDependencies.reserve(32); // Arbitrary
 }
