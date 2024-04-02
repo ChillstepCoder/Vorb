@@ -2,34 +2,19 @@
 
 #include "world/Chunk.h"
 #include "world/IHeightmapGrid.h"
-
-#include <Vorb/Event.hpp>
+#include "ChunkGridEvent.h"
 
 class World;
 
 
-class ChunkGridEvent {
-public:
-    ChunkGridEvent(Chunk& chunk) : chunk(chunk) {}
-
-    Chunk& chunk;
-};
-
-enum class CHUNK_GRID_EVENT_TYPE {
-    BeginActivate,
-    Ready,
-    Deactivate
-};
-EVENT_DISPATCHER_TYPE(ChunkGrid, CHUNK_GRID_EVENT_TYPE, ChunkGridEvent&);
-
 struct ChunkActivateContext {
     std::atomic_int refCount = 1;
 };
-
-class ChunkActivationEvent : public ChunkGridEvent {
-    using ChunkGridEvent::ChunkGridEvent;
-    ChunkActivateContext* context;
-};
+//
+//class ChunkActivationEvent : public ChunkGridEvent {
+//    using ChunkGridEvent::ChunkGridEvent;
+//    ChunkActivateContext* context;
+//};
 
 class IWorldGrid;
 
@@ -69,7 +54,7 @@ public:
     World& getWorld() const { return *mWorld; }
 
     // Events
-    EVENT_LISTENER_FUNCS_ADAPTOR(ChunkGrid, BeginActivate, CHUNK_GRID_EVENT_TYPE::BeginActivate, ChunkActivationEvent&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, BeginActivate, CHUNK_GRID_EVENT_TYPE::BeginActivate, ChunkGridEvent&);
     EVENT_LISTENER_FUNCS(ChunkGrid, Ready, CHUNK_GRID_EVENT_TYPE::Ready, ChunkGridEvent&);
     EVENT_LISTENER_FUNCS(ChunkGrid, Deactivate, CHUNK_GRID_EVENT_TYPE::Deactivate, ChunkGridEvent&);
 
@@ -87,12 +72,11 @@ protected:
     // List management
     void addChunkToActiveList(Chunk& chunk);
     void removeChunkFromActiveList(Chunk& chunk);
-    void addChunkToLoadList(Chunk& chunk);
-    void addChunkToDestroyList(Chunk& chunk);
-    void removeChunkFromDestroyList(Chunk& chunk);
+    void addChunkToActivatingList(Chunk& chunk);
+    void addChunkToWantDeactivateList(Chunk& chunk);
+    void removeChunkFromWantDeactivateList(Chunk& chunk);
     // Loading
     void onAllNeighborsAlive(Chunk& chunk);
-    void beginHeightLoadForChunk(Chunk& chunk);
     // Ready
     void onChunkReady(Chunk& chunk);
     
@@ -115,7 +99,6 @@ protected:
 
     // World
     World* mWorld = nullptr;
-
     // Events
     IHeightmapGridListeners mHeightmapGridListeners;
     EVENT_DISPATCHER_DEF(ChunkGrid);

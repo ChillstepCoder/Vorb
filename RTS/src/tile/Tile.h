@@ -23,6 +23,7 @@ static_assert(sizeof(TileOrientation) == 1);
 class Tile {
     friend class TileContainer;
     friend class ChunkGenerator;
+    friend class TileContainerLoader;
     friend class FlatChunkGenerator;
     friend class CityBuilder; // TODO: Remove? Only for debug?
 public:
@@ -52,6 +53,7 @@ public:
     Cartesian getOrientation(TileLayer layer) const;
 
     bool isEmpty() const { return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MAIN] == TILE_ID_NONE; }
+    bool isRoofed() const { return tileFlags.isBitSet(TileFlags::ROOFED); }
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)

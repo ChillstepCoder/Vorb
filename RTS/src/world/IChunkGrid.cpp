@@ -335,7 +335,7 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
                 chunk.mFlags.clearBit(ChunkFlags::IN_EDGE_LIST);
                 mForceUpdateEdgeChunks = true;
                 // Chunk is now dead and destroying
-                addChunkToDestroyList(chunk);
+                addChunkToWantDeactivateList(chunk);
             }
         }
     }
@@ -351,7 +351,7 @@ void IChunkGrid::makeChunkAlive(const ChunkID& chunkId) {
     // Check if we need to remove from destroy list first
     Chunk& chunk = mChunks[chunkId];
     if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
-        removeChunkFromDestroyList(chunk);
+        removeChunkFromWantDeactivateList(chunk);
     }
 
     ui8& neighborBits = mNeighborBits[chunkId];
@@ -405,13 +405,13 @@ void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST));
 }
 
-void IChunkGrid::addChunkToLoadList(Chunk& chunk) {
+void IChunkGrid::addChunkToActivatingList(Chunk& chunk) {
     mActivatingChunks.emplace_back(chunk.getChunkID());
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
     chunk.mFlags.setBit(ChunkFlags::IN_LOAD_LIST);
 }
 
-void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
+void IChunkGrid::addChunkToWantDeactivateList(Chunk& chunk) {
     PROFILE_FUNCTION();
 
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
@@ -456,7 +456,7 @@ void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
     mWantDeactivateChunks.emplace_back(id);
 }
 
-void IChunkGrid::removeChunkFromDestroyList(Chunk& chunk) {
+void IChunkGrid::removeChunkFromWantDeactivateList(Chunk& chunk) {
     // TODO: Eliminate linear search? Do we care?
     ChunkID chunkId = chunk.getChunkID();
     for (size_t i = 0; i < mWantDeactivateChunks.size(); ++i) {
@@ -504,8 +504,9 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         case ChunkState::INVALID: {
             // Begin load
             chunk.beginActivate();
-            addChunkToLoadList(chunk);
-            ChunkActivationEvent evnt(chunk);
+            addChunkToActivatingList(chunk);
+            // TileContainerLoader will listen for this event and begin loading
+            ChunkGridEvent evnt(chunk);
             dispatchBeginActivate(evnt);
             break;
         }

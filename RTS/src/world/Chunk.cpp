@@ -46,11 +46,10 @@ void Chunk::beginActivate() {
     assert(mState != ChunkState::LOADING_TILES);
     mState = ChunkState::LOADING_TILES;
     assert(!mTileContainer);
-    const ui32v3 worldPosInt3D(mAABB.pos.x, mAABB.pos.y, 0u);
 
     {
         std::lock_guard lock(mTileContainerLifetimeMutex);
-        mTileContainer = mWorld->getTileContainerRepository().loadChunk(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
+        mTileContainer = mWorld->getTileContainerRepository().allocateChunkContainer(mAABB.pos, this);
     }
     mGrass.resize(CHUNK_SIZE);
 

@@ -9,6 +9,7 @@ class World;
 
 typedef std::unordered_map<StructureID, std::unique_ptr<Structure>> StructureMap;
 struct ChunkStructureData {
+    bool isSimulated = true;
     std::vector<StructureID> containedStructures;
     std::unique_ptr<StructureID[]> dTileStructures = nullptr;
 };
@@ -16,6 +17,8 @@ class StructureGrid {
 public:
     StructureGrid(World& world);
     ~StructureGrid() = default;
+
+    void tick();
 
     // Can fail if overlapping an existing structure
     Structure* tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles);
@@ -28,11 +31,12 @@ public:
 
 private:
     void initEventHandlers();
-    void addStructureToChunk(StructureID structureId, ChunkID id);
+    void removeStructureFromDeactivateList(Structure* structure);
 
     World& mWorld;
     mutable std::shared_mutex mMutex;
     std::unique_ptr<ChunkStructureData[]> mChunkStructureData;
+    std::vector<Structure*> mDeactivatingStructures; // Structures that are waiting to free their tile containers
     StructureMap mStructures;
     ChunkGridListeners mChunkEventListeners;
 };

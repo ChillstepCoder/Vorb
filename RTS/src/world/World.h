@@ -25,6 +25,7 @@ class PhysicsWorld;
 class StructureGrid;
 class TimeOfDayManager;
 class TileContainerRepository;
+class TileContainerLoader;
 class ChunkGenerator;
 class BiomeGrid;
 class RoadGrid;
@@ -93,6 +94,7 @@ public:
     StructureGrid& getStructureGrid() const { return *mStructureGrid; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
+    TileContainerLoader& getTileContainerLoader() const { return *mTileContainerLoader; }
     ChunkGenerator& getWorldGenerator() const { return *mChunkGenerator; }
     CombatContext& getCombatContext() const { return *mCombatContext; }
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
@@ -153,6 +155,8 @@ private:
     std::unique_ptr<IChunkGrid> mChunkGrid;
     // Tile containers
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
+    // Loader
+    std::unique_ptr<TileContainerLoader> mTileContainerLoader;
     // Terrain
     std::shared_ptr<IHeightmapGrid> mHeightmapGrid;
     // Biome

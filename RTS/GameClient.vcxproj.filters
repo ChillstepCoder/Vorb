@@ -2582,6 +2582,9 @@
     <ClInclude Include="src\world\settlement\building\BuildingBlueprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\ChunkGridEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

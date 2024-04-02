@@ -1027,6 +1027,7 @@
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />
     <ClInclude Include="src\world\ChunkEvents.h" />
+    <ClInclude Include="src\world\ChunkGridEvent.h" />
     <ClInclude Include="src\world\ChunkState.h" />
     <ClInclude Include="src\world\chunk\SimChunkTileGrid.h" />
     <ClInclude Include="src\world\cli\CliChunkGrid.h" />

@@ -400,7 +400,8 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
                 const ui32 floorBitIndex = y * aabb.dims.x + x;
                 const TileIndex tileIndex = floor * floorTileCount + floorBitIndex;
                 // If we own this tile, and above us is clear, we are a roofed tile
-                if (meshBuilders.tileData.tiles[tileIndex].hasFlag(TileFlags::ROOFED)) {
+                if (meshBuilders.tileData.tiles[tileIndex].hasFlag(TileFlags::ROOFED) &&
+                    (floor == floorCount - 1 || !meshBuilders.tileData.tiles[tileIndex + floorTileCount].hasFlag(TileFlags::ROOFED))) {
                     roofedTiles.setBitTo(floorBitIndex, true);
                 }
             }

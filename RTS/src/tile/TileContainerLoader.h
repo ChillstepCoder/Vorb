@@ -1,21 +1,27 @@
 #pragma once
 
+#include "world/ChunkGridEvent.h"
+
 class TileContainer;
 class World;
+class Building;
 
-typedef std::function<void(TileContainer&)> TileContainerLoadFinishedCallback;
-
-// Loads tile containers from disk or generates them, and initializes them with navmesh, visibility, mesh, ect.
+// Loads tile containers from disk or generates them from sim data, and initializes them with navmesh, visibility, mesh, ect.
 class TileContainerLoader
 {
 public:
     TileContainerLoader(World& world);
 
-    // Container must be initialized
-    void loadChunkFromSimChunk(TileContainer& container);
+    void loadBuilding(Building& building) const;
 
 private:
-    std::unordered_map<TileContainerID, TileContainerLoadFinishedCallback> mLoadingContainers;
+    void loadBuildingFromBlueprint(Building& building) const;
+    // Container must be initialized
+    void loadChunkFromSimChunk(TileContainer& container) const;
+
+    void initEvents();
+
     World& mWorld;
+    ChunkGridListeners mChunkGridListeners;
 };
 

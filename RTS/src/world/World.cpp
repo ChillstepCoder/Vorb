@@ -19,6 +19,7 @@
 #include "structure/Structure.h"
 #include "structure/StructureGrid.h"
 #include "tile/TileContainerRepository.h"
+#include "tile/TileContainerLoader.h"
 #include "tile/TileHandle.h"
 #include "time/TimeOfDayManager.h"
 #include "world/Chunk.h"
@@ -127,6 +128,8 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mOwnershipGrid->init(*mHostSimContext);
     // Tile Containers
     mTileContainerRepository = std::make_unique<TileContainerRepository>(*this);
+    // Loader
+    mTileContainerLoader = std::make_unique<TileContainerLoader>(*this);
     // Time of day
     mTimeOfDayManager = std::make_unique<TimeOfDayManager>();
     // Cities
@@ -219,6 +222,9 @@ void World::tick(f32 elapsedSec) {
 
     // Chunks
     mChunkGrid->tick(mLoadCenter);
+
+    // Structures
+    mStructureGrid->tick();
 
     // Terrain
     mHeightmapGrid->tickShared();

@@ -13,6 +13,7 @@ enum class StructureType : ui8 {
 
 enum class StructureState : ui8 {
     ACTIVE,
+    DEACTIVATING,
     SIM
 };
 
@@ -34,6 +35,7 @@ public:
     virtual ~Structure() = default;
 
     const i32AABB3& getTileAABB() const { return mTileAABB; }
+    ui8 getFloorHeight() const { return mFloorHeight; }
 
     StructureID getId() const { return mId; }
     StructureType getType() const { return mType; }
@@ -45,9 +47,13 @@ public:
 
     void incRef() { assert(mTileContainer); mTileContainer->incRef(); }
     void decRef() { assert(mTileContainer); mTileContainer->decRef(); }
+    ui32 getRefCount() const { assert(mTileContainer); return mTileContainer->getRefCount(); }
 
     const ChunkID* getChunkDependencies() const { return mChunkDependencies; }
-    bool hasUnloadedChunkDependencies() const { return mChunkDependenciesUnloaded != 0; }
+    ui32 getChunkDependencyCount() const { return mChunkdDependencyCount; }
+    bool hasUnloadedChunkDependencies() const { return mChunkDependenciesSimulating != 0; }
+
+    void freeData();
 
 protected:
     BitArray mOwnedDTiles;
@@ -56,8 +62,10 @@ protected:
     //f32 mZPosFloor;
     //ui32 mStateArrayIndex = UINT32_MAX;
     StructureID mId = INVALID_STRUCTURE_ID;
-    ChunkID mChunkDependencies[4];
-    ui8 mChunkDependenciesUnloaded = 0;
+    ChunkID mChunkDependencies[4] = { INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID };
+    ui8 mChunkdDependencyCount : 2;
+    ui8 mChunkDependenciesSimulating : 2;
+    ui8 mFloorHeight : 4;
     StructureType mType = StructureType::Building; // TODO: Different types?
     StructureState mState = StructureState::SIM;
     // TODO: LOD as well?

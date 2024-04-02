@@ -40,7 +40,7 @@ public:
     BitArray computeSolidTilesFirstFloor() const;
     bool isFinished() const { return desc != nullptr; }
 
-    BuildingBlueprintRoomGraph roomGraph; // TODO: Build this
+    BuildingBlueprintRoomGraph roomGraph; // TODO: Build this?
     BitArray ownedDTiles;
     // Sorted by build priority back to front, so first floor tiles at the end
     std::unique_ptr<BuildingBlueprintTileTarget[]> tileTargets;

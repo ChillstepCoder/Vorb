@@ -6,6 +6,7 @@
 #include "tile/TileContainerRepository.h"
 
 #include "world/World.h"
+#include "tile/TileContainerLoader.h"
 
 #include "debugging/DebugRenderer.h"
 
@@ -27,6 +28,20 @@ StructureID sStructureIdGen = 0;
 StructureGrid::StructureGrid(World& world) : mWorld(world) {
     initEventHandlers();
     mChunkStructureData = std::make_unique<ChunkStructureData[]>(SQ(mWorld.getWidthChunks()));
+}
+
+void StructureGrid::tick() {
+    ASSERT_GAME_THREAD();
+    for (size_t i = 0; i < mDeactivatingStructures.size();) {
+        if (mDeactivatingStructures[i]->getRefCount() == 0) {
+            mDeactivatingStructures[i]->freeData();
+            mDeactivatingStructures[i]->mState = StructureState::SIM;
+            mDeactivatingStructures[i] = mDeactivatingStructures.back();
+            mDeactivatingStructures.pop_back();
+        } else {
+            ++i;
+        }
+    }
 }
 
 Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles) {
@@ -134,8 +149,6 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
     worldXY = i32v2(tileAABB.x + tileAABB.dims.x, tileAABB.y + tileAABB.dims.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
 
-    const bool isActive = true;
-
     assert(chunkDependencies.size() && chunkDependencies.size() <= 4);
     int chunkCount = 0;
     for (auto&& c : chunkDependencies) {
@@ -143,17 +156,26 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
         // Chunks increment our refcount while they are loaded
         newStructure->mChunkDependencies[chunkCount++] = c->getChunkID();
     }
-    while (chunkCount < 4) {
-        newStructure->mChunkDependencies[chunkCount++] = INVALID_CHUNK_ID;
-    }
+    newStructure->mChunkdDependencyCount = chunkCount;
+    newStructure->mChunkDependenciesSimulating = 0;
+    assert(floorHeight < 16); // Fit in 4 bits
+    newStructure->mFloorHeight = floorHeight;
 
     Structure* rv = newStructure.get();
     { // Write critical section
         std::lock_guard lock(mMutex);
-        // Do this last
-        if (isActive) {
+        for (int c = 0; c < chunkCount; ++c) {
+            ChunkID dep = newStructure->mChunkDependencies[c];
+            ChunkStructureData& structureData = mChunkStructureData[dep];
+            structureData.containedStructures.emplace_back(newStructureId);
+            if (structureData.isSimulated) {
+                newStructure->mState = StructureState::SIM;
+                ++newStructure->mChunkDependenciesSimulating;
+            }
+        }
+        if (newStructure->mChunkDependenciesSimulating == 0) {
             assert(newStructure->getType() == StructureType::Building);
-            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB.pos, tileDims, floorHeight, (Building*)newStructure.get());
+            newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, floorHeight, (Building*)newStructure.get());
             rv->mState = StructureState::ACTIVE;
         }
         else {
@@ -208,7 +230,7 @@ Structure* StructureGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     }
     auto it = mStructures.find(id);
     // This can occur if we query while a structure has been placed but not fully allocated and tracked
-    if (it != mStructures.end()) [[unlikely]] {
+    if (it == mStructures.end()) [[unlikely]] {
         return nullptr;
     }
     return it->second.get();
@@ -221,18 +243,22 @@ void StructureGrid::initEventHandlers() {
     chunkGrid.addReadyListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
-        const ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
+        ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
         const std::vector<StructureID>& chunkStructures = structureData.containedStructures;
 
         std::lock_guard lock(mMutex);
-
+        structureData.isSimulated = false;
         for (StructureID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
             Structure* structure = it->second.get();
-            structure->incRef(); // Chunk no longer needs
-            if (--structure->mChunkDependenciesUnloaded == 0) {
-                // TODO: Load the structure on threadpool
+            if (--structure->mChunkDependenciesSimulating == 0) {
+                if (structure->mState == StructureState::DEACTIVATING) {
+                    removeStructureFromDeactivateList(structure);
+                }
+                structure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(structure->getTileAABB(), structure->getFloorHeight(), static_cast<Building*>(structure));
+                assert(structure->getType() == StructureType::Building);
+                mWorld.getTileContainerLoader().loadBuilding(static_cast<Building&>(*structure));
                 structure->mState = StructureState::ACTIVE;
             }
         }
@@ -241,21 +267,32 @@ void StructureGrid::initEventHandlers() {
     chunkGrid.addDeactivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         Chunk& chunk = evnt.chunk;
         ASSERT_GAME_THREAD();
-        // Move structures to dormancy
-        const ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
+        // Move structures to simuation layer
+        ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
         const std::vector<StructureID>& chunkStructures = structureData.containedStructures;
 
         std::lock_guard lock(mMutex);
-
+        structureData.isSimulated = true;
         for (StructureID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
             Structure* structure = it->second.get();
-            structure->decRef(); // Chunk no longer needs
-            ++structure->mChunkDependenciesUnloaded;
-            if (structure->mState != StructureState::SIM) {
-                structure->mState = StructureState::SIM;
+            ++structure->mChunkDependenciesSimulating;
+            if (structure->mState != StructureState::DEACTIVATING) {
+                structure->mState = StructureState::DEACTIVATING;
+                mDeactivatingStructures.emplace_back(structure);
             }
         }
     });
+}
+
+void StructureGrid::removeStructureFromDeactivateList(Structure* structure) {
+    for (size_t i = 0; i < mDeactivatingStructures.size(); ++i) {
+        if (mDeactivatingStructures[i] == structure) {
+            mDeactivatingStructures[i] = mDeactivatingStructures.back();
+            mDeactivatingStructures.pop_back();
+            return;
+        }
+    }
+    assert(false);
 }

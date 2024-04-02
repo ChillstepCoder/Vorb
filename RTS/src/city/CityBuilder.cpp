@@ -6,6 +6,7 @@
 #include "CityPlanner.h"
 #include "world/settlement/building/BuildingBlueprint.h"
 #include "tile/TileContainerRepository.h"
+#include "tile/TileContainerLoader.h"
 
 #include "pathfinding/NavThread.h"
 #include "pathfinding/NavWorld.h"
@@ -59,7 +60,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
       mBlueprintsToBuild.push_back(blueprint);*/
 }
 
-Building* CityBuilder::debugBuildInstant(World& world, std::unique_ptr<BuildingBlueprint>& bpPtr) {
+Building* CityBuilder::debugCreateAndBuildNewBuilding(World& world, std::unique_ptr<BuildingBlueprint>& bpPtr) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 
@@ -82,65 +83,8 @@ Building* CityBuilder::debugBuildInstant(World& world, std::unique_ptr<BuildingB
         return nullptr;
     }
     newBuilding->setBlueprint(std::move(bpPtr));
-    BuildingBlueprint& bp = *newBuilding->getBlueprint();
-    //std::cout << "New structure in " << timer.stop() << " ms\n";
-
-    // === Flatten terrain ===
-    //grid.flattenAABB(i32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
-    TileContainer& tileContainer = *newBuilding->mTileContainer;
-
-    std::vector<Tile>& tiles = tileContainer.mTiles;
-    std::vector<TileContainer*> dirtyNavTileContainers;
-    const i32v3 dims(aabb.dims.x, aabb.dims.y, bp.floorCount);
-    const i32 floorStride = dims.x * dims.y;
-
-    // === Set world tiles, flatten heightmap, and track occupied bits ===
-    for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
-        BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
-        if (tileTarget.tileIndex < floorStride) {
-            i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % dims.x, tileTarget.tileIndex / dims.x);
-            // Epsilon to prevent z fighting
-            grid.setHeightAtWorldPos(tileWorldPos, meanHeight - 0.005f);
-        }
-
-        assert(isTileValid(tileTarget.id));
-        Tile& tile = tiles[tileTarget.tileIndex];
-        const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
-        tile.layers[data.layer] = tileTarget.id;
-        tile.setTileFlag(TileFlags::ROOFED);
-        tileContainer.onTileChanged(tileTarget.tileIndex);
-    }
-    for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
-        BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
-        assert(isTileValid(wallTarget.id));
-        TileWall newWall{ .wallID = wallTarget.id, .isDoor = false /*TODO: this is wrong...*/ };
-        tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, newWall, wallTarget.dir);
-    }
-
-    // Copy room data
-    //newBuilding->mRooms = std::move(bp.rooms);
-
-    // Set stairs tiles
-    for (i32 i = 0; i < bp.stairPieceCount; ++i) {
-        StairPiece& stairPiece = bp.stairPieces[i];
-        const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
-        // Place stair steps
-        const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
-        const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
-        Tile& tile = tiles[stairPiece.pos];
-        tile.groundLayer = bp.defaultFloorID;
-        tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
-        tile.setGroundZOffset(tilePos.z + heightAdd);
-        tile.setOrientation(stairPiece.dir, TileLayer::Main);
-        tile.setTileFlag(TileFlags::ROOFED);
-        tileContainer.onTileChanged(stairPiece.pos);
-    }
-
-    TileContainerEvent loadFinishedEvent;
-    loadFinishedEvent.container = &tileContainer;
-    tileContainer.getWorld().getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
-
-    finishBuilding(world, *newBuilding, bp);
+    newBuilding->incRef();
+    world.getTileContainerLoader().loadBuilding(*newBuilding);
 
     return newBuilding;
 }
@@ -181,22 +125,6 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
     //if (bp.flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
     //    mCity.getCityQuartermaster().createStockpilesForBlueprint(bp);
     //}
-}
-
-void CityBuilder::finishBuilding(World& world, Building& building, BuildingBlueprint& blueprint) {
-    building.mFunction = blueprint.desc->function;
-    //building.mDoorTiles = blueprint.exteriorDoors;
-    //assert(building.mDoorTiles.size());
-    //assert(building.mRooms.size());
-
-    // Mark ready for access
-    building.getTileContainer()->setState(TileContainerState::READY);
-
-    // Navmesh
-    if (NavWorld* navWorld = world.tryGetNavWorld()) {
-        navWorld->markContainerNavDirty(building.mTileContainer);
-    }
-
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {

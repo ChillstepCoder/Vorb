@@ -343,10 +343,10 @@ void ProceduralMeshHelpers::addTileWallMesh(
                     }
                 }
                 // Determine which way shutters face and if they exist based on nearby empty tiles
-                if (spatialGrid.isPosAtSouthBorder(tilePos) || tiles[spatialGrid.getSouthTileIndex(index)].isEmpty()) {
+                if (spatialGrid.isPosAtSouthBorder(tilePos) || !tiles[spatialGrid.getSouthTileIndex(index)].isRoofed()) {
                     shutterDir = -1;
                 }
-                else if (spatialGrid.isPosAtNorthBorder(tilePos) || tiles[spatialGrid.getNorthTileIndex(index)].isEmpty()) {
+                else if (spatialGrid.isPosAtNorthBorder(tilePos) || !tiles[spatialGrid.getNorthTileIndex(index)].isRoofed()) {
                     shutterDir = 1;
                 }
             }
@@ -368,10 +368,10 @@ void ProceduralMeshHelpers::addTileWallMesh(
                     }
                 }
                 // Determine which way shutters face and if they exist based on nearby empty tiles
-                if (spatialGrid.isPosAtWestBorder(tilePos) || tiles[spatialGrid.getWestTileIndex(index)].isEmpty()) {
+                if (spatialGrid.isPosAtWestBorder(tilePos) || !tiles[spatialGrid.getWestTileIndex(index)].isRoofed()) {
                     shutterDir = -1;
                 }
-                else if (spatialGrid.isPosAtEastBorder(tilePos) || tiles[spatialGrid.getEastTileIndex(index)].isEmpty()) {
+                else if (spatialGrid.isPosAtEastBorder(tilePos) || !tiles[spatialGrid.getEastTileIndex(index)].isRoofed()) {
                     shutterDir = 1;
                 }
             }

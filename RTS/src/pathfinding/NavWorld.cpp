@@ -756,17 +756,18 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
 
         Structure* owner = taskData.container->getOwnerBuilding();
         assert(owner);
-        for (int j = 0; j < 4; ++j) {
+        assert(!owner->hasUnloadedChunkDependencies());
+        for (int j = 0; j < owner->getChunkDependencyCount(); ++j) {
             ChunkID id = owner->getChunkDependencies()[j];
-            if (id == INVALID_CHUNK_ID) {
-                break;
-            }
             // If we have edges for this chunk, store
             auto&& it = externalEdges.find(id);
             if (it != externalEdges.end()) {
                 mTerrainDependentEdges[id][containerId] = it->second;
                 markChunkContainerNavDirty(id);
             }
+
+            // No longer need chunk
+            mWorld.getChunkGrid().getChunk(id).decRef();
         }
     }
     // Release resources
@@ -1382,11 +1383,8 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
             Structure* owner = container->getOwnerBuilding();
             assert(owner);
             assert(!owner->hasUnloadedChunkDependencies());
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < owner->getChunkDependencyCount(); ++i) {
                 ChunkID id = owner->getChunkDependencies()[i];
-                if (id == INVALID_CHUNK_ID) {
-                    break;
-                }
                 // Make sure this chunk stays
                 mWorld.getChunkGrid().getChunk(id).incRef();
             }
