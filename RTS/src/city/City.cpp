@@ -198,12 +198,6 @@ RoadID City::addRoad(CityRoad& road)
     return id;
 }
 
-BuildingID City::addCompletedBuilding(std::unique_ptr<Building> building) {
-    Building& newBuilding = *mBuildings.emplace_back(std::move(building));
-    newBuilding.mId = (BuildingID)(mBuildings.size() - 1);
-
-    return newBuilding.mId;
-}
 
 void CityGraph::update() {
     for (auto&& it : mNodes) {

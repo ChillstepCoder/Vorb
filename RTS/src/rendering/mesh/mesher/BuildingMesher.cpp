@@ -468,6 +468,15 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, 
 
         const i32 startX = cornerPos.x = startIndex % dims.x;
         const i32 startY = cornerPos.y = startIndex / dims.y;
+        if (startY > dims.y) {
+            // TODO: Text render
+            LOG_CRITICAL("startY > dims.y error in buildRoofStraightSkeletons");
+            if (visLog) {
+                const f32v3 rootPos = f32v3(cornerPos.x, cornerPos.y, zPos);
+                visLog->addWireQuad(rootPos, f32v2(1.0f), color::Black);
+            }
+            return skeletons;
+        }
         Cartesian edge = Cartesian::SOUTH; // We are guaranteed theres always a bottom edge at this corner
         // If we do not have a free tile below, it means we are an interior tile on an already skeletoned segment, so continue
         if (cornerPos.y > 0 && floorRoofedTiles.getBit((cornerPos.y - 1) * dims.x + cornerPos.x)) {
@@ -514,7 +523,12 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, 
             gridCell4x4.constructFrom2DBitArray(floorRoofedTiles, cornerPos.x, cornerPos.y, dims.x, dims.y);
 
             if (!gridCell4x4.data) {
-                assert(false && "Must be nonzero or we walked off the edge or something");
+                if (visLog) {
+                    const ui32v2& xy = spatialGrid.getTileXYOffset(startIndex);
+                    visLog->addFilledQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), color::Black);
+                    LOG_CRITICAL("gridCell4x4 error in roof generation");
+                    //DebugBreak();
+                }
                 return skeletons;
             }
             const Cartesian nextEdge = GridEdgeFinder::getNextCCWEdgeWalkDirFromGrid4x4(gridCell4x4, edge, nullptr);

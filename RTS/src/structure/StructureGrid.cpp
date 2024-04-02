@@ -12,17 +12,7 @@
 
 #include "boost/container/flat_set.hpp"
 
-// STRUCTURE LOADING
-// When a chunk that has a structure is loaded, it notifies structure manager to load the structure.
-// Structure knows which chunks need to be loaded, ALL chunks must be active for structure to be active.
-// Structure can be in two states
-// 1. ACTIVE: All chunks are loaded - Tile container exists, navgraph + physics + fine mesh are generated
-// 2. DORMANT: Not all chunks are loaded - Mesh LOD can exist (Serialized to disk so we don't need to load tiles? How do we handle buildings in construction?)
-
-// * When an active structure becomes dormant, we deallocate its tiles
-// * When a dormant structure becomes active, we allocate its tiles and do all the rest
-
-// TODO: Serialize this
+// TODO: Serialize this?
 StructureID sStructureIdGen = 0;
 
 StructureGrid::StructureGrid(World& world) : mWorld(world) {
@@ -44,7 +34,7 @@ void StructureGrid::tick() {
     }
 }
 
-Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles) {
+Building* StructureGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
     const DTileCoord rootDTileCoord = DTileCoord::fromTilePosRound(tileAABB.pos);
     const ui32v2 DTileDims((tileAABB.dims.x >> 1), (tileAABB.dims.y >> 1));
     assert(DTileDims.x < MAX_STRUCTURE_WIDTH_DTILES && DTileDims.y < MAX_STRUCTURE_WIDTH_DTILES);
@@ -121,19 +111,12 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
     assert(tileDims.x < CHUNK_WIDTH&& tileDims.y < CHUNK_WIDTH);
-    std::unique_ptr<Structure> newStructure;
-    switch (type) {
-        case StructureType::Building: {
-            newStructure = std::make_unique<Building>();
-            newStructure->mType = StructureType::Building;
-            newStructure->mOwnedDTiles = ownedDTiles;
-            break;
-        }
-        default:
-            assert(false && "Invalid structure type");
-    }
+    std::unique_ptr<Building> newStructure = std::make_unique<Building>();
+    newStructure->mType = StructureType::Building;
+    newStructure->mOwnedDTiles = ownedDTiles;
     newStructure->mTileAABB = tileAABB;
     newStructure->mId = newStructureId;
+    newStructure->setBlueprint(std::move(bptr));
    
     // Hook up chunk dependencies
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
@@ -152,16 +135,15 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
     assert(chunkDependencies.size() && chunkDependencies.size() <= 4);
     int chunkCount = 0;
     for (auto&& c : chunkDependencies) {
-        assert(c->isDataReady());
         // Chunks increment our refcount while they are loaded
         newStructure->mChunkDependencies[chunkCount++] = c->getChunkID();
     }
     newStructure->mChunkdDependencyCount = chunkCount;
     newStructure->mChunkDependenciesSimulating = 0;
-    assert(floorHeight < 16); // Fit in 4 bits
+    assert(floorHeight < UINT8_MAX); 
     newStructure->mFloorHeight = floorHeight;
 
-    Structure* rv = newStructure.get();
+    Building* rv = newStructure.get();
     { // Write critical section
         std::lock_guard lock(mMutex);
         for (int c = 0; c < chunkCount; ++c) {
@@ -174,8 +156,8 @@ Structure* StructureGrid::tryMakeNewStructure(StructureType type, const i32AABB3
             }
         }
         if (newStructure->mChunkDependenciesSimulating == 0) {
-            assert(newStructure->getType() == StructureType::Building);
             newStructure->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, floorHeight, (Building*)newStructure.get());
+            mWorld.getTileContainerLoader().loadBuilding(static_cast<Building&>(*newStructure));
             rv->mState = StructureState::ACTIVE;
         }
         else {

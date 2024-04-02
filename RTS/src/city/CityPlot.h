@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CityConst.h"
+typedef ui32 BuildingID;
 
 // TODO: non power of two
 enum class CityBlockSize {

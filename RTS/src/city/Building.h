@@ -20,6 +20,7 @@ public:
     friend class BuildingMesher;
     friend class CityBuilder;
     friend class City;
+    friend class StructureGrid;
 
     Building();
     ~Building();
@@ -37,7 +38,6 @@ private:
    
     //std::vector<RoomGenNode> mRooms;
     //BuildingFunction mFunction = BuildingFunction::NONE;
-    BuildingID mId = INVALID_BUILDING_ID;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk
 
     // Entity owning this plot, can be a person or a business

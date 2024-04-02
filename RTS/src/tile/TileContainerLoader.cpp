@@ -45,11 +45,7 @@ void TileContainerLoader::loadBuildingFromBlueprint(Building& building) const {
     const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
     const i32AABB2 aabb(worldPos, bp.dimsDTile * DTILE_WIDTH);
 
-    BitArray tilesNeedingTerrainFlatten = bp.computeSolidTilesFirstFloor();
-
     // Clamp building height to 1 meter increments
-    IHeightmapGrid& grid = mWorld.getHeightmapGrid();
-    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
 
     // === Flatten terrain ===
     //grid.flattenAABB(i32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
@@ -61,12 +57,13 @@ void TileContainerLoader::loadBuildingFromBlueprint(Building& building) const {
     const i32 floorStride = dims.x * dims.y;
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
+    IHeightmapGrid& grid = mWorld.getHeightmapGrid();
     for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
         BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
         if (tileTarget.tileIndex < floorStride) {
             i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % dims.x, tileTarget.tileIndex / dims.x);
             // Epsilon to prevent z fighting
-            grid.setHeightAtWorldPos(tileWorldPos, meanHeight - 0.005f);
+            grid.setHeightAtWorldPos(tileWorldPos, building.getTileAABB().z - 0.005f);
         }
 
         assert(isTileValid(tileTarget.id));

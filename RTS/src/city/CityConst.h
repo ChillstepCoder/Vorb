@@ -9,7 +9,6 @@ constexpr ui8 INVALID_ROOM_ID = UINT8_MAX;
 typedef ui8 RoomNodeID;
 
 typedef ui32 RoadID;
-typedef ui32 BuildingID;
 #define INVALID_ROAD_ID UINT32_MAX
 #define INVALID_BUILDING_ID UINT32_MAX
 

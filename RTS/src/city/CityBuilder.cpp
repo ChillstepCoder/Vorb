@@ -78,12 +78,10 @@ Building* CityBuilder::debugCreateAndBuildNewBuilding(World& world, std::unique_
     const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewStructure(StructureType::Building, aabb3d, bpPtr->floorHeight, bpPtr->ownedDTiles));
+    Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewBuilding(aabb3d, bpPtr->floorHeight, bpPtr->ownedDTiles, bpPtr));
     if (!newBuilding) {
         return nullptr;
     }
-    newBuilding->setBlueprint(std::move(bpPtr));
-    newBuilding->incRef();
     world.getTileContainerLoader().loadBuilding(*newBuilding);
 
     return newBuilding;

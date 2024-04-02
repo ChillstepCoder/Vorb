@@ -63,9 +63,9 @@ protected:
     //ui32 mStateArrayIndex = UINT32_MAX;
     StructureID mId = INVALID_STRUCTURE_ID;
     ChunkID mChunkDependencies[4] = { INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID };
-    ui8 mChunkdDependencyCount : 2;
-    ui8 mChunkDependenciesSimulating : 2;
-    ui8 mFloorHeight : 4;
+    ui8 mChunkdDependencyCount : 4;
+    ui8 mChunkDependenciesSimulating : 4;
+    ui8 mFloorHeight;
     StructureType mType = StructureType::Building; // TODO: Different types?
     StructureState mState = StructureState::SIM;
     // TODO: LOD as well?

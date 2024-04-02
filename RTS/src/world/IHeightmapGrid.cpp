@@ -387,7 +387,6 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
 }
 
 f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const {
-    ASSERT_GAME_THREAD();
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
@@ -396,7 +395,7 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray
             const ui32 index = y * aabb.dims.x + x;
             if (checkBits.getBit(index)) {
                 const f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
-                meanHeight += computeHeightAtPoint<false>(pos);
+                meanHeight += computeHeightAtPoint<true>(pos);
                 ++total;
             }
         }

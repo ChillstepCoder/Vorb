@@ -6,6 +6,8 @@
 #include <shared_mutex>
 
 class World;
+class BuildingBlueprint;
+class Building;
 
 typedef std::unordered_map<StructureID, std::unique_ptr<Structure>> StructureMap;
 struct ChunkStructureData {
@@ -21,7 +23,8 @@ public:
     void tick();
 
     // Can fail if overlapping an existing structure
-    Structure* tryMakeNewStructure(StructureType type, const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles);
+    // Will consume bptr via move if successful
+    Building* tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr);
 
     void debugRender();
 
