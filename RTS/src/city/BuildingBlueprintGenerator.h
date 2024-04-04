@@ -28,7 +28,8 @@ public:
         i32v2 plotSizeDTiles,
         const BitArray& ownedDTiles,
         BuildingBlueprintFlags flags,
-        ui32 seed
+        ui32 seed,
+        i32 approxZPosition
     );
 
     static void generatePossibleWindowPermutations();

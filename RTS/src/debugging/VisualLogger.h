@@ -77,7 +77,8 @@ public:
 
     // TODO: Pool allocator?
 
-    void setRootPos(const f32v3& rootPos) { mRootPos = rootPos; }
+    void setRootPos(f32v3 rootPos) { mRootPos = rootPos; }
+    void setRootPosZ(f32 z) { mRootPos.z = z; }
     // Allows you to have a fake root position when using world space coordinates for the log. Added to RootPos (typically 0)
     void setCameraDistanceCheckPosOffset(const f32v3& posOffset) { mCameraDistanceCheckPosOffset = posOffset; }
     void reserve(ui32 shapeCount);

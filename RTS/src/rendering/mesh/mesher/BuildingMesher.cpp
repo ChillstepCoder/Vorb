@@ -367,7 +367,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // TODO: This is a race condition
 
     // Debug log
-    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building", VisualLogCategory::Building, false);
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building", VisualLogCategory::Building, true);
     if (visLog) {
         visLog->setRootPos(spatialGrid.getWorldPos3D());
         visLog->nextStep("AABB");
@@ -467,7 +467,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, 
         checkedTiles.setBitTo(startIndex, true);
 
         const i32 startX = cornerPos.x = startIndex % dims.x;
-        const i32 startY = cornerPos.y = startIndex / dims.y;
+        const i32 startY = cornerPos.y = startIndex / dims.x;
         if (startY > dims.y) {
             // TODO: Text render
             LOG_CRITICAL("startY > dims.y error in buildRoofStraightSkeletons");

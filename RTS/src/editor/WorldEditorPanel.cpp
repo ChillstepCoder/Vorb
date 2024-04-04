@@ -739,7 +739,9 @@ void WorldEditorPanel::updateBuildingEdit() {
                     ownedDTiles.clearBit(y * dims.x + x);
                 }
             }*/
-            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(buildingId), 1.0f /*?*/, Cartesian::WEST, createPos, dims, ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom());
+            x; // TODO:
+            const i32 approxZPos = world->getHeightmapGrid().getApproximateHeightAt(createPos);
+            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(buildingRepo.getLoadedOrUnloadedAsset(buildingId), 1.0f /*?*/, Cartesian::WEST, createPos, dims, ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), approxZPosition);
             if (!bp) {
                 assert(false);
                 return;

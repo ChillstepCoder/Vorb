@@ -145,7 +145,8 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous
     i32v2 plotSizeDTiles,
     const BitArray& ownedDTiles,
     BuildingBlueprintFlags flags,
-    ui32 seed
+    ui32 seed,
+    i32 approxZPosition
 ) {
 
     PROFILE_FUNCTION();
@@ -155,7 +156,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous
     RandomGenerator seedMutator(seed);
 
     do {
-        BuildingBlueprintGenerationContext context(desc, ownedDTiles, sizeAlpha, entrySide, plotSizeDTiles, worldPosRoot, flags);
+        BuildingBlueprintGenerationContext context(desc, ownedDTiles, sizeAlpha, entrySide, plotSizeDTiles, worldPosRoot, flags, approxZPosition);
         context.generationSeed = seed;
         context.randomGen = std::make_unique<RandomGenerator>(seed);
         assert(plotSizeDTiles.x > 2 && plotSizeDTiles.y > 2);
@@ -206,7 +207,7 @@ void BuildingBlueprintGenerator::generatePossibleWindowPermutations() {
 bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprintGenerationContext& context) {
 
     
-    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(context.randomGen->mSeed), VisualLogCategory::Building, false);
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(context.randomGen->mSeed), VisualLogCategory::Building, true);
     if (visLog) {
         visLog->setRootPos(f32v3(context.mTileSpatialGrid.getWorldPos3D()));
         const i32v3 dims = context.mTileSpatialGrid.getDims();
