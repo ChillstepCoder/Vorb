@@ -51,6 +51,7 @@ public:
 
 private:
     std::pair<SettlementZone, f32> getDesiredZoneAndRadiusAtCoord(DTileCoord coord);
+    void debugInitSettlementPartiallyMade();
 
     std::vector<SettlementSector> mSectors;
     std::vector<ui32> mOpenSectors; // Sectors that have at least one road edge to infinity

@@ -55,8 +55,6 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     mOpenSectors.reserve(64);
     mRoadNetwork->mRoadSegments.reserve(64);
 
-    RoadGrid& roadGrid = world.getRoadGrid();
-    OwnershipGrid& ownerGrid = world.getOwnershipGrid();
 
     //constexpr f32 DESIRED_RADIUS = INITIAL_GOVERNMENT_RADIUS;
     //constexpr f32 PADDED_RADIUS = DESIRED_RADIUS + 1.0f;
@@ -64,56 +62,26 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     if (!tryAddSector(dTilePos, INITIAL_GOVERNMENT_RADIUS, SettlementZone::Government)) [[unlikely]] {
         panic("Failed to add first sector for settlement");
     }
-    ui32 addedCount = 1;
-
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(-PADDED_RADIUS, (i32)PADDED_RADIUS * 3.3f), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 2.0f, (i32)PADDED_RADIUS * 4.3f), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)PADDED_RADIUS), DESIRED_RADIUS);
-    //addedCount += (i32)tryAddSector(settlement, dTilePos + DTileCoord(PADDED_RADIUS * 3.0f, (i32)-PADDED_RADIUS), DESIRED_RADIUS);
-   
-    for (ui32 i = 0; i < 8; ++i) {
-        addedCount += tryAddNewRandomSector();
-    }
-    if (mCurrentVisLog) {
-        mCurrentVisLog->nextStep("Plots");
-    }
-
-    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
-    BuildingRepository& buildingRepo = BuildingRepository::get();
-    const BuildingDef& houseDef = buildingRepo.getLoadedOrUnloadedAsset(CStrToken("small_house"));
-
-    for (ui32 i = 0; i < 32; ++i) {
-        SettlementPlotRequest request;
-        request.zone = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
-        SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
-        if (newPlotID != INVALID_SETTLEMENT_PLOT_ID) {
-            SettlementPlot& newPlot = mPlotManager->getPlot(newPlotID);
-
-            const i32 approxZPos = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.getCenter()));
-            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), approxZPos);
-            if (bp) {
-                BitArray tilesNeedingTerrainFlatten = bp->computeSolidTilesFirstFloor();
-
-                // Clamp building height to 1 meter increments
-                const i32AABB2 tileAABB(newPlot.aabbDTile.pos << 1, newPlot.aabbDTile.dims << 1);
-                const ui32 meanHeight = round(heightGrid.computeMeanHeightAtAABB(tileAABB, tilesNeedingTerrainFlatten));
-                const i32AABB3 aabb3d(i32v3(tileAABB.pos.x, tileAABB.pos.y, meanHeight), i32v3(tileAABB.dims.x, tileAABB.dims.y, bp->floorCount * bp->floorHeight));
-
-                Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
-                // TODO: Store building reference
-            }
+    // Try many times to add our second sector, should return first time, but could be blocked
+    bool didAddSecondSector = false;
+    for (int i = 0; i < 32; ++i) {
+        if (tryAddNewRandomSector()) {
+            didAddSecondSector = true;
+            break;
         }
     }
+    if (!didAddSecondSector) {
+        return false;
+    }
+
+    debugInitSettlementPartiallyMade();
 
     if (mCurrentVisLog) {
         visLog->finish();
         mCurrentVisLog = nullptr;
         mRoadNetwork->mCurrentVisLog = nullptr;
     }
-    return addedCount > 1;
+    return true;
 }
 
 bool SettlementLayoutManager::tryAddNewRandomSector() {
@@ -369,4 +337,41 @@ std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusA
         return std::make_pair(SettlementZone::UrbanResidential, 16.0f);
     }
     return std::make_pair(SettlementZone::UrbanCommercial, 16.0f);
+}
+
+void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
+
+    for (ui32 i = 0; i < 6; ++i) {
+        tryAddNewRandomSector();
+    }
+    if (mCurrentVisLog) {
+        mCurrentVisLog->nextStep("Plots");
+    }
+
+    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
+    BuildingRepository& buildingRepo = BuildingRepository::get();
+    const BuildingDef& houseDef = buildingRepo.getLoadedOrUnloadedAsset(CStrToken("small_house"));
+
+    for (ui32 i = 0; i < 32; ++i) {
+        SettlementPlotRequest request;
+        request.zone = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
+        SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
+        if (newPlotID != INVALID_SETTLEMENT_PLOT_ID) {
+            SettlementPlot& newPlot = mPlotManager->getPlot(newPlotID);
+
+            const i32 approxZPos = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.getCenter()));
+            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), approxZPos);
+            if (bp) {
+                BitArray tilesNeedingTerrainFlatten = bp->computeSolidTilesFirstFloor();
+
+                // Clamp building height to 1 meter increments
+                const i32AABB2 tileAABB(newPlot.aabbDTile.pos << 1, newPlot.aabbDTile.dims << 1);
+                const ui32 meanHeight = round(heightGrid.computeMeanHeightAtAABB(tileAABB, tilesNeedingTerrainFlatten));
+                const i32AABB3 aabb3d(i32v3(tileAABB.pos.x, tileAABB.pos.y, meanHeight), i32v3(tileAABB.dims.x, tileAABB.dims.y, bp->floorCount * bp->floorHeight));
+
+                Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
+                // TODO: Store building reference
+            }
+        }
+    }
 }
