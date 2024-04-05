@@ -18,7 +18,7 @@ class Chunk;
 class BillboardMesh;
 class TBOBillboardMesh;
 class NavWorld;
-class Structure;
+class Building;
 class TileContainerRepository;
 
 #define USE_INSTANCED_BILLBOARDS 1

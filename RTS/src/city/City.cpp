@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "City.h"
 
-#include "CityPlotter.h"
 #include "CityPlanner.h"
 #include "CityBuilder.h"
 #include "CityResidentManager.h"

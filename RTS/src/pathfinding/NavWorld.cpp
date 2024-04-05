@@ -12,7 +12,7 @@
 
 #include "time/TimestepManager.h"
 
-#include "city/Building.h"
+#include "building/building.h"
 
 #include "debugging/VisualLogger.h"
 
@@ -754,7 +754,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
         // Tell chunks about our external edges
         const StructureExternalEdgeListOutput& externalEdges = taskData.externalEdges;
 
-        Structure* owner = taskData.container->getOwnerBuilding();
+        Building* owner = taskData.container->getOwnerBuilding();
         assert(owner);
         assert(!owner->hasUnloadedChunkDependencies());
         for (int j = 0; j < owner->getChunkDependencyCount(); ++j) {
@@ -1380,7 +1380,7 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
     if (didAdd) {
         container->incRef();
         if (!container->isTerrain()) {
-            Structure* owner = container->getOwnerBuilding();
+            Building* owner = container->getOwnerBuilding();
             assert(owner);
             assert(!owner->hasUnloadedChunkDependencies());
             for (int i = 0; i < owner->getChunkDependencyCount(); ++i) {

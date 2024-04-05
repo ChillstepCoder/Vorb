@@ -108,19 +108,7 @@
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\Building.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\BuildingGrammar.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\CityPlotter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\pathfinding\PathFinder.cpp">
@@ -207,12 +195,6 @@
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\BuildingRepository.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\BuildingBlueprintGenerationContext.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\util\BitArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -265,9 +247,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\CityPlot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\ItemReservation.cpp">
@@ -342,9 +321,6 @@
     <ClCompile Include="src\rendering\texture\MaterialTextureGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\structure\Structure.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\tile\TileContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -367,9 +343,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\debugging\ValueTweaker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\structure\StructureGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\GridEdgeFinder.cpp">
@@ -1047,7 +1020,22 @@
     <ClCompile Include="src\world\settlement\SettlementPlotManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\settlement\building\BuildingBlueprint.cpp">
+    <ClCompile Include="src\building\Building.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\building\BuildingBlueprintGenerationContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\building\BuildingBlueprintGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\building\BuildingGrammar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\building\BuildingGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\building\BuildingRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1163,16 +1151,7 @@
     <ClInclude Include="src\city\CityBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\Building.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ecs\component\ProfessionComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\BuildingBlueprintGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\BuildingGrammar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\RoomGenNode.h">
@@ -1182,15 +1161,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\CityDebugRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\CityPlotter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\CityPlot.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\CityDistrict.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\pathfinding\PathFinder.h">
@@ -1314,12 +1284,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\BuildingBlueprintGenerationContext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\BuildingRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\BitArray.h">
@@ -1487,9 +1451,6 @@
     <ClInclude Include="src\rendering\texture\MaterialTextureGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\structure\Structure.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\tile\Tile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1521,9 +1482,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\debugging\ValueTweaker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\structure\StructureGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp">
@@ -1965,9 +1923,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\BuildingBlueprintFlags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileContainerRepository.h">
@@ -2579,10 +2534,28 @@
     <ClInclude Include="src\world\settlement\SettlementZone.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\settlement\building\BuildingBlueprint.h">
+    <ClInclude Include="src\world\ChunkGridEvent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\ChunkGridEvent.h">
+    <ClInclude Include="src\building\Building.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingBlueprintFlags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingBlueprintGenerationContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingBlueprintGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingGrammar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "BuildingBlueprintGenerationContext.h"
-#include "Building.h"
+#include "building/building.h"
 
 #include "resources/TileRepository.h"
 

@@ -40,7 +40,7 @@ struct SettlementAdjacencyData {
 struct SettlementDistrict {
     ChunkID chunk;
     DistrictType type;
-    std::vector<StructureID> structures;
+    std::vector<BuildingID> structures;
 };
 
 struct SettlementDistrictsComponent {
@@ -82,7 +82,7 @@ struct SettlementPeopleComponent {
 
 struct SettlementQuartermasterComponent {
     entt::entity quartermasterCharacter = entt::null;
-    std::vector<StructureID> storageStructures;
+    std::vector<BuildingID> storageStructures;
     boost::container::flat_map<ItemID, ui32v2> itemCountsVsDesired;
 };
 

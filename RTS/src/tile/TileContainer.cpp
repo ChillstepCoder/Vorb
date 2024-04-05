@@ -12,7 +12,7 @@
 #include "world/World.h"
 #include "world/IChunkGrid.h"
 
-#include "city/Building.h"
+#include "building/building.h"
 
 #include "physics/PhysicsWorld.h"
 

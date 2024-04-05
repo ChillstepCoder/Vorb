@@ -20,7 +20,7 @@
 #include "debugging/DebugRenderer.h"
 #include "rendering/mesh/mesher/BuildingMesher.h"
 
-#include "structure/StructureGrid.h"
+#include "building/BuildingGrid.h"
 
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"

@@ -15,10 +15,10 @@
 
 #include "world/settlement/SettlementPlotManager.h"
 #include "world/settlement/SettlementRoadNetwork.h"
-#include "structure/StructureGrid.h"
+#include "building/BuildingGrid.h"
 
-#include "city/BuildingBlueprintGenerator.h"
-#include "city/BuildingRepository.h"
+#include "building/buildingBlueprintGenerator.h"
+#include "building/buildingRepository.h"
 
 SettlementLayoutManager::SettlementLayoutManager() = default;
 SettlementLayoutManager::~SettlementLayoutManager() = default;
@@ -348,14 +348,14 @@ void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
         mCurrentVisLog->nextStep("Plots");
     }
 
-    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
+    IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     BuildingRepository& buildingRepo = BuildingRepository::get();
     const BuildingDef& houseDef = buildingRepo.getLoadedOrUnloadedAsset(CStrToken("small_house"));
 
     for (ui32 i = 0; i < 32; ++i) {
         SettlementPlotRequest request;
         request.zone = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
-        SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
+        SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, mSettlementEntity, mCurrentVisLog);
         if (newPlotID != INVALID_SETTLEMENT_PLOT_ID) {
             SettlementPlot& newPlot = mPlotManager->getPlot(newPlotID);
 
@@ -369,7 +369,7 @@ void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
                 const ui32 meanHeight = round(heightGrid.computeMeanHeightAtAABB(tileAABB, tilesNeedingTerrainFlatten));
                 const i32AABB3 aabb3d(i32v3(tileAABB.pos.x, tileAABB.pos.y, meanHeight), i32v3(tileAABB.dims.x, tileAABB.dims.y, bp->floorCount * bp->floorHeight));
 
-                Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
+                Building* newBuilding = static_cast<Building*>(mWorld->getStructureGrid().tryMakeNewBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
                 // TODO: Store building reference
             }
         }

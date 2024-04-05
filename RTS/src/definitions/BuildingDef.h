@@ -1,7 +1,7 @@
 #pragma once
 
 #include "city/CityConst.h"
-#include "city/BuildingGrammar.h"
+#include "building/buildingGrammar.h"
 
 // TODO: Move to data? Useless?
 enum class BuildingFunction : ui16 {

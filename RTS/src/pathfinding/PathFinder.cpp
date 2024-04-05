@@ -12,7 +12,7 @@
 
 #include "debugging/DebugRenderer.h"
 
-#include "city/Building.h"
+#include "building/building.h"
 
 constexpr Cartesian CARTESIAN_COARSE_EDGE_WALK_CARTESIAN[4] = {
     Cartesian::EAST, //South

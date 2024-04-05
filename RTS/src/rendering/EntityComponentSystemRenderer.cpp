@@ -4,7 +4,6 @@
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"
-#include "city/CityPlot.h"
 #include "world/World.h"
 
 #include "resources/ResourceManager.h"

@@ -6,7 +6,7 @@
 #include "world/IChunkGrid.h"
 #include "world/Chunk.h"
 #include "world/ecosystem/FishEcosystem.h"
-#include "city/Building.h"
+#include "building/building.h"
 #include "world/settlement/building/BuildingBlueprint.h"
 #include "pathfinding/NavWorld.h"
 #include "generation/ChunkGenerator.h"

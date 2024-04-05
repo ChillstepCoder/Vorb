@@ -57,7 +57,7 @@
 #include "screens/ScreenState.h"
 #include "network/srv/GameServer.h"
 
-#include "structure/StructureGrid.h"
+#include "building/BuildingGrid.h"
 
 #include "ui/UIContext.h"
 

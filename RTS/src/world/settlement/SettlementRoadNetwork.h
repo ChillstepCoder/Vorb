@@ -29,7 +29,7 @@ struct RoadPointNeedingConstruct {
 
 struct RoadSegment {
     std::vector<RoadPointNeedingConstruct> roadPointsNeedingConstruct; // TODO: Move out? This eventually becomes permanently empty
-    std::vector<StructureID> attachedStructures; // TODO Store attach point so its easy to split roads?
+    std::vector<BuildingID> attachedStructures; // TODO Store attach point so its easy to split roads?
     std::vector<std::pair<RoadSegmentID, f32/*time*/>> attachedEdges;
     std::vector<DTileCoord> segmentVerts;
     f32v2 direction;

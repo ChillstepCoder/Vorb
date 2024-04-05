@@ -16,8 +16,8 @@
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
 #include "resources/ResourceManager.h"
-#include "structure/Structure.h"
-#include "structure/StructureGrid.h"
+#include "building/Building.h"
+#include "building/BuildingGrid.h"
 #include "tile/TileContainerRepository.h"
 #include "tile/TileContainerLoader.h"
 #include "tile/TileHandle.h"
@@ -135,7 +135,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     // Cities
     mCities = std::make_unique<CityGraph>(*this);
     // Structures
-    mStructureGrid = std::make_unique<StructureGrid>(*this);
+    mStructureGrid = std::make_unique<BuildingGrid>(*this);
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
@@ -348,7 +348,7 @@ TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
         assert(worldPos2D.x >= 0.0f && worldPos2D.y >= 0.0f);
-        if (Structure* structure = tryGetStructureAtWorldPos(TileCoord(worldPos2D))) {
+        if (Building* structure = tryGetStructureAtWorldPos(TileCoord(worldPos2D))) {
             TileHandle structureHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(worldPos);
             if (structureHandle.isValid() && structure->isTileOwned(structureHandle.tileIndex)) {
                 return structureHandle;
@@ -428,7 +428,7 @@ void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk
     }
 }
 
-Structure* World::tryGetStructureAtWorldPos(TileCoord worldPos) const {
+Building* World::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     return mStructureGrid->tryGetStructureAtWorldPos(worldPos);
 }
 

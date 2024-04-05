@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ConstructBuildingJob.h"
 
-#include "city/BuildingBlueprintGenerationContext.h"
+#include "building/buildingBlueprintGenerationContext.h"
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 

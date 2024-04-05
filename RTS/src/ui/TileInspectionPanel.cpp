@@ -12,7 +12,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include "city/Building.h"
+#include "building/building.h"
 
 
 #include <Vorb/ui/GameWindow.h>

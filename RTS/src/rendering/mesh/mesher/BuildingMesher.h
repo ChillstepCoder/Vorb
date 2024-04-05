@@ -1,6 +1,6 @@
 #pragma once
 
-#include "city/Building.h"
+#include "building/building.h"
 #include "rendering/mesh/mesher/ITileContainerMesher.h"
 
 class Building;

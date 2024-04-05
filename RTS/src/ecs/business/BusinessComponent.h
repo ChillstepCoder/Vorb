@@ -1,7 +1,7 @@
 #pragma once
 
 #include "city/CityConst.h"
-#include "city/Building.h"
+#include "building/building.h"
 #include "crafting/CraftingConst.h"
 
 #include "ai/tasks/IAgentTask.h"

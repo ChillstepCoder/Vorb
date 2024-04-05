@@ -10,8 +10,8 @@ typedef GLuint64 TextureHandle;
 typedef ui16 MaterialID;
 constexpr ui16 INVALID_MATERIAL_ID = std::numeric_limits<MaterialID>::max();
 
-typedef ui32 StructureID;
-constexpr StructureID INVALID_STRUCTURE_ID = std::numeric_limits<StructureID>::max();
+typedef ui32 BuildingID;
+constexpr BuildingID INVALID_STRUCTURE_ID = std::numeric_limits<BuildingID>::max();
 
 typedef ui32 ItemStockpileID;
 constexpr ItemStockpileID INVALID_ITEM_STOCKPILE_ID = std::numeric_limits<ItemStockpileID>::max();

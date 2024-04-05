@@ -1,7 +1,7 @@
 #pragma once
 
 struct SDL_Window;
-class Structure;
+class Building;
 struct RoomGenNode;
 class Building;
 class World;
@@ -50,7 +50,7 @@ public:
 
     WorldObjectQueryPtr& getWorldObjects() { return mWorldObjectQuery; }
 
-    Structure* getSelectedStructure() const { return mSelectedStructure; }
+    Building* getSelectedStructure() const { return mSelectedStructure; }
     RoomNodeID getSelectedRoomID() const { return mSelectedRoomID; }
     const RoomGenNode* tryGetSelectedRoom() const;
     Building* tryGetSelectedBuilding() const;
@@ -63,7 +63,7 @@ private:
     SDL_Window* mWindow;
     WorldObjectQueryPtr mWorldObjectQuery;
     UIInteractMenuState mState = UIInteractMenuState::SELECT_OBJECT;
-    Structure* mSelectedStructure = nullptr;
+    Building* mSelectedStructure = nullptr;
     RoomNodeID mSelectedRoomID = INVALID_ROOM_ID;
     TileHandle mSelectedTileHandle;
     World& mWorld;

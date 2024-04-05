@@ -2,9 +2,8 @@
 
 #include "CityPlanner.h"
 #include "City.h"
-#include "CityPlotter.h"
-#include "BuildingRepository.h"
-#include "city/BuildingBlueprintGenerator.h"
+#include "building/BuildingRepository.h"
+#include "building/buildingBlueprintGenerator.h"
 
 #include "math/Random.h"
 

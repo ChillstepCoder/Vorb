@@ -53,7 +53,7 @@
 
 #include "tile/TileContainerRepository.h"
 
-#include "structure/StructureGrid.h"
+#include "building/BuildingGrid.h"
 #include "city/City.h"
 
 #include "resources/ResourceManager.h"

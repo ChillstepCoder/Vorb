@@ -201,7 +201,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
             Chunk* owner = mWorldObjectQuery->getTileContainer()->getOwnerChunk();
             assert(owner);
-            Structure* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(mWorldObjectQuery->getTilePos()));
+            Building* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(mWorldObjectQuery->getTilePos()));
             if (!structure) {
                 // If we got here the structure  was deleted while we had it selected
                 resultFlags = INTERACT_MENU_RESULT_INVALID;

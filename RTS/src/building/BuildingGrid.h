@@ -1,6 +1,6 @@
 #pragma once
 
-#include "structure/Structure.h"
+#include "building/Building.h"
 #include "world/IChunkGrid.h"
 
 #include <shared_mutex>
@@ -9,16 +9,16 @@ class World;
 class BuildingBlueprint;
 class Building;
 
-typedef std::unordered_map<StructureID, std::unique_ptr<Structure>> StructureMap;
-struct ChunkStructureData {
+typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> StructureMap;
+struct ChunkBuildingData {
     bool isSimulated = true;
-    std::vector<StructureID> containedStructures;
-    std::unique_ptr<StructureID[]> dTileStructures = nullptr;
+    std::vector<BuildingID> containedStructures;
+    std::unique_ptr<BuildingID[]> dTileStructures = nullptr;
 };
-class StructureGrid {
+class BuildingGrid {
 public:
-    StructureGrid(World& world);
-    ~StructureGrid() = default;
+    BuildingGrid(World& world);
+    ~BuildingGrid() = default;
 
     void tick();
 
@@ -29,17 +29,18 @@ public:
     void debugRender();
 
     // TODO: Structure could be destroyed after return! We need a structureHandle?
-    Structure* tryGetStructureAtWorldPos(TileCoord worldPos) const;
+    Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
     const StructureMap& getStructures() const { ASSERT_GAME_THREAD(); return mStructures; }
+    const Building& getStructure(BuildingID id) const { ASSERT_GAME_THREAD(); return *mStructures.at(id); }
 
 private:
     void initEventHandlers();
-    void removeStructureFromDeactivateList(Structure* structure);
+    void removeStructureFromDeactivateList(Building* structure);
 
     World& mWorld;
     mutable std::shared_mutex mMutex;
-    std::unique_ptr<ChunkStructureData[]> mChunkStructureData;
-    std::vector<Structure*> mDeactivatingStructures; // Structures that are waiting to free their tile containers
+    std::unique_ptr<ChunkBuildingData[]> mChunkStructureData;
+    std::vector<Building*> mDeactivatingStructures; // Structures that are waiting to free their tile containers
     StructureMap mStructures;
     ChunkGridListeners mChunkEventListeners;
 };

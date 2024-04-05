@@ -3,13 +3,13 @@
 
 #include "city/City.h"
 #include "city/CityBuilder.h"
-#include "city/BuildingBlueprintGenerationContext.h"
+#include "building/buildingBlueprintGenerationContext.h"
 
 #include "ecs/component/OwnershipComponent.h"
 
 #include "world/World.h"
 #include "resources/ResourceManager.h"
-#include "city/BuildingRepository.h"
+#include "building/buildingRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
 #include "item/ItemStockpile.h"
 #include "resources/TileRepository.h"
@@ -170,20 +170,21 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
     OwnershipComponent& ownershipCmp = registry.get<OwnershipComponent>(entity);
 
     // Check if we need to request a building. If so, we request one, and do nothing else
-    if (ownershipCmp.mOwnedPlots.size() == 0) {
-        // TODO: Fill out
-        PlotRequestProps props;
-        City& city = *cmp.mCity;
-        CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props, entity);
-        if (plot) {
-            const BuildingRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
-            city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName, BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE);
-            ownershipCmp.mOwnedPlots.push_back(plot);
-        }
-        else {
-            return;
-        }
-    }
+    assert(false)
+    //if (ownershipCmp.mOwnedPlots.size() == 0) {
+    //    // TODO: Fill out
+    //    PlotRequestProps props;
+    //    City& city = *cmp.mCity;
+    //    CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props, entity);
+    //    if (plot) {
+    //        const BuildingRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
+    //        city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName, BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE);
+    //        ownershipCmp.mOwnedPlots.push_back(plot);
+    //    }
+    //    else {
+    //        return;
+    //    }
+    //}
     
     // Assign idle workers to active jobs
     while (cmp.mIdleWorkers.size()) {

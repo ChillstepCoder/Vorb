@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IAgentTask.h"
-#include "city/BuildingBlueprintGenerationContext.h"
+#include "building/buildingBlueprintGenerationContext.h"
 
 struct BuildBlueprintTask : public IAgentTask {
 public:

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "city/Building.h"
-#include "StructureGrid.h"
+#include "building/building.h"
+#include "BuildingGrid.h"
 
 #include "tile/TileContainerRepository.h"
 
@@ -13,14 +13,14 @@
 #include "boost/container/flat_set.hpp"
 
 // TODO: Serialize this?
-StructureID sStructureIdGen = 0;
+BuildingID sStructureIdGen = 0;
 
-StructureGrid::StructureGrid(World& world) : mWorld(world) {
+BuildingGrid::BuildingGrid(World& world) : mWorld(world) {
     initEventHandlers();
-    mChunkStructureData = std::make_unique<ChunkStructureData[]>(SQ(mWorld.getWidthChunks()));
+    mChunkStructureData = std::make_unique<ChunkBuildingData[]>(SQ(mWorld.getWidthChunks()));
 }
 
-void StructureGrid::tick() {
+void BuildingGrid::tick() {
     ASSERT_GAME_THREAD();
     for (size_t i = 0; i < mDeactivatingStructures.size();) {
         if (mDeactivatingStructures[i]->getRefCount() == 0) {
@@ -34,13 +34,13 @@ void StructureGrid::tick() {
     }
 }
 
-Building* StructureGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
+Building* BuildingGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
     const DTileCoord rootDTileCoord = DTileCoord::fromTilePosRound(tileAABB.pos);
     const ui32v2 DTileDims((tileAABB.dims.x >> 1), (tileAABB.dims.y >> 1));
-    assert(DTileDims.x < MAX_STRUCTURE_WIDTH_DTILES && DTileDims.y < MAX_STRUCTURE_WIDTH_DTILES);
+    assert(DTileDims.x < MAX_BUILDING_WIDTH_DTILES && DTileDims.y < MAX_BUILDING_WIDTH_DTILES);
 
     // Cache all dtile positions pre-lock to reduce critical section load
-    DTileCoord coveredTiles[SQ(MAX_STRUCTURE_WIDTH_DTILES)];
+    DTileCoord coveredTiles[SQ(MAX_BUILDING_WIDTH_DTILES)];
     ui32 coveredTilesCount = 0;
     DTileCoord iter = rootDTileCoord;
     for (iter.y = 0; iter.y < DTileDims.y; ++iter.y) {
@@ -56,20 +56,20 @@ Building* StructureGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floor
         const ChunkCoord chunkCoord(dTileCoord);
         const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
 
-        const ChunkStructureData& structureData = mChunkStructureData[chunkId];
+        const ChunkBuildingData& structureData = mChunkStructureData[chunkId];
         if (!structureData.dTileStructures) {
             return false;
         }
         const DTileCoord dTileOffset = dTileCoord - DTileCoord(chunkCoord);
         const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
-        const StructureID id = structureData.dTileStructures[index];
+        const BuildingID id = structureData.dTileStructures[index];
         if (id == INVALID_STRUCTURE_ID) {
             return false;
         }
         return true;
     };
 
-    StructureID newStructureId;
+    BuildingID newStructureId;
 
     // First check if we can actually place structure here, and place them in one lock
     // Must be done this way to avoid any race conditions
@@ -92,10 +92,10 @@ Building* StructureGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floor
             const DTileCoord worldCoord = coveredTiles[di];
             const ChunkCoord chunkCoord(worldCoord);
             const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
-            ChunkStructureData& structureData = mChunkStructureData[chunkId];
+            ChunkBuildingData& structureData = mChunkStructureData[chunkId];
             // Initialize structure data if needed
             if (!structureData.dTileStructures) [[unlikely]] {
-                structureData.dTileStructures = std::make_unique<StructureID[]>(CHUNK_SIZE_DTILES);
+                structureData.dTileStructures = std::make_unique<BuildingID[]>(CHUNK_SIZE_DTILES);
                 for (ui32 i = 0; i < CHUNK_SIZE_DTILES; ++i) {
                     structureData.dTileStructures[i] = INVALID_STRUCTURE_ID;
                 }
@@ -148,7 +148,7 @@ Building* StructureGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floor
         std::lock_guard lock(mMutex);
         for (int c = 0; c < chunkCount; ++c) {
             ChunkID dep = newStructure->mChunkDependencies[c];
-            ChunkStructureData& structureData = mChunkStructureData[dep];
+            ChunkBuildingData& structureData = mChunkStructureData[dep];
             structureData.containedStructures.emplace_back(newStructureId);
             if (structureData.isSimulated) {
                 newStructure->mState = StructureState::SIM;
@@ -168,7 +168,7 @@ Building* StructureGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floor
     return rv;
 }
 
-void StructureGrid::debugRender() {
+void BuildingGrid::debugRender() {
     constexpr int LIFETIME_FRAMES = 24;
     static int x = 0;
     if (x++ >= LIFETIME_FRAMES) {
@@ -176,7 +176,7 @@ void StructureGrid::debugRender() {
         const color4 DORMANT_COLOR(255, 255, 0, 128);
         std::lock_guard lock(mMutex);
         for (auto&& it : mStructures) {
-            const Structure* s = it.second.get();
+            const Building* s = it.second.get();
             switch (s->mState) {
                 case StructureState::ACTIVE:
                     DebugRenderer::drawAABB(s->mTileAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
@@ -191,7 +191,7 @@ void StructureGrid::debugRender() {
     }
 }
 
-Structure* StructureGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
+Building* BuildingGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorld.getWidthTiles() || worldPos.y >= mWorld.getWidthTiles()) [[unlikely]] {
         return nullptr;
     }
@@ -202,11 +202,11 @@ Structure* StructureGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
 
     std::shared_lock lock(mMutex);
-    const ChunkStructureData& structureData = mChunkStructureData[chunkId];
+    const ChunkBuildingData& structureData = mChunkStructureData[chunkId];
     if (!structureData.dTileStructures) {
         return nullptr;
     }
-    const StructureID id = structureData.dTileStructures[index];
+    const BuildingID id = structureData.dTileStructures[index];
     if (id == INVALID_STRUCTURE_ID) {
         return nullptr;
     }
@@ -219,21 +219,21 @@ Structure* StructureGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
 }
 
 
-void StructureGrid::initEventHandlers() {
+void BuildingGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
     chunkGrid.addReadyListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
-        ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
-        const std::vector<StructureID>& chunkStructures = structureData.containedStructures;
+        ChunkBuildingData& structureData = mChunkStructureData[chunk.getChunkID()];
+        const std::vector<BuildingID>& chunkStructures = structureData.containedStructures;
 
         std::lock_guard lock(mMutex);
         structureData.isSimulated = false;
-        for (StructureID structureID : chunkStructures) {
+        for (BuildingID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
-            Structure* structure = it->second.get();
+            Building* structure = it->second.get();
             if (--structure->mChunkDependenciesSimulating == 0) {
                 if (structure->mState == StructureState::DEACTIVATING) {
                     removeStructureFromDeactivateList(structure);
@@ -250,15 +250,15 @@ void StructureGrid::initEventHandlers() {
         Chunk& chunk = evnt.chunk;
         ASSERT_GAME_THREAD();
         // Move structures to simuation layer
-        ChunkStructureData& structureData = mChunkStructureData[chunk.getChunkID()];
-        const std::vector<StructureID>& chunkStructures = structureData.containedStructures;
+        ChunkBuildingData& structureData = mChunkStructureData[chunk.getChunkID()];
+        const std::vector<BuildingID>& chunkStructures = structureData.containedStructures;
 
         std::lock_guard lock(mMutex);
         structureData.isSimulated = true;
-        for (StructureID structureID : chunkStructures) {
+        for (BuildingID structureID : chunkStructures) {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
-            Structure* structure = it->second.get();
+            Building* structure = it->second.get();
             ++structure->mChunkDependenciesSimulating;
             if (structure->mState != StructureState::DEACTIVATING) {
                 structure->mState = StructureState::DEACTIVATING;
@@ -268,7 +268,7 @@ void StructureGrid::initEventHandlers() {
     });
 }
 
-void StructureGrid::removeStructureFromDeactivateList(Structure* structure) {
+void BuildingGrid::removeStructureFromDeactivateList(Building* structure) {
     for (size_t i = 0; i < mDeactivatingStructures.size(); ++i) {
         if (mDeactivatingStructures[i] == structure) {
             mDeactivatingStructures[i] = mDeactivatingStructures.back();

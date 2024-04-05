@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "BuildingMesher.h"
 
-#include "city/Building.h"
+#include "building/building.h"
 #include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
 

@@ -20,9 +20,9 @@
 #include "rendering/texture/GLTexture.h"
 
 #include "city/City.h"
-#include "city/BuildingBlueprintGenerator.h"
+#include "building/buildingBlueprintGenerator.h"
 #include "city/CityBuilder.h"
-#include "city/BuildingRepository.h"
+#include "building/buildingRepository.h"
 
 #include "gamethread/GameThreadTasks.h"
 

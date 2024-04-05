@@ -6,9 +6,9 @@
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 
-#include "city/BuildingBlueprintGenerationContext.h"
+#include "building/buildingBlueprintGenerationContext.h"
 #include "resources/ResourceManager.h"
-#include "BuildingRepository.h"
+#include "building/BuildingRepository.h"
 
 CityQuartermaster::CityQuartermaster(City& city) : mCity(city) {
 

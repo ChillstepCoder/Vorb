@@ -223,22 +223,21 @@
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
     <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
     <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\building\Building.cpp" />
+    <ClCompile Include="src\building\BuildingBlueprintGenerationContext.cpp" />
+    <ClCompile Include="src\building\BuildingBlueprintGenerator.cpp" />
+    <ClCompile Include="src\building\BuildingGrammar.cpp" />
+    <ClCompile Include="src\building\BuildingGrid.cpp" />
+    <ClCompile Include="src\building\BuildingRepository.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\camera\CameraController.cpp" />
     <ClCompile Include="src\camera\OrthoCamera.cpp" />
     <ClCompile Include="src\camera\SimpleCamera.cpp" />
-    <ClCompile Include="src\city\Building.cpp" />
-    <ClCompile Include="src\city\BuildingBlueprintGenerationContext.cpp" />
-    <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
-    <ClCompile Include="src\city\BuildingRepository.cpp" />
     <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp" />
     <ClCompile Include="src\city\City.cpp" />
     <ClCompile Include="src\city\CityBuilder.cpp" />
-    <ClCompile Include="src\city\BuildingGrammar.cpp" />
     <ClCompile Include="src\city\CityBusinessManager.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
-    <ClCompile Include="src\city\CityPlot.cpp" />
-    <ClCompile Include="src\city\CityPlotter.cpp" />
     <ClCompile Include="src\city\CityQuartermaster.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\city\contracts\ContractManager.cpp" />
@@ -477,8 +476,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\structure\Structure.cpp" />
-    <ClCompile Include="src\structure\StructureGrid.cpp" />
     <ClCompile Include="src\tile\TileContainerRepository.cpp" />
     <ClCompile Include="src\tile\TileItemContainer.cpp" />
     <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
@@ -543,7 +540,6 @@
     <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp" />
     <ClCompile Include="src\world\ownership\OwnershipGrid.cpp" />
     <ClCompile Include="src\world\road\RoadGrid.cpp" />
-    <ClCompile Include="src\world\settlement\building\BuildingBlueprint.cpp" />
     <ClCompile Include="src\world\settlement\SettlementLayoutManager.cpp" />
     <ClCompile Include="src\world\settlement\SettlementPlotManager.cpp" />
     <ClCompile Include="src\world\settlement\SettlementRoadNetwork.cpp" />
@@ -576,6 +572,13 @@
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
     <ClInclude Include="src\ai\tasks\PathToTargetTask.h" />
     <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\building\Building.h" />
+    <ClInclude Include="src\building\BuildingBlueprintFlags.h" />
+    <ClInclude Include="src\building\BuildingBlueprintGenerationContext.h" />
+    <ClInclude Include="src\building\BuildingBlueprintGenerator.h" />
+    <ClInclude Include="src\building\BuildingGrammar.h" />
+    <ClInclude Include="src\building\BuildingGrid.h" />
+    <ClInclude Include="src\building\BuildingRepository.h" />
     <ClInclude Include="src\camera\Camera3D.h" />
     <ClInclude Include="src\camera\CameraController.h" />
     <ClInclude Include="src\camera\CameraMode.h" />
@@ -583,22 +586,13 @@
     <ClInclude Include="src\camera\SimpleCamera.h" />
     <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\character\CharacterConst.h" />
-    <ClInclude Include="src\city\Building.h" />
-    <ClInclude Include="src\city\BuildingBlueprintGenerationContext.h" />
-    <ClInclude Include="src\city\BuildingBlueprintFlags.h" />
-    <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
-    <ClInclude Include="src\city\BuildingRepository.h" />
     <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
     <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
     <ClInclude Include="src\city\City.h" />
     <ClInclude Include="src\city\CityBuilder.h" />
-    <ClInclude Include="src\city\BuildingGrammar.h" />
     <ClInclude Include="src\city\CityBusinessManager.h" />
     <ClInclude Include="src\city\CityConst.h" />
-    <ClInclude Include="src\city\CityDistrict.h" />
     <ClInclude Include="src\city\CityPlanner.h" />
-    <ClInclude Include="src\city\CityPlot.h" />
-    <ClInclude Include="src\city\CityPlotter.h" />
     <ClInclude Include="src\city\CityQuartermaster.h" />
     <ClInclude Include="src\city\CityResidentManager.h" />
     <ClInclude Include="src\city\contracts\ContractManager.h" />
@@ -932,8 +926,6 @@
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\skill\SkillSlot.h" />
     <ClInclude Include="src\stdafx.h" />
-    <ClInclude Include="src\structure\Structure.h" />
-    <ClInclude Include="src\structure\StructureGrid.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
     <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h" />
     <ClInclude Include="src\tile\TileContainerConst.h" />
@@ -1044,7 +1036,6 @@
     <ClInclude Include="src\world\markup\WorldMarkupGrid.h" />
     <ClInclude Include="src\world\ownership\OwnershipGrid.h" />
     <ClInclude Include="src\world\road\RoadGrid.h" />
-    <ClInclude Include="src\world\settlement\building\BuildingBlueprint.h" />
     <ClInclude Include="src\world\settlement\SettlementLayoutManager.h" />
     <ClInclude Include="src\world\settlement\SettlementPlotManager.h" />
     <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h" />

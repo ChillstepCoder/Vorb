@@ -11,7 +11,7 @@
 #include <shared_mutex>
 
 class HostWorldData;
-class Structure;
+class Building;
 class Camera3D;
 class Chunk;
 class CityGraph;
@@ -22,7 +22,7 @@ class ItemStockpileRegistry;
 class IEffectContext;
 class IFactionManager;
 class PhysicsWorld;
-class StructureGrid;
+class BuildingGrid;
 class TimeOfDayManager;
 class TileContainerRepository;
 class TileContainerLoader;
@@ -91,7 +91,7 @@ public:
     CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
     IEntityComponentSystem& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
-    StructureGrid& getStructureGrid() const { return *mStructureGrid; }
+    BuildingGrid& getStructureGrid() const { return *mStructureGrid; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     TileContainerLoader& getTileContainerLoader() const { return *mTileContainerLoader; }
@@ -122,7 +122,7 @@ public:
     void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
     
     // Structures TODO: Needs to be StructureRef so it isnt destroyed
-    Structure* tryGetStructureAtWorldPos(TileCoord worldPos) const;
+    Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
 
     STATIC_EVENT_LISTENER_FUNCS(World, OnWorldBeginGameThread, WORLD_EVENT_TYPE::OnWorldBeginGameThread, World&);
     STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEndGameThread, WORLD_EVENT_TYPE::OnWorldEndGameThread, World&);
@@ -176,7 +176,7 @@ private:
     // Physics
     std::unique_ptr<PhysicsWorld> mPhysWorld;
     // Structures
-    std::unique_ptr<StructureGrid> mStructureGrid;
+    std::unique_ptr<BuildingGrid> mStructureGrid;
     // Cities
     std::unique_ptr<CityGraph> mCities;
     // Generation

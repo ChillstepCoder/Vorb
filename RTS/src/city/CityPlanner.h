@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Building.h"
-#include "BuildingBlueprintFlags.h"
+#include "building/building.h"
+#include "building/BuildingBlueprintFlags.h"
 
 #include "tile/TileConst.h"
 
+class BuildingBlueprintGenerationContext;
 class BuildingBlueprintGenerator;
 class City;
 struct CityPlot;
