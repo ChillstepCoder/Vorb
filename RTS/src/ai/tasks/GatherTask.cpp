@@ -6,7 +6,6 @@
 #include "ecs/component/PositionComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
-#include "city/City.h"
 #include "city/CityQuartermaster.h"
 
 #include "ecs/component/InventoryComponent.h"

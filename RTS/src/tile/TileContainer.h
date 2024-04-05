@@ -51,7 +51,7 @@ public:
     friend class TileContainerRepository;
     friend class TileContainerLoader;
     friend class ChunkGenerator;
-    friend class CityBuilder; // ONLY FOR DEBUG GENERATION
+    friend class BuildingBuilder; // ONLY FOR DEBUG GENERATION
     friend class NavThread; // TODO: Too many friends?
     friend class NavWorld; // TODO: Remove
     friend class IChunkGrid;

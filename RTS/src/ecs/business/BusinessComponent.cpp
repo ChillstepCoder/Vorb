@@ -1,8 +1,7 @@
 #include "stdafx.h"
 #include "BusinessComponent.h"
 
-#include "city/City.h"
-#include "city/CityBuilder.h"
+#include "city/BuildingBuilder.h"
 #include "building/buildingBlueprintGenerationContext.h"
 
 #include "ecs/component/OwnershipComponent.h"
@@ -16,8 +15,6 @@
 
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
-
-#include "city/CityPlanner.h"
 
 #include "definitions/BusinessDef.h"
 
@@ -170,7 +167,7 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
     OwnershipComponent& ownershipCmp = registry.get<OwnershipComponent>(entity);
 
     // Check if we need to request a building. If so, we request one, and do nothing else
-    assert(false)
+    assert(false);
     //if (ownershipCmp.mOwnedPlots.size() == 0) {
     //    // TODO: Fill out
     //    PlotRequestProps props;

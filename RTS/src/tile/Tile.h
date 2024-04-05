@@ -25,7 +25,7 @@ class Tile {
     friend class ChunkGenerator;
     friend class TileContainerLoader;
     friend class FlatChunkGenerator;
-    friend class CityBuilder; // TODO: Remove? Only for debug?
+    friend class BuildingBuilder; // TODO: Remove? Only for debug?
 public:
 	Tile() {};
     Tile(TileID ground, TileID mid);

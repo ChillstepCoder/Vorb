@@ -21,7 +21,6 @@
 #include "rendering/renderer/GrassRenderer.h"
 #include "rendering/TileContainerRenderer.h"
 #include "rendering/ChunkGrassQuadtree.h"
-#include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
@@ -74,7 +73,6 @@
 #include "physics/PhysicsWorld.h"
 
 #include "time/TimeOfDayManager.h" // TODO: Move to WorldRenderer
-#include "city/City.h"
 
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteBatch.h>

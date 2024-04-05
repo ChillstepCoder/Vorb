@@ -32,7 +32,7 @@ DebugOptions::DebugOptions() :
     // Structures
     mWallWoobleChance(0.3f),
     mWallWoobleIntensity(0.15f),
-    mStructureDebug(false),
+    mBuildingDebug(false),
     mBlueprintDebug(true),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra

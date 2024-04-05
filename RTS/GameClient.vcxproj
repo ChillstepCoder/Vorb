@@ -224,6 +224,7 @@
     <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
     <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\building\Building.cpp" />
+    <ClCompile Include="src\building\BuildingBlueprint.cpp" />
     <ClCompile Include="src\building\BuildingBlueprintGenerationContext.cpp" />
     <ClCompile Include="src\building\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\building\BuildingGrammar.cpp" />
@@ -234,12 +235,9 @@
     <ClCompile Include="src\camera\OrthoCamera.cpp" />
     <ClCompile Include="src\camera\SimpleCamera.cpp" />
     <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp" />
-    <ClCompile Include="src\city\City.cpp" />
-    <ClCompile Include="src\city\CityBuilder.cpp" />
+    <ClCompile Include="src\city\BuildingBuilder.cpp" />
     <ClCompile Include="src\city\CityBusinessManager.cpp" />
-    <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\city\CityQuartermaster.cpp" />
-    <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\city\contracts\ContractManager.cpp" />
     <ClCompile Include="src\city\contracts\IContract.cpp" />
     <ClCompile Include="src\combat\Attack.cpp" />
@@ -352,7 +350,6 @@
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\character\CharacterAnimator.cpp" />
     <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
-    <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\fish\FishRenderer.cpp" />
@@ -573,6 +570,7 @@
     <ClInclude Include="src\ai\tasks\PathToTargetTask.h" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\building\Building.h" />
+    <ClInclude Include="src\building\BuildingBlueprint.h" />
     <ClInclude Include="src\building\BuildingBlueprintFlags.h" />
     <ClInclude Include="src\building\BuildingBlueprintGenerationContext.h" />
     <ClInclude Include="src\building\BuildingBlueprintGenerator.h" />
@@ -588,13 +586,10 @@
     <ClInclude Include="src\character\CharacterConst.h" />
     <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
     <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
-    <ClInclude Include="src\city\City.h" />
-    <ClInclude Include="src\city\CityBuilder.h" />
+    <ClInclude Include="src\city\BuildingBuilder.h" />
     <ClInclude Include="src\city\CityBusinessManager.h" />
     <ClInclude Include="src\city\CityConst.h" />
-    <ClInclude Include="src\city\CityPlanner.h" />
     <ClInclude Include="src\city\CityQuartermaster.h" />
-    <ClInclude Include="src\city\CityResidentManager.h" />
     <ClInclude Include="src\city\contracts\ContractManager.h" />
     <ClInclude Include="src\city\contracts\IContract.h" />
     <ClInclude Include="src\city\contracts\ItemShipmentContract.h" />
@@ -761,7 +756,6 @@
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\character\CharacterAnimator.h" />
     <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
-    <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\rendering\fish\FishRenderer.h" />

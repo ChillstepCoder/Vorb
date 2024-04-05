@@ -19,9 +19,8 @@
 #include "resources/TileRepository.h"
 #include "rendering/texture/GLTexture.h"
 
-#include "city/City.h"
 #include "building/buildingBlueprintGenerator.h"
-#include "city/CityBuilder.h"
+#include "city/BuildingBuilder.h"
 #include "building/buildingRepository.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -714,7 +713,8 @@ void WorldEditorPanel::updateCityEdit() {
         task->worldPos = f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y);
         task->world = mActiveWorld;
         GameThreadTasks::getInstance().addGenericTask([task]() {
-            task->world->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
+            panic("WorldEditorPanel::updateCityEdit No longer implemented");
+            //task->world->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
             delete task;
         });
     }
@@ -748,7 +748,7 @@ void WorldEditorPanel::updateBuildingEdit() {
                 assert(false);
                 return;
             }
-            CityBuilder::debugCreateAndBuildNewBuilding(*world, bp);
+            BuildingBuilder::debugCreateAndBuildNewBuilding(*world, bp);
         });
 
     }

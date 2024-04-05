@@ -4,12 +4,12 @@
 // Algorithm inspired by - Jess Martin. Procedural house generation: A method for dynamically generating floor plans. In Symposium on Interactive 3D Graphics and Games. Citeseer, 2006
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.97.4544&rep=rep1&type=pdf
 
-#include "world/settlement/building/BuildingBlueprint.h"
+#include "building/BuildingBlueprint.h"
 #include "BuildingBlueprintGenerationContext.h"
 
 class VisualLog;
 class World;
-class CityBuilder;
+class BuildingBuilder;
 struct RoomGenNode;
 
 constexpr ui32 MAX_EXTERIOR_WALL_RUN_LENGTH = 8; // TODO: Enforce this

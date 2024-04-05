@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "World.h"
 
-#include "city/City.h"
 #include "combat/CombatContext.h"
 #include "effect/cli/CliEffectContext.h"
 #include "effect/host/HostEffectContext.h"
@@ -132,8 +131,6 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mTileContainerLoader = std::make_unique<TileContainerLoader>(*this);
     // Time of day
     mTimeOfDayManager = std::make_unique<TimeOfDayManager>();
-    // Cities
-    mCities = std::make_unique<CityGraph>(*this);
     // Structures
     mStructureGrid = std::make_unique<BuildingGrid>(*this);
     // Physics
@@ -243,9 +240,6 @@ void World::tick(f32 elapsedSec) {
         mEcs->tickPhysics(elapsedSec);
     }
 
-    // Cities
-    mCities->update();
-
     // Nav (Optional)
     if (mNavWorld) {
         Services::NavThread::ref().mainThreadUpdate();
@@ -286,7 +280,6 @@ void World::shutdown() {
     mEffectContext.reset();
     mHostSimContext.reset();
     mTimeOfDayManager.reset();
-    mCities.reset();
     mStructureGrid.reset();
     mPhysWorld.reset();
     mChunkGenerator.reset();

@@ -16,7 +16,7 @@ public:
     ~BusinessRepository();
 
     void loadBusinessFile(const vio::Path& filePath);
-    entt::entity createBusinessEntity(City* parentCity, entt::registry& registry, const nString& typeName);
+    entt::entity createBusinessEntity(entt::registry& registry, const nString& typeName);
 
 private:
     vio::IOManager& mIoManager;

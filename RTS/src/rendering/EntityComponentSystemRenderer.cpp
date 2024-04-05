@@ -11,7 +11,6 @@
 #include "rendering/LightRenderer.h"
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
-#include "rendering/CityDebugRenderer.h"
 
 #include <Vorb/utils.h>
 #include <Vorb/graphics/SpriteBatch.h>
@@ -39,7 +38,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(World& world, const Came
     int i = 0;
     // Blueprint debug
     if (sDebugOptions.mBlueprintDebug) {
-        auto& ecs = world.getECS();
+       /* auto& ecs = world.getECS();
 
 		auto view = ecs.mRegistry.view<BusinessBuildComponent>();
 		for (auto entity : view) {
@@ -47,7 +46,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(World& world, const Came
 			if (bp) {
 				CityDebugRenderer::renderBlueprintDebug(*bp, mFramesPerDebugDraw);
 			}
-		}
+		}*/
 	}
 }
 

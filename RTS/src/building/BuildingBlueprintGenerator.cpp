@@ -5,7 +5,7 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "city/CityBuilder.h"
+#include "city/BuildingBuilder.h"
 
 #include "resources/TileRepository.h"
 

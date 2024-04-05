@@ -96,19 +96,10 @@
     <ClCompile Include="src\generation\WorldGenerationData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\City.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\CityPlanner.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\CityBuilder.cpp">
+    <ClCompile Include="src\city\BuildingBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\CityDebugRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\pathfinding\PathFinder.cpp">
@@ -124,9 +115,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\city\CityResidentManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\ItemDef.cpp">
@@ -1038,6 +1026,9 @@
     <ClCompile Include="src\building\BuildingRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\building\BuildingBlueprint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1142,13 +1133,7 @@
     <ClInclude Include="src\FeatureConst.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\City.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\CityPlanner.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\CityBuilder.h">
+    <ClInclude Include="src\city\BuildingBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\ProfessionComponent.h">
@@ -1158,9 +1143,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\CityConst.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\CityDebugRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\pathfinding\PathFinder.h">
@@ -1185,9 +1167,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\PersonAIComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\CityResidentManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\ItemDef.h">
@@ -2556,6 +2535,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\building\BuildingRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\building\BuildingBlueprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

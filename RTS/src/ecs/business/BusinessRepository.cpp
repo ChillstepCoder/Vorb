@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "BusinessRepository.h"
 
-#include "city/City.h"
 #include "city/CityBusinessManager.h"
 
 #include "item/ItemRepository.h"
@@ -41,9 +40,8 @@ void BusinessRepository::loadBusinessFile(const vio::Path& filePath)
     }
 }
 
-entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::registry& registry, const nString& typeName)
+entt::entity BusinessRepository::createBusinessEntity(entt::registry& registry, const nString& typeName)
 {
-    assert(parentCity); // Currently required
 
     auto&& it = mBusinessesFromName.find(typeName);
     assert(it != mBusinessesFromName.end());
@@ -52,7 +50,7 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
     const entt::entity newEntity = registry.create();
 
     auto&& businessCmp = registry.emplace<BusinessComponent>(newEntity);
-    businessCmp.mCity = parentCity;
+    //businessCmp.mCity = parentCity;
     businessCmp.mMaxEmployeeCount = def.mMaxEmployeeCount;
     businessCmp.mDesiredEmployeeCount = def.mDesiredEmployeeCount;
     businessCmp.mBusinessDef = &def;
@@ -76,7 +74,7 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
 
     registry.emplace<OwnershipComponent>(newEntity);
 
-    parentCity->getBusinessManager().registerBusiness(newEntity);
+   // parentCity->getBusinessManager().registerBusiness(newEntity);
 
     return newEntity;
 }

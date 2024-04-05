@@ -3,7 +3,6 @@
 
 #include "world/World.h"
 #include "world/IChunkGrid.h"
-#include "city/City.h"
 #include "city/CityQuartermaster.h"
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"

@@ -4,7 +4,10 @@
 #include "world/World.h"
 #include "tile/TileContainerRepository.h"
 
+#include "building/BuildingBlueprint.h"
 
+Building::Building() = default;
+Building::~Building() = default;
 Building::Building(Building&& other) noexcept = default;
 Building& Building::operator=(Building&& other) noexcept = default;
 

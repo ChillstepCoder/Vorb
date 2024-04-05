@@ -10,9 +10,9 @@ class BuildingBlueprintGenerationContext;
 // TODO: Should trade be separated?
 class CityQuartermaster {
     friend class CityDebugRenderer;
-public:
+public:/*
     CityQuartermaster(City& city);
-    ~CityQuartermaster();
+    ~CityQuartermaster();*/
 
     void createStockpilesForBlueprint(BuildingBlueprintGenerationContext& bp);
 
@@ -30,5 +30,4 @@ private:
     // TODO: Sorted with Fast AABB search algorithm?
     ItemStockpileListeners mItemStockpileListeners;
     std::set<ItemStockpile*> mAllStockpiles;
-    City& mCity;
 };

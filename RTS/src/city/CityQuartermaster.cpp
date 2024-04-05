@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "CityQuartermaster.h"
-#include "city/City.h"
 #include "world/World.h"
 
 #include "item/ItemStockpile.h"
@@ -10,13 +9,6 @@
 #include "resources/ResourceManager.h"
 #include "building/BuildingRepository.h"
 
-CityQuartermaster::CityQuartermaster(City& city) : mCity(city) {
-
-}
-
-CityQuartermaster::~CityQuartermaster() {
-
-}
 
 void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprintGenerationContext& bp) {
 
@@ -45,27 +37,30 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprintGeneration
 }
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::entity ownerEntity) {
-
-    ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
-    
-    // Create new stockpile and leave unassigned (city ownership)
-    if (newStockpile) {
-        mAllStockpiles.insert(newStockpile);
-        return true;
-    }
+    assert(false);
     return false;
+    //ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
+    //
+    //// Create new stockpile and leave unassigned (city ownership)
+    //if (newStockpile) {
+    //    mAllStockpiles.insert(newStockpile);
+    //    return true;
+    //}
+    //return false;
 }
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
 
-    ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
-
-    // Create new stockpile and leave unassigned (city ownership)
-    if (newStockpile) {
-        mAllStockpiles.insert(newStockpile);
-        return true;
-    }
+    assert(false);
     return false;
+    //ItemStockpile* newStockpile = mCity.getWorld().getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
+
+    //// Create new stockpile and leave unassigned (city ownership)
+    //if (newStockpile) {
+    //    mAllStockpiles.insert(newStockpile);
+    //    return true;
+    //}
+    //return false;
 }
 
 ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const i32v2 position) {

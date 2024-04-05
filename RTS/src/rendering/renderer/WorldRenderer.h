@@ -6,7 +6,6 @@
 class AmbientOcclusionPostProcess;
 class Camera3D;
 class CharacterRenderer;
-class CityDebugRenderer;
 class CloudMeshManager;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
@@ -82,7 +81,6 @@ private:
     mutable std::unique_ptr<TileContainerRenderer> mTileContainerRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
-    mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
     mutable std::unique_ptr<ItemRenderer> mItemRenderer;
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
     mutable std::unique_ptr<CloudRenderer> mCloudRenderer;

@@ -14,7 +14,6 @@
 #include "debugging/DebugRenderer.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/ChunkGrassQuadtree.h"
-#include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/EntityComponentSystemRenderer.h"
 #include "rendering/fish/FishRenderer.h"
@@ -54,7 +53,6 @@
 #include "tile/TileContainerRepository.h"
 
 #include "building/BuildingGrid.h"
-#include "city/City.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
@@ -89,7 +87,6 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
     mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
-    mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
     mItemRenderer = std::make_unique<ItemRenderer>();
     mCloudRenderer = std::make_unique<CloudRenderer>(screenResolution);
     mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(screenResolution);
@@ -382,28 +379,14 @@ void WorldRenderer::renderDebug() {
     if (!mActiveWorld) {
         return;
     }
-    // City Debug
-    if (sDebugOptions.mCities) {
-        const CityGraph& cities = mActiveWorld->getCityGraph();
-        for (auto&& city : cities.mNodes) {
-            mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
-            mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
-            mCityDebugRenderer->renderCityPlotterDebug(city->getCityPlotter());
-            mCityDebugRenderer->renderCityQuartermasterDebug(city->getCityQuartermaster());
-        }
-        mCityDebugRenderer->finishRenderFrame();
-    }
-    else {
-        mCityDebugRenderer->clearMeshes();
-    }
 
     if (const HostSimContext* simContext = mActiveWorld->tryGetHostSimContext()) {
         simContext->debugRender(mCamera->getPosition());
     }
 
     // Structure debug
-    if (sDebugOptions.mStructureDebug) {
-        mActiveWorld->getStructureGrid().debugRender();
+    if (sDebugOptions.mBuildingDebug) {
+        mActiveWorld->getBuildingGrid().debugRender();
     }
 
     mEcsRenderer->renderBusinessDebug(*mActiveWorld, *mCamera);

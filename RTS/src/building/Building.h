@@ -33,9 +33,8 @@ const ui32 MAX_BUILDING_WIDTH_DTILES = CHUNK_WIDTH_DTILES - 1;
 class Building {
     friend class BuildingGrid;
 public:
-    Building() = default;
-    virtual ~Building() = default;
-
+    Building();
+    virtual ~Building();
     Building(Building&& other) noexcept;
     Building& operator=(Building&& other) noexcept;
 

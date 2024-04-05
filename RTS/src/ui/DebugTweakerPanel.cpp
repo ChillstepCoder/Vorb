@@ -141,10 +141,10 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::Separator();
     }
 
-    if (ImGui::CollapsingHeader("Structures")) {
+    if (ImGui::CollapsingHeader("Buildings")) {
         ImGui::SliderFloat("Wall Wooble Chance", &sDebugOptions.mWallWoobleChance, 0.0f, 1.0f);
         ImGui::SliderFloat("Wall Wooble Intensity", &sDebugOptions.mWallWoobleIntensity, 0.0f, 1.0f);
-        ImGui::Checkbox("Debug draw", &sDebugOptions.mStructureDebug);
+        ImGui::Checkbox("Debug draw", &sDebugOptions.mBuildingDebug);
         ImGui::Separator();
     }
 

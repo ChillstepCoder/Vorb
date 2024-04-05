@@ -14,7 +14,6 @@ class HostWorldData;
 class Building;
 class Camera3D;
 class Chunk;
-class CityGraph;
 class IChunkGrid;
 class IEntityComponentSystem;
 class IHeightmapGrid;
@@ -88,10 +87,9 @@ public:
     WorldMarkupGrid& getMarkupGrid() const { return *mMarkupGrid; }
     OwnershipGrid& getOwnershipGrid() const { return *mOwnershipGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
-    CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
     IEntityComponentSystem& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
-    BuildingGrid& getStructureGrid() const { return *mStructureGrid; }
+    BuildingGrid& getBuildingGrid() const { return *mStructureGrid; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     TileContainerLoader& getTileContainerLoader() const { return *mTileContainerLoader; }
@@ -177,8 +175,6 @@ private:
     std::unique_ptr<PhysicsWorld> mPhysWorld;
     // Structures
     std::unique_ptr<BuildingGrid> mStructureGrid;
-    // Cities
-    std::unique_ptr<CityGraph> mCities;
     // Generation
     std::unique_ptr<ChunkGenerator> mChunkGenerator;
     // Combat
