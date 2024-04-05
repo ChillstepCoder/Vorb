@@ -81,6 +81,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
         mCurrentVisLog->nextStep("Plots");
     }
 
+    IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     BuildingRepository& buildingRepo = BuildingRepository::get();
     const BuildingDef& houseDef = buildingRepo.getLoadedOrUnloadedAsset(CStrToken("small_house"));
 
@@ -90,14 +91,15 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
         SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, settlement, mCurrentVisLog);
         if (newPlotID != INVALID_SETTLEMENT_PLOT_ID) {
             SettlementPlot& newPlot = mPlotManager->getPlot(newPlotID);
-            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom());
+
+            const i32 approxZPos = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.getCenter()));
+            BuildingBlueprintPtr bp = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), approxZPos);
             if (bp) {
                 BitArray tilesNeedingTerrainFlatten = bp->computeSolidTilesFirstFloor();
 
                 // Clamp building height to 1 meter increments
-                IHeightmapGrid& grid = world.getHeightmapGrid();
                 const i32AABB2 tileAABB(newPlot.aabbDTile.pos << 1, newPlot.aabbDTile.dims << 1);
-                const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(tileAABB, tilesNeedingTerrainFlatten));
+                const ui32 meanHeight = round(heightGrid.computeMeanHeightAtAABB(tileAABB, tilesNeedingTerrainFlatten));
                 const i32AABB3 aabb3d(i32v3(tileAABB.pos.x, tileAABB.pos.y, meanHeight), i32v3(tileAABB.dims.x, tileAABB.dims.y, bp->floorCount * bp->floorHeight));
 
                 Building* newBuilding = static_cast<Building*>(world.getStructureGrid().tryMakeNewBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
