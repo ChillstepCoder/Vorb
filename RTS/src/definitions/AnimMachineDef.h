@@ -120,3 +120,28 @@ SERIALIZABLE_SIMPLE(AnimMachineDefFileData,
     make_field(o.mJumpName, "jump"sv),
     make_field(o.mLandingName, "land"sv)
 );
+
+
+// TEST ANIM MACHINE
+// States
+// idle:
+//   type: anim_sequence
+//   transitions: 
+//   - condition: "input.move" == 0
+//     transition_duration: 0.2
+//     transition_sequence: idle_to_walk
+//     speed_curve: CURVE_LINEAR (TODO: Custom Curves)
+//     TODO: extract root motion?
+//     to_state: walk
+// walk:
+//   type: blendspace2d
+//   transitions:
+//   - condition: "input.move" == 0
+//     transition_duration: 0.2
+//     to_state: idle
+//   - condition: "input.move" > 0
+//     transition_duration: 0.2
+//     to_state: walk
+//   - condition: "input.move" < 0
+//     transition_duration: 0.2
+//     to_state: walk
