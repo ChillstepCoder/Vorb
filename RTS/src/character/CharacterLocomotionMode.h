@@ -10,5 +10,6 @@ enum class CharacterLocomotionMode : ui8 {
     JUMPING,
     FALLING,
     LANDING,
+    SWIMMING,
     COUNT
 };

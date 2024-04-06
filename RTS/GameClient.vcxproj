@@ -583,7 +583,7 @@
     <ClInclude Include="src\camera\OrthoCamera.h" />
     <ClInclude Include="src\camera\SimpleCamera.h" />
     <ClInclude Include="src\camera\ICamera.h" />
-    <ClInclude Include="src\character\CharacterConst.h" />
+    <ClInclude Include="src\character\CharacterLocomotionMode.h" />
     <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
     <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
     <ClInclude Include="src\city\BuildingBuilder.h" />
@@ -818,6 +818,8 @@
     <ClInclude Include="src\rendering\model\MaterialRenderPassType.h" />
     <ClInclude Include="src\rendering\model\ModelSubmeshData.h" />
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionCondition.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionConditions.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />
     <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />

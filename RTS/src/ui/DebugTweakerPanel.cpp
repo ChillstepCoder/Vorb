@@ -497,7 +497,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
                         }
                         if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeightScale, 0.0f, 1.0f)) {
                             // Debug update the context
-                            RenderContext::getInstance().getCharacterRenderer().getCharacterAnimator().setAnimTrackWeight(animState, AnimMachineState(i), track.mWeight);
+                            RenderContext::getInstance().getCharacterRenderer().getCharacterAnimator().setAnimTrackWeight(animState, AnimMachineStateOLD(i), track.mWeight);
                             
                         }
                         ImGui::SliderFloat((nString("Time ") + std::to_string(i)).c_str(), &track.mTime, 0.0f, track.mDuration);

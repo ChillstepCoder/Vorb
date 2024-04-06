@@ -1,6 +1,10 @@
 #pragma once
 
 #include "rendering/model/AnimationConst.h"
+#include "rendering/model/skeletal/AnimTransitionCondition.h"
+
+// TODO: REMOVE
+#include "rendering/model/skeletal/AnimTransitionConditions.h"
 
 namespace ozz {
     namespace animation {
@@ -8,6 +12,42 @@ namespace ozz {
     };
 };
 
+typedef ui8 AnimStateID;
+constexpr auto MAX_ANIM_STATES = std::numeric_limits<AnimStateID>::max();
+
+struct AnimTransitionDef {
+    StrToken condition;
+    f32 transitionDuration;
+    StrToken toState;
+};
+
+struct AnimTransition {
+    // Deliberately just a single condition for now, as these are custom code driven
+    AnimTransitionCondition condition;
+    f32 transitionDuration;
+    AnimStateID toState;
+};
+
+enum class AnimStateType : ui8 {
+    AnimSequence,
+    Blendspace2D,
+    Blendspace3D
+};
+
+struct AnimStateDef {
+    StrToken name;
+    std::vector<AnimTransition> transitions;
+    AssetID assetId;
+    AnimStateType stateType;
+};
+
+// Efficient representation
+struct AnimState {
+    std::unique_ptr<AnimTransition[]> transitions;
+    AssetID assetId;
+    ui8 numTransitions;
+    AnimStateType stateType;
+};
 
 // Make sure order and contents of the animation machine name and animation arrays are the same
 class AnimMachineDef : public IAsset {
@@ -32,8 +72,15 @@ public:
         };
         const ozz::animation::Animation* mAnimsArray[ANIMATION_MACHINE_ANIMS_COUNT] = {};
     };
+
+    // TODO: USE
+    // Editor representation, State 0 is entry state
+    std::vector<AnimStateDef> mStateDefs;
+    // Efficient representation, State 0 is entry state
+    std::vector<AnimState> mStates;
 };
-static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update AnimMachineDef and FileData below");
+static_assert(e_cast(AnimMachineStateOLD::COUNT) == 14, "Update AnimMachineDef and FileData below");
+
 
 struct AnimMachineDefFileData {
     StrToken mRigName;
@@ -54,7 +101,7 @@ struct AnimMachineDefFileData {
     StrToken mJumpName;
     StrToken mLandingName;
 };
-static_assert(e_cast(AnimMachineState::COUNT) == 14, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");
+static_assert(e_cast(AnimMachineStateOLD::COUNT) == 14, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");
 
 SERIALIZABLE_SIMPLE(AnimMachineDefFileData,
     make_field(o.mRigName, "rig"sv),

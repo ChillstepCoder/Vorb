@@ -1673,7 +1673,7 @@
     <ClInclude Include="src\world\Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\character\CharacterConst.h">
+    <ClInclude Include="src\character\CharacterLocomotionMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\ModelConst.h">
@@ -2538,6 +2538,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\building\BuildingBlueprint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionConditions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

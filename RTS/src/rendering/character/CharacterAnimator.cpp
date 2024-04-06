@@ -316,8 +316,8 @@ void CharacterAnimator::initializeCharacterAnimState(CharacterAnimState& animSta
         track.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
     }
     // Init to idle state engaged
-    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
-    animState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
+    animState.mTracks[e_cast(AnimMachineStateOLD::IDLE)].mWeightScale = 1.0f;
+    animState.mTracks[e_cast(AnimMachineStateOLD::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
     // Init one shot anim track
     animState.mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
     animState.mCurrentOneShotTrack.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
@@ -346,19 +346,19 @@ void CharacterAnimator::updateAnimationStates(CharacterAnimState& animState, Cha
         // TODO: Array lookup mapping instead of switch?
         switch (locomotionMode) {
             case CharacterLocomotionMode::IDLE: {
-                fadeInStateTrack(animState, AnimMachineState::IDLE, FADE_IN_SLOW);
+                fadeInStateTrack(animState, AnimMachineStateOLD::IDLE, FADE_IN_SLOW);
                 break;
             }
             case CharacterLocomotionMode::WALK: {
-                fadeInStateTrack(animState, AnimMachineState::WALK_FRONT, FADE_IN_SLOW);
+                fadeInStateTrack(animState, AnimMachineStateOLD::WALK_FRONT, FADE_IN_SLOW);
                 break;
             }
             case CharacterLocomotionMode::RUN: {
-                fadeInStateTrack(animState, AnimMachineState::RUN_FRONT, FADE_IN_SLOW);
+                fadeInStateTrack(animState, AnimMachineStateOLD::RUN_FRONT, FADE_IN_SLOW);
                 break;
             }
             case CharacterLocomotionMode::SPRINT: {
-                fadeInStateTrack(animState, AnimMachineState::SPRINT_FRONT, FADE_IN_SLOW);
+                fadeInStateTrack(animState, AnimMachineStateOLD::SPRINT_FRONT, FADE_IN_SLOW);
                 break;
             }
             case CharacterLocomotionMode::DODGE: {
@@ -371,15 +371,15 @@ void CharacterAnimator::updateAnimationStates(CharacterAnimState& animState, Cha
                 panic("BEGIN JUMP ASSERT FAIL");
                 break;
             case CharacterLocomotionMode::JUMPING: {
-                fadeInStateTrack(animState, AnimMachineState::JUMPING, FADE_IN_FAST);
+                fadeInStateTrack(animState, AnimMachineStateOLD::JUMPING, FADE_IN_FAST);
                 break;
             }
             case CharacterLocomotionMode::FALLING: {
-                fadeInStateTrack(animState, AnimMachineState::FALLING, FADE_IN_MEDIUM);
+                fadeInStateTrack(animState, AnimMachineStateOLD::FALLING, FADE_IN_MEDIUM);
                 break;
             }
             case CharacterLocomotionMode::LANDING: {
-                fadeInStateTrack(animState, AnimMachineState::LANDING, FADE_IN_FAST);
+                fadeInStateTrack(animState, AnimMachineStateOLD::LANDING, FADE_IN_FAST);
                 break;
             }
             default:
@@ -400,13 +400,13 @@ void CharacterAnimator::playOneShotAnimation(CharacterAnimState& animState, cons
     animState.mCurrentOneShotAnimation = animation;
 }
 
-void CharacterAnimator::setAnimTrackWeight(CharacterAnimState& animState, AnimMachineState currentState, f32 weightScale) {
+void CharacterAnimator::setAnimTrackWeight(CharacterAnimState& animState, AnimMachineStateOLD currentState, f32 weightScale) {
     ASSERT_RENDER_THREAD();
     AnimTrack& track = animState.mTracks[e_cast(currentState)];
     track.mWeightScale = weightScale;
 }
 
-void CharacterAnimator::fadeInStateTrack(CharacterAnimState& animState, AnimMachineState state, f32 fadeDuration) {
+void CharacterAnimator::fadeInStateTrack(CharacterAnimState& animState, AnimMachineStateOLD state, f32 fadeDuration) {
     ASSERT_RENDER_THREAD();
     animState.mTracks[e_cast(state)].fadeIn(fadeDuration);
     animState.mPrimaryStateTrack = (ui8)state;

@@ -11,7 +11,7 @@ namespace ozz {
 using Animation = ozz::animation::Animation;
 
 // Make sure this matches AnimMachineDef
-enum class AnimMachineState : ui16 {
+enum class AnimMachineStateOLD : ui16 {
     WALK_LEFT,
     WALK_RIGHT,
     WALK_FRONT,
@@ -29,10 +29,10 @@ enum class AnimMachineState : ui16 {
     COUNT
 };
 
-constexpr ui32 NUM_ANIM_STATE_TRACKS = e_cast(AnimMachineState::COUNT);
-constexpr ui32 ANIMATION_MACHINE_ANIMS_COUNT = e_cast(AnimMachineState::COUNT);
+constexpr ui32 NUM_ANIM_STATE_TRACKS = e_cast(AnimMachineStateOLD::COUNT);
+constexpr ui32 ANIMATION_MACHINE_ANIMS_COUNT = e_cast(AnimMachineStateOLD::COUNT);
 
-constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
+constexpr const char* AnimMachineStateNames[e_cast(AnimMachineStateOLD::COUNT)] = {
     "WALK_LEFT",
     "WALK_RIGHT",
     "WALK_FRONT",
@@ -49,4 +49,4 @@ constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
     "LANDING"
 };
 
-static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update debug strings");
+static_assert(e_cast(AnimMachineStateOLD::COUNT) == 14, "Update debug strings");

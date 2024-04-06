@@ -3,7 +3,7 @@
 #include "world/ChunkState.h"
 #include "world/GridID.h"
 
-#include "character/CharacterConst.h"
+#include "character/CharacterLocomotionMode.h"
 #include "rendering/renderstate/CharacterRenderState.h"
 #include "rendering/renderstate/DynamicModelInstanceState.h"
 

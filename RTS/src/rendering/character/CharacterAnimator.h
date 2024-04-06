@@ -8,7 +8,7 @@ struct MeshSkeletonData;
 struct CharacterAnimState;
 
 #include "rendering/model/AnimationConst.h"
-#include "character/CharacterConst.h"
+#include "character/CharacterLocomotionMode.h"
 
 #include <ozz/base/containers/vector.h>
 #include <ozz/base/maths/simd_math.h>
@@ -72,9 +72,9 @@ public:
 
     void initializeCharacterAnimState(CharacterAnimState& animState, const ModelDef& modelDef);
     void playOneShotAnimation(CharacterAnimState& animState, const ozz::animation::Animation* animation);
-    void setAnimTrackWeight(CharacterAnimState& animState, AnimMachineState currentState, f32 weightScale);
+    void setAnimTrackWeight(CharacterAnimState& animState, AnimMachineStateOLD currentState, f32 weightScale);
 protected:
-    void fadeInStateTrack(CharacterAnimState& animState, AnimMachineState state, f32 fadeDuration);
+    void fadeInStateTrack(CharacterAnimState& animState, AnimMachineStateOLD state, f32 fadeDuration);
     void updateFootstepAlpha(CharacterAnimState& animState, f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode);
     void updateAnimationStates(CharacterAnimState& animState, CharacterLocomotionMode locomotionMode, f32 elapsedSec);
 

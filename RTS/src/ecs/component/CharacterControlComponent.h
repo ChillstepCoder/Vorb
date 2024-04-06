@@ -1,6 +1,6 @@
 #pragma once
 
-#include "character/CharacterConst.h"
+#include "character/CharacterLocomotionMode.h"
 
 struct CharacterControlComponentDef {
     float mSpeed = 0.3f;
