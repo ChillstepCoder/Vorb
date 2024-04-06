@@ -4,7 +4,7 @@
 #include "rendering/model/skeletal/AnimTransitionCondition.h"
 
 // TODO: REMOVE
-#include "rendering/model/skeletal/AnimTransitionConditions.h"
+#include "rendering/model/skeletal/AnimTransitionConditionDef.h"
 
 namespace ozz {
     namespace animation {

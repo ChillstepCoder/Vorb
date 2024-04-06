@@ -398,6 +398,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
     <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp" />
+    <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
     <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp" />
     <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
@@ -819,7 +820,7 @@
     <ClInclude Include="src\rendering\model\ModelSubmeshData.h" />
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
     <ClInclude Include="src\rendering\model\skeletal\AnimTransitionCondition.h" />
-    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionConditions.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionConditionDef.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />
     <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />
