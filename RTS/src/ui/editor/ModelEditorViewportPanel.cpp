@@ -10,6 +10,7 @@
 #include "rendering/Mesh/MeshDrawer.h"
 #include "rendering/post_process/ShadowDetail.h"
 #include "rendering/mesh/LineMesh.h"
+#include "rendering/model/skeletal/SkeletalAnimator.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -24,6 +25,7 @@
 
 ModelEditorViewportPanel::ModelEditorViewportPanel()
 {
+    mSkeletalAnimator = std::make_unique<SkeletalAnimator>();
 }
 
 ModelEditorViewportPanel::~ModelEditorViewportPanel()
@@ -41,7 +43,9 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     if (mAssetData) {
         ImGui::Text("Name: %s", mAssetData->getName().toString().c_str());
         updateAndRenderSaveButton();
-
+        if (mAssetData && mAssetData->isSkeletalModel()) {
+            ImGui::Checkbox("Skeletal Edit", &mSkeletalEditMode);
+        }
         ImGui::Text("MeshCount %d", mAssetData->getNumMeshes());
         int polyCount = 0;
         for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
@@ -116,6 +120,9 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 }
 
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
+    if (mAssetData && mAssetData->isSkeletalModel() && mSkeletalEditMode) {
+        MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_skel"))->tryGetLoadedAsset();
+    }
     return getModelRenderShader();
 }
 
@@ -125,42 +132,16 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
-      
-        const MaterialShaderDef* shader = getShader();
-        glUniform1i(shader->getUniform("unVariantIndex"), mVariantIndex);
-        glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
-        if (mShowSingle) {
-            mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
-            Mesh& mesh = mAssetData->getMesh(mSingleIndex);
-            mesh.unbindModelAttribs(); // Editor doesnt use these
-            assert(mesh.mVariantDataUbo);
-            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-            MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
-            mesh.bindModelAttribs(); // Main game does
+        if (mAssetData->isSkeletalModel()) {
+            if (mSkeletalEditMode) {
+                renderMeshSkeletal();
+            }
+            else {
+                renderMeshStatic();
+            }
         }
         else {
-            for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-                Mesh& mesh = mAssetData->getMesh(i);
-                mesh.unbindModelAttribs(); // Editor doesnt use these
-                assert(mesh.mVariantDataUbo);
-                glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-                MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
-                mesh.bindModelAttribs(); // Main game does
-            }
-            int x = 1;
-            const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
-            for (int l = e_cast(MeshLODLevel::Highest) + 1; l < e_count(MeshLODLevel); ++l) {
-                glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
-                for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-                    Mesh& mesh = mAssetData->getMesh(i);
-                    mesh.unbindModelAttribs(); // Editor doesnt use these
-                    assert(mesh.mVariantDataUbo);
-                    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-                    MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
-                    mesh.bindModelAttribs(); // Main game does
-                }
-                ++x;
-            }
+            renderMeshStatic();
         }
 
         // Render AABB
@@ -178,5 +159,72 @@ void ModelEditorViewportPanel::renderMesh() {
             mAABBMesh->bind();
             mAABBMesh->drawLines(0);
         }
+    }
+}
+
+void ModelEditorViewportPanel::renderMeshStatic() {
+    const MaterialShaderDef* shader = getShader();
+    glUniform1i(shader->getUniform("unVariantIndex"), mVariantIndex);
+    glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
+    if (mShowSingle) {
+        mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
+        Mesh& mesh = mAssetData->getMesh(mSingleIndex);
+        mesh.unbindModelAttribs(); // Editor doesnt use these
+        assert(mesh.mVariantDataUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+        MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
+        mesh.bindModelAttribs(); // Main game does
+    }
+    else {
+        for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+            Mesh& mesh = mAssetData->getMesh(i);
+            mesh.unbindModelAttribs(); // Editor doesnt use these
+            assert(mesh.mVariantDataUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+            MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
+            mesh.bindModelAttribs(); // Main game does
+        }
+        int x = 1;
+        const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
+        for (int l = e_cast(MeshLODLevel::Highest) + 1; l < e_count(MeshLODLevel); ++l) {
+            glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
+            for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+                Mesh& mesh = mAssetData->getMesh(i);
+                mesh.unbindModelAttribs(); // Editor doesnt use these
+                assert(mesh.mVariantDataUbo);
+                glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+                MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
+                mesh.bindModelAttribs(); // Main game does
+            }
+            ++x;
+        }
+    }
+}
+
+void ModelEditorViewportPanel::renderMeshSkeletal() {
+    const MaterialShaderDef* shader = getShader();
+    glUniform1i(shader->getUniform("unVariantIndex"), mVariantIndex);
+    glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
+    f32m4 transform(1.0f);
+    transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(0.0f, 0.0f, 1.0f));
+    transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+    glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &transform[0][0]);
+
+    for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+        const SkeletalMesh& mesh = mAssetData->getSkeletalMesh(i);
+        const MeshSkeletonData& skelData = mesh.getSkeletonData();
+        // TODO: ANIM SHARE FOR LINKED SUBMESHES
+        mesh.unbindModelAttribs(); // Editor doesnt use these
+        assert(mesh.mVariantDataUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+        if (ozz::vector<ozz::math::Float4x4>* skinningMatrices = mCharacterAnimator->updateAnimation(renderData.animatorData, skelData, 0.5f)) {
+            // Draw animated
+
+            glUniformMatrix4fv(shader->getUniform("unM"), skelData.mNumJoints, false, (const GLfloat*)&(*skinningMatrices)[0].cols);
+
+            // TODO: Indirect?
+            MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
+        }
+        mesh.bindModelAttribs(); // Main game does
     }
 }

@@ -168,7 +168,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             // Allocates skinning matrices.
             for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
                 const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
-                const MeshSkeletonData& skelData = skeletalMesh.getSkeleton();
+                const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
 
                 if (ozz::vector<ozz::math::Float4x4>* skinningMatrices = mCharacterAnimator->updateAnimation(renderData.animatorData, skelData, characterState.animState, character.mLocomotionMode, elapsedSec)) {
                     // Draw animated

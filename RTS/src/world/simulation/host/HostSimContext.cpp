@@ -39,7 +39,7 @@ void HostSimContext::beginHistorySimulation() {
     mSimThread = std::make_unique<SimThread>(*this, mWorld);
     mSimThread->setState(SimThreadState::HistorySim);
     mSimThread->setTargetTickRateMs(1.0);
-    mSimThread->setTimeScale(100000.0f); // 100000x speed sim
+    mSimThread->setTimeScale(1000000.0f); // 100000x speed sim (currently 10x)
     mSimThread->start();
     mSimulatingHistory = true;
 }

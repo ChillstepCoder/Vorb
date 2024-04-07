@@ -84,3 +84,25 @@ protected:
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 };
 
+struct CharacterAnimStateNew {
+
+    AnimTrack mTracks[NUM_ANIM_STATE_TRACKS];
+    AnimTrack mCurrentOneShotTrack;
+    const ozz::animation::Animation* mCurrentOneShotAnimation = nullptr;
+    ModelID mModelID = INVALID_MODEL_ID;
+    f32 mFootstepAlpha;
+    ui8 mPrimaryStateTrack = UINT8_MAX;
+    CharacterLocomotionMode mPrevLocomotionMode = CharacterLocomotionMode::IDLE;
+};
+
+class CharacterAnimatorNew {
+public:
+    // Return NULL on fail
+    ozz::vector<ozz::math::Float4x4>* updateAnimation(const CharacterAnimatorModelData& data, const MeshSkeletonData& skeletonData, CharacterAnimStateNew& animState, f32 elapsedSec);
+
+protected:
+    ozz::vector<ozz::math::Float4x4> models;
+    ozz::vector<ozz::math::Float4x4> skinningMatrices;
+    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_STATE_TRACKS + 1];
+    ozz::vector<ozz::math::SoaTransform> blendedLocals;
+};

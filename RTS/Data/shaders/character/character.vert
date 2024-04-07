@@ -9,7 +9,7 @@ layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec2 vTangent;
 // 6 is reserved for wind influence
-layout(location = 7) in mat4 vModelMatrix;
+layout(location = 7) in mat4 vModelMatrix; // TODO: USE
 // Model matrix consumes 4 locations
 layout(location = 11) in vec4 vBoneWeights;
 layout(location = 12) in ivec4 vBoneIds;
@@ -21,7 +21,7 @@ out mat3 fTBN;
 out vec3 fNormal;
 
 uniform vec3 unOffset;
-uniform mat4 unModelTransform;
+uniform mat4 unModelTransform; // TODO: REMOVE
 const int MAX_BONES = 100;
 uniform mat4 unBoneTransforms[MAX_BONES];
 
@@ -39,6 +39,7 @@ void main() {
   vec3 normal = normalize(vNormal);
   vec3 tangent = normalize(vec3(vTangent, 0));
   vec4 localPos = boneTransform * vec4(vPosition.xyz, 1.0);
+  // TODO: Should this be a 3x3?
   vec4 localNormal = boneTransform * vec4(normal, 0.0);
   vec4 localTangent = boneTransform * vec4(tangent, 0.0);
 

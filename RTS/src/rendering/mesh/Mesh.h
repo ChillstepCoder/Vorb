@@ -156,7 +156,7 @@ public:
 class SkeletalMesh : public Mesh {
     friend class ModelRepository;
 public:
-    const MeshSkeletonData& getSkeleton() const { return mSkeletonData; }
+    const MeshSkeletonData& getSkeletonData() const { return mSkeletonData; }
 
 protected:
     MeshSkeletonData mSkeletonData;

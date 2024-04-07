@@ -422,3 +422,7 @@ void CharacterAnimator::updateFootstepAlpha(CharacterAnimState& animState, f32 e
         animState.mFootstepAlpha -= (int)animState.mFootstepAlpha;
     }
 }
+
+ozz::vector<ozz::math::Float4x4>* CharacterAnimatorNew::updateAnimation(const CharacterAnimatorModelData& data, const MeshSkeletonData& skeletonData, CharacterAnimStateNew& animState, f32 elapsedSec) {
+    return nullptr;
+}

@@ -5,6 +5,7 @@
 #include "definitions/ModelDef.h"
 
 class LineMesh;
+class SkeletalAnimator;
 
 class ModelEditorViewportPanel : public AssetEditorViewportPanel<ModelDef>
 {
@@ -20,7 +21,10 @@ private:
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
+    void renderMeshStatic();
+    void renderMeshSkeletal();
    
+    bool mSkeletalEditMode = true;
     bool mDirtyModelData = false;
     int mLod = 0;
     bool mShowSingle = false;
@@ -28,5 +32,6 @@ private:
     int mVariantIndex = 0;
 
     std::unique_ptr<LineMesh> mAABBMesh;
+    std::unique_ptr<SkeletalAnimator> mSkeletalAnimator;
 };
 
