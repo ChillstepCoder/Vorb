@@ -59,7 +59,6 @@ SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef,
     make_field(o.assetName, "asset_name"sv),
     make_field(o.stateType, "state_type"sv)
 );
-    
 
 // Efficient representation
 struct AnimState {

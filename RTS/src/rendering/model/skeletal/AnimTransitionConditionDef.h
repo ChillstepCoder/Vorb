@@ -7,6 +7,8 @@
 
 #include "AnimTransitionCondition.h"
 
+#include <ryml.hpp>
+
 enum class AnimTransitionConditionDefType : ui8 {
     is_in_air,
     is_on_ground,
@@ -41,10 +43,44 @@ struct AnimTransitionConditionDef {
     AnimTransitionConditionDefType defType;
 };
 
+typedef std::variant<f32, f32v2> AnimTransitionConditionParamVar;
+
+namespace c4 {
+    namespace yml {
+        YML_WRITE_DEF(AnimTransitionConditionParamVar) {
+            if (std::holds_alternative<f32>(o)) {
+                *n << std::get<f32>(o);
+            }
+            else if (std::holds_alternative<f32v2>(o)) {
+                n->operator<<(std::get<f32v2>(o));
+            }
+        }
+        YML_READ_DEF(AnimTransitionConditionParamVar) {
+            // TODO: Wont work for other types
+            if (n.is_seq()) {
+                if (n.num_children() == 2) {
+                    f32v2 tmp;
+                    n >> tmp;
+                    *target = tmp;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                f32 tmp;
+                n >> tmp;
+                *target = tmp;
+            }
+            return true;
+        }
+    }
+}
+
 struct AnimTransitionConditionFileData {
     AnimTransitionConditionDefType defType;
     // Param options
-    std::variant<f32, f32v2> param;
+    AnimTransitionConditionParamVar param;
     static_assert(e_count(AnimTransitionConditionConstantType) == 3);
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimTransitionConditionFileData,

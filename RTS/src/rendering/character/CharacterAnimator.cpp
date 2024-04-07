@@ -388,7 +388,7 @@ void CharacterAnimator::updateAnimationStates(CharacterAnimState& animState, Cha
 
         }
     }
-    static_assert(e_cast(CharacterLocomotionMode::COUNT) == 9, "Update anim mapping");
+    static_assert(e_cast(CharacterLocomotionMode::COUNT) == 10, "Update anim mapping");
 
 }
 

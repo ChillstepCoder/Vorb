@@ -42,8 +42,9 @@ constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(CharacterLocomotionMode::COUNT)
     0.6f, // JUMP
     0.6f, // FALLING
     0.6f, // LANDING
+    1.0f, // SWIMMING
 };
-static_assert(e_cast(CharacterLocomotionMode::COUNT) == 9, "Update above tables");
+static_assert(e_cast(CharacterLocomotionMode::COUNT) == 10, "Update above tables");
 
 
 enum class CharacterControlComponentFlags : ui8{
