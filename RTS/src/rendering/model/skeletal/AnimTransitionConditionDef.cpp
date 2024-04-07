@@ -24,8 +24,11 @@ AnimTransitionConditionDef getAnimTransitionConditionDef(AnimTransitionCondition
          CONDITION_DEF(is_accelerating, {
              return vars.acceleration > 0.01f;
          }),
+         CONDITION_DEF_PARAM(speed_greater_than, 1.0f, {
+             return vars.speed > p.f;
+         }),
      };
-     static_assert(e_count(AnimTransitionConditionDefType) == 4);
+     static_assert(e_count(AnimTransitionConditionDefType) == 5);
      assert(e_count(AnimTransitionConditionDefType) == conditions.size());
 
      auto it = conditions.find(name);

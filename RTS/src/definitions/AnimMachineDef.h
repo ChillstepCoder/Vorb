@@ -16,14 +16,22 @@ typedef ui8 AnimStateID;
 constexpr auto MAX_ANIM_STATES = std::numeric_limits<AnimStateID>::max();
 
 struct AnimTransitionDef {
-    StrToken condition;
+    AnimTransitionConditionFileData condition;
+    StrToken transitionAnim;
     f32 transitionDuration;
     StrToken toState;
 };
+SERIALIZABLE_IMGUI_CONTROLLED(AnimTransitionDef,
+    make_field(o.condition, "condition"sv),
+    make_field(o.transitionAnim, "tran_anim"sv),
+    make_field(o.transitionDuration, "tran_dur"sv),
+    make_field(o.toState, "to_state"sv)
+);
 
 struct AnimTransition {
     // Deliberately just a single condition for now, as these are custom code driven
     AnimTransitionCondition condition;
+    AssetID transitionAnim = INVALID_ASSET_ID;
     f32 transitionDuration;
     AnimStateID toState;
 };
@@ -33,13 +41,25 @@ enum class AnimStateType : ui8 {
     Blendspace2D,
     Blendspace3D
 };
+SERIALIZABLE_ENUM_SAME_NAME(AnimStateType,
+    ENUM_FIELD_SIMPLE(AnimStateType, AnimSequence),
+    ENUM_FIELD_SIMPLE(AnimStateType, Blendspace2D),
+    ENUM_FIELD_SIMPLE(AnimStateType, Blendspace3D),
+);
 
 struct AnimStateDef {
     StrToken name;
-    std::vector<AnimTransition> transitions;
-    AssetID assetId;
+    std::vector<AnimTransitionDef> transitions;
+    StrToken assetName; // Could be any of the state type
     AnimStateType stateType;
 };
+SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef, 
+    make_field(o.name, "name"sv),
+    make_field(o.transitions, "transitions"sv),
+    make_field(o.assetName, "asset_name"sv),
+    make_field(o.stateType, "state_type"sv)
+);
+    
 
 // Efficient representation
 struct AnimState {

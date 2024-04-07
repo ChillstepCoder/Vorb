@@ -258,6 +258,7 @@ namespace YmlSerializer {
         YmlSerializer::deserializeYmlFields<Type>(n, __VA_ARGS__); \
         return true; \
     }
+// Usage: SERIALIZABLE_IMGUI_CONTROLLED(Type, make_field(o.Value1, "value_name1"sv), make_field(o.Value2, ...)
 #define SERIALIZABLE_IMGUI_CONTROLLED(Type, ...) \
     SERIALIZABLE_SIMPLE(Type, __VA_ARGS__) \
     inline bool updateAndRenderImguiControls(Type& o) { \
