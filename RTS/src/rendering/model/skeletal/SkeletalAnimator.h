@@ -13,20 +13,27 @@
 class RigDef;
 struct MeshSkeletonData;
 
+typedef ozz::vector<ozz::math::SoaTransform> OzzSoaTransformVector;
+typedef ozz::vector<ozz::math::Float4x4> OzzMatrixVector;
+
 struct SkeletalAnimationContext {
-    std::unique_ptr<ozz::animation::SamplingJob::Context> mSamplingContext; // TODO: Pool allocator
+    ozz::animation::SamplingJob::Context samplingContext;
     const ozz::animation::Animation* anim;
     f32 time = 0.0f;
 };
-
+// Animation steps:
+// 1. Sample pose
+// 2. Blend
+// 3. Local to Model
+// 4. Per submesh - skinToMesh
 class SkeletalAnimator {
 public:
-    ozz::vector<ozz::math::Float4x4>* getPoseAtTime(const SkeletalAnimationContext& context, const RigDef& rig, const MeshSkeletonData& skeletonData);
-
-private:
-    ozz::vector<ozz::math::Float4x4> models;
-    ozz::vector<ozz::math::Float4x4> skinningMatrices;
-    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_STATE_TRACKS + 1];
-    ozz::vector<ozz::math::SoaTransform> blendedLocals;
+    // returns false on sampling error, stores result affine transforms in outTransforms, must be sent through skinMatricesToMesh to be used
+    static bool samplePose(SkeletalAnimationContext& context, const RigDef& rig, OzzSoaTransformVector& outTransforms);
+    // TODO: Blend
+    // Take finished local Soa transforms and convert them to model matrices
+    static bool localToModel(const OzzSoaTransformVector& transforms, const RigDef& rig, OzzMatrixVector& outModelMatrices);
+    // Map matrices to a specific mesh for skinning
+    static bool skinModelMatricesToMesh(OzzMatrixVector& outSkinningMatrices, const OzzMatrixVector& modelMatrices, const MeshSkeletonData& meshData);
 };
 
