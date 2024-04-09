@@ -2,6 +2,7 @@
 #include "ModelEditorViewportPanel.h"
 
 #include "definitions/ModelDef.h"
+#include "definitions/RigDef.h"
 
 #include "resources/ModelRepository.h"
 #include "rendering/MaterialShaderRepository.h"
@@ -11,6 +12,8 @@
 #include "rendering/post_process/ShadowDetail.h"
 #include "rendering/mesh/LineMesh.h"
 #include "rendering/model/skeletal/SkeletalAnimator.h"
+
+#include "resources/AnimationRepository.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -121,7 +124,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
     if (mAssetData && mAssetData->isSkeletalModel() && mSkeletalEditMode) {
-        MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_skel"))->tryGetLoadedAsset();
+        return MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_skel"))->tryGetLoadedAsset();
     }
     return getModelRenderShader();
 }
@@ -210,21 +213,39 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
     transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
     glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &transform[0][0]);
 
-    for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-        const SkeletalMesh& mesh = mAssetData->getSkeletalMesh(i);
-        const MeshSkeletonData& skelData = mesh.getSkeletonData();
-        // TODO: ANIM SHARE FOR LINKED SUBMESHES
-        mesh.unbindModelAttribs(); // Editor doesnt use these
-        assert(mesh.mVariantDataUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-        if (ozz::vector<ozz::math::Float4x4>* skinningMatrices = mCharacterAnimator->updateAnimation(renderData.animatorData, skelData, 0.5f)) {
+    SkeletalAnimationContext context;
+    context.samplingContext.Resize(mAssetData->mRig->mSkeleton.num_joints());
+    AssetHandlePtr<AnimationDef> animHandle = AnimationRepository::get().getAssetHandle(CStrToken("sprint"));
+
+    if (animHandle->isLoaded()) {
+        const AnimationDef& animDef = animHandle->getLoadedAsset();
+        context.anim = &animDef.mAnimation;
+        OzzSoaTransformVector soaTransforms;
+        if (!SkeletalAnimator::samplePose(context, *mAssetData->mRig, soaTransforms)) {
+            panic("Anim sample fail!");
+        }
+        OzzMatrixVector modelMatrices;
+        if (!SkeletalAnimator::localToModel(soaTransforms, *mAssetData->mRig, modelMatrices)) {
+            panic("Anim LTM fail!");
+        }
+
+        for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
+            const SkeletalMesh& mesh = mAssetData->getSkeletalMesh(i);
+            const MeshSkeletonData& skelData = mesh.getSkeletonData();
+            // TODO: ANIM SHARE FOR LINKED SUBMESHES
+            mesh.unbindModelAttribs(); // Editor doesnt use these
+            assert(mesh.mVariantDataUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+           
+            OzzMatrixVector skinningMatrices;
+            if (!SkeletalAnimator::skinModelMatricesToMesh(skinningMatrices, modelMatrices, skelData)) {
+                panic("Anim skinning fail!");
+            }
             // Draw animated
-
-            glUniformMatrix4fv(shader->getUniform("unM"), skelData.mNumJoints, false, (const GLfloat*)&(*skinningMatrices)[0].cols);
-
+            glUniformMatrix4fv(shader->getUniform("unBoneTransforms[0]"), skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
             // TODO: Indirect?
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
+            mesh.bindModelAttribs(); // Main game does
         }
-        mesh.bindModelAttribs(); // Main game does
     }
 }

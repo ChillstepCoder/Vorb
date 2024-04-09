@@ -11,7 +11,6 @@ bool SkeletalAnimator::samplePose(SkeletalAnimationContext& context, const RigDe
     // Animation and skinning
     const int numSoaJoints = rig.mSkeleton.num_soa_joints();
     const int numJoints = rig.mSkeleton.num_joints();
-    models.resize(numJoints);
 
     // Allocate buffers
     outTransforms.resize(numSoaJoints);
