@@ -96,6 +96,7 @@ void WorldObjectQuery::queryInternal() {
 WorldObjectQueryPtr WorldObjectQueryFactory::makeQuery(World& world, const f32v3& worldPos) {
     WorldObjectQueryPtr newQuery = std::make_shared<WorldObjectQuery>(world);
     newQuery->mWorldPos = worldPos;
+    assert(worldPos.x >= 0.0f && worldPos.y >= 0.0f);
     newQuery->query(newQuery);
     return newQuery;
 }

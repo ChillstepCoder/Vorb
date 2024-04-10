@@ -61,7 +61,7 @@ void TileEditorViewportPanel::renderMesh() {
             const MaterialShaderDef* shader = getShader();
             glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
             glUniform1i(shader->getUniform("unVariantIndex"), mAssetData->modelVariants[mVariantIndex]);
-            AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->modelRef.getAssetHandle());
+            AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->modelRef.getAssetHandleBase());
             if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
                 for (int i = 0; i < modelDef->getNumMeshes(); ++i) {
                     modelDef->getMesh(i).unbindModelAttribs(); // Editor doesnt use these

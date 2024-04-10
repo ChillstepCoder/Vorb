@@ -32,6 +32,10 @@ private:
     int mVariantIndex = 0;
 
     std::unique_ptr<LineMesh> mAABBMesh;
+
+    // Skeletal
     std::unique_ptr<SkeletalAnimator> mSkeletalAnimator;
+    SoftAssetReference mPreviewAnim = SoftAssetReference(AssetType::Animation);
+    f32 mPreviewAnimTime = 0.0f;
 };
 

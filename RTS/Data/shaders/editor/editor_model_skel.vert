@@ -66,7 +66,7 @@ void main() {
     // For debugging
     fTangent = localTangent.xyz;
     
-    vec4 worldPos = unM * (localPos + unPosOffset);
+    vec4 worldPos = transformedPos + unPosOffset;
     fWorldPos = worldPos.xyz;
     vec4 screenPos = unVP * worldPos;
     gl_Position = screenPos;

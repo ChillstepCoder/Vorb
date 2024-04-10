@@ -143,7 +143,7 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
     return changed;
 }
 
-AssetHandleBasePtr SoftAssetReference::getAssetHandle() const {
+AssetHandleBasePtr SoftAssetReference::getAssetHandleBase() const {
     if (!isValid()) {
         return nullptr;
     }

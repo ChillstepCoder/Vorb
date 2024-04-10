@@ -11,8 +11,8 @@ AssetLoadFunc ItemRepository::getAssetLoadFunc() {
         ItemDef& def = *static_cast<ItemDef*>(assetDataPtr);
 
         def.reserveDependencyCount(2);
-        def.addDependency(def.mIconTextureRef.getAssetHandle());
-        def.addDependency(def.mModelRef.getAssetHandle());
+        def.addDependency(def.mIconTextureRef.getAssetHandleBase());
+        def.addDependency(def.mModelRef.getAssetHandleBase());
 
         LOAD_DEPENDENCIES_HELPER(def);
     };

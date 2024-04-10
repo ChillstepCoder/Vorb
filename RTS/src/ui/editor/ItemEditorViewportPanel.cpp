@@ -31,7 +31,7 @@ const MaterialShaderDef* ItemEditorViewportPanel::getShader() {
 void ItemEditorViewportPanel::renderMesh() {
     if (mAssetData) {
         if (mAssetData->mModelRef.isValid()) {
-            AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->mModelRef.getAssetHandle());
+            AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->mModelRef.getAssetHandleBase());
             const MaterialShaderDef* shader = getShader();
             glUniform1i(shader->getUniform("unVariantIndex"), 0);
             glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);

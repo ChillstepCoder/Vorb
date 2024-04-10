@@ -107,7 +107,7 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                     if (!o.tile.isValid()) {
                         return changed;
                     }
-                    AssetHandlePtr<TileDef> tileDefHandle = static_unique_pointer_cast<AssetHandle<TileDef>>(o.tile.getAssetHandle());
+                    AssetHandlePtr<TileDef> tileDefHandle = static_unique_pointer_cast<AssetHandle<TileDef>>(o.tile.getAssetHandleBase());
                     if (!tileDefHandle) {
                         ImGui::Text("!!!INVALID REFERENCE!!!");
                         return changed;

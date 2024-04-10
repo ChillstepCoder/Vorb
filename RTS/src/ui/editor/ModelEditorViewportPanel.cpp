@@ -48,6 +48,15 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         updateAndRenderSaveButton();
         if (mAssetData && mAssetData->isSkeletalModel()) {
             ImGui::Checkbox("Skeletal Edit", &mSkeletalEditMode);
+            if (mSkeletalEditMode) {
+                if (ImguiUtil::updateAndRenderSoftAssetReference("Preview Anim", mPreviewAnim)) {
+                    mPreviewAnimTime = 0.0f;
+                }
+                AssetHandlePtr<AnimationDef> previewHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
+                if (previewHandle; const AnimationDef* def = previewHandle->tryGetLoadedAsset()) {
+                    ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->mAnimation.duration());
+                }
+            }
         }
         ImGui::Text("MeshCount %d", mAssetData->getNumMeshes());
         int polyCount = 0;
@@ -215,9 +224,8 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
 
     SkeletalAnimationContext context;
     context.samplingContext.Resize(mAssetData->mRig->mSkeleton.num_joints());
-    AssetHandlePtr<AnimationDef> animHandle = AnimationRepository::get().getAssetHandle(CStrToken("sprint"));
-
-    if (animHandle->isLoaded()) {
+    AssetHandlePtr<AnimationDef> animHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
+    if (animHandle && animHandle->isLoaded()) {
         const AnimationDef& animDef = animHandle->getLoadedAsset();
         context.anim = &animDef.mAnimation;
         OzzSoaTransformVector soaTransforms;
@@ -233,7 +241,7 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
             const SkeletalMesh& mesh = mAssetData->getSkeletalMesh(i);
             const MeshSkeletonData& skelData = mesh.getSkeletonData();
             // TODO: ANIM SHARE FOR LINKED SUBMESHES
-            mesh.unbindModelAttribs(); // Editor doesnt use these
+            //mesh.unbindModelAttribs(); // Editor doesnt use these
             assert(mesh.mVariantDataUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
            
@@ -245,7 +253,7 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
             glUniformMatrix4fv(shader->getUniform("unBoneTransforms[0]"), skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
             // TODO: Indirect?
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
-            mesh.bindModelAttribs(); // Main game does
+            //mesh.bindModelAttribs(); // Main game does
         }
     }
 }

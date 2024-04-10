@@ -19,8 +19,8 @@ AssetLoadFunc FishRepository::getAssetLoadFunc() {
         FishDef& def = *static_cast<FishDef*>(assetDataPtr);
 
         def.reserveDependencyCount(2);
-        def.addDependency(def.mItemRef.getAssetHandle());
-        def.addDependency(def.mModelRef.getAssetHandle());
+        def.addDependency(def.mItemRef.getAssetHandleBase());
+        def.addDependency(def.mModelRef.getAssetHandleBase());
 
         LOAD_DEPENDENCIES_HELPER(def,
             FishDef& def = *static_cast<FishDef*>(assetDataPtr);
