@@ -151,7 +151,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
                     GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
                     for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                        instanceData.mMesh[m]->bindModelAttribs();
+                        instanceData.mMesh[m]->bindStaticModelAttribs();
                     }
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());

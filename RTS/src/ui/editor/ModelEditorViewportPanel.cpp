@@ -12,6 +12,7 @@
 #include "rendering/post_process/ShadowDetail.h"
 #include "rendering/mesh/LineMesh.h"
 #include "rendering/model/skeletal/SkeletalAnimator.h"
+#include "rendering/mesh/Vertex.h"
 
 #include "resources/AnimationRepository.h"
 
@@ -53,8 +54,10 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                     mPreviewAnimTime = 0.0f;
                 }
                 AssetHandlePtr<AnimationDef> previewHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
-                if (previewHandle; const AnimationDef* def = previewHandle->tryGetLoadedAsset()) {
-                    ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->mAnimation.duration());
+                if (previewHandle) {
+                    if (const AnimationDef* def = previewHandle->tryGetLoadedAsset()) {
+                        ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->mAnimation.duration());
+                    }
                 }
             }
         }
@@ -132,7 +135,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 }
 
 const MaterialShaderDef* ModelEditorViewportPanel::getShader() {
-    if (mAssetData && mAssetData->isSkeletalModel() && mSkeletalEditMode) {
+    if (mAssetData && mAssetData->isSkeletalModel() && mSkeletalEditMode && mPreviewAnim.isValid()) {
         return MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_skel"))->tryGetLoadedAsset();
     }
     return getModelRenderShader();
@@ -145,7 +148,7 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
         if (mAssetData->isSkeletalModel()) {
-            if (mSkeletalEditMode) {
+            if (mSkeletalEditMode && mPreviewAnim.isValid()) {
                 renderMeshSkeletal();
             }
             else {
@@ -181,20 +184,20 @@ void ModelEditorViewportPanel::renderMeshStatic() {
     if (mShowSingle) {
         mSingleIndex = glm::min((int)mAssetData->getNumMeshes() - 1, mSingleIndex);
         Mesh& mesh = mAssetData->getMesh(mSingleIndex);
-        mesh.unbindModelAttribs(); // Editor doesnt use these
+        mesh.unbindStaticModelAttribs(); // Editor doesnt use these
         assert(mesh.mVariantDataUbo);
         glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
         MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
-        mesh.bindModelAttribs(); // Main game does
+        mesh.bindStaticModelAttribs(); // Main game does
     }
     else {
         for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
             Mesh& mesh = mAssetData->getMesh(i);
-            mesh.unbindModelAttribs(); // Editor doesnt use these
+            mesh.unbindStaticModelAttribs(); // Editor doesnt use these
             assert(mesh.mVariantDataUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
-            mesh.bindModelAttribs(); // Main game does
+            mesh.bindStaticModelAttribs(); // Main game does
         }
         int x = 1;
         const ModelLodParams& params = ModelRepository::get().getLodParams(mAssetData->getID());
@@ -202,11 +205,11 @@ void ModelEditorViewportPanel::renderMeshStatic() {
             glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
             for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
                 Mesh& mesh = mAssetData->getMesh(i);
-                mesh.unbindModelAttribs(); // Editor doesnt use these
+                mesh.unbindStaticModelAttribs(); // Editor doesnt use these
                 assert(mesh.mVariantDataUbo);
                 glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
                 MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
-                mesh.bindModelAttribs(); // Main game does
+                mesh.bindStaticModelAttribs(); // Main game does
             }
             ++x;
         }
@@ -228,6 +231,7 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
     if (animHandle && animHandle->isLoaded()) {
         const AnimationDef& animDef = animHandle->getLoadedAsset();
         context.anim = &animDef.mAnimation;
+        context.time = mPreviewAnimTime;
         OzzSoaTransformVector soaTransforms;
         if (!SkeletalAnimator::samplePose(context, *mAssetData->mRig, soaTransforms)) {
             panic("Anim sample fail!");
@@ -241,7 +245,8 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
             const SkeletalMesh& mesh = mAssetData->getSkeletalMesh(i);
             const MeshSkeletonData& skelData = mesh.getSkeletonData();
             // TODO: ANIM SHARE FOR LINKED SUBMESHES
-            //mesh.unbindModelAttribs(); // Editor doesnt use these
+            mesh.unbindStaticModelAttribs(); // Editor doesnt use these
+            SkinnedModelVertex::bindVertexAttribs(mesh.mGpuData.mVao); // Have to do this or crash
             assert(mesh.mVariantDataUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
            
@@ -253,7 +258,8 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
             glUniformMatrix4fv(shader->getUniform("unBoneTransforms[0]"), skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
             // TODO: Indirect?
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(mLod));
-            //mesh.bindModelAttribs(); // Main game does
+
+            mesh.unbindSkeletalModelAttribs(); // Have to do this or crash
         }
     }
 }

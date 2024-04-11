@@ -119,8 +119,10 @@ public:
     void setRenderPass(MaterialRenderPassType type) { mRenderPassType = type; }
     const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
-    void bindModelAttribs() const;
-    void unbindModelAttribs() const;
+    void bindStaticModelAttribs() const;
+    void unbindStaticModelAttribs() const;
+    void bindSkeletalModelAttribs() const;
+    void unbindSkeletalModelAttribs() const;
 
     bool castsShadow() const {
         return mRenderPassType != MaterialRenderPassType::Water;

@@ -64,10 +64,10 @@ void TileEditorViewportPanel::renderMesh() {
             AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->modelRef.getAssetHandleBase());
             if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
                 for (int i = 0; i < modelDef->getNumMeshes(); ++i) {
-                    modelDef->getMesh(i).unbindModelAttribs(); // Editor doesnt use these
+                    modelDef->getMesh(i).unbindStaticModelAttribs(); // Editor doesnt use these
                     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, modelDef->getMesh(i).mVariantDataUbo);
                     MeshDrawer::draw(modelDef->getMesh(i).mGpuData, MeshLODLevel(0));
-                    modelDef->getMesh(i).bindModelAttribs(); // Main game does
+                    modelDef->getMesh(i).bindStaticModelAttribs(); // Main game does
                 }
             }
         }

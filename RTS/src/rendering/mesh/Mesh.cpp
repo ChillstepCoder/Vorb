@@ -19,7 +19,7 @@ void Mesh::destroy() {
     mGpuData.destroy();
 }
 
-void Mesh::bindModelAttribs() const {
+void Mesh::bindStaticModelAttribs() const {
     assert(mGpuData.mVao);
     if (!mHasModelAttribsBound) [[unlikely]] {
         mHasModelAttribsBound = true;
@@ -46,13 +46,23 @@ void Mesh::bindModelAttribs() const {
     }
 }
 
-void Mesh::unbindModelAttribs() const {
+void Mesh::unbindStaticModelAttribs() const {
     mHasModelAttribsBound = false;
     glDisableVertexArrayAttrib(mGpuData.mVao, 7);
     glDisableVertexArrayAttrib(mGpuData.mVao, 8);
     glDisableVertexArrayAttrib(mGpuData.mVao, 9);
     glDisableVertexArrayAttrib(mGpuData.mVao, 10);
     glDisableVertexArrayAttrib(mGpuData.mVao, 11);
+}
+
+void Mesh::bindSkeletalModelAttribs() const {
+    glEnableVertexArrayAttrib(mGpuData.mVao, 11); // Bone weights
+    glEnableVertexArrayAttrib(mGpuData.mVao, 12); // Bone ids
+}
+
+void Mesh::unbindSkeletalModelAttribs() const {
+    glDisableVertexArrayAttrib(mGpuData.mVao, 11); // Bone weights
+    glDisableVertexArrayAttrib(mGpuData.mVao, 12); // Bone ids
 }
 
 void MeshGpuData::destroy() {

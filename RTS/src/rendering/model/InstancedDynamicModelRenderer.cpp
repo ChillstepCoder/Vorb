@@ -196,7 +196,7 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
         GLDrawCommandBuffer* drawCommands = drawCommandPair.first;
         const Mesh& mesh = *drawCommandPair.second;
         // TODO: Do elsewhere
-        mesh.bindModelAttribs();
+        mesh.bindStaticModelAttribs();
 
         // TODO: I think this might be cheaper as an SSBO so we aren't binding to every mesh
         mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
