@@ -7,12 +7,10 @@
 #include <ozz/base/maths/simd_math.h>
 
 struct RigDefFileData {
-    std::vector<StrToken> mAnimationNames;
     StrToken mSkeletonFileName;
     nString mUpperRootJointName;
 };
 SERIALIZABLE_SIMPLE(RigDefFileData,
-    make_field(o.mAnimationNames, "anims"sv),
     make_field(o.mSkeletonFileName, "skeleton"sv),
     make_field(o.mUpperRootJointName, "upper_root"sv)
 );
@@ -23,11 +21,9 @@ class RigDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(RigDef, AssetType::Rig);
 
-    std::map<StrToken, ui32> mNameToAnimationIndex;
-    std::unique_ptr<ConstOzzAnimationPtr[]> mAnimations;
+    std::vector<SoftAssetReference> mAnimationDefs; // populated by AnimationRepository
     ozz::animation::Skeleton mSkeleton;
     ozz::vector<ozz::math::SimdFloat4> mUpperBodyJointWeights;
     ozz::vector<ozz::math::SimdFloat4> mLowerBodyJointWeights;
-    ui32 mNumAnimations;
     ui32 mRigId;
 };

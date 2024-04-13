@@ -242,6 +242,12 @@ public:
     const T& getLoadedOrUnloadedAsset(AssetID id) {
         return *mAssets[id];
     }
+    T& getMutableLoadedOrUnloadedAsset(StrToken name) {
+        return *mAssets[getAssetID(name)];
+    }
+    T& getMutableLoadedOrUnloadedAsset(AssetID id) {
+        return *mAssets[id];
+    }
     inline bool isAssetLoaded(AssetID id) { return mLoadedAssets[id]->load(); }
 
     AssetID getAssetID(StrToken assetName) const override {

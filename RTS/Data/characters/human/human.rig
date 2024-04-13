@@ -1,25 +1,2 @@
 skeleton: paladin_skeleton.ozz
 upper_root: Spine
-anims: [
-  sheath_sword,
-  swrd_shld_atk_1,
-  swrd_shld_atk_2,
-  swrd_shld_atk_3,
-  swrd_shld_atk_4,
-  swrd_shld_blk_1,
-  swrd_shld_blk_2,
-  swrd_shld_blk_idle,
-  swrd_shld_death,
-  swrd_shld_idle,
-  swrd_shld_run_1,
-  swrd_shld_run_2,
-  swrd_shld_strf_1,
-  swrd_shld_strf_2,
-  swrd_shld_turn_1,
-  swrd_shld_turn_2,
-  swrd_shld_walk,
-  sprint,
-  swrd_shld_jump,
-  falling_idle_1,
-  land_1
-]

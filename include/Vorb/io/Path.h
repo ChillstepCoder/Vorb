@@ -41,6 +41,9 @@ namespace vorb {
             /// Construct a path from a string
             /// @param p: Path value
             Path(const nString& p);
+            /// Construct a path from a string
+            /// @param p: Path value
+            Path(nString&& p);
             //  TODO: Delete this entire class
             Path(const std::filesystem::path& p);
 
@@ -106,6 +109,8 @@ namespace vorb {
             nString getFileNameNoExtension() const;
             nString getFileNameTrimOneExtension() const;
             nString getExtension() const;
+            // NewExtension should not contain the .
+            Path getPathReplaceExtension(const nString& newExtension) const;
 
             /// Add a string to the end of this path's value
             /// @param s: String addition

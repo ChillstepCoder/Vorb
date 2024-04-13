@@ -2,6 +2,7 @@
 #include "AnimMachineRepository.h"
 
 #include "resources/RigRepository.h"
+#include "resources/AnimationRepository.h"
 
 AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
@@ -26,9 +27,10 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
             for (ui32 i = 0; i < ANIMATION_MACHINE_ANIMS_COUNT; ++i) {
                 if (animIter->isValid()) {
                     // Search for corresponding animation in the rigdef
-                    auto&& it = rig->mNameToAnimationIndex.find(*animIter);
-                    if (it != rig->mNameToAnimationIndex.end()) {
-                        def.mAnimsArray[i] = rig->mAnimations[it->second];
+                    auto&& it = std::find(rig->mAnimations.begin(), rig->mAnimations.end(), *animIter);
+                    if (it != rig->mAnimations.end()) {
+                        // TODO: THIS REQUIRES ALL ANIMS BE LOADED
+                        def.mAnimsArray[i] = &AnimationRepository::get().getLoadedOrUnloadedAsset(*it).mAnimation;
                     }
                     else {
                         panic("Anim machine animation {} does not exist in rig. Machine file: {}", animIter->toString(), filePath.getString());

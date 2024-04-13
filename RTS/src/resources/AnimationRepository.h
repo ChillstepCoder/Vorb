@@ -15,6 +15,8 @@ public:
     const char* const getAssetTypeDisplayName() const override { return "Animation"; }
 
 private:
+    void onRegisteredAsset(AssetID id) override;
+    void onAllAssetTypesRegistered() override;
     AssetLoadFunc getAssetLoadFunc() override;
 
 };

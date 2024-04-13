@@ -9,17 +9,10 @@
 #include <sys/stat.h>
 #endif
 
-vio::Path::Path() : Path("") {
-    // Empty
-}
-vio::Path::Path(const cString p) :
-m_path(p) {
-    // Empty
-}
-vio::Path::Path(const nString& p) :
-m_path(p) {
-    // Empty
-}
+vio::Path::Path() : Path("") { }
+vio::Path::Path(const cString p) : m_path(p) { }
+vio::Path::Path(const nString& p) : m_path(p) { }
+vorb::io::Path::Path(nString&& p) : m_path(std::move(p)) { }
 
 bool vio::Path::isNull() const {
     return m_path.empty();
@@ -90,6 +83,7 @@ vorb::io::Path::Path(const std::filesystem::path& p) {
     *this = vio::Path(p.string());
 }
 
+
 /****************************************************************\
  * End adaptation from Boost::Filesystem portability functions. *
 \****************************************************************/
@@ -156,6 +150,18 @@ nString vorb::io::Path::getExtension() const {
         }
     }
     return "";
+}
+
+vio::Path vorb::io::Path::getPathReplaceExtension(const nString& newExtension) const {
+    for (int c = m_path.size() - 1; c > 0; --c) {
+        // Trim extension and replace
+        if (m_path[c] == '.') {
+            nString newPath(m_path);
+            newPath.resize(c + 1);
+            return vio::Path(newPath + newExtension);
+        }
+    } 
+    return vio::Path(m_path + "." + newExtension);
 }
 
 bool vio::Path::isValid() const {
