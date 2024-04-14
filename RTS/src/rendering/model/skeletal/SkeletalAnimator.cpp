@@ -6,7 +6,7 @@
 
 #include "definitions/RigDef.h"
 
-bool SkeletalAnimator::samplePose(SkeletalAnimationContext& context, const RigDef& rig, OzzSoaTransformVector& outTransforms) {
+bool SkeletalAnimator::samplePose(SkeletalAnimationSampleContext& context, const RigDef& rig, OzzSoaTransformVector& outTransforms) {
 
     // Animation and skinning
     const int numSoaJoints = rig.mSkeleton.num_soa_joints();

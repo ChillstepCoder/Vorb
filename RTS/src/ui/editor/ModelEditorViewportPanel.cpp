@@ -56,7 +56,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 AssetHandlePtr<AnimationDef> previewHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
                 if (previewHandle) {
                     if (const AnimationDef* def = previewHandle->tryGetLoadedAsset()) {
-                        ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->mAnimation.duration());
+                        ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->animation.duration());
                     }
                 }
             }
@@ -225,12 +225,12 @@ void ModelEditorViewportPanel::renderMeshSkeletal() {
     transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
     glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &transform[0][0]);
 
-    SkeletalAnimationContext context;
+    SkeletalAnimationSampleContext context;
     context.samplingContext.Resize(mAssetData->mRig->mSkeleton.num_joints());
     AssetHandlePtr<AnimationDef> animHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
     if (animHandle && animHandle->isLoaded()) {
         const AnimationDef& animDef = animHandle->getLoadedAsset();
-        context.anim = &animDef.mAnimation;
+        context.anim = &animDef.animation;
         context.time = mPreviewAnimTime;
         OzzSoaTransformVector soaTransforms;
         if (!SkeletalAnimator::samplePose(context, *mAssetData->mRig, soaTransforms)) {

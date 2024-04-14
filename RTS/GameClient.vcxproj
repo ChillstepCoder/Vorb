@@ -822,6 +822,7 @@
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
     <ClInclude Include="src\rendering\model\skeletal\AnimTransitionCondition.h" />
     <ClInclude Include="src\rendering\model\skeletal\AnimTransitionConditionDef.h" />
+    <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimationSampleContext.h" />
     <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimator.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />

@@ -101,7 +101,7 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
         // TODO: Allow lazy load anim? hmmm prob not?
         const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
         if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
-        mCharacterAnimator->playOneShotAnimation(it->second->animState, &animDef->mAnimation);
+        mCharacterAnimator->playOneShotAnimation(it->second->animState, &animDef->animation);
     }
 }
 

@@ -44,7 +44,7 @@ AssetLoadFunc AnimationRepository::getAssetLoadFunc() {
             pError("Animation file is not an animation - " + filePath.getString());
             assert(false);
         }
-        archive >> def.mAnimation;
+        archive >> def.animation;
 
         return true;
     };

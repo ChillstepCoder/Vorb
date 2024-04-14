@@ -2555,6 +2555,9 @@
     <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimationSampleContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
