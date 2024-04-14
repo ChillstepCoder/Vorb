@@ -92,34 +92,28 @@ AssetLoadFunc RigRepository::getAssetLoadFunc() {
         }
 
         AnimationRepository& animRepo = AnimationRepository::get();
-        def.mNumAnimations = fileData.mAnimationNames.size();
-        if (def.mNumAnimations) {
-            def.mAnimations = std::unique_ptr<ConstOzzAnimationPtr[]>(new ConstOzzAnimationPtr[def.mNumAnimations]);
-            for (ui32 i = 0; i < def.mNumAnimations; ++i) {
-                def.addDependency(animRepo.getAssetHandle(fileData.mAnimationNames[i]));
-            }
-        }
 
-        // TODO: This fileData copy is expensive, use userdata
-        assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
-            def.mNumAnimations = fileData.mAnimationNames.size();
-            if (def.mNumAnimations) {
-                def.mAnimations = std::unique_ptr<ConstOzzAnimationPtr[]>(new ConstOzzAnimationPtr[def.mNumAnimations]);
-                for (ui32 i = 0; i < def.mNumAnimations; ++i) {
-                    def.mAnimations[i] = &def.getDependencies()->getLoadedAsset<AnimationDef>(fileData.mAnimationNames[i]).mAnimation;
-                    def.mNameToAnimationIndex[fileData.mAnimationNames[i]] = i;
-                }
-            }
-            return true;
-        },
-            nullptr,
-            assetID,
-            assetDataPtr,
-            filePath,
-            mLoadedAssets[assetID].get(),
-            nullptr,
-            def.getDependencies()
-        );
-        return false;
+        //// TODO: This fileData copy is expensive, use userdata
+        //assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
+        //    def.mNumAnimations = fileData.mAnimationNames.size();
+        //    if (def.mNumAnimations) {
+        //        def.mAnimations = std::unique_ptr<ConstOzzAnimationPtr[]>(new ConstOzzAnimationPtr[def.mNumAnimations]);
+        //        for (ui32 i = 0; i < def.mNumAnimations; ++i) {
+        //            def.mAnimations[i] = &def.getDependencies()->getLoadedAsset<AnimationDef>(fileData.mAnimationNames[i]).mAnimation;
+        //            def.mNameToAnimationIndex[fileData.mAnimationNames[i]] = i;
+        //        }
+        //    }
+        //    return true;
+        //},
+        //    nullptr,
+        //    assetID,
+        //    assetDataPtr,
+        //    filePath,
+        //    mLoadedAssets[assetID].get(),
+        //    nullptr,
+        //    def.getDependencies()
+        //);
+        //return false;
+        return true;
     };
 }

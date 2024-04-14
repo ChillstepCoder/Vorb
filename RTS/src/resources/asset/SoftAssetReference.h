@@ -20,6 +20,8 @@ public:
     }
     AssetID getAssetID() const;
     AssetDescriptor getAssetDescriptor() const { return AssetDescriptor{ .id = getAssetID(), .assetType = assetType, }; }
+
+    auto operator<=>(const SoftAssetReference&) const = default;
     
     StrToken name;
     AssetType assetType = AssetType::NONE;
