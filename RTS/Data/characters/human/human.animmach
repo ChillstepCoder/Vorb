@@ -1,15 +1,1 @@
 rig: human
-walk_left: ""
-walk_right: ""
-walk_front: swrd_shld_walk
-walk_back: ""
-run_left: ""
-run_right: ""
-run_front: swrd_shld_run_1
-run_back: swrd_shld_run_2
-sprint_front: sprint
-idle: swrd_shld_idle
-idle_combat: swrd_shld_idle
-jump: swrd_shld_jump
-fall: falling_idle_1
-land: land_1

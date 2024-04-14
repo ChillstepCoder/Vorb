@@ -161,6 +161,7 @@ ozz::vector<ozz::math::Float4x4>* CharacterAnimator::updateAnimation(const Chara
         // Sample animation
         ozz::animation::SamplingJob sampling_job;
         sampling_job.animation = machine.mAnimsArray[i];
+        assert(sampling_job.animation);
         sampling_job.context = currentTrack.mContext.get();
         sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
         sampling_job.output = make_span(locals[numValidTracks]);

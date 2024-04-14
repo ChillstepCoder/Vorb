@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "AnimMachineRepository.h"
 
-#include "resources/RigRepository.h"
+#include "definitions/RigDef.h"
 #include "resources/AnimationRepository.h"
 
 AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
@@ -9,38 +9,15 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
 
         AnimMachineDef& def = *static_cast<AnimMachineDef*>(assetDataPtr);
 
-        ryml::Tree tree = YmlSerializer::parseFileData(readFileToString(filePath));
-
-        AnimMachineDefFileData fileData;
-        tree.crootref() >> fileData;
-
-        if (!fileData.mRigName.isValid()) {
-            panic("Anim machine file does not have a rig: {}", filePath.getString());
+        YmlSerializer::readFileData(readFileToString(filePath), def);
+        if (!def.rigDef.isValid()) {
+            panic("AnimMachine {} has no rig", filePath.getString());
         }
 
-        def.addDependency(RigRepository::get().getAssetHandle(fileData.mRigName));
+        def.addDependency(def.rigDef.getAssetHandle<RigDef>());
 
-        assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
-            const RigDef* rig = &def.getDependencies()->getLoadedAsset<RigDef>(fileData.mRigName);
-            // Hook up all ozz animation references in the animation machine
-            const StrToken* animIter = &fileData.mWalkLeftName; //< Must be mWalkLeftName as it is start of the string array
-            for (ui32 i = 0; i < ANIMATION_MACHINE_ANIMS_COUNT; ++i) {
-                if (animIter->isValid()) {
-                    // Search for corresponding animation in the rigdef
-                    auto it = rig->mAnimationDefs.begin();
-                    for (; it != rig->mAnimationDefs.end(); ++it) {
-                        if (it->assetType == AssetType::Animation && it->name == *animIter) {
-                            // TODO: THIS REQUIRES ALL ANIMS BE LOADED
-                            def.mAnimsArray[i] = &AnimationRepository::get().getLoadedOrUnloadedAsset(it->name).mAnimation;
-                            break;
-                        }
-                    }
-                    if (it == rig->mAnimationDefs.end()) {
-                        panic("Anim machine animation {} does not exist in rig. Machine file: {}", animIter->toString(), filePath.getString());
-                    }
-                }
-                ++animIter;
-            }
+        assetLoader.requestAssetLoadWithDependencies([]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
+            // TODO: Set everything up
             return true;
         },
             nullptr,

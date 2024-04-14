@@ -205,6 +205,7 @@ void CharacterRenderer::addCharacterModelInternal(entt::entity entityId, AssetID
     ASSERT_RENDER_THREAD();
     CharacterModelRendererData& renderData = mModelRenderData[modelId];
     CharacterRendererCharacterState& newState = renderData.entityCharacterModels.emplace(entityId, CharacterRendererCharacterState()).first->second;
+    // Only init if we aren't already pending a full init
     if (!renderData.needsInitialize) {
         const ModelDef& modelDef = renderData.handle->getLoadedAsset();
         mCharacterAnimator->initializeCharacterAnimState(newState.animState, modelDef);
