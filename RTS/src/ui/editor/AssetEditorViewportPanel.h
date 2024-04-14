@@ -8,6 +8,7 @@
 template <typename T>
 class AssetEditorViewportPanel : public AssetEditorViewportPanelBase {
 public:
+
     bool updateAndRender(f32 elapsedSec) override {
         mCurrentElapsedSec = elapsedSec;
 

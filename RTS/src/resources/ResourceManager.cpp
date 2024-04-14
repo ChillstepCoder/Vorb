@@ -27,6 +27,7 @@
 #include "resources/FishRepository.h"
 #include "resources/ParticleSystemRepository.h"
 #include "resources/TileDistributionRepository.h"
+#include "resources/Blendspace1DRepository.h"
 #include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
 #include "editor/EditorResources.h"
@@ -76,6 +77,7 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(RigRepository, AssetType::Rig);
     REGISTER_ASSET_REPO(AnimationRepository, AssetType::Animation);
     REGISTER_ASSET_REPO(AnimMachineRepository, AssetType::AnimMachine);
+    REGISTER_ASSET_REPO(Blendspace1DRepository, AssetType::Blendspace1D);
     REGISTER_ASSET_REPO(ModelRepository, AssetType::Model);
     REGISTER_ASSET_REPO(SkillRepository, AssetType::Skill);
     REGISTER_ASSET_REPO(ItemRepository, AssetType::Item);
@@ -86,7 +88,7 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TileDistributionRepository, AssetType::TileDistribution);
     REGISTER_ASSET_REPO(BuildingRepository, AssetType::Building);
     REGISTER_ASSET_REPO(RoomRepository, AssetType::Room);
-    static_assert(e_count(AssetType) == 20);
+    static_assert(e_count(AssetType) == 21);
 
     // Add other extensions
     mExtensionToAssetRepository[CStrToken("comp")] = &MaterialShaderRepository::get();

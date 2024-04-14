@@ -32,6 +32,8 @@ std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(A
             return getThumbnailFunction<AnimationDef>();
         case AssetType::AnimMachine:
             return getThumbnailFunction<AnimMachineDef>();
+        case AssetType::Blendspace1D:
+            return getThumbnailFunction<Blendspace1DDef>();
         case AssetType::Model:
             return getThumbnailFunction<ModelDef>();
         case AssetType::Skill:
@@ -58,7 +60,7 @@ std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(A
             break;
 
     }
-    static_assert(e_count(AssetType) == 20);
+    static_assert(e_count(AssetType) == 21);
 }
 
 template<>

@@ -1,0 +1,31 @@
+#pragma once
+
+#include "AssetEditorViewportPanel.h"
+
+#include "definitions/rendering/Blendspace1DDef.h"
+
+class SkeletalAnimator;
+
+
+class Blendspace1DEditorViewportPanel : public AssetEditorViewportPanel<Blendspace1DDef>
+{
+public:
+    Blendspace1DEditorViewportPanel();
+    ~Blendspace1DEditorViewportPanel();
+
+    void updateAndRenderPrimaryControls(f32 ySize) override;
+    bool hasBottomControls() const override { return true; }
+    void updateAndRenderBottomControls() override;
+
+
+
+    const char* getViewportWindowName() const override { return "Blendspace 1D Editor"; }
+
+private:
+
+    // Skeletal
+    std::unique_ptr<SkeletalAnimator> mSkeletalAnimator;
+    SoftAssetReference mPreviewModel = SoftAssetReference(AssetType::Model);
+    f32 mPreviewAnimTime = 0.0f;
+};
+

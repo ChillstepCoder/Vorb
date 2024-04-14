@@ -32,9 +32,7 @@ ModelEditorViewportPanel::ModelEditorViewportPanel()
     mSkeletalAnimator = std::make_unique<SkeletalAnimator>();
 }
 
-ModelEditorViewportPanel::~ModelEditorViewportPanel()
-{
-}
+ModelEditorViewportPanel::~ModelEditorViewportPanel() = default;
 
 void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
 {

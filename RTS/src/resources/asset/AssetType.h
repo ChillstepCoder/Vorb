@@ -11,6 +11,7 @@ enum class AssetType : ui8 {
     Rig,
     Animation,
     AnimMachine,
+    Blendspace1D,
     Model,
     Skill,
     Item,

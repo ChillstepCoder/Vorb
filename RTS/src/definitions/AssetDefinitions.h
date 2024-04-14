@@ -12,6 +12,7 @@
 #include "definitions/ModelDef.h"
 #include "definitions/ParticleSystemDef.h"
 #include "definitions/rendering/CubemapDef.h"
+#include "definitions/rendering/Blendspace1DDef.h"
 #include "definitions/rendering/TextureDef.h"
 #include "definitions/SkillDef.h"
 #include "definitions/TileDef.h"
@@ -19,4 +20,4 @@
 #include "definitions/TileDistributionDef.h"
 #include "item/ItemDef.h"
 
-static_assert(e_count(AssetType) == 20, "Add all includes here");
+static_assert(e_count(AssetType) == 21, "Add all includes here");

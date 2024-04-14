@@ -33,6 +33,7 @@ ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootP
     m_AssetIconMap[AssetType::Rig] = EditorResources::skelIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Animation] = EditorResources::animIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::AnimMachine] = EditorResources::animGraphIcon->getLoadedAsset().getTextureHandle();
+    m_AssetIconMap[AssetType::Blendspace1D] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Model] = EditorResources::meshIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Skill] = EditorResources::skillIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Item] = EditorResources::itemIcon->getLoadedAsset().getTextureHandle();
@@ -45,7 +46,7 @@ ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootP
     m_AssetIconMap[AssetType::Room] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::NONE] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
 
-    static_assert(e_count(AssetType) == 20, "Add icon");
+    static_assert(e_count(AssetType) == 21, "Add icon");
     memset(m_SearchBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
 
 	initEvents();

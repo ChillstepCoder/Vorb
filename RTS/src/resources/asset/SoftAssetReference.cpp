@@ -87,6 +87,9 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
         case AssetType::AnimMachine:
             assetButton<AnimMachineDef>(assetRef);
             break;
+        case AssetType::Blendspace1D:
+            assetButton<Blendspace1DDef>(assetRef);
+            break;
         case AssetType::Model:
             assetButton<ModelDef>(assetRef);
             break;
@@ -123,7 +126,7 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
             break;
 
     }
-    static_assert(e_count(AssetType) == 20);
+    static_assert(e_count(AssetType) == 21);
 
     auto&& it = sAssetSelectorPopup.find(&assetRef);
     if (it != sAssetSelectorPopup.end()) {

@@ -41,6 +41,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, Rig),
     ENUM_FIELD_SIMPLE(AssetType, Animation),
     ENUM_FIELD_SIMPLE(AssetType, AnimMachine),
+    ENUM_FIELD_SIMPLE(AssetType, Blendspace1D),
     ENUM_FIELD_SIMPLE(AssetType, Model),
     ENUM_FIELD_SIMPLE(AssetType, Skill),
     ENUM_FIELD_SIMPLE(AssetType, Item),
@@ -52,7 +53,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, Building),
     ENUM_FIELD_SIMPLE(AssetType, Room),
 );
-static_assert(e_count(AssetType) == 20);
+static_assert(e_count(AssetType) == 21);
 
 // Usage: s.value2b(myValue) ect...
 // See bitsery documentation

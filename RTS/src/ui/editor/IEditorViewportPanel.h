@@ -46,11 +46,10 @@ public:
     virtual bool updateAndRenderTertiaryControls(f32 ySize) { return false; }
     // Optional
     virtual bool hasBottomControls() const { return false; }
-    virtual f32 getBottomHeight() const { return 0.0f; }
     virtual void updateAndRenderBottomControls() {  }
 
-    virtual void onEnter() {};
-    virtual void onExit() {};
+    virtual void onEnter() { mDidJustEnter = true; }
+    virtual void onExit() { mDidJustEnter = false; }
 
     f32v3 getCameraPosition() const;
     f32v3 getCameraDirection() const;
@@ -137,6 +136,7 @@ protected:
     f32v3 mLightColor = f32v3(1.0f, 0.8f, 0.8f);
     bool mRenderArray = false;
     bool mFollowAxis = false;
+    bool mDidJustEnter = false;
 
     // Config
     bool mShowDrawModeDropdown = true;

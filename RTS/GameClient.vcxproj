@@ -437,6 +437,7 @@
     <ClCompile Include="src\resources\AssetLoader.cpp" />
     <ClCompile Include="src\resources\asset\SoftAssetReference.cpp" />
     <ClCompile Include="src\resources\BiomeRepository.cpp" />
+    <ClCompile Include="src\resources\Blendspace1DRepository.cpp" />
     <ClCompile Include="src\resources\CubemapRepository.cpp" />
     <ClCompile Include="src\resources\DataAssetRepository.cpp" />
     <ClCompile Include="src\resources\EffectRepository.cpp" />
@@ -463,6 +464,7 @@
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp" />
     <ClCompile Include="src\text\NameManager.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
+    <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
@@ -619,6 +621,7 @@
     <ClInclude Include="src\definitions\FishDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
     <ClInclude Include="src\definitions\ParticleSystemDef.h" />
+    <ClInclude Include="src\definitions\rendering\Blendspace1DDef.h" />
     <ClInclude Include="src\definitions\rendering\CubemapDef.h" />
     <ClInclude Include="src\definitions\rendering\TextureDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
@@ -879,6 +882,7 @@
     <ClInclude Include="src\resources\asset\AssetType.h" />
     <ClInclude Include="src\resources\asset\SoftAssetReference.h" />
     <ClInclude Include="src\resources\BiomeRepository.h" />
+    <ClInclude Include="src\resources\Blendspace1DRepository.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />
     <ClInclude Include="src\resources\DataAssetRepository.h" />
     <ClInclude Include="src\resources\EffectRepository.h" />
@@ -908,6 +912,7 @@
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\NameManager.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
+    <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
