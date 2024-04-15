@@ -272,7 +272,6 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
     enum { AREA_WIDTH = 16 };
     enum { GRAB_RADIUS = 10 };
     enum { GRAB_BORDER = 2 };
-    static f32 v[2] = { 0.0f, 1.0f };
 
     ImGui::Begin(BottomControlsName, nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
 
@@ -288,6 +287,10 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
     if (mDidJustEnter) {
         ImGui::SetWindowFocus(BottomControlsName);
         mDidJustEnter = false;
+    }
+
+    if (!ImGui::IsMouseDown(0)) {
+        mDragIndex = -1;
     }
 
     //ImGui::ShowBezierDemo();
@@ -314,45 +317,60 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
         return;
 
     const bool lineHovered = ImGui::ItemHoverable(bb, Window->GetID("LineHover"), ImGuiItemFlags_None);
+    if (lineHovered && ImGui::IsMouseDoubleClicked(0)) {
+        f32 posX = (IO.MousePos.x - bb.Min.x) / (bb.Max.x - bb.Min.x);
+        posX = glm::clamp(posX, 0.0f, 1.0f);
+        Blendpsace1DDefNode& newNode = mAssetData->nodes.emplace_back();
+        newNode.x = posX;
+    }
 
     ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg, 1), true, Style.FrameRounding);
 
     ImVec2 start = bb.GetCenter() - ImVec2(bb.GetWidth() * 0.5f, 0.0f);
-    ImVec2 positions[2] = { start + ImVec2(v[0] * bb.GetWidth(), 0.0f), start + ImVec2(v[1] * bb.GetWidth(), 0.0f) };
 
-    {
-        // handle grabbers
-        ImVec2 mouse = IO.MousePos, pos[2];
-        float distance[2];
-
-        for (int i = 0; i < 2; ++i) {
-            pos[i] = positions[i];
-            distance[i] = (pos[i].x - mouse.x) * (pos[i].x - mouse.x) + (pos[i].y - mouse.y) * (pos[i].y - mouse.y);
-        }
-
-        int selected = distance[0] < distance[1] ? 0 : 1;
-        if (distance[selected] < (4 * GRAB_RADIUS * 4 * GRAB_RADIUS))
-        {
-            ImGui::SetTooltip("(%4.3f)", v[selected]);
-
-            if (/*hovered &&*/ (ImGui::IsMouseClicked(0) || ImGui::IsMouseDragging(0))) {
-                float& px = (v[selected] += IO.MouseDelta.x / Canvas.x);
-                px = (px < 0 ? 0 : (px > 1 ? 1 : px));
-
-                changed = true;
-            }
+    ImVec2 mouse = IO.MousePos;
+    i32 closestIndex = -1;
+    f32 closestDistanceSQ = FLT_MAX;
+    for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+        const Blendpsace1DDefNode& node = mAssetData->nodes[i];
+        const ImVec2 pos = start + ImVec2(node.x * bb.GetWidth(), 0.0f);
+        const f32 distanceSQ = (pos.x - mouse.x) * (pos.x - mouse.x) + (pos.y - mouse.y) * (pos.y - mouse.y);
+        if (distanceSQ < closestDistanceSQ) {
+            closestDistanceSQ = distanceSQ;
+            closestIndex = i;
         }
     }
 
-    // draw lines and grabbers
-    ImVec4 white(ImGui::GetStyle().Colors[ImGuiCol_Text]);
-    float luma = ImGui::IsItemActive() || ImGui::IsItemHovered() ? 0.5f : 1.0f;
-    ImVec4 pink(1.00f, 0.00f, 0.75f, luma), cyan(0.00f, 0.75f, 1.00f, luma);
-    drawList.AddLine(positions[0], positions[1], ImColor(white), 2);
-    drawList.AddCircleFilled(positions[0], GRAB_RADIUS, ImColor(white));
-    drawList.AddCircleFilled(positions[0], GRAB_RADIUS - GRAB_BORDER, ImColor(pink));
-    drawList.AddCircleFilled(positions[1], GRAB_RADIUS, ImColor(white));
-    drawList.AddCircleFilled(positions[1], GRAB_RADIUS - GRAB_BORDER, ImColor(cyan));
+    if (ImGui::IsMouseClicked(0) && closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
+        mSelectedIndex = mDragIndex = closestIndex;
+    }
+
+    if (mDragIndex != -1) {
+        float& px = (mAssetData->nodes[mDragIndex].x += IO.MouseDelta.x / Canvas.x);
+        px = glm::clamp(px, 0.0f, 1.0f);
+        changed = true;
+    }
+    // Draw main line
+    const ImVec4 white(ImGui::GetStyle().Colors[ImGuiCol_Text]);
+    const ImVec2 linePos[2] = { start, start + ImVec2(bb.GetWidth(), 0.0f) };
+    drawList.AddLine(linePos[0], linePos[1], ImColor(white), 2);
+    // Draw points
+    for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+        const Blendpsace1DDefNode& node = mAssetData->nodes[i];
+        const ImVec2 pos = start + ImVec2(node.x * bb.GetWidth(), 0.0f);
+        ImVec4 color(1.00f, 0.00f, 0.75f, 1.0f);
+        const ImVec4 cyan(0.00f, 0.75f, 1.00f, 1.0f);
+        if (i == mDragIndex) {
+            color = cyan;
+            color.w = 0.4f; // luma
+        }
+        else if (i == mSelectedIndex) {
+            color = cyan;
+            color.w = 0.55f; // luma
+        }
+        drawList.AddCircleFilled(pos, GRAB_RADIUS, ImColor(white));
+        drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
 
     ImGui::End();
 

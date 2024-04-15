@@ -17,8 +17,6 @@ public:
     bool hasBottomControls() const override { return true; }
     void updateAndRenderBottomControls() override;
 
-
-
     const char* getViewportWindowName() const override { return "Blendspace 1D Editor"; }
 
 private:
@@ -27,5 +25,7 @@ private:
     std::unique_ptr<SkeletalAnimator> mSkeletalAnimator;
     SoftAssetReference mPreviewModel = SoftAssetReference(AssetType::Model);
     f32 mPreviewAnimTime = 0.0f;
+    i32 mDragIndex = -1;
+    i32 mSelectedIndex = -1;
 };
 
