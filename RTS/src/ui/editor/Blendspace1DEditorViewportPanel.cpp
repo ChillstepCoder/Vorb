@@ -266,6 +266,50 @@ void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) 
     ImGui::Text("Hello world :)");
 }
 
+bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
+    if (!mAssetData) {
+        return false;
+    }
+
+    constexpr ImGuiTableFlags TABLE_FLAGS =
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable
+        | ImGuiTableFlags_Sortable
+        | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBody
+        | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
+        | ImGuiTableFlags_SizingFixedFit;
+
+    ImGui::Separator();
+    int colCount = 3;
+    if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+        //constexpr f32 FIXED_WIDTH = 75.0f;
+        ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 50.0f);
+        ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0);
+        ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0);
+       
+        ImGui::TableSetupScrollFreeze(1, 1);
+        ImGui::TableHeadersRow();
+
+        for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+            ImGui::PushID(i + 66);
+            ImGui::TableNextRow(ImGuiTableRowFlags_None, 0);
+            // ID
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%d", i);
+            // Val
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%f", mAssetData->nodes[i].x);
+            // Anim
+            ImGui::TableSetColumnIndex(2);
+            ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation);
+
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+
+    return true;
+}
+
 // TODO: Curve editor https://github.com/ocornut/imgui/issues/786
 void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
 
@@ -322,6 +366,7 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
         posX = glm::clamp(posX, 0.0f, 1.0f);
         Blendpsace1DDefNode& newNode = mAssetData->nodes.emplace_back();
         newNode.x = posX;
+        newNode.editorIndex = mAssetData->nodes.size() - 1;
     }
 
     ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg, 1), true, Style.FrameRounding);
@@ -343,6 +388,11 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
 
     if (ImGui::IsMouseClicked(0) && closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
         mSelectedIndex = mDragIndex = closestIndex;
+    }
+    if (mDragIndex != -1) {
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, "DRAGGING");
+    } else if (closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", closestIndex, mAssetData->nodes[closestIndex].x, "CLOSEST");
     }
 
     if (mDragIndex != -1) {
@@ -370,6 +420,25 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
         }
         drawList.AddCircleFilled(pos, GRAB_RADIUS, ImColor(white));
         drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
+
+    if (changed) {
+        // Sort all points
+        std::sort(mAssetData->nodes.begin(), mAssetData->nodes.end(), [](const Blendpsace1DDefNode& a, const Blendpsace1DDefNode& b) {
+            return a.x < b.x;
+        });
+        // Restore indices
+        const int prevSelectedIndex = mSelectedIndex;
+        const int prevDragIndex = mDragIndex;
+        for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+            if (prevSelectedIndex != -1 && mAssetData->nodes[i].editorIndex == prevSelectedIndex) {
+                mSelectedIndex = i;
+            }
+            if (prevDragIndex != -1 && mAssetData->nodes[i].editorIndex == prevDragIndex) {
+                mDragIndex = i;
+            }
+            mAssetData->nodes[i].editorIndex = i;
+        }
     }
 
     ImGui::End();

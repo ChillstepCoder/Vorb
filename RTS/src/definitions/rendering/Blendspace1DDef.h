@@ -5,6 +5,7 @@ class AnimationDef;
 struct Blendpsace1DDefNode {
     SoftAssetReference animation = SoftAssetReference(AssetType::Animation);
     f32 x = 0.0f;
+    i32 editorIndex = -1; // Used for sorting and such
 };
 SERIALIZABLE_IMGUI_CONTROLLED(Blendpsace1DDefNode,
     make_field(o.animation, "anim"sv),

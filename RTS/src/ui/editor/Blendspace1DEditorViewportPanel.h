@@ -14,6 +14,7 @@ public:
     ~Blendspace1DEditorViewportPanel();
 
     void updateAndRenderPrimaryControls(f32 ySize) override;
+    bool updateAndRenderSecondaryControls(f32 ySize) override;
     bool hasBottomControls() const override { return true; }
     void updateAndRenderBottomControls() override;
 
