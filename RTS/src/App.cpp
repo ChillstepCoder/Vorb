@@ -4,6 +4,7 @@
 #include "screens/MainMenuScreen.h"
 #include "screens/WorldGenScreen.h"
 #include "screens/GameplayScreen.h"
+#include "screens/EditorOnlyScreen.h"
 #include "screens/ScreenState.h"
 
 #include "math/Random.h"
@@ -50,6 +51,7 @@ void App::addScreens() {
     mMainMenuScreen = std::make_unique<MainMenuScreen>(this);
     mWorldGenScreen = std::make_unique<WorldGenScreen>(this);
     mGameplayScreen = std::make_unique<GameplayScreen>(this);
+    mEditorOnlyScreen = std::make_unique<EditorOnlyScreen>(this);
 
     m_screenList.addScreen(mMainMenuScreen.get());
     static_assert(e_cast(RegisteredScreens::MainMenu) == 0);
@@ -60,7 +62,14 @@ void App::addScreens() {
     m_screenList.addScreen(mGameplayScreen.get());
     static_assert(e_cast(RegisteredScreens::Gameplay) == 2);
 
+    m_screenList.addScreen(mEditorOnlyScreen.get());
+    static_assert(e_cast(RegisteredScreens::EditorOnly) == 3);
+
+    static_assert(e_count(RegisteredScreens) == 4);
+
     m_screenList.setScreen(mMainMenuScreen->getIndex());
+
+
 }
 
 void setPriorityToNormal() {

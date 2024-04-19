@@ -13,12 +13,16 @@ enum class RegisteredScreens {
     MainMenu = 0,
     WorldGen = 1,
     Gameplay = 2,
+    EditorOnly = 3,
+    COUNT
 };
 
 enum class StartGameType {
     NewWorld,
     NewWorldFromTemplate,
-    LoadWorld
+    LoadWorld,
+    EditorOnly,
+    COUNT
 };
 
 class MainMenuScreenGlobalState {

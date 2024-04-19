@@ -125,9 +125,9 @@ void GameplayScreen::build() {
         mResourceManager.writeDebugAtlas();
     }
 #endif
-
-    UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
-
+    if (!UIContext::hasInstance()) {
+        UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
+    }
 }
 
 void GameplayScreen::destroy(const vui::GameTime& gameTime) {

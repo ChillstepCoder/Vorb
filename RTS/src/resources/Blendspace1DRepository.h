@@ -8,7 +8,8 @@ class Blendspace1DRepository : public IAssetRepository<Blendspace1DDef>
 public:
     ASSET_REPOSITORY_COMMON_CODE(Blendspace1DRepository, Blendspace1DDef, AssetType::Blendspace1D);
 
-    bool saveAsset(AssetID assetId) override { panic("Cannot save blendspaces yet"); }
+    DEFAULT_ASSET_SAVE_FUNC();
+    //bool saveAsset(AssetID assetId) override { panic("Cannot save blendspaces yet"); }
 
     StrToken getAssetExtension() const override { return CStrToken("blend1"); }
     const char* const getAssetTypeDisplayName() const override { return "Blendspace"; }

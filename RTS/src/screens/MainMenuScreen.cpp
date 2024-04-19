@@ -31,6 +31,9 @@ MainMenuScreen::~MainMenuScreen()
 
 i32 MainMenuScreen::getNextScreen() const
 {
+    if (MainMenuScreenGlobalState::startGameType == StartGameType::EditorOnly) {
+        return e_cast(RegisteredScreens::EditorOnly);
+    }
     return e_cast(RegisteredScreens::WorldGen);
 }
 
@@ -95,7 +98,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     ImGui::NewFrame();
 
     constexpr float WINDOW_WIDTH = 400.0f;
-    constexpr float WINDOW_HEIGHT = 300.0f;
+    constexpr float WINDOW_HEIGHT = 350.0f;
     const ui32v2 screenDims = window.getViewportDims();
     ImGui::SetNextWindowPos(ImVec2(screenDims.x * 0.5f - WINDOW_WIDTH * 0.5f, screenDims.y * 0.5 - WINDOW_HEIGHT * 0.5f));
     ImGui::SetNextWindowSize(ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT));
@@ -190,6 +193,11 @@ void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Multiplayer", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
+    }
+    ImGui::Spacing();
+    if (ImguiUtil::ButtonCenteredOnLine("Editor", buttonSize)) {
+        MainMenuScreenGlobalState::startGameType = StartGameType::EditorOnly;
+        m_state = vui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Options", buttonSize)) {

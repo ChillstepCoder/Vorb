@@ -38,6 +38,7 @@ public:
 
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static UIContext& getInstance();
+    static bool hasInstance();
 
     static ui32v2 getWindowDims();
 

@@ -1,1 +1,10 @@
+nodes:
+  - anim: swrd_shld_idle
+    x: 0
+  - anim: swrd_shld_walk
+    x: 0.23912
+  - anim: swrd_shld_run_1
+    x: 0.6089267
+  - anim: swrd_shld_run_2
+    x: 1
 rig: human

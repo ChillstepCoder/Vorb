@@ -2,6 +2,7 @@
 #include "Blendspace1DEditorViewportPanel.h"
 
 #include "rendering/model/skeletal/SkeletalAnimator.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include <imgui/imgui_internal.h>
 
@@ -263,7 +264,13 @@ Blendspace1DEditorViewportPanel::Blendspace1DEditorViewportPanel() {
 Blendspace1DEditorViewportPanel::~Blendspace1DEditorViewportPanel() = default;
 
 void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
-    ImGui::Text("Hello world :)");
+    if (mAssetData) {
+        ImGui::Text(mAssetData->getName().toString().c_str());
+        updateAndRenderSaveButton();
+    }
+    else {
+        ImGui::Text("NO ASSET");
+    }
 }
 
 bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
@@ -282,9 +289,9 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
     int colCount = 3;
     if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
         //constexpr f32 FIXED_WIDTH = 75.0f;
-        ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 50.0f);
-        ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0);
-        ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 0);
+        ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 30.0f);
+        ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 40.0f);
+        ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 200.0f);
        
         ImGui::TableSetupScrollFreeze(1, 1);
         ImGui::TableHeadersRow();
@@ -430,6 +437,7 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
         // Restore indices
         const int prevSelectedIndex = mSelectedIndex;
         const int prevDragIndex = mDragIndex;
+        const int prevLeaderIndex = mLeaderIndex;
         for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
             if (prevSelectedIndex != -1 && mAssetData->nodes[i].editorIndex == prevSelectedIndex) {
                 mSelectedIndex = i;
@@ -437,10 +445,36 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
             if (prevDragIndex != -1 && mAssetData->nodes[i].editorIndex == prevDragIndex) {
                 mDragIndex = i;
             }
+            if (prevLeaderIndex != -1 && mAssetData->nodes[i].editorIndex == prevLeaderIndex) {
+                mLeaderIndex = i;
+            }
             mAssetData->nodes[i].editorIndex = i;
         }
     }
 
     ImGui::End();
 
+}
+
+const MaterialShaderDef* Blendspace1DEditorViewportPanel::getShader() {
+    return MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_skel"))->tryGetLoadedAsset();
+}
+
+void Blendspace1DEditorViewportPanel::renderMesh() {
+
+
+    // Based on unreal sync groups (But more efficient)
+    // https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-sync-groups-in-unreal-engine?application_version=5.3
+
+    if (mLeaderAnimTime == 0.0f) {
+        mPreviewAnimTime = 0.0f;
+    }
+    else {
+        mPreviewAnimTime += mCurrentElapsedSec;
+
+        if (mPreviewAnimTime > mLeaderAnimTime) {
+            mPreviewAnimTime -= mLeaderAnimTime;
+        }
+        mSyncTime = mPreviewAnimTime / mLeaderAnimTime;
+    }
 }

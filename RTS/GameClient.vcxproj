@@ -456,6 +456,7 @@
     <ClCompile Include="src\resources\TileDistributionRepository.cpp" />
     <ClCompile Include="src\resources\TileGrassRepository.cpp" />
     <ClCompile Include="src\resources\TileRepository.cpp" />
+    <ClCompile Include="src\screens\EditorOnlyScreen.cpp" />
     <ClCompile Include="src\screens\GameplayScreen.cpp" />
     <ClCompile Include="src\screens\MainMenuScreen.cpp" />
     <ClCompile Include="src\screens\ScreenState.cpp" />
@@ -901,6 +902,7 @@
     <ClInclude Include="src\resources\TileDistributionRepository.h" />
     <ClInclude Include="src\resources\TileGrassRepository.h" />
     <ClInclude Include="src\resources\TileRepository.h" />
+    <ClInclude Include="src\screens\EditorOnlyScreen.h" />
     <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\MainMenuScreen.h" />
     <ClInclude Include="src\screens\ScreenState.h" />

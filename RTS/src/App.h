@@ -7,9 +7,9 @@
 class MainMenuScreen;
 class WorldGenScreen;
 class GameplayScreen;
+class EditorOnlyScreen;
 
-class App : public vui::MainGame
-{
+class App : public vui::MainGame {
 public:
     App();
     ~App();
@@ -22,6 +22,7 @@ public:
     std::unique_ptr<MainMenuScreen> mMainMenuScreen;
     std::unique_ptr<WorldGenScreen> mWorldGenScreen;
     std::unique_ptr<GameplayScreen> mGameplayScreen;
+    std::unique_ptr<EditorOnlyScreen> mEditorOnlyScreen;
 protected:
     void onUpdateFrame() override;
 
