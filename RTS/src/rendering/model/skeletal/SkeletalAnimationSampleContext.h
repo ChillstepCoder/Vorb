@@ -13,6 +13,10 @@
 typedef ozz::vector<ozz::math::SoaTransform> OzzSoaTransformVector;
 typedef ozz::vector<ozz::math::Float4x4> OzzMatrixVector;
 
+typedef ozz::span<const ozz::math::SoaTransform> OzzConstSoaTransformSpan;
+typedef ozz::span<ozz::math::SoaTransform> OzzSoaTransformSpan;
+typedef ozz::span<ozz::math::Float4x4> OzzMatrixSpan;
+
 struct SkeletalAnimationSampleContext {
     ozz::animation::SamplingJob::Context samplingContext;
     const ozz::animation::Animation* anim = nullptr;

@@ -2,9 +2,13 @@
 #include "EditorOnlyScreen.h"
 
 #include "screens/ScreenState.h"
+#include "resources/AssetLoader.h"
+#include "rendering/RenderContext.h"
+#include "resources/MaterialRepository.h"
 
 #include "ui/UIContext.h"
 #include "camera/Camera3D.h"
+#include "options/DebugOptions.h"
 
 #include "App.h"
 
@@ -55,16 +59,27 @@ void EditorOnlyScreen::update(const vui::GameTime& gameTime) {
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
         m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
     }
+
+    // Keep preloading assets
+    AssetLoader::getInstance().update();
+    RenderContext::getInstance().updateRenderThreadProcs();
 }
 
 void EditorOnlyScreen::draw(const vui::GameTime& gameTime) {
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    vg::DepthState::NONE.set();
+    vg::DepthState::FULL.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    // TODO: hmm this is a lot of stuff to remember
+    MaterialRepository::get().bindMaterialBuffer();
 
     vui::GameWindow& window = m_app->getWindow();
 
@@ -73,7 +88,10 @@ void EditorOnlyScreen::draw(const vui::GameTime& gameTime) {
     ImGui::NewFrame();
 
     Camera3D camera;
+    const bool isShowEditor = sDebugOptions.mShowEditor;
+    sDebugOptions.mShowEditor = true;
     UIContext::getInstance().updateAndRenderUI(nullptr, gameTime.elapsedSec, camera);
+    sDebugOptions.mShowEditor = isShowEditor;
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

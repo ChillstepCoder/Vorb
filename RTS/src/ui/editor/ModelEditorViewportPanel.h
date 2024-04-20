@@ -21,8 +21,6 @@ private:
     const MaterialShaderDef* getShader() override;
     void uploadCustomShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) override;
     void renderMesh() override;
-    void renderMeshStatic();
-    void renderMeshSkeletal();
    
     bool mSkeletalEditMode = true;
     bool mDirtyModelData = false;

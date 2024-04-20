@@ -7,7 +7,7 @@ struct Blendpsace1DDefNode {
     f32 x = 0.0f;
     i32 editorIndex = -1; // Used for sorting and such
 };
-SERIALIZABLE_IMGUI_CONTROLLED(Blendpsace1DDefNode,
+SERIALIZABLE_SIMPLE(Blendpsace1DDefNode,
     make_field(o.animation, "anim"sv),
     make_field(o.x, "x"sv)
 )
@@ -18,7 +18,7 @@ public:
     std::vector<Blendpsace1DDefNode> nodes;
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
 };
-SERIALIZABLE_IMGUI_CONTROLLED(Blendspace1DDef,
+SERIALIZABLE_SIMPLE(Blendspace1DDef,
     make_field(o.nodes, "nodes"sv),
     make_field(o.rigDef, "rig"sv)
 )

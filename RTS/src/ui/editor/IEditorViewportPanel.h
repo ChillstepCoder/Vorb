@@ -48,7 +48,7 @@ public:
     virtual bool hasBottomControls() const { return false; }
     virtual void updateAndRenderBottomControls() {  }
 
-    virtual void onEnter() { mDidJustEnter = true; }
+    virtual void onEnter() { mDidJustEnter = true; onEnterInternal(); }
     virtual void onExit() { mDidJustEnter = false; }
 
     f32v3 getCameraPosition() const;
@@ -61,6 +61,7 @@ protected:
     virtual void clearFramebuffers();
     virtual void renderSkybox();
     virtual void renderCenterPanelImage(i32AABB2* outImageRect, VGTexture displayTexture);
+    virtual void onEnterInternal() {}
     void updateFramebufferAndLazyInit(const i32v2& framebufferDims);
 
     // Virtual API

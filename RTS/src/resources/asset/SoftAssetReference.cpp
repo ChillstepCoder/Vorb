@@ -17,7 +17,7 @@ static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
 static std::map<SoftAssetReference*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
 
 template <typename T>
-void assetButton(SoftAssetReference& assetRef) {
+bool assetButton(SoftAssetReference& assetRef) {
     IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
     ImguiUtil::ScopedColor color(ImGuiCol_Button, assetRef.isValid() ? ImguiColors::Theme::highlight : ImguiColors::Theme::error);
     if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0,0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
@@ -36,6 +36,7 @@ void assetButton(SoftAssetReference& assetRef) {
     if (assetRef.isValid()) {
         if (ImGui::Button("x")) {
             assetRef.name = StrToken();
+            return true;
         }
     }
     ImGui::SameLine();
@@ -44,6 +45,7 @@ void assetButton(SoftAssetReference& assetRef) {
     if (f && assetRef.name.isValid()) {
         f(repo.getAssetID(assetRef.name), f32v2(60.0f));
     }
+    return false;
 }
 
 bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef) {
@@ -58,67 +60,67 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
 
     switch (assetRef.assetType) {
         case AssetType::Tile:
-            assetButton<TileDef>(assetRef);
+            changed |= assetButton<TileDef>(assetRef);
             break;
         case AssetType::ParticleSystem:
-            assetButton<ParticleSystemDef>(assetRef);
+            changed |= assetButton<ParticleSystemDef>(assetRef);
             break;
         case AssetType::Effect:
-            assetButton<EffectDef>(assetRef);
+            changed |= assetButton<EffectDef>(assetRef);
             break;
         case AssetType::Texture:
-            assetButton<TextureDef>(assetRef);
+            changed |= assetButton<TextureDef>(assetRef);
             break;
         case AssetType::Cubemap:
-            assetButton<CubemapDef>(assetRef);
+            changed |= assetButton<CubemapDef>(assetRef);
             break;
         case AssetType::Brush:
-            assetButton<BrushDef>(assetRef);
+            changed |= assetButton<BrushDef>(assetRef);
             break;
         case AssetType::Material:
-            assetButton<MaterialDef>(assetRef);
+            changed |= assetButton<MaterialDef>(assetRef);
             break;
         case AssetType::Rig:
-            assetButton<RigDef>(assetRef);
+            changed |= assetButton<RigDef>(assetRef);
             break;
         case AssetType::Animation:
-            assetButton<AnimationDef>(assetRef);
+            changed |= assetButton<AnimationDef>(assetRef);
             break;
         case AssetType::AnimMachine:
-            assetButton<AnimMachineDef>(assetRef);
+            changed |= assetButton<AnimMachineDef>(assetRef);
             break;
         case AssetType::Blendspace1D:
-            assetButton<Blendspace1DDef>(assetRef);
+            changed |= assetButton<Blendspace1DDef>(assetRef);
             break;
         case AssetType::Model:
-            assetButton<ModelDef>(assetRef);
+            changed |= assetButton<ModelDef>(assetRef);
             break;
         case AssetType::Skill:
-            assetButton<SkillDef>(assetRef);
+            changed |= assetButton<SkillDef>(assetRef);
             break;
         case AssetType::Item:
-            assetButton<ItemDef>(assetRef);
+            changed |= assetButton<ItemDef>(assetRef);
             break;
         case AssetType::Fish:
-            assetButton<FishDef>(assetRef);
+            changed |= assetButton<FishDef>(assetRef);
             break;
         case AssetType::MaterialShader:
-            assetButton<MaterialShaderDef>(assetRef);
+            changed |= assetButton<MaterialShaderDef>(assetRef);
             break;
         case AssetType::TileGrass:
-            assetButton<TileGrassDef>(assetRef);
+            changed |= assetButton<TileGrassDef>(assetRef);
             break;
         case AssetType::Biome:
-            assetButton<BiomeDef>(assetRef);
+            changed |= assetButton<BiomeDef>(assetRef);
             break;
         case AssetType::TileDistribution:
-            assetButton<TileDistributionDef>(assetRef);
+            changed |= assetButton<TileDistributionDef>(assetRef);
             break;
         case AssetType::Building:
-            assetButton<BuildingDef>(assetRef);
+            changed |= assetButton<BuildingDef>(assetRef);
             break;
         case AssetType::Room:
-            assetButton<RoomDef>(assetRef);
+            changed |= assetButton<RoomDef>(assetRef);
             break;
         case AssetType::NONE:
         default:

@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "Blendspace1DEditorViewportPanel.h"
 
+#include "definitions/ModelDef.h"
+#include "resources/ModelRepository.h"
+
 #include "rendering/model/skeletal/SkeletalAnimator.h"
 #include "rendering/MaterialShaderRepository.h"
 
@@ -271,6 +274,9 @@ void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) 
     else {
         ImGui::Text("NO ASSET");
     }
+    ImGui::SeparatorText("Preview");
+    ImguiUtil::updateAndRenderSoftAssetReference("Model", mPreviewModel);
+
 }
 
 bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
@@ -285,33 +291,48 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
         | ImGuiTableFlags_SizingFixedFit;
 
+    bool changed = false;
+
+    if (ImguiUtil::updateAndRenderSoftAssetReference("Rig", mAssetData->rigDef)) {
+        mAssetData->nodes.clear();
+        changed = true;
+    }
     ImGui::Separator();
-    int colCount = 3;
-    if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
-        //constexpr f32 FIXED_WIDTH = 75.0f;
-        ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 30.0f);
-        ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 40.0f);
-        ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 200.0f);
-       
-        ImGui::TableSetupScrollFreeze(1, 1);
-        ImGui::TableHeadersRow();
+    if (mAssetData->rigDef.isValid()) {
+        int colCount = 3;
+        if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+            //constexpr f32 FIXED_WIDTH = 75.0f;
+            ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 20.0f);
+            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 80.0f);
+            ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 400.0f);
 
-        for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
-            ImGui::PushID(i + 66);
-            ImGui::TableNextRow(ImGuiTableRowFlags_None, 0);
-            // ID
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%d", i);
-            // Val
-            ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%f", mAssetData->nodes[i].x);
-            // Anim
-            ImGui::TableSetColumnIndex(2);
-            ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation);
+            ImGui::TableSetupScrollFreeze(1, 1);
+            ImGui::TableHeadersRow();
 
-            ImGui::PopID();
+            for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+                ImGui::PushID(i + 66);
+                ImGui::TableNextRow(ImGuiTableRowFlags_None, 0);
+                // ID
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%d", i);
+                // Val
+                ImGui::TableSetColumnIndex(1);
+                if (ImGui::InputFloat("", &mAssetData->nodes[i].x)) {
+                    changed = true;
+                    mAssetData->nodes[i].x = glm::clamp(mAssetData->nodes[i].x, 0.0f, 1.0f);
+                }
+                // Anim
+                ImGui::TableSetColumnIndex(2);
+                changed |= ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation);
+
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
         }
-        ImGui::EndTable();
+    }
+
+    if (changed) {
+        onChanged();
     }
 
     return true;
@@ -327,21 +348,55 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
     ImGui::Begin(BottomControlsName, nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
 
     if (mAssetData) {
-        ImGui::Text(mAssetData->getName().toString().c_str());
+        if (mAssetData->rigDef.isValid()) {
+            ImGui::Text(mAssetData->getName().toString().c_str());
+        }
+        else {
+            ImGui::Text("NO RIG SELECTED");
+            ImGui::End();
+            return;
+        }
     }
     else {
         ImGui::Text("NO BLENDSPACE SELECTED");
         ImGui::End();
         return;
     }
+    if (!mPreviewModel.isValid()) {
+        ImGui::Text("NO PREVIEW MODEL SELECTED");
+    }
+    ImGui::Separator();
+    
+    ImGui::PushItemWidth(150.f);
+    if (ImGui::DragFloat("Preview X", &mPreviewX, 0.001f, 0.0f, 1.0f)) {
+        mPreviewX = glm::clamp(mPreviewX, 0.0f, 1.0f);
+    }
+    ImGui::PopItemWidth();
+    ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
 
     if (mDidJustEnter) {
         ImGui::SetWindowFocus(BottomControlsName);
+
+        if (mAssetData && !mPreviewModel.isValid()) {
+            if (mAssetData->rigDef.isValid()) {
+                // Find a valid preview model to start with
+                for (const AssetMetadata& data : ModelRepository::get().getAssetRegistry()) {
+                    const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(data.getId());
+                    if (def.mRigName == mAssetData->rigDef) {
+                        mPreviewModel.name = data.mName;
+                        break;
+                    }
+                }
+            }
+        }
+
+        rebuildBlendspacePlayer();
         mDidJustEnter = false;
     }
 
     if (!ImGui::IsMouseDown(0)) {
         mDragIndex = -1;
+        mDraggingPreview = false;
     }
 
     //ImGui::ShowBezierDemo();
@@ -412,44 +467,52 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
     const ImVec2 linePos[2] = { start, start + ImVec2(bb.GetWidth(), 0.0f) };
     drawList.AddLine(linePos[0], linePos[1], ImColor(white), 2);
     // Draw points
+    const ImVec4 cyan(0.00f, 0.75f, 1.00f, 1.0f);
+    const ImVec4 red(0.90f, 0.00f, 0.00f, 1.0f);
     for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
         const Blendpsace1DDefNode& node = mAssetData->nodes[i];
         const ImVec2 pos = start + ImVec2(node.x * bb.GetWidth(), 0.0f);
-        ImVec4 color(1.00f, 0.00f, 0.75f, 1.0f);
-        const ImVec4 cyan(0.00f, 0.75f, 1.00f, 1.0f);
+        ImVec4 color = mAssetData->nodes[i].animation.isValid() ? ImVec4(0.00f, 0.80f, 0.2f, 1.0f) : red;
         if (i == mDragIndex) {
-            color = cyan;
+            if (mAssetData->nodes[i].animation.isValid()) color = cyan;
             color.w = 0.4f; // luma
         }
         else if (i == mSelectedIndex) {
-            color = cyan;
+            if (mAssetData->nodes[i].animation.isValid()) color = cyan;
             color.w = 0.55f; // luma
         }
         drawList.AddCircleFilled(pos, GRAB_RADIUS, ImColor(white));
         drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
     }
 
+    // Draw preview drag
+
+    const ImVec2 pos = start + ImVec2(mPreviewX * bb.GetWidth(), -bb.GetHeight() * 2.0);
+    const f32 distanceSQ = (pos.x - mouse.x) * (pos.x - mouse.x) + (pos.y - mouse.y) * (pos.y - mouse.y);
+    const bool isHoverPreview = distanceSQ <= SQ(GRAB_RADIUS + 1.0f);
+    if (ImGui::IsMouseClicked(0) && isHoverPreview) {
+        mDraggingPreview = true;
+    }
+
+    if (mDraggingPreview) {
+        float& px = (mPreviewX += IO.MouseDelta.x / Canvas.x);
+        px = glm::clamp(px, 0.0f, 1.0f);
+    }
+    if (mDraggingPreview || isHoverPreview) {
+        ImGui::SetTooltip("X: %f", mPreviewX);
+    }
+    const ImVec4 color = mDraggingPreview ? ImVec4(0.90f, 0.90f, 0.90f, 1.0f) : ImVec4(0.60f, 0.60f, 0.6f, 1.0f);
+    drawList.AddLine(pos, pos + ImVec2(0.0f, bb.GetHeight() * 3), ImColor(color), 2);
+    drawList.AddCircleFilled(pos, GRAB_RADIUS, ImColor(white));
+    if (mDraggingPreview) {
+        drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
+    else {
+        drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
+
     if (changed) {
-        // Sort all points
-        std::sort(mAssetData->nodes.begin(), mAssetData->nodes.end(), [](const Blendpsace1DDefNode& a, const Blendpsace1DDefNode& b) {
-            return a.x < b.x;
-        });
-        // Restore indices
-        const int prevSelectedIndex = mSelectedIndex;
-        const int prevDragIndex = mDragIndex;
-        const int prevLeaderIndex = mLeaderIndex;
-        for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
-            if (prevSelectedIndex != -1 && mAssetData->nodes[i].editorIndex == prevSelectedIndex) {
-                mSelectedIndex = i;
-            }
-            if (prevDragIndex != -1 && mAssetData->nodes[i].editorIndex == prevDragIndex) {
-                mDragIndex = i;
-            }
-            if (prevLeaderIndex != -1 && mAssetData->nodes[i].editorIndex == prevLeaderIndex) {
-                mLeaderIndex = i;
-            }
-            mAssetData->nodes[i].editorIndex = i;
-        }
+        onChanged();
     }
 
     ImGui::End();
@@ -461,8 +524,22 @@ const MaterialShaderDef* Blendspace1DEditorViewportPanel::getShader() {
 }
 
 void Blendspace1DEditorViewportPanel::renderMesh() {
+    if (!mPreviewModel.isValid() || !mBlendspacePlayer.isValid()) {
+        return;
+    }
 
+    /*  const float numIntervals = mBlendspacePlayer.numNodes - 1;
+      const float interval = 1.f / kNumIntervals;
+      for (int i = 0; i < mBlendspacePlayer.numNodes; ++i) {
+          const float med = i * kInterval;
+          const float x = mPreviewX - med;
+          const float y = ((x < 0.f ? x : -x) + kInterval) * kNumIntervals;
+          samplers_[i].weight = ozz::math::Max(0.f, y);
+      }*/
 
+    if (const ModelDef* modelDef = mPreviewModel.getAssetHandle<ModelDef>()->tryGetLoadedAsset()) {
+        renderMeshSkeletal(modelDef, 0, 0, nullptr, 0.0f);
+    }
     // Based on unreal sync groups (But more efficient)
     // https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-sync-groups-in-unreal-engine?application_version=5.3
 
@@ -477,4 +554,89 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
         }
         mSyncTime = mPreviewAnimTime / mLeaderAnimTime;
     }
+}
+
+void Blendspace1DEditorViewportPanel::onChanged() {
+    // Make sure no points share x values by randomly jittering equal values apart
+    if (mAssetData->nodes.size() > 1) {
+        bool wasEqual;
+        do {
+            wasEqual = false;
+            for (size_t i = 0; i < mAssetData->nodes.size() - 1; ++i) {
+                Blendpsace1DDefNode& nodeA = mAssetData->nodes[i];
+                for (size_t j = i + 1; j < mAssetData->nodes.size(); ++j) {
+                    Blendpsace1DDefNode& nodeB = mAssetData->nodes[j];
+                    if (nodeA.x == nodeB.x) [[unlikely]] {
+                        nodeA.x -= (rand() / (f32)RAND_MAX) * 0.001f;
+                        nodeB.x += (rand() / (f32)RAND_MAX) * 0.001f;
+                        nodeA.x = glm::clamp(nodeA.x, 0.0f, 1.0f);
+                        nodeB.x = glm::clamp(nodeB.x, 0.0f, 1.0f);
+                        wasEqual = true;
+                    }
+                }
+            }
+        } while (wasEqual);
+    }
+
+    // Sort all points
+    std::sort(mAssetData->nodes.begin(), mAssetData->nodes.end(), [](const Blendpsace1DDefNode& a, const Blendpsace1DDefNode& b) {
+        return a.x < b.x;
+    });
+    // Restore indices
+    const int prevSelectedIndex = mSelectedIndex;
+    const int prevDragIndex = mDragIndex;
+    const int prevLeaderIndex = mLeaderIndex;
+    for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+        if (prevSelectedIndex != -1 && mAssetData->nodes[i].editorIndex == prevSelectedIndex) {
+            mSelectedIndex = i;
+        }
+        if (prevDragIndex != -1 && mAssetData->nodes[i].editorIndex == prevDragIndex) {
+            mDragIndex = i;
+        }
+        if (prevLeaderIndex != -1 && mAssetData->nodes[i].editorIndex == prevLeaderIndex) {
+            mLeaderIndex = i;
+        }
+        mAssetData->nodes[i].editorIndex = i;
+    }
+
+    rebuildBlendspacePlayer();
+}
+
+void Blendspace1DEditorViewportPanel::rebuildBlendspacePlayer() {
+    if (mAssetData) {
+        std::vector<Blendspace1DPlayerNode> playerNodes;
+        playerNodes.reserve(mAssetData->nodes.size());
+        for (auto& node : mAssetData->nodes) {
+            if (node.animation.isValid()) {
+                playerNodes.push_back({ node.x, node.animation.getAssetID() });
+            }
+        }
+        if (playerNodes.size()) {
+            mBlendspacePlayer = Blendspace1DPlayer(playerNodes);
+        }
+        else {
+            mBlendspacePlayer = Blendspace1DPlayer();
+        }
+    }
+    else {
+        mBlendspacePlayer = Blendspace1DPlayer();
+    }
+}
+
+AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x) const {
+    assert(numNodes > 0);
+
+    // Before first node
+    if (x <= nodes[0].x) {
+        return { nodes[0].animId, INVALID_ASSET_ID, 1.0f };
+    }
+
+    for (size_t i = 0; i < numNodes - 1; ++i) {
+        if (x >= nodes[i].x && x < nodes[i + 1].x) {
+            const f32 t = (x - nodes[i].x) / (nodes[i + 1].x - nodes[i].x);
+            return { nodes[i].animId, nodes[i + 1].animId, 1.0f - t };
+        }
+    }
+    // After last node
+    return { nodes[numNodes - 1].animId, INVALID_ASSET_ID, 1.0f };
 }

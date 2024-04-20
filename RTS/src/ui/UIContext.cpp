@@ -45,10 +45,7 @@ void UIContext::updateEditors(World* world, const Camera3D& camera, const f32v3&
 void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec, const Camera3D& camera) {
     
     // Force show editor
-    const bool isShowEditor = sDebugOptions.mShowEditor;
-    sDebugOptions.mShowEditor = true;
     mEditorRoot->updateAndRenderUI(activeGBuffer, elapsedSec, camera);
-    sDebugOptions.mShowEditor = isShowEditor;
     
     if (mTileInspectionPanel) {
         mTileInspectionPanel->updateAndRender();
