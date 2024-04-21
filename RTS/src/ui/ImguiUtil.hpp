@@ -261,6 +261,10 @@ namespace ImguiUtil {
             mThumbnailSize = thumbnailSize;
             mThumbnailFunc = func;
         }
+        // Add additional asset specific filtering
+        void setAssetFilterFunc(AssetFilterFunc filterFunc) {
+            mAssetFilterFunc = filterFunc;
+        }
         // Return true when closed
         bool updateAndRender(f32 maxHeight) {
             constexpr ImGuiTableFlags TABLE_FLAGS =
@@ -294,7 +298,7 @@ namespace ImguiUtil {
                     ImGui::TableHeadersRow();
 
                     for (size_t i : mSortedIndices) {
-                        if (mFilterStatus[i]) {
+                        if (mFilterStatus[i] && (!mAssetFilterFunc || mAssetFilterFunc(mAssets[i].getId()))) {
                             ImGui::PushID(i + 33);
                             ImGui::TableNextRow(ImGuiTableRowFlags_None, mThumbnailFunc ? mThumbnailSize.y : 0);
                             // Select
@@ -338,6 +342,7 @@ namespace ImguiUtil {
         std::vector<size_t> mSortedIndices;
         std::function<void(AssetID, f32v2)> mThumbnailFunc = nullptr;
         f32v2 mThumbnailSize = f32v2(25.0f);
+        AssetFilterFunc mAssetFilterFunc = nullptr;
     };
 
     inline bool ButtonCenteredOnLine(const char* label, ImVec2 size) {

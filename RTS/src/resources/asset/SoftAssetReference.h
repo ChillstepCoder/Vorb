@@ -2,6 +2,8 @@
 
 #include "resources/asset/AssetType.h"
 
+typedef std::function<bool(AssetID)> AssetFilterFunc;
+
 class SoftAssetReference {
 public:
     SoftAssetReference() = default;
@@ -9,6 +11,7 @@ public:
     SoftAssetReference(AssetType assetType, StrToken name) : assetType(assetType), name(name) {};
 
     bool isValid() const { return name.isValid(); }
+    void invalidate() { name = StrToken(); }
     void toString(OUT char* outStr, OUT ui32* outLength) const { name.toString(outStr, outLength); }
     nString toString() const { return name.toString(); }
     AssetHandleBasePtr getAssetHandleBase() const;
@@ -28,5 +31,5 @@ public:
 };
 
 namespace ImguiUtil {
-    bool updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef);
+    bool updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef, AssetFilterFunc filterFunc = nullptr);
 }

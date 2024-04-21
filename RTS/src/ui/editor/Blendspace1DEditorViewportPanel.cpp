@@ -2,6 +2,8 @@
 #include "Blendspace1DEditorViewportPanel.h"
 
 #include "definitions/ModelDef.h"
+#include "definitions/RigDef.h"
+#include "resources/AnimationRepository.h"
 #include "resources/ModelRepository.h"
 
 #include "rendering/model/skeletal/SkeletalAnimator.h"
@@ -267,6 +269,7 @@ Blendspace1DEditorViewportPanel::Blendspace1DEditorViewportPanel() {
 Blendspace1DEditorViewportPanel::~Blendspace1DEditorViewportPanel() = default;
 
 void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
+    ImGui::Spacing();
     if (mAssetData) {
         ImGui::Text(mAssetData->getName().toString().c_str());
         updateAndRenderSaveButton();
@@ -275,8 +278,19 @@ void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) 
         ImGui::Text("NO ASSET");
     }
     ImGui::SeparatorText("Preview");
-    ImguiUtil::updateAndRenderSoftAssetReference("Model", mPreviewModel);
+    ImguiUtil::updateAndRenderSoftAssetReference("Model", mPreviewModel, [this](AssetID id) {
+        // Make sure this model has our rig
+        if (!mAssetData || !mAssetData->rigDef.isValid()) return false;
+        const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(id);
+        return def.mRig && (def.mRig->getID() == mAssetData->rigDef.getAssetID());
+    });
 
+    ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+    ImGui::SeparatorText("How To Use?");
+    ImGui::BulletText("Double click line to add a node");
+    ImGui::BulletText("Right click node to delete it");
+    ImGui::BulletText("Click or hover node to highlight its entry in the table");
+    ImGui::BulletText("Use table to select animations");
 }
 
 bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
@@ -285,16 +299,17 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
     }
 
     constexpr ImGuiTableFlags TABLE_FLAGS =
-        ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable
         | ImGuiTableFlags_Sortable
         | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBody
-        | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
-        | ImGuiTableFlags_SizingStretchProp;
+        | ImGuiTableFlags_ScrollY
+        | ImGuiTableFlags_SizingFixedFit;
 
     bool changed = false;
 
     if (ImguiUtil::updateAndRenderSoftAssetReference("Rig", mAssetData->rigDef)) {
         mAssetData->nodes.clear();
+        mPreviewModel.invalidate();
         changed = true;
     }
     ImGui::Separator();
@@ -304,9 +319,9 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
 
             //constexpr f32 FIXED_WIDTH = 75.0f;
-            ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 20.0f);
-            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | /*ImGuiTableColumnFlags_WidthFixed | */ImGuiTableColumnFlags_NoHide, 0);
-            ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_NoHide, 0);
+            ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 20.0f);
+            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed, 30.0f);
+            ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthStretch, 0);
 
             ImGui::TableSetupScrollFreeze(1, 1);
             ImGui::TableHeadersRow();
@@ -326,7 +341,12 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
                 }
                 // Anim
                 ImGui::TableSetColumnIndex(2);
-                changed |= ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation);
+                changed |= ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation, [this](AssetID id) {
+                    // Make sure this anim has our rig
+                    if (!mAssetData || !mAssetData->rigDef.isValid()) return false;
+                    const AnimationDef& def = AnimationRepository::get().getLoadedOrUnloadedAsset(id);
+                    return def.rigDef.isValid() && (def.rigDef.getAssetID() == mAssetData->rigDef.getAssetID());
+                });
 
                 if ((i == mSelectedIndex) || (i == mHoverIndex)) {
                     // https://github.com/ocornut/imgui/discussions/3966

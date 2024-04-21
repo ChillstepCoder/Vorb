@@ -17,7 +17,7 @@ static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
 static std::map<SoftAssetReference*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
 
 template <typename T>
-bool assetButton(SoftAssetReference& assetRef) {
+bool assetButton(SoftAssetReference& assetRef, AssetFilterFunc fiterFunc) {
     IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
     ImguiUtil::ScopedColor color(ImGuiCol_Button, assetRef.isValid() ? ImguiColors::Theme::highlight : ImguiColors::Theme::error);
     if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0,0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
@@ -30,6 +30,7 @@ bool assetButton(SoftAssetReference& assetRef) {
         else {
             sAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
             sAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<T>(), THUMBNAIL_SIZE);
+            sAssetSelectorPopup[&assetRef]->setAssetFilterFunc(fiterFunc);
         }
     }
     ImGui::SameLine();
@@ -48,7 +49,7 @@ bool assetButton(SoftAssetReference& assetRef) {
     return false;
 }
 
-bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef) {
+bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef, std::function<bool(AssetID)> filterFunc /*= nullptr*/) {
 
     ImGui::PushID(&assetRef);
     bool changed = false;
@@ -60,67 +61,67 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
 
     switch (assetRef.assetType) {
         case AssetType::Tile:
-            changed |= assetButton<TileDef>(assetRef);
+            changed |= assetButton<TileDef>(assetRef, filterFunc);
             break;
         case AssetType::ParticleSystem:
-            changed |= assetButton<ParticleSystemDef>(assetRef);
+            changed |= assetButton<ParticleSystemDef>(assetRef, filterFunc);
             break;
         case AssetType::Effect:
-            changed |= assetButton<EffectDef>(assetRef);
+            changed |= assetButton<EffectDef>(assetRef, filterFunc);
             break;
         case AssetType::Texture:
-            changed |= assetButton<TextureDef>(assetRef);
+            changed |= assetButton<TextureDef>(assetRef, filterFunc);
             break;
         case AssetType::Cubemap:
-            changed |= assetButton<CubemapDef>(assetRef);
+            changed |= assetButton<CubemapDef>(assetRef, filterFunc);
             break;
         case AssetType::Brush:
-            changed |= assetButton<BrushDef>(assetRef);
+            changed |= assetButton<BrushDef>(assetRef, filterFunc);
             break;
         case AssetType::Material:
-            changed |= assetButton<MaterialDef>(assetRef);
+            changed |= assetButton<MaterialDef>(assetRef, filterFunc);
             break;
         case AssetType::Rig:
-            changed |= assetButton<RigDef>(assetRef);
+            changed |= assetButton<RigDef>(assetRef, filterFunc);
             break;
         case AssetType::Animation:
-            changed |= assetButton<AnimationDef>(assetRef);
+            changed |= assetButton<AnimationDef>(assetRef, filterFunc);
             break;
         case AssetType::AnimMachine:
-            changed |= assetButton<AnimMachineDef>(assetRef);
+            changed |= assetButton<AnimMachineDef>(assetRef, filterFunc);
             break;
         case AssetType::Blendspace1D:
-            changed |= assetButton<Blendspace1DDef>(assetRef);
+            changed |= assetButton<Blendspace1DDef>(assetRef, filterFunc);
             break;
         case AssetType::Model:
-            changed |= assetButton<ModelDef>(assetRef);
+            changed |= assetButton<ModelDef>(assetRef, filterFunc);
             break;
         case AssetType::Skill:
-            changed |= assetButton<SkillDef>(assetRef);
+            changed |= assetButton<SkillDef>(assetRef, filterFunc);
             break;
         case AssetType::Item:
-            changed |= assetButton<ItemDef>(assetRef);
+            changed |= assetButton<ItemDef>(assetRef, filterFunc);
             break;
         case AssetType::Fish:
-            changed |= assetButton<FishDef>(assetRef);
+            changed |= assetButton<FishDef>(assetRef, filterFunc);
             break;
         case AssetType::MaterialShader:
-            changed |= assetButton<MaterialShaderDef>(assetRef);
+            changed |= assetButton<MaterialShaderDef>(assetRef, filterFunc);
             break;
         case AssetType::TileGrass:
-            changed |= assetButton<TileGrassDef>(assetRef);
+            changed |= assetButton<TileGrassDef>(assetRef, filterFunc);
             break;
         case AssetType::Biome:
-            changed |= assetButton<BiomeDef>(assetRef);
+            changed |= assetButton<BiomeDef>(assetRef, filterFunc);
             break;
         case AssetType::TileDistribution:
-            changed |= assetButton<TileDistributionDef>(assetRef);
+            changed |= assetButton<TileDistributionDef>(assetRef, filterFunc);
             break;
         case AssetType::Building:
-            changed |= assetButton<BuildingDef>(assetRef);
+            changed |= assetButton<BuildingDef>(assetRef, filterFunc);
             break;
         case AssetType::Room:
-            changed |= assetButton<RoomDef>(assetRef);
+            changed |= assetButton<RoomDef>(assetRef, filterFunc);
             break;
         case AssetType::NONE:
         default:
