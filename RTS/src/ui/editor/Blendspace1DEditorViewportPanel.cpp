@@ -303,8 +303,8 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
             //constexpr f32 FIXED_WIDTH = 75.0f;
             ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 20.0f);
-            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 80.0f);
-            ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 400.0f);
+            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | /*ImGuiTableColumnFlags_WidthFixed | */ImGuiTableColumnFlags_NoHide, 0.0f);
+            ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_NoHide, 0);
 
             ImGui::TableSetupScrollFreeze(1, 1);
             ImGui::TableHeadersRow();
@@ -448,8 +448,16 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
         }
     }
 
-    if (ImGui::IsMouseClicked(0) && closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
-        mSelectedIndex = mDragIndex = closestIndex;
+    if (closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
+        if (ImGui::IsMouseClicked(0)) {
+            mSelectedIndex = mDragIndex = closestIndex;
+        }
+        else if (ImGui::IsMouseClicked(1)) {
+            // Right click destroy
+            mAssetData->nodes.erase(mAssetData->nodes.begin() + closestIndex);
+            mSelectedIndex = mDragIndex = closestIndex = -1;
+            changed = true;
+        }
     }
     if (mDragIndex != -1) {
         ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, "DRAGGING");
@@ -547,23 +555,25 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
         const int numAnims = 1 + (int)blendPair.hasBoth();
         // Select loop duration based on weights
         mBlendData[0].anim = &blendPair.anim0.getLoadedOrUnloadedAsset();
+        mBlendData[0].weight = blendPair.weight0;
         f32 duration0 = mBlendData[0].anim->animation.duration();
         f32 duration1 = 0.0f;
         float loopDuration = duration0 * mBlendData[0].weight;
-        mBlendData[0].weight = blendPair.weight0;
         if (numAnims == 2) {
             mBlendData[1].anim = &blendPair.anim1.getLoadedOrUnloadedAsset();
             mBlendData[1].weight = 1.0f - blendPair.weight0;
             duration1 = mBlendData[1].anim->animation.duration();
             loopDuration += duration1 * mBlendData[1].weight;
         }
+        assert(loopDuration > 0.0f);
 
         f32 loopTime = loopDuration * mSyncAlpha;
         loopTime += mCurrentElapsedSec;
         if (loopTime > loopDuration) {
-            loopTime -= loopDuration;
+            loopTime = fmod(loopTime, loopDuration);
         }
         mSyncAlpha = loopTime / loopDuration;
+        assert(mSyncAlpha >= 0.0f && mSyncAlpha <= 1.0f);
 
 
         mBlendData[0].animTime = mSyncAlpha * duration0;
