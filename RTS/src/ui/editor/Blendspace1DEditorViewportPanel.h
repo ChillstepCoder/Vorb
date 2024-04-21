@@ -36,7 +36,7 @@ private:
     bool mDraggingPreview = false;
     i32 mDragIndex = -1;
     i32 mSelectedIndex = -1;
-    i32 mLeaderIndex = -1;
+    i32 mHoverIndex = -1;
 
     Blendspace1DPlayer mBlendspacePlayer;
 };

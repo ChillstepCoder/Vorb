@@ -289,7 +289,7 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         | ImGuiTableFlags_Sortable
         | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBody
         | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY
-        | ImGuiTableFlags_SizingFixedFit;
+        | ImGuiTableFlags_SizingStretchProp;
 
     bool changed = false;
 
@@ -300,10 +300,12 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
     ImGui::Separator();
     if (mAssetData->rigDef.isValid()) {
         int colCount = 3;
+        ImVec4 te = ImGui::GetStyleColorVec4(ImGuiCol_Text);
         if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+
             //constexpr f32 FIXED_WIDTH = 75.0f;
             ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 20.0f);
-            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | /*ImGuiTableColumnFlags_WidthFixed | */ImGuiTableColumnFlags_NoHide, 0.0f);
+            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | /*ImGuiTableColumnFlags_WidthFixed | */ImGuiTableColumnFlags_NoHide, 0);
             ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_NoHide, 0);
 
             ImGui::TableSetupScrollFreeze(1, 1);
@@ -312,6 +314,7 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
             for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
                 ImGui::PushID(i + 66);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, 0);
+
                 // ID
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Text("%d", i);
@@ -325,8 +328,15 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
                 ImGui::TableSetColumnIndex(2);
                 changed |= ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation);
 
+                if ((i == mSelectedIndex) || (i == mHoverIndex)) {
+                    // https://github.com/ocornut/imgui/discussions/3966
+                    ImGuiTable* table = ImGui::GetCurrentContext()->CurrentTable;
+                    table->RowBgColor[1] = ImGui::GetColorU32(ImGuiCol_Border, i == mSelectedIndex ? 0.8f : 0.6f);
+                }
+
                 ImGui::PopID();
             }
+          
             ImGui::EndTable();
         }
     }
@@ -436,33 +446,33 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
     ImVec2 start = bb.GetCenter() - ImVec2(bb.GetWidth() * 0.5f, 0.0f);
 
     ImVec2 mouse = IO.MousePos;
-    i32 closestIndex = -1;
+    mHoverIndex = -1;
     f32 closestDistanceSQ = FLT_MAX;
     for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
         const Blendpsace1DDefNode& node = mAssetData->nodes[i];
         const ImVec2 pos = start + ImVec2(node.x * bb.GetWidth(), 0.0f);
         const f32 distanceSQ = (pos.x - mouse.x) * (pos.x - mouse.x) + (pos.y - mouse.y) * (pos.y - mouse.y);
-        if (distanceSQ < closestDistanceSQ) {
+        if (distanceSQ < closestDistanceSQ && distanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
             closestDistanceSQ = distanceSQ;
-            closestIndex = i;
+            mHoverIndex = i;
         }
     }
 
-    if (closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
+    if (mHoverIndex != -1 ) {
         if (ImGui::IsMouseClicked(0)) {
-            mSelectedIndex = mDragIndex = closestIndex;
+            mSelectedIndex = mDragIndex = mHoverIndex;
         }
         else if (ImGui::IsMouseClicked(1)) {
             // Right click destroy
-            mAssetData->nodes.erase(mAssetData->nodes.begin() + closestIndex);
-            mSelectedIndex = mDragIndex = closestIndex = -1;
+            mAssetData->nodes.erase(mAssetData->nodes.begin() + mHoverIndex);
+            mSelectedIndex = mDragIndex = mHoverIndex = -1;
             changed = true;
         }
     }
     if (mDragIndex != -1) {
-        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, "DRAGGING");
-    } else if (closestIndex != -1 && closestDistanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
-        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", closestIndex, mAssetData->nodes[closestIndex].x, "CLOSEST");
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, mAssetData->nodes[mDragIndex].animation.name.toString().c_str());
+    } else if (mHoverIndex != -1) {
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mHoverIndex, mAssetData->nodes[mHoverIndex].x, mAssetData->nodes[mHoverIndex].animation.name.toString().c_str());
     }
 
     if (mDragIndex != -1) {
@@ -575,7 +585,6 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
         mSyncAlpha = loopTime / loopDuration;
         assert(mSyncAlpha >= 0.0f && mSyncAlpha <= 1.0f);
 
-
         mBlendData[0].animTime = mSyncAlpha * duration0;
         mBlendData[1].animTime = mSyncAlpha * duration1;
 
@@ -615,18 +624,15 @@ void Blendspace1DEditorViewportPanel::onChanged() {
         return a.x < b.x;
     });
     // Restore indices
+    mHoverIndex = -1;
     const int prevSelectedIndex = mSelectedIndex;
     const int prevDragIndex = mDragIndex;
-    const int prevLeaderIndex = mLeaderIndex;
     for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
         if (prevSelectedIndex != -1 && mAssetData->nodes[i].editorIndex == prevSelectedIndex) {
             mSelectedIndex = i;
         }
         if (prevDragIndex != -1 && mAssetData->nodes[i].editorIndex == prevDragIndex) {
             mDragIndex = i;
-        }
-        if (prevLeaderIndex != -1 && mAssetData->nodes[i].editorIndex == prevLeaderIndex) {
-            mLeaderIndex = i;
         }
         mAssetData->nodes[i].editorIndex = i;
     }
