@@ -528,6 +528,10 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
         return;
     }
 
+    if (!mBlendspacePlayer.areAllAssetsLoaded()) {
+        return;
+    }
+
     /*  const float numIntervals = mBlendspacePlayer.numNodes - 1;
       const float interval = 1.f / kNumIntervals;
       for (int i = 0; i < mBlendspacePlayer.numNodes; ++i) {
@@ -538,22 +542,40 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
       }*/
 
     if (const ModelDef* modelDef = mPreviewModel.getAssetHandle<ModelDef>()->tryGetLoadedAsset()) {
-        renderMeshSkeletal(modelDef, 0, 0, nullptr, 0.0f);
+        AnimSampleBlendData mBlendData[2];
+        AnimBlendPair blendPair = mBlendspacePlayer.getBlendPair(mPreviewX);
+        const int numAnims = 1 + (int)blendPair.hasBoth();
+        // Select loop duration based on weights
+        mBlendData[0].anim = &blendPair.anim0.getLoadedOrUnloadedAsset();
+        f32 duration0 = mBlendData[0].anim->animation.duration();
+        f32 duration1 = 0.0f;
+        float loopDuration = duration0 * mBlendData[0].weight;
+        mBlendData[0].weight = blendPair.weight0;
+        if (numAnims == 2) {
+            mBlendData[1].anim = &blendPair.anim1.getLoadedOrUnloadedAsset();
+            mBlendData[1].weight = 1.0f - blendPair.weight0;
+            duration1 = mBlendData[1].anim->animation.duration();
+            loopDuration += duration1 * mBlendData[1].weight;
+        }
+
+        f32 loopTime = loopDuration * mSyncAlpha;
+        loopTime += mCurrentElapsedSec;
+        if (loopTime > loopDuration) {
+            loopTime -= loopDuration;
+        }
+        mSyncAlpha = loopTime / loopDuration;
+
+
+        mBlendData[0].animTime = mSyncAlpha * duration0;
+        mBlendData[1].animTime = mSyncAlpha * duration1;
+
+        renderMeshSkeletalBlended(modelDef, 0, 0, std::span(mBlendData, numAnims));
+
+        // Store our sync (footstep) time accurately in case loop time changes wildly
     }
     // Based on unreal sync groups (But more efficient)
     // https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-sync-groups-in-unreal-engine?application_version=5.3
 
-    if (mLeaderAnimTime == 0.0f) {
-        mPreviewAnimTime = 0.0f;
-    }
-    else {
-        mPreviewAnimTime += mCurrentElapsedSec;
-
-        if (mPreviewAnimTime > mLeaderAnimTime) {
-            mPreviewAnimTime -= mLeaderAnimTime;
-        }
-        mSyncTime = mPreviewAnimTime / mLeaderAnimTime;
-    }
 }
 
 void Blendspace1DEditorViewportPanel::onChanged() {
@@ -621,22 +643,4 @@ void Blendspace1DEditorViewportPanel::rebuildBlendspacePlayer() {
     else {
         mBlendspacePlayer = Blendspace1DPlayer();
     }
-}
-
-AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x) const {
-    assert(numNodes > 0);
-
-    // Before first node
-    if (x <= nodes[0].x) {
-        return { nodes[0].animId, INVALID_ASSET_ID, 1.0f };
-    }
-
-    for (size_t i = 0; i < numNodes - 1; ++i) {
-        if (x >= nodes[i].x && x < nodes[i + 1].x) {
-            const f32 t = (x - nodes[i].x) / (nodes[i + 1].x - nodes[i].x);
-            return { nodes[i].animId, nodes[i + 1].animId, 1.0f - t };
-        }
-    }
-    // After last node
-    return { nodes[numNodes - 1].animId, INVALID_ASSET_ID, 1.0f };
 }

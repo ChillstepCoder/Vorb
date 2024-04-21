@@ -96,7 +96,7 @@ void AssetEditorViewportPanelBase::renderMeshSkeletal(const ModelDef* modelAsset
     renderMeshSkeletalBlended(modelAsset, variantIndex, lod, anims);
 }
 
-void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* modelAsset, int variantIndex, int lod, const std::vector<AnimSampleBlendData>& anims) {
+void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* modelAsset, int variantIndex, int lod, const std::span<AnimSampleBlendData> anims) {
     if (!modelAsset) return;
     assert(modelAsset->isSkeletalModel());
     const MaterialShaderDef* shader = getShader();

@@ -41,3 +41,24 @@ protected:
 
 template <typename T>
 using AssetHandlePtr = std::unique_ptr<AssetHandle<T>>;
+
+template <typename T>
+class AssetRawPtr {
+public:
+    AssetRawPtr() = default;
+    AssetRawPtr(AssetID id) : assetId(id) {};
+
+    AssetRawPtr<T>& operator= (AssetID id) {
+        assetId = id;
+        return *this;
+    }
+
+    const T& getLoadedOrUnloadedAsset() const;
+
+
+    bool isValid() const {
+        return assetId != INVALID_ASSET_ID;
+    }
+
+    AssetID assetId = INVALID_ASSET_ID;
+};

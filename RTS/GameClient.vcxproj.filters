@@ -1044,6 +1044,9 @@
     <ClCompile Include="src\screens\EditorOnlyScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\animation\Blendspace1DPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -2577,6 +2580,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\screens\EditorOnlyScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\animation\Blendspace1DPlayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

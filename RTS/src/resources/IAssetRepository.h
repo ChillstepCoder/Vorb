@@ -501,6 +501,14 @@ const T& AssetHandle<T>::getLoadedAsset() const {
     return *mLoadedAsset;
 }
 
+
+// TODO: is saving 4 bytes worth an indirection?
+template <typename T>
+[[nodiscard]] const T& AssetRawPtr<T>::getLoadedOrUnloadedAsset() const {
+    assert(isValid());
+    return IAssetRepository<T>::getInstance().getLoadedOrUnloadedAsset(assetId);
+}
+
 namespace AssetUtil {
     // Useful when you want to put a bunch of assets into a bundle and cache the asset
     // so once they are all loaded you don't need to query them

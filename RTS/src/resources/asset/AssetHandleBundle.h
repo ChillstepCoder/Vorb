@@ -90,5 +90,5 @@ protected:
     std::vector<AssetHandleBasePtr> mHandles;
     mutable ui32 mLoadedCount = 0;
     bool mLockedByAssetLoader = false;
-    mutable BitArray mLoaded;
+    mutable BitArray mLoaded; // TODO: We could shrink this class or make a lightweight version, see Blendspace1DPlayer::areAllAssetsLoaded
 };
