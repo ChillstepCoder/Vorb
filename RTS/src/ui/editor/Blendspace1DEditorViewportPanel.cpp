@@ -260,7 +260,7 @@ namespace ImGui
     }
 }
 
-const char* BottomControlsName = "Blendspace1D Controls";
+static const char* BottomControlsName = "Blendspace1D Controls";
 
 Blendspace1DEditorViewportPanel::Blendspace1DEditorViewportPanel() {
     mSkeletalAnimator = std::make_unique<SkeletalAnimator>();

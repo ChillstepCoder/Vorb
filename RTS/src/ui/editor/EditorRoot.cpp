@@ -14,6 +14,7 @@
 #include "ui/editor/TileEditorViewportPanel.h"
 #include "ui/editor/TileDistributionEditorViewportPanel.h"
 #include "ui/editor/Blendspace1DEditorViewportPanel.h"
+#include "ui/editor/AnimMachineEditorViewportPanel.h"
 #include "ui/editor/ContentBrowserPanel.h"
 #include "options/DebugOptions.h"
 #include "camera/Camera3D.h"
@@ -58,6 +59,7 @@ EditorRoot::EditorRoot() {
     mAssetEditorPanels[AssetType::Tile] = std::make_unique<TileEditorViewportPanel>();
     mAssetEditorPanels[AssetType::TileDistribution] = std::make_unique<TileDistributionEditorViewportPanel>();
     mAssetEditorPanels[AssetType::Blendspace1D] = std::make_unique<Blendspace1DEditorViewportPanel>();
+    mAssetEditorPanels[AssetType::AnimMachine] = std::make_unique<AnimMachineEditorViewportPanel>();
 
     mContentBrowserPanel = std::make_unique<ContentBrowserPanel>(ResourceManager::get().getResourceRoot().getStdPath());
 
@@ -151,11 +153,13 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             auto dockIdDown = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Down, 0.25f, nullptr, &dockspaceId);
 
             // we now dock our windows into the docking node we made above
+            // TODO: Manually managing this list is not ideal
             ImGui::DockBuilderDockWindow("Primary Controls", dockIdLeft);
             ImGui::DockBuilderDockWindow("Secondary Controls", dockIdRight);
             ImGui::DockBuilderDockWindow("Content Browser", dockIdDown);
             ImGui::DockBuilderDockWindow("Bottom Controls", dockIdDown);
             ImGui::DockBuilderDockWindow("Blendspace1D Controls", dockIdDown);
+            ImGui::DockBuilderDockWindow("AnimMachine Controls", dockIdDown);
             ImGui::DockBuilderDockWindow("Biome  Editor", dockspaceId);
             for (auto&& it : mAssetEditorPanels) {
                 ImGui::DockBuilderDockWindow(it.second->getViewportWindowName(), dockspaceId);
