@@ -9,16 +9,19 @@
 #include "rendering/model/skeletal/SkeletalAnimator.h"
 #include "rendering/MaterialShaderRepository.h"
 
+
+
 static const char* BottomControlsName = "AnimMachine Controls";
 
-AnimMachineEditorViewportPanel::AnimMachineEditorViewportPanel()
-{
 
+
+
+AnimMachineEditorViewportPanel::AnimMachineEditorViewportPanel() {
+   
+    mGraph = std::make_unique<NodeGraph>();
 }
 
-AnimMachineEditorViewportPanel::~AnimMachineEditorViewportPanel()
-{
-
+AnimMachineEditorViewportPanel::~AnimMachineEditorViewportPanel() {
 }
 
 void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
@@ -33,14 +36,18 @@ bool AnimMachineEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize)
 }
 
 void AnimMachineEditorViewportPanel::updateAndRenderBottomControls() {
-
     ImGui::Begin(BottomControlsName, nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
-    ImGui::Text("BOttom!");
+    ImGui::Text("Bottom!");
+
     if (mDidJustEnter) {
         ImGui::SetWindowFocus(BottomControlsName);
         mDidJustEnter = false;
     }
 
+    mGraph->updateAndRender();
+
+    //ImGui::ShowTestWindow();
+    //ImGui::ShowMetricsWindow();
     ImGui::End();
 }
 

@@ -294,6 +294,13 @@
     <ClCompile Include="src\effect\IEffectContext.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7decomp.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7enc.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\crude_json.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\imgui_canvas.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\imgui_node_editor.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\imgui_node_editor_api.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\utilities\builders.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\utilities\drawing.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\utilities\widgets.cpp" />
     <ClCompile Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.cpp" />
     <ClCompile Include="src\faction\CliFactionManager.cpp" />
     <ClCompile Include="src\faction\HostFactionManager.cpp" />
@@ -468,6 +475,7 @@
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
@@ -688,6 +696,12 @@
     <ClInclude Include="src\extern\bc7enc\dds_defs.h" />
     <ClInclude Include="src\extern\bc7enc\rgbcx.h" />
     <ClInclude Include="src\extern\bc7enc\rgbcx_table4.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\crude_json.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_bezier_math.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_canvas.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_extra_math.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_node_editor.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_node_editor_internal.h" />
     <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.h" />
     <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialogConfig.h" />
     <ClInclude Include="src\faction\CliFactionManager.h" />
@@ -919,6 +933,7 @@
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\NodeGraph.h" />
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
@@ -1083,6 +1098,9 @@
     <ClInclude Include="src\world\WorldObjectQuery.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\extern\imgui-node-editor\imgui_bezier_math.inl" />
+    <None Include="src\extern\imgui-node-editor\imgui_extra_math.inl" />
+    <None Include="src\extern\imgui-node-editor\imgui_node_editor_internal.inl" />
     <None Include="src\item\ItemReservation" />
     <None Include="src\rendering\mesh\fbx2raw.inl" />
     <None Include="src\rendering\mesh\VertexType" />

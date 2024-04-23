@@ -30,7 +30,9 @@ public:
             return isOpen;
         }
 
-        updateCamera(mViewportDims.x / mViewportDims.y);
+        if (ImGui::IsWindowFocused()) {
+            updateCamera(mViewportDims.x / mViewportDims.y);
+        }
 
         updateFramebufferAndLazyInit(mViewportDims);
 
