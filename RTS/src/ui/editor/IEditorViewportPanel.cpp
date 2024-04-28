@@ -310,6 +310,9 @@ void IEditorViewportPanel::updateAndRenderTweakers() {
 
 void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
 
+    // Mouse control requires this
+    ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
+
     // Controls
     mCameraPositioner->movement_.forward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_W);
     mCameraPositioner->movement_.backward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
