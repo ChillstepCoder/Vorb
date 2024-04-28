@@ -1,1 +1,18 @@
 rig: human
+states:
+  - name: idle
+    asset_name: swrd_shld_idle
+    state_type: AnimSequence
+    transitions:
+      - condition:
+          type: is_moving
+        tran_dur: 0
+        to_state: move
+  - name: move
+    asset_name: move
+    state_type: BlendSpace1D
+    transitions:
+      - condition:
+          type: is_not_moving
+        tran_dur: 0
+        to_state: idle

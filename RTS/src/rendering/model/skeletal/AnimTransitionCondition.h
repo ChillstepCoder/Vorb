@@ -4,12 +4,9 @@
 
 //typedef std::variant<f32, f32v2> AnimConstant;
 
-enum class AnimTransitionConditionConstantType : ui8 {
-    NONE,
-    F32,
-    F32V2,
-    COUNT
-};
+typedef std::variant<f32, f32v2> AnimParamVar;
+
+// Efficient version of AnimTransitionConditionParamVar which allows the condition to make an assumption on type
 struct AnimParam {
     AnimParam() = default;
     AnimParam(f32 f) : f(f) {}
@@ -20,7 +17,7 @@ struct AnimParam {
         f32v2 f2;
     };
 };
-static_assert(e_count(AnimTransitionConditionConstantType) == 3);
+static_assert(std::variant_size_v<AnimParamVar> == 2);
 
 // TODO: Move
 struct AnimVariables {

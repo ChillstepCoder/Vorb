@@ -13,12 +13,13 @@ namespace ozz {
 };
 
 typedef ui8 AnimStateID;
-constexpr auto MAX_ANIM_STATES = std::numeric_limits<AnimStateID>::max();
+constexpr auto INVALID_ANIM_STATE = std::numeric_limits<AnimStateID>::max();
+constexpr auto MAX_ANIM_STATES = std::numeric_limits<AnimStateID>::max() - 1;
 
 struct AnimTransitionDef {
     AnimTransitionConditionFileData condition;
     StrToken transitionAnim;
-    f32 transitionDuration;
+    f32 transitionDuration = 0.0f;
     StrToken toState;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimTransitionDef,
@@ -31,27 +32,29 @@ SERIALIZABLE_IMGUI_CONTROLLED(AnimTransitionDef,
 struct AnimTransition {
     // Deliberately just a single condition for now, as these are custom code driven
     AnimTransitionCondition condition;
-    AssetID transitionAnim = INVALID_ASSET_ID;
-    f32 transitionDuration;
-    AnimStateID toState;
+    AssetID transitionAnimID = INVALID_ASSET_ID;
+    f32 transitionDuration = 0.0f;
+    AnimStateID toState = INVALID_ANIM_STATE;
 };
 
 enum class AnimStateType : ui8 {
     AnimSequence,
+    Blendspace1D,
     Blendspace2D,
-    Blendspace3D
+    COUNT,
+    INVALID = COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(AnimStateType,
     ENUM_FIELD_SIMPLE(AnimStateType, AnimSequence),
+    ENUM_FIELD_SIMPLE(AnimStateType, Blendspace1D),
     ENUM_FIELD_SIMPLE(AnimStateType, Blendspace2D),
-    ENUM_FIELD_SIMPLE(AnimStateType, Blendspace3D),
 );
 
 struct AnimStateDef {
     StrToken name;
     std::vector<AnimTransitionDef> transitions;
     StrToken assetName; // Could be any of the state type
-    AnimStateType stateType;
+    AnimStateType stateType = AnimStateType::INVALID;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef, 
     make_field(o.name, "name"sv),
@@ -63,9 +66,9 @@ SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef,
 // Efficient representation
 struct AnimState {
     std::unique_ptr<AnimTransition[]> transitions;
-    AssetID assetId;
-    ui8 numTransitions;
-    AnimStateType stateType;
+    AssetID assetId = INVALID_ASSET_ID;
+    ui8 numTransitions = 0;
+    AnimStateType stateType = AnimStateType::INVALID;
 };
 
 // Make sure order and contents of the animation machine name and animation arrays are the same
@@ -81,7 +84,8 @@ public:
     std::vector<AnimState> states;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimMachineDef,
-    make_field(o.rigDef, "rig"sv)
+    make_field(o.rigDef, "rig"sv),
+    make_field(o.stateDefs, "states"sv)
 );
 
 

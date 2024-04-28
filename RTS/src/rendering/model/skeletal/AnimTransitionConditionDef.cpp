@@ -3,7 +3,9 @@
 
 #include <boost/container/flat_map.hpp>
 
-AnimTransitionConditionDef getAnimTransitionConditionDef(AnimTransitionConditionDefType name) {
+constexpr f32 MOVING_THRESHOLD = 0.01f;
+
+const AnimTransitionConditionDef& getAnimTransitionConditionDef(AnimTransitionConditionDefType name) {
 
 #define CONDITION_DEF(token, func) {AnimTransitionConditionDefType::token, AnimTransitionConditionDef{ [](const AnimVariables& vars, AnimParam) func, CStrToken(#token)}}
 #define CONDITION_DEF_PARAM(token, defaultParam, func) {AnimTransitionConditionDefType::token, AnimTransitionConditionDef{ [](const AnimVariables& vars, AnimParam p) func, defaultParam, CStrToken(#token)}}
@@ -19,7 +21,10 @@ AnimTransitionConditionDef getAnimTransitionConditionDef(AnimTransitionCondition
                      vars.locomotionMode != CharacterLocomotionMode::SWIMMING;
          }),
          CONDITION_DEF(is_moving, {
-             return vars.speed > 0.01f;
+             return vars.speed > MOVING_THRESHOLD;
+         }),
+         CONDITION_DEF(is_not_moving, {
+             return vars.speed <= MOVING_THRESHOLD;
          }),
          CONDITION_DEF(is_accelerating, {
              return vars.acceleration > 0.01f;
@@ -28,7 +33,7 @@ AnimTransitionConditionDef getAnimTransitionConditionDef(AnimTransitionCondition
              return vars.speed > p.f;
          }),
      };
-     static_assert(e_count(AnimTransitionConditionDefType) == 5);
+     static_assert(e_count(AnimTransitionConditionDefType) == 6);
      assert(e_count(AnimTransitionConditionDefType) == conditions.size());
 
      auto it = conditions.find(name);
