@@ -73,17 +73,16 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
                             effTrans.condition.func = condDef.func;
 
 #define UPDATE_CONDITION_PARAM(type) \
-if (std::holds_alternative<f32>(condDef.defaultParam)) { \
+if (std::holds_alternative<type>(condDef.defaultParam)) { \
     if (std::holds_alternative<type>(transDef.condition.param)) { \
         effTrans.condition.constant = std::get<type>(transDef.condition.param); \
     } \
     else { \
-        effTrans.condition.constant = condDef.defaultParam; \
+        effTrans.condition.constant = std::get<type>(condDef.defaultParam); \
     } \
 }
                             UPDATE_CONDITION_PARAM(f32)
                             else UPDATE_CONDITION_PARAM(f32v2)
-
 
                             static_assert(std::variant_size_v<AnimParamVar> == 2, "Update construction");
                         }

@@ -83,6 +83,7 @@ bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) 
 void ChunkGrassQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {
     auto& mesh = mMeshes[patchIndex];
     assert(mesh);
+    // TODO: CRASH HERE
     mesh->mCrossfadeAlpha = crossfadeAlpha;
     mesh->mCrossfadeDir = crossfadeDir;
 }

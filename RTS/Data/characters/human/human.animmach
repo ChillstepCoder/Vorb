@@ -10,7 +10,7 @@ states:
         to_state: move
   - name: move
     asset_name: move
-    state_type: BlendSpace1D
+    state_type: Blendspace1D
     transitions:
       - condition:
           type: is_not_moving
