@@ -21,16 +21,19 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
         for (AnimStateDef& state : def.stateDefs) {
             switch (state.stateType) {
                 case AnimStateType::AnimSequence:
-                    def.addDependency(AnimationRepository::get().getAssetHandle(state.assetName));
+                    state.assetRef.assetType = AssetType::Animation;
+                    def.addDependency(state.assetRef.getAssetHandleBase());
                     break;
                 case AnimStateType::Blendspace1D:
-                    def.addDependency(Blendspace1DRepository::get().getAssetHandle(state.assetName));
+                    state.assetRef.assetType = AssetType::Blendspace1D;
+                    def.addDependency(state.assetRef.getAssetHandleBase());
                     break;
                 case AnimStateType::Blendspace2D:
                     panic("BlendSpace 2d not implemented yet");
                 default:
                     panic("Missing state type on animmachine {} state {}", filePath.getString(), state.name.toString());
             }
+            static_assert(e_count(AnimStateType) == 3);
             for (auto& transition : state.transitions) {
                 if (transition.transitionAnim.isValid()) {
                     def.addDependency(AnimationRepository::get().getAssetHandle(transition.transitionAnim));
@@ -47,10 +50,10 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
                 effState.stateType = stateDef.stateType;
                 switch (stateDef.stateType) {
                     case AnimStateType::AnimSequence:
-                        effState.assetId = AnimationRepository::get().getAssetID(stateDef.assetName);
+                        effState.assetId = stateDef.assetRef.getAssetID();
                         break;
                     case AnimStateType::Blendspace1D:
-                        effState.assetId = Blendspace1DRepository::get().getAssetID(stateDef.assetName);
+                        effState.assetId = stateDef.assetRef.getAssetID();
                         break;
                     case AnimStateType::Blendspace2D:
                         panic("BlendSpace 2d not implemented yet");

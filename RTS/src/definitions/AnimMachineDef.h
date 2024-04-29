@@ -53,13 +53,13 @@ SERIALIZABLE_ENUM_SAME_NAME(AnimStateType,
 struct AnimStateDef {
     StrToken name;
     std::vector<AnimTransitionDef> transitions;
-    StrToken assetName; // Could be any of the state type
+    SoftAssetReference assetRef; // Could be any of the state type
     AnimStateType stateType = AnimStateType::INVALID;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef, 
     make_field(o.name, "name"sv),
     make_field(o.transitions, "transitions"sv),
-    make_field(o.assetName, "asset_name"sv),
+    make_field(o.assetRef, "asset_name"sv),
     make_field(o.stateType, "state_type"sv)
 );
 

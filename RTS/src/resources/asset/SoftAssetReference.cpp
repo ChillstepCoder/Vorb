@@ -124,6 +124,8 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
             changed |= assetButton<RoomDef>(assetRef, filterFunc);
             break;
         case AssetType::NONE:
+            ImGui::Button("INVALID SOFT REF");
+            break;
         default:
             panic("Unhandled asset type {} in SoftAssetReference::updateAndRenderSoftAssetReference", e_cast(assetRef.assetType));
             break;
