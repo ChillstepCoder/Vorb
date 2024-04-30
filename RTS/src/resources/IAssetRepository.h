@@ -31,7 +31,7 @@ public:
     virtual AssetID tryGetRegisteredAssetID(StrToken name) const = 0;
     virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
     virtual void onAllAssetTypesRegistered() {
-        fixupAssets();
+        fixupRegisteredAssets();
     }
     virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
 
@@ -60,12 +60,18 @@ public:
 
     virtual bool saveAsset(AssetID assetId) = 0;
 
-    virtual void onAssetChangedByEditor(AssetID assetId) { fixupAsset(assetId); };
-    virtual void fixupAsset(AssetID assetId) {};
+    virtual void onAssetChangedByEditor(AssetID assetId) {
+        fixupRegisteredAsset(assetId);
+        fixupLoadedAsset(assetId);
+    };
+    // Called automatically on after all assets have been registered or on edit
+    virtual void fixupRegisteredAsset(AssetID assetId) {};
+    // Called only on edit, must be manually called post load if used
+    virtual void fixupLoadedAsset(AssetID assetId) {};
 
-    void fixupAssets() {
+    void fixupRegisteredAssets() {
         for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
-            fixupAsset(id);
+            fixupRegisteredAsset(id);
         }
     }
 
@@ -389,7 +395,11 @@ public:
         // TODO: Remove file
     }
 
-    
+protected:
+    // Intended for internal use only
+    T& getMutableAssetInternal(AssetID id) {
+        return *mAssets[id].get();
+    }
 
 private:
     void loadAssetAsync(const AssetMetadata& assetEntry) override {

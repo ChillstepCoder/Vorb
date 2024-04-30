@@ -19,7 +19,7 @@ public:
     VGTexture getBiomeColorMapsArrayTexture() const { return mBiomeColorMapsArrayTexture; }
     VGBuffer getBiomeColorMapsShaderLookupBuffer() const { return mBiomeColorMapsShaderLookupBuffer; }
 
-    void fixupAsset(AssetID id) override;
+    void fixupRegisteredAsset(AssetID id) override;
 protected:
     AssetLoadFunc getAssetLoadFunc() override;
     void onRegisteredAsset(AssetID id) override;

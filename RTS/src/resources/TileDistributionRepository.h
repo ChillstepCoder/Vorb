@@ -14,5 +14,5 @@ public:
         return (TileDistributionRepository&)*IAssetRepository<TileDistributionDef>::sInstance;
     }
 
-    void fixupAsset(AssetID id) override;
+    void fixupRegisteredAsset(AssetID id) override;
 };

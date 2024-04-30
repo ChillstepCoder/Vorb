@@ -116,7 +116,7 @@ void BiomeRepository::onAllAssetTypesRegistered() {
 
     generateBiomesGLSLFile();
 
-    fixupAssets();
+    fixupRegisteredAssets();
 }
 
 void BiomeRepository::linkCorruptedBiomes() {
@@ -229,7 +229,7 @@ void BiomeRepository::generateBiomesGLSLFile() {
     outStream << fileData;
 }
 
-void BiomeRepository::fixupAsset(AssetID id) {
+void BiomeRepository::fixupRegisteredAsset(AssetID id) {
     BiomeDef& def = *mAssets[id];
 
     // Construct cache + lookup friendly data for fast generation passes

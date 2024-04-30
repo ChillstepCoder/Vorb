@@ -4,6 +4,7 @@
 #include "definitions/ModelDef.h"
 #include "definitions/RigDef.h"
 #include "resources/AnimationRepository.h"
+#include "resources/AnimMachineRepository.h"
 #include "resources/ModelRepository.h"
 
 #include "rendering/model/skeletal/SkeletalAnimator.h"
@@ -34,8 +35,10 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     bool changed = false;
     changed = updateAndRenderImguiControls(*mAssetData);
     changed |= ImguiUtil::ObjectVector<AnimStateDef>("States", mAssetData->stateDefs,
-        [this](AnimStateDef& o, ui32 i) {
-        bool changed = updateAndRenderImguiControls(o);
+        [this](AnimStateDef& o, ui32 stateIndex) {
+        bool changed = false;
+        
+        changed |=updateAndRenderImguiControls(o);
         if (changed) {
             switch (o.stateType) {
                 case AnimStateType::AnimSequence:
@@ -58,15 +61,17 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
             static_assert(e_count(AnimStateType) == 3);
         }
         changed |= ImguiUtil::ObjectVector<AnimTransitionDef>("Transitions", o.transitions,
-            [this](AnimTransitionDef& o, ui32 i) {
-                bool changed = updateAndRenderImguiControls(o);
-                ImGui::InputFloat("Transition duration", &o.transitionDuration);
+            [this, stateIndex](AnimTransitionDef& o, ui32 index) {
+                bool changed = false;
                 if (ImGui::BeginCombo("To State", o.toState.toString().c_str())) {
                     for (size_t i = 0; i < mAssetData->stateDefs.size(); ++i) {
                         AnimStateDef& def = mAssetData->stateDefs[i];
+                        if (i == stateIndex) {
+                            // No self selection
+                            continue;
+                        }
                         bool isSelected = def.name == o.toState;
                         ImGui::Selectable(def.name.toString().c_str(), &isSelected);
-                        x; // finish
                         if (isSelected) {
                             ImGui::SetItemDefaultFocus();
                             if (def.name != o.toState) {
@@ -77,13 +82,20 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                     }
                     ImGui::EndCombo();
                 }
+                changed |= updateAndRenderImguiControls(o);
+                changed |= ImGui::InputFloat("Transition duration", &o.transitionDuration);
                 return changed;
             }
         );
         return changed;
     });
 
-    ImGui::Text("Hello world");
+    if (changed) {
+        onChanged();
+    }
+
+    // For laptop and stuff going off screen
+    for (int i = 0; i < 5; ++i) ImGui::Spacing();
 }
 
 bool AnimMachineEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
@@ -116,7 +128,6 @@ void AnimMachineEditorViewportPanel::renderMesh()
 
 }
 
-void AnimMachineEditorViewportPanel::onChanged()
-{
-
+void AnimMachineEditorViewportPanel::onChanged() {
+    AnimMachineRepository::get().onAssetChangedByEditor(mAssetData->getID());
 }

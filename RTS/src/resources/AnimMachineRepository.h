@@ -17,6 +17,8 @@ public:
     const char* const getAssetTypeDisplayName() const override { return "Anim Machine"; }
 
 protected:
+    void fixupLoadedAsset(AssetID assetId) override;
+
     AssetLoadFunc getAssetLoadFunc() override;
 };
 

@@ -5,6 +5,76 @@
 #include "resources/AnimationRepository.h"
 #include "resources/Blendspace1DRepository.h"
 
+void AnimMachineRepository::fixupLoadedAsset(AssetID assetId) {
+    AnimMachineDef& def = getMutableAssetInternal(assetId);
+    
+    // Build efficient state representation
+    def.states.clear(); // Clear old data so we can rebuild it
+    def.states.resize(def.stateDefs.size());
+    for (size_t i = 0; i < def.stateDefs.size(); ++i) {
+        AnimStateDef& stateDef = def.stateDefs[i];
+        AnimState& effState = def.states[i];
+        effState.stateType = stateDef.stateType;
+        switch (stateDef.stateType) {
+            case AnimStateType::AnimSequence:
+                effState.assetId = stateDef.assetRef.getAssetID();
+                break;
+            case AnimStateType::Blendspace1D:
+                effState.assetId = stateDef.assetRef.getAssetID();
+                break;
+            case AnimStateType::Blendspace2D:
+                panic("BlendSpace 2d not implemented yet");
+            default:
+                panic("Type error post dependency load on anim machine {}", def.getName().toString());
+        }
+        if (stateDef.transitions.size()) {
+            effState.numTransitions = stateDef.transitions.size();
+            effState.transitions = std::make_unique<AnimTransition[]>(effState.numTransitions);
+            for (size_t t = 0; t < stateDef.transitions.size(); ++t) {
+                AnimTransitionDef& transDef = stateDef.transitions[t];
+                AnimTransition& effTrans = effState.transitions[t];
+                if (transDef.transitionAnim.isValid()) {
+                    effTrans.transitionAnimID = transDef.transitionAnim.getAssetID();
+                }
+                effTrans.transitionDuration = transDef.transitionDuration;
+                // Condition
+                if (transDef.condition.isValid()) {
+                    const AnimTransitionConditionDef& condDef = getAnimTransitionConditionDef(transDef.condition.defType);
+                    effTrans.condition.func = condDef.func;
+
+#define UPDATE_CONDITION_PARAM(type) \
+if (std::holds_alternative<type>(condDef.defaultParam)) { \
+    if (std::holds_alternative<type>(transDef.condition.param)) { \
+        effTrans.condition.constant = std::get<type>(transDef.condition.param); \
+    } \
+    else { \
+        effTrans.condition.constant = std::get<type>(condDef.defaultParam); \
+    } \
+}
+                    UPDATE_CONDITION_PARAM(f32)
+                    else UPDATE_CONDITION_PARAM(f32v2)
+
+                    static_assert(std::variant_size_v<AnimParamVar> == 2, "Update construction");
+                }
+
+                // To state
+                assert(transDef.toState.isValid());
+                for (size_t j = 0; j < def.stateDefs.size(); ++j) {
+                    if (def.stateDefs[j].name == transDef.toState) {
+                        effTrans.toState = j;
+                        break;
+                    }
+                }
+                if (effTrans.toState == INVALID_ANIM_STATE) {
+                    transDef.toState.clear();
+                }
+                assert(effTrans.toState != INVALID_ANIM_STATE);
+                assert(effTrans.toState != i && "Circular dependency");
+            }
+        }
+    }
+}
+
 AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
@@ -40,69 +110,10 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
                 }
             }
         }
-        assetLoader.requestAssetLoadWithDependencies([]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
+        assetLoader.requestAssetLoadWithDependencies([this]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
             AnimMachineDef& def = *static_cast<AnimMachineDef*>(assetDataPtr);
-            // Build efficient state representation
-            def.states.resize(def.stateDefs.size());
-            for (size_t i = 0; i < def.stateDefs.size(); ++i) {
-                AnimStateDef& stateDef = def.stateDefs[i];
-                AnimState& effState = def.states[i];
-                effState.stateType = stateDef.stateType;
-                switch (stateDef.stateType) {
-                    case AnimStateType::AnimSequence:
-                        effState.assetId = stateDef.assetRef.getAssetID();
-                        break;
-                    case AnimStateType::Blendspace1D:
-                        effState.assetId = stateDef.assetRef.getAssetID();
-                        break;
-                    case AnimStateType::Blendspace2D:
-                        panic("BlendSpace 2d not implemented yet");
-                    default:
-                        panic("Type error post dependency load on anim machine {}", filePath.getString());
-                }
-                if (stateDef.transitions.size()) {
-                    effState.numTransitions = stateDef.transitions.size();
-                    effState.transitions = std::make_unique<AnimTransition[]>(effState.numTransitions);
-                    for (size_t t = 0; t < stateDef.transitions.size(); ++t) {
-                        AnimTransitionDef& transDef = stateDef.transitions[t];
-                        AnimTransition& effTrans = effState.transitions[t];
-                        if (transDef.transitionAnim.isValid()) {
-                            effTrans.transitionAnimID = transDef.transitionAnim.getAssetID();
-                        }
-                        effTrans.transitionDuration = transDef.transitionDuration;
-                        // Condition
-                        if (transDef.condition.isValid()) {
-                            const AnimTransitionConditionDef& condDef = getAnimTransitionConditionDef(transDef.condition.defType);
-                            effTrans.condition.func = condDef.func;
 
-#define UPDATE_CONDITION_PARAM(type) \
-if (std::holds_alternative<type>(condDef.defaultParam)) { \
-    if (std::holds_alternative<type>(transDef.condition.param)) { \
-        effTrans.condition.constant = std::get<type>(transDef.condition.param); \
-    } \
-    else { \
-        effTrans.condition.constant = std::get<type>(condDef.defaultParam); \
-    } \
-}
-                            UPDATE_CONDITION_PARAM(f32)
-                            else UPDATE_CONDITION_PARAM(f32v2)
-
-                            static_assert(std::variant_size_v<AnimParamVar> == 2, "Update construction");
-                        }
-
-                        // To state
-                        assert(transDef.toState.isValid());
-                        for (size_t j = 0; j < def.stateDefs.size(); ++j) {
-                            if (def.stateDefs[j].name == transDef.toState) {
-                                effTrans.toState = j;
-                                break;
-                            }
-                        }
-                        assert(effTrans.toState != INVALID_ANIM_STATE);
-                        assert(effTrans.toState != i && "Circular dependency");
-                    }
-                }
-            }
+            fixupLoadedAsset(assetID);
 
             return true;
         },

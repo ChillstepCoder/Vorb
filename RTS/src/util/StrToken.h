@@ -8,6 +8,8 @@ constexpr ui64 strTokenEncodeChar(const char c) {
 
 constexpr int MAX_CHARS_IN_STRTOKEN = 20;
 
+const constexpr char* DEBUG_STR_EMPTY = "EMPTY";
+
 // Constexpr 64 bit compressed lower case 21 character string with optional 4 digit integer at end
 // For fast comparison and serialization
 class StrToken
@@ -72,6 +74,12 @@ public:
     nString toString() const;
 
     bool isValid() const { return mTokenLow != 0ull || mTokenHigh != 0ull; }
+    void clear() {
+        mTokenLow = mTokenHigh = 0ull;
+#ifdef DEBUG
+        DEBUG_STR = DEBUG_STR_EMPTY;
+#endif
+    }
 
     NET_SERIALIZE_DECL();
 
@@ -80,7 +88,7 @@ protected:
     ui64 mTokenHigh; // Upper 64 bits
 #ifdef DEBUG
     // Debug str only works for constexpr strings since we cant own the string data
-    const char* DEBUG_STR = "EMPTY";
+    const char* DEBUG_STR = DEBUG_STR_EMPTY;
 #endif
     friend struct std::hash<StrToken>;
 

@@ -24,7 +24,7 @@ protected:
         const vio::Path& filePath = this->mAssetRegistry[id].mFilePath;
         YmlSerializer::readFileData(this->readFileToString(filePath), def);
         this->mLoadedAssets[id]->store(true);
-        this->fixupAsset(id);
+        this->fixupRegisteredAsset(id);
     }
 
     AssetLoadFunc getAssetLoadFunc() override { panic("Data asset repo tried to call Load Func"); return nullptr; }

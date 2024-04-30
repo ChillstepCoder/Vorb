@@ -58,7 +58,7 @@ void TileRepository::onRegisteredAsset(AssetID id) {
     mLoadedAssets[id]->store(true);
 }
 
-void TileRepository::fixupAsset(AssetID id) {
+void TileRepository::fixupRegisteredAsset(AssetID id) {
 
     if (mTileRecipes.size() != mAssets.size()) {
         mTileRecipes.resize(mAssets.size());

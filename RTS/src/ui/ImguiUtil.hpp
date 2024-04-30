@@ -1167,5 +1167,8 @@ namespace ImguiUtil {
         return ImguiUtil::TreeNodeWithIcon(icon, window->GetID(id.c_str()), flags, label.c_str(), NULL);
     }
 
-
+    inline bool StrtokenInput() {
+        x; // TODO:
+        bool changed = ImGui::InputText();
+    }
 }

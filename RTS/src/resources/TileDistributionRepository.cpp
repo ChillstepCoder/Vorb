@@ -3,6 +3,6 @@
 
 #include "generation/TileDistributionSampler.h"
 
-void TileDistributionRepository::fixupAsset(AssetID id) {
+void TileDistributionRepository::fixupRegisteredAsset(AssetID id) {
     TileDistributionSampler::buildPrecalcData(*mAssets[id]);
 }
