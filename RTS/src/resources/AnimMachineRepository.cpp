@@ -54,21 +54,24 @@ if (std::holds_alternative<type>(condDef.defaultParam)) { \
                     UPDATE_CONDITION_PARAM(f32)
                     else UPDATE_CONDITION_PARAM(f32v2)
 
-                    static_assert(std::variant_size_v<AnimParamVar> == 2, "Update construction");
+                    static_assert(std::variant_size_v<AnimParamVar> == 3, "Update construction");
                 }
 
                 // To state
-                assert(transDef.toState.isValid());
-                for (size_t j = 0; j < def.stateDefs.size(); ++j) {
-                    if (def.stateDefs[j].name == transDef.toState) {
-                        effTrans.toState = j;
-                        break;
+                if (transDef.toState.isValid()) {
+                    for (size_t j = 0; j < def.stateDefs.size(); ++j) {
+                        if (def.stateDefs[j].name == transDef.toState) {
+                            effTrans.toState = j;
+                            break;
+                        }
                     }
+                }
+                else {
+                    LOG_WARN("Invalid ToState on {}", stateDef.name.toString());
                 }
                 if (effTrans.toState == INVALID_ANIM_STATE) {
                     transDef.toState.clear();
                 }
-                assert(effTrans.toState != INVALID_ANIM_STATE);
                 assert(effTrans.toState != i && "Circular dependency");
             }
         }

@@ -1167,8 +1167,15 @@ namespace ImguiUtil {
         return ImguiUtil::TreeNodeWithIcon(icon, window->GetID(id.c_str()), flags, label.c_str(), NULL);
     }
 
-    inline bool StrtokenInput() {
-        x; // TODO:
-        bool changed = ImGui::InputText();
+    inline bool StrTokenInput(const char* label, StrToken& token) {
+        char buf[MAX_CHARS_IN_STRTOKEN + 1];
+        const nString str = token.toString();
+        memcpy(buf, str.c_str(), str.length());
+        buf[str.length()] = '\0';
+        if (ImGui::InputText(label, buf, MAX_CHARS_IN_STRTOKEN)) {
+            token = StrToken(buf);
+            return true;
+        }
+        return false;
     }
 }

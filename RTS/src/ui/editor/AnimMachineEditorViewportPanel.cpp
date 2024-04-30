@@ -11,6 +11,7 @@
 #include "rendering/MaterialShaderRepository.h"
 
 #include "ui/imgui_controls/ObjectVector.h"
+#include "ui/ImguiUtil.hpp"
 
 static const char* BottomControlsName = "AnimMachine Controls";
 
@@ -37,8 +38,8 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     changed |= ImguiUtil::ObjectVector<AnimStateDef>("States", mAssetData->stateDefs,
         [this](AnimStateDef& o, ui32 stateIndex) {
         bool changed = false;
-        
-        changed |=updateAndRenderImguiControls(o);
+        changed |= ImguiUtil::StrTokenInput("Name", o.name);
+        changed |= updateAndRenderImguiControls(o);
         if (changed) {
             switch (o.stateType) {
                 case AnimStateType::AnimSequence:
@@ -63,6 +64,10 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
         changed |= ImguiUtil::ObjectVector<AnimTransitionDef>("Transitions", o.transitions,
             [this, stateIndex](AnimTransitionDef& o, ui32 index) {
                 bool changed = false;
+                if (!o.toState.isValid()) {
+                    ImguiUtil::ScopedColor color(ImGuiCol_Text, ImguiColors::Theme::error);
+                    ImGui::Text("INVALID TO STATE");
+                }
                 if (ImGui::BeginCombo("To State", o.toState.toString().c_str())) {
                     for (size_t i = 0; i < mAssetData->stateDefs.size(); ++i) {
                         AnimStateDef& def = mAssetData->stateDefs[i];
@@ -83,6 +88,31 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                     ImGui::EndCombo();
                 }
                 changed |= updateAndRenderImguiControls(o);
+                ImGui::Text("Condition:");
+                ImGui::Indent();
+                if (ImguiUtil::EnumCombo("Type", o.condition.defType)) {
+                    changed = true;
+                    if (o.condition.isValid()) {
+                        const AnimTransitionConditionDef& def = getAnimTransitionConditionDef(o.condition.defType);
+                        if (std::holds_alternative<f32>(def.defaultParam)) {
+                            if (!std::holds_alternative<f32>(o.condition.param)) {
+                                o.condition.param = f32(0.0f);
+                            }
+                            ImGui::InputFloat("param", &std::get<f32>(o.condition.param));
+                        }
+                        else if (std::holds_alternative<f32v2>(def.defaultParam)) {
+                            if (!std::holds_alternative<f32v2>(o.condition.param)) {
+                                o.condition.param = f32v2(0.0f);
+                            }
+                            ImGui::InputFloat2("param", &std::get<f32v2>(o.condition.param).x);
+                        }
+                        else {
+                            o.condition.param = std::monostate();
+                        }
+                        static_assert(std::variant_size_v<AnimParamVar> == 3, "Update edit");
+                    }
+                }
+                ImGui::Unindent();
                 changed |= ImGui::InputFloat("Transition duration", &o.transitionDuration);
                 return changed;
             }

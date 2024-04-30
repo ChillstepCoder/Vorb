@@ -73,7 +73,7 @@ namespace c4 {
             }
             return true;
         }
-        static_assert(std::variant_size_v<AnimParamVar> == 2, "Update serialization");
+        static_assert(std::variant_size_v<AnimParamVar> == 3, "Update serialization");
     }
 }
 
@@ -84,7 +84,7 @@ struct AnimTransitionConditionFileData {
     // Param options
     AnimParamVar param;
 };
-SERIALIZABLE_IMGUI_CONTROLLED(AnimTransitionConditionFileData,
+SERIALIZABLE_SIMPLE(AnimTransitionConditionFileData,
     make_field(o.defType, "type"sv),
     make_field(o.param, "param"sv)
 );

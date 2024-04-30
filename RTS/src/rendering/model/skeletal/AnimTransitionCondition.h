@@ -4,7 +4,7 @@
 
 //typedef std::variant<f32, f32v2> AnimConstant;
 
-typedef std::variant<f32, f32v2> AnimParamVar;
+typedef std::variant<std::monostate, f32, f32v2> AnimParamVar;
 
 // Efficient version of AnimTransitionConditionParamVar which allows the condition to make an assumption on type
 struct AnimParam {
@@ -17,7 +17,7 @@ struct AnimParam {
         f32v2 f2;
     };
 };
-static_assert(std::variant_size_v<AnimParamVar> == 2);
+static_assert(std::variant_size_v<AnimParamVar> == 3);
 
 // TODO: Move
 struct AnimVariables {
