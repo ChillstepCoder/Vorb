@@ -6,7 +6,6 @@ states:
     transitions:
       - condition:
           type: is_moving
-        tran_dur: 0
         to_state: move
   - name: move
     asset_name: move
@@ -14,5 +13,4 @@ states:
     transitions:
       - condition:
           type: is_not_moving
-        tran_dur: 0
         to_state: idle

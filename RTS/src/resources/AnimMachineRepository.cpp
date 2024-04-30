@@ -36,7 +36,7 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
             static_assert(e_count(AnimStateType) == 3);
             for (auto& transition : state.transitions) {
                 if (transition.transitionAnim.isValid()) {
-                    def.addDependency(AnimationRepository::get().getAssetHandle(transition.transitionAnim));
+                    def.addDependency(transition.transitionAnim.getAssetHandleBase());
                 }
             }
         }
@@ -67,7 +67,7 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
                         AnimTransitionDef& transDef = stateDef.transitions[t];
                         AnimTransition& effTrans = effState.transitions[t];
                         if (transDef.transitionAnim.isValid()) {
-                            effTrans.transitionAnimID = AnimationRepository::get().getAssetID(transDef.transitionAnim);
+                            effTrans.transitionAnimID = transDef.transitionAnim.getAssetID();
                         }
                         effTrans.transitionDuration = transDef.transitionDuration;
                         // Condition

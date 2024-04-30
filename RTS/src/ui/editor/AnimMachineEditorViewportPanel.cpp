@@ -34,7 +34,7 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     bool changed = false;
     changed = updateAndRenderImguiControls(*mAssetData);
     changed |= ImguiUtil::ObjectVector<AnimStateDef>("States", mAssetData->stateDefs,
-        [](AnimStateDef& o, ui32 i) {
+        [this](AnimStateDef& o, ui32 i) {
         bool changed = updateAndRenderImguiControls(o);
         if (changed) {
             switch (o.stateType) {
@@ -58,9 +58,25 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
             static_assert(e_count(AnimStateType) == 3);
         }
         changed |= ImguiUtil::ObjectVector<AnimTransitionDef>("Transitions", o.transitions,
-            [](AnimTransitionDef& o, ui32 i) {
+            [this](AnimTransitionDef& o, ui32 i) {
                 bool changed = updateAndRenderImguiControls(o);
-                x; // Rest of controls
+                ImGui::InputFloat("Transition duration", &o.transitionDuration);
+                if (ImGui::BeginCombo("To State", o.toState.toString().c_str())) {
+                    for (size_t i = 0; i < mAssetData->stateDefs.size(); ++i) {
+                        AnimStateDef& def = mAssetData->stateDefs[i];
+                        bool isSelected = def.name == o.toState;
+                        ImGui::Selectable(def.name.toString().c_str(), &isSelected);
+                        x; // finish
+                        if (isSelected) {
+                            ImGui::SetItemDefaultFocus();
+                            if (def.name != o.toState) {
+                                o.toState = def.name;
+                                changed = true;
+                            }
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
                 return changed;
             }
         );
