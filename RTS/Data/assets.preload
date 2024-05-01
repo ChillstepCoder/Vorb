@@ -8,6 +8,8 @@ startup:
   - [biome_grow, MaterialShader]
   - [editor_biome_height, MaterialShader]
   - [perlin_noise, Texture]
+#TODO: Not entities
+  - [*, Entity]
 preload:
 #  - [*, Material] #uncomment to force generate all .dds
   - [*, MaterialShader]

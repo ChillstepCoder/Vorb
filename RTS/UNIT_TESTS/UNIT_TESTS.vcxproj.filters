@@ -78,7 +78,7 @@
     <ClCompile Include="..\src\resources\TileRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\EntityDefinitionRepository.cpp">
+    <ClCompile Include="..\src\ecs\EntityRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ecs\IEntityComponentSystem.cpp">
@@ -132,13 +132,7 @@
     <ClCompile Include="..\src\ecs\component\ReplicationComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\component\SimpleSpriteComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\ecs\component\SkillsComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ecs\component\SoldierAIComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ecs\component\StatsComponent.cpp">
@@ -242,7 +236,7 @@
     <ClInclude Include="..\src\resources\TileRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\EntityDefinitionRepository.h">
+    <ClInclude Include="..\src\ecs\EntityRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\IEntityComponentSystem.h">
@@ -266,7 +260,7 @@
     <ClInclude Include="..\src\ecs\component\CombatComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\component\ComponentDefinition.h">
+    <ClInclude Include="..\src\ecs\component\Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\ComponentTypes.h">
@@ -279,9 +273,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\EmployeeComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ecs\component\EntityDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\EntityDetailsComponent.h">
@@ -311,22 +302,13 @@
     <ClInclude Include="..\src\ecs\component\ReplicationComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\component\SimpleSpriteComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\ecs\component\SkillsComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ecs\component\SoldierAIComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\StatsComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\TimedTileInteractComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ecs\component\UndeadAIComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

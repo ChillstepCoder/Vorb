@@ -9,10 +9,6 @@
 
 constexpr float JUMP_VELOCITY = 4.0f;
 
-KEG_TYPE_DEF_SAME_NAME(CharacterControlComponentDef, kt) {
-    kt.addValue("speed", keg::Value::basic(offsetof(CharacterControlComponentDef, mSpeed), keg::BasicType::F32));
-}
-
 inline float interpolateYaw(float currentYaw, float targetYaw, float speed) {
     float yawDifference = targetYaw - currentYaw;
 

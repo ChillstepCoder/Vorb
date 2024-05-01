@@ -1,5 +1,5 @@
 #pragma once
-#include "ecs/component/ComponentDefinition.h"
+#include "ecs/component/Components.h"
 
 #include "ecs/component/FishingComponent.h"
 

@@ -7,10 +7,6 @@
 // For asset handle
 #include "resources/IAssetRepository.h"
 
-KEG_TYPE_DEF_SAME_NAME(SkillsComponentFileData, kt) {
-    kt.addValue("skill_names", keg::Value::array(offsetof(SkillsComponentFileData, mSkillNames), keg::BasicType::STRING));
-}
-
 void SkillsComponentSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
     ASSERT_GAME_THREAD();
 

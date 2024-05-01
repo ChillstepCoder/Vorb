@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "EntityFactory.h"
 
-#include "ecs/EntityDefinitionRepository.h"
+#include "ecs/EntityRepository.h"
 #include "ecs/IEntityComponentSystem.h"
-#include "ecs/component/EntityDefinition.h"
+#include "definitions/EntityDef.h"
 
 #include "resources/ModelRepository.h"
 #include "resources/SkillRepository.h"
@@ -26,7 +26,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     //todo_use_ryml; // TODO: USE RYML
-    const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeToken);
+    const EntityDef& edef = EntityRepository::get().getLoadedAsset(typeToken);
 
     // Char control needs further initialization post physics load
     CharacterControlComponent* charControlCmp = nullptr;
@@ -36,8 +36,11 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {
                 // TODO: Select correct model
-                LOG_CRITICAL("TODO: EntityFactory::createEntity needs to set the correct modelId");
-                registry.emplace<CharacterModelComponent>(newEntity, 0);
+                assert(cdef.characterModel.model.isValid());
+                registry.emplace<CharacterModelComponent>(newEntity, cdef.characterModel.model.getAssetID());
+                if (cdef.characterModel.animMachine.isValid()) {
+                    assert(false); // DO THIS
+                }
                 break;
             }
             case ComponentTypes::CharacterControl: {
@@ -58,7 +61,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
             }
             case ComponentTypes::CharacterDetails: {
                 auto& characterDetails = registry.emplace<CharacterDetailsComponent>(newEntity);
-                if (cdef.characterDetails.name) {
+                if (characterDetails.name.size()) {
                     characterDetails.name = cdef.characterDetails.name;
                 }
                 else {
@@ -103,18 +106,6 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 registry.emplace<ProfessionComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::SimpleSprite: {
-                assert(false);
-                break;
-            }
-            case ComponentTypes::SoldierAI: {
-                registry.emplace<SoldierAIComponent>(newEntity);
-                break;
-            }
-            case ComponentTypes::UndeadAI: {
-                registry.emplace<UndeadAIComponent>(newEntity);
-                break;
-            }
             case ComponentTypes::Skills: {
                 // TODO: We shouldnt have to do this every single time we create a new entity!
                 auto& skillsCmp = registry.emplace<SkillsComponent>(newEntity);
@@ -129,7 +120,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 assert(false); // Missing type
                 break;
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 15, "Update component construction");
+        static_assert(e_cast(ComponentTypes::COUNT) == 12, "Update component construction");
     }
 
     // Post load

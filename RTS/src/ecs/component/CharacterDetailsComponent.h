@@ -5,6 +5,8 @@ public:
 };
 
 struct CharacterDetailsComponentDef {
-    const char* name = nullptr;
+    nString name;
 };
-KEG_TYPE_DECL(CharacterDetailsComponentDef);
+SERIALIZABLE_SIMPLE(CharacterDetailsComponentDef,
+    make_field(o.name, "name"sv)
+);

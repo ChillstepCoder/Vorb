@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "CombatComponent.h"
 #include "PhysicsComponent.h"
-#include "SimpleSpriteComponent.h"
 #include "world/World.h"
 #include "ecs/IEntityComponentSystem.h"
 

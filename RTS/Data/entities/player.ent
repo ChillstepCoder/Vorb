@@ -1,4 +1,6 @@
 character_model:
+  model: human
+  anim_mach: human
 character:
   speed: 6.2
 physics:

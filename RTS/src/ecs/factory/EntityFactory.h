@@ -8,7 +8,7 @@ class IEntityComponentSystem;
 class ResourceManager;
 class World;
 
-class EntityDefinitionRepository;
+class EntityRepository;
 
 // Static class used by EntityComponentSystem to add entities
 class EntityFactory

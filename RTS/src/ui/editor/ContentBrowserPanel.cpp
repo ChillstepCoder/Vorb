@@ -25,6 +25,7 @@ ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootP
     m_AssetIconMap[AssetType::Tile] = EditorResources::tileIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::ParticleSystem] = EditorResources::psysIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Effect] = EditorResources::effectIcon->getLoadedAsset().getTextureHandle();
+    m_AssetIconMap[AssetType::Entity] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Texture] = EditorResources::pngIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::Cubemap] = EditorResources::cubeIcon->getLoadedAsset().getTextureHandle();
     // TODO: Brush conflicts with PNG (TextureDef vs BrushDef)
@@ -46,7 +47,7 @@ ContentBrowserPanel::ContentBrowserPanel(std::filesystem::path rootDir) : mRootP
     m_AssetIconMap[AssetType::Room] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
     m_AssetIconMap[AssetType::NONE] = EditorResources::fileIcon->getLoadedAsset().getTextureHandle();
 
-    static_assert(e_count(AssetType) == 21, "Add icon");
+    static_assert(e_count(AssetType) == 22, "Add icon");
     memset(m_SearchBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
 
 	initEvents();

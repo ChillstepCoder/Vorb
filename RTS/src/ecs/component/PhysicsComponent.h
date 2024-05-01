@@ -45,7 +45,13 @@ struct PhysicsComponentDef {
 	bool disableXyzRot = false;
 	float massKg = 0.0f; // By default is static
 };
-KEG_TYPE_DECL(PhysicsComponentDef);
+SERIALIZABLE_SIMPLE(PhysicsComponentDef,
+    make_field(o.colliderShape, "shape"sv),
+	make_field(o.massKg, "mass"sv),
+	make_field(o.halfExtents, "half_dims"sv),
+	make_field(o.disableXyRot, "disable_xy_rot"sv),
+	make_field(o.disableXyzRot, "disable_xyz_rot"sv)
+);
 
 class PhysicsSystem {
 public:

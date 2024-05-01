@@ -8,9 +8,12 @@
 class World;
 
 struct SkillsComponentFileData {
-    Array<nString> mSkillNames;
+    // TODO: SoftAssetReference
+    std::vector<nString> mSkillNames;
 };
-KEG_TYPE_DECL(SkillsComponentFileData);
+SERIALIZABLE_SIMPLE(SkillsComponentFileData,
+    make_field(o.mSkillNames, "skill_names"sv)
+)
 
 struct ActiveSkillComponent {
     const SkillDef* mDef = nullptr;

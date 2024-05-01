@@ -131,7 +131,7 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
             break;
 
     }
-    static_assert(e_count(AssetType) == 21);
+    static_assert(e_count(AssetType) == 22);
 
     auto&& it = sAssetSelectorPopup.find(&assetRef);
     if (it != sAssetSelectorPopup.end()) {

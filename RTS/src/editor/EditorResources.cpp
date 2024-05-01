@@ -48,7 +48,7 @@ void EditorResources::loadAllResources()
 
     ADD_TEXTURE_RES(shadowTexture, "ui_shadow");
     ADD_TEXTURE_RES(translucencyTexture, "ui_translucency");
-    static_assert(e_count(AssetType) == 21, "Load icon if needed");
+    static_assert(e_count(AssetType) == 22, "Load icon if needed");
 }
 
 void EditorResources::freeAllResources() {

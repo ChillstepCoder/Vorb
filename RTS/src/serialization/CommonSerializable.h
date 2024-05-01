@@ -34,6 +34,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, Tile),
     ENUM_FIELD_SIMPLE(AssetType, ParticleSystem),
     ENUM_FIELD_SIMPLE(AssetType, Effect),
+    ENUM_FIELD_SIMPLE(AssetType, Entity),
     ENUM_FIELD_SIMPLE(AssetType, Texture),
     ENUM_FIELD_SIMPLE(AssetType, Cubemap),
     ENUM_FIELD_SIMPLE(AssetType, Brush),
@@ -53,7 +54,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, Building),
     ENUM_FIELD_SIMPLE(AssetType, Room),
 );
-static_assert(e_count(AssetType) == 21);
+static_assert(e_count(AssetType) == 22);
 
 // Usage: s.value2b(myValue) ect...
 // See bitsery documentation

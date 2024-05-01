@@ -7,7 +7,7 @@
 #include "rendering/ShaderLoader.h"
 #include "building/building.h"
 #include "building/buildingRepository.h"
-#include "ecs/EntityDefinitionRepository.h"
+#include "ecs/EntityRepository.h"
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
@@ -70,6 +70,7 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TileRepository, AssetType::Tile, *mCollisionShapeRepository);
     REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
     REGISTER_ASSET_REPO(EffectRepository, AssetType::Effect);
+    REGISTER_ASSET_REPO(EntityRepository, AssetType::Entity);
     REGISTER_ASSET_REPO(TextureRepository, AssetType::Texture);
     REGISTER_ASSET_REPO(CubemapRepository, AssetType::Cubemap);
     REGISTER_ASSET_REPO(BrushRepository, AssetType::Brush);
@@ -88,12 +89,11 @@ ResourceManager::ResourceManager() {
     REGISTER_ASSET_REPO(TileDistributionRepository, AssetType::TileDistribution);
     REGISTER_ASSET_REPO(BuildingRepository, AssetType::Building);
     REGISTER_ASSET_REPO(RoomRepository, AssetType::Room);
-    static_assert(e_count(AssetType) == 21);
+    static_assert(e_count(AssetType) == 22);
 
     // Add other extensions
     mExtensionToAssetRepository[CStrToken("comp")] = &MaterialShaderRepository::get();
 
-    mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager);
     mFontRepository = std::make_unique<FontRepository>();
@@ -137,7 +137,6 @@ void ResourceManager::gatherFiles() {
 
     PreciseTimer timer;
     
-    mEntityFiles.clear();
     mRecipeFiles.clear();
     mBusinessFiles.clear();
     mFontFiles.clear();
@@ -182,14 +181,6 @@ void ResourceManager::loadFiles() {
         // Load business definitions
         for (auto&& entry : mBusinessFiles) {
             mBusinessRepository->loadBusinessFile(entry);
-        }
-    }
-
-    // Load entity definitions
-    {
-        ScopedTimer timer("Entity load");
-        for (auto&& entry : mEntityFiles) {
-            mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
         }
     }
 
@@ -348,9 +339,6 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             else if (fileHasExtension(entry, ".ttf")) {
                 mFontFiles.emplace_back(entry);
             }
-            else if (fileHasExtension(entry, ".ent")) {
-                mEntityFiles.emplace_back(entry);
-            }
             else if (fileHasExtension(entry, ".recipe")) {
                 mRecipeFiles.emplace_back(entry);
             }
@@ -359,6 +347,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
 }
 
 void ResourceManager::preloadFiles() {
+    constexpr StrToken WILDCARD = CStrToken("*");
     vio::Path preloadPath = mResourceRoot / vio::Path("assets.preload");
     nString data;
     if (!mIoManager->readFileToString(preloadPath, data)) {
@@ -377,7 +366,14 @@ void ResourceManager::preloadFiles() {
         }
         child.child(0) >> assetName;
         child.child(1) >> assetType;
-        addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
+        if (assetName == WILDCARD) {
+            for (size_t i = 0; i < mAssetRepositories[e_cast(assetType)]->getNumRegisteredAssets(); ++i) {
+                mPreloadAssetsBundle.addAssetHandle(mAssetRepositories[e_cast(assetType)]->getAssetHandleBase(i));
+            }
+        }
+        else {
+            addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
+        }
     }
 
     LOG_INFO("Loading startup assets...");
@@ -400,14 +396,13 @@ void ResourceManager::preloadFiles() {
     }
     LOG_INFO("Done");
 
-    constexpr StrToken wildcard = CStrToken("*");
     for (ryml::ConstNodeRef child : preloadSeq.children()) {
         if (child.num_children() != 2) {
             panic("Malformed entry in assets.preload::startup");
         }
         child.child(0) >> assetName;
         child.child(1) >> assetType;
-        if (assetName == wildcard) {
+        if (assetName == WILDCARD) {
             for (size_t i = 0; i < mAssetRepositories[e_cast(assetType)]->getNumRegisteredAssets(); ++i) {
                 if (!mPreloadAssetsBundle.hasAssetHandle(AssetDescriptor{ .id = (AssetID)i,.assetType = assetType })) {
                     mPreloadAssetsBundle.addAssetHandle(mAssetRepositories[e_cast(assetType)]->getAssetHandleBase(i));

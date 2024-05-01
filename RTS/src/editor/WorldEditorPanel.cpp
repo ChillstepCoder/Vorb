@@ -14,7 +14,7 @@
 #include "resources/ResourceOperations.h"
 #include "resources/ResourceManager.h"
 #include "resources/TileGrassRepository.h"
-#include "ecs/EntityDefinitionRepository.h"
+#include "ecs/EntityRepository.h"
 #include "editor/BrushRepository.h"
 #include "resources/TileRepository.h"
 #include "rendering/texture/GLTexture.h"
@@ -408,9 +408,8 @@ void WorldEditorPanel::renderTileEditUI() const {
 
 void WorldEditorPanel::renderEntityEditUI() const {
     ImGui::Text("Select entity");
-    const EntityDefinitionMap& entityDefs = Services::ResourceManager::ref().getEntityDefinitionRepository().getAllEntityDefinitions();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-    TileRepository::get().forEachRegisteredAsset([&](TileDef* def, const AssetMetadata& entry) {
+    EntityRepository::get().forEachRegisteredAsset([&](EntityDef* def, const AssetMetadata& entry) {
         ImGui::TableNextColumn();
         char buf[64];
         entry.mName.toString(buf, nullptr);

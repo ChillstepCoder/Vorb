@@ -18,6 +18,8 @@ std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(A
             return getThumbnailFunction<ParticleSystemDef>();
         case AssetType::Effect:
             return getThumbnailFunction<EffectDef>();
+        case AssetType::Entity:
+            return getThumbnailFunction<EntityDef>();
         case AssetType::Texture:
             return getThumbnailFunction<TextureDef>();
         case AssetType::Cubemap:
@@ -60,7 +62,7 @@ std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(A
             break;
 
     }
-    static_assert(e_count(AssetType) == 21);
+    static_assert(e_count(AssetType) == 22);
 }
 
 template<>

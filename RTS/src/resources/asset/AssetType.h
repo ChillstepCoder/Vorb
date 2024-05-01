@@ -4,6 +4,7 @@ enum class AssetType : ui8 {
     Tile,
     ParticleSystem,
     Effect,
+    Entity,
     Texture,
     Cubemap,
     Brush,

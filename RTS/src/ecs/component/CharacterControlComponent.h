@@ -5,7 +5,10 @@
 struct CharacterControlComponentDef {
     float mSpeed = 0.3f;
 };
-KEG_TYPE_DECL(CharacterControlComponentDef);
+SERIALIZABLE_SIMPLE(CharacterControlComponentDef,
+    make_field(o.mSpeed, "speed"sv)
+);
+
 
 constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(CharacterLocomotionMode::COUNT)] = {
     0.0f, // IDLE

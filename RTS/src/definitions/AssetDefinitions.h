@@ -7,6 +7,7 @@
 #include "definitions/BuildingDef.h"
 #include "definitions/BusinessDef.h"
 #include "definitions/EffectDef.h"
+#include "definitions/EntityDef.h"
 #include "definitions/FishDef.h"
 #include "definitions/RigDef.h"
 #include "definitions/ModelDef.h"
@@ -20,4 +21,4 @@
 #include "definitions/TileDistributionDef.h"
 #include "item/ItemDef.h"
 
-static_assert(e_count(AssetType) == 21, "Add all includes here");
+static_assert(e_count(AssetType) == 22, "Add all includes here");
