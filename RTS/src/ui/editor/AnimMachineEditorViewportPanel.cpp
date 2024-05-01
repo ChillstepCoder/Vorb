@@ -112,8 +112,15 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                         static_assert(std::variant_size_v<AnimParamVar> == 3, "Update edit");
                     }
                 }
+
+                if (std::holds_alternative<f32>(o.condition.param)) {
+                    ImGui::InputFloat("param", &std::get<f32>(o.condition.param));
+                }
+                else if (std::holds_alternative<f32v2>(o.condition.param)) {
+                    ImGui::InputFloat2("param", &std::get<f32v2>(o.condition.param).x);
+                }
+                static_assert(std::variant_size_v<AnimParamVar> == 3, "Update control");
                 ImGui::Unindent();
-                changed |= ImGui::InputFloat("Transition duration", &o.transitionDuration);
                 return changed;
             }
         );
