@@ -18,4 +18,5 @@ private:
     void onRegisteredAsset(AssetID id) override;
     AssetLoadFunc getAssetLoadFunc() override;
 
+    void fixupLoadedAsset(AssetID assetId) override;
 };

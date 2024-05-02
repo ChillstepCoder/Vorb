@@ -109,7 +109,7 @@ namespace YmlSerializer {
     template<typename T, typename First, typename... Rest>
     void deserializeYmlFields(ryml::ConstNodeRef const& s, FieldPair<First> first, Rest... rest) {
         c4::csubstr nameSubstr = ryml::to_csubstr(first.key);
-        if (s.has_child(nameSubstr)) {
+        if (s.is_map() && s.has_child(nameSubstr)) {
             s[nameSubstr] >> first.value;
         }
         deserializeYmlFields<T>(s, rest...);

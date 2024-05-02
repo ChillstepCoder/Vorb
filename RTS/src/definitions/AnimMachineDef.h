@@ -13,8 +13,11 @@ namespace ozz {
 };
 
 typedef ui8 AnimStateID;
+typedef ui8 AnimTransitionID;
 constexpr auto INVALID_ANIM_STATE = std::numeric_limits<AnimStateID>::max();
 constexpr auto MAX_ANIM_STATES = std::numeric_limits<AnimStateID>::max() - 1;
+constexpr auto INVALID_ANIM_TRANSITION = std::numeric_limits<AnimTransitionID>::max();
+constexpr auto MAX_ANIM_TRANSITIONS = std::numeric_limits<AnimTransitionID>::max() - 1;
 
 struct AnimTransitionDef {
     AnimTransitionConditionFileData condition;
@@ -50,13 +53,13 @@ SERIALIZABLE_ENUM_SAME_NAME(AnimStateType,
     ENUM_FIELD_SIMPLE(AnimStateType, Blendspace2D),
 );
 
-struct AnimStateDef {
+struct AnimMachineStateDef {
     StrToken name;
     std::vector<AnimTransitionDef> transitions;
     SoftAssetReference assetRef; // Could be any of the state type
     AnimStateType stateType = AnimStateType::INVALID;
 };
-SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef, 
+SERIALIZABLE_IMGUI_CONTROLLED(AnimMachineStateDef, 
     make_field(o.name, "name"sv),
     make_field(o.transitions, "transitions"sv),
     make_field(o.assetRef, "asset_name"sv),
@@ -64,7 +67,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(AnimStateDef,
 );
 
 // Efficient representation
-struct AnimState {
+struct AnimMachineState {
     std::unique_ptr<AnimTransition[]> transitions;
     AssetID assetId = INVALID_ASSET_ID;
     ui8 numTransitions = 0;
@@ -79,9 +82,9 @@ public:
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
     // TODO: USE
     // Editor representation, State 0 is entry state
-    std::vector<AnimStateDef> stateDefs;
-    // Efficient representation, State 0 is entry state
-    std::vector<AnimState> states;
+    std::vector<AnimMachineStateDef> stateDefs;
+    // Efficient representation used to spin off AnimMachineInstances, State 0 is entry state
+    std::vector<AnimMachineState> states;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimMachineDef,
     make_field(o.rigDef, "rig"sv),

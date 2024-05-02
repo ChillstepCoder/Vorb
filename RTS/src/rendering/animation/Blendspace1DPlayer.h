@@ -1,11 +1,10 @@
 #pragma once
 
 #include "definitions/AnimationDef.h"
+#include "Blendspace1DPlayerNode.h"
 
-struct Blendspace1DPlayerNode {
-    f32 x = 0.0f;
-    AssetID animId = INVALID_ASSET_ID;
-};
+class Blendspace1DDef;
+
 
 struct AnimBlendPair {
     // If weight1 is 1.0f, then anim2 is null
@@ -17,37 +16,28 @@ struct AnimBlendPair {
     f32 weight0 = 1.0f; // Weight2 is 1 - weight1
 };
 
+// Does not store any reference to the Blendspace1DDef,
+// asset handle should be tracked by owner such as AnimMachine
 class Blendspace1DPlayer {
+    friend class Blendspace1DEditorViewportPanel;
 public:
     Blendspace1DPlayer() = default;
-    Blendspace1DPlayer(std::span<const Blendspace1DPlayerNode> inNodes);
-    bool isValid() const { return mNodes != nullptr; }
+    Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef);
 
+    void resetSyncAlpha() {  mSyncAlpha = 0.0f; }
+    // [0, 1]
+    void setSyncAlpha(f32 newAlpha) { mSyncAlpha = newAlpha; }
+
+    // Returns valid anim samples
+    AnimSampleBlendDataPair updateAndGetBlendData(f32 x, f32 elapsedSec);
+
+    // Simply get pair blend with no time or update
     AnimBlendPair getBlendPair(f32 x) const;
 
-    // TODO: This eliminates the bitArray so can be more efficient than AssetHandleBundle, use this there?
-    bool areAllAssetsLoaded() const {
-        if (mLoadedCount == mNumNodes) [[likely]] { return true; }
-        mLoadedCount = 0;
-        for (ui32 i = 0; i < mNumNodes; ++i) {
-            if (mAnimAssetHandles[i]->isLoaded()) {
-                ++mLoadedCount;
-            }
-            else {
-                // We don't need to check every one if one fails
-                return false;
-            }
-        };
-        assert(mLoadedCount == mNumNodes);
-        return true;
-    }
+    bool isValid() const { return mNodes != nullptr; }
 
-    std::unique_ptr<AssetHandlePtr<AnimationDef>[]> mAnimAssetHandles; // size == numNodes
+private:
     std::unique_ptr<Blendspace1DPlayerNode[]> mNodes;
     ui32 mNumNodes = 0;
-    f32 mTime = 0.0f;
-    f32 mSyncTime = 0.0f;
-    bool mAllAssetsLoaded = false;
-private:
-    mutable i16 mLoadedCount = 0;
+    f32 mSyncAlpha = 0.0f;
 };

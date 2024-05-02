@@ -3,7 +3,7 @@
 
 #include <boost/container/flat_map.hpp>
 
-constexpr f32 MOVING_THRESHOLD = 0.01f;
+constexpr f32 MOVING_THRESHOLD = SQ(0.01f);
 
 const AnimTransitionConditionDef& getAnimTransitionConditionDef(AnimTransitionConditionDefType name) {
 
@@ -21,16 +21,16 @@ const AnimTransitionConditionDef& getAnimTransitionConditionDef(AnimTransitionCo
                      vars.locomotionMode != CharacterLocomotionMode::SWIMMING;
          }),
          CONDITION_DEF(is_moving, {
-             return vars.speed > MOVING_THRESHOLD;
+             return vars.speedSq > MOVING_THRESHOLD;
          }),
          CONDITION_DEF(is_not_moving, {
-             return vars.speed <= MOVING_THRESHOLD;
+             return vars.speedSq <= MOVING_THRESHOLD;
          }),
          CONDITION_DEF(is_accelerating, {
              return vars.acceleration > 0.01f;
          }),
          CONDITION_DEF_PARAM(speed_greater_than, 1.0f, {
-             return vars.speed > p.f;
+             return vars.speedSq > SQ(p.f);
          }),
      };
      static_assert(e_count(AnimTransitionConditionDefType) == 6);

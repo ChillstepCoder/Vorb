@@ -1,7 +1,7 @@
 #pragma once
 
 // All supported component types a
-enum class ComponentTypes : ui8 {
+enum class ComponentType : ui8 {
     CharacterModel,
     CharacterControl,
     Combat,
@@ -14,10 +14,12 @@ enum class ComponentTypes : ui8 {
     Physics,
     Profession,
     Skills,
-    COUNT
+    COUNT,
+    BEGIN = 0,
+    END = COUNT
     // TODO: Custom
 };
-constexpr StrToken ComponentTypeStrings[e_cast(ComponentTypes::COUNT)] = {
+constexpr StrToken ComponentTypeStrings[e_cast(ComponentType::COUNT)] = {
     CStrToken("character_model"),
     CStrToken("character"),
     CStrToken("combat"),
@@ -31,4 +33,4 @@ constexpr StrToken ComponentTypeStrings[e_cast(ComponentTypes::COUNT)] = {
     CStrToken("profession"),
     CStrToken("skills")
 };
-static_assert(e_cast(ComponentTypes::COUNT) == 12, "Update .ent file type strings");
+static_assert(e_cast(ComponentType::COUNT) == 12, "Update .ent file type strings");

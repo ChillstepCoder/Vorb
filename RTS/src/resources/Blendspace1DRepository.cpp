@@ -8,23 +8,43 @@ void Blendspace1DRepository::onRegisteredAsset(AssetID id) {
 
 AssetLoadFunc Blendspace1DRepository::getAssetLoadFunc() {
     return[&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
-        /* AnimationDef& def = *static_cast<AnimationDef*>(assetDataPtr);
 
-         vio::Path srcPath = filePath.getPathReplaceExtension("animsrc");
-         ozz::io::File file(srcPath.getCString(), "rb");
+        Blendspace1DDef& def = *static_cast<Blendspace1DDef*>(assetDataPtr);
 
-         if (!file.opened()) {
-             pError("Animation import failure - " + filePath.getString());
-             assert(false);
-         }
+        for (auto& node : def.nodes) {
+            if (node.animation.isValid()) [[likely]] {
+                def.addDependency(node.animation.getAssetHandleBase());
+            }
+        }
 
-         ozz::io::IArchive archive(&file);
-         if (!archive.TestTag<ozz::animation::Animation>()) {
-             pError("Animation file is not an animation - " + filePath.getString());
-             assert(false);
-         }
-         archive >> def.animation;*/
-
-        return true;
+        if (!def.getDependencies()) {
+            fixupLoadedAsset(assetID);
+            return true;
+        }
+        assetLoader.requestAssetLoadWithDependencies([this]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
+            fixupLoadedAsset(assetID);
+            return true;
+        },
+            nullptr,
+            assetID,
+            assetDataPtr,
+            filePath,
+            mLoadedAssets[assetID].get(),
+            nullptr,
+            def.getDependencies()
+        );
+        return false;
     };
+}
+
+void Blendspace1DRepository::fixupLoadedAsset(AssetID assetId) {
+    Blendspace1DDef& def = getMutableAssetInternal(assetId);
+
+    def.cachedPlayerNodes.clear();
+    def.cachedPlayerNodes.reserve(def.nodes.size());
+    for (auto& node : def.nodes) {
+        if (node.animation.isValid()) [[likely]] {
+            def.cachedPlayerNodes.emplace_back(Blendspace1DPlayerNode{ node.x, node.animation.getAssetID() });
+        }
+    }
 }

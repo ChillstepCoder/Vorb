@@ -16,3 +16,19 @@ SERIALIZABLE_IMGUI_CONTROLLED(AnimationDef,
     make_field(o.syncToFeet, "sync_feet"sv),
     make_field(o.isUpperBody, "is_upper"sv)
 )
+
+struct AnimSampleBlendData {
+    const AnimationDef* anim = nullptr;
+    f32 weight = 0.0f;
+    f32 animTime = 0.0f;
+};
+
+struct AnimSampleBlendDataPair {
+    AnimSampleBlendData first;
+    AnimSampleBlendData second;
+    ui8 validCount = 0;
+
+    std::span<AnimSampleBlendData> toSpan() {
+        return std::span<AnimSampleBlendData>(&first, validCount);
+    }
+};

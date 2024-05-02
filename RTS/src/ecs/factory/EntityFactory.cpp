@@ -32,95 +32,103 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     CharacterControlComponent* charControlCmp = nullptr;
     // Initialize components
     // TODO: Use groups
-    for (auto&& cdef : edef.components) {
-        switch (cdef.type) {
-            case ComponentTypes::CharacterModel: {
+    for (const ComponentDefinitionInstance& defInst : edef.components) {
+        switch (defInst.type) {
+            case ComponentType::CharacterModel: {
+                assert(defInst.componentDef);
+                CharacterModelComponentDef& cdef = static_cast<CharacterModelComponentDef&>(*defInst.componentDef);
                 // TODO: Select correct model
-                assert(cdef.characterModel.model.isValid());
-                registry.emplace<CharacterModelComponent>(newEntity, cdef.characterModel.model.getAssetID());
-                if (cdef.characterModel.animMachine.isValid()) {
-                    assert(false); // DO THIS
-                }
+                assert(cdef.model.isValid());
+                registry.emplace<CharacterModelComponent>(newEntity, cdef.model.getAssetID(), cdef.animMachine.getAssetID());
                 break;
             }
-            case ComponentTypes::CharacterControl: {
+            case ComponentType::CharacterControl: {
+                assert(defInst.componentDef);
+                CharacterControlComponentDef& cdef = static_cast<CharacterControlComponentDef&>(*defInst.componentDef);
                 auto& cmp = registry.emplace<CharacterControlComponent>(newEntity);
-                cmp.mSpeedRun = cdef.characterControl.mSpeed;
+                cmp.mSpeedRun = cdef.mSpeed;
                 charControlCmp = &cmp;
                 // Character control begets navigation always
                 registry.get_or_emplace<NavigationComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::Combat: {
+            case ComponentType::Combat: {
                 registry.emplace<CombatComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::Corpse: {
+            case ComponentType::Corpse: {
                 registry.emplace<CorpseComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::CharacterDetails: {
+            case ComponentType::CharacterDetails: {
+                assert(defInst.componentDef);
+                CharacterDetailsComponentDef& cdef = static_cast<CharacterDetailsComponentDef&>(*defInst.componentDef);
                 auto& characterDetails = registry.emplace<CharacterDetailsComponent>(newEntity);
                 if (characterDetails.name.size()) {
-                    characterDetails.name = cdef.characterDetails.name;
+                    characterDetails.name = cdef.name;
                 }
                 else {
                     characterDetails.name = "UNNAMED CHARACTER";
                 }
                 break;
             }
-            case ComponentTypes::DynamicLight: {
+            case ComponentType::DynamicLight: {
                 registry.emplace<DynamicLightComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::Navigation: {
+            case ComponentType::Navigation: {
                 registry.get_or_emplace<NavigationComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::PersonAI: {
+            case ComponentType::PersonAI: {
                 registry.emplace<PersonAIComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::Inventory: {
+            case ComponentType::Inventory: {
                 registry.emplace<InventoryComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::Physics: {
+            case ComponentType::Physics: {
+                assert(defInst.componentDef);
+                PhysicsComponentDef& cdef = static_cast<PhysicsComponentDef&>(*defInst.componentDef);
                 auto& physics = registry.emplace<PhysicsComponent>(newEntity);
                 auto& positionCmp = registry.get_or_emplace<PositionComponent>(newEntity);
                 RigidBodyRotationType rotType = RigidBodyRotationType::FULL;
-                if (cdef.physics.disableXyzRot) {
+                if (cdef.disableXyzRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE;
                 }
-                else if (cdef.physics.disableXyRot) {
+                else if (cdef.disableXyRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE_XY;
                 }
                 // TODO: allow collision group specify
-                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.halfExtents, cdef.physics.massKg, CollisionGroup::CHARACTER, rotType);
+                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.colliderShape, cdef.halfExtents, cdef.massKg, CollisionGroup::CHARACTER, rotType);
                 physics.mRigidBody = rbp.first;
                 physics.mZPosOffset = -rbp.second;
                 positionCmp.mPosition = position;
                 break;
             }
-            case ComponentTypes::Profession: {
+            case ComponentType::Profession: {
                 registry.emplace<ProfessionComponent>(newEntity);
                 break;
             }
-            case ComponentTypes::Skills: {
+            case ComponentType::Skills: {
+                assert(defInst.componentDef);
+                SkillsComponentDef& cdef = static_cast<SkillsComponentDef&>(*defInst.componentDef);
                 // TODO: We shouldnt have to do this every single time we create a new entity!
                 auto& skillsCmp = registry.emplace<SkillsComponent>(newEntity);
                 SkillRepository& skillRepo = SkillRepository::get();
-                skillsCmp.mSkills.reserve(cdef.skillsFileData.mSkillNames.size());
-                for (size_t i = 0; i < cdef.skillsFileData.mSkillNames.size(); ++i) {
-                    skillsCmp.mSkills.emplace_back(skillRepo.getAssetHandle(StrToken(cdef.skillsFileData.mSkillNames[i])));
+                skillsCmp.mSkills.reserve(cdef.mSkillNames.size());
+                // TODO: SoftAssetReference
+                for (size_t i = 0; i < cdef.mSkillNames.size(); ++i) {
+                    skillsCmp.mSkills.emplace_back(skillRepo.getAssetHandle(StrToken(cdef.mSkillNames[i])));
                 }   
                 break;
             }
             default:
-                assert(false); // Missing type
+                panic("Missing component type");
                 break;
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 12, "Update component construction");
+        static_assert(e_cast(ComponentType::COUNT) == 12, "Update component construction");
     }
 
     // Post load

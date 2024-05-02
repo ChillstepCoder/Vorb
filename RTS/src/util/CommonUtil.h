@@ -1,12 +1,20 @@
 #pragma once
 
 #include <boost/pool/singleton_pool.hpp>
+#include <ranges>
 
 // Enum cast
 template<typename E>
 constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
+
+// Iterate over a range of enum values
+// https://stackoverflow.com/questions/69762598/what-are-commonly-used-ways-to-iterate-over-an-enum-class-in-c
+constexpr inline auto enum_range = [](auto begin, auto end) {
+    return std::views::iota(e_cast(begin), e_cast(end))
+        | std::views::transform([](auto e) { return decltype(begin)(e); });
+};
 
 #define e_count(e) (e_cast(e::COUNT))
 

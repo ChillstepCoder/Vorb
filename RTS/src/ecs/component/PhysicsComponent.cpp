@@ -56,6 +56,11 @@ f32v3 PhysicsComponent::getLinearVelocity() const {
     return btVector3ToF32v3(mRigidBody->getLinearVelocity());
 }
 
+f32v2 PhysicsComponent::getLinearVelocity2D() const {
+    ASSERT_GAME_THREAD();
+    return btVector3ToF32v2(mRigidBody->getLinearVelocity());
+}
+
 f32 PhysicsComponent::getRotation() const {
     ASSERT_GAME_THREAD();
     // TODO: Interpolated or no?

@@ -263,7 +263,7 @@
     <ClInclude Include="..\src\ecs\component\Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\component\ComponentTypes.h">
+    <ClInclude Include="..\src\ecs\component\ComponentType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\CorpseComponent.h">

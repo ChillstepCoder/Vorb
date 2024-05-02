@@ -23,7 +23,7 @@ static_assert(std::variant_size_v<AnimParamVar> == 3);
 struct AnimVariables {
     f32v2 acceleration2d = {};
     f32v2 velocity2d = {};
-    f32 speed = {};
+    f32 speedSq = {};
     f32 acceleration = {};
     CharacterLocomotionMode locomotionMode = CharacterLocomotionMode::IDLE;
 };

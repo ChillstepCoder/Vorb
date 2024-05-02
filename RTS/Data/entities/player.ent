@@ -1,5 +1,5 @@
 character_model:
-  model: human
+  model: paladin
   anim_mach: human
 character:
   speed: 6.2

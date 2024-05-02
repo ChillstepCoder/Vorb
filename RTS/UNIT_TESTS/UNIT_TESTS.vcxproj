@@ -283,7 +283,7 @@
     <ClInclude Include="..\src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="..\src\ecs\component\CombatComponent.h" />
     <ClInclude Include="..\src\ecs\component\Components.h" />
-    <ClInclude Include="..\src\ecs\component\ComponentTypes.h" />
+    <ClInclude Include="..\src\ecs\component\ComponentType.h" />
     <ClInclude Include="..\src\ecs\component\CorpseComponent.h" />
     <ClInclude Include="..\src\ecs\component\DynamicLightComponent.h" />
     <ClInclude Include="..\src\ecs\component\EmployeeComponent.h" />

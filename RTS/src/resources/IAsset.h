@@ -27,6 +27,7 @@ public:
 
     bool isDirty() const { return mDirty; }
     void setDirty(bool val) const { mDirty = val; }
+    // Returns null if there are no dependencies
     AssetHandleBundle* getDependencies() const { return mDependencies.get(); }
     void addDependency(std::unique_ptr<AssetHandleBase>&& handle);
     void reserveDependencyCount(size_t count);

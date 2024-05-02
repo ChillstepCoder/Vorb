@@ -12,8 +12,8 @@ void AnimMachineRepository::fixupLoadedAsset(AssetID assetId) {
     def.states.clear(); // Clear old data so we can rebuild it
     def.states.resize(def.stateDefs.size());
     for (size_t i = 0; i < def.stateDefs.size(); ++i) {
-        AnimStateDef& stateDef = def.stateDefs[i];
-        AnimState& effState = def.states[i];
+        AnimMachineStateDef& stateDef = def.stateDefs[i];
+        AnimMachineState& effState = def.states[i];
         effState.stateType = stateDef.stateType;
         switch (stateDef.stateType) {
             case AnimStateType::AnimSequence:
@@ -91,7 +91,7 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
         def.addDependency(def.rigDef.getAssetHandle<RigDef>());
 
         // Validate states and add state dependencies
-        for (AnimStateDef& state : def.stateDefs) {
+        for (AnimMachineStateDef& state : def.stateDefs) {
             switch (state.stateType) {
                 case AnimStateType::AnimSequence:
                     state.assetRef.assetType = AssetType::Animation;
@@ -114,10 +114,7 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
             }
         }
         assetLoader.requestAssetLoadWithDependencies([this]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
-            AnimMachineDef& def = *static_cast<AnimMachineDef*>(assetDataPtr);
-
             fixupLoadedAsset(assetID);
-
             return true;
         },
             nullptr,

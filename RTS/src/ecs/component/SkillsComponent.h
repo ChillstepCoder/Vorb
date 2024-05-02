@@ -4,14 +4,16 @@
 #include "definitions/SkillDef.h"
 
 #include "events/SkillEvent.h"
+#include "ecs/component/ComponentDefBase.h"
 
 class World;
 
-struct SkillsComponentFileData {
+class SkillsComponentDef : public ComponentDefBase {
+public:
     // TODO: SoftAssetReference
     std::vector<nString> mSkillNames;
 };
-SERIALIZABLE_SIMPLE(SkillsComponentFileData,
+SERIALIZABLE_SIMPLE(SkillsComponentDef,
     make_field(o.mSkillNames, "skill_names"sv)
 )
 

@@ -1068,6 +1068,9 @@
     <ClCompile Include="src\ui\editor\NodeGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -1187,7 +1190,7 @@
     <ClInclude Include="src\ecs\EntityRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\component\ComponentTypes.h">
+    <ClInclude Include="src\ecs\component\ComponentType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\Components.h">
@@ -2621,7 +2624,16 @@
     <ClInclude Include="src\definitions\EntityDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\component\ComponentDefinition.h">
+    <ClInclude Include="src\ecs\component\ComponentDefinitionInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\ComponentDefBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\animation\AnimMachineInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\animation\Blendspace1DPlayerNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

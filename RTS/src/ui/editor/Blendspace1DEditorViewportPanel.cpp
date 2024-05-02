@@ -5,6 +5,7 @@
 #include "definitions/RigDef.h"
 #include "resources/AnimationRepository.h"
 #include "resources/ModelRepository.h"
+#include "resources/Blendspace1DRepository.h"
 
 #include "rendering/model/skeletal/SkeletalAnimator.h"
 #include "rendering/MaterialShaderRepository.h"
@@ -562,11 +563,7 @@ const MaterialShaderDef* Blendspace1DEditorViewportPanel::getShader() {
 }
 
 void Blendspace1DEditorViewportPanel::renderMesh() {
-    if (!mPreviewModel.isValid() || !mBlendspacePlayer.isValid()) {
-        return;
-    }
-
-    if (!mBlendspacePlayer.areAllAssetsLoaded()) {
+    if (!mAssetData || !mPreviewModel.isValid() || !mBlendspacePlayer.isValid()) {
         return;
     }
 
@@ -580,35 +577,8 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
       }*/
 
     if (const ModelDef* modelDef = mPreviewModel.getAssetHandle<ModelDef>()->tryGetLoadedAsset()) {
-        AnimSampleBlendData mBlendData[2];
-        AnimBlendPair blendPair = mBlendspacePlayer.getBlendPair(mPreviewX);
-        const int numAnims = 1 + (int)blendPair.hasBoth();
-        // Select loop duration based on weights
-        mBlendData[0].anim = &blendPair.anim0.getLoadedOrUnloadedAsset();
-        mBlendData[0].weight = blendPair.weight0;
-        f32 duration0 = mBlendData[0].anim->animation.duration();
-        f32 duration1 = 0.0f;
-        float loopDuration = duration0 * mBlendData[0].weight;
-        if (numAnims == 2) {
-            mBlendData[1].anim = &blendPair.anim1.getLoadedOrUnloadedAsset();
-            mBlendData[1].weight = 1.0f - blendPair.weight0;
-            duration1 = mBlendData[1].anim->animation.duration();
-            loopDuration += duration1 * mBlendData[1].weight;
-        }
-        assert(loopDuration > 0.0f);
-
-        f32 loopTime = loopDuration * mSyncAlpha;
-        loopTime += mCurrentElapsedSec;
-        if (loopTime > loopDuration) {
-            loopTime = fmod(loopTime, loopDuration);
-        }
-        mSyncAlpha = loopTime / loopDuration;
-        assert(mSyncAlpha >= 0.0f && mSyncAlpha <= 1.0f);
-
-        mBlendData[0].animTime = mSyncAlpha * duration0;
-        mBlendData[1].animTime = mSyncAlpha * duration1;
-
-        renderMeshSkeletalBlended(modelDef, 0, 0, std::span(mBlendData, numAnims));
+        AnimSampleBlendDataPair blendData = mBlendspacePlayer.updateAndGetBlendData(mPreviewX, mCurrentElapsedSec);
+        renderMeshSkeletalBlended(modelDef, 0, 0, blendData.toSpan());
 
         // Store our sync (footstep) time accurately in case loop time changes wildly
     }
@@ -657,24 +627,14 @@ void Blendspace1DEditorViewportPanel::onChanged() {
         mAssetData->nodes[i].editorIndex = i;
     }
 
+    Blendspace1DRepository::get().onAssetChangedByEditor(mAssetData->getID());
+
     rebuildBlendspacePlayer();
 }
 
 void Blendspace1DEditorViewportPanel::rebuildBlendspacePlayer() {
     if (mAssetData) {
-        std::vector<Blendspace1DPlayerNode> playerNodes;
-        playerNodes.reserve(mAssetData->nodes.size());
-        for (auto& node : mAssetData->nodes) {
-            if (node.animation.isValid()) {
-                playerNodes.push_back({ node.x, node.animation.getAssetID() });
-            }
-        }
-        if (playerNodes.size()) {
-            mBlendspacePlayer = Blendspace1DPlayer(playerNodes);
-        }
-        else {
-            mBlendspacePlayer = Blendspace1DPlayer();
-        }
+        mBlendspacePlayer = Blendspace1DPlayer(*mAssetData);
     }
     else {
         mBlendspacePlayer = Blendspace1DPlayer();

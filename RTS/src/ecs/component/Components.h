@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs/component/ComponentTypes.h"
+#include "ecs/component/ComponentType.h"
 
 // All serializable component includes
 #include "ecs/component/PlayerControlComponent.h"
@@ -25,5 +25,5 @@
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
 
-static_assert(e_count(ComponentTypes) == 12, "Update component includes");
+static_assert(e_count(ComponentType) == 12, "Update component includes");
 

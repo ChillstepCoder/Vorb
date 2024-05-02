@@ -1,16 +1,11 @@
 #pragma once
 
 #include "IEditorViewportPanel.h"
+#include "definitions/AnimationDef.h"
 
 class MaterialShaderDef;
 class ModelDef;
 class AnimationDef;
-
-struct AnimSampleBlendData {
-    const AnimationDef* anim;
-    f32 weight;
-    f32 animTime;
-};
 
 class AssetEditorViewportPanelBase : public IEditorViewportPanel {
 public:

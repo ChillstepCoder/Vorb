@@ -99,55 +99,81 @@ AssetLoadFunc EntityRepository::getAssetLoadFunc() {
         ryml::ConstNodeRef rootNode = tree.rootref();
 
         for (ryml::ConstNodeRef innerNode : rootNode.children()) {
-            StrToken key(std::string_view(innerNode.key().str, innerNode.key().len));
+            const std::string_view strv(innerNode.key().str, innerNode.key().len);
+            // Ignore null node (happens sometimes)
+            if (!strv.size() || strv[0] == '\0') {
+                continue;
+            }
+            const StrToken key(strv);
 
-            if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterModel)]) {
-                CharacterModelComponentDef& cmpDef = def.components.emplace_back(ComponentTypes::CharacterModel).characterModel;
-                innerNode >> cmpDef;
-                if (cmpDef.model.isValid()) {
-                    def.addDependency(cmpDef.model.getAssetHandleBase());
-                }
-                if (cmpDef.animMachine.isValid()) {
-                    def.addDependency(cmpDef.animMachine.getAssetHandleBase());
+            // Simple linear search, small elements so should be very fast
+            ComponentType cmpType = ComponentType::COUNT;
+            for (const ComponentType e : enum_range(ComponentType::BEGIN, ComponentType::END)) {
+                if (key == ComponentTypeStrings[e_cast(e)]) {
+                    cmpType = e;
+                    break;
                 }
             }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterControl)]) {
-                innerNode >> def.components.emplace_back(ComponentTypes::CharacterControl).characterControl;
+            if (cmpType == ComponentType::COUNT) [[unlikely]] {
+                panic("Invalid component type {} in {}", key.toString(), filePath.getCString());
             }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Combat)]) {
-                def.components.emplace_back(ComponentTypes::Combat);
+
+            ComponentDefinitionInstance& newCmpInst = def.components.emplace_back(cmpType);
+
+            // Helper
+#define ALLOCATE_AND_PARSE_DEF(type, varName) \
+            newCmpInst.componentDef = std::make_unique<type>(); \
+            type& varName = static_cast<type&>(*newCmpInst.componentDef); \
+            innerNode >> varName;
+
+            // Parse data and allocate component def if needed
+            switch (cmpType) {
+                case ComponentType::CharacterModel: {
+                    ALLOCATE_AND_PARSE_DEF(CharacterModelComponentDef, cmpDef);
+                    if (cmpDef.model.isValid()) {
+                        def.addDependency(cmpDef.model.getAssetHandleBase());
+                    }
+                    if (cmpDef.animMachine.isValid()) {
+                        def.addDependency(cmpDef.animMachine.getAssetHandleBase());
+                    }
+                    break;
+                }
+                case ComponentType::CharacterControl: {
+                    ALLOCATE_AND_PARSE_DEF(CharacterControlComponentDef, cmpDef);
+                    break;
+                }
+                case ComponentType::Combat:
+                    break;
+                case ComponentType::Corpse:
+                    break;
+                case ComponentType::CharacterDetails: {
+                    ALLOCATE_AND_PARSE_DEF(CharacterDetailsComponentDef, cmpDef);
+                    break;
+                }
+                case ComponentType::DynamicLight:
+                    break;
+                case ComponentType::Inventory:
+                    break;
+                case ComponentType::Navigation:
+                    break;
+                case ComponentType::PersonAI:
+                    break;
+                case ComponentType::Physics: {
+                    ALLOCATE_AND_PARSE_DEF(PhysicsComponentDef, cmpDef);
+                    break;
+                }
+                case ComponentType::Profession:
+                    break;
+                case ComponentType::Skills: {
+                    ALLOCATE_AND_PARSE_DEF(SkillsComponentDef, cmpDef);
+                    break;
+                }
+                default:
+                    panic("Unhandled component type {}", (int)cmpType);
+                    break;
+
             }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Corpse)]) {
-                def.components.emplace_back(ComponentTypes::Corpse);
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterDetails)]) {
-                innerNode >> def.components.emplace_back(ComponentTypes::CharacterDetails).characterDetails;
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::DynamicLight)]) {
-                def.components.emplace_back(ComponentTypes::DynamicLight);
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Inventory)]) {
-                def.components.emplace_back(ComponentTypes::Inventory);
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Navigation)]) {
-                def.components.emplace_back(ComponentTypes::Navigation);
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::PersonAI)]) {
-                def.components.emplace_back(ComponentTypes::PersonAI);
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Physics)]) {
-                innerNode >> def.components.emplace_back(ComponentTypes::Physics).physics;
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Profession)]) {
-                def.components.emplace_back(ComponentTypes::Profession);
-            }
-            else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Skills)]) {
-                innerNode >> def.components.emplace_back(ComponentTypes::Skills).skillsFileData;
-            }
-            else {
-                pError("Tried to load invalid .entt component type \"" + key.toString() + "\"");
-            }
-            static_assert(e_cast(ComponentTypes::COUNT) == 12, "Parse new component type");
+            static_assert(e_cast(ComponentType::COUNT) == 12, "Parse new component type");
         }
         // Wait for dependencies to load if needed
         if (def.getDependencies()->getCount()) {

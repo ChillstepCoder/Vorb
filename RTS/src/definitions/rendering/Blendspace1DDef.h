@@ -2,6 +2,8 @@
 
 class AnimationDef;
 
+#include "rendering/animation/Blendspace1DPlayerNode.h"
+
 struct Blendpsace1DDefNode {
     SoftAssetReference animation = SoftAssetReference(AssetType::Animation);
     f32 x = 0.0f;
@@ -12,11 +14,14 @@ SERIALIZABLE_SIMPLE(Blendpsace1DDefNode,
     make_field(o.x, "x"sv)
 )
 
-struct Blendspace1DDef : public IAsset {
+class Blendspace1DDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(Blendspace1DDef, AssetType::Blendspace1D);
     std::vector<Blendpsace1DDefNode> nodes;
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
+
+    // For easy blendspace player instantiation
+    std::vector<Blendspace1DPlayerNode> cachedPlayerNodes;
 };
 SERIALIZABLE_SIMPLE(Blendspace1DDef,
     make_field(o.nodes, "nodes"sv),

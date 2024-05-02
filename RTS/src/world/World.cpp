@@ -472,16 +472,17 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
     entt::registry& registry = ecs.mRegistry;
 
     { // Characters
-        auto view = registry.view<PositionComponent, CharacterControlComponent, CharacterModelComponent>();
+        auto view = registry.view<PositionComponent, CharacterControlComponent, PhysicsComponent, CharacterModelComponent>();
 
         renderState.mCharacters.clear();
         renderState.mCharacters.reserve(view.size_hint());
 
         for (auto entity : view) {
-            PositionComponent& posCmp = view.get<PositionComponent>(entity);
             CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
-            if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) {
-                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, controlCmp.mControllerAngle, controlCmp.mLocomotionMode });
+            if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) [[likely]] {
+                PositionComponent& posCmp = view.get<PositionComponent>(entity);
+                PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
+                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, physCmp.getLinearVelocity2D(), controlCmp.mControllerAngle, controlCmp.mLocomotionMode });
             }
         };
     }

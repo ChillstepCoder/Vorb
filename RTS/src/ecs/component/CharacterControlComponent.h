@@ -1,8 +1,10 @@
 #pragma once
 
 #include "character/CharacterLocomotionMode.h"
+#include "ecs/component/ComponentDefBase.h"
 
-struct CharacterControlComponentDef {
+class CharacterControlComponentDef: public ComponentDefBase {
+public:
     float mSpeed = 0.3f;
 };
 SERIALIZABLE_SIMPLE(CharacterControlComponentDef,

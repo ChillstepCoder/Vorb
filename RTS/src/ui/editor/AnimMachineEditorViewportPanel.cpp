@@ -35,8 +35,8 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 
     bool changed = false;
     changed = updateAndRenderImguiControls(*mAssetData);
-    changed |= ImguiUtil::ObjectVector<AnimStateDef>("States", mAssetData->stateDefs,
-        [this](AnimStateDef& o, ui32 stateIndex) {
+    changed |= ImguiUtil::ObjectVector<AnimMachineStateDef>("States", mAssetData->stateDefs,
+        [this](AnimMachineStateDef& o, ui32 stateIndex) {
         bool changed = false;
         changed |= ImguiUtil::StrTokenInput("Name", o.name);
         changed |= updateAndRenderImguiControls(o);
@@ -70,7 +70,7 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                 }
                 if (ImGui::BeginCombo("To State", o.toState.toString().c_str())) {
                     for (size_t i = 0; i < mAssetData->stateDefs.size(); ++i) {
-                        AnimStateDef& def = mAssetData->stateDefs[i];
+                        AnimMachineStateDef& def = mAssetData->stateDefs[i];
                         if (i == stateIndex) {
                             // No self selection
                             continue;

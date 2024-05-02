@@ -113,6 +113,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     if (!shaderDef) return;
 
     // We will render sorted by model ID, so pair up all render states this frame
+    // TODO: Also sort anim machine?
     for (const auto& character : characters) {
         auto&& it = mEntityCharacterRenderData.find(character.mEntityID);
         if (it != mEntityCharacterRenderData.end()) {
@@ -143,6 +144,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 renderData.needsInitialize = false;
             }
             else {
+                // Still loading assets
                 continue;
             }
         }

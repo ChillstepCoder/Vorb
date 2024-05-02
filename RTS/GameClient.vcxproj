@@ -351,6 +351,7 @@
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp" />
     <ClCompile Include="src\rendering\animation\Blendspace1DPlayer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
@@ -646,7 +647,8 @@
     <ClInclude Include="src\ecs\component\AttributesComponent.h" />
     <ClInclude Include="src\ecs\component\CameraAttachComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
-    <ClInclude Include="src\ecs\component\ComponentDefinition.h" />
+    <ClInclude Include="src\ecs\component\ComponentDefBase.h" />
+    <ClInclude Include="src\ecs\component\ComponentDefinitionInstance.h" />
     <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
     <ClInclude Include="src\ecs\component\DynamicModelComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
@@ -661,7 +663,7 @@
     <ClInclude Include="src\ecs\component\Components.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
     <ClInclude Include="src\ecs\component\DynamicLightComponent.h" />
-    <ClInclude Include="src\ecs\component\ComponentTypes.h" />
+    <ClInclude Include="src\ecs\component\ComponentType.h" />
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PersonalityComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
@@ -769,7 +771,9 @@
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
+    <ClInclude Include="src\rendering\animation\AnimMachineInstance.h" />
     <ClInclude Include="src\rendering\animation\Blendspace1DPlayer.h" />
+    <ClInclude Include="src\rendering\animation\Blendspace1DPlayerNode.h" />
     <ClInclude Include="src\rendering\BufferBindingPoints.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />

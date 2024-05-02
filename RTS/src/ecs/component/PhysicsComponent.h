@@ -2,6 +2,7 @@
 #include "actor/ActorTypes.h"
 
 #include "physics/CollisionShapes.h"
+#include "ecs/component/ComponentDefBase.h"
 
 class IEntityComponentSystem;
 class PhysicsWorld;
@@ -23,6 +24,7 @@ public:
     f32v3 getPosition() const;
 	f32v3 getInterpolatedPosition() const;
 	f32v3 getLinearVelocity() const;
+	f32v2 getLinearVelocity2D() const;
 	f32 getRotation() const;
 
 	void teleportToPoint(f32v3 worldPos);
@@ -38,7 +40,8 @@ public:
 };
 static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");
 
-struct PhysicsComponentDef {
+class PhysicsComponentDef : public ComponentDefBase {
+public:
 	CollisionShapes colliderShape = CollisionShapes::CAPSULE;
     f32v3 halfExtents = f32v3(1.0f);
 	bool disableXyRot = false;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "resources/IAssetRepository.h"
-#include "component/ComponentTypes.h"
+#include "component/ComponentType.h"
 
 #include "definitions/EntityDef.h"
 
