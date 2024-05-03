@@ -125,7 +125,7 @@
 ozz::vector<ozz::math::Float4x4>* CharacterAnimator::updateAnimation(const CharacterAnimatorModelData& data, const MeshSkeletonData& skeletonData, CharacterAnimState& animState, CharacterLocomotionMode locomotionMode, f32 elapsedSec) {
 
     // Speed blend, run/walk/sprint
-    updateFootstepAlpha(animState, elapsedSec, locomotionMode);
+    //updateFootstepAlpha(animState, elapsedSec, locomotionMode);
 
     // Buffer of local transforms as sampled from animation_.
     // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
@@ -332,14 +332,14 @@ void CharacterAnimator::playOneShotAnimation(CharacterAnimState& animState, cons
     animState.mCurrentOneShotAnimation = animation;*/
     LOG_CRITICAL("TODO: playOneShotAnimation");
 }
-
-void CharacterAnimator::updateFootstepAlpha(CharacterAnimState& animState, f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode) {
-    ASSERT_RENDER_THREAD();
-    // TODO: Allow per model specification
-    const f32 cycleDuration = FOOTSTEP_CYCLE_DURATION_SEC[e_cast(currentLocomotionMode)];
-    assert(cycleDuration);
-    animState.mFootstepAlpha += elapsedSec / cycleDuration;
-    if (animState.mFootstepAlpha > 1.0f) {
-        animState.mFootstepAlpha -= (int)animState.mFootstepAlpha;
-    }
-}
+//
+//void CharacterAnimator::updateFootstepAlpha(CharacterAnimState& animState, f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode) {
+//    ASSERT_RENDER_THREAD();
+//    // TODO: Allow per model specification
+//    const f32 cycleDuration = FOOTSTEP_CYCLE_DURATION_SEC[e_cast(currentLocomotionMode)];
+//    assert(cycleDuration);
+//    animState.mFootstepAlpha += elapsedSec / cycleDuration;
+//    if (animState.mFootstepAlpha > 1.0f) {
+//        animState.mFootstepAlpha -= (int)animState.mFootstepAlpha;
+//    }
+//}

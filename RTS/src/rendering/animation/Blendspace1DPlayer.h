@@ -2,7 +2,9 @@
 
 #include "definitions/AnimationDef.h"
 #include "Blendspace1DPlayerNode.h"
+#include "rendering/model/skeletal/AnimVariableFloatBinding.h"
 
+struct AnimVariables;
 class Blendspace1DDef;
 
 struct AnimBlendPair {
@@ -17,6 +19,7 @@ struct AnimBlendPair {
 // Does not store any reference to the Blendspace1DDef,
 // asset handle should be tracked by owner such as AnimMachine
 class Blendspace1DPlayer {
+public:
     friend class Blendspace1DEditorViewportPanel;
     Blendspace1DPlayer() = default;
     Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef);

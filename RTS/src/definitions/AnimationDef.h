@@ -24,8 +24,15 @@ struct AnimSampleBlendData {
 };
 
 struct AnimSampleBlendDataPair {
-    AnimSampleBlendData first;
-    AnimSampleBlendData second;
+    AnimSampleBlendDataPair() : first(), second() {};
+
+    union {
+        struct {
+            AnimSampleBlendData first;
+            AnimSampleBlendData second;
+        };
+        AnimSampleBlendData arry[2];
+    };
     ui8 validCount = 0;
 
     std::span<AnimSampleBlendData> toSpan() {

@@ -31,9 +31,9 @@ constexpr ui16 MAX_ANIM_FADE_WEIGHT = UINT16_MAX;
 
 struct CharacterAnimState {
     std::unique_ptr<SkeletalAnimationSampleContext> mCurrentOneShotContext; // TODO: Pool allocate?
-    const ozz::animation::Animation* mCurrentOneShotAnimation = nullptr;
+    //const ozz::animation::Animation* mCurrentOneShotAnimation = nullptr;
     ModelID mModelID = INVALID_MODEL_ID;
-    f32 mFootstepAlpha;
+    //f32 mFootstepAlpha;
     //CharacterLocomotionMode mPrevLocomotionMode = CharacterLocomotionMode::IDLE;
     // TODO: Anim machine state
 };
@@ -45,8 +45,8 @@ public:
 
     void initializeCharacterAnimState(CharacterAnimState& animState, const ModelDef& modelDef);
     void playOneShotAnimation(CharacterAnimState& animState, const ozz::animation::Animation* animation);
-protected:
-    void updateFootstepAlpha(CharacterAnimState& animState, f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode);
+protected:/*
+    void updateFootstepAlpha(CharacterAnimState& animState, f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode);*/
 
     ozz::vector<ozz::math::Float4x4> models;
     ozz::vector<ozz::math::Float4x4> skinningMatrices;/*

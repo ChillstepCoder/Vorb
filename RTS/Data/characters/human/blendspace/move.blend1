@@ -8,3 +8,6 @@ nodes:
   - anim: sprint
     x: 1
 rig: human
+input:
+  binding: Speed
+  range: [0.01, 100]

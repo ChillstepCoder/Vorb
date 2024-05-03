@@ -13,6 +13,8 @@
 #include "rendering/TileVertex.h"
 #include "rendering/renderstate/CharacterRenderState.h"
 #include "rendering/mesh/MeshDrawer.h"
+#include "rendering/animation/AnimMachineInstance.h"
+#include "rendering/model/skeletal/SkeletalAnimator.h"
 
 #include "resources/ModelRepository.h"
 #include "resources/AnimationRepository.h"
@@ -31,6 +33,11 @@
 #include "ozz/base/containers/vector.h"
 #include "ozz/base/maths/simd_math.h"
 
+struct CharacterRendererCharacterState {
+    //CharacterAnimState animState;
+    AnimMachineInstance mAnimInstance;
+    const CharacterRenderState* renderStateThisFrame = nullptr;
+};
 
 CharacterRenderer::CharacterRenderer() :
     mShaderHandle(MaterialShaderRepository::get().getAssetHandle(CStrToken("character"))) {
@@ -93,16 +100,17 @@ void CharacterRenderer::removeCharacterModel(entt::entity entityId, AssetID mode
 }
 
 void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID animationId) {
-    auto&& it = mEntityCharacterRenderData.find(entityId);
-    // TODO: Ensure?
-    assert(it != mEntityCharacterRenderData.end());
-    if (it != mEntityCharacterRenderData.end()) {
+    panic("TODO: Implement one shot");
+    //auto&& it = mEntityCharacterRenderData.find(entityId);
+    //// TODO: Ensure?
+    //assert(it != mEntityCharacterRenderData.end());
+    //if (it != mEntityCharacterRenderData.end()) {
 
-        // TODO: Allow lazy load anim? hmmm prob not?
-        const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
-        if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
-        mCharacterAnimator->playOneShotAnimation(it->second->animState, &animDef->animation);
-    }
+    //    // TODO: Allow lazy load anim? hmmm prob not?
+    //    const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
+    //    if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
+    //    mCharacterAnimator->playOneShotAnimation(it->second->animState, &animDef->animation);
+    //}
 }
 
 void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha) {
@@ -139,8 +147,10 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 renderData.animatorData.machine = modelDefPtr->mAnimMachine;
                 assert(renderData.animatorData.rig);
                 assert(renderData.animatorData.machine);
+                // Create all anim instances
+                AssetID machineId = renderData.animatorData.machine->getID();
                 for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
-                    mCharacterAnimator->initializeCharacterAnimState(characterState.animState, *modelDefPtr);
+                    characterState.mAnimInstance = AnimMachineInstance(machineId);
                 }
                 renderData.needsInitialize = false;
             }
@@ -156,6 +166,18 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
         // Render all characters with this model
         for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
             const CharacterRenderState& character = *characterState.renderStateThisFrame;
+            const RigDef& rig = characterState.mAnimInstance.getRig();
+
+            // TODO: combine with CharacterRenderState?
+            AnimVariables variables;
+            variables.locomotionMode = character.mLocomotionMode;
+            variables.velocity2d = character.mVelocity2D;
+            variables.speed = glm::length(character.mVelocity2D);
+            ozz::math::Float4x4 modelsBuffer[MAX_JOINTS_IN_RIG];
+            OzzMatrixSpan modelMatrices(modelsBuffer, rig.mSkeleton.num_joints());
+
+            // Update animation TODO: Multithreaded?
+            characterState.mAnimInstance.update(elapsedSec, variables, modelMatrices);
 
             const f32v3& position = character.mPos;
             const f32 angle = character.mRotation;
@@ -172,26 +194,21 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
             glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
-            // Allocates skinning matrices.
             for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
                 const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
                 const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
 
-                if (ozz::vector<ozz::math::Float4x4>* skinningMatrices = mCharacterAnimator->updateAnimation(renderData.animatorData, skelData, characterState.animState, character.mLocomotionMode, elapsedSec)) {
-                    // Draw animated
-                  
-                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&(*skinningMatrices)[0].cols);
-
-                    // TODO: Indirect?
-                    MeshDrawer::draw(skeletalMesh.mGpuData);
+                // Skin animation to mesh
+                ozz::math::Float4x4 skinningBuffer[MAX_JOINTS_IN_RIG];
+                OzzMatrixSpan skinningMatrices(skinningBuffer, skelData.mNumJoints);
+                if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, skinningMatrices)) {
+                    panic("Anim skinning fail!");
                 }
-                else {
-                    // INVALID ANIMATION
-                    ozz::vector<ozz::math::Float4x4> tmpMatrices(skelData.mNumJoints, ozz::math::Float4x4::identity());
-                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)&tmpMatrices[0].cols);
+              
+                glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
 
-                    MeshDrawer::draw(skeletalMesh.mGpuData);
-                }
+                // TODO: Indirect?
+                MeshDrawer::draw(skeletalMesh.mGpuData);
             }
         }
     }
@@ -214,8 +231,8 @@ void CharacterRenderer::addCharacterModelInternal(entt::entity entityId, AssetID
     CharacterRendererCharacterState& newState = renderData.entityCharacterModels.emplace(entityId, CharacterRendererCharacterState()).first->second;
     // Only init if we aren't already pending a full init
     if (!renderData.needsInitialize) {
-        const ModelDef& modelDef = renderData.handle->getLoadedAsset();
-        mCharacterAnimator->initializeCharacterAnimState(newState.animState, modelDef);
+        AssetID machineId = renderData.animatorData.machine->getID();
+        newState.mAnimInstance = AnimMachineInstance(machineId);
     }
     assert(!mEntityCharacterRenderData.contains(entityId));
     mEntityCharacterRenderData[entityId] = &newState;

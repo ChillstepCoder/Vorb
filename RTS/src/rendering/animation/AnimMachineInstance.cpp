@@ -12,26 +12,18 @@ constexpr ui32 MAX_ANIM_UPDATE_CONTEXT_LAYERS = 6;
 struct AnimMachineUpdateContext {
     ozz::animation::BlendingJob::Layer layers[MAX_ANIM_UPDATE_CONTEXT_LAYERS];
     ozz::math::SoaTransform transforms[MAX_ANIM_UPDATE_CONTEXT_LAYERS][MAX_JOINTS_IN_RIG];
-    int numLayers;
-    const AnimVariables* variables;
+    int numLayers = 0;
+    const AnimVariables* variables = nullptr;
 };
 
 AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
     machineDefHandle = AnimMachineRepository::get().getAssetHandle(animMachineID);
+    // Should already be loaded by the model
+    initInternal(machineDefHandle->getLoadedAsset());
 }
 
 void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices) {
-
-    // Lazy init
-    if (!states) [[unlikely]] {
-        if (const AnimMachineDef* machineDef = machineDefHandle->tryGetLoadedAsset()) {
-            initInternal(*machineDef);
-        }
-        else {
-            return;
-        }
-    }
-
+    assert(states);
     assert(currentStateID < numStates);
     AnimMachineInstanceState& currentState = states[currentStateID];
 
@@ -115,6 +107,7 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
     const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
     context.samplingContext.Resize(NUM_JOINTS);
 
+    assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
     auto& layer = updateContext.layers[updateContext.numLayers];
     layer.weight = 1.0f;
     OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
@@ -126,11 +119,28 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
 }
 
 void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
+    const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
     assert(state.blendspace1d.playerId < numBlendspace1DPlayers);
     Blendspace1DPlayer& player = blendspace1DPlayers[state.blendspace1d.playerId];
-    // TODO: X BINDING
-    X;
-    AnimSampleBlendDataPair blendData = player.updateAndGetBlendData(mPreviewX, elapsedSec);
+    AnimSampleBlendDataPair blendData = player.updateAndGetBlendData(*updateContext.variables, elapsedSec);
+    for (int i = 0; i < blendData.validCount; ++i) {
+
+        assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
+        auto& layer = updateContext.layers[updateContext.numLayers];
+        const AnimSampleBlendData& data = blendData.arry[i];
+        layer.weight = data.weight;
+
+        // TODO: Cache context for performance!
+        SkeletalAnimationSampleContext context;
+        context.anim = &data.anim->animation;
+        context.time = data.animTime;
+        OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
+        if (!SkeletalAnimator::samplePose(context, *rigDef, transforms)) [[unlikely]] {
+            panic("Anim sample fail!");
+        }
+        layer.transform = transforms;
+        ++updateContext.numLayers;
+    }
 }
 
 void AnimMachineInstance::updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {

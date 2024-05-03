@@ -3,10 +3,14 @@
 #include "definitions/AnimMachineDef.h"
 #include "Blendspace1DPlayer.h"
 
-#include "rendering/model/skeletal/AnimVariables.h"
+#include "rendering/model/skeletal/AnimVariableFloatBinding.h"
 #include "rendering/model/skeletal/SkeletalAnimationSampleContext.h"
 
+class RigDef;
+
 struct AnimMachineInstanceState {
+    AnimMachineInstanceState() {}
+    ~AnimMachineInstanceState() {}
     union {
         struct {
             // TODO: Flyweight this too like blendspace?
@@ -37,6 +41,9 @@ public:
     // Return model matrices, must be skinned via SkeletalAnimator::skinModelMatricesToMesh
     // outModelMatrices must be large enough for all skeletons or we assert
     void update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices);
+
+    bool isValid() const { return machineDefHandle != nullptr; }
+    const RigDef& getRig() const { assert(rigDef); return *rigDef; }
 
 private:
     // Initialize using the instanceTemplate on the AnimMachineDef

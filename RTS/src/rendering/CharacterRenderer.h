@@ -5,15 +5,12 @@
 #include "definitions/ModelDef.h"
 #include "events/SkillEvent.h"
 
+
 class MaterialShaderDef;
 class Camera3D;
 class World;
 struct CharacterRenderState;
-
-struct CharacterRendererCharacterState {
-    CharacterAnimState animState;
-    const CharacterRenderState* renderStateThisFrame = nullptr;
-};
+struct CharacterRendererCharacterState;
 
 typedef std::unordered_map<entt::entity, CharacterRendererCharacterState> EntityCharacterModelMap;
 

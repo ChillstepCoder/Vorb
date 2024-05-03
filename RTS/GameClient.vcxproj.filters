@@ -2639,6 +2639,9 @@
     <ClInclude Include="src\rendering\model\skeletal\AnimVariables.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\model\skeletal\AnimVariableFloatBinding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

@@ -1,8 +1,8 @@
 #pragma once
 
 class AnimationDef;
-#include "rendering/model/skeletal/AnimVariables.h"
 #include "rendering/animation/Blendspace1DPlayerNode.h"
+#include "rendering/model/skeletal/AnimVariableFloatBinding.h"
 
 struct Blendpsace1DDefNode {
     SoftAssetReference animation = SoftAssetReference(AssetType::Animation);

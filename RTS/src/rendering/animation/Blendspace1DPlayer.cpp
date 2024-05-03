@@ -12,11 +12,15 @@ Blendspace1DPlayer::Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef) {
 }
 
 AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(const AnimVariables& inputs, f32 elapsedSec) {
-    const f32 x = *(const f32*)((const ui8*)&inputs + mInputBinding.byteOffset);
+    // Get float variable via offset into inputs
+    f32 x = *(const f32*)((const ui8*)&inputs + mInputBinding.byteOffset);
+    // Scale to [0,1]
+    x = (x - mInputBinding.rangeStart) * mInputBinding.inverseRange;
     return updateAndGetBlendData(x, elapsedSec);
 }
 
 AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 elapsedSec) {
+    // X does not need to be clamped as getBlendPair handles it fine
 
     if (!mNodes.size()) [[unlikely]] {
         return AnimSampleBlendDataPair();

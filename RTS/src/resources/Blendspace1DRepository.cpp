@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "Blendspace1DRepository.h"
 
+#include "rendering/model/skeletal/AnimVariables.h"
+
 void Blendspace1DRepository::onRegisteredAsset(AssetID id) {
     Blendspace1DDef& def = *mAssets[id];
     YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
@@ -62,6 +64,7 @@ void Blendspace1DRepository::fixupLoadedAsset(AssetID assetId) {
             break;
 
     }
-    def.inputBindingRuntime.scale = def.inputBindingRuntime.scale;
-    def.inputBindingRuntime.offset = def.inputBindingRuntime.offset;
+    def.inputBindingRuntime.rangeStart = def.inputBinding.range.x;
+    assert(def.inputBinding.range.x != def.inputBinding.range.y);
+    def.inputBindingRuntime.inverseRange = 1.0f / (def.inputBinding.range.y - def.inputBinding.range.x);
 }
