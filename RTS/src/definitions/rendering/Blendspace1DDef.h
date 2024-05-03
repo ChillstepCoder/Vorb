@@ -20,6 +20,7 @@ public:
     std::vector<Blendpsace1DDefNode> nodes;
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
 
+    x; // input binding?
     // For easy blendspace player instantiation
     std::vector<Blendspace1DPlayerNode> cachedPlayerNodes;
 };

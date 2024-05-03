@@ -60,6 +60,7 @@ struct AnimMachineStateDef {
     std::vector<AnimTransitionDef> transitions;
     SoftAssetReference assetRef; // Could be any of the state type
     AnimStateType stateType = AnimStateType::INVALID;
+    
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimMachineStateDef, 
     make_field(o.name, "name"sv),

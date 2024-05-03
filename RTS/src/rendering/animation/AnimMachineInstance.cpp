@@ -13,6 +13,7 @@ struct AnimMachineUpdateContext {
     ozz::animation::BlendingJob::Layer layers[MAX_ANIM_UPDATE_CONTEXT_LAYERS];
     ozz::math::SoaTransform transforms[MAX_ANIM_UPDATE_CONTEXT_LAYERS][MAX_JOINTS_IN_RIG];
     int numLayers;
+    const AnimVariables* variables;
 };
 
 AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
@@ -36,7 +37,7 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
 
     // This is a very large stack allocation
     AnimMachineUpdateContext updateContext;
-
+    updateContext.variables = &animVariables;
 
     // TODO: Non instant transitions, state blending
     /*if (currentTransition != INVALID_ANIM_TRANSITION) {
@@ -127,8 +128,9 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
 void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
     assert(state.blendspace1d.playerId < numBlendspace1DPlayers);
     Blendspace1DPlayer& player = blendspace1DPlayers[state.blendspace1d.playerId];
-    x;
-    // TODO:
+    // TODO: X BINDING
+    X;
+    AnimSampleBlendDataPair blendData = player.updateAndGetBlendData(mPreviewX, elapsedSec);
 }
 
 void AnimMachineInstance::updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
