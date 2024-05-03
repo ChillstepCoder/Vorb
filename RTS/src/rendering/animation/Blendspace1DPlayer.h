@@ -10,7 +10,6 @@ struct AnimBlendPair {
     // If weight1 is 1.0f, then anim2 is null
     bool hasBoth() const { return weight0 != 1.0f; }
 
-    // TODO: AssetPtr<T> (Wrapper for 4 byte index which does a direct asset lookup, doesn't incref)
     AssetRawPtr<AnimationDef> anim0;
     AssetRawPtr<AnimationDef> anim1;
     f32 weight0 = 1.0f; // Weight2 is 1 - weight1
@@ -20,7 +19,6 @@ struct AnimBlendPair {
 // asset handle should be tracked by owner such as AnimMachine
 class Blendspace1DPlayer {
     friend class Blendspace1DEditorViewportPanel;
-public:
     Blendspace1DPlayer() = default;
     Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef);
 

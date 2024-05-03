@@ -1,7 +1,6 @@
 person_ai:
 character_model:
   model: paladin
-  anim_mach: human
 character:
   speed: 4.0
 physics:

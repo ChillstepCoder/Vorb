@@ -18,6 +18,7 @@ public:
 
 protected:
     void fixupLoadedAsset(AssetID assetId) override;
+    void buildInstanceTemplate(AnimMachineDef& def);
 
     AssetLoadFunc getAssetLoadFunc() override;
 };

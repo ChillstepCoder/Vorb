@@ -20,8 +20,7 @@ flat out uint fMaterialIndex;
 out mat3 fTBN;
 out vec3 fNormal;
 
-uniform vec3 unOffset;
-uniform mat4 unModelTransform; // TODO: REMOVE
+uniform mat4 unModelTransform; // TODO: REMOVE (use vModelMatrix? not sure)
 const int MAX_BONES = 100;
 uniform mat4 unBoneTransforms[MAX_BONES];
 
@@ -44,8 +43,7 @@ void main() {
   vec4 localTangent = boneTransform * vec4(tangent, 0.0);
 
   vec4 transformedPos = unModelTransform * localPos;
-  vec4 worldPos = transformedPos + vec4(unOffset, 0.0);
-  gl_Position = VP * worldPos;
+  gl_Position = VP * transformedPos;
   
   
   localNormal = (unModelTransform * localNormal);

@@ -5,11 +5,15 @@
 #include "resources/AnimationRepository.h"
 #include "resources/Blendspace1DRepository.h"
 
+#include "rendering/animation/AnimMachineInstance.h"
+
 void AnimMachineRepository::fixupLoadedAsset(AssetID assetId) {
     AnimMachineDef& def = getMutableAssetInternal(assetId);
     
     // Build efficient state representation
     def.states.clear(); // Clear old data so we can rebuild it
+    def.totalBlendspace1Ds = 0;
+    def.totalBlendspace2Ds = 0;
     def.states.resize(def.stateDefs.size());
     for (size_t i = 0; i < def.stateDefs.size(); ++i) {
         AnimMachineStateDef& stateDef = def.stateDefs[i];
@@ -21,9 +25,11 @@ void AnimMachineRepository::fixupLoadedAsset(AssetID assetId) {
                 break;
             case AnimStateType::Blendspace1D:
                 effState.assetId = stateDef.assetRef.getAssetID();
+                ++def.totalBlendspace1Ds;
                 break;
             case AnimStateType::Blendspace2D:
                 panic("BlendSpace 2d not implemented yet");
+                ++def.totalBlendspace2Ds;
             default:
                 panic("Type error post dependency load on anim machine {}", def.getName().toString());
         }
@@ -75,6 +81,45 @@ if (std::holds_alternative<type>(condDef.defaultParam)) { \
                 assert(effTrans.toState != i && "Circular dependency");
             }
         }
+    }
+
+    buildInstanceTemplate(def);
+}
+
+void AnimMachineRepository::buildInstanceTemplate(AnimMachineDef& def) {
+    // Heavy lifting done in this function so future instantiation is simply a copy
+    def.instanceTemplate = std::make_unique<AnimMachineInstance>();
+    AnimMachineInstance& inst = *def.instanceTemplate;
+    // Default instance does not have a machine def handle
+    assert(def.totalBlendspace1Ds < UINT8_MAX);
+    inst.rigDef = &def.rigDef.getAssetHandle<RigDef>()->getLoadedAsset();
+    inst.numStates = def.states.size();
+    inst.numBlendspace1DPlayers = def.totalBlendspace1Ds;
+    inst.states = std::make_unique<AnimMachineInstanceState[]>(inst.numStates);
+    inst.blendspace1DPlayers = std::make_unique<Blendspace1DPlayer[]>(inst.numBlendspace1DPlayers);
+    int blendspace1DIndex = 0;
+    for (size_t stateIndex = 0; stateIndex < def.states.size(); ++stateIndex) {
+        AnimMachineInstanceState& instState = inst.states[stateIndex];
+        const AnimMachineState& defState = def.states[stateIndex];
+        instState.stateType = defState.stateType;
+        switch (instState.stateType) {
+            case AnimStateType::AnimSequence:
+                instState.anim.animDef = defState.assetId;
+                instState.anim.time = 0.0f;
+                break;
+            case AnimStateType::Blendspace1D:
+                assert(blendspace1DIndex < def.totalBlendspace1Ds);
+                instState.blendspace1d.playerId = blendspace1DIndex++;
+                inst.blendspace1DPlayers[instState.blendspace1d.playerId] = Blendspace1DPlayer(Blendspace1DRepository::get().getLoadedAsset(defState.assetId));
+                break;
+            case AnimStateType::Blendspace2D:
+                break;
+            default:
+                panic("Invalid state type");
+                break;
+
+        }
+        static_assert(e_count(AnimStateType) == 3);
     }
 }
 

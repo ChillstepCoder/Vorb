@@ -107,6 +107,8 @@ void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* mod
     transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
     glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &transform[0][0]);
 
+    // We are re-using context which is inefficient but its fine, this is editor stuff
+    // see AnimMachineInstance for proper usage
     SkeletalAnimationSampleContext context;
     const RigDef& rig = *modelAsset->mRig;
     context.samplingContext.Resize(rig.mSkeleton.num_joints());

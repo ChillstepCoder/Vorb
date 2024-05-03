@@ -6,6 +6,8 @@
 // TODO: REMOVE
 #include "rendering/model/skeletal/AnimTransitionConditionDef.h"
 
+class AnimMachineInstance;
+
 namespace ozz {
     namespace animation {
         class Animation;
@@ -77,7 +79,10 @@ struct AnimMachineState {
 // Make sure order and contents of the animation machine name and animation arrays are the same
 class AnimMachineDef : public IAsset {
 public:
-    DEFAULT_ASSET_CONSTRUCTOR(AnimMachineDef, AssetType::AnimMachine);
+    AnimMachineDef(StrToken name, AssetID id);
+    ~AnimMachineDef();
+    AssetType getAssetType() const override { return AssetType::AnimMachine; }
+    inline static constexpr AssetType ASSET_TYPE = AssetType::AnimMachine;
 
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
     // TODO: USE
@@ -85,6 +90,13 @@ public:
     std::vector<AnimMachineStateDef> stateDefs;
     // Efficient representation used to spin off AnimMachineInstances, State 0 is entry state
     std::vector<AnimMachineState> states;
+    // Useful for quickly initializing AnimMachineInstance
+    int totalBlendspace1Ds = 0;
+    int totalBlendspace2Ds = 0;
+
+    // Used for fast initialization of new AnimMachineInstances
+    // Created in AnimMachineRepository
+    std::unique_ptr<AnimMachineInstance> instanceTemplate;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimMachineDef,
     make_field(o.rigDef, "rig"sv),

@@ -133,9 +133,6 @@ AssetLoadFunc EntityRepository::getAssetLoadFunc() {
                     if (cmpDef.model.isValid()) {
                         def.addDependency(cmpDef.model.getAssetHandleBase());
                     }
-                    if (cmpDef.animMachine.isValid()) {
-                        def.addDependency(cmpDef.animMachine.getAssetHandleBase());
-                    }
                     break;
                 }
                 case ComponentType::CharacterControl: {

@@ -17,6 +17,8 @@ SERIALIZABLE_SIMPLE(RigDefFileData,
 
 typedef const ozz::animation::Animation* ConstOzzAnimationPtr;
 
+constexpr ui32 MAX_JOINTS_IN_RIG = 128;
+
 class RigDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(RigDef, AssetType::Rig);

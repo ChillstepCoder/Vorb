@@ -39,7 +39,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 CharacterModelComponentDef& cdef = static_cast<CharacterModelComponentDef&>(*defInst.componentDef);
                 // TODO: Select correct model
                 assert(cdef.model.isValid());
-                registry.emplace<CharacterModelComponent>(newEntity, cdef.model.getAssetID(), cdef.animMachine.getAssetID());
+                registry.emplace<CharacterModelComponent>(newEntity, cdef.model.getAssetID());
                 break;
             }
             case ComponentType::CharacterControl: {

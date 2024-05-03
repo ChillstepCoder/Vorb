@@ -121,9 +121,10 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
         }
     }
 
+    // TODO: Camera culling
+
     // TODO: UBO
     MaterialRenderer::bindMaterialShaderForRender(*shaderDef);
-    VGUniform offsetUniform = shaderDef->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = shaderDef->mProgram.getUniform("unModelTransform");
     VGUniform boneUniform = shaderDef->mProgram.getUniform("unBoneTransforms[0]");
     for (auto& [modelID, renderData] : mModelRenderData) {
@@ -158,13 +159,17 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
             const f32v3& position = character.mPos;
             const f32 angle = character.mRotation;
-            // TODO: Optimize
+            // TODO: Optimize or do on the GPU
             f32m4 transform(1.0f);
             transform = glm::rotate(transform, DEG_TO_RAD(90.0f) + angle, f32v3(0.0f, 0.0f, 1.0f));
             transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
 
+            // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
             const f32v3 offset = position - camera.getPosition();
-            glUniform3fv(offsetUniform, 1, &offset.x);
+            transform[3][0] = offset.x;
+            transform[3][1] = offset.y;
+            transform[3][2] = offset.z;
+
             glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
             // Allocates skinning matrices.

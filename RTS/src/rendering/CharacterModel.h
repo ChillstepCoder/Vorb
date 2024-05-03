@@ -13,19 +13,16 @@ enum CharacterModelTextureIndex {
 };
 
 struct CharacterModelComponent {
-    CharacterModelComponent(ModelID modelId, AssetID animMachineID) : modelId(modelId), animMachineID(animMachineID) {}
+    CharacterModelComponent(ModelID modelId) : modelId(modelId) {}
 
     ModelID modelId = INVALID_MODEL_ID;
-	AssetID animMachineID = INVALID_ASSET_ID;
 };
-static_assert(sizeof(CharacterModelComponent) == 8, "Keep small");
+static_assert(sizeof(CharacterModelComponent) == 4, "Keep small");
 
 class CharacterModelComponentDef : public ComponentDefBase {
 public:
-	SoftAssetReference model = SoftAssetReference(AssetType::Model);
-	SoftAssetReference animMachine = SoftAssetReference(AssetType::AnimMachine);
+    SoftAssetReference model = SoftAssetReference(AssetType::Model);
 };
 SERIALIZABLE_SIMPLE(CharacterModelComponentDef,
-	make_field(o.model, "model"sv),
-    make_field(o.animMachine, "anim_mach"sv)
+	make_field(o.model, "model"sv)
 );

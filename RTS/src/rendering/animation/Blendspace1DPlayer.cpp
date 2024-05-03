@@ -43,7 +43,7 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
 
     f32 loopTime = loopDuration * mSyncAlpha;
     loopTime += elapsedSec;
-    if (loopTime > loopDuration) {
+    if (loopTime > loopDuration) [[unlikely]] {
         loopTime = fmod(loopTime, loopDuration);
     }
     mSyncAlpha = loopTime / loopDuration;
