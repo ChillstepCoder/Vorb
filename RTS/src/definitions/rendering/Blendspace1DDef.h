@@ -1,7 +1,7 @@
 #pragma once
 
 class AnimationDef;
-
+#include "rendering/model/skeletal/AnimVariables.h"
 #include "rendering/animation/Blendspace1DPlayerNode.h"
 
 struct Blendpsace1DDefNode {
@@ -19,14 +19,15 @@ public:
     DEFAULT_ASSET_CONSTRUCTOR(Blendspace1DDef, AssetType::Blendspace1D);
     std::vector<Blendpsace1DDefNode> nodes;
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
-
-    x; // input binding?
+    AnimVariableFloatBindingDef inputBinding;
     // For easy blendspace player instantiation
-    std::vector<Blendspace1DPlayerNode> cachedPlayerNodes;
+    AnimVariableFloatBinding inputBindingRuntime;
+    std::vector<Blendspace1DPlayerNode> playerNodes;
 };
 SERIALIZABLE_SIMPLE(Blendspace1DDef,
     make_field(o.nodes, "nodes"sv),
-    make_field(o.rigDef, "rig"sv)
+    make_field(o.rigDef, "rig"sv),
+    make_field(o.inputBinding, "input"sv)
 )
 
 struct Blendspace1DNode {

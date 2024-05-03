@@ -6,17 +6,19 @@
 
 
 Blendspace1DPlayer::Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef) {
-    assert(blendspaceDef.cachedPlayerNodes.size() <= blendspaceDef.nodes.size());
-    mNumNodes = blendspaceDef.cachedPlayerNodes.size();
-    if (mNumNodes) [[likely]] {
-        mNodes = std::make_unique<Blendspace1DPlayerNode[]>(mNumNodes);
-        memcpy(mNodes.get(), blendspaceDef.cachedPlayerNodes.data(), mNumNodes * sizeof(Blendspace1DPlayerNode));
-    }
+    assert(blendspaceDef.playerNodes.size() <= blendspaceDef.nodes.size());
+    mInputBinding = blendspaceDef.inputBindingRuntime;
+    mNodes = std::span<const Blendspace1DPlayerNode>(blendspaceDef.playerNodes.data(), blendspaceDef.playerNodes.size());
+}
+
+AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(const AnimVariables& inputs, f32 elapsedSec) {
+    const f32 x = *(const f32*)((const ui8*)&inputs + mInputBinding.byteOffset);
+    return updateAndGetBlendData(x, elapsedSec);
 }
 
 AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 elapsedSec) {
 
-    if (!mNumNodes) [[unlikely]] {
+    if (!mNodes.size()) [[unlikely]] {
         return AnimSampleBlendDataPair();
     }
 
@@ -55,14 +57,14 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
 }
 
 AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x) const {
-    assert(mNumNodes > 0);
+    assert(mNodes.size() > 0);
 
     // Before first node
     if (x <= mNodes[0].x) {
         return { mNodes[0].animId, INVALID_ASSET_ID, 1.0f };
     }
 
-    for (size_t i = 0; i < mNumNodes - 1; ++i) {
+    for (size_t i = 0; i < mNodes.size() - 1; ++i) {
         if (x >= mNodes[i].x && x < mNodes[i + 1].x) {
             const f32 t = (x - mNodes[i].x) / (mNodes[i + 1].x - mNodes[i].x);
             AnimBlendPair rv{ mNodes[i].animId, mNodes[i + 1].animId, 1.0f - t };
@@ -79,7 +81,7 @@ AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x) const {
         }
     }
     // After last node
-    return { mNodes[mNumNodes - 1].animId, INVALID_ASSET_ID, 1.0f };
+    return { mNodes[mNodes.size() - 1].animId, INVALID_ASSET_ID, 1.0f };
 }
 
 // TODO: This eliminates the bitArray so can be more efficient than AssetHandleBundle, use this there?

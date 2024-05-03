@@ -5,7 +5,6 @@
 
 class Blendspace1DDef;
 
-
 struct AnimBlendPair {
     // If weight1 is 1.0f, then anim2 is null
     bool hasBoth() const { return weight0 != 1.0f; }
@@ -26,16 +25,18 @@ class Blendspace1DPlayer {
     // [0, 1]
     void setSyncAlpha(f32 newAlpha) { mSyncAlpha = newAlpha; }
 
-    // Returns valid anim samples
+    AnimSampleBlendDataPair updateAndGetBlendData(const AnimVariables& inputs, f32 elapsedSec);
+    // Returns valid anim samples with a manual input
     AnimSampleBlendDataPair updateAndGetBlendData(f32 x, f32 elapsedSec);
 
     // Simply get pair blend with no time or update
     AnimBlendPair getBlendPair(f32 x) const;
 
-    bool isValid() const { return mNodes != nullptr; }
+    bool isValid() const { return mNodes.size() > 0; }
 
 private:
-    std::unique_ptr<Blendspace1DPlayerNode[]> mNodes;
-    ui32 mNumNodes = 0;
+    // TODO: will be invalidated if Blendspace1DDef is modified in editor
+    std::span<const Blendspace1DPlayerNode> mNodes;
+    AnimVariableFloatBinding mInputBinding;
     f32 mSyncAlpha = 0.0f;
 };
