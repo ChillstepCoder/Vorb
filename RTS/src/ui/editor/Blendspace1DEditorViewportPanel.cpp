@@ -298,6 +298,7 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
     if (!mAssetData) {
         return false;
     }
+    ImGui::BeginChild("Blendspace 1D Table", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings/* | ImGuiWindowFlags_NoScrollbar*/);
 
     constexpr ImGuiTableFlags TABLE_FLAGS =
         ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable
@@ -366,6 +367,53 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         onChanged();
     }
 
+    ImGui::EndChild();
+    return true;
+}
+
+bool Blendspace1DEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize)
+{
+    if (!mAssetData) {
+        return true;
+    }
+    ImGui::BeginChild("Bone Heirarchy", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+
+    const RigDef& rig = mAssetData->rigDef.getAssetHandle<RigDef>()->getLoadedAsset();
+    ImGui::Text("Num Joints %d", rig.mSkeleton.num_joints());
+    ImGui::Text("Num SOA Joints %d", rig.mSkeleton.num_soa_joints());
+
+    // TODO: Cache this once
+    struct JointEditorNode {
+        std::vector<ui32> childNodes;
+        const char* name;
+    };
+    // Recursive lambda lol
+    JointEditorNode nodes[MAX_JOINTS_IN_RIG];
+    std::function<void(ui32 i)> recursiveImguiBoneHeirarchy;
+    recursiveImguiBoneHeirarchy = [&recursiveImguiBoneHeirarchy, &nodes](ui32 i) {
+        ImGui::Text("%s", nodes[i].name);
+        ImGui::Indent();
+        for (ui32 child : nodes[i].childNodes) {
+            recursiveImguiBoneHeirarchy(child);
+        }
+        ImGui::Unindent();
+    };
+
+    ui32 rootNode = 0;
+    for (ui32 i = 0; i < rig.mSkeleton.num_joints(); ++i) {
+        int parent = rig.mSkeleton.joint_parents()[i];
+        if (parent != -1) {
+            nodes[parent].childNodes.emplace_back(i);
+        }
+        else {
+            rootNode = i;
+        }
+        nodes[i].name = rig.mSkeleton.joint_names()[i];
+    }
+    X;
+    recursiveImguiBoneHeirarchy(rootNode);
+
+    ImGui::EndChild();
     return true;
 }
 

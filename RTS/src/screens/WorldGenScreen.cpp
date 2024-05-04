@@ -481,19 +481,21 @@ void WorldGenScreen::updateDockspace()
 
     if (mRebuildDockspace)
     {
-        mRebuildDockspace = false;
-        ImGuiID rootId = dockspaceId;
-        ImGui::DockBuilderRemoveNode(rootId); // clear any previous layout
-        ImGui::DockBuilderAddNode(rootId, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderSetNodeSize(rootId, viewport->Size);
+        if (viewport->Size.x != 0 && viewport->Size.y != 0) [[likely]] {
+            mRebuildDockspace = false;
+            ImGuiID rootId = dockspaceId;
+            ImGui::DockBuilderRemoveNode(rootId); // clear any previous layout
+            ImGui::DockBuilderAddNode(rootId, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(rootId, viewport->Size);
 
-        //ImGuiID dockIdUp;
-        auto dockIdLeft = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.2f, nullptr, &dockspaceId);
-       
-        // we now dock our windows into the docking node we made above
-        ImGui::DockBuilderDockWindow("Controls", dockIdLeft);
-        ImGui::DockBuilderDockWindow("World Generator", dockspaceId);
-        ImGui::DockBuilderFinish(rootId);
+            //ImGuiID dockIdUp;
+            auto dockIdLeft = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.2f, nullptr, &dockspaceId);
+
+            // we now dock our windows into the docking node we made above
+            ImGui::DockBuilderDockWindow("Controls", dockIdLeft);
+            ImGui::DockBuilderDockWindow("World Generator", dockspaceId);
+            ImGui::DockBuilderFinish(rootId);
+        }
     }
 
     ImGui::End(); // End dockspace
