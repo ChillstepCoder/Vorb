@@ -9,6 +9,7 @@ Blendspace1DPlayer::Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef) {
     assert(blendspaceDef.playerNodes.size() <= blendspaceDef.nodes.size());
     mInputBinding = blendspaceDef.inputBindingRuntime;
     mNodes = std::span<const Blendspace1DPlayerNode>(blendspaceDef.playerNodes.data(), blendspaceDef.playerNodes.size());
+    mMaxAlphaChangeSpeed = blendspaceDef.maxXChangeSpeed;
 }
 
 AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(const AnimVariables& inputs, f32 elapsedSec) {
@@ -26,8 +27,23 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
         return AnimSampleBlendDataPair();
     }
 
+    // Update X
+    if (mMaxAlphaChangeSpeed == 0.0f) {
+        mX = x;
+    }
+    else {
+        // Use max speed
+        f32 deltaX = x - mX;
+        if (deltaX > 0.0f) {
+            mX = glm::min(mX + mMaxAlphaChangeSpeed * elapsedSec, x);
+        }
+        else if (deltaX < 0.0f) {
+            mX = glm::max(mX - mMaxAlphaChangeSpeed * elapsedSec, x);
+        }
+    }
+
     AnimSampleBlendDataPair rv;
-    AnimBlendPair blendPair = getBlendPair(x);
+    AnimBlendPair blendPair = getBlendPair(mX);
     // Select loop duration based on weights
     rv.first.anim = &blendPair.anim0.getLoadedOrUnloadedAsset();
     rv.first.weight = blendPair.weight0;

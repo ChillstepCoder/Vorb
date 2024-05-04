@@ -314,6 +314,8 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         mPreviewModel.invalidate();
         changed = true;
     }
+    changed |= ImGui::SliderFloat("Max Change Speed", &mAssetData->maxXChangeSpeed, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+
     ImGui::Separator();
     if (mAssetData->rigDef.isValid()) {
         int colCount = 3;
@@ -376,42 +378,9 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize)
     if (!mAssetData) {
         return true;
     }
-    ImGui::BeginChild("Bone Heirarchy", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
-
+    ImGui::BeginChild("Bone Hierarchy", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     const RigDef& rig = mAssetData->rigDef.getAssetHandle<RigDef>()->getLoadedAsset();
-    ImGui::Text("Num Joints %d", rig.mSkeleton.num_joints());
-    ImGui::Text("Num SOA Joints %d", rig.mSkeleton.num_soa_joints());
-
-    // TODO: Cache this once
-    struct JointEditorNode {
-        std::vector<ui32> childNodes;
-        const char* name;
-    };
-    // Recursive lambda lol
-    JointEditorNode nodes[MAX_JOINTS_IN_RIG];
-    std::function<void(ui32 i)> recursiveImguiBoneHeirarchy;
-    recursiveImguiBoneHeirarchy = [&recursiveImguiBoneHeirarchy, &nodes](ui32 i) {
-        ImGui::Text("%s", nodes[i].name);
-        ImGui::Indent();
-        for (ui32 child : nodes[i].childNodes) {
-            recursiveImguiBoneHeirarchy(child);
-        }
-        ImGui::Unindent();
-    };
-
-    ui32 rootNode = 0;
-    for (ui32 i = 0; i < rig.mSkeleton.num_joints(); ++i) {
-        int parent = rig.mSkeleton.joint_parents()[i];
-        if (parent != -1) {
-            nodes[parent].childNodes.emplace_back(i);
-        }
-        else {
-            rootNode = i;
-        }
-        nodes[i].name = rig.mSkeleton.joint_names()[i];
-    }
-    X;
-    recursiveImguiBoneHeirarchy(rootNode);
+    rig.imguiRenderSkeletonHierarchy();
 
     ImGui::EndChild();
     return true;
@@ -582,7 +551,7 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
     }
 
     if (mDraggingPreview) {
-        float& px = (mPreviewX += IO.MouseDelta.x / Canvas.x);
+        float& px = (mPreviewX = ((IO.MousePos.x - bb.Min.x) / Canvas.x));
         px = glm::clamp(px, 0.0f, 1.0f);
     }
     if (mDraggingPreview || isHoverPreview) {
@@ -626,6 +595,8 @@ void Blendspace1DEditorViewportPanel::renderMesh() {
 
     if (const ModelDef* modelDef = mPreviewModel.getAssetHandle<ModelDef>()->tryGetLoadedAsset()) {
         AnimSampleBlendDataPair blendData = mBlendspacePlayer.updateAndGetBlendData(mPreviewX, mCurrentElapsedSec);
+        // Account for max speed
+        mPreviewX = mBlendspacePlayer.getX();
         renderMeshSkeletalBlended(modelDef, 0, 0, blendData.toSpan());
 
         // Store our sync (footstep) time accurately in case loop time changes wildly
@@ -682,7 +653,10 @@ void Blendspace1DEditorViewportPanel::onChanged() {
 
 void Blendspace1DEditorViewportPanel::rebuildBlendspacePlayer() {
     if (mAssetData) {
+        f32 prevAlpha = mBlendspacePlayer.mSyncAlpha;
         mBlendspacePlayer = Blendspace1DPlayer(*mAssetData);
+        mBlendspacePlayer.mX = mPreviewX;
+        mBlendspacePlayer.mSyncAlpha = prevAlpha;
     }
     else {
         mBlendspacePlayer = Blendspace1DPlayer();

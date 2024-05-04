@@ -34,14 +34,15 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
 
     AnimMachineInstanceState* currentState = &states[currentStateID];
 
-    if (currentTransition == INVALID_ANIM_TRANSITION) {
+    if (currentTransitionID == INVALID_ANIM_TRANSITION) {
         // Check for valid transitions, taking first valid
         for (size_t i = 0; i < currentState->transitions.size(); ++i) {
             const AnimTransition& transition = currentState->transitions[i];
             if (transition.condition.passesCondition(animVariables)) {
                 assert(transition.toState < numStates);
                 if (transition.transitionDuration) {
-                    currentTransition = i;
+                    currentTransitionTime = 0.0f;
+                    currentTransitionID = i;
                 }
                 else {
                     currentStateID = transition.toState;
@@ -52,27 +53,28 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
         }
     }
 
-    // TODO: Non instant transitions, state blending
-    if (currentTransition != INVALID_ANIM_TRANSITION) {
-        panic("Need to implement timed transitions");
-    }
+    f32 currentStateWeight = 1.0f;
 
+    // Update current transition
+    if (currentTransitionID != INVALID_ANIM_TRANSITION) {
+        const AnimTransition& currentTransition = currentState->transitions[currentTransitionID];
+        assert(currentTransition.transitionAnimID == INVALID_ASSET_ID && "NEED TO IMPLEMENT ANIM TRANSITION");
+        assert(currentTransition.toState != INVALID_ANIM_STATE);
+        currentTransitionTime += elapsedSec;
+        if (currentTransitionTime >= currentTransition.transitionDuration) {
+            currentTransitionID = INVALID_ANIM_TRANSITION;
+            currentStateID = currentTransition.toState;
+            currentState = &states[currentStateID];
+        }
+        else {
+            const f32 nextStateWeight = (currentTransitionTime / currentTransition.transitionDuration);
+            currentStateWeight = 1.0f - nextStateWeight;
+            updateState(states[currentTransition.toState], elapsedSec, updateContext, nextStateWeight);
+        }
+    }
 
     // Update the current state
-    switch (currentState->stateType) {
-        case AnimStateType::AnimSequence:
-            updateLoopingAnimSequence(*currentState, elapsedSec, updateContext);
-            break;
-        case AnimStateType::Blendspace1D:
-            updateBlendspace1D(*currentState, elapsedSec, updateContext);
-            break;
-        case AnimStateType::Blendspace2D:
-            updateBlendspace2D(*currentState, elapsedSec, updateContext);
-            break;
-        default:
-            panic("Invalid state type");
-    }
-    static_assert(e_count(AnimStateType) == 3);
+    updateState(*currentState, elapsedSec, updateContext, currentStateWeight);
 
     if (updateContext.numLayers == 1) {
         // No blend
@@ -111,7 +113,24 @@ void AnimMachineInstance::initInternal(const AnimMachineDef& def) {
     memcpy(blendspace1DPlayers.get(), defaultInstance.blendspace1DPlayers.get(), numBlendspace1DPlayers * sizeof(Blendspace1DPlayer));
 }
 
-void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
+void AnimMachineInstance::updateState(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
+    switch (state.stateType) {
+        case AnimStateType::AnimSequence:
+            updateLoopingAnimSequence(state, elapsedSec, updateContext, weight);
+            break;
+        case AnimStateType::Blendspace1D:
+            updateBlendspace1D(state, elapsedSec, updateContext, weight);
+            break;
+        case AnimStateType::Blendspace2D:
+            updateBlendspace2D(state, elapsedSec, updateContext, weight);
+            break;
+        default:
+            panic("Invalid state type");
+    }
+    static_assert(e_count(AnimStateType) == 3);
+}
+
+void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
     state.anim.time += elapsedSec;
 
     const AnimationDef& animDef = state.anim.animDef.getLoadedOrUnloadedAsset();
@@ -130,7 +149,7 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
 
     assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
     auto& layer = updateContext.layers[updateContext.numLayers];
-    layer.weight = 1.0f;
+    layer.weight = weight;
     OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
     if (!SkeletalAnimator::samplePose(context, *rigDef, transforms)) [[unlikely]] {
         panic("Anim sample fail!");
@@ -139,7 +158,7 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
     ++updateContext.numLayers;
 }
 
-void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
+void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
     const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
     const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
     assert(state.blendspace1d.playerId < numBlendspace1DPlayers);
@@ -150,7 +169,7 @@ void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f3
         assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
         auto& layer = updateContext.layers[updateContext.numLayers];
         const AnimSampleBlendData& data = blendData.arry[i];
-        layer.weight = data.weight;
+        layer.weight = data.weight * weight;
 
         // TODO: Cache context for performance!
         SkeletalAnimationSampleContext context;
@@ -166,6 +185,6 @@ void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f3
     }
 }
 
-void AnimMachineInstance::updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
+void AnimMachineInstance::updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
     panic("Implement updateBlendspace2D");
 }

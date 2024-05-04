@@ -39,10 +39,10 @@ void AnimMachineRepository::fixupLoadedAsset(AssetID assetId) {
             for (size_t t = 0; t < stateDef.transitions.size(); ++t) {
                 AnimTransitionDef& transDef = stateDef.transitions[t];
                 AnimTransition& effTrans = effState.transitions[t];
-                if (transDef.transitionAnim.isValid()) {
-                    effTrans.transitionAnimID = transDef.transitionAnim.getAssetID();
+                if (transDef.anim.isValid()) {
+                    effTrans.transitionAnimID = transDef.anim.getAssetID();
                 }
-                effTrans.transitionDuration = transDef.transitionDuration;
+                effTrans.transitionDuration = transDef.duration;
                 // Condition
                 if (transDef.condition.isValid()) {
                     const AnimTransitionConditionDef& condDef = getAnimTransitionConditionDef(transDef.condition.defType);
@@ -154,8 +154,8 @@ AssetLoadFunc AnimMachineRepository::getAssetLoadFunc() {
             }
             static_assert(e_count(AnimStateType) == 3);
             for (auto& transition : state.transitions) {
-                if (transition.transitionAnim.isValid()) {
-                    def.addDependency(transition.transitionAnim.getAssetHandleBase());
+                if (transition.anim.isValid()) {
+                    def.addDependency(transition.anim.getAssetHandleBase());
                 }
             }
         }

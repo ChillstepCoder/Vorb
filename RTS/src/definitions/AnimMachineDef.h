@@ -23,14 +23,14 @@ constexpr auto MAX_ANIM_TRANSITIONS = std::numeric_limits<AnimTransitionID>::max
 
 struct AnimTransitionDef {
     AnimTransitionConditionFileData condition;
-    SoftAssetReference transitionAnim = SoftAssetReference(AssetType::Animation);
-    f32 transitionDuration = 0.0f;
+    SoftAssetReference anim = SoftAssetReference(AssetType::Animation);
+    f32 duration = 0.0f;
     StrToken toState;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(AnimTransitionDef,
     make_field(o.condition, "condition"sv),
-    make_field(o.transitionAnim, "transition_anim"sv),
-    make_field(o.transitionDuration, "transition_dur"sv),
+    make_field(o.anim, "anim"sv),
+    make_field(o.duration, "dur"sv),
     make_field(o.toState, "to_state"sv)
 );
 

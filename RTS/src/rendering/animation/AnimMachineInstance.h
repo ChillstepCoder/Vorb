@@ -49,16 +49,17 @@ private:
     // Initialize using the instanceTemplate on the AnimMachineDef
     void initInternal(const AnimMachineDef& def);
 
-    void updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext);
-    void updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext);
-    void updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext);
+    void updateState(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
+    void updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
+    void updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
+    void updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
 
     AssetHandlePtr<AnimMachineDef> machineDefHandle;
     const RigDef* rigDef = nullptr;
     std::unique_ptr<AnimMachineInstanceState[]> states;
     std::unique_ptr<Blendspace1DPlayer[]> blendspace1DPlayers;
     f32 currentTransitionTime = 0.0f;
-    AnimTransitionID currentTransition = INVALID_ANIM_TRANSITION;
+    AnimTransitionID currentTransitionID = INVALID_ANIM_TRANSITION;
     AnimStateID currentStateID = 0;
     ui8 numBlendspace1DPlayers = 0;
     ui8 numStates = 0;

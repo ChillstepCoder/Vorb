@@ -23,11 +23,13 @@ public:
     // For easy blendspace player instantiation
     AnimVariableFloatBinding inputBindingRuntime;
     std::vector<Blendspace1DPlayerNode> playerNodes;
+    f32 maxXChangeSpeed = 0.0f; // How quickly the X value can change, lower = smoother, 0 = instant
 };
 SERIALIZABLE_SIMPLE(Blendspace1DDef,
     make_field(o.nodes, "nodes"sv),
     make_field(o.rigDef, "rig"sv),
-    make_field(o.inputBinding, "input"sv)
+    make_field(o.inputBinding, "input"sv),
+    make_field(o.maxXChangeSpeed, "max_x_speed"sv)
 )
 
 struct Blendspace1DNode {

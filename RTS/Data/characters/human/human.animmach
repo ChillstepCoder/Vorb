@@ -14,3 +14,4 @@ states:
       - condition:
           type: is_not_moving
         to_state: idle
+        dur: 0.3

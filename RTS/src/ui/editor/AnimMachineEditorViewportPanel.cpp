@@ -136,7 +136,14 @@ void AnimMachineEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 }
 
 bool AnimMachineEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
-    ImGui::Text("Hi");
+    if (!mAssetData || !mAssetData->rigDef.isValid()) {
+        return true;
+    }
+    ImGui::BeginChild("Amach Bone Hierarchy", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+    const RigDef& rig = mAssetData->rigDef.getAssetHandle<RigDef>()->getLoadedAsset();
+    rig.imguiRenderSkeletonHierarchy();
+
+    ImGui::EndChild();
     return true;
 }
 

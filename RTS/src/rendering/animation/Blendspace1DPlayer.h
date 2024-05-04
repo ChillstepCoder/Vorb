@@ -24,7 +24,7 @@ public:
     Blendspace1DPlayer() = default;
     Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef);
 
-    void resetSyncAlpha() {  mSyncAlpha = 0.0f; }
+    void resetSyncAlpha() { mSyncAlpha = 0.0f; }
     // [0, 1]
     void setSyncAlpha(f32 newAlpha) { mSyncAlpha = newAlpha; }
 
@@ -34,7 +34,7 @@ public:
 
     // Simply get pair blend with no time or update
     AnimBlendPair getBlendPair(f32 x) const;
-
+    f32 getX() const { return mX; }
     bool isValid() const { return mNodes.size() > 0; }
 
 private:
@@ -42,4 +42,6 @@ private:
     std::span<const Blendspace1DPlayerNode> mNodes;
     AnimVariableFloatBinding mInputBinding;
     f32 mSyncAlpha = 0.0f;
+    f32 mMaxAlphaChangeSpeed = 0.0f;
+    f32 mX = 0.0f;
 };
