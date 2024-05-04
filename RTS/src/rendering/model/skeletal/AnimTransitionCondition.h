@@ -26,6 +26,9 @@ static_assert(std::variant_size_v<AnimParamVar> == 3);
 typedef bool(*AnimTransitionConditionFunc)(const AnimVariables& variables, OPT AnimParam constant);
 
 struct AnimTransitionCondition {
+
+    bool passesCondition(const AnimVariables& variables) const { return func(variables, constant); }
+
     AnimTransitionConditionFunc func;
     OPT AnimParam constant;
 };

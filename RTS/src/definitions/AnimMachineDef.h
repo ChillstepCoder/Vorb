@@ -71,6 +71,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(AnimMachineStateDef,
 
 // Efficient representation
 struct AnimMachineState {
+    // Sorted high to low priority
     std::unique_ptr<AnimTransition[]> transitions;
     AssetID assetId = INVALID_ASSET_ID;
     ui8 numTransitions = 0;

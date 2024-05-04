@@ -10,4 +10,4 @@ nodes:
 rig: human
 input:
   binding: Speed
-  range: [0.01, 100]
+  range: [0.01, 4.5]

@@ -41,8 +41,6 @@ struct CharacterRendererCharacterState {
 
 CharacterRenderer::CharacterRenderer() :
     mShaderHandle(MaterialShaderRepository::get().getAssetHandle(CStrToken("character"))) {
-
-    mCharacterAnimator = std::make_unique<CharacterAnimator>();
 }
 
 CharacterRenderer::~CharacterRenderer() {
@@ -100,17 +98,16 @@ void CharacterRenderer::removeCharacterModel(entt::entity entityId, AssetID mode
 }
 
 void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID animationId) {
-    panic("TODO: Implement one shot");
-    //auto&& it = mEntityCharacterRenderData.find(entityId);
-    //// TODO: Ensure?
-    //assert(it != mEntityCharacterRenderData.end());
-    //if (it != mEntityCharacterRenderData.end()) {
+    auto&& it = mEntityCharacterRenderData.find(entityId);
+    // TODO: Ensure?
+    assert(it != mEntityCharacterRenderData.end());
+    if (it != mEntityCharacterRenderData.end()) {
 
-    //    // TODO: Allow lazy load anim? hmmm prob not?
-    //    const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
-    //    if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
-    //    mCharacterAnimator->playOneShotAnimation(it->second->animState, &animDef->animation);
-    //}
+        // TODO: Allow lazy load anim? hmmm prob not?
+        const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
+        if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
+        LOG_CRITICAL("TODO: HANDLE ONE SHOT");
+    }
 }
 
 void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha) {
@@ -143,12 +140,8 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 renderData.handle = ModelRepository::get().getAssetHandle(modelID);
             }
             if (const ModelDef* modelDefPtr = renderData.handle->tryGetLoadedAsset()) {
-                renderData.animatorData.rig = modelDefPtr->mRig;
-                renderData.animatorData.machine = modelDefPtr->mAnimMachine;
-                assert(renderData.animatorData.rig);
-                assert(renderData.animatorData.machine);
                 // Create all anim instances
-                AssetID machineId = renderData.animatorData.machine->getID();
+                AssetID machineId = modelDefPtr->mAnimMachine->getID();
                 for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
                     characterState.mAnimInstance = AnimMachineInstance(machineId);
                 }
@@ -231,7 +224,7 @@ void CharacterRenderer::addCharacterModelInternal(entt::entity entityId, AssetID
     CharacterRendererCharacterState& newState = renderData.entityCharacterModels.emplace(entityId, CharacterRendererCharacterState()).first->second;
     // Only init if we aren't already pending a full init
     if (!renderData.needsInitialize) {
-        AssetID machineId = renderData.animatorData.machine->getID();
+        AssetID machineId = renderData.handle->getLoadedAsset().mAnimMachine->getID();
         newState.mAnimInstance = AnimMachineInstance(machineId);
     }
     assert(!mEntityCharacterRenderData.contains(entityId));

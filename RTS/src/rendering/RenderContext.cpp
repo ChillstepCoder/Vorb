@@ -590,6 +590,10 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
             yOffset += GAP_SIZE;
         }
 
+        sprintf_s(buffer, STR_BUFFER_SIZE, "CPU Threads: %d", (int)std::thread::hardware_concurrency());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
         sprintf_s(buffer, STR_BUFFER_SIZE, "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;

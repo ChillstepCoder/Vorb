@@ -38,6 +38,7 @@ struct CharacterAnimState {
     // TODO: Anim machine state
 };
 
+// TODO: DEPRECATED, DELETEME
 class CharacterAnimator {
 public:
     // Return NULL on fail

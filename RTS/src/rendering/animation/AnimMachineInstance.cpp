@@ -23,35 +23,56 @@ AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
 }
 
 void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices) {
+    PROFILE_FUNCTION();
+
     assert(states);
     assert(currentStateID < numStates);
-    AnimMachineInstanceState& currentState = states[currentStateID];
 
     // This is a very large stack allocation
     AnimMachineUpdateContext updateContext;
     updateContext.variables = &animVariables;
 
-    // TODO: Non instant transitions, state blending
-    /*if (currentTransition != INVALID_ANIM_TRANSITION) {
+    AnimMachineInstanceState* currentState = &states[currentStateID];
 
+    if (currentTransition == INVALID_ANIM_TRANSITION) {
+        // Check for valid transitions, taking first valid
+        for (size_t i = 0; i < currentState->transitions.size(); ++i) {
+            const AnimTransition& transition = currentState->transitions[i];
+            if (transition.condition.passesCondition(animVariables)) {
+                assert(transition.toState < numStates);
+                if (transition.transitionDuration) {
+                    currentTransition = i;
+                }
+                else {
+                    currentStateID = transition.toState;
+                    currentState = &states[currentStateID];
+                }
+                break;
+            }
+        }
     }
-    else {*/
-        // Update the current state
-    switch (currentState.stateType) {
+
+    // TODO: Non instant transitions, state blending
+    if (currentTransition != INVALID_ANIM_TRANSITION) {
+        panic("Need to implement timed transitions");
+    }
+
+
+    // Update the current state
+    switch (currentState->stateType) {
         case AnimStateType::AnimSequence:
-            updateLoopingAnimSequence(currentState, elapsedSec, updateContext);
+            updateLoopingAnimSequence(*currentState, elapsedSec, updateContext);
             break;
         case AnimStateType::Blendspace1D:
-            updateBlendspace1D(currentState, elapsedSec, updateContext);
+            updateBlendspace1D(*currentState, elapsedSec, updateContext);
             break;
         case AnimStateType::Blendspace2D:
-            updateBlendspace2D(currentState, elapsedSec, updateContext);
+            updateBlendspace2D(*currentState, elapsedSec, updateContext);
             break;
         default:
             panic("Invalid state type");
     }
     static_assert(e_count(AnimStateType) == 3);
-    //}
 
     if (updateContext.numLayers == 1) {
         // No blend
@@ -119,6 +140,7 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
 }
 
 void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
+    const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
     const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
     assert(state.blendspace1d.playerId < numBlendspace1DPlayers);
     Blendspace1DPlayer& player = blendspace1DPlayers[state.blendspace1d.playerId];
@@ -134,6 +156,7 @@ void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f3
         SkeletalAnimationSampleContext context;
         context.anim = &data.anim->animation;
         context.time = data.animTime;
+        context.samplingContext.Resize(NUM_JOINTS);
         OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
         if (!SkeletalAnimator::samplePose(context, *rigDef, transforms)) [[unlikely]] {
             panic("Anim sample fail!");

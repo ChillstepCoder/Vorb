@@ -1,6 +1,5 @@
 #pragma once
 #include "rendering/CharacterModel.h"
-#include "rendering/character/CharacterAnimator.h"
 
 #include "definitions/ModelDef.h"
 #include "events/SkillEvent.h"
@@ -17,7 +16,6 @@ typedef std::unordered_map<entt::entity, CharacterRendererCharacterState> Entity
 struct CharacterModelRendererData {
     EntityCharacterModelMap entityCharacterModels;
     AssetHandlePtr<ModelDef> handle;
-    CharacterAnimatorModelData animatorData;
     bool needsInitialize = true;
 };
 
@@ -42,8 +40,6 @@ public:
     void playOneShotAnimation(entt::entity entityId, AssetID animationId);
     void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha);
 
-    CharacterAnimator& getCharacterAnimator() const { return *mCharacterAnimator; }
-
     CharacterRendererCharacterState* tryGetCharacterRenderStateForDebug(entt::entity entityId);
 private:
     void addCharacterModelInternal(entt::entity entityId, AssetID modelId);
@@ -59,6 +55,5 @@ private:
     std::map<ModelID, CharacterModelRendererData> mModelRenderData;
     std::unordered_map<entt::entity, CharacterRendererCharacterState*> mEntityCharacterRenderData;
 
-    std::unique_ptr<CharacterAnimator> mCharacterAnimator;
     entt::registry* mRegisteredECS = nullptr;
 };

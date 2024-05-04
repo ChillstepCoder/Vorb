@@ -101,6 +101,7 @@ void AnimMachineRepository::buildInstanceTemplate(AnimMachineDef& def) {
     for (size_t stateIndex = 0; stateIndex < def.states.size(); ++stateIndex) {
         AnimMachineInstanceState& instState = inst.states[stateIndex];
         const AnimMachineState& defState = def.states[stateIndex];
+        instState.transitions = std::span<AnimTransition>(defState.transitions.get(), defState.numTransitions);
         instState.stateType = defState.stateType;
         switch (instState.stateType) {
             case AnimStateType::AnimSequence:
