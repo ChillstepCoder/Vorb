@@ -33,7 +33,7 @@ public:
     AnimSampleBlendDataPair updateAndGetBlendData(f32 x, f32 elapsedSec);
 
     // Simply get pair blend with no time or update
-    AnimBlendPair getBlendPair(f32 x) const;
+    AnimBlendPair getBlendPair(f32 x, OUT f32& outAnimSpeed) const;
     f32 getX() const { return mX; }
     bool isValid() const { return mNodes.size() > 0; }
 
@@ -44,4 +44,6 @@ private:
     f32 mSyncAlpha = 0.0f;
     f32 mMaxAlphaChangeSpeed = 0.0f;
     f32 mX = 0.0f;
+    f32 mSpeedWarpLess = 0.0f;
+    f32 mSpeedWarpGreater = 1.0f;
 };

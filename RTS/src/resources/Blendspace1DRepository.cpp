@@ -42,11 +42,11 @@ AssetLoadFunc Blendspace1DRepository::getAssetLoadFunc() {
 void Blendspace1DRepository::fixupLoadedAsset(AssetID assetId) {
     Blendspace1DDef& def = getMutableAssetInternal(assetId);
 
-    def.playerNodes.clear();
-    def.playerNodes.reserve(def.nodes.size());
+    def.playerNodesRuntime.clear();
+    def.playerNodesRuntime.reserve(def.nodes.size());
     for (auto& node : def.nodes) {
         if (node.animation.isValid()) [[likely]] {
-            def.playerNodes.emplace_back(Blendspace1DPlayerNode{ node.x, node.animation.getAssetID() });
+            def.playerNodesRuntime.emplace_back(Blendspace1DPlayerNode{ node.x, node.animation.getAssetID() });
         }
     }
     switch (def.inputBinding.bindingType) {

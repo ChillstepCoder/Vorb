@@ -6,10 +6,12 @@
 
 
 Blendspace1DPlayer::Blendspace1DPlayer(const Blendspace1DDef& blendspaceDef) {
-    assert(blendspaceDef.playerNodes.size() <= blendspaceDef.nodes.size());
+    assert(blendspaceDef.playerNodesRuntime.size() <= blendspaceDef.nodes.size());
     mInputBinding = blendspaceDef.inputBindingRuntime;
-    mNodes = std::span<const Blendspace1DPlayerNode>(blendspaceDef.playerNodes.data(), blendspaceDef.playerNodes.size());
+    mNodes = std::span<const Blendspace1DPlayerNode>(blendspaceDef.playerNodesRuntime.data(), blendspaceDef.playerNodesRuntime.size());
     mMaxAlphaChangeSpeed = blendspaceDef.maxXChangeSpeed;
+    mSpeedWarpLess = blendspaceDef.speedWarpFactorLess;
+    mSpeedWarpGreater = blendspaceDef.speedWarpFactorGreater;
 }
 
 AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(const AnimVariables& inputs, f32 elapsedSec) {
@@ -43,7 +45,8 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
     }
 
     AnimSampleBlendDataPair rv;
-    AnimBlendPair blendPair = getBlendPair(mX);
+    f32 animSpeed;
+    AnimBlendPair blendPair = getBlendPair(mX, animSpeed);
     // Select loop duration based on weights
     rv.first.anim = &blendPair.anim0.getLoadedOrUnloadedAsset();
     rv.first.weight = blendPair.weight0;
@@ -64,7 +67,7 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
     assert(loopDuration > 0.0f);
 
     f32 loopTime = loopDuration * mSyncAlpha;
-    loopTime += elapsedSec;
+    loopTime += elapsedSec * animSpeed;
     if (loopTime > loopDuration) [[unlikely]] {
         loopTime = fmod(loopTime, loopDuration);
     }
@@ -76,11 +79,14 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
     return rv;
 }
 
-AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x) const {
+AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x, OUT f32& outAnimSpeed) const {
     assert(mNodes.size() > 0);
 
     // Before first node
     if (x <= mNodes[0].x) {
+        const f32 dist = mNodes[0].x - x;
+        const f32 ratio = dist / mNodes[0].x;
+        outAnimSpeed = 1.0f - ratio * mSpeedWarpLess;
         return { mNodes[0].animId, INVALID_ASSET_ID, 1.0f };
     }
 
@@ -97,11 +103,16 @@ AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x) const {
             else if (rv.weight0 == 1.0f) {
                 rv.anim1 = INVALID_ASSET_ID;
             }
+            outAnimSpeed = 1.0f;
             return rv;
         }
     }
     // After last node
-    return { mNodes[mNodes.size() - 1].animId, INVALID_ASSET_ID, 1.0f };
+    const Blendspace1DPlayerNode& lastNode = mNodes[mNodes.size() - 1];
+    const f32 dist = x - lastNode.x;
+    const f32 ratio = dist / lastNode.x;
+    outAnimSpeed = 1.0f - ratio * mSpeedWarpGreater;
+    return { lastNode.animId, INVALID_ASSET_ID, 1.0f };
 }
 
 // TODO: This eliminates the bitArray so can be more efficient than AssetHandleBundle, use this there?

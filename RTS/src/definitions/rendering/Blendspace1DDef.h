@@ -20,16 +20,21 @@ public:
     std::vector<Blendpsace1DDefNode> nodes;
     SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
     AnimVariableFloatBindingDef inputBinding;
+    f32 maxXChangeSpeed = 0.0f; // How quickly the X value can change, lower = smoother, 0 = instant
+    f32 speedWarpFactorLess = 0.0f; // How much speed can reduce by when below left node, 0 = no reduction, 1 = full reduction
+    f32 speedWarpFactorGreater = 0.0f; // How much speed can reduce by when above right node, 0 = no reduction, 1 = full reduction
+
     // For easy blendspace player instantiation
     AnimVariableFloatBinding inputBindingRuntime;
-    std::vector<Blendspace1DPlayerNode> playerNodes;
-    f32 maxXChangeSpeed = 0.0f; // How quickly the X value can change, lower = smoother, 0 = instant
+    std::vector<Blendspace1DPlayerNode> playerNodesRuntime;
 };
 SERIALIZABLE_SIMPLE(Blendspace1DDef,
     make_field(o.nodes, "nodes"sv),
     make_field(o.rigDef, "rig"sv),
     make_field(o.inputBinding, "input"sv),
-    make_field(o.maxXChangeSpeed, "max_x_speed"sv)
+    make_field(o.maxXChangeSpeed, "max_x_speed"sv),
+    make_field(o.speedWarpFactorLess, "speed_warp_less"sv),
+    make_field(o.speedWarpFactorGreater, "speed_warp_greater"sv)
 )
 
 struct Blendspace1DNode {

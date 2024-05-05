@@ -34,6 +34,9 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
 
     AnimMachineInstanceState* currentState = &states[currentStateID];
 
+    f32 currentStateWeight = 1.0f;
+
+    // Check for valid transitions
     if (currentTransitionID == INVALID_ANIM_TRANSITION) {
         // Check for valid transitions, taking first valid
         for (size_t i = 0; i < currentState->transitions.size(); ++i) {
@@ -43,33 +46,50 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
                 if (transition.transitionDuration) {
                     currentTransitionTime = 0.0f;
                     currentTransitionID = i;
+                    onBeginState(states[transition.toState]);
                 }
                 else {
                     currentStateID = transition.toState;
                     currentState = &states[currentStateID];
+                    onBeginState(*currentState);
                 }
                 break;
             }
         }
     }
-
-    f32 currentStateWeight = 1.0f;
-
-    // Update current transition
-    if (currentTransitionID != INVALID_ANIM_TRANSITION) {
+    else if (currentTransitionID != INVALID_ANIM_TRANSITION) {
+        // Update current transition, we will only start updating the transition a frame late,
+        // but its not a big deal probably
         const AnimTransition& currentTransition = currentState->transitions[currentTransitionID];
+        // Allow reversal if condition is no longer satisfied
+        const bool isTransitioningForward = currentTransition.condition.passesCondition(animVariables);
+
         assert(currentTransition.transitionAnimID == INVALID_ASSET_ID && "NEED TO IMPLEMENT ANIM TRANSITION");
         assert(currentTransition.toState != INVALID_ANIM_STATE);
-        currentTransitionTime += elapsedSec;
-        if (currentTransitionTime >= currentTransition.transitionDuration) {
-            currentTransitionID = INVALID_ANIM_TRANSITION;
-            currentStateID = currentTransition.toState;
-            currentState = &states[currentStateID];
+        if (isTransitioningForward) {
+            currentTransitionTime += elapsedSec;
+            if (currentTransitionTime >= currentTransition.transitionDuration) {
+                currentTransitionID = INVALID_ANIM_TRANSITION;
+                currentStateID = currentTransition.toState;
+                currentState = &states[currentStateID];
+            }
+            else {
+                const f32 nextStateWeight = (currentTransitionTime / currentTransition.transitionDuration);
+                currentStateWeight = 1.0f - nextStateWeight;
+                updateState(states[currentTransition.toState], elapsedSec, updateContext, nextStateWeight);
+            }
         }
         else {
-            const f32 nextStateWeight = (currentTransitionTime / currentTransition.transitionDuration);
-            currentStateWeight = 1.0f - nextStateWeight;
-            updateState(states[currentTransition.toState], elapsedSec, updateContext, nextStateWeight);
+            currentTransitionTime -= elapsedSec;
+            if (currentTransitionTime <= 0.0f) {
+                // Abort the transition
+                currentTransitionID = INVALID_ANIM_TRANSITION;
+            }
+            else {
+                const f32 nextStateWeight = (currentTransitionTime / currentTransition.transitionDuration);
+                currentStateWeight = 1.0f - nextStateWeight;
+                updateState(states[currentTransition.toState], elapsedSec, updateContext, nextStateWeight);
+            }
         }
     }
 
@@ -187,4 +207,21 @@ void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f3
 
 void AnimMachineInstance::updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
     panic("Implement updateBlendspace2D");
+}
+
+void AnimMachineInstance::onBeginState(AnimMachineInstanceState& state) {
+    switch (state.stateType) {
+        case AnimStateType::AnimSequence:
+            state.anim.time = 0.0f;
+            break;
+        case AnimStateType::Blendspace1D:
+            blendspace1DPlayers[state.blendspace1d.playerId].resetSyncAlpha();
+            break;
+        case AnimStateType::Blendspace2D:
+            panic("implement onBeginState for blendspace 2D");
+            break;
+        default:
+            panic("Invalid state type");
+    }
+    static_assert(e_count(AnimStateType) == 3);
 }

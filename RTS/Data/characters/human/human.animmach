@@ -7,6 +7,7 @@ states:
       - condition:
           type: is_moving
         to_state: move
+        dur: 0.3
   - name: move
     asset_name: move
     state_type: Blendspace1D

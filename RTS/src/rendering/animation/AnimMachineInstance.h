@@ -54,6 +54,8 @@ private:
     void updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
     void updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
 
+    void onBeginState(AnimMachineInstanceState& state);
+
     AssetHandlePtr<AnimMachineDef> machineDefHandle;
     const RigDef* rigDef = nullptr;
     std::unique_ptr<AnimMachineInstanceState[]> states;

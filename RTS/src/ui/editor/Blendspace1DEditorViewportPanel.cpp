@@ -315,6 +315,8 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
         changed = true;
     }
     changed |= ImGui::SliderFloat("Max Change Speed", &mAssetData->maxXChangeSpeed, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    changed |= ImGui::SliderFloat("Speed Warp Less", &mAssetData->speedWarpFactorLess, 0.0f, 1.0f);
+    changed |= ImGui::SliderFloat("Speed Warp Greater", &mAssetData->speedWarpFactorGreater, 0.0f, 1.0f);
 
     ImGui::Separator();
     if (mAssetData->rigDef.isValid()) {
