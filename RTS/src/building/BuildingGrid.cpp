@@ -218,7 +218,6 @@ Building* BuildingGrid::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     return it->second.get();
 }
 
-
 void BuildingGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
@@ -269,6 +268,7 @@ void BuildingGrid::initEventHandlers() {
 }
 
 void BuildingGrid::removeStructureFromDeactivateList(Building* structure) {
+    ASSERT_GAME_THREAD();
     for (size_t i = 0; i < mDeactivatingStructures.size(); ++i) {
         if (mDeactivatingStructures[i] == structure) {
             mDeactivatingStructures[i] = mDeactivatingStructures.back();

@@ -301,7 +301,7 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
     // Make sure center chunk is alive
     const ChunkID centerId = getChunkIDFromWorldPos(loadCenter);
     if (mAliveChunkBits.getBit(centerId) == false) {
-        makeChunkAlive(centerId);
+        tryMarkChunkAlive(centerId);
     }
 
     // Reverse iterate the edge positions so new edge chunks don't usually get processed this frame
@@ -320,7 +320,7 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
                     if (isChunkXYInBounds(neighborXy)) {
                         const ChunkID neighborId = getChunkIDFromChunkOffset(neighborXy);
                         if (isChunkInLoadRange(getWorldPosXYFromChunkID(neighborId), loadCenter)) {
-                            makeChunkAlive(neighborId);
+                            tryMarkChunkAlive(neighborId);
                         }
                     }
                 }
@@ -341,15 +341,21 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
     }
 }
 
-void IChunkGrid::makeChunkAlive(const ChunkID& chunkId) {
+bool IChunkGrid::tryMarkChunkAlive(const ChunkID& chunkId) {
     PROFILE_FUNCTION();
     // Any time grid state changes we will update again
+    Chunk& chunk = mChunks[chunkId];
+
+    // We must wait for sim destroy to complete
+    if (chunk.mState == ChunkState::DESTROYING_ON_SIM) {
+        return false;
+    }
+
     mForceUpdateEdgeChunks = true;
     assert(!mAliveChunkBits.getBit(chunkId)); // I added this as I suspect IChunkGrid::updateGridEdges can result in this
     mAliveChunkBits.setBit(chunkId);
 
     // Check if we need to remove from destroy list first
-    Chunk& chunk = mChunks[chunkId];
     if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
         removeChunkFromWantDeactivateList(chunk);
     }
@@ -379,6 +385,8 @@ void IChunkGrid::makeChunkAlive(const ChunkID& chunkId) {
         mEdgeChunkPositions.emplace_back(chunkId);
         chunk.mFlags.setBit(ChunkFlags::IN_EDGE_LIST);
     }
+
+    return true;
 }
 
 void IChunkGrid::addChunkToActiveList(Chunk& chunk) {
@@ -522,12 +530,14 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
             // If we are already loaded, just insert us back into the active list
             addChunkToActiveList(chunk);
             break;
+        case ChunkState::DESTROYING_ON_SIM:
+            panic("Chunk is being destroyed on sim but marked as all neighbors active");
         default:
             assert(false);
             break;
 
     }
-    static_assert(e_count(ChunkState) == 5);
+    static_assert(e_count(ChunkState) == 6);
 }
 
 void IChunkGrid::onChunkReady(Chunk& chunk) {

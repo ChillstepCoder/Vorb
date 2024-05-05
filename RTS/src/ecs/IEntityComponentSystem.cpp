@@ -2,7 +2,8 @@
 #include "IEntityComponentSystem.h"
 
 #include "world/World.h"
-
+#include "world/IHeightmapGrid.h"
+#include "ecs/component/FullEntityBindingComponent.h"
 #include "camera/Camera3D.h"
 
 // TODO: Get rid of this
@@ -47,6 +48,31 @@ void IEntityComponentSystem::tick(f32 elapsedSec) {
 void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
 	mPhysicsSystem.update(mWorld, mRegistry);
 	mCharacterControlSystem.update(mRegistry);
+}
+
+void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkEntityFullActivateDataList& entities) {
+	ASSERT_GAME_THREAD();
+	const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+	for (const EntityFullActivateData& activateData : entities) {
+		// TODO: I dont think we need thread safe here as main thread is only writer?
+		const f32 zPos = heightGrid.computeHeightAtPoint<true>(activateData.simPosition);
+		entt::entity newEntity = entt::null;
+		switch (activateData.entityType) {
+			case SimEntityType::Person: {
+				newEntity = createEntity(f32v3(activateData.simPosition.x, activateData.simPosition.y, zPos), CStrToken("villager"), true /*shouldReplicate*/);
+				break;
+			}
+			case SimEntityType::Group:
+			case SimEntityType::Settlement:
+			default:
+				panic("Tried to create invalid entity type {}", (int)activateData.entityType);
+				break;
+
+		}
+		assert(activateData.binding);
+        mRegistry.emplace<FullEntityBindingComponent>(newEntity).binding = activateData.binding;
+		static_assert(e_count(SimEntityType) == 4);
+	}
 }
 
 entt::entity IEntityComponentSystem::getLocalPlayerThreadSafe() const {

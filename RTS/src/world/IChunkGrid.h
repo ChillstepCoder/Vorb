@@ -68,7 +68,7 @@ protected:
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     // Grid management
     void updateGridEdges(const f32v2& loadCenter);
-    void makeChunkAlive(const ChunkID& chunkId);
+    bool tryMarkChunkAlive(const ChunkID& chunkId);
     // List management
     void addChunkToActiveList(Chunk& chunk);
     void removeChunkFromActiveList(Chunk& chunk);

@@ -71,6 +71,7 @@ public:
     ui32 getWidthTiles() const { return mWidthTiles; }
     ui32 getWidthDTiles() const { return mWidthDTiles; }
     ui32 getWidthChunks() const { return mWidthChunks; }
+    ui32 getTotalChunks() const { return mTotalChunks; }
     ui32 getWidthHeightmapPatches() const { return mWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES; }
     WorldID getId() const { return mId; }
     ui64 getWorldTimeMs() const { return mWorldTimeMs; }
@@ -144,6 +145,7 @@ private:
     ui32 mWidthTiles = 0;
     ui32 mWidthDTiles = 0;
     ui32 mWidthChunks = 0;
+    ui32 mTotalChunks = 0;
     f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
 
     ui64 mWorldTimeMs = 0; // Time since the world began

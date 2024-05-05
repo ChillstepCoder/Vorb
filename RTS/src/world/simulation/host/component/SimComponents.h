@@ -2,6 +2,7 @@
 
 #include <boost/container/flat_map.hpp>
 #include "world/simulation/SimTask.h"
+#include "world/simulation/host/SimEntityType.h"
 
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
 #include "ecs/component/InventoryComponent.h"
@@ -9,6 +10,8 @@
 #include "ecs/component/AttributesComponent.h"
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
+// If this component exists, the entity is on the simulation layer.
+// Otherwise it is fully simulated
 struct SimPositionComponent {
     friend class SimECS;
     friend class SimAISystem;
@@ -28,6 +31,10 @@ struct SimCharacterComponent {
     CharacterUID characterId;
 };
 
+struct SimEntityTypeComponent {
+    SimEntityType type;
+};
+
 struct SimCharacterGenderComponent {
     bool isFemale = false;
 };
@@ -35,6 +42,16 @@ struct SimCharacterGenderComponent {
 struct SimEmploymentComponent {
     entt::entity employerId; // Can be a person or business entity
 };
+
+// Can only have one of these at a time, can spawn related tasks
+//enum class SimBrainHighLevelDirective : ui8 {
+//    Idle,
+//    FindFood,
+//    FindShelter,
+//    Work,
+//    Follow,
+//    Sleep,
+//};
 
 enum class SimBrainComponentFlags : ui8 {
     IsFollowingCharacterGroup = BIT(0),
@@ -45,9 +62,10 @@ enum class SimBrainComponentFlags : ui8 {
 };
 static_assert(e_cast(SimBrainComponentFlags::TERM) <= 0xff);
 
-// Extemely simple decision maker as we will be running tens of thousands of these on the
-// sim thread
+// High level simple decision maker
 struct SimBrainComponent {
+    //SimBrainHighLevelDirective currentDirective = SimBrainHighLevelDirective::Idle;
+    //entt::entity fullEntity = entt::null;
     BitFlags<SimBrainComponentFlags> flags;
 };
 static_assert(sizeof(SimBrainComponent) == 1, "Keep small for cache efficiency");
@@ -64,7 +82,7 @@ static_assert(sizeof(SimInProgressTaskComponent) == 32, "Keep small for cache ef
 struct SimNeedsComponent {
     f32 hunger = 0.0f; // [0, 1>, 1 is starving. Can go beyond 1.
     f32 health = 1.0f; // [0, 1], 1 is healthy. 0 is dead.
-    f32 fun = 0.0f; // [0, 1], 1 is fully satisfied. 
+    //f32 fun = 0.0f; // [0, 1], 1 is fully satisfied. 
     bool wantsHome = true; // If nomadic or owns home, will be false
     bool wantsWork = true;
 };

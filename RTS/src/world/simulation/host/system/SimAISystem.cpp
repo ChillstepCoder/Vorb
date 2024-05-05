@@ -13,11 +13,11 @@
 SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
     mWorld(simContext.getWorld()), mSimContext(simContext), mRegistry(registry), mECS(ecs) {
     mWorldWidthChunks = mWorld.getWidthChunks();
-    mEntitiesInChunks.resize(SQ(mWorldWidthChunks));
+    mAIEntitiesInChunks.resize(SQ(mWorldWidthChunks));
 
     // Prevent allocations
     constexpr ui32 LIST_RESERVE_COUNT = 64;
-    for (auto& list : mEntitiesInChunks) {
+    for (auto& list : mAIEntitiesInChunks) {
         list.reserve(LIST_RESERVE_COUNT);
     }
     
@@ -25,13 +25,13 @@ SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry
     ecs.addEntityCreatedListener(mECSEventListeners, [this](SimECSEvent e) {
         if (e.type != SimEntityType::Settlement) [[likely]] {
             SimPositionComponent& p = mRegistry.get<SimPositionComponent>(e.entity);
-            mEntitiesInChunks[p.chunk].push_back(e.entity);
+            mAIEntitiesInChunks[p.chunk].push_back(e.entity);
         }
     });
 
     ecs.addEntityDestroyedListener(mECSEventListeners, [this](SimECSEvent e) {
         SimPositionComponent& p = mRegistry.get<SimPositionComponent>(e.entity);
-        SimChunkEntityList& entityList = mEntitiesInChunks[p.chunk];
+        SimChunkEntityList& entityList = mAIEntitiesInChunks[p.chunk];
         for (size_t i = 0; i < entityList.size(); ++i) {
             if (entityList[i] == e.entity) {
                 entityList[i] = entityList.back();
@@ -83,6 +83,28 @@ void SimAISystem::setEntityPosition(entt::entity e, f32v2 newPosition) {
     if (prevChunk != posCmp.chunk) [[unlikely]] {
         onEntityEnterNewChunk(e, prevChunk, posCmp.chunk);
     }
+}
+
+ChunkEntityFullActivateDataList SimAISystem::simThreadOnActivateChunk(ChunkID chunk) {
+    ASSERT_SIM_THREAD();
+
+    ChunkEntityFullActivateDataList rv;
+    SimChunkEntityList& list = mAIEntitiesInChunks[chunk];
+    rv.resize(list.size());
+
+    for (size_t i = 0; i < list.size(); ++i) {
+        rv[i].entityType = mRegistry.get<SimEntityTypeComponent>(list[i]).type;
+        rv[i].simPosition = mRegistry.get<SimPositionComponent>(list[i]).position;
+        rv[i].simEntity = list[i];
+        // We erase our sim position while fully activated
+        mRegistry.remove<SimPositionComponent>(list[i]);
+    }
+
+    // Free memory
+    list.clear();
+    list.shrink_to_fit();
+
+    return rv;
 }
 
 void SimAISystem::updateCharacterGroups() {
@@ -163,7 +185,7 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
 void SimAISystem::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
     PROFILE_FUNCTION();
 
-    SimChunkEntityList& prevEntityList = mEntitiesInChunks[prevChunk];
+    SimChunkEntityList& prevEntityList = mAIEntitiesInChunks[prevChunk];
     bool found = false;
     for (size_t i = 0; i < prevEntityList.size(); ++i) {
         if (prevEntityList[i] == entity) {
@@ -174,5 +196,5 @@ void SimAISystem::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, 
         }
     }
     assert(found);
-    mEntitiesInChunks[newChunk].emplace_back(entity);
+    mAIEntitiesInChunks[newChunk].emplace_back(entity);
 }

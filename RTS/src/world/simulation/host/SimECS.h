@@ -2,6 +2,7 @@
 
 #include "world/simulation/host/CharacterGroupType.h"
 #include "world/simulation/host/SimECSEvents.h"
+#include "ecs/EntityFullActivateData.h"
 
 class HostSimContext;
 class SimAISystem;
@@ -32,6 +33,9 @@ public:
     // Destroys the group entity and triggers members to resolve the group condition
     void endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason);
 
+    // Transition our AI entities to fully simulated and return the list of AI entitiess
+    ChunkEntityFullActivateDataList simThreadOnActivateChunk(ChunkID chunkId);
+
     EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
     EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
 
@@ -53,6 +57,12 @@ private:
 
     std::unique_ptr<SimAISystem> mAISystem;
     std::unique_ptr<SimSettlementSystem> mSettlementSystem;
+
+    // Guarantee pointer stability for entity bindings
+    std::unordered_map<entt::entity, SimFullEntityBinding> mFullEntityBindings;
+
+    // TODO: Farm plots, ect
+    //std::vector<SimChunkEntityList> mStaticEntitiesInChunks;
 
     // TODO: Strip in release?
     mutable std::mutex mDebugRenderMutex;

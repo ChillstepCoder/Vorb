@@ -7,6 +7,7 @@
 
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
+#include "ecs/component/FullEntityBindingComponent.h"
 
 #include "text/NameManager.h"
 
@@ -57,6 +58,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
         DEFAULT_BLOOD,
         DEFAULT_MOVE_SPEED
     );
+    mRegistry.emplace<SimEntityTypeComponent>(newPerson).type = SimEntityType::Person;
 
     SimCharacterNameComponent& nameCmp = mRegistry.emplace<SimCharacterNameComponent>(newPerson);
     nameCmp.firstName = NameManager::getRandomFirstName(gen, isFemale);
@@ -136,6 +138,20 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
     mRegistry.destroy(group);
 }
 
+ChunkEntityFullActivateDataList SimECS::simThreadOnActivateChunk(ChunkID chunkId) {
+    // TODO: Handle other entities too, not just AI
+    ChunkEntityFullActivateDataList list = mAISystem->simThreadOnActivateChunk(chunkId);
+
+    // Create bindings
+    for (auto& it : list) {
+        SimFullEntityBinding& binding = mFullEntityBindings[it.simEntity];
+        it.binding = &binding;
+        mRegistry.emplace<FullEntityBindingComponent>(it.simEntity).binding = &binding;
+    }
+
+    return list;
+}
+
 void SimECS::debugRender(f32v3 cameraPos) const {
     if (sDebugOptions.mShowSettlementDebug) {
         std::lock_guard lock(mDebugRenderMutex);
@@ -190,6 +206,7 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
     // Start at the leaders position
     const SimPositionComponent& leaderPos = mRegistry.get<SimPositionComponent>(leader);
     mRegistry.emplace<SimPositionComponent>(groupEntity, leaderPos.position, leaderPos.chunk);
+    mRegistry.emplace<SimEntityTypeComponent>(groupEntity).type = SimEntityType::Group;
     groupCmp.leader = leader;
     groupCmp.groupType = groupType;
 

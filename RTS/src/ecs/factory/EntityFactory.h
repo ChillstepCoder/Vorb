@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ecs/factory/EntityType.h"
-
 #include "item/ItemStack.h"
 
 class IEntityComponentSystem;

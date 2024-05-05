@@ -6,6 +6,7 @@ enum class ChunkState : ui8 {
     DORMANT, // LOD simulated but with visible LOD tile data
     LOADING_MESH_PHYSICS_NAV_VISIBILITY,
     ACTIVE, // Fully simulated
+    DESTROYING_ON_SIM, // Being destroyed on simulation thread, do nothing until it is finished
     COUNT
 };
 

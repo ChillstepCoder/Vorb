@@ -158,6 +158,10 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
         // Render all characters with this model
         for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
+            // We require a render state to render, new entities may not have one
+            if (!characterState.renderStateThisFrame) [[unlikely]] {
+                continue;
+            }
             const CharacterRenderState& character = *characterState.renderStateThisFrame;
             const RigDef& rig = characterState.mAnimInstance.getRig();
 

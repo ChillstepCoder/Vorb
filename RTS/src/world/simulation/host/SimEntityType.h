@@ -1,8 +1,9 @@
 #pragma once
 
-enum class SimEntityType {
+enum class SimEntityType : ui8 {
     INVALID,
     Person,
     Group,
-    Settlement
+    Settlement,
+    COUNT
 };

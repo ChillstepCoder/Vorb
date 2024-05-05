@@ -71,6 +71,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
         mWidthTiles = MIN_WORLD_WIDTH_TILES;
     }
     mWidthChunks = mWidthTiles / CHUNK_WIDTH;
+    mTotalChunks = SQ(mWidthChunks);
     mWidthDTiles = mWidthTiles / DTILE_WIDTH;
 
     // Host vs Client objects

@@ -61,7 +61,7 @@ void SimThread::simThreadFunc() {
     setThreadName("Sim");
     mTimestepManager.init(mTargetTickRateMs / MS_PER_SECOND);
 
-    constexpr size_t BULK_DEQUEUE_COUNT = 64;
+    constexpr size_t BULK_DEQUEUE_COUNT = 256;
     std::function<void()> funcs[BULK_DEQUEUE_COUNT];
     while (!mStop.load()) {
         mThreadUtilizationTimer.beginFrame();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "world/simulation/host/SimECSEvents.h"
+#include "ecs/EntityFullActivateData.h"
 
 class HostSimContext;
 class SimECS;
@@ -19,6 +20,8 @@ public:
     void tick(TimestampMs currentTime, TimestampMs deltaTime);
     void setEntityPosition(entt::entity e, f32v2 newPosition);
 
+    // Transition our AI entities to fully simulated and return the list of AI entitiess
+    ChunkEntityFullActivateDataList simThreadOnActivateChunk(ChunkID chunk);
 private:
     void updateCharacterGroups();
     void handleTaskComplete(entt::entity entity, SimBrainComponent& brain, SimInProgressTaskComponent& taskCmp);
@@ -33,7 +36,7 @@ private:
     TimestampMs mDeltaTime = 0;
     ui32 mWorldWidthChunks = 0;
 
-    std::vector<SimChunkEntityList> mEntitiesInChunks;
+    std::vector<SimChunkEntityList> mAIEntitiesInChunks;
     SimECSListeners mECSEventListeners;
 };
 

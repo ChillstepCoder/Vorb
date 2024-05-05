@@ -19,7 +19,7 @@
 // https://www.youtube.com/watch?v=RYZSdPuvta8
 void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
-    assert(false);
+    //assert(false);
     // Set home to first city if none (TODO: better residence)
     //if (!ai.mCity) {
     //    ai.mCity = world.getCityGraph().getClosestCityToPoint(physics.getPosition());

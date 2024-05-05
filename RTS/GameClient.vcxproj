@@ -654,6 +654,7 @@
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\FishingComponent.h" />
+    <ClInclude Include="src\ecs\component\FullEntityBindingComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
     <ClInclude Include="src\ecs\component\ItemComponent.h" />
@@ -676,10 +677,10 @@
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\VelocityComponent.h" />
     <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
+    <ClInclude Include="src\ecs\EntityFullActivateData.h" />
     <ClInclude Include="src\ecs\IEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\EntityRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
-    <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\EditorResources.h" />

@@ -2,6 +2,7 @@
 #include "ecs/component/Components.h"
 
 #include "ecs/component/FishingComponent.h"
+#include "ecs/EntityFullActivateData.h"
 
 #include <mutex>
 
@@ -19,6 +20,8 @@ public:
     virtual entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) = 0;
     // Client or server
     virtual void destroyEntity(entt::entity entity) = 0;
+
+    void createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkEntityFullActivateDataList& entities);
 
     entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mPlayerEntity; }
     entt::entity getLocalPlayerThreadSafe() const;

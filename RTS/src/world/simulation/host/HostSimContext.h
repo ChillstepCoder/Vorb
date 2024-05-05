@@ -4,10 +4,13 @@
 
 #include "world/simulation/SimChunk.h"
 #include "world/simulation/host/SimWorldAnalytics.h"
+#include "world/ChunkGridEvent.h"
 
 #include "tile/TileHarvestable.h"
 
 #include "util/BitArray.h"
+
+#include <Vorb/concurrentqueue.h>
 
 class SimThread;
 class StoryTeller;
@@ -55,6 +58,7 @@ public:
     void debugRender(f32v3 cameraPos) const;
 
 private:
+    void initEvents();
     //ChunkSimulator mSimulator;
 
     // ==================== CHUNK DATA ====================
@@ -68,6 +72,7 @@ private:
     BitArray mSimulatingChunks; // Chunks with SimChunkState = simulating for fast find first set bit
     // TODO: Flat set?
     std::unordered_set<ChunkID> mFullChunks; // Only store full chunks in here, usually not very many
+    ChunkGridListeners mChunkEventListeners;
 
     ui32 mTotalChunks;
 

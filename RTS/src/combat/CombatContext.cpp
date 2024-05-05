@@ -269,7 +269,8 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
                 continue;
             }
             // TODO: ENTITY
-            assert(false);
+            //assert(false);
+            LOG_CRITICAL("TODO: HANDLE ENTITY ATTACKS");
         }
     }
 }
