@@ -74,7 +74,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     }
 
     // Update all loading chunks
-    updateLoadingChunks();
+    updateActivatingChunks();
 
     // Update all destroying chunks
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
@@ -226,11 +226,23 @@ void IChunkGrid::setWorldAndAllocateChunks(World& world) {
     }
 }
 
-void IChunkGrid::updateLoadingChunks() {
+void IChunkGrid::updateActivatingChunks() {
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
     for (size_t i = 0; i < mActivatingChunks.size();) {
         Chunk& chunk = mChunks[mActivatingChunks[i]];
         switch (chunk.mState) {
+            case ChunkState::WAITING_SIM_RELEASE: {
+                ++i;
+                break;
+            }
+            case ChunkState::READY_TO_LOAD: {
+                chunk.setState(ChunkState::LOADING_TILES);
+                // TileContainerLoader will listen for this event and begin loading
+                ChunkGridEvent evnt(chunk);
+                dispatchBeginLoad(evnt);
+                ++i;
+                break;
+            }
             case ChunkState::LOADING_TILES: {
                 ++i;
                 break;
@@ -239,8 +251,8 @@ void IChunkGrid::updateLoadingChunks() {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mActivatingChunks[i] = mActivatingChunks.back();
                     mActivatingChunks.pop_back();
-                    chunk.mFlags.clearBit(ChunkFlags::IN_LOAD_LIST);
-                    onChunkReady(chunk);
+                    chunk.mFlags.clearBit(ChunkFlags::IS_ACTIVATING);
+                    activateChunk(chunk);
                 }
                 else {
                     ++i;
@@ -329,7 +341,7 @@ void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
         else {
             // Destroying chunks are not edge chunks since they aren't alive
             Chunk& chunk = mChunks[chunkId];
-            if (!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST)) {
+            if (!chunk.mFlags.isBitSet(ChunkFlags::IS_ACTIVATING)) {
                 mEdgeChunkPositions[i] = mEdgeChunkPositions.back();
                 mEdgeChunkPositions.pop_back();
                 chunk.mFlags.clearBit(ChunkFlags::IN_EDGE_LIST);
@@ -415,14 +427,14 @@ void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
 
 void IChunkGrid::addChunkToActivatingList(Chunk& chunk) {
     mActivatingChunks.emplace_back(chunk.getChunkID());
-    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
-    chunk.mFlags.setBit(ChunkFlags::IN_LOAD_LIST);
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IS_ACTIVATING));
+    chunk.mFlags.setBit(ChunkFlags::IS_ACTIVATING);
 }
 
 void IChunkGrid::addChunkToWantDeactivateList(Chunk& chunk) {
     PROFILE_FUNCTION();
 
-    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IS_ACTIVATING));
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
 
     if (chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST)) {
@@ -503,7 +515,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_EDGE_LIST));
     }
     // If we are still in any load or active list, its because we lost and regained a neighbor at some point, just ignore
-    if (chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST) || chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST)) {
+    if (chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST) || chunk.mFlags.isBitSet(ChunkFlags::IS_ACTIVATING)) {
         return;
     }
 
@@ -511,13 +523,17 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
     switch (state) {
         case ChunkState::DEACTIVATED: {
             // Begin load
-            chunk.beginActivate();
+            chunk.setState(ChunkState::WAITING_SIM_RELEASE);
+            chunk.allocateData();
+
             addChunkToActivatingList(chunk);
-            // TileContainerLoader will listen for this event and begin loading
+          
             ChunkGridEvent evnt(chunk);
             dispatchBeginActivate(evnt);
             break;
         }
+        case ChunkState::WAITING_SIM_RELEASE:
+        case ChunkState::READY_TO_LOAD:
         case ChunkState::LOADING_TILES:
             panic("Tried to re-load chunk already being loaded");
             break;
@@ -537,10 +553,10 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
             break;
 
     }
-    static_assert(e_count(ChunkState) == 6);
+    static_assert(e_count(ChunkState) == 8);
 }
 
-void IChunkGrid::onChunkReady(Chunk& chunk) {
+void IChunkGrid::activateChunk(Chunk& chunk) {
     assert(chunk.getTileContainer()->getState() == TileContainerState::READY);
 
     chunk.mState = ChunkState::ACTIVATED;

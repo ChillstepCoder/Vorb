@@ -55,12 +55,13 @@ public:
 
     // Events
     EVENT_LISTENER_FUNCS(ChunkGrid, BeginActivate, CHUNK_GRID_EVENT_TYPE::BeginActivate, ChunkGridEvent&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, BeginLoad, CHUNK_GRID_EVENT_TYPE::BeginLoad, ChunkGridEvent&);
     EVENT_LISTENER_FUNCS(ChunkGrid, Activated, CHUNK_GRID_EVENT_TYPE::Activated, ChunkGridEvent&);
     EVENT_LISTENER_FUNCS(ChunkGrid, Deactivated, CHUNK_GRID_EVENT_TYPE::Deactivated, ChunkGridEvent&);
 
     void setWorldAndAllocateChunks(World& world);
 protected:
-    virtual void updateLoadingChunks();
+    virtual void updateActivatingChunks();
 
     bool isChunkXYInBounds(const i32v2& xy);
 
@@ -78,7 +79,7 @@ protected:
     // Loading
     void onAllNeighborsAlive(Chunk& chunk);
     // Ready
-    void onChunkReady(Chunk& chunk);
+    void activateChunk(Chunk& chunk);
     
     // Chunk data
     ui32 mWidthChunks = 0;

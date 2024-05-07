@@ -7,6 +7,6 @@
 #include "tile/TileContainerRepository.h"
 
 // TODO: Reduce copy paste
-void CliChunkGrid::updateLoadingChunks() {
+void CliChunkGrid::updateActivatingChunks() {
     panic("Fix CliChunkGrid::updateLoadingChunks, use IChunkGrid and better interface");
 }

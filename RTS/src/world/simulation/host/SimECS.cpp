@@ -56,13 +56,17 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
             GameThreadTasks::getInstance().addGenericTask([this, chunkId, entities = std::move(entities)]() mutable {
                 Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
                 if (chunk.isActivated()) {
-                    mWorld.getECS().createFullEntitiesFromSimEntities(mWorld.getChunkGrid().getChunk(chunkId), entities);
+                    mWorld.getECS().createFullEntitiesFromSimEntities(chunk, entities);
                 }
-                else {
+                else if (chunk.isDeactivated()) {
                     // Rare case where chunk deactivated when we were trying to send it entities, so we need to send them back
                     mHostSimContext.tryGetSimThread()->addTask([this, chunkId, entities = std::move(entities)]() mutable {
                         onEntityFullActivationFailed(chunkId, std::move(entities));
                     });
+                }
+                else {
+                    // If here, we are in the process of activating, so mark as pending
+                    mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(entities));
                 }
             });
         }
@@ -212,12 +216,41 @@ void SimECS::simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntit
     }
 }
 
+void SimECS::simThreadOnFullDeactivateEntity(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntitity) {
+    EntityVector& list = mEntitiesInChunks[chunkId];
+    SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(deactivateEntitity.simEntity);
+    posCmp.position = deactivateEntitity.simPosition;
+    posCmp.chunk = chunkId;
+    list.emplace_back(deactivateEntitity.simEntity);
+
+    // Remove binding
+    auto&& it = mFullEntityBindings.find(deactivateEntitity.simEntity);
+    mFullEntityBindings.erase(it);
+    mRegistry.remove<FullEntityBindingComponent>(deactivateEntitity.simEntity);
+}
+
+void SimECS::onEntityDeactivationFailed(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntity) {
+    ASSERT_SIM_THREAD();
+    auto&& it = mFullEntityBindings.find(deactivateEntity.simEntity);
+    assert(it != mFullEntityBindings.end());
+
+    EntityFullActivateData activateData;
+    activateData.entityType = mRegistry.get<SimEntityTypeComponent>(deactivateEntity.simEntity).type;
+    activateData.simPosition = deactivateEntity.simPosition;
+    activateData.binding = &it->second;
+
+    mFullActivatedEntitiesThisFrame[chunkId].emplace_back(activateData);
+}
+
 void SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
+    ASSERT_SIM_THREAD();
     PROFILE_FUNCTION();
 
     EntityVector& prevEntityList = mEntitiesInChunks[prevChunk];
     bool found = false;
-    for (size_t i = 0; i < prevEntityList.size(); ++i) {
+    // We amortize this by reverse iterating as
+    // more dynamic entities are likely to be at the end of the list
+    for (int i = (int)prevEntityList.size() - 1; i >= 0; --i) {
         if (prevEntityList[i] == entity) {
             prevEntityList[i] = prevEntityList.back();
             prevEntityList.pop_back();
@@ -255,7 +288,6 @@ EntityFullActivateData SimECS::onFullActivateEntity(entt::entity entity) {
     EntityFullActivateData rv;
     rv.entityType = mRegistry.get<SimEntityTypeComponent>(entity).type;
     rv.simPosition = mRegistry.get<SimPositionComponent>(entity).position;
-    rv.simEntity = entity;
     // We erase our sim position while fully activated
     mRegistry.remove<SimPositionComponent>(entity);
 
@@ -274,7 +306,7 @@ void SimECS::onEntityFullActivationFailed(ChunkID chunkId, ChunkEntityFullActiva
         ChunkEntityFullDeactivateDataList list;
         list.resize(activateData.size());
         for (size_t i = 0; i < activateData.size(); ++i) {
-            list[i].simEntity = activateData[i].simEntity;
+            list[i].simEntity = activateData[i].binding->simEntity;
             list[i].simPosition = activateData[i].simPosition;
         }
         simThreadOnFullDeactivateEntities(chunkId, list);

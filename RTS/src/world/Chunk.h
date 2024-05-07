@@ -97,7 +97,7 @@ public:
     // =========== Main methods  ===========
 
     void init(World& world, ChunkID chunkId, i32v2 worldPos);
-	void beginActivate();
+	void allocateData();
 	void freeData();
 	void dispose();
 
@@ -138,7 +138,7 @@ public:
 	ItemStack getItemStackOnGround(TileIndex pos);
 
     // =========== State  ===========
-	bool isInvalid() const { ASSERT_GAME_THREAD(); return mState == ChunkState::DEACTIVATED; }
+	bool isDeactivated() const { ASSERT_GAME_THREAD(); return mState == ChunkState::DEACTIVATED || mState == ChunkState::DESTROYING_ON_SIM; }
 	bool isActivated() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVATED; }
 
 	void setState(ChunkState state) { mState = state; }

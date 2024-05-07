@@ -673,12 +673,14 @@
     <ClInclude Include="src\ecs\component\PositionComponent.h" />
     <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
     <ClInclude Include="src\ecs\component\ProjectileComponent.h" />
+    <ClInclude Include="src\ecs\component\SimEntityTypeComponent.h" />
     <ClInclude Include="src\ecs\component\SkillsComponent.h" />
     <ClInclude Include="src\ecs\component\StatsComponent.h" />
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\VelocityComponent.h" />
     <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
     <ClInclude Include="src\ecs\EntityFullActivateData.h" />
+    <ClInclude Include="src\ecs\FullECSEvents.h" />
     <ClInclude Include="src\ecs\IEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\EntityRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />

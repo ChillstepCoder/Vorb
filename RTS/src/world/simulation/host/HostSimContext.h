@@ -5,6 +5,7 @@
 #include "world/simulation/SimChunk.h"
 #include "world/simulation/host/SimWorldAnalytics.h"
 #include "world/ChunkGridEvent.h"
+#include "ecs/FullECSEvents.h"
 
 #include "tile/TileHarvestable.h"
 
@@ -74,6 +75,7 @@ private:
     // TODO: Flat set?
     std::unordered_set<ChunkID> mFullChunks; // Only store full chunks in here, usually not very many
     ChunkGridListeners mChunkEventListeners;
+    IEntityComponentSystemListeners mFullECSListeners;
 
     ui32 mTotalChunks;
 

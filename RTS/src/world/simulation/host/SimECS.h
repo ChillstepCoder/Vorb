@@ -36,6 +36,9 @@ public:
     // Transition our AI entities to fully simulated and return the list of AI entitiess
     ChunkEntityFullActivateDataList simThreadOnActivateChunk(ChunkID chunkId);
     void simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities);
+    void simThreadOnFullDeactivateEntity(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntitity);
+    // For when we cannot deactivate an entity as we do not have control, send it back to game thread
+    void onEntityDeactivationFailed(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntity);
 
     EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
     EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);

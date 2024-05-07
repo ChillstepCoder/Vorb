@@ -42,11 +42,11 @@ void Chunk::init(World& world, ChunkID chunkId, i32v2 worldPos) {
     mAABB.height = 4;
 }
 
-void Chunk::beginActivate() {
-    assert(mState != ChunkState::LOADING_TILES);
-    mState = ChunkState::LOADING_TILES;
+void Chunk::allocateData() {
     assert(!mTileContainer);
-
+    // We should only allocate at the beginning of a load cycle
+    // This should be set by chunk grid
+    assert(mState == ChunkState::WAITING_SIM_RELEASE);
     {
         std::lock_guard lock(mTileContainerLifetimeMutex);
         mTileContainer = mWorld->getTileContainerRepository().allocateChunkContainer(mAABB.pos, this);

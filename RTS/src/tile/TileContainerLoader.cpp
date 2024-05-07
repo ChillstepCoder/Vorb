@@ -176,7 +176,7 @@ void TileContainerLoader::loadChunkFromSimChunk(TileContainer& container) const
 void TileContainerLoader::initEvents() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkGridListeners);
-    chunkGrid.addBeginActivateListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addBeginLoadListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         loadChunkFromSimChunk(*evnt.chunk.getTileContainer());
     });

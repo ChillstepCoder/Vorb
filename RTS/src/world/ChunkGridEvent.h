@@ -12,6 +12,7 @@ public:
 
 enum class CHUNK_GRID_EVENT_TYPE {
     BeginActivate,
+    BeginLoad,
     Activated,
     Deactivated
 };

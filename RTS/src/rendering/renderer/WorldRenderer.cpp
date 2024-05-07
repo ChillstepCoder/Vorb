@@ -406,6 +406,12 @@ void WorldRenderer::renderDebug() {
                     case ChunkState::DEACTIVATED:
                         color = color4(0.5f, 0.5f, 0.5f);
                         break;
+                    case ChunkState::WAITING_SIM_RELEASE:
+                        color = color4(0.0f, 0.0f, 1.0f);
+                        break;
+                    case ChunkState::READY_TO_LOAD:
+                        color = color4(1.0f, 1.0f, 1.0f);
+                        break;
                     case ChunkState::LOADING_TILES:
                         color = color4(0.0f, 1.0f, 1.0f);
                         break;
@@ -421,6 +427,7 @@ void WorldRenderer::renderDebug() {
                     default:
                         break;
                 }
+                static_assert(e_count(ChunkState) == 8);
             }
 
             f32v3 worldPosA, worldPosB;

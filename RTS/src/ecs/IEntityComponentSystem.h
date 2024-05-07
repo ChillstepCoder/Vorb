@@ -3,6 +3,9 @@
 
 #include "ecs/component/FishingComponent.h"
 #include "ecs/EntityFullActivateData.h"
+#include "ecs/FullECSEvents.h"
+
+#include "world/ChunkGridEvent.h"
 
 #include <mutex>
 
@@ -21,6 +24,7 @@ public:
     // Client or server
     virtual void destroyEntity(entt::entity entity) = 0;
 
+    void addPendingEntitiesToChunk(Chunk& chunk, ChunkEntityFullActivateDataList&& entities);
     void createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkEntityFullActivateDataList& entities);
     ChunkEntityFullDeactivateDataList deactivateEntitiesForChunk(Chunk& chunk);
 
@@ -47,10 +51,21 @@ public:
 
     entt::registry mRegistry;
 
+    EVENT_LISTENER_FUNCS(IEntityComponentSystem, EntityDeactivated, FullECSEventType::EntityDeactivated, FullECSEvent&);
+
 protected:
+    void initEvents();
+
     // TODO: Periodically shrink_to_fit
     std::vector<EntityVector> mEntitiesByChunk;
+    // Entities that are waiting for chunk to load so they can activate
+    std::map<ChunkID, ChunkEntityFullActivateDataList> mPendingEntities;
+
+    ChunkGridListeners mChunkEventListeners;
 
     mutable std::mutex mPlayerEntityMutex;
     entt::entity mLocalPlayerEntity = entt::null;
+
+
+    EVENT_DISPATCHER_DEF(IEntityComponentSystem);
 };

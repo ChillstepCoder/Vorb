@@ -13,7 +13,6 @@ struct SimFullEntityBinding {
 
 // Sim -> Full
 struct EntityFullActivateData {
-    entt::entity simEntity;
     f32v2 simPosition;
     SimEntityType entityType;
     SimFullEntityBinding* binding = nullptr;

@@ -108,6 +108,7 @@ void HostSimContext::initEvents() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
 
+    // TODO: UPDATE THIS COMMENT
     //   Sim -> Game entity handshake process
     /*   CHUNK ACTIVATION
          1. Main thread activates chunk
@@ -152,18 +153,18 @@ void HostSimContext::initEvents() {
           This is a one way relationship, no need for mutex if we use queue
     */
 
-    chunkGrid.addActivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addBeginActivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
+        // We have guarantee that the chunk cannot be destroyed while we have this state
+        assert(chunk.getState() == ChunkState::WAITING_SIM_RELEASE);
 
-        // Tells main thread not to deactivate until we are done
-        chunk.incRef();
         mSimThread->addTask([this, &chunk]() {
             mSimulatingChunks.clearBit(chunk.getChunkID());
             ChunkEntityFullActivateDataList entities = mSimECS->simThreadOnActivateChunk(chunk.getChunkID());
-            GameThreadTasks::getInstance().addGenericTask([this, &chunk, entities = std::move(entities)]() {
-                mWorld.getECS().createFullEntitiesFromSimEntities(chunk, entities);
-                chunk.decRef();
+            GameThreadTasks::getInstance().addGenericTask([this, &chunk, entities = std::move(entities)]() mutable {
+                mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(entities));
+                chunk.setState(ChunkState::READY_TO_LOAD);
             });
         });
     });
@@ -181,6 +182,23 @@ void HostSimContext::initEvents() {
 
             // Allow main thread to reactivate this chunk
             chunk.setState(ChunkState::DEACTIVATED);
+        });
+    });
+
+    IEntityComponentSystem& fullEcs = mWorld.getECS();
+    fullEcs.registerIEntityComponentSystemListeners(mFullECSListeners);
+
+    fullEcs.addEntityDeactivatedListener(mFullECSListeners, [this](FullECSEvent evnt) {
+        ASSERT_GAME_THREAD();
+
+        mSimThread->addTask([this, chunkId = evnt.chunkId, dData = evnt.deactivateData]() {
+            if (mSimulatingChunks.getBit(chunkId)) {
+                mSimECS->simThreadOnFullDeactivateEntity(chunkId, dData);
+            }
+            else {
+                // Need to send it back, we don't own control
+                mSimECS->onEntityDeactivationFailed(chunkId, dData);
+            }
         });
     });
 }

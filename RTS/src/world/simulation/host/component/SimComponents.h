@@ -2,7 +2,7 @@
 
 #include <boost/container/flat_map.hpp>
 #include "world/simulation/SimTask.h"
-#include "world/simulation/host/SimEntityType.h"
+#include "ecs/component/SimEntityTypeComponent.h"
 
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
 #include "ecs/component/InventoryComponent.h"
@@ -31,9 +31,7 @@ struct SimCharacterComponent {
     CharacterUID characterId;
 };
 
-struct SimEntityTypeComponent {
-    SimEntityType type;
-};
+
 
 struct SimCharacterGenderComponent {
     bool isFemale = false;
