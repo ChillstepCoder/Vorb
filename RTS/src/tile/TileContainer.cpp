@@ -54,6 +54,7 @@ void TileContainer::allocateData() {
 
 void TileContainer::freeData() {
     ASSERT_GAME_THREAD();
+    assert(mRefCount.load() == 0);
     std::vector<Tile>().swap(mTiles);
     std::vector<DynamicTile>().swap(mDynamicTiles);
     mTileWallsContainer.destroy();
@@ -947,7 +948,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
             const i32v2 worldPos2D(rootPos.x + offset.x, rootPos.y + offset.y);
 
             Chunk& chunk = chunkGrid.getChunkAtPosition(worldPos2D);
-            if (chunk.isDataReady()) {
+            if (chunk.isActive()) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
                 const TileSpatialGrid& chunkTileIndexManager = chunkTileContainer->getTileSpatialGrid();
                 assert(chunkTileContainer);

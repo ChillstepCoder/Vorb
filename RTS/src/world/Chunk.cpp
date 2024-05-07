@@ -88,7 +88,7 @@ TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
         return TileHandle(mTileContainer, index - 1);
     }
     const Chunk& leftNeighbor = getLeftNeighbor();
-    if (leftNeighbor.isDataReady()) {
+    if (leftNeighbor.isActive()) {
         return TileHandle(leftNeighbor.getTileContainer(), index + CHUNK_WIDTH - 1);
     }
 	return TileHandle();
@@ -101,7 +101,7 @@ TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
     }
 
     const Chunk& rightNeighbor = getRightNeighbor();
-    if (rightNeighbor.isDataReady()) {
+    if (rightNeighbor.isActive()) {
         return TileHandle(rightNeighbor.getTileContainer(), index - CHUNK_WIDTH + 1);
     }
     return TileHandle();
@@ -114,7 +114,7 @@ TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
     }
 
     Chunk& topNeighbor = getTopNeighbor();
-	if (topNeighbor.isDataReady()) {
+	if (topNeighbor.isActive()) {
         return TileHandle(topNeighbor.getTileContainer(), index + CHUNK_WIDTH - CHUNK_SIZE);
 	}
     return TileHandle();
@@ -127,7 +127,7 @@ TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
     }
 
     Chunk& bottomNeighbor = getBottomNeighbor();
-    if (bottomNeighbor.isDataReady()) {
+    if (bottomNeighbor.isActive()) {
         return TileHandle(bottomNeighbor.getTileContainer(), index - CHUNK_WIDTH + CHUNK_SIZE);
     }
 	return TileHandle();

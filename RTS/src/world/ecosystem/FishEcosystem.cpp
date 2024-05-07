@@ -88,7 +88,7 @@ entt::entity FishEcosystem::getClosestIdleFishToPoint(f32v3 point, f32 maxRange)
     for (int i = 0; i < 4; ++i) {
         assert(closestChunks[i]);
         const Chunk& chunk = *closestChunks[i];
-        if (!chunk.isDataReady()) {
+        if (!chunk.isActive()) {
             continue;
         }
         auto&& it = mActiveFishChunks.find(chunk.getChunkID());

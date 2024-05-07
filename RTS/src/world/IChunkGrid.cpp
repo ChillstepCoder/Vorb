@@ -279,7 +279,7 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
     std::vector<std::pair<TileIndex, f32>> editData;
     for (auto&& it : tilePositionsNeedingUpdate) {
         Chunk& chunk = getChunk(it.first);
-        if (chunk.isDataReady()) {
+        if (chunk.isActive()) {
             editData.reserve(it.second.size());
             for (auto&& pos : it.second) {
                 const ui32 x = (ui32)pos.x & (CHUNK_WIDTH - 1); // Fast modulus

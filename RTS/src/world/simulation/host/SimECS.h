@@ -35,15 +35,26 @@ public:
 
     // Transition our AI entities to fully simulated and return the list of AI entitiess
     ChunkEntityFullActivateDataList simThreadOnActivateChunk(ChunkID chunkId);
+    void simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities);
 
     EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
     EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
 
+    void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
+
     // DEBUGGING
     void debugRender(f32v3 cameraPos) const;
 private:
+    EntityFullActivateData onFullActivateEntity(entt::entity entity);
+    // Can happen if a chunk is deactivated after we send off entities to be activated
+    void onEntityFullActivationFailed(ChunkID chunkId, ChunkEntityFullActivateDataList&& activateData);
     void debugRenderInternal() const;
     entt::entity createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType);
+
+    void onEntityDestroyed(entt::entity entity, SimEntityType type);
+
+    // For batch send to game thread
+    std::unordered_map<ChunkID, std::vector<EntityFullActivateData>> mFullActivatedEntitiesThisFrame;
 
     entt::registry mRegistry;
     TimestampMs mCurrentTickTimestamp = 0;
@@ -62,6 +73,7 @@ private:
     std::unordered_map<entt::entity, SimFullEntityBinding> mFullEntityBindings;
 
     // TODO: Farm plots, ect
+    std::vector<EntityVector> mEntitiesInChunks;
     //std::vector<SimChunkEntityList> mStaticEntitiesInChunks;
 
     // TODO: Strip in release?

@@ -104,7 +104,7 @@ DebugOptions::DebugOptions() :
     mShowDynamicPhysics(false),
     mShowPhysicsActions(false),
     mShowBusinessDebug(true),
-    mShowSettlementDebug(true),
+    mShowSettlementDebug(false),
     mShowEditor(false),
     mShowPaths(true),
     mDebugFishEcosystem(false),

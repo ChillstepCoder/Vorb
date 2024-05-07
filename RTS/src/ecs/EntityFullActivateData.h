@@ -3,12 +3,15 @@
 #include "world/simulation/host/SimEntityType.h"
 
 // Exists when we have a full entity spawned for this entity
-// Allows communication between the sim and full entity
+// Allows communication between the sim -> full entity, one way
 struct SimFullEntityBinding {
-    std::mutex mutex;
-    entt::entity fullEntity = entt::null;
+    // We do not store the full entity here as
+    // it is not needed, this is simply for the
+    // sim entity to push information to the full entity
+    entt::entity simEntity = entt::null;
 };
 
+// Sim -> Full
 struct EntityFullActivateData {
     entt::entity simEntity;
     f32v2 simPosition;
@@ -16,4 +19,11 @@ struct EntityFullActivateData {
     SimFullEntityBinding* binding = nullptr;
 };
 
+// Full -> Sim
+struct EntityFullDeactivateData {
+    entt::entity simEntity;
+    f32v2 simPosition;
+};
+
 typedef std::vector<EntityFullActivateData> ChunkEntityFullActivateDataList;
+typedef std::vector<EntityFullDeactivateData> ChunkEntityFullDeactivateDataList;

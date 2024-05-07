@@ -53,10 +53,10 @@ public:
 
     void incRef() { assert(mTileContainer); mTileContainer->incRef(); }
     void decRef() { assert(mTileContainer); mTileContainer->decRef(); }
-    ui32 getRefCount() const { assert(mTileContainer); return mTileContainer->getRefCount(); }
+    ui32 getRefCount() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
     const ChunkID* getChunkDependencies() const { return mChunkDependencies; }
-    ui32 getChunkDependencyCount() const { return mChunkdDependencyCount; }
+    ui32 getChunkDependencyCount() const { return mChunkDependencyCount; }
     bool hasUnloadedChunkDependencies() const { return mChunkDependenciesSimulating != 0; }
 
     void setBlueprint(std::unique_ptr<BuildingBlueprint>&& bp);
@@ -72,7 +72,7 @@ protected:
     //ui32 mStateArrayIndex = UINT32_MAX;
     BuildingID mId = INVALID_STRUCTURE_ID;
     ChunkID mChunkDependencies[4] = { INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID,INVALID_STRUCTURE_ID };
-    ui8 mChunkdDependencyCount : 4;
+    ui8 mChunkDependencyCount : 4;
     ui8 mChunkDependenciesSimulating : 4;
     ui8 mFloorHeight;
     StructureType mType = StructureType::Building; // TODO: Different types?

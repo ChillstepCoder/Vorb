@@ -399,7 +399,7 @@ void WorldRenderer::renderDebug() {
                 color = color4(1.0f, 0.0f, 0.0f);
             }
             else if (chunkDebugState.mFlags.isBitSet(DebugChunkFlags::IS_NAVMESHING)) {
-                color = color4(1.0f, 0.0f, 1.0f);
+                color = color4(1.0f, 1.0f, 0.0f);
             }
             else {
                 switch (chunkDebugState.mState) {
@@ -414,6 +414,9 @@ void WorldRenderer::renderDebug() {
                         break;
                     case ChunkState::ACTIVE:
                         color = color4(0.0f, 1.0f, 0.0f);
+                        break;
+                    case ChunkState::DESTROYING_ON_SIM:
+                        color = color4(1.0f, 0.0f, 1.0f);
                         break;
                     default:
                         break;

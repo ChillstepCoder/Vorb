@@ -55,7 +55,7 @@ void WorldObjectQuery::queryInternal() {
         }
 
         Chunk* chunk = handle.container->getOwnerChunk();
-        if (chunk->isDataReady()) {
+        if (chunk->isActive()) {
             assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
             if (Building* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(tilePos2D))) {
                 TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(mWorldPos);

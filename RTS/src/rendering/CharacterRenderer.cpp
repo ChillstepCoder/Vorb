@@ -6,6 +6,7 @@
 
 #include "resources/IAssetRepository.h"
 #include "rendering/MaterialShaderDef.h"
+#include "debugging/DebugRenderer.h"
 
 #include "rendering/MaterialShaderRepository.h"
 
@@ -177,6 +178,10 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             characterState.mAnimInstance.update(elapsedSec, variables, modelMatrices);
 
             const f32v3& position = character.mPos;
+
+            // TODO: REMOVE
+            DebugRenderer::drawFilledQuad(position, f32v2(1.0f, 1.0f), color::Red);
+
             const f32 angle = character.mRotation;
             // TODO: Optimize or do on the GPU
             f32m4 transform(1.0f);

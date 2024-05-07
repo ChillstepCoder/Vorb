@@ -53,6 +53,7 @@ public:
     SimWorldAnalytics& getAnalytics() const { return *mAnalytics; }
     RandomGenerator& getSimRandomGenerator() const;
     ui32 getWidthChunks() const;
+    bool isChunkSimulating(ChunkID chunkId) const;
 
     // DEBUGGING
     void debugRender(f32v3 cameraPos) const;

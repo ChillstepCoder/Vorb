@@ -139,7 +139,7 @@ public:
 
     // =========== State  ===========
 	bool isInvalid() const { ASSERT_GAME_THREAD(); return mState == ChunkState::INVALID; }
-	bool isDataReady() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVE; }
+	bool isActive() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVE; }
 
 	void setState(ChunkState state) { mState = state; }
 	
@@ -168,7 +168,7 @@ public:
     }
     // Only game thread can incref but any thread can decref
 	inline void incRef() const { ASSERT_GAME_THREAD();  mTileContainer->incRef(); }
-	inline void decRef() const { mTileContainer->decRef(); }
+	inline void decRef() const { assert(mTileContainer);  mTileContainer->decRef(); }
     ui32 getRefCount() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
 	World& getWorld() const { return *mWorld; }

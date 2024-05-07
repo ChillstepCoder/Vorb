@@ -22,8 +22,11 @@ public:
     virtual void destroyEntity(entt::entity entity) = 0;
 
     void createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkEntityFullActivateDataList& entities);
+    ChunkEntityFullDeactivateDataList deactivateEntitiesForChunk(Chunk& chunk);
 
-    entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mPlayerEntity; }
+    void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
+
+    entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mLocalPlayerEntity; }
     entt::entity getLocalPlayerThreadSafe() const;
     void setLocalPlayer(entt::entity playerEntity);
     f32v3 getLocalPlayerPosition();
@@ -45,6 +48,9 @@ public:
     entt::registry mRegistry;
 
 protected:
+    // TODO: Periodically shrink_to_fit
+    std::vector<EntityVector> mEntitiesByChunk;
+
     mutable std::mutex mPlayerEntityMutex;
-    entt::entity mPlayerEntity = entt::null;
+    entt::entity mLocalPlayerEntity = entt::null;
 };

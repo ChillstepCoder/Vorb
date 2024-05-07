@@ -118,6 +118,13 @@ void PhysicsSystem::update(World& world, entt::registry& registry) {
             cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
         }
         // Copy position to our position component
-        view.get<PositionComponent>(entity).mPosition = pos;
+        PositionComponent& posCmp = view.get<PositionComponent>(entity);
+        posCmp.mPosition = pos;
+        ChunkID newChunkID = world.getChunkIDAtWorldPos(pos);
+
+        if (newChunkID != posCmp.chunkId) [[unlikely]] {
+            world.getECS().onEntityEnterNewChunk(entity, posCmp.chunkId, newChunkID);
+            posCmp.chunkId = newChunkID;
+        }
     };
 }

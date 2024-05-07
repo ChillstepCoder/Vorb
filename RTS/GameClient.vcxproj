@@ -669,6 +669,7 @@
     <ClInclude Include="src\ecs\component\PersonalityComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
+    <ClInclude Include="src\ecs\component\PlayerIdComponent.h" />
     <ClInclude Include="src\ecs\component\PositionComponent.h" />
     <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
     <ClInclude Include="src\ecs\component\ProjectileComponent.h" />

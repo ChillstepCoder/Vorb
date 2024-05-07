@@ -7,7 +7,11 @@
 
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
+#include "world/simulation/host/SimThread.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/FullEntityBindingComponent.h"
+#include "gamethread/GameThreadTasks.h"
+#include "world/IChunkGrid.h"
 
 #include "text/NameManager.h"
 
@@ -17,9 +21,19 @@
 
 #include "options/DebugOptions.h"
 
+
+constexpr ui32 ENTITY_LIST_RESERVE_COUNT = 64;
+// Prevent lists getting too out of control
+constexpr ui32 ENTITY_LIST_DEALLOCATE_COUNT = 512;
+
 SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()) {
     mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
     mSettlementSystem = std::make_unique<SimSettlementSystem>(hostSimContext, *this, mRegistry);
+    mEntitiesInChunks.resize(mWorld.getTotalChunks());
+    // Prevent allocations
+    for (auto& list : mEntitiesInChunks) {
+        list.reserve(ENTITY_LIST_RESERVE_COUNT);
+    }
 }
 
 SimECS::~SimECS() {
@@ -36,6 +50,25 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     mAISystem->tick(mCurrentTickTimestamp, mTimeDelta);
     mSettlementSystem->tick(mCurrentTickTimestamp, mTimeDelta);
 
+    // Send newly activated entities to game thread
+    if (mFullActivatedEntitiesThisFrame.size()) {
+        for (auto& [chunkId, entities] : mFullActivatedEntitiesThisFrame) {
+            GameThreadTasks::getInstance().addGenericTask([this, chunkId, entities = std::move(entities)]() mutable {
+                Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+                if (chunk.isActive()) {
+                    mWorld.getECS().createFullEntitiesFromSimEntities(mWorld.getChunkGrid().getChunk(chunkId), entities);
+                }
+                else {
+                    // Rare case where chunk deactivated when we were trying to send it entities, so we need to send them back
+                    mHostSimContext.tryGetSimThread()->addTask([this, chunkId, entities = std::move(entities)]() mutable {
+                        onEntityFullActivationFailed(chunkId, std::move(entities));
+                    });
+                }
+            });
+        }
+    }
+    mFullActivatedEntitiesThisFrame.clear();
+
     debugRenderInternal();
 }
 
@@ -49,7 +82,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
 
     mRegistry.emplace<SimCharacterComponent>(newPerson, ++mUIDGenerator);
     mRegistry.emplace<SimCharacterGenderComponent>(newPerson, isFemale);
-    mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition, mWorld.getChunkIDAtWorldPos(worldTilePosition));
+    SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition, mWorld.getChunkIDAtWorldPos(worldTilePosition));
     mRegistry.emplace<SimBrainComponent>(newPerson);
     mRegistry.emplace<SimNeedsComponent>(newPerson);
     mRegistry.emplace<AttributesComponent>(newPerson).init(
@@ -64,7 +97,10 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
     nameCmp.firstName = NameManager::getRandomFirstName(gen, isFemale);
     nameCmp.lastName = NameManager::getRandomLastName(gen);
 
+    mEntitiesInChunks[posCmp.chunk].push_back(newPerson);
+
     dispatchEntityCreated(SimECSEvent{ newPerson, SimEntityType::Person });
+
     return newPerson;
 }
 
@@ -133,23 +169,75 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
         mRegistry.remove<CharacterGroupFollowerComponent>(follower);
     }
 
-    dispatchEntityDestroyed(SimECSEvent{ group, SimEntityType::Group });
+    onEntityDestroyed(group, SimEntityType::Group);
     mRegistry.remove<CharacterGroupLeaderComponent>(groupCmp.leader);
     mRegistry.destroy(group);
 }
 
 ChunkEntityFullActivateDataList SimECS::simThreadOnActivateChunk(ChunkID chunkId) {
-    // TODO: Handle other entities too, not just AI
-    ChunkEntityFullActivateDataList list = mAISystem->simThreadOnActivateChunk(chunkId);
+    ASSERT_SIM_THREAD();
 
-    // Create bindings
-    for (auto& it : list) {
-        SimFullEntityBinding& binding = mFullEntityBindings[it.simEntity];
-        it.binding = &binding;
-        mRegistry.emplace<FullEntityBindingComponent>(it.simEntity).binding = &binding;
+    ChunkEntityFullActivateDataList rv;
+    EntityVector& list = mEntitiesInChunks[chunkId];
+    rv.resize(list.size());
+
+    for (size_t i = 0; i < list.size(); ++i) {
+        rv[i] = onFullActivateEntity(list[i]);
     }
 
-    return list;
+    // Free memory
+    list.clear();
+    if (list.capacity() > ENTITY_LIST_DEALLOCATE_COUNT) {
+        list.shrink_to_fit();
+        list.reserve(ENTITY_LIST_RESERVE_COUNT);
+    }
+
+    return rv;
+}
+
+void SimECS::simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities) {
+    ASSERT_SIM_THREAD();
+    EntityVector& list = mEntitiesInChunks[chunkId];
+    list.reserve(list.size() + deactivateEntities.size());
+    for (const EntityFullDeactivateData& dd : deactivateEntities) {
+        SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(dd.simEntity);
+        posCmp.position = dd.simPosition;
+        posCmp.chunk = chunkId;
+        list.emplace_back(dd.simEntity);
+
+        // Remove binding
+        auto&& it = mFullEntityBindings.find(dd.simEntity);
+        mFullEntityBindings.erase(it);
+        mRegistry.remove<FullEntityBindingComponent>(dd.simEntity);
+    }
+}
+
+void SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
+    PROFILE_FUNCTION();
+
+    EntityVector& prevEntityList = mEntitiesInChunks[prevChunk];
+    bool found = false;
+    for (size_t i = 0; i < prevEntityList.size(); ++i) {
+        if (prevEntityList[i] == entity) {
+            prevEntityList[i] = prevEntityList.back();
+            prevEntityList.pop_back();
+            // Free memory when needed
+            if (prevEntityList.capacity() > prevEntityList.size() + ENTITY_LIST_RESERVE_COUNT) [[unlikely]] {
+                prevEntityList.shrink_to_fit();
+                prevEntityList.reserve(ENTITY_LIST_RESERVE_COUNT);
+            }
+            found = true;
+            break;
+        }
+    }
+    assert(found);
+
+    if (mHostSimContext.isChunkSimulating(newChunk)) {
+        mEntitiesInChunks[newChunk].emplace_back(entity);
+    }
+    else {
+        mFullActivatedEntitiesThisFrame[newChunk].emplace_back(onFullActivateEntity(entity));
+    }
 }
 
 void SimECS::debugRender(f32v3 cameraPos) const {
@@ -160,6 +248,48 @@ void SimECS::debugRender(f32v3 cameraPos) const {
     else {
         std::lock_guard lock(mDebugRenderMutex);
         mDebugCameraPos.x = FLT_MAX;
+    }
+}
+
+EntityFullActivateData SimECS::onFullActivateEntity(entt::entity entity) {
+    EntityFullActivateData rv;
+    rv.entityType = mRegistry.get<SimEntityTypeComponent>(entity).type;
+    rv.simPosition = mRegistry.get<SimPositionComponent>(entity).position;
+    rv.simEntity = entity;
+    // We erase our sim position while fully activated
+    mRegistry.remove<SimPositionComponent>(entity);
+
+    // Create binding
+    SimFullEntityBinding& binding = mFullEntityBindings[entity];
+    rv.binding = &binding;
+    binding.simEntity = entity;
+    mRegistry.emplace<FullEntityBindingComponent>(entity).binding = &binding;
+
+    return rv;
+}
+
+void SimECS::onEntityFullActivationFailed(ChunkID chunkId, ChunkEntityFullActivateDataList&& activateData) {
+    ASSERT_SIM_THREAD();
+    if (mHostSimContext.isChunkSimulating(chunkId)) {
+        ChunkEntityFullDeactivateDataList list;
+        list.resize(activateData.size());
+        for (size_t i = 0; i < activateData.size(); ++i) {
+            list[i].simEntity = activateData[i].simEntity;
+            list[i].simPosition = activateData[i].simPosition;
+        }
+        simThreadOnFullDeactivateEntities(chunkId, list);
+    }
+    else {
+        // Fail again! either due to delay or due to chunk immediately reactivating, just keep ping ponging back till it owrks
+        ChunkEntityFullActivateDataList& list = mFullActivatedEntitiesThisFrame[chunkId];
+        if (list.empty()) {
+            list.swap(activateData);
+        }
+        else {
+            // Append
+            list.reserve(list.size() + activateData.size());
+            list.insert(list.end(), activateData.begin(), activateData.end());
+        }
     }
 }
 
@@ -227,5 +357,25 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
     groupCmp.moveSpeed = avgMoveSpeed;
     groupCmp.nextRefreshTime = mCurrentTickTimestamp + CHARACTER_GROUP_DEFAULT_REFRESH_INTERVAL_MS;
 
+    mEntitiesInChunks[leaderPos.chunk].push_back(groupEntity);
+
     return groupEntity;
+}
+
+void SimECS::onEntityDestroyed(entt::entity entity, SimEntityType type) {
+    SimPositionComponent& p = mRegistry.get<SimPositionComponent>(entity);
+    EntityVector& entityList = mEntitiesInChunks[p.chunk];
+
+    assert(mRegistry.get<SimEntityTypeComponent>(entity).type == type);
+
+    for (size_t i = 0; i < entityList.size(); ++i) {
+        if (entityList[i] == entity) {
+            entityList[i] = entityList.back();
+            entityList.pop_back();
+            return;
+        }
+    }
+    panic("Failed to find entity {} of type {} for destroy in SimAISystem", (ui32)entity, (ui32)type);
+
+    dispatchEntityDestroyed(SimECSEvent{ entity, type });
 }

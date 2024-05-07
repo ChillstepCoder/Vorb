@@ -138,7 +138,7 @@ Building* BuildingGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorH
         // Chunks increment our refcount while they are loaded
         newStructure->mChunkDependencies[chunkCount++] = c->getChunkID();
     }
-    newStructure->mChunkdDependencyCount = chunkCount;
+    newStructure->mChunkDependencyCount = chunkCount;
     newStructure->mChunkDependenciesSimulating = 0;
     assert(floorHeight < UINT8_MAX); 
     newStructure->mFloorHeight = floorHeight;
@@ -151,7 +151,6 @@ Building* BuildingGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorH
             ChunkBuildingData& structureData = mChunkStructureData[dep];
             structureData.containedStructures.emplace_back(newStructureId);
             if (structureData.isSimulated) {
-                newStructure->mState = StructureState::SIM;
                 ++newStructure->mChunkDependenciesSimulating;
             }
         }
@@ -233,6 +232,7 @@ void BuildingGrid::initEventHandlers() {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
             Building* structure = it->second.get();
+            assert(structure->mChunkDependenciesSimulating > 0);
             if (--structure->mChunkDependenciesSimulating == 0) {
                 if (structure->mState == StructureState::DEACTIVATING) {
                     removeStructureFromDeactivateList(structure);
@@ -258,6 +258,7 @@ void BuildingGrid::initEventHandlers() {
             auto&& it = mStructures.find(structureID);
             assert(it != mStructures.end());
             Building* structure = it->second.get();
+            assert(structure->mChunkDependenciesSimulating < 4);
             ++structure->mChunkDependenciesSimulating;
             if (structure->mState != StructureState::DEACTIVATING) {
                 structure->mState = StructureState::DEACTIVATING;

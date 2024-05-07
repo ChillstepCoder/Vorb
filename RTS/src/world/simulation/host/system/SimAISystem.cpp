@@ -10,37 +10,11 @@
 
 #include "math/Random.h"
 
+#include "debugging/DebugRenderer.h"
+
 SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
     mWorld(simContext.getWorld()), mSimContext(simContext), mRegistry(registry), mECS(ecs) {
     mWorldWidthChunks = mWorld.getWidthChunks();
-    mAIEntitiesInChunks.resize(SQ(mWorldWidthChunks));
-
-    // Prevent allocations
-    constexpr ui32 LIST_RESERVE_COUNT = 64;
-    for (auto& list : mAIEntitiesInChunks) {
-        list.reserve(LIST_RESERVE_COUNT);
-    }
-    
-    ecs.registerSimECSListeners(mECSEventListeners);
-    ecs.addEntityCreatedListener(mECSEventListeners, [this](SimECSEvent e) {
-        if (e.type != SimEntityType::Settlement) [[likely]] {
-            SimPositionComponent& p = mRegistry.get<SimPositionComponent>(e.entity);
-            mAIEntitiesInChunks[p.chunk].push_back(e.entity);
-        }
-    });
-
-    ecs.addEntityDestroyedListener(mECSEventListeners, [this](SimECSEvent e) {
-        SimPositionComponent& p = mRegistry.get<SimPositionComponent>(e.entity);
-        SimChunkEntityList& entityList = mAIEntitiesInChunks[p.chunk];
-        for (size_t i = 0; i < entityList.size(); ++i) {
-            if (entityList[i] == e.entity) {
-                entityList[i] = entityList.back();
-                entityList.pop_back();
-                return;
-            }
-        }
-        panic("Failed to find entity {} of type {} for destroy in SimAISystem", (ui32)e.entity, (ui32)e.type);
-    });
 }
 
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
@@ -66,6 +40,7 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
                 // TODO: REMOVE
                 const f32v2 newPos = pos.position + f32v2(gen.getRandomFloatSigned() * 15.0f, gen.getRandomFloatSigned() * 15.0f);
                 setEntityPosition(entity, newPos);
+                DebugRenderer::drawWireQuadThreadSafe(f32v3(newPos.x, newPos.y, 5.0f), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), 30);
             }
         }
     }
@@ -81,30 +56,8 @@ void SimAISystem::setEntityPosition(entt::entity e, f32v2 newPosition) {
     ChunkID prevChunk = posCmp.chunk;
     posCmp.chunk = ui32(newPosition.y / CHUNK_WIDTH) * mWorldWidthChunks + ui32(newPosition.x / CHUNK_WIDTH);
     if (prevChunk != posCmp.chunk) [[unlikely]] {
-        onEntityEnterNewChunk(e, prevChunk, posCmp.chunk);
+        mECS.onEntityEnterNewChunk(e, prevChunk, posCmp.chunk);
     }
-}
-
-ChunkEntityFullActivateDataList SimAISystem::simThreadOnActivateChunk(ChunkID chunk) {
-    ASSERT_SIM_THREAD();
-
-    ChunkEntityFullActivateDataList rv;
-    SimChunkEntityList& list = mAIEntitiesInChunks[chunk];
-    rv.resize(list.size());
-
-    for (size_t i = 0; i < list.size(); ++i) {
-        rv[i].entityType = mRegistry.get<SimEntityTypeComponent>(list[i]).type;
-        rv[i].simPosition = mRegistry.get<SimPositionComponent>(list[i]).position;
-        rv[i].simEntity = list[i];
-        // We erase our sim position while fully activated
-        mRegistry.remove<SimPositionComponent>(list[i]);
-    }
-
-    // Free memory
-    list.clear();
-    list.shrink_to_fit();
-
-    return rv;
 }
 
 void SimAISystem::updateCharacterGroups() {
@@ -180,21 +133,4 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
 
     // In sim, we are always just stuck to the leader in a close line regardless of formation, for cheap calculation
     setEntityPosition(entity, groupPosition.getPosition() - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f));
-}
-
-void SimAISystem::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
-    PROFILE_FUNCTION();
-
-    SimChunkEntityList& prevEntityList = mAIEntitiesInChunks[prevChunk];
-    bool found = false;
-    for (size_t i = 0; i < prevEntityList.size(); ++i) {
-        if (prevEntityList[i] == entity) {
-            prevEntityList[i] = prevEntityList.back();
-            prevEntityList.pop_back();
-            found = true;
-            break;
-        }
-    }
-    assert(found);
-    mAIEntitiesInChunks[newChunk].emplace_back(entity);
 }

@@ -30,6 +30,12 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
 
     // Char control needs further initialization post physics load
     CharacterControlComponent* charControlCmp = nullptr;
+
+    // All entities have a position
+    auto& positionCmp = registry.get_or_emplace<PositionComponent>(newEntity);
+    positionCmp.mPosition = position;
+    positionCmp.chunkId = world.getChunkIDAtWorldPos(position);
+
     // Initialize components
     // TODO: Use groups
     for (const ComponentDefinitionInstance& defInst : edef.components) {
@@ -92,7 +98,6 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 assert(defInst.componentDef);
                 PhysicsComponentDef& cdef = static_cast<PhysicsComponentDef&>(*defInst.componentDef);
                 auto& physics = registry.emplace<PhysicsComponent>(newEntity);
-                auto& positionCmp = registry.get_or_emplace<PositionComponent>(newEntity);
                 RigidBodyRotationType rotType = RigidBodyRotationType::FULL;
                 if (cdef.disableXyzRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE;
@@ -104,7 +109,6 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.colliderShape, cdef.halfExtents, cdef.massKg, CollisionGroup::CHARACTER, rotType);
                 physics.mRigidBody = rbp.first;
                 physics.mZPosOffset = -rbp.second;
-                positionCmp.mPosition = position;
                 break;
             }
             case ComponentType::Profession: {

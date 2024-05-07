@@ -52,6 +52,7 @@
 
 #include <entt/entt.hpp>
 constexpr entt::entity INVALID_ENTITY = (entt::null);
+typedef std::vector<entt::entity> EntityVector;
 
 // Types
 #include "types/IdTypes.h"

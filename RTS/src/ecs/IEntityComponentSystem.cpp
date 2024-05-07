@@ -12,6 +12,7 @@
 const float DEAD_COLOR_MULT = 0.4f;
 
 IEntityComponentSystem::IEntityComponentSystem(World& world) : mWorld(world) {
+	mEntitiesByChunk.resize(world.getTotalChunks());
 }
 
 IEntityComponentSystem::~IEntityComponentSystem() {
@@ -69,27 +70,59 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, con
 				break;
 
 		}
-		assert(activateData.binding);
+        assert(activateData.binding);
+        //activateData.binding->fullEntity = newEntity;
         mRegistry.emplace<FullEntityBindingComponent>(newEntity).binding = activateData.binding;
 		static_assert(e_count(SimEntityType) == 4);
 	}
 }
 
+ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForChunk(Chunk& chunk) {
+    ASSERT_GAME_THREAD();
+	EntityVector& chunkEntities = mEntitiesByChunk[chunk.getChunkID()];
+	ChunkEntityFullDeactivateDataList rv;
+	rv.reserve(chunkEntities.size());
+
+	std::vector<entt::entity> unboundEntities;
+
+	for (entt::entity e : chunkEntities) {
+		// Ignore things with no binding, such as players
+		if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(e)) [[likely]] {
+            EntityFullDeactivateData& ddata = rv.emplace_back();
+            ddata.simEntity = bindingCmp->binding->simEntity;
+			ddata.simPosition = mRegistry.get<PositionComponent>(e).mPosition;
+			assert(mRegistry.get<PositionComponent>(e).chunkId == chunk.getChunkID());
+			// TODO: Send anything else?
+			destroyEntity(e);
+		}
+		else {
+			unboundEntities.emplace_back(e);
+		}
+	}
+	chunkEntities.swap(unboundEntities);
+	chunkEntities.shrink_to_fit();
+	return rv;
+}
+
+void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
+
+}
+
 entt::entity IEntityComponentSystem::getLocalPlayerThreadSafe() const {
 	std::lock_guard lock(mPlayerEntityMutex);
-    return mPlayerEntity;
+    return mLocalPlayerEntity;
 }
 
 void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
 {
     ASSERT_GAME_THREAD();
-	if (mPlayerEntity != entt::null) {
-		mRegistry.remove<PlayerControlComponent>(mPlayerEntity);
+	if (mLocalPlayerEntity != entt::null) {
+		mRegistry.remove<PlayerControlComponent>(mLocalPlayerEntity);
 	}
     mRegistry.emplace<PlayerControlComponent>(playerEntity);
 
 	std::lock_guard lock(mPlayerEntityMutex);
-    mPlayerEntity = playerEntity;
+    mLocalPlayerEntity = playerEntity;
 }
 
 f32v3 IEntityComponentSystem::getLocalPlayerPosition() {

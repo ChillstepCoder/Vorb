@@ -6,12 +6,14 @@
 entt::entity CliEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
+    mEntitiesByChunk[mRegistry.get<PositionComponent>(newEntity).chunkId].emplace_back(newEntity);
     return newEntity;
 }
 
 entt::entity CliEntityComponentSystem::createEntityFromSrv(entt::entity srvEntity, const f32v3& position, StrToken typeToken) {
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     assert(mSrvToCliEntityLookup.find(srvEntity) == mSrvToCliEntityLookup.end());
+    mEntitiesByChunk[mRegistry.get<PositionComponent>(newEntity).chunkId].emplace_back(newEntity);
     mSrvToCliEntityLookup[srvEntity] = newEntity;
     return newEntity;
 }

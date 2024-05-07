@@ -96,6 +96,10 @@ ui32 HostSimContext::getWidthChunks() const {
     return mWorld.getChunkGrid().getWidthChunks();
 }
 
+bool HostSimContext::isChunkSimulating(ChunkID chunkId) const {
+    return mSimulatingChunks.getBit(chunkId);
+}
+
 void HostSimContext::debugRender(f32v3 cameraPos) const {
     mSimECS->debugRender(cameraPos);
 }
@@ -107,24 +111,27 @@ void HostSimContext::initEvents() {
     //   Sim -> Game entity handshake process
     /*   CHUNK ACTIVATION
          1. Main thread activates chunk
-         2. Sim thread listens to event
+         2. Sim context listens to event
          - Incref chunk so it cant change
          - Add queued sim thread message for ActivateChunk
          3. SIM THREAD PROCESS ActivateChunk
+         - Create all SimFullEntityBinding 
          - Send message with all entities to be created
          4. Game thread process ENTITY_BATCH
          - Create all entities
+         - Finalize SimFullEntityBinding
          - Decref chunks
 
          CHUNK DEACTIVATION
          1. Main thread deactivates chunk and destroys
-         2. Sim thread listens to event
+         2. Sim context listens to event
          - Add queued sim thread message for DeactivateChunk
-         - Set atomic flag on chunk "DO_NOT_ACTIVATE"
+         - Set atomic state on chunk "DESTROYING_ON_SIM"
          - Remove all main thread entities
          3. SIM THREAD PROCESS
          - Reactivate sim controllers
-         - Unset atomic flag on chunk DO_NOT_ACTIVATE
+         - Unset atomic state on chunk DESTROYING_ON_SIM
+         - Delete binding, handle any state that was unconsumed by the main thread
 
          ENTITY ENTER FULL CHUNK
          1. On sim entity enter full chunk
@@ -139,11 +146,17 @@ void HostSimContext::initEvents() {
          3. Sim thread checks if chunk still simulated
          - Is valid? create entity
          - Not valid? send create entity message back to game thread
+
+          BINDING LOGIC
+          SimFullEntityBinding is what allows the sim thread to push state to the game thread
+          This is a one way relationship, no need for mutex if we use queue
     */
 
     chunkGrid.addReadyListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
+
+        // Tells main thread not to deactivate until we are done
         chunk.incRef();
         mSimThread->addTask([this, &chunk]() {
             mSimulatingChunks.clearBit(chunk.getChunkID());
@@ -154,13 +167,17 @@ void HostSimContext::initEvents() {
             });
         });
     });
+
     chunkGrid.addDeactivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
-        // Tells main thread not to deactivate until we are done
+        // Tells main thread not to activate until we are done
         chunk.setState(ChunkState::DESTROYING_ON_SIM);
-        mSimThread->addTask([this, &chunk]() {
+        ChunkEntityFullDeactivateDataList deactivateList = mWorld.getECS().deactivateEntitiesForChunk(chunk);
+
+        mSimThread->addTask([this, &chunk, deactivateList = std::move(deactivateList)]() {
             mSimulatingChunks.setBit(chunk.getChunkID());
+            mSimECS->simThreadOnFullDeactivateEntities(chunk.getChunkID(), deactivateList);
 
             // Allow main thread to reactivate this chunk
             chunk.setState(ChunkState::INVALID);
