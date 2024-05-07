@@ -674,7 +674,7 @@ void WorldEditorPanel::updateTileEdit() {
             GameThreadTasks::getInstance().addGenericTask([taskData]() {
                 ChunkID chunkId = std::get<0>(*taskData);
                 Chunk& chunk = std::get<3>(*taskData)->getChunkGrid().getChunk(chunkId);
-                if (chunk.isActive()) {
+                if (chunk.isActivated()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
                     const TileDef& data = TileRepository::get().getLoadedOrUnloadedAsset(std::get<2>(*taskData));
                     TileContainer& tileContainer = *chunk.getTileContainer();

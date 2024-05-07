@@ -88,7 +88,7 @@ entt::entity FishEcosystem::getClosestIdleFishToPoint(f32v3 point, f32 maxRange)
     for (int i = 0; i < 4; ++i) {
         assert(closestChunks[i]);
         const Chunk& chunk = *closestChunks[i];
-        if (!chunk.isActive()) {
+        if (!chunk.isActivated()) {
             continue;
         }
         auto&& it = mActiveFishChunks.find(chunk.getChunkID());
@@ -171,7 +171,7 @@ void FishEcosystem::initEventHandlers() {
     chunkGrid.registerChunkGridListeners(mChunkGridEventListeners);
     // We dont use the ready listener as IChunkGrid will directly call initChunkFish
 
-    chunkGrid.addDeactivateListener(mChunkGridEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addDeactivatedListener(mChunkGridEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         disposeChunkFish(evnt.chunk);
     });

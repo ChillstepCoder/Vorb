@@ -12,8 +12,8 @@ public:
 
 enum class CHUNK_GRID_EVENT_TYPE {
     BeginActivate,
-    Ready,
-    Deactivate
+    Activated,
+    Deactivated
 };
 EVENT_DISPATCHER_TYPE(ChunkGrid, CHUNK_GRID_EVENT_TYPE, ChunkGridEvent&);
 

@@ -219,7 +219,7 @@ Building* BuildingGrid::tryGetBuildingAtWorldPos(TileCoord worldPos) const {
 void BuildingGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
-    chunkGrid.addReadyListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addActivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
         ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];
@@ -243,7 +243,7 @@ void BuildingGrid::initEventHandlers() {
         }
     });
 
-    chunkGrid.addDeactivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addDeactivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         Chunk& chunk = evnt.chunk;
         ASSERT_GAME_THREAD();
         // Move structures to simuation layer

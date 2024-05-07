@@ -88,9 +88,9 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 // See TileContainer::tryAquireThreadSafe for why we need this lock
                 chunk.mTileContainer->mLifetimeMutex.unlock(); // UNLOCK
                 // Release height and notify only if we were ever valid
-                if (chunk.mState != ChunkState::INVALID) {
+                if (chunk.mState != ChunkState::DEACTIVATED) {
                     ChunkGridEvent evnt(chunk);
-                    dispatchDeactivate(evnt);
+                    dispatchDeactivated(evnt);
                 }
                 chunk.dispose();
                 mWantDeactivateChunks[i] = mWantDeactivateChunks.back();
@@ -104,9 +104,9 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         else {
             if (chunk.getRefCount() == 0) {
                 // Release height and notify only if we were ever valid
-                if (chunk.mState != ChunkState::INVALID) {
+                if (chunk.mState != ChunkState::DEACTIVATED) {
                     ChunkGridEvent evnt(chunk);
-                    dispatchDeactivate(evnt);
+                    dispatchDeactivated(evnt);
                 }
                 chunk.dispose();
                 mWantDeactivateChunks[i] = mWantDeactivateChunks.back();
@@ -279,7 +279,7 @@ void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modi
     std::vector<std::pair<TileIndex, f32>> editData;
     for (auto&& it : tilePositionsNeedingUpdate) {
         Chunk& chunk = getChunk(it.first);
-        if (chunk.isActive()) {
+        if (chunk.isActivated()) {
             editData.reserve(it.second.size());
             for (auto&& pos : it.second) {
                 const ui32 x = (ui32)pos.x & (CHUNK_WIDTH - 1); // Fast modulus
@@ -509,7 +509,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 
     ChunkState state = chunk.mState;
     switch (state) {
-        case ChunkState::INVALID: {
+        case ChunkState::DEACTIVATED: {
             // Begin load
             chunk.beginActivate();
             addChunkToActivatingList(chunk);
@@ -526,7 +526,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY:
             panic("Tried to re-load chunk already being loaded (mesh)");
             break;
-        case ChunkState::ACTIVE:
+        case ChunkState::ACTIVATED:
             // If we are already loaded, just insert us back into the active list
             addChunkToActiveList(chunk);
             break;
@@ -543,12 +543,12 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 void IChunkGrid::onChunkReady(Chunk& chunk) {
     assert(chunk.getTileContainer()->getState() == TileContainerState::READY);
 
-    chunk.mState = ChunkState::ACTIVE;
+    chunk.mState = ChunkState::ACTIVATED;
     addChunkToActiveList(chunk);
 
     // Notify observers
     ChunkGridEvent evnt(chunk);
-    dispatchReady(evnt);
+    dispatchActivated(evnt);
     TileContainerEvent event{ chunk.mTileContainer, {} };
-    mWorld->getTileContainerRepository().dispatchReady(event);
+    mWorld->getTileContainerRepository().dispatchActivated(event);
 }

@@ -69,7 +69,7 @@ void Chunk::freeData() {
 
 void Chunk::dispose() {
     mFlags = 0;
-    mState = ChunkState::INVALID;
+    mState = ChunkState::DEACTIVATED;
     freeData();
 }
 
@@ -88,7 +88,7 @@ TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
         return TileHandle(mTileContainer, index - 1);
     }
     const Chunk& leftNeighbor = getLeftNeighbor();
-    if (leftNeighbor.isActive()) {
+    if (leftNeighbor.isActivated()) {
         return TileHandle(leftNeighbor.getTileContainer(), index + CHUNK_WIDTH - 1);
     }
 	return TileHandle();
@@ -101,7 +101,7 @@ TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
     }
 
     const Chunk& rightNeighbor = getRightNeighbor();
-    if (rightNeighbor.isActive()) {
+    if (rightNeighbor.isActivated()) {
         return TileHandle(rightNeighbor.getTileContainer(), index - CHUNK_WIDTH + 1);
     }
     return TileHandle();
@@ -114,7 +114,7 @@ TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
     }
 
     Chunk& topNeighbor = getTopNeighbor();
-	if (topNeighbor.isActive()) {
+	if (topNeighbor.isActivated()) {
         return TileHandle(topNeighbor.getTileContainer(), index + CHUNK_WIDTH - CHUNK_SIZE);
 	}
     return TileHandle();
@@ -127,7 +127,7 @@ TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
     }
 
     Chunk& bottomNeighbor = getBottomNeighbor();
-    if (bottomNeighbor.isActive()) {
+    if (bottomNeighbor.isActivated()) {
         return TileHandle(bottomNeighbor.getTileContainer(), index - CHUNK_WIDTH + CHUNK_SIZE);
     }
 	return TileHandle();

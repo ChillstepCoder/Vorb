@@ -8,7 +8,7 @@ class TileContainer;
 
 enum class TileContainerEventType {
     LoadFinished,
-    Ready,
+    Activated,
     EditTiles,
     TileDamaged,
     TileDestroyed,

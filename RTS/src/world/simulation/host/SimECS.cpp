@@ -55,7 +55,7 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
         for (auto& [chunkId, entities] : mFullActivatedEntitiesThisFrame) {
             GameThreadTasks::getInstance().addGenericTask([this, chunkId, entities = std::move(entities)]() mutable {
                 Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
-                if (chunk.isActive()) {
+                if (chunk.isActivated()) {
                     mWorld.getECS().createFullEntitiesFromSimEntities(mWorld.getChunkGrid().getChunk(chunkId), entities);
                 }
                 else {

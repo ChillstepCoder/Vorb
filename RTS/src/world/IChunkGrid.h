@@ -55,8 +55,8 @@ public:
 
     // Events
     EVENT_LISTENER_FUNCS(ChunkGrid, BeginActivate, CHUNK_GRID_EVENT_TYPE::BeginActivate, ChunkGridEvent&);
-    EVENT_LISTENER_FUNCS(ChunkGrid, Ready, CHUNK_GRID_EVENT_TYPE::Ready, ChunkGridEvent&);
-    EVENT_LISTENER_FUNCS(ChunkGrid, Deactivate, CHUNK_GRID_EVENT_TYPE::Deactivate, ChunkGridEvent&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, Activated, CHUNK_GRID_EVENT_TYPE::Activated, ChunkGridEvent&);
+    EVENT_LISTENER_FUNCS(ChunkGrid, Deactivated, CHUNK_GRID_EVENT_TYPE::Deactivated, ChunkGridEvent&);
 
     void setWorldAndAllocateChunks(World& world);
 protected:

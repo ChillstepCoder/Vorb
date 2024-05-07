@@ -138,8 +138,8 @@ public:
 	ItemStack getItemStackOnGround(TileIndex pos);
 
     // =========== State  ===========
-	bool isInvalid() const { ASSERT_GAME_THREAD(); return mState == ChunkState::INVALID; }
-	bool isActive() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVE; }
+	bool isInvalid() const { ASSERT_GAME_THREAD(); return mState == ChunkState::DEACTIVATED; }
+	bool isActivated() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVATED; }
 
 	void setState(ChunkState state) { mState = state; }
 	
@@ -180,7 +180,7 @@ private:
     // =========== Members ===========
 	ChunkID mChunkId;
 	i32AABB3 mAABB = i32AABB3(0);
-	std::atomic<ChunkState> mState = ChunkState::INVALID;
+	std::atomic<ChunkState> mState = ChunkState::DEACTIVATED;
 	BitFlags<ChunkFlags> mFlags;
 
 	World* mWorld = nullptr;

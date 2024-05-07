@@ -12,10 +12,10 @@
 GrassMeshManager::GrassMeshManager(World& world) : mWorld(world) {
     // TODO: LISTENERS!
     LOG_CRITICAL("Missing event listeners in GrassMeshManager::GrassMeshManager");
-    world.getChunkGrid().addReadyListener([this](const ChunkGridEvent& evnt) {
+    world.getChunkGrid().addActivatedListener([this](const ChunkGridEvent& evnt) {
         mChunkTrackChanges.enqueue(std::make_pair(evnt.chunk.getChunkID(), true));
     });
-    world.getChunkGrid().addDeactivateListener([this](const ChunkGridEvent& evnt) {
+    world.getChunkGrid().addDeactivatedListener([this](const ChunkGridEvent& evnt) {
         mChunkTrackChanges.enqueue(std::make_pair(evnt.chunk.getChunkID(), false));
     });
 }

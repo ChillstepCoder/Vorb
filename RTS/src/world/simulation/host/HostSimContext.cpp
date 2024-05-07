@@ -152,7 +152,7 @@ void HostSimContext::initEvents() {
           This is a one way relationship, no need for mutex if we use queue
     */
 
-    chunkGrid.addReadyListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addActivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
 
@@ -168,7 +168,7 @@ void HostSimContext::initEvents() {
         });
     });
 
-    chunkGrid.addDeactivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addDeactivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
         // Tells main thread not to activate until we are done
@@ -180,7 +180,7 @@ void HostSimContext::initEvents() {
             mSimECS->simThreadOnFullDeactivateEntities(chunk.getChunkID(), deactivateList);
 
             // Allow main thread to reactivate this chunk
-            chunk.setState(ChunkState::INVALID);
+            chunk.setState(ChunkState::DEACTIVATED);
         });
     });
 }

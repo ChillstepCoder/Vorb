@@ -403,7 +403,7 @@ void WorldRenderer::renderDebug() {
             }
             else {
                 switch (chunkDebugState.mState) {
-                    case ChunkState::INVALID:
+                    case ChunkState::DEACTIVATED:
                         color = color4(0.5f, 0.5f, 0.5f);
                         break;
                     case ChunkState::LOADING_TILES:
@@ -412,7 +412,7 @@ void WorldRenderer::renderDebug() {
                     case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY:
                         color = color4(0.0f, 0.5f, 1.0f);
                         break;
-                    case ChunkState::ACTIVE:
+                    case ChunkState::ACTIVATED:
                         color = color4(0.0f, 1.0f, 0.0f);
                         break;
                     case ChunkState::DESTROYING_ON_SIM:

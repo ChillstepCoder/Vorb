@@ -1,12 +1,12 @@
 #pragma once
 
 enum class ChunkState : ui8 {
-    INVALID,
-    //WAITING_STRUCTURES,
+    DEACTIVATED,
+    //WAITING_BUILDINGS,
     LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
     DORMANT, // LOD simulated but with visible LOD tile data
     LOADING_MESH_PHYSICS_NAV_VISIBILITY,
-    ACTIVE, // Fully simulated
+    ACTIVATED, // Fully simulated
     DESTROYING_ON_SIM, // Being destroyed on simulation thread, do nothing until it is finished
     COUNT
 };

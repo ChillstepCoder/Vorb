@@ -337,7 +337,7 @@ TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     ASSERT_GAME_THREAD();
     i32v2 worldPos2D = worldPos;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos2D);
-    if (chunk->isActive()) {
+    if (chunk->isActivated()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
@@ -361,7 +361,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v3& worldPos) const {
 TileHandle World::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     TileHandle handle;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
-    if (chunk->isActive()) {
+    if (chunk->isActivated()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         return chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
@@ -372,7 +372,7 @@ TileHandle World::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
 TileHandle World::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     TileHandle handle;
     const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
-    if (chunk->isActive()) {
+    if (chunk->isActivated()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         return chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
