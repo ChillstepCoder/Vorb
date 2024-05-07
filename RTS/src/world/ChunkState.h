@@ -2,6 +2,7 @@
 
 enum class ChunkState : ui8 {
     INVALID,
+    //WAITING_STRUCTURES,
     LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
     DORMANT, // LOD simulated but with visible LOD tile data
     LOADING_MESH_PHYSICS_NAV_VISIBILITY,

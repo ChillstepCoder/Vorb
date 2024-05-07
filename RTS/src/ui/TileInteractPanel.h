@@ -50,7 +50,7 @@ public:
 
     WorldObjectQueryPtr& getWorldObjects() { return mWorldObjectQuery; }
 
-    Building* getSelectedStructure() const { return mSelectedStructure; }
+    Building* getSelectedStructure() const { return mSelectedBuilding; }
     RoomNodeID getSelectedRoomID() const { return mSelectedRoomID; }
     const RoomGenNode* tryGetSelectedRoom() const;
     Building* tryGetSelectedBuilding() const;
@@ -63,7 +63,7 @@ private:
     SDL_Window* mWindow;
     WorldObjectQueryPtr mWorldObjectQuery;
     UIInteractMenuState mState = UIInteractMenuState::SELECT_OBJECT;
-    Building* mSelectedStructure = nullptr;
+    Building* mSelectedBuilding = nullptr;
     RoomNodeID mSelectedRoomID = INVALID_ROOM_ID;
     TileHandle mSelectedTileHandle;
     World& mWorld;

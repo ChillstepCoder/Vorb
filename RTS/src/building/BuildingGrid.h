@@ -9,11 +9,11 @@ class World;
 class BuildingBlueprint;
 class Building;
 
-typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> StructureMap;
+typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> BuildingMap;
 struct ChunkBuildingData {
     bool isSimulated = true;
-    std::vector<BuildingID> containedStructures;
-    std::unique_ptr<BuildingID[]> dTileStructures = nullptr;
+    std::vector<BuildingID> containedBuildings;
+    std::unique_ptr<BuildingID[]> dTileBuildings = nullptr;
 };
 class BuildingGrid {
 public:
@@ -29,19 +29,19 @@ public:
     void debugRender();
 
     // TODO: Structure could be destroyed after return! We need a structureHandle?
-    Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
-    const StructureMap& getStructures() const { ASSERT_GAME_THREAD(); return mStructures; }
-    const Building& getStructure(BuildingID id) const { ASSERT_GAME_THREAD(); return *mStructures.at(id); }
+    Building* tryGetBuildingAtWorldPos(TileCoord worldPos) const;
+    const BuildingMap& getBuildings() const { ASSERT_GAME_THREAD(); return mBuildings; }
+    const Building& getBuilding(BuildingID id) const { ASSERT_GAME_THREAD(); return *mBuildings.at(id); }
 
 private:
     void initEventHandlers();
-    void removeStructureFromDeactivateList(Building* structure);
+    void removeBuildingFromDeactivateList(Building* building);
 
     World& mWorld;
     mutable std::shared_mutex mMutex;
-    std::unique_ptr<ChunkBuildingData[]> mChunkStructureData;
-    std::vector<Building*> mDeactivatingStructures; // Structures that are waiting to free their tile containers
-    StructureMap mStructures;
+    std::unique_ptr<ChunkBuildingData[]> mChunkBuildingData;
+    std::vector<Building*> mDeactivatingBuildings; // Structures that are waiting to free their tile containers
+    BuildingMap mBuildings;
     ChunkGridListeners mChunkEventListeners;
 };
 

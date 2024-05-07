@@ -207,13 +207,11 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
             }
             else {
-                if (structure->getType() == StructureType::Building) {
-                    if (ImGui::Button("Building")) {
-                        // TODO: Now what?
-                        LOG_DEBUG("Building selected but we don't handle it yet");
-                        //mWorldObjectQuery->setSelectedStructure(mSelectedStructure = structure);
-                        break;
-                    }
+                if (ImGui::Button("Building")) {
+                    // TODO: Now what?
+                    LOG_DEBUG("Building selected but we don't handle it yet");
+                    //mWorldObjectQuery->setSelectedStructure(mSelectedStructure = structure);
+                    break;
                 }
             }
             break;
@@ -274,12 +272,11 @@ ui32 TileInteractPanel::updateAndRenderStructureTile() {
 }
 
 const RoomGenNode* TileInteractPanel::tryGetSelectedRoom() const {
-    if (!mSelectedStructure || mSelectedRoomID == INVALID_ROOM_ID) {
+    if (!mSelectedBuilding || mSelectedRoomID == INVALID_ROOM_ID) {
         return nullptr;
     }
-    assert(mSelectedStructure->getType() == StructureType::Building);
 
-    Building* building = static_cast<Building*>(mSelectedStructure);
+    Building* building = static_cast<Building*>(mSelectedBuilding);
     LOG_CRITICAL("TODO: Fix TileInteractPanel::tryGetSelectedRoom");
     /*auto&& roomGraph = building->getRooms();
     assert(mSelectedRoomID < roomGraph.size());
@@ -288,8 +285,5 @@ const RoomGenNode* TileInteractPanel::tryGetSelectedRoom() const {
 }
 
 Building* TileInteractPanel::tryGetSelectedBuilding() const {
-    if (mSelectedStructure && mSelectedStructure->getType() == StructureType::Building) {
-        return static_cast<Building*>(mSelectedStructure);
-    }
-    return nullptr;
+    return mSelectedBuilding;
 }

@@ -423,7 +423,7 @@ void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk
 }
 
 Building* World::tryGetStructureAtWorldPos(TileCoord worldPos) const {
-    return mStructureGrid->tryGetStructureAtWorldPos(worldPos);
+    return mStructureGrid->tryGetBuildingAtWorldPos(worldPos);
 }
 
 World* World::tryGetWorld(WorldID id) {

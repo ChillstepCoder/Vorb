@@ -10,7 +10,6 @@ typedef ui8 RoomNodeID;
 
 typedef ui32 RoadID;
 #define INVALID_ROAD_ID UINT32_MAX
-#define INVALID_BUILDING_ID UINT32_MAX
 
 // Types
 typedef ui16 RoomDefID;
