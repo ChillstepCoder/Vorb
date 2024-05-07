@@ -155,8 +155,7 @@ void NavWorld::updateNavThread()
         // Remove from spatial lookup
         const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
         if (containerData.isTerrain) {
-            i32v3 worldPos = containerData.worldPos;
-            ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos2D);
+            ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(containerData.worldPos);
             mTerrainTileContainers[chunkID] = INVALID_TILE_CONTAINER_ID;
         }
         else {

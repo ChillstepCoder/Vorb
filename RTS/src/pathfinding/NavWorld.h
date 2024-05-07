@@ -240,7 +240,7 @@ private:
         CHUNK_DEPENDENCY_3 = BIT(3)
     };
     struct TileContainerToDestroy {
-        i32v3 worldPos;
+        i32v2 worldPos;
         i32v2 dims;
         TileContainerID id;
         bool isTerrain;
