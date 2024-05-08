@@ -3,6 +3,7 @@
 
 #include "generation/ChunkGenerator.h"
 #include "world/World.h"
+#include "building/BuildingGrid.h"
 #include "tile/TileContainerRepository.h"
 
 #include "world/ecosystem/FishEcosystem.h"
@@ -248,35 +249,38 @@ void IChunkGrid::updateActivatingChunks() {
                 break;
             }
             case ChunkState::WAITING_BUILDINGS: {
-                assert(false); // TODO BUILDING CHECK
-                // Ecosystem
-                // TODO: This can be partially async in the TileContainerLoader step?
-                mWorld->getFishEcosystem().initChunkFish(chunk);
+                
+                // TODO: What if new building comes on right after this?
+                if (mWorld->getBuildingGrid().getNumSimulatedBuildingsAtChunk(chunk.getChunkID()) == 0) {
+                    // Ecosystem
+                    // TODO: This can be partially async in the TileContainerLoader step?
+                    mWorld->getFishEcosystem().initChunkFish(chunk);
 
-                // Cache harvestables
-                chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
+                    // Cache harvestables
+                    chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
 
-                // Begin nav load
-                if (NavWorld* navWorld = mWorld->tryGetNavWorld()) {
-                    navWorld->markContainerNavDirty(chunk.mTileContainer);
+                    // Begin nav load
+                    if (NavWorld* navWorld = mWorld->tryGetNavWorld()) {
+                        navWorld->markContainerNavDirty(chunk.mTileContainer);
+                    }
+                    else {
+                        // TODO: THIS IS ONLY FOR EDITOR WORLD
+                        chunk.mTileContainer->setDidInitNav();
+                    }
+
+                    // Begin vis load
+                    mWorld->getVisibilityManager().initContainerVisibility(*chunk.mTileContainer);
+
+                    // Tile container loaded
+                    chunk.mTileContainer->setState(TileContainerState::READY);
+
+                    // Dispatch load finished
+                    TileContainerEvent loadFinishedEvent;
+                    loadFinishedEvent.container = chunk.mTileContainer;
+                    mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
+
+                    chunk.setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY);
                 }
-                else {
-                    // TODO: THIS IS ONLY FOR EDITOR WORLD
-                    chunk.mTileContainer->setDidInitNav();
-                }
-
-                // Begin vis load
-                mWorld->getVisibilityManager().initContainerVisibility(*chunk.mTileContainer);
-
-                // Tile container loaded
-                chunk.mTileContainer->setState(TileContainerState::READY);
-
-                // Dispatch load finished
-                TileContainerEvent loadFinishedEvent;
-                loadFinishedEvent.container = chunk.mTileContainer;
-                mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
-
-                chunk.setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY);
                 break;
             }
             case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY: {

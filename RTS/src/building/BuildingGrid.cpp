@@ -225,6 +225,10 @@ Building* BuildingGrid::tryGetBuildingAtWorldPos(TileCoord worldPos) const {
     return it->second.get();
 }
 
+ui32 BuildingGrid::getNumSimulatedBuildingsAtChunk(ChunkID chunkId) {
+    return mChunkBuildingData[chunkId].numSimulatedBuildings;
+}
+
 void BuildingGrid::onBuildingFinishedLoad(Building& building) {
     ASSERT_GAME_THREAD();
     building.mState = BuildingState::ACTIVE;

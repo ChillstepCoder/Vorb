@@ -12,7 +12,7 @@ class Building;
 typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> BuildingMap;
 struct ChunkBuildingData {
     bool isSimulated = true;
-    ui32 numSimulatedBuildings = 0;
+    std::atomic<ui32> numSimulatedBuildings = 0;
     std::vector<BuildingID> containedBuildings;
     std::unique_ptr<BuildingID[]> dTileBuildings = nullptr;
 };
@@ -33,6 +33,8 @@ public:
     Building* tryGetBuildingAtWorldPos(TileCoord worldPos) const;
     const BuildingMap& getBuildings() const { ASSERT_GAME_THREAD(); return mBuildings; }
     const Building& getBuilding(BuildingID id) const { ASSERT_GAME_THREAD(); return *mBuildings.at(id); }
+
+    ui32 getNumSimulatedBuildingsAtChunk(ChunkID chunkId);
 
 private:
     void onBuildingFinishedLoad(Building& building);
