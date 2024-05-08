@@ -52,7 +52,6 @@ public:
 
     const ChunkID* getChunkDependencies() const { return mChunkDependencies; }
     ui32 getChunkDependencyCount() const { return mChunkDependencyCount; }
-    bool hasUnloadedChunkDependencies() const { return mChunkDependenciesSimulating != 0; }
 
     void setBlueprint(std::unique_ptr<BuildingBlueprint>&& bp);
     BuildingBlueprint* getBlueprint() const { return mBlueprint.get(); }
@@ -66,9 +65,9 @@ protected:
     //f32 mZPosFloor;
     //ui32 mStateArrayIndex = UINT32_MAX;
     BuildingID mId = INVALID_BUILDING_ID;
-    ChunkID mChunkDependencies[4] = { INVALID_BUILDING_ID,INVALID_BUILDING_ID,INVALID_BUILDING_ID,INVALID_BUILDING_ID };
+    ChunkID mChunkDependencies[4] = { INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID };
     ui8 mChunkDependencyCount : 4;
-    ui8 mChunkDependenciesSimulating : 4;
+    ui8 mChunkDependenciesActive : 4;
     ui8 mFloorHeight;
     BuildingState mState = BuildingState::SIM;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk

@@ -753,21 +753,22 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
         // Tell chunks about our external edges
         const StructureExternalEdgeListOutput& externalEdges = taskData.externalEdges;
 
-        Building* owner = taskData.container->getOwnerBuilding();
-        assert(owner);
-        assert(!owner->hasUnloadedChunkDependencies());
-        for (int j = 0; j < owner->getChunkDependencyCount(); ++j) {
-            ChunkID id = owner->getChunkDependencies()[j];
-            // If we have edges for this chunk, store
-            auto&& it = externalEdges.find(id);
-            if (it != externalEdges.end()) {
-                mTerrainDependentEdges[id][containerId] = it->second;
-                markChunkContainerNavDirty(id);
-            }
+        LOG_WARN("Need to figure out building external nav edge solution");
 
-            // No longer need chunk
-            mWorld.getChunkGrid().getChunk(id).decRef();
-        }
+        //Building* owner = taskData.container->getOwnerBuilding();
+        //assert(owner);
+        //for (int j = 0; j < owner->getChunkDependencyCount(); ++j) {
+        //    ChunkID id = owner->getChunkDependencies()[j];
+        //    // If we have edges for this chunk, store
+        //    auto&& it = externalEdges.find(id);
+        //    if (it != externalEdges.end()) {
+        //        mTerrainDependentEdges[id][containerId] = it->second;
+        //        markChunkContainerNavDirty(id);
+        //    }
+
+        //    // No longer need chunk
+        //    mWorld.getChunkGrid().getChunk(id).decRef();
+        //}
     }
     // Release resources
     taskData.container->setDidInitNav();
@@ -893,6 +894,7 @@ void NavWorld::markChunkContainerNavDirty(ChunkID chunkId)
 {
     ASSERT_NAV_THREAD();
     const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+    assert(!chunk.isDeactivated());
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
     bool didAdd = mDirtyTileContainers.workerThreadTryDirtyObject(chunkTileContainer);
@@ -1378,16 +1380,6 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
     // this should be statistically impossible
     if (didAdd) {
         container->incRef();
-        if (!container->isTerrain()) {
-            Building* owner = container->getOwnerBuilding();
-            assert(owner);
-            assert(!owner->hasUnloadedChunkDependencies());
-            for (int i = 0; i < owner->getChunkDependencyCount(); ++i) {
-                ChunkID id = owner->getChunkDependencies()[i];
-                // Make sure this chunk stays
-                mWorld.getChunkGrid().getChunk(id).incRef();
-            }
-        }
     }
 }
 

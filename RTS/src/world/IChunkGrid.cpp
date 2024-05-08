@@ -7,6 +7,8 @@
 
 #include "world/ecosystem/FishEcosystem.h"
 
+#include "visibility/VisibilityManager.h"
+
 // TODO: SrvChunkGrid?
 
 #include "services/Services.h"
@@ -73,7 +75,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
         updateGridEdges(loadCenter);
     }
 
-    // Update all loading chunks
+    // Update all activating chunks
     updateActivatingChunks();
 
     // Update all destroying chunks
@@ -228,34 +230,60 @@ void IChunkGrid::setWorldAndAllocateChunks(World& world) {
 
 void IChunkGrid::updateActivatingChunks() {
     IHeightmapGrid& heightGrid = mWorld->getHeightmapGrid();
-    for (size_t i = 0; i < mActivatingChunks.size();) {
+    // Reverse iteration for simplicity of pop swap
+    for (int i = (int)mActivatingChunks.size() - 1; i >= 0; --i) {
         Chunk& chunk = mChunks[mActivatingChunks[i]];
         switch (chunk.mState) {
             case ChunkState::WAITING_SIM_RELEASE: {
-                ++i;
                 break;
             }
             case ChunkState::READY_TO_LOAD: {
                 chunk.setState(ChunkState::LOADING_TILES);
-                // TileContainerLoader will listen for this event and begin loading
+                // TileContainerLoader and BuildingGrid will listen for this event and begin loading
                 ChunkGridEvent evnt(chunk);
                 dispatchBeginLoad(evnt);
-                ++i;
                 break;
             }
             case ChunkState::LOADING_TILES: {
-                ++i;
+                break;
+            }
+            case ChunkState::WAITING_BUILDINGS: {
+                assert(false); // TODO BUILDING CHECK
+                // Ecosystem
+                // TODO: This can be partially async in the TileContainerLoader step?
+                mWorld->getFishEcosystem().initChunkFish(chunk);
+
+                // Cache harvestables
+                chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
+
+                // Begin nav load
+                if (NavWorld* navWorld = mWorld->tryGetNavWorld()) {
+                    navWorld->markContainerNavDirty(chunk.mTileContainer);
+                }
+                else {
+                    // TODO: THIS IS ONLY FOR EDITOR WORLD
+                    chunk.mTileContainer->setDidInitNav();
+                }
+
+                // Begin vis load
+                mWorld->getVisibilityManager().initContainerVisibility(*chunk.mTileContainer);
+
+                // Tile container loaded
+                chunk.mTileContainer->setState(TileContainerState::READY);
+
+                // Dispatch load finished
+                TileContainerEvent loadFinishedEvent;
+                loadFinishedEvent.container = chunk.mTileContainer;
+                mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
+
+                chunk.setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY);
                 break;
             }
             case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY: {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mActivatingChunks[i] = mActivatingChunks.back();
                     mActivatingChunks.pop_back();
-                    chunk.mFlags.clearBit(ChunkFlags::IS_ACTIVATING);
                     activateChunk(chunk);
-                }
-                else {
-                    ++i;
                 }
                 break;
             }
@@ -535,9 +563,8 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         case ChunkState::WAITING_SIM_RELEASE:
         case ChunkState::READY_TO_LOAD:
         case ChunkState::LOADING_TILES:
+        case ChunkState::WAITING_BUILDINGS:
             panic("Tried to re-load chunk already being loaded");
-            break;
-        case ChunkState::DORMANT:
             break;
         case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY:
             panic("Tried to re-load chunk already being loaded (mesh)");
@@ -558,7 +585,8 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
 
 void IChunkGrid::activateChunk(Chunk& chunk) {
     assert(chunk.getTileContainer()->getState() == TileContainerState::READY);
-
+    assert(chunk.mFlags.isBitSet(ChunkFlags::IS_ACTIVATING));
+    chunk.mFlags.clearBit(ChunkFlags::IS_ACTIVATING);
     chunk.mState = ChunkState::ACTIVATED;
     addChunkToActiveList(chunk);
 

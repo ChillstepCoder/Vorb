@@ -12,6 +12,7 @@ class Building;
 typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> BuildingMap;
 struct ChunkBuildingData {
     bool isSimulated = true;
+    ui32 numSimulatedBuildings = 0;
     std::vector<BuildingID> containedBuildings;
     std::unique_ptr<BuildingID[]> dTileBuildings = nullptr;
 };
@@ -34,6 +35,7 @@ public:
     const Building& getBuilding(BuildingID id) const { ASSERT_GAME_THREAD(); return *mBuildings.at(id); }
 
 private:
+    void onBuildingFinishedLoad(Building& building);
     void initEventHandlers();
     void removeBuildingFromDeactivateList(Building* building);
 

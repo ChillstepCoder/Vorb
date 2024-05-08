@@ -13,8 +13,6 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "visibility/VisibilityManager.h"
-
 #include "tile/TileContainer.h"
 #include "tile/TileContainerRepository.h"
 
@@ -121,7 +119,8 @@ void TileContainerLoader::loadChunkFromSimChunk(TileContainer& container) const
     // TODO: Go from SimulatedChunk somehow (SimulatedChunk vs SimulatedStructure)
     Chunk* chunk = container.getOwnerChunk();
     assert(chunk);
-    chunk->incRef();
+
+    // No need to incref, we cannot be destroyed while activating
 
     Services::Threadpool::ref().addTask([this, chunk]() {
         TileContainer& container = *chunk->mTileContainer;
@@ -140,36 +139,7 @@ void TileContainerLoader::loadChunkFromSimChunk(TileContainer& container) const
         // Build visibility
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());
 
-        GameThreadTasks::getInstance().addGenericTask([this, chunk]() {
-            chunk->setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY); // Dormant?
-            // Ecosystem
-            chunk->getWorld().getFishEcosystem().initChunkFish(*chunk);
-
-            // Cache harvestables
-            chunk->mTileContainer->mHarvestableRegistry.refreshFromOwner();
-
-            // Begin nav load
-            if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {
-                navWorld->markContainerNavDirty(chunk->mTileContainer);
-            }
-            else {
-                // TODO: THIS IS ONLY FOR EDITOR WORLD
-                chunk->mTileContainer->setDidInitNav();
-            }
-
-            // Begin vis load
-            mWorld.getVisibilityManager().initContainerVisibility(*chunk->mTileContainer);
-
-            // Tile container loaded
-            chunk->mTileContainer->setState(TileContainerState::READY);
-
-            // Dispatch load finished
-            TileContainerEvent loadFinishedEvent;
-            loadFinishedEvent.container = chunk->mTileContainer;
-            mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
-
-            chunk->decRef();
-        });
+        chunk->setState(ChunkState::WAITING_BUILDINGS);
     });
 }
 

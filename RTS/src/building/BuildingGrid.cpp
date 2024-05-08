@@ -23,10 +23,17 @@ BuildingGrid::BuildingGrid(World& world) : mWorld(world) {
 void BuildingGrid::tick() {
     ASSERT_GAME_THREAD();
     for (size_t i = 0; i < mDeactivatingBuildings.size();) {
-        if (mDeactivatingBuildings[i]->getRefCount() == 0) {
-            mDeactivatingBuildings[i]->freeData();
-            mDeactivatingBuildings[i]->mState = BuildingState::SIM;
-            mDeactivatingBuildings[i] = mDeactivatingBuildings.back();
+        Building* bldg = mDeactivatingBuildings[i];
+        if (bldg->getRefCount() == 0) {
+            bldg->freeData();
+            bldg->mState = BuildingState::SIM;
+            for (ui32 c = 0; c < bldg->mChunkDependencyCount; ++c) {
+                ChunkID id = bldg->mChunkDependencies[c];
+                ChunkBuildingData& buildingData = mChunkBuildingData[id];
+                assert(buildingData.numSimulatedBuildings < bldg->mChunkDependencyCount);
+                ++buildingData.numSimulatedBuildings;
+            }
+            bldg = mDeactivatingBuildings.back();
             mDeactivatingBuildings.pop_back();
         } else {
             ++i;
@@ -138,7 +145,7 @@ Building* BuildingGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorH
         newBuilding->mChunkDependencies[chunkCount++] = c->getChunkID();
     }
     newBuilding->mChunkDependencyCount = chunkCount;
-    newBuilding->mChunkDependenciesSimulating = 0;
+    newBuilding->mChunkDependenciesActive = 0;
     assert(floorHeight < UINT8_MAX); 
     newBuilding->mFloorHeight = floorHeight;
 
@@ -147,16 +154,18 @@ Building* BuildingGrid::tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorH
         std::lock_guard lock(mMutex);
         for (int c = 0; c < chunkCount; ++c) {
             ChunkID dep = newBuilding->mChunkDependencies[c];
-            ChunkBuildingData& structureData = mChunkBuildingData[dep];
-            structureData.containedBuildings.emplace_back(newStructureId);
-            if (structureData.isSimulated) {
-                ++newBuilding->mChunkDependenciesSimulating;
+            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+            buildingData.containedBuildings.emplace_back(newStructureId);
+            // Building always initializes as "simulating", this is decremented in onBuildingFinishedLoad
+            ++buildingData.numSimulatedBuildings;
+            if (!buildingData.isSimulated) {
+                ++newBuilding->mChunkDependenciesActive;
             }
         }
-        if (newBuilding->mChunkDependenciesSimulating == 0) {
+        if (newBuilding->mChunkDependenciesActive > 0) {
             newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, floorHeight, (Building*)newBuilding.get());
             mWorld.getTileContainerLoader().loadBuilding(static_cast<Building&>(*newBuilding));
-            rv->mState = BuildingState::ACTIVE;
+            onBuildingFinishedLoad(*rv);
         }
         else {
             rv->mState = BuildingState::SIM;
@@ -216,10 +225,21 @@ Building* BuildingGrid::tryGetBuildingAtWorldPos(TileCoord worldPos) const {
     return it->second.get();
 }
 
+void BuildingGrid::onBuildingFinishedLoad(Building& building) {
+    ASSERT_GAME_THREAD();
+    building.mState = BuildingState::ACTIVE;
+    for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
+        const ChunkID id = building.getChunkDependencies()[i];
+        ChunkBuildingData& buildingData = mChunkBuildingData[id];
+        assert(buildingData.numSimulatedBuildings > 0);
+        --buildingData.numSimulatedBuildings;
+    }
+}
+
 void BuildingGrid::initEventHandlers() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
-    chunkGrid.addActivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
+    chunkGrid.addBeginLoadListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
         ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];
@@ -231,14 +251,19 @@ void BuildingGrid::initEventHandlers() {
             auto&& it = mBuildings.find(buildingId);
             assert(it != mBuildings.end());
             Building* building = it->second.get();
-            assert(building->mChunkDependenciesSimulating > 0);
-            if (--building->mChunkDependenciesSimulating == 0) {
-                if (building->mState == BuildingState::DEACTIVATING) {
+            assert(building->mChunkDependenciesActive < building->getChunkDependencyCount());
+            // Activate on the first dependant chunk activation
+            if (++building->mChunkDependenciesActive == 1) {
+                if (building->mState == BuildingState::DEACTIVATING) [[unlikely]] {
+                    // No need to re-load as we already were loaded
                     removeBuildingFromDeactivateList(building);
                 }
-                building->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(building->getTileAABB(), building->getFloorHeight(), static_cast<Building*>(building));
-                mWorld.getTileContainerLoader().loadBuilding(*building);
-                building->mState = BuildingState::ACTIVE;
+                else {
+                    building->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(building->getTileAABB(), building->getFloorHeight(), static_cast<Building*>(building));
+                    // TODO: Do this async on worker thread!
+                    mWorld.getTileContainerLoader().loadBuilding(*building);
+                    onBuildingFinishedLoad(*building);
+                }
             }
         }
     });
@@ -256,11 +281,16 @@ void BuildingGrid::initEventHandlers() {
             auto&& it = mBuildings.find(structureID);
             assert(it != mBuildings.end());
             Building* building = it->second.get();
-            assert(building->mChunkDependenciesSimulating < 4);
-            ++building->mChunkDependenciesSimulating;
-            if (building->mState != BuildingState::DEACTIVATING) {
-                building->mState = BuildingState::DEACTIVATING;
-                mDeactivatingBuildings.emplace_back(building);
+            assert(building->mChunkDependenciesActive > 0);
+            // Deactivate when we have no active chunks
+            if (--building->mChunkDependenciesActive == 0) {
+                if (building->mState != BuildingState::DEACTIVATING) {
+                    // We cant deactivate a building that is not active
+                    assert(building->mState == BuildingState::ACTIVE);
+                    building->mState = BuildingState::DEACTIVATING;
+                    // TODO: Once we have async load make sure we handle it properly here
+                    mDeactivatingBuildings.emplace_back(building);
+                }
             }
         }
     });
@@ -272,8 +302,9 @@ void BuildingGrid::removeBuildingFromDeactivateList(Building* building) {
         if (mDeactivatingBuildings[i] == building) {
             mDeactivatingBuildings[i] = mDeactivatingBuildings.back();
             mDeactivatingBuildings.pop_back();
+            building->mState = BuildingState::ACTIVE;
             return;
         }
     }
-    assert(false);
+    panic("Didnt find deactivating building");
 }
