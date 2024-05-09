@@ -10,14 +10,30 @@ class BuildingBlueprint;
 class Building;
 
 typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> BuildingMap;
+
 struct ChunkBuildingData {
-    bool isSimulated = true;
+public:
+    bool getIsSimulated() const { ASSERT_GAME_THREAD(); return isSimulated; }
+    void setIsSimulated(bool val) { ASSERT_GAME_THREAD(); isSimulated = val; }
+
+    ui32 getNumLoadingBuildings() const { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
+    void setNumLoadingBuildings(ui32 val) { ASSERT_GAME_THREAD(); mNumLoadingBuildings = val; }
+
+    ui32 getNumConnectedBuildings() const { ASSERT_GAME_THREAD(); return mNumConnectedBuildings; }
+    void setNumConnectedBuildings(ui32 val) { ASSERT_GAME_THREAD(); mNumConnectedBuildings = val; }
+private:
+
+    bool isSimulated = true; // Main thread only
+    ui32 mNumLoadingBuildings = 0; // Main thread only
+    ui32 mNumConnectedBuildings = 0; // Main thread only
+
+public:
     mutable std::mutex mMutex;
-    ui32 mNumLoadingBuildings = 0;
-    std::vector<BuildingID> disconnectedBuildings;
-    std::vector<BuildingID> connectedBuildings;
-    std::unique_ptr<BuildingID[]> dTileBuildings = nullptr;
+    std::vector<BuildingID> buildings; // Shared
+    BitArray connected;  // Shared
+    std::unique_ptr<BuildingID[]> dTileBuildings = nullptr; // Shared
 };
+
 class BuildingGrid {
 public:
     BuildingGrid(World& world);
@@ -49,7 +65,8 @@ private:
     // Game thread only
     std::vector<Building*> mDeactivatingBuildings; // Structures that are waiting to free their tile containers
 
-    mutable std::shared_mutex mBuildingsMutex; // Never lock this AFTER locking a BuildingDataMutex, only before!
+    std::mutex mBuildingIDMutex;
+    mutable std::shared_mutex mBuildingsMutex; // Never lock this BEFORE locking a BuildingDataMutex, only AFTER!
     BuildingMap mBuildings;
     ChunkGridListeners mChunkEventListeners;
 };

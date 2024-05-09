@@ -57,6 +57,9 @@ public:
 
     void freeData();
 
+    BuildingState getState() const { return mState.load(); }
+    void setState(BuildingState state) { mState = state; }
+
 protected:
     BitArray mOwnedDTiles;
     TileContainer* mTileContainer = nullptr;
@@ -66,8 +69,8 @@ protected:
     BuildingID mId = INVALID_BUILDING_ID;
     ChunkID mChunkDependencies[4] = { INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID };
     ui8 mChunkDependencyCount : 4;
-    ui8 mChunkDependenciesActive : 4;
-    ui8 mChunkDependenciesConnected : 4; // Bits
+    ui8 mChunkDependenciesActive : 4; // Main thread only
+    ui8 mChunkDependenciesConnected : 4; // Main thread only
     ui8 mFloorHeight;
     std::atomic<BuildingState> mState = BuildingState::LOADING;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk

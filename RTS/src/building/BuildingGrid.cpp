@@ -88,19 +88,21 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
 
     // First check if we can actually place structure here, and place them in one lock
     // Must be done this way to avoid any race conditions
-    { // Critical section
-        std::lock_guard lock(mBuildingsMutex);
-        newStructureId = sStructureIdGen;
-        // Check
-        for (ui32 di = 0; di < coveredTilesCount; ++di) {
-            const DTileCoord worldCoord = coveredTiles[di];
-            if (structureExists(worldCoord)) {
-                return nullptr;
+    { 
+        { // Critical section
+            std::lock_guard lock(mBuildingIDMutex);
+            newStructureId = sStructureIdGen;
+            // Check
+            for (ui32 di = 0; di < coveredTilesCount; ++di) {
+                const DTileCoord worldCoord = coveredTiles[di];
+                if (structureExists(worldCoord)) {
+                    return nullptr;
+                }
             }
-        }
 
-        // Allocate
-        newStructureId = sStructureIdGen++;
+            // Allocate
+            newStructureId = sStructureIdGen++;
+        }
 
         // Place
         for (ui32 di = 0; di < coveredTilesCount; ++di) {
@@ -178,8 +180,7 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
             for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
                 ChunkID dep = newBuilding->mChunkDependencies[c];
                 ChunkBuildingData& buildingData = mChunkBuildingData[dep];
-                std::lock_guard lock(buildingData.mMutex);
-                if (!buildingData.isSimulated) {
+                if (!buildingData.getIsSimulated()) {
                     ++newBuilding->mChunkDependenciesActive;
                 }
             }
@@ -276,11 +277,11 @@ void BuildingGrid::initEventHandlers() {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
         ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];
-        assert(buildingData.connectedBuildings.size() == 0);
-        const std::vector<BuildingID>& chunkBuildings = buildingData.disconnectedBuildings;
+        assert(buildingData.mNumConnectedBuildings == 0);
+        const std::vector<BuildingID>& chunkBuildings = buildingData.buildings;
 
         std::lock_guard lock(buildingData.mMutex);
-        buildingData.isSimulated = false;
+        buildingData.IsSimulated(false);
         for (BuildingID buildingId : chunkBuildings) {
             auto&& it = mBuildings.find(buildingId);
             assert(it != mBuildings.end());
@@ -288,18 +289,27 @@ void BuildingGrid::initEventHandlers() {
             assert(building->mChunkDependenciesActive < building->getChunkDependencyCount());
             // Activate on the first dependant chunk activation
             if (++building->mChunkDependenciesActive == 1) {
-                if (building->mState == BuildingState::DEACTIVATING) [[unlikely]] {
-                    // No need to re-load as we already were loaded
-                    removeBuildingFromDeactivateList(building);
+                switch (building->mState.load()) {
+                    case BuildingState::LOADING:
+                        // Do nothing, already loading
+                        break;
+                    case BuildingState::ACTIVE:
+                        // Do nothing, we will connect later
+                        break;
+                    case BuildingState::DEACTIVATING:
+                        removeBuildingFromDeactivateList(building);
+                        break;
+                    case BuildingState::SIM:
+                        building->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(building->getTileAABB(), building->getFloorHeight(), static_cast<Building*>(building));
+                        // TODO: Do this async on worker thread!
+                        building->mState = BuildingState::LOADING;
+                        mWorld.getTileContainerLoader().loadBuildingAsync(*building);
+                        onBuildingFinishedLoad(*building);
+                        break;
+                    default:
+                        break;
+
                 }
-                else if (building->mState == BuildingState::SIM) {
-                    building->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(building->getTileAABB(), building->getFloorHeight(), static_cast<Building*>(building));
-                    // TODO: Do this async on worker thread!
-                    building->mState = BuildingState::LOADING;
-                    mWorld.getTileContainerLoader().loadBuilding(*building);
-                    onBuildingFinishedLoad(*building);
-                }
-                // If we arent sim or deactivating, we should be loading, so do nothing as we will load as part of that process
             }
         }
     });
@@ -309,12 +319,14 @@ void BuildingGrid::initEventHandlers() {
         ASSERT_GAME_THREAD();
         // Move structures to simuation layer
         ChunkBuildingData& structureData = mChunkBuildingData[chunk.getChunkID()];
-        std::vector<BuildingID>& connectedBuildings = structureData.connectedBuildings;
-        std::vector<BuildingID>& disconnectedBuildings = structureData.disconnectedBuildings;
+        const std::vector<BuildingID>& buildings = structureData.buildings;
+
+        structureData.setIsSimulated(true);
 
         std::lock_guard lock(structureData.mMutex);
-        structureData.isSimulated = true;
-        for (BuildingID structureID : connectedBuildings) {
+        structureData.connected.zeroAllBits();
+        std::lock_guard buildingsLock(mBuildingsMutex);
+        for (BuildingID structureID : buildings) {
             auto&& it = mBuildings.find(structureID);
             assert(it != mBuildings.end());
             Building* building = it->second.get();
@@ -331,8 +343,6 @@ void BuildingGrid::initEventHandlers() {
                 }
             }
         }
-        disconnectedBuildings.reserve(disconnectedBuildings.size() + connectedBuildings.size());
-        disconnectedBuildings.insert(disconnectedBuildings.begin(), connectedBuildings.begin(), connectedBuildings.end());
     });
 }
 

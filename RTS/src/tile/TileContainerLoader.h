@@ -17,7 +17,7 @@ public:
 private:
     void loadBuildingFromBlueprintAsync(Building& building) const;
     // Container must be initialized
-    void loadChunkFromSimChunk(TileContainer& container) const;
+    void loadChunkFromSimChunkAsync(TileContainer& container) const;
 
     void initEvents();
 

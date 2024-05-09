@@ -16,11 +16,28 @@ BitArray::BitArray(ui32 numBits)
 BitArray::~BitArray() = default;
 
 void BitArray::resize(ui32 numBits) {
+    mNumBits = numBits;
     mData.resize(size_t((numBits + (BITS_PER_ELEMENT - 1)) / BITS_PER_ELEMENT));
 }
 
 void BitArray::resizeAndZero(ui32 numBits) {
+    mNumBits = numBits;
     mData.resize(size_t((numBits + (BITS_PER_ELEMENT - 1)) / BITS_PER_ELEMENT), 0);
+}
+
+void BitArray::push_back(bool val) {
+    if ((mNumBits % BITS_PER_ELEMENT) == 0) [[unlikely]] {
+        mData.push_back(0);
+    }
+    setBitTo(mNumBits, val);
+    ++mNumBits;
+}
+
+void BitArray::pop_back() {
+    assert(mNumBits);
+    if ((--mNumBits % BITS_PER_ELEMENT) == 0) [[unlikely]] {
+        mData.pop_back();
+    }
 }
 
 void BitArray::fill(bool val) {

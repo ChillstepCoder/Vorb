@@ -369,7 +369,7 @@ void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
                 const ui32 meanHeight = round(heightGrid.computeMeanHeightAtAABB(tileAABB, tilesNeedingTerrainFlatten));
                 const i32AABB3 aabb3d(i32v3(tileAABB.pos.x, tileAABB.pos.y, meanHeight), i32v3(tileAABB.dims.x, tileAABB.dims.y, bp->floorCount * bp->floorHeight));
 
-                Building* newBuilding = static_cast<Building*>(mWorld->getBuildingGrid().tryMakeNewBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
+                Building* newBuilding = static_cast<Building*>(mWorld->getBuildingGrid().tryMakeNewFullyBuiltBuilding(aabb3d, bp->floorHeight, bp->ownedDTiles, bp));
                 // TODO: Store building reference
             }
         }

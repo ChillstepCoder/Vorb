@@ -61,7 +61,7 @@ void TileVisibilityContainer::resize(const TileSpatialGrid* tileSpatialGrid) {
 void TileVisibilityContainer::copyFrom(const TileVisibilityContainer& other) {
     assert(mOccludedEdges.getNumBits() == other.mOccludedEdges.getNumBits());
     mTileSpatialGrid = other.mTileSpatialGrid;
-    memcpy(mOccludedEdges.data(), other.mOccludedEdges.data(), mOccludedEdges.getNumBytes());
+    memcpy(mOccludedEdges.data(), other.mOccludedEdges.data(), mOccludedEdges.getAllocatedBytes());
 }
 
 void TileVisibilityContainer::destroy() {

@@ -24,6 +24,8 @@ TileContainerLoader::TileContainerLoader(World& world) : mWorld(world) {
 }
 
 void TileContainerLoader::loadBuildingAsync(Building& building) const {
+    assert(building.getState() == BuildingState::SIM);
+    building.setState(BuildingState::LOADING);
     if (building.getBlueprint()) {
         loadBuildingFromBlueprintAsync(building);
     }
@@ -35,8 +37,7 @@ void TileContainerLoader::loadBuildingAsync(Building& building) const {
 void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) const {
     PROFILE_FUNCTION();
 
-    building.mState =
-        Services::Threadpool::ref().addTask([this, &building]() {
+    Services::Threadpool::ref().addTask([this, &building]() {
 
         TileRepository& tileRepo = TileRepository::get();
         BuildingBlueprint& bp = *building.getBlueprint();
