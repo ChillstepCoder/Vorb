@@ -8,6 +8,7 @@
 #include "world/ecosystem/FishEcosystem.h"
 #include "building/building.h"
 #include "building/BuildingBlueprint.h"
+#include "building/BuildingGrid.h"
 #include "pathfinding/NavWorld.h"
 #include "generation/ChunkGenerator.h"
 
@@ -33,6 +34,14 @@ void TileContainerLoader::loadBuildingAsync(Building& building) const {
         assert(false);
     }
 }
+
+// Allow limited access to private member
+class TileContainerLoaderBuildingGridProxy {
+public:
+    static void onFinished(BuildingGrid& grid, Building& building) {
+        grid.onBuildingFinishedLoad(building);
+    }
+};
 
 void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) const {
     PROFILE_FUNCTION();
@@ -104,6 +113,8 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
         // Mark ready for access
         tileContainer.setDirtyData();
         tileContainer.setState(TileContainerState::READY);
+
+        TileContainerLoaderBuildingGridProxy::onFinished(mWorld.getBuildingGrid(), building);
 
         // Navmesh dirty
         /*if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {

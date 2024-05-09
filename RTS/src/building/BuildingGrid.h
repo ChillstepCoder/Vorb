@@ -16,11 +16,9 @@ public:
     bool getIsSimulated() const { ASSERT_GAME_THREAD(); return isSimulated; }
     void setIsSimulated(bool val) { ASSERT_GAME_THREAD(); isSimulated = val; }
 
-    ui32 getNumLoadingBuildings() const { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
-    void setNumLoadingBuildings(ui32 val) { ASSERT_GAME_THREAD(); mNumLoadingBuildings = val; }
-
-    ui32 getNumConnectedBuildings() const { ASSERT_GAME_THREAD(); return mNumConnectedBuildings; }
-    void setNumConnectedBuildings(ui32 val) { ASSERT_GAME_THREAD(); mNumConnectedBuildings = val; }
+    // Thread limited variable access
+    ui32& numLoadingBuildingsRef() { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
+    ui32& numLoadingBuildingsRef() { ASSERT_GAME_THREAD(); return mNumConnectedBuildings; }
 private:
 
     bool isSimulated = true; // Main thread only
@@ -35,6 +33,7 @@ public:
 };
 
 class BuildingGrid {
+    friend class TileContainerLoaderBuildingGridProxy;
 public:
     BuildingGrid(World& world);
     ~BuildingGrid() = default;

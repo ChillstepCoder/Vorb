@@ -259,15 +259,15 @@ Building* BuildingGrid::tryGetBuildingAtWorldPos(TileCoord worldPos) const {
 }
 
 void BuildingGrid::onBuildingFinishedLoad(Building& building) {
-    ASSERT_GAME_THREAD();
-    for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
-        const ChunkID id = building.getChunkDependencies()[i];
-        ChunkBuildingData& buildingData = mChunkBuildingData[id];
-        std::lock_guard lock(buildingData.mMutex);
-        assert(buildingData.mNumLoadingBuildings > 0);
-        --buildingData.mNumLoadingBuildings;
-    }
-    building.mState = BuildingState::ACTIVE;
+    GameThreadTasks::getInstance().addGenericTask([this, &building]() {
+        for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
+            const ChunkID id = building.getChunkDependencies()[i];
+            ChunkBuildingData& buildingData = mChunkBuildingData[id];
+            assert(buildingData.getNumLoadingBuildings() > 0);
+            --buildingData.mNumLoadingBuildings;
+        }
+        building.mState = BuildingState::ACTIVE;
+    });
 }
 
 void BuildingGrid::initEventHandlers() {
@@ -277,11 +277,12 @@ void BuildingGrid::initEventHandlers() {
         ASSERT_GAME_THREAD();
         Chunk& chunk = evnt.chunk;
         ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];
-        assert(buildingData.mNumConnectedBuildings == 0);
+        assert(buildingData.getNumConnectedBuildings() == 0);
         const std::vector<BuildingID>& chunkBuildings = buildingData.buildings;
 
+        buildingData.setIsSimulated(false);
+
         std::lock_guard lock(buildingData.mMutex);
-        buildingData.IsSimulated(false);
         for (BuildingID buildingId : chunkBuildings) {
             auto&& it = mBuildings.find(buildingId);
             assert(it != mBuildings.end());
