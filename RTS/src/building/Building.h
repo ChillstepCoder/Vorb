@@ -12,7 +12,6 @@ class BuildingBlueprint;
 enum class BuildingState : ui8 {
     LOADING,
     ACTIVE,
-    DEACTIVATING,
     SIM
 };
 
@@ -74,6 +73,7 @@ protected:
     ui8 mFloorHeight;
     std::atomic<BuildingState> mState = BuildingState::LOADING;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk
+    bool mIsDeactivating = false;
 
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;

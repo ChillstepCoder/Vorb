@@ -35,11 +35,6 @@ void BuildingGrid::tick() {
         if (bldg->getRefCount() == 0) {
             bldg->mState = BuildingState::SIM;
             bldg->freeData();
-            for (ui32 c = 0; c < bldg->mChunkDependencyCount; ++c) {
-                ChunkID id = bldg->mChunkDependencies[c];
-                ChunkBuildingData& buildingData = mChunkBuildingData[id];
-                buildingData.simulatedBuildings.emplace_back(bldg->getId());
-            }
             bldg = mDeactivatingBuildings.back();
             mDeactivatingBuildings.pop_back();
         } else {
@@ -263,10 +258,14 @@ void BuildingGrid::onBuildingFinishedLoad(Building& building) {
         for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
             const ChunkID id = building.getChunkDependencies()[i];
             ChunkBuildingData& buildingData = mChunkBuildingData[id];
-            assert(buildingData.getNumLoadingBuildings() > 0);
-            --buildingData.mNumLoadingBuildings;
+            assert(buildingData.numLoadingBuildingsRef() > 0);
+            --buildingData.numLoadingBuildingsRef();
         }
-        building.mState = BuildingState::ACTIVE;
+        // If deactivating, go ahead and finish deactivating
+        if (building.mState != BuildingState::DEACTIVATING) {
+            building.mState = BuildingState::ACTIVE;
+            return;
+        }
     });
 }
 
@@ -319,13 +318,13 @@ void BuildingGrid::initEventHandlers() {
         Chunk& chunk = evnt.chunk;
         ASSERT_GAME_THREAD();
         // Move structures to simuation layer
-        ChunkBuildingData& structureData = mChunkBuildingData[chunk.getChunkID()];
-        const std::vector<BuildingID>& buildings = structureData.buildings;
+        ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];
+        const std::vector<BuildingID>& buildings = buildingData.buildings;
 
-        structureData.setIsSimulated(true);
+        buildingData.setIsSimulated(true);
 
-        std::lock_guard lock(structureData.mMutex);
-        structureData.connected.zeroAllBits();
+        std::lock_guard lock(buildingData.mMutex);
+        buildingData.connected.zeroAllBits();
         std::lock_guard buildingsLock(mBuildingsMutex);
         for (BuildingID structureID : buildings) {
             auto&& it = mBuildings.find(structureID);
@@ -334,11 +333,10 @@ void BuildingGrid::initEventHandlers() {
             assert(building->mChunkDependenciesActive > 0);
             // Deactivate when we have no active chunks
             if (--building->mChunkDependenciesActive == 0) {
-                if (building->mState != BuildingState::DEACTIVATING) {
-                    // We cant deactivate a building that is not active
-                    assert(building->mState == BuildingState::ACTIVE);
-                    assert(building->mState != BuildingState::LOADING && "NEED TO HANDLE LOAD ON DEACTIVATE"); x; // TODO
-                    building->mState = BuildingState::DEACTIVATING;
+                if (!building->mIsDeactivating) {
+                    // We cant deactivate a building that is not active or loading
+                    assert(building->mState == BuildingState::ACTIVE || building->mState == BuildingState::LOADING);
+                    building->mIsDeactivating = true;
                     // TODO: Once we have async load make sure we handle it properly here
                     mDeactivatingBuildings.emplace_back(building);
                 }
@@ -353,7 +351,7 @@ void BuildingGrid::removeBuildingFromDeactivateList(Building* building) {
         if (mDeactivatingBuildings[i] == building) {
             mDeactivatingBuildings[i] = mDeactivatingBuildings.back();
             mDeactivatingBuildings.pop_back();
-            building->mState = BuildingState::ACTIVE;
+            building->mIsDeactivating = false;
             return;
         }
     }
