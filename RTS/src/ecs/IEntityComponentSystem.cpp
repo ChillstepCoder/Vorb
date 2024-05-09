@@ -64,6 +64,7 @@ void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
 }
 
 void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkEntityFullActivateDataList&& entities) {
+
 	ASSERT_GAME_THREAD();
 	ChunkID chunkId = chunk.getChunkID();
 	auto&& it = mPendingEntities.find(chunkId);
@@ -77,6 +78,7 @@ void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkEntity
 
 void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkEntityFullActivateDataList& entities) {
     ASSERT_GAME_THREAD();
+
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     for (const EntityFullActivateData& activateData : entities) {
         // TODO: I dont think we need thread safe here as main thread is only writer?
@@ -149,7 +151,15 @@ void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID 
             break;
         }
     }
-    assert(found);
+    if (!found) [[unlikely]] {
+        SimEntityTypeComponent* cmp = mRegistry.try_get<SimEntityTypeComponent>(entity);
+        if (!cmp) {
+            panic("Failed to find entity for enter new chunk, type player");
+        }
+        else {
+            panic("Failed to find entity for enter new chunk, type {}", (int)cmp->type);
+        }
+    }
 
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     Chunk& chunk = chunkGrid.getChunk(newChunk);

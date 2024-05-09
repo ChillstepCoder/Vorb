@@ -12,10 +12,10 @@ class TileContainerLoader
 public:
     TileContainerLoader(World& world);
 
-    void loadBuilding(Building& building) const;
+    void loadBuildingAsync(Building& building) const;
 
 private:
-    void loadBuildingFromBlueprint(Building& building) const;
+    void loadBuildingFromBlueprintAsync(Building& building) const;
     // Container must be initialized
     void loadChunkFromSimChunk(TileContainer& container) const;
 

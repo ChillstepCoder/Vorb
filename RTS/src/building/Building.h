@@ -10,6 +10,7 @@
 class BuildingBlueprint;
 
 enum class BuildingState : ui8 {
+    LOADING,
     ACTIVE,
     DEACTIVATING,
     SIM
@@ -31,8 +32,6 @@ class Building {
 public:
     Building();
     virtual ~Building();
-    Building(Building&& other) noexcept;
-    Building& operator=(Building&& other) noexcept;
 
     VORB_NON_COPYABLE(Building);
 
@@ -68,8 +67,9 @@ protected:
     ChunkID mChunkDependencies[4] = { INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID };
     ui8 mChunkDependencyCount : 4;
     ui8 mChunkDependenciesActive : 4;
+    ui8 mChunkDependenciesConnected : 4; // Bits
     ui8 mFloorHeight;
-    BuildingState mState = BuildingState::SIM;
+    std::atomic<BuildingState> mState = BuildingState::LOADING;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk
 
     // Entity owning this plot, can be a person or a business

@@ -61,16 +61,10 @@ void SimThread::simThreadFunc() {
     setThreadName("Sim");
     mTimestepManager.init(mTargetTickRateMs / MS_PER_SECOND);
 
-    constexpr size_t BULK_DEQUEUE_COUNT = 256;
-    std::function<void()> funcs[BULK_DEQUEUE_COUNT];
     while (!mStop.load()) {
         mThreadUtilizationTimer.beginFrame();
 
-        if (size_t count = mSimThreadProcs.try_dequeue_bulk(funcs, BULK_DEQUEUE_COUNT)) {
-            for (size_t i = 0; i < count; ++i) {
-                funcs[i]();
-            }
-        }
+        updateTasks();
 
         const SimThreadState state = mState.load();
         switch (state) {
@@ -97,7 +91,8 @@ void SimThread::tickSim(SimThreadState state) {
         f64 sleepSec = 0.0f;
         if (!mTimestepManager.tryTick(&sleepSec)) {
             mThreadUtilizationTimer.beginSleep();
-            Sleep(sleepSec * MS_PER_SECOND);
+            // Don't sleep too long so we can poll task queue
+            Sleep(glm::min(DWORD(sleepSec * MS_PER_SECOND), DWORD(SIM_THREAD_IDLE_SLEEP_MS)));
             mThreadUtilizationTimer.endSleep();
             return;
         }
@@ -119,4 +114,16 @@ void SimThread::tickSim(SimThreadState state) {
     mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime);
 
     //LOG_TRACE(" Sim thread {} ms", mThreadUtilizationTimer.getFrameTimeMS());
+}
+
+void SimThread::updateTasks() {
+    constexpr size_t BULK_DEQUEUE_COUNT = 256;
+    std::function<void()> funcs[BULK_DEQUEUE_COUNT];
+
+    if (size_t count = mSimThreadProcs.try_dequeue_bulk(funcs, BULK_DEQUEUE_COUNT)) {
+        for (size_t i = 0; i < count; ++i) {
+            funcs[i]();
+        }
+    }
+
 }

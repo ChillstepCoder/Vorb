@@ -21,6 +21,8 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
     ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     mEntitiesByChunk[mRegistry.get<PositionComponent>(newEntity).chunkId].emplace_back(newEntity);
+    LOG_CRITICAL("Create Entity {} in {}", (int)newEntity, mRegistry.get<PositionComponent>(newEntity).chunkId);
+
     if (shouldReplicate && GameServer::exists()) {
         mRegistry.emplace<ReplicationComponent>(newEntity);
         SrvMessage::sendEntityCreateMessageToAll(newEntity, typeToken, position, 0.0f);

@@ -12,8 +12,10 @@ class Building;
 typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> BuildingMap;
 struct ChunkBuildingData {
     bool isSimulated = true;
-    std::atomic<ui32> numSimulatedBuildings = 0;
-    std::vector<BuildingID> containedBuildings;
+    mutable std::mutex mMutex;
+    ui32 mNumLoadingBuildings = 0;
+    std::vector<BuildingID> disconnectedBuildings;
+    std::vector<BuildingID> connectedBuildings;
     std::unique_ptr<BuildingID[]> dTileBuildings = nullptr;
 };
 class BuildingGrid {
@@ -25,7 +27,7 @@ public:
 
     // Can fail if overlapping an existing structure
     // Will consume bptr via move if successful
-    Building* tryMakeNewBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr);
+    Building* tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr);
 
     void debugRender();
 
@@ -34,7 +36,7 @@ public:
     const BuildingMap& getBuildings() const { ASSERT_GAME_THREAD(); return mBuildings; }
     const Building& getBuilding(BuildingID id) const { ASSERT_GAME_THREAD(); return *mBuildings.at(id); }
 
-    ui32 getNumSimulatedBuildingsAtChunk(ChunkID chunkId);
+    ui32 allBuildingsLoadedAtChunk(ChunkID chunkId);
 
 private:
     void onBuildingFinishedLoad(Building& building);
@@ -42,9 +44,12 @@ private:
     void removeBuildingFromDeactivateList(Building* building);
 
     World& mWorld;
-    mutable std::shared_mutex mMutex;
     std::unique_ptr<ChunkBuildingData[]> mChunkBuildingData;
+
+    // Game thread only
     std::vector<Building*> mDeactivatingBuildings; // Structures that are waiting to free their tile containers
+
+    mutable std::shared_mutex mBuildingsMutex; // Never lock this AFTER locking a BuildingDataMutex, only before!
     BuildingMap mBuildings;
     ChunkGridListeners mChunkEventListeners;
 };

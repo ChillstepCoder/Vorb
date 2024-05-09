@@ -948,6 +948,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
             const i32v2 worldPos2D(rootPos.x + offset.x, rootPos.y + offset.y);
 
             Chunk& chunk = chunkGrid.getChunkAtPosition(worldPos2D);
+            // Only notify chunk if it is activated
             if (chunk.isActivated()) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
                 const TileSpatialGrid& chunkTileIndexManager = chunkTileContainer->getTileSpatialGrid();
@@ -961,9 +962,6 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
                     // TODO: Don't always clear grass?
                     chunk.clearGrassAt(chunkTileIndex);
                 }
-            }
-            else {
-                assert(false && "Building on invalid chunk");
             }
         }
     }

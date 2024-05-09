@@ -48,6 +48,7 @@ public:
 private:
     void simThreadFunc();
     void tickSim(SimThreadState state);
+    void updateTasks();
 
     World& mWorld;
     HostSimContext& mHostSimContext;

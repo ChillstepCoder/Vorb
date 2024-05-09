@@ -42,9 +42,9 @@ public:
 
     BuildingBlueprintRoomGraph roomGraph; // TODO: Build this?
     BitArray ownedDTiles;
-    // Sorted by build priority back to front, so first floor tiles at the end
+    // Sorted by build priority front to back, so first floor tiles at the start
     std::unique_ptr<BuildingBlueprintTileTarget[]> tileTargets;
-    // Sorted by build priority back to front, so first floor walls at the end
+    // Sorted by build priority front to back, so first floor walls at the start
     std::unique_ptr<BuildingBlueprintWallTarget[]> wallTargets;
     // Required items to build
     std::unique_ptr<ItemStack[]> itemComposition; // TODO: Maybe this should be flexible... maybe we dont care what items are used? Room specific tiles? ect.

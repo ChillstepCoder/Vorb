@@ -144,6 +144,12 @@ void WorldGenScreen::destroy(const vui::GameTime& gameTime)
 }
 
 void WorldGenScreen::onEntry(const vui::GameTime& gameTime) {
+
+    // For now, we are also the game thread, for preventing history generation asserts
+    // Will be replaced by GameThread on game launch
+    // TODO: Spin up a real game thread here, that way we get better performance?
+    GAME_THREAD_ID = std::this_thread::get_id();
+
     mFrameTimer.start();
     mScreenShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("generation_map"));
     mDebugLineShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("river_gen_lines"));
@@ -197,7 +203,6 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
 }
 
 void WorldGenScreen::update(const vui::GameTime& gameTime) {
-
     // Update tasks
     GameThreadTasks::getInstance().updateMainThread();
     RenderContext::getInstance().updateRenderThreadProcs();

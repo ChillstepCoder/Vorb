@@ -120,11 +120,13 @@ void PhysicsSystem::update(World& world, entt::registry& registry) {
         // Copy position to our position component
         PositionComponent& posCmp = view.get<PositionComponent>(entity);
         posCmp.mPosition = pos;
-        ChunkID newChunkID = world.getChunkIDAtWorldPos(pos);
+        const ChunkID newChunkID = world.getChunkIDAtWorldPos(pos);
 
         if (newChunkID != posCmp.chunkId) [[unlikely]] {
-            world.getECS().onEntityEnterNewChunk(entity, posCmp.chunkId, newChunkID);
+            const ui32 oldChunkId = posCmp.chunkId;
             posCmp.chunkId = newChunkID;
+            world.getECS().onEntityEnterNewChunk(entity, oldChunkId, newChunkID);
+            // Entity may be destroyed in onEntityEnterNewChunk
         }
     };
 }

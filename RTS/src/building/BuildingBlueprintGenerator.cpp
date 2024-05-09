@@ -2285,7 +2285,6 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
 
     i32 wallN = 0;
     i32 tileN = 0;
-    // TODO: FINISH
     for (TileIndex tileIndex = 0; tileIndex < (TileIndex)context.tiles.size(); ++tileIndex) {
         // TODO: Bitindex
         const BlueprintTileType type = context.tiles[tileIndex];
