@@ -48,5 +48,5 @@ void main() {
     
     // For displacement, get our world space -> tangent space
     mat3 tfTBN = inverse(fTBN);
-    fFragPosTangent  = tfTBN * worldPos.xyz;
+    fFragPosTangent = tfTBN * worldPos.xyz;
 }

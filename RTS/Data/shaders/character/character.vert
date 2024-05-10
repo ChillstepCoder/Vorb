@@ -7,7 +7,7 @@ layout(location = 1) in vec2 vUV;
 layout(location = 2) in uint vMaterialIndex;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
-layout(location = 5) in vec2 vTangent;
+layout(location = 5) in vec3 vTangent;
 // 6 is reserved for wind influence
 layout(location = 7) in mat4 vModelMatrix; // TODO: USE
 // Model matrix consumes 4 locations
@@ -34,9 +34,9 @@ void main() {
   boneTransform += unBoneTransforms[vBoneIds[2]] * vBoneWeights[2];
   boneTransform += unBoneTransforms[vBoneIds[3]] * vBoneWeights[3];
   
-  
   vec3 normal = normalize(vNormal);
-  vec3 tangent = normalize(vec3(vTangent, 0));
+  vec3 tangent = normalize(vTangent);
+  
   vec4 localPos = boneTransform * vec4(vPosition.xyz, 1.0);
   // TODO: Should this be a 3x3?
   vec4 localNormal = boneTransform * vec4(normal, 0.0);
@@ -46,9 +46,12 @@ void main() {
   gl_Position = VP * transformedPos;
   
   
-  localNormal = (unModelTransform * localNormal);
-  localTangent = (unModelTransform * localTangent);
+  localNormal = normalize(unModelTransform * localNormal);
+  localTangent = normalize(unModelTransform * localTangent);
   
+  //https://learnopengl.com/Advanced-Lighting/Normal-Mapping
+  // re-orthogonalize T with respect to N
+  localTangent = normalize(localTangent - dot(localTangent, localNormal) * localNormal);
 
   vec3 bitangent = cross(localNormal.xyz, localTangent.xyz);
   fTBN = mat3(localTangent.xyz, bitangent, localNormal.xyz);
