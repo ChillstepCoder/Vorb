@@ -179,7 +179,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
 
             const RoadPoint roadPoint = roadGrid.getRoadPoint<true>(DTileCoord::fromTilePosRound(worldPos));
             v.roadIntensity = (f32)roadPoint.strength / (f32)MAX_ROAD_STRENGTH;
-            v.roadTexture = 0;
+            v.roadMaterialId = roadGrid.getRoadMaterialFromType(roadPoint.type);
 
             // Normal calc
             f32 fl = uncompressHeight(paddedHeightfield[y][x]); // front left

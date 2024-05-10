@@ -32,12 +32,11 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerHarvestableRegistry);
 
     void onTileLayerChanged(TileContainerEditEvent& evnt);
-
 private:
     const TileContainer* mOwner = nullptr;
     std::unique_ptr<HarvestableSubchunkRegistry[]> mRegistries;
     std::unique_ptr<TileHarvestable[]> mHarvestables;
-    ui32v3 mRegistriesDims;
-    ui32 mRegistryCount;
+    ui32v3 mRegistriesDims = ui32v3(0);
+    ui32 mRegistryCount = 0;
     ui32 mTotalHarvestables[e_cast(TileHarvestable::COUNT)];
 };

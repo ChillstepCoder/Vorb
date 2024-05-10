@@ -78,7 +78,7 @@ void tryDiscardTransparentPixel(float alpha) {
 vec2 dispMapping(vec2 uvs, sampler2D disp, vec3 viewDirection, float heightScale) {
     // Variables that control parallax occlusion mapping quality
 	const float minLayers = 4.0;
-    const float maxLayers = 32.0; // 16.0 // 0.035 HEIGHT SCALE WORKS WELL WITH 16
+    const float maxLayers = 512.0; // 16.0 or 32.0 // 0.035 HEIGHT SCALE WORKS WELL WITH 16
     float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDirection)));
     numLayers = clamp(numLayers, minLayers, maxLayers);
 	float layerDepth = 1.0 / numLayers;

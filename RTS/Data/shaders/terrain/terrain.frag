@@ -1,4 +1,5 @@
 //#include "util/hsv.glsl"
+#include "MaterialData.glsl"
 #include "GlobalUbo.glsl"
 
 #include "terrain/biome_util.glsl"
@@ -7,7 +8,6 @@ uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform sampler2D CliffTexture;
 uniform sampler2D CliffNormal;
-uniform sampler2D DirtRoad;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
@@ -29,12 +29,14 @@ const float DISTANT_COLOR_INTENSITY = 0.75;
 
 in float fHeight;
 in float fRoadIntensity;
+flat in uint fRoadMaterialIndex;
 in vec3 fPosition;
 in vec2 fBiomeUV;
 in vec2 fUV;
 in mat3 fTBN;
 in float fSnow;
 in vec3 fNormal;
+in vec3 fFragPosTangent;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
@@ -272,14 +274,35 @@ void main() {
     oColor.a = 1.0; // AO?
     
     // =========== Road ===========
-    vec3 roadSample = texture(DirtRoad, fUV * 10.0).rgb;
-    float roadLuminance = getLuminance(roadSample) * 4.0;
-    // Fake shitty height learp (Adjust based on texture?)
-    //float roadBlend = clamp(fRoadIntensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
-    float roadBlend = clamp(pow(fRoadIntensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
-    //roadBlend = fRoadIntensity;
-    oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample, roadLuminance * roadBlend);
-    //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
+    if (fRoadIntensity > 0.0) {
+        vec3 normal;
+        vec4 roadSample;
+        float ao;
+        float metallic;
+        float roughness;
+        vec2 uv = fUV * 100.0;
+        float heightScale = 0.5;
+        
+        // Disp
+        MaterialData mtl = inMaterials[fRoadMaterialIndex];
+        if (mtl.displacementMap > 0) {
+            vec3 VIEW_POS_TANGENT = vec3(0.0,0.0,0.0); // Camera is at 0!
+            vec3 tangentViewDir = normalize(VIEW_POS_TANGENT - fFragPosTangent);
+            uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
+        }
+        
+        
+        getMaterialPixelInfo(fRoadMaterialIndex, uv, roadSample, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
+        
+        //vec3 roadSample = texture(DirtRoad, fUV * 10.0).rgb;
+        float roadLuminance = getLuminance(roadSample.rgb) * 4.0;
+        // Fake shitty height learp (Adjust based on texture?)
+        //float roadBlend = clamp(fRoadIntensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
+        float roadBlend = clamp(pow(fRoadIntensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
+        //roadBlend = fRoadIntensity;
+        oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample.rgb, roadLuminance * roadBlend);
+        //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
+    }
     
     
     // =========== Snow ===========

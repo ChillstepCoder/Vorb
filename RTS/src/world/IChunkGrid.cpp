@@ -250,14 +250,15 @@ void IChunkGrid::updateActivatingChunks() {
             }
             case ChunkState::WAITING_BUILDINGS: {
                 
-                // TODO: What if new building comes on right after this?
-                if (mWorld->getBuildingGrid().getNumSimulatedBuildingsAtChunk(chunk.getChunkID()) == 0) {
+                if (mWorld->getBuildingGrid().allBuildingsLoadedAtChunk(chunk.getChunkID())) {
+
+                    // TODO: Why does this cause a crash due to corruption when we run in threadpool?
+                    chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
+                    assert(chunk.mTileContainer->mHarvestableRegistry.getRegistryCount() == 64);
+
                     // Ecosystem
                     // TODO: This can be partially async in the TileContainerLoader step?
                     mWorld->getFishEcosystem().initChunkFish(chunk);
-
-                    // Cache harvestables
-                    chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
 
                     // Begin nav load
                     if (NavWorld* navWorld = mWorld->tryGetNavWorld()) {
@@ -269,7 +270,11 @@ void IChunkGrid::updateActivatingChunks() {
                     }
 
                     // Begin vis load
+                    // TODO: Make this system real
                     mWorld->getVisibilityManager().initContainerVisibility(*chunk.mTileContainer);
+
+                    // Connect buildings
+                    mWorld->getBuildingGrid().connectBuildingsToChunk(chunk);
 
                     // Tile container loaded
                     chunk.mTileContainer->setState(TileContainerState::READY);

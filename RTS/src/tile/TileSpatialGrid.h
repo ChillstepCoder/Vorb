@@ -81,7 +81,9 @@ public:
     }
 
     const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mTileDims); }
+    // Returns dims in tiles, not accounting floor height
     const i32v3& getDims() const { return mTileDims; }
+    // True world size AABB including floor height
     const i32AABB3 getAABB() const { return mAABB; }
     i32 getFloorStride() const { return mFloorStride; }
     i32 getNumTiles() const { return mNumTiles; }

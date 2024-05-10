@@ -19,4 +19,6 @@ preload:
   - [cell_noise, Material]
   - [grass_terrain, Material]
   - [mountain, Material]
+  - [dirt_road, Material]
+#  - [dirt_plowed, Material]
   - [*, Model] #DEVELOPMENT ONLY?

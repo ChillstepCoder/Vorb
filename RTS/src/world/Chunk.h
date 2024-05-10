@@ -167,7 +167,7 @@ public:
 		return mTileContainer->tryAquireThreadSafe();
     }
     // Only game thread can incref but any thread can decref
-	inline void incRef() const { ASSERT_GAME_THREAD();  mTileContainer->incRef(); }
+	inline void incRef() const { ASSERT_GAME_THREAD(); assert(mTileContainer); mTileContainer->incRef(); }
 	inline void decRef() const { assert(mTileContainer);  mTileContainer->decRef(); }
     ui32 getRefCount() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
 

@@ -12,7 +12,7 @@ constexpr ui32 ROAD_GRID_CELL_SIZE_POINTS = SQ(ROAD_GRID_CELL_WIDTH_POINTS);
 
 struct RoadPoint {
     ui8 strength = 0;
-    ui8 type = 0;
+    ui8 type = {};
 };
 static_assert(sizeof(RoadPoint) == 2);
 
@@ -33,6 +33,8 @@ public:
     // Only sets the road point if it is either a different type, or higher intensity that what already exists
     bool setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint point);
     void adjustRoadPoint(DTileCoord worldPos, i32 adjust);
+
+    MaterialID getRoadMaterialFromType(ui8 type) const;
 
 private:
     ui32 mWorldWidthDTiles;

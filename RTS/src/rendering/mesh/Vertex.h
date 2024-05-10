@@ -52,7 +52,7 @@ struct alignas(16) TerrainVertex {
     f32v3 pos;
     f32v3 normal;
     f32 roadIntensity;
-    ui32 roadTexture;
+    ui16 roadMaterialId;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::TERRAIN; }

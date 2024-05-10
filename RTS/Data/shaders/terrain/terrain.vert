@@ -3,7 +3,7 @@
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec3 vNormal;
 layout(location = 2) in float vRoadIntensity;
-layout(location = 3) in uint vRoadType;
+layout(location = 3) in uint vRoadMaterialIndex;
 
 uniform vec3 unPosition;
 uniform vec2 unUVRoot;
@@ -13,26 +13,27 @@ uniform float unSnowLevel;
 
 out float fHeight;
 out float fRoadIntensity;
+flat out uint fRoadMaterialIndex;
 out vec3 fPosition;
 out vec2 fUV;
 out vec2 fBiomeUV;
 out mat3 fTBN;
 out float fSnow;
 out vec3 fNormal;
-
-const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
+out vec3 fViewTangent;
+out vec3 fFragPosTangent;
 
 void main() {
     vec4 vertexPos = vPosition;
     vec4 worldPos = vertexPos + vec4(unPosition - CameraPos, 0.0);
     fBiomeUV = (vertexPos.xy + unPosition.xy) * unInverseWorldWidth;
     fRoadIntensity = vRoadIntensity;
+    fRoadMaterialIndex = vRoadMaterialIndex;
 	
 	vec3 normal = vNormal; // Prenormalized on CPU
-	vec3 binormal = cross(normal, TANGENT);
-    vec3 tangent = cross(binormal, normal);
-    // TODO: TANGENT???
-	fTBN = mat3(TANGENT, binormal, normal);
+	vec3 binormal = normalize(cross(normal, vec3(1.0, 0.0, 0.0)));
+    vec3 tangent = normalize(cross(binormal, normal));
+	fTBN = mat3(tangent, binormal, normal);
     fNormal = normal;
     
     fSnow = normal.z * unSnowLevel;
@@ -44,4 +45,8 @@ void main() {
     fPosition = worldPos.xyz;
 
     gl_Position = VP * worldPos;
+    
+    // For displacement, get our world space -> tangent space
+    mat3 tfTBN = inverse(fTBN);
+    fFragPosTangent  = tfTBN * worldPos.xyz;
 }

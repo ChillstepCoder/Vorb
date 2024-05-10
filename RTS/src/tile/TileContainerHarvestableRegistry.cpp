@@ -7,15 +7,9 @@
 
 #include "debugging/DebugRenderer.h"
 
-TileContainerHarvestableRegistry::TileContainerHarvestableRegistry()
-{
+TileContainerHarvestableRegistry::TileContainerHarvestableRegistry() = default;
 
-}
-
-TileContainerHarvestableRegistry::~TileContainerHarvestableRegistry()
-{
-
-}
+TileContainerHarvestableRegistry::~TileContainerHarvestableRegistry() = default;
 
 void TileContainerHarvestableRegistry::init(const TileContainer& owner) {
     mOwner = &owner;

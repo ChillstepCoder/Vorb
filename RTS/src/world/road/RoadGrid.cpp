@@ -87,3 +87,10 @@ void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
     point.strength = (ui8)glm::clamp((i32)point.strength + adjust, 0, (i32)MAX_ROAD_STRENGTH);
 }
 
+// TODO: Remove
+#include "resources/MaterialRepository.h"
+MaterialID RoadGrid::getRoadMaterialFromType(ui8 type) const {
+    // TODO: Data drive roads!
+    return MaterialRepository::get().getMaterialId(CStrToken(/*"dirt_road"*/"window"));
+}
+

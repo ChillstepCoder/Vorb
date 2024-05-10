@@ -949,11 +949,12 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
 
             Chunk& chunk = chunkGrid.getChunkAtPosition(worldPos2D);
             // Only notify chunk if it is activated
+            // TODO: is it possible a building can change while under chunk is activated but not connected? Does it matter?
             if (chunk.isActivated()) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
-                const TileSpatialGrid& chunkTileIndexManager = chunkTileContainer->getTileSpatialGrid();
+                const TileSpatialGrid& chunkTileSpatialGrid = chunkTileContainer->getTileSpatialGrid();
                 assert(chunkTileContainer);
-                TileIndex chunkTileIndex = chunkTileIndexManager.getTileIndexFromXYZOffset(worldPos2D.x - chunkTileIndexManager.getWorldPos2D().x, worldPos2D.y - chunkTileIndexManager.getWorldPos2D().y, 0);
+                TileIndex chunkTileIndex = chunkTileSpatialGrid.getBaseTileIndexFromXYOffset(worldPos2D.x - chunkTileSpatialGrid.getWorldPos2D().x, worldPos2D.y - chunkTileSpatialGrid.getWorldPos2D().y);
                 if (tile.isEmpty()) {
                     chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
                 }

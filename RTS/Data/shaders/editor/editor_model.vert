@@ -33,7 +33,7 @@ void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
     
-    // TODO: Do in fragment shader?
+    // TODO: Do in fragment shader? (future ben- why? xD)
     fMaterialIndex = inVariantData[unVariantIndex].materials[vMaterialSlot];
 	
 	vec3 normal = normalize(vNormal);

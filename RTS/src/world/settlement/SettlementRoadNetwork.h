@@ -8,7 +8,7 @@ class RandomGenerator;
 class VisualLog;
 class SettlementPlotManager;
 
-// TODO: RoadGrid needs access to this
+// TODO: Data drive this?
 enum class RoadType : ui8 {
     Dirt,
     COUNT

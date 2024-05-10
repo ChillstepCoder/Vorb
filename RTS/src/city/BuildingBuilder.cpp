@@ -44,7 +44,6 @@ Building* BuildingBuilder::debugCreateAndBuildNewBuilding(World& world, std::uni
     if (!newBuilding) {
         return nullptr;
     }
-    world.getTileContainerLoader().loadBuilding(*newBuilding);
 
     return newBuilding;
 }

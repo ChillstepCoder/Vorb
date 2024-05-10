@@ -25,8 +25,7 @@ TileContainerLoader::TileContainerLoader(World& world) : mWorld(world) {
 }
 
 void TileContainerLoader::loadBuildingAsync(Building& building) const {
-    assert(building.getState() == BuildingState::SIM);
-    building.setState(BuildingState::LOADING);
+    building.setState(BuildingState::LOADING_TILES);
     if (building.getBlueprint()) {
         loadBuildingFromBlueprintAsync(building);
     }
@@ -56,13 +55,9 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
         const i32AABB2 aabb(worldPos, bp.dimsDTile * DTILE_WIDTH);
 
         // Clamp building height to 1 meter increments
-
-        // === Flatten terrain ===
-        //grid.flattenAABB(i32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
         TileContainer& tileContainer = *building.getTileContainer();
 
         std::vector<Tile>& tiles = tileContainer.mTiles;
-        std::vector<TileContainer*> dirtyNavTileContainers;
         const i32v3 dims(aabb.dims.x, aabb.dims.y, bp.floorCount);
         const i32 floorStride = dims.x * dims.y;
 
@@ -75,7 +70,7 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
             Tile& tile = tiles[tileTarget.tileIndex];
             const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
             tile.layers[data.layer] = tileTarget.id;
-            tile.setTileFlag(TileFlags::ROOFED);
+            tile.tileFlags.setBit(TileFlags::ROOFED);
         }
         for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
             BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
@@ -94,11 +89,11 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
             Tile& tile = tiles[stairPiece.pos];
             tile.groundLayer = bp.defaultFloorID;
             tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
-            tile.setGroundZOffset(tilePos.z + heightAdd);
+            tile.groundZOffset = tilePos.z + heightAdd;
             tile.setOrientation(stairPiece.dir, TileLayer::Main);
-            tile.setTileFlag(TileFlags::ROOFED);
+            tile.tileFlags.setBit(TileFlags::ROOFED);
             // Mark above tile as roofed as well
-            tiles[stairPiece.pos + floorStride].setTileFlag(TileFlags::ROOFED);
+            tiles[stairPiece.pos + floorStride].tileFlags.setBit(TileFlags::ROOFED);
         }
 
         TileContainerEvent loadFinishedEvent;
@@ -147,6 +142,9 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
 
         // Build visibility
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());
+
+        // Cache harvestables
+        //container.mHarvestableRegistry.refreshFromOwner();
 
         chunk->setState(ChunkState::WAITING_BUILDINGS);
     });

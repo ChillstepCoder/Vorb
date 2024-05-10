@@ -10,9 +10,11 @@
 class BuildingBlueprint;
 
 enum class BuildingState : ui8 {
-    LOADING,
+    SIM,
+    WAITING_SIM_RELEASE, // LAST SIM STATE
+    LOADING_TILES,
     ACTIVE,
-    SIM
+    INVALID
 };
 
 class StructureSimulationData {
@@ -44,9 +46,9 @@ public:
     const BitArray& getOwnedDTiles() const { return mOwnedDTiles; }
     bool isTileOwned(TileIndex index) const { return mOwnedDTiles.getBit(structureTileIndexToDTileIndex(index % (mTileAABB.width * mTileAABB.depth), mTileAABB.width >> 1)); }
 
-    void incRef() { assert(mTileContainer); mTileContainer->incRef(); }
-    void decRef() { assert(mTileContainer); mTileContainer->decRef(); }
-    ui32 getRefCount() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
+    void incRefTiles() { ASSERT_GAME_THREAD(); assert(mTileContainer); mTileContainer->incRef(); }
+    void decRefTiles() { ASSERT_GAME_THREAD(); assert(mTileContainer); mTileContainer->decRef(); }
+    ui32 getRefCountTiles() const { ASSERT_GAME_THREAD(); return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
     const ChunkID* getChunkDependencies() const { return mChunkDependencies; }
     ui32 getChunkDependencyCount() const { return mChunkDependencyCount; }
@@ -59,6 +61,17 @@ public:
     BuildingState getState() const { return mState.load(); }
     void setState(BuildingState state) { mState = state; }
 
+    bool isValidForSimUsage() {
+        ASSERT_SIM_THREAD();
+        BuildingState state = mState.load();
+        return (state == BuildingState::SIM || state == BuildingState::WAITING_SIM_RELEASE);
+    }
+
+    bool isValidForMainThreadUsage() {
+        ASSERT_GAME_THREAD();
+        return (mState == BuildingState::ACTIVE);
+    }
+
 protected:
     BitArray mOwnedDTiles;
     TileContainer* mTileContainer = nullptr;
@@ -68,10 +81,9 @@ protected:
     BuildingID mId = INVALID_BUILDING_ID;
     ChunkID mChunkDependencies[4] = { INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID };
     ui8 mChunkDependencyCount : 4;
-    ui8 mChunkDependenciesActive : 4; // Main thread only
-    ui8 mChunkDependenciesConnected : 4; // Main thread only
+    ui8 mChunkDependenciesActiveCount : 4; // Main thread only
     ui8 mFloorHeight;
-    std::atomic<BuildingState> mState = BuildingState::LOADING;
+    std::atomic<BuildingState> mState = BuildingState::INVALID;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk
     bool mIsDeactivating = false;
 

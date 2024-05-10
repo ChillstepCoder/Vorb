@@ -18,17 +18,18 @@ public:
 
     // Thread limited variable access
     ui32& numLoadingBuildingsRef() { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
-    ui32& numLoadingBuildingsRef() { ASSERT_GAME_THREAD(); return mNumConnectedBuildings; }
+    ui32 getNumLoadingBuildings() const { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
+    // Buildings which are not connected to the active chunks
+    std::vector<Building*>& getDisconnectedBuildings() { ASSERT_GAME_THREAD(); return disconnectedBuildings; }
 private:
 
     bool isSimulated = true; // Main thread only
     ui32 mNumLoadingBuildings = 0; // Main thread only
-    ui32 mNumConnectedBuildings = 0; // Main thread only
+    std::vector<Building*> disconnectedBuildings; // Main thread only
 
 public:
     mutable std::mutex mMutex;
-    std::vector<BuildingID> buildings; // Shared
-    BitArray connected;  // Shared
+    std::vector<Building*> buildings; // Shared
     std::unique_ptr<BuildingID[]> dTileBuildings = nullptr; // Shared
 };
 
@@ -51,9 +52,13 @@ public:
     const BuildingMap& getBuildings() const { ASSERT_GAME_THREAD(); return mBuildings; }
     const Building& getBuilding(BuildingID id) const { ASSERT_GAME_THREAD(); return *mBuildings.at(id); }
 
-    ui32 allBuildingsLoadedAtChunk(ChunkID chunkId);
+    ui32 allBuildingsLoadedAtChunk(ChunkID chunkId) const;
+    // For connecting loaded buildings to the active chunk
+    void connectBuildingsToChunk(Chunk& chunk);
 
 private:
+    // Returns false if already connected, does not remove from disconnected array, caller must do that
+    void connectBuildingToChunk(Building& building, Chunk& chunk);
     void onBuildingFinishedLoad(Building& building);
     void initEventHandlers();
     void removeBuildingFromDeactivateList(Building* building);

@@ -13,5 +13,3 @@ textures:
     uniform: CliffTexture
   - name: cliff_base_n
     uniform: CliffNormal
-  - name: dirt_road
-    uniform: DirtRoad
