@@ -33,6 +33,14 @@ void main() {
 	vec3 normal = vNormal; // Prenormalized on CPU
 	vec3 binormal = normalize(cross(normal, vec3(1.0, 0.0, 0.0)));
     vec3 tangent = normalize(cross(binormal, normal));
+    
+    
+    //https://learnopengl.com/Advanced-Lighting/Normal-Mapping
+    // re-orthogonalize B with respect to N
+    // TODO: Seems to make no difference
+    //binormal = normalize(binormal - dot(binormal, normal) * normal);
+    
+    
 	fTBN = mat3(tangent, binormal, normal);
     fNormal = normal;
     
@@ -47,6 +55,6 @@ void main() {
     gl_Position = VP * worldPos;
     
     // For displacement, get our world space -> tangent space
-    mat3 tfTBN = inverse(fTBN);
+    mat3 tfTBN = transpose(fTBN);
     fFragPosTangent = tfTBN * worldPos.xyz;
 }

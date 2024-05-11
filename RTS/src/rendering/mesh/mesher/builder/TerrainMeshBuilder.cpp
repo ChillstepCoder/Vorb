@@ -182,22 +182,25 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
             v.roadMaterialId = roadGrid.getRoadMaterialFromType(roadPoint.type);
 
             // Normal calc
-            f32 fl = uncompressHeight(paddedHeightfield[y][x]); // front left
-            f32  l = uncompressHeight(paddedHeightfield[y + 1][x]);   // left
-            f32 bl = uncompressHeight(paddedHeightfield[y + 2][x]); // back left
-            f32  f = uncompressHeight(paddedHeightfield[y][x + 1]);   // front
-            f32  b = uncompressHeight(paddedHeightfield[y + 2][x + 1]);   // back
-            f32 fr = uncompressHeight(paddedHeightfield[y][x + 2]); // front right
-            f32  r = uncompressHeight(paddedHeightfield[y + 1][x + 2]);   // right
-            f32 br = uncompressHeight(paddedHeightfield[y + 2][x + 2]); // back right
+           // f32 fl = uncompressHeight(paddedHeightfield[y][x]);     // front left
+            f32 f = uncompressHeight(paddedHeightfield[y][x + 1]); // front
+            //f32 fr = uncompressHeight(paddedHeightfield[y][x + 2]); // front right
+
+            f32 l = uncompressHeight(paddedHeightfield[y + 1][x]); // left
+            f32 r = uncompressHeight(paddedHeightfield[y + 1][x + 2]); // right
+
+            //f32 bl = uncompressHeight(paddedHeightfield[y + 2][x]); // back left
+            f32 b = uncompressHeight(paddedHeightfield[y + 2][x + 1]); // back
+            //f32 br = uncompressHeight(paddedHeightfield[y + 2][x + 2]); // back right
 
             //https://gamedev.stackexchange.com/questions/165575/calculating-normal-map-from-height-map-using-sobel-operator
             // Sobel filter
-            const f32 dX = (fl + 2.0f * l + bl) - (fr + 2.0f * r + br);
-            const f32 dY = (fl + 2.0f * f + fr) - (bl + 2.0f * b + br);
-            const f32 dZ = quadWidth;
+          /*  const f32 dX = (fr + 2.0f * r + br) - (fl + 2.0f * l + bl);
+            const f32 dY = (bl + 2.0f * b + br) - (fl + 2.0f * f + fr);
+            const f32 dZ = quadWidth;*/
+            f32v3 n(l - r, f - b, 2.0f);
 
-            f32v3 n(dX, dY, dZ);
+            //f32v3 n(dX, dY, dZ);
             v.normal = glm::normalize(n);
         }
     }

@@ -106,9 +106,7 @@ void computeCrossfade() {
 
 vec3 computeNormal() {
     // TODO: NORMAL MAPPING
-    vec3 normal = vec3(0.0, 0.0, 1.0);
-	normal = normalize(fTBN * normal);
-    return normal;
+    return normalize(fTBN[2]);
 }
 
 float getTerrainDistanceFactor(float distance) {
@@ -229,7 +227,6 @@ void main() {
     vec3 normalFar = getTriplanarNormal(surfaceNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
     vec3 finalNormal = mix(normalClose, normalFar, cliffDistFactor);
     finalNormal = mix(finalNormal, surfaceNormal, min(fSnow, 1.0));
-    oNormal.rgb = (finalNormal + 1.0) * 0.5;
 
 	//oNormal.rgb = oNormal.rgb * 0.00001 + (surfaceNormal + 1.0) * 0.5;
     
@@ -281,11 +278,12 @@ void main() {
         float metallic;
         float roughness;
         vec2 uv = fUV * 100.0;
-        float heightScale = 0.5;
+        // 0.4 matches height blend scale
         
         // Disp
         MaterialData mtl = inMaterials[fRoadMaterialIndex];
         if (mtl.displacementMap > 0) {
+            float heightScale = max((fRoadIntensity - 0.45) * 0.6, 0);
             vec3 VIEW_POS_TANGENT = vec3(0.0,0.0,0.0); // Camera is at 0!
             vec3 tangentViewDir = normalize(VIEW_POS_TANGENT - fFragPosTangent);
             uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
@@ -302,6 +300,19 @@ void main() {
         //roadBlend = fRoadIntensity;
         oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample.rgb, roadLuminance * roadBlend);
         //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
+       // oColor.rgb = 0.0001 * oColor.rgb + fFragPosTangent.z * 0.1;
+       
+       // Normal map
+       vec3 roadNormal = fTBN * normal;
+       finalNormal = mix(finalNormal, roadNormal, roadBlend);
+       
+       // Roughness metallic
+       oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), roadBlend); 
+       
+       // Uncomment to debug weird negative frag pos issue
+       // if (-fFragPosTangent.z < 0.0) {
+       //     oColor.r = 1.0;
+       // }
     }
     
     
@@ -326,4 +337,7 @@ void main() {
         }
     }
     //oColor.rgb = 0.0001 * oColor.rgb + oNormal.rgb;//fNormal.rgb * 0.5 + 0.5;
+    
+    
+    oNormal.rgb = (finalNormal + 1.0) * 0.5;
 }

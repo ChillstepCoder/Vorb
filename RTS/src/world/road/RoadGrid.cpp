@@ -91,6 +91,6 @@ void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
 #include "resources/MaterialRepository.h"
 MaterialID RoadGrid::getRoadMaterialFromType(ui8 type) const {
     // TODO: Data drive roads!
-    return MaterialRepository::get().getMaterialId(CStrToken(/*"dirt_road"*/"window"));
+    return MaterialRepository::get().getMaterialId(CStrToken(/*"dirt_road"*/"farm_plot_2"));
 }
 
