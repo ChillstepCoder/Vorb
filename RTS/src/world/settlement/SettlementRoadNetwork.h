@@ -8,7 +8,7 @@ class RandomGenerator;
 class VisualLog;
 class SettlementPlotManager;
 
-#include "world/road/RoadType.h"
+#include "world/road/TerrainTextureType.h"
 
 enum class RoadSegmentType : ui8 {
     Segment,
@@ -33,7 +33,7 @@ struct RoadSegment {
     RoadSegmentType segmentType = RoadSegmentType::InfiniteLine;
     ui8 widthTiles[2]; // Allow taper
     bool infiniteEdges[2]; // Whether each vertex implicitly extends to infinity
-    RoadType roadType;
+    TerrainTextureType roadType;
     SettlementZone zone;
 };
 
@@ -64,7 +64,7 @@ public:
     SettlementRoadNetwork(World& world, RandomGenerator& randomGenerator);
     ~SettlementRoadNetwork();
     void init(SettlementPlotManager& plotManager);
-    bool tryAddRoadBetweenSectorPoints(entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width, SettlementZone zone);
+    bool tryAddRoadBetweenSectorPoints(entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, TerrainTextureType roadType, ui8 width, SettlementZone zone);
 private:
     // Return true if we hit ANY segment, ignores infinite edges
     bool simpleTraceAgainstSolidRoadSegments(f32v2 start, f32v2 end);

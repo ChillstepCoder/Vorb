@@ -11,6 +11,11 @@ uniform sampler2D CliffNormal;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
+uniform sampler2D unSplatTexture;
+// TODO: Splat data
+
+uniform uint unSplatMaterials[256];
+
 uniform float unHeightMult = 0.191;
 uniform float unWavyMult = 0.167;
 uniform float unSquaresIntensity = 0.5;
@@ -28,8 +33,6 @@ const float DISTANT_COLOR_EXP = 0.6;
 const float DISTANT_COLOR_INTENSITY = 0.75;
 
 in float fHeight;
-in float fRoadIntensity;
-flat in uint fRoadMaterialIndex;
 in vec3 fPosition;
 in vec2 fBiomeUV;
 in vec2 fUV;
@@ -37,6 +40,7 @@ in mat3 fTBN;
 in float fSnow;
 in vec3 fNormal;
 in vec3 fFragPosTangent;
+in vec2 fSplatUV;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
@@ -270,9 +274,14 @@ void main() {
     
     oColor.a = 1.0; // AO?
     
-    // =========== Road ===========
-    if (fRoadIntensity > 0.0) {
-        vec3 normal;
+    
+    vec2 splatOffset = vec2(rawTurb);
+    float splatValue = texture(unSplatTexture, fSplatUV + splatOffset * 0.01).r;
+    
+    if (splatValue != 0.0) {
+        uint splatMaterialId = unSplatMaterials[uint(splatValue * 255.0)];
+        
+         vec3 normal;
         vec4 roadSample;
         float ao;
         float metallic;
@@ -280,23 +289,25 @@ void main() {
         vec2 uv = fUV * 100.0;
         // 0.4 matches height blend scale
         
+        float intensity = 1.0;
+        
         // Disp
-        MaterialData mtl = inMaterials[fRoadMaterialIndex];
+        MaterialData mtl = inMaterials[splatMaterialId];
         if (mtl.displacementMap > 0) {
-            float heightScale = max((fRoadIntensity - 0.45) * 0.6, 0);
+            float heightScale = max((intensity - 0.45) * 0.6, 0);
             vec3 VIEW_POS_TANGENT = vec3(0.0,0.0,0.0); // Camera is at 0!
             vec3 tangentViewDir = normalize(VIEW_POS_TANGENT - fFragPosTangent);
             uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
         }
         
-        getMaterialPixelInfo(fRoadMaterialIndex, uv, roadSample, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
+        getMaterialPixelInfo(splatMaterialId, uv, roadSample, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
         
         //vec3 roadSample = texture(DirtRoad, fUV * 10.0).rgb;
         float roadLuminance = getLuminance(roadSample.rgb) * 4.0;
         // Fake shitty height learp (Adjust based on texture?)
-        //float roadBlend = clamp(fRoadIntensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
-        float roadBlend = clamp(pow(fRoadIntensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
-        //roadBlend = fRoadIntensity;
+        //float roadBlend = clamp(intensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
+        float roadBlend = clamp(pow(intensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
+        //roadBlend = intensity;
         oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample.rgb, roadLuminance * roadBlend);
         //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
        // oColor.rgb = 0.0001 * oColor.rgb + fFragPosTangent.z * 0.1;
@@ -319,6 +330,8 @@ void main() {
        //     oColor.r = 1.0;
        // }
     }
+    
+    //oColor.rgb = 0.0001 * oColor.rgb + vec3(fSplatUV.x, 0.0, 0.0);
     
     
     // =========== Snow ===========

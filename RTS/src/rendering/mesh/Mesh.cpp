@@ -151,3 +151,7 @@ MeshCpuData& MeshCpuData::operator=(MeshCpuData&& o) {
     o.mElementsPtr = nullptr;
     return *this;
 }
+
+TerrainMesh::~TerrainMesh() {
+    glDeleteTextures(1, &mTerrainSplatTexture);
+}

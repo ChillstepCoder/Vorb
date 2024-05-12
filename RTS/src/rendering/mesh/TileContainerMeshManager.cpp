@@ -152,6 +152,7 @@ void TileContainerMeshManager::initEventHandlers(World& world) {
     tileContainerRepository.registerTileContainerListeners(mTileContainerListeners);
 
     tileContainerRepository.addLoadFinishedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
+        ASSERT_GAME_THREAD();
         updateTileContainerMesh(*containerEvent.container);
     });
 

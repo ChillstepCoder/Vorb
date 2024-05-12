@@ -17,6 +17,7 @@
 
 #include "resources/ResourceManager.h"
 #include "resources/BiomeRepository.h"
+#include "resources/MaterialRepository.h"
 #include "camera/Camera3D.h"
 #include "mesh/Mesh.h"
 #include "mesh/MeshDrawer.h"
@@ -30,6 +31,11 @@ TerrainRenderer::TerrainRenderer() {
     mTerrainMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("terrain"));
     mWaterMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water"));
     mWaterPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_pbr"));
+
+    // TODO: Data drive roads!
+    mMaterialsLookup[e_cast(TerrainTextureType::None)] = 0;
+    mMaterialsLookup[e_cast(TerrainTextureType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
+    mMaterialsLookup[e_cast(TerrainTextureType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
 }
 
 void TerrainRenderer::setActiveWorld(World& world) {
@@ -64,16 +70,23 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffAmount"), sDebugOptions.mTerrainCliffAmount);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffZMult"), sDebugOptions.mTerrainCliffZMult);
 
-    VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
-    VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
-    VGUniform crossfadeDirectionUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeDirection");
-    VGUniform uvRootUniform = mTerrainMaterial->mProgram.getUniform("unUVRoot");
+    const VGUniform unSplatMaterialsUniform = mTerrainMaterial->mProgram.getUniform("unSplatMaterials[0]");
+    glUniform1uiv(unSplatMaterialsUniform, e_count(TerrainTextureType), mMaterialsLookup);
+
+    const VGUniform patchWidthUniform = mTerrainMaterial->mProgram.getUniform("unPatchWidth");
+    const VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
+    const VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
+    const VGUniform crossfadeDirectionUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeDirection");
+    const VGUniform uvRootUniform = mTerrainMaterial->mProgram.getUniform("unUVRoot");
     glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeTexture"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, mBiomeTexture);
 
     ++nextTextureUnit;
     glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
+    
+    const ui32 splatTextureUnit = ++nextTextureUnit;
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSplatTexture"), splatTextureUnit);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
 
@@ -92,9 +105,12 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
                 glUniform1f(crossfadeAlphaUniform, 0.0f);
                 glUniform1f(crossfadeDirectionUniform, 0.0f);
             }
-            f32v3 position = terrainMesh->getPosition();
-            glUniform3fv(positionUniform, 1, &position.x);
+            glUniform1f(patchWidthUniform, (f32)(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].x << 1));
+            glUniform3fv(positionUniform, 1, &terrainMesh->getPosition().x);
             glUniform2fv(uvRootUniform, 1, &terrainMesh->mUVRoot.x);
+
+            glBindTextureUnit(splatTextureUnit, terrainMesh->mTerrainSplatTexture);
+
             MeshDrawer::draw(terrainMesh->mGpuData);
         }
     }

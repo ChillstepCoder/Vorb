@@ -26,6 +26,18 @@ public:
             return HEIGHT_STEP * data[vertPos];
         }
     }
+
+    template<bool THREAD_SAFE = false>
+    CompressedHeight getCompressedHeightAt(int vertPos) const {
+        if constexpr (THREAD_SAFE) {
+            std::shared_lock lock(mMutex);
+            return data[vertPos];
+        }
+        else {
+            return data[vertPos];
+        }
+    }
+
     void setHeightAt(int vertPos, f32 height) {
         data[vertPos] = compressHeight(glm::clamp(height, MIN_HEIGHT, MAX_HEIGHT));
     }

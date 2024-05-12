@@ -96,9 +96,6 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
             tiles[stairPiece.pos + floorStride].tileFlags.setBit(TileFlags::ROOFED);
         }
 
-        TileContainerEvent loadFinishedEvent;
-        loadFinishedEvent.container = &tileContainer;
-        tileContainer.getWorld().getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
         //building.mFunction = bp.desc->function;
         //building.mDoorTiles = blueprint.exteriorDoors;

@@ -268,13 +268,21 @@ f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::getHeightAtVert, (DTileCoord vertPos) const)
 
-
 f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) const {
     ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
     assert(vertPos.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH && vertPos.y < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     return patch.getHeightAt(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
 }
+
+template<bool THREAD_SAFE>
+CompressedHeight IHeightmapGrid::getCompressedHeightAtVert(DTileCoord vertPos) const {
+    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    return mHeightData[id].getCompressedHeightAt<THREAD_SAFE>(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
+}
+DECL_BOOL_TEMPLATE(CompressedHeight IHeightmapGrid::getCompressedHeightAtVert, (DTileCoord vertPos) const)
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAtPoint(const f32v2& worldPos) const {

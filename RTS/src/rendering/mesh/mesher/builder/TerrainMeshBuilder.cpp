@@ -7,8 +7,6 @@
 #include "terrain/HeightmapPatch.h"
 #include "options/DebugOptions.h"
 
-#include "world/road/RoadGrid.h"
-
 #include <math.h>  /* modf */
 
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
@@ -106,11 +104,12 @@ void TerrainMeshBuilder::initStaticIBO() {
 }
 
 void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPosTreeRoot) {
+    ASSERT_RENDER_THREAD();
 
     terrainMesh.mUVRoot = mUVRoot;
 
     // Set bounds
-    terrainMesh.setPosition(worldPosTreeRoot);
+    terrainMesh.setPosition(f32v3(mWorldPosPatchCorner.x, mWorldPosPatchCorner.y, 0.0f));
     waterMesh.setPosition(worldPosTreeRoot);
     terrainMesh.setBoundingSphere(mBoundingSphere);
     waterMesh.setBoundingSphere(mBoundingSphere);
@@ -129,6 +128,13 @@ void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& wat
     terrainMesh.mGpuData.mVertexType = TerrainVertex::bindVertexAttribs(terrainMesh.mGpuData.mVao);
     waterMesh.mGpuData.mVertexType = WaterVertex::bindVertexAttribs(waterMesh.mGpuData.mVao);
 
+    // Upload splat texture
+    if (!terrainMesh.mTerrainSplatTexture) {
+        glCreateTextures(GL_TEXTURE_2D, 1, &terrainMesh.mTerrainSplatTexture);
+        glTextureStorage2D(terrainMesh.mTerrainSplatTexture, 1, GL_R8, TERRAIN_MESH_PADDED_WIDTH_VERTS, TERRAIN_MESH_PADDED_WIDTH_VERTS);
+    }
+    glTextureSubImage2D(terrainMesh.mTerrainSplatTexture, 0, 0, 0, TERRAIN_MESH_PADDED_WIDTH_VERTS, TERRAIN_MESH_PADDED_WIDTH_VERTS, GL_RED, GL_UNSIGNED_BYTE, mBaseTerrainLayers);
+    vg::sSamplerStates.POINT_CLAMP.setForTexture(terrainMesh.mTerrainSplatTexture);
 
     checkGlError("TerrainMeshBuilder::finishMeshes");
 }
@@ -140,21 +146,21 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
     const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
     const RoadGrid& roadGrid) {
 
-    const i32v2 worldPosPatchCorner = worldPosTreeRoot + cornerPosRelativeToRoot;
+    mWorldPosPatchCorner = worldPosTreeRoot + cornerPosRelativeToRoot;
 
     // AABB calculation
     f32AABB3 aabb;
     aabb.dims.x = totalWidth;
     aabb.dims.y = totalWidth;
-    aabb.pos.x = worldPosPatchCorner.x;
-    aabb.pos.y = worldPosPatchCorner.y;
+    aabb.pos.x = mWorldPosPatchCorner.x;
+    aabb.pos.y = mWorldPosPatchCorner.y;
     f32 minZ = FLT_MAX;
     f32 maxZ = -FLT_MAX;
 
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
 
     { // Compute with high precision to avoid precision issues in shader
-        f64v2 rootUVDouble = f64v2(worldPosTreeRoot) * f64(sDebugOptions.mGrassColorMapScale);
+        f64v2 rootUVDouble = f64v2(mWorldPosPatchCorner) * f64(sDebugOptions.mGrassColorMapScale);
         f64 intpart;
         mUVRoot.x = (f32)modf(rootUVDouble.x, &intpart);
         mUVRoot.y = (f32)modf(rootUVDouble.y, &intpart);
@@ -163,9 +169,9 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
     constexpr f32 NORMAL_STRENGTH = 1.0f / 4.0f;
     i32v2 worldPos;
     for (i32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
-        worldPos.y = worldPosPatchCorner.y + y * quadWidth;
+        worldPos.y = mWorldPosPatchCorner.y + y * quadWidth;
         for (i32 x = 0; x < TERRAIN_MESH_WIDTH_VERTS; ++x) {
-            worldPos.x = worldPosPatchCorner.x + x * quadWidth;
+            worldPos.x = mWorldPosPatchCorner.x + x * quadWidth;
             TerrainVertex& v = mTerrainVerts[y * TERRAIN_MESH_WIDTH_VERTS + x];
             f32 height = uncompressHeight(paddedHeightfield[y + 1][x + 1]);
 
@@ -173,13 +179,9 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
             if (height > maxZ) maxZ = height;
 
             // Position
-            v.pos.x = cornerPosRelativeToRoot.x + x * quadWidth;
-            v.pos.y = cornerPosRelativeToRoot.y + y * quadWidth;
+            v.pos.x = x * quadWidth;
+            v.pos.y = y * quadWidth;
             v.pos.z = height;
-
-            const RoadPoint roadPoint = roadGrid.getRoadPoint<true>(DTileCoord::fromTilePosRound(worldPos));
-            v.roadIntensity = roadPoint.strength;
-            v.roadMaterialId = roadGrid.getRoadMaterialFromType(roadPoint.type);
 
             // Normal calc
            // f32 fl = uncompressHeight(paddedHeightfield[y][x]);     // front left

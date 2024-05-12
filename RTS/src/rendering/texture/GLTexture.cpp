@@ -2,7 +2,7 @@
 #include "GLTexture.h"
 
 
-GLTexture::GLTexture(GLuint handle, vg::TextureTarget type, const ui32v2& dims) : mHandle(handle), mType(type), mDims(dims) {
+GLTexture::GLTexture(VGTexture handle, vg::TextureTarget type, const ui32v2& dims) : mHandle(handle), mType(type), mDims(dims) {
 
 }
 
@@ -33,7 +33,7 @@ GLTexture::~GLTexture() {
     destroy();
 }
 
-void GLTexture::init(GLuint handle, vg::TextureTarget type, const ui32v2& dims) {
+void GLTexture::init(VGTexture handle, vg::TextureTarget type, const ui32v2& dims) {
     destroy();
 
     mDims = dims;

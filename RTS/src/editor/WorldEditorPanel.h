@@ -6,7 +6,7 @@
 #include "tile/TileGrass.h"
 
 #include "definitions/BrushDef.h"
-#include "world/road/RoadType.h"
+#include "world/road/TerrainTextureType.h"
 
 class Camera3D;
 class BrushRepository;
@@ -124,7 +124,7 @@ private:
     // Grass edit
     mutable TileGrassID mSelectedGrass = 0;
     // Road Edit
-    mutable RoadType mSelectedRoadType = RoadType::Dirt;
+    mutable TerrainTextureType mSelectedRoadType = TerrainTextureType::Dirt;
 
     mutable StrToken mSelectedEntity;
     std::unique_ptr<DeferredPhysicsPick> mDeferredPhysicsPick;

@@ -57,7 +57,7 @@ void SettlementRoadNetwork::init(SettlementPlotManager& plotManager) {
 }
 
 
-bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, RoadType roadType, ui8 width, SettlementZone zone) {
+bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, TerrainTextureType roadType, ui8 width, SettlementZone zone) {
     f32v2 offsetf(sector2Pos.v - sector1Pos.v);
 
     // Rotate offset so it is a a cell border between our two sectors

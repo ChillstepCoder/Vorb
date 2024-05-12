@@ -6,6 +6,7 @@
 #include "debugging/DebugRenderer.h"
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
+#include "world/road/RoadGrid.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/RenderContext.h"
@@ -73,13 +74,17 @@ void createTerrainAndWaterMesh(
     assert(dims.x == dims.y);
 
     // Generate heightfield
+    RoadGrid& roadGrid = world.getRoadGrid();
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
-            const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            const f32 zPos = heightGrid.computeHeightAtPoint<true>(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-            paddedHeightfield[y][x] = compressHeight(zPos);
+            const f32v2 vertOffset = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
+            const f32v2 trueWorldPos = f32v2(vertOffset.x + worldPos.x, vertOffset.y + worldPos.y);
+            DTileCoord dTilePos = DTileCoord::fromTilePosRound(trueWorldPos);
+            dTilePos.v = glm::clamp(dTilePos.v, 0, (i32)(world.getWidthDTiles() - 1));
+            paddedHeightfield[y][x] = heightGrid.getCompressedHeightAtVert<true>(dTilePos);
+            terrainBuilder.mBaseTerrainLayers[y][x] = roadGrid.getRoadPoint<true>(dTilePos).type;
         }
     }
     terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield, world.getRoadGrid());

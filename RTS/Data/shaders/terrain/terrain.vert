@@ -2,18 +2,15 @@
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec3 vNormal;
-layout(location = 2) in float vRoadIntensity;
-layout(location = 3) in uint vRoadMaterialIndex;
 
 uniform vec3 unPosition;
 uniform vec2 unUVRoot;
 uniform float unInverseWorldWidth;
 uniform float unColorMapScale = 0.005;
 uniform float unSnowLevel;
+uniform float unPatchWidth;
 
 out float fHeight;
-out float fRoadIntensity;
-flat out uint fRoadMaterialIndex;
 out vec3 fPosition;
 out vec2 fUV;
 out vec2 fBiomeUV;
@@ -22,13 +19,17 @@ out float fSnow;
 out vec3 fNormal;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
+out vec2 fSplatUV;
+
+const float TERRAIN_TO_PAD_RATIO = 0.98473282442; // 129/131
+const float PAD_OFFSET = 0.00763358778; // 1/131
 
 void main() {
-    vec4 vertexPos = vPosition;
-    vec4 worldPos = vertexPos + vec4(unPosition - CameraPos, 0.0);
-    fBiomeUV = (vertexPos.xy + unPosition.xy) * unInverseWorldWidth;
-    fRoadIntensity = vRoadIntensity;
-    fRoadMaterialIndex = vRoadMaterialIndex;
+
+    fSplatUV = (vPosition.xy / vec2(unPatchWidth)) * TERRAIN_TO_PAD_RATIO + vec2(PAD_OFFSET);
+    
+    vec4 worldPos = vPosition + vec4(unPosition - CameraPos, 0.0);
+    fBiomeUV = (vPosition.xy + unPosition.xy) * unInverseWorldWidth;
 	
 	vec3 normal = normalize(vNormal); // Prenormalized on CPU
 	vec3 binormal = normalize(cross(normal, vec3(1.0, 0.0, 0.0)));
@@ -45,11 +46,11 @@ void main() {
     fNormal = normal;
     
     fSnow = normal.z * unSnowLevel;
-    fSnow += clamp((vertexPos.z - 50.0) * 0.025 * normal.z, 0.0, 3.0);
+    fSnow += clamp((vPosition.z - 50.0) * 0.025 * normal.z, 0.0, 3.0);
     worldPos.z += fSnow * 0.5f;
 	
     fUV = unUVRoot + vPosition.xy * unColorMapScale;
-    fHeight = vertexPos.z;
+    fHeight = vPosition.z;
     fPosition = worldPos.xyz;
 
     gl_Position = VP * worldPos;

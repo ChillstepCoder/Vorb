@@ -146,13 +146,15 @@ protected:
 class TerrainMesh : public Mesh {
 public:
     TerrainMesh(ui32 patchIndex) : mIndex(patchIndex) {};
+    ~TerrainMesh();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(TerrainMesh);
+    VORB_NON_COPYABLE(TerrainMesh);
 
     ui32 mIndex;
     std::atomic<f32> mCrossfadeAlpha = 0.0f;
     std::atomic_int mCrossfadeDir = 0; // -1 = down, 0 = none, 1 = up
     f32v2 mUVRoot;
+    VGTexture mTerrainSplatTexture = 0;
 };
 
 class SkeletalMesh : public Mesh {

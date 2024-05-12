@@ -51,13 +51,13 @@ static_assert(sizeof(StaticModelVertex) == 32, "16 byte alignment needed");
 struct alignas(16) TerrainVertex {
     f32v3 pos;
     ui32 normalPacked;
-    ui8 roadIntensity;
-    ui16 roadMaterialId;
+   // ui8 roadIntensity;
+   // ui16 roadMaterialId;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::TERRAIN; }
 };
-static_assert(sizeof(TerrainVertex) == 32, "16 byte alignment needed");
+static_assert(sizeof(TerrainVertex) == 16, "16 byte alignment needed");
 
 struct alignas(16) WaterVertex {
     f32v3 pos;

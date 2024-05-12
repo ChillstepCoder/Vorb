@@ -2654,7 +2654,7 @@
     <ClInclude Include="src\ecs\FullECSEvents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\road\RoadType.h">
+    <ClInclude Include="src\world\road\TerrainTextureType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

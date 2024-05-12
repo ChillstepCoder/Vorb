@@ -3,6 +3,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include "resources/asset/AssetHandleBundle.h"
+#include "world/road/TerrainTextureType.h"
 
 class MaterialShaderDef;
 class Camera3D;
@@ -31,5 +32,8 @@ private:
     VGTexture mBiomeTexture = 0;
     f32 mInverseWorldWidth = 0.0f;
     WeatherManager* mWeatherManager = nullptr;
+
+    // TODO: SSBO instead
+    ui32 mMaterialsLookup[e_count(TerrainTextureType)] = {};
 };
 

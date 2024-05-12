@@ -341,6 +341,11 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
 
 void BuildingGrid::onBuildingFinishedLoad(Building& building) {
     GameThreadTasks::getInstance().addGenericTask([this, &building]() {
+
+        TileContainerEvent loadFinishedEvent;
+        loadFinishedEvent.container = building.getTileContainer();
+        mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
+
         building.mState = BuildingState::ACTIVE;
         for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
             const ChunkID id = building.getChunkDependencies()[i];

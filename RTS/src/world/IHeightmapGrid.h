@@ -92,6 +92,9 @@ public:
     f32 getHeightAtVert(DTileCoord vertPos) const;
     f32 getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) const;
 
+    template<bool THREAD_SAFE>
+    CompressedHeight getCompressedHeightAtVert(DTileCoord vertPos) const;
+
     template <bool THREAD_SAFE>
     f32 computeHeightAtPoint(const f32v2& worldPos) const;
     // Never thread safe
