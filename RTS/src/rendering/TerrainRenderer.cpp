@@ -38,8 +38,8 @@ TerrainRenderer::TerrainRenderer() {
     // We store which gradients we use in a texture at same resolution as layer materials,
     // which is updated when the terrain updates.
     // Note that some textures will be duplicate... thats ok. For example:
-    // 0 1  will have the same gradient from perspective of top left as 0 1
-    // 0 0                                                              1 0
+    // 0 1  will have the same gradient from perspective of top right as 0 1
+    // 0 0                                                               1 0
 
     // TODO: Data drive layers!
     mMaterialsLookup[e_cast(TerrainTextureType::None)] = 0;
