@@ -3,6 +3,7 @@
 #include "util/SpatialGrid2D.h"
 
 #include <shared_mutex>
+#include "RoadType.h"
 
 constexpr ui8 MAX_ROAD_STRENGTH = UINT8_MAX;
 
@@ -12,7 +13,7 @@ constexpr ui32 ROAD_GRID_CELL_SIZE_POINTS = SQ(ROAD_GRID_CELL_WIDTH_POINTS);
 
 struct RoadPoint {
     ui8 strength = 0;
-    ui8 type = {};
+    RoadType type = {};
 };
 static_assert(sizeof(RoadPoint) == 2);
 
@@ -32,9 +33,9 @@ public:
     void setRoadPoint(DTileCoord worldPos, RoadPoint point);
     // Only sets the road point if it is either a different type, or higher intensity that what already exists
     bool setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint point);
-    void adjustRoadPoint(DTileCoord worldPos, i32 adjust);
+    void adjustRoadPoint(DTileCoord worldPos, i32 adjust, RoadType type);
 
-    MaterialID getRoadMaterialFromType(ui8 type) const;
+    MaterialID getRoadMaterialFromType(RoadType type) const;
 
 private:
     ui32 mWorldWidthDTiles;
@@ -42,5 +43,6 @@ private:
     ui32 mWidthCells = 0;
     SpatialGrid2D mSpatialGrid;
     std::unique_ptr<RoadGridCell[]> mRoadData;
+    MaterialID mMaterialsLookup[e_count(RoadType)] = {};
 };
 

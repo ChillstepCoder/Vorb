@@ -593,7 +593,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     // TODO: REMOVE ***DEBUG BUILD ROADS***
     SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
     for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
-        if (roadGrid.setRoadPointIfHigherIntensity(p.pos, RoadPoint{ .strength = ui8(p.strength * 255), .type = e_cast(newSegment.roadType) })) {
+        if (roadGrid.setRoadPointIfHigherIntensity(p.pos, RoadPoint{ .strength = ui8(p.strength * 255), .type = newSegment.roadType })) {
             // Clear tile if needed
             TileCoord tCoordsThisDTile[4];
             p.pos.getCoveredTileCoords(tCoordsThisDTile);

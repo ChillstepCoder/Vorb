@@ -3,6 +3,7 @@
 
 // For ROAD_VERTEX_STRIDE
 #include "world/TerrainConstants.h"
+#include "resources/MaterialRepository.h"
 
 RoadGrid::RoadGrid(ui32 worldWidthTiles) : mWorldWidthDTiles(worldWidthTiles / 2) {
     mWidthCells = worldWidthTiles / ROAD_GRID_CELL_WIDTH_POINTS;
@@ -11,6 +12,12 @@ RoadGrid::RoadGrid(ui32 worldWidthTiles) : mWorldWidthDTiles(worldWidthTiles / 2
     mRoadData = std::make_unique<RoadGridCell[]>(mTotalCells);
     LOG_DEBUG("Road grid allocated {} mb data",
         (mTotalCells * sizeof(RoadGridCell)) / 1024.f / 1024.f);
+
+    // TODO: Data drive roads!
+    mMaterialsLookup[e_cast(RoadType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
+    mMaterialsLookup[e_cast(RoadType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
+
+    static_assert(e_count(RoadType) == 2);
 
 }
 
@@ -74,7 +81,7 @@ bool RoadGrid::setRoadPointIfHigherIntensity(DTileCoord worldPos, RoadPoint poin
     return false;
 }
 
-void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
+void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust, RoadType type) {
     i32v2 cellOffset;
     const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
     RoadGridCell& cell = mRoadData[cellId];
@@ -85,12 +92,10 @@ void RoadGrid::adjustRoadPoint(DTileCoord worldPos, i32 adjust) {
     }
     RoadPoint& point = cell.points[cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x];
     point.strength = (ui8)glm::clamp((i32)point.strength + adjust, 0, (i32)MAX_ROAD_STRENGTH);
+    point.type = type;
 }
 
-// TODO: Remove
-#include "resources/MaterialRepository.h"
-MaterialID RoadGrid::getRoadMaterialFromType(ui8 type) const {
-    // TODO: Data drive roads!
-    return MaterialRepository::get().getMaterialId(CStrToken(/*"dirt_road"*/"farm_plot_2"));
+MaterialID RoadGrid::getRoadMaterialFromType(RoadType type) const {
+    return mMaterialsLookup[e_cast(type)];
 }
 

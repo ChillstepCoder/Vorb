@@ -32,12 +32,11 @@ void main() {
     //noiseVal = smoothstep(0.0, 1.0, noiseVal);
     noiseVal = clamp(noiseVal * unNoiseAmplitude * noiseScale, 0.0, 1.0);
     
-    vec3 newAlbedo = blur9(unAlbedoFbo, fUV, unScreenResolution, unDirection * noiseVal).rgb;
+    vec4 newAlbedo = blur9(unAlbedoFbo, fUV, unScreenResolution, unDirection * noiseVal).rgba;
     vec3 newNormal = blur9(unNormalFbo, fUV, unScreenResolution, unDirection * noiseVal).rgb;
    
-    oColor.rgb = newAlbedo;
+    oColor = newAlbedo;
     oNormal.rgb = newNormal;
-    oColor.a = 1.0; // TODO GET RID OF THIS
     
     if (unDebugRender == 1) {
         oColor.rg = vec2(noiseVal);

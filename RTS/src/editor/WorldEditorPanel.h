@@ -6,6 +6,7 @@
 #include "tile/TileGrass.h"
 
 #include "definitions/BrushDef.h"
+#include "world/road/RoadType.h"
 
 class Camera3D;
 class BrushRepository;
@@ -122,6 +123,8 @@ private:
     mutable i32v2 mPlotDimsDTile = i32v2(8);
     // Grass edit
     mutable TileGrassID mSelectedGrass = 0;
+    // Road Edit
+    mutable RoadType mSelectedRoadType = RoadType::Dirt;
 
     mutable StrToken mSelectedEntity;
     std::unique_ptr<DeferredPhysicsPick> mDeferredPhysicsPick;

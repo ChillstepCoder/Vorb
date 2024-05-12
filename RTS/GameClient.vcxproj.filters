@@ -2654,6 +2654,9 @@
     <ClInclude Include="src\ecs\FullECSEvents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\road\RoadType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

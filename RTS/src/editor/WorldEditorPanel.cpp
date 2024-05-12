@@ -360,6 +360,7 @@ void WorldEditorPanel::renderRoadEditUI() const {
     }
     ImGui::SliderFloat("Brush Size", &mRoadBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Brush Strength", &mRoadBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImguiUtil::EnumCombo("Type", mSelectedRoadType);
 }
 
 void WorldEditorPanel::renderGrassEditUI() const {
@@ -808,7 +809,7 @@ void WorldEditorPanel::editRoadVertex(i32v2 worldPos, f32v2 offsetToVertex, cons
             assert(false);
             break;
     }
-    roadGrid.adjustRoadPoint(DTileCoord::fromTilePosRound(worldPos), (i32)glm::round(adjust));
+    roadGrid.adjustRoadPoint(DTileCoord::fromTilePosRound(worldPos), (i32)glm::round(adjust), mSelectedRoadType);
 }
 
 void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {

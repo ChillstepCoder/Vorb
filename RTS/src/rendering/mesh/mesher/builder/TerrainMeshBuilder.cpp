@@ -178,7 +178,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
             v.pos.z = height;
 
             const RoadPoint roadPoint = roadGrid.getRoadPoint<true>(DTileCoord::fromTilePosRound(worldPos));
-            v.roadIntensity = (f32)roadPoint.strength / (f32)MAX_ROAD_STRENGTH;
+            v.roadIntensity = roadPoint.strength;
             v.roadMaterialId = roadGrid.getRoadMaterialFromType(roadPoint.type);
 
             // Normal calc
@@ -201,7 +201,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
             f32v3 n(l - r, f - b, 2.0f);
 
             //f32v3 n(dX, dY, dZ);
-            v.normal = glm::normalize(n);
+            v.normalPacked = Pack_INT_2_10_10_10_REV(glm::normalize(n));
         }
     }
 

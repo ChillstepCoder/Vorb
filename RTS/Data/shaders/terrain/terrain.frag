@@ -289,7 +289,6 @@ void main() {
             uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
         }
         
-        
         getMaterialPixelInfo(fRoadMaterialIndex, uv, roadSample, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
         
         //vec3 roadSample = texture(DirtRoad, fUV * 10.0).rgb;
@@ -308,6 +307,12 @@ void main() {
        
        // Roughness metallic
        oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), roadBlend); 
+       
+       // Ambient occlusion
+       oColor.a = mix(oColor.a, ao, roadBlend); 
+       
+       
+      // oColor.rgb = 0.0001 * oColor.rgb + vec3(h);
        
        // Uncomment to debug weird negative frag pos issue
        // if (-fFragPosTangent.z < 0.0) {
@@ -337,7 +342,6 @@ void main() {
         }
     }
     //oColor.rgb = 0.0001 * oColor.rgb + oNormal.rgb;//fNormal.rgb * 0.5 + 0.5;
-    
     
     oNormal.rgb = (finalNormal + 1.0) * 0.5;
 }

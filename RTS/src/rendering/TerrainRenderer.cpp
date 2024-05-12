@@ -44,6 +44,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     }
 
     glEnable(GL_CULL_FACE);
+    //vg::BlendState::set(vorb::graphics::BlendStateType::REPLACE);
 
     ui32 nextTextureUnit = 0;
     MaterialRenderer::bindMaterialShaderForRender(*mTerrainMaterial, &nextTextureUnit);

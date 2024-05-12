@@ -27,7 +27,7 @@ LightingOptions sLightingPresets[2][LIGHT_PRESET_COUNT] = {
         LightingOptions(2.2f /*gamma*/, 1.0f /*exposure*/, 0.55f /*hazeExponent*/, TONEMAP_NONE,
         6000.0f /*hazedivisor*/, 1.0f /*ambient*/, 3.0f /*sunintensity*/, LIGHTING_MODEL::PHONG),
         // UCHIMURA
-        LightingOptions(2.2f /*gamma*/, 1.0f /*exposure*/, 1.0f /*hazeExponent*/, TONEMAP_UCHIMURA,
+        LightingOptions(2.2f /*gamma*/, 0.5f /*exposure*/, 1.0f /*hazeExponent*/, TONEMAP_UCHIMURA,
         7000.0f /*hazedivisor*/, 1.0f /*ambient*/, 3.0f /*sunintensity*/, LIGHTING_MODEL::PHONG),
         // LOTTES
         LightingOptions(2.2f /*gamma*/, 1.0f /*exposure*/, 0.45f /*hazeExponent*/, TONEMAP_LOTTES,

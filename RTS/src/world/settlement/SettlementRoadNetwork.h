@@ -8,11 +8,7 @@ class RandomGenerator;
 class VisualLog;
 class SettlementPlotManager;
 
-// TODO: Data drive this?
-enum class RoadType : ui8 {
-    Dirt,
-    COUNT
-};
+#include "world/road/RoadType.h"
 
 enum class RoadSegmentType : ui8 {
     Segment,

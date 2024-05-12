@@ -30,7 +30,7 @@ void main() {
     fRoadIntensity = vRoadIntensity;
     fRoadMaterialIndex = vRoadMaterialIndex;
 	
-	vec3 normal = vNormal; // Prenormalized on CPU
+	vec3 normal = normalize(vNormal); // Prenormalized on CPU
 	vec3 binormal = normalize(cross(normal, vec3(1.0, 0.0, 0.0)));
     vec3 tangent = normalize(cross(binormal, normal));
     

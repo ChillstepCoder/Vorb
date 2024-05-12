@@ -28,5 +28,4 @@ void main() {
     
 	fColor.rgb = lightPixel(fboColor, normal, worldPos, fUV, roughness, isSky, shadow * 0.5); // TODO: NOTE THIS 0.5 IS HARD CODED!
 	fColor.a = 1.0;
-	
 }
