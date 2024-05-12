@@ -184,6 +184,15 @@ vec3 heightblend(vec3 input1, float height1, vec3 input2, float height2) {
     return ((input1 * level1) + (input2 * level2)) / (level1 + level2);
 }
 
+// Given radius R and dir, get the distance to the edge of a perfect square
+float distanceToCellEdge(float R, vec2 dir) {
+    // Prevent div by zero
+    float x = max(abs(dir.x), 0.00001);
+    float y = max(abs(dir.y), 0.00001);
+
+    return min(R / x, R / y);
+}
+
 // =========== MAIN ===========
 void main() {
 	
@@ -275,11 +284,15 @@ void main() {
     oColor.a = 1.0; // AO?
     
     
-    vec2 splatOffset = vec2(rawTurb);
-    float splatValue = texture(unSplatTexture, fSplatUV + splatOffset * 0.01).r;
+    //vec2 splatUV = fSplatUV + vec2(rawTurb) * 0.01;
+    vec2 splatUV = fSplatUV;// + vec2(rawTurb) * 0.01;
+    const float splatValue = texture(unSplatTexture, splatUV).r;
+    
+    const float HALF_TEXEL_SIZE = 0.00381679389; // (1/131)/2
     
     if (splatValue != 0.0) {
         uint splatMaterialId = unSplatMaterials[uint(splatValue * 255.0)];
+        
         
          vec3 normal;
         vec4 roadSample;
@@ -308,6 +321,23 @@ void main() {
         //float roadBlend = clamp(intensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
         float roadBlend = clamp(pow(intensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
         //roadBlend = intensity;
+        
+        // Get offset to center
+        vec2 texelCenter = (vec2(ivec2(splatUV * 131.0)) / 131.0) + vec2(HALF_TEXEL_SIZE);
+        vec2 offset = splatUV - texelCenter;
+        float l = length(offset);
+        vec2 norm = offset / l;
+        
+        float d = distanceToCellEdge(HALF_TEXEL_SIZE, norm) - l + 0.0001;
+        //d = min(d, HALF_TEXEL_SIZE * 0.5);
+        
+        vec2 uvOffset = norm * d;
+        if (texture(unSplatTexture, splatUV + uvOffset).r != splatValue) {
+            roadBlend = 0.5;
+        }
+        //  TODO: REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //roadBlend = roadBlend * 0.001;
+        
         oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample.rgb, roadLuminance * roadBlend);
         //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
        // oColor.rgb = 0.0001 * oColor.rgb + fFragPosTangent.z * 0.1;
@@ -321,6 +351,8 @@ void main() {
        
        // Ambient occlusion
        oColor.a = mix(oColor.a, ao, roadBlend); 
+       
+       //oColor.rgb = 0.00001 * oColor.rgb + vec3(d / HALF_TEXEL_SIZE, 0.0, 0.0);
        
        
       // oColor.rgb = 0.0001 * oColor.rgb + vec3(h);
