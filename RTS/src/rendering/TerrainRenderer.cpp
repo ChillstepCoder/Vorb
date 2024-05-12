@@ -32,7 +32,16 @@ TerrainRenderer::TerrainRenderer() {
     mWaterMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water"));
     mWaterPbrMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_pbr"));
 
-    // TODO: Data drive roads!
+    // Terrain layer materials are stored in a texture, with resolution equal to the vertex resolution.
+    // To achieve blending, we pre-compute 256 gradient textures on the CPU representing all possible blend
+    // combinations, where neighboring 1 bits represent the same texture, and 0 represents a different texture.
+    // We store which gradients we use in a texture at same resolution as layer materials,
+    // which is updated when the terrain updates.
+    // Note that some textures will be duplicate... thats ok. For example:
+    // 0 1  will have the same gradient from perspective of top left as 0 1
+    // 0 0                                                              1 0
+
+    // TODO: Data drive layers!
     mMaterialsLookup[e_cast(TerrainTextureType::None)] = 0;
     mMaterialsLookup[e_cast(TerrainTextureType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
     mMaterialsLookup[e_cast(TerrainTextureType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
