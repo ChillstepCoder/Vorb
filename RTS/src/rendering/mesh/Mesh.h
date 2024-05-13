@@ -154,7 +154,7 @@ public:
     std::atomic<f32> mCrossfadeAlpha = 0.0f;
     std::atomic_int mCrossfadeDir = 0; // -1 = down, 0 = none, 1 = up
     f32v2 mUVRoot;
-    VGTexture mTerrainSplatTexture = 0;
+    VGTexture mTerrainSurfaceDataTexture = 0;
 };
 
 class SkeletalMesh : public Mesh {

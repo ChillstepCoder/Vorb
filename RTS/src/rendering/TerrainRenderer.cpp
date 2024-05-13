@@ -6,7 +6,10 @@
 #include "rendering/MaterialUtils.h"
 #include "definitions/rendering/CubemapDef.h"
 
+#include "rendering/texture/TextureConvert.h"
 #include "rendering/material/BrdfLUT.h"
+
+#include "filesystem/FileSystem.h"
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/BlendState.h>
@@ -45,6 +48,8 @@ TerrainRenderer::TerrainRenderer() {
     mMaterialsLookup[e_cast(TerrainTextureType::None)] = 0;
     mMaterialsLookup[e_cast(TerrainTextureType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
     mMaterialsLookup[e_cast(TerrainTextureType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
+
+    buildSurfaceDensityGradientMaps();
 }
 
 void TerrainRenderer::setActiveWorld(World& world) {
@@ -93,9 +98,13 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     ++nextTextureUnit;
     glUniform1i(mTerrainMaterial->mProgram.getUniform("unBiomeColorMapsTexture"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, BiomeRepository::get().getBiomeColorMapsArrayTexture());
+
+    ++nextTextureUnit;
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceDensityGradientMaps"), nextTextureUnit);
+    glBindTextureUnit(nextTextureUnit, mSurfaceDensityGradientMapsArray);
     
     const ui32 splatTextureUnit = ++nextTextureUnit;
-    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSplatTexture"), splatTextureUnit);
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceTextures"), splatTextureUnit);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
 
@@ -205,4 +214,155 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
 
 
     vg::BlendState::restorePrevious();
+}
+
+void TerrainRenderer::buildSurfaceDensityGradientMaps() {
+    ASSERT_RENDER_THREAD();
+    // Build adjacency density gradient maps for the surfaces based on
+    // 1 being same texture at an adjacent grid position, and 0 being a different texture
+
+    constexpr int MAP_RESOLUTION = 256;
+    constexpr int HALF_MAP_RESOLUTION = MAP_RESOLUTION / 2;
+    constexpr f32 BLEND_RADIUS = 75.0f;
+    static_assert((int)BLEND_RADIUS < HALF_MAP_RESOLUTION);
+    constexpr int MAX_COORDINATE = MAP_RESOLUTION - 1;
+    constexpr int NUM_LAYERS = UINT8_MAX + 1;
+
+    PreciseTimer timer;
+    assert(mSurfaceDensityGradientMapsArray == 0);
+
+    std::vector<gli::texture2d> gradientData;
+    gradientData.resize(NUM_LAYERS);
+
+    auto isBitZero = [](int i, int b) {
+        return (i & (1 << b)) == 0;
+    };
+
+    LOG_INFO("Loading surface density gradient maps");
+
+    std::filesystem::path densityTextureFolder = ResourceManager::get().getResourceRoot().getStdPath() / "textures/terrain/density_grad/";
+    FileSystem::createDirectory(densityTextureFolder.string());
+
+    const int mipLevels = 1 + (int)std::floor(std::log2(MAP_RESOLUTION));
+
+    glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &mSurfaceDensityGradientMapsArray);
+    glTextureStorage3D(
+        mSurfaceDensityGradientMapsArray,
+        mipLevels,
+        GL_COMPRESSED_RED_RGTC1,
+        MAP_RESOLUTION,
+        MAP_RESOLUTION,
+        NUM_LAYERS
+    );
+
+    auto uploadLayer = [&](gli::texture2d& loadedLayer, int layer) {
+        for (gli::texture2d::size_type level = 0; level < mipLevels; ++level) {
+            // Get extent of the current mip level
+            const gli::extent2d levelExtent = loadedLayer.extent(level);
+
+            // Upload the compressed texture data for this mip level to OpenGL
+            glCompressedTextureSubImage3D(
+                mSurfaceDensityGradientMapsArray,
+                static_cast<GLint>(level),
+                0, 0,
+                layer,
+                levelExtent.x,
+                levelExtent.y,
+                1,
+                GL_COMPRESSED_RED_RGTC1,
+                static_cast<GLsizei>(loadedLayer.size(level)),
+                loadedLayer.data(0, 0, level)
+            );
+        }
+    };
+
+    // Generation is inefficient but should never be done at runtime after the first time, as we
+    // will cache to DDS on disk. DDS load is fast
+    // 5 6 7
+    // 3   4
+    // 0 1 2
+    for (int i = 0; i <= UINT8_MAX; ++i) {
+        const std::filesystem::path ddsPath = densityTextureFolder / ("sfd" + std::to_string(i) + ".dds");
+        if (FileSystem::exists(ddsPath.string())) {
+            gli::texture2d loadedLayer = static_cast<gli::texture2d>(gli::load(ddsPath.string()));
+            assert(loadedLayer.format() == gli::FORMAT_R_ATI1N_UNORM_BLOCK8);
+            assert(loadedLayer.extent().x == MAP_RESOLUTION && loadedLayer.extent().y == MAP_RESOLUTION);
+            assert(loadedLayer.levels() == mipLevels);
+            uploadLayer(loadedLayer, i);
+        }
+        else {
+
+            // Should not happen at user run time unless they deleted the files!
+            LOG_ERROR("Surface density map {} missing from disk, generating now...", ddsPath.string());
+            gli::texture2d& data = gradientData[i];
+            data = gli::texture2d(gli::format::FORMAT_R8_UNORM_PACK8, gli::extent2d(MAP_RESOLUTION, MAP_RESOLUTION));
+            // Treating +y as up in the map as well as in world space
+            for (int y = 0; y < MAP_RESOLUTION; ++y) {
+                for (int x = 0; x < MAP_RESOLUTION; ++x) {
+
+                    f32 lowestDensity = 1.0f;
+                    // Quadrants
+                    if (x < HALF_MAP_RESOLUTION) {
+                        if (y < HALF_MAP_RESOLUTION) {
+                            // Bottom left
+                            if (isBitZero(i, 3)) {
+                                lowestDensity = std::min(lowestDensity, x / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 1)) {
+                                lowestDensity = std::min(lowestDensity, y / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 0)) {
+                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(x) + SQ(y)) / BLEND_RADIUS));
+                            }
+                        }
+                        else {
+                            // Top left
+                            if (isBitZero(i, 3)) {
+                                lowestDensity = std::min(lowestDensity, x / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 6)) {
+                                lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - y) / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 5)) {
+                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(x) + SQ(MAX_COORDINATE - y)) / BLEND_RADIUS));
+                            }
+                        }
+                    }
+                    else {
+                        if (y < HALF_MAP_RESOLUTION) {
+                            // Bottom right
+                            if (isBitZero(i, 4)) {
+                                lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - x) / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 1)) {
+                                lowestDensity = std::min(lowestDensity, y / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 2)) {
+                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(MAX_COORDINATE - x) + SQ(y)) / BLEND_RADIUS));
+                            }
+                        }
+                        else {
+                            // Top right
+                            if (isBitZero(i, 4)) {
+                                lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - x) / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 6)) {
+                                lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - y) / BLEND_RADIUS);
+                            }
+                            if (isBitZero(i, 7)) {
+                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(MAX_COORDINATE - x) + SQ(MAX_COORDINATE - y)) / BLEND_RADIUS));
+                            }
+                        }
+                    }
+                    data.store(gli::texture2d::extent_type(x, y), 0, (ui8)round(lowestDensity * UINT8_MAX));
+                }
+            }
+            LOG_INFO("Compressing {}...", i);
+            gli::texture2d compressed = TextureConvert::convertToDDS(data, true /*generateMipmaps*/);
+            uploadLayer(compressed, i);
+            gli::save(compressed, ddsPath.string());
+        }
+    }
+    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTexture(mSurfaceDensityGradientMapsArray);
+    LOG_INFO("Loaded surface density gradient maps in {} ms", timer.stop());
 }

@@ -153,5 +153,5 @@ MeshCpuData& MeshCpuData::operator=(MeshCpuData&& o) {
 }
 
 TerrainMesh::~TerrainMesh() {
-    glDeleteTextures(1, &mTerrainSplatTexture);
+    glDeleteTextures(1, &mTerrainSurfaceDataTexture);
 }

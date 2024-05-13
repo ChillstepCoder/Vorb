@@ -8,6 +8,14 @@
 class TerrainMesh;
 class RoadGrid;
 
+struct TerrainSurfaceData {
+    TerrainTextureType baseTexture = TerrainTextureType::None;
+    ui8 baseDensityTextureID = 0;
+    TerrainTextureType overlayTexture = TerrainTextureType::None;
+    ui8 overlayDensityTextureID = 0;
+};
+static_assert(sizeof(TerrainSurfaceData) == 4, "Currently packing into RGBA8");
+
 class TerrainMeshBuilder
 {
 public:
@@ -28,7 +36,7 @@ public:
     void finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& waterMesh, const f32v3& worldPosTreeRoot);
 
 public:
-    TerrainTextureType mBaseTerrainLayers[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
+    TerrainSurfaceData mTerrainSurfaceLayers[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
 private:
     void setVertsTerrainFromPaddedHeightfield(
         i32v2 worldPosTreeRoot,

@@ -11,7 +11,8 @@ uniform sampler2D CliffNormal;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
-uniform sampler2D unSplatTexture;
+uniform sampler2D unSurfaceTextures;
+uniform sampler2DArray unSurfaceDensityGradientMaps;
 // TODO: Splat data
 
 uniform uint unSplatMaterials[256];
@@ -286,13 +287,24 @@ void main() {
     
     //vec2 splatUV = fSplatUV + vec2(rawTurb) * 0.01;
     vec2 splatUV = fSplatUV;// + vec2(rawTurb) * 0.01;
-    const float splatValue = texture(unSplatTexture, splatUV).r;
+    
+    // R = base terrain
+    // G = base terrain density
+    // B = overlay terrain
+    // A - overlay terrain density
+    const vec4 surfaceData = texture(unSurfaceTextures, splatUV).rgba;
     
     const float HALF_TEXEL_SIZE = 0.00381679389; // (1/131)/2
     
-    if (splatValue != 0.0) {
-        uint splatMaterialId = unSplatMaterials[uint(splatValue * 255.0)];
+    if (surfaceData.r != 0.0) {
+
+        uint splatMaterialId = unSplatMaterials[uint(surfaceData.r * 255.0)];
         
+        // Get offset to center
+        vec2 texelCorner = (vec2(ivec2(splatUV * 131.0)) / 131.0);
+        vec2 densityUV = (splatUV - texelCorner) * 131.0;
+        
+        float baseSurfaceDensity = texture(unSurfaceDensityGradientMaps, vec3(densityUV, surfaceData.g * 255.0)).r;
         
          vec3 normal;
         vec4 roadSample;
@@ -322,8 +334,7 @@ void main() {
         float roadBlend = clamp(pow(intensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
         //roadBlend = intensity;
         
-        // Get offset to center
-        vec2 texelCenter = (vec2(ivec2(splatUV * 131.0)) / 131.0) + vec2(HALF_TEXEL_SIZE);
+        vec2 texelCenter = texelCorner + vec2(HALF_TEXEL_SIZE);
         vec2 offset = splatUV - texelCenter;
         float l = length(offset);
         vec2 norm = offset / l;
@@ -332,11 +343,9 @@ void main() {
         //d = min(d, HALF_TEXEL_SIZE * 0.5);
         
         vec2 uvOffset = norm * d;
-        if (texture(unSplatTexture, splatUV + uvOffset).r != splatValue) {
+        if (texture(unSurfaceTextures, splatUV + uvOffset).r != surfaceData.r) {
             roadBlend = 0.5;
         }
-        //  TODO: REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //roadBlend = roadBlend * 0.001;
         
         oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample.rgb, roadLuminance * roadBlend);
         //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
@@ -354,8 +363,8 @@ void main() {
        
        //oColor.rgb = 0.00001 * oColor.rgb + vec3(d / HALF_TEXEL_SIZE, 0.0, 0.0);
        
-       
-      // oColor.rgb = 0.0001 * oColor.rgb + vec3(h);
+       g; // FIX THIS
+       oColor.rgb = 0.0001 * oColor.rgb + baseSurfaceDensity;
        
        // Uncomment to debug weird negative frag pos issue
        // if (-fFragPosTangent.z < 0.0) {

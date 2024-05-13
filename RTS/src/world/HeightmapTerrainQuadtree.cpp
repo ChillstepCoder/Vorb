@@ -84,9 +84,30 @@ void createTerrainAndWaterMesh(
             DTileCoord dTilePos = DTileCoord::fromTilePosRound(trueWorldPos);
             dTilePos.v = glm::clamp(dTilePos.v, 0, (i32)(world.getWidthDTiles() - 1));
             paddedHeightfield[y][x] = heightGrid.getCompressedHeightAtVert<true>(dTilePos);
-            terrainBuilder.mBaseTerrainLayers[y][x] = roadGrid.getRoadPoint<true>(dTilePos).type;
+
+            TerrainSurfaceData& surfaceData = terrainBuilder.mTerrainSurfaceLayers[y][x];
+            surfaceData.baseTexture = roadGrid.getRoadPoint<true>(dTilePos).type;
         }
     }
+
+    // Second pass, gather surface data densities for inner points
+    // See TerrainRenderer::buildSurfaceDensityGradientMaps for details
+    for (ui32 y = 1; y < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++y) {
+        for (ui32 x = 1; x < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++x) {
+            TerrainSurfaceData& surfaceData = terrainBuilder.mTerrainSurfaceLayers[y][x];
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x - 1].baseTexture == surfaceData.baseTexture) << 0);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x].baseTexture == surfaceData.baseTexture) << 1);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x + 1].baseTexture == surfaceData.baseTexture) << 2);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y][x - 1].baseTexture == surfaceData.baseTexture) << 3);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y][x + 1].baseTexture == surfaceData.baseTexture) << 4);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x - 1].baseTexture == surfaceData.baseTexture) << 5);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x].baseTexture == surfaceData.baseTexture) << 6);
+            surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x + 1].baseTexture == surfaceData.baseTexture) << 7);
+        }
+    }
+
+    // TODO: Properly calculate edge surface densitys!
+
     terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield, world.getRoadGrid());
 };
 

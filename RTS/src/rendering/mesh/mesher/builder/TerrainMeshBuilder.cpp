@@ -129,12 +129,12 @@ void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& wat
     waterMesh.mGpuData.mVertexType = WaterVertex::bindVertexAttribs(waterMesh.mGpuData.mVao);
 
     // Upload splat texture
-    if (!terrainMesh.mTerrainSplatTexture) {
-        glCreateTextures(GL_TEXTURE_2D, 1, &terrainMesh.mTerrainSplatTexture);
-        glTextureStorage2D(terrainMesh.mTerrainSplatTexture, 1, GL_R8, TERRAIN_MESH_PADDED_WIDTH_VERTS, TERRAIN_MESH_PADDED_WIDTH_VERTS);
+    if (!terrainMesh.mTerrainSurfaceDataTexture) {
+        glCreateTextures(GL_TEXTURE_2D, 1, &terrainMesh.mTerrainSurfaceDataTexture);
+        glTextureStorage2D(terrainMesh.mTerrainSurfaceDataTexture, 1, GL_RGBA8, TERRAIN_MESH_PADDED_WIDTH_VERTS, TERRAIN_MESH_PADDED_WIDTH_VERTS);
     }
-    glTextureSubImage2D(terrainMesh.mTerrainSplatTexture, 0, 0, 0, TERRAIN_MESH_PADDED_WIDTH_VERTS, TERRAIN_MESH_PADDED_WIDTH_VERTS, GL_RED, GL_UNSIGNED_BYTE, mBaseTerrainLayers);
-    vg::sSamplerStates.POINT_CLAMP.setForTexture(terrainMesh.mTerrainSplatTexture);
+    glTextureSubImage2D(terrainMesh.mTerrainSurfaceDataTexture, 0, 0, 0, TERRAIN_MESH_PADDED_WIDTH_VERTS, TERRAIN_MESH_PADDED_WIDTH_VERTS, GL_RGBA, GL_UNSIGNED_BYTE, mTerrainSurfaceLayers);
+    vg::sSamplerStates.POINT_CLAMP.setForTexture(terrainMesh.mTerrainSurfaceDataTexture);
 
     checkGlError("TerrainMeshBuilder::finishMeshes");
 }

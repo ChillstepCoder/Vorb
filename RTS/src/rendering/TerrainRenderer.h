@@ -24,6 +24,8 @@ public:
     void renderWater(const Camera3D& camera, const boost::container::flat_set<const TerrainMesh*>& waterMeshes, const CubemapDef& skyCubeMap);
 
 private:
+    void buildSurfaceDensityGradientMaps();
+
     const MaterialShaderDef* mWaterMaterial = nullptr;
     const MaterialShaderDef* mWaterPbrMaterial = nullptr;
     const MaterialShaderDef* mTerrainMaterial = nullptr;
@@ -35,5 +37,6 @@ private:
 
     // TODO: SSBO instead
     ui32 mMaterialsLookup[e_count(TerrainTextureType)] = {};
+    VGTexture mSurfaceDensityGradientMapsArray = 0;
 };
 
