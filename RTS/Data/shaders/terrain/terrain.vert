@@ -19,14 +19,15 @@ out float fSnow;
 out vec3 fNormal;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
-out vec2 fSplatUV;
+out vec2 fSurfaceUV;
 
-const float TERRAIN_TO_PAD_RATIO = 0.98473282442; // 129/131
+const float TERRAIN_TO_PAD_RATIO = 0.977099236641; // 128/131
 const float PAD_OFFSET = 0.00763358778; // 1/131
+const float HALF_TEXEL_OFFSET = 0.0038167938931298;
 
 void main() {
 
-    fSplatUV = (vPosition.xy / vec2(unPatchWidth)) * TERRAIN_TO_PAD_RATIO + vec2(PAD_OFFSET);
+    fSurfaceUV = (vPosition.xy / vec2(unPatchWidth)) * TERRAIN_TO_PAD_RATIO + vec2(PAD_OFFSET + HALF_TEXEL_OFFSET);
     
     vec4 worldPos = vPosition + vec4(unPosition - CameraPos, 0.0);
     fBiomeUV = (vPosition.xy + unPosition.xy) * unInverseWorldWidth;

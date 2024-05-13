@@ -41,7 +41,7 @@ in mat3 fTBN;
 in float fSnow;
 in vec3 fNormal;
 in vec3 fFragPosTangent;
-in vec2 fSplatUV;
+in vec2 fSurfaceUV;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
@@ -185,15 +185,6 @@ vec3 heightblend(vec3 input1, float height1, vec3 input2, float height2) {
     return ((input1 * level1) + (input2 * level2)) / (level1 + level2);
 }
 
-// Given radius R and dir, get the distance to the edge of a perfect square
-float distanceToCellEdge(float R, vec2 dir) {
-    // Prevent div by zero
-    float x = max(abs(dir.x), 0.00001);
-    float y = max(abs(dir.y), 0.00001);
-
-    return min(R / x, R / y);
-}
-
 // =========== MAIN ===========
 void main() {
 	
@@ -285,14 +276,13 @@ void main() {
     oColor.a = 1.0; // AO?
     
     
-    //vec2 splatUV = fSplatUV + vec2(rawTurb) * 0.01;
-    vec2 splatUV = fSplatUV;// + vec2(rawTurb) * 0.01;
+    vec2 surfaceUV = fSurfaceUV + vec2(noiseBlend) * 0.001;
     
     // R = base terrain
     // G = base terrain density
     // B = overlay terrain
     // A - overlay terrain density
-    const vec4 surfaceData = texture(unSurfaceTextures, splatUV).rgba;
+    vec4 surfaceData = texture(unSurfaceTextures, surfaceUV).rgba;
     
     const float HALF_TEXEL_SIZE = 0.00381679389; // (1/131)/2
     
@@ -300,18 +290,24 @@ void main() {
 
         uint splatMaterialId = unSplatMaterials[uint(surfaceData.r * 255.0)];
         
-        // Get offset to center
-        vec2 texelCorner = (vec2(ivec2(splatUV * 131.0)) / 131.0);
-        vec2 densityUV = (splatUV - texelCorner) * 131.0;
+        // Get UV for this tile
+        const vec2 scaledUV = surfaceUV * 131.0;
+        const vec2 densityUV = fract(scaledUV);
+        // Manually calculate LOD to fix issue of mipmapping crack due to fract dicontinuity
+        vec2 lodInfo = textureQueryLod(unSurfaceDensityGradientMaps, scaledUV);
+       
+        float baseSurfaceDensity = textureLod(unSurfaceDensityGradientMaps, vec3(densityUV, round(surfaceData.g * 255.0)), lodInfo.x).r;
         
-        float baseSurfaceDensity = texture(unSurfaceDensityGradientMaps, vec3(densityUV, surfaceData.g * 255.0)).r;
-        
-         vec3 normal;
+        vec3 normal;
         vec4 roadSample;
         float ao;
         float metallic;
         float roughness;
-        vec2 uv = fUV * 100.0;
+        vec2 uv = fUV * 10.0;
+        // TODO: REMOVE
+        if (surfaceData.r * 255.0 > 1.1) {
+            uv *= 10.0;
+        }
         // 0.4 matches height blend scale
         
         float intensity = 1.0;
@@ -319,7 +315,8 @@ void main() {
         // Disp
         MaterialData mtl = inMaterials[splatMaterialId];
         if (mtl.displacementMap > 0) {
-            float heightScale = max((intensity - 0.45) * 0.6, 0);
+            // Aggresively curve out the displacement as we fade out
+            float heightScale = max((intensity - 0.45) * 0.6, 0) * pow(baseSurfaceDensity, 2.0);
             vec3 VIEW_POS_TANGENT = vec3(0.0,0.0,0.0); // Camera is at 0!
             vec3 tangentViewDir = normalize(VIEW_POS_TANGENT - fFragPosTangent);
             uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
@@ -327,53 +324,38 @@ void main() {
         
         getMaterialPixelInfo(splatMaterialId, uv, roadSample, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
         
-        //vec3 roadSample = texture(DirtRoad, fUV * 10.0).rgb;
-        float roadLuminance = getLuminance(roadSample.rgb) * 4.0;
-        // Fake shitty height learp (Adjust based on texture?)
-        //float roadBlend = clamp(intensity * 2 - pow(roadLuminance, 4.0), 0.0, 1.0);
-        float roadBlend = clamp(pow(intensity, 0.001 + rawTurb * 3.0), 0.0, 1.0);
-        //roadBlend = intensity;
+        float curvedSurfaceDensity = pow(baseSurfaceDensity, 0.5);
         
-        vec2 texelCenter = texelCorner + vec2(HALF_TEXEL_SIZE);
-        vec2 offset = splatUV - texelCenter;
-        float l = length(offset);
-        vec2 norm = offset / l;
+        float roadLuminance = getLuminance(roadSample.rgb);
+        float blendFactor = curvedSurfaceDensity;
         
-        float d = distanceToCellEdge(HALF_TEXEL_SIZE, norm) - l + 0.0001;
-        //d = min(d, HALF_TEXEL_SIZE * 0.5);
-        
-        vec2 uvOffset = norm * d;
-        if (texture(unSurfaceTextures, splatUV + uvOffset).r != surfaceData.r) {
-            roadBlend = 0.5;
-        }
-        
-        oColor.rgb = heightblend(oColor.rgb, 1.0 - roadBlend, roadSample.rgb, roadLuminance * roadBlend);
-        //oColor.rgb = mix(oColor.rgb, roadSample, roadBlend);
-       // oColor.rgb = 0.0001 * oColor.rgb + fFragPosTangent.z * 0.1;
+        oColor.rgb = heightblend(oColor.rgb, 1.0 - blendFactor, roadSample.rgb, blendFactor);
        
        // Normal map
        vec3 roadNormal = fTBN * normal;
-       finalNormal = mix(finalNormal, roadNormal, roadBlend);
+       finalNormal = mix(finalNormal, roadNormal, blendFactor);
        
        // Roughness metallic
-       oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), roadBlend); 
+       oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), blendFactor); 
        
        // Ambient occlusion
-       oColor.a = mix(oColor.a, ao, roadBlend); 
+       oColor.a = mix(oColor.a, ao, blendFactor); 
        
-       //oColor.rgb = 0.00001 * oColor.rgb + vec3(d / HALF_TEXEL_SIZE, 0.0, 0.0);
+       //oColor.rgb = 0.0001 * oColor.rgb + vec3(baseSurfaceDensity);
        
-       g; // FIX THIS
-       oColor.rgb = 0.0001 * oColor.rgb + baseSurfaceDensity;
+       
+        if (!isinf(densityUV.y) || !isnan(densityUV.y)) {
+        //    oColor.rgb = vec3(0.0, densityUV.y, 0.0);
+        }
+       
+       //oColor.rgb = 0.0001 * oColor.rgb + surfaceData.g;
+       //oColor.rgb = 0.0001 * oColor.rgb + vec3(texelCorner.g / 131.0, 0.0, 0.0);
        
        // Uncomment to debug weird negative frag pos issue
        // if (-fFragPosTangent.z < 0.0) {
        //     oColor.r = 1.0;
        // }
     }
-    
-    //oColor.rgb = 0.0001 * oColor.rgb + vec3(fSplatUV.x, 0.0, 0.0);
-    
     
     // =========== Snow ===========
     oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));

@@ -315,12 +315,17 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
 
     constexpr f32 TILE_BLOCK_RANGE = 2.f;
 
+    const i32 localXMin = xMin - buildingWorldPos.x;
+    const i32 localXMax = xMax - buildingWorldPos.x;
+    const i32 localYMin = yMin - buildingWorldPos.y;
+    const i32 localYMax = yMax - buildingWorldPos.y;
+
     for (i32 z = 0; z < dims.z; ++z) {
         const i32 zOffset = floorStride * z;
-        for (i32 y = yMin; y < yMax; ++y) {
+        for (i32 y = localYMin; y < localYMax; ++y) {
             const i32 zyOffset = zOffset + y * dims.x;
             const i32 worldPosY = y + buildingWorldPos.y;
-            for (i32 x = xMin; x < xMax; ++x) {
+            for (i32 x = localXMin; x < localXMax; ++x) {
                 const TileIndex buildingTileIndex = zyOffset + x;
                 const Tile& tile = tileContainer.getTileAt(buildingTileIndex);
                 if (!tile.isEmpty()) {
@@ -407,7 +412,11 @@ void BuildingGrid::initEventHandlers() {
                         // We must do a handshake to ensure each thread is aware of when it loses control of its data
                         // Incref while we wait for sim release so we dont deactivate during initial handshake for simplicity
                         chunk.incRef();
-                        ++buildingData.numLoadingBuildingsRef();
+                        for (int c = 0; c < building->mChunkDependencyCount; ++c) {
+                            ChunkID dep = building->mChunkDependencies[c];
+                            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+                            ++buildingData.numLoadingBuildingsRef();
+                        }
                         mWorld.tryGetHostSimContext()->tryGetSimThread()->addTask([this, &chunk, building]() {
                             // loadBuildingAsync will set state to LOADING_TILES, completing the handshake
                             // All sim thread access up to this point is valid

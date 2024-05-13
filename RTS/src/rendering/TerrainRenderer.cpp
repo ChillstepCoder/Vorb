@@ -103,8 +103,8 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceDensityGradientMaps"), nextTextureUnit);
     glBindTextureUnit(nextTextureUnit, mSurfaceDensityGradientMapsArray);
     
-    const ui32 splatTextureUnit = ++nextTextureUnit;
-    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceTextures"), splatTextureUnit);
+    const ui32 surfaceDataTextureUnit = ++nextTextureUnit;
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceTextures"), surfaceDataTextureUnit);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
 
@@ -127,7 +127,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
             glUniform3fv(positionUniform, 1, &terrainMesh->getPosition().x);
             glUniform2fv(uvRootUniform, 1, &terrainMesh->mUVRoot.x);
 
-            glBindTextureUnit(splatTextureUnit, terrainMesh->mTerrainSplatTexture);
+            glBindTextureUnit(surfaceDataTextureUnit, terrainMesh->mTerrainSurfaceDataTexture);
 
             MeshDrawer::draw(terrainMesh->mGpuData);
         }
@@ -212,7 +212,6 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const boost::container
         }
     }
 
-
     vg::BlendState::restorePrevious();
 }
 
@@ -221,9 +220,10 @@ void TerrainRenderer::buildSurfaceDensityGradientMaps() {
     // Build adjacency density gradient maps for the surfaces based on
     // 1 being same texture at an adjacent grid position, and 0 being a different texture
 
-    constexpr int MAP_RESOLUTION = 256;
+    constexpr int MAP_RESOLUTION = 128;
     constexpr int HALF_MAP_RESOLUTION = MAP_RESOLUTION / 2;
-    constexpr f32 BLEND_RADIUS = 75.0f;
+    constexpr f32 BLEND_RADIUS = 62.0f;
+    constexpr f32 BLEND_RADIUS_REMAINDER = HALF_MAP_RESOLUTION - BLEND_RADIUS;
     static_assert((int)BLEND_RADIUS < HALF_MAP_RESOLUTION);
     constexpr int MAX_COORDINATE = MAP_RESOLUTION - 1;
     constexpr int NUM_LAYERS = UINT8_MAX + 1;
@@ -305,52 +305,108 @@ void TerrainRenderer::buildSurfaceDensityGradientMaps() {
                     if (x < HALF_MAP_RESOLUTION) {
                         if (y < HALF_MAP_RESOLUTION) {
                             // Bottom left
+                            int missingEdgeCount = 0;
                             if (isBitZero(i, 3)) {
                                 lowestDensity = std::min(lowestDensity, x / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
                             if (isBitZero(i, 1)) {
                                 lowestDensity = std::min(lowestDensity, y / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
-                            if (isBitZero(i, 0)) {
-                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(x) + SQ(y)) / BLEND_RADIUS));
+                            // If entire corner is missing, this will help smooth it
+                            if (missingEdgeCount == 2) {
+                                // Instead calc distance to circular blend radius
+                                const float distX = (x - HALF_MAP_RESOLUTION);
+                                const float distY = (y - HALF_MAP_RESOLUTION);
+                                lowestDensity = std::min(lowestDensity, 1.0f - f32((sqrt(SQ(distX) + SQ(distY)) - BLEND_RADIUS_REMAINDER) / BLEND_RADIUS));
+                                lowestDensity = glm::max(lowestDensity, 0.0f);
+                            }
+                            else {
+                                // Diagonal
+                                if (isBitZero(i, 0)) {
+                                    lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(x) + SQ(y)) / BLEND_RADIUS));
+                                }
                             }
                         }
                         else {
                             // Top left
+                            int missingEdgeCount = 0;
                             if (isBitZero(i, 3)) {
                                 lowestDensity = std::min(lowestDensity, x / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
                             if (isBitZero(i, 6)) {
                                 lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - y) / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
-                            if (isBitZero(i, 5)) {
-                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(x) + SQ(MAX_COORDINATE - y)) / BLEND_RADIUS));
+                            // If entire corner is missing, this will help smooth it
+                            if (missingEdgeCount == 2) {
+                                // Instead calc distance to circular blend radius
+                                const float distX = (x - HALF_MAP_RESOLUTION);
+                                const float distY = (y - HALF_MAP_RESOLUTION);
+                                lowestDensity = std::min(lowestDensity, 1.0f - f32((sqrt(SQ(distX) + SQ(distY)) - BLEND_RADIUS_REMAINDER) / BLEND_RADIUS));
+                                lowestDensity = glm::max(lowestDensity, 0.0f);
+                            }
+                            else {
+                                // Diagonal
+                                if (isBitZero(i, 5)) {
+                                    lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(x) + SQ(MAX_COORDINATE - y)) / BLEND_RADIUS));
+                                }
                             }
                         }
                     }
                     else {
                         if (y < HALF_MAP_RESOLUTION) {
+                            int missingEdgeCount = 0;
                             // Bottom right
                             if (isBitZero(i, 4)) {
                                 lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - x) / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
                             if (isBitZero(i, 1)) {
                                 lowestDensity = std::min(lowestDensity, y / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
-                            if (isBitZero(i, 2)) {
-                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(MAX_COORDINATE - x) + SQ(y)) / BLEND_RADIUS));
+                            // If entire corner is missing, this will help smooth it
+                            if (missingEdgeCount == 2) {
+                                // Instead calc distance to circular blend radius
+                                const float distX = (x - HALF_MAP_RESOLUTION);
+                                const float distY = (y - HALF_MAP_RESOLUTION);
+                                lowestDensity = std::min(lowestDensity, 1.0f - f32((sqrt(SQ(distX) + SQ(distY)) - BLEND_RADIUS_REMAINDER) / BLEND_RADIUS));
+                                lowestDensity = glm::max(lowestDensity, 0.0f);
+                            }
+                            else {
+                                // Diagonal
+                                if (isBitZero(i, 2)) {
+                                    lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(MAX_COORDINATE - x) + SQ(y)) / BLEND_RADIUS));
+                                }
                             }
                         }
                         else {
+                            int missingEdgeCount = 0;
                             // Top right
                             if (isBitZero(i, 4)) {
                                 lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - x) / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
                             if (isBitZero(i, 6)) {
                                 lowestDensity = std::min(lowestDensity, (MAX_COORDINATE - y) / BLEND_RADIUS);
+                                ++missingEdgeCount;
                             }
-                            if (isBitZero(i, 7)) {
-                                lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(MAX_COORDINATE - x) + SQ(MAX_COORDINATE - y)) / BLEND_RADIUS));
+                            // If entire corner is missing, this will help smooth it
+                            if (missingEdgeCount == 2) {
+                                // Instead calc distance to circular blend radius
+                                const float distX = (x - HALF_MAP_RESOLUTION);
+                                const float distY = (y - HALF_MAP_RESOLUTION);
+                                lowestDensity = std::min(lowestDensity, 1.0f - f32((sqrt(SQ(distX) + SQ(distY)) - BLEND_RADIUS_REMAINDER) / BLEND_RADIUS));
+                                lowestDensity = glm::max(lowestDensity, 0.0f);
+                            }
+                            else {
+                                // Diagonal
+                                if (isBitZero(i, 7)) {
+                                    lowestDensity = std::min(lowestDensity, f32(sqrt(SQ(MAX_COORDINATE - x) + SQ(MAX_COORDINATE - y)) / BLEND_RADIUS));
+                                }
                             }
                         }
                     }

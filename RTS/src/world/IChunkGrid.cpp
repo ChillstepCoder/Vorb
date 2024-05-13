@@ -273,11 +273,12 @@ void IChunkGrid::updateActivatingChunks() {
                     // TODO: Make this system real
                     mWorld->getVisibilityManager().initContainerVisibility(*chunk.mTileContainer);
 
+                    // Tile container loaded
+                    chunk.mTileContainer->setState(TileContainerState::READY);
+
                     // Connect buildings
                     mWorld->getBuildingGrid().connectBuildingsToChunk(chunk);
 
-                    // Tile container loaded
-                    chunk.mTileContainer->setState(TileContainerState::READY);
 
                     // Dispatch load finished
                     TileContainerEvent loadFinishedEvent;
