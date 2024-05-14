@@ -807,10 +807,10 @@ void WorldEditorPanel::editSurfaceVertex(i32v2 worldPos, f32v2 offsetToVertex, c
         if (mSurfaceOverlayMode) {
             switch (editState) {
                 case SurfaceEditState::ADD:
-                    surfaceGrid.setBaseSurfaceType(DTileCoord::fromTilePosRound(worldPos), mSelectedSurfaceType);
+                    surfaceGrid.trySetOverlaySurfaceType(DTileCoord::fromTilePosRound(worldPos), mSelectedSurfaceOverlayType);
                     break;
                 case SurfaceEditState::REMOVE:
-                    surfaceGrid.setBaseSurfaceType(DTileCoord::fromTilePosRound(worldPos), TerrainSurfaceType::None);
+                    surfaceGrid.trySetOverlaySurfaceType(DTileCoord::fromTilePosRound(worldPos), TerrainSurfaceOverlayType::None);
                     break;
                 default:
                     panic("Fail switch");
@@ -819,10 +819,10 @@ void WorldEditorPanel::editSurfaceVertex(i32v2 worldPos, f32v2 offsetToVertex, c
         else {
             switch (editState) {
                 case SurfaceEditState::ADD:
-                    surfaceGrid.trySetOverlaySurfaceType(DTileCoord::fromTilePosRound(worldPos), mSelectedSurfaceOverlayType);
+                    surfaceGrid.setBaseSurfaceType(DTileCoord::fromTilePosRound(worldPos), mSelectedSurfaceType);
                     break;
                 case SurfaceEditState::REMOVE:
-                    surfaceGrid.trySetOverlaySurfaceType(DTileCoord::fromTilePosRound(worldPos), TerrainSurfaceOverlayType::None);
+                    surfaceGrid.setBaseSurfaceType(DTileCoord::fromTilePosRound(worldPos), TerrainSurfaceType::None);
                     break;
                 default:
                     panic("Fail switch");

@@ -125,7 +125,7 @@ private:
     mutable TileGrassID mSelectedGrass = 0;
     // Road Edit
     mutable bool mSurfaceOverlayMode = false;
-    mutable TerrainSurfaceType mSelectedSurfaceType = TerrainSurfaceType::Dirt;
+    mutable TerrainSurfaceType mSelectedSurfaceType = TerrainSurfaceType::DirtRoad;
     mutable TerrainSurfaceOverlayType mSelectedSurfaceOverlayType = TerrainSurfaceOverlayType::Seeds;
 
     mutable StrToken mSelectedEntity;

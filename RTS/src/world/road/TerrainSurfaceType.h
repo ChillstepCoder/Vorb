@@ -3,13 +3,13 @@
 // TODO: Data drive this?
 enum class TerrainSurfaceType : ui8 {
     None,
-    Dirt,
+    DirtRoad,
     FarmPlot,
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(TerrainSurfaceType,
     ENUM_FIELD_SIMPLE(TerrainSurfaceType, None),
-    ENUM_FIELD_SIMPLE(TerrainSurfaceType, Dirt),
+    ENUM_FIELD_SIMPLE(TerrainSurfaceType, DirtRoad),
     ENUM_FIELD_SIMPLE(TerrainSurfaceType, FarmPlot)
 )
 static_assert(e_count(TerrainSurfaceType) == 3);

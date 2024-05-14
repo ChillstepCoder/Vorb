@@ -110,7 +110,6 @@ vec2 dispMapping(vec2 uvs, sampler2D disp, vec3 viewDirection, float heightScale
     // TODO: Cache previous value for one less lookup
 	float beforeDepth = 1.0 - texture(disp, prevTexCoords).r - currentLayerDepth + layerDepth;
 	float weight = afterDepth / (afterDepth - beforeDepth);
-	UVs = prevTexCoords * weight + UVs * (1.0 - weight);
     
-    return UVs;
+    return prevTexCoords * weight + UVs * (1.0 - weight);
 }

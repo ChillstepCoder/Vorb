@@ -22,4 +22,5 @@ preload:
   - [dirt_road, Material]
 #  - [dirt_plowed, Material]
   - [farm_plot_2, Material]
+  - [seeds, Material]
   - [*, Model] #DEVELOPMENT ONLY?

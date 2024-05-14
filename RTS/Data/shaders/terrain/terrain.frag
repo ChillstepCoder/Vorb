@@ -11,11 +11,22 @@ uniform sampler2D CliffNormal;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
-uniform sampler2D unSurfaceTextures;
+uniform sampler2D unSurfaceDataTexture;
 uniform sampler2DArray unSurfaceDensityGradientMaps;
-// TODO: Splat data
 
-uniform uint unSplatMaterials[256];
+struct SurfaceMaterialData {
+    int materialId;
+    float uvScale;
+};
+
+layout(std430, binding = 5) restrict readonly buffer SurfaceMaterials {
+	SurfaceMaterialData surfaceMaterialData[];
+};
+layout(std430, binding = 6) restrict readonly buffer SurfaceOverlayMaterials {
+	SurfaceMaterialData surfaceMaterialOverlayData[];
+};
+
+uniform int unSurfaceTextureMaterials[256];
 
 uniform float unHeightMult = 0.191;
 uniform float unWavyMult = 0.167;
@@ -185,24 +196,35 @@ vec3 heightblend(vec3 input1, float height1, vec3 input2, float height2) {
     return ((input1 * level1) + (input2 * level2)) / (level1 + level2);
 }
 
-// =========== MAIN ===========
+// ================================= MAIN =================================
 void main() {
 	
-    // === Crossfade ===
+    // Turbulent noise is from biome_util.glsl
+    const float rawTurb = texture(TurbulentNoise, fUV * 4.0).r;
+    const float noiseBlend = (rawTurb * 2.0 - 1.0) * 4.0;
+    
+    vec2 surfaceUV = fSurfaceUV + vec2(noiseBlend) * 0.001;
+    // R = base terrain
+    // G = base terrain density
+    // B = overlay terrain
+    // A - overlay terrain density
+    vec4 surfaceData = texture(unSurfaceDataTexture, surfaceUV).rgba;
+    
+    // ================================= Crossfade =================================
     computeCrossfade();
     
-    // === Normals ===
+    // ================================= Normals =================================
     vec3 surfaceNormal = computeNormal();
     
-    // === Biome ===
+    // ================================= Biome =================================
     int biome = getBiome(fBiomeUV);
 
-    // === Terrain Color ===
+    // ================================= Terrain Color =================================
     float distance = length(fPosition.xy);
     float distanceFactor = getTerrainDistanceFactor(distance);
     oColor.rgb = getTerrainColor(fUV, biome);
     
-    // =========== Cliff color ===========
+    // ================================= Cliff color =================================
     const float CLOSE_MULT = 10.0;
     const float FAR_MULT = 3.0;
     vec2 xyUVClose = fUV.xy * CLOSE_MULT;
@@ -218,16 +240,13 @@ void main() {
     vec3 ySampleFar = texture(CliffTexture, vec2(xyUVFar.x, heightVFar)).rgb;
     
     
-    // Turbulent noise is from biome_util.glsl
-    float rawTurb = texture(TurbulentNoise, fUV * 4.0).r;
-    float noiseBlend = (rawTurb * 2.0 - 1.0) * 4.0;
     vec3 weights = getTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose), noiseBlend);
     vec3 cliffClose = weights.x * xSampleClose + weights.y * ySampleClose;
     vec3 cliffFar = weights.x * xSampleFar + weights.y * ySampleFar;
     float cliffDistFactor = min(distance * 0.01, 1.0);
     oColor.rgb = oColor.rgb * weights.z + mix(cliffClose, cliffFar, cliffDistFactor);
     
-    // =========== Output Normals ===========
+    // ================================= Output Normals =================================
     vec3 normalClose = getTriplanarNormal(surfaceNormal, vec2(xyUVClose.y, heightVClose), vec2(xyUVClose.x, heightVClose), weights);
     vec3 normalFar = getTriplanarNormal(surfaceNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
     vec3 finalNormal = mix(normalClose, normalFar, cliffDistFactor);
@@ -235,7 +254,7 @@ void main() {
 
 	//oNormal.rgb = oNormal.rgb * 0.00001 + (surfaceNormal + 1.0) * 0.5;
     
-    // =========== Distance stylized color ===========
+    // ================================= Distance stylized color =================================
     float FLAT_REDUCE_MULT = 1.0;
     float GRANULARITY_MULT = unWavyMult;
     float GRANULARITY = 12.0 * GRANULARITY_MULT * (1.0 - surfaceNormal.z * FLAT_REDUCE_MULT);
@@ -260,7 +279,7 @@ void main() {
     vec3 distanceColor = mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
     oColor.rgb = mix(oColor.rgb, distanceColor, pow(distanceFactor, DISTANT_COLOR_EXP) * DISTANT_COLOR_INTENSITY);
         
-    // =========== Wet Soil ===========
+    // ================================= Wet Soil =================================
     // Shift warmer
     float wetnessMult = clamp(-fHeight * 10.0 + 0.01, 0.0, 1.0);
     oColor.rgb = mix(oColor.rgb, oColor.rgb * 0.6 * vec3(1.2, 1.1, 1.0), wetnessMult);
@@ -274,90 +293,89 @@ void main() {
     oMetallicRoughness.g = min(oMetallicRoughness.g + 0.5, 1.0);
     
     oColor.a = 1.0; // AO?
-    
-    
-    vec2 surfaceUV = fSurfaceUV + vec2(noiseBlend) * 0.001;
-    
-    // R = base terrain
-    // G = base terrain density
-    // B = overlay terrain
-    // A - overlay terrain density
-    vec4 surfaceData = texture(unSurfaceTextures, surfaceUV).rgba;
+
     
     const float HALF_TEXEL_SIZE = 0.00381679389; // (1/131)/2
     
+    
+    
+    // ================================= Surface Texture Overlays =================================
+      // Get UV for this tile
+    const vec2 scaledSurfaceUV = surfaceUV * 131.0;
+    const vec2 densityUV = fract(scaledSurfaceUV);
+    // Manually calculate LOD to fix issue of mipmapping crack due to fract dicontinuity
+    const vec2 densityLodInfo = textureQueryLod(unSurfaceDensityGradientMaps, scaledSurfaceUV);
+    vec2 dispUVOffset = vec2(0.0);
+    float dispUVScale = 1.0;
     if (surfaceData.r != 0.0) {
-
-        uint splatMaterialId = unSplatMaterials[uint(surfaceData.r * 255.0)];
+        SurfaceMaterialData surfaceMaterial = surfaceMaterialData[int(surfaceData.r * 255.0)];
+        const float baseSurfaceDensity = textureLod(unSurfaceDensityGradientMaps, vec3(densityUV, round(surfaceData.g * 255.0)), densityLodInfo.x).r;
         
-        // Get UV for this tile
-        const vec2 scaledUV = surfaceUV * 131.0;
-        const vec2 densityUV = fract(scaledUV);
-        // Manually calculate LOD to fix issue of mipmapping crack due to fract dicontinuity
-        vec2 lodInfo = textureQueryLod(unSurfaceDensityGradientMaps, scaledUV);
-       
-        float baseSurfaceDensity = textureLod(unSurfaceDensityGradientMaps, vec3(densityUV, round(surfaceData.g * 255.0)), lodInfo.x).r;
+        vec2 uv = fUV * surfaceMaterial.uvScale;
+      
+        // Disp
+        MaterialData mtl = inMaterials[surfaceMaterial.materialId];
+        if (mtl.displacementMap > 0) {
+            dispUVScale = surfaceMaterial.uvScale;
+            // Aggresively curve out the displacement as we fade out
+            float heightScale = 0.33 * pow(baseSurfaceDensity, 2.0);
+            vec3 tangentViewDir = normalize(/*vec3(0.0,0.0,0.0)*/ - fFragPosTangent); // Camera is at 0!
+            vec2 newUV = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
+            dispUVOffset = newUV - uv; // Cache offset to apply to other textures
+            uv = newUV;
+        }
         
         vec3 normal;
-        vec4 roadSample;
-        float ao;
-        float metallic;
-        float roughness;
-        vec2 uv = fUV * 10.0;
-        // TODO: REMOVE
-        if (surfaceData.r * 255.0 > 1.1) {
-            uv *= 10.0;
-        }
-        // 0.4 matches height blend scale
+        vec4 albedo;
+        float ao, metallic, roughness;
+        getMaterialPixelInfo(surfaceMaterial.materialId, uv, albedo, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
         
-        float intensity = 1.0;
+        const float blendFactor = pow(baseSurfaceDensity, 0.5) * albedo.a;
         
-        // Disp
-        MaterialData mtl = inMaterials[splatMaterialId];
-        if (mtl.displacementMap > 0) {
-            // Aggresively curve out the displacement as we fade out
-            float heightScale = max((intensity - 0.45) * 0.6, 0) * pow(baseSurfaceDensity, 2.0);
-            vec3 VIEW_POS_TANGENT = vec3(0.0,0.0,0.0); // Camera is at 0!
-            vec3 tangentViewDir = normalize(VIEW_POS_TANGENT - fFragPosTangent);
-            uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
-        }
-        
-        getMaterialPixelInfo(splatMaterialId, uv, roadSample, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
-        
-        float curvedSurfaceDensity = pow(baseSurfaceDensity, 0.5);
-        
-        float roadLuminance = getLuminance(roadSample.rgb);
-        float blendFactor = curvedSurfaceDensity;
-        
-        oColor.rgb = heightblend(oColor.rgb, 1.0 - blendFactor, roadSample.rgb, blendFactor);
+        oColor.rgb = heightblend(oColor.rgb, 1.0 - blendFactor, albedo.rgb, blendFactor);
        
-       // Normal map
-       vec3 roadNormal = fTBN * normal;
-       finalNormal = mix(finalNormal, roadNormal, blendFactor);
+        // Normal map
+        vec3 roadNormal = fTBN * normal;
+        finalNormal = mix(finalNormal, roadNormal, blendFactor);
        
-       // Roughness metallic
-       oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), blendFactor); 
+        // Roughness metallic
+        oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), blendFactor); 
        
-       // Ambient occlusion
-       oColor.a = mix(oColor.a, ao, blendFactor); 
-       
-       //oColor.rgb = 0.0001 * oColor.rgb + vec3(baseSurfaceDensity);
-       
-       
-        if (!isinf(densityUV.y) || !isnan(densityUV.y)) {
-        //    oColor.rgb = vec3(0.0, densityUV.y, 0.0);
-        }
-       
-       //oColor.rgb = 0.0001 * oColor.rgb + surfaceData.g;
-       //oColor.rgb = 0.0001 * oColor.rgb + vec3(texelCorner.g / 131.0, 0.0, 0.0);
+        // Ambient occlusion
+        oColor.a = mix(oColor.a, ao, blendFactor); 
        
        // Uncomment to debug weird negative frag pos issue
        // if (-fFragPosTangent.z < 0.0) {
        //     oColor.r = 1.0;
        // }
     }
+    if (surfaceData.b != 0.0) {
+        SurfaceMaterialData surfaceMaterial = surfaceMaterialOverlayData[int(surfaceData.b * 255.0)];
+        const float overlaySurfaceDensity = textureLod(unSurfaceDensityGradientMaps, vec3(densityUV, round(surfaceData.a * 255.0)), densityLodInfo.x).r;
+
+        vec2 uv = fUV * surfaceMaterial.uvScale + dispUVOffset * (surfaceMaterial.uvScale / dispUVScale);
+        
+        vec3 normal;
+        vec4 albedo;
+        float ao, metallic, roughness;
+        getMaterialPixelInfo(surfaceMaterial.materialId, uv, albedo, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
+        
+        const float blendFactor = pow(overlaySurfaceDensity, 0.5) * albedo.a;
+        
+        oColor.rgb = heightblend(oColor.rgb, 1.0 - blendFactor, albedo.rgb, blendFactor);
+       
+        // Normal map
+        vec3 roadNormal = fTBN * normal;
+        finalNormal = mix(finalNormal, roadNormal, blendFactor);
+       
+        // Roughness metallic
+        oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), blendFactor); 
+       
+        // Ambient occlusion
+        oColor.a = mix(oColor.a, ao, blendFactor); 
+    }
     
-    // =========== Snow ===========
+    // ================================= Snow =================================
     oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));
     
     // Debug biome colors 

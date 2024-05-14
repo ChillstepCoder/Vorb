@@ -97,6 +97,7 @@ void createTerrainAndWaterMesh(
     for (ui32 y = 1; y < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++y) {
         for (ui32 x = 1; x < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++x) {
             TerrainSurfaceData& surfaceData = terrainBuilder.mTerrainSurfaceLayers[y][x];
+            // Base
             surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x - 1].baseTexture == surfaceData.baseTexture) << 0);
             surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x].baseTexture == surfaceData.baseTexture) << 1);
             surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x + 1].baseTexture == surfaceData.baseTexture) << 2);
@@ -105,6 +106,15 @@ void createTerrainAndWaterMesh(
             surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x - 1].baseTexture == surfaceData.baseTexture) << 5);
             surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x].baseTexture == surfaceData.baseTexture) << 6);
             surfaceData.baseDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x + 1].baseTexture == surfaceData.baseTexture) << 7);
+            // Overlay
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x - 1].overlayTexture == surfaceData.overlayTexture) << 0);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x].overlayTexture == surfaceData.overlayTexture) << 1);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y - 1][x + 1].overlayTexture == surfaceData.overlayTexture) << 2);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y][x - 1].overlayTexture == surfaceData.overlayTexture) << 3);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y][x + 1].overlayTexture == surfaceData.overlayTexture) << 4);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x - 1].overlayTexture == surfaceData.overlayTexture) << 5);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x].overlayTexture == surfaceData.overlayTexture) << 6);
+            surfaceData.overlayDensityTextureID |= (ui8(terrainBuilder.mTerrainSurfaceLayers[y + 1][x + 1].overlayTexture == surfaceData.overlayTexture) << 7);
         }
     }
 

@@ -34,9 +34,14 @@ private:
     VGTexture mBiomeTexture = 0;
     f32 mInverseWorldWidth = 0.0f;
     WeatherManager* mWeatherManager = nullptr;
+    
+    struct SurfaceMaterialData {
+        i32 materialId;
+        f32 uvScale;
+    };
 
-    // TODO: SSBO instead
-    ui32 mMaterialsLookup[e_count(TerrainSurfaceType)] = {};
+    GLBuffer mSurfaceDataBuffer;
+    GLBuffer mSurfaceOverlayDataBuffer;
     VGTexture mSurfaceDensityGradientMapsArray = 0;
 };
 

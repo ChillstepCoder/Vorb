@@ -44,10 +44,22 @@ TerrainRenderer::TerrainRenderer() {
     // 0 1  will have the same gradient from perspective of top right as 0 1
     // 0 0                                                               1 0
 
-    // TODO: Data drive layers!
-    mMaterialsLookup[e_cast(TerrainSurfaceType::None)] = 0;
-    mMaterialsLookup[e_cast(TerrainSurfaceType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
-    mMaterialsLookup[e_cast(TerrainSurfaceType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
+
+    SurfaceMaterialData SurfaceData[e_count(TerrainSurfaceType)] = {
+        {}, //None
+        { MaterialRepository::get().getMaterialId(CStrToken("dirt_road")), 10.0f }, // Dirt Road
+        { MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2")), 100.0f }, // Farm Plot
+
+    };
+    static_assert(e_count(TerrainSurfaceType) == 3);
+    SurfaceMaterialData SurfaceOverlayData[e_count(TerrainSurfaceOverlayType)] = {
+        {}, //None
+        { MaterialRepository::get().getMaterialId(CStrToken("seeds")), 240.0f }, // Seeds
+    };
+    static_assert(e_count(TerrainSurfaceOverlayType) == 2);
+
+    mSurfaceDataBuffer.allocate(sizeof(SurfaceData), SurfaceData, 0);
+    mSurfaceOverlayDataBuffer.allocate(sizeof(SurfaceOverlayData), SurfaceOverlayData, 0);
 
     buildSurfaceDensityGradientMaps();
 }
@@ -84,8 +96,8 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffAmount"), sDebugOptions.mTerrainCliffAmount);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffZMult"), sDebugOptions.mTerrainCliffZMult);
 
-    const VGUniform unSplatMaterialsUniform = mTerrainMaterial->mProgram.getUniform("unSplatMaterials[0]");
-    glUniform1uiv(unSplatMaterialsUniform, e_count(TerrainSurfaceType), mMaterialsLookup);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_SURFACE_DATA_SSBO, mSurfaceDataBuffer.getHandle());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_SURFACE_OVERLAY_DATA_SSBO, mSurfaceOverlayDataBuffer.getHandle());
 
     const VGUniform patchWidthUniform = mTerrainMaterial->mProgram.getUniform("unPatchWidth");
     const VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
@@ -104,7 +116,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glBindTextureUnit(nextTextureUnit, mSurfaceDensityGradientMapsArray);
     
     const ui32 surfaceDataTextureUnit = ++nextTextureUnit;
-    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceTextures"), surfaceDataTextureUnit);
+    glUniform1i(mTerrainMaterial->mProgram.getUniform("unSurfaceDataTexture"), surfaceDataTextureUnit);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_TERRAIN_COLOR_MAPS_SSBO, BiomeRepository::get().getBiomeColorMapsShaderLookupBuffer());
 
