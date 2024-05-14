@@ -6,7 +6,7 @@
 #include "tile/TileGrass.h"
 
 #include "definitions/BrushDef.h"
-#include "world/road/TerrainTextureType.h"
+#include "world/road/TerrainSurfaceType.h"
 
 class Camera3D;
 class BrushRepository;
@@ -31,7 +31,7 @@ enum class TerrainEditState {
     COUNT
 };
 
-enum class RoadEditState {
+enum class SurfaceEditState {
     ADD,
     REMOVE
 };
@@ -79,7 +79,7 @@ private:
     void renderMenuBar() const;
     void tryRenderBrushSelect() const;
     void renderTerrainEditUI() const;
-    void renderRoadEditUI() const;
+    void renderSurfaceEditUI() const;
     void renderGrassEditUI() const;
     void renderTileEditUI() const;
     void renderEntityEditUI() const;
@@ -87,7 +87,7 @@ private:
     void renderBuildingEditUI() const;
 
     void updateTerrainEdit();
-    void updateRoadEdit();
+    void updateSurfaceEdit();
     void updateGrassEdit();
     void updateTileEdit();
     void updateEntityEdit();
@@ -95,7 +95,7 @@ private:
     void updateBuildingEdit();
 
     void editHeightVertex(HeightmapPatchID id, DTileCoord vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
-    void editRoadVertex(i32v2 worldPos, f32v2 offsetToVertex, const BrushSettings& brush, RoadEditState editState);
+    void editSurfaceVertex(i32v2 worldPos, f32v2 offsetToVertex, const BrushSettings& brush, SurfaceEditState editState);
     void editGrass(ChunkID id, TileIndex tileIndex, TileGrassID grassId, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
     f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
@@ -106,10 +106,10 @@ private:
     mutable GrassEditState mGrassEditState = GrassEditState::RAISE;
     mutable CityEditState mCityEditState = CityEditState::CREATE;
     mutable BuildingEditState mBuildingEditState = BuildingEditState::CREATE;
-    mutable RoadEditState mRoadEditState = RoadEditState::ADD;
+    mutable SurfaceEditState mRoadEditState = SurfaceEditState::ADD;
     // Brushes
     mutable BrushSettings mTerrainBrushSettings = { nullptr, UINT32_MAX, 5.0f, 0.1f };
-    mutable BrushSettings mRoadBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
+    mutable BrushSettings mSurfaceBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings mGrassBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;
     // Tile Edit
@@ -124,7 +124,9 @@ private:
     // Grass edit
     mutable TileGrassID mSelectedGrass = 0;
     // Road Edit
-    mutable TerrainTextureType mSelectedRoadType = TerrainTextureType::Dirt;
+    mutable bool mSurfaceOverlayMode = false;
+    mutable TerrainSurfaceType mSelectedSurfaceType = TerrainSurfaceType::Dirt;
+    mutable TerrainSurfaceOverlayType mSelectedSurfaceOverlayType = TerrainSurfaceOverlayType::Seeds;
 
     mutable StrToken mSelectedEntity;
     std::unique_ptr<DeferredPhysicsPick> mDeferredPhysicsPick;

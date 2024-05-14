@@ -432,7 +432,7 @@ void WorldGenScreen::initWorldData() {
     mWorldData->biomeGrid = std::make_unique<BiomeGrid>(mWorldData->worldWidth);
     mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth, mWorldData->worldSeed);
     mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth, *mWorldData->markupGrid);
-    mWorldData->roadGrid = std::make_shared<RoadGrid>(mWorldData->worldWidth);
+    mWorldData->terrainSurfaceGrid = std::make_shared<TerrainSurfaceGrid>(mWorldData->worldWidth);
     mWorldData->tileGrid = std::make_shared<SimChunkTileGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 

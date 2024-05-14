@@ -12,7 +12,7 @@
 #include "world/WorldDefaults.h"
 #include "world/IHeightmapGrid.h"
 #include "world/chunk/SimChunkTileGrid.h"
-#include "world/road/RoadGrid.h"
+#include "world/road/TerrainSurfaceGrid.h"
 #include "resources/TileRepository.h"
 
 #include "generation/NoiseFunction.hpp"
@@ -99,7 +99,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk) {
 
     TileRepository& tileRepo = TileRepository::get();
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
-    RoadGrid& roadGrid = world.getRoadGrid();
+    TerrainSurfaceGrid& surfaceGrid = world.getTerrainSurfaceGrid();
     const i32v2 chunkPosWorld = chunk.getWorldPos();
 
     // Allocate tiles if needed
@@ -116,8 +116,9 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk) {
     for (i32 index = 0; index < CHUNK_SIZE; ++index) {
         const TileCoord coord(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
         tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(coord.v);
-        const f32 roadGrassMult = f32(255 - roadGrid.getRoadPoint<true>(DTileCoord(coord)).strength) / 255.f;
-        chunk.mGrass[index] = generateTileGrass(coord.v, tiles[index].groundZOffset, SQ(roadGrassMult) /*Steeper falloff*/);
+        if (surfaceGrid.getSurfacePoint<true>(DTileCoord(coord)).baseType == TerrainSurfaceType::None) {
+            chunk.mGrass[index] = generateTileGrass(coord.v, tiles[index].groundZOffset, 1.0f /*intensitymult*/);
+        }
     }
 
     std::shared_lock lock(simData.mutex);

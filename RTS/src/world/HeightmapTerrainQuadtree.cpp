@@ -6,7 +6,7 @@
 #include "debugging/DebugRenderer.h"
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
-#include "world/road/RoadGrid.h"
+#include "world/road/TerrainSurfaceGrid.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/RenderContext.h"
@@ -74,7 +74,7 @@ void createTerrainAndWaterMesh(
     assert(dims.x == dims.y);
 
     // Generate heightfield
-    RoadGrid& roadGrid = world.getRoadGrid();
+    TerrainSurfaceGrid& roadGrid = world.getTerrainSurfaceGrid();
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
@@ -86,7 +86,9 @@ void createTerrainAndWaterMesh(
             paddedHeightfield[y][x] = heightGrid.getCompressedHeightAtVert<true>(dTilePos);
 
             TerrainSurfaceData& surfaceData = terrainBuilder.mTerrainSurfaceLayers[y][x];
-            surfaceData.baseTexture = roadGrid.getRoadPoint<true>(dTilePos).type;
+            TerrainSurfacePoint point = roadGrid.getSurfacePoint<true>(dTilePos);
+            surfaceData.baseTexture = point.baseType;
+            surfaceData.overlayTexture = point.overlayType;
         }
     }
 
@@ -108,7 +110,7 @@ void createTerrainAndWaterMesh(
 
     // TODO: Properly calculate edge surface densitys!
 
-    terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield, world.getRoadGrid());
+    terrainBuilder.buildFromPaddedHeightfield(worldPos, posStart, dims.x, paddedHeightfield, world.getTerrainSurfaceGrid());
 };
 
 void HeightmapTerrainQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {

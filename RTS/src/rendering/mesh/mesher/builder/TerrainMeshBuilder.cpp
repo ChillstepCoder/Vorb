@@ -144,7 +144,7 @@ void TerrainMeshBuilder::setVertsTerrainFromPaddedHeightfield(
     i32v2 cornerPosRelativeToRoot,
     f32 totalWidth,
     const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
-    const RoadGrid& roadGrid) {
+    const TerrainSurfaceGrid& roadGrid) {
 
     mWorldPosPatchCorner = worldPosTreeRoot + cornerPosRelativeToRoot;
 

@@ -3,15 +3,15 @@
 #include "rendering/mesh/Vertex.h"
 #include "world/TerrainConstants.h"
 #include "terrain/CompressedHeight.h"
-#include "world/road/TerrainTextureType.h"
+#include "world/road/TerrainSurfaceType.h"
 
 class TerrainMesh;
-class RoadGrid;
+class TerrainSurfaceGrid;
 
 struct TerrainSurfaceData {
-    TerrainTextureType baseTexture = TerrainTextureType::None;
+    TerrainSurfaceType baseTexture = TerrainSurfaceType::None;
     ui8 baseDensityTextureID = 0;
-    TerrainTextureType overlayTexture = TerrainTextureType::None;
+    TerrainSurfaceOverlayType overlayTexture = TerrainSurfaceOverlayType::None;
     ui8 overlayDensityTextureID = 0;
 };
 static_assert(sizeof(TerrainSurfaceData) == 4, "Currently packing into RGBA8");
@@ -27,7 +27,7 @@ public:
         i32v2 cornerPosRelativeToRoot,
         f32 totalWidth,
         const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
-        const RoadGrid& roadGrid
+        const TerrainSurfaceGrid& roadGrid
     ) {
         setVertsTerrainFromPaddedHeightfield(worldPosTreeRoot, cornerPosRelativeToRoot, totalWidth, paddedHeightfield, roadGrid);
         setVertsWaterFromPaddedHeightfield(cornerPosRelativeToRoot, totalWidth, paddedHeightfield);
@@ -43,7 +43,7 @@ private:
         i32v2 cornerPosRelativeToRoot,
         f32 totalWidth,
         const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS],
-        const RoadGrid& roadGrid);
+        const TerrainSurfaceGrid& roadGrid);
     void setVertsWaterFromPaddedHeightfield(i32v2 cornerPosRelativeToRoot, f32 totalWidth, const CompressedHeight paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
     
     TerrainVertex mTerrainVerts[TERRAIN_MESH_SIZE_VERTS];

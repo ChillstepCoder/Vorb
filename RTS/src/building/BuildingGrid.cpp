@@ -36,6 +36,7 @@ void BuildingGrid::tick() {
         Building* bldg = mDeactivatingBuildings[i];
         // Wait for ref to be 0 and load to finish
         if (bldg->getRefCountTiles() == 0 && bldg->getState() == BuildingState::ACTIVE) {
+            bldg->mIsDeactivating = false;
             bldg->mState = BuildingState::SIM;
             bldg->freeData();
             bldg = mDeactivatingBuildings.back();

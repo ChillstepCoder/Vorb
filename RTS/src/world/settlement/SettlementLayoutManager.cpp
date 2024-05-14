@@ -3,7 +3,7 @@
 
 #include "world/World.h"
 #include "world/ownership/OwnershipGrid.h"
-#include "world/road/RoadGrid.h"
+#include "world/road/TerrainSurfaceGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/component/SettlementComponents.h"
@@ -172,7 +172,7 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius,
                 newSector.center,
                 otherSector.center,
                 DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(newSector.center.v), f32v2(otherSector.center.v), distanceRatio)))),
-                TerrainTextureType::Dirt,
+                TerrainSurfaceType::Dirt,
                 DESIRED_ROAD_WIDTH,
                 zone
             );

@@ -4,7 +4,7 @@
 #include "world/biome/BiomeGrid.h"
 #include "world/markup/WorldMarkupGrid.h"
 #include "world/ownership/OwnershipGrid.h"
-#include "world/road/RoadGrid.h"
+#include "world/road/TerrainSurfaceGrid.h"
 #include "world/chunk/SimChunkTileGrid.h"
 
 // All word initialization data is here. Can either be generated or loaded
@@ -19,6 +19,6 @@ public:
     std::shared_ptr<BiomeGrid> biomeGrid;
     std::shared_ptr<WorldMarkupGrid> markupGrid;
     std::shared_ptr<OwnershipGrid> ownershipGrid;
-    std::shared_ptr<RoadGrid> roadGrid;
+    std::shared_ptr<TerrainSurfaceGrid> terrainSurfaceGrid;
     std::shared_ptr<SimChunkTileGrid> tileGrid;
 };

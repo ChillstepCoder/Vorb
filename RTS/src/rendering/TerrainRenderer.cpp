@@ -45,9 +45,9 @@ TerrainRenderer::TerrainRenderer() {
     // 0 0                                                               1 0
 
     // TODO: Data drive layers!
-    mMaterialsLookup[e_cast(TerrainTextureType::None)] = 0;
-    mMaterialsLookup[e_cast(TerrainTextureType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
-    mMaterialsLookup[e_cast(TerrainTextureType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
+    mMaterialsLookup[e_cast(TerrainSurfaceType::None)] = 0;
+    mMaterialsLookup[e_cast(TerrainSurfaceType::Dirt)] = MaterialRepository::get().getMaterialId(CStrToken("dirt_road"));
+    mMaterialsLookup[e_cast(TerrainSurfaceType::FarmPlot)] = MaterialRepository::get().getMaterialId(CStrToken("farm_plot_2"));
 
     buildSurfaceDensityGradientMaps();
 }
@@ -85,7 +85,7 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const boost::contain
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unCliffZMult"), sDebugOptions.mTerrainCliffZMult);
 
     const VGUniform unSplatMaterialsUniform = mTerrainMaterial->mProgram.getUniform("unSplatMaterials[0]");
-    glUniform1uiv(unSplatMaterialsUniform, e_count(TerrainTextureType), mMaterialsLookup);
+    glUniform1uiv(unSplatMaterialsUniform, e_count(TerrainSurfaceType), mMaterialsLookup);
 
     const VGUniform patchWidthUniform = mTerrainMaterial->mProgram.getUniform("unPatchWidth");
     const VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");

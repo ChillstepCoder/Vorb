@@ -4,7 +4,7 @@
 #include "math/Random.h"
 #include "world/World.h"
 #include "world/ownership/OwnershipGrid.h"
-#include "world/road/RoadGrid.h"
+#include "world/road/TerrainSurfaceGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "world/chunk/SimChunkTileGrid.h"
 
@@ -57,7 +57,7 @@ void SettlementRoadNetwork::init(SettlementPlotManager& plotManager) {
 }
 
 
-bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, TerrainTextureType roadType, ui8 width, SettlementZone zone) {
+bool SettlementRoadNetwork::tryAddRoadBetweenSectorPoints(entt::entity settlement, DTileCoord sector1Pos, DTileCoord sector2Pos, DTileCoord midPoint, TerrainSurfaceType roadType, ui8 width, SettlementZone zone) {
     f32v2 offsetf(sector2Pos.v - sector1Pos.v);
 
     // Rotate offset so it is a a cell border between our two sectors
@@ -394,7 +394,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     // Loop through the AABB and check for if it is owned already
     OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    RoadGrid& roadGrid = mWorld.getRoadGrid();
+    TerrainSurfaceGrid& roadGrid = mWorld.getTerrainSurfaceGrid();
 
     const i32v2 maxCoord = aabb.pos + aabb.dims;
 
@@ -593,14 +593,13 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     // TODO: REMOVE ***DEBUG BUILD ROADS***
     SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
     for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
-        if (roadGrid.setRoadPointIfHigherIntensity(p.pos, RoadPoint{ .strength = ui8(p.strength * 255), .type = newSegment.roadType })) {
+        if (roadGrid.setBaseSurfaceTypeIfEmpty(p.pos, newSegment.roadType)) {
             // Clear tile if needed
             TileCoord tCoordsThisDTile[4];
             p.pos.getCoveredTileCoords(tCoordsThisDTile);
             for (int i = 0; i < 4; ++i) {
                 if (SimTileDataWriteReservationPtr writeLock = tileGrid.tryReserveTileDataAtPosIfNotEmpty(tCoordsThisDTile[i])) {
                     writeLock->reservedCopy.tileId = TILE_ID_NONE;
-                    writeLock.reset();
                 }
             }
         }

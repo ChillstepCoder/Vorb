@@ -3,7 +3,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include "resources/asset/AssetHandleBundle.h"
-#include "world/road/TerrainTextureType.h"
+#include "world/road/TerrainSurfaceType.h"
 
 class MaterialShaderDef;
 class Camera3D;
@@ -36,7 +36,7 @@ private:
     WeatherManager* mWeatherManager = nullptr;
 
     // TODO: SSBO instead
-    ui32 mMaterialsLookup[e_count(TerrainTextureType)] = {};
+    ui32 mMaterialsLookup[e_count(TerrainSurfaceType)] = {};
     VGTexture mSurfaceDensityGradientMapsArray = 0;
 };
 

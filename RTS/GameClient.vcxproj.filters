@@ -975,7 +975,7 @@
     <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\road\RoadGrid.cpp">
+    <ClCompile Include="src\world\road\TerrainSurfaceGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\renderer\RoadRenderer.cpp">
@@ -2489,7 +2489,7 @@
     <ClInclude Include="src\world\simulation\host\system\SimSettlementSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\road\RoadGrid.h">
+    <ClInclude Include="src\world\road\TerrainSurfaceGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\renderer\RoadRenderer.h">
@@ -2654,7 +2654,7 @@
     <ClInclude Include="src\ecs\FullECSEvents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\road\TerrainTextureType.h">
+    <ClInclude Include="src\world\road\TerrainSurfaceType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
