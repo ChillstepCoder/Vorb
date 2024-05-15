@@ -16,6 +16,7 @@
 #include "debugging/DebugRenderer.h"
 
 #include "boost/container/flat_set.hpp"
+#include "pathfinding/NavWorld.h"
 
 // HOW IT WORKS
 // 1. Sim thread OR game thread create a building, gets marked as SIM state and disconnected
@@ -34,12 +35,13 @@ void BuildingGrid::tick() {
     ASSERT_GAME_THREAD();
     for (size_t i = 0; i < mDeactivatingBuildings.size();) {
         Building* bldg = mDeactivatingBuildings[i];
+        assert(bldg->mIsDeactivating);
         // Wait for ref to be 0 and load to finish
         if (bldg->getRefCountTiles() == 0 && bldg->getState() == BuildingState::ACTIVE) {
             bldg->mIsDeactivating = false;
             bldg->mState = BuildingState::SIM;
             bldg->freeData();
-            bldg = mDeactivatingBuildings.back();
+            mDeactivatingBuildings[i] = mDeactivatingBuildings.back();
             mDeactivatingBuildings.pop_back();
         } else {
             ++i;
@@ -185,6 +187,24 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
             }
             else {
                 break; // Only need to iterate first floor, BP is sorted
+            }
+        }
+        for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
+            StairPiece& stairPiece = bp.stairPieces[i];
+            if (stairPiece.pos < floorStride) {
+                if (stairPiece.pos < floorStride) {
+                    i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
+                    // Epsilon to prevent z fighting
+                    heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
+                    // Mark covered
+                    ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                    ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                    mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+                }
+                else {
+                    // TODO: Guarentee this!
+                    break; // Only need to iterate first floor, BP is sorted
+                }
             }
         }
 
@@ -387,6 +407,11 @@ void BuildingGrid::onBuildingFinishedLoad(Building& building) {
                 }
                 assert(found);
             }
+        }
+
+        // Navmesh dirty
+        if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {
+            navWorld->markContainerNavDirty(building.getTileContainer());
         }
     });
 }

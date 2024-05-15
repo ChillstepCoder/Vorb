@@ -87,6 +87,8 @@ AnimBlendPair Blendspace1DPlayer::getBlendPair(f32 x, OUT f32& outAnimSpeed) con
         const f32 dist = mNodes[0].x - x;
         const f32 ratio = dist / mNodes[0].x;
         outAnimSpeed = 1.0f - ratio * mSpeedWarpLess;
+        // Sometimes can be negative here
+        outAnimSpeed = glm::max(outAnimSpeed, 0.0f);
         return { mNodes[0].animId, INVALID_ASSET_ID, 1.0f };
     }
 

@@ -108,10 +108,6 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
 
         TileContainerLoaderBuildingGridProxy::onFinished(mWorld.getBuildingGrid(), building);
 
-        // Navmesh dirty
-        /*if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {
-            navWorld->markContainerNavDirty(building.getTileContainer());
-        }*/
     });
 }
 
