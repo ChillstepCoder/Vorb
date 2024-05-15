@@ -9,6 +9,7 @@ class Chunk;
 class SpatialGrid2D;
 class SimChunkTileContainer;
 class BiomeDef;
+class BitArray;
 struct TileGrass;
 
 class ChunkGenerator
@@ -17,7 +18,11 @@ public:
     ChunkGenerator(World& world);
     ~ChunkGenerator();
 
-    void generateChunkFromSimChunk(Chunk& chunk);
+    // Generate a chunk from the sim chunk, and rectify any invalid data such
+    // as trees intersecting buildings, removing them from the simchunk
+    void generateChunkFromSimChunk(Chunk& chunk, const BitArray& buildingFootprint);
+    // Generate a simulated chunk, may contain some invalid data such as trees intersecting
+    // buildings, but such errors are fixed during full chunk generation
     void generateSimChunk(SimChunkTileContainer& chunk, World& world);
 
     const WorldGenerationData& getGenerationData() const { return mGenerationData; }

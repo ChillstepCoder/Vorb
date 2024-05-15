@@ -956,10 +956,10 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
                 assert(chunkTileContainer);
                 TileIndex chunkTileIndex = chunkTileSpatialGrid.getBaseTileIndexFromXYOffset(worldPos2D.x - chunkTileSpatialGrid.getWorldPos2D().x, worldPos2D.y - chunkTileSpatialGrid.getWorldPos2D().y);
                 if (tile.isEmpty()) {
-                    chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
+                    chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_BUILDING);
                 }
                 else {
-                    chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
+                    chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_BUILDING);
                     // TODO: Don't always clear grass?
                     chunk.clearGrassAt(chunkTileIndex);
                 }

@@ -15,8 +15,8 @@ enum class TileFlags : TileFlagType {
     BLOCKED_BY_LARGE            = BIT(5),
     MEDIUM_BLOCKER              = BIT(6),
     LARGE_BLOCKER               = BIT(7),
-    IS_BLOCKED_BY_STRUCTURE     = BIT(8),
-    NAV_BLOCKED_MASK_TERM       = IS_BLOCKED_BY_STRUCTURE,
+    IS_BLOCKED_BY_BUILDING      = BIT(8),
+    NAV_BLOCKED_MASK_TERM       = IS_BLOCKED_BY_BUILDING,
     // Bits beyond here do not contribute to nav blocking
     IS_INTERACTING              = BIT(9),
     IS_STOCKPILE                = BIT(10), // True if owned by a stockpile
@@ -35,7 +35,7 @@ static_assert(e_cast(TileFlags::TERM) <= 0x8000); // Must fit into a short
 // one of bits >= 4 will be set which is always considered blocked
 constexpr TileFlagType TILE_BLOCKED_TILE_FLAGS_MASK = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4) | BIT(5) | BIT(6) | BIT(7) | BIT(8);
 static_assert(e_cast(TileFlags::NAV_BLOCKED_MASK_TERM) == BIT(8));
-static_assert(TileFlags::NAV_BLOCKED_MASK_TERM == TileFlags::IS_BLOCKED_BY_STRUCTURE);
+static_assert(TileFlags::NAV_BLOCKED_MASK_TERM == TileFlags::IS_BLOCKED_BY_BUILDING);
 
 // These flags indicate that they will block diagonal tiles via HAS_DIAGONAL_BLOCKER
 constexpr TileFlagType TILE_DIAGONAL_BLOCKERS_MASK = e_cast(TileFlags::MEDIUM_BLOCKER) | e_cast(TileFlags::LARGE_BLOCKER);

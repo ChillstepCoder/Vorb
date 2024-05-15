@@ -554,7 +554,6 @@
     <ClCompile Include="src\world\settlement\SettlementLayoutManager.cpp" />
     <ClCompile Include="src\world\settlement\SettlementPlotManager.cpp" />
     <ClCompile Include="src\world\settlement\SettlementRoadNetwork.cpp" />
-    <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp" />
     <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp" />
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
@@ -566,7 +565,6 @@
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
-    <ClCompile Include="src\world\simulation\SimChunk.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
@@ -1074,7 +1072,6 @@
     <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h" />
     <ClInclude Include="src\world\settlement\SettlementZone.h" />
     <ClInclude Include="src\world\simulation\host\CharacterGroupType.h" />
-    <ClInclude Include="src\world\simulation\host\ChunkSimulator.h" />
     <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />
     <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h" />
     <ClInclude Include="src\world\simulation\host\component\SimComponents.h" />
@@ -1091,7 +1088,6 @@
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
     <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />
     <ClInclude Include="src\world\simulation\host\system\SimSettlementSystem.h" />
-    <ClInclude Include="src\world\simulation\SimChunk.h" />
     <ClInclude Include="src\world\simulation\SimTask.h" />
     <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />

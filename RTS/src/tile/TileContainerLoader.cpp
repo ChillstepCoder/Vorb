@@ -121,9 +121,11 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
     Chunk* chunk = container.getOwnerChunk();
     assert(chunk);
 
-    // No need to incref, we cannot be destroyed while activating
+    // Footprint must be copied
+    BitArray buildingFootprint = mWorld.getBuildingGrid().getBuildingFootprintAtChunk(chunk->getChunkID());
 
-    Services::Threadpool::ref().addTask([this, chunk]() {
+    // No need to incref, we cannot be destroyed while activating
+    Services::Threadpool::ref().addTask([this, chunk, buildingFootprint = std::move(buildingFootprint)]() {
         TileContainer& container = *chunk->mTileContainer;
         // Worker thread
         //
@@ -135,7 +137,7 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
         }
 
         // Generate chunk
-        chunk->getWorld().getWorldGenerator().generateChunkFromSimChunk(*chunk);
+        chunk->getWorld().getWorldGenerator().generateChunkFromSimChunk(*chunk, buildingFootprint);
 
         // Build visibility
         container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());

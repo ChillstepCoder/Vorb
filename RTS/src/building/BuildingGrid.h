@@ -21,11 +21,22 @@ public:
     ui32 getNumLoadingBuildings() const { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
     // Buildings which are not connected to the active chunks
     std::vector<Building*>& getDisconnectedBuildings() { ASSERT_GAME_THREAD(); return disconnectedBuildings; }
+
+    bool isTileCoveredByBuilding(TileIndex index) const { ASSERT_GAME_THREAD(); return buildingFootprintTiles.getNumBits() == 0 || buildingFootprintTiles.getBit(index); }
+    void setTileCoveredByBuilding(TileIndex index) { ASSERT_GAME_THREAD(); tryLazyAllocateBuildingFootprint(); buildingFootprintTiles.setBit(index); }
+    void clearTileCoveredByBuilding(TileIndex index) { ASSERT_GAME_THREAD(); assert(buildingFootprintTiles.getNumBits()); buildingFootprintTiles.clearBit(index); }
+    const BitArray& getFootprint() { ASSERT_GAME_THREAD(); return buildingFootprintTiles; }
 private:
+    void tryLazyAllocateBuildingFootprint() {
+        if (buildingFootprintTiles.isEmpty()) [[unlikely]] {
+            buildingFootprintTiles.resizeAndZero(CHUNK_SIZE);
+        }
+    }
 
     bool isSimulated = true; // Main thread only
     ui32 mNumLoadingBuildings = 0; // Main thread only
     std::vector<Building*> disconnectedBuildings; // Main thread only
+    BitArray buildingFootprintTiles; // Main thread only - 1 bits indicate a building at this tile
 
 public:
     mutable std::mutex mMutex;
@@ -55,6 +66,8 @@ public:
     ui32 allBuildingsLoadedAtChunk(ChunkID chunkId) const;
     // For connecting loaded buildings to the active chunk
     void connectBuildingsToChunk(Chunk& chunk);
+    // Main thread access only, if passing to worker thread, make a copy
+    const BitArray& getBuildingFootprintAtChunk(ChunkID chunkId) const { return mChunkBuildingData[chunkId].getFootprint(); }
 
 private:
     // Returns false if already connected, does not remove from disconnected array, caller must do that

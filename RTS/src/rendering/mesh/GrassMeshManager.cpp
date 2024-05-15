@@ -65,7 +65,6 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
         }
     }
 
-
     for (TrackedChunk& trackedChunk : mTrackedChunks) {
         const f32 distSq = glm::length2(trackedChunk.worldPosCenter - loadCenter);
         std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = trackedChunk.quadtree;
@@ -128,10 +127,11 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
                     }
                 }),
                     chunkNonConst.addGrassEditListener([this](const ChunkEvent& evnt) {
-                    const f32v2 worldPos = evnt.chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos2D(evnt.tileIndex);
-                    i16v2 xyOffset((evnt.tileIndex% CHUNK_WIDTH) / LEAF_DIM, (evnt.tileIndex / CHUNK_WIDTH) / LEAF_DIM);
-                    mDirtyPositions.dirtyObject(std::make_pair(evnt.chunk.getChunkID(), xyOffset));
-                }));
+                        const f32v2 worldPos = evnt.chunk.getTileContainer()->getTileSpatialGrid().getTileBaseWorldPos2D(evnt.tileIndex);
+                        i16v2 xyOffset((evnt.tileIndex% CHUNK_WIDTH) / LEAF_DIM, (evnt.tileIndex / CHUNK_WIDTH) / LEAF_DIM);
+                        mDirtyPositions.dirtyObject(std::make_pair(evnt.chunk.getChunkID(), xyOffset));
+                    })
+                );
                 grassQuadtree = std::make_unique<ChunkGrassQuadtree>(*trackedChunk.chunk);
             }
         }

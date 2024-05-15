@@ -852,9 +852,6 @@
     <ClCompile Include="src\world\simulation\host\HostSimContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\simulation\host\ChunkSimulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\screens\WorldGenScreen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -946,9 +943,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\world\simulation\SimChunk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\simulation\host\SimWorldAnalytics.cpp">
@@ -2312,9 +2306,6 @@
     <ClInclude Include="src\world\simulation\host\HostSimContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\host\ChunkSimulator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\screens\WorldGenScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2454,9 +2445,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\SimImmigrationManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\simulation\SimChunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\SimWorldAnalytics.h">

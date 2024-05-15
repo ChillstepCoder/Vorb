@@ -2,7 +2,6 @@
 
 #include "world/WorldContextObject.h"
 
-#include "world/simulation/SimChunk.h"
 #include "world/simulation/host/SimWorldAnalytics.h"
 #include "world/ChunkGridEvent.h"
 #include "ecs/FullECSEvents.h"
@@ -69,7 +68,6 @@ private:
     // TODO: This can be in seconds, and use ui16 with -= per frame
 
     // Chunks
-    UniqueArray<SimChunkData> mChunkData;
     BitArray mChunkStates; // Pack SimChunkState into 2 bits per element
     BitArray mSimulatingChunks; // Chunks with SimChunkState = simulating for fast find first set bit
     // TODO: Flat set?

@@ -16,7 +16,6 @@
 
 HostSimContext::HostSimContext(World& world) :
     WorldContextObject(world),
-    mChunkData(world.getTotalChunks()),
     mTotalChunks(world.getTotalChunks())
 {
     mAnalytics = std::make_unique<SimWorldAnalytics>();

@@ -173,10 +173,18 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
         const i32 floorStride = tileAABB.dims.x * tileAABB.dims.y;
         for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
             BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
+            // Footprint
             if (tileTarget.tileIndex < floorStride) {
                 i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
                 // Epsilon to prevent z fighting
                 heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
+                // Mark covered
+                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+            }
+            else {
+                break; // Only need to iterate first floor, BP is sorted
             }
         }
 
@@ -304,6 +312,7 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     const TileSpatialGrid& chunkTileSpatialGrid = chunk.getTileContainer()->getTileSpatialGrid();
     const i32v3& buildingWorldPos = tileSpatialGrid.getWorldPos3D();
+    const i32 floorHeight = tileSpatialGrid.getFloorHeight();
     
     // Clip X and Y to the chunk
     const i32v2 chunkWorldPos = chunk.getWorldPos();
@@ -321,7 +330,10 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
     const i32 localYMin = yMin - buildingWorldPos.y;
     const i32 localYMax = yMax - buildingWorldPos.y;
 
-    for (i32 z = 0; z < dims.z; ++z) {
+    // ChunkGenerator::generateChunkFromSimChunk will set building block and grass block for first floor,
+    // based on the ChunkBuildingData::buildingFootprint, so we only need to iterate subsequent floors
+    // and check if they are close to intersecting terrain, which can happen with steep hills
+    for (i32 z = 1; z < dims.z; ++z) {
         const i32 zOffset = floorStride * z;
         for (i32 y = localYMin; y < localYMax; ++y) {
             const i32 zyOffset = zOffset + y * dims.x;
@@ -333,10 +345,10 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
                     const i32 worldPosX = x + buildingWorldPos.x;
                     TileIndex chunkTileIndex = chunkTileSpatialGrid.getBaseTileIndexFromXYOffset(worldPosX - chunkWorldPos.x, worldPosY - chunkWorldPos.y);
                     // TODO CHECK PROXIMITY!
-                    const i32 buildingWorldZ = z + buildingWorldPos.z;
-                    // TODO: Should this be part of a bulk edit?
-                    if (buildingWorldZ - chunkTileContainer->getTileAt(chunkTileIndex).getGroundZOffset() <= TILE_BLOCK_RANGE) {
-                        chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
+                    const i32 buildingWorldZ = z * floorHeight + buildingWorldPos.z;
+                    // TODO: This should be part of a bulk edit
+                    if (buildingWorldZ - chunkTileContainer->getTileAt(chunkTileIndex).getGroundZOffset() <= TILE_BLOCK_RANGE) { 
+                        chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_BUILDING);
                         chunk.clearGrassAt(chunkTileIndex);
                     }
                 }

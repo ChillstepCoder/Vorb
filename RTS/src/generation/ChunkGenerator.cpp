@@ -19,8 +19,10 @@
 #include "generation/WorldGenerationData.h"
 #include "generation/TileDistributionSampler.h"
 
-#include "util/TilingVoronoiMap.h"
+//#include "debugging/DebugRenderer.h"
 
+#include "util/BitArray.h"
+#include "util/TilingVoronoiMap.h"
 
 ChunkGenerator::ChunkGenerator(World& world) : mWorld(world) {
     mWorldCenter = f32v2(mWorld.getWidthTiles() * 0.5f);
@@ -87,14 +89,15 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
     return tile;
 }
 
-void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk) {
+
+void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& buildingFootprint) {
     World& world = chunk.getWorld();
     SimChunkTileGrid& simGrid = world.getSimTileGrid();
-    const SimChunkTileContainer& simData = simGrid.getChunk(chunk.getChunkID());
+    SimChunkTileContainer& simData = simGrid.getChunkForGeneration(chunk.getChunkID());
 
     if (world.isEditorWorld()) [[unlikely]] {
         // Need to generate the sim chunk first on editor worlds, as we did not generate history
-        generateSimChunk(simGrid.getChunkForGeneration(chunk.getChunkID()), world);
+        generateSimChunk(simData, world);
     }
 
     TileRepository& tileRepo = TileRepository::get();
@@ -105,29 +108,49 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk) {
     // Allocate tiles if needed
     chunk.mTileContainer->allocateData();
 
+    // Indicates an ocean chunk
     if (simData.state != SimChunkTileContainerState::Allocated) {
         // TODO: Need to still generate tiles in ocean and stuff
         chunk.mAABB.height = 10;
         return;
     }
 
-    // Set all tile ground positions and generate grass
+    // Set all tile ground positions, mark building locations, and generate grass
     std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
     for (i32 index = 0; index < CHUNK_SIZE; ++index) {
         const TileCoord coord(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
         tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(coord.v);
-        if (surfaceGrid.getSurfacePoint<true>(DTileCoord(coord)).baseType == TerrainSurfaceType::None) {
+        if (!buildingFootprint.isEmpty() && buildingFootprint.getBit(index)) {
+            tiles[index].tileFlags.setBit(TileFlags::IS_BLOCKED_BY_BUILDING);
+        }
+        else if (surfaceGrid.getSurfacePoint<true>(DTileCoord(coord)).baseType == TerrainSurfaceType::None) {
             chunk.mGrass[index] = generateTileGrass(coord.v, tiles[index].groundZOffset, 1.0f /*intensitymult*/);
         }
     }
-
-    std::shared_lock lock(simData.mutex);
+    // Read+write lock
+    std::lock_guard lock(simData.mutex);
     assert(simData.data);
     SimChunkTileData& simChunkTileData = *simData.data;
-    for (auto& [index, data] : simChunkTileData.tileIndexToTileData) {
-        tiles[index].mainLayer = data.tileId;
-        tiles[index].mainLayerVariant = data.variant;
-        chunk.mGrass[index] = TileGrass();
+    auto& tileIndexToTileData = simChunkTileData.tileIndexToTileData;
+    for (auto&& it = tileIndexToTileData.begin(); it != tileIndexToTileData.end();) {
+        auto& [index, data] = *it;
+        Tile& tile = tiles[index];
+        assert(isTileValid(data.tileId));
+        if (tile.tileFlags.isBitSet(TileFlags::IS_BLOCKED_BY_BUILDING)) {
+            // Remove blocked tile from sim layer and do not add to this chunk
+            auto&& qit = simChunkTileData.tileQuantities.find(data.tileId);
+            assert(qit != simChunkTileData.tileQuantities.end());
+            if (--qit->second == 0) {
+                simChunkTileData.tileQuantities.erase(qit);
+            }
+            it = tileIndexToTileData.erase(it);
+        }
+        else {
+            tiles[index].mainLayer = data.tileId;
+            tiles[index].mainLayerVariant = data.variant;
+            chunk.mGrass[index] = TileGrass();
+            ++it;
+        }
 
         // TODO: Not ideal
         //const NavBlockerType navBlockerType = tileRepo.getLoadedOrUnloadedAsset(data.tileId).navBlockerType;
