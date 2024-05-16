@@ -99,6 +99,7 @@ public:
         assert(!IS_GAME_THREAD());
         std::lock_guard lock(mMutex);
         std::swap(outObjects, mDirtyObjectsWorkerThread);
+        mDirtyObjectsWorkerThread.clear();
     }
 private:
     std::mutex mMutex;

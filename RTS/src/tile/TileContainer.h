@@ -248,6 +248,7 @@ private:
     mutable std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
     bool mDirtyData = false;
     bool mPendingDestroy = false;
+    mutable bool mIsGeneratingNavmesh = false;
     std::variant<Chunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
     World& mWorld;

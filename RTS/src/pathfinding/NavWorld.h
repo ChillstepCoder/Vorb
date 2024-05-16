@@ -227,14 +227,14 @@ public:
     void markContainerNavDirty(TileContainer* container);
     bool navThreadTryReserveHarvestable(LiteTileHandle position) const;
 private:
+    void tryBeginNavmeshTaskForContainer(const TileContainer* container);
+    void addContainerToPendingDirtyContainersList(const TileContainer* container);
     void finishNavGraphBuildTask(NavGraphBuildTaskData& taskData);
     void initEventHandlers();
     bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ChunkBuildingEdgeListOutput* externalEdges);
     bool trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
 
     bool isInteriorTile(const BitArray& ownedDTiles, TileIndex index2d, ui32v2 containerDimsDTiles, const std::vector<Tile>& tiles) const;
-
-    void markChunkContainerNavDirty(ChunkID chunkId);
 
     //void buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir);
     //void addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
@@ -260,8 +260,9 @@ private:
         TileContainerID id;
         bool isTerrain;
     };
-    
-    GameThreadBatchedDirtySet<const TileContainer*> mDirtyTileContainers;
+
+    GameThreadBatchedDirtySet<const TileContainer*> mDirtyBuildingTileContainers;
+    GameThreadBatchedDirtySet<const TileContainer*> mDirtyChunkTileContainers;
     GameThreadBatchedDirtyVector<TileContainerToDestroy> mContainersToDestroy;
 
     TileContainerListeners mTileContainerEventListeners;
@@ -272,5 +273,6 @@ private:
     std::unique_ptr<i32[]> mChunkPendingBuildingNavmeshCounts;
     std::unique_ptr<ChunkBuildingEdgeList[]> mChunkBuildingEdges;
     std::unique_ptr<TileContainerID[]> mTerrainTileContainers;
+    std::unordered_set<const TileContainer*> mPendingDirtyTileContainers;
 
 };

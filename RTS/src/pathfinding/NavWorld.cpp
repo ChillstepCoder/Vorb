@@ -69,7 +69,8 @@ NavWorld::~NavWorld()
 
 void NavWorld::tickGameThread() {
     ASSERT_GAME_THREAD();
-    mDirtyTileContainers.gameThreadCopyToWorkerThread();
+    mDirtyBuildingTileContainers.gameThreadCopyToWorkerThread();
+    mDirtyChunkTileContainers.gameThreadCopyToWorkerThread();
     mContainersToDestroy.gameThreadCopyToWorkerThread();
 }
 
@@ -89,44 +90,17 @@ void NavWorld::updateNavThread()
 
     // Update dirty tile containers
     {
+        // Buildings first as chunks are dependant on buildings
         boost::container::flat_set<const TileContainer*> dirtyContainers;
-        mDirtyTileContainers.workerThreadAquireAllDirtyObjects(dirtyContainers);
 
+        mDirtyBuildingTileContainers.workerThreadAquireAllDirtyObjects(dirtyContainers);
         for (auto&& container : dirtyContainers) {
-            // The decref will happen after the build
-            //LOG_DEBUG("NAV BEGIN {}", container->getId());
-            if (container->isTerrain()) {
-                PROFILE_SCOPE("IsTerrain");
-                // Build external edges if needed
-                // I couldnt' get unique_ptr to work with the lambda
-                TerrainExternalEdges* externalEdgesPtr = nullptr;
-                ChunkBuildingEdgeList& edgeList = mChunkBuildingEdges[container->getOwnerChunk()->getChunkID()];
-                if (edgeList.size()) {
-                    externalEdgesPtr = new TerrainExternalEdges();
-                    for (ChunkBuildingEdge& edge : edgeList) {
-                        externalEdgesPtr->setExternal(edge.chunkTileIndex, edge.cartesian);
-                    }
-                }
-               
-                // Run task
-                Services::Threadpool::ref().addTask([this, container, externalEdgesPtr]() {
-                    buildNavGraphForContainer(*container, externalEdgesPtr);
-                    if (externalEdgesPtr) {
-                        delete externalEdgesPtr;
-                    }
-                });
-            }
-            else {
-                // Increment dirty counts
-                boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container->getWorldPos(), container->getDims());
-                for (ChunkID id : chunkDependencies) {
-                    x; // TODO: use
-                    ++mChunkPendingBuildingNavmeshCounts[id];
-                }
-                Services::Threadpool::ref().addTask([this, container]() {
-                    buildNavGraphForContainer(*container, nullptr);
-                });
-            }
+            tryBeginNavmeshTaskForContainer(container);
+        }
+
+        mDirtyChunkTileContainers.workerThreadAquireAllDirtyObjects(dirtyContainers);
+        for (auto&& container : dirtyContainers) {
+            tryBeginNavmeshTaskForContainer(container);
         }
     }
 
@@ -138,7 +112,7 @@ void NavWorld::updateNavThread()
         mNavGraphs.erase(containerData.id);
 
         if (!containerData.isTerrain) {
-            boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
+            const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
             for (ChunkID chunkId : chunkDependencies) {
                 ChunkBuildingEdgeList& edgeList = mChunkBuildingEdges[chunkId];
                 for (int j = edgeList.size() - 1; j >= 0; --j) {
@@ -714,10 +688,72 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     mFinishedNavGraphBuildTasks.enqueue(std::move(taskData));
 }
 
+void NavWorld::tryBeginNavmeshTaskForContainer(const TileContainer* container) {
+    // The decref will happen after the build
+    if (container->mIsGeneratingNavmesh) {
+        addContainerToPendingDirtyContainersList(container);
+    }
+    else {
+        if (container->isTerrain()) {
+            const ChunkID chunkId = container->getOwnerChunk()->getChunkID();
+            if (mChunkPendingBuildingNavmeshCounts[chunkId] == 0) {
+
+                // Build external edges if needed
+                // I couldn't' get unique_ptr to work with the lambda
+                TerrainExternalEdges* externalEdgesPtr = nullptr;
+                ChunkBuildingEdgeList& edgeList = mChunkBuildingEdges[chunkId];
+                if (edgeList.size()) {
+                    externalEdgesPtr = new TerrainExternalEdges();
+                    for (ChunkBuildingEdge& edge : edgeList) {
+                        externalEdgesPtr->setExternal(edge.chunkTileIndex, edge.cartesian);
+                    }
+                }
+
+                // Run task
+                container->mIsGeneratingNavmesh = true;
+                Services::Threadpool::ref().addTask([this, container, externalEdgesPtr]() {
+                    buildNavGraphForContainer(*container, externalEdgesPtr);
+                    if (externalEdgesPtr) {
+                        delete externalEdgesPtr;
+                    }
+                });
+            }
+            else {
+                addContainerToPendingDirtyContainersList(container);
+            }
+        }
+        else {
+            // Increment dirty counts
+            const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container->getWorldPos(), container->getDims());
+            for (ChunkID id : chunkDependencies) {
+                ++mChunkPendingBuildingNavmeshCounts[id];
+            }
+            container->mIsGeneratingNavmesh = true;
+            Services::Threadpool::ref().addTask([this, container]() {
+                buildNavGraphForContainer(*container, nullptr);
+            });
+        }
+    }
+}
+
+void NavWorld::addContainerToPendingDirtyContainersList(const TileContainer* container) {
+    auto&& it = mPendingDirtyTileContainers.find(container);
+    if (it == mPendingDirtyTileContainers.end()) {
+        mPendingDirtyTileContainers.insert(container);
+    }
+    else {
+        // If we are already tracked to be recreated, ignore this request.
+        // We decref here since we have an additional incref that is no longer needed
+        // from when we marked as dirty
+        container->decRef();
+    }
+}
+
 void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     ASSERT_NAV_THREAD();
 
     const TileContainerID containerId = taskData.container->getId();
+    const bool isTerrain = taskData.container->isTerrain();
     //LOG_DEBUG("NAV FINISHED {}", containerId);
     // Store nav data
     const auto& navGraphIt = mNavGraphs.find(containerId);
@@ -736,7 +772,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
 
     // Store in spatial lookup
     if (isNewContainer) {
-        if (taskData.container->isTerrain()) {
+        if (isTerrain) {
             i32v3 worldPos = spatialGrid.getWorldPos();
             ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(i32v2(worldPos.x, worldPos.y));
             mTerrainTileContainers[chunkID] = taskData.container->getId();
@@ -752,7 +788,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
         // TODO: Implement container resizing
     }
 
-    if (!taskData.container->isTerrain()) {
+    if (!isTerrain) {
         // Tell chunks about our external edges
         const ChunkBuildingExternalEdgeListOutput& externalEdges = taskData.externalEdges;
 
@@ -766,9 +802,53 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
             }
         }
     }
-    // Release resources
+    // Mark done
     taskData.container->setDidInitNav();
-    taskData.container->decRef();
+    taskData.container->mIsGeneratingNavmesh = false;
+
+    bool didRecreate = false;
+    auto&& it = mPendingDirtyTileContainers.find(taskData.container);
+    if (it != mPendingDirtyTileContainers.end()) {
+        if (isTerrain) {
+            const ChunkID chunkId = taskData.container->getOwnerChunk()->getChunkID();
+            // Only renavmesh chunk if we aren't pending buildings on our chunk
+            if (mChunkPendingBuildingNavmeshCounts[chunkId] == 0) {
+                mPendingDirtyTileContainers.erase(it);
+                didRecreate = true;
+                tryBeginNavmeshTaskForContainer(taskData.container);
+            }
+        }
+        else {
+            // Buildings always renavmesh
+            mPendingDirtyTileContainers.erase(it);
+            didRecreate = true;
+            tryBeginNavmeshTaskForContainer(taskData.container);
+        }
+    }
+
+    // Notify chunk deps that this building finished
+    if (!isTerrain) {
+        const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), taskData.container->getWorldPos(), taskData.container->getDims());
+        for (ChunkID id : chunkDependencies) {
+            assert(mChunkPendingBuildingNavmeshCounts[id] > 0);
+            // If this chunk no longer has dependencies and we aren't about to remesh and add dependency back, renavmesh it
+            if (--mChunkPendingBuildingNavmeshCounts[id] == 0 && !didRecreate) {
+                const Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
+                auto&& pit = mPendingDirtyTileContainers.find(chunk.getTileContainer());
+                if (pit != mPendingDirtyTileContainers.end()) {
+                    mPendingDirtyTileContainers.erase(pit);
+                    // Only navmesh the chunk if it is in pending, as otherwise we can't
+                    // guarentee that it is even valid
+                    tryBeginNavmeshTaskForContainer(chunk.getTileContainer());
+                }
+            }
+        }
+    }
+
+    // Release resources if needed
+    if (!didRecreate) {
+        taskData.container->decRef();
+    }
 }
 
 void NavWorld::initEventHandlers() {
@@ -876,23 +956,6 @@ bool NavWorld::isInteriorTile(const BitArray& ownedDTiles, TileIndex index2d, ui
         return false;
     }
     return !tiles[index2d].isBuildingExterior();
-}
-
-void NavWorld::markChunkContainerNavDirty(ChunkID chunkId)
-{
-    ASSERT_NAV_THREAD();
-    const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
-    assert(!chunk.isDeactivated());
-    const TileContainer* chunkTileContainer = chunk.getTileContainer();
-    // Mark dirty again
-    bool didAdd = mDirtyTileContainers.workerThreadTryDirtyObject(chunkTileContainer);
-    // If we added, we dont decref as we will get dec-reffed after updating the container
-    if (!didAdd) {
-        chunk.decRef();
-    }
-    else {
-        LOG_DEBUG("NAV FORCE DIRTY CHUNK {}", chunkId);
-    }
 }
 
 bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
@@ -1366,8 +1429,24 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
 void NavWorld::markContainerNavDirty(TileContainer* container) {
     ASSERT_GAME_THREAD();
     assert(container);
-    const bool didAdd = mDirtyTileContainers.gameThreadTryDirtyObject(container);
-    
+    bool didAdd = false;
+    if (container->isTerrain()) {
+        didAdd = mDirtyChunkTileContainers.gameThreadTryDirtyObject(container);
+    }
+    else {
+        const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container->getWorldPos(), container->getDims()); // TODO: boost::container::flat_set?
+        for (ChunkID chunkId : chunkDependencies) {
+            const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+            // Valid will get marked dirty as well, as they depend on our external edges
+            if (chunk.getState() >= ChunkState::CAN_GENERATE_NAV) {
+                if (mDirtyChunkTileContainers.gameThreadTryDirtyObject(chunk.getTileContainer())) {
+                    chunk.getTileContainer()->incRef();
+                }
+            }
+        }
+
+        didAdd = mDirtyBuildingTileContainers.gameThreadTryDirtyObject(container);
+    }
     // Make sure we don't get deallocated while we are in the dirty list
     // TODO: Technically this is race condition if the nav thread and worker thread manage to finish their entire cycle before we get here.. but
     // this should be statistically impossible
