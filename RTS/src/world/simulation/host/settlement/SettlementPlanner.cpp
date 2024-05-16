@@ -2,7 +2,7 @@
 #include "SettlementPlanner.h"
 
 #include "world/World.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 
 // Cart bones
 // root

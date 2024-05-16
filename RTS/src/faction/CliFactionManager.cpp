@@ -4,7 +4,7 @@
 #include "math/Random.h"
 #include "world/World.h"
 
-#include "world/simulation/host/component/SimComponents.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
 
 CliFactionManager::CliFactionManager(World& world) : IFactionManager(world) {
     mRandomGenerator = std::make_unique<RandomGenerator>(world.getSeed() ^ (world.getSeed() << 53262));

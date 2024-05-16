@@ -924,7 +924,7 @@
     <ClCompile Include="src\world\simulation\host\SimECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\simulation\host\component\SettlementComponents.cpp">
+    <ClCompile Include="src\world\simulation\host\component\SimSettlementComponents.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\faction\HostFactionManager.cpp">
@@ -964,9 +964,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\ownership\OwnershipGrid.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\road\TerrainSurfaceGrid.cpp">
@@ -1063,6 +1060,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\host\system\SimSettlementCharacterInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2411,7 +2414,7 @@
     <ClInclude Include="src\world\simulation\host\SimECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\host\component\SettlementComponents.h">
+    <ClInclude Include="src\world\simulation\host\component\SimSettlementComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\faction\HostFactionManager.h">
@@ -2426,7 +2429,7 @@
     <ClInclude Include="src\faction\CliFactionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\host\component\SimComponents.h">
+    <ClInclude Include="src\world\simulation\host\component\SimCharacterComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\SimTask.h">
@@ -2472,9 +2475,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\GridIdUtil.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\simulation\host\system\SimSettlementSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\road\TerrainSurfaceGrid.h">
@@ -2643,6 +2643,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\road\TerrainSurfaceType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\system\SimSettlementCharacterInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

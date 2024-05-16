@@ -10,6 +10,10 @@ struct SimBrainComponent;
 struct SimInProgressTaskComponent;
 struct SimPositionComponent;
 
+struct SimFamily {
+    x;
+};
+
 class SimAISystem {
 public:
     SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry);
@@ -21,6 +25,7 @@ private:
     void updateCharacterGroups();
     void handleTaskComplete(entt::entity entity, SimBrainComponent& brain, SimInProgressTaskComponent& taskCmp);
     void updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos);
+    void updateSimBrain(SimBrainComponent& brain, SimPositionComponent& pos, entt::entity entity);
 
     World& mWorld;
     entt::registry& mRegistry;
@@ -29,5 +34,6 @@ private:
     TimestampMs mCurrentTime = 0;
     TimestampMs mDeltaTime = 0;
     ui32 mWorldWidthChunks = 0;
+    RandomGenerator* mRandomGen = nullptr;
 };
 

@@ -5,7 +5,7 @@
 
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 
 OwnershipGrid::OwnershipGrid(ui32 worldWidthTiles, WorldMarkupGrid& markupGrid) 
     : mMarkupGrid(markupGrid) {

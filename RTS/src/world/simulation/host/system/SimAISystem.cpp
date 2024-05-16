@@ -1,11 +1,12 @@
 #include "stdafx.h"
 #include "SimAISystem.h"
 
-#include "world/simulation/host/component/SimComponents.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
+#include "world/simulation/host/settlement/SimSettlementCharacterInterface.h"
 #include "world/World.h"
 
 #include "math/Random.h"
@@ -20,8 +21,7 @@ SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     mCurrentTime = currentTime;
     mDeltaTime = deltaTime;
-
-    RandomGenerator& gen = mSimContext.getSimRandomGenerator();
+    mRandomGen = &mSimContext.getSimRandomGenerator();
     
     updateCharacterGroups();
   
@@ -30,18 +30,7 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
         for (auto entity : view) {
             SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
             SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
-            if (brain.flags.isBitSet(SimBrainComponentFlags::HasTask)) {
-                SimInProgressTaskComponent& task = mRegistry.get<SimInProgressTaskComponent>(entity);
-                if (currentTime > task.taskStepEndTime) {
-                    handleTaskComplete(entity, brain, task);
-                }
-            }
-            else {
-                // TODO: REMOVE
-                const f32v2 newPos = pos.position + f32v2(gen.getRandomFloatSigned() * 15.0f, gen.getRandomFloatSigned() * 15.0f);
-                setEntityPosition(entity, newPos);
-                DebugRenderer::drawWireQuadThreadSafe(f32v3(newPos.x, newPos.y, 5.0f), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), 30);
-            }
+            updateSimBrain(brain, pos, entity);
         }
     }
 }
@@ -133,4 +122,35 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
 
     // In sim, we are always just stuck to the leader in a close line regardless of formation, for cheap calculation
     setEntityPosition(entity, groupPosition.getPosition() - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f));
+}
+
+void SimAISystem::updateSimBrain(SimBrainComponent& brain, SimPositionComponent& pos, entt::entity entity) {
+    if (brain.flags.isBitSet(SimBrainComponentFlags::HasTask)) {
+        SimInProgressTaskComponent& task = mRegistry.get<SimInProgressTaskComponent>(entity);
+        if (mCurrentTime > task.taskStepEndTime) {
+            handleTaskComplete(entity, brain, task);
+        }
+    }
+    else {
+        SimResidentComponent* residencyCmp = mRegistry.try_get<SimResidentComponent>(entity);
+        assert(residencyCmp); // TODO: Handle nomadic people or those who need to find residency
+        assert(residencyCmp->settlementEntity != entt::null);
+
+        // Try aquire residency
+        if (residencyCmp->homeId == INVALID_BUILDING_ID) {
+            if (!residencyCmp->flags.isBitSet(SimResidentComponentFlags::HasPendingHome)) {
+                SimSettlementCharacterInterface::tryRequestHome(entity, residencyCmp->settlementEntity, mRegistry);
+            }
+        }
+        // Try aquire task
+
+        // Wander if failed to aquire task
+        
+
+        // TODO: REMOVE
+        const f32 WANDER_SPEED = mDeltaTime * 2.0f;
+        const f32v2 newPos = pos.position + f32v2(mRandomGen->getRandomFloatSigned() * WANDER_SPEED, mRandomGen->getRandomFloatSigned() * WANDER_SPEED);
+        setEntityPosition(entity, newPos);
+        DebugRenderer::drawWireQuadThreadSafe(f32v3(newPos.x, newPos.y, 5.0f), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), 30);
+    }
 }

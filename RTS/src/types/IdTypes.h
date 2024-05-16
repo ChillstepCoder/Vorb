@@ -52,14 +52,18 @@ constexpr RoadSegmentID INVALID_ROAD_SEGMENT_ID = std::numeric_limits<RoadSegmen
 typedef ui32 SettlementPlotID;
 constexpr SettlementPlotID INVALID_SETTLEMENT_PLOT_ID = std::numeric_limits<SettlementPlotID>::max();
 
-// UIDs
 typedef ui16 BusinessID; // No more than 65535 businesses per city
+constexpr ui16 INVALID_BUSINESS_ID = std::numeric_limits<BusinessID>::max(); static_assert(sizeof(BusinessID) == sizeof(ui16));
+
+typedef ui32 FamilyID;
+constexpr ui32 INVALID_FAMILY_ID = std::numeric_limits<FamilyID>::max();
+
+// UIDs
 typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
 typedef ui32 SettlementUID;
 typedef ui64 CharacterUID;
 typedef ui64 BuildingUID;
 
-constexpr ui16 INVALID_BUSINESS_ID = std::numeric_limits<BusinessID>::max(); static_assert(sizeof(BusinessID) == sizeof(ui16));
 constexpr ui32 INVALID_CITY_UID = std::numeric_limits<CityUID>::max(); static_assert(sizeof(CityUID) == sizeof(ui32));
 constexpr ui32 INVALID_SETTLEMENT_UID = std::numeric_limits<SettlementUID>::max(); static_assert(sizeof(SettlementUID) == sizeof(ui32));
 constexpr ui64 INVALID_BUILDING_UID = std::numeric_limits<BuildingUID>::max(); static_assert(sizeof(BuildingUID) == sizeof(ui64));

@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "SimSettlementSystem.h"
 
-#include "world/simulation/host/component/SimComponents.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/settlement/SettlementPlanner.h"
 #include "world/simulation/host/SimECS.h"
 

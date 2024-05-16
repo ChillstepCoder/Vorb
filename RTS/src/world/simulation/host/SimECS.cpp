@@ -2,8 +2,8 @@
 #include "SimECS.h"
 
 #include "world/simulation/host/HostSimContext.h"
-#include "world/simulation/host/component/SimComponents.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
@@ -85,7 +85,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
     const bool isFemale = gen.getRandomBool();
 
     mRegistry.emplace<SimCharacterComponent>(newPerson, ++mUIDGenerator);
-    mRegistry.emplace<SimCharacterGenderComponent>(newPerson, isFemale);
+    mRegistry.emplace<SimGenderComponent>(newPerson, isFemale);
     SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition, mWorld.getChunkIDAtWorldPos(worldTilePosition));
     mRegistry.emplace<SimBrainComponent>(newPerson);
     mRegistry.emplace<SimNeedsComponent>(newPerson);

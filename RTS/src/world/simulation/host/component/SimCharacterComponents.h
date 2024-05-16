@@ -32,8 +32,7 @@ struct SimCharacterComponent {
 };
 
 
-
-struct SimCharacterGenderComponent {
+struct SimGenderComponent {
     bool isFemale = false;
 };
 
@@ -90,9 +89,14 @@ struct SimTaskBossComponent {
     boost::container::flat_map<SimTaskID, SimTaskData> activeTasks;
 };
 
+enum class SimResidentComponentFlags {
+    HasPendingHome = BIT(0)
+};
+
 struct SimResidentComponent {
     entt::entity settlementEntity = entt::null;
-    BuildingUID homeId = INVALID_BUILDING_UID;
+    BuildingID homeId = INVALID_BUILDING_ID;
+    BitFlags<SimResidentComponentFlags> flags;
 };
 
 struct SimCharacterNameComponent {

@@ -6,7 +6,7 @@
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/SimImmigrationManager.h"
 
-#include "world/simulation/host/component/SimComponents.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
 
 #include "math/Random.h"
 

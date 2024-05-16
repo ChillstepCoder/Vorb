@@ -6,8 +6,8 @@
 #include "world/IChunkGrid.h"
 #include "world/simulation/host/SimECS.h"
 
-#include "world/simulation/host/component/SimComponents.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/StoryTeller.h"
 #include "world/simulation/host/SimImmigrationManager.h"
 #include "ecs/IEntityComponentSystem.h"

@@ -6,7 +6,7 @@
 #include "world/road/TerrainSurfaceGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "world/simulation/host/SimECS.h"
-#include "world/simulation/host/component/SettlementComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
