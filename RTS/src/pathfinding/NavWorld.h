@@ -269,6 +269,7 @@ private:
     World& mWorld;
 
     // Nav thread access only
+    std::unique_ptr<i32[]> mChunkPendingBuildingNavmeshCounts;
     std::unique_ptr<ChunkBuildingEdgeList[]> mChunkBuildingEdges;
     std::unique_ptr<TileContainerID[]> mTerrainTileContainers;
 

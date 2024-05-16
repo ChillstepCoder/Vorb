@@ -14,7 +14,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprintGeneration
 
     bool ownershipMask[CHUNK_SIZE];
 
-    const i32v3& rootPos = bp.mTileSpatialGrid.getWorldPos3D();
+    const i32v3& rootPos = bp.mTileSpatialGrid.getWorldPos();
     const i32v3& bpDims = bp.mTileSpatialGrid.getDims();
     RoomRepository& roomRepo = RoomRepository::get();
     for (auto&& room : bp.rooms) {

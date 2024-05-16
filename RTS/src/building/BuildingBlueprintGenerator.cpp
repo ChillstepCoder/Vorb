@@ -209,7 +209,7 @@ bool BuildingBlueprintGenerator::tryGenerateBlueprintInternal(BuildingBlueprintG
     
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint - Seed: " + std::to_string(context.randomGen->mSeed), VisualLogCategory::Building, true);
     if (visLog) {
-        visLog->setRootPos(f32v3(context.mTileSpatialGrid.getWorldPos3D()));
+        visLog->setRootPos(f32v3(context.mTileSpatialGrid.getWorldPos()));
         const i32v3 dims = context.mTileSpatialGrid.getDims();
         visLog->setUserString(fmt::format("  Dims <{},{},{}>", dims.x, dims.y, dims.z));
     }
@@ -1093,10 +1093,10 @@ void BuildingBlueprintGenerator::placeWalls(BuildingBlueprintGenerationContext& 
 
 void BuildingBlueprintGenerator::allocateTileData(BuildingBlueprintGenerationContext& context) {
     
-    const i32v2 dims2D = context.mTileSpatialGrid.getDims2D();
+    const i32v2 dims2D = context.mTileSpatialGrid.getDims();
     ui32 numTiles = dims2D.x * dims2D.y * context.floorCount;
     // Set proper floor count into the AABB
-    context.mTileSpatialGrid.init(context.mTileSpatialGrid.getWorldPos3D(), i32v3(dims2D.x, dims2D.y, context.floorCount), context.mTileSpatialGrid.getFloorHeight());
+    context.mTileSpatialGrid.init(context.mTileSpatialGrid.getWorldPos(), i32v3(dims2D.x, dims2D.y, context.floorCount), context.mTileSpatialGrid.getFloorHeight());
     context.tiles.resize((size_t)context.floorCount * dims2D.x * dims2D.y, BlueprintTileType::NONE);
     context.walls.init(&context.mTileSpatialGrid);
     context.ownerArray.resize(context.tiles.size(), INVALID_ROOM_ID);
@@ -1400,7 +1400,7 @@ void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprintGenerationCon
         room.tilePositions.reserve(room.size);
     }
 
-    const i32v3& rootPos = context.mTileSpatialGrid.getWorldPos3D();
+    const i32v3& rootPos = context.mTileSpatialGrid.getWorldPos();
     const i32v3& dims = context.mTileSpatialGrid.getDims();
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
     for (TileIndex tileIndex = 0; tileIndex < (TileIndex)context.tiles.size(); ++tileIndex) {
@@ -1482,7 +1482,7 @@ bool BuildingBlueprintGenerator::validateRoomsArentEmpty(BuildingBlueprintGenera
 
 void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprintGenerationContext& context, RoomGenNode& room)
 {
-    const i32 index = getIndex3DAtPos(i32v2(room.offsetFromZero), context.mTileSpatialGrid.getDims2D(), room.floorIndex);
+    const i32 index = getIndex3DAtPos(i32v2(room.offsetFromZero), context.mTileSpatialGrid.getDims(), room.floorIndex);
     // Init root node
     room.size = 1;
     context.tiles[index] = BlueprintTileType::FLOOR;
@@ -1503,7 +1503,7 @@ struct DoorBFSNode {
 void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprintGenerationContext& context, Cartesian dir, TileIndex tileIndex, RoomGenNode& room, const i32v2& currentPos, BitArray& visited, BitArray& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
     const i32v2& directionOffset = WALL_EXPAND_OFFSETS[e_cast(dir)];
     const i32v2 nextPos = currentPos + directionOffset;
-    const TileIndex nextTileIndex = getIndex3DAtPos(i32v2(nextPos), context.mTileSpatialGrid.getDims2D(), room.floorIndex);
+    const TileIndex nextTileIndex = getIndex3DAtPos(i32v2(nextPos), context.mTileSpatialGrid.getDims(), room.floorIndex);
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
     const i32v3& dims = context.mTileSpatialGrid.getDims();
     if (!visited.getBit(nextTileIndex)) {
@@ -1647,7 +1647,7 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprintGenerat
     BitArray bits;
     
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     bits.resize(floorDims.x * floorDims.y);
     for (auto&& room : context.rooms) {
    
@@ -1703,7 +1703,7 @@ inline bool isDoor(TileID tileId) {
 }
 
 bool tileBlocksDoor(TileIndex index, BuildingBlueprintGenerationContext& context) {
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     const i32v2 pos = getPosAtIndex2D(index, floorDims);
     assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
     TileWalls walls;
@@ -1718,7 +1718,7 @@ bool tileBlocksDoor(TileIndex index, BuildingBlueprintGenerationContext& context
 }
 
 bool canPlaceStairsHere(TileIndex index, BuildingBlueprintGenerationContext& context, RoomGenNode& child) {
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     const TileIndex aboveIndex = index + floorDims.x * floorDims.y;
     if (context.tiles[index] == BlueprintTileType::FLOOR &&
         context.ownerArray[aboveIndex] == child.id &&
@@ -1731,7 +1731,7 @@ bool canPlaceStairsHere(TileIndex index, BuildingBlueprintGenerationContext& con
 
 bool isAtWallCorner(TileIndex index, BuildingBlueprintGenerationContext& context) {
     
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     const i32v2 pos = getPosAtIndex2D(index, floorDims);
     assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
     i32 adjacentWallCount = 0;
@@ -1748,7 +1748,7 @@ bool isAtWallCorner(TileIndex index, BuildingBlueprintGenerationContext& context
 
 bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprintGenerationContext& context, Cartesian dir) {
     
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     i16v2 pos = getPosAtIndex2D(index, floorDims);
     const i32 floorIndex = index / (floorDims.x * floorDims.y);
     assert(pos.x > 0 && pos.x < floorDims.x - 1 && pos.y > 0 && pos.y < floorDims.y - 1); // We should have a wall buffer guarenteed
@@ -1764,7 +1764,7 @@ void BuildingBlueprintGenerator::placeStairs(BuildingBlueprintGenerationContext&
     boost::container::static_vector<ui8, 256> runLengths;
     boost::container::static_vector<Cartesian, 256> dirs;
     
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     const i32 floorSize = floorDims.x * floorDims.y;
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
     BitArray usedTiles;
@@ -2000,7 +2000,7 @@ void BuildingBlueprintGenerator::buildExteriorWallRuns(BuildingBlueprintGenerati
     std::vector<ExteriorWallRun>& exteriorWallRuns = context.exteriorWallRuns;
     exteriorWallRuns.reserve(32);
 
-    const i32v2& dims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 dims = context.mTileSpatialGrid.getDims();
     const i32 floorSize = dims.x * dims.y;
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
     // Helper function for checking if tile is unowned and therefore external (TODO: Owned could still be external in the garden)
@@ -2146,7 +2146,7 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprintGenerationContext
     if (visLog) visLog->nextStep("Place Windows");
 
     
-    const i32v2& floorDims = context.mTileSpatialGrid.getDims2D();
+    const i32v2 floorDims = context.mTileSpatialGrid.getDims();
     const f32 floorHeight = context.mTileSpatialGrid.getFloorHeight();
     const i32 INDEX_OFFSETS[4] = {
         1, //South

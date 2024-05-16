@@ -130,7 +130,7 @@ struct ContourVertexInfo {
 };
 
 bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const TileSpatialGrid& spatialGrid, const ui32 floorIndex, f32 zPos, VisualLog* visLog) {
-    const i32v2 dims = spatialGrid.getDims2D();
+    const i32v2 dims = spatialGrid.getDims();
     // If we are out of the AABB, its a collide
     if (start[!axis] < 0 || start[!axis] >= dims[!axis]) {
         return true;
@@ -299,7 +299,7 @@ void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, cons
     }
 
     // Fixup extrude positions that may be colliding with walls on above floors
-    const ui32 floorIndex = floor * spatialGrid.getDims2D().y * spatialGrid.getDims2D().x;
+    const ui32 floorIndex = floor * spatialGrid.getDims().y * spatialGrid.getDims().x;
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
         do {
@@ -369,7 +369,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building", VisualLogCategory::Building, true);
     if (visLog) {
-        visLog->setRootPos(spatialGrid.getWorldPos3D());
+        visLog->setRootPos(spatialGrid.getWorldPos());
         visLog->nextStep("AABB");
         visLog->addWireQuad(f32v3(0.0f), aabb.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
@@ -434,7 +434,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     meshRoomUndercarriage(meshBuilders, roofStyle);
 
 
-    physicsBuilder.setRootPos(spatialGrid.getWorldPos3D());
+    physicsBuilder.setRootPos(spatialGrid.getWorldPos());
 
     if (visLog) visLog->finish();
 }
@@ -442,7 +442,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
 std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, const TileSpatialGrid& spatialGrid, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
-    const i32v2 dims(spatialGrid.getDims2D());
+    const i32v2 dims(spatialGrid.getDims());
     const ui32 totalTiles = dims.x * dims.y;
     std::vector<SsPtr> skeletons;
 

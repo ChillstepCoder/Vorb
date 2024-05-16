@@ -541,7 +541,7 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
     if (!isReady()) {
         return TileHandle();
     }
-    const i32v3& rootPos = mTileSpatialGrid.getWorldPos3D();
+    const i32v3& rootPos = mTileSpatialGrid.getWorldPos();
     const i32v3& dims = mTileSpatialGrid.getDims();
     i32v3 offset = worldPos - rootPos;
     if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= dims.x || offset.y >= dims.y || offset.z >= dims.z * (i32)mTileSpatialGrid.getFloorHeight()) {
@@ -942,7 +942,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
     // TODO: Only when the layer changes
     if (!isTerrain()) {
         IChunkGrid& chunkGrid = mWorld.getChunkGrid();
-        const i32v3& rootPos = mTileSpatialGrid.getWorldPos3D();
+        const i32v3& rootPos = mTileSpatialGrid.getWorldPos();
         const i32v3 offset = mTileSpatialGrid.getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
             const i32v2 worldPos2D(rootPos.x + offset.x, rootPos.y + offset.y);
@@ -954,7 +954,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
                 const TileSpatialGrid& chunkTileSpatialGrid = chunkTileContainer->getTileSpatialGrid();
                 assert(chunkTileContainer);
-                TileIndex chunkTileIndex = chunkTileSpatialGrid.getBaseTileIndexFromXYOffset(worldPos2D.x - chunkTileSpatialGrid.getWorldPos2D().x, worldPos2D.y - chunkTileSpatialGrid.getWorldPos2D().y);
+                TileIndex chunkTileIndex = chunkTileSpatialGrid.getBaseTileIndexFromXYOffset(worldPos2D.x - chunkTileSpatialGrid.getWorldPos().x, worldPos2D.y - chunkTileSpatialGrid.getWorldPos().y);
                 if (tile.isEmpty()) {
                     chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_BUILDING);
                 }

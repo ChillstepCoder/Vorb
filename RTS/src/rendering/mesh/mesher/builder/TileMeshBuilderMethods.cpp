@@ -196,7 +196,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     // TODO: Do we need to handle container resize? Or is resize destroy and remake?
     const TileSpatialGrid& spatialGrid = builders.tileData.spatialGrid;
     const i32v3& tileDims = spatialGrid.getDims();
-    const f32v3 tileContainerWorldPos = spatialGrid.getWorldPos3D();
+    const f32v3 tileContainerWorldPos = spatialGrid.getWorldPos();
     const f32 floorHeight = spatialGrid.getFloorHeight();
 
     //LOG_DEBUG("Meshing Container {}", tileContainer.getId());

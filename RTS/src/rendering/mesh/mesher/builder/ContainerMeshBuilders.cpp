@@ -6,7 +6,7 @@ ContainerMeshBuilders::ContainerMeshBuilders(const TileContainer& container, boo
     staticBuilder(staticMeshIsOnlyQuads),
     dynamicBuilder(false),
     billboardBuilder(),
-    modelGatherer(container.getId(), f32v3(container.getTileSpatialGrid().getWorldPos3D())),
+    modelGatherer(container.getId(), f32v3(container.getTileSpatialGrid().getWorldPos())),
     world(container.getWorld())
 {
     containerId = container.getId();

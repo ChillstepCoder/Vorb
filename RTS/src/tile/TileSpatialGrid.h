@@ -80,18 +80,16 @@ public:
         return getBaseTileIndexFromXYOffset((i32)offset.x, (i32)offset.y);
     }
 
-    const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mTileDims); }
     // Returns dims in tiles, not accounting floor height
-    const i32v3& getDims() const { return mTileDims; }
+    i32v3 getDims() const { return mTileDims; }
     // True world size AABB including floor height
     const i32AABB3 getAABB() const { return mAABB; }
     i32 getFloorStride() const { return mFloorStride; }
     i32 getNumTiles() const { return mNumTiles; }
     i32 getFloorHeight() const { return mFloorHeight; }
     
-    const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mAABB.pos); }
-    const i32v3& getWorldPos3D() const { return mAABB.pos; }
-    const f32v3 getWorldPosCenter3D() const { return f32v3(mAABB.pos) + f32v3(mAABB.dims) * 0.5f; }
+    i32v3 getWorldPos() const { return mAABB.pos; }
+    f32v3 getWorldPosCenter() const { return f32v3(mAABB.pos) + f32v3(mAABB.dims) * 0.5f; }
 
 private:
 

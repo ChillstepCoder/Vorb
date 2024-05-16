@@ -69,7 +69,7 @@ void TileInspectionPanel::updateAndRender() {
     const i32v3 dims = container.getTileSpatialGrid().getDims();
     const i32v3 xyzOffset = container.getTileSpatialGrid().getTileXYZOffset(mTileHandle.tileIndex);
     const i32v2 xyOffset(xyzOffset.x, xyzOffset.y);
-    const i32v2 worldPos2D = i32v2(xyOffset) + container.getTileSpatialGrid().getWorldPos2D();
+    const i32v2 worldPos2D = xyOffset + i32v2(container.getWorldPos());
     bool isOwned = true;
     if (container.getOwnerType() == TileContainerOwnerType::BUILDING) {
         Building* owner = container.getOwnerBuilding();

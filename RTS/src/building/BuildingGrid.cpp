@@ -331,7 +331,7 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
 
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     const TileSpatialGrid& chunkTileSpatialGrid = chunk.getTileContainer()->getTileSpatialGrid();
-    const i32v3& buildingWorldPos = tileSpatialGrid.getWorldPos3D();
+    const i32v3& buildingWorldPos = tileSpatialGrid.getWorldPos();
     const i32 floorHeight = tileSpatialGrid.getFloorHeight();
     
     // Clip X and Y to the chunk

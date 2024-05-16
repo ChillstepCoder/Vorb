@@ -474,7 +474,7 @@ void WorldRenderer::renderDebug() {
             DebugRenderer::reserveLines(mActiveWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = mActiveWorld->getTileContainerRepository().getTileContainers();
             for (auto&& it : containers) {
-                const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter3D();
+                const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter();
                 const f32v3 cameraPos = mCamera->getPosition();
                 if (glm::length2(mCamera->getPosition() - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
                     

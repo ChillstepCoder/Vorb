@@ -97,7 +97,7 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         meshManager.removeMeshesForData(meshData);
 
         // Upload mesh buffers
-        const i32v3& worldPos3D = taskData->builders.tileData.spatialGrid.getWorldPos3D();
+        const i32v3& worldPos3D = taskData->builders.tileData.spatialGrid.getWorldPos();
         taskData->builders.staticBuilder.finishMesh(meshData.mStaticMesh, worldPos3D);
         taskData->builders.dynamicBuilder.finishMesh(meshData.mDynamicMesh, worldPos3D);
         taskData->builders.billboardBuilder.finishMesh(meshData.mBillboardMesh, worldPos3D, 0 /*bufferFlags*/);

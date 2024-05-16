@@ -93,6 +93,8 @@ public:
 
     // Tile indexing
     const TileSpatialGrid& getTileSpatialGrid() const { return mTileSpatialGrid; }
+    i32v3 getWorldPos() const { return mTileSpatialGrid.getWorldPos(); }
+    i32v3 getDims() const { return mTileSpatialGrid.getDims(); }
 
     f32v3 getTileCenterWorldPosition(TileIndex i) const {
         return mTileSpatialGrid.getTileCenterWorldPos3D(i, mTiles[i].groundZOffset);
