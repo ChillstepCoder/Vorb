@@ -34,8 +34,9 @@ constexpr f64 RESERVE_DURATION_SEC = 10.0;
 //    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(pos2d));
 //}
 
-std::set<ChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
-    std::set<ChunkID> chunkDependencies; // TODO: flatset?
+boost::container::flat_set<ChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
+    boost::container::flat_set<ChunkID> chunkDependencies;
+    chunkDependencies.reserve(4);
     i32v2 worldXY = i32v2(pos.x, pos.y);
     chunkDependencies.insert(chunkGrid.getChunkIDFromWorldPos(worldXY));
     worldXY = i32v2(pos.x + dims.x, pos.y);
@@ -56,6 +57,7 @@ NavWorld::NavWorld(World& world) : mWorld(world) {
     for (int i = 0; i < totalChunks; ++i) {
         mTerrainTileContainers[i] = INVALID_TILE_CONTAINER_ID;
     }
+    mChunkBuildingEdges = std::make_unique<ChunkBuildingEdgeList[]>(totalChunks);
     initEventHandlers();
 }
 
@@ -95,25 +97,21 @@ void NavWorld::updateNavThread()
             if (container->isTerrain()) {
                 PROFILE_SCOPE("IsTerrain");
                 // Build external edges if needed
-                TerrainExternalEdges* externalEdges = nullptr;
-                // TODO: Calculate chunkID instead?
-                auto&& it = mTerrainDependentEdges.find(container->getOwnerChunk()->getChunkID());
-                if (it != mTerrainDependentEdges.end()) {
-                    if (!it->second.empty()) {
-                        externalEdges = new TerrainExternalEdges;
-                        for (auto&& edgeList : it->second) {
-                            for (const std::pair<TileIndex, Cartesian>& edge : edgeList.second) {
-                                externalEdges->setExternal(edge.first, edge.second);
-                            }
-                        }
+                // I couldnt' get unique_ptr to work with the lambda
+                TerrainExternalEdges* externalEdgesPtr = nullptr;
+                ChunkBuildingEdgeList& edgeList = mChunkBuildingEdges[container->getOwnerChunk()->getChunkID()];
+                if (edgeList.size()) {
+                    externalEdgesPtr = new TerrainExternalEdges();
+                    for (ChunkBuildingEdge& edge : edgeList) {
+                        externalEdgesPtr->setExternal(edge.chunkTileIndex, edge.cartesian);
                     }
                 }
-
+               
                 // Run task
-                Services::Threadpool::ref().addTask([this, container, externalEdges]() {
-                    buildNavGraphForContainer(*container, externalEdges);
-                    if (externalEdges) {
-                        delete externalEdges;
+                Services::Threadpool::ref().addTask([this, container, externalEdgesPtr]() {
+                    buildNavGraphForContainer(*container, externalEdgesPtr);
+                    if (externalEdgesPtr) {
+                        delete externalEdgesPtr;
                     }
                 });
             }
@@ -130,27 +128,23 @@ void NavWorld::updateNavThread()
     mContainersToDestroy.workerThreadAquireAllDirtyObjects(containersToDestroy);
     for (size_t i = 0; i < containersToDestroy.size(); ++i) {
         TileContainerToDestroy containerData = containersToDestroy[i];
+        mNavGraphs.erase(containerData.id);
 
-        // Remove external edge dependencies on terrain
         if (!containerData.isTerrain) {
-            // Manually compute chunk dependencies since we dont have the data here
-            std::set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
-            int j = 0;
-            for (ChunkID id : chunkDependencies) {
-                // Make sure we only decref/modify chunks that we increffed
-                if (containerData.chunkDependencyFlags.isBitSet(ChunkDependencyFlags(1 << j))) {
-                    mTerrainDependentEdges[id].erase(containerData.id);
-
-                    Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
-                    // TODO: should we be marking it dirty? Wouldnt this be an invalid chunk?
-                    markChunkContainerNavDirty(id);
-                    chunk.decRef();
+            boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
+            for (ChunkID chunkId : chunkDependencies) {
+                ChunkBuildingEdgeList& edgeList = mChunkBuildingEdges[chunkId];
+                for (int j = edgeList.size() - 1; j >= 0; --j) {
+                    if (edgeList[j].buildingContainerId == containerData.id) {
+                        edgeList[j] = edgeList.back();
+                        edgeList.pop_back();
+                        // Note that we do not dirty the chunk here, this is because for the building to destroy, the chunk is also
+                        // destroying
+                        // TODO: This is not always true! If a building is leveled in full sim we will have a bug here
+                    }
                 }
-                ++j;
             }
         }
-
-        mNavGraphs.erase(containerData.id);
 
         // Remove from spatial lookup
         const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
@@ -241,8 +235,8 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     const f32 floorHeight = tileContainer.getTileSpatialGrid().getFloorHeight();
     const bool isTerrain = tileContainer.isTerrain();
     // We only care about external edges for non terrain
-    StructureExternalEdgeList* externalEdges = nullptr;
-    StructureExternalEdgeList localEdgeList;
+    ChunkBuildingEdgeListOutput* externalEdges = nullptr;
+    ChunkBuildingEdgeListOutput localEdgeList;
     if (!isTerrain) {
         externalEdges = &localEdgeList;
         externalEdges->reserve(6);
@@ -285,7 +279,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 tileFineNavData.reset();
 
                 // Determine if we own this tile
-                if (!TileContainer::isTileOwned(ownedDTiles, index, dimsDTiles)) {
+                if (!isInteriorTile(ownedDTiles, index, dimsDTiles, tiles)) {
                     tileFineNavData.pathWeight = 0;
                     continue;
                 }
@@ -714,6 +708,8 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 }
 
 void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
+    ASSERT_NAV_THREAD();
+
     const TileContainerID containerId = taskData.container->getId();
     //LOG_DEBUG("NAV FINISHED {}", containerId);
     // Store nav data
@@ -751,24 +747,17 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
 
     if (!taskData.container->isTerrain()) {
         // Tell chunks about our external edges
-        const StructureExternalEdgeListOutput& externalEdges = taskData.externalEdges;
+        const ChunkBuildingExternalEdgeListOutput& externalEdges = taskData.externalEdges;
 
-        LOG_WARN("Need to figure out building external nav edge solution");
-
-        //Building* owner = taskData.container->getOwnerBuilding();
-        //assert(owner);
-        //for (int j = 0; j < owner->getChunkDependencyCount(); ++j) {
-        //    ChunkID id = owner->getChunkDependencies()[j];
-        //    // If we have edges for this chunk, store
-        //    auto&& it = externalEdges.find(id);
-        //    if (it != externalEdges.end()) {
-        //        mTerrainDependentEdges[id][containerId] = it->second;
-        //        markChunkContainerNavDirty(id);
-        //    }
-
-        //    // No longer need chunk
-        //    mWorld.getChunkGrid().getChunk(id).decRef();
-        //}
+        // Append external edges to the chunk
+        for (auto& [chunkId, output] : externalEdges) {
+            ChunkBuildingEdgeList& list = mChunkBuildingEdges[chunkId];
+            list.reserve(list.size() + output.size());
+            for (i32 i = 0; i < output.size(); ++i) {
+                assert(output[i].first <= UINT16_MAX);
+                list.emplace_back(ChunkBuildingEdge{ containerId, (ui16)output[i].first, output[i].second });
+            }
+        }
     }
     // Release resources
     taskData.container->setDidInitNav();
@@ -795,33 +784,18 @@ void NavWorld::initEventHandlers() {
     tileContainerRepository.addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
         ASSERT_GAME_THREAD();
         const TileContainer& container = *containerEvent.container;
-        BitFlags<ChunkDependencyFlags> dependencyFlags;
-        if (!container.isTerrain()) {
-            // Manually compute chunk dependencies since we dont have the data here
-            std::set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D()); // TODO: boost::container::flat_set?
-            int i = 0;
-            for (ChunkID id : chunkDependencies) {
-                Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
-                // Only have dependencies on chunks with valid chunks
-                if (chunk.getRefCount()) {
-                    chunk.incRef();
-                    dependencyFlags.setBit(ChunkDependencyFlags(1 << i));
-                }
-                ++i;
-            }
-        }
-        mContainersToDestroy.gameThreadDirtyObject(TileContainerToDestroy{ container.getTileSpatialGrid().getWorldPos3D(), container.getTileSpatialGrid().getDims2D(), container.getId(), container.isTerrain(), dependencyFlags });
+        mContainersToDestroy.gameThreadDirtyObject(TileContainerToDestroy{ container.getTileSpatialGrid().getWorldPos2D(), container.getTileSpatialGrid().getDims2D(), container.getId(), container.isTerrain() });
     });
 }
 
-bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges) {
+bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ChunkBuildingEdgeListOutput* externalEdges) {
 
     const Cartesian cartesian = CARTESIAN8_TO_CARTESIAN[e_cast(cartesian8)];
     assert(cartesian != Cartesian::NONE);
     const int floorStride = containerDims.x * containerDims.y;
     const ui32v2 dimsDTiles = ui32v2(containerDims.x >> 1, containerDims.y >> 1);
     assert(cartesian != Cartesian::NONE); // This must be a 4 cartesian
-    if (isInner && TileContainer::isTileOwned(ownedDTiles, adjacentIndex, dimsDTiles)) {
+    if (isInner && isInteriorTile(ownedDTiles, adjacentIndex, dimsDTiles, tiles)) {
         // Interior edge
         const Tile* adjacent = &tiles[adjacentIndex];
         // Empty tiles, we go down a floor
@@ -829,7 +803,7 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacen
         if (adjacent->isEmpty()) {
             if (adjacentIndex >= floorStride) {
                 adjacentIndex = adjacentIndex - floorStride;
-                if (TileContainer::isTileOwned(ownedDTiles, adjacentIndex, dimsDTiles)) {
+                if (isInteriorTile(ownedDTiles, adjacentIndex, dimsDTiles, tiles)) {
                     adjacent = &tiles[adjacentIndex];
                 }
                 else {
@@ -870,7 +844,7 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacen
 
 bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
     const ui32v2 dimsDTiles = ui32v2(containerDims.x >> 1, containerDims.y >> 1);
-    if (isInner && TileContainer::isTileOwned(ownedDTiles, adjacentIndex, dimsDTiles)) {
+    if (isInner && isInteriorTile(ownedDTiles, adjacentIndex, dimsDTiles, tiles)) {
         // Interior edge
         const Tile& adjacent = tiles[adjacentIndex];
         if (canEnterTileInDirectionDiagonal(adjacent, cartesian8) &&
@@ -888,6 +862,13 @@ bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Carte
         // return true;
     }
     return false;
+}
+
+bool NavWorld::isInteriorTile(const BitArray& ownedDTiles, TileIndex index2d, ui32v2 containerDimsDTiles, const std::vector<Tile>& tiles) const {
+    if (!TileContainer::isTileOwned(ownedDTiles, index2d, containerDimsDTiles)) {
+        return false;
+    }
+    return !tiles[index2d].isBuildingExterior();
 }
 
 void NavWorld::markChunkContainerNavDirty(ChunkID chunkId)
@@ -1128,6 +1109,11 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
     const color4 upColor = color4(0.0f, 1.0f, 1.0f, 0.7f);
     const color4 exteriorColor = color4(1.0f, 0.0f, 0.0f, 0.7f);
     const color4 whiteColor(1.0f, 1.0f, 1.0f, 0.3f);
+
+    // TODO: not sure how this happens yet
+    if (!coarseNavData.tileCoarseNavIndices) {
+        return;
+    }
 
     for (ui32 tileIndex = 0; tileIndex < fineNavData.size(); ++tileIndex) {
         if (tileContainer.isTileOwned(tileIndex)) {

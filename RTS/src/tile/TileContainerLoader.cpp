@@ -75,7 +75,7 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
         for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
             BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
             assert(isTileValid(wallTarget.id));
-            TileWall newWall{ .wallID = wallTarget.id, .isDoor = false /*TODO: this is wrong...*/ };
+            TileWall newWall{ .wallID = wallTarget.id, .isDoor = wallTarget.isDoor };
             tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, newWall, wallTarget.dir);
         }
 
@@ -96,6 +96,14 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
             tiles[stairPiece.pos + floorStride].tileFlags.setBit(TileFlags::ROOFED);
         }
 
+        // Set exterior flags
+        for (TileIndex i = 0; i < tileContainer.getNumTiles(); ++i) {
+            Tile& tile = tiles[i];
+            // TODO: More robust checks
+            if (!tile.isRoofed()) {
+                tile.tileFlags.setBit(TileFlags::IS_BUILDING_EXTERIOR);
+            }
+        }
 
         //building.mFunction = bp.desc->function;
         //building.mDoorTiles = blueprint.exteriorDoors;

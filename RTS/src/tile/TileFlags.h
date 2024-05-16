@@ -24,6 +24,7 @@ enum class TileFlags : TileFlagType {
     IS_RESOURCE_RESERVED        = BIT(12),
     IN_CITY                     = BIT(13), // True if inside city limits
     ROOFED                      = BIT(14), // True if inside city limits
+    IS_BUILDING_EXTERIOR        = BIT(15),
 
     TERM                        = IN_CITY, // Keep this == last
 };

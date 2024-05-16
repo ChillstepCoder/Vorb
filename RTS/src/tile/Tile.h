@@ -54,6 +54,7 @@ public:
 
     bool isEmpty() const { return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MAIN] == TILE_ID_NONE; }
     bool isRoofed() const { return tileFlags.isBitSet(TileFlags::ROOFED); }
+    bool isBuildingExterior() const { return tileFlags.isBitSet(TileFlags::IS_BUILDING_EXTERIOR); }
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)

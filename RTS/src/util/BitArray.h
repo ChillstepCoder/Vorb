@@ -58,6 +58,10 @@ template <size_t N>
 class StaticBitArray {
     static_assert(N % 8 == 0, "We enforce byte alignment for simplicity");
 public:
+    StaticBitArray() = default;
+    ~StaticBitArray() = default;
+    VORB_MOVABLE(StaticBitArray);
+
     void setBit(ui32 index);
     void clearBit(ui32 index);
     void setBitTo(ui32 index, bool val);

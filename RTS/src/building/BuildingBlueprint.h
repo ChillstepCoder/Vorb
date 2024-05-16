@@ -16,6 +16,7 @@ struct BuildingBlueprintWallTarget {
     TileIndex tileIndex;
     TileID id;
     Cartesian dir;
+    bool isDoor;
     // ui8 runLength // TODO: RLE Compression
 };
 

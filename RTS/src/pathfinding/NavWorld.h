@@ -109,12 +109,21 @@ struct TileFineNavData {
 };
 static_assert(sizeof(TileFineNavData) == 8, "Keep tiny");
 
+struct ChunkBuildingEdge {
+    TileContainerID buildingContainerId;
+    ui16 chunkTileIndex;
+    Cartesian cartesian;
+    //ui8 padding;
+};
+
+typedef std::vector<ChunkBuildingEdge> ChunkBuildingEdgeList;
+
 // Stores all external edges for a container
-typedef std::vector<std::pair<TileIndex, Cartesian>> StructureExternalEdgeList;
+typedef std::vector<std::pair<TileIndex, Cartesian>> ChunkBuildingEdgeListOutput;
 // Stores external edges mapped to chunk locations
-typedef std::map<ChunkID, StructureExternalEdgeList> StructureExternalEdgeListOutput;
+typedef std::map<ChunkID, ChunkBuildingEdgeListOutput> ChunkBuildingExternalEdgeListOutput;
 // TODO: Vector of Vector may be better here for memory footprint + iteration?
-typedef std::unordered_map<TileContainerID, StructureExternalEdgeList> ContainerTerrainDependentEdges;
+typedef std::unordered_map<TileContainerID, ChunkBuildingEdgeListOutput> ContainerTerrainDependentEdges;
 struct ContainerNavData {
     ContainerNavData() = default;
     ContainerNavData(
@@ -144,7 +153,7 @@ struct ContainerNavData {
 };
 
 struct NavGraphBuildTaskData {
-    StructureExternalEdgeListOutput externalEdges;
+    ChunkBuildingExternalEdgeListOutput externalEdges;
     std::vector<TileFineNavData> fineNavData;
     NavGraphTileDataToCopy navTileData;
     CoarseNavGraph navGraph;
@@ -169,6 +178,10 @@ struct bgi::indexable<ContainerNavRegion>
 
 class TerrainExternalEdges {
 public:
+    TerrainExternalEdges() = default;
+    ~TerrainExternalEdges() = default;
+    VORB_MOVABLE(TerrainExternalEdges);
+
     inline bool isExternal(TileIndex tileIndex, Cartesian cartesian) {
         return edgeData.getBit(tileIndex * 4 + e_cast(cartesian));
     }
@@ -216,8 +229,10 @@ public:
 private:
     void finishNavGraphBuildTask(NavGraphBuildTaskData& taskData);
     void initEventHandlers();
-    bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges);
+    bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ChunkBuildingEdgeListOutput* externalEdges);
     bool trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
+
+    bool isInteriorTile(const BitArray& ownedDTiles, TileIndex index2d, ui32v2 containerDimsDTiles, const std::vector<Tile>& tiles) const;
 
     void markChunkContainerNavDirty(ChunkID chunkId);
 
@@ -244,7 +259,6 @@ private:
         i32v2 dims;
         TileContainerID id;
         bool isTerrain;
-        BitFlags<ChunkDependencyFlags> chunkDependencyFlags;
     };
     
     GameThreadBatchedDirtySet<const TileContainer*> mDirtyTileContainers;
@@ -254,8 +268,8 @@ private:
 
     World& mWorld;
 
-    // Large data at the bottom
+    // Nav thread access only
+    std::unique_ptr<ChunkBuildingEdgeList[]> mChunkBuildingEdges;
     std::unique_ptr<TileContainerID[]> mTerrainTileContainers;
-    std::unordered_map<ChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
 
 };

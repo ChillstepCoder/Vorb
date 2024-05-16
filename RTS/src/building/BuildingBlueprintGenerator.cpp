@@ -2292,10 +2292,10 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
         TileWall walls[2];
         context.walls.getSouthAndWestWallsAtTile(walls, tileIndex);
         if (walls[0].isValid()) {
-            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[0].wallID, Cartesian::SOUTH };
+            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[0].wallID, Cartesian::SOUTH, walls[0].isDoor};
         }
         if (walls[1].isValid()) {
-            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[1].wallID, Cartesian::WEST };
+            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[1].wallID, Cartesian::WEST, walls[1].isDoor };
         }
         // Copy walls
         if (type != BlueprintTileType::NONE) {
