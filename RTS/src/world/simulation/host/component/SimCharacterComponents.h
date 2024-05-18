@@ -67,6 +67,10 @@ struct SimBrainComponent {
 };
 static_assert(sizeof(SimBrainComponent) == 1, "Keep small for cache efficiency");
 
+struct SimMovementComponent {
+    f32v2 targetPosition = f32v2(-1.0f);
+};
+
 struct SimInProgressTaskComponent {
     TimestampMs taskStepStartTime;
     TimestampMs taskStepEndTime;
@@ -84,19 +88,31 @@ struct SimNeedsComponent {
     bool wantsWork = true;
 };
 
+struct SimFamilyMemberComponent {
+    FamilyID familyId = INVALID_FAMILY_ID;
+};
+
 // Represents a list of tasks, and who is working on them for us. Does not include tasks we are doing for ourselves
 struct SimTaskBossComponent {
     boost::container::flat_map<SimTaskID, SimTaskData> activeTasks;
 };
 
-enum class SimResidentComponentFlags {
-    HasPendingHome = BIT(0)
+enum class SimResidentComponentFlags : ui8 {
+};
+
+enum class SimHomeState : ui8 {
+    Homeless,
+    Pending,
+    Building,
+    Done
 };
 
 struct SimResidentComponent {
     entt::entity settlementEntity = entt::null;
     BuildingID homeId = INVALID_BUILDING_ID;
+    i32v2 homePoint = i32v2(-1, -1); // Represents our tent, house, or general wandering area that we should stay near while chilling
     BitFlags<SimResidentComponentFlags> flags;
+    SimHomeState homeState;
 };
 
 struct SimCharacterNameComponent {

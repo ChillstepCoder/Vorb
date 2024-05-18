@@ -565,7 +565,7 @@
     <ClCompile Include="src\world\simulation\host\SimWorldAnalytics.cpp" />
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
-    <ClCompile Include="src\world\simulation\host\system\SimSettlementCharacterInterface.cpp" />
+    <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
@@ -1089,7 +1089,7 @@
     <ClInclude Include="src\world\simulation\host\StoryTeller.h" />
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
     <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />
-    <ClInclude Include="src\world\simulation\host\system\SimSettlementCharacterInterface.h" />
+    <ClInclude Include="src\world\simulation\host\settlement\SimSettlementSystem.h" />
     <ClInclude Include="src\world\simulation\SimTask.h" />
     <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />

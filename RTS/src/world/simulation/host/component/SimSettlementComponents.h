@@ -54,6 +54,7 @@ struct SettlementRoadGraphComponent {
 // Handles logic for growing the settlement
 struct SettlementPlannerComponent {
     std::vector<FamilyID> familiesPendingHomes;
+    std::vector<entt::entity> singleCharactersPendingHomes;
 };
 
 struct ChunkOwnershipComponent {

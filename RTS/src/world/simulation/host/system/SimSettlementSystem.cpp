@@ -5,6 +5,7 @@
 #include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/settlement/SettlementPlanner.h"
 #include "world/simulation/host/SimECS.h"
+#include "world/IChunkGrid.h"
 
 #include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
@@ -15,7 +16,7 @@
 constexpr TimestampMs UPDATE_INTERVAL = 5000;
 
 SimSettlementSystem::SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
-    mSimContext(simContext), mRegistry(registry), mECS(ecs) {
+    mSimContext(simContext), mRegistry(registry), mECS(ecs), mCharacterInterface(*this) {
 
     mPlanner = std::make_unique<SettlementPlanner>(mSimContext.getWorld(), registry);
 }
@@ -27,7 +28,7 @@ void SimSettlementSystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
     mDeltaTime = deltaTime;
 
     if (mCurrentTime >= mNextUpdateTime) {
-        LOG_DEBUG("Updating settlements {}", mCurrentTime);
+       // LOG_DEBUG("Updating settlements {}", mCurrentTime);
         auto view = mRegistry.view<SettlementSimComponent, SettlementPlannerComponent>();
         for (entt::entity entity : view) {
             mPlanner->updatePlanner(entity, currentTime, deltaTime);
@@ -88,6 +89,8 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SimEntityTypeComponent>(settlementEntity).type = SimEntityType::Settlement;
     // TODO Adjacency
 
+    const i32v2 defaultHomePoint = world.getChunkGrid().getChunk(rootChunk).getWorldPosCenter2D();
+
     // Assign people
     SettlementPeopleComponent& peopleCmp = mRegistry.emplace<SettlementPeopleComponent>(settlementEntity);
     peopleCmp.leader = leader;
@@ -95,6 +98,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     for (auto& person : people) {
         SimResidentComponent& residentCmp = mRegistry.get_or_emplace<SimResidentComponent>(person);
         residentCmp.settlementEntity = settlementEntity;
+        residentCmp.homePoint = defaultHomePoint;
     }
     // TODO: Homeless families...
     peopleCmp.homelessCount = peopleCmp.people.size();

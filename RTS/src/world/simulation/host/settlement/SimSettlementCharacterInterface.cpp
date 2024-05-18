@@ -1,7 +1,29 @@
 #include "stdafx.h"
 #include "SimSettlementCharacterInterface.h"
 
-bool SimSettlementCharacterInterface::tryRequestHome(entt::entity characterEntity, entt::entity settlementEntity, entt::registry& registry) {
-    // TODO: Some residents are more important than others
+#include "world/simulation/host/component/SimCharacterComponents.h"
+#include "world/simulation/host/component/SimSettlementComponents.h"
 
+#include "world/simulation/host/SimECS.h"
+#include "world/simulation/host/system/SimSettlementSystem.h"
+#include "world/simulation/host/system/SimAISystem.h"
+
+bool SimSettlementCharacterInterface::tryRequestHomeForSelfAndFamily(entt::entity characterEntity, entt::entity settlementEntity) {
+    ASSERT_SIM_THREAD();
+    // TODO: Some residents are more important than others
+    SettlementPlannerComponent& plannerCmp = mSystem.mRegistry.get<SettlementPlannerComponent>(settlementEntity);
+    SimFamilyMemberComponent* memberCmp = mSystem.mRegistry.try_get<SimFamilyMemberComponent>(characterEntity);
+    if (memberCmp) {
+        SimFamily& family = mSystem.mECS.getAISystem().getFamily(memberCmp->familyId);
+        for (i32 i = 0; i < family.numCharacters; ++i) {
+            mSystem.mRegistry.get<SimResidentComponent>(family.characters[i]).homeState = SimHomeState::Pending;
+        }
+        plannerCmp.familiesPendingHomes.emplace_back(memberCmp->familyId);
+    }
+    else {
+        mSystem.mRegistry.get<SimResidentComponent>(characterEntity).homeState = SimHomeState::Pending;
+        plannerCmp.singleCharactersPendingHomes.emplace_back(characterEntity);
+    }
+    // For now always return true
+    return true;
 }

@@ -1,8 +1,15 @@
 #pragma once
 
-// Static methods that AI characters can use to interface with settlements
+class SimSettlementSystem;
+
+// Methods that AI characters can use to interface with settlements
 class SimSettlementCharacterInterface {
 public:
-    static bool tryRequestHome(entt::entity characterEntity, entt::entity settlementEntity, entt::registry& registry);
+    SimSettlementCharacterInterface(SimSettlementSystem& system) : mSystem(system) {}
+
+    bool tryRequestHomeForSelfAndFamily(entt::entity characterEntity, entt::entity settlementEntity);
+
+private:
+    SimSettlementSystem& mSystem;
 };
 

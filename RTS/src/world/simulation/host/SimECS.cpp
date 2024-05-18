@@ -87,6 +87,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
     mRegistry.emplace<SimCharacterComponent>(newPerson, ++mUIDGenerator);
     mRegistry.emplace<SimGenderComponent>(newPerson, isFemale);
     SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition, mWorld.getChunkIDAtWorldPos(worldTilePosition));
+    mRegistry.emplace<SimMovementComponent>(newPerson);
     mRegistry.emplace<SimBrainComponent>(newPerson);
     mRegistry.emplace<SimNeedsComponent>(newPerson);
     mRegistry.emplace<AttributesComponent>(newPerson).init(
@@ -186,6 +187,8 @@ ChunkEntityFullActivateDataList SimECS::simThreadOnActivateChunk(ChunkID chunkId
     rv.resize(list.size());
 
     for (size_t i = 0; i < list.size(); ++i) {
+        assert(mRegistry.get<SimPositionComponent>(list[i]).chunk == chunkId);
+        assert(mWorld.getChunkIDAtWorldPos(mRegistry.get<SimPositionComponent>(list[i]).position) == chunkId);
         rv[i] = onFullActivateEntity(list[i]);
     }
 
@@ -205,6 +208,7 @@ void SimECS::simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntit
     list.reserve(list.size() + deactivateEntities.size());
     for (const EntityFullDeactivateData& dd : deactivateEntities) {
         SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(dd.simEntity);
+        mRegistry.emplace<SimMovementComponent>(dd.simEntity);
         posCmp.position = dd.simPosition;
         posCmp.chunk = chunkId;
         list.emplace_back(dd.simEntity);
@@ -219,6 +223,7 @@ void SimECS::simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntit
 void SimECS::simThreadOnFullDeactivateEntity(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntitity) {
     EntityVector& list = mEntitiesInChunks[chunkId];
     SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(deactivateEntitity.simEntity);
+    mRegistry.emplace<SimMovementComponent>(deactivateEntitity.simEntity);
     posCmp.position = deactivateEntitity.simPosition;
     posCmp.chunk = chunkId;
     list.emplace_back(deactivateEntitity.simEntity);
@@ -242,7 +247,7 @@ void SimECS::onEntityDeactivationFailed(ChunkID chunkId, const EntityFullDeactiv
     mFullActivatedEntitiesThisFrame[chunkId].emplace_back(activateData);
 }
 
-void SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
+bool SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
     ASSERT_SIM_THREAD();
     PROFILE_FUNCTION();
 
@@ -267,9 +272,11 @@ void SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chunk
 
     if (mHostSimContext.isChunkSimulating(newChunk)) {
         mEntitiesInChunks[newChunk].emplace_back(entity);
+        return false;
     }
     else {
         mFullActivatedEntitiesThisFrame[newChunk].emplace_back(onFullActivateEntity(entity));
+        return true;
     }
 }
 
@@ -288,8 +295,9 @@ EntityFullActivateData SimECS::onFullActivateEntity(entt::entity entity) {
     EntityFullActivateData rv;
     rv.entityType = mRegistry.get<SimEntityTypeComponent>(entity).type;
     rv.simPosition = mRegistry.get<SimPositionComponent>(entity).position;
-    // We erase our sim position while fully activated
+    // We erase our sim position and movement while fully activated
     mRegistry.remove<SimPositionComponent>(entity);
+    mRegistry.remove<SimMovementComponent>(entity);
 
     // Create binding
     SimFullEntityBinding& binding = mFullEntityBindings[entity];

@@ -33,6 +33,9 @@ public:
     // Destroys the group entity and triggers members to resolve the group condition
     void endCharacterGroup(entt::entity group, CharacterGroupDissolveReason reason);
 
+    SimAISystem& getAISystem() { return *mAISystem; }
+    SimSettlementSystem& getSettlementSystem(){ return *mSettlementSystem; }
+
     // Transition our AI entities to fully simulated and return the list of AI entitiess
     ChunkEntityFullActivateDataList simThreadOnActivateChunk(ChunkID chunkId);
     void simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities);
@@ -43,7 +46,8 @@ public:
     EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
     EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
 
-    void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
+    // Returns true if our entity is fully activating, if returned true, position and movement are INVALID
+    bool onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
 
     // DEBUGGING
     void debugRender(f32v3 cameraPos) const;

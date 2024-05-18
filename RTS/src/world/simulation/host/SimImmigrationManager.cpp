@@ -8,6 +8,8 @@
 #include "world/ownership/OwnershipGrid.h"
 #include "faction/IFactionManager.h"
 
+#include "world/simulation/host/system/SimAISystem.h"
+
 #include "math/Random.h"
 
 constexpr ui64 MIN_TIME_BETWEEN_IMMIGRATIONS_MS = 4000;
@@ -144,15 +146,33 @@ void SimImmigrationManager::spawnImmigrationBySea(TimestampMs currentTime) {
         factionId = factionManager.generateRandomNewFaction();
     }
 
-    constexpr ui32 MIN_NEW_PEOPLE = 1;
-    constexpr ui32 MAX_NEW_PEOPLE = 128;
-    const ui32 numPeople = gen.getRandomUIntInRange(MIN_NEW_PEOPLE, MAX_NEW_PEOPLE);
+    constexpr i32 MIN_NEW_PEOPLE = 1;
+    constexpr i32 MAX_NEW_PEOPLE = 128;
+    const i32 numPeople = gen.getRandomIntInRange(MIN_NEW_PEOPLE, MAX_NEW_PEOPLE);
 
     entt::entity newPeopleIds[MAX_NEW_PEOPLE];
 
-    for (ui32 i = 0; i < numPeople; ++i) {
+    // Create all characters
+    for (i32 i = 0; i < numPeople; ++i) {
         newPeopleIds[i] = ecs.createNewPerson(startPos);
     }
+
+    // Create a bunch of random families from the characters
+    // TODO: Do better here
+    SimAISystem& aiSystem = ecs.getAISystem();
+    constexpr i32 MAX_PEOPLE_IN_FAMILY = 2;
+    for (i32 i = 0; i < numPeople;) {
+        const i32 familySize = glm::min(gen.getRandomIntInRange(1, MAX_PEOPLE_IN_FAMILY + 1), numPeople - i);
+
+        if (familySize > 1) {
+            std::span<entt::entity> family(&newPeopleIds[i], familySize);
+            aiSystem.createFamily(family, "New family"); // TODO: Family name
+        }
+
+        i += familySize;
+    }
+    
+
     std::span peopleSpan(newPeopleIds, numPeople);
 
     // Use first entity as leader

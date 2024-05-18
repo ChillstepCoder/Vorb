@@ -77,7 +77,7 @@ public:
     ui64 getWorldTimeMs() const { return mWorldTimeMs; }
     void setWorldTimeMs(ui64 newTime);
     ui32 getSeed() const { return mSeed; }
-    inline ChunkID getChunkIDAtWorldPos(f32v2 worldPos) const { return (ChunkID)((worldPos.y / CHUNK_WIDTH) * mWidthChunks + (worldPos.x / CHUNK_WIDTH)); }
+    inline ChunkID getChunkIDAtWorldPos(f32v2 worldPos) const { return (ChunkID)(((i32)worldPos.y / CHUNK_WIDTH) * mWidthChunks + ((i32)worldPos.x / CHUNK_WIDTH)); }
     inline TileCoord getChunkWorldPos(ChunkID id) const { return TileCoord((id % mWidthChunks) * CHUNK_WIDTH, (id / mWidthChunks) * CHUNK_WIDTH); }
 
     // System Accessors 
@@ -142,10 +142,10 @@ private:
     WorldNetMode mNetMode;
     mutable std::mutex mLoadCenterMutex;
     f32v2 mLoadCenter = f32v2(0);
-    ui32 mWidthTiles = 0;
-    ui32 mWidthDTiles = 0;
-    ui32 mWidthChunks = 0;
-    ui32 mTotalChunks = 0;
+    i32 mWidthTiles = 0;
+    i32 mWidthDTiles = 0;
+    i32 mWidthChunks = 0;
+    i32 mTotalChunks = 0;
     f32v2 mDefaultPlayerSpawnUV = f32v2(0.5f);
 
     ui64 mWorldTimeMs = 0; // Time since the world began

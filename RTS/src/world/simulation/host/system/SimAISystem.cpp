@@ -6,6 +6,7 @@
 
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
+#include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/simulation/host/settlement/SimSettlementCharacterInterface.h"
 #include "world/World.h"
 
@@ -16,37 +17,56 @@
 SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
     mWorld(simContext.getWorld()), mSimContext(simContext), mRegistry(registry), mECS(ecs) {
     mWorldWidthChunks = mWorld.getWidthChunks();
+    mWorldWidthTiles = mWorld.getWidthTiles();
 }
 
-void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
+void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
     mCurrentTime = currentTime;
-    mDeltaTime = deltaTime;
+    mDeltaTimeMs = deltaTimeMs;
+    mDeltaTimeSec = deltaTimeMs / MS_PER_SECOND;
     mRandomGen = &mSimContext.getSimRandomGenerator();
     
     updateCharacterGroups();
   
     { // Update all brains who aren't followers (Complex Logic)
-        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent>(entt::exclude<CharacterGroupFollowerComponent>);
+        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, SimMovementComponent>(entt::exclude<CharacterGroupFollowerComponent>);
         for (auto entity : view) {
             SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
             SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
-            updateSimBrain(brain, pos, entity);
+            SimMovementComponent& movement = view.get<SimMovementComponent>(entity);
+            updateSimCharacter(brain, pos, movement, entity);
         }
     }
 }
 
-void SimAISystem::setEntityPosition(entt::entity e, f32v2 newPosition) {
-
-    // TODO: FIX
-    newPosition = glm::clamp(newPosition, 0.0f, 32767.f);
+bool SimAISystem::setEntityPosition(entt::entity e, f32v2 newPosition) {
+    newPosition = glm::clamp(newPosition, 0.0f, mWorldWidthTiles - 1.0f);
 
     SimPositionComponent& posCmp = mRegistry.get<SimPositionComponent>(e);
     posCmp.position = newPosition;
     ChunkID prevChunk = posCmp.chunk;
     posCmp.chunk = ui32(newPosition.y / CHUNK_WIDTH) * mWorldWidthChunks + ui32(newPosition.x / CHUNK_WIDTH);
+    assert(posCmp.chunk == mWorld.getChunkIDAtWorldPos(posCmp.position));
     if (prevChunk != posCmp.chunk) [[unlikely]] {
-        mECS.onEntityEnterNewChunk(e, prevChunk, posCmp.chunk);
+        return mECS.onEntityEnterNewChunk(e, prevChunk, posCmp.chunk);
     }
+    return false;
+}
+
+FamilyID SimAISystem::createFamily(std::span<entt::entity> entities, const char* name) {
+    ASSERT_SIM_THREAD();
+    // TODO: Allow rollover on live, check for duplicate family IDs to be safe
+    assert(mFamilyIDGen < INVALID_FAMILY_ID);
+    SimFamily& newFamily = mFamilies[++mFamilyIDGen];
+    newFamily.characters = std::make_unique<entt::entity[]>(entities.size());
+    for (size_t i = 0; i < entities.size(); ++i) {
+        newFamily.characters[i] = entities[i];
+        mRegistry.emplace<SimFamilyMemberComponent>(entities[i], mFamilyIDGen);
+    }
+    memcpy(newFamily.characters.get(), entities.data(), entities.size_bytes());
+    newFamily.numCharacters = entities.size();
+    newFamily.name = name;
+    return mFamilyIDGen;
 }
 
 void SimAISystem::updateCharacterGroups() {
@@ -70,7 +90,7 @@ void SimAISystem::updateCharacterGroups() {
             constexpr f32 minMoveStep = 2.f; // Prevents getting stuck at one tile due to small move increments
             constexpr f32 COMPLETE_DISTANCE = 8.f;
             
-            const f32 moveDistance = glm::min(distanceToTarget, glm::max(group.moveSpeed * (mDeltaTime / MS_PER_SECOND), minMoveStep));
+            const f32 moveDistance = glm::min(distanceToTarget, glm::max(group.moveSpeed * mDeltaTimeSec, minMoveStep));
             f32v2 newPosition;
             if (distanceToTarget < 0.0001f) [[unlikely]] {
                 newPosition = group.targetPos;
@@ -124,7 +144,29 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
     setEntityPosition(entity, groupPosition.getPosition() - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f));
 }
 
-void SimAISystem::updateSimBrain(SimBrainComponent& brain, SimPositionComponent& pos, entt::entity entity) {
+void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionComponent& pos, SimMovementComponent& movement, entt::entity entity) {
+
+    // Handle move orders
+    if (movement.targetPosition.x >= 0.0f) {
+        const f32 MOVE_SPEED = mDeltaTimeSec * 2.0f;
+        const f32v2 offsetToTarget = f32v2(movement.targetPosition) - pos.position;
+        const f32 distanceToTarget = glm::length(offsetToTarget);
+        if (distanceToTarget < MOVE_SPEED) {
+            if (setEntityPosition(entity, movement.targetPosition)) {
+                // We are now activating
+                return;
+            }
+            movement.targetPosition = f32v2(-1.0f);
+        }
+        else {
+            f32v2 newPosition = pos.position + (offsetToTarget / distanceToTarget) * MOVE_SPEED;
+            if (setEntityPosition(entity, newPosition)) {
+                // We are now activating
+                return;
+            }
+        }
+    }
+
     if (brain.flags.isBitSet(SimBrainComponentFlags::HasTask)) {
         SimInProgressTaskComponent& task = mRegistry.get<SimInProgressTaskComponent>(entity);
         if (mCurrentTime > task.taskStepEndTime) {
@@ -136,21 +178,35 @@ void SimAISystem::updateSimBrain(SimBrainComponent& brain, SimPositionComponent&
         assert(residencyCmp); // TODO: Handle nomadic people or those who need to find residency
         assert(residencyCmp->settlementEntity != entt::null);
 
-        // Try aquire residency
-        if (residencyCmp->homeId == INVALID_BUILDING_ID) {
-            if (!residencyCmp->flags.isBitSet(SimResidentComponentFlags::HasPendingHome)) {
-                SimSettlementCharacterInterface::tryRequestHome(entity, residencyCmp->settlementEntity, mRegistry);
-            }
+        // Aquire or prioritize shelter if needed
+        switch (residencyCmp->homeState) {
+            case SimHomeState::Homeless:
+                mECS.getSettlementSystem().getCharacterInterface().tryRequestHomeForSelfAndFamily(entity, residencyCmp->settlementEntity);
+                break;
+            case SimHomeState::Pending:
+                // Waiting for the settlement to gift us a plot
+                break;
+            case SimHomeState::Building:
+                // TODO: Aquire building task
+                break;
+            case SimHomeState::Done:
+                break;
+            default:
+                break;
         }
         // Try aquire task
 
-        // Wander if failed to aquire task
-        
+        // Select wander target around home point if not moving
+        if (movement.targetPosition.x < 0.0f && residencyCmp->homePoint.x > -1) {
+            constexpr f32 MAX_WANDER_RADIUS = 256.0f;
+            constexpr f32 MAX_WANDER_RADIUS_SQ = SQ(MAX_WANDER_RADIUS);
+            // Acquire new wander position
+            const f32 randRadius = mRandomGen->getRandomFloatUnsigned() * MAX_WANDER_RADIUS;
+            const f32 randRotation = mRandomGen->getRandomFloatUnsigned() * M_2_PIF;
+            const f32v2 offset(randRadius * cosf(randRotation), randRadius * sinf(randRotation));
+            movement.targetPosition = f32v2(residencyCmp->homePoint) + offset;
+        }
 
-        // TODO: REMOVE
-        const f32 WANDER_SPEED = mDeltaTime * 2.0f;
-        const f32v2 newPos = pos.position + f32v2(mRandomGen->getRandomFloatSigned() * WANDER_SPEED, mRandomGen->getRandomFloatSigned() * WANDER_SPEED);
-        setEntityPosition(entity, newPos);
-        DebugRenderer::drawWireQuadThreadSafe(f32v3(newPos.x, newPos.y, 5.0f), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), 30);
+        DebugRenderer::drawWireQuadThreadSafe(f32v3(pos.position.x, pos.position.y, 5.0f), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), 30);
     }
 }

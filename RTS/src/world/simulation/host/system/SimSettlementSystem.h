@@ -5,8 +5,11 @@ class SimECS;
 class SettlementNameContext;
 class SettlementPlanner;
 
+#include "world/simulation/host/settlement/SimSettlementCharacterInterface.h"
+
 class SimSettlementSystem
 {
+    friend class SimSettlementCharacterInterface;
 public:
     SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry);
     ~SimSettlementSystem();
@@ -15,7 +18,7 @@ public:
 
     bool tryCreateSettlementFromGroup(entt::entity groupEntity);
 
-
+    SimSettlementCharacterInterface& getCharacterInterface() { return mCharacterInterface; }
 private:
     entt::entity createSettlementEntity(ChunkID rootChunk, entt::entity leader, std::vector<entt::entity>& people);
     std::unique_ptr<SettlementNameContext> mNameContext;
@@ -29,5 +32,7 @@ private:
 
     TimestampMs mNextUpdateTime = 0;
     std::unique_ptr<SettlementPlanner> mPlanner;
+
+    SimSettlementCharacterInterface mCharacterInterface;
 };
 
