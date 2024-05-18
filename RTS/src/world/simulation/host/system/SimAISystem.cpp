@@ -125,9 +125,15 @@ void SimAISystem::updateCharacterGroups() {
     };
 }
 
-void SimAISystem::handleTaskComplete(entt::entity entity, SimBrainComponent& brain, SimInProgressTaskComponent& taskCmp) {
-    assert(false);
+void SimAISystem::updateSimTask(entt::entity entity, SimBrainComponent& brain) {
+    SimTaskQueueComponent& taskCmp = mRegistry.get<SimTaskQueueComponent>(entity);
+    assert(taskCmp.numTasks);
+    SimTaskTickResult result = taskCmp.tasks[taskCmp.firstTask]->tickSim(mWorld, mRegistry, entity);
+    if (result != SimTaskTickResult::IN_PROGRESS) {
+        assert(false);
+    }
 }
+
 
 void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos) {
     // Snap to leader position
@@ -168,10 +174,7 @@ void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionCompon
     }
 
     if (brain.flags.isBitSet(SimBrainComponentFlags::HasTask)) {
-        SimInProgressTaskComponent& task = mRegistry.get<SimInProgressTaskComponent>(entity);
-        if (mCurrentTime > task.taskStepEndTime) {
-            handleTaskComplete(entity, brain, task);
-        }
+        updateSimTask(entity, brain);
     }
     else {
         SimResidentComponent* residencyCmp = mRegistry.try_get<SimResidentComponent>(entity);

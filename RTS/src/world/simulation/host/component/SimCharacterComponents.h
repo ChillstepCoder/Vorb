@@ -1,7 +1,8 @@
 #pragma once
 
 #include <boost/container/flat_map.hpp>
-#include "world/simulation/SimTask.h"
+#include <boost/circular_buffer.hpp>
+#include "world/simulation/ISimTask.h"
 #include "ecs/component/SimEntityTypeComponent.h"
 
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
@@ -71,14 +72,13 @@ struct SimMovementComponent {
     f32v2 targetPosition = f32v2(-1.0f);
 };
 
-struct SimInProgressTaskComponent {
-    TimestampMs taskStepStartTime;
-    TimestampMs taskStepEndTime;
-    SimTaskHandle currentTask;
-    SimTaskPriority taskPriority = SimTaskPriority::Idle;
-    ui8 padding[7];
+constexpr i32 MAX_SIM_TASKS = 3;
+struct SimTaskQueueComponent {
+    ISimTask* tasks[MAX_SIM_TASKS] = {};
+    ui8 firstTask = 0;
+    ui8 numTasks = 0;
 };
-static_assert(sizeof(SimInProgressTaskComponent) == 32, "Keep small for cache efficiency");
+static_assert(sizeof(SimTaskQueueComponent) == 32, "Keep small for cache efficiency");
 
 struct SimNeedsComponent {
     f32 hunger = 0.0f; // [0, 1>, 1 is starving. Can go beyond 1.
@@ -93,11 +93,8 @@ struct SimFamilyMemberComponent {
 };
 
 // Represents a list of tasks, and who is working on them for us. Does not include tasks we are doing for ourselves
-struct SimTaskBossComponent {
+struct SimJobBossComponent {
     boost::container::flat_map<SimTaskID, SimTaskData> activeTasks;
-};
-
-enum class SimResidentComponentFlags : ui8 {
 };
 
 enum class SimHomeState : ui8 {
@@ -107,11 +104,24 @@ enum class SimHomeState : ui8 {
     Done
 };
 
+enum class SimProfession : ui8 {
+    Unemployed,
+    Steward, // Sells property
+    Quartermaster, // Allocates goods and receives donations
+};
+
+struct SimProfessionComponent {
+    BusinessID businessId = INVALID_BUSINESS_ID; // If invalid, employed by settlement
+    SimProfession profession = SimProfession::Unemployed;
+};
+
+//enum class SimResidentComponentFlags : ui8 {
+//};
 struct SimResidentComponent {
     entt::entity settlementEntity = entt::null;
     BuildingID homeId = INVALID_BUILDING_ID;
     i32v2 homePoint = i32v2(-1, -1); // Represents our tent, house, or general wandering area that we should stay near while chilling
-    BitFlags<SimResidentComponentFlags> flags;
+    //BitFlags<SimResidentComponentFlags> flags;
     SimHomeState homeState;
 };
 

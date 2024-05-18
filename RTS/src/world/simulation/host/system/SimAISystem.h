@@ -8,7 +8,6 @@ class World;
 class RandomGenerator;
 
 struct SimBrainComponent;
-struct SimInProgressTaskComponent;
 struct SimPositionComponent;
 struct SimMovementComponent;
 
@@ -33,7 +32,7 @@ public:
 
 private:
     void updateCharacterGroups();
-    void handleTaskComplete(entt::entity entity, SimBrainComponent& brain, SimInProgressTaskComponent& taskCmp);
+    void updateSimTask(entt::entity entity, SimBrainComponent& brain);
     void updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos);
     void updateSimCharacter(SimBrainComponent& brain, SimPositionComponent& pos, SimMovementComponent& movement, entt::entity entity);
 

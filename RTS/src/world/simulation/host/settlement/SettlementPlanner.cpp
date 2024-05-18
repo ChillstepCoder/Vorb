@@ -8,6 +8,10 @@
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
+#include "world/IHeightmapGrid.h"
+
+#include "building/BuildingRepository.h"
+#include "building/BuildingBlueprintGenerator.h"
 
 // OLD SETTLEMENT DESIGN NOTES
 //  [SettlementRoadNetwork]
@@ -72,6 +76,11 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
     SimAISystem& aiSystem = mEcs.getAISystem();
     SimSettlementSystem& settlementSystem = mEcs.getSettlementSystem();
 
+    BuildingRepository& buildingRepo = BuildingRepository::get();
+    const BuildingDef& houseDef = buildingRepo.getLoadedOrUnloadedAsset(CStrToken("small_house"));
+
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+
     SettlementPlannerComponent& plannerCmp = mRegistry.get<SettlementPlannerComponent>(settlementEntity);
     SettlementLayoutComponent& layoutCmp = mRegistry.get<SettlementLayoutComponent>(settlementEntity);
     // Prioritize families
@@ -94,6 +103,10 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
             // This is a slow operation but this array is small so its fine
             plannerCmp.familiesPendingHomes.erase(plannerCmp.familiesPendingHomes.begin());
+
+            SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
+            const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
+            newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
         }
     }
     else if (plannerCmp.singleCharactersPendingHomes.size()) {
@@ -111,6 +124,10 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
             // This is a slow operation but this array is small so its fine
             plannerCmp.singleCharactersPendingHomes.erase(plannerCmp.singleCharactersPendingHomes.begin());
+
+            SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
+            const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
+            newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
         }
     }
 }

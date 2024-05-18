@@ -52,10 +52,13 @@ public:
     // Each stair tile
     std::unique_ptr<StairPiece[]> stairPieces;
     const BuildingDef* desc = nullptr;
-    i32 tileTargetCount;
-    i32 wallTargetCount;
     i32 itemCompositionCount;
+    i32 tileTargetCount;
+    i32 constructedTileTargetCount = 0;
+    i32 wallTargetCount;
+    i32 constructedWallTargetCount = 0;
     i32 stairPieceCount;
+    i32 constructedStairPieceCount = 0;
     DTileCoord worldPosRootDTile;
     i32v2 dimsDTile;
     i32 floorHeight;

@@ -95,7 +95,7 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
             //sClosedSeedSet.clear();
             //sClosedSeedSet.reserve(256);
 
-            std::vector<PlotSeed>& seeds = it->second;
+            const std::vector<PlotSeed>& seeds = it->second;
             for (PlotSeed c : seeds) {
                 const ui32 hash = c.pos.y * worldWidthDTiles + c.pos.x;
                 /*if (sClosedSeedSet.contains(hash)) {

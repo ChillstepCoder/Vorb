@@ -219,6 +219,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\ai\jobs\ConstructBlueprintSimJob.cpp" />
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
     <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
@@ -577,6 +578,7 @@
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\gpt\GptApi.h" />
+    <ClInclude Include="src\ai\jobs\ConstructBlueprintSimJob.h" />
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
@@ -1091,7 +1093,8 @@
     <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
     <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />
     <ClInclude Include="src\world\simulation\host\settlement\SimSettlementSystem.h" />
-    <ClInclude Include="src\world\simulation\SimTask.h" />
+    <ClInclude Include="src\world\simulation\ISimJob.h" />
+    <ClInclude Include="src\world\simulation\ISimTask.h" />
     <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
     <ClInclude Include="src\world\srv\HostHeightmapGrid.h" />
