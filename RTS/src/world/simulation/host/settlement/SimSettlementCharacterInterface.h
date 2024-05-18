@@ -8,6 +8,7 @@ public:
     SimSettlementCharacterInterface(SimSettlementSystem& system) : mSystem(system) {}
 
     bool tryRequestHomeForSelfAndFamily(entt::entity characterEntity, entt::entity settlementEntity);
+    void makePlotOwnedByEntity(entt::entity entity, SettlementPlotID plotId);
 
 private:
     SimSettlementSystem& mSystem;

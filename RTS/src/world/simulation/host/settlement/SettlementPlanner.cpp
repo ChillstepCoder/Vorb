@@ -2,19 +2,14 @@
 #include "SettlementPlanner.h"
 
 #include "world/World.h"
+#include "world/simulation/host/component/SimCharacterComponents.h"
 #include "world/simulation/host/component/SimSettlementComponents.h"
 
-// Cart bones
-// root
-//   axle_f
-//     wheel_fl
-//     wheel_fr
-//   wheel_bl
-//   wheel_br
-//   yoke
-//  - All wheel joints should be oriented exactly the same
+#include "world/simulation/host/SimECS.h"
+#include "world/simulation/host/system/SimAISystem.h"
+#include "world/simulation/host/system/SimSettlementSystem.h"
 
-// NEW SETTLEMENT DESIGN
+// OLD SETTLEMENT DESIGN NOTES
 //  [SettlementRoadNetwork]
 // 1. Define road network, with desired size based on desired number of plots
 //    - Starts with a single node and 3 to 4 branches
@@ -44,31 +39,78 @@
 //    - Roads can collide with each other, and will attempt to do so with pathfinding to create circles. (Needs elaboration)
 
 
-SettlementPlanner::SettlementPlanner(World& world, entt::registry& registry) : mWorld(world), mRegistry(registry) {
+SettlementPlanner::SettlementPlanner(World& world, SimECS& simEcs, entt::registry& registry) : mWorld(world), mEcs(simEcs), mRegistry(registry) {
 
 }
 
 void SettlementPlanner::onSettlementCreated(entt::entity settlementEntity, TimestampMs currentTime) {
+    ASSERT_SIM_THREAD();
     mLastThinkTime = currentTime;
 
     SettlementSimComponent& simCmp = mRegistry.get<SettlementSimComponent>(settlementEntity);
     TileCoord worldPosCenter = mWorld.getChunkWorldPos(simCmp.rootChunkId) + TileCoord(CHUNK_WIDTH / 2);
 
     // Create roads
-    SettlementLayoutComponent& roadCmp = mRegistry.get<SettlementLayoutComponent>(settlementEntity);
-    roadCmp.manager.tryInitAtWorldPos(mWorld, settlementEntity, DTileCoord(worldPosCenter));
+    SettlementLayoutComponent& layoutCmp = mRegistry.get<SettlementLayoutComponent>(settlementEntity);
+    layoutCmp.manager.tryInitAtWorldPos(mWorld, settlementEntity, DTileCoord(worldPosCenter));
 }
 
 void SettlementPlanner::updatePlanner(entt::entity settlementEntity, TimestampMs currentTime, TimestampMs deltaTime) {
+    ASSERT_SIM_THREAD();
+
     mLastThinkTime = currentTime; // TODO: Timestep?
 
-    SettlementSimComponent& simCmp = mRegistry.get<SettlementSimComponent>(settlementEntity);
-    //SettlementPlannerComponent& plannerCmp = mRegistry.get<SettlementPlannerComponent>(settlementEntity);
-    SettlementQuartermasterComponent& quartermasterCmp = mRegistry.get<SettlementQuartermasterComponent>(settlementEntity);
-    SettlementPeopleComponent& peopleCmp = mRegistry.get<SettlementPeopleComponent>(settlementEntity);
-    SettlementStructuresComponent& structuresCmp = mRegistry.get<SettlementStructuresComponent>(settlementEntity);
+    //SettlementSimComponent& simCmp = mRegistry.get<SettlementSimComponent>(settlementEntity);
+    //SettlementQuartermasterComponent& quartermasterCmp = mRegistry.get<SettlementQuartermasterComponent>(settlementEntity);
+    //SettlementPeopleComponent& peopleCmp = mRegistry.get<SettlementPeopleComponent>(settlementEntity);
 
-    //SettlementWorkOrdersComponent& workOrdersCmp = mRegistry.get<SettlementWorkOrdersComponent>(settlementEntity);
+    updateResidentsPendingHomes(settlementEntity);
 
+}
 
+void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntity) {
+    SimAISystem& aiSystem = mEcs.getAISystem();
+    SimSettlementSystem& settlementSystem = mEcs.getSettlementSystem();
+
+    SettlementPlannerComponent& plannerCmp = mRegistry.get<SettlementPlannerComponent>(settlementEntity);
+    SettlementLayoutComponent& layoutCmp = mRegistry.get<SettlementLayoutComponent>(settlementEntity);
+    // Prioritize families
+    if (plannerCmp.familiesPendingHomes.size()) {
+        FamilyID pendingFamily = plannerCmp.familiesPendingHomes[0];
+        SimFamily& family = aiSystem.getFamily(pendingFamily);
+
+        // TODO: Preferences
+        SettlementPlotRequest request;
+        request.allowedZones = BitFlags<SettlementZone>(SettlementZone::UrbanResidential, SettlementZone::Rural);
+
+        SettlementPlotID plotId = layoutCmp.manager.tryClaimOrGeneratePlot(request, family.characters[0], true);
+        if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
+            settlementSystem.getCharacterInterface().makePlotOwnedByEntity(family.characters[0], plotId);
+
+            // Go build your home!
+            for (int i = 0; i < family.numCharacters; ++i) {
+                mRegistry.get<SimResidentComponent>(family.characters[i]).homeState = SimHomeState::Building;
+            }
+
+            // This is a slow operation but this array is small so its fine
+            plannerCmp.familiesPendingHomes.erase(plannerCmp.familiesPendingHomes.begin());
+        }
+    }
+    else if (plannerCmp.singleCharactersPendingHomes.size()) {
+        entt::entity character = plannerCmp.singleCharactersPendingHomes[0];
+        // TODO: Preferences
+        SettlementPlotRequest request;
+        request.allowedZones = BitFlags<SettlementZone>(SettlementZone::UrbanResidential, SettlementZone::Rural);
+
+        SettlementPlotID plotId = layoutCmp.manager.tryClaimOrGeneratePlot(request, character, true);
+        if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
+            settlementSystem.getCharacterInterface().makePlotOwnedByEntity(character, plotId);
+
+            // Go build your home!
+            mRegistry.get<SimResidentComponent>(character).homeState = SimHomeState::Building;
+
+            // This is a slow operation but this array is small so its fine
+            plannerCmp.singleCharactersPendingHomes.erase(plannerCmp.singleCharactersPendingHomes.begin());
+        }
+    }
 }

@@ -52,7 +52,7 @@ SettlementZone SettlementPlotManager::getPlotSeedZone(DTileCoord pos) const {
     if (it != mPlotSeedToZone.end()) [[likely]] {
         return it->second;
     }
-    return SettlementZone::COUNT;
+    return SettlementZone::TERM;
 }
 
 PlotSeed SettlementPlotManager::getPlotSeed(DTileCoord pos) const {
@@ -69,31 +69,47 @@ PlotSeed SettlementPlotManager::getPlotSeed(DTileCoord pos) const {
     return PlotSeed();
 }
 
-SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog) {
-    ASSERT_SIM_THREAD();
-
-    auto it = mPlotSeeds.find(request.zone);
-    if (it == mPlotSeeds.end()) {
-        return INVALID_SETTLEMENT_PLOT_ID;
-    }
-    const i32 worldWidthDTiles = mWorld.getWidthDTiles();
-    //sClosedSeedSet.clear();
-    //sClosedSeedSet.reserve(256);
-
-    std::vector<PlotSeed>& seeds = it->second;
-    for (PlotSeed c : seeds) {
-        const ui32 hash = c.pos.y * worldWidthDTiles + c.pos.x;
-        /*if (sClosedSeedSet.contains(hash)) {
-            continue;
-        }*/
-        //sClosedSeedSet.insert(hash);
-        SettlementPlotID plotId = tryGeneratePlotAtSeedInternal(request, c, owner, visLog);
-        if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
+SettlementPlotID SettlementPlotManager::tryClaimOrGeneratePlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog) {
+    for (SettlementPlotID plotId : mFreePlots) {
+        SettlementPlot& plot = mPlots[plotId];
+        if (plotSatisfiesRequest(plot, request)) {
+            plot.owner = owner;
             return plotId;
         }
     }
+    return tryGenerateNewPlot(request, owner, visLog);
+}
 
-    // TODO
+SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog) {
+    ASSERT_SIM_THREAD();
+
+    for (int zoneBit = BIT(0); zoneBit < (int)SettlementZone::TERM; zoneBit = zoneBit << 1) {
+        // Try all allowed zones
+        SettlementZone zone = (SettlementZone)zoneBit;
+        if (request.allowedZones.isBitSet(zone)) {
+            auto it = mPlotSeeds.find(zone);
+            if (it == mPlotSeeds.end()) {
+                return INVALID_SETTLEMENT_PLOT_ID;
+            }
+            const i32 worldWidthDTiles = mWorld.getWidthDTiles();
+            //sClosedSeedSet.clear();
+            //sClosedSeedSet.reserve(256);
+
+            std::vector<PlotSeed>& seeds = it->second;
+            for (PlotSeed c : seeds) {
+                const ui32 hash = c.pos.y * worldWidthDTiles + c.pos.x;
+                /*if (sClosedSeedSet.contains(hash)) {
+                    continue;
+                }*/
+                //sClosedSeedSet.insert(hash);
+                SettlementPlotID plotId = tryGeneratePlotAtSeedInternal(request, c, owner, zone, visLog);
+                if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
+                    return plotId;
+                }
+            }
+        }
+    }
+
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
@@ -195,7 +211,7 @@ bool tryExpandPlotInDir(Cartesian dir, i32AABB2& aabb, std::vector<DTileCoord>& 
     return true;
 }
 
-SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, OPT VisualLog* vislog) {
+SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, SettlementZone plotZone, OPT VisualLog* vislog) {
     OwnershipGrid& ownerGrid = mWorld.getOwnershipGrid();
     IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
     const i32 worldWidthDTiles = mWorld.getWidthDTiles();
@@ -240,7 +256,7 @@ SettlementPlotID SettlementPlotManager::tryGeneratePlotAtSeedInternal(Settlement
 
     if (validPoints.size() >= request.minimumSize) {
         // TODO: Detect disjoint nodes and remove them?
-        return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), request.zone, aabb, owner);
+        return allocateNewPlot(std::span(validPoints.data(), validPoints.size()), plotZone, aabb, owner);
     }
   
     return INVALID_SETTLEMENT_PLOT_ID;
@@ -254,6 +270,7 @@ SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> co
     newPlot.aabbDTile = aabbDTile;
     newPlot.ownedDTiles.resizeAndZero(aabbDTile.width * aabbDTile.depth);
     newPlot.owner = owner;
+    newPlot.dTileCount = coords.size();
     for (DTileCoord c : coords) {
         const i32 x = c.x - aabbDTile.pos.x;
         const i32 y = c.y - aabbDTile.pos.y;
@@ -268,5 +285,16 @@ SettlementPlotID SettlementPlotManager::allocateNewPlot(std::span<DTileCoord> co
             ownerGrid.setDTileOwner(c, owner, DTileOwnerObjectType::Plot, id);
         }
     }
+
+    if (owner == entt::null) {
+        mFreePlots.emplace_back(id);
+    }
+
     return id;
+}
+
+bool SettlementPlotManager::plotSatisfiesRequest(const SettlementPlot& plot, SettlementPlotRequest request) const {
+    return (request.allowedZones.isBitSet(plot.zone)) &&
+           (plot.dTileCount >= request.minimumSize) && (plot.dTileCount <= request.maximumSize) &&
+           (plot.aabbDTile.dims.x >= request.minimumWidth) && (plot.aabbDTile.dims.y >= request.minimumWidth);
 }

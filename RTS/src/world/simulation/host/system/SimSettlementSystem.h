@@ -14,7 +14,7 @@ public:
     SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry);
     ~SimSettlementSystem();
 
-    void tick(TimestampMs currentTime, TimestampMs deltaTime);
+    void tick(TimestampMs currentTime, TimestampMs deltaTimeMs);
 
     bool tryCreateSettlementFromGroup(entt::entity groupEntity);
 
@@ -27,7 +27,8 @@ private:
     HostSimContext& mSimContext;
     SimECS& mECS;
     TimestampMs mCurrentTime = 0;
-    TimestampMs mDeltaTime = 0;
+    TimestampMs mDeltaTimeMs = 0;
+    f32 mDeltaTimeSec = 0;
     SettlementUID mUIDGen = 0; // TODO: Serialize this
 
     TimestampMs mNextUpdateTime = 0;

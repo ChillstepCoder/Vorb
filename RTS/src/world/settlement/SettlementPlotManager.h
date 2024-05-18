@@ -1,38 +1,11 @@
 #pragma once
 
-#include "util/BitArray.h"
-#include "world/settlement/SettlementZone.h"
+#include "world/settlement/SettlementPlot.h"
 
 class RandomGenerator;
 class World;
 class VisualLog;
 
-enum class PlotFlags : ui8 {
-    Owned,
-    Reserved,
-    HasBlueprint,
-    HasFinishedStructure
-};
-
-struct SettlementPlot {
-    BitArray ownedDTiles;
-    i32AABB2 aabbDTile;
-    RoadSegmentID connectedRoad;
-    BitFlags<PlotFlags> flags;
-    SettlementZone zone;
-    entt::entity owner = entt::null;
-    BuildingID structure = INVALID_BUILDING_ID;
-    //ui8 padding[2];
-};
-
-struct SettlementPlotRequest {
-    i32 minimumWidth = 5;
-    i32 maximumWidth = 10;
-    i32 minimumSize = SQ(6);
-    i32 maximumSize = SQ(10);
-    SettlementZone zone;
-    // DTileCoord desiredProximity (for generating close to forests?)
-};
 
 // Based on road proximity, we generate in a direction
 enum class PlotSeedDir : ui8 {
@@ -74,16 +47,22 @@ public:
     SettlementPlot& getPlot(SettlementPlotID id) { return mPlots[id]; }
     const SettlementPlot& getPlot(SettlementPlotID id) const { return mPlots[id]; }
 
-    // Returns INVALID_SETTLEMENT_PLOT_ID on failure
+    // Returns INVALID_SETTLEMENT_PLOT_ID on failure, owner must not be null
+    SettlementPlotID tryClaimOrGeneratePlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog);
+    // Returns INVALID_SETTLEMENT_PLOT_ID on failure, owner can be null
     SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog);
     
     const std::vector<SettlementPlot>& getPlots() const { return mPlots; }
 
 private:
-    SettlementPlotID tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, OPT VisualLog* vislog);
+    SettlementPlotID tryGeneratePlotAtSeedInternal(SettlementPlotRequest request, PlotSeed seed, entt::entity owner, SettlementZone plotZone, OPT VisualLog* vislog);
     SettlementPlotID allocateNewPlot(std::span<DTileCoord> coords, SettlementZone zone, i32AABB2 aabbDTile, entt::entity owner);
+    bool plotSatisfiesRequest(const SettlementPlot& plot, SettlementPlotRequest request) const;
+
     // TODO: DISTRICTING
+    // TODO: Handle deleting plots!
     std::vector<SettlementPlot> mPlots;
+    std::vector<SettlementPlotID> mFreePlots;
     //std::map<SettlementZone, std::vector<SettlementPlotID>> mFreePlots; // Use?
     std::map<SettlementZone, std::vector<PlotSeed>> mPlotSeeds;
     std::map<DTileCoord, SettlementZone> mPlotSeedToZone;

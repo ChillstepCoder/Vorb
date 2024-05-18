@@ -115,6 +115,11 @@ struct SimResidentComponent {
     SimHomeState homeState;
 };
 
+struct SimOwnershipComponent {
+    std::unique_ptr<SettlementPlotID[]> ownedPlots;
+    i32 numOwnedPlots = 0;
+};
+
 struct SimCharacterNameComponent {
     const char* firstName = nullptr;
     const char* lastName = nullptr;

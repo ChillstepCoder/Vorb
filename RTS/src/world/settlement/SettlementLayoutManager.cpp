@@ -65,7 +65,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     // Try many times to add our second sector, should return first time, but could be blocked
     bool didAddSecondSector = false;
     for (int i = 0; i < 32; ++i) {
-        if (tryAddNewRandomSector()) {
+        if (tryAddNewRandomSector(SettlementZone::ALL) != SettlementZone::INVALID) {
             didAddSecondSector = true;
             break;
         }
@@ -74,7 +74,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
         return false;
     }
 
-    debugInitSettlementPartiallyMade();
+    //debugInitSettlementPartiallyMade();
 
     if (mCurrentVisLog) {
         visLog->finish();
@@ -84,7 +84,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
     return true;
 }
 
-bool SettlementLayoutManager::tryAddNewRandomSector() {
+SettlementZone SettlementLayoutManager::tryAddNewRandomSector(BitFlags<SettlementZone> allowedZones) {
     assert(mSectors.size());
 
     // Just to determine direction
@@ -109,11 +109,13 @@ bool SettlementLayoutManager::tryAddNewRandomSector() {
         const f32 distanceAdjustScale = (sector.desiredRadius + desiredRadius + 1.0f) / initialDistance;
         // Recalculate pos
         newPos = sector.center + DTileCoord(i32v2(glm::round(offset * distanceAdjustScale)));
-        if (tryAddSector(newPos, desiredRadius, desiredZone)) {
-            return true;
+        if (allowedZones.isBitSet(desiredZone)) {
+            if (tryAddSector(newPos, desiredRadius, desiredZone)) {
+                return desiredZone;
+            }
         }
     }
-    return false;
+    return SettlementZone::INVALID;
 }
 
 bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius, SettlementZone zone) {
@@ -318,6 +320,30 @@ void SettlementLayoutManager::debugDraw() const {
     }
 }
 
+SettlementPlot& SettlementLayoutManager::getPlot(SettlementPlotID id) {
+    return mPlotManager->getPlot(id);
+}
+
+const SettlementPlot& SettlementLayoutManager::getPlot(SettlementPlotID id) const {
+    return mPlotManager->getPlot(id);
+}
+
+SettlementPlotID SettlementLayoutManager::tryClaimOrGeneratePlot(SettlementPlotRequest& request, entt::entity owner, bool allowAddSector) {
+    SettlementPlotID id = mPlotManager->tryClaimOrGeneratePlot(request, owner, nullptr);
+    if (id == INVALID_SETTLEMENT_PLOT_ID && allowAddSector) {
+        constexpr int MAX_TRIES = 3;
+        for (int i = 0; i < MAX_TRIES; ++i) {
+            const SettlementZone generatedZone = tryAddNewRandomSector(request.allowedZones);
+            if (generatedZone != SettlementZone::INVALID) {
+                // Only looking in the new zone
+                request.allowedZones.overwriteBits(generatedZone);
+                return mPlotManager->tryClaimOrGeneratePlot(request, owner, nullptr);
+            }
+        }
+    }
+    return id;
+}
+
 std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusAtCoord(DTileCoord coord) {
     constexpr f32 RURAL_RADIUS = 150.0f;
 
@@ -342,7 +368,7 @@ std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusA
 void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
 
     for (ui32 i = 0; i < 6; ++i) {
-        tryAddNewRandomSector();
+        tryAddNewRandomSector(SettlementZone::ALL);
     }
     if (mCurrentVisLog) {
         mCurrentVisLog->nextStep("Plots");
@@ -354,7 +380,7 @@ void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
 
     for (ui32 i = 0; i < 32; ++i) {
         SettlementPlotRequest request;
-        request.zone = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
+        request.allowedZones = mRandomGenerator.getRandomBool() ? SettlementZone::UrbanCommercial : SettlementZone::UrbanResidential;
         SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, mSettlementEntity, mCurrentVisLog);
         if (newPlotID != INVALID_SETTLEMENT_PLOT_ID) {
             SettlementPlot& newPlot = mPlotManager->getPlot(newPlotID);

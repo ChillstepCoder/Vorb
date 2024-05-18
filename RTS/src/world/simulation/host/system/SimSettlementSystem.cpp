@@ -18,20 +18,21 @@ constexpr TimestampMs UPDATE_INTERVAL = 5000;
 SimSettlementSystem::SimSettlementSystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
     mSimContext(simContext), mRegistry(registry), mECS(ecs), mCharacterInterface(*this) {
 
-    mPlanner = std::make_unique<SettlementPlanner>(mSimContext.getWorld(), registry);
+    mPlanner = std::make_unique<SettlementPlanner>(mSimContext.getWorld(), mECS, registry);
 }
 
 SimSettlementSystem::~SimSettlementSystem() = default;
 
-void SimSettlementSystem::tick(TimestampMs currentTime, TimestampMs deltaTime) {
+void SimSettlementSystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
     mCurrentTime = currentTime;
-    mDeltaTime = deltaTime;
+    mDeltaTimeMs = deltaTimeMs;
+    mDeltaTimeSec = deltaTimeMs / MS_PER_SECOND;
 
     if (mCurrentTime >= mNextUpdateTime) {
        // LOG_DEBUG("Updating settlements {}", mCurrentTime);
         auto view = mRegistry.view<SettlementSimComponent, SettlementPlannerComponent>();
         for (entt::entity entity : view) {
-            mPlanner->updatePlanner(entity, currentTime, deltaTime);
+            mPlanner->updatePlanner(entity, currentTime, deltaTimeMs);
         }
 
         mNextUpdateTime = mCurrentTime + UPDATE_INTERVAL;
@@ -82,7 +83,6 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SettlementDistrictsComponent>(settlementEntity);
     mRegistry.emplace<SettlementPlannerComponent>(settlementEntity);
     mRegistry.emplace<SettlementJobBoardsComponent>(settlementEntity); 
-    mRegistry.emplace<SettlementStructuresComponent>(settlementEntity);
     mRegistry.emplace<SettlementWorkOrdersComponent>(settlementEntity);
     mRegistry.emplace<SettlementQuartermasterComponent>(settlementEntity);
     mRegistry.emplace<SettlementLayoutComponent>(settlementEntity);

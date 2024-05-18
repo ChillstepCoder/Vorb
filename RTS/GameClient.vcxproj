@@ -1069,6 +1069,7 @@
     <ClInclude Include="src\world\road\TerrainSurfaceGrid.h" />
     <ClInclude Include="src\world\road\TerrainSurfaceType.h" />
     <ClInclude Include="src\world\settlement\SettlementLayoutManager.h" />
+    <ClInclude Include="src\world\settlement\SettlementPlot.h" />
     <ClInclude Include="src\world\settlement\SettlementPlotManager.h" />
     <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h" />
     <ClInclude Include="src\world\settlement\SettlementZone.h" />
@@ -1111,6 +1112,7 @@
     <None Include="src\rendering\mesh\VertexType" />
     <None Include="src\text\NameStrings.inl" />
     <None Include="src\world\settlement\SettlementDebugHelpers.inl" />
+    <None Include="src\world\settlement\SettlementPlot" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "math/Random.h"
-#include "world/settlement/SettlementZone.h"
+#include "world/settlement/SettlementPlot.h"
 
 class World;
 class SettlementRoadNetwork;
@@ -44,10 +44,17 @@ public:
     VORB_NON_COPYABLE(SettlementLayoutManager);
 
     bool tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos);
-    bool tryAddNewRandomSector();
+    // Set zone to ALL for any zone, returns INVALID on fail
+    SettlementZone tryAddNewRandomSector(BitFlags<SettlementZone> allowedZones);
     bool tryAddSector(DTileCoord center, f32 desiredRadius, SettlementZone zone);
 
     void debugDraw() const;
+
+    SettlementPlot& getPlot(SettlementPlotID id);
+    const SettlementPlot& getPlot(SettlementPlotID id) const;
+
+    // Returns INVALID_SETTLEMENT_PLOT_ID on failure, owner must not be null
+    SettlementPlotID tryClaimOrGeneratePlot(SettlementPlotRequest& request, entt::entity owner, bool allowAddSector);
 
 private:
     std::pair<SettlementZone, f32> getDesiredZoneAndRadiusAtCoord(DTileCoord coord);

@@ -27,3 +27,19 @@ bool SimSettlementCharacterInterface::tryRequestHomeForSelfAndFamily(entt::entit
     // For now always return true
     return true;
 }
+
+void SimSettlementCharacterInterface::makePlotOwnedByEntity(entt::entity entity, SettlementPlotID plotId) {
+    SimOwnershipComponent& ownerCmp = mSystem.mRegistry.get_or_emplace<SimOwnershipComponent>(entity);
+    if (ownerCmp.numOwnedPlots) {
+        ++ownerCmp.numOwnedPlots;
+        std::unique_ptr<SettlementPlotID[]> newPlotsList = std::make_unique<SettlementPlotID[]>(ownerCmp.numOwnedPlots);
+        memcpy(newPlotsList.get(), ownerCmp.ownedPlots.get(), (ownerCmp.numOwnedPlots - 1) * sizeof(SettlementPlotID));
+        newPlotsList[ownerCmp.numOwnedPlots - 1] = plotId;
+        ownerCmp.ownedPlots = std::move(newPlotsList);
+    }
+    else {
+        ownerCmp.numOwnedPlots = 1;
+        ownerCmp.ownedPlots = std::make_unique<SettlementPlotID[]>(1);
+        ownerCmp.ownedPlots[0] = plotId;
+    }
+}

@@ -1062,9 +1062,6 @@
     <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\simulation\host\system\SimSettlementCharacterInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2648,13 +2645,13 @@
     <ClInclude Include="src\world\road\TerrainSurfaceType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\host\system\SimSettlementCharacterInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\simulation\host\system\SimSettlementSystem.h">
+    <ClInclude Include="src\world\simulation\host\settlement\SimSettlementSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\settlement\SettlementPlot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -2679,5 +2676,6 @@
     <None Include="src\extern\imgui-node-editor\imgui_node_editor_internal.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="src\world\settlement\SettlementPlot" />
   </ItemGroup>
 </Project>

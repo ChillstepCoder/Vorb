@@ -87,12 +87,6 @@ struct SettlementQuartermasterComponent {
     boost::container::flat_map<ItemID, ui32v2> itemCountsVsDesired;
 };
 
-
-struct SettlementStructuresComponent {
-    std::vector<entt::entity> allStructureEntities;
-
-};
-
 struct SettlementWorkOrdersComponent {
 
 };

@@ -179,17 +179,22 @@ void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionCompon
         assert(residencyCmp->settlementEntity != entt::null);
 
         // Aquire or prioritize shelter if needed
+        color4 debugColor = color4(1.0f, 0.0f, 1.0f, 1.0f);
         switch (residencyCmp->homeState) {
             case SimHomeState::Homeless:
                 mECS.getSettlementSystem().getCharacterInterface().tryRequestHomeForSelfAndFamily(entity, residencyCmp->settlementEntity);
+                debugColor = color4(1.0f, 0.0f, 0.0f, 1.0f);
                 break;
             case SimHomeState::Pending:
+                debugColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
                 // Waiting for the settlement to gift us a plot
                 break;
             case SimHomeState::Building:
+                debugColor = color4(0.0f, 1.0f, 1.0f, 1.0f);
                 // TODO: Aquire building task
                 break;
             case SimHomeState::Done:
+                debugColor = color4(1.0f, 1.0f, 1.0f, 1.0f);
                 break;
             default:
                 break;
@@ -207,6 +212,6 @@ void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionCompon
             movement.targetPosition = f32v2(residencyCmp->homePoint) + offset;
         }
 
-        DebugRenderer::drawWireQuadThreadSafe(f32v3(pos.position.x, pos.position.y, 5.0f), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), 30);
+        DebugRenderer::drawWireQuadThreadSafe(f32v3(pos.position.x, pos.position.y, 5.0f), f32v2(1.0f), debugColor, 30);
     }
 }
