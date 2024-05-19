@@ -113,6 +113,11 @@ SettlementPlotID SettlementPlotManager::tryGenerateNewPlot(SettlementPlotRequest
     return INVALID_SETTLEMENT_PLOT_ID;
 }
 
+void SettlementPlotManager::debugMarkPlotFree(SettlementPlotID id) {
+    // TODO: This is unsafe
+    mFreePlots.emplace_back(id);
+}
+
 i32v2 PLOT_EXPAND_OFFSETS[4] = {
     { 0, -1}, // SOUTH
     {-1,  0}, // WEST
@@ -178,20 +183,34 @@ bool tryExpandPlotInDir(Cartesian dir, i32AABB2& aabb, std::vector<DTileCoord>& 
             isValid = false;
             break;
         }
-        if (heightGrid.getHeightAtVert<true>(iterPos) <= -1.0f) {
+        const f32 height = heightGrid.getHeightAtVert<true>(iterPos);
+        if (height <= -1.0f) {
             // No plots on deep water (for now)
             currentRun = 0;
+            if (visLog) {
+                i32v2 tilepos = iterPos.toTilePos();
+                visLog->addWireQuad(f32v3(tilepos.x, tilepos.y, height), f32v2(1.0f), color::Blue);
+            }
             continue;
         }
         if (const DTileOwnershipData* ownerData = ownerGrid.tryGetDTileOwnerData(iterPos)) {
             // Blocked fails the whole plot attempt
             if (ownerData->ownerObjectType == DTileOwnerObjectType::ExternalRoadBlocked) {
                 isValid = false;
+                if (visLog) {
+                    i32v2 tilepos = iterPos.toTilePos();
+                    visLog->addWireQuad(f32v3(tilepos.x, tilepos.y, height), f32v2(1.0f), color::Red);
+                }
                 break;
             }
             // We can only cover empty or plot seed tiles but this is not a failure case
             if (!(ownerData->ownerObjectType == DTileOwnerObjectType::None || ownerData->ownerObjectType == DTileOwnerObjectType::RoadPlotSeed)) {
                 currentRun = 0;
+
+                if (visLog) {
+                    i32v2 tilepos = iterPos.toTilePos();
+                    visLog->addWireQuad(f32v3(tilepos.x, tilepos.y, height), f32v2(1.0f), color::Gray);
+                }
                 continue;
             }
         }
@@ -200,6 +219,10 @@ bool tryExpandPlotInDir(Cartesian dir, i32AABB2& aabb, std::vector<DTileCoord>& 
             bestRun = currentRun;
         }
         validPoints.emplace_back(iterPos);
+        if (visLog) {
+            i32v2 tilepos = iterPos.toTilePos();
+            visLog->addWireQuad(f32v3(tilepos.x, tilepos.y, height), f32v2(1.0f), color4(0, 200, 0, 128));
+        }
         // Step
         iterPos.v += iterateOffset;
     }

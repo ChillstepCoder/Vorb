@@ -26,6 +26,7 @@ class RandomGenerator;
 
 // Can range from a simple hamlet to a sprawling metropolis
 
+
 // Always active even if player is in a full chunk
 struct SimPlayer {
     f32v3 mLastKnownPosition;

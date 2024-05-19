@@ -6,6 +6,8 @@
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/SimImmigrationManager.h"
 
+#include "options/DebugOptions.h"
+
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
 #include "math/Random.h"
@@ -85,7 +87,7 @@ void SimThread::simThreadFunc() {
 }
 
 void SimThread::tickSim(SimThreadState state) {
-    mTimestepManager.setTargetTimestepSec(mTargetTickRateMs / MS_PER_SECOND);
+    mTimestepManager.setTargetTimestepSec((mTargetTickRateMs / MS_PER_SECOND) * sDebugOptions.mGlobalSimTimestepMult);
 
     {
         f64 sleepSec = 0.0f;
@@ -102,7 +104,7 @@ void SimThread::tickSim(SimThreadState state) {
         case SimThreadState::HistorySim:
         case SimThreadState::GameSim:
             // TODO: Grab the world time instead of incrementing sim time?
-            mHostSimContext.mSimTime += ui64(mTargetTickRateMs * mTimeScale);
+            mHostSimContext.mSimTime += ui64(mTargetTickRateMs * mTimeScale * sDebugOptions.mGlobalSimTimescale);
             break;
         default:
             assert(mTimeScale == 1.0f);

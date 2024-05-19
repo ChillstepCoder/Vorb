@@ -51,6 +51,14 @@ public:
 
     // DEBUGGING
     void debugRender(f32v3 cameraPos) const;
+    
+    mutable std::mutex mDebugDrawMutex;
+    struct DebugDrawSimAgentData {
+        f32v3 pos;
+        color4 color;
+    };
+    mutable std::vector<DebugDrawSimAgentData> mDebugDrawAgents[2]; // Double buffer
+    void addDebugDrawData(DebugDrawSimAgentData data) { ASSERT_SIM_THREAD(); mDebugDrawAgents[1].emplace_back(data); }
 private:
     EntityFullActivateData onFullActivateEntity(entt::entity entity);
     // Can happen if a chunk is deactivated after we send off entities to be activated

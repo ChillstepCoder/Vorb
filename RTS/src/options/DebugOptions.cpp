@@ -90,6 +90,10 @@ DebugOptions::DebugOptions() :
     mSmudgePaintNoiseAmplitude(4.05f),
     mSmudgePaintNoiseDisable(false),
     mSmudgePaintNoiseDebug(false),
+    // Sim
+    mGlobalSimTimescale(1.0f),
+    mGlobalSimTimestepMult(1.0f),
+    mDebugSimCharacters(true),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),

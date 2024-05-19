@@ -20,6 +20,7 @@
 #include "world/World.h"
 
 #include "options/DebugOptions.h"
+#include "debugging/DebugRenderer.h"
 
 
 constexpr ui32 ENTITY_LIST_RESERVE_COUNT = 64;
@@ -42,6 +43,8 @@ SimECS::~SimECS() {
 
 void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     ASSERT_SIM_THREAD();
+
+    mDebugDrawAgents[1].clear();
 
     mCurrentTickTimestamp = currentTimestamp;
     mTimeDelta = currentTimestamp - mLastTickTimestamp;
@@ -73,6 +76,10 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     }
     mFullActivatedEntitiesThisFrame.clear();
 
+    {
+        std::lock_guard lock(mDebugDrawMutex);
+        mDebugDrawAgents[1].swap(mDebugDrawAgents[0]);
+    }
     debugRenderInternal();
 }
 
@@ -282,6 +289,7 @@ bool SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chunk
 }
 
 void SimECS::debugRender(f32v3 cameraPos) const {
+    ASSERT_RENDER_THREAD();
     if (sDebugOptions.mShowSettlementDebug) {
         std::lock_guard lock(mDebugRenderMutex);
         mDebugCameraPos = cameraPos;
@@ -289,6 +297,18 @@ void SimECS::debugRender(f32v3 cameraPos) const {
     else {
         std::lock_guard lock(mDebugRenderMutex);
         mDebugCameraPos.x = FLT_MAX;
+    }
+
+    // Simulation character debug
+    if (sDebugOptions.mDebugSimCharacters) { // NOT THREAD SAFE BOOL ACCESS
+        std::vector<DebugDrawSimAgentData> drawAgents;
+        {
+            std::lock_guard lock(mDebugDrawMutex);
+            drawAgents = mDebugDrawAgents[0];
+        }
+        for (DebugDrawSimAgentData drawData : drawAgents) {
+            DebugRenderer::drawWireQuad(drawData.pos - f32v3(0.4f, 0.4f, 0.0f), f32v2(0.8f), drawData.color);
+        }
     }
 }
 

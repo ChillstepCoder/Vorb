@@ -51,6 +51,8 @@ public:
     SettlementPlotID tryClaimOrGeneratePlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog);
     // Returns INVALID_SETTLEMENT_PLOT_ID on failure, owner can be null
     SettlementPlotID tryGenerateNewPlot(SettlementPlotRequest request, entt::entity owner, OPT VisualLog* visLog);
+
+    void debugMarkPlotFree(SettlementPlotID id);
     
     const std::vector<SettlementPlot>& getPlots() const { return mPlots; }
 

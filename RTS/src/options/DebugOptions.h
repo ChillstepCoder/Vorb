@@ -93,6 +93,10 @@ struct DebugOptions {
     f32 mSmudgePaintNoiseAmplitude;
     bool mSmudgePaintNoiseDisable;
     bool mSmudgePaintNoiseDebug;
+    // Simulation
+    f32 mGlobalSimTimescale;
+    f32 mGlobalSimTimestepMult;
+    bool mDebugSimCharacters;
     // Toggles
     bool mPauseFrustum;
     bool mWireframe;

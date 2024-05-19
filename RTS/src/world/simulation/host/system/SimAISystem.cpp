@@ -12,6 +12,7 @@
 
 #include "math/Random.h"
 
+#include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
 
 SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry& registry) :
@@ -215,6 +216,11 @@ void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionCompon
             movement.targetPosition = f32v2(residencyCmp->homePoint) + offset;
         }
 
-        DebugRenderer::drawWireQuadThreadSafe(f32v3(pos.position.x, pos.position.y, 5.0f), f32v2(1.0f), debugColor, 30);
+        if (sDebugOptions.mDebugSimCharacters) {
+            SimECS::DebugDrawSimAgentData debugData;
+            debugData.pos = f32v3(pos.position.x, pos.position.y, 5.0f);
+            debugData.color = debugColor;
+            mECS.addDebugDrawData(debugData);
+        }
     }
 }
