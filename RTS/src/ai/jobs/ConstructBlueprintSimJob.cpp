@@ -3,7 +3,8 @@
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimJob, 256);
 
-ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint, entt::registry& simRegistry, entt::entity simJobOwner) {
+ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SettlementPlotID plotId, SimECS& simEcs, entt::entity simJobOwner)
+    : ISimJob(simJobOwner), mBlueprint(blueprint), mPlotId(plotId), mSimEcs(simEcs) {
     ASSERT_SIM_THREAD();
 }
 

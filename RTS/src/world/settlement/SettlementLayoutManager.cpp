@@ -26,7 +26,12 @@ SettlementLayoutManager::~SettlementLayoutManager() = default;
 SettlementLayoutManager::SettlementLayoutManager(SettlementLayoutManager&& o) = default;
 SettlementLayoutManager& SettlementLayoutManager::operator=(SettlementLayoutManager&& o) = default;
 
-constexpr f32 INITIAL_GOVERNMENT_RADIUS = 60.f;
+constexpr f32 RURAL_SPAWN_RADIUS = 140.0f;
+constexpr f32 INITIAL_GOVERNMENT_RADIUS = 40.f;
+constexpr f32 RURAL_SPACING = 20.0f;
+constexpr f32 URBAN_SPACING = 7.0f;
+constexpr f32 COMMERCIAL_FREQ = M_PIF * 3.0f; // USE WHOLE NUMBER
+constexpr f32 COMMERCIAL_CUTOFF = -0.1f; // Larger number = more residential
 
 bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settlement, DTileCoord dTilePos) {
 
@@ -74,7 +79,7 @@ bool SettlementLayoutManager::tryInitAtWorldPos(World& world, entt::entity settl
         return false;
     }
 
-    debugInitSettlementPartiallyMade();
+    //debugInitSettlementPartiallyMade();
 
     if (mCurrentVisLog) {
         visLog->finish();
@@ -345,24 +350,21 @@ SettlementPlotID SettlementLayoutManager::tryClaimOrGeneratePlot(SettlementPlotR
 }
 
 std::pair<SettlementZone, f32> SettlementLayoutManager::getDesiredZoneAndRadiusAtCoord(DTileCoord coord) {
-    constexpr f32 RURAL_RADIUS = 150.0f;
 
     const f32v2 offsetFromRoot((coord - mRootPos).v);
     const f32 offsetLength = glm::length(offsetFromRoot);
     // Beyond certain radius always rural
-    if (offsetLength > RURAL_RADIUS) {
-        return std::make_pair(SettlementZone::Rural, 40.f);
+    if (offsetLength > RURAL_SPAWN_RADIUS) {
+        return std::make_pair(SettlementZone::Rural, RURAL_SPACING);
     }
 
     const f32v2 offsetNormal = offsetFromRoot / offsetLength;
     const f32 dot = glm::dot(offsetNormal, mSettlementOrientation);
     // Oscillate between residential and commercial in a circle
-    constexpr f32 FREQ = M_PIF * 3.0f; // USE WHOLE NUMBER
-    constexpr f32 COMMERCIAL_CUTOFF = -0.1f; // Larger number = more residential
-    if (cos((dot + 1.0f) * FREQ) >= COMMERCIAL_CUTOFF) {
-        return std::make_pair(SettlementZone::UrbanResidential, 16.0f);
+    if (cos((dot + 1.0f) * COMMERCIAL_FREQ) >= COMMERCIAL_CUTOFF) {
+        return std::make_pair(SettlementZone::UrbanResidential, URBAN_SPACING);
     }
-    return std::make_pair(SettlementZone::UrbanCommercial, 16.0f);
+    return std::make_pair(SettlementZone::UrbanCommercial, URBAN_SPACING);
 }
 
 void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
@@ -378,7 +380,7 @@ void SettlementLayoutManager::debugInitSettlementPartiallyMade() {
     BuildingRepository& buildingRepo = BuildingRepository::get();
     const BuildingDef& houseDef = buildingRepo.getLoadedOrUnloadedAsset(CStrToken("small_house"));
 
-    for (ui32 i = 0; i < 512; ++i) {
+    for (ui32 i = 0; i < 32; ++i) {
         SettlementPlotRequest request;
         request.allowedZones = mRandomGenerator.getRandomBool() ? SettlementZone::Rural : SettlementZone::UrbanResidential;
         SettlementPlotID newPlotID = mPlotManager->tryGenerateNewPlot(request, mSettlementEntity, mCurrentVisLog);

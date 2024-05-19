@@ -10,6 +10,8 @@
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/IHeightmapGrid.h"
 
+#include "ai/jobs/ConstructBlueprintSimJob.h"
+
 #include "building/BuildingRepository.h"
 #include "building/BuildingBlueprintGenerator.h"
 
@@ -106,7 +108,13 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
             SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
             const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
+            // TODO: Correct cartesian!
             newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
+            if (newPlot.activeBlueprint) {
+                // TODO: Shared code with other branch
+                fix;
+                std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, );
+            }
         }
     }
     else if (plannerCmp.singleCharactersPendingHomes.size()) {
@@ -127,7 +135,10 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
             SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
             const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
+            // TODO: Correct cartesian!
             newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
         }
     }
+
+
 }

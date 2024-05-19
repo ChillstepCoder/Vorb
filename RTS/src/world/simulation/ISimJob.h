@@ -4,6 +4,7 @@
 class ISimJob {
 public:
     ISimJob() = default;
+    ISimJob(entt::entity jobOwner) : mJobOwner(jobOwner) {}
     virtual ~ISimJob() = default;
 
     virtual bool tryAquireNextTaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) = 0;
