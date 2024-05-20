@@ -20,11 +20,6 @@ enum class SimTaskPriority : ui8 {
     Critical // Task is life or death
 };
 
-struct SimTaskHandle {
-    SimTaskID taskId = INVALID_TASK_ID;
-    entt::entity taskBoss = entt::null; // If null, we are the boss of this task
-};
-
 enum class SimTaskType : ui8 {
     Idle,
 

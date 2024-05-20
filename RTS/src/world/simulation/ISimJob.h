@@ -1,5 +1,7 @@
 #pragma once
 
+class SimTaskHandle;
+
 // Jobs are only created on sim thread
 class ISimJob {
 public:

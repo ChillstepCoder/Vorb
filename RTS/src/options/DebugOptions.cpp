@@ -44,7 +44,7 @@ DebugOptions::DebugOptions() :
     mTerrainBlendMult(0.037f),
     mTerrainDetailTextureStrength(1.0f),
     mTerrainCliffBlendHardness(100.0),
-    mTerrainCliffAmount(0.284),
+    mTerrainCliffAmount(0.55),
     mTerrainCliffZMult(1.5),
     mBiomeBlendScale(1.0f),
     mBiomeBlendFrequency(1.0f),

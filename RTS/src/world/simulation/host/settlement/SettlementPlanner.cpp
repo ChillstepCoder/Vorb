@@ -97,18 +97,13 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
         if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
             settlementSystem.getCharacterInterface().makePlotOwnedByEntity(characters[0], plotId);
 
-            
-
-            // This is a slow operation but this array is small so its fine
-            plannerCmp.familiesPendingHomes.erase(plannerCmp.familiesPendingHomes.begin());
-
             SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
             const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
             // TODO: Correct cartesian!
             newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
             if (newPlot.activeBlueprint) {
                 std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, plotId, mEcs, characters[0]);
-                SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent&>(characters[0]);
+                SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
 
                 // Instruct all characters to build this house
                 for (int i = 0; i < numCharacters; ++i) {

@@ -25,6 +25,7 @@ SimTaskHandle& SimTaskHandle::operator=(SimTaskHandle&& other) noexcept {
 
     // Disables cleanup
     other.mIsJob = false;
+    return *this;
 }
 
 SimTaskHandle::~SimTaskHandle() {

@@ -14,9 +14,9 @@ public:
 
     POOLED_ALLOC_DECL();
 
-    bool isJob() const { return isJob; }
-    ISimJob* getJob() const { assert(isJob); return mJob; }
-    ISimTask* getTask() const { assert(!isJob); return mTask; }
+    bool isJob() const { return mIsJob; }
+    ISimJob* getJob() const { assert(mIsJob); return mJob; }
+    ISimTask* getTask() const { assert(!mIsJob); return mTask; }
     i16 getPriority() const { return mPriority; }
     void setPriority(i16 p) { mPriority = p; }
 
