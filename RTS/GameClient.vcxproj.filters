@@ -1071,6 +1071,9 @@
     <ClCompile Include="src\ai\jobs\ConstructBlueprintSimJob.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2661,6 +2664,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\jobs\ConstructBlueprintSimJob.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai\jobs\SimTaskHandle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

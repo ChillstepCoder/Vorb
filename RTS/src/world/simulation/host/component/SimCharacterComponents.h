@@ -3,6 +3,7 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/circular_buffer.hpp>
 #include "world/simulation/ISimTask.h"
+#include "ai/jobs/SimTaskHandle.h"
 #include "ecs/component/SimEntityTypeComponent.h"
 
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
@@ -54,7 +55,7 @@ struct SimEmploymentComponent {
 enum class SimBrainComponentFlags : ui8 {
     IsFollowingCharacterGroup = BIT(0),
     IsCharacterGroupLeader = BIT(1),
-    HasTask = BIT(2),
+    HasTaskOrJob = BIT(2),
     InCombat = BIT(3),
     TERM
 };
@@ -72,13 +73,13 @@ struct SimMovementComponent {
     f32v2 targetPosition = f32v2(-1.0f);
 };
 
-constexpr i32 MAX_SIM_TASKS = 3;
+constexpr i32 MAX_SIM_TASK_QUEUE_SIZE = 8;
 struct SimTaskQueueComponent {
-    ISimTask* tasks[MAX_SIM_TASKS] = {};
-    ui8 firstTask = 0;
-    ui8 numTasks = 0;
+    // Provides stable pointers to task handles
+    boost::circular_buffer<SimTaskHandle> taskQueue = boost::circular_buffer<SimTaskHandle>(MAX_SIM_TASK_QUEUE_SIZE); // First is the active one
+    ISimTask* activeTask = nullptr;
 };
-static_assert(sizeof(SimTaskQueueComponent) == 32, "Keep small for cache efficiency");
+static_assert(sizeof(SimTaskQueueComponent) == 48, "Keep small for cache efficiency");
 
 struct SimNeedsComponent {
     f32 hunger = 0.0f; // [0, 1>, 1 is starving. Can go beyond 1.
@@ -92,14 +93,15 @@ struct SimFamilyMemberComponent {
     FamilyID familyId = INVALID_FAMILY_ID;
 };
 
-// Represents a list of tasks, and who is working on them for us. Does not include tasks we are doing for ourselves
+// Tracks jobs that need to be done in order of priority
 struct SimJobBossComponent {
-    boost::container::flat_map<SimTaskID, SimTaskData> activeTasks;
+    std::vector<std::unique_ptr<ISimJob>> activeJobs;
 };
 
 enum class SimHomeState : ui8 {
     Homeless,
     Pending,
+    NeedsBlueprint,
     Building,
     Done
 };

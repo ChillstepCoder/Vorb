@@ -11,6 +11,7 @@
 #include "world/IHeightmapGrid.h"
 
 #include "ai/jobs/ConstructBlueprintSimJob.h"
+#include "ai/jobs/SimTaskHandle.h"
 
 #include "building/BuildingRepository.h"
 #include "building/BuildingBlueprintGenerator.h"
@@ -85,23 +86,18 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
     SettlementPlannerComponent& plannerCmp = mRegistry.get<SettlementPlannerComponent>(settlementEntity);
     SettlementLayoutComponent& layoutCmp = mRegistry.get<SettlementLayoutComponent>(settlementEntity);
-    // Prioritize families
-    if (plannerCmp.familiesPendingHomes.size()) {
-        FamilyID pendingFamily = plannerCmp.familiesPendingHomes[0];
-        SimFamily& family = aiSystem.getFamily(pendingFamily);
 
+    // Helper
+    auto makeHomePlotForCharacters = [&](entt::entity* characters, i32 numCharacters) -> bool {
         // TODO: Preferences
         SettlementPlotRequest request;
         request.allowedZones = BitFlags<SettlementZone>(SettlementZone::UrbanResidential, SettlementZone::Rural);
 
-        SettlementPlotID plotId = layoutCmp.manager.tryClaimOrGeneratePlot(request, family.characters[0], true);
+        SettlementPlotID plotId = layoutCmp.manager.tryClaimOrGeneratePlot(request, characters[0], true);
         if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
-            settlementSystem.getCharacterInterface().makePlotOwnedByEntity(family.characters[0], plotId);
+            settlementSystem.getCharacterInterface().makePlotOwnedByEntity(characters[0], plotId);
 
-            // Go build your home!
-            for (int i = 0; i < family.numCharacters; ++i) {
-                mRegistry.get<SimResidentComponent>(family.characters[i]).homeState = SimHomeState::Building;
-            }
+            
 
             // This is a slow operation but this array is small so its fine
             plannerCmp.familiesPendingHomes.erase(plannerCmp.familiesPendingHomes.begin());
@@ -111,34 +107,52 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
             // TODO: Correct cartesian!
             newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
             if (newPlot.activeBlueprint) {
-                // TODO: Shared code with other branch
-                fix;
-                std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, );
+                std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, plotId, mEcs, characters[0]);
+                SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent&>(characters[0]);
+
+                // Instruct all characters to build this house
+                for (int i = 0; i < numCharacters; ++i) {
+                    mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::Building;
+                    // TODO: Handle switching jobs
+                    SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(characters[i]);
+                    if (taskQueue.taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
+                        taskQueue.taskQueue.push_back(SimTaskHandle(newConstructJob.get(), characters[i]));
+                    }
+                }
+
+                // Track job
+                jobBossCmp.activeJobs.emplace_back(std::move(newConstructJob));
+
             }
+            else {
+                for (int i = 0; i < numCharacters; ++i) {
+                    // TODO: Handle this failure case
+                    mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::NeedsBlueprint;
+                }
+            }
+            return true;
+        }
+        return false;
+    };
+
+    // Prioritize families
+    if (plannerCmp.familiesPendingHomes.size()) {
+        FamilyID pendingFamily = plannerCmp.familiesPendingHomes[0];
+        SimFamily& family = aiSystem.getFamily(pendingFamily);
+
+        if (makeHomePlotForCharacters(family.characters.get(), family.numCharacters)) {
+
+            // This is a slow operation but this array is small so its fine
+            plannerCmp.familiesPendingHomes.erase(plannerCmp.familiesPendingHomes.begin());
         }
     }
     else if (plannerCmp.singleCharactersPendingHomes.size()) {
         entt::entity character = plannerCmp.singleCharactersPendingHomes[0];
-        // TODO: Preferences
-        SettlementPlotRequest request;
-        request.allowedZones = BitFlags<SettlementZone>(SettlementZone::UrbanResidential, SettlementZone::Rural);
 
-        SettlementPlotID plotId = layoutCmp.manager.tryClaimOrGeneratePlot(request, character, true);
-        if (plotId != INVALID_SETTLEMENT_PLOT_ID) {
-            settlementSystem.getCharacterInterface().makePlotOwnedByEntity(character, plotId);
-
-            // Go build your home!
-            mRegistry.get<SimResidentComponent>(character).homeState = SimHomeState::Building;
+        if (makeHomePlotForCharacters(&character, 1)) {
 
             // This is a slow operation but this array is small so its fine
             plannerCmp.singleCharactersPendingHomes.erase(plannerCmp.singleCharactersPendingHomes.begin());
-
-            SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
-            const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
-            // TODO: Correct cartesian!
-            newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
         }
     }
-
-
 }
