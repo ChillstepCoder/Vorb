@@ -2,6 +2,7 @@
 
 class HostSimContext;
 class World;
+class SimTaskHandle;
 struct SimTaskData;
 
 typedef void(*SimTaskTickFunction)(HostSimContext& context, SimTaskData& task, entt::entity owner, TimestampMs currentTime, bool wasCancelled);
@@ -9,16 +10,16 @@ typedef void(*SimTaskTickFunction)(HostSimContext& context, SimTaskData& task, e
 typedef ui32 SimTaskID;
 constexpr ui32 INVALID_TASK_ID = UINT32_MAX;
 
-enum class SimTaskPriority : ui8 {
-    None, // No task
-    Idle,
-    VeryLow,
-    Low,
-    Medium,
-    High,
-    VeryHigh,
-    Critical // Task is life or death
-};
+//enum class SimTaskPriority : ui8 {
+//    None, // No task
+//    Idle,
+//    VeryLow,
+//    Low,
+//    Medium,
+//    High,
+//    VeryHigh,
+//    Critical // Task is life or death
+//};
 
 enum class SimTaskType : ui8 {
     Idle,
@@ -33,9 +34,9 @@ enum class SimTaskFlags : ui8 {
 
 
 enum class SimTaskTickResult {
-    IN_PROGRESS,
-    SUCCESS,
-    FAIL,
+    InProgress,
+    Success,
+    Fail,
     COUNT
 };
 
@@ -43,39 +44,27 @@ class ISimJob;
 
 class ISimTask {
 public:
-    ISimTask() = delete;
+    ISimTask() = default;
     virtual ~ISimTask() = default;
     // Return true when task is done
+    virtual void onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {};
+    virtual void onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {};
     virtual SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) = 0;
     virtual SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent) = 0;
 
-    std::unique_ptr<ISimTask>& getNextTask() { return mNextTask; }
-    void setNextTask(std::unique_ptr<ISimTask>&& nextTask) { assert(!mNextTask); mNextTask = std::move(nextTask); }
+    // Implemented by ISimTaskChain
+    virtual std::unique_ptr<ISimTask>* getNextTask() { return nullptr; }
+    virtual void setNextTask(std::unique_ptr<ISimTask>&& nextTask) { panic("Tried to setNextTask on a non ISimTaskChain of type {}", getTaskName()); }
 
     virtual const char* getTaskName() const = 0;
+};
+
+class ISimTaskChain : public ISimTask {
+public:
+    virtual std::unique_ptr<ISimTask>* getNextTask() override { return &mNextTask; }
+    virtual void setNextTask(std::unique_ptr<ISimTask>&& nextTask) { assert(!mNextTask); mNextTask = std::move(nextTask); }
 protected:
     std::unique_ptr<ISimTask> mNextTask = nullptr;
-    ISimJob* mParentJob = nullptr; // Optional
-    SimTaskPriority mPriority = SimTaskPriority::Idle;
 };
 
 typedef std::unique_ptr<ISimTask> ISimTaskPtr;
-//
-//struct SimTaskData {
-//    SimTaskType taskType = SimTaskType::Idle;
-//    SimTaskPriority priority = SimTaskPriority::Medium;
-//    ui8 currentStep = 0;
-//    ui8 lastStep = 0;
-//    i32v2 stepStartWorldPos;
-//    i32v2 stepEndWorldPos;
-//    TimestampMs taskStartTime;
-//    TimestampMs lastTickTime;
-//    TimestampMs estimatedEndTime;
-//    entt::entity taskWorker;
-//    bool isFullySimulated = false;
-//    BitFlags<SimTaskFlags> flags;
-//    ui8 padding[2];
-//    SimTaskTickFunction tickFunction = nullptr;
-//    void* taskSpecificData = nullptr;
-//};
-//SIZER(SimTaskData);

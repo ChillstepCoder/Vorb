@@ -8,12 +8,21 @@ ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint,
     ASSERT_SIM_THREAD();
 }
 
-bool ConstructBlueprintSimJob::tryAquireNextTaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter)
+std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) {
+    
+}
+
+std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool ConstructBlueprintSimJob::tryAquireNextTaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter)
+void ConstructBlueprintSimJob::onAbortTask(ISimTask& task)
 {
-    throw std::logic_error("The method or operation is not implemented.");
+
+}
+
+void ConstructBlueprintSimJob::onCompleteTask(ISimTask& task)
+{
+
 }

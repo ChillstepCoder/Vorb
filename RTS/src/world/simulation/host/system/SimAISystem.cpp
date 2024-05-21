@@ -30,12 +30,9 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
     updateCharacterGroups();
   
     { // Update all brains who aren't followers (Complex Logic)
-        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, SimMovementComponent>(entt::exclude<CharacterGroupFollowerComponent>);
+        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, SimMovementComponent, SimTaskQueueComponent>(entt::exclude<CharacterGroupFollowerComponent>);
         for (auto entity : view) {
-            SimBrainComponent& brain = view.get<SimBrainComponent>(entity);
-            SimPositionComponent& pos = view.get<SimPositionComponent>(entity);
-            SimMovementComponent& movement = view.get<SimMovementComponent>(entity);
-            updateSimCharacter(brain, pos, movement, entity);
+            updateSimCharacter(entity);
         }
     }
 }
@@ -126,16 +123,6 @@ void SimAISystem::updateCharacterGroups() {
     };
 }
 
-void SimAISystem::updateSimTask(entt::entity entity, SimBrainComponent& brain) {
-    SimTaskQueueComponent& taskCmp = mRegistry.get<SimTaskQueueComponent>(entity);
-    /* assert(taskCmp.numTasks);
-     SimTaskTickResult result = taskCmp.taskQueue.front()->tickSim(mWorld, mRegistry, entity);
-     if (result != SimTaskTickResult::IN_PROGRESS) {
-         assert(false);
-     }*/
-}
-
-
 void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos) {
     // Snap to leader position
     CharacterGroupFollowerComponent& followCmp = mRegistry.get<CharacterGroupFollowerComponent>(entity);
@@ -151,7 +138,11 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
     setEntityPosition(entity, groupPosition.getPosition() - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f));
 }
 
-void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionComponent& pos, SimMovementComponent& movement, entt::entity entity) {
+void SimAISystem::updateSimCharacter(entt::entity entity) {
+
+    SimBrainComponent& brain = mRegistry.get<SimBrainComponent>(entity);
+    SimPositionComponent& pos = mRegistry.get<SimPositionComponent>(entity);
+    SimMovementComponent& movement = mRegistry.get<SimMovementComponent>(entity);
 
     // Handle move orders
     if (movement.targetPosition.x >= 0.0f) {
@@ -174,8 +165,9 @@ void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionCompon
         }
     }
 
-    if (brain.flags.isBitSet(SimBrainComponentFlags::HasTaskOrJob)) {
-        updateSimTask(entity, brain);
+    SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(entity);
+    if (taskQueue.taskQueue.size()) {
+        updateSimTask(entity, taskQueue);
     }
     else {
         SimResidentComponent* residencyCmp = mRegistry.try_get<SimResidentComponent>(entity);
@@ -223,4 +215,35 @@ void SimAISystem::updateSimCharacter(SimBrainComponent& brain, SimPositionCompon
             mECS.addDebugDrawData(debugData);
         }
     }
+}
+
+void SimAISystem::updateSimTask(entt::entity entity, SimTaskQueueComponent& taskCmp) {
+    assert(taskCmp.taskQueue.size());
+    // Aquire task if needed
+    if (!taskCmp.activeTask) {
+        for (auto& task : taskCmp.taskQueue) {
+            taskCmp.activeTask = task.getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
+            if (taskCmp.activeTask) break;
+        }
+    }
+
+    // Operate on task
+    if (taskCmp.activeTask) {
+        SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity);
+        if (tickResult != SimTaskTickResult::InProgress) {
+            taskCmp.activeTask = nullptr;
+            if (tickResult == SimTaskTickResult::Success) {
+                taskCmp.taskQueue.front().
+            }
+            else {
+
+            }
+            assert(e_count(SimTaskTickResult) == 3);
+        }
+    }
+    /* assert(taskCmp.numTasks);
+     SimTaskTickResult result = taskCmp.taskQueue.front()->tickSim(mWorld, mRegistry, entity);
+     if (result != SimTaskTickResult::IN_PROGRESS) {
+         assert(false);
+     }*/
 }

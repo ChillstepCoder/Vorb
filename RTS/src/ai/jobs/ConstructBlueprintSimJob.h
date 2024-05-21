@@ -4,6 +4,7 @@
 #include "building/BuildingBlueprint.h"
 
 class SimECS;
+class ISimTask;
 
 class ConstructBlueprintSimJob : public ISimJob {
 public:
@@ -12,10 +13,14 @@ public:
 
 	POOLED_ALLOC_DECL(ConstructBlueprintSimJob);
 
-	bool tryAquireNextTaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) override;
-	bool tryAquireNextTaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
+
+	void onAbortTask(ISimTask& task) override;
+	void onCompleteTask(ISimTask& task) override;
 
 private:
+
 	BuildingBlueprint& mBlueprint;
 	SettlementPlotID mPlotId;
 	SimECS& mSimEcs;

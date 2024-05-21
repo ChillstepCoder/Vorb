@@ -2,10 +2,19 @@
 
 class ISimTask;
 class ISimJob;
+class World;
+
+enum class SimTaskStatus {
+    Idle,
+    Running,
+    Finished,
+    COUNT
+};
 
 class SimTaskHandle {
+    friend class SimAISystem; // TODO: Interface wrapper to expose only the necessary functionality
 public:
-    SimTaskHandle(ISimTask* task, entt::entity owner) : mTask(task), mIsJob(false), mOwner(owner) {}
+    SimTaskHandle(World& world, entt::registry& simRegistry, ISimTask* task, entt::entity owner);
     SimTaskHandle(ISimJob* job, entt::entity owner);
     ~SimTaskHandle();
 
@@ -14,6 +23,13 @@ public:
 
     POOLED_ALLOC_DECL();
 
+    SimTaskStatus tickSimThread(World& world, entt::registry& simRegistry, entt::entity simCharacter);
+    SimTaskStatus tickFull(World& world, entt::registry& fullRegistry, entt::entity fullCharacter);
+
+    // Will either return the task, or will return a task from the job, if possible
+    ISimTask* getOrAquireActiveTaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter);
+    ISimTask* getOrAquireActiveTaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter);
+
     bool isJob() const { return mIsJob; }
     ISimJob* getJob() const { assert(mIsJob); return mJob; }
     ISimTask* getTask() const { assert(!mIsJob); return mTask; }
@@ -21,10 +37,16 @@ public:
     void setPriority(i16 p) { mPriority = p; }
 
 private:
+
+    void onActiveSubtaskGoToNextTask(ISimTask* task);
+    void onActiveSubtaskFinished(ISimTask* task);
+    void onActiveSubtaskAborted(ISimTask* task);
+
     union {
         ISimTask* mTask;
         ISimJob* mJob;
     };
+    std::unique_ptr<ISimTask> mActiveJobSubtask;
     i16 mPriority = 10;
     bool mIsJob = false;
     entt::entity mOwner;

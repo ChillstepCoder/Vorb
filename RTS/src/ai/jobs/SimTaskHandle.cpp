@@ -2,8 +2,14 @@
 #include "SimTaskHandle.h"
 
 #include "world/simulation/ISimJob.h"
+#include "world/simulation/ISimTask.h"
 
 POOLED_ALLOC_DEF_NOT_THREADSAFE(SimTaskHandle, 256, ASSERT_SIM_THREAD());
+
+SimTaskHandle::SimTaskHandle(World& world, entt::registry& simRegistry, ISimTask* task, entt::entity owner) : mTask(task), mIsJob(false), mOwner(owner) {
+    ASSERT_SIM_THREAD();
+    mTask->onBeginSim(world, simRegistry, owner);
+}
 
 SimTaskHandle::SimTaskHandle(ISimJob* job, entt::entity owner) : mJob(job), mIsJob(true), mOwner(owner) {
     mJob->addTaskHandle(this);
@@ -16,6 +22,83 @@ SimTaskHandle::SimTaskHandle(SimTaskHandle&& other) noexcept {
 
     // Disables cleanup
     other.mIsJob = false;
+}
+
+SimTaskStatus SimTaskHandle::tickSimThread(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
+
+    // TODO: Only need to do this if we dont have active task?
+    if (mIsJob) {
+        if (mActiveJobSubtask) {
+            SimTaskTickResult result = mActiveJobSubtask->tickSim(world, simRegistry, simCharacter);
+        }
+        else {
+            mActiveJobSubtask = mJob->tryAquireNextSubtaskForSimCharacter(simRegistry, simCharacter);
+            if (mActiveJobSubtask) {
+                mActiveJobSubtask->onBeginSim(world, simRegistry, simCharacter);
+                SimTaskTickResult result = mActiveJobSubtask->tickSim(world, simRegistry, simCharacter);
+            }
+        }
+    }
+    x;
+}
+
+// TODO: DELETEME?
+ISimTask* SimTaskHandle::getOrAquireActiveTaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
+    ASSERT_SIM_THREAD();
+    if (mIsJob) {
+        if (mActiveJobSubtask) {
+            return mActiveJobSubtask.get();
+        }
+        mActiveJobSubtask = mJob->tryAquireNextSubtaskForSimCharacter(simRegistry, simCharacter);
+        if (mActiveJobSubtask) {
+            mActiveJobSubtask->onBeginSim(world, simRegistry, simCharacter);
+            return mActiveJobSubtask.get();
+        }
+        return nullptr;
+    }
+    else {
+        return mTask;
+    }
+}
+
+ISimTask* SimTaskHandle::getOrAquireActiveTaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter) {
+    ASSERT_GAME_THREAD();
+    panic("getOrAquireActiveTaskForFullCharacter NOT IMPLEMENTED");
+}
+
+
+void SimTaskHandle::onActiveSubtaskGoToNextTask(ISimTask* task) {
+    assert(task == mActiveJobSubtask.get());
+    assert(task->getNextTask());
+    // Making a copy just in case destructor runs first on activeJobSubtask copy
+    auto subtaskCopy = std::move(task->getNextTask());
+    mActiveJobSubtask = std::move(*subtaskCopy);
+}
+
+void SimTaskHandle::onActiveSubtaskFinished(ISimTask* task) {
+    assert(!task->getNextTask());
+
+    if (mIsJob) {
+        assert(task == mActiveJobSubtask.get());
+        mJob->onCompleteTask(*task);
+        mActiveJobSubtask.reset();
+    }
+    else {
+        assert(task == mTask);
+        mTask = nullptr;
+        assert(false); // This feels wrong, wheres the ownership of the task object?? Should we just use mActiveJobSubtask?
+    }
+}
+
+void SimTaskHandle::onActiveSubtaskAborted(ISimTask* task) {
+    if (mIsJob) {
+        assert(task == mActiveJobSubtask.get());
+        mJob->onAbortTask(*task);
+        mActiveJobSubtask.reset();
+    }
+    else {
+        mTask = nullptr;
+    }
 }
 
 SimTaskHandle& SimTaskHandle::operator=(SimTaskHandle&& other) noexcept {

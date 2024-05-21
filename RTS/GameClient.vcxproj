@@ -223,6 +223,7 @@
     <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp" />
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\ai\tasks\MoveToPointSimTask.cpp" />
     <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
     <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\building\Building.cpp" />
@@ -568,6 +569,8 @@
     <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
     <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
+    <ClCompile Include="src\world\simulation\ISimJob.cpp" />
+    <ClCompile Include="src\world\simulation\ISimTask.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
@@ -584,6 +587,7 @@
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\ai\tasks\MoveToPointSimTask.h" />
     <ClInclude Include="src\ai\tasks\PathToTargetTask.h" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\building\Building.h" />

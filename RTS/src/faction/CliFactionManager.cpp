@@ -7,7 +7,7 @@
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
 CliFactionManager::CliFactionManager(World& world) : IFactionManager(world) {
-    mRandomGenerator = std::make_unique<RandomGenerator>(world.getSeed() ^ (world.getSeed() << 53262));
+    mRandomGenerator = std::make_unique<RandomGenerator>(world.getSeed() ^ (world.getSeed() << 16));
 }
 
 CliFactionManager::~CliFactionManager() = default;

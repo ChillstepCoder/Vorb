@@ -55,8 +55,7 @@ struct SimEmploymentComponent {
 enum class SimBrainComponentFlags : ui8 {
     IsFollowingCharacterGroup = BIT(0),
     IsCharacterGroupLeader = BIT(1),
-    HasTaskOrJob = BIT(2),
-    InCombat = BIT(3),
+    InCombat = BIT(2),
     TERM
 };
 static_assert(e_cast(SimBrainComponentFlags::TERM) <= 0xff);
