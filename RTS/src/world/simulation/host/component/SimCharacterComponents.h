@@ -69,6 +69,9 @@ struct SimBrainComponent {
 static_assert(sizeof(SimBrainComponent) == 1, "Keep small for cache efficiency");
 
 struct SimMovementComponent {
+    // Only need X to signify invalid
+    void clearTarget() { targetPosition.x = -1.0f; }
+
     f32v2 targetPosition = f32v2(-1.0f);
 };
 

@@ -2,6 +2,7 @@
 
 class SimTaskHandle;
 class ISimTask;
+class World;
 
 // Jobs are only created on sim thread
 class ISimJob {
@@ -10,8 +11,8 @@ public:
     ISimJob(entt::entity jobOwner) : mJobOwner(jobOwner) {}
     virtual ~ISimJob() = default;
 
-    virtual std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) = 0;
-    virtual std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) = 0;
+    virtual std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) = 0;
+    virtual std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter) = 0;
 
     virtual void onCompleteTask(ISimTask& task) {};
     virtual void onAbortTask(ISimTask& task) {};

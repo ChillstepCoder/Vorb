@@ -219,27 +219,42 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
 
 void SimAISystem::updateSimTask(entt::entity entity, SimTaskQueueComponent& taskCmp) {
     assert(taskCmp.taskQueue.size());
-    // Aquire task if needed
+    // Acquire task if needed
     if (!taskCmp.activeTask) {
-        for (auto& task : taskCmp.taskQueue) {
-            taskCmp.activeTask = task.getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
-            if (taskCmp.activeTask) break;
-        }
-    }
+        taskCmp.activeTask = taskCmp.taskQueue.front().getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
+        if (!taskCmp.activeTask) {
+            // No task available, we are done
+            taskCmp.taskQueue.pop_front();
 
-    // Operate on task
-    if (taskCmp.activeTask) {
-        SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity);
-        if (tickResult != SimTaskTickResult::InProgress) {
-            taskCmp.activeTask = nullptr;
-            if (tickResult == SimTaskTickResult::Success) {
-                taskCmp.taskQueue.front().
+            // Try ONE more time to get a task from the next one
+            if (taskCmp.taskQueue.size()) {
+                taskCmp.activeTask = taskCmp.taskQueue.front().getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
+                if (!taskCmp.activeTask) {
+                    // If this one also failed, we will not attempt any more until next tick
+                    taskCmp.taskQueue.pop_front();
+                    return;
+                }
             }
             else {
-
+                return;
             }
-            assert(e_count(SimTaskTickResult) == 3);
         }
+    }
+    assert(taskCmp.activeTask);
+
+    // Operate on task
+    SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity);
+    if (tickResult != SimTaskTickResult::InProgress) {
+        if (tickResult == SimTaskTickResult::Success) {
+            taskCmp.taskQueue.front().onActiveSubtaskFinished(taskCmp.activeTask);
+        }
+        else {
+            taskCmp.taskQueue.front().onActiveSubtaskAborted(taskCmp.activeTask);
+        }
+        // We will grab a new task next tick, and potentially be fully done with this TaskHandle if there
+        // are none left
+        taskCmp.activeTask = nullptr;
+        assert(e_count(SimTaskTickResult) == 3);
     }
     /* assert(taskCmp.numTasks);
      SimTaskTickResult result = taskCmp.taskQueue.front()->tickSim(mWorld, mRegistry, entity);

@@ -15,6 +15,13 @@ SimTaskHandle::SimTaskHandle(ISimJob* job, entt::entity owner) : mJob(job), mIsJ
     mJob->addTaskHandle(this);
 }
 
+SimTaskHandle::~SimTaskHandle() {
+    ASSERT_SIM_THREAD();
+    if (mIsJob) {
+        mJob->removeTaskHandle(this);
+    }
+}
+
 SimTaskHandle::SimTaskHandle(SimTaskHandle&& other) noexcept {
     ASSERT_SIM_THREAD();
     // Bitwise copy
@@ -24,36 +31,18 @@ SimTaskHandle::SimTaskHandle(SimTaskHandle&& other) noexcept {
     other.mIsJob = false;
 }
 
-SimTaskStatus SimTaskHandle::tickSimThread(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
-
-    // TODO: Only need to do this if we dont have active task?
-    if (mIsJob) {
-        if (mActiveJobSubtask) {
-            SimTaskTickResult result = mActiveJobSubtask->tickSim(world, simRegistry, simCharacter);
-        }
-        else {
-            mActiveJobSubtask = mJob->tryAquireNextSubtaskForSimCharacter(simRegistry, simCharacter);
-            if (mActiveJobSubtask) {
-                mActiveJobSubtask->onBeginSim(world, simRegistry, simCharacter);
-                SimTaskTickResult result = mActiveJobSubtask->tickSim(world, simRegistry, simCharacter);
-            }
-        }
-    }
-    x;
-}
-
-// TODO: DELETEME?
 ISimTask* SimTaskHandle::getOrAquireActiveTaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
     ASSERT_SIM_THREAD();
     if (mIsJob) {
         if (mActiveJobSubtask) {
             return mActiveJobSubtask.get();
         }
-        mActiveJobSubtask = mJob->tryAquireNextSubtaskForSimCharacter(simRegistry, simCharacter);
+        mActiveJobSubtask = mJob->tryAquireNextSubtaskForSimCharacter(world, simRegistry, simCharacter);
         if (mActiveJobSubtask) {
             mActiveJobSubtask->onBeginSim(world, simRegistry, simCharacter);
             return mActiveJobSubtask.get();
         }
+        // Signals that we are done with the job
         return nullptr;
     }
     else {
@@ -109,11 +98,4 @@ SimTaskHandle& SimTaskHandle::operator=(SimTaskHandle&& other) noexcept {
     // Disables cleanup
     other.mIsJob = false;
     return *this;
-}
-
-SimTaskHandle::~SimTaskHandle() {
-    ASSERT_SIM_THREAD();
-    if (mIsJob) {
-        mJob->removeTaskHandle(this);
-    }
 }

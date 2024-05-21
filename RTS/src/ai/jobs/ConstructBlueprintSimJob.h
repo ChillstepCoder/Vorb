@@ -13,8 +13,8 @@ public:
 
 	POOLED_ALLOC_DECL(ConstructBlueprintSimJob);
 
-	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) override;
-	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter) override;
 
 	void onAbortTask(ISimTask& task) override;
 	void onCompleteTask(ISimTask& task) override;

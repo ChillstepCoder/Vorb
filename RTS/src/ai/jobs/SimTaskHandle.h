@@ -23,9 +23,6 @@ public:
 
     POOLED_ALLOC_DECL();
 
-    SimTaskStatus tickSimThread(World& world, entt::registry& simRegistry, entt::entity simCharacter);
-    SimTaskStatus tickFull(World& world, entt::registry& fullRegistry, entt::entity fullCharacter);
-
     // Will either return the task, or will return a task from the job, if possible
     ISimTask* getOrAquireActiveTaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter);
     ISimTask* getOrAquireActiveTaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter);
