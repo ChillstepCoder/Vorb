@@ -14,7 +14,7 @@ enum class SimTaskStatus {
 class SimTaskHandle {
     friend class SimAISystem; // TODO: Interface wrapper to expose only the necessary functionality
 public:
-    SimTaskHandle(World& world, entt::registry& simRegistry, ISimTask* task, entt::entity owner);
+    SimTaskHandle(World& world, entt::registry& simRegistry, std::unique_ptr<ISimTask>&& task, entt::entity owner);
     SimTaskHandle(ISimJob* job, entt::entity owner);
     ~SimTaskHandle();
 
@@ -39,11 +39,8 @@ private:
     void onActiveSubtaskFinished(ISimTask* task);
     void onActiveSubtaskAborted(ISimTask* task);
 
-    union {
-        ISimTask* mTask;
-        ISimJob* mJob;
-    };
-    std::unique_ptr<ISimTask> mActiveJobSubtask;
+    ISimJob* mJob = nullptr;
+    std::unique_ptr<ISimTask> mTask;
     i16 mPriority = 10;
     bool mIsJob = false;
     entt::entity mOwner;

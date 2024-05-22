@@ -1083,6 +1083,9 @@
     <ClCompile Include="src\ai\tasks\MoveToPointSimTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ai\tasks\ConstructBlueprintSimTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2679,6 +2682,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\MoveToPointSimTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai\tasks\ConstructBlueprintSimTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

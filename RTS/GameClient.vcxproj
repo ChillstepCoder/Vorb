@@ -222,6 +222,7 @@
     <ClCompile Include="src\ai\jobs\ConstructBlueprintSimJob.cpp" />
     <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp" />
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
+    <ClCompile Include="src\ai\tasks\ConstructBlueprintSimTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
     <ClCompile Include="src\ai\tasks\MoveToPointSimTask.cpp" />
     <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
@@ -585,6 +586,7 @@
     <ClInclude Include="src\ai\jobs\ConstructBlueprintSimJob.h" />
     <ClInclude Include="src\ai\jobs\SimTaskHandle.h" />
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
+    <ClInclude Include="src\ai\tasks\ConstructBlueprintSimTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
     <ClInclude Include="src\ai\tasks\MoveToPointSimTask.h" />

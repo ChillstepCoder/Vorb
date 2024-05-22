@@ -6,7 +6,7 @@
 
 POOLED_ALLOC_DEF_NOT_THREADSAFE(SimTaskHandle, 256, ASSERT_SIM_THREAD());
 
-SimTaskHandle::SimTaskHandle(World& world, entt::registry& simRegistry, ISimTask* task, entt::entity owner) : mTask(task), mIsJob(false), mOwner(owner) {
+SimTaskHandle::SimTaskHandle(World& world, entt::registry& simRegistry, std::unique_ptr<ISimTask>&& task, entt::entity owner) : mTask(std::move(task)), mIsJob(false), mOwner(owner) {
     ASSERT_SIM_THREAD();
     mTask->onBeginSim(world, simRegistry, owner);
 }
@@ -34,19 +34,19 @@ SimTaskHandle::SimTaskHandle(SimTaskHandle&& other) noexcept {
 ISimTask* SimTaskHandle::getOrAquireActiveTaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
     ASSERT_SIM_THREAD();
     if (mIsJob) {
-        if (mActiveJobSubtask) {
-            return mActiveJobSubtask.get();
+        if (mTask) {
+            return mTask.get();
         }
-        mActiveJobSubtask = mJob->tryAquireNextSubtaskForSimCharacter(world, simRegistry, simCharacter);
-        if (mActiveJobSubtask) {
-            mActiveJobSubtask->onBeginSim(world, simRegistry, simCharacter);
-            return mActiveJobSubtask.get();
+        mTask = mJob->tryAquireNextSubtaskForSimCharacter(world, simRegistry, simCharacter);
+        if (mTask) {
+            mTask->onBeginSim(world, simRegistry, simCharacter);
+            return mTask.get();
         }
         // Signals that we are done with the job
         return nullptr;
     }
     else {
-        return mTask;
+        return mTask.get();
     }
 }
 
@@ -55,39 +55,33 @@ ISimTask* SimTaskHandle::getOrAquireActiveTaskForFullCharacter(World& world, ent
     panic("getOrAquireActiveTaskForFullCharacter NOT IMPLEMENTED");
 }
 
-
 void SimTaskHandle::onActiveSubtaskGoToNextTask(ISimTask* task) {
-    assert(task == mActiveJobSubtask.get());
+    assert(task == mTask.get());
     assert(task->getNextTask());
     // Making a copy just in case destructor runs first on activeJobSubtask copy
     auto subtaskCopy = std::move(task->getNextTask());
-    mActiveJobSubtask = std::move(*subtaskCopy);
+    mTask = std::move(*subtaskCopy);
 }
 
 void SimTaskHandle::onActiveSubtaskFinished(ISimTask* task) {
     assert(!task->getNextTask());
+    assert(task == mTask.get());
 
     if (mIsJob) {
-        assert(task == mActiveJobSubtask.get());
         mJob->onCompleteTask(*task);
-        mActiveJobSubtask.reset();
     }
-    else {
-        assert(task == mTask);
-        mTask = nullptr;
-        assert(false); // This feels wrong, wheres the ownership of the task object?? Should we just use mActiveJobSubtask?
-    }
+
+    mTask.reset();
 }
 
 void SimTaskHandle::onActiveSubtaskAborted(ISimTask* task) {
+    assert(task == mTask.get());
+
     if (mIsJob) {
-        assert(task == mActiveJobSubtask.get());
         mJob->onAbortTask(*task);
-        mActiveJobSubtask.reset();
     }
-    else {
-        mTask = nullptr;
-    }
+
+    mTask.reset();
 }
 
 SimTaskHandle& SimTaskHandle::operator=(SimTaskHandle&& other) noexcept {
