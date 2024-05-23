@@ -102,7 +102,9 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
             // TODO: Correct cartesian!
             newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
             if (newPlot.activeBlueprint) {
-                std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, plotId, mEcs, characters[0]);
+                newPlot.activeBlueprint->assignToSettlement(settlementEntity, plotId);
+
+                std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, mEcs, characters[0]);
                 SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
 
                 // Instruct all characters to build this house

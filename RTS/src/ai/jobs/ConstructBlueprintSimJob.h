@@ -6,9 +6,11 @@
 class SimECS;
 class ISimTask;
 
+// Step 1: Aquire items for job and fill blueprint + flatten terrain
+// Step 2: Build each tile that has all items
 class ConstructBlueprintSimJob : public ISimJob {
 public:
-	ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SettlementPlotID plotId, SimECS& simEcs, entt::entity simJobOwner);
+	ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner);
 	~ConstructBlueprintSimJob() = default;
 
 	POOLED_ALLOC_DECL(ConstructBlueprintSimJob);
@@ -22,7 +24,6 @@ public:
 private:
 
 	BuildingBlueprint& mBlueprint;
-	SettlementPlotID mPlotId;
 	SimECS& mSimEcs;
 };
 

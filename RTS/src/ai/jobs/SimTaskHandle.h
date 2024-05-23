@@ -29,7 +29,7 @@ public:
 
     bool isJob() const { return mIsJob; }
     ISimJob* getJob() const { assert(mIsJob); return mJob; }
-    ISimTask* getTask() const { assert(!mIsJob); return mTask; }
+    ISimTask* getTask() const { assert(!mIsJob); return mTask.get(); }
     i16 getPriority() const { return mPriority; }
     void setPriority(i16 p) { mPriority = p; }
 

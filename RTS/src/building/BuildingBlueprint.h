@@ -9,6 +9,8 @@ class BuildingDef;
 struct BuildingBlueprintTileTarget {
     TileIndex tileIndex;
     TileID id;
+    bool isReserved : 1 = false;
+    bool isBuilt : 1 = false;
     //ui8 runLength // TODO: RLE Compression
 };
 
@@ -16,7 +18,9 @@ struct BuildingBlueprintWallTarget {
     TileIndex tileIndex;
     TileID id;
     Cartesian dir;
-    bool isDoor;
+    bool isDoor : 1 = false;
+    bool isReserved : 1 = false;
+    bool isBuilt : 1 = false;
     // ui8 runLength // TODO: RLE Compression
 };
 
@@ -36,10 +40,22 @@ class BuildingBlueprintRoomGraph {
 
 // Minimal data representation of a building
 class BuildingBlueprint {
+    friend class BuildingBlueprintGenerator;
+    friend class ConstructBlueprintSimJob;
+    friend class BuildingBuilder;
+    friend class BuildingGrid; // TODO: Remove
+    friend class TileContainerLoader;
 public:
 
     BitArray computeSolidTilesFirstFloor() const;
     bool isFinished() const { return desc != nullptr; }
+    void assignToSettlement(entt::entity settlementEntity, SettlementPlotID plotID) {
+        ASSERT_SIM_THREAD();
+        parentSettlement = settlementEntity;
+        parentPlotID = plotID;
+    }
+
+private:
 
     BuildingBlueprintRoomGraph roomGraph; // TODO: Build this?
     BitArray ownedDTiles;
@@ -59,13 +75,20 @@ public:
     i32 constructedWallTargetCount = 0;
     i32 stairPieceCount;
     i32 constructedStairPieceCount = 0;
-    DTileCoord worldPosRootDTile;
+    DTileCoord worldPosRootDTile = DTileCoord(-1);
     i32v2 dimsDTile;
     i32 floorHeight;
     i32 floorCount;
     TileID stairsTileID;
     TileID stairsFlatTileID;
     TileID defaultFloorID;
+    SettlementPlotID parentPlotID = INVALID_SETTLEMENT_PLOT_ID;
+    entt::entity parentSettlement = entt::null;
+
+    // Build information
+    i32 nextTileTargetToReserve = 0;
+    i32 nextWallTargetToReserve = 0;
+    i32 nextStairPieceToReserve = 0;
     /*
 
     bool tileIsOwned(DTileIndex tileIndex) const {

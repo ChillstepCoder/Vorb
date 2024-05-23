@@ -3,10 +3,14 @@
 #include "world/simulation/ISimTask.h"
 #include "ai/tasks/MoveToPointSimTask.h"
 
+class BuildingBlueprint;
+
 // TODO: Serialization?
 class ConstructBlueprintSimTask : public ISimTask
 {
 public:
+
+	ConstructBlueprintSimTask(BuildingBlueprint& blueprint);
 
 	POOLED_ALLOC_DECL();
 

@@ -6,9 +6,13 @@
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimJob, 256);
 
-ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SettlementPlotID plotId, SimECS& simEcs, entt::entity simJobOwner)
-    : ISimJob(simJobOwner), mBlueprint(blueprint), mPlotId(plotId), mSimEcs(simEcs) {
+ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner)
+    : ISimJob(simJobOwner), mBlueprint(blueprint), mSimEcs(simEcs) {
     ASSERT_SIM_THREAD();
+
+    assert(blueprint.parentPlotID != INVALID_SETTLEMENT_PLOT_ID);
+    assert(blueprint.parentSettlement != entt::null);
+    assert(blueprint.worldPosRootDTile.x > -1);
 }
 
 std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {

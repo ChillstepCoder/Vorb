@@ -1086,6 +1086,9 @@
     <ClCompile Include="src\ai\tasks\ConstructBlueprintSimTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\item\SimpleItemReservation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2685,6 +2688,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\ConstructBlueprintSimTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\item\SimpleItemReservation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
