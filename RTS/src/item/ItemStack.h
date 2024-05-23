@@ -76,3 +76,9 @@ struct ItemStack {
     bool isNull() const { return quantity == 0; }
 };
 static_assert(sizeof(ItemStack) == 12);
+
+// No durabilities, just item ID and quantity
+struct SimpleItemStack {
+    ItemID itemId = INVALID_ITEM_ID;
+    ui32 quantity = 0;
+};

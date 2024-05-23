@@ -190,7 +190,7 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
             }
         }
         for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
-            StairPiece& stairPiece = bp.stairPieces[i];
+            const StairPiece& stairPiece = bp.stairTargets[i].piece;
             if (stairPiece.pos < floorStride) {
                 if (stairPiece.pos < floorStride) {
                     i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);

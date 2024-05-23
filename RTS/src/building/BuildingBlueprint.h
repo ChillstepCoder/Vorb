@@ -1,12 +1,14 @@
 #pragma once
 
 #include "item/ItemStack.h"
+#include "item/Recipe.h"
 #include "tile/Stairs.h"
 #include "util/BitArray.h"
 
 class BuildingDef;
 
 struct BuildingBlueprintTileTarget {
+    FillableRecipe fillableRecipe;
     TileIndex tileIndex;
     TileID id;
     bool isReserved : 1 = false;
@@ -15,6 +17,7 @@ struct BuildingBlueprintTileTarget {
 };
 
 struct BuildingBlueprintWallTarget {
+    FillableRecipe fillableRecipe;
     TileIndex tileIndex;
     TileID id;
     Cartesian dir;
@@ -22,6 +25,11 @@ struct BuildingBlueprintWallTarget {
     bool isReserved : 1 = false;
     bool isBuilt : 1 = false;
     // ui8 runLength // TODO: RLE Compression
+};
+
+struct StairTileTarget {
+    FillableRecipe fillableRecipe;
+    StairPiece piece;
 };
 
 struct BuildingBlueprintRoomNode {
@@ -63,10 +71,10 @@ private:
     std::unique_ptr<BuildingBlueprintTileTarget[]> tileTargets;
     // Sorted by build priority front to back, so first floor walls at the start
     std::unique_ptr<BuildingBlueprintWallTarget[]> wallTargets;
+    // Each stair tile
+    std::unique_ptr<StairTileTarget[]> stairTargets;
     // Required items to build
     std::unique_ptr<ItemStack[]> itemComposition; // TODO: Maybe this should be flexible... maybe we dont care what items are used? Room specific tiles? ect.
-    // Each stair tile
-    std::unique_ptr<StairPiece[]> stairPieces;
     const BuildingDef* desc = nullptr;
     i32 itemCompositionCount;
     i32 tileTargetCount;

@@ -2191,35 +2191,8 @@ void BuildingBlueprintGenerator::placeWindows(BuildingBlueprintGenerationContext
 }
 
 void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGenerationContext& context) {
-    // Tally required items
-    std::map<ItemID, ui32> requiredItems;
-    TileRepository& tileRepo = TileRepository::get();
-    
-    context.tileRecipes[e_cast(BlueprintTileType::NONE)] = nullptr;
-    context.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::FLOOR)]);
-    context.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::DOOR)]);
-    context.tileRecipes[e_cast(BlueprintTileType::WALL)] = &tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::WALL)]);
-    context.tileRecipes[e_cast(BlueprintTileType::WINDOW)] = &tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::WINDOW)]);
-    context.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::STAIRS)]);
-    context.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]);
-    context.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
-    static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
-    auto addRequiredItems = [&](BlueprintTileType type) {
-        const Recipe& recipe = *context.tileRecipes[e_cast(type)];
-        const ui16 itemCount = recipe.mItemCount;
-        for (ui32 r = 0; r < recipe.mItemCount; ++r) {
-            const ItemStack stack = recipe.mItems[r];
-            auto&& it = requiredItems.find(stack.id);
-            if (it == requiredItems.end()) {
-                requiredItems[stack.id] = stack.quantity;
-            }
-            else {
-                it->second += stack.quantity;
-            }
-        }
-    };
-
+    // TODO: Can counting be done DURING generation to cut out this entire iteration?
     // Compute required items, count tiles, count walls
     for (TileIndex tileIndex = 0; tileIndex < (TileIndex)context.tiles.size(); ++tileIndex) {
         BlueprintTileType type = context.tiles[tileIndex];
@@ -2228,25 +2201,16 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
         for (int i = 0; i < 2; ++i) {
             if (walls[i].isValid()) [[unlikely]] {
                 ++context.totalWalls;
-                if (walls[i].isDoor) {
-                    addRequiredItems(BlueprintTileType::DOOR);
-                }
-                else {
-                    addRequiredItems(BlueprintTileType::WALL);
-                }
             }
         }
         switch (type) {
             case BlueprintTileType::NONE:
             case BlueprintTileType::AIR:
-                break;
             case BlueprintTileType::STAIRS:
             case BlueprintTileType::STAIRS_FLAT:
-                addRequiredItems(type);
                 break;
             case BlueprintTileType::WINDOW:
             case BlueprintTileType::FLOOR:{
-                addRequiredItems(type);
                 ++context.totalTiles;
                 break;
             }
@@ -2260,13 +2224,41 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
     }
     static_assert(e_cast(BlueprintTileType::TYPES) == 8);
 
-    context.requiredItemsToBuild.reserve(requiredItems.size());
-    for (auto&& it : requiredItems) {
-        context.requiredItemsToBuild.emplace_back(it.first, it.second);
-    }
 }
 
 BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBlueprintGenerationContext& context) {
+    
+    // Tally required items
+    boost::container::flat_map<ItemID, ui32> requiredItems;
+    requiredItems.reserve(32);
+    TileRepository& tileRepo = TileRepository::get();
+
+    context.tileRecipes[e_cast(BlueprintTileType::NONE)] = FillableRecipe();
+    context.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::FLOOR)]));
+    context.tileRecipes[e_cast(BlueprintTileType::DOOR)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::DOOR)]));
+    context.tileRecipes[e_cast(BlueprintTileType::WALL)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::WALL)]));
+    context.tileRecipes[e_cast(BlueprintTileType::WINDOW)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::WINDOW)]));
+    context.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::STAIRS)]));
+    context.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]));
+    context.tileRecipes[e_cast(BlueprintTileType::AIR)] = FillableRecipe();
+    static_assert(e_cast(BlueprintTileType::TYPES) == 8);
+
+    auto addRequiredItems = [&](BlueprintTileType type) {
+        const FillableRecipe& recipe = context.tileRecipes[e_cast(type)];
+        for (ui32 r = 0; r < recipe.numItems; ++r) {
+            const ItemID id = recipe.itemIds[r];
+            const ui8 quantity = recipe.requiredQuantities[r];
+            auto&& it = requiredItems.find(id);
+            if (it == requiredItems.end()) {
+                requiredItems[id] = quantity;
+            }
+            else {
+                it->second += quantity;
+            }
+        }
+    };
+    
+    
     BuildingBlueprintPtr bp = std::make_unique<BuildingBlueprint>();
     bp->floorCount = context.floorCount;
     bp->floorHeight = context.mTileSpatialGrid.getFloorHeight();
@@ -2292,19 +2284,28 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
         TileWall walls[2];
         context.walls.getSouthAndWestWallsAtTile(walls, tileIndex);
         if (walls[0].isValid()) {
-            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[0].wallID, Cartesian::SOUTH, walls[0].isDoor};
+            BlueprintTileType type = walls[0].isDoor ? BlueprintTileType::DOOR : BlueprintTileType::WALL;
+            addRequiredItems(type);
+            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ 
+                context.tileRecipes[e_cast(type)], tileIndex, walls[0].wallID, Cartesian::SOUTH, walls[0].isDoor
+            };
         }
         if (walls[1].isValid()) {
-            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ tileIndex, walls[1].wallID, Cartesian::WEST, walls[1].isDoor };
+            BlueprintTileType type = walls[0].isDoor ? BlueprintTileType::DOOR : BlueprintTileType::WALL;
+            addRequiredItems(type);
+            bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ 
+                context.tileRecipes[e_cast(type)], tileIndex, walls[1].wallID, Cartesian::WEST, walls[1].isDoor
+            };
         }
         // Copy walls
         if (type != BlueprintTileType::NONE) {
 
+            addRequiredItems(type);
             // Stairs are processed below
             if (type != BlueprintTileType::STAIRS) {
                 const TileID tileId = context.tileIDs[e_cast(type)];
                 if (tileId != TILE_ID_NONE) {
-                    bp->tileTargets[tileN++] = BuildingBlueprintTileTarget{ tileIndex, tileId };
+                    bp->tileTargets[tileN++] = BuildingBlueprintTileTarget{ context.tileRecipes[e_cast(type)], tileIndex, tileId };
                 }
             }
         }
@@ -2314,17 +2315,25 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     // Copy room data
     //newBuilding->mRooms = std::move(bp.rooms);
 
+    context.requiredItemsToBuild.reserve(requiredItems.size());
+    for (auto&& it : requiredItems) {
+        context.requiredItemsToBuild.emplace_back(it.first, it.second);
+    }
+
     // Set stairs tiles
     bp->stairPieceCount = 0;
     for (auto& stairsVec : context.stairs) {
         bp->stairPieceCount += stairsVec.size();
     }
 
-
-    bp->stairPieces = std::make_unique<StairPiece[]>(bp->stairPieceCount);
+    bp->stairTargets = std::make_unique<StairTileTarget[]>(bp->stairPieceCount);
     ui32 startIndex = 0;
     for (auto& stairsVec : context.stairs) {
-        memcpy(&bp->stairPieces[startIndex], stairsVec.data(), sizeof(StairPiece) * stairsVec.size());
+        for (size_t i = 0; i < stairsVec.size(); ++i) {
+            bp->stairTargets[startIndex + i].piece = stairsVec[i];
+            //  TODO: Should STAIRS_FLAT recipe be different?
+            bp->stairTargets[startIndex + i].fillableRecipe = context.tileRecipes[e_cast(BlueprintTileType::STAIRS)];
+        }
         startIndex += stairsVec.size();
     }
 

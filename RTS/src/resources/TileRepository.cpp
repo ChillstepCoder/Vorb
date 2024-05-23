@@ -73,11 +73,15 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
 
     // Recipes
     Recipe& recipe = mTileRecipes[id];
-    recipe.mItemCount = def.recipeData.size();
-    recipe.mItems = std::make_unique_for_overwrite<ItemStack[]>(recipe.mItemCount);
-    for (ui32 i = 0; i < recipe.mItemCount; ++i) {
-        recipe.mItems[i].quantity = def.recipeData[i].count;
-        recipe.mItems[i].id = itemRepo.getAssetID(def.recipeData[i].itemName);
+    if (def.recipeData.size() > MAX_ITEMS_IN_RECIPE) {
+        LOG_ERROR("Recipe {} found with item count of {} greater than max of {}, deleting entries",
+            def.getName().toString(), def.recipeData.size(), MAX_ITEMS_IN_RECIPE);
+        def.recipeData.resize(MAX_ITEMS_IN_RECIPE);
+    }
+    recipe.numItems = def.recipeData.size();
+    for (size_t i = 0; i < def.recipeData.size(); ++i) {
+        recipe.quantities[i] = def.recipeData[i].count;
+        recipe.itemIds[i] = itemRepo.getAssetID(def.recipeData[i].itemName);
     }
 
     // Model

@@ -5,6 +5,7 @@
 #include "tile/TileWallContainer.h"
 #include "city/RoomGenNode.h"
 #include "item/ItemStack.h"
+#include "item/Recipe.h"
 
 class Building;
 class BuildingBlueprintGenerationContext;
@@ -107,7 +108,7 @@ public:
     //std::map<ItemID, std::deque<TileIndex>> tilesNeedingItems; // Pull from back first
     //std::vector<TileIndex> tilesReadyToBuild;
     //std::vector<BlueprintTileItemData> tileItemData;
-    std::vector<ItemStack> requiredItemsToBuild;
+    std::vector<SimpleItemStack> requiredItemsToBuild;
     //std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
     //std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
     // End construction
@@ -135,7 +136,7 @@ public:
     std::vector<std::vector<StairPiece>> stairs;
     std::map<TileIndex, RoomNodeID> exteriorDoors;
     std::vector<ExteriorWallRun> exteriorWallRuns;
-    const Recipe* tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
+    FillableRecipe tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
     ui32 totalTiles = 0;
