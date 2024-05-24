@@ -82,3 +82,10 @@ struct SimpleItemStack {
     ItemID itemId = INVALID_ITEM_ID;
     ui32 quantity = 0;
 };
+
+// Represents a ledger of a stack of simple items that we want to fill
+struct FillableSimpleItemStack {
+    ItemID itemId = INVALID_ITEM_ID;
+    ui32 desiredQuantity = 0;
+    ui32 filledQuantity = 0;
+};;

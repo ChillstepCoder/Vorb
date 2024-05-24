@@ -2258,7 +2258,6 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
         }
     };
     
-    
     BuildingBlueprintPtr bp = std::make_unique<BuildingBlueprint>();
     bp->floorCount = context.floorCount;
     bp->floorHeight = context.mTileSpatialGrid.getFloorHeight();
@@ -2266,8 +2265,12 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     bp->dimsDTile = context.dimsDTile;
     // Items
     bp->itemCompositionCount = context.requiredItemsToBuild.size();
-    bp->itemComposition = std::make_unique<ItemStack[]>(bp->itemCompositionCount);
-    memcpy(bp->itemComposition.get(), context.requiredItemsToBuild.data(), sizeof(ItemStack) * bp->itemCompositionCount); // TODO: if we used vector or ptr we could just std::move...
+    bp->itemComposition = std::make_unique<FillableSimpleItemStack[]>(bp->itemCompositionCount);
+    for (i32 i = 0; i < bp->itemCompositionCount; ++i) {
+        bp->itemComposition[i].itemId = context.requiredItemsToBuild[i].itemId;
+        bp->itemComposition[i].desiredQuantity = context.requiredItemsToBuild[i].quantity;
+        bp->totalItemsUnfulfilled += context.requiredItemsToBuild[i].quantity;
+    }
 
     bp->tileTargetCount = context.totalTiles;
     bp->tileTargets = std::make_unique<BuildingBlueprintTileTarget[]>(bp->tileTargetCount);
@@ -2287,14 +2290,14 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
             BlueprintTileType type = walls[0].isDoor ? BlueprintTileType::DOOR : BlueprintTileType::WALL;
             addRequiredItems(type);
             bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ 
-                context.tileRecipes[e_cast(type)], tileIndex, walls[0].wallID, Cartesian::SOUTH, walls[0].isDoor
+                nullptr, context.tileRecipes[e_cast(type)], tileIndex, walls[0].wallID, Cartesian::SOUTH, walls[0].isDoor
             };
         }
         if (walls[1].isValid()) {
             BlueprintTileType type = walls[0].isDoor ? BlueprintTileType::DOOR : BlueprintTileType::WALL;
             addRequiredItems(type);
             bp->wallTargets[wallN++] = BuildingBlueprintWallTarget{ 
-                context.tileRecipes[e_cast(type)], tileIndex, walls[1].wallID, Cartesian::WEST, walls[1].isDoor
+                nullptr, context.tileRecipes[e_cast(type)], tileIndex, walls[1].wallID, Cartesian::WEST, walls[1].isDoor
             };
         }
         // Copy walls
@@ -2305,7 +2308,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
             if (type != BlueprintTileType::STAIRS) {
                 const TileID tileId = context.tileIDs[e_cast(type)];
                 if (tileId != TILE_ID_NONE) {
-                    bp->tileTargets[tileN++] = BuildingBlueprintTileTarget{ context.tileRecipes[e_cast(type)], tileIndex, tileId };
+                    bp->tileTargets[tileN++] = BuildingBlueprintTileTarget{ nullptr, context.tileRecipes[e_cast(type)], tileIndex, tileId };
                 }
             }
         }

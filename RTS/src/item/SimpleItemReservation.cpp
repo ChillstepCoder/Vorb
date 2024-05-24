@@ -5,24 +5,33 @@ POOLED_ALLOC_DEF_THREADSAFE(SimpleItemReservationData, 256);
 POOLED_ALLOC_DEF_THREADSAFE(SimpleItemReservationSourceHandle, 256);
 POOLED_ALLOC_DEF_THREADSAFE(SimpleItemReservationTargetHandle, 256);
 
-SimpleItemReservationData::SimpleItemReservationData(ItemID itemId, i32 desiredQuantity, SimpleItemReservationSourceHandle* sourceHandle, SimpleItemReservationTargetHandle* targetHandle) :
-    desiredItem(itemId),
-    desiredQuantity(desiredQuantity),
+SimpleItemReservationData::SimpleItemReservationData(std::span<SimpleItemStack> reservedItems, SimpleItemReservationSourceHandle* sourceHandle, SimpleItemReservationTargetHandle* targetHandle) :
     sourceHandle(sourceHandle),
     targetHandle(targetHandle) {
+    for (size_t i = 0; i < reservedItems.size(); ++i) {
+        desiredItems[i] = reservedItems[i].itemId;
+        totalDesired += reservedItems[i].quantity;
+        desiredQuantity[i] = reservedItems[i].quantity;
+    }
+    numItems = reservedItems.size();
+    assert(numItems);
 }
 
 void SimpleItemReservationData::cancel() {
-    if (mSourceEndFunction) {
-        mSourceEndFunction(ItemReservationEndReason::Cancel);
+    if (sourceEndFunction) {
+        sourceEndFunction(ItemReservationEndReason::Cancel);
     }
     invalidateHandles();
 }
 
 void SimpleItemReservationData::onComplete() {
-    assert(filledQuantity == desiredQuantity);
-    if (mSourceEndFunction) {
-        mSourceEndFunction(ItemReservationEndReason::Success);
+#ifdef DEBUG
+    for (int i = 0; i < numItems; ++i) {
+        assert(filledQuantity[i] == desiredQuantity[i]);
+    }
+#endif
+    if (sourceEndFunction) {
+        sourceEndFunction(ItemReservationEndReason::Success);
     }
     invalidateHandles();
 }
@@ -47,22 +56,25 @@ void SimpleItemReservationSourceHandle::cancel() {
     dataPtr->cancel();
 }
 
-bool SimpleItemReservationSourceHandle::tryFulfillQuantity(i32 quantity) {
+bool SimpleItemReservationSourceHandle::tryFulfillQuantity(ItemID id, i32 quantity) {
     if (!dataPtr) [[unlikely]] {
         return false;
     }
-    assert(quantity < getRemainingQuantity());
+    assert(quantity <= getRemainingQuantity(id));
 
-    dataPtr->filledQuantity += quantity;
+    const i32 index = dataPtr->getItemIndex(id);
+
+    dataPtr->filledQuantity[index] += quantity;
+    dataPtr->totalFilled += quantity;
     
-    if (dataPtr->filledQuantity == dataPtr->desiredQuantity) {
-        if (dataPtr->mTargetUpdateFunction) {
-            dataPtr->mTargetUpdateFunction(ItemReservationUpdateType::CompleteFulfill, quantity);
+    if (dataPtr->totalFilled == dataPtr->totalDesired) {
+        if (dataPtr->targetUpdateFunction) {
+            dataPtr->targetUpdateFunction(ItemReservationUpdateType::CompleteFulfill, id, quantity);
         }
         dataPtr->onComplete();
     }
-    else if (dataPtr->mTargetUpdateFunction) {
-        dataPtr->mTargetUpdateFunction(ItemReservationUpdateType::PartialFulfill, quantity);
+    else if (dataPtr->targetUpdateFunction) {
+        dataPtr->targetUpdateFunction(ItemReservationUpdateType::PartialFulfill, id, quantity);
     }
     return true;
 }
@@ -78,12 +90,34 @@ void SimpleItemReservationTargetHandle::cancel() {
     dataPtr->cancel();
 }
 
-std::pair<SimpleItemReservationSourceHandlePtr, SimpleItemReservationTargetHandlePtr> SimpleItemReservation::createReservation(i32 desiredQuantity, ItemID desiredItem) {
-    std::pair<SimpleItemReservationSourceHandlePtr, SimpleItemReservationTargetHandlePtr> rv;
-    rv.first = std::make_unique<SimpleItemReservationSourceHandle>();
-    rv.second = std::make_unique<SimpleItemReservationTargetHandle>();
+ItemReservationPair SimpleItemReservation::createReservation(std::span<SimpleItemStack> reservedItems) {
+    ItemReservationPair rv;
+    rv.source = std::make_unique<SimpleItemReservationSourceHandle>();
+    rv.target = std::make_unique<SimpleItemReservationTargetHandle>();
     // std::make_unique doesn't work with private constructors
-    rv.second->dataPtr = std::unique_ptr<SimpleItemReservationData>(new SimpleItemReservationData(desiredQuantity, desiredItem, rv.first.get(), rv.second.get()));
-    rv.first->dataPtr = rv.second->dataPtr.get();
+    rv.target->dataPtr = std::unique_ptr<SimpleItemReservationData>(new SimpleItemReservationData(reservedItems, rv.source.get(), rv.target.get()));
+    rv.source->dataPtr = rv.target->dataPtr.get();
+    return rv;
+}
+
+ItemReservationPair SimpleItemReservation::createReservationForRecipe(const FillableRecipe& recipe) {
+    assert(!recipe.isFullyFilled);
+    ItemReservationPair rv;
+    rv.source = std::make_unique<SimpleItemReservationSourceHandle>();
+    rv.target = std::make_unique<SimpleItemReservationTargetHandle>();
+    // std::make_unique doesn't work with private constructors
+    SimpleItemStack items[MAX_ITEMS_IN_SIMPLE_RESERVATION];
+    i32 total = 0;
+    for (int i = 0; i < recipe.numItems; ++i) {
+        const i32 required = recipe.requiredQuantities[i] - recipe.providedQuantities[i];
+        if (required > 0) {
+            items[total].itemId = recipe.itemIds[i];
+            items[total].quantity = required;
+            ++total;
+        }
+    }
+    assert(total);
+    rv.target->dataPtr = std::unique_ptr<SimpleItemReservationData>(new SimpleItemReservationData(std::span<SimpleItemStack>(items, total), rv.source.get(), rv.target.get()));
+    rv.source->dataPtr = rv.target->dataPtr.get();
     return rv;
 }

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ConstructBlueprintSimJob.h"
 
-#include "ai/tasks/MoveToPointSimTask.h"
+#include "ai/tasks/ConstructBlueprintSimTask.h"
 #include "world/World.h"
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimJob, 256);
@@ -16,8 +16,11 @@ ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint,
 }
 
 std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
-    std::unique_ptr<MoveToPointSimTask> moveTask = std::make_unique<MoveToPointSimTask>(world.getWorldCenter(), 128.0f);
-    return moveTask;
+    if (mBlueprint.totalItemsUnfulfilled == 0) {
+        // TODO: Need to handle when BP has all items but tiles still need to be constructed
+        return nullptr;
+    }
+    return std::make_unique<ConstructBlueprintSimTask>(mBlueprint);
 }
 
 std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter)
@@ -25,8 +28,7 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubaskForFullCh
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-void ConstructBlueprintSimJob::onAbortTask(ISimTask& task)
-{
+void ConstructBlueprintSimJob::onAbortTask(ISimTask& task) {
 
 }
 

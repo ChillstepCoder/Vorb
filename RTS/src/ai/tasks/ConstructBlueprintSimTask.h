@@ -2,6 +2,7 @@
 
 #include "world/simulation/ISimTask.h"
 #include "ai/tasks/MoveToPointSimTask.h"
+#include "item/SimpleItemReservation.h"
 
 class BuildingBlueprint;
 
@@ -9,8 +10,8 @@ class BuildingBlueprint;
 class ConstructBlueprintSimTask : public ISimTask
 {
 public:
-
 	ConstructBlueprintSimTask(BuildingBlueprint& blueprint);
+	~ConstructBlueprintSimTask();
 
 	POOLED_ALLOC_DECL();
 
@@ -29,10 +30,14 @@ private:
 		AquireResources,
 		MoveToBlueprint,
 		FlattenTerrain,
-		BuildTile
+		BuildTile,
+		End
 	} mState = State::Init;
 
+	BuildingBlueprint& mBlueprint;
 	MoveToPointSimSubtask mMoveSubtask;
+	SimpleItemReservationSourceHandlePtr mItemReservation = nullptr;
+	ui32 mTargetReservationId = 0;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };
 
