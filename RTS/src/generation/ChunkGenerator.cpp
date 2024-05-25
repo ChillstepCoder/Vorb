@@ -11,7 +11,7 @@
 #include "world/World.h"
 #include "world/WorldDefaults.h"
 #include "world/IHeightmapGrid.h"
-#include "world/chunk/SimChunkTileGrid.h"
+#include "world/chunk/SimChunkGrid.h"
 #include "world/road/TerrainSurfaceGrid.h"
 #include "resources/TileRepository.h"
 
@@ -92,8 +92,8 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
 
 void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& buildingFootprint) {
     World& world = chunk.getWorld();
-    SimChunkTileGrid& simGrid = world.getSimTileGrid();
-    SimChunkTileContainer& simData = simGrid.getChunkForGeneration(chunk.getChunkID());
+    SimChunkGrid& simGrid = world.getSimTileGrid();
+    SimChunk& simData = simGrid.getChunkForGeneration(chunk.getChunkID());
 
     if (world.isEditorWorld()) [[unlikely]] {
         // Need to generate the sim chunk first on editor worlds, as we did not generate history
@@ -109,7 +109,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
     chunk.mTileContainer->allocateData();
 
     // Indicates an ocean chunk
-    if (simData.mState != SimChunkTileContainerState::Allocated) {
+    if (simData.mState != SimChunkState::Allocated) {
         // TODO: Need to still generate tiles in ocean and stuff
         chunk.mAABB.height = 10;
         return;
@@ -169,14 +169,14 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
 }
 
 
-void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world) {
+void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
     PROFILE_FUNCTION();
     PreciseTimer timer;
 
     TileRepository& tileRepo = TileRepository::get();
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     BiomeGrid& biomeGrid = world.getBiomeGrid();
-    SimChunkTileGrid& simGrid = world.getSimTileGrid();
+    SimChunkGrid& simGrid = world.getSimTileGrid();
 
     // Allocate tiles if needed
     ChunkID id = chunk.mChunkID;

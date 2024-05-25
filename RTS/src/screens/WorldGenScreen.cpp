@@ -20,7 +20,7 @@
 #include "world/WorldDefaults.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimThread.h"
-#include "world/chunk/SimChunkTileGrid.h"
+#include "world/chunk/SimChunkGrid.h"
 #include "generation/WorldDataGenerator.h"
 #include "generation/WorldGenerationBlackboard.h"
 
@@ -433,7 +433,7 @@ void WorldGenScreen::initWorldData() {
     mWorldData->markupGrid = std::make_unique<WorldMarkupGrid>(mWorldData->worldWidth, mWorldData->worldSeed);
     mWorldData->ownershipGrid = std::make_unique<OwnershipGrid>(mWorldData->worldWidth, *mWorldData->markupGrid);
     mWorldData->terrainSurfaceGrid = std::make_shared<TerrainSurfaceGrid>(mWorldData->worldWidth);
-    mWorldData->tileGrid = std::make_shared<SimChunkTileGrid>(mWorldData->worldWidth);
+    mWorldData->tileGrid = std::make_shared<SimChunkGrid>(mWorldData->worldWidth);
     mWorldData->worldSeed = mGenData.mSeedInt;
 
     mTotalPatches = mWorldData->heightmapGrid->getTotalPatches();

@@ -8,6 +8,8 @@
 class World;
 class TileContainer;
 struct LiteTileHandle;
+class SimChunk;
+class Chunk;
 
 struct TileHandle {
 
@@ -47,6 +49,7 @@ struct LiteTileHandle {
     TileHandle toTileHandle(World& world) const;
 
     i32v3 getWorldPosition(World& world) const;
+    f32v3 getWorldPositionCenter(World& world) const;
 
     void reset() { containerId = INVALID_TILE_CONTAINER_ID; }
 

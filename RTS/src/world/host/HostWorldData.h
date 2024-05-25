@@ -5,7 +5,7 @@
 #include "world/markup/WorldMarkupGrid.h"
 #include "world/ownership/OwnershipGrid.h"
 #include "world/road/TerrainSurfaceGrid.h"
-#include "world/chunk/SimChunkTileGrid.h"
+#include "world/chunk/SimChunkGrid.h"
 
 // All word initialization data is here. Can either be generated or loaded
 // from disk
@@ -20,5 +20,5 @@ public:
     std::shared_ptr<WorldMarkupGrid> markupGrid;
     std::shared_ptr<OwnershipGrid> ownershipGrid;
     std::shared_ptr<TerrainSurfaceGrid> terrainSurfaceGrid;
-    std::shared_ptr<SimChunkTileGrid> tileGrid;
+    std::shared_ptr<SimChunkGrid> tileGrid;
 };

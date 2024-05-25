@@ -136,7 +136,7 @@ void GameSaveManager::serializeWorldTemplateData(World& world, BBuffer& template
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     BiomeGrid& biomeGrid = world.getBiomeGrid();
     WorldMarkupGrid& markupGrid = world.getMarkupGrid();
-    SimChunkTileGrid& tileGrid = world.getSimTileGrid();
+    SimChunkGrid& tileGrid = world.getSimTileGrid();
 
     templateData.reserve(START_SIZE);
 

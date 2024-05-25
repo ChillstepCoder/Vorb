@@ -10,7 +10,7 @@
 #include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/StoryTeller.h"
 #include "world/simulation/host/SimImmigrationManager.h"
-#include "world/chunk/SimChunkTileGrid.h"
+#include "world/chunk/SimChunkGrid.h"
 #include "ecs/IEntityComponentSystem.h"
 
 #include "gamethread/GameThreadTasks.h"

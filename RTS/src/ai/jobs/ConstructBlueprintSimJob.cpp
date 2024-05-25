@@ -20,7 +20,13 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
         // TODO: Need to handle when BP has all items but tiles still need to be constructed
         return nullptr;
     }
-    return std::make_unique<ConstructBlueprintSimTask>(mBlueprint);
+
+    std::unique_ptr<ConstructBlueprintSimTask> newTask = std::make_unique<ConstructBlueprintSimTask>(mBlueprint, *this);
+    // If state is END then the task could not initialize, likely due to no valid items
+    if (newTask->mState == ConstructBlueprintSimTask::State::End) {
+        return nullptr;
+    }
+    return newTask;
 }
 
 std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter)

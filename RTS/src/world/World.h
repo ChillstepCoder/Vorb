@@ -28,7 +28,7 @@ class TileContainerLoader;
 class ChunkGenerator;
 class BiomeGrid;
 class TerrainSurfaceGrid;
-class SimChunkTileGrid;
+class SimChunkGrid;
 class OwnershipGrid;
 class WorldMarkupGrid;
 class HostSimContext;
@@ -84,7 +84,7 @@ public:
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
     BiomeGrid& getBiomeGrid() const { return *mBiomeGrid; }
     TerrainSurfaceGrid& getTerrainSurfaceGrid() const { return *mTerrainSurfaceGrid; }
-    SimChunkTileGrid& getSimTileGrid() const { return *mSimTileGrid; }
+    SimChunkGrid& getSimTileGrid() const { return *mSimTileGrid; }
     WorldMarkupGrid& getMarkupGrid() const { return *mMarkupGrid; }
     OwnershipGrid& getOwnershipGrid() const { return *mOwnershipGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
@@ -164,7 +164,7 @@ private:
     // Surfaces
     std::shared_ptr<TerrainSurfaceGrid> mTerrainSurfaceGrid;
     // SimTiles
-    std::shared_ptr<SimChunkTileGrid> mSimTileGrid;
+    std::shared_ptr<SimChunkGrid> mSimTileGrid;
     // Markup
     std::shared_ptr<WorldMarkupGrid> mMarkupGrid;
     // Ownership

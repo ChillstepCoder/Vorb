@@ -44,7 +44,7 @@ void WorldSaveContext::saveWorld(const fs::path& savePath) {
 
 
     WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
-    SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
+    SimChunkGrid& tileGrid = mWorld.getSimTileGrid();
 
     PreciseTimer timer;
     saveWorldDesc();
@@ -225,15 +225,15 @@ void WorldSaveContext::loadBiomes() {
 }
 
 void WorldSaveContext::saveChunks() {
-    SimChunkTileGrid& simGrid = mWorld.getSimTileGrid();
+    SimChunkGrid& simGrid = mWorld.getSimTileGrid();
     const ui32 regionCount = getRegionCount(RegionType::Chunk);
     for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
         ui32 pendingThisRegion = 0;
         forEachPatchInRegion(RegionType::Chunk, regionId, [this, &simGrid, &pendingThisRegion](ui32 simChunkId, RegionPatchID regionPatchId) {
-            SimChunkTileContainer& patch = simGrid.mChunkData[simChunkId];
+            SimChunk& patch = simGrid.mChunkData[simChunkId];
             if (patch.mIsSaveUpToDate.test_and_set() == false) {
                 // Oceans are implicit
-                if (patch.getState() == SimChunkTileContainerState::Ocean) {
+                if (patch.getState() == SimChunkState::Ocean) {
                     return;
                 }
                 BBuffer buffer;
@@ -260,8 +260,8 @@ void WorldSaveContext::loadChunks() {
         ++mRunningLoadThreads;
         Services::Threadpool::ref().addTask([this, regionId, fileData = std::move(fileData)]() mutable {
             forEachPatchInRegion(RegionType::Chunk, regionId, [this, regionId, &fileData](ui32 patchId, RegionPatchID regionPatchId) {
-                SimChunkTileGrid& simGrid = mWorld.getSimTileGrid();
-                SimChunkTileContainer& patch = simGrid.mChunkData[patchId];
+                SimChunkGrid& simGrid = mWorld.getSimTileGrid();
+                SimChunk& patch = simGrid.mChunkData[patchId];
 
                 std::span<uint8_t> compressedBytes = fileData.getPatchBytes(regionPatchId.regionPatchIndex);
                 // TODO: Evaluate reserve

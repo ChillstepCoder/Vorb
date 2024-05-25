@@ -284,7 +284,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     worldData.playerStart = f32v2(0.5f);
     worldData.heightmapGrid = std::make_unique<HostHeightmapGrid>(worldData.worldWidth);
     worldData.terrainSurfaceGrid = std::make_shared<TerrainSurfaceGrid>(worldData.worldWidth);
-    worldData.tileGrid = std::make_shared<SimChunkTileGrid>(worldData.worldWidth);
+    worldData.tileGrid = std::make_shared<SimChunkGrid>(worldData.worldWidth);
     worldData.biomeGrid = std::make_unique<BiomeGrid>(worldData.worldWidth);
     worldData.biomeGrid->setBiomeTexture(mBiomeTexture);
     for (int v = 0; v < worldData.biomeGrid->getTotalVertices(); ++v) {

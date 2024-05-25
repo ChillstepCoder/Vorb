@@ -6,7 +6,7 @@
 #include "world/ownership/OwnershipGrid.h"
 #include "world/road/TerrainSurfaceGrid.h"
 #include "world/IHeightmapGrid.h"
-#include "world/chunk/SimChunkTileGrid.h"
+#include "world/chunk/SimChunkGrid.h"
 
 #include "world/settlement/SettlementPlotManager.h"
 
@@ -591,7 +591,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
 
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
-    SimChunkTileGrid& tileGrid = mWorld.getSimTileGrid();
+    SimChunkGrid& tileGrid = mWorld.getSimTileGrid();
     for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
         if (roadGrid.setBaseSurfaceTypeIfEmpty(p.pos, newSegment.roadType)) {
             // Clear tile if needed

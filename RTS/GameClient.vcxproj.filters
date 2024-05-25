@@ -972,7 +972,7 @@
     <ClCompile Include="src\rendering\renderer\RoadRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\chunk\SimChunkTileGrid.cpp">
+    <ClCompile Include="src\world\chunk\SimChunkGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\serialization\GameSaveManager.cpp">
@@ -1087,6 +1087,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\SimpleItemReservation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tile\SimTileReservation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\chunk\SimChunk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\FixedSizeVector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2504,7 +2516,7 @@
     <ClInclude Include="src\rendering\renderer\RoadRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\chunk\SimChunkTileGrid.h">
+    <ClInclude Include="src\world\chunk\SimChunkGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\serialization\GameSaveManager.h">
@@ -2691,6 +2703,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\SimpleItemReservation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\SimTileReservation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\chunk\SimChunk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\ChunkLiteTileHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\FixedSizeVector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

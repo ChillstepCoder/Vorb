@@ -116,6 +116,13 @@ TileHandle LiteTileHandle::toTileHandle(World& world) const {
 }
 
 i32v3 LiteTileHandle::getWorldPosition(World& world) const {
+    assert(isValid());
     TileContainer* container = getTileContainer(world);
-    return container->getTileCenterWorldPosition(index);;
+    return container->getTileSpatialGrid().getTileWorldPos3D(index, container->getTileAt(index).getGroundZOffset());
+}
+
+f32v3 LiteTileHandle::getWorldPositionCenter(World& world) const {
+    assert(isValid());
+    TileContainer* container = getTileContainer(world);
+    return container->getTileCenterWorldPosition(index);
 }

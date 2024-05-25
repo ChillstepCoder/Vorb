@@ -3,14 +3,18 @@
 #include "world/simulation/ISimTask.h"
 #include "ai/tasks/MoveToPointSimTask.h"
 #include "item/SimpleItemReservation.h"
+#include "tile/SimTileReservation.h"
 
 class BuildingBlueprint;
+class ConstructBlueprintSimJob;
 
 // TODO: Serialization?
 class ConstructBlueprintSimTask : public ISimTask
 {
+	friend class ConstructBlueprintSimJob;
 public:
-	ConstructBlueprintSimTask(BuildingBlueprint& blueprint);
+	// We will aquire the tileReservations, and the job will release them after
+	ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, std::span<SimChunkTileReservationHandle> tileReservations);
 	~ConstructBlueprintSimTask();
 
 	POOLED_ALLOC_DECL();
@@ -34,9 +38,12 @@ private:
 		End
 	} mState = State::Init;
 
+	ConstructBlueprintSimJob& mParentJob;
 	BuildingBlueprint& mBlueprint;
 	MoveToPointSimSubtask mMoveSubtask;
-	SimpleItemReservationSourceHandlePtr mItemReservation = nullptr;
+    SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
+    std::unique_ptr<SimChunkTileReservationHandle[]> mTileReservations;
+    i32 mNumTileReservations = 0;
 	ui32 mTargetReservationId = 0;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };

@@ -1,26 +1,20 @@
 #pragma once
-#include "util/SpatialGrid2D.h"
+
+#include "tile/TileContainerEvents.h"
+#include "tile/TileWallContainer.h"
 
 #include <shared_mutex>
 #include <boost/container/flat_map.hpp>
 
-#include "tile/TileWallContainer.h"
-
 #include "util/BitArray.h"
+#include "util/FixedSizeVector.h"
 
 #include "serialization/BitseryExt.h"
-
 #include "resources/TileRepository.h"
-#include "tile/TileContainerEvents.h"
+
+#include "tile/SimTileReservation.h"
 
 class Chunk;
-
-enum class SimChunkTileContainerState : ui8 {
-    NONE,
-    //Wilderness, // Unloaded, no tiles
-    Ocean, // Never loaded on sim layer
-    Allocated // Tiles are loaded into memory
-};
 
 enum class SimTileDataFlags : ui8 {
     Reserved = BIT(0)
@@ -36,37 +30,20 @@ struct SimTileData {
 };
 static_assert(sizeof(SimTileData) == 4);
 
-// Lock a sim tile with intent to modify, so it can't be modified or used by anyone else
-class SimTileDataWriteReservation {
-    friend class SimChunkTileGrid;
-public:
-    SimTileDataWriteReservation() = delete;
-    SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ChunkTileIndex tileIndex, SimTileData data);
-    ~SimTileDataWriteReservation();
-
-    POOLED_ALLOC_DECL();
-
-    ChunkTileIndex getTileIndex() const { return mTileIndex; }
-    ChunkID getChunkID() const { return mChunk; }
-    SimChunkTileGrid* getSimChunkGrid() const { return mGrid; }
-    bool didRelease() const { return mDidRelease; }
-
-    void copyBackAndRelease();
-    void cancelReservation() { mDidRelease = true; }
-
-    // Freely modify this and then release or destroy the reservation
-    SimTileData reservedCopy;
-private:
-    SimChunkTileGrid* mGrid = nullptr;
-    ChunkTileIndex mTileIndex;
-    ChunkID mChunk;
-    bool mDidRelease = false;
+enum class SimChunkState : ui8 {
+    NONE,
+    //Wilderness, // Unloaded, no tiles
+    Ocean, // Never loaded on sim layer
+    Allocated // Tiles are loaded into memory
 };
-typedef std::unique_ptr<SimTileDataWriteReservation> SimTileDataWriteReservationPtr;
+
+
+constexpr i16 MAX_SIM_TILE_RESERVATIONS_PER_QUERY = 128;
+typedef FixedSizeVector<SimChunkTileReservationHandle, MAX_SIM_TILE_RESERVATIONS_PER_QUERY> SimChunkTileReservationHandleVector;
 
 class SimChunkTileData {
-    friend class SimChunkTileGrid;
-    friend class SimChunkTileContainer;
+    friend class SimChunkGrid;
+    friend class SimChunk;
     friend class ChunkGenerator;
 private:
     void incrementTileQuantity(TileID id, ui32 quantity);
@@ -124,23 +101,31 @@ private:
     }
 };
 
-class SimChunkTileContainer {
+class SimChunk {
     friend class WorldSaveContext;
-    friend class SimChunkTileGrid;
+    friend class SimChunkGrid;
     friend class ChunkGenerator;
+    friend class SimTileReservation;
+    friend class SimChunkTileReservation;
 public:
     // Return true if it wasnt already allocated
     bool allocate();
     ChunkID getChunkID() const { return mChunkID; }
-    SimChunkTileContainerState getState() const { return mState; }
-    bool isAllocated() const { return mState == SimChunkTileContainerState::Allocated; }
+    SimChunkState getState() const { return mState; }
+    bool isAllocated() const { return mState == SimChunkState::Allocated; }
 
     void bindEditEventToChunkTileContainer(Chunk& chunk);
     void unBindEditEventToChunkTileContainer();
+
+    // Returns num reserved, set maxCount to 0 for infinite
+    i32 tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, SimChunkTileReservationHandleVector& outReservationHandles);
 private:
+    bool tryReserveNonEmptyTile(ChunkTileIndex tileIndex);
+    void freeTileReservation(ChunkTileIndex tileIndex);
+
     mutable std::shared_mutex mMutex;
     std::unique_ptr<SimChunkTileData> mData;
-    SimChunkTileContainerState mState = SimChunkTileContainerState::NONE;
+    SimChunkState mState = SimChunkState::NONE;
     ChunkID mChunkID;
     mutable std::atomic_flag mIsSaveUpToDate = ATOMIC_FLAG_INIT;
     TileContainerEventDispatcher::Handle mEditTilesEventHandle;
@@ -148,7 +133,7 @@ private:
     BINARY_SERIALIZE();
     BINARY_SERIALIZE_INPUT() {
         s.value1b(mState);
-        if (mState == SimChunkTileContainerState::Allocated) {
+        if (mState == SimChunkState::Allocated) {
             allocate();
             s.object(*mData);
         }
@@ -160,51 +145,3 @@ private:
         }
     }
 };
-
-class SimChunkTileGrid {
-    friend class WorldSaveContext;
-public:
-    SimChunkTileGrid(ui32 worldWidthTiles);
-    ~SimChunkTileGrid();
-
-    ui32 getApproxMemoryUsageBytes() const;
-
-    const SimChunkTileContainer& getChunk(ChunkID chunkId) const {
-        return mChunkData[chunkId];
-    }
-    SimChunkTileContainer& getChunk(ChunkID chunkId) {
-        return mChunkData[chunkId];
-    }
-
-    SimChunkTileContainer& getChunkForGeneration(ChunkID chunkId) {
-        return mChunkData[chunkId];
-    }
-
-    SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(ChunkID chunkId, TileIndex tileIndex);
-    SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(TileCoord tileCoord);
-    void releaseTileDataReservationAndCopyData(SimTileDataWriteReservation& reservation);
-
-
-    // For memory tracking only
-    void onNewChunkAllocated() { ++mTotalSimulatingChunks; }
-private:
-    void initInternal();
-
-    std::atomic<ui32> mTotalSimulatingChunks = 0;
-    ui32 mWorldWidthTiles;
-    ui32 mWidthChunks = 0;
-    ui32 mTotalChunks;
-    SpatialGrid2D mSpatialGrid;
-    std::unique_ptr<SimChunkTileContainer[]> mChunkData;
-
-    BINARY_SERIALIZE() {
-        s.value4b(mWidthChunks);
-        if (!mChunkData) {
-            initInternal();
-        }
-        for (ui32 i = 0; i < mTotalChunks; ++i) {
-            s.object(mChunkData[i]);
-        }
-    }
-};
-

@@ -4,14 +4,20 @@
 #include "building/BuildingBlueprint.h"
 #include "tile/TileHandle.h"
 
+#include "tile/SimTileReservation.h"
+#include "tile/SimTileReservation.h"
+
 class SimECS;
 class ISimTask;
+class ConstructBlueprintSimTask;
 
 // TODO:
 enum class ItemAquisitionSourceType : ui8 {
-	Environment,
+	ChunkTile,
+	ItemOnGround,
 	StockpileOwned,
-	StockpilePurchase
+	StockpilePurchase,
+	COUNT
 };
 struct ItemAquisitionSource {
 	LiteTileHandle tileHandle;
@@ -20,9 +26,11 @@ struct ItemAquisitionSource {
 	ItemAquisitionSourceType type;
 };
 
+
 // Step 1: Aquire items for job and fill blueprint + flatten terrain
 // Step 2: Build each tile that has all items
 class ConstructBlueprintSimJob : public ISimJob {
+	friend class ConstructBlueprintSimTask;
 public:
 	ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner);
 	~ConstructBlueprintSimJob() = default;
@@ -38,7 +46,8 @@ public:
 private:
 
 	// Places where we are attempting to aquire items from
-	std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
+    std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
+    std::vector<SimChunkTileReservationHandle> reservedTiles;
 
 	BuildingBlueprint& mBlueprint;
 	SimECS& mSimEcs;

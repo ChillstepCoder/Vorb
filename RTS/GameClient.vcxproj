@@ -476,12 +476,15 @@
     <ClCompile Include="src\serialization\GameSaveManager.cpp" />
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp" />
     <ClCompile Include="src\text\NameManager.cpp" />
+    <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp" />
+    <ClCompile Include="src\tile\SimTileReservation.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
+    <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
     <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
     <ClCompile Include="src\visibility\VisibilityGraph.cpp" />
@@ -544,7 +547,8 @@
     <ClCompile Include="src\weather\WeatherManager.cpp" />
     <ClCompile Include="src\world\biome\BiomeGrid.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
-    <ClCompile Include="src\world\chunk\SimChunkTileGrid.cpp" />
+    <ClCompile Include="src\world\chunk\SimChunk.cpp" />
+    <ClCompile Include="src\world\chunk\SimChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
     <ClCompile Include="src\world\controller\EditorWorldInterfaceController.cpp" />
@@ -947,6 +951,8 @@
     <ClInclude Include="src\serialization\gamesave\WorldSaveEventType.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\NameManager.h" />
+    <ClInclude Include="src\tile\ChunkLiteTileHandle.h" />
+    <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
@@ -956,6 +962,7 @@
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />
+    <ClInclude Include="src\util\FixedSizeVector.h" />
     <ClInclude Include="src\util\TilingVoronoiMap.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />
@@ -1064,7 +1071,8 @@
     <ClInclude Include="src\world\ChunkEvents.h" />
     <ClInclude Include="src\world\ChunkGridEvent.h" />
     <ClInclude Include="src\world\ChunkState.h" />
-    <ClInclude Include="src\world\chunk\SimChunkTileGrid.h" />
+    <ClInclude Include="src\world\chunk\SimChunk.h" />
+    <ClInclude Include="src\world\chunk\SimChunkGrid.h" />
     <ClInclude Include="src\world\cli\CliChunkGrid.h" />
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
     <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
