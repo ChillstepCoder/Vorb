@@ -36,6 +36,7 @@ struct TileContainerEditLayerEventData {
     f32v3 worldPosition;
     TileID prevId;
     TileID newId;
+    ui8 newVariant;
     TileLayer layer;
 };
 
@@ -61,7 +62,7 @@ struct TileContainerEditEvent {
         TileContainerEditOrientationEventData* changeOrientationArray;
         // TODO: Walls
     };
-    ui32 editCount = 1;
+    i32 editCount = 1;
     TileContainerEditEventType type;
 };
 

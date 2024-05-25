@@ -2229,7 +2229,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
 BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBlueprintGenerationContext& context) {
     
     // Tally required items
-    boost::container::flat_map<ItemID, ui32> requiredItems;
+    boost::container::flat_map<ItemID, i32> requiredItems;
     requiredItems.reserve(32);
     TileRepository& tileRepo = TileRepository::get();
 
@@ -2245,7 +2245,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
 
     auto addRequiredItems = [&](BlueprintTileType type) {
         const FillableRecipe& recipe = context.tileRecipes[e_cast(type)];
-        for (ui32 r = 0; r < recipe.numItems; ++r) {
+        for (int r = 0; r < recipe.numItems; ++r) {
             const ItemID id = recipe.itemIds[r];
             const ui8 quantity = recipe.requiredQuantities[r];
             auto&& it = requiredItems.find(id);
@@ -2263,14 +2263,6 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     bp->floorHeight = context.mTileSpatialGrid.getFloorHeight();
     bp->worldPosRootDTile = context.rootPosDTileCoord;
     bp->dimsDTile = context.dimsDTile;
-    // Items
-    bp->itemCompositionCount = context.requiredItemsToBuild.size();
-    bp->itemComposition = std::make_unique<FillableSimpleItemStack[]>(bp->itemCompositionCount);
-    for (i32 i = 0; i < bp->itemCompositionCount; ++i) {
-        bp->itemComposition[i].itemId = context.requiredItemsToBuild[i].itemId;
-        bp->itemComposition[i].desiredQuantity = context.requiredItemsToBuild[i].quantity;
-        bp->totalItemsUnfulfilled += context.requiredItemsToBuild[i].quantity;
-    }
 
     bp->tileTargetCount = context.totalTiles;
     bp->tileTargets = std::make_unique<BuildingBlueprintTileTarget[]>(bp->tileTargetCount);
@@ -2318,9 +2310,14 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     // Copy room data
     //newBuilding->mRooms = std::move(bp.rooms);
 
-    context.requiredItemsToBuild.reserve(requiredItems.size());
-    for (auto&& it : requiredItems) {
-        context.requiredItemsToBuild.emplace_back(it.first, it.second);
+    bp->itemCompositionCount = requiredItems.size();
+    bp->itemComposition = std::make_unique<FillableSimpleItemStack[]>(bp->itemCompositionCount);
+    i32 i = 0;
+    for (auto& [id, quantity] : requiredItems) {
+        bp->itemComposition[i].itemId = id;
+        bp->itemComposition[i].desiredQuantity = quantity;
+        bp->totalItemsUnfulfilled += quantity;
+        ++i;
     }
 
     // Set stairs tiles

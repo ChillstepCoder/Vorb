@@ -73,7 +73,7 @@ public:
     bool canAddTileData(TileIndex i, const TileDef& tileData) const;
     void setTileLayer(TileIndex i, const TileDef& tileData);
     bool tryAddTileLayer(TileIndex i, const TileDef& tileData);
-    void setTileLayer(TileIndex i, TileLayer layer, TileID id);
+    void setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 variant);
 
     void setTileFlag(TileIndex i, TileFlags flag);
     void overwriteTileFlags(TileIndex i, TileFlags flags);

@@ -691,7 +691,10 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 void NavWorld::tryBeginNavmeshTaskForContainer(const TileContainer* container) {
     // The decref will happen after the build
     if (container->mIsGeneratingNavmesh) {
-        addContainerToPendingDirtyContainersList(container);
+        tryAddContainerToPendingDirtyContainersList(container);
+        // If we are generating, we already have a ref, so delete the one we added
+        // when dirtying this container
+        container->decRef();
     }
     else {
         if (container->isTerrain()) {
@@ -719,7 +722,11 @@ void NavWorld::tryBeginNavmeshTaskForContainer(const TileContainer* container) {
                 });
             }
             else {
-                addContainerToPendingDirtyContainersList(container);
+                if (!tryAddContainerToPendingDirtyContainersList(container)) {
+                    // We decref here since we have an additional incref that is no longer needed
+                    // from when we first marked as dirty
+                    container->decRef();
+                }
             }
         }
         else {
@@ -736,17 +743,13 @@ void NavWorld::tryBeginNavmeshTaskForContainer(const TileContainer* container) {
     }
 }
 
-void NavWorld::addContainerToPendingDirtyContainersList(const TileContainer* container) {
+bool NavWorld::tryAddContainerToPendingDirtyContainersList(const TileContainer* container) {
     auto&& it = mPendingDirtyTileContainers.find(container);
     if (it == mPendingDirtyTileContainers.end()) {
         mPendingDirtyTileContainers.insert(container);
+        return true;
     }
-    else {
-        // If we are already tracked to be recreated, ignore this request.
-        // We decref here since we have an additional incref that is no longer needed
-        // from when we marked as dirty
-        container->decRef();
-    }
+    return false;
 }
 
 void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {

@@ -231,7 +231,7 @@ void WorldSaveContext::saveChunks() {
         ui32 pendingThisRegion = 0;
         forEachPatchInRegion(RegionType::Chunk, regionId, [this, &simGrid, &pendingThisRegion](ui32 simChunkId, RegionPatchID regionPatchId) {
             SimChunkTileContainer& patch = simGrid.mChunkData[simChunkId];
-            if (patch.isSaveUpToDate.test_and_set() == false) {
+            if (patch.mIsSaveUpToDate.test_and_set() == false) {
                 // Oceans are implicit
                 if (patch.getState() == SimChunkTileContainerState::Ocean) {
                     return;
@@ -269,7 +269,7 @@ void WorldSaveContext::loadChunks() {
                 bitsery::quickDeserialization(BInputAdapter{ buffer.data(), buffer.size() }, patch);
 
                 // Clean
-                patch.isSaveUpToDate.test_and_set();
+                patch.mIsSaveUpToDate.test_and_set();
             });
             --mRunningLoadThreads;
         });

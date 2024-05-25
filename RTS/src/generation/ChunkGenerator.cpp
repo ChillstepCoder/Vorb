@@ -109,7 +109,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
     chunk.mTileContainer->allocateData();
 
     // Indicates an ocean chunk
-    if (simData.state != SimChunkTileContainerState::Allocated) {
+    if (simData.mState != SimChunkTileContainerState::Allocated) {
         // TODO: Need to still generate tiles in ocean and stuff
         chunk.mAABB.height = 10;
         return;
@@ -128,9 +128,9 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
         }
     }
     // Read+write lock
-    std::lock_guard lock(simData.mutex);
-    assert(simData.data);
-    SimChunkTileData& simChunkTileData = *simData.data;
+    std::lock_guard lock(simData.mMutex);
+    assert(simData.mData);
+    SimChunkTileData& simChunkTileData = *simData.mData;
     auto& tileIndexToTileData = simChunkTileData.tileIndexToTileData;
     for (auto&& it = tileIndexToTileData.begin(); it != tileIndexToTileData.end();) {
         auto& [index, data] = *it;
@@ -179,12 +179,12 @@ void ChunkGenerator::generateSimChunk(SimChunkTileContainer& chunk, World& world
     SimChunkTileGrid& simGrid = world.getSimTileGrid();
 
     // Allocate tiles if needed
-    ChunkID id = chunk.chunkId;
+    ChunkID id = chunk.mChunkID;
     if (chunk.allocate()) {
         // FOR MEMORY TRACKING ONLY
         simGrid.onNewChunkAllocated();
     }
-    SimChunkTileData& chunkData = *chunk.data;
+    SimChunkTileData& chunkData = *chunk.mData;
     const i32v2 chunkPosWorld = mSpatialGrid->getWorldPosXYFromID(id);
 
     ui32 totalTiles = 0;

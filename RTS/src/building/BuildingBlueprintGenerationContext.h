@@ -108,7 +108,6 @@ public:
     //std::map<ItemID, std::deque<TileIndex>> tilesNeedingItems; // Pull from back first
     //std::vector<TileIndex> tilesReadyToBuild;
     //std::vector<BlueprintTileItemData> tileItemData;
-    std::vector<SimpleItemStack> requiredItemsToBuild;
     //std::vector<BlueprintTileItemDataHandle> tileItemDataHandles; // Constant size
     //std::vector<BlueprintTileBuildData> tileBuildData; // Constant size
     // End construction

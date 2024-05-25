@@ -228,7 +228,8 @@ public:
     bool navThreadTryReserveHarvestable(LiteTileHandle position) const;
 private:
     void tryBeginNavmeshTaskForContainer(const TileContainer* container);
-    void addContainerToPendingDirtyContainersList(const TileContainer* container);
+    // Return false on already there
+    bool tryAddContainerToPendingDirtyContainersList(const TileContainer* container);
     void finishNavGraphBuildTask(NavGraphBuildTaskData& taskData);
     void initEventHandlers();
     bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ChunkBuildingEdgeListOutput* externalEdges);

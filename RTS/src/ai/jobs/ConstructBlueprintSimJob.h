@@ -2,9 +2,23 @@
 
 #include "world/simulation/ISimJob.h"
 #include "building/BuildingBlueprint.h"
+#include "tile/TileHandle.h"
 
 class SimECS;
 class ISimTask;
+
+// TODO:
+enum class ItemAquisitionSourceType : ui8 {
+	Environment,
+	StockpileOwned,
+	StockpilePurchase
+};
+struct ItemAquisitionSource {
+	LiteTileHandle tileHandle;
+	i32v2 worldPos2D;
+	i16 estimatedQuantity;
+	ItemAquisitionSourceType type;
+};
 
 // Step 1: Aquire items for job and fill blueprint + flatten terrain
 // Step 2: Build each tile that has all items
@@ -22,6 +36,9 @@ public:
 	void onCompleteTask(ISimTask& task) override;
 
 private:
+
+	// Places where we are attempting to aquire items from
+	std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
 
 	BuildingBlueprint& mBlueprint;
 	SimECS& mSimEcs;

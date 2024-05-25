@@ -59,7 +59,7 @@ void ConstructBlueprintSimTask::onBeginFull(World& world, entt::registry& fullRe
 
 void ConstructBlueprintSimTask::onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent)
 {
-    throw std::logic_error("The method or operation is not implemented.");
+    //throw std::logic_error("The method or operation is not implemented.");
 }
 
 SimTaskTickResult ConstructBlueprintSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent)
@@ -69,7 +69,8 @@ SimTaskTickResult ConstructBlueprintSimTask::tickFull(World& world, entt::regist
 
 SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent)
 {
-    throw std::logic_error("The method or operation is not implemented.");
+   // throw std::logic_error("The method or operation is not implemented.");
+    return SimTaskTickResult::InProgress;
 }
 
 const char* ConstructBlueprintSimTask::getTaskName() const

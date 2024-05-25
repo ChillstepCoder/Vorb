@@ -10,6 +10,7 @@
 #include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/StoryTeller.h"
 #include "world/simulation/host/SimImmigrationManager.h"
+#include "world/chunk/SimChunkTileGrid.h"
 #include "ecs/IEntityComponentSystem.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -161,6 +162,8 @@ void HostSimContext::initEvents() {
         mSimThread->addTask([this, &chunk]() {
             mSimulatingChunks.clearBit(chunk.getChunkID());
             ChunkEntityFullActivateDataList entities = mSimECS->simThreadOnActivateChunk(chunk.getChunkID());
+
+            mWorld.getSimTileGrid().getChunk(chunk.getChunkID()).bindEditEventToChunkTileContainer(chunk);
             GameThreadTasks::getInstance().addGenericTask([this, &chunk, entities = std::move(entities)]() mutable {
                 mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(entities));
                 chunk.setState(ChunkState::READY_TO_LOAD);
@@ -175,6 +178,7 @@ void HostSimContext::initEvents() {
         chunk.setState(ChunkState::DESTROYING_ON_SIM);
         ChunkEntityFullDeactivateDataList deactivateList = mWorld.getECS().deactivateEntitiesForChunk(chunk);
 
+        mWorld.getSimTileGrid().getChunk(chunk.getChunkID()).unBindEditEventToChunkTileContainer();
         mSimThread->addTask([this, &chunk, deactivateList = std::move(deactivateList)]() {
             mSimulatingChunks.setBit(chunk.getChunkID());
             mSimECS->simThreadOnFullDeactivateEntities(chunk.getChunkID(), deactivateList);

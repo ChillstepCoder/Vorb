@@ -5,9 +5,15 @@
 #include <boost/container/flat_map.hpp>
 
 #include "tile/TileWallContainer.h"
+
 #include "util/BitArray.h"
 
 #include "serialization/BitseryExt.h"
+
+#include "resources/TileRepository.h"
+#include "tile/TileContainerEvents.h"
+
+class Chunk;
 
 enum class SimChunkTileContainerState : ui8 {
     NONE,
@@ -35,12 +41,12 @@ class SimTileDataWriteReservation {
     friend class SimChunkTileGrid;
 public:
     SimTileDataWriteReservation() = delete;
-    SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ui16 tileIndex, SimTileData data);
+    SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ChunkTileIndex tileIndex, SimTileData data);
     ~SimTileDataWriteReservation();
 
     POOLED_ALLOC_DECL();
 
-    ui16 getTileIndex() const { return mTileIndex; }
+    ChunkTileIndex getTileIndex() const { return mTileIndex; }
     ChunkID getChunkID() const { return mChunk; }
     SimChunkTileGrid* getSimChunkGrid() const { return mGrid; }
     bool didRelease() const { return mDidRelease; }
@@ -52,7 +58,7 @@ public:
     SimTileData reservedCopy;
 private:
     SimChunkTileGrid* mGrid = nullptr;
-    ui16 mTileIndex;
+    ChunkTileIndex mTileIndex;
     ChunkID mChunk;
     bool mDidRelease = false;
 };
@@ -66,9 +72,15 @@ private:
     void incrementTileQuantity(TileID id, ui32 quantity);
     void decrementTileQuantity(TileID id, ui32 quantity);
 
-    boost::container::flat_map<ui16, SimTileData> tileIndexToTileData;
-    boost::container::flat_map<TileID, ui32> tileQuantities;
+    void addTile(ChunkTileIndex pos, TileID id, ui8 variant);
+    void removeTile(ChunkTileIndex pos);
+
+    // SERIALIZED DATA
+    boost::container::flat_map<ChunkTileIndex, SimTileData> tileIndexToTileData;
     TileWallContainer tileWalls; // Most chunks don't have walls
+    // NOT SERIALIZED
+    boost::container::flat_map<TileID, ui32> tileQuantities;
+    boost::container::flat_map<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
 
     BINARY_SERIALIZE();
     template <typename T>
@@ -82,8 +94,11 @@ private:
     }
     BINARY_SERIALIZE_INPUT() {
         sharedSerialize(s);
+        // Why are we checking here?
         if (tileQuantities.empty()) {
+            TileRepository& tileRepo = TileRepository::get();
             for (auto& [tileIndex, tileData] : tileIndexToTileData) {
+                const TileDef& tileDef = tileRepo.getLoadedOrUnloadedAsset(tileData.tileId);
                 auto&& it = tileQuantities.find(tileData.tileId);
                 if (it == tileQuantities.end()) [[unlikely]] {
                     tileQuantities.emplace(tileData.tileId, 1);
@@ -91,8 +106,17 @@ private:
                 else {
                     ++it->second;
                 }
+                if (tileDef.harvestable != TileHarvestable::NONE) {
+                    harvestables[tileDef.harvestable].emplace_back(tileIndex);
+                }
             }
             tileQuantities.shrink_to_fit();
+        }
+        else {
+            assert(false); // TODO: I don't understand this case, why would we input twice?
+        }
+        for (auto&& it : harvestables) {
+            it.second.shrink_to_fit();
         }
     }
     BINARY_SERIALIZE_OUTPUT() {
@@ -107,28 +131,32 @@ class SimChunkTileContainer {
 public:
     // Return true if it wasnt already allocated
     bool allocate();
-    ChunkID getChunkID() const { return chunkId; }
-    SimChunkTileContainerState getState() const { return state; }
-    bool isAllocated() const { return state == SimChunkTileContainerState::Allocated; }
+    ChunkID getChunkID() const { return mChunkID; }
+    SimChunkTileContainerState getState() const { return mState; }
+    bool isAllocated() const { return mState == SimChunkTileContainerState::Allocated; }
+
+    void bindEditEventToChunkTileContainer(Chunk& chunk);
+    void unBindEditEventToChunkTileContainer();
 private:
-    mutable std::shared_mutex mutex;
-    std::unique_ptr<SimChunkTileData> data;
-    SimChunkTileContainerState state = SimChunkTileContainerState::NONE;
-    ChunkID chunkId;
-    mutable std::atomic_flag isSaveUpToDate = ATOMIC_FLAG_INIT;
+    mutable std::shared_mutex mMutex;
+    std::unique_ptr<SimChunkTileData> mData;
+    SimChunkTileContainerState mState = SimChunkTileContainerState::NONE;
+    ChunkID mChunkID;
+    mutable std::atomic_flag mIsSaveUpToDate = ATOMIC_FLAG_INIT;
+    TileContainerEventDispatcher::Handle mEditTilesEventHandle;
 
     BINARY_SERIALIZE();
     BINARY_SERIALIZE_INPUT() {
-        s.value1b(state);
-        if (state == SimChunkTileContainerState::Allocated) {
+        s.value1b(mState);
+        if (mState == SimChunkTileContainerState::Allocated) {
             allocate();
-            s.object(*data);
+            s.object(*mData);
         }
     }
     BINARY_SERIALIZE_OUTPUT() {
-        s.value1b(state);
-        if (data) {
-            s.object(*data);
+        s.value1b(mState);
+        if (mData) {
+            s.object(*mData);
         }
     }
 };
@@ -141,7 +169,10 @@ public:
 
     ui32 getApproxMemoryUsageBytes() const;
 
-    const SimChunkTileContainer& getChunk(ChunkID chunkId) {
+    const SimChunkTileContainer& getChunk(ChunkID chunkId) const {
+        return mChunkData[chunkId];
+    }
+    SimChunkTileContainer& getChunk(ChunkID chunkId) {
         return mChunkData[chunkId];
     }
 
@@ -152,6 +183,7 @@ public:
     SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(ChunkID chunkId, TileIndex tileIndex);
     SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(TileCoord tileCoord);
     void releaseTileDataReservationAndCopyData(SimTileDataWriteReservation& reservation);
+
 
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }

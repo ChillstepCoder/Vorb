@@ -60,38 +60,39 @@ public:
     // Returns false if already dirty
     bool gameThreadTryDirtyObject(T obj) {
         ASSERT_GAME_THREAD();
-        bool didAdd = false;
         auto&& it = mDirtyObjectsGameThread.find(obj);
         if (it == mDirtyObjectsGameThread.end()) {
-            didAdd = true;
             mDirtyObjectsGameThread.insert(obj);
+            return true;
         }
-        return didAdd;
+        return false;
     }
 
-    // Returns false if already dirty
-    bool workerThreadTryDirtyObject(T obj) {
-        assert(!IS_GAME_THREAD());
-        bool didAdd = false;
-        { // Critical section
-            std::lock_guard lock(mMutex);
-            auto&& it = mDirtyObjectsWorkerThread.find(obj);
-            if (it == mDirtyObjectsWorkerThread.end()) {
-                didAdd = true;
-                mDirtyObjectsWorkerThread.insert(obj);
-            }
-        }
-        return didAdd;
-    }
+    //// Returns false if already dirty
+    //bool workerThreadTryDirtyObject(T obj) {
+    //    assert(!IS_GAME_THREAD());
+    //    bool didAdd = false;
+    //    { // Critical section
+    //        std::lock_guard lock(mMutex);
+    //        auto&& it = mDirtyObjectsWorkerThread.find(obj);
+    //        if (it == mDirtyObjectsWorkerThread.end()) {
+    //            didAdd = true;
+    //            mDirtyObjectsWorkerThread.insert(obj);
+    //        }
+    //    }
+    //    return didAdd;
+    //}
 
-    // Will fill outObjects with all currently dirty objects and clear
+    // Will fill outObjects with all currently dirty objects and clear, but only if the worker thread already cleared it before
+    // As otherwise we can end up with duplicates in the workerThread set which can cause dangling refs (as they combine)
     void gameThreadCopyToWorkerThread() {
         ASSERT_GAME_THREAD();
         {
             std::lock_guard lock(mMutex);
-            mDirtyObjectsWorkerThread.merge(mDirtyObjectsGameThread);
+            if (mDirtyObjectsWorkerThread.empty()) {
+                std::swap(mDirtyObjectsWorkerThread, mDirtyObjectsGameThread);
+            }
         }
-        mDirtyObjectsGameThread.clear();
     }
 
     // Will fill outObjects with all currently dirty objects and clear

@@ -87,7 +87,7 @@ bool TileContainer::canAddTileData(TileIndex i, const TileDef& tileData) const
 
 void TileContainer::setTileLayer(TileIndex i, const TileDef& tileData) {
     assert(isReady());
-    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID());
+    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID(), 0);
 }
 
 bool TileContainer::tryAddTileLayer(TileIndex i, const TileDef& tileData) {
@@ -96,11 +96,11 @@ bool TileContainer::tryAddTileLayer(TileIndex i, const TileDef& tileData) {
     if (!tile.canAddTileData(tileData)) {
         return false;
     }
-    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID());
+    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID(), 0);
     return true;
 }
 
-void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
+void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 variant) {
     assert(isReady());
     Tile& tile = mTiles[i];
     TileID prevId = tile.layers[e_cast(layer)];
@@ -145,6 +145,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     eventData.worldPosition = getTileCenterWorldPosition(i);
     eventData.tileIndex = i;
     eventData.prevId = prevId;
+    eventData.newVariant = variant;
     eventData.newId = id;
     eventData.layer = layer;
     // Edit
@@ -458,7 +459,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
 
         std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;
         // Destroy tile
-        setTileLayer(index, TileLayer::Main, TILE_ID_NONE);
+        setTileLayer(index, TileLayer::Main, TILE_ID_NONE, 0);
         // Damage + Death event
         dispatchTileDamaged(evnt);
         mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);

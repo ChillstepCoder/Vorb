@@ -1,7 +1,7 @@
 model: tree_pine
 col_shape: capsule
 col_half_dims: [1.3, 1.3, 5.0]
-resource: wood
+harvestable: wood
 path_weight: 0
 destroy_effect: tree_explode
 block_vis: true

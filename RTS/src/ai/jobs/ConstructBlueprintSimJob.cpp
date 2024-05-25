@@ -9,7 +9,7 @@ POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimJob, 256);
 ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner)
     : ISimJob(simJobOwner), mBlueprint(blueprint), mSimEcs(simEcs) {
     ASSERT_SIM_THREAD();
-
+    assert(blueprint.itemCompositionCount);
     assert(blueprint.parentPlotID != INVALID_SETTLEMENT_PLOT_ID);
     assert(blueprint.parentSettlement != entt::null);
     assert(blueprint.worldPosRootDTile.x > -1);

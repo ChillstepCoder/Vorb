@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "SimChunkTileGrid.h"
 
+#include "world/Chunk.h"
+
 SimChunkTileGrid::SimChunkTileGrid(ui32 worldWidthTiles) {
     mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
     initInternal();
@@ -19,9 +21,9 @@ SimTileDataWriteReservationPtr SimChunkTileGrid::tryReserveTileDataAtPosIfNotEmp
     assert(container.isAllocated()); // TODO: Allow allocation later?
 
     { // Critical section
-        std::unique_lock lock(container.mutex);
-        auto&& it = container.data->tileIndexToTileData.find(tileIndex);
-        if (it != container.data->tileIndexToTileData.end()) {
+        std::unique_lock lock(container.mMutex);
+        auto&& it = container.mData->tileIndexToTileData.find(tileIndex);
+        if (it != container.mData->tileIndexToTileData.end()) {
             // Tile was tracked, only reserve if not empty
             SimTileData& existing = it->second;
             if (existing.tileId != TILE_ID_NONE) {
@@ -48,18 +50,18 @@ void SimChunkTileGrid::releaseTileDataReservationAndCopyData(SimTileDataWriteRes
     bool didModify = false;
 
     { // Critical section
-        std::lock_guard lock(container.mutex);
-        auto&& it = container.data->tileIndexToTileData.find(reservation.mTileIndex);
-        if (it == container.data->tileIndexToTileData.end()) {
+        std::lock_guard lock(container.mMutex);
+        auto&& it = container.mData->tileIndexToTileData.find(reservation.mTileIndex);
+        if (it == container.mData->tileIndexToTileData.end()) {
             // Tile was not tracked, just add it
             if (newData.tileId != TILE_ID_NONE) {
-                container.data->tileIndexToTileData.emplace(reservation.mTileIndex, newData);
-                container.data->incrementTileQuantity(newData.tileId, 1);
+                container.mData->tileIndexToTileData.emplace(reservation.mTileIndex, newData);
+                container.mData->incrementTileQuantity(newData.tileId, 1);
                 didModify = true;
             }
             else if (!newData.isNull()) {
                 // We can still store data with empty tile as long as there are flags
-                container.data->tileIndexToTileData.emplace(reservation.mTileIndex, newData);
+                container.mData->tileIndexToTileData.emplace(reservation.mTileIndex, newData);
                 didModify = true;
             }
         }
@@ -68,12 +70,12 @@ void SimChunkTileGrid::releaseTileDataReservationAndCopyData(SimTileDataWriteRes
             SimTileData& existing = it->second;
             if (existing.tileId != newData.tileId) {
                 didModify = true;
-                container.data->decrementTileQuantity(existing.tileId, 1);
+                container.mData->decrementTileQuantity(existing.tileId, 1);
                 if (newData.tileId != TILE_ID_NONE) {
-                    container.data->incrementTileQuantity(newData.tileId, 1);
+                    container.mData->incrementTileQuantity(newData.tileId, 1);
                 }
                 if (newData.isNull()) {
-                    container.data->tileIndexToTileData.erase(it);
+                    container.mData->tileIndexToTileData.erase(it);
                 }
                 else {
                     it->second = newData;
@@ -93,22 +95,56 @@ void SimChunkTileGrid::initInternal() {
     LOG_DEBUG("Sim chunk grid allocated {} mb data",
         (mTotalChunks * sizeof(SimChunkTileContainer)) / 1024.f / 1024.f);
     for (ChunkID id = 0; id < mTotalChunks; ++id) {
-        mChunkData[id].chunkId = id;
+        mChunkData[id].mChunkID = id;
     }
 }
 
 bool SimChunkTileContainer::allocate() {
-    std::lock_guard lock(mutex);
-    if (!data) {
-        state = SimChunkTileContainerState::Allocated;
-        data = std::make_unique<SimChunkTileData>();
+    std::lock_guard lock(mMutex);
+    if (!mData) {
+        mState = SimChunkTileContainerState::Allocated;
+        mData = std::make_unique<SimChunkTileData>();
         return true;
     }
-    assert(state == SimChunkTileContainerState::Allocated);
+    assert(mState == SimChunkTileContainerState::Allocated);
     return false;
 }
 
-SimTileDataWriteReservation::SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ui16 tileIndex, SimTileData data) :
+void SimChunkTileContainer::bindEditEventToChunkTileContainer(Chunk& chunk) {
+    TileContainer* chunkTileContainer = chunk.getTileContainer();
+
+    assert(chunk.getTileContainer());
+    // Thread safe updates of the sim tile grid
+    mEditTilesEventHandle = chunkTileContainer->addEditTilesListener([this](const TileContainerEvent& containerEvent) {
+        static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+
+        ASSERT_GAME_THREAD();
+
+        const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(containerEvent.varEvent);
+        if (editEvent.type == TileContainerEditEventType::ChangeLayer) {
+            allocate();
+            std::lock_guard lock(mMutex);
+            for (i32 i = 0; i < editEvent.editCount; ++i) {
+                TileContainerEditLayerEventData& data = editEvent.changeLayerArray[i];
+                if (data.layer == TileLayer::Main) [[likely]] {
+                    if (data.prevId != TILE_ID_NONE) {
+                        mData->removeTile(data.tileIndex);
+                    }
+                    if (data.newId != TILE_ID_NONE) {
+                        mData->addTile(data.tileIndex, data.newId, data.newVariant);
+                    }
+                }
+            }
+            mIsSaveUpToDate.clear();
+        }
+    });
+}
+
+void SimChunkTileContainer::unBindEditEventToChunkTileContainer() {
+    mEditTilesEventHandle.reset();
+}
+
+SimTileDataWriteReservation::SimTileDataWriteReservation(SimChunkTileGrid& grid, ChunkID chunk, ChunkTileIndex tileIndex, SimTileData data) :
     mGrid(&grid),
     mChunk(chunk),
     mTileIndex(tileIndex),
@@ -148,4 +184,34 @@ void SimChunkTileData::decrementTileQuantity(TileID id, ui32 quantity) {
     if (qit->second == 0) {
         tileQuantities.erase(qit);
     }
+}
+
+void SimChunkTileData::addTile(ChunkTileIndex pos, TileID id, ui8 variant) {
+
+    tileIndexToTileData.emplace(pos, SimTileData{.tileId = id, .variant = variant});
+    
+    incrementTileQuantity(id, 1);
+    TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
+    if (harvestable != TileHarvestable::NONE) {
+        harvestables[harvestable].emplace_back(pos);
+    }
+}
+
+void SimChunkTileData::removeTile(ChunkTileIndex pos) {
+    auto&& it = tileIndexToTileData.find(pos);
+    assert(it != tileIndexToTileData.end());
+    SimTileData& data = it->second;
+    decrementTileQuantity(data.tileId, 1);
+    TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(data.tileId).harvestable;
+    if (harvestable != TileHarvestable::NONE) {
+        auto&& hit = harvestables.find(harvestable);
+        for (size_t i = 0; i < hit->second.size(); ++i) {
+            if (hit->second[i] == pos) {
+                hit->second[i] = hit->second.back();
+                hit->second.pop_back();
+                break;
+            }
+        }
+    }
+    tileIndexToTileData.erase(it);
 }
