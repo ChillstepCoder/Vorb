@@ -388,7 +388,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                     IEntityComponentSystem& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
+                    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::Wood, 1024.0f, nullptr);
                 });
             }
         }

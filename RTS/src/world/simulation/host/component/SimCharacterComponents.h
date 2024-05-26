@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/container/flat_map.hpp>
 #include <boost/circular_buffer.hpp>
 #include "world/simulation/ISimTask.h"
 #include "ai/jobs/SimTaskHandle.h"

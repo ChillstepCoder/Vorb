@@ -6,6 +6,7 @@
 // TODO: SettlementConst?
 #include "city/CityConst.h"
 #include "world/settlement/SettlementLayoutManager.h"
+#include "tile/TileHarvestable.h"
 
 enum class JobType {
     
@@ -30,6 +31,10 @@ struct SettlementSimComponent {
     ChunkID rootChunkId;
     SettlementUID uid;
     SettlementTier tier = SettlementTier::Hamlet;
+
+    TileCoord getCenterPos(i32 worldWidthChunks) {
+        return TileCoord((rootChunkId % worldWidthChunks) * CHUNK_WIDTH, (rootChunkId / worldWidthChunks) * CHUNK_WIDTH);
+    }
 };
 
 struct SettlementAdjacencyData {
@@ -95,6 +100,24 @@ struct SettlementWorkOrdersComponent {
 struct SettlementLayoutComponent {
     i32v2 rootPos;
     SettlementLayoutManager manager;
+};
+
+struct SettlementHarvestableTrackerComponent {
+    friend class SimSettlementSystem;
+    SettlementHarvestableTrackerComponent() {
+        harvestableLocations = std::make_unique<SortedIntCoordDistanceSqMap[]>(e_count(TileHarvestable));
+    }
+
+    SortedIntCoordDistanceSqMap& getLocationsForHarvestable(TileHarvestable harvestable) {
+        assert(harvestable != TileHarvestable::None);
+        ASSERT_SIM_THREAD();
+        return harvestableLocations[e_cast(harvestable)];
+    }
+
+public:
+    i32 currentSearchRadiusTiles = CHUNK_WIDTH * 3;
+private:
+    std::unique_ptr<SortedIntCoordDistanceSqMap[]> harvestableLocations;
 };
 
 //std::vector<Chunk*> mChunks;

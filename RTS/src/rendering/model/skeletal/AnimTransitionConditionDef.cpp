@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "AnimTransitionConditionDef.h"
 
-#include <boost/container/flat_map.hpp>
-
 constexpr f32 MOVING_THRESHOLD = 0.01f;
 
 const AnimTransitionConditionDef& getAnimTransitionConditionDef(AnimTransitionConditionDefType name) {

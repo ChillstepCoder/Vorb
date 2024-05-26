@@ -2,8 +2,6 @@
 
 #include "resources/AssetLoadTask.h"
 
-#include <boost/container/flat_map.hpp>
-
 DECL_VIO(class IOManager);
 
 class AssetHandleBundle;

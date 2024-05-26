@@ -62,7 +62,7 @@ public:
     SoftAssetReference mIconTextureRef = AssetType::Texture;
     SoftAssetReference mModelRef = AssetType::Model;
     ItemType mType = ItemType::UNKNOWN;
-    TileHarvestable mHarvestableSource = TileHarvestable::NONE; // TODO: Resource Tags instead?
+    TileHarvestable mHarvestableSource = TileHarvestable::None; // TODO: Resource Tags instead?
     InventoryBagType mInventoryBagType = InventoryBagType::Misc;
     // TODO: ModelDef
     f32 mValue = 1.0f;

@@ -3,8 +3,6 @@
 #include "util/SpatialGrid2D.h"
 #include "util/BitArray.h"
 
-#include <boost/container/flat_map.hpp>
-
 class WorldMarkupGrid;
 class HostSimContext;
 class SimECS;

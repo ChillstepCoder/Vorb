@@ -1,7 +1,6 @@
 #pragma once
 
 #include "resources/asset/AssetHandleBase.h"
-#include <boost/container/flat_map.hpp>
 
 #include "util/BitArray.h"
 

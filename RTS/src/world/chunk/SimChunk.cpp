@@ -30,7 +30,7 @@ void SimChunkTileData::addTile(ChunkTileIndex pos, TileID id, ui8 variant) {
 
     incrementTileQuantity(id, 1);
     TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
-    if (harvestable != TileHarvestable::NONE) {
+    if (harvestable != TileHarvestable::None) {
         harvestables[harvestable].emplace_back(pos);
     }
 }
@@ -41,7 +41,7 @@ void SimChunkTileData::removeTile(ChunkTileIndex pos) {
     SimTileData& data = it->second;
     decrementTileQuantity(data.tileId, 1);
     TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(data.tileId).harvestable;
-    if (harvestable != TileHarvestable::NONE) {
+    if (harvestable != TileHarvestable::None) {
         auto&& hit = harvestables.find(harvestable);
         for (size_t i = 0; i < hit->second.size(); ++i) {
             if (hit->second[i] == pos) {
@@ -129,6 +129,11 @@ i32 SimChunk::tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, 
 }
 
 
+SimChunkTileReservationHandle SimChunk::tryReserveHarvestableAtTile(ChunkTileIndex tileIndex, TileHarvestable harvestable) {
+    std::lock_guard writeLock(mMutex);
+    return SimTileReservation::tryReserveHarvestableSimTileForChunk(ChunkLiteTileHandle(mChunkID, tileIndex), harvestable);
+}
+
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
     // Does not lock as we can only create these reservations from within SimChunk lock
     if (mData) {
@@ -136,8 +141,29 @@ bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
         if (it == mData->tileIndexToTileData.end()) {
             return false;
         }
+        if (it->second.flags.isBitSet(SimTileDataFlags::Reserved)) {
+            return false;
+        }
         it->second.flags.setBit(SimTileDataFlags::Reserved);
         return true;
+    }
+    return false;
+}
+
+bool SimChunk::tryReserveHarvestableTile(ChunkTileIndex tileIndex, TileHarvestable harvestable) {
+    // Does not lock as we can only create these reservations from within SimChunk lock
+    if (mData) {
+        auto&& it = mData->tileIndexToTileData.find(tileIndex);
+        if (it == mData->tileIndexToTileData.end()) {
+            return false;
+        }
+        if (it->second.flags.isBitSet(SimTileDataFlags::Reserved)) {
+            return false;
+        }
+        if (TileRepository::get().getLoadedOrUnloadedAsset(it->second.tileId).harvestable == harvestable) {
+            it->second.flags.setBit(SimTileDataFlags::Reserved);
+            return true;
+        }
     }
     return false;
 }

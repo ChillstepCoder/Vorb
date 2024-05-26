@@ -6,7 +6,6 @@
 #include "world/TerrainConstants.h"
 
 #include <boost/container/flat_set.hpp>
-#include <boost/container/flat_map.hpp>
 
 #include "util/SpatialGrid2D.h"
 

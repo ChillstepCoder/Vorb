@@ -5,8 +5,6 @@
 
 #include "world/HeightmapTerrainQuadtree.h"
 
-#include <boost/container/flat_map.hpp>
-
 TerrainMeshManager::TerrainMeshManager(World& world) : mWorld(world) {
     // Init terrain
     mWidthTerrainTrees = mWorld.getWidthChunks() / CHUNKS_PER_TERRAIN_QUADTREE;

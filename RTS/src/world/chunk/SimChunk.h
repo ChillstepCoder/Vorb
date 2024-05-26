@@ -4,7 +4,6 @@
 #include "tile/TileWallContainer.h"
 
 #include <shared_mutex>
-#include <boost/container/flat_map.hpp>
 
 #include "util/BitArray.h"
 #include "util/FixedSizeVector.h"
@@ -83,7 +82,7 @@ private:
                 else {
                     ++it->second;
                 }
-                if (tileDef.harvestable != TileHarvestable::NONE) {
+                if (tileDef.harvestable != TileHarvestable::None) {
                     harvestables[tileDef.harvestable].emplace_back(tileIndex);
                 }
             }
@@ -119,8 +118,11 @@ public:
 
     // Returns num reserved, set maxCount to 0 for infinite
     i32 tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, SimChunkTileReservationHandleVector& outReservationHandles);
+    SimChunkTileReservationHandle tryReserveHarvestableAtTile(ChunkTileIndex tileIndex, TileHarvestable harvestable);
 private:
+    // TODO: These functions assume a lock so need to be constrained to an interface friend class?
     bool tryReserveNonEmptyTile(ChunkTileIndex tileIndex);
+    bool tryReserveHarvestableTile(ChunkTileIndex tileIndex, TileHarvestable harvestable);
     void freeTileReservation(ChunkTileIndex tileIndex);
 
     mutable std::shared_mutex mMutex;

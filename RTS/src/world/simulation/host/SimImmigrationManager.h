@@ -4,8 +4,6 @@ class HostSimContext;
 class SimWorldAnalytics;
 class WorldMarkupGrid;
 
-#include <boost/container/flat_map.hpp>
-
 struct BodyImmigrationData {
     std::vector<ChunkID> mPrioritySortedChunks; // Highest priority at end for pop_back
     std::vector<ChunkID> mOccupiedChunks; // Chunks move from the priority list to here when occupied

@@ -103,7 +103,7 @@ public:
     CollisionShapes collisionShapeType = CollisionShapes::NONE;
     f32v3 collisionHalfExtents = f32v3(0.5f, 0.5f, 1.0f);
     CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
-    TileHarvestable harvestable = TileHarvestable::NONE;
+    TileHarvestable harvestable = TileHarvestable::None;
     // TODO: Could be a giant array of material slots and these defs only store pointers and lengths.
     std::vector<StrToken> materialNames;
     std::vector<MaterialDesc> materialData;

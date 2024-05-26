@@ -40,13 +40,6 @@
 SimChunkGrid::SimChunkGrid(ui32 worldWidthTiles) {
     mWidthChunks = worldWidthTiles / CHUNK_WIDTH;
     initInternal();
-
-    iterateGridSpiral(i32v2(0,0), 64, [](i32v2 pos, int step) {
-        LOG_CRITICAL("{}  -  {},{}", step, pos.x, pos.y);
-        return true;
-    });
-
-    int i = 0;
 }
 
 SimChunkGrid::~SimChunkGrid() {
@@ -129,11 +122,10 @@ void SimChunkGrid::releaseTileDataReservationAndCopyData(SimTileDataWriteReserva
     }
 }
 
-boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> SimChunkGrid::getClosestUnreservedHarvestablesToPoint(TileCoord worldPos, TileHarvestable harvestable, f32 maxDistance, i32 maxCount) {
+SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoint(TileCoord worldPos, TileHarvestable harvestable, i32 maxDistance, i32 maxCount) {
     PROFILE_FUNCTION();
-    x; // TEST SEARCH AND LOG FOUND
     constexpr i32 MAX_ITERATIONS = 256;
-    const i32 maxDistanceSq = (i32)SQ(maxDistance);
+    const i32 maxDistanceSq = SQ(maxDistance);
 
     ChunkCoord chunkCoord(worldPos);
     // Breadth first search
@@ -148,7 +140,7 @@ boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> SimChunkGrid::getClose
     i32 back = 1;
     i32 front = 0;
 
-    boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> rv;
+    SortedIntCoordDistanceSqMap rv;
 
     i32 i = 0;
     do {
@@ -166,7 +158,8 @@ boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> SimChunkGrid::getClose
                 if (it != simChunk.mData->harvestables.end()) {
                     for (ChunkTileIndex tileIndex : it->second) {
                         const TileCoord tileCoord = chunkTilePos + TileCoord(tileIndex % CHUNK_WIDTH, tileIndex / CHUNK_WIDTH);
-                        const i32 distSq = glm::distance2(tileCoord.v, worldPos.v);
+                        const i32v2 offset = tileCoord.v - worldPos.v;
+                        const i32 distSq = offset.x * offset.x + offset.y * offset.y;
                         if (distSq <= maxDistanceSq) {
                             rv.emplace(distSq, tileCoord.v);
                         }
@@ -214,8 +207,14 @@ boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> SimChunkGrid::getClose
         }
     } while (front != back);
 
-    rv.shrink_to_fit();
     return rv;
+}
+
+SimChunkTileReservationHandle SimChunkGrid::tryReserveHarvestableAtTilePos(TileCoord worldPos, TileHarvestable harvestable) {
+    const ChunkCoord chunkCoord(worldPos);
+    const ChunkID id = chunkCoord.toGridIDType(mWidthChunks);
+    const TileCoord offset = worldPos - TileCoord(chunkCoord);
+    return mChunkData[id].tryReserveHarvestableAtTile(offset.y * CHUNK_WIDTH + offset.x, harvestable);
 }
 
 void SimChunkGrid::initInternal() {

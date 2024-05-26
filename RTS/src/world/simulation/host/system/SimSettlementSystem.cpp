@@ -87,6 +87,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SettlementQuartermasterComponent>(settlementEntity);
     mRegistry.emplace<SettlementLayoutComponent>(settlementEntity);
     mRegistry.emplace<SimEntityTypeComponent>(settlementEntity).type = SimEntityType::Settlement;
+    mRegistry.emplace<SettlementHarvestableTrackerComponent>(settlementEntity);
     // TODO Adjacency
 
     const i32v2 defaultHomePoint = world.getChunkGrid().getChunk(rootChunk).getWorldPosCenter2D();

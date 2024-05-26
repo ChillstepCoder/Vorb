@@ -2316,6 +2316,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     for (auto& [id, quantity] : requiredItems) {
         bp->itemComposition[i].itemId = id;
         bp->itemComposition[i].desiredQuantity = quantity;
+        bp->itemComposition[i].harvestableType = tileRepo.getLoadedOrUnloadedAsset(id).harvestable;
         bp->totalItemsUnfulfilled += quantity;
         ++i;
     }

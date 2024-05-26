@@ -2,7 +2,6 @@
 
 class World;
 
-#include <boost/container/flat_map.hpp>
 
 #include "world/IChunkGrid.h"
 

@@ -84,7 +84,7 @@ public:
     IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
     BiomeGrid& getBiomeGrid() const { return *mBiomeGrid; }
     TerrainSurfaceGrid& getTerrainSurfaceGrid() const { return *mTerrainSurfaceGrid; }
-    SimChunkGrid& getSimTileGrid() const { return *mSimTileGrid; }
+    SimChunkGrid& getSimChunkGrid() const { return *mSimChunkGrid; }
     WorldMarkupGrid& getMarkupGrid() const { return *mMarkupGrid; }
     OwnershipGrid& getOwnershipGrid() const { return *mOwnershipGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
@@ -164,7 +164,7 @@ private:
     // Surfaces
     std::shared_ptr<TerrainSurfaceGrid> mTerrainSurfaceGrid;
     // SimTiles
-    std::shared_ptr<SimChunkGrid> mSimTileGrid;
+    std::shared_ptr<SimChunkGrid> mSimChunkGrid;
     // Markup
     std::shared_ptr<WorldMarkupGrid> mMarkupGrid;
     // Ownership

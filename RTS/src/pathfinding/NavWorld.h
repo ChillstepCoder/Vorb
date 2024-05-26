@@ -11,7 +11,6 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/container/flat_set.hpp>
-#include <boost/container/flat_map.hpp>
 
 #include "tile/TileContainerEvents.h"
 

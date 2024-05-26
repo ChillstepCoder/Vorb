@@ -2,14 +2,14 @@
 
 // TODO: Could this become TileInteractable? ResourceTag?
 enum class TileHarvestable : ui8 {
-    WOOD,
-    STONE,
-    NONE,
-    COUNT = NONE
+    Wood,
+    Stone,
+    None,
+    COUNT = None
 };
 SERIALIZABLE_ENUM_SAME_NAME(TileHarvestable,
-    pair{ TileHarvestable::WOOD, "wood"sv },
-    pair{ TileHarvestable::STONE, "stone"sv },
-    pair{ TileHarvestable::NONE, "none"sv }
+    pair{ TileHarvestable::Wood, "wood"sv },
+    pair{ TileHarvestable::Stone, "stone"sv },
+    pair{ TileHarvestable::None, "none"sv }
 );
 static_assert(e_count(TileHarvestable) == 2);

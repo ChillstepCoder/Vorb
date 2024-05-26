@@ -17,5 +17,5 @@ Chunk& ChunkLiteTileHandle::getChunk(World& world) const {
 
 SimChunk& ChunkLiteTileHandle::getSimChunk(World& world) const {
     assert(isValid());
-    return world.getSimTileGrid().getChunk(chunkId);
+    return world.getSimChunkGrid().getChunk(chunkId);
 }

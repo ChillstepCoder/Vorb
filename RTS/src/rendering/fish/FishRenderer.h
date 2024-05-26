@@ -6,8 +6,6 @@ class GLDrawCommandBuffer;
 class Mesh;
 class MaterialShaderDef;
 
-#include <boost/container/flat_map.hpp>
-
 #include "definitions/FishDef.h"
 
 struct FishGPUData {

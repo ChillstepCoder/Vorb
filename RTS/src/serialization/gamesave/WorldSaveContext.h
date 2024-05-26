@@ -4,8 +4,6 @@
 #include "WorldSaveEventType.h"
 #include "serialization/BitseryExt.h"
 
-#include <boost/container/flat_map.hpp>
-
 class World;
 typedef ui32 RegionPatchIndex;
 

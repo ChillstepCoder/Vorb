@@ -1,7 +1,6 @@
 #pragma once
 
 #include "item/ItemStack.h"
-#include <boost/container/flat_map.hpp>
 
 enum class WorkStorageID : ui8 {
     HAULING,

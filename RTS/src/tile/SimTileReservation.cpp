@@ -24,3 +24,12 @@ SimChunkTileReservationHandle SimTileReservation::tryReserveSimTileForChunk(Chun
     }
     return nullptr;
 }
+
+SimChunkTileReservationHandle SimTileReservation::tryReserveHarvestableSimTileForChunk(ChunkLiteTileHandle tileHandle, TileHarvestable requiredHarvestable) {
+    assert(sGameWorld);
+    SimChunk& simChunk = tileHandle.getSimChunk(*sGameWorld);
+    if (simChunk.tryReserveHarvestableTile(tileHandle.index, requiredHarvestable)) {
+        return std::unique_ptr<SimChunkTileReservation>(new SimChunkTileReservation(tileHandle));
+    }
+    return nullptr;
+}

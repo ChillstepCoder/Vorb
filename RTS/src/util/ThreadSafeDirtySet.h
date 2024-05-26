@@ -1,7 +1,6 @@
 #pragma once
 
 #include <boost/container/flat_set.hpp>
-#include <boost/container/flat_map.hpp>
 
 // Handles managing dirtying objects in a thread safe manner
 template <typename T>

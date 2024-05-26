@@ -591,7 +591,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
 
     // ==================== BEGIN DEBUG ====================
     // TODO: REMOVE ***DEBUG BUILD ROADS***
-    SimChunkGrid& tileGrid = mWorld.getSimTileGrid();
+    SimChunkGrid& tileGrid = mWorld.getSimChunkGrid();
     for (RoadPointNeedingConstruct p : newSegment.roadPointsNeedingConstruct) {
         if (roadGrid.setBaseSurfaceTypeIfEmpty(p.pos, newSegment.roadType)) {
             // Clear tile if needed

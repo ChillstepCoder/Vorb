@@ -2,8 +2,6 @@
 
 #include "item/ItemStack.h"
 
-#include <boost/container/flat_map.hpp>
-
 enum class StructureFlags : ui8 {
     SettlementStorage = BIT(0),
     InConstruction = BIT(1),

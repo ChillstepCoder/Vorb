@@ -14,7 +14,7 @@ class ConstructBlueprintSimTask : public ISimTask
 	friend class ConstructBlueprintSimJob;
 public:
 	// We will aquire the tileReservations, and the job will release them after
-	ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, std::span<SimChunkTileReservationHandle> tileReservations);
+	ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation);
 	~ConstructBlueprintSimTask();
 
 	POOLED_ALLOC_DECL();
@@ -42,8 +42,7 @@ private:
 	BuildingBlueprint& mBlueprint;
 	MoveToPointSimSubtask mMoveSubtask;
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
-    std::unique_ptr<SimChunkTileReservationHandle[]> mTileReservations;
-    i32 mNumTileReservations = 0;
+	SimChunkTileReservationHandle mTileReservation;
 	ui32 mTargetReservationId = 0;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };

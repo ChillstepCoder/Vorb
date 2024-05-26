@@ -2,7 +2,6 @@
 
 #include "util/SpatialGrid2D.h"
 
-#include "boost/container/flat_map.hpp"
 
 #include "math/Random.h"
 #include "serialization/BitseryExt.h"

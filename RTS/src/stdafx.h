@@ -35,6 +35,12 @@
 #include <type_traits>
 #include <assert.h>
 
+/************************************************************************/
+/* Boost Containers                                                     */
+/************************************************************************/
+#include <boost/container/flat_map.hpp>
+
+
 // TODO: Distribute OpenGL from this location
 #include <GL/glew.h>
 

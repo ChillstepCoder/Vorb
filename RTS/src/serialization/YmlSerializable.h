@@ -4,7 +4,6 @@
   [inobj = &obj](keg::YAMLWriter& writer) { inobj->saveYmlData(writer); }
 
 #include <ryml.hpp>
-#include <boost/container/flat_map.hpp>
 #include "serialization/YmlSerializer.h"
 
 // Simple interface to turn anything into a yml node

@@ -44,7 +44,7 @@ void WorldSaveContext::saveWorld(const fs::path& savePath) {
 
 
     WorldMarkupGrid& markupGrid = mWorld.getMarkupGrid();
-    SimChunkGrid& tileGrid = mWorld.getSimTileGrid();
+    SimChunkGrid& tileGrid = mWorld.getSimChunkGrid();
 
     PreciseTimer timer;
     saveWorldDesc();
@@ -225,7 +225,7 @@ void WorldSaveContext::loadBiomes() {
 }
 
 void WorldSaveContext::saveChunks() {
-    SimChunkGrid& simGrid = mWorld.getSimTileGrid();
+    SimChunkGrid& simGrid = mWorld.getSimChunkGrid();
     const ui32 regionCount = getRegionCount(RegionType::Chunk);
     for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
         ui32 pendingThisRegion = 0;
@@ -260,7 +260,7 @@ void WorldSaveContext::loadChunks() {
         ++mRunningLoadThreads;
         Services::Threadpool::ref().addTask([this, regionId, fileData = std::move(fileData)]() mutable {
             forEachPatchInRegion(RegionType::Chunk, regionId, [this, regionId, &fileData](ui32 patchId, RegionPatchID regionPatchId) {
-                SimChunkGrid& simGrid = mWorld.getSimTileGrid();
+                SimChunkGrid& simGrid = mWorld.getSimChunkGrid();
                 SimChunk& patch = simGrid.mChunkData[patchId];
 
                 std::span<uint8_t> compressedBytes = fileData.getPatchBytes(regionPatchId.regionPatchIndex);

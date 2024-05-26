@@ -19,7 +19,7 @@
 
 HarvestItemsTask::HarvestItemsTask(ItemID itemId, ui16 itemCount, AgentTaskFinishedFunc finishedFunc) : mItemId(itemId), mTargetCount(itemCount), IAgentTask(finishedFunc) {
     mTargetHarvestable = ItemRepository::get().getLoadedOrUnloadedAsset(mItemId).getSourceHarvestable();
-    assert(mTargetHarvestable != TileHarvestable::NONE);
+    assert(mTargetHarvestable != TileHarvestable::None);
 }
 
 HarvestItemsTask::~HarvestItemsTask() {
@@ -68,7 +68,7 @@ TaskTickResult HarvestItemsTask::tick(World& world, entt::registry& registry, en
 void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
     PositionComponent& posCmp = registry.get<PositionComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    cmp.requestCoarsePathToHarvestable(posCmp.mPosition, TileHarvestable::WOOD, 1024.0f, nullptr);
+    cmp.requestCoarsePathToHarvestable(posCmp.mPosition, TileHarvestable::Wood, 1024.0f, nullptr);
     mState = TaskState::PATH_TO_ITEM;
 }
 

@@ -3,8 +3,6 @@
 #include "tile/TileHarvestable.h"
 #include "util/BitArray.h"
 
-#include <boost/container/flat_map.hpp>
-
 typedef ui16 DisjointSetNode;
 struct NavGraphTileDataToCopy {
     std::vector<DisjointSetNode> djNodes;

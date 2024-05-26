@@ -92,7 +92,7 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
 
 void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& buildingFootprint) {
     World& world = chunk.getWorld();
-    SimChunkGrid& simGrid = world.getSimTileGrid();
+    SimChunkGrid& simGrid = world.getSimChunkGrid();
     SimChunk& simData = simGrid.getChunkForGeneration(chunk.getChunkID());
 
     if (world.isEditorWorld()) [[unlikely]] {
@@ -176,7 +176,7 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
     TileRepository& tileRepo = TileRepository::get();
     IHeightmapGrid& heightGrid = world.getHeightmapGrid();
     BiomeGrid& biomeGrid = world.getBiomeGrid();
-    SimChunkGrid& simGrid = world.getSimTileGrid();
+    SimChunkGrid& simGrid = world.getSimChunkGrid();
 
     // Allocate tiles if needed
     ChunkID id = chunk.mChunkID;

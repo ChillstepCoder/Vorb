@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tile/ChunkLiteTileHandle.h"
+#include "tile/TileHarvestable.h"
 
 class SimChunkTileReservation {
     friend class SimTileReservation;
@@ -27,4 +28,5 @@ public:
 private:
     // SimChunk use only
     static SimChunkTileReservationHandle tryReserveSimTileForChunk(ChunkLiteTileHandle tileHandle);
+    static SimChunkTileReservationHandle tryReserveHarvestableSimTileForChunk(ChunkLiteTileHandle tileHandle, TileHarvestable requiredHarvestable);
 };

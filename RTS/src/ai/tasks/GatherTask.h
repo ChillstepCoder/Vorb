@@ -38,7 +38,7 @@ protected:
 	ui16 mTargetCount;
 	ui16 mCurrentCount = 0;
 	ui16 mFailCount = 0;
-	TileHarvestable mTargetHarvestable = TileHarvestable::NONE;
+	TileHarvestable mTargetHarvestable = TileHarvestable::None;
 	TaskState mState = TaskState::FIND_ITEM;
 };
 

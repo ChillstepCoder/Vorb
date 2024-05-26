@@ -34,7 +34,7 @@ void TileContainerHarvestableRegistry::init(const TileContainer& owner) {
     mRegistries = std::unique_ptr<HarvestableSubchunkRegistry[]>(new HarvestableSubchunkRegistry[mRegistryCount]);
     mHarvestables = std::unique_ptr<TileHarvestable[]>(new TileHarvestable[mOwner->getNumTiles()]);
     for (size_t i = 0; i < mOwner->getNumTiles(); ++i) {
-        mHarvestables[i] = TileHarvestable::NONE;
+        mHarvestables[i] = TileHarvestable::None;
     }
 
     for (int i = 0; i < (int)TileHarvestable::COUNT; ++i) {
@@ -78,11 +78,11 @@ void TileContainerHarvestableRegistry::refreshFromOwner() {
                 TileID mainId = tile.getMainID();
                 static_assert(TILE_LAYER_COUNT == 2, "If harvestables can exist on more than one level we need this to be a loop");
                 if (isTileNone(mainId)) {
-                    mHarvestables[tileIndex] = TileHarvestable::NONE;
+                    mHarvestables[tileIndex] = TileHarvestable::None;
                 } else {
                     const TileHarvestable harvestable = tileRepo.getLoadedOrUnloadedAsset(tile.getMainID()).harvestable;
                     mHarvestables[tileIndex] = harvestable;
-                    if (harvestable != TileHarvestable::NONE) {
+                    if (harvestable != TileHarvestable::None) {
                         ++mTotalHarvestables[e_cast(harvestable)];
                         const ui32 rx = x / TILE_CONTAINER_ITEM_REGISTRY_CELL_WIDTH;
                         const ui32 registryIndex = rzoffset + ryoffset + rx;
@@ -127,8 +127,8 @@ void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent
         TileContainerEditLayerEventData& editData = evnt.changeLayerArray[i];
         // Only main layer matters
         if ((int)editData.layer == TILE_LAYER_MAIN) {
-            TileHarvestable prevHarvestable = TileHarvestable::NONE;
-            TileHarvestable newHarvestable = TileHarvestable::NONE;
+            TileHarvestable prevHarvestable = TileHarvestable::None;
+            TileHarvestable newHarvestable = TileHarvestable::None;
 
             if (!isTileNone(editData.prevId)) {
                 prevHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.prevId).harvestable;
@@ -140,10 +140,10 @@ void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent
             if (newHarvestable != prevHarvestable) {
                 const SubchunkIndex registryIndex = mOwner->getSubchunkIndexFromTileIndex(editData.tileIndex);
                 HarvestableSubchunkRegistry& subchunkRegistry = mRegistries[registryIndex];
-                if (prevHarvestable != TileHarvestable::NONE) {
+                if (prevHarvestable != TileHarvestable::None) {
                     --mTotalHarvestables[e_cast(prevHarvestable)];
                     --subchunkRegistry.mTotalHarvestables[e_cast(prevHarvestable)];
-                    if (newHarvestable != TileHarvestable::NONE) {
+                    if (newHarvestable != TileHarvestable::None) {
                         // Replacing harvestable with a new harvestable
                         ++mTotalHarvestables[e_cast(newHarvestable)];
                         ++subchunkRegistry.mTotalHarvestables[e_cast(newHarvestable)];

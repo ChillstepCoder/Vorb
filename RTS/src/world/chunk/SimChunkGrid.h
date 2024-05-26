@@ -58,7 +58,9 @@ public:
 
     // Returns sorted list of harvestables
     // These are not guarenteed to still exist
-    boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> getClosestUnreservedHarvestablesToPoint(TileCoord worldPos, TileHarvestable harvestable, f32 maxDistance, i32 maxCount);
+    SortedIntCoordDistanceSqMap getClosestUnreservedHarvestablesToPoint(TileCoord worldPos, TileHarvestable harvestable, i32 maxDistance, i32 maxCount);
+
+    SimChunkTileReservationHandle tryReserveHarvestableAtTilePos(TileCoord worldPos, TileHarvestable harvestable);
 
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }

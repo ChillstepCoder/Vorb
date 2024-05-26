@@ -14,7 +14,7 @@ struct BusinessComponentDefinition {
 
 struct BusinessGatherComponentDef : public BusinessComponentDefinition {
     ui32 mPriority = PRIORITY_NO_COMPONENT;
-    TileHarvestable mResourceToFind = TileHarvestable::NONE;
+    TileHarvestable mResourceToFind = TileHarvestable::None;
 };
 KEG_TYPE_DECL(BusinessGatherComponentDef);
 

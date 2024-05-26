@@ -5,8 +5,9 @@
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimTask, 256);
 
-ConstructBlueprintSimTask::ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, std::span<SimChunkTileReservationHandle> tileReservations) : mBlueprint(blueprint), mParentJob(parentJob) {
-    
+ConstructBlueprintSimTask::ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation) : mBlueprint(blueprint), mParentJob(parentJob), mTileReservation(std::move(tileReservation)) {
+    assert(mTileReservation);
+
     SimpleItemStack itemToFill;
     constexpr i32 TMP_MAX_COUNT = 8;
     for (i32 i = 0; i < blueprint.itemCompositionCount; ++i) {
@@ -44,15 +45,6 @@ ConstructBlueprintSimTask::ConstructBlueprintSimTask(BuildingBlueprint& blueprin
     // Store a reference to the blueprint handle so we can remove it
     mTargetReservationId = mBlueprint.nextReservationId++;
     mBlueprint.itemReservationHandles.emplace(mTargetReservationId, std::move(reservationPair.target));
-
-    // Aquire tile reservations
-    if (tileReservations.size()) {
-        mTileReservations = std::make_unique<SimChunkTileReservationHandle[]>(tileReservations.size());
-        mNumTileReservations = tileReservations.size();
-        for (i32 i = 0; i < mNumTileReservations; ++i) {
-            mTileReservations[i] = std::move(tileReservations[i]);
-        }
-    }
 }
 
 ConstructBlueprintSimTask::~ConstructBlueprintSimTask()

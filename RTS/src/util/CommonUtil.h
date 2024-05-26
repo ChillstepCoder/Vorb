@@ -3,6 +3,7 @@
 #include <boost/pool/singleton_pool.hpp>
 #include <ranges>
 
+
 // Enum cast
 template<typename E>
 constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
@@ -170,3 +171,8 @@ inline DTileIndex structureTileXYZToDTileIndex(ui32v3 tileXYZ, DTileIndex struct
 inline DTileIndex structureTileXYToDTileIndex(ui32v2 tileXY, DTileIndex structureWidthDTiles) {
     return (tileXY.y << 1) * structureWidthDTiles + (tileXY.x << 1);
 }
+
+// Represents a set of integer coordinate positions sorted by their distance to something
+// We dont use a flat_multimap as insert/erase performance is terrible for those
+// TODO: Test google btree implementation?
+typedef std::multimap<i32 /*distSqInt*/, i32v2> SortedIntCoordDistanceSqMap;

@@ -8,8 +8,6 @@
 #include "generation/ChunkGenerator.h"
 #include "serialization/GameSaveManager.h"
 
-#include <boost/container/flat_map.hpp>
-
 MarkupGenerationStage::MarkupGenerationStage(WorldDataGenerator& generator, std::unique_ptr<World>& worldPtr) :
     IWorldGenerationStage(generator), mWorldPtr(worldPtr)
 {
@@ -294,7 +292,7 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                     if (it.second > highestLandCount) {
                         chunkMarkup.mainLandBodyID = it.first;
                         highestLandCount = it.second;
-                        mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimTileGrid().getChunkForGeneration(chunkID), *mWorldPtr);
+                        mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimChunkGrid().getChunkForGeneration(chunkID), *mWorldPtr);
                     }
                 }
                 else {

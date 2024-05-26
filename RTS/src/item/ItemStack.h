@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tile/TileHarvestable.h"
+
 constexpr ui16 MAX_ITEM_RESERVATION_SIZE = UINT16_MAX;
 
 enum class InventoryBagType : ui8 {
@@ -47,12 +49,11 @@ enum class ItemBehaviorModifier : ui8 {
 static_assert(e_count(ItemBehaviorModifier) <= 32, "Must fit in 5 bits");
 
 enum class ItemStackFlags : ui8 {
-    Junk, //< Get rid of at earliest convenience
-    Important,
-    Stolen,
+    Important = BIT(0),
+    Stolen = BIT(1),
     TERM
 };
-static_assert(e_cast(ItemStackFlags::TERM) < 0b11111, "Fit in 5 bits (See ItemStack::flags)");
+static_assert(e_cast(ItemStackFlags::TERM) <= 0b11111, "Fit in 5 bits (See ItemStack::flags)");
 
 // Maximum stack size is 4,294,967,295 
 struct ItemStack {
@@ -77,15 +78,25 @@ struct ItemStack {
 };
 static_assert(sizeof(ItemStack) == 12);
 
+enum class FillableItemstackFlags : ui8 {
+    Harvestable = BIT(0),
+};
+
 // No durabilities, just item ID and quantity
 struct SimpleItemStack {
     ItemID itemId = INVALID_ITEM_ID;
+    TileHarvestable harvestableType = TileHarvestable::None;
+    BitFlags<FillableItemstackFlags> flags;
     ui32 quantity = 0;
 };
+static_assert(sizeof(SimpleItemStack) == 8);
 
 // Represents a ledger of a stack of simple items that we want to fill
 struct FillableSimpleItemStack {
     ItemID itemId = INVALID_ITEM_ID;
+    BitFlags<FillableItemstackFlags> flags;
+    TileHarvestable harvestableType = TileHarvestable::None;
     ui32 desiredQuantity = 0;
     ui32 filledQuantity = 0;
-};;
+};
+static_assert(sizeof(FillableSimpleItemStack) == 12);
