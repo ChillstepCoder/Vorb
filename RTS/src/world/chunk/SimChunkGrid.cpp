@@ -134,7 +134,7 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
     closedList.reserve(MAX_ITERATIONS);
 
     // Stack allocated for efficiency
-    ChunkCoord chunkQueue[MAX_ITERATIONS];
+    ChunkCoord chunkQueue[MAX_ITERATIONS * 4 + 4]; // Extra padding to prevent stack corruption
     chunkQueue[0] = ChunkCoord(worldPos);
     closedList.insert(chunkQueue[0].toGridIDType(mWidthChunks));
     i32 back = 1;
@@ -147,7 +147,7 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
         // TODO: Need to check distanceSq to closest point on chunk to see if this chunk is completely out of range
 
         // Pop from stack 
-        ChunkCoord coord = chunkQueue[++front];
+        ChunkCoord coord = chunkQueue[front++];
         const ChunkID id = coord.toGridIDType(mWidthChunks);
         SimChunk& simChunk = mChunkData[id];
         {

@@ -114,6 +114,7 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
                     SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(characters[i]);
                     if (taskQueue.taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
                         taskQueue.taskQueue.push_back(SimTaskHandle(newConstructJob.get(), characters[i]));
+                        taskQueue.taskQueue.back().init();
                     }
                 }
 

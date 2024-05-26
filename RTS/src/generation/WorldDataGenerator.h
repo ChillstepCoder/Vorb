@@ -15,6 +15,7 @@ class OrthoCamera;
 // Stage 2 - Seed corrupted biomes on CPU (Can be done in parallel with stage 1)
 // Stage 3 - Propagate biomes on GPU with checkerboard cellular automata
 // Stage 4 - Carve rivers on CPU
+// Operates on static sGameWorld
 class WorldDataGenerator
 {
 public:
@@ -53,12 +54,8 @@ public:
         mBiomeTexture = 0;
         return tex;
     }
-    std::unique_ptr<World> releaseWorld();
 
-    World* tryGetWorld() {
-        ASSERT_RENDER_THREAD(); // Not thread safe with allocate
-        return mWorld.get();
-    }
+    World* tryGetWorld();
 
 private:
     void initStages();
@@ -89,8 +86,6 @@ private:
 
     std::vector<ui32v2> mPeakPositions;
     moodycamel::ConcurrentQueue<ui32v2> mPeakPositionsQueue;
-
-    std::unique_ptr<World> mWorld;
 
     f32 mWorldSeed = 0.f;
 };

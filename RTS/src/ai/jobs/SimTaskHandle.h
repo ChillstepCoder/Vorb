@@ -21,6 +21,10 @@ public:
     SimTaskHandle(SimTaskHandle&& other) noexcept;
     SimTaskHandle& operator=(SimTaskHandle&& other) noexcept;
 
+    void init();
+
+    VORB_NON_COPYABLE(SimTaskHandle);
+
     POOLED_ALLOC_DECL();
 
     // Will either return the task, or will return a task from the job, if possible
@@ -43,5 +47,6 @@ private:
     std::unique_ptr<ISimTask> mTask;
     i16 mPriority = 10;
     bool mIsJob = false;
+    bool mDidInit = false;
     entt::entity mOwner;
 };

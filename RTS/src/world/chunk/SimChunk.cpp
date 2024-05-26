@@ -145,6 +145,7 @@ bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
             return false;
         }
         it->second.flags.setBit(SimTileDataFlags::Reserved);
+        // TODO: Need to notify full chunk of the reservation
         return true;
     }
     return false;
@@ -162,6 +163,7 @@ bool SimChunk::tryReserveHarvestableTile(ChunkTileIndex tileIndex, TileHarvestab
         }
         if (TileRepository::get().getLoadedOrUnloadedAsset(it->second.tileId).harvestable == harvestable) {
             it->second.flags.setBit(SimTileDataFlags::Reserved);
+            // TODO: Need to notify full chunk of the reservation
             return true;
         }
     }

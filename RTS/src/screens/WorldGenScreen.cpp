@@ -182,7 +182,7 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
         // Initialize world
         assert(mWorldGenerator);
         mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
-        sGameWorld = mWorldGenerator->releaseWorld();
+        assert(sGameWorld);
         sGameWorld->setDefaultWorldSpawn(mWorldData->playerStart);
     }
     mWorldData.reset();

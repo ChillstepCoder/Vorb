@@ -8,6 +8,7 @@
 #include "city/BuildingBuilder.h"
 
 #include "resources/TileRepository.h"
+#include "item/ItemRepository.h"
 
 #include <Vorb/Timing.h>
 #include "math/Random.h"
@@ -2232,6 +2233,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     boost::container::flat_map<ItemID, i32> requiredItems;
     requiredItems.reserve(32);
     TileRepository& tileRepo = TileRepository::get();
+    ItemRepository& itemRepo = ItemRepository::get();
 
     context.tileRecipes[e_cast(BlueprintTileType::NONE)] = FillableRecipe();
     context.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = FillableRecipe(tileRepo.getRecipeForTile(context.tileIDs[e_cast(BlueprintTileType::FLOOR)]));
@@ -2316,7 +2318,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     for (auto& [id, quantity] : requiredItems) {
         bp->itemComposition[i].itemId = id;
         bp->itemComposition[i].desiredQuantity = quantity;
-        bp->itemComposition[i].harvestableType = tileRepo.getLoadedOrUnloadedAsset(id).harvestable;
+        bp->itemComposition[i].harvestableType = itemRepo.getLoadedOrUnloadedAsset(id).mHarvestableSource;
         bp->totalItemsUnfulfilled += quantity;
         ++i;
     }

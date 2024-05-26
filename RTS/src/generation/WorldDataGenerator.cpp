@@ -57,9 +57,10 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
     mBlackboard = std::make_unique<WorldGenerationBlackboard>(mWorldData->heightmapGrid->getWidthPatches());
 
     if (MainMenuScreenGlobalState::startGameType == StartGameType::NewWorldFromTemplate) {
-        mWorld = std::make_unique<World>(WorldNetMode::Host, mWorldData);
+        assert(!sGameWorld);
+        sGameWorld = std::make_unique<World>(WorldNetMode::Host, mWorldData);
 
-        if (!GameSaveManager::get().loadWorld(*mWorld, MainMenuScreenGlobalState::loadWorldPath)) {
+        if (!GameSaveManager::get().loadWorld(*sGameWorld, MainMenuScreenGlobalState::loadWorldPath)) {
             panic("Failed to load world template {}", MainMenuScreenGlobalState::loadWorldPath.string());
         }
 
@@ -182,9 +183,9 @@ void WorldDataGenerator::cleanup() {
     }
     std::vector<std::unique_ptr<IWorldGenerationStage>>().swap(mStages);
 
-    if (mWorld) {
-        WorldDestroyer::shutdownWorld(*mWorld);
-        mWorld.reset();
+    if (sGameWorld) {
+        WorldDestroyer::shutdownWorld(*sGameWorld);
+        sGameWorld.reset();
     }
 
     mFinished = false;
@@ -213,8 +214,9 @@ bool WorldDataGenerator::update() {
     return false;
 }
 
-std::unique_ptr<World> WorldDataGenerator::releaseWorld() {
-    return std::move(mWorld);
+World* WorldDataGenerator::tryGetWorld() {
+    ASSERT_RENDER_THREAD(); // Not thread safe with allocate
+    return sGameWorld.get();
 }
 
 void WorldDataGenerator::initStages() {
@@ -224,9 +226,9 @@ void WorldDataGenerator::initStages() {
     if (!mSkipToHistory) {
         mStages.emplace_back(std::make_unique<BaseHeightmapAndBiomeGenerationStage>(*this));
         mStages.emplace_back(std::make_unique<RiverGenerationStage>(*this));
-        mStages.emplace_back(std::make_unique<MarkupGenerationStage>(*this, mWorld));
+        mStages.emplace_back(std::make_unique<MarkupGenerationStage>(*this, sGameWorld));
     }
-    mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this, mWorld));
+    mStages.emplace_back(std::make_unique<HistoryGenerationStage>(*this, sGameWorld));
 
     mStages[mCurrentStageIndex]->begin();
 }
