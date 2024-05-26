@@ -24,7 +24,10 @@ void SimTaskHandle::init() {
 }
 
 SimTaskHandle::~SimTaskHandle() {
-    ASSERT_SIM_THREAD();
+    if (!IS_SHUTTING_DOWN) {
+        ASSERT_SIM_THREAD();
+    }
+
     if (mIsJob) {
         // If this crashes we probably forgot to call init()
         mJob->removeTaskHandle(this);

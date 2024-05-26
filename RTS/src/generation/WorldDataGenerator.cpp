@@ -183,11 +183,6 @@ void WorldDataGenerator::cleanup() {
     }
     std::vector<std::unique_ptr<IWorldGenerationStage>>().swap(mStages);
 
-    if (sGameWorld) {
-        WorldDestroyer::shutdownWorld(*sGameWorld);
-        sGameWorld.reset();
-    }
-
     mFinished = false;
 }
 

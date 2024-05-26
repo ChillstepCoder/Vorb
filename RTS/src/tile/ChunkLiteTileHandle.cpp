@@ -7,7 +7,7 @@
 
 i32v2 ChunkLiteTileHandle::getWorldPosition2D(World& world) const {
     assert(isValid());
-    return world.getChunkGrid().getChunk(chunkId).getWorldPos() + i32v2(index % CHUNK_SIZE, index / CHUNK_SIZE);
+    return world.getChunkGrid().getChunk(chunkId).getWorldPos() + i32v2(index % CHUNK_WIDTH, index / CHUNK_WIDTH);
 }
 
 Chunk& ChunkLiteTileHandle::getChunk(World& world) const {

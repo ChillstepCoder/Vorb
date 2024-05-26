@@ -49,8 +49,8 @@ public:
     // Return true when task is done
     virtual void onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {};
     virtual void onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {};
-    virtual SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) = 0;
-    virtual SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent) = 0;
+    virtual SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) = 0;
+    virtual SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) = 0;
 
     // Implemented by ISimTaskChain
     virtual std::unique_ptr<ISimTask>* getNextTask() { return nullptr; }

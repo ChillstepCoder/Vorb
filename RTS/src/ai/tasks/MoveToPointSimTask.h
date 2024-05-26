@@ -6,12 +6,12 @@
 class MoveToPointSimSubtask {
 public:
 	MoveToPointSimSubtask() = default;
-	MoveToPointSimSubtask(f32v2 worldPos, f32 successRadius);
+	MoveToPointSimSubtask(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius);
 
-	void init(f32v2 worldPos, f32 successRadius);
+	void init(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius);
 
-	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent);
-	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
+	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
+	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 
     f32v2 mWorldPosTarget = f32v2(0.0f);
     f32 mSuccessRadiusSQ = -1.0f;
@@ -19,15 +19,16 @@ public:
 
 class MoveToPointSimTask : public ISimTask {
 public:
-	MoveToPointSimTask(f32v2 worldPos, f32 successRadius) : moveSubtask(worldPos, successRadius) {}
+	MoveToPointSimTask(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius) :
+		moveSubtask(simRegistry, simAgent, worldPos, successRadius) {}
 
     POOLED_ALLOC_DECL();
 
-	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override {
-		return moveSubtask.tickFull(world, fullRegistry, fullAgent);
+	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) override {
+		return moveSubtask.tickFull(world, fullRegistry, fullAgent, elapsedSec);
 	}
-	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override {
-		return moveSubtask.tickSim(world, simRegistry, simAgent);
+	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override {
+		return moveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec);
 	}
 
 	const char* getTaskName() const override { return "Move To Point"; }

@@ -243,7 +243,7 @@ void SimAISystem::updateSimTask(entt::entity entity, SimTaskQueueComponent& task
     assert(taskCmp.activeTask);
 
     // Operate on task
-    SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity);
+    SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity, mDeltaTimeSec);
     if (tickResult != SimTaskTickResult::InProgress) {
         if (tickResult == SimTaskTickResult::Success) {
             taskCmp.taskQueue.front().onActiveSubtaskFinished(taskCmp.activeTask);

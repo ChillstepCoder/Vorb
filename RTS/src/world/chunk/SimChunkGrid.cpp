@@ -168,7 +168,9 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
             }
             else {
                 // If this is not a valid chunk, don't add neighbors
-                ++i;
+                if (++i == MAX_ITERATIONS) {
+                    break;
+                }
                 continue;
             }
         }

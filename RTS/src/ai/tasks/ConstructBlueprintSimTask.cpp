@@ -2,10 +2,11 @@
 #include "ConstructBlueprintSimTask.h"
 
 #include "building/BuildingBlueprint.h"
+#include "world/World.h"
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimTask, 256);
 
-ConstructBlueprintSimTask::ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation) : mBlueprint(blueprint), mParentJob(parentJob), mTileReservation(std::move(tileReservation)) {
+ConstructBlueprintSimTask::ConstructBlueprintSimTask(World& world, BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation) : mBlueprint(blueprint), mParentJob(parentJob), mTileReservation(std::move(tileReservation)) {
     assert(mTileReservation);
 
     SimpleItemStack itemToFill;
@@ -45,6 +46,7 @@ ConstructBlueprintSimTask::ConstructBlueprintSimTask(BuildingBlueprint& blueprin
     // Store a reference to the blueprint handle so we can remove it
     mTargetReservationId = mBlueprint.nextReservationId++;
     mBlueprint.itemReservationHandles.emplace(mTargetReservationId, std::move(reservationPair.target));
+    
 }
 
 ConstructBlueprintSimTask::~ConstructBlueprintSimTask()
@@ -59,19 +61,37 @@ void ConstructBlueprintSimTask::onBeginFull(World& world, entt::registry& fullRe
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-void ConstructBlueprintSimTask::onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent)
-{
-    //throw std::logic_error("The method or operation is not implemented.");
+void ConstructBlueprintSimTask::onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+    // TODO: Dynamic success radius based on the tile size?
+    constexpr f32 SUCCESS_RADIUS = 2.0f;
+    mMoveSubtask.init(simRegistry, simAgent, mTileReservation->getLiteTileHandle().getWorldPosition2D(world), SUCCESS_RADIUS);
+    mState = State::MoveToHarvestable;
 }
 
-SimTaskTickResult ConstructBlueprintSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent)
+SimTaskTickResult ConstructBlueprintSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent)
-{
-   // throw std::logic_error("The method or operation is not implemented.");
+SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
+    switch (mState) {
+        case State::Init:
+            assert(false);
+            break;
+        case State::MoveToHarvestable:
+            if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
+                mState = State::Harvest;
+            }
+            break;
+        case State::Harvest:
+            break;
+        case State::MoveToBlueprint:
+            break;
+        case State::FlattenTerrain:
+            break;
+        case State::BuildTile:
+            break;
+    }
     return SimTaskTickResult::InProgress;
 }
 

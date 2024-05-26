@@ -21,6 +21,7 @@
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimThread.h"
 #include "world/chunk/SimChunkGrid.h"
+#include "world/WorldDestroyer.h"
 #include "generation/WorldDataGenerator.h"
 #include "generation/WorldGenerationBlackboard.h"
 
@@ -176,7 +177,10 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     mRiverDebugLocalGroupMesh.reset();
 
     if (mCancelled) {
-        sGameWorld.reset();
+        if (sGameWorld) {
+            WorldDestroyer::shutdownWorld(*sGameWorld);
+            sGameWorld.reset();
+        }
     }
     else {
         // Initialize world
@@ -508,6 +512,10 @@ void WorldGenScreen::updateDockspace()
 
 void WorldGenScreen::beginWorldGeneration() {
     if (mWorldGenerator) {
+        if (sGameWorld) {
+            WorldDestroyer::shutdownWorld(*sGameWorld);
+            sGameWorld.reset();
+        }
         mWorldGenerator->cleanup();
     }
     else {
@@ -518,7 +526,6 @@ void WorldGenScreen::beginWorldGeneration() {
     initWorldData();
 
     mCancelled = false;
-    assert(!sGameWorld);
 
     mRiverDebugMesh.reset();
     mRiverDebugVisitedMesh.reset();

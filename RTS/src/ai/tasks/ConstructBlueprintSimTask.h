@@ -14,7 +14,7 @@ class ConstructBlueprintSimTask : public ISimTask
 	friend class ConstructBlueprintSimJob;
 public:
 	// We will aquire the tileReservations, and the job will release them after
-	ConstructBlueprintSimTask(BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation);
+	ConstructBlueprintSimTask(World& world, BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation);
 	~ConstructBlueprintSimTask();
 
 	POOLED_ALLOC_DECL();
@@ -22,8 +22,8 @@ public:
 	void onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
 	void onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
 
-	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
-	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
+	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) override;
+	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override;
 
 	const char* getTaskName() const override;
 
@@ -31,7 +31,8 @@ private:
 
 	enum class State {
 		Init,
-		AquireResources,
+		MoveToHarvestable,
+		Harvest,
 		MoveToBlueprint,
 		FlattenTerrain,
 		BuildTile,
