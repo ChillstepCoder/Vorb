@@ -238,7 +238,6 @@
     <ClCompile Include="src\camera\CameraController.cpp" />
     <ClCompile Include="src\camera\OrthoCamera.cpp" />
     <ClCompile Include="src\camera\SimpleCamera.cpp" />
-    <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp" />
     <ClCompile Include="src\city\BuildingBuilder.cpp" />
     <ClCompile Include="src\city\CityBusinessManager.cpp" />
     <ClCompile Include="src\city\CityQuartermaster.cpp" />
@@ -612,7 +611,6 @@
     <ClInclude Include="src\camera\SimpleCamera.h" />
     <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\character\CharacterLocomotionMode.h" />
-    <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
     <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
     <ClInclude Include="src\city\BuildingBuilder.h" />
     <ClInclude Include="src\city\CityBusinessManager.h" />

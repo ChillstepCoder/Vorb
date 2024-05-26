@@ -56,6 +56,9 @@ public:
     SimTileDataWriteReservationPtr tryReserveTileDataAtPosIfNotEmpty(TileCoord tileCoord);
     void releaseTileDataReservationAndCopyData(SimTileDataWriteReservation& reservation);
 
+    // Returns sorted list of harvestables
+    // These are not guarenteed to still exist
+    boost::container::flat_multimap<i32 /*distSqInt*/, i32v2> getClosestUnreservedHarvestablesToPoint(TileCoord worldPos, TileHarvestable harvestable, f32 maxDistance, i32 maxCount);
 
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }

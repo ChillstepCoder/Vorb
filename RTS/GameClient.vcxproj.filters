@@ -228,9 +228,6 @@
     <ClCompile Include="src\ui\TileInspectionPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\item\ItemReservation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1389,9 +1386,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\business_jobs\IBusinessJob.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\ItemReservation.h">

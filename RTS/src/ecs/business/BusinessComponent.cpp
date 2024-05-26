@@ -9,7 +9,6 @@
 #include "world/World.h"
 #include "resources/ResourceManager.h"
 #include "building/buildingRepository.h"
-#include "city/business_jobs/ConstructBuildingJob.h"
 #include "item/ItemStockpile.h"
 #include "resources/TileRepository.h"
 
@@ -153,12 +152,12 @@ void updateBuildComponent(BusinessBuildComponent& buildCmp, BusinessComponent& b
     // Gathering currently requires a city
     assert(businessCmp.mCity);
 
-    // Initialize the job if needed
-    if (buildCmp.mCurrentBlueprint && !buildCmp.mCurrentJob) {
-        IBusinessJobPtr newJob = std::make_unique<ConstructBuildingJob>(*buildCmp.mCurrentBlueprint, entity);
-        buildCmp.mCurrentJob = static_cast<ConstructBuildingJob*>(newJob.get());
-        businessCmp.mActiveJobs.push_back(std::move(newJob));
-    }
+    //// Initialize the job if needed
+    //if (buildCmp.mCurrentBlueprint && !buildCmp.mCurrentJob) {
+    //    IBusinessJobPtr newJob = std::make_unique<ConstructBuildingJob>(*buildCmp.mCurrentBlueprint, entity);
+    //    buildCmp.mCurrentJob = static_cast<ConstructBuildingJob*>(newJob.get());
+    //    businessCmp.mActiveJobs.push_back(std::move(newJob));
+    //}
    
 }
 

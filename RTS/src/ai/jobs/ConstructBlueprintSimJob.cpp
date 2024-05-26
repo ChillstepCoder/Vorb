@@ -21,7 +21,11 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
         return nullptr;
     }
 
-    std::unique_ptr<ConstructBlueprintSimTask> newTask = std::make_unique<ConstructBlueprintSimTask>(mBlueprint, *this);
+    std::span<SimChunkTileReservationHandle> tilesToHarvest;
+
+    assert(false);
+
+    std::unique_ptr<ConstructBlueprintSimTask> newTask = std::make_unique<ConstructBlueprintSimTask>(mBlueprint, *this, tilesToHarvest);
     // If state is END then the task could not initialize, likely due to no valid items
     if (newTask->mState == ConstructBlueprintSimTask::State::End) {
         return nullptr;
