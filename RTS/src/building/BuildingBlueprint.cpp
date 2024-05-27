@@ -2,7 +2,7 @@
 #include "BuildingBlueprint.h"
 
 BitArray BuildingBlueprint::computeSolidTilesFirstFloor() const {
-    const i32v2 dimsTiles = dimsDTile * DTILE_WIDTH;
+    const TileCoord dimsTiles(dimsDTile);
     const i32 floorStride = dimsTiles.x * dimsTiles.y;
     BitArray solidTilesFirstFloor = BitArray(floorStride);
     // TODO: Optimize by sorting tileTargets in generation so we stop iterating after done with

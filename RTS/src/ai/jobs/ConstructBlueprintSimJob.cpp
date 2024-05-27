@@ -56,7 +56,8 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
                     }
                     // Only retry once
                     if (!tileReservationHandle && !didRetry) {
-                        harvestables = simGrid.getClosestUnreservedHarvestablesToPoint(settlementCenter, itemStack.harvestableType, harvestTracker.currentSearchRadiusTiles, 128);
+                        constexpr i32 MAX_COUNT = 64;
+                        harvestables = simGrid.getClosestUnreservedHarvestablesToPoint(settlementCenter, itemStack.harvestableType, harvestTracker.currentSearchRadiusTiles, MAX_COUNT);
                         didRetry = true;
                     }
                     else {

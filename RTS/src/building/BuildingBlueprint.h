@@ -67,6 +67,10 @@ public:
         parentSettlement = settlementEntity;
         parentPlotID = plotID;
     }
+    TileCoord getCenterPosTile() const {
+        assert(dimsDTile.x != -1);
+        return TileCoord(worldPosRootDTile + dimsDTile / 2);
+    }
 
 private:
 
@@ -91,7 +95,7 @@ private:
     i32 stairPieceCount = 0;
     i32 constructedStairPieceCount = 0;
     DTileCoord worldPosRootDTile = DTileCoord(-1);
-    i32v2 dimsDTile;
+    DTileCoord dimsDTile = DTileCoord(-1);
     i32 floorHeight;
     i32 floorCount;
     TileID stairsTileID;

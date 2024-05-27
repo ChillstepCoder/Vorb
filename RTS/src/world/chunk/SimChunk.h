@@ -50,6 +50,7 @@ private:
 
     void addTile(ChunkTileIndex pos, TileID id, ui8 variant);
     void removeTile(ChunkTileIndex pos);
+    void changeTile(ChunkTileIndex pos, TileID id, ui8 variant);
 
     // SERIALIZED DATA
     boost::container::flat_map<ChunkTileIndex, SimTileData> tileIndexToTileData;
@@ -98,6 +99,10 @@ private:
     BINARY_SERIALIZE_OUTPUT() {
         sharedSerialize(s);
     }
+private:
+    // Internal use only
+    void onTileAdded(TileID id, ChunkTileIndex pos);
+    void onTileRemoved(TileID id, ChunkTileIndex pos);
 };
 
 class SimChunk {
@@ -119,6 +124,7 @@ public:
     // Returns num reserved, set maxCount to 0 for infinite
     i32 tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, SimChunkTileReservationHandleVector& outReservationHandles);
     SimChunkTileReservationHandle tryReserveHarvestableAtTile(ChunkTileIndex tileIndex, TileHarvestable harvestable);
+
 private:
     // TODO: These functions assume a lock so need to be constrained to an interface friend class?
     bool tryReserveNonEmptyTile(ChunkTileIndex tileIndex);

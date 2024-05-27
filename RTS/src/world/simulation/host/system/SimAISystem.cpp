@@ -168,6 +168,13 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
     SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(entity);
     if (taskQueue.taskQueue.size()) {
         updateSimTask(entity, taskQueue);
+        // On task debug draw
+        if (sDebugOptions.mDebugSimCharacters) {
+            SimECS::DebugDrawSimAgentData debugData;
+            debugData.pos = f32v3(pos.position.x, pos.position.y, 5.0f);
+            debugData.color = color4(0.0f, 1.0f, 0.0f, 1.0f);
+            mECS.addDebugDrawData(debugData);
+        }
     }
     else {
         SimResidentComponent* residencyCmp = mRegistry.try_get<SimResidentComponent>(entity);
@@ -195,7 +202,7 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
             default:
                 break;
         }
-        // Try aquire task
+        // Try aquire task?
 
         // Select wander target around home point if not moving
         if (movement.targetPosition.x < 0.0f && residencyCmp->homePoint.x > -1) {

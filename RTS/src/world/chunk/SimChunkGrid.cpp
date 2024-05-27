@@ -79,52 +79,20 @@ void SimChunkGrid::releaseTileDataReservationAndCopyData(SimTileDataWriteReserva
     reservation.mDidRelease = true;
     SimChunk& container = mChunkData[reservation.mChunk];
     assert(container.isAllocated());
-    SimTileData newData = reservation.reservedCopy;
-    newData.flags.clearBit(SimTileDataFlags::Reserved); // No reserve anymore
-    bool didModify = false;
+    const SimTileData newData = reservation.reservedCopy;
+
+    TileRepository& tileRepo = TileRepository::get();
 
     { // Critical section
         std::lock_guard lock(container.mMutex);
-        auto&& it = container.mData->tileIndexToTileData.find(reservation.mTileIndex);
-        if (it == container.mData->tileIndexToTileData.end()) {
-            // Tile was not tracked, just add it
-            if (newData.tileId != TILE_ID_NONE) {
-                container.mData->tileIndexToTileData.emplace(reservation.mTileIndex, newData);
-                container.mData->incrementTileQuantity(newData.tileId, 1);
-                didModify = true;
-            }
-            else if (!newData.isNull()) {
-                // We can still store data with empty tile as long as there are flags
-                container.mData->tileIndexToTileData.emplace(reservation.mTileIndex, newData);
-                didModify = true;
-            }
-        }
-        else {
-            // Tile was tracked, we need to modify it and change quantities
-            SimTileData& existing = it->second;
-            if (existing.tileId != newData.tileId) {
-                didModify = true;
-                container.mData->decrementTileQuantity(existing.tileId, 1);
-                if (newData.tileId != TILE_ID_NONE) {
-                    container.mData->incrementTileQuantity(newData.tileId, 1);
-                }
-                if (newData.isNull()) {
-                    container.mData->tileIndexToTileData.erase(it);
-                }
-                else {
-                    it->second = newData;
-                }
-            }
-            else if (existing != newData) {
-                it->second = newData;
-            }
-        }
+        container.mData->changeTile(reservation.mTileIndex, newData.tileId, newData.variant);
     }
 }
 
 SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoint(TileCoord worldPos, TileHarvestable harvestable, i32 maxDistance, i32 maxCount) {
     PROFILE_FUNCTION();
-    constexpr i32 MAX_ITERATIONS = 256;
+    assert(maxDistance < 45000); // Greater than this will overflow an i32 (46340 with padding)
+    constexpr i32 MAX_ITERATIONS = 512;
     const i32 maxDistanceSq = SQ(maxDistance);
 
     ChunkCoord chunkCoord(worldPos);
@@ -160,8 +128,14 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
                         const TileCoord tileCoord = chunkTilePos + TileCoord(tileIndex % CHUNK_WIDTH, tileIndex / CHUNK_WIDTH);
                         const i32v2 offset = tileCoord.v - worldPos.v;
                         const i32 distSq = offset.x * offset.x + offset.y * offset.y;
-                        if (distSq <= maxDistanceSq) {
+                        if (distSq > maxDistanceSq) {
+                            continue;
+                        }
+                        if (!simChunk.mData->tileIndexToTileData.at(tileIndex).flags.isBitSet(SimTileDataFlags::Reserved)) {
                             rv.emplace(distSq, tileCoord.v);
+                            if (rv.size() == maxCount) [[unlikely]] {
+                                return rv;
+                            }
                         }
                     }
                 }

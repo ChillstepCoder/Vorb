@@ -68,3 +68,31 @@ protected:
 };
 
 typedef std::unique_ptr<ISimTask> ISimTaskPtr;
+
+// Utility
+struct SimpleSimTaskTimer {
+    void begin(f32 time) {
+        assert(time > 0.0f);
+        mTimerElapsedSec = 0.0f;
+        mTimerSec = 1.0f;
+    }
+
+    // Return true on complete
+    bool tick(f32 elapsedSec) {
+        mTimerElapsedSec += elapsedSec;
+        return mTimerElapsedSec > mTimerSec;
+    }
+
+    f32 getRatio() const {
+        assert(mTimerSec);
+        return mTimerElapsedSec / mTimerSec;
+    }
+
+    f32 getDifference() const {
+        return mTimerSec - mTimerElapsedSec;
+    }
+
+private:
+    f32 mTimerElapsedSec = 0.0f;
+    f32 mTimerSec = 0.0f;
+};

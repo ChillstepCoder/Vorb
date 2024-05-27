@@ -115,7 +115,7 @@ struct SettlementHarvestableTrackerComponent {
     }
 
 public:
-    i32 currentSearchRadiusTiles = CHUNK_WIDTH * 3;
+    i32 currentSearchRadiusTiles = CHUNK_WIDTH * 16;
 private:
     std::unique_ptr<SortedIntCoordDistanceSqMap[]> harvestableLocations;
 };

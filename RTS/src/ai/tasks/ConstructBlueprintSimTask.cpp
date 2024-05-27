@@ -81,10 +81,18 @@ SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registr
         case State::MoveToHarvestable:
             if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
                 mState = State::Harvest;
+                // TODO: Estimate duration better
+                mTimer.begin(10.0f);
             }
             break;
-        case State::Harvest:
+        case State::Harvest: {
+            if (mTimer.tick(elapsedSec)) {
+                mState = State::MoveToBlueprint;
+                mMoveSubtask.init(simRegistry, simAgent, mBlueprint.getCenterPosTile().v, 8.0f);
+                x;//complete, chop down tree
+            }
             break;
+        }
         case State::MoveToBlueprint:
             break;
         case State::FlattenTerrain:

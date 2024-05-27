@@ -28,6 +28,46 @@ void SimChunkTileData::addTile(ChunkTileIndex pos, TileID id, ui8 variant) {
 
     tileIndexToTileData.emplace(pos, SimTileData{ .tileId = id, .variant = variant });
 
+    onTileAdded(id, pos);
+}
+
+void SimChunkTileData::removeTile(ChunkTileIndex pos) {
+    auto&& it = tileIndexToTileData.find(pos);
+    assert(it != tileIndexToTileData.end());
+    SimTileData& data = it->second;
+    onTileRemoved(data.tileId, pos);
+    tileIndexToTileData.erase(it);
+}
+
+void SimChunkTileData::changeTile(ChunkTileIndex pos, TileID id, ui8 variant) {
+    // TODO: Flags?
+    auto&& it = tileIndexToTileData.find(pos);
+    if (it == tileIndexToTileData.end()) {
+        // Tile was not tracked, just add it
+        if (id != TILE_ID_NONE) {
+            addTile(pos, id, variant);
+        }
+    }
+    else {
+        // Tile was tracked, we need to modify it and change quantities
+        SimTileData& existing = it->second;
+        if (existing.tileId != id) {
+            onTileRemoved(existing.tileId, pos);
+            if (id != TILE_ID_NONE) {
+                onTileAdded(id, pos);
+            }
+            else {
+                tileIndexToTileData.erase(it);
+            }
+        }
+        else {
+            // Its the same tile, but this wipes out flags and updates variant
+            it->second = SimTileData{ .tileId = id, .variant = variant };
+        }
+    }
+}
+
+void SimChunkTileData::onTileAdded(TileID id, ChunkTileIndex pos) {
     incrementTileQuantity(id, 1);
     TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
     if (harvestable != TileHarvestable::None) {
@@ -35,23 +75,22 @@ void SimChunkTileData::addTile(ChunkTileIndex pos, TileID id, ui8 variant) {
     }
 }
 
-void SimChunkTileData::removeTile(ChunkTileIndex pos) {
-    auto&& it = tileIndexToTileData.find(pos);
-    assert(it != tileIndexToTileData.end());
-    SimTileData& data = it->second;
-    decrementTileQuantity(data.tileId, 1);
-    TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(data.tileId).harvestable;
+void SimChunkTileData::onTileRemoved(TileID id, ChunkTileIndex pos) {
+    decrementTileQuantity(id, 1);
+    TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
     if (harvestable != TileHarvestable::None) {
+        bool found = false;
         auto&& hit = harvestables.find(harvestable);
         for (size_t i = 0; i < hit->second.size(); ++i) {
             if (hit->second[i] == pos) {
                 hit->second[i] = hit->second.back();
                 hit->second.pop_back();
+                found = true;
                 break;
             }
         }
+        assert(found);
     }
-    tileIndexToTileData.erase(it);
 }
 
 bool SimChunk::allocate() {

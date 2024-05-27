@@ -45,6 +45,7 @@ private:
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
 	SimChunkTileReservationHandle mTileReservation;
 	ui32 mTargetReservationId = 0;
+	SimpleSimTaskTimer mTimer;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };
 
