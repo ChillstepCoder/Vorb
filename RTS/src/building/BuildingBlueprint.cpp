@@ -20,9 +20,9 @@ void BuildingBlueprint::onEndReservation(ui32 reservationId) {
     auto&& it = itemReservationHandles.find(reservationId);
     assert(it != itemReservationHandles.end());
     SimpleItemReservationTargetHandle& handle = *it->second;
-    std::span<ItemID> desiredItems = handle.getDesiredItems();
-    std::span<i32> filledQuantities = handle.getFilledQuantities();
-    std::span<i32> desiredQuantities = handle.getDesiredQuantities();
+    std::span<const ItemID> desiredItems = handle.getDesiredItems();
+    std::span<const i32> filledQuantities = handle.getFilledQuantities();
+    std::span<const i32> desiredQuantities = handle.getDesiredQuantities();
 
     // If we have any items that were not fully filled, decrement the count from
     // the tracked fullfilled count so other workers can then try to fill it

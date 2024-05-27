@@ -6,6 +6,8 @@
 // TODO: Do we need rendering here? (MaterialDesc)
 #include "rendering/material/MaterialData.h"
 
+#include "item/ItemRollTable.h"
+
 enum class TileLayer : ui8 {
     Ground = 0,
     Main = 1,
@@ -130,8 +132,8 @@ public:
         f32 heightOffsets[4];
     };
     std::string displayName;
-    std::vector<ItemDrop> itemDrops;
     std::vector<ItemInputDef> recipeData;
+    ItemRollTable itemDrops;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.dims, "dims"),

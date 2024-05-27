@@ -25,7 +25,7 @@ BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
     flags(flags)
 {
     floorStrideDTile = dimsDTile.y * dimsDTile.x;
-    dimsTile = dimsDTile * DTILE_WIDTH;
+    dimsTile = TileCoord(dimsDTile);
     floorStrideTile = dimsTile.x * dimsTile.y;
 
     TileRepository& tileRepo = TileRepository::get();
@@ -60,7 +60,7 @@ bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(TileIndex index) 
     assert(index < floorStrideTile);
     return ownedTilesFirstFloorBits.getBit(index);
 }
-bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(ui32v2 tileXY) const {
+bool BuildingBlueprintGenerationContext::isLocalTileIndexOwned(i32v2 tileXY) const {
     return ownedTilesFirstFloorBits.getBit(tileXY.y * dimsTile.x + tileXY.x);
 }
 

@@ -2711,6 +2711,15 @@
     <ClInclude Include="src\util\FixedSizeVector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\tile\SimTileData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\item\ItemRollTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\RollTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

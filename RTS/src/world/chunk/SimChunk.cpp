@@ -76,6 +76,7 @@ void SimChunkTileData::onTileAdded(TileID id, ChunkTileIndex pos) {
 }
 
 void SimChunkTileData::onTileRemoved(TileID id, ChunkTileIndex pos) {
+    // Not all removal paths go here, see tryClearHarvestable
     decrementTileQuantity(id, 1);
     TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
     if (harvestable != TileHarvestable::None) {
@@ -171,6 +172,52 @@ i32 SimChunk::tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, 
 SimChunkTileReservationHandle SimChunk::tryReserveHarvestableAtTile(ChunkTileIndex tileIndex, TileHarvestable harvestable) {
     std::lock_guard writeLock(mMutex);
     return SimTileReservation::tryReserveHarvestableSimTileForChunk(ChunkLiteTileHandle(mChunkID, tileIndex), harvestable);
+}
+
+SimTileData SimChunk::getTileDataCopy(ChunkTileIndex tileIndex) const {
+    std::shared_lock readLock(mMutex);
+    if (!mData) {
+        return SimTileData();
+    }
+    auto&& it = mData->tileIndexToTileData.find(tileIndex);
+    if (it == mData->tileIndexToTileData.end()) {
+        return SimTileData();
+    }
+    return it->second;
+}
+
+TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkTileIndex tileIndex) {
+    std::lock_guard writeLock(mMutex);
+    if (!mData) {
+        return TILE_ID_NONE;
+    }
+    auto&& hit = mData->harvestables.find(expectedHarvestable);
+    if (hit == mData->harvestables.end()) {
+        return TILE_ID_NONE;
+    }
+    
+    bool found = false;
+    for (size_t i = 0; i < hit->second.size(); ++i) {
+        if (hit->second[i] == tileIndex) {
+            hit->second[i] = hit->second.back();
+            hit->second.pop_back();
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        return TILE_ID_NONE;
+    }
+
+    auto&& it = mData->tileIndexToTileData.find(tileIndex);
+    assert(it != mData->tileIndexToTileData.end());
+
+    const TileID id = it->second.tileId;
+    mData->decrementTileQuantity(id, 1);
+
+    mData->tileIndexToTileData.erase(it);
+    return id;
 }
 
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {

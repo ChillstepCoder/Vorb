@@ -99,6 +99,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
     mRegistry.emplace<SimNeedsComponent>(newPerson);
     mRegistry.emplace<SimProfessionComponent>(newPerson);
     mRegistry.emplace<SimTaskQueueComponent>(newPerson);
+    mRegistry.emplace<InventoryComponent>(newPerson);
     mRegistry.emplace<AttributesComponent>(newPerson).init(
         DEFAULT_HEALTH,
         DEFAULT_STAMINA,

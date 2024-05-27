@@ -78,3 +78,6 @@ public:
 inline f32 randFromf32v3(const f32v3& x, ui64 additional) {
     return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
 }
+
+// Thread specific global random number generator
+inline static thread_local RandomGenerator sThreadLocalRandomGenerator(0xB25D9A7B + std::hash<std::thread::id>{}(std::this_thread::get_id()));

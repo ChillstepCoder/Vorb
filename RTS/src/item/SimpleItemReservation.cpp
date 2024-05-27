@@ -18,22 +18,28 @@ SimpleItemReservationData::SimpleItemReservationData(std::span<SimpleItemStack> 
 }
 
 void SimpleItemReservationData::cancel() {
-    if (sourceEndFunction) {
-        sourceEndFunction(ItemReservationEndReason::Cancel);
-    }
     invalidateHandles();
+    if (sourceEndFunction) {
+        sourceEndFunction(ItemReservationEndReason::Cancel, *this);
+        sourceEndFunction = nullptr;
+    }
+    if (targetUpdateFunction) {
+        targetUpdateFunction(ItemReservationUpdateType::Cancel, TILE_ID_NONE, 0);
+        targetUpdateFunction = nullptr;
+    }
 }
 
 void SimpleItemReservationData::onComplete() {
+    invalidateHandles();
 #ifdef DEBUG
     for (int i = 0; i < numItems; ++i) {
         assert(filledQuantity[i] == desiredQuantity[i]);
     }
 #endif
     if (sourceEndFunction) {
-        sourceEndFunction(ItemReservationEndReason::Success);
+        sourceEndFunction(ItemReservationEndReason::Success, *this);
+        sourceEndFunction = nullptr;
     }
-    invalidateHandles();
 }
 
 void SimpleItemReservationData::invalidateHandles() {

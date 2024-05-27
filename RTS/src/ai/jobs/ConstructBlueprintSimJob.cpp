@@ -24,8 +24,6 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
         return nullptr;
     }
 
-    std::span<SimChunkTileReservationHandle> tilesToHarvest;
-
     entt::entity settlementEntity = mBlueprint.parentSettlement;
     assert(settlementEntity != entt::null);
     SettlementHarvestableTrackerComponent& harvestTracker = simRegistry.get<SettlementHarvestableTrackerComponent>(settlementEntity);
@@ -51,6 +49,7 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
                         tileReservationHandle = simGrid.tryReserveHarvestableAtTilePos(pos, itemStack.harvestableType);
                         it = harvestables.erase(it);
                         if (tileReservationHandle) {
+                            harvestableToAquire = itemStack.harvestableType;
                             break;
                         }
                     }
@@ -82,7 +81,7 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
 
     std::unique_ptr<ConstructBlueprintSimTask> newTask =
         std::make_unique<ConstructBlueprintSimTask>(
-            world, mBlueprint, *this, std::move(tileReservationHandle)
+            world, mBlueprint, *this, std::move(tileReservationHandle), harvestableToAquire
         );
     // If state is END then the task could not initialize, likely due to no valid items
     if (newTask->mState == ConstructBlueprintSimTask::State::End) {

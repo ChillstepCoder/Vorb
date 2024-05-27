@@ -93,7 +93,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildingBlueprintGenerationContext);
 
     bool isLocalTileIndexOwned(TileIndex index) const;
-    bool isLocalTileIndexOwned(ui32v2 tileXY) const;
+    bool isLocalTileIndexOwned(i32v2 tileXY) const;
 
     // Indexing
     TileSpatialGrid mTileSpatialGrid;
@@ -115,13 +115,13 @@ public:
     const BuildingDef* desc = nullptr;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::WEST;
-    ui32 floorCount = 1u;
+    i32 floorCount = 1u;
 
     DTileCoord rootPosDTileCoord;
-    i32v2 dimsDTile;
-    i32v2 dimsTile;
-    ui32 floorStrideDTile;
-    ui32 floorStrideTile;
+    DTileCoord dimsDTile;
+    TileCoord dimsTile;
+    i32 floorStrideDTile;
+    i32 floorStrideTile;
     f32 approxZPosition;
 
     BitArray ownedDTiles;
@@ -138,8 +138,8 @@ public:
     FillableRecipe tileRecipes[e_cast(BlueprintTileType::TYPES)] = {};
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
-    ui32 totalTiles = 0;
-    ui32 totalWalls = 0;
+    i32 totalTiles = 0;
+    i32 totalWalls = 0;
     BitFlags<BuildingBlueprintFlags> flags;
 
     std::unique_ptr<RandomGenerator> randomGen;

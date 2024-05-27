@@ -744,6 +744,7 @@
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\ItemDef.h" />
     <ClInclude Include="src\item\ItemConst.h" />
+    <ClInclude Include="src\item\ItemRollTable.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
     <ClInclude Include="src\item\ItemReservation.h" />
@@ -950,6 +951,7 @@
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\NameManager.h" />
     <ClInclude Include="src\tile\ChunkLiteTileHandle.h" />
+    <ClInclude Include="src\tile\SimTileData.h" />
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
@@ -961,6 +963,7 @@
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />
     <ClInclude Include="src\util\FixedSizeVector.h" />
+    <ClInclude Include="src\util\RollTable.h" />
     <ClInclude Include="src\util\TilingVoronoiMap.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />

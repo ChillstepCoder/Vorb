@@ -12,22 +12,9 @@
 #include "resources/TileRepository.h"
 
 #include "tile/SimTileReservation.h"
+#include "tile/SimTileData.h"
 
 class Chunk;
-
-enum class SimTileDataFlags : ui8 {
-    Reserved = BIT(0)
-};
-
-struct SimTileData {
-    TileID tileId;
-    ui8 variant;
-    BitFlags<SimTileDataFlags> flags;
-
-    auto operator<=>(const SimTileData&) const = default;
-    bool isNull() const { return tileId == TILE_ID_NONE && flags.getBits() == 0; }
-};
-static_assert(sizeof(SimTileData) == 4);
 
 enum class SimChunkState : ui8 {
     NONE,
@@ -124,6 +111,14 @@ public:
     // Returns num reserved, set maxCount to 0 for infinite
     i32 tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, SimChunkTileReservationHandleVector& outReservationHandles);
     SimChunkTileReservationHandle tryReserveHarvestableAtTile(ChunkTileIndex tileIndex, TileHarvestable harvestable);
+
+    // Lock chunk mutex and get a copy of the current tile data
+    [[nodiscard]] SimTileData getTileDataCopy(ChunkTileIndex tileIndex) const;
+
+    // Lock chunk and try to clear specified harvestable at this point.
+    // If harvestable does not exist here, return TILE_ID_NONE
+    // TODO: Variant?
+    [[nodiscard]] TileID tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkTileIndex tilePos);
 
 private:
     // TODO: These functions assume a lock so need to be constrained to an interface friend class?

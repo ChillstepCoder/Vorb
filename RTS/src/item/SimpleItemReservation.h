@@ -24,7 +24,7 @@ class SimpleItemReservation;
 constexpr i32 MAX_ITEMS_IN_SIMPLE_RESERVATION = MAX_ITEMS_IN_RECIPE;
 
 typedef std::function<void(ItemReservationUpdateType, ItemID, i32/*Quantity*/)> SimpleItemReservationUpdateFunc;
-typedef std::function<void(ItemReservationEndReason)> SimpleItemReservationEndFunc;
+typedef std::function<void(ItemReservationEndReason, SimpleItemReservationData&)> SimpleItemReservationEndFunc;
 
 class SimpleItemReservationData {
     friend class SimpleItemReservationHandleBase<std::unique_ptr<SimpleItemReservationData>>;
@@ -34,6 +34,17 @@ class SimpleItemReservationData {
     friend class SimpleItemReservation;
 public:
     POOLED_ALLOC_DECL();
+
+    std::span<const ItemID> getDesiredItems() const {
+        return std::span<const ItemID>(desiredItems, numItems);
+    }
+    std::span<const i32> getFilledQuantities() const {
+        return std::span<const i32>(filledQuantity, numItems);
+    }
+    std::span<const i32> getDesiredQuantities() const {
+        return std::span<const i32>(desiredQuantity, numItems);
+    }
+    i8 getNumItems() const { return numItems; }
 
 private:
     SimpleItemReservationData(std::span<SimpleItemStack> reservedItems, SimpleItemReservationSourceHandle* sourceHandle, SimpleItemReservationTargetHandle* targetHandle);
@@ -81,17 +92,17 @@ public:
         if (itemIndex == -1) [[unlikely]] return 0;
         return dataPtr->desiredQuantity[itemIndex];
     }
-    const std::span<ItemID> getDesiredItems() const {
+    std::span<const ItemID> getDesiredItems() const {
         if (!dataPtr) [[unlikely]] return {};
-        return std::span<ItemID>(dataPtr->desiredItems, dataPtr->numItems);
+        return dataPtr->getDesiredItems();
     }
-    const std::span<i32> getFilledQuantities() const {
+    std::span<const i32> getFilledQuantities() const {
         if (!dataPtr) [[unlikely]] return {};
-        return std::span<i32>(dataPtr->filledQuantity, dataPtr->numItems);
+        return dataPtr->getFilledQuantities();
     }
-    const std::span<i32> getDesiredQuantities() const {
+    std::span<const i32> getDesiredQuantities() const {
         if (!dataPtr) [[unlikely]] return {};
-        return std::span<i32>(dataPtr->desiredQuantity, dataPtr->numItems);
+        return dataPtr->getDesiredQuantities();
     }
     bool isValid() const { return dataPtr != nullptr; }
 protected:

@@ -52,7 +52,7 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
 
         PreciseTimer timer;
         const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
-        const i32AABB2 aabb(worldPos, bp.dimsDTile * DTILE_WIDTH);
+        const i32AABB2 aabb(worldPos, bp.dimsDTile.toTilePos());
 
         // Clamp building height to 1 meter increments
         TileContainer& tileContainer = *building.getTileContainer();

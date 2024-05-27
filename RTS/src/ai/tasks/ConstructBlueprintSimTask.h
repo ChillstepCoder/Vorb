@@ -4,6 +4,7 @@
 #include "ai/tasks/MoveToPointSimTask.h"
 #include "item/SimpleItemReservation.h"
 #include "tile/SimTileReservation.h"
+#include "tile/TileHarvestable.h"
 
 class BuildingBlueprint;
 class ConstructBlueprintSimJob;
@@ -14,7 +15,9 @@ class ConstructBlueprintSimTask : public ISimTask
 	friend class ConstructBlueprintSimJob;
 public:
 	// We will aquire the tileReservations, and the job will release them after
-	ConstructBlueprintSimTask(World& world, BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation);
+	ConstructBlueprintSimTask(
+		World& world, BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
+	);
 	~ConstructBlueprintSimTask();
 
 	POOLED_ALLOC_DECL();
@@ -45,6 +48,7 @@ private:
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
 	SimChunkTileReservationHandle mTileReservation;
 	ui32 mTargetReservationId = 0;
+	TileHarvestable mHarvestableToAquire;
 	SimpleSimTaskTimer mTimer;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };

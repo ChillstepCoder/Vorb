@@ -11,6 +11,8 @@
 #include "ecs/component/AttributesComponent.h"
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
+#include "item/ItemStack.h"
+
 // If this component exists, the entity is on the simulation layer.
 // Otherwise it is fully simulated
 struct SimPositionComponent {
@@ -32,6 +34,10 @@ struct SimCharacterComponent {
     CharacterUID characterId;
 };
 
+// Represents resources slung over the shoulder
+struct SimResourceBundleComponent {
+    SimpleItemStack itemStack;
+};
 
 struct SimGenderComponent {
     bool isFemale = false;

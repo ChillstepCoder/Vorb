@@ -9,6 +9,7 @@ struct ChunkLiteTileHandle {
     ChunkLiteTileHandle(ChunkID chunkId, ChunkTileIndex index) : chunkId(chunkId), index(index) {};
 
     bool isValid() const { return  chunkId != INVALID_CHUNK_ID; }
+    void invalidate() { chunkId = INVALID_CHUNK_ID; }
 
     // Must be valid handle to call this
     i32v2 getWorldPosition2D(World& world) const;

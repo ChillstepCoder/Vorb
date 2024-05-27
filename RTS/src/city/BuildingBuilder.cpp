@@ -30,7 +30,7 @@ Building* BuildingBuilder::debugCreateAndBuildNewBuilding(World& world, std::uni
 
     PreciseTimer timer;
     const i32v2 worldPos = bpPtr->worldPosRootDTile.toTilePos();
-    const i32AABB2 aabb(worldPos, bpPtr->dimsDTile * DTILE_WIDTH);
+    const i32AABB2 aabb(worldPos, bpPtr->dimsDTile.toTilePos());
 
     BitArray tilesNeedingTerrainFlatten = bpPtr->computeSolidTilesFirstFloor();
 
