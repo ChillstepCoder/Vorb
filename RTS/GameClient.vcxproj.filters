@@ -1098,7 +1098,7 @@
     <ClCompile Include="src\util\FixedSizeVector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\resources\asset\AssetIdReference.cpp">
+    <ClCompile Include="src\resources\asset\LiteAssetRef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2723,7 +2723,7 @@
     <ClInclude Include="src\util\RollTableBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\resources\asset\AssetIdReference.h">
+    <ClInclude Include="src\resources\asset\LiteAssetRef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

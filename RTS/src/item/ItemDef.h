@@ -59,8 +59,8 @@ public:
     ui32 getMaxStockpileStackSize() const { return mStockpileStackSize; }
     TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
 
-    SoftAssetReference mIconTextureRef = AssetType::Texture;
-    SoftAssetReference mModelRef = AssetType::Model;
+    TextureAssetRef mIconTextureRef;
+    ModelAssetRef mModelRef;
     ItemType mType = ItemType::UNKNOWN;
     TileHarvestable mHarvestableSource = TileHarvestable::None; // TODO: Resource Tags instead?
     InventoryBagType mInventoryBagType = InventoryBagType::Misc;

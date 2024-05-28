@@ -85,7 +85,7 @@ public:
           }*/
     }
 
-    void ymlRead(c4::yml::ConstNodeRef const& n) {
+    bool ymlRead(c4::yml::ConstNodeRef const& n) {
         /* mEntries.clear();
          mCumulativeProbabilities.clear();
          mTotalProbability = 0.0f;
@@ -103,6 +103,7 @@ public:
              }
              mEntries.push_back(std::move(entry));
          }*/
+        return true;
     }
 
 protected:

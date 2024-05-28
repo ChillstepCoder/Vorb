@@ -57,8 +57,8 @@ class FishDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(FishDef, AssetType::Fish);
 
-    SoftAssetReference mItemRef = AssetType::Item;
-    SoftAssetReference mModelRef = AssetType::Model;
+    ItemAssetRef mItemRef;
+    ModelAssetRef mModelRef;
     ItemID mItemId = INVALID_ITEM_ID;
     ModelID mModelId = INVALID_ASSET_ID;
     FishingMinigameFishData mMinigameData; // TODO: Yml

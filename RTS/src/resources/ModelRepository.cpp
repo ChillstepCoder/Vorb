@@ -65,7 +65,7 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         LOG_TRACE("Loading model {}", filePath.getCString());
 
 
-        if (!def.mModelName.isValid()) {
+        if (!def.mModelRef.isValid()) {
             panic("Model file missing model name - {}", filePath.getString());
         }
 
@@ -73,7 +73,7 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         rootDir.trimEnd();
         assert(rootDir.isDirectory());
 
-        const vio::Path modelPath = rootDir + nString("\\") + def.mModelName.toString();
+        const vio::Path modelPath = rootDir + nString("\\") + def.mModelRef.toString();
         loadModelInternal(def, def.getName(), modelPath);
 
         return false;
@@ -94,10 +94,10 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     }
 
     // If has rig, we need to load animation and skeleton info
-    if (def.mRigName.isValid()) {
-        def.addDependency(RigRepository::get().getAssetHandle(def.mRigName.name));
-        if (def.mMachineName.isValid()) {
-            def.addDependency(AnimMachineRepository::get().getAssetHandle(def.mMachineName.name));
+    if (def.mRigRef.isValid()) {
+        def.addDependency(def.mRigRef.getAssetHandleBase());
+        if (def.mMachineRef.isValid()) {
+            def.addDependency(def.mMachineRef.getAssetHandleBase());
         }
     }
 
@@ -134,10 +134,10 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
         // Rig + animation
-        if (def.mRigName.isValid()) {
-            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(def.mRigName.name);
-            if (def.mMachineName.isValid()) {
-                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineName.name);
+        if (def.mRigRef.isValid()) {
+            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(def.mRigRef.name);
+            if (def.mMachineRef.isValid()) {
+                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineRef.name);
             }
         }
 
@@ -192,7 +192,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             if (needsConstructDefaultVariant) {
                 def.mVariants[0].submeshMaterials.emplace_back();
                 for (size_t i = 0; i < rawMaterialIdSlotMapping.size(); ++i) {
-                    def.mVariants[0].submeshMaterials.back()[i].name = StrToken(rawMeshPtr->mMaterials[rawMaterialIdSlotMapping[i]].materialName);
+                    def.mVariants[0].submeshMaterials.back()[i].setAssetName(StrToken(rawMeshPtr->mMaterials[rawMaterialIdSlotMapping[i]].materialName));
                 }
             }
 

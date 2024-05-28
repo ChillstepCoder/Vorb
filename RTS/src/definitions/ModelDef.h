@@ -51,9 +51,9 @@ public:
     // TODO: single unique_ptr? <mesh[]>
     std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
     ui32 mNumMeshes = 0;
-    SoftAssetReference mModelName = AssetType::Model;
-    SoftAssetReference mRigName = AssetType::Rig;
-    SoftAssetReference mMachineName = AssetType::AnimMachine;
+    ModelAssetRef mModelRef;
+    RigAssetRef mRigRef;
+    AnimMachineAssetRef mMachineRef;
     f32 mScale = 1.0f;
     f32 mLodDistance0 = 45.f;
     f32 mLodDistance1 = 90.f;

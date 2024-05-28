@@ -4,7 +4,7 @@
 
 // For rolling random item drops
 
-class ItemRollTable : public RollTableBase<AssetIdReference<AssetType::Item>> {
+class ItemRollTable : public RollTableBase<LiteAssetRef<AssetType::Item>> {
 protected:
     void ymlWriteValue(c4::yml::NodeRef& s) const override
     {
@@ -23,5 +23,5 @@ YML_WRITE_DEF(ItemRollTable) {
 }
 
 YML_READ_DEF(ItemRollTable) {
-    target->ymlRead(n);
+    return target->ymlRead(n);
 }

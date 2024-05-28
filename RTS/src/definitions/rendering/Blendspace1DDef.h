@@ -5,7 +5,7 @@ class AnimationDef;
 #include "rendering/model/skeletal/AnimVariableFloatBinding.h"
 
 struct Blendpsace1DDefNode {
-    SoftAssetReference animation = SoftAssetReference(AssetType::Animation);
+    AnimationAssetRef animation;
     f32 x = 0.0f;
     i32 editorIndex = -1; // Used for sorting and such
 };
@@ -18,7 +18,7 @@ class Blendspace1DDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(Blendspace1DDef, AssetType::Blendspace1D);
     std::vector<Blendpsace1DDefNode> nodes;
-    SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
+    RigAssetRef rigDef;
     AnimVariableFloatBindingDef inputBinding;
     f32 maxXChangeSpeed = 0.0f; // How quickly the X value can change, lower = smoother, 0 = instant
     f32 speedWarpFactorLess = 0.0f; // How much speed can reduce by when below left node, 0 = no reduction, 1 = full reduction

@@ -147,7 +147,13 @@ void ResourceManager::gatherFiles() {
 
     // Any needed post processing
     for (auto& assetRepo : mAssetRepositories) {
+        assetRepo->notifyAssetRegisters();
+    }
+    for (auto& assetRepo : mAssetRepositories) {
         assetRepo->onAllAssetTypesRegistered();
+    }
+    for (auto& assetRepo : mAssetRepositories) {
+        assetRepo->fixupAllAssets();
     }
 
     preloadFiles();
@@ -257,6 +263,7 @@ AssetDescriptor ResourceManager::registerOrGetRegisteredAsset(const std::filesys
 
         if (mHasGathered) {
             repo.onAllAssetTypesRegistered();
+            repo.fixupAllAssets();
         }
     }
     return AssetDescriptor{ .id=repo.getAssetID(assetName), .assetType=type };

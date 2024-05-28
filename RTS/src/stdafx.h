@@ -117,7 +117,7 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "resources/IAsset.h"
 #include "resources/asset/AssetHandle.h"
 #include "resources/asset/SoftAssetReference.h"
-#include "resources/asset/AssetIdReference.h"
+#include "resources/asset/LiteAssetRef.h"
 
 // **************** Constexpr vectors *****************
 #include "math/ConstVectors.h"

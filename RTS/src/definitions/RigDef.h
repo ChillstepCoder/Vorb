@@ -33,7 +33,7 @@ public:
     // Render bone heirarchy using tree nodes
     void imguiRenderSkeletonHierarchy() const;
 
-    std::vector<SoftAssetReference> mAnimationDefs; // populated by AnimationRepository
+    std::vector<AnimationAssetRef> mAnimationDefs; // populated by AnimationRepository
     ozz::animation::Skeleton mSkeleton;
     ozz::vector<ozz::math::SimdFloat4> mUpperBodyJointWeights;
     ozz::vector<ozz::math::SimdFloat4> mLowerBodyJointWeights;

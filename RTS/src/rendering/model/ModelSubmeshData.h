@@ -29,7 +29,7 @@ SERIALIZABLE_ENUM_SAME_NAME(ModelVariantSelectType,
     ENUM_FIELD_SIMPLE(ModelVariantSelectType, Voronoi)
 );
 
-YML_WRITE_DEF(std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>) {
+YML_WRITE_DEF(std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>) {
     ryml::NodeRef& nr = *n;
     nr |= ryml::SEQ;
     nr |= ryml::_WIP_STYLE_FLOW_SL;
@@ -37,7 +37,7 @@ YML_WRITE_DEF(std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>) {
         nr.append_child() << o[i];
     }
 }
-YML_READ_DEF(std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>) {
+YML_READ_DEF(std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>) {
     if (n.num_children() > MATERIAL_SLOT_COUNT) return false;
     int i = 0;
     for (auto const ch : n)
@@ -47,7 +47,7 @@ YML_READ_DEF(std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>) {
 
 struct ModelVariantData {
     StrToken displayName = CStrToken("new_variant");
-    std::vector<std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>> submeshMaterials;
+    std::vector<std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>> submeshMaterials;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelVariantData,
     make_field(o.displayName, "name"sv),

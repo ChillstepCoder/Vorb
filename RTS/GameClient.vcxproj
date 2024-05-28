@@ -446,7 +446,7 @@
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\AssetLoader.cpp" />
-    <ClCompile Include="src\resources\asset\AssetIdReference.cpp" />
+    <ClCompile Include="src\resources\asset\LiteAssetRef.cpp" />
     <ClCompile Include="src\resources\asset\SoftAssetReference.cpp" />
     <ClCompile Include="src\resources\BiomeRepository.cpp" />
     <ClCompile Include="src\resources\Blendspace1DRepository.cpp" />
@@ -917,7 +917,7 @@
     <ClInclude Include="src\resources\asset\AssetHandle.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
-    <ClInclude Include="src\resources\asset\AssetIdReference.h" />
+    <ClInclude Include="src\resources\asset\LiteAssetRef.h" />
     <ClInclude Include="src\resources\asset\AssetMetadata.h" />
     <ClInclude Include="src\resources\asset\AssetType.h" />
     <ClInclude Include="src\resources\asset\SoftAssetReference.h" />

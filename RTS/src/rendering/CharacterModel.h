@@ -21,7 +21,7 @@ static_assert(sizeof(CharacterModelComponent) == 4, "Keep small");
 
 class CharacterModelComponentDef : public ComponentDefBase {
 public:
-    SoftAssetReference model = SoftAssetReference(AssetType::Model);
+    ModelAssetRef model;
 };
 SERIALIZABLE_SIMPLE(CharacterModelComponentDef,
 	make_field(o.model, "model"sv)

@@ -432,7 +432,7 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
                 // Find a valid preview model to start with
                 for (const AssetMetadata& data : ModelRepository::get().getAssetRegistry()) {
                     const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(data.getId());
-                    if (def.mRigName == mAssetData->rigDef) {
+                    if (def.mRigRef == mAssetData->rigDef) {
                         mPreviewModel.name = data.mName;
                         break;
                     }

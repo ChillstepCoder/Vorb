@@ -40,6 +40,11 @@ bool IAssetRepositoryBase::saveAssetContents(const IAsset& asset, const vio::Pat
 }
 
 nString IAssetRepositoryBase::readFileToString(const vio::Path& path) {
+    // Empty path returns empty file, used when creating new assets with no path
+    if (path.getString().empty()) {
+        panic("Test IAssetRepositoryBase::readFileToString, should we actually have a path here???");
+        return "";
+    }
     nString fileData;
     if (!mIoManager.readFileToString(path, fileData)) {
         panic("Asset repository failed to read file {}", path.getCString());

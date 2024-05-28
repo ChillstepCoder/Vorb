@@ -24,8 +24,8 @@ AssetLoadFunc FishRepository::getAssetLoadFunc() {
 
         LOAD_DEPENDENCIES_HELPER(def,
             FishDef& def = *static_cast<FishDef*>(assetDataPtr);
-            def.mItemId = def.getDependencies()->getLoadedAsset<ItemDef>(def.mItemRef.name).getID();
-            def.mModelId = def.getDependencies()->getLoadedAsset<ModelDef>(def.mModelRef.name).getID();
+            def.mItemId = def.mItemRef.getAssetID();
+            def.mModelId = def.mModelRef.getAssetID();
         );
     };
 }

@@ -64,7 +64,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(BiomePossibleVariant,
 );
 
 struct BiomePossibleTile {
-    SoftAssetReference tile = AssetType::Tile;
+    TileAssetRef tile;
     f32 weight = 1.0f;
     TileVariantSelectionType variantSelectionType = TileVariantSelectionType::Random;
     std::vector<BiomePossibleVariant> variants;
@@ -83,7 +83,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(BiomePossibleTile,
 struct BiomeTileGenCategory {
     nString name = "NewCategory";
     std::vector<BiomePossibleTile> tiles;
-    SoftAssetReference distribution = AssetType::TileDistribution;
+    TileDistributionAssetRef distribution;
     f32 minHeight = 0.1f;
     f32 maxHeight = 10000.0f;
     f32v2 slopeRange = f32v2(0.0f, 1.0f); // 0 = flat, 1 = vertical
@@ -133,9 +133,9 @@ public:
     nString displayName = "UNKNOWN";
     BiomeUniqueID uniqueId = BiomeUniqueID::INVALID;
     f32 priority = 0.0f; // ??
-    SoftAssetReference colorMapTexture = AssetType::Texture;
+    TextureAssetRef colorMapTexture;
     // If a sub biome, this will be set by file. If corrupt, this will be set automatically
-    SoftAssetReference parentBiomeRef = AssetType::Biome;
+    BiomeAssetRef parentBiomeRef;
     BiomeDef* parentBiome = nullptr;
     BiomeDef* corruptVersions[e_count(BiomeCorruptions)] = {};
     BiomeCorruptions corruptType = BiomeCorruptions::COUNT;

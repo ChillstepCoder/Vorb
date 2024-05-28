@@ -10,7 +10,7 @@ class World;
 
 class SkillsComponentDef : public ComponentDefBase {
 public:
-    // TODO: SoftAssetReference
+    // TODO: AssetRef
     std::vector<nString> mSkillNames;
 };
 SERIALIZABLE_SIMPLE(SkillsComponentDef,

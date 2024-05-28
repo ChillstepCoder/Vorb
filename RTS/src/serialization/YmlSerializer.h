@@ -101,22 +101,22 @@ namespace YmlSerializer {
         s |= ryml::MAP;
         s[ryml::to_csubstr(first.key)] << first.value;
 
-        serializeYmlFields<T>(s, rest...);
+        if constexpr (sizeof...(Rest) > 0) {
+            serializeYmlFields<T>(s, rest...);
+        }
     }
 
-    template<typename T>
-    void deserializeYmlFields(const ryml::ConstNodeRef& s) {}
     template<typename T, typename First, typename... Rest>
     void deserializeYmlFields(ryml::ConstNodeRef const& s, FieldPair<First> first, Rest... rest) {
         c4::csubstr nameSubstr = ryml::to_csubstr(first.key);
         if (s.is_map() && s.has_child(nameSubstr)) {
             s[nameSubstr] >> first.value;
         }
-        deserializeYmlFields<T>(s, rest...);
+        if constexpr (sizeof...(Rest) > 0) {
+            deserializeYmlFields<T>(s, rest...);
+        }
     }
 
-    template<typename T>
-    bool updateAndRenderImgui() { return false; }
     template<typename T, typename First, typename... Rest>
     bool updateAndRenderImgui(FieldPair<First> first, Rest... rest) {
         First& value = first.value;
@@ -190,6 +190,9 @@ namespace YmlSerializer {
         else if constexpr (std::is_same_v<First, SoftAssetReference>) {
             changed |= ImguiUtil::updateAndRenderSoftAssetReference(label.data(), value );
         }
+        else if constexpr (is_lite_asset_ref_v<First>) {
+            changed |= value.updateAndRenderImgui(label.data());
+        }
         else if constexpr (std::is_same_v<First, color3>) {
             float colorf[3] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f };
             changed |= ImGui::ColorEdit3(label.data(), colorf, ImGuiColorEditFlags_Uint8);
@@ -200,8 +203,12 @@ namespace YmlSerializer {
             changed |= ImGui::ColorEdit4(label.data(), colorf, ImGuiColorEditFlags_Uint8);
             value = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
-        // Add more type checks if needed
-        return changed | updateAndRenderImgui<T>(rest...);
+        // Recursively call updateAndRenderImgui for the rest of the arguments
+        if constexpr (sizeof...(Rest) > 0) {
+            changed |= updateAndRenderImgui<T>(rest...);
+        }
+
+        return changed;
     }
 
     inline ryml::Tree parseFileData(const nString& ymlFileData) {

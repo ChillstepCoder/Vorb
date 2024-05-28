@@ -67,9 +67,10 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     ItemRepository& itemRepo = ItemRepository::get();
     TileDef& def = *mAssets[id];
-    for (size_t i = 0; i < def.itemDrops.size(); ++i) {
+    // TODO: DROPS
+   /* for (size_t i = 0; i < def.itemDrops.size(); ++i) {
         def.itemDrops[i].id = itemRepo.getAssetID(def.itemDrops[i].itemName);
-    }
+    }*/
 
     // Recipes
     Recipe& recipe = mTileRecipes[id];

@@ -19,6 +19,7 @@ public:
     AssetHandleBasePtr getAssetHandleBase(AssetID id);
     AssetHandleBasePtr getAssetHandleBase(StrToken assetName);
     AssetHandleBasePtr tryGetAssetHandleBase(StrToken assetName);
+    virtual IAsset& getLoadedOrUnloadedIAsset(AssetID id) = 0;
 
     virtual AssetType getAssetType() const = 0;
 
@@ -30,9 +31,9 @@ public:
     virtual bool isAssetRegistered(StrToken name) const = 0;
     virtual AssetID tryGetRegisteredAssetID(StrToken name) const = 0;
     virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
-    virtual void onAllAssetTypesRegistered() {
-        fixupRegisteredAssets();
-    }
+    virtual void notifyAssetRegisters() = 0;
+    virtual void onAllAssetTypesRegistered() = 0;
+    virtual void fixupAllAssets() = 0;
     virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
 
 
@@ -68,12 +69,6 @@ public:
     virtual void fixupRegisteredAsset(AssetID assetId) {};
     // Called only on edit, must be manually called post load if used
     virtual void fixupLoadedAsset(AssetID assetId) {};
-
-    void fixupRegisteredAssets() {
-        for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
-            fixupRegisteredAsset(id);
-        }
-    }
 
     virtual AssetHandleBasePtr reloadAsset(AssetID id) {
         return nullptr;
@@ -248,6 +243,9 @@ public:
     const T& getLoadedOrUnloadedAsset(AssetID id) {
         return *mAssets[id];
     }
+    IAsset& getLoadedOrUnloadedIAsset(AssetID id) {
+        return *mAssets[id];
+    }
     T& getMutableLoadedOrUnloadedAsset(StrToken name) {
         return *mAssets[getAssetID(name)];
     }
@@ -293,7 +291,8 @@ public:
         mAssetRefCounts.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_int>>(0));
         mAssets.emplace_back(std::make_unique<T>(name, id));
         mLoadedAssets.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_bool>>(false));
-        onRegisteredAsset(id);
+        // We do not call onRegisteredAsset here, we must wait for all assets to be registered as
+        // some may have LiteAssetRef dependencies to each other
         return id;
     }
     inline bool isAssetRegistered(StrToken name) const override {
@@ -309,6 +308,7 @@ public:
         // TODO: Cleanup first?
         onRegisteredAsset(id);
         onAllAssetTypesRegistered(); // TODO: MIGHT CAUSE PROBLEMS if this is implemented to not clean itself up
+        fixupAllAssets();
         // Some assets don't "load"
         if (getAssetLoadFunc() || getAssetLoadRenderProcessFunc()) {
             if (mLoadedAssets[id]->load()) {
@@ -329,10 +329,10 @@ public:
     AssetHandleBundle reloadAllLoadedAssets() {
         AssetHandleBundle assets;
         // TODO: Cleanup first?
-        for (AssetID id = 0; id < mAssets.size(); ++id) {
-            onRegisteredAsset(id);
-        }
+       
+        notifyAssetRegisters();
         onAllAssetTypesRegistered();
+        fixupAllAssets();
         // Some assets don't "load"
         if (getAssetLoadFunc() || getAssetLoadRenderProcessFunc()) {
             for (AssetID id = 0; id < mAssets.size(); ++id) {
@@ -349,6 +349,19 @@ public:
             }
         }
         return assets;
+    }
+
+    void notifyAssetRegisters() override final {
+        for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
+            onRegisteredAsset(id);
+        }
+    }
+    void onAllAssetTypesRegistered() override {}
+
+    void fixupAllAssets() override {
+        for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
+            fixupRegisteredAsset(id);
+        }
     }
 
     // Editor function which will register and create a default asset of this type
@@ -371,6 +384,7 @@ public:
         }
         else {
             AssetID newId = registerAsset(name, "");
+            onRegisteredAsset(newId);
             mLoadedAssets[newId]->store(true);
             AssetHandlePtr<T> newHandle = getAssetHandle(newId);
             return newHandle;

@@ -7,7 +7,7 @@ public:
     DEFAULT_ASSET_CONSTRUCTOR(AnimationDef, AssetType::Animation);
 
     ozz::animation::Animation animation;
-    SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
+    RigAssetRef rigDef;
     bool syncToFeet = false;
     bool isUpperBody = false;
 };

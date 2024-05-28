@@ -23,7 +23,7 @@ constexpr auto MAX_ANIM_TRANSITIONS = std::numeric_limits<AnimTransitionID>::max
 
 struct AnimTransitionDef {
     AnimTransitionConditionFileData condition;
-    SoftAssetReference anim = SoftAssetReference(AssetType::Animation);
+    AnimationAssetRef anim;
     f32 duration = 0.0f;
     StrToken toState;
 };
@@ -86,7 +86,7 @@ public:
     AssetType getAssetType() const override { return AssetType::AnimMachine; }
     inline static constexpr AssetType ASSET_TYPE = AssetType::AnimMachine;
 
-    SoftAssetReference rigDef = SoftAssetReference(AssetType::Rig);
+    RigAssetRef rigDef;
     // TODO: USE
     // Editor representation, State 0 is entry state
     std::vector<AnimMachineStateDef> stateDefs;

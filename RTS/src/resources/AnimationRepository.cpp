@@ -5,7 +5,7 @@
 #include <ozz/base/io/archive.h>
 #include <ozz/base/io/stream.h>
 
-#include "resources/RigRepository.h"
+#include "definitions/RigDef.h"
 #include "filesystem/FileSystem.h"
 
 void AnimationRepository::onRegisteredAsset(AssetID id) {
@@ -17,9 +17,9 @@ void AnimationRepository::onAllAssetTypesRegistered() {
     for (auto& asset : mAssetRegistry) {
         AnimationDef& def = *mAssets[asset.getId()];
         if (def.rigDef.isValid()) {
-            RigDef& rigHandle = RigRepository::get().getMutableLoadedOrUnloadedAsset(def.rigDef.name);
+            RigDef& rigHandle = def.rigDef.getMutableLoadedOrUnloadedAsset<RigDef>();
             // TODO: ShrinkToFit pass later in onPostAllAssetTypesRegistered?
-            rigHandle.mAnimationDefs.emplace_back(SoftAssetReference(AssetType::Animation, def.getName()));
+            rigHandle.mAnimationDefs.emplace_back(AnimationAssetRef(def.getName()));
         }
         else {
             LOG_WARN("Warning: Animation {} has no rig", asset.mFilePath.getString());

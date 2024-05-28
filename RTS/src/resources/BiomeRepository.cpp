@@ -115,8 +115,6 @@ void BiomeRepository::onAllAssetTypesRegistered() {
     // TODO: Load custom mapping file so we can persist biome IDs for mods?
 
     generateBiomesGLSLFile();
-
-    fixupRegisteredAssets();
 }
 
 void BiomeRepository::linkCorruptedBiomes() {
@@ -146,8 +144,8 @@ void BiomeRepository::linkCorruptedBiomes() {
             def.corruptVersions[e_cast(BiomeCorruptions::Chernobog)] = mAssets[mUniqueIDMap[uniqueId + 2]].get();
             for (int i = 0; i < e_count(BiomeCorruptions); ++i) {
                 BiomeDef& child = *def.corruptVersions[i];
-                assert(!child.parentBiomeRef.isValid() || child.parentBiomeRef.name == def.getName());
-                child.parentBiomeRef.name = def.getName();
+                assert(!child.parentBiomeRef.isValid() || child.parentBiomeRef.getAssetID() == def.getID());
+                child.parentBiomeRef.setAssetID(def.getID());
                 child.parentBiome = &def;
                 child.corruptType = BiomeCorruptions(i);
             }

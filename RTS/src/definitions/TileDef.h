@@ -110,8 +110,8 @@ public:
     std::vector<StrToken> materialNames;
     std::vector<MaterialDesc> materialData;
     TileTextureMethod textureMethod;
-    SoftAssetReference destroyEffectRef = AssetType::Effect;
-    SoftAssetReference modelRef = AssetType::Model;
+    EffectAssetRef destroyEffectRef;
+    ModelAssetRef modelRef;
     ModelID modelId = INVALID_MODEL_ID;
     std::vector<ui8> modelVariants;
     ui16 maxHealth = 100;

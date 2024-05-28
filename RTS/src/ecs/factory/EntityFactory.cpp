@@ -122,7 +122,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 auto& skillsCmp = registry.emplace<SkillsComponent>(newEntity);
                 SkillRepository& skillRepo = SkillRepository::get();
                 skillsCmp.mSkills.reserve(cdef.mSkillNames.size());
-                // TODO: SoftAssetReference
+                // TODO: AssetRef
                 for (size_t i = 0; i < cdef.mSkillNames.size(); ++i) {
                     skillsCmp.mSkills.emplace_back(skillRepo.getAssetHandle(StrToken(cdef.mSkillNames[i])));
                 }   
@@ -158,7 +158,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     ItemRepository& itemRepo = ItemRepository::get();
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
     if (itemDef.mModelRef.isValid()) {
-        registry.emplace<DynamicModelComponent>(newEntity, ModelRepository::get().getAssetID(itemDef.mModelRef.name));
+        registry.emplace<DynamicModelComponent>(newEntity, itemDef.mModelRef.getAssetID());
     }
     return newEntity;
 }

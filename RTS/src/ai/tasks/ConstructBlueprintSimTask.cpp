@@ -124,13 +124,13 @@ SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registr
                 }
 
                 // TODO: USE DROP TABLE
-                x;
+                //x;
 
-                assert(!simRegistry.try_get<SimResourceBundleComponent>(simAgent));
-                SimResourceBundleComponent& bundle = simRegistry.emplace<SimResourceBundleComponent>(simAgent);
+                //assert(!simRegistry.try_get<SimResourceBundleComponent>(simAgent));
+                //SimResourceBundleComponent& bundle = simRegistry.emplace<SimResourceBundleComponent>(simAgent);
 
                 // TODO: BUNDLE
-                x;
+               // x;
 
                 mState = State::MoveToBlueprint;
                 mMoveSubtask.init(simRegistry, simAgent, mBlueprint.getCenterPosTile().v, 32.0f);
