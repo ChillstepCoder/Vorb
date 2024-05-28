@@ -1,13 +1,27 @@
 #pragma once
 
-#include <random>
-
-#include "util/RollTable.h"
+#include "util/RollTableBase.h"
 
 // For rolling random item drops
-typedef RollTable<ItemID> ItemRollTable;
+
+class ItemRollTable : public RollTableBase<AssetIdReference<AssetType::Item>> {
+protected:
+    void ymlWriteValue(c4::yml::NodeRef& s) const override
+    {
+        throw std::logic_error("The method or operation is not implemented.");
+    }
+
+    void ymlReadValue(c4::yml::ConstNodeRef const& n) override
+    {
+        throw std::logic_error("The method or operation is not implemented.");
+    }
+};
 
 // TODO:
 YML_WRITE_DEF(ItemRollTable) {
-    x;
+    o.ymlWrite(*n);
+}
+
+YML_READ_DEF(ItemRollTable) {
+    target->ymlRead(n);
 }

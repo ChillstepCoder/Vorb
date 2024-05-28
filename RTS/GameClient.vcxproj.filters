@@ -1098,6 +1098,9 @@
     <ClCompile Include="src\util\FixedSizeVector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\asset\AssetIdReference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2717,7 +2720,10 @@
     <ClInclude Include="src\item\ItemRollTable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\util\RollTable.h">
+    <ClInclude Include="src\util\RollTableBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\asset\AssetIdReference.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

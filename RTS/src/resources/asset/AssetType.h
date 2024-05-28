@@ -26,3 +26,5 @@ enum class AssetType : ui8 {
     NONE,
     COUNT = NONE
 };
+
+typedef std::function<bool(AssetID)> AssetFilterFunc;

@@ -446,6 +446,7 @@
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\AssetLoader.cpp" />
+    <ClCompile Include="src\resources\asset\AssetIdReference.cpp" />
     <ClCompile Include="src\resources\asset\SoftAssetReference.cpp" />
     <ClCompile Include="src\resources\BiomeRepository.cpp" />
     <ClCompile Include="src\resources\Blendspace1DRepository.cpp" />
@@ -916,6 +917,7 @@
     <ClInclude Include="src\resources\asset\AssetHandle.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
     <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
+    <ClInclude Include="src\resources\asset\AssetIdReference.h" />
     <ClInclude Include="src\resources\asset\AssetMetadata.h" />
     <ClInclude Include="src\resources\asset\AssetType.h" />
     <ClInclude Include="src\resources\asset\SoftAssetReference.h" />
@@ -963,7 +965,7 @@
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />
     <ClInclude Include="src\util\FixedSizeVector.h" />
-    <ClInclude Include="src\util\RollTable.h" />
+    <ClInclude Include="src\util\RollTableBase.h" />
     <ClInclude Include="src\util\TilingVoronoiMap.h" />
     <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
     <ClInclude Include="src\visibility\VisibilityGraph.h" />

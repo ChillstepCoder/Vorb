@@ -2,8 +2,6 @@
 
 #include "resources/asset/AssetType.h"
 
-typedef std::function<bool(AssetID)> AssetFilterFunc;
-
 class SoftAssetReference {
 public:
     SoftAssetReference() = default;

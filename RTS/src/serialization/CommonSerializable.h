@@ -30,6 +30,24 @@ YML_READ_DEF(SoftAssetReference) {
     return true;
 }
 
+// ASSET ID REFERENCE
+template <AssetType ASSET_TYPE>
+YML_WRITE_DEF(AssetIdReference<ASSET_TYPE>) {
+    ryml::NodeRef& nr = *n;
+    nr << o.getAssetName().toString();
+}
+template <AssetType ASSET_TYPE>
+YML_READ_DEF(AssetIdReference<ASSET_TYPE>) {
+    c4::csubstr str;
+    n >> str;
+    if (str.size() > MAX_CHARS_IN_STRTOKEN) {
+        panic("Invalid asset reference strtoken length (max 20) {} {}", str.size(), str.data());
+    };
+    SoftAssetReference ref(ASSET_TYPE, StrToken(str.data(), str.size()));
+    target->id = ref->getAssetID();
+    return true;
+}
+
 SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, Tile),
     ENUM_FIELD_SIMPLE(AssetType, ParticleSystem),
