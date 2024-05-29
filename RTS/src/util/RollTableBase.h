@@ -9,13 +9,8 @@ template <typename T>
 struct RollTableEntry {
     T item;
     f32 probability = 0.0f;
-    i32v2 quanityRange = i32v2(0);
+    i32v2 quantityRange = i32v2(0);
     std::unique_ptr<RollTableBase<T>> subTable = nullptr;
-};
-
-template <typename T>
-class RollTableDef {
-
 };
 
 // TODO: New file
@@ -68,47 +63,76 @@ public:
     }
 
     void ymlWrite(c4::yml::NodeRef& n) const {
-        /*  n |= ryml::SEQ;
-          for (const auto& entry : mEntries) {
-              c4::ryml::NodeRef c = n.append_child();
-              c |= ryml::MAP;
-              if (entry.subTable) {
-                  c4::ryml::NodeRef st = c.append_child();
-                  st << ryml::key("sub_table");
-                  entry.subTable->ymlWrite(st);
-              }
-              else {
-                  c["item"] << entry.item;
-                  c["probability"] << entry.probability;
-                  c["quantityRange"] << quanityRange;
-              }
-          }*/
+        n |= ryml::SEQ;
+        for (const auto& entry : mEntries) {
+            c4::yml::NodeRef c = n.append_child();
+            c |= ryml::MAP;
+            if (entry.subTable) {
+                c4::yml::NodeRef st = c.append_child();
+                st << ryml::key("sub_table");
+                entry.subTable->ymlWrite(st);
+            }
+            else {
+                c["item"] << entry.item;
+                c["probability"] << entry.probability;
+                c["quantityRange"] << entry.quantityRange;
+            }
+        }
     }
 
     bool ymlRead(c4::yml::ConstNodeRef const& n) {
-        /* mEntries.clear();
-         mCumulativeProbabilities.clear();
-         mTotalProbability = 0.0f;
+        mEntries.clear();
+        mCumulativeProbabilities.clear();
+        mTotalProbability = 0.0f;
 
-         for (const auto& c : n) {
-             RollTableEntry<T> entry;
-             if (c.has_child("sub_table")) {
-                 entry.subTable = std::make_unique<RollTableBase<T>>();
-                 entry.subTable->ymlRead(c["sub_table"]);
-             }
-             else {
-                 c["item"] >> entry.item;
-                 c["probability"] >> entry.probability;
-                 c["quantityRange"] >> entry.quanityRange;
-             }
-             mEntries.push_back(std::move(entry));
-         }*/
+        for (const auto& c : n) {
+            RollTableEntry<T> entry;
+            if (c.has_child("sub_table")) {
+                entry.subTable = std::make_unique<RollTableBase<T>>();
+                entry.subTable->ymlRead(c["sub_table"]);
+            }
+            else {
+                if (c.has_child("item")) {
+                    c["item"] >> entry.item;
+                }
+
+                if (c.has_child("probability")) {
+                    c["probability"] >> entry.probability;
+                }
+
+                if (c.has_child("quantityRange")) {
+                    c["quantityRange"] >> entry.quantityRange;
+                }
+            }
+            mEntries.push_back(std::move(entry));
+        }
         return true;
     }
 
+    bool updateAndRenderImgui(const char* label) {
+        bool changed = false;
+        ImGui::PushID(label);
+        ImGui::Text("Label");
+        for (ui32 i = 0; i < mEntries.size(); i++) {
+            RollTableEntry<T>& entry = mEntries[i];
+            ImGui::PushID(i);
+            if (entry.subTable) {
+                ImGui::Indent();
+                changed |= entry.subTable->updateAndRenderImgui("Sub-table");
+                ImGui::Unindent();
+            }
+            else {
+                changed |= ImGui::InputFloat("Probability", &entry.probability);
+                changed |= ImGui::InputInt2("Quantity Range", &entry.quantityRange.x);
+                changed |= ImGui::InputInt2("Quantity Range", &entry.quantityRange.y);
+            }
+            ImGui::PopID();
+        }
+        ImGui::PopID();
+        return changed;
+    
+
 protected:
-    virtual void ymlWriteValue(c4::yml::NodeRef& s) const = 0;
-    virtual void ymlReadValue(c4::yml::ConstNodeRef const& n) = 0;
 
     std::vector<RollTableEntry<T>> mEntries;
     std::vector<f32> mCumulativeProbabilities; // For binary search

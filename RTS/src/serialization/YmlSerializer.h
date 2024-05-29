@@ -31,6 +31,12 @@ FieldPair<T> make_field(T& val, std::string_view k) {
     return FieldPair<T>{ val, k };
 }
 
+// Concept to check for the exact function signature for updateAndRenderImgui
+template <typename T>
+concept HasUpdateAndRenderImgui = requires(T t, const char* label) {
+    { t.updateAndRenderImgui(label) } -> std::same_as<bool>;
+};
+
 //// A helper type trait to check if a type is a specialization of std::vector
 //template<typename>
 //struct is_std_vector : std::false_type {};
@@ -190,7 +196,10 @@ namespace YmlSerializer {
         else if constexpr (std::is_same_v<First, VariantAssetRef>) {
             changed |= ImguiUtil::updateAndRenderVariantAssetReference(label.data(), value );
         }
-        else if constexpr (is_lite_asset_ref_v<First>) {
+        else if constexpr (HasUpdateAndRenderImgui<First>) {
+            changed |= value.updateAndRenderImgui(label.data());
+        }
+        else if constexpr (IsLiteAssetRef<First>) {
             changed |= value.updateAndRenderImgui(label.data());
         }
         else if constexpr (std::is_same_v<First, color3>) {

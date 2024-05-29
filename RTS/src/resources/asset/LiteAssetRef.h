@@ -80,14 +80,10 @@ public:
     auto operator<=>(const LiteAssetRef&) const = default;
 };
 
-template<typename T>
-struct is_lite_asset_ref : std::false_type {};
-
-template<AssetType T>
-struct is_lite_asset_ref<LiteAssetRef<T>> : std::true_type {};
-
-template<typename T>
-constexpr bool is_lite_asset_ref_v = is_lite_asset_ref<T>::value;
+template <typename T>
+concept IsLiteAssetRef = std::derived_from<T, LiteAssetRefBase>&& requires {
+    { T::getAssetType() } -> std::convertible_to<AssetType>;
+};
 
 
 // Usage: ASSET_REF_DECL(Texture) yields TextureRef from TextureDef
