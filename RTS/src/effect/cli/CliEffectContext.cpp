@@ -38,7 +38,7 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
 
     // Render queue
     constexpr size_t BULK_SIZE = 64;
-    std::pair<StrToken, PendingEffectInstanceData> effects[BULK_SIZE];
+    std::pair<EffectAssetRef, PendingEffectInstanceData> effects[BULK_SIZE];
     if (size_t count = mRenderThreadQueue.try_dequeue_bulk(effects, BULK_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             auto&& data = effects[i];
@@ -67,9 +67,9 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     }
 }
 
-void CliEffectContext::playParticleEffectAtPoint(StrToken effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
+void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
     if (IS_RENDER_THREAD()) {
-        AssetHandlePtr<EffectDef> effectHandle = EffectRepository::get().getAssetHandle(effectName);
+        AssetHandlePtr<EffectDef> effectHandle = effectName.getAssetHandle<EffectDef>();
         if (const EffectDef* effectDef = effectHandle->tryGetLoadedAsset()) {
             addEffectInstance(
                 effectHandle->getAssetID(),

@@ -48,7 +48,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         if (mAssetData && mAssetData->isSkeletalModel()) {
             ImGui::Checkbox("Skeletal Edit", &mSkeletalEditMode);
             if (mSkeletalEditMode) {
-                if (ImguiUtil::updateAndRenderSoftAssetReference("Preview Anim", mPreviewAnim)) {
+                if (mPreviewAnim.updateAndRenderImgui("Preview Anim")) {
                     mPreviewAnimTime = 0.0f;
                 }
                 AssetHandlePtr<AnimationDef> previewHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
@@ -101,11 +101,11 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                     [](ModelVariantData& o, ui32) {
                         bool changed = false;
                         changed |= updateAndRenderImguiControls(o);
-                        changed |= ImguiUtil::ObjectVector<std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>>("Materials", o.submeshMaterials,
-                            [](std::array<SoftAssetReference, MATERIAL_SLOT_COUNT>& o, ui32 i) {
+                        changed |= ImguiUtil::ObjectVector<std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>>("Materials", o.submeshMaterials,
+                            [](std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>& o, ui32 i) {
                                 bool changed = false;
                                 for (auto&& r : o) {
-                                    changed |= ImguiUtil::updateAndRenderSoftAssetReference(nullptr, r);
+                                    changed |= r.updateAndRenderImgui(nullptr);
                                 }
                                 return changed;
                             }, false /*resizable*/

@@ -18,7 +18,7 @@ public:
     virtual void renderEffects(f32 elapsedSec, const Camera3D& camera) = 0;
 
     virtual void playParticleEffectAtPoint(
-        StrToken effectName,
+        EffectAssetRef effectName,
         f32v3 point,
         ParticleSystemInputs inputs,
         BitFlags<EffectCreateFlags> flags

@@ -11,7 +11,7 @@ public:
     void renderEffects(f32 elapsedSec, const Camera3D& camera) override { mCliContext.renderEffects(elapsedSec, camera); }
 
     void playParticleEffectAtPoint(
-        StrToken effectName,
+        EffectAssetRef effectName,
         f32v3 point,
         ParticleSystemInputs inputs,
         BitFlags<EffectCreateFlags> flags

@@ -728,7 +728,7 @@ void WorldRenderer::setActiveWorld(World* world) {
             SkillsComponent& skillsCmp = world->getECS().mRegistry.get<SkillsComponent>(skillEvent.mEntity);
             const SkillDef* skill = skillsCmp.mSkills[e_cast(skillEvent.mSkillSlot)]->tryGetLoadedAsset();
             if (skill) {
-                RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skill->mAnimID);
+                RenderThreadTasks::getInstance().playOneShotAnimation(skillEvent.mEntity, skill->mAnimation.getAssetID());
             }
             else {
                 LOG_WARN("Tried to play skill animation for skill slot {} but skill was not loaded", (int)skillEvent.mSkillSlot);

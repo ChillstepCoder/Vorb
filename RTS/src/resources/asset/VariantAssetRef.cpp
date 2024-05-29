@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "SoftAssetReference.h"
+#include "VariantAssetRef.h"
 
 #include "ui/ImguiUtil.hpp"
 #include "ui/editor/ImguiAssetThumbnails.h"
@@ -14,10 +14,10 @@
 #include "definitions/AssetDefinitions.h"
 
 static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
-static std::map<SoftAssetReference*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
+static std::map<VariantAssetRef*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
 
 template <typename T>
-bool assetButton(SoftAssetReference& assetRef, AssetFilterFunc fiterFunc) {
+bool assetButton(VariantAssetRef& assetRef, AssetFilterFunc fiterFunc) {
     IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
     ImguiUtil::ScopedColor color(ImGuiCol_Button, assetRef.isValid() ? ImguiColors::Theme::highlight : ImguiColors::Theme::error);
     if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0,0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
@@ -49,7 +49,7 @@ bool assetButton(SoftAssetReference& assetRef, AssetFilterFunc fiterFunc) {
     return false;
 }
 
-bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef, std::function<bool(AssetID)> filterFunc /*= nullptr*/) {
+bool ImguiUtil::updateAndRenderVariantAssetReference(const char* label, VariantAssetRef& assetRef, std::function<bool(AssetID)> filterFunc /*= nullptr*/) {
 
     ImGui::PushID(&assetRef);
     bool changed = false;
@@ -151,7 +151,7 @@ bool ImguiUtil::updateAndRenderSoftAssetReference(const char* label, SoftAssetRe
     return changed;
 }
 
-AssetHandleBasePtr SoftAssetReference::getAssetHandleBase() const {
+AssetHandleBasePtr VariantAssetRef::getAssetHandleBase() const {
     if (!isValid()) {
         return nullptr;
     }
@@ -159,7 +159,7 @@ AssetHandleBasePtr SoftAssetReference::getAssetHandleBase() const {
     return repo.getAssetHandleBase(name);
 }
 
-AssetID SoftAssetReference::getAssetID() const {
+AssetID VariantAssetRef::getAssetID() const {
     if (!isValid()) {
         return INVALID_ASSET_ID;
     }

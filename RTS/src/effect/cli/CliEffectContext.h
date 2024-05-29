@@ -44,7 +44,7 @@ public:
     void renderEffects(f32 elapsedSec, const Camera3D& camera) override;
 
     void playParticleEffectAtPoint(
-        StrToken effectName,
+        EffectAssetRef effectName,
         f32v3 point,
         ParticleSystemInputs inputs,
         BitFlags<EffectCreateFlags> flags
@@ -53,9 +53,9 @@ public:
 private:
     void addEffectInstance(AssetID assetId, EffectInstance instance);
 
-    moodycamel::ConcurrentQueue<std::pair<StrToken, PendingEffectInstanceData>> mRenderThreadQueue;
+    moodycamel::ConcurrentQueue<std::pair<EffectAssetRef, PendingEffectInstanceData>> mRenderThreadQueue;
 
-    std::unordered_map<StrToken, PendingEffectData> mPendingAssetLoadEffects;
+    std::unordered_map<EffectAssetRef, PendingEffectData> mPendingAssetLoadEffects;
     std::vector<EffectInstance> mEffectInstances;
     std::unordered_map<const EffectDef*, std::pair<int, AssetHandlePtr<EffectDef>>> mEffectReferences;
 };

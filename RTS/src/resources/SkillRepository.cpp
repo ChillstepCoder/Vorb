@@ -16,16 +16,14 @@ AssetLoadFunc SkillRepository::getAssetLoadFunc() {
             def.mFlags.setBit(SkillDefFlags::INSTANT);
         }
         else {
-            AssetHandlePtr<AnimationDef> animHandle = AnimationRepository::get().getAssetHandle(fileData.mAnimName);
-            def.mAnimID = animHandle->getAssetID();
-            def.addDependency(std::move(animHandle));
+            def.mAnimation = fileData.mAnimName;
+            def.addDependency(def.mAnimation.getAssetHandleBase());
         }
 
         // Hit effects
         if (fileData.mHitEffectName.isValid()) {
-            AssetHandlePtr<EffectDef> effectHandle = EffectRepository::get().getAssetHandle(fileData.mHitEffectName);
-            def.mHitEffectName = fileData.mHitEffectName;
-            def.addDependency(std::move(effectHandle));
+            def.mHitEffect = fileData.mHitEffectName;
+            def.addDependency(def.mHitEffect.getAssetHandleBase());
         }
 
         def.mDuration = fileData.mDuration;

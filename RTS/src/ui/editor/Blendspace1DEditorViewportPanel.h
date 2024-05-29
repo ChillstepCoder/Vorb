@@ -30,7 +30,7 @@ private:
 
     // Skeletal
     std::unique_ptr<SkeletalAnimator> mSkeletalAnimator;
-    SoftAssetReference mPreviewModel = SoftAssetReference(AssetType::Model);
+    VariantAssetRef mPreviewModel = VariantAssetRef(AssetType::Model);
     f32 mPreviewX = 0.0f;
     f32 mPreviewAnimTime = 0.0f;
     f32 mSyncAlpha = 0.0f; // [0,1]

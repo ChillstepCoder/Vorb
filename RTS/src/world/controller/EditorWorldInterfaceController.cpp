@@ -103,7 +103,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_I)) {
                 DebugRenderer::drawWireQuad(hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), f32v2(0.3f), color4(1.0f, 0.0f, 0.0f, 1.0f), 100);
                 ParticleSystemInputs inputs;
-                mWorld->getEffectContext().playParticleEffectAtPoint(CStrToken("hitfx"), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), inputs, BitFlags<EffectCreateFlags>());
+                mWorld->getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("hitfx")), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), inputs, BitFlags<EffectCreateFlags>());
                 mRightClickUpPick.reset();
                 return;
             }

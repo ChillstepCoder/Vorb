@@ -58,7 +58,7 @@ SERIALIZABLE_ENUM_SAME_NAME(AnimStateType,
 struct AnimMachineStateDef {
     StrToken name;
     std::vector<AnimTransitionDef> transitions;
-    SoftAssetReference assetRef; // Could be any of the state type
+    VariantAssetRef assetRef; // Could be any of the state type
     AnimStateType stateType = AnimStateType::INVALID;
     
 };

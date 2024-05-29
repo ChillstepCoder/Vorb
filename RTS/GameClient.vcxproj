@@ -447,7 +447,7 @@
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\AssetLoader.cpp" />
     <ClCompile Include="src\resources\asset\LiteAssetRef.cpp" />
-    <ClCompile Include="src\resources\asset\SoftAssetReference.cpp" />
+    <ClCompile Include="src\resources\asset\VariantAssetRef.cpp" />
     <ClCompile Include="src\resources\BiomeRepository.cpp" />
     <ClCompile Include="src\resources\Blendspace1DRepository.cpp" />
     <ClCompile Include="src\resources\CubemapRepository.cpp" />
@@ -920,7 +920,7 @@
     <ClInclude Include="src\resources\asset\LiteAssetRef.h" />
     <ClInclude Include="src\resources\asset\AssetMetadata.h" />
     <ClInclude Include="src\resources\asset\AssetType.h" />
-    <ClInclude Include="src\resources\asset\SoftAssetReference.h" />
+    <ClInclude Include="src\resources\asset\VariantAssetRef.h" />
     <ClInclude Include="src\resources\BiomeRepository.h" />
     <ClInclude Include="src\resources\Blendspace1DRepository.h" />
     <ClInclude Include="src\resources\CubemapRepository.h" />

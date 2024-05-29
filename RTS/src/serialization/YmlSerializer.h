@@ -12,7 +12,7 @@
 
 #include "util/GlobalEnumNameMap.h"
 
-#include "resources/asset/SoftAssetReference.h"
+#include "resources/asset/VariantAssetRef.h"
 
 namespace c4 {
     namespace yml {
@@ -187,8 +187,8 @@ namespace YmlSerializer {
         else if constexpr (std::is_same_v<First, ui32v4>) {
             changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 4);
         }
-        else if constexpr (std::is_same_v<First, SoftAssetReference>) {
-            changed |= ImguiUtil::updateAndRenderSoftAssetReference(label.data(), value );
+        else if constexpr (std::is_same_v<First, VariantAssetRef>) {
+            changed |= ImguiUtil::updateAndRenderVariantAssetReference(label.data(), value );
         }
         else if constexpr (is_lite_asset_ref_v<First>) {
             changed |= value.updateAndRenderImgui(label.data());

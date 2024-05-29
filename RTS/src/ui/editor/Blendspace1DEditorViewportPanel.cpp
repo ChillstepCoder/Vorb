@@ -279,7 +279,7 @@ void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) 
         ImGui::Text("NO ASSET");
     }
     ImGui::SeparatorText("Preview");
-    ImguiUtil::updateAndRenderSoftAssetReference("Model", mPreviewModel, [this](AssetID id) {
+    ImguiUtil::updateAndRenderVariantAssetReference("Model", mPreviewModel, [this](AssetID id) {
         // Make sure this model has our rig
         if (!mAssetData || !mAssetData->rigDef.isValid()) return false;
         const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(id);
@@ -309,7 +309,7 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
 
     bool changed = false;
 
-    if (ImguiUtil::updateAndRenderSoftAssetReference("Rig", mAssetData->rigDef)) {
+    if (mAssetData->rigDef.updateAndRenderImgui("Rig")) {
         mAssetData->nodes.clear();
         mPreviewModel.invalidate();
         changed = true;
@@ -347,7 +347,7 @@ bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize
                 }
                 // Anim
                 ImGui::TableSetColumnIndex(2);
-                changed |= ImguiUtil::updateAndRenderSoftAssetReference("Anim", mAssetData->nodes[i].animation, [this](AssetID id) {
+                changed |= mAssetData->nodes[i].animation.updateAndRenderImgui("Anim", [this](AssetID id) {
                     // Make sure this anim has our rig
                     if (!mAssetData || !mAssetData->rigDef.isValid()) return false;
                     const AnimationDef& def = AnimationRepository::get().getLoadedOrUnloadedAsset(id);
@@ -510,9 +510,9 @@ void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
         }
     }
     if (mDragIndex != -1) {
-        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, mAssetData->nodes[mDragIndex].animation.name.toString().c_str());
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, mAssetData->nodes[mDragIndex].animation.toString().c_str());
     } else if (mHoverIndex != -1) {
-        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mHoverIndex, mAssetData->nodes[mHoverIndex].x, mAssetData->nodes[mHoverIndex].animation.name.toString().c_str());
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mHoverIndex, mAssetData->nodes[mHoverIndex].x, mAssetData->nodes[mHoverIndex].animation.toString().c_str());
     }
 
     if (mDragIndex != -1) {

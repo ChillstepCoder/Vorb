@@ -12,14 +12,18 @@ inline StrToken LiteAssetRefBase::getAssetNameInternal(AssetType type) const {
 }
 
 void LiteAssetRefBase::setAssetNameInternal(StrToken name, AssetType type) {
-    IAssetRepositoryBase& repo = ResourceManager::get().getAssetRepository(type);
-    mId = repo.getAssetID(name);
+    if (name.isValid()) {
+        IAssetRepositoryBase& repo = ResourceManager::get().getAssetRepository(type);
+        mId = repo.getAssetID(name);
+    } else {
+        mId = INVALID_ASSET_ID;
+    }
 }
 
 bool LiteAssetRefBase::updateAndRenderImguiInternal(const char* label, AssetType type, AssetFilterFunc filterFunc)  {
     // Share soft asset reference logic for now
-    SoftAssetReference ref(type, isValid() ? getAssetNameInternal(type) : StrToken());
-    bool changed = ImguiUtil::updateAndRenderSoftAssetReference(label, ref, filterFunc);
+    VariantAssetRef ref(type, isValid() ? getAssetNameInternal(type) : StrToken());
+    bool changed = ImguiUtil::updateAndRenderVariantAssetReference(label, ref, filterFunc);
     if (changed) {
         mId = ref.getAssetID();
     }
@@ -28,6 +32,10 @@ bool LiteAssetRefBase::updateAndRenderImguiInternal(const char* label, AssetType
 
 IAsset& LiteAssetRefBase::getLoadedOrUnloadedAssetInternal(AssetType type) const {
     return ResourceManager::get().getAssetRepository(type).getLoadedOrUnloadedIAsset(mId);
+}
+
+IAsset& LiteAssetRefBase::getLoadedAssetInternal(AssetType type) const {
+    return ResourceManager::get().getAssetRepository(type).getLoadedIAsset(mId);
 }
 
 AssetHandleBasePtr LiteAssetRefBase::getAssetHandleBaseInternal(AssetType type) const {

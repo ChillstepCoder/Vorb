@@ -55,8 +55,8 @@ SERIALIZABLE_SIMPLE(SkillAttackTriggerFileData,
 );
 
 struct SkillDefFileData {
-    StrToken mAnimName;
-    StrToken mHitEffectName;
+    AnimationAssetRef mAnimName;
+    EffectAssetRef mHitEffectName;
     f32 mDuration = 1.0f;
     f32 mCost = 0.0f;
     std::vector<SkillSimpleTriggerFileData> mSimpleTriggers;
@@ -87,7 +87,6 @@ public:
     std::unique_ptr<SkillTrigger[]> mTriggers;
     ui32 mNumTriggers;
     BitFlags<SkillDefFlags> mFlags;
-    AssetID mAnimID = INVALID_ASSET_ID;
-    StrToken mHitEffectName;
+    AnimationAssetRef mAnimation;
+    EffectAssetRef mHitEffect;
 };
-

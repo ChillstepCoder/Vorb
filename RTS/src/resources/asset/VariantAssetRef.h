@@ -2,11 +2,11 @@
 
 #include "resources/asset/AssetType.h"
 
-class SoftAssetReference {
+class VariantAssetRef {
 public:
-    SoftAssetReference() = default;
-    SoftAssetReference(AssetType assetType) : assetType(assetType) {};
-    SoftAssetReference(AssetType assetType, StrToken name) : assetType(assetType), name(name) {};
+    VariantAssetRef() = default;
+    VariantAssetRef(AssetType assetType) : assetType(assetType) {};
+    VariantAssetRef(AssetType assetType, StrToken name) : assetType(assetType), name(name) {};
 
     bool isValid() const { return name.isValid(); }
     void invalidate() { name = StrToken(); }
@@ -22,12 +22,12 @@ public:
     AssetID getAssetID() const;
     AssetDescriptor getAssetDescriptor() const { return AssetDescriptor{ .id = getAssetID(), .assetType = assetType, }; }
 
-    auto operator<=>(const SoftAssetReference&) const = default;
+    auto operator<=>(const VariantAssetRef&) const = default;
     
     StrToken name;
     AssetType assetType = AssetType::NONE;
 };
 
 namespace ImguiUtil {
-    bool updateAndRenderSoftAssetReference(const char* label, SoftAssetReference& assetRef, AssetFilterFunc filterFunc = nullptr);
+    bool updateAndRenderVariantAssetReference(const char* label, VariantAssetRef& assetRef, AssetFilterFunc filterFunc = nullptr);
 }

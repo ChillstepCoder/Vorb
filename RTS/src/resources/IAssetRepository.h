@@ -20,6 +20,7 @@ public:
     AssetHandleBasePtr getAssetHandleBase(StrToken assetName);
     AssetHandleBasePtr tryGetAssetHandleBase(StrToken assetName);
     virtual IAsset& getLoadedOrUnloadedIAsset(AssetID id) = 0;
+    virtual IAsset& getLoadedIAsset(AssetID id) = 0;
 
     virtual AssetType getAssetType() const = 0;
 
@@ -234,7 +235,11 @@ public:
     }
     const T& getLoadedAsset(AssetID id) {
         assert(mLoadedAssets[id]->load());
-        return *mAssets[id].get();
+        return *mAssets[id];
+    }
+    IAsset& getLoadedIAsset(AssetID id) override {
+        assert(mLoadedAssets[id]->load());
+        return *mAssets[id];
     }
     // Some assets are valid without being loaded as they have minimal definitions that can be loaded on register
     const T& getLoadedOrUnloadedAsset(StrToken name) {
@@ -243,7 +248,7 @@ public:
     const T& getLoadedOrUnloadedAsset(AssetID id) {
         return *mAssets[id];
     }
-    IAsset& getLoadedOrUnloadedIAsset(AssetID id) {
+    IAsset& getLoadedOrUnloadedIAsset(AssetID id) override {
         return *mAssets[id];
     }
     T& getMutableLoadedOrUnloadedAsset(StrToken name) {

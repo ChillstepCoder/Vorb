@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "HostEffectContext.h"
 
-void HostEffectContext::playParticleEffectAtPoint(StrToken effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
+void HostEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
     mCliContext.playParticleEffectAtPoint(effectName, point, inputs, flags);
 
     // TODO: Replicate to other clients

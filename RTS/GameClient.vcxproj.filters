@@ -807,7 +807,7 @@
     <ClCompile Include="src\ui\editor\ItemEditorViewportPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\resources\asset\SoftAssetReference.cpp">
+    <ClCompile Include="src\resources\asset\VariantAssetRef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\AssetEditorViewportPanelBase.cpp">
@@ -2285,7 +2285,7 @@
     <ClInclude Include="src\util\GlobalEnumNameMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\resources\asset\SoftAssetReference.h">
+    <ClInclude Include="src\resources\asset\VariantAssetRef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\asset\AssetType.h">

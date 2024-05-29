@@ -285,10 +285,10 @@ void CombatContext::hitTile(LiteTileHandle liteHandle, const SkillDef& skillDef,
         impactNormal
     );
 
-    if (skillDef.mHitEffectName.isValid()) {
+    if (skillDef.mHitEffect.isValid()) {
         ParticleSystemInputs inputs;
         inputs.mInputImpactDirection = impactDir;
         inputs.mInputImpactSurfaceNormal = impactNormal;
-        mWorld.getEffectContext().playParticleEffectAtPoint(skillDef.mHitEffectName, impactPosition, inputs, BitFlags<EffectCreateFlags>());
+        mWorld.getEffectContext().playParticleEffectAtPoint(skillDef.mHitEffect, impactPosition, inputs, BitFlags<EffectCreateFlags>());
     }
 }

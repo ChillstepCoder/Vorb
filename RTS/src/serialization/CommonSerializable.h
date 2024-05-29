@@ -15,12 +15,12 @@ YML_READ_DEF(StrToken) {
     return true;
 }
 
-// SOFT ASSET REFERENCE
-YML_WRITE_DEF(SoftAssetReference) {
+// VARIANT ASSET REFERENCE
+YML_WRITE_DEF(VariantAssetRef) {
     ryml::NodeRef& nr = *n;
     nr << o.name.toString();
 }
-YML_READ_DEF(SoftAssetReference) {
+YML_READ_DEF(VariantAssetRef) {
     c4::csubstr str;
     n >> str;
     if (str.size() > MAX_CHARS_IN_STRTOKEN) {

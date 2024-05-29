@@ -51,7 +51,7 @@ public:
     // TODO: single unique_ptr? <mesh[]>
     std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
     ui32 mNumMeshes = 0;
-    ModelAssetRef mModelRef;
+    StrToken mModelFileName;
     RigAssetRef mRigRef;
     AnimMachineAssetRef mMachineRef;
     f32 mScale = 1.0f;
@@ -72,9 +72,9 @@ public:
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
-    make_field(o.mModelName, "model"sv),
-    make_field(o.mRigName, "rig"sv),
-    make_field(o.mMachineName, "machine"sv),
+    make_field(o.mModelFileName, "model"sv),
+    make_field(o.mRigRef, "rig"sv),
+    make_field(o.mMachineRef, "machine"sv),
     make_field(o.mScale, "scale"sv),
     make_field(o.mLodDistance0, "lod_dst_0"sv),
     make_field(o.mLodDistance1, "lod_dst_1"sv),

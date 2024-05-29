@@ -94,8 +94,8 @@ void BiomeEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
                 changed |= ImguiUtil::ObjectVector<BiomePossibleTile>("Tiles", o.tiles,
                     [](BiomePossibleTile& o, ui32) {
                     bool changed = false;
-                    if (o.tile.name.isValid()) {
-                        ImGui::Text(o.tile.name.toString().c_str());
+                    if (o.tile.isValid()) {
+                        ImGui::Text(o.tile.toString().c_str());
                     }
                     else {
                         ImGui::Text("INVALID");

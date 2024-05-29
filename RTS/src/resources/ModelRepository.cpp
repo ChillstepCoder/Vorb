@@ -65,7 +65,7 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         LOG_TRACE("Loading model {}", filePath.getCString());
 
 
-        if (!def.mModelRef.isValid()) {
+        if (!def.mModelFileName.isValid()) {
             panic("Model file missing model name - {}", filePath.getString());
         }
 
@@ -73,7 +73,7 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         rootDir.trimEnd();
         assert(rootDir.isDirectory());
 
-        const vio::Path modelPath = rootDir + nString("\\") + def.mModelRef.toString();
+        const vio::Path modelPath = rootDir + nString("\\") + def.mModelFileName.toString();
         loadModelInternal(def, def.getName(), modelPath);
 
         return false;
@@ -135,9 +135,9 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
         // Rig + animation
         if (def.mRigRef.isValid()) {
-            def.mRig = &def.getDependencies()->getLoadedAsset<RigDef>(def.mRigRef.name);
+            def.mRig = &def.mRigRef.getLoadedAsset<RigDef>();
             if (def.mMachineRef.isValid()) {
-                def.mAnimMachine = &def.getDependencies()->getLoadedAsset<AnimMachineDef>(def.mMachineRef.name);
+                def.mAnimMachine = &def.mMachineRef.getLoadedAsset<AnimMachineDef>();
             }
         }
 
@@ -399,11 +399,6 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     for (size_t i = 0; i < def.mVariants.size(); ++i) {
         ModelVariantData& varData = def.mVariants[i];
         varData.submeshMaterials.resize(def.mSubmeshesData.size());
-        for (auto& mats : varData.submeshMaterials) {
-            for (auto& assetRef : mats) {
-                assetRef.assetType = AssetType::Material;
-            }
-        }
     }
 
     // Copy all variant materials to GPU data and then upload
@@ -435,9 +430,9 @@ void ModelRepository::updateMaterialDependencies(AssetID id) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     for (auto& variant : def.mVariants) {
         for (auto& mats : variant.submeshMaterials) {
-            for (SoftAssetReference& matRef : mats) {
+            for (MaterialAssetRef matRef : mats) {
                 if (matRef.isValid()) {
-                    AssetHandlePtr<MaterialDef> assetHandle = materialRepo.tryGetAssetHandle(matRef.name);
+                    AssetHandlePtr<MaterialDef> assetHandle = matRef.getAssetHandle<MaterialDef>();
                     if (assetHandle) {
                         def.addDependency(std::move(assetHandle));
                     }

@@ -10,17 +10,22 @@ public:
     AssetID getAssetID() const { return mId; }
     void setAssetID(AssetID id) { mId = id; }
 
+    std::size_t hash() const {
+        return std::hash<AssetID>{}(mId);
+    }
+
 protected:
     StrToken getAssetNameInternal(AssetType type) const;
     void setAssetNameInternal(StrToken name, AssetType type);
     bool updateAndRenderImguiInternal(const char* label, AssetType type, AssetFilterFunc filterFunc);
     IAsset& getLoadedOrUnloadedAssetInternal(AssetType type) const;
+    IAsset& getLoadedAssetInternal(AssetType type) const;
     AssetHandleBasePtr getAssetHandleBaseInternal(AssetType type) const;
 
     AssetID mId = INVALID_ASSET_ID;
 };
 
-// Super lightweight, successor to SoftAssetReference?
+// Super lightweight 4 byte asset ref
 template <AssetType assetType>
 class LiteAssetRef : public LiteAssetRefBase {
 public:
@@ -39,14 +44,18 @@ public:
     AssetDescriptor getAssetDescriptor() const { return AssetDescriptor{ .id = mId, .assetType = assetType, }; }
     AssetHandleBasePtr getAssetHandleBase() const { return getAssetHandleBaseInternal(assetType); }
     
-    // Must pass in the class to cast
     template<typename AssetClass>
     AssetHandlePtr<AssetClass> getAssetHandle() const {
         assert(AssetClass::ASSET_TYPE == assetType);
         return static_unique_pointer_cast<AssetHandle<AssetClass>>(getAssetHandleBase());
     }
 
-    // Must pass in the class to cast
+    template <typename AssetClass>
+    const AssetClass& getLoadedAsset() const {
+        assert(AssetClass::ASSET_TYPE == assetType);
+        return static_cast<AssetClass&>(getLoadedAssetInternal(assetType));
+    }
+
     template <typename AssetClass>
     const AssetClass& getLoadedOrUnloadedAsset() const {
         assert(AssetClass::ASSET_TYPE == assetType);
@@ -64,7 +73,11 @@ public:
         return updateAndRenderImguiInternal(label, assetType, filterFunc);
     }
 
-    auto operator<=>(const LiteAssetRef<assetType>&) const = default;
+    bool operator==(const LiteAssetRef& other) const {
+        return mId == other.mId;
+    }
+
+    auto operator<=>(const LiteAssetRef&) const = default;
 };
 
 template<typename T>
@@ -104,3 +117,12 @@ ASSET_REF_DECL(TileDistribution);
 ASSET_REF_DECL(Building);
 ASSET_REF_DECL(Room);
 static_assert(e_count(AssetType) == 22, "Add AssetRef");
+
+namespace std {
+    template <AssetType assetType>
+    struct hash<LiteAssetRef<assetType>> {
+        std::size_t operator()(const LiteAssetRef<assetType>& ref) const noexcept {
+            return ref.hash();
+        }
+    };
+}
