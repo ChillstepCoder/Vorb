@@ -6,15 +6,17 @@
 #include "world/chunk/SimChunkGrid.h"
 #include "world/simulation/host/component/SimSettlementComponents.h"
 
+#include "building/Building.h"
+
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBuildingSimJob, 256);
 
-ConstructBuildingSimJob::ConstructBuildingSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner)
-    : ISimJob(simJobOwner), mBlueprint(blueprint), mSimEcs(simEcs) {
+ConstructBuildingSimJob::ConstructBuildingSimJob(Building& building, SimECS& simEcs, entt::entity simJobOwner)
+    : ISimJob(simJobOwner), mBuilding(building), mBlueprint(*building.getBlueprint()), mSimEcs(simEcs) {
     ASSERT_SIM_THREAD();
-    assert(blueprint.itemCompositionCount);
-    assert(blueprint.parentPlotID != INVALID_SETTLEMENT_PLOT_ID);
-    assert(blueprint.parentSettlement != entt::null);
-    assert(blueprint.worldPosRootDTile.x > -1);
+    assert(mBlueprint.itemCompositionCount);
+    assert(mBlueprint.parentPlotID != INVALID_SETTLEMENT_PLOT_ID);
+    assert(mBlueprint.parentSettlement != entt::null);
+    assert(mBlueprint.worldPosRootDTile.x > -1);
 }
 
 std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {

@@ -100,9 +100,23 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
             SettlementPlot& newPlot = layoutCmp.manager.getPlot(plotId);
             const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
             // TODO: Correct cartesian!
-            newPlot.activeBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
-            if (newPlot.activeBlueprint) {
-                newPlot.activeBlueprint->assignToSettlement(settlementEntity, plotId);
+            BuildingBlueprintPtr newBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
+            if (newBlueprint) {
+                newBlueprint->assignToSettlement(settlementEntity, plotId);
+                Building* newBuilding = mWorld.getBuildingGrid().makeNewEmptyBuilding(newBlueprint);
+                // WIP
+                //TileRepository& tileRepo = TileRepository::get();
+
+                //PreciseTimer timer;
+                //const i32v2 worldPos = bpPtr->worldPosRootDTile.toTilePos();
+                //const i32AABB2 aabb(worldPos, bpPtr->dimsDTile.toTilePos());
+
+                //BitArray tilesNeedingTerrainFlatten = bpPtr->computeSolidTilesFirstFloor();
+
+                //// Clamp building height to 1 meter increments
+                //IHeightmapGrid& grid = world.getHeightmapGrid();
+                //const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
+                //const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
 
                 std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(*newPlot.activeBlueprint, mEcs, characters[0]);
                 SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);

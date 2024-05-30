@@ -9,6 +9,7 @@
 
 class SimECS;
 class ISimTask;
+class Building;
 class ConstructBuildingSimTask;
 
 // TODO:
@@ -32,7 +33,7 @@ struct ItemAquisitionSource {
 class ConstructBuildingSimJob : public ISimJob {
 	friend class ConstructBuildingSimTask;
 public:
-	ConstructBuildingSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner);
+	ConstructBuildingSimJob(Building& building, SimECS& simEcs, entt::entity simJobOwner);
 	~ConstructBuildingSimJob() = default;
 
 	POOLED_ALLOC_DECL(ConstructBuildingSimJob);
@@ -49,6 +50,7 @@ private:
     std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
     std::vector<SimChunkTileReservationHandle> reservedTiles;
 
+	Building& mBuilding;
 	BuildingBlueprint& mBlueprint;
 	SimECS& mSimEcs;
 };

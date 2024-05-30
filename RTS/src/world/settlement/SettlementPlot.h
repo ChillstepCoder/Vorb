@@ -20,7 +20,6 @@ struct SettlementPlot {
     BitFlags<PlotFlags> flags;
     SettlementZone zone;
     entt::entity owner = entt::null;
-    BuildingID structure = INVALID_BUILDING_ID;
-    BuildingBlueprintPtr activeBlueprint = nullptr;
+    BuildingID buildingId = INVALID_BUILDING_ID;
     //ui8 padding[2];
 };
