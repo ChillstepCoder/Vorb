@@ -5,6 +5,7 @@
 
 enum class ItemReservationUpdateType {
     PartialFulfill,
+    PromiseIncrease,
     END_TYPES, // Anything >= this is an end type
     CompleteFulfill = END_TYPES,
     Cancel
@@ -38,11 +39,8 @@ public:
     std::span<const ItemID> getDesiredItems() const {
         return std::span<const ItemID>(desiredItems, numItems);
     }
-    std::span<const i32> getFilledQuantities() const {
-        return std::span<const i32>(filledQuantity, numItems);
-    }
-    std::span<const i32> getDesiredQuantities() const {
-        return std::span<const i32>(desiredQuantity, numItems);
+    std::span<const i32> getRemainingQuantities() const {
+        return std::span<const i32>(remainingQuantity, numItems);
     }
     i8 getNumItems() const { return numItems; }
 
@@ -58,12 +56,10 @@ private:
         return -1;
     }
 
-    ItemID desiredItems[MAX_ITEMS_IN_SIMPLE_RESERVATION] = {INVALID_ITEM_ID, INVALID_ITEM_ID, INVALID_ITEM_ID, INVALID_ITEM_ID};
-    i32 filledQuantity[MAX_ITEMS_IN_SIMPLE_RESERVATION] = { 0,0,0,0 };
-    i32 desiredQuantity[MAX_ITEMS_IN_SIMPLE_RESERVATION] = { 0,0,0,0 };
+    ItemID desiredItems[MAX_ITEMS_IN_SIMPLE_RESERVATION] = { INVALID_ITEM_ID, INVALID_ITEM_ID, INVALID_ITEM_ID, INVALID_ITEM_ID };
+    i32 remainingQuantity[MAX_ITEMS_IN_SIMPLE_RESERVATION] = { 0,0,0,0 };
     i8 numItems = 0;
-    i32 totalFilled = 0;
-    i32 totalDesired = 0;
+    i32 totalRemaining = 0;
     SimpleItemReservationSourceHandle* sourceHandle = nullptr;
     SimpleItemReservationTargetHandle* targetHandle = nullptr;
     SimpleItemReservationUpdateFunc targetUpdateFunction = nullptr;
@@ -74,36 +70,26 @@ private:
 template <typename PointerType>
 class SimpleItemReservationHandleBase {
 public:
-    i32 getFilledQuantity(ItemID id) const {
-        if (!dataPtr) [[unlikely]] return 0;
-        const i32 itemIndex = dataPtr->getItemIndex(id);
-        if (itemIndex == -1) [[unlikely]] return 0;
-        return dataPtr->filledQuantity[itemIndex];
-    }
     i32 getRemainingQuantity(ItemID id) const {
         if (!dataPtr) [[unlikely]] return 0;
         const i32 itemIndex = dataPtr->getItemIndex(id);
         if (itemIndex == -1) [[unlikely]] return 0;
-        return dataPtr->desiredQuantity[itemIndex] - dataPtr->filledQuantity[itemIndex];
+        return dataPtr->remainingQuantity[itemIndex];
     }
-    i32 getDesiredQuantity(ItemID id) const {
-        if (!dataPtr) [[unlikely]] return 0;
+    bool desiresItem(ItemID id) const {
+        if (!dataPtr) [[unlikely]] return false;
         const i32 itemIndex = dataPtr->getItemIndex(id);
-        if (itemIndex == -1) [[unlikely]] return 0;
-        return dataPtr->desiredQuantity[itemIndex];
+        return itemIndex != -1 && dataPtr->remainingQuantity[itemIndex] > 0;
     }
     std::span<const ItemID> getDesiredItems() const {
         if (!dataPtr) [[unlikely]] return {};
         return dataPtr->getDesiredItems();
     }
-    std::span<const i32> getFilledQuantities() const {
+    std::span<const i32> getRemainingQuantities() const {
         if (!dataPtr) [[unlikely]] return {};
-        return dataPtr->getFilledQuantities();
+        return dataPtr->getRemainingQuantities();
     }
-    std::span<const i32> getDesiredQuantities() const {
-        if (!dataPtr) [[unlikely]] return {};
-        return dataPtr->getDesiredQuantities();
-    }
+
     bool isValid() const { return dataPtr != nullptr; }
 protected:
     // Only target owns the reference
@@ -125,6 +111,7 @@ public:
 
     // Must not overflow, returns false if this reservation was already canceled
     bool tryFulfillQuantity(ItemID id, i32 quantity);
+    void increasePromisedQuantity(ItemID id, i32 quantity);
 
     void bindEndFunction(SimpleItemReservationEndFunc endFunction) {
         assert(dataPtr);

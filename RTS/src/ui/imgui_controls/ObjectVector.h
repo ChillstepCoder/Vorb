@@ -14,7 +14,7 @@ namespace ImguiUtil {
 
         if (resizable) {
             if (ImGui::Button("Add")) {
-                objects.emplace_back(defaultValue);
+                objects.emplace_back(std::move(defaultValue));
                 changed = true;
             }
         }

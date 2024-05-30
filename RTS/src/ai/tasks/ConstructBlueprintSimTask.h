@@ -37,6 +37,7 @@ private:
 		MoveToHarvestable,
 		Harvest,
 		MoveToBlueprint,
+		PlaceItems,
 		FlattenTerrain,
 		BuildTile,
 		End

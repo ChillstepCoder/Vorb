@@ -10,8 +10,8 @@ SimpleItemReservationData::SimpleItemReservationData(std::span<SimpleItemStack> 
     targetHandle(targetHandle) {
     for (size_t i = 0; i < reservedItems.size(); ++i) {
         desiredItems[i] = reservedItems[i].itemId;
-        totalDesired += reservedItems[i].quantity;
-        desiredQuantity[i] = reservedItems[i].quantity;
+        totalRemaining += reservedItems[i].quantity;
+        remainingQuantity[i] = reservedItems[i].quantity;
     }
     numItems = reservedItems.size();
     assert(numItems);
@@ -31,11 +31,6 @@ void SimpleItemReservationData::cancel() {
 
 void SimpleItemReservationData::onComplete() {
     invalidateHandles();
-#ifdef DEBUG
-    for (int i = 0; i < numItems; ++i) {
-        assert(filledQuantity[i] == desiredQuantity[i]);
-    }
-#endif
     if (sourceEndFunction) {
         sourceEndFunction(ItemReservationEndReason::Success, *this);
         sourceEndFunction = nullptr;
@@ -66,14 +61,14 @@ bool SimpleItemReservationSourceHandle::tryFulfillQuantity(ItemID id, i32 quanti
     if (!dataPtr) [[unlikely]] {
         return false;
     }
-    assert(quantity <= getRemainingQuantity(id));
-
     const i32 index = dataPtr->getItemIndex(id);
+    assert(quantity <= dataPtr->remainingQuantity[index]);
+    assert(quantity > 0);
 
-    dataPtr->filledQuantity[index] += quantity;
-    dataPtr->totalFilled += quantity;
+    dataPtr->remainingQuantity[index] -= quantity;
+    dataPtr->totalRemaining -= quantity;
     
-    if (dataPtr->totalFilled == dataPtr->totalDesired) {
+    if (dataPtr->totalRemaining <= 0) {
         if (dataPtr->targetUpdateFunction) {
             dataPtr->targetUpdateFunction(ItemReservationUpdateType::CompleteFulfill, id, quantity);
         }
@@ -84,6 +79,33 @@ bool SimpleItemReservationSourceHandle::tryFulfillQuantity(ItemID id, i32 quanti
     }
     return true;
 }
+
+void SimpleItemReservationSourceHandle::increasePromisedQuantity(ItemID id, i32 quantity) {
+    if (!dataPtr) [[unlikely]] {
+        return;
+    }
+
+    const i32 index = dataPtr->getItemIndex(id);
+    assert(index != -1);
+
+    dataPtr->remainingQuantity[index] += quantity;
+    dataPtr->totalRemaining += quantity;
+    dataPtr->targetUpdateFunction(ItemReservationUpdateType::PromiseIncrease, id, quantity);
+}
+
+//
+//void SimpleItemReservationSourceHandle::adjustPromisedQuantity(ItemID id, i32 quantity) {
+//    if (!dataPtr) [[unlikely]] {
+//        return;
+//    }
+//    assert(quantity <= getMaxQuantityToPromise(id));
+//    const i32 index = dataPtr->getItemIndex(id);
+//    assert(index != -1);
+//    dataPtr->promisedQuantity[index] += quantity;
+//    dataPtr->totalPromised += quantity;
+//
+//    dataPtr->targetUpdateFunction(ItemReservationUpdateType::AdjustPromise, id, quantity);
+//}
 
 SimpleItemReservationTargetHandle::~SimpleItemReservationTargetHandle() {
     cancel();

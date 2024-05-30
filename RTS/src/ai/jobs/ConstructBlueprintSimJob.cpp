@@ -19,7 +19,7 @@ ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint,
 
 std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
     ASSERT_SIM_THREAD();
-    if (mBlueprint.totalItemsUnfulfilled == 0) {
+    if (mBlueprint.totalItemsUnpromised == 0) {
         // TODO: Need to handle when BP has all items but tiles still need to be constructed
         return nullptr;
     }

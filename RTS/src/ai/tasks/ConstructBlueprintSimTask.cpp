@@ -6,6 +6,7 @@
 
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
+#include "item/ItemDef.h"
 #include "resources/TileRepository.h"
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimTask, 256);
@@ -19,13 +20,14 @@ ConstructBlueprintSimTask::ConstructBlueprintSimTask(
     SimpleItemStack itemToFill;
     constexpr i32 TMP_MAX_COUNT = 8;
     for (i32 i = 0; i < blueprint.itemCompositionCount; ++i) {
-        const i32 quantityRemaining = blueprint.itemComposition[i].desiredQuantity - blueprint.itemComposition[i].filledQuantity;
-        if (quantityRemaining > 0) {
+        FillableSimpleItemStack& stack = blueprint.itemComposition[i];
+        const i32 quantityPromisable = stack.getMaxPromiseSize();
+        if (quantityPromisable > 0) {
             itemToFill.itemId = blueprint.itemComposition[i].itemId;
 
             // TODO: Account this entities carry weight, nearby items, equipped items, ect when deciding what to commit to
-            itemToFill.quantity = glm::min(quantityRemaining, TMP_MAX_COUNT);
-            blueprint.itemComposition[i].filledQuantity += itemToFill.quantity;
+            itemToFill.quantity = glm::min(quantityPromisable, TMP_MAX_COUNT);
+            blueprint.itemComposition[i].promisedQuantity += itemToFill.quantity;
             break;
         }
     }
@@ -37,27 +39,15 @@ ConstructBlueprintSimTask::ConstructBlueprintSimTask(
         ASSERT_SIM_THREAD(); // What about full?
         mState = State::End;
         mBlueprint.onEndReservation(mTargetReservationId);
-
-        // Unfill any remaining
-        std::span<const ItemID> items = data.getDesiredItems();
-        std::span<const i32> desiredQuantities = data.getDesiredQuantities();
-        std::span<const i32> filledQuantities = data.getFilledQuantities();
-        for (int i = 0; i < items.size(); ++i) {
-            const int unfulfulledCount = desiredQuantities[i] - filledQuantities[i];
-            if (unfulfulledCount > 0) {
-                for (int j = 0; j < mBlueprint.itemCompositionCount; ++j) {
-                    if (mBlueprint.itemComposition[j].itemId == items[i]) {
-                        mBlueprint.itemComposition[j].filledQuantity -= unfulfulledCount;
-                        mBlueprint.totalItemsUnfulfilled -= unfulfulledCount;
-                        break;
-                    }
-                }
-            }
-        }
     });
 
-    mBlueprint.totalItemsUnfulfilled -= itemToFill.quantity;
-    assert(mBlueprint.totalItemsUnfulfilled >= 0);
+    // TODO: Update on promise increase
+    reservationPair.target->bindUpdateFunction([this]() {
+        x;
+    }
+
+    mBlueprint.totalItemsUnpromised -= itemToFill.quantity;
+    assert(mBlueprint.totalItemsUnpromised >= 0);
 
     // Bind handles
     mBlueprintItemPromise = std::move(reservationPair.source);
@@ -123,14 +113,48 @@ SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registr
                     return SimTaskTickResult::Fail;
                 }
 
-                // TODO: USE DROP TABLE
-                //x;
+                // TODO: Inventory Operations helper?
+                constexpr i32 MAX_ROLL_RESULTS = 16;
+                ItemRollTable::Result rollResults[MAX_ROLL_RESULTS];
+                const i32 resultCount = TileRepository::get().getLoadedOrUnloadedAsset(clearedTileID).itemDrops.rollN(std::span(rollResults, MAX_ROLL_RESULTS), 1);
+                if (!resultCount) {
+                    LOG_WARN("Failed item drop result on construct blueprint task");
+                    mState = State::End;
+                    return SimTaskTickResult::Fail;
+                }
 
-                //assert(!simRegistry.try_get<SimResourceBundleComponent>(simAgent));
-                //SimResourceBundleComponent& bundle = simRegistry.emplace<SimResourceBundleComponent>(simAgent);
+                // Figure out which of the items we desire
+                i32 bundleSelect = -1;
+                for (i32 i = 0; i < resultCount; ++i) {
+                    const ItemAssetRef itemAsset = rollResults[i].value;
+                    if (mBlueprintItemPromise->desiresItem(itemAsset.getAssetID())) {
+                        bundleSelect = i;
+                        break;
+                    }
+                }
 
-                // TODO: BUNDLE
-               // x;
+                // Equip desired item, drop the rest
+                // TODO: Keep other items for ourselves?
+                for (i32 i = 0; i < resultCount; ++i) {
+                    const ItemAssetRef itemAsset = rollResults[i].value;
+                    const i32 quantity = rollResults[i].quantity;
+                    if (i == bundleSelect) {
+                        assert(!simRegistry.try_get<SimResourceBundleComponent>(simAgent));
+                        SimResourceBundleComponent& bundle = simRegistry.get_or_emplace<SimResourceBundleComponent>(simAgent);
+                        // TODO: Drop old??
+                        if (bundle.itemStack.itemId != INVALID_ITEM_ID) {
+                            LOG_WARN("Overwriting item in bundle");
+                            assert(false);
+                        }
+                        bundle.itemStack.itemId = itemAsset.getAssetID();
+                        bundle.itemStack.quantity = quantity;
+                        bundle.itemStack.harvestableType = mHarvestableToAquire; // TODO: ensure this is correct?
+                    }
+                    else {
+                        assert(false);
+                        // TODO: drop on the ground
+                    }
+                }
 
                 mState = State::MoveToBlueprint;
                 mMoveSubtask.init(simRegistry, simAgent, mBlueprint.getCenterPosTile().v, 32.0f);
@@ -139,11 +163,30 @@ SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registr
         }
         case State::MoveToBlueprint: {
             if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
-                // TODO: Do the thing
-                return SimTaskTickResult::Success;
+                if (SimResourceBundleComponent* bundle = simRegistry.try_get<SimResourceBundleComponent>(simAgent)) {
+                    SimpleItemStack& bundleItem = bundle->itemStack;
+
+                    // We have extra items, let the BP know we intend to use them!
+                    i32 existingPromiseSize = mBlueprintItemPromise->getRemainingQuantity(bundleItem.itemId);
+                    const i32 countDiff = bundleItem.quantity - existingPromiseSize;
+                    if (countDiff > 0) {
+                        i32 promiseIncrease = glm::min(countDiff, mBlueprint.getMaxPromiseSize(bundleItem.itemId));
+                        mBlueprintItemPromise->increasePromisedQuantity(bundleItem.itemId, promiseIncrease);
+                    }
+                        
+                    mState = State::PlaceItems;
+                }
+                else {
+                    // Lost our bundle somehow...
+                    LOG_WARN("Lost bundle in construct blueprint task");
+                    mState = State::End;
+                    return SimTaskTickResult::Fail;
+                }
             }
             break;
         }
+        case State::PlaceItems:
+            break;
         case State::FlattenTerrain:
             break;
         case State::BuildTile:

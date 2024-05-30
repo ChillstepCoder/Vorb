@@ -93,10 +93,14 @@ static_assert(sizeof(SimpleItemStack) == 8);
 
 // Represents a ledger of a stack of simple items that we want to fill
 struct FillableSimpleItemStack {
+
+    i32 getMaxPromiseSize() const { return (desiredQuantity - filledQuantity) - promisedQuantity; }
+
     ItemID itemId = INVALID_ITEM_ID;
     BitFlags<FillableItemstackFlags> flags;
     TileHarvestable harvestableType = TileHarvestable::None;
-    ui32 desiredQuantity = 0;
-    ui32 filledQuantity = 0;
+    ui32 desiredQuantity = 0; 
+    ui32 filledQuantity = 0; 
+    ui32 promisedQuantity = 0; // Number of items that are committed to be filled but are not yet
 };
-static_assert(sizeof(FillableSimpleItemStack) == 12);
+static_assert(sizeof(FillableSimpleItemStack) == 16);

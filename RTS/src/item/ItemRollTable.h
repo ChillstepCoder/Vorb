@@ -1,10 +1,10 @@
 #pragma once
 
-#include "util/RollTableBase.h"
+#include "util/RollTable.h"
 
 // For rolling random item drops
 
-using ItemRollTable = RollTableBase<ItemAssetRef>;
+using ItemRollTable = RollTable<ItemAssetRef>;
 
 // TODO:
 YML_WRITE_DEF(ItemRollTable) {

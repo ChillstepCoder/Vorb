@@ -21,21 +21,16 @@ void BuildingBlueprint::onEndReservation(ui32 reservationId) {
     assert(it != itemReservationHandles.end());
     SimpleItemReservationTargetHandle& handle = *it->second;
     std::span<const ItemID> desiredItems = handle.getDesiredItems();
-    std::span<const i32> filledQuantities = handle.getFilledQuantities();
-    std::span<const i32> desiredQuantities = handle.getDesiredQuantities();
+    std::span<const i32> remainingQuantities = handle.getRemainingQuantities();
 
     // If we have any items that were not fully filled, decrement the count from
-    // the tracked fullfilled count so other workers can then try to fill it
+    // the tracked promised count so other workers can then try to promise it
     for (int i = 0; i < desiredItems.size(); ++i) {
-        const i32 difference = desiredQuantities[i] - filledQuantities[i];
-        if (difference > 0) {
+        if (remainingQuantities[i] > 0) {
             for (int j = 0; j < itemCompositionCount; ++j) {
                 FillableSimpleItemStack& stack = itemComposition[j];
-                if (stack.itemId = desiredItems[i]) {
-                    stack.filledQuantity -= difference;
-                    totalItemsUnfulfilled += difference;
-                    break;
-                }
+                stack.promisedQuantity -= remainingQuantities[i];
+                totalItemsUnpromised += remainingQuantities[i];
             }
         }
     }

@@ -71,6 +71,14 @@ public:
         assert(dimsDTile.x != -1);
         return TileCoord(worldPosRootDTile + dimsDTile / 2);
     }
+    i32 getMaxPromiseSize(ItemID id) const {
+        for (i32 i = 0; i < itemCompositionCount; ++i) {
+            if (itemComposition[i].itemId == id) {
+                return itemComposition[i].getMaxPromiseSize();
+            }
+        }
+        return 0;
+    }
 
 private:
 
@@ -114,6 +122,7 @@ private:
     i32 nextWallTargetToReserve = 0;
     i32 nextStairPieceToReserve = 0;
     i32 totalItemsUnfulfilled = 0;
+    i32 totalItemsUnpromised = 0;
 
     ui32 nextReservationId = 0;
 

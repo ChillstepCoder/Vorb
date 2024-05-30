@@ -97,6 +97,99 @@ namespace c4::yml { \
 // Usage: MyType, EnumName
 #define ENUM_FIELD_SIMPLE(type, name) pair{ type::name, #name##sv }
 
+namespace ImguiUtil {
+    // Will try to match imgui editor data to a type, implement updateAndRenderImgui on the type to ensure it works
+    template<typename T>
+    bool updateAndRenderImgui(const char* label, T& value) {
+        bool changed = false;
+        if constexpr (std::is_floating_point_v<T>) {
+            float v = value;
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
+            const nString tagStr = nString("##float") + nString(label);
+            changed |= ImGui::InputFloat(tagStr.c_str(), &v);
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::SameLine();
+            ImGui::PushID("11"); changed |= ImGui::SliderFloat(label, &v, 0.0f, 1000.0f, "%.4f", ImGuiSliderFlags_Logarithmic); ImGui::PopID();
+            ImGui::PopItemWidth(); ImGui::PopItemWidth();
+            value = v;
+        }
+        else if constexpr (std::is_same_v<T, bool>) {
+            changed |= ImGui::Checkbox(label, &value);
+        }
+        else if constexpr (std::is_integral_v<T>) {
+            // Handle integral types (e.g., int, unsigned int)
+            int v = value;
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
+            const nString tagStr = nString("##int") + nString(label);
+            changed |= ImGui::InputInt(tagStr.c_str(), &v);
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::SameLine();
+            ImGui::PushID("22"); changed |= ImGui::SliderInt(label, &v, 0, 16); ImGui::PopID();
+            ImGui::PopItemWidth(); ImGui::PopItemWidth();
+            value = v;
+        }
+        else if constexpr (std::is_enum_v<T>) {
+            changed |= ImguiUtil::EnumCombo<T>(label, value);
+        }
+        else if constexpr (std::is_same_v<T, std::string>) {
+            // Handle std::string
+            char buffer[256];
+            std::strncpy(buffer, value.c_str(), sizeof(buffer));
+            changed |= ImGui::InputText(label, buffer, sizeof(buffer));
+            if (changed) {
+                value = buffer;
+            }
+        }
+        else if constexpr (std::is_same_v<T, f32v2>) {
+            changed |= ImGui::InputFloat2(label, &value.x);
+        }
+        else if constexpr (std::is_same_v<T, f32v3>) {
+            changed |= ImGui::InputFloat3(label, &value.x);
+        }
+        else if constexpr (std::is_same_v<T, f32v4>) {
+            changed |= ImGui::InputFloat4(label, &value.x);
+        }
+        else if constexpr (std::is_same_v<T, i32v2>) {
+            changed |= ImGui::InputInt2(label, &value.x);
+        }
+        else if constexpr (std::is_same_v<T, i32v3>) {
+            changed |= ImGui::InputInt3(label, &value.x);
+        }
+        else if constexpr (std::is_same_v<T, i32v4>) {
+            changed |= ImGui::InputInt4(label, &value.x);
+        }
+        else if constexpr (std::is_same_v<T, ui32v2>) {
+            changed |= ImGui::InputScalarN(label, ImGuiDataType_U32, &value.x, 2);
+        }
+        else if constexpr (std::is_same_v<T, ui32v3>) {
+            changed |= ImGui::InputScalarN(label, ImGuiDataType_U32, &value.x, 3);
+        }
+        else if constexpr (std::is_same_v<T, ui32v4>) {
+            changed |= ImGui::InputScalarN(label, ImGuiDataType_U32, &value.x, 4);
+        }
+        else if constexpr (std::is_same_v<T, VariantAssetRef>) {
+            changed |= ImguiUtil::updateAndRenderVariantAssetReference(label, value);
+        }
+        else if constexpr (HasUpdateAndRenderImgui<T>) {
+            changed |= value.updateAndRenderImgui(label);
+        }
+        else if constexpr (IsLiteAssetRef<T>) {
+            changed |= value.updateAndRenderImgui(label);
+        }
+        else if constexpr (std::is_same_v<T, color3>) {
+            float colorf[3] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f };
+            changed |= ImGui::ColorEdit3(label, colorf, ImGuiColorEditFlags_Uint8);
+            value = color3((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f));
+        }
+        else if constexpr (std::is_same_v<T, color4>) {
+            float colorf[4] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f, value.a / 255.0f };
+            changed |= ImGui::ColorEdit4(label, colorf, ImGuiColorEditFlags_Uint8);
+            value = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
+        }
+        return changed;
+    }
+}
+
 namespace YmlSerializer {
     template<typename T>
     void serializeYmlFields(ryml::NodeRef& s) {}
@@ -127,96 +220,11 @@ namespace YmlSerializer {
     bool updateAndRenderImgui(FieldPair<First> first, Rest... rest) {
         First& value = first.value;
         const std::string_view label = first.key;
-        bool changed = false;
-        if constexpr (std::is_floating_point_v<First>) {
-            float v = value;
-            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
-            const nString tagStr = nString("##float") + nString(label);
-            changed |= ImGui::InputFloat(tagStr.c_str(), &v);
-            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::SameLine();
-            ImGui::PushID("11"); changed |= ImGui::SliderFloat(label.data(), &v, 0.0f, 1000.0f, "%.4f", ImGuiSliderFlags_Logarithmic); ImGui::PopID();
-            ImGui::PopItemWidth(); ImGui::PopItemWidth();
-            value = v;
-        }
-        else if constexpr (std::is_same_v<First, bool>) {
-            changed |= ImGui::Checkbox(label.data(), &value);
-        }
-        else if constexpr (std::is_integral_v<First>) {
-            // Handle integral types (e.g., int, unsigned int)
-            int v = value;
-            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.25f);
-            const nString tagStr = nString("##int") + nString(label);
-            changed |= ImGui::InputInt(tagStr.c_str(), &v);
-            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::SameLine();
-            ImGui::PushID("22"); changed |= ImGui::SliderInt(label.data(), &v, 0, 16); ImGui::PopID();
-            ImGui::PopItemWidth(); ImGui::PopItemWidth();
-            value = v;
-        }
-        else if constexpr (std::is_enum_v<First>) {
-            changed |= ImguiUtil::EnumCombo<First>(label.data(), value);
-        }
-        else if constexpr (std::is_same_v<First, std::string>) {
-            // Handle std::string
-            char buffer[256];
-            std::strncpy(buffer, value.c_str(), sizeof(buffer));
-            changed |= ImGui::InputText(label.data(), buffer, sizeof(buffer));
-            if (changed) {
-                value = buffer;
-            }
-        }
-        else if constexpr (std::is_same_v<First, f32v2>) {
-            changed |= ImGui::InputFloat2(label.data(), &value.x);
-        }
-        else if constexpr (std::is_same_v<First, f32v3>) {
-            changed |= ImGui::InputFloat3(label.data(), &value.x);
-        }
-        else if constexpr (std::is_same_v<First, f32v4>) {
-            changed |= ImGui::InputFloat4(label.data(), &value.x);
-        }
-        else if constexpr (std::is_same_v<First, i32v2>) {
-            changed |= ImGui::InputInt2(label.data(), &value.x);
-        }
-        else if constexpr (std::is_same_v<First, i32v3>) {
-            changed |= ImGui::InputInt3(label.data(), &value.x);
-        }
-        else if constexpr (std::is_same_v<First, i32v4>) {
-            changed |= ImGui::InputInt4(label.data(), &value.x);
-        }
-        else if constexpr (std::is_same_v<First, ui32v2>) {
-            changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 2);
-        }
-        else if constexpr (std::is_same_v<First, ui32v3>) {
-            changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 3);
-        }
-        else if constexpr (std::is_same_v<First, ui32v4>) {
-            changed |= ImGui::InputScalarN(label.data(), ImGuiDataType_U32, &value.x, 4);
-        }
-        else if constexpr (std::is_same_v<First, VariantAssetRef>) {
-            changed |= ImguiUtil::updateAndRenderVariantAssetReference(label.data(), value );
-        }
-        else if constexpr (HasUpdateAndRenderImgui<First>) {
-            changed |= value.updateAndRenderImgui(label.data());
-        }
-        else if constexpr (IsLiteAssetRef<First>) {
-            changed |= value.updateAndRenderImgui(label.data());
-        }
-        else if constexpr (std::is_same_v<First, color3>) {
-            float colorf[3] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f };
-            changed |= ImGui::ColorEdit3(label.data(), colorf, ImGuiColorEditFlags_Uint8);
-            value = color3((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f));
-        }
-        else if constexpr (std::is_same_v<First, color4>) {
-            float colorf[4] = { value.r / 255.0f, value.g / 255.0f, value.b / 255.0f, value.a / 255.0f };
-            changed |= ImGui::ColorEdit4(label.data(), colorf, ImGuiColorEditFlags_Uint8);
-            value = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
-        }
+        bool changed = ImguiUtil::updateAndRenderImgui<First>(label.data(), value);
         // Recursively call updateAndRenderImgui for the rest of the arguments
         if constexpr (sizeof...(Rest) > 0) {
             changed |= updateAndRenderImgui<T>(rest...);
         }
-
         return changed;
     }
 
