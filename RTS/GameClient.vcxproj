@@ -219,10 +219,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\ai\jobs\ConstructBlueprintSimJob.cpp" />
+    <ClCompile Include="src\ai\jobs\ConstructBuildingSimJob.cpp" />
     <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp" />
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
-    <ClCompile Include="src\ai\tasks\ConstructBlueprintSimTask.cpp" />
+    <ClCompile Include="src\ai\tasks\ConstructBuildingSimTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
     <ClCompile Include="src\ai\tasks\MoveToPointSimTask.cpp" />
     <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
@@ -588,10 +588,10 @@
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\gpt\GptApi.h" />
-    <ClInclude Include="src\ai\jobs\ConstructBlueprintSimJob.h" />
+    <ClInclude Include="src\ai\jobs\ConstructBuildingSimJob.h" />
     <ClInclude Include="src\ai\jobs\SimTaskHandle.h" />
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
-    <ClInclude Include="src\ai\tasks\ConstructBlueprintSimTask.h" />
+    <ClInclude Include="src\ai\tasks\ConstructBuildingSimTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
     <ClInclude Include="src\ai\tasks\MoveToPointSimTask.h" />

@@ -3,6 +3,8 @@
 #include "math/Random.h"
 #include "ui/imgui_controls/ObjectVector.h"
 
+// TODO: Population tables (ref caves of qud)
+
 template <typename T>
 class RollTable;
 
@@ -20,6 +22,9 @@ public:
     std::unique_ptr<RollTable<T>> subTable = nullptr;
 };
 
+// Represents a table of objects that can be rolled on with weighted probability.
+// The table is split into two parts, guaranteed entries and random entries.
+// Guaranteed entries are always collected once, while random entries are rolled on.
 template <typename T>
 class RollTable {
 public:
@@ -43,11 +48,14 @@ public:
         updateWeight();
     }
 
-    i32 getRequiredBufferSizeForRollCount(i32 n) const {
+    // Possible to return more items than this if subtables are involved
+    i32 getEstimatedBufferSizeForRollCount(i32 n) const {
         return n + mMaximumGuaranteedEntries;
     }
 
     // Returns number of drops returned in outputBuffer
+    // n represents number of times to roll on the random table.
+    // Guarenteed table will be collected only once regardless of n
     i32 rollN(std::span<Result> outputBuffer, i32 n) const;
 
     // Serialization
@@ -179,30 +187,39 @@ template <typename T>
 i32 RollTable<T>::rollN(std::span<Result> outputBuffer, i32 n) const
 {
     assert(mRandomEntries.size());
-    assert(outputBuffer.size() >= getRequiredBufferSizeForRollCount(n));
 
     i32 count = 0;
 
-    // Helper
-    auto rollEntry = [&](const RollTableEntry<T>& entry) {
+    // Returns true if out of space
+    auto rollEntry = [&](const RollTableEntry<T>& entry) -> bool{
         if (entry.subTable) {
             count += entry.subTable->rollN(outputBuffer.subspan(count, 1), 1);
         }
         else {
-            Result& result = outputBuffer[count++];
-            result.value = entry.value;
+            if (count >= outputBuffer.size()) [[unlikely]] {
+                return true;
+            }
+            Result& result = outputBuffer[count];
             if (entry.quantityRange.x == entry.quantityRange.y) {
                 result.quantity = entry.quantityRange.x;
             }
             else {
                 result.quantity = sThreadLocalRandomGenerator.getRandomIntInRange(entry.quantityRange.x, entry.quantityRange.y);
             }
+            // If we rolled a 0 for quantity, do not add the item
+            if (result.quantity != 0) {
+                result.value = entry.value;
+                ++count;
+            }
         }
+        return false;
     };
 
     // First add guaranteed entries
     for (const auto& entry : mGuaranteedEntries) {
-        rollEntry(entry);
+        if (rollEntry(entry)) [[unlikely]] {
+            return count;
+        }
     }
 
     // Now roll random entries
@@ -216,7 +233,9 @@ i32 RollTable<T>::rollN(std::span<Result> outputBuffer, i32 n) const
         const int index = std::distance(mCumulativeWeights.begin(), it);
         const auto& entry = mRandomEntries[index];
 
-        rollEntry(entry);
+        if (rollEntry(entry)) [[unlikely]] {
+            return count;
+        }
     }
     return count;
 }
@@ -233,7 +252,7 @@ void RollTable<T>::displayProbabilityTable(float parentProbability, int depth) c
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         ImGui::Indent(depth * 20);  // Indent based on depth
-        //if (!ImguiUtil::displayValue(entry.value)) {
+        //if (!ImguiUtil::displayValue(entry.value)) { //TODO: make this?
             ImGui::Text("%d", i);
         //}
         ImGui::Unindent();

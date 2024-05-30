@@ -141,7 +141,7 @@ void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassDef& g
     );
 }
 
-void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatch* heightData) {
+bool GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod, const HeightmapPatch* heightData) {
     PROFILE_FUNCTION();
     TileGrassRepository& grassRepository = TileGrassRepository::get();
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
@@ -152,7 +152,9 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
     static_assert(e_count(TileGrassMeshType) == 3);
 
     TileGrass paddedGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH];
-    chunk.copyPaddedGrassDataWorkerThread(paddedGrassData);
+    if (!chunk.copyPaddedGrassDataWorkerThread(paddedGrassData)) {
+        return false;
+    }
 
     const auto& getHeightAndNormalFunc = (lod == GRASS_QUADTREE_MAX_LOD) ? [](f32v2 worldPos, f32v3* outNormal, IHeightmapGrid& grid) -> f32 {
         return grid.computeHeightAndNormalAtPoint<true>(worldPos, outNormal);
@@ -243,8 +245,9 @@ void GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMe
                 }
             }
         }
-    } // Read lock end
+    }
     grassMeshBuilder.setBoundingSphere(boundingSphere);
+    return true;
 }
 
 void GrassMeshBuilderMethods::editorCreateGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, ui32 widthTiles, const TileGrass grassDataArray[] /* Should be length SQ(widthTiles) */)

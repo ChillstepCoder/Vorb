@@ -8,7 +8,8 @@ struct TileGrass;
 
 namespace GrassMeshBuilderMethods
 {
-    void createGrassMesh(
+    // Return false on failure
+    bool createGrassMesh(
         GrassBillboardMeshBuilder& grassMeshBuilder,
         const Chunk& chunk,
         const ui32v2& tilePosStart,

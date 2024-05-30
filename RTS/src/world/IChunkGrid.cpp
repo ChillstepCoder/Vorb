@@ -458,6 +458,7 @@ void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
             break;
         }
     }
+    // TODO: Hit a crash here when quickly zooming around in a spiral
     chunk.decRef();
     // Make sure we removed
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST));

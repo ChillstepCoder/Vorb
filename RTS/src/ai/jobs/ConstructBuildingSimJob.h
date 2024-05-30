@@ -9,7 +9,7 @@
 
 class SimECS;
 class ISimTask;
-class ConstructBlueprintSimTask;
+class ConstructBuildingSimTask;
 
 // TODO:
 enum class ItemAquisitionSourceType : ui8 {
@@ -29,13 +29,13 @@ struct ItemAquisitionSource {
 
 // Step 1: Aquire items for job and fill blueprint + flatten terrain
 // Step 2: Build each tile that has all items
-class ConstructBlueprintSimJob : public ISimJob {
-	friend class ConstructBlueprintSimTask;
+class ConstructBuildingSimJob : public ISimJob {
+	friend class ConstructBuildingSimTask;
 public:
-	ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner);
-	~ConstructBlueprintSimJob() = default;
+	ConstructBuildingSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner);
+	~ConstructBuildingSimJob() = default;
 
-	POOLED_ALLOC_DECL(ConstructBlueprintSimJob);
+	POOLED_ALLOC_DECL(ConstructBuildingSimJob);
 
 	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) override;
 	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter) override;

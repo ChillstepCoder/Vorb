@@ -49,7 +49,243 @@ void BuildingGrid::tick() {
     }
 }
 
-Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
+Building* BuildingGrid::debugMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
+   
+    Building* newBuilding = tryMakeNewBuildingInternal(tileAABB, floorHeight, ownedDTiles, bptr);
+    if (!newBuilding) {
+        return nullptr;
+    }
+
+    newBuilding->mIsDebugBuilding = true;
+
+    // Flatten terrain and initialize building on main thread
+    GameThreadTasks::getInstance().addGenericTask([this, newBuilding, tileAABB]() {
+        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+        BuildingBlueprint& bp = *newBuilding->getBlueprint();
+        const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
+        const i32 floorStride = tileAABB.dims.x * tileAABB.dims.y;
+        for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
+            BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
+            // Footprint
+            if (tileTarget.tileIndex < floorStride) {
+                i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
+                // Epsilon to prevent z fighting
+                heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
+                // Mark covered
+                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+            }
+            else {
+                break; // Only need to iterate first floor, BP is sorted
+            }
+        }
+        for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
+            const StairPiece& stairPiece = bp.stairTargets[i].piece;
+            if (stairPiece.pos < floorStride) {
+                if (stairPiece.pos < floorStride) {
+                    i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
+                    // Epsilon to prevent z fighting
+                    heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
+                    // Mark covered
+                    ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                    ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                    mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+                }
+                else {
+                    // TODO: Guarentee this!
+                    break; // Only need to iterate first floor, BP is sorted
+                }
+            }
+        }
+
+        for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
+            ChunkID dep = newBuilding->mChunkDependencies[c];
+            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+            if (!buildingData.getIsSimulated()) {
+                ++newBuilding->mChunkDependenciesActiveCount;
+            }
+
+            std::lock_guard lock(buildingData.mMutex);
+            buildingData.buildings.emplace_back(newBuilding);
+            buildingData.getDisconnectedBuildings().emplace_back(newBuilding);
+        }
+
+        if (newBuilding->mChunkDependenciesActiveCount > 0) {
+            for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
+                ChunkID dep = newBuilding->mChunkDependencies[c];
+                ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+                ++buildingData.numLoadingBuildingsRef();
+            }
+            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, newBuilding->mFloorHeight, newBuilding);
+            mWorld.getTileContainerLoader().loadBuildingAsync(*newBuilding);
+        }
+        else {
+            newBuilding->mState = BuildingState::SIM;
+        }
+    });
+    return newBuilding;
+}
+
+Building* BuildingGrid::makeNewEmptyBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
+    
+    Building* newBuilding = tryMakeNewBuildingInternal(tileAABB, floorHeight, ownedDTiles, bptr);
+    if (!newBuilding) {
+        return nullptr;
+    }
+
+    // Initialize building on main thread
+    GameThreadTasks::getInstance().addGenericTask([this, newBuilding, tileAABB]() {
+        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+        BuildingBlueprint& bp = *newBuilding->getBlueprint();
+        const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
+        const i32 floorStride = tileAABB.dims.x * tileAABB.dims.y;
+        for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
+            BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
+            // Footprint
+            if (tileTarget.tileIndex < floorStride) {
+                i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
+                // Mark covered
+                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+            }
+            else {
+                break; // Only need to iterate first floor, BP is sorted
+            }
+        }
+        for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
+            const StairPiece& stairPiece = bp.stairTargets[i].piece;
+            if (stairPiece.pos < floorStride) {
+                if (stairPiece.pos < floorStride) {
+                    i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
+                    // Epsilon to prevent z fighting
+                    heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
+                    // Mark covered
+                    ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                    ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                    mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+                }
+                else {
+                    // TODO: Guarentee this!
+                    break; // Only need to iterate first floor, BP is sorted
+                }
+            }
+        }
+
+        // Building is initially disconnected from chunks, we will connect momentarily
+        for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
+            ChunkID dep = newBuilding->mChunkDependencies[c];
+            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+            if (!buildingData.getIsSimulated()) {
+                ++newBuilding->mChunkDependenciesActiveCount;
+            }
+
+            std::lock_guard lock(buildingData.mMutex);
+            buildingData.buildings.emplace_back(newBuilding);
+            buildingData.getDisconnectedBuildings().emplace_back(newBuilding);
+        }
+
+        // Connect
+        connectBuildingToChunks(*newBuilding);
+
+        if (newBuilding->mChunkDependenciesActiveCount > 0) {
+            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, newBuilding->mFloorHeight, newBuilding);
+            newBuilding->mTileContainer->setState(TileContainerState::READY);
+            // Mark as load finished for now ( TODO: IS THIS NEEDED? )
+            TileContainerEvent loadFinishedEvent;
+            loadFinishedEvent.container = newBuilding->getTileContainer();
+            mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
+
+            newBuilding->mState = BuildingState::ACTIVE;
+        }
+        else {
+            newBuilding->mState = BuildingState::SIM;
+        }
+    });
+    return newBuilding;
+}
+
+void BuildingGrid::debugRender() {
+    constexpr int LIFETIME_FRAMES = 24;
+    static int x = 0;
+    if (x++ >= LIFETIME_FRAMES) {
+        const color4 ACTIVE_COLOR(0, 255, 0, 128);
+        const color4 DORMANT_COLOR(255, 255, 0, 128);
+        std::shared_lock lock(mBuildingsMutex);
+        for (auto&& it : mBuildings) {
+            const Building* s = it.second.get();
+            switch (s->mState) {
+                case BuildingState::ACTIVE:
+                    DebugRenderer::drawAABB(s->mTileAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
+                    break;
+                case BuildingState::SIM:
+                    DebugRenderer::drawAABB(s->mTileAABB, DORMANT_COLOR, LIFETIME_FRAMES);
+                    break;
+                default:
+                    assert(false);
+            }
+        }
+    }
+}
+
+Building* BuildingGrid::tryGetBuildingAtWorldPos(TileCoord worldPos) const {
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorld.getWidthTiles() || worldPos.y >= mWorld.getWidthTiles()) [[unlikely]] {
+        return nullptr;
+    }
+    const DTileCoord dTileCoord(worldPos);
+    const ChunkCoord chunkCoord(dTileCoord);
+    const DTileCoord dTileOffset = dTileCoord - DTileCoord(chunkCoord);
+    const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
+    const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
+
+    BuildingID id;
+    {
+        const ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
+        std::lock_guard innerLock(buildingData.mMutex);
+        if (!buildingData.dTileBuildings) {
+            return nullptr;
+        }
+        id = buildingData.dTileBuildings[index];
+        if (id == INVALID_BUILDING_ID) {
+            return nullptr;
+        }
+    }
+    std::shared_lock lock(mBuildingsMutex);
+    auto it = mBuildings.find(id);
+    // This can occur if we query while a structure has been placed but not fully allocated and tracked
+    if (it == mBuildings.end()) [[unlikely]] {
+        return nullptr;
+    }
+    return it->second.get();
+}
+
+ui32 BuildingGrid::allBuildingsLoadedAtChunk(ChunkID chunkId) const {
+    ASSERT_GAME_THREAD();
+    const ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
+    return buildingData.getNumLoadingBuildings() == 0;
+}
+
+void BuildingGrid::connectBuildingsToChunk(Chunk& chunk) {
+    ASSERT_GAME_THREAD();
+    const ChunkID chunkId = chunk.getChunkID();
+    ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
+
+    std::vector<Building*>& disconnected = buildingData.getDisconnectedBuildings();
+
+    for (int i = disconnected.size() - 1; i >= 0; --i) {
+        Building* building = disconnected[i];
+        // Can only connect active buildings
+        if (building->getState() == BuildingState::ACTIVE) {
+            connectBuildingToChunk(*building, chunk);
+            disconnected[i] = disconnected.back();
+            disconnected.pop_back();
+            continue;
+        }
+    }
+}
+
+Building* BuildingGrid::tryMakeNewBuildingInternal(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
     const DTileCoord rootDTileCoord = DTileCoord::fromTilePosRound(tileAABB.pos);
     const ui32v2 DTileDims((tileAABB.dims.x >> 1), (tileAABB.dims.y >> 1));
     assert(DTileDims.x < MAX_BUILDING_WIDTH_DTILES && DTileDims.y < MAX_BUILDING_WIDTH_DTILES);
@@ -137,11 +373,11 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
     }
     newBuilding->mChunkDependencyCount = chunkCount;
     newBuilding->mChunkDependenciesActiveCount = 0;
-    assert(floorHeight < UINT8_MAX); 
+    assert(floorHeight < UINT8_MAX);
     newBuilding->mFloorHeight = floorHeight;
 
     Building* rv = newBuilding.get();
-    
+
     // Track in list
     {
         std::lock_guard lock(mBuildingsMutex);
@@ -167,150 +403,31 @@ Building* BuildingGrid::tryMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, u
         structureData.dTileBuildings[index] = newBuildingId;
     }
 
-    // Flatten terrain and initialize building on main thread
-    GameThreadTasks::getInstance().addGenericTask([this, newBuilding = rv, tileAABB]() {
-        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-        BuildingBlueprint& bp = *newBuilding->getBlueprint();
-        const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
-        const i32 floorStride = tileAABB.dims.x * tileAABB.dims.y;
-        for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
-            BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
-            // Footprint
-            if (tileTarget.tileIndex < floorStride) {
-                i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
-                // Epsilon to prevent z fighting
-                heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
-                // Mark covered
-                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
-                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
-                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
-            }
-            else {
-                break; // Only need to iterate first floor, BP is sorted
-            }
-        }
-        for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
-            const StairPiece& stairPiece = bp.stairTargets[i].piece;
-            if (stairPiece.pos < floorStride) {
-                if (stairPiece.pos < floorStride) {
-                    i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
-                    // Epsilon to prevent z fighting
-                    heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
-                    // Mark covered
-                    ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
-                    ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
-                    mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
-                }
-                else {
-                    // TODO: Guarentee this!
-                    break; // Only need to iterate first floor, BP is sorted
-                }
-            }
-        }
-
-        for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
-            ChunkID dep = newBuilding->mChunkDependencies[c];
-            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
-            if (!buildingData.getIsSimulated()) {
-                ++newBuilding->mChunkDependenciesActiveCount;
-            }
-
-            std::lock_guard lock(buildingData.mMutex);
-            buildingData.buildings.emplace_back(newBuilding);
-            buildingData.getDisconnectedBuildings().emplace_back(newBuilding);
-        }
-
-        if (newBuilding->mChunkDependenciesActiveCount > 0) {
-            for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
-                ChunkID dep = newBuilding->mChunkDependencies[c];
-                ChunkBuildingData& buildingData = mChunkBuildingData[dep];
-                ++buildingData.numLoadingBuildingsRef();
-            }
-            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, newBuilding->mFloorHeight, newBuilding);
-            mWorld.getTileContainerLoader().loadBuildingAsync(*newBuilding);
-        }
-        else {
-            newBuilding->mState = BuildingState::SIM;
-        }
-    });
     return rv;
 }
 
-void BuildingGrid::debugRender() {
-    constexpr int LIFETIME_FRAMES = 24;
-    static int x = 0;
-    if (x++ >= LIFETIME_FRAMES) {
-        const color4 ACTIVE_COLOR(0, 255, 0, 128);
-        const color4 DORMANT_COLOR(255, 255, 0, 128);
-        std::shared_lock lock(mBuildingsMutex);
-        for (auto&& it : mBuildings) {
-            const Building* s = it.second.get();
-            switch (s->mState) {
-                case BuildingState::ACTIVE:
-                    DebugRenderer::drawAABB(s->mTileAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
+void BuildingGrid::connectBuildingToChunks(Building& building) {
+    for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
+        const ChunkID id = building.getChunkDependencies()[i];
+        ChunkBuildingData& buildingData = mChunkBuildingData[id];
+        assert(buildingData.numLoadingBuildingsRef() > 0);
+        --buildingData.numLoadingBuildingsRef();
+        Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
+        // Check if we are in a state where we should instantly connect
+        if (chunk.getState() == ChunkState::ACTIVATED || chunk.getState() == ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY) {
+            connectBuildingToChunk(building, chunk);
+            // Remove from disconnected array
+            std::vector<Building*>& disconnectedBuildings = buildingData.getDisconnectedBuildings();
+            bool found = false;
+            for (size_t j = 0; j < disconnectedBuildings.size(); ++j) {
+                if (disconnectedBuildings[j] == &building) {
+                    disconnectedBuildings[j] = disconnectedBuildings.back();
+                    disconnectedBuildings.pop_back();
+                    found = true;
                     break;
-                case BuildingState::SIM:
-                    DebugRenderer::drawAABB(s->mTileAABB, DORMANT_COLOR, LIFETIME_FRAMES);
-                    break;
-                default:
-                    assert(false);
+                }
             }
-        }
-    }
-}
-
-Building* BuildingGrid::tryGetBuildingAtWorldPos(TileCoord worldPos) const {
-    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorld.getWidthTiles() || worldPos.y >= mWorld.getWidthTiles()) [[unlikely]] {
-        return nullptr;
-    }
-    const DTileCoord dTileCoord(worldPos);
-    const ChunkCoord chunkCoord(dTileCoord);
-    const DTileCoord dTileOffset = dTileCoord - DTileCoord(chunkCoord);
-    const ChunkID chunkId = chunkCoord.toGridIDType(mWorld.getWidthChunks());
-    const DTileIndex index = dTileOffset.y * CHUNK_WIDTH_DTILES + dTileOffset.x;
-
-    BuildingID id;
-    {
-        const ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
-        std::lock_guard innerLock(buildingData.mMutex);
-        if (!buildingData.dTileBuildings) {
-            return nullptr;
-        }
-        id = buildingData.dTileBuildings[index];
-        if (id == INVALID_BUILDING_ID) {
-            return nullptr;
-        }
-    }
-    std::shared_lock lock(mBuildingsMutex);
-    auto it = mBuildings.find(id);
-    // This can occur if we query while a structure has been placed but not fully allocated and tracked
-    if (it == mBuildings.end()) [[unlikely]] {
-        return nullptr;
-    }
-    return it->second.get();
-}
-
-ui32 BuildingGrid::allBuildingsLoadedAtChunk(ChunkID chunkId) const {
-    ASSERT_GAME_THREAD();
-    const ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
-    return buildingData.getNumLoadingBuildings() == 0;
-}
-
-void BuildingGrid::connectBuildingsToChunk(Chunk& chunk) {
-    ASSERT_GAME_THREAD();
-    const ChunkID chunkId = chunk.getChunkID();
-    ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
-
-    std::vector<Building*>& disconnected = buildingData.getDisconnectedBuildings();
-
-    for (int i = disconnected.size() - 1; i >= 0; --i) {
-        Building* building = disconnected[i];
-        // Can only connect active buildings
-        if (building->getState() == BuildingState::ACTIVE) {
-            connectBuildingToChunk(*building, chunk);
-            disconnected[i] = disconnected.back();
-            disconnected.pop_back();
-            continue;
+            assert(found);
         }
     }
 }
@@ -353,7 +470,9 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
     // ChunkGenerator::generateChunkFromSimChunk will set building block and grass block for first floor,
     // based on the ChunkBuildingData::buildingFootprint, so we only need to iterate subsequent floors
     // and check if they are close to intersecting terrain, which can happen with steep hills
-    for (i32 z = 1; z < dims.z; ++z) {
+    // However a "debug" building was created instantly in editor, and will have to start at 0 as we never ran generateChunkFromSimChunk
+    const i32 startZ = building.mIsDebugBuilding ? 0 : 1;
+    for (i32 z = startZ; z < dims.z; ++z) {
         const i32 zOffset = floorStride * z;
         for (i32 y = localYMin; y < localYMax; ++y) {
             const i32 zyOffset = zOffset + y * dims.x;
@@ -385,29 +504,7 @@ void BuildingGrid::onBuildingFinishedLoad(Building& building) {
         mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
         building.mState = BuildingState::ACTIVE;
-        for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
-            const ChunkID id = building.getChunkDependencies()[i];
-            ChunkBuildingData& buildingData = mChunkBuildingData[id];
-            assert(buildingData.numLoadingBuildingsRef() > 0);
-            --buildingData.numLoadingBuildingsRef();
-            Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
-            // Check if we are in a state where we should instantly connect
-            if (chunk.getState() == ChunkState::ACTIVATED || chunk.getState() == ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY) {
-                connectBuildingToChunk(building, chunk);
-                // Remove from disconnected array
-                std::vector<Building*>& disconnectedBuildings = buildingData.getDisconnectedBuildings();
-                bool found = false;
-                for (size_t j = 0; j < disconnectedBuildings.size(); ++j) {
-                    if (disconnectedBuildings[j] == &building) {
-                        disconnectedBuildings[j] = disconnectedBuildings.back();
-                        disconnectedBuildings.pop_back();
-                        found = true;
-                        break;
-                    }
-                }
-                assert(found);
-            }
-        }
+        connectBuildingToChunks(building);
 
         // Navmesh dirty
         if (NavWorld* navWorld = mWorld.tryGetNavWorld()) {

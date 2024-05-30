@@ -1,14 +1,14 @@
 #include "stdafx.h"
-#include "ConstructBlueprintSimJob.h"
+#include "ConstructBuildingSimJob.h"
 
-#include "ai/tasks/ConstructBlueprintSimTask.h"
+#include "ai/tasks/ConstructBuildingSimTask.h"
 #include "world/World.h"
 #include "world/chunk/SimChunkGrid.h"
 #include "world/simulation/host/component/SimSettlementComponents.h"
 
-POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimJob, 256);
+POOLED_ALLOC_DEF_THREADSAFE(ConstructBuildingSimJob, 256);
 
-ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner)
+ConstructBuildingSimJob::ConstructBuildingSimJob(BuildingBlueprint& blueprint, SimECS& simEcs, entt::entity simJobOwner)
     : ISimJob(simJobOwner), mBlueprint(blueprint), mSimEcs(simEcs) {
     ASSERT_SIM_THREAD();
     assert(blueprint.itemCompositionCount);
@@ -17,7 +17,7 @@ ConstructBlueprintSimJob::ConstructBlueprintSimJob(BuildingBlueprint& blueprint,
     assert(blueprint.worldPosRootDTile.x > -1);
 }
 
-std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
+std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
     ASSERT_SIM_THREAD();
     if (mBlueprint.totalItemsUnpromised == 0) {
         // TODO: Need to handle when BP has all items but tiles still need to be constructed
@@ -79,27 +79,27 @@ std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubtaskForSimCh
         return nullptr;
     }
 
-    std::unique_ptr<ConstructBlueprintSimTask> newTask =
-        std::make_unique<ConstructBlueprintSimTask>(
+    std::unique_ptr<ConstructBuildingSimTask> newTask =
+        std::make_unique<ConstructBuildingSimTask>(
             world, mBlueprint, *this, std::move(tileReservationHandle), harvestableToAquire
         );
     // If state is END then the task could not initialize, likely due to no valid items
-    if (newTask->mState == ConstructBlueprintSimTask::State::End) {
+    if (newTask->mState == ConstructBuildingSimTask::State::End) {
         return nullptr;
     }
     return newTask;
 }
 
-std::unique_ptr<ISimTask> ConstructBlueprintSimJob::tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter)
+std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-void ConstructBlueprintSimJob::onAbortTask(ISimTask& task) {
+void ConstructBuildingSimJob::onAbortTask(ISimTask& task) {
 
 }
 
-void ConstructBlueprintSimJob::onCompleteTask(ISimTask& task)
+void ConstructBuildingSimJob::onCompleteTask(ISimTask& task)
 {
 
 }

@@ -86,6 +86,7 @@ protected:
     std::atomic<BuildingState> mState = BuildingState::INVALID;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk
     bool mIsDeactivating = false;
+    bool mIsDebugBuilding = false; // TODO: Bitflags?
 
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;

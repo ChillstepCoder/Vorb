@@ -7,18 +7,18 @@
 #include "tile/TileHarvestable.h"
 
 class BuildingBlueprint;
-class ConstructBlueprintSimJob;
+class ConstructBuildingSimJob;
 
 // TODO: Serialization?
-class ConstructBlueprintSimTask : public ISimTask
+class ConstructBuildingSimTask : public ISimTask
 {
-	friend class ConstructBlueprintSimJob;
+	friend class ConstructBuildingSimJob;
 public:
 	// We will aquire the tileReservations, and the job will release them after
-	ConstructBlueprintSimTask(
-		World& world, BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
+	ConstructBuildingSimTask(
+		World& world, BuildingBlueprint& blueprint, ConstructBuildingSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
 	);
-	~ConstructBlueprintSimTask();
+	~ConstructBuildingSimTask();
 
 	POOLED_ALLOC_DECL();
 
@@ -43,7 +43,7 @@ private:
 		End
 	} mState = State::Init;
 
-	ConstructBlueprintSimJob& mParentJob;
+	ConstructBuildingSimJob& mParentJob;
 	BuildingBlueprint& mBlueprint;
 	MoveToPointSimSubtask mMoveSubtask;
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;

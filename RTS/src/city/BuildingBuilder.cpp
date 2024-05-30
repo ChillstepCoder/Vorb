@@ -40,7 +40,7 @@ Building* BuildingBuilder::debugCreateAndBuildNewBuilding(World& world, std::uni
     const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getBuildingGrid().tryMakeNewFullyBuiltBuilding(aabb3d, bpPtr->floorHeight, bpPtr->ownedDTiles, bpPtr));
+    Building* newBuilding = static_cast<Building*>(world.getBuildingGrid().debugMakeNewFullyBuiltBuilding(aabb3d, bpPtr->floorHeight, bpPtr->ownedDTiles, bpPtr));
     if (!newBuilding) {
         return nullptr;
     }

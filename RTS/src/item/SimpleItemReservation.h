@@ -4,10 +4,10 @@
 #include "item/ItemStack.h"
 
 enum class ItemReservationUpdateType {
-    PartialFulfill,
+    FulfillCount,
     PromiseIncrease,
     END_TYPES, // Anything >= this is an end type
-    CompleteFulfill = END_TYPES,
+    Complete = END_TYPES,
     Cancel
 };
 

@@ -147,7 +147,8 @@ public:
     void clearGrassAt(const TileIndex index);
 	const TileGrass& getGrassAt(const TileIndex index) const { /*ASSERT_GAME_THREAD(); */return mGrass[index]; } // TODO: Game thread assert
 	const ui8 getGrassDensityAt(const TileIndex index, TileGrassID grassId) const;
-	void copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const;
+	// Return false if grass is not valid as chunk is destroying
+	bool copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const;
 
     // =========== Terrain update  ===========
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);

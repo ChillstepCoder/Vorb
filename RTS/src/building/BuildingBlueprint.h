@@ -53,8 +53,8 @@ struct BuildingItemComposition {
 // Minimal data representation of a building
 class BuildingBlueprint {
     friend class BuildingBlueprintGenerator;
-    friend class ConstructBlueprintSimJob;
-    friend class ConstructBlueprintSimTask;
+    friend class ConstructBuildingSimJob;
+    friend class ConstructBuildingSimTask;
     friend class BuildingBuilder;
     friend class BuildingGrid; // TODO: Remove
     friend class TileContainerLoader;

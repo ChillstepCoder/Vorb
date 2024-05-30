@@ -110,20 +110,29 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData]() {
 
         GrassMeshTaskData* taskData = new GrassMeshTaskData(this, patchIndex, mMeshes[patchIndex]->mMesh);
-        GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData);
+        if (GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData)) {
+            // Back to render thread for upload and state update
+            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
+                GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
+                taskData->owner->finishMesh(taskData->meshBuilder, taskData->patchIndex);
 
-        // Back to render thread for upload and state update
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-            GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
-            taskData->owner->finishMesh(taskData->meshBuilder, taskData->patchIndex);
-
-            ChunkGrassQuadtree* owner = taskData->owner;
-            const ui32 patchIndex = taskData->patchIndex;
-            owner->onMeshFinished(patchIndex, owner->mMeshes[patchIndex] != nullptr);
-            --owner->mRefCount;
-            // Free resources
-            delete taskData;
-        }, taskData);
+                ChunkGrassQuadtree* owner = taskData->owner;
+                const ui32 patchIndex = taskData->patchIndex;
+                owner->onMeshFinished(patchIndex, owner->mMeshes[patchIndex] != nullptr);
+                --owner->mRefCount;
+                // Free resources
+                delete taskData;
+            }, taskData);
+        }
+        else {
+            // Rare failure case, must decrement ref on render thread
+            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
+                __debugbreak(); // Just make sure this doesnt cause a crash or anything
+                GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
+                --taskData->owner->mRefCount;
+                delete taskData;
+            }, taskData);
+        }
     });
    
 }

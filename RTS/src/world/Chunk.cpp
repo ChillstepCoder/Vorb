@@ -62,7 +62,11 @@ void Chunk::freeData() {
         mTileContainer->getWorld().getTileContainerRepository().destroyTileContainer(mTileContainer);
         mTileContainer = nullptr;
     }
-    std::vector<TileGrass>().swap(mGrass);
+    {
+        // Clear grass
+        std::lock_guard lock(mSharedGrassMutex);
+        std::vector<TileGrass>().swap(mGrass);
+    }
     // TODO: Serialization
     std::map<TileIndex, ItemStack>().swap(mItemsOnGround);
 }
@@ -246,11 +250,14 @@ const ui8 Chunk::getGrassDensityAt(const TileIndex index, TileGrassID grassId) c
     return grass.getDensity(grassId);
 }
 
-void Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const {
+bool Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const {
     PROFILE_FUNCTION();
     assert(!IS_GAME_THREAD());
     { // Copy true data with lock
         std::shared_lock lock(mSharedGrassMutex);
+        if (!mGrass.size()) {
+            return false;
+        }
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             // Memcpy each row for maximum speed
             memcpy(&outGrassData[y + 1][1], &mGrass[y * CHUNK_WIDTH], sizeof(TileGrass) * CHUNK_WIDTH);
@@ -275,6 +282,7 @@ void Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_
     memcpy(&outGrassData[PADDED_CHUNK_WIDTH - 1][1], &outGrassData[PADDED_CHUNK_WIDTH - 2][1], sizeof(TileGrass) * CHUNK_WIDTH);
     // Top right corner
     outGrassData[PADDED_CHUNK_WIDTH - 1][PADDED_CHUNK_WIDTH - 1] = outGrassData[PADDED_CHUNK_WIDTH - 2][PADDED_CHUNK_WIDTH - 2];
+    return true;
 }
 
 void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {

@@ -67,16 +67,18 @@ bool SimpleItemReservationSourceHandle::tryFulfillQuantity(ItemID id, i32 quanti
 
     dataPtr->remainingQuantity[index] -= quantity;
     dataPtr->totalRemaining -= quantity;
-    
-    if (dataPtr->totalRemaining <= 0) {
-        if (dataPtr->targetUpdateFunction) {
-            dataPtr->targetUpdateFunction(ItemReservationUpdateType::CompleteFulfill, id, quantity);
+
+    if (dataPtr->targetUpdateFunction) {
+        dataPtr->targetUpdateFunction(ItemReservationUpdateType::FulfillCount, id, quantity);
+        if (dataPtr->totalRemaining <= 0) {
+            dataPtr->targetUpdateFunction(ItemReservationUpdateType::Complete, id, 0);
+            dataPtr->onComplete();
         }
+    }
+    else if (dataPtr->totalRemaining <= 0) {
         dataPtr->onComplete();
     }
-    else if (dataPtr->targetUpdateFunction) {
-        dataPtr->targetUpdateFunction(ItemReservationUpdateType::PartialFulfill, id, quantity);
-    }
+    
     return true;
 }
 

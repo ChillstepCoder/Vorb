@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "ConstructBlueprintSimTask.h"
+#include "ConstructBuildingSimTask.h"
 
 #include "building/BuildingBlueprint.h"
 #include "world/World.h"
@@ -9,10 +9,10 @@
 #include "item/ItemDef.h"
 #include "resources/TileRepository.h"
 
-POOLED_ALLOC_DEF_THREADSAFE(ConstructBlueprintSimTask, 256);
+POOLED_ALLOC_DEF_THREADSAFE(ConstructBuildingSimTask, 256);
 
-ConstructBlueprintSimTask::ConstructBlueprintSimTask(
-    World& world, BuildingBlueprint& blueprint, ConstructBlueprintSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
+ConstructBuildingSimTask::ConstructBuildingSimTask(
+    World& world, BuildingBlueprint& blueprint, ConstructBuildingSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
 )
     : mBlueprint(blueprint), mParentJob(parentJob), mTileReservation(std::move(tileReservation)), mHarvestableToAquire(harvestableToAquire){
     assert(mTileReservation);
@@ -41,10 +41,18 @@ ConstructBlueprintSimTask::ConstructBlueprintSimTask(
         mBlueprint.onEndReservation(mTargetReservationId);
     });
 
-    // TODO: Update on promise increase
-    reservationPair.target->bindUpdateFunction([this]() {
-        x;
-    }
+    // Notify blueprint when we increase our promised amount due to overharvest
+    reservationPair.target->bindUpdateFunction([this](ItemReservationUpdateType type, ItemID id, i32 quantity) {
+        if (type == ItemReservationUpdateType::PromiseIncrease) {
+            for (i32 i = 0; i < mBlueprint.itemCompositionCount; ++i) {
+                FillableSimpleItemStack& itemStack = mBlueprint.itemComposition[i];
+                if (itemStack.itemId == id) {
+                    itemStack.promisedQuantity += quantity;
+                    break;
+                }
+            }
+        }
+    });
 
     mBlueprint.totalItemsUnpromised -= itemToFill.quantity;
     assert(mBlueprint.totalItemsUnpromised >= 0);
@@ -57,31 +65,31 @@ ConstructBlueprintSimTask::ConstructBlueprintSimTask(
     
 }
 
-ConstructBlueprintSimTask::~ConstructBlueprintSimTask()
+ConstructBuildingSimTask::~ConstructBuildingSimTask()
 {
     if (mBlueprintItemPromise) {
         mBlueprintItemPromise->cancel();
     }
 }
 
-void ConstructBlueprintSimTask::onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent)
+void ConstructBuildingSimTask::onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-void ConstructBlueprintSimTask::onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+void ConstructBuildingSimTask::onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
     // TODO: Dynamic success radius based on the tile size?
     constexpr f32 SUCCESS_RADIUS = 2.0f;
     mMoveSubtask.init(simRegistry, simAgent, mTileReservation->getLiteTileHandle().getWorldPosition2D(world), SUCCESS_RADIUS);
     mState = State::MoveToHarvestable;
 }
 
-SimTaskTickResult ConstructBlueprintSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec)
+SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
+SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
     switch (mState) {
         case State::Init:
             assert(false);
@@ -170,7 +178,7 @@ SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registr
                     i32 existingPromiseSize = mBlueprintItemPromise->getRemainingQuantity(bundleItem.itemId);
                     const i32 countDiff = bundleItem.quantity - existingPromiseSize;
                     if (countDiff > 0) {
-                        i32 promiseIncrease = glm::min(countDiff, mBlueprint.getMaxPromiseSize(bundleItem.itemId));
+                        const i32 promiseIncrease = glm::min(countDiff, mBlueprint.getMaxPromiseSize(bundleItem.itemId));
                         mBlueprintItemPromise->increasePromisedQuantity(bundleItem.itemId, promiseIncrease);
                     }
                         
@@ -195,7 +203,7 @@ SimTaskTickResult ConstructBlueprintSimTask::tickSim(World& world, entt::registr
     return SimTaskTickResult::InProgress;
 }
 
-const char* ConstructBlueprintSimTask::getTaskName() const
+const char* ConstructBuildingSimTask::getTaskName() const
 {
     throw std::logic_error("The method or operation is not implemented.");
 }

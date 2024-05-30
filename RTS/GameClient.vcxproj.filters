@@ -1065,7 +1065,7 @@
     <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ai\jobs\ConstructBlueprintSimJob.cpp">
+    <ClCompile Include="src\ai\jobs\ConstructBuildingSimJob.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp">
@@ -1080,7 +1080,7 @@
     <ClCompile Include="src\ai\tasks\MoveToPointSimTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ai\tasks\ConstructBlueprintSimTask.cpp">
+    <ClCompile Include="src\ai\tasks\ConstructBuildingSimTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\SimpleItemReservation.cpp">
@@ -2687,7 +2687,7 @@
     <ClInclude Include="src\world\simulation\ISimJob.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ai\jobs\ConstructBlueprintSimJob.h">
+    <ClInclude Include="src\ai\jobs\ConstructBuildingSimJob.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\jobs\SimTaskHandle.h">
@@ -2696,7 +2696,7 @@
     <ClInclude Include="src\ai\tasks\MoveToPointSimTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ai\tasks\ConstructBlueprintSimTask.h">
+    <ClInclude Include="src\ai\tasks\ConstructBuildingSimTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\SimpleItemReservation.h">

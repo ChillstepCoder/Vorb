@@ -10,7 +10,7 @@
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/IHeightmapGrid.h"
 
-#include "ai/jobs/ConstructBlueprintSimJob.h"
+#include "ai/jobs/ConstructBuildingSimJob.h"
 #include "ai/jobs/SimTaskHandle.h"
 
 #include "building/BuildingRepository.h"
@@ -104,7 +104,7 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
             if (newPlot.activeBlueprint) {
                 newPlot.activeBlueprint->assignToSettlement(settlementEntity, plotId);
 
-                std::unique_ptr<ConstructBlueprintSimJob> newConstructJob = std::make_unique<ConstructBlueprintSimJob>(*newPlot.activeBlueprint, mEcs, characters[0]);
+                std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(*newPlot.activeBlueprint, mEcs, characters[0]);
                 SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
 
                 // Instruct all characters to build this house
