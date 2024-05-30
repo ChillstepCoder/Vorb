@@ -57,6 +57,10 @@ public:
     // n represents number of times to roll on the random table.
     // Guarenteed table will be collected only once regardless of n
     i32 rollN(std::span<Result> outputBuffer, i32 n) const;
+    // Returns number of drops returned in outputBuffer
+    inline i32 roll(std::span<Result> outputBuffer) const {
+        return rollN(outputBuffer, 1);
+    }
 
     // Serialization
     void ymlWrite(c4::yml::NodeRef& n) const;
@@ -186,8 +190,6 @@ void RollTable<T>::ymlWrite(c4::yml::NodeRef& n) const {
 template <typename T>
 i32 RollTable<T>::rollN(std::span<Result> outputBuffer, i32 n) const
 {
-    assert(mRandomEntries.size());
-
     i32 count = 0;
 
     // Returns true if out of space
@@ -223,18 +225,20 @@ i32 RollTable<T>::rollN(std::span<Result> outputBuffer, i32 n) const
     }
 
     // Now roll random entries
-    for (ui32 i = 0; i < n; i++) {
-        const f32 roll = sThreadLocalRandomGenerator.getRandomFloatUnsigned() * mTotalWeight;
-        auto it = std::upper_bound(mCumulativeWeights.begin(), mCumulativeWeights.end(), roll);
-        if (it == mCumulativeWeights.end()) [[unlikely]] {
-            // Fail case
-            continue;
-        }
-        const int index = std::distance(mCumulativeWeights.begin(), it);
-        const auto& entry = mRandomEntries[index];
+    if (mRandomEntries.size()) {
+        for (ui32 i = 0; i < n; i++) {
+            const f32 roll = sThreadLocalRandomGenerator.getRandomFloatUnsigned() * mTotalWeight;
+            auto it = std::upper_bound(mCumulativeWeights.begin(), mCumulativeWeights.end(), roll);
+            if (it == mCumulativeWeights.end()) [[unlikely]] {
+                // Fail case
+                continue;
+            }
+            const int index = std::distance(mCumulativeWeights.begin(), it);
+            const auto& entry = mRandomEntries[index];
 
-        if (rollEntry(entry)) [[unlikely]] {
-            return count;
+            if (rollEntry(entry)) [[unlikely]] {
+                return count;
+            }
         }
     }
     return count;

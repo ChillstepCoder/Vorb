@@ -2247,9 +2247,9 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
 
     auto addRequiredItems = [&](BlueprintTileType type) {
         const FillableRecipe& recipe = context.tileRecipes[e_cast(type)];
-        for (int r = 0; r < recipe.numItems; ++r) {
-            const ItemID id = recipe.itemIds[r];
-            const ui8 quantity = recipe.requiredQuantities[r];
+        for (int r = 0; r < recipe.getNumItems(); ++r) {
+            const ItemID id = recipe.getRequiredItems()[r];
+            const ui8 quantity = recipe.getRequiredQuantities()[r];
             auto&& it = requiredItems.find(id);
             if (it == requiredItems.end()) {
                 requiredItems[id] = quantity;
@@ -2322,14 +2322,15 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
         bp->totalItemsUnfulfilled += quantity;
         ++i;
     }
+    bp->totalItemsUnpromised = bp->totalItemsUnfulfilled;
 
     // Set stairs tiles
-    bp->stairPieceCount = 0;
+    bp->stairTargetCount = 0;
     for (auto& stairsVec : context.stairs) {
-        bp->stairPieceCount += stairsVec.size();
+        bp->stairTargetCount += stairsVec.size();
     }
 
-    bp->stairTargets = std::make_unique<StairTileTarget[]>(bp->stairPieceCount);
+    bp->stairTargets = std::make_unique<StairTileTarget[]>(bp->stairTargetCount);
     ui32 startIndex = 0;
     for (auto& stairsVec : context.stairs) {
         for (size_t i = 0; i < stairsVec.size(); ++i) {

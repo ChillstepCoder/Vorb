@@ -6,6 +6,7 @@
 
 #include "tile/SimTileReservation.h"
 #include "tile/SimTileReservation.h"
+#include "BuildContextTargetData.h"
 
 class SimECS;
 class ISimTask;
@@ -20,15 +21,38 @@ enum class ItemAquisitionSourceType : ui8 {
 	StockpilePurchase,
 	COUNT
 };
-struct ItemAquisitionSource {
-	LiteTileHandle tileHandle;
-	i32v2 worldPos2D;
-	i16 estimatedQuantity;
-	ItemAquisitionSourceType type;
+//struct ItemAquisitionSource {
+//	LiteTileHandle tileHandle;
+//	i32v2 worldPos2D;
+//	i16 estimatedQuantity;
+//	ItemAquisitionSourceType type;
+//};
+
+class ConstructBuildingContext {
+public:
+	ConstructBuildingContext(Building& building);
+
+	// Tasks are grabbed and returned from here to guarentee no two actors are modifying the same target
+	std::optional<BuildContextTargetData> tryAquireTargetForItem(ItemID itemId);
+	void returnTargetForItem(ItemID itemId, BuildContextTargetData target);
+	std::optional<BuildContextTargetData> tryAquireTargetToConstruct();
+	void returnTargetToConstruct(BuildContextTargetData target) {
+		tilesToConstruct.push(target);
+	}
+
+	bool shouldFlattenTile(TileIndex i) const;
+	void markFlattened(TileIndex i);
+
+    Building& building;
+    BuildingBlueprint& blueprint;
+	// Reversed vectors for efficient pop_back
+	std::map<ItemID, std::vector<BuildContextTargetData>> itemsToTileTargets;
+	std::queue<BuildContextTargetData> tilesToConstruct;
+	i32 firstIncompleteFloor = 0;
+	BitArray tilesNeedingFlatten;
 };
 
-
-// Step 1: Aquire items for job and fill blueprint + flatten terrain
+// Step 1: Acquire items for job and fill blueprint + flatten terrain
 // Step 2: Build each tile that has all items
 class ConstructBuildingSimJob : public ISimJob {
 	friend class ConstructBuildingSimTask;
@@ -45,13 +69,12 @@ public:
 	void onCompleteTask(ISimTask& task) override;
 
 private:
+	void initContext();
 
 	// Places where we are attempting to aquire items from
-    std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
+    //std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
     std::vector<SimChunkTileReservationHandle> reservedTiles;
 
-	Building& mBuilding;
-	BuildingBlueprint& mBlueprint;
+	ConstructBuildingContext mContext;
 	SimECS& mSimEcs;
 };
-

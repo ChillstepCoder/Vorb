@@ -9,6 +9,7 @@ class World;
 // ***********************************************************************************************************
 // The city builder recieves blueprints, and contracts them out to builder businesses to be constructed
 
+// TODO: Delete
 class BuildingBuilder
 {
 public:

@@ -131,17 +131,17 @@ ItemReservationPair SimpleItemReservation::createReservation(std::span<SimpleIte
 }
 
 ItemReservationPair SimpleItemReservation::createReservationForRecipe(const FillableRecipe& recipe) {
-    assert(!recipe.isFullyFilled);
+    assert(!recipe.isFullyFilled());
     ItemReservationPair rv;
     rv.source = std::make_unique<SimpleItemReservationSourceHandle>();
     rv.target = std::make_unique<SimpleItemReservationTargetHandle>();
     // std::make_unique doesn't work with private constructors
     SimpleItemStack items[MAX_ITEMS_IN_SIMPLE_RESERVATION];
     i32 total = 0;
-    for (int i = 0; i < recipe.numItems; ++i) {
-        const i32 required = recipe.requiredQuantities[i] - recipe.providedQuantities[i];
+    for (int i = 0; i < recipe.getNumItems(); ++i) {
+        const i32 required = recipe.getRemainingQuantityAtIndex(i);
         if (required > 0) {
-            items[total].itemId = recipe.itemIds[i];
+            items[total].itemId = recipe.getRequiredItems()[i];
             items[total].quantity = required;
             ++total;
         }

@@ -51,7 +51,7 @@ void BuildingGrid::tick() {
 
 Building* BuildingGrid::debugMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
    
-    Building* newBuilding = tryMakeNewBuildingInternal(tileAABB, floorHeight, ownedDTiles, bptr);
+    Building* newBuilding = tryMakeNewBuildingInternal(tileAABB, bptr);
     if (!newBuilding) {
         return nullptr;
     }
@@ -59,57 +59,11 @@ Building* BuildingGrid::debugMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB,
     newBuilding->mIsDebugBuilding = true;
 
     // Flatten terrain and initialize building on main thread
-    GameThreadTasks::getInstance().addGenericTask([this, newBuilding, tileAABB]() {
-        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-        BuildingBlueprint& bp = *newBuilding->getBlueprint();
-        const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
-        const i32 floorStride = tileAABB.dims.x * tileAABB.dims.y;
-        for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
-            BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
-            // Footprint
-            if (tileTarget.tileIndex < floorStride) {
-                i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
-                // Epsilon to prevent z fighting
-                heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
-                // Mark covered
-                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
-                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
-                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
-            }
-            else {
-                break; // Only need to iterate first floor, BP is sorted
-            }
-        }
-        for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
-            const StairPiece& stairPiece = bp.stairTargets[i].piece;
-            if (stairPiece.pos < floorStride) {
-                if (stairPiece.pos < floorStride) {
-                    i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
-                    // Epsilon to prevent z fighting
-                    heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
-                    // Mark covered
-                    ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
-                    ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
-                    mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
-                }
-                else {
-                    // TODO: Guarentee this!
-                    break; // Only need to iterate first floor, BP is sorted
-                }
-            }
-        }
+    GameThreadTasks::getInstance().addGenericTask([this, newBuilding]() {
 
-        for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
-            ChunkID dep = newBuilding->mChunkDependencies[c];
-            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
-            if (!buildingData.getIsSimulated()) {
-                ++newBuilding->mChunkDependenciesActiveCount;
-            }
+        initBuildingFootprint(*newBuilding);
 
-            std::lock_guard lock(buildingData.mMutex);
-            buildingData.buildings.emplace_back(newBuilding);
-            buildingData.getDisconnectedBuildings().emplace_back(newBuilding);
-        }
+        initBuildingAsDisconnected(*newBuilding);
 
         if (newBuilding->mChunkDependenciesActiveCount > 0) {
             for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
@@ -117,7 +71,7 @@ Building* BuildingGrid::debugMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB,
                 ChunkBuildingData& buildingData = mChunkBuildingData[dep];
                 ++buildingData.numLoadingBuildingsRef();
             }
-            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, newBuilding->mFloorHeight, newBuilding);
+            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(newBuilding->getTileAABB(), newBuilding->mFloorHeight, newBuilding);
             mWorld.getTileContainerLoader().loadBuildingAsync(*newBuilding);
         }
         else {
@@ -127,70 +81,42 @@ Building* BuildingGrid::debugMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB,
     return newBuilding;
 }
 
-Building* BuildingGrid::makeNewEmptyBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
-    
-    Building* newBuilding = tryMakeNewBuildingInternal(tileAABB, floorHeight, ownedDTiles, bptr);
+Building* BuildingGrid::makeNewEmptyBuilding(std::unique_ptr<BuildingBlueprint>& bptr) {
+    assert(bptr);
+    PreciseTimer timer;
+    const i32v2 worldPos = bptr->worldPosRootDTile.toTilePos();
+    const i32AABB2 aabb(worldPos, bptr->dimsDTile.toTilePos());
+
+    BitArray tilesNeedingTerrainFlatten = bptr->computeSolidTilesFirstFloor();
+
+    // Clamp building height to 1 meter increments
+    IHeightmapGrid& grid = mWorld.getHeightmapGrid();
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
+    const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bptr->floorCount * bptr->floorHeight));
+
+    Building* newBuilding = tryMakeNewBuildingInternal(aabb3d, bptr);
     if (!newBuilding) {
         return nullptr;
     }
 
     // Initialize building on main thread
-    GameThreadTasks::getInstance().addGenericTask([this, newBuilding, tileAABB]() {
-        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-        BuildingBlueprint& bp = *newBuilding->getBlueprint();
-        const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
-        const i32 floorStride = tileAABB.dims.x * tileAABB.dims.y;
-        for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
-            BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
-            // Footprint
-            if (tileTarget.tileIndex < floorStride) {
-                i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
-                // Mark covered
-                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
-                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
-                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
-            }
-            else {
-                break; // Only need to iterate first floor, BP is sorted
-            }
-        }
-        for (ui32 i = 0; i < bp.stairPieceCount; ++i) {
-            const StairPiece& stairPiece = bp.stairTargets[i].piece;
-            if (stairPiece.pos < floorStride) {
-                if (stairPiece.pos < floorStride) {
-                    i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
-                    // Epsilon to prevent z fighting
-                    heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
-                    // Mark covered
-                    ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
-                    ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
-                    mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
-                }
-                else {
-                    // TODO: Guarentee this!
-                    break; // Only need to iterate first floor, BP is sorted
-                }
-            }
-        }
+    GameThreadTasks::getInstance().addGenericTask([this, newBuilding]() {
+        
+        initBuildingFootprint(*newBuilding);
 
         // Building is initially disconnected from chunks, we will connect momentarily
+        initBuildingAsDisconnected(*newBuilding);
+
+        // Expected by connectBuildingsToChunks. We are technically "loading"
         for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
             ChunkID dep = newBuilding->mChunkDependencies[c];
             ChunkBuildingData& buildingData = mChunkBuildingData[dep];
-            if (!buildingData.getIsSimulated()) {
-                ++newBuilding->mChunkDependenciesActiveCount;
-            }
-
-            std::lock_guard lock(buildingData.mMutex);
-            buildingData.buildings.emplace_back(newBuilding);
-            buildingData.getDisconnectedBuildings().emplace_back(newBuilding);
+            ++buildingData.numLoadingBuildingsRef();
         }
 
-        // Connect
-        connectBuildingToChunks(*newBuilding);
 
         if (newBuilding->mChunkDependenciesActiveCount > 0) {
-            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(tileAABB, newBuilding->mFloorHeight, newBuilding);
+            newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(newBuilding->getTileAABB(), newBuilding->mFloorHeight, newBuilding);
             newBuilding->mTileContainer->setState(TileContainerState::READY);
             // Mark as load finished for now ( TODO: IS THIS NEEDED? )
             TileContainerEvent loadFinishedEvent;
@@ -198,6 +124,9 @@ Building* BuildingGrid::makeNewEmptyBuilding(const i32AABB3& tileAABB, ui32 floo
             mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
             newBuilding->mState = BuildingState::ACTIVE;
+
+            // Connect, which expects this to be "loading"
+            connectBuildingToChunks(*newBuilding);
         }
         else {
             newBuilding->mState = BuildingState::SIM;
@@ -285,7 +214,9 @@ void BuildingGrid::connectBuildingsToChunk(Chunk& chunk) {
     }
 }
 
-Building* BuildingGrid::tryMakeNewBuildingInternal(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr) {
+Building* BuildingGrid::tryMakeNewBuildingInternal(const i32AABB3& tileAABB, std::unique_ptr<BuildingBlueprint>& bptr) {
+    i32 floorHeight = bptr->floorHeight;
+    const BitArray& ownedDTiles = bptr->ownedDTiles;
     const DTileCoord rootDTileCoord = DTileCoord::fromTilePosRound(tileAABB.pos);
     const ui32v2 DTileDims((tileAABB.dims.x >> 1), (tileAABB.dims.y >> 1));
     assert(DTileDims.x < MAX_BUILDING_WIDTH_DTILES && DTileDims.y < MAX_BUILDING_WIDTH_DTILES);
@@ -406,6 +337,61 @@ Building* BuildingGrid::tryMakeNewBuildingInternal(const i32AABB3& tileAABB, ui3
     return rv;
 }
 
+void BuildingGrid::initBuildingFootprint(Building& building) {
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+    BuildingBlueprint& bp = *building.getBlueprint();
+    const i32v2 worldPos = bp.worldPosRootDTile.toTilePos();
+    const i32AABB3& tileAABB = building.getTileAABB();
+    const i32 floorStride = building.getFloorStride();
+    for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
+        BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
+        // Footprint
+        if (tileTarget.tileIndex < floorStride) {
+            i32v2 tileWorldPos = worldPos + i32v2(tileTarget.tileIndex % tileAABB.dims.x, tileTarget.tileIndex / tileAABB.dims.x);
+            // Mark covered
+            ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+            ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+            mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+        }
+        else {
+            break; // Only need to iterate first floor, BP is sorted
+        }
+    }
+    for (ui32 i = 0; i < bp.stairTargetCount; ++i) {
+        const StairPiece& stairPiece = bp.stairTargets[i].piece;
+        if (stairPiece.pos < floorStride) {
+            if (stairPiece.pos < floorStride) {
+                i32v2 tileWorldPos = worldPos + i32v2(stairPiece.pos % tileAABB.dims.x, stairPiece.pos / tileAABB.dims.x);
+                // Epsilon to prevent z fighting
+                heightGrid.setHeightAtWorldPos(tileWorldPos, tileAABB.z - 0.005f);
+                // Mark covered
+                ChunkCoord chunkc = ChunkCoord::fromTilePos(tileWorldPos);
+                ChunkID chunkId = chunkc.toGridIDType(mWorld.getWidthChunks());
+                mChunkBuildingData[chunkId].setTileCoveredByBuilding((tileWorldPos.y % CHUNK_WIDTH) * CHUNK_WIDTH + tileWorldPos.x % CHUNK_WIDTH);
+            }
+            else {
+                // TODO: Guarentee this!
+                break; // Only need to iterate first floor, BP is sorted
+            }
+        }
+    }
+}
+
+void BuildingGrid::initBuildingAsDisconnected(Building& building) {
+    // Track which chunks are active, and track us as diconnected to each chunk
+    for (int c = 0; c < building.mChunkDependencyCount; ++c) {
+        ChunkID dep = building.mChunkDependencies[c];
+        ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+        if (!buildingData.getIsSimulated()) {
+            ++building.mChunkDependenciesActiveCount;
+        }
+
+        std::lock_guard lock(buildingData.mMutex);
+        buildingData.buildings.emplace_back(&building);
+        buildingData.getDisconnectedBuildings().emplace_back(&building);
+    }
+}
+
 void BuildingGrid::connectBuildingToChunks(Building& building) {
     for (ui32 i = 0; i < building.getChunkDependencyCount(); ++i) {
         const ChunkID id = building.getChunkDependencies()[i];
@@ -483,7 +469,7 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
                 if (!tile.isEmpty()) {
                     const i32 worldPosX = x + buildingWorldPos.x;
                     TileIndex chunkTileIndex = chunkTileSpatialGrid.getBaseTileIndexFromXYOffset(worldPosX - chunkWorldPos.x, worldPosY - chunkWorldPos.y);
-                    // TODO CHECK PROXIMITY!
+                    // TODO: CHECK PROXIMITY TO NEIGHBOR TREES
                     const i32 buildingWorldZ = z * floorHeight + buildingWorldPos.z;
                     // TODO: This should be part of a bulk edit
                     if (buildingWorldZ - chunkTileContainer->getTileAt(chunkTileIndex).getGroundZOffset() <= TILE_BLOCK_RANGE) { 

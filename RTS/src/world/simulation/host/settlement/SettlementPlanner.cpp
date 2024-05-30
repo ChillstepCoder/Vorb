@@ -9,6 +9,7 @@
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/IHeightmapGrid.h"
+#include "building/BuildingGrid.h"
 
 #include "ai/jobs/ConstructBuildingSimJob.h"
 #include "ai/jobs/SimTaskHandle.h"
@@ -101,42 +102,46 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
             const f32 zApprox = heightGrid.getHeightAtVert<true>(DTileCoord(newPlot.aabbDTile.pos + newPlot.aabbDTile.dims / 2));
             // TODO: Correct cartesian!
             BuildingBlueprintPtr newBlueprint = BuildingBlueprintGenerator::tryGenerateBlueprintSynchronous(houseDef, 1.0f /*?*/, Cartesian::WEST, DTileCoord(newPlot.aabbDTile.pos), newPlot.aabbDTile.dims, newPlot.ownedDTiles, BuildingBlueprintFlags(0), Random::getCachedRandom(), zApprox);
+            bool success = false;
             if (newBlueprint) {
                 newBlueprint->assignToSettlement(settlementEntity, plotId);
                 Building* newBuilding = mWorld.getBuildingGrid().makeNewEmptyBuilding(newBlueprint);
-                // WIP
-                //TileRepository& tileRepo = TileRepository::get();
+                if (newBuilding) {
+                    // WIP
+                    //TileRepository& tileRepo = TileRepository::get();
 
-                //PreciseTimer timer;
-                //const i32v2 worldPos = bpPtr->worldPosRootDTile.toTilePos();
-                //const i32AABB2 aabb(worldPos, bpPtr->dimsDTile.toTilePos());
+                    //PreciseTimer timer;
+                    //const i32v2 worldPos = bpPtr->worldPosRootDTile.toTilePos();
+                    //const i32AABB2 aabb(worldPos, bpPtr->dimsDTile.toTilePos());
 
-                //BitArray tilesNeedingTerrainFlatten = bpPtr->computeSolidTilesFirstFloor();
+                    //BitArray tilesNeedingTerrainFlatten = bpPtr->computeSolidTilesFirstFloor();
 
-                //// Clamp building height to 1 meter increments
-                //IHeightmapGrid& grid = world.getHeightmapGrid();
-                //const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
-                //const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
+                    //// Clamp building height to 1 meter increments
+                    //IHeightmapGrid& grid = world.getHeightmapGrid();
+                    //const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
+                    //const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
 
-                std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(*newPlot.activeBlueprint, mEcs, characters[0]);
-                SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
+                    std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(*newBuilding, mEcs, characters[0]);
+                    SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
 
-                // Instruct all characters to build this house
-                for (int i = 0; i < numCharacters; ++i) {
-                    mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::Building;
-                    // TODO: Handle switching jobs
-                    SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(characters[i]);
-                    if (taskQueue.taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
-                        taskQueue.taskQueue.push_back(SimTaskHandle(newConstructJob.get(), characters[i]));
-                        taskQueue.taskQueue.back().init();
+                    // Instruct all characters to build this house
+                    for (int i = 0; i < numCharacters; ++i) {
+                        mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::Building;
+                        // TODO: Handle switching jobs
+                        SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(characters[i]);
+                        if (taskQueue.taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
+                            taskQueue.taskQueue.push_back(SimTaskHandle(newConstructJob.get(), characters[i]));
+                            taskQueue.taskQueue.back().init();
+                        }
                     }
+
+                    // Track job
+                    jobBossCmp.activeJobs.emplace_back(std::move(newConstructJob));
+                    success = true;
                 }
-
-                // Track job
-                jobBossCmp.activeJobs.emplace_back(std::move(newConstructJob));
-
             }
-            else {
+
+            if (!success) {
                 for (int i = 0; i < numCharacters; ++i) {
                     // TODO: Handle this failure case
                     mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::NeedsBlueprint;

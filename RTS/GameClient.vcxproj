@@ -588,6 +588,7 @@
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\gpt\GptApi.h" />
+    <ClInclude Include="src\ai\jobs\BuildContextTargetData.h" />
     <ClInclude Include="src\ai\jobs\ConstructBuildingSimJob.h" />
     <ClInclude Include="src\ai\jobs\SimTaskHandle.h" />
     <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />

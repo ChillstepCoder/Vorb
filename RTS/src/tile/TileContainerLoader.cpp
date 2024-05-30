@@ -80,7 +80,7 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
         }
 
         // Set stairs tiles
-        for (i32 i = 0; i < bp.stairPieceCount; ++i) {
+        for (i32 i = 0; i < bp.stairTargetCount; ++i) {
             StairPiece& stairPiece = bp.stairTargets[i].piece;
             const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
             // Place stair steps

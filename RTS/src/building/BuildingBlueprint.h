@@ -5,6 +5,7 @@
 #include "item/SimpleItemReservation.h"
 #include "tile/Stairs.h"
 #include "util/BitArray.h"
+#include "ai/jobs/BuildContextTargetData.h"
 
 class BuildingDef;
 
@@ -13,7 +14,6 @@ struct BuildingBlueprintTileTarget {
     FillableRecipe fillableRecipe;
     TileIndex tileIndex;
     TileID id;
-    bool isBuilt : 1 = false;
     //ui8 runLength // TODO: RLE Compression
 };
 struct BuildingBlueprintWallTarget {
@@ -23,7 +23,6 @@ struct BuildingBlueprintWallTarget {
     TileID id;
     Cartesian dir;
     bool isDoor : 1 = false;
-    bool isBuilt : 1 = false;
     // ui8 runLength // TODO: RLE Compression
 };
 
@@ -45,9 +44,6 @@ class BuildingBlueprintRoomGraph {
     std::unique_ptr<ui16[]> allEdges; // Represents 1 way edge
     ui32 nodeCount;
     ui32 edgeCount;
-};
-
-struct BuildingItemComposition {
 };
 
 // Minimal data representation of a building
@@ -79,10 +75,11 @@ public:
         }
         return 0;
     }
+    FillableRecipe& getRecipeForTargetData(BuildContextTargetData data) const;
 
 private:
 
-    void onEndReservation(ui32 reservationId);
+    void onEndItemReservation(ui32 reservationId);
 
     BuildingBlueprintRoomGraph roomGraph; // TODO: Build this?
     BitArray ownedDTiles;
@@ -92,16 +89,13 @@ private:
     std::unique_ptr<BuildingBlueprintWallTarget[]> wallTargets;
     // Each stair tile
     std::unique_ptr<StairTileTarget[]> stairTargets;
-    // Required items to build. Filled items are not necessarily placed, but are reserved by characters
+    // Required items to build. Filled items are not necessarily placed, but are promised by characters
     std::unique_ptr<FillableSimpleItemStack[]> itemComposition; // TODO: Maybe this should be flexible... maybe we dont care what items are used? Room specific tiles? ect.
     const BuildingDef* desc = nullptr;
     i32 itemCompositionCount = 0;
     i32 tileTargetCount = 0;
-    i32 constructedTileTargetCount = 0;
     i32 wallTargetCount = 0;
-    i32 constructedWallTargetCount = 0;
-    i32 stairPieceCount = 0;
-    i32 constructedStairPieceCount = 0;
+    i32 stairTargetCount = 0;
     DTileCoord worldPosRootDTile = DTileCoord(-1);
     DTileCoord dimsDTile = DTileCoord(-1);
     i32 floorHeight;
@@ -112,19 +106,14 @@ private:
     SettlementPlotID parentPlotID = INVALID_SETTLEMENT_PLOT_ID;
     entt::entity parentSettlement = entt::null;
 
+    // Item tracking
+    i32 totalItemsUnfulfilled = 0;
+    i32 totalItemsUnpromised = 0;
+    ui32 nextItemReservationId = 0;
     // Tracks items that are promised to this blueprint from workers.
     // As workers reserve items, the are filled in itemComposition. Once the items are slotted successfully into
     // tiles, the reservation is updated or completed.
     std::map<ui32, SimpleItemReservationTargetHandlePtr> itemReservationHandles;
-
-    // Build information
-    i32 nextTileTargetToReserve = 0;
-    i32 nextWallTargetToReserve = 0;
-    i32 nextStairPieceToReserve = 0;
-    i32 totalItemsUnfulfilled = 0;
-    i32 totalItemsUnpromised = 0;
-
-    ui32 nextReservationId = 0;
 
     /*
 

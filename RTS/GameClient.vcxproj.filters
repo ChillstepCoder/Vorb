@@ -2726,6 +2726,9 @@
     <ClInclude Include="src\resources\asset\LiteAssetRef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ai\jobs\BuildContextTargetData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

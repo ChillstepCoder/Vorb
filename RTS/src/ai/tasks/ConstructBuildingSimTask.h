@@ -5,9 +5,11 @@
 #include "item/SimpleItemReservation.h"
 #include "tile/SimTileReservation.h"
 #include "tile/TileHarvestable.h"
+#include "ai/jobs/BuildContextTargetData.h"
 
 class BuildingBlueprint;
 class ConstructBuildingSimJob;
+class ConstructBuildingContext;
 
 // TODO: Serialization?
 class ConstructBuildingSimTask : public ISimTask
@@ -16,7 +18,7 @@ class ConstructBuildingSimTask : public ISimTask
 public:
 	// We will aquire the tileReservations, and the job will release them after
 	ConstructBuildingSimTask(
-		World& world, BuildingBlueprint& blueprint, ConstructBuildingSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
+		World& world, ConstructBuildingSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
 	);
 	~ConstructBuildingSimTask();
 
@@ -38,19 +40,21 @@ private:
 		Harvest,
 		MoveToBlueprint,
 		PlaceItems,
-		FlattenTerrain,
-		BuildTile,
+		SelectToConstruct,
+		MoveToConstruct,
+		Construct,
 		End
 	} mState = State::Init;
 
 	ConstructBuildingSimJob& mParentJob;
-	BuildingBlueprint& mBlueprint;
+	ConstructBuildingContext& mContext;
 	MoveToPointSimSubtask mMoveSubtask;
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
 	SimChunkTileReservationHandle mTileReservation;
 	ui32 mTargetReservationId = 0;
 	TileHarvestable mHarvestableToAquire;
 	SimpleSimTaskTimer mTimer;
+	BuildContextTargetData mTargetData;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };
 

@@ -58,7 +58,7 @@ public:
     Building* debugMakeNewFullyBuiltBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr);
     // Can fail if overlapping an existing structure
     // Will consume bptr via move if successful
-    Building* makeNewEmptyBuilding(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr);
+    Building* makeNewEmptyBuilding(std::unique_ptr<BuildingBlueprint>& bptr);
 
     void debugRender();
 
@@ -74,7 +74,9 @@ public:
     const BitArray& getBuildingFootprintAtChunk(ChunkID chunkId) const { return mChunkBuildingData[chunkId].getFootprint(); }
 
 private:
-    Building* tryMakeNewBuildingInternal(const i32AABB3& tileAABB, ui32 floorHeight, const BitArray& ownedDTiles, std::unique_ptr<BuildingBlueprint>& bptr);
+    Building* tryMakeNewBuildingInternal(const i32AABB3& tileAABB, std::unique_ptr<BuildingBlueprint>& bptr);
+    void initBuildingFootprint(Building& building);
+    void initBuildingAsDisconnected(Building& building);
     void connectBuildingToChunks(Building& building);
     void connectBuildingToChunk(Building& building, Chunk& chunk);
     void onBuildingFinishedLoad(Building& building);

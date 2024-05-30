@@ -38,6 +38,7 @@ public:
 
     const i32AABB3& getTileAABB() const { return mTileAABB; }
     ui8 getFloorHeight() const { return mFloorHeight; }
+    i32 getFloorStride() const { return mTileAABB.dims.y * mTileAABB.dims.x; }
 
     BuildingID getId() const { return mId; }
     TileContainer* getTileContainer() { return mTileContainer; }
@@ -72,6 +73,13 @@ public:
         return (mState == BuildingState::ACTIVE);
     }
 
+    i32v3 getTileWorldPos(TileIndex index) const {
+        i32 floorStride = getFloorStride();
+        return mTileAABB.pos + i32v3(
+            index % mTileAABB.width, (index / floorStride) / mTileAABB.width, (index / floorStride) * mFloorHeight
+        );
+    }
+
 protected:
     BitArray mOwnedDTiles;
     TileContainer* mTileContainer = nullptr;
@@ -82,7 +90,7 @@ protected:
     ChunkID mChunkDependencies[4] = { INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID,INVALID_CHUNK_ID };
     ui8 mChunkDependencyCount : 4;
     ui8 mChunkDependenciesActiveCount : 4; // Main thread only
-    ui8 mFloorHeight;
+    ui8 mFloorHeight = 0;
     std::atomic<BuildingState> mState = BuildingState::INVALID;
     std::unique_ptr<BuildingBlueprint> mBlueprint; // If valid, building has not been serialized to disk
     bool mIsDeactivating = false;
