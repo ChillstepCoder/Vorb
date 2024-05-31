@@ -35,11 +35,11 @@ struct StaticMeshAnimation {
     f32v2 direction;
 };
 
-class StaticMeshInstanceData
+class StaticModelBatchData
 {
 public:
     // Instance data for a specific mesh
-    StaticMeshInstanceData();
+    StaticModelBatchData();
 
     std::vector<f32m4> mInstanceTransforms;
     std::vector<ui8> mInstanceVariants;
@@ -53,6 +53,7 @@ public:
     const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};
     int mMeshCount = 0;
     bool mMeshCastsShadow[e_count(MaterialRenderPassType)] = {};
+    bool mIsLoaded = false;
 
     // TODO: Investigate why, hardware? Driver? - Compact GPU culled indirect buffer is actually slower due to atomic operation and cpu-gpu sync
     // std::unique_ptr<GLIndirectBuffer> mOutDrawCommands;
@@ -62,4 +63,4 @@ public:
 };
 
 // Stores all specific instances of a given model in the world
-typedef std::map<ModelID, StaticMeshInstanceData> ModelInstanceMap;
+typedef std::map<ModelID, StaticModelBatchData> ModelInstanceMap;

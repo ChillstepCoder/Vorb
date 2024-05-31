@@ -19,6 +19,7 @@
 #include "ecs/component/CameraAttachComponent.h"
 #include "ecs/component/PositionComponent.h"
 #include "ecs/component/DynamicModelComponent.h"
+#include "ecs/component/StaticModelComponent.h"
 #include "ecs/component/ItemComponent.h"
 #include "ecs/component/ProjectileComponent.h"
 #include "ecs/component/PlayerIdComponent.h"

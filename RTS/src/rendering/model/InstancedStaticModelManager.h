@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/model/StaticModelInstance.h"
-#include "rendering/model/StaticMeshInstanceData.h"
+#include "rendering/model/StaticModelBatchData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
 #include "definitions/ModelDef.h"
@@ -39,7 +39,7 @@ struct PendingModelInstance {
     ui8 variantIndex;
 };
 
-// TODO: RENAME InstancedStaticMeshManager
+// Currently only supports one model instance per tile
 class InstancedStaticModelManager
 {
 public:
@@ -48,13 +48,16 @@ public:
 
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
-    void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex);
-    void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
-    TileModelInstance* getInstanceAtPosition(LiteTileHandle tileHandle);
-    bool hasInstanceAtPosition(LiteTileHandle tileHandle);
-    void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
-    void removeInstancesFromContainer(TileContainerID containerId);
+    // Tile models
+    void addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex);
+    void removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
+    TileModelInstance* getTileInstanceAtPosition(LiteTileHandle tileHandle);
+    bool hasTileInstanceAtPosition(LiteTileHandle tileHandle);
+    void addTileInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
+    void removeTileInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
+    
+    // Entity models
 
     void playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction);
 
@@ -66,7 +69,6 @@ public:
     // TODO: This is more data than the renderer needs?
     const ModelInstanceMap& getModelInstanceMap() const { return mModelsToInstances; }
 private:
-    void updatePendingModelDefs();
     void addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex);
 
     void updateAnimatedModels(f32 elapsedSec);
@@ -80,13 +82,11 @@ private:
 
     // Refcount ModelDefs
     std::unordered_map<ModelID, ModelDefRef> mModelDefRefs;
-    // Tracks models that are awaiting ModelDef load
-    boost::container::flat_map<ModelID, std::vector<PendingModelInstance>> mPendingInstances;
-    // Used to track removal of instances from containers while we wait for ModelDef load
-    boost::container::flat_map<TileContainerID, boost::container::flat_set<ModelID>> mPendingInstanceForContainer;
 
     AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
 
     std::unique_ptr<ModelBillboardLodManager> mBillboardLodManager;
+
+    std::unordered_map<ModelID, boost::container::flat_map<StaticModelInstanceID, StaticModelInstance>> mStaticModelInstances;
 };
 

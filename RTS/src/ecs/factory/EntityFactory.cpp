@@ -153,7 +153,14 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     registry.emplace<ItemComponent>(newEntity, itemStack);
     registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
     BitFlags<ProjectileFlags> flags(ProjectileFlags::RemoveOnLand, ProjectileFlags::OrientToTerrainOnLand);
-    ProjectileSystem::addProjectileComponent(registry, newEntity, velocity, flags);
+    ProjectileSystem::addProjectileComponent(registry, newEntity, velocity, flags, [](World& world, entt::registry& registry, entt::entity entity, ProjectileImpactResult result) {
+        ASSERT_GAME_THREAD();
+        // Switch to static model on land
+        if (DynamicModelComponent* dynCmp = registry.try_get<DynamicModelComponent>(entity)) {
+            StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(entity, dynCmp->modelId);
+            registry.remove<DynamicModelComponent>(entity);
+        }
+    });
 
     ItemRepository& itemRepo = ItemRepository::get();
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);

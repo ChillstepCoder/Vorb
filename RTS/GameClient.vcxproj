@@ -411,7 +411,7 @@
     <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\SkeletalAnimator.cpp" />
-    <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp" />
+    <ClCompile Include="src\rendering\model\StaticModelBatchData.cpp" />
     <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
@@ -689,6 +689,7 @@
     <ClInclude Include="src\ecs\component\ProjectileComponent.h" />
     <ClInclude Include="src\ecs\component\SimEntityTypeComponent.h" />
     <ClInclude Include="src\ecs\component\SkillsComponent.h" />
+    <ClInclude Include="src\ecs\component\StaticModelComponent.h" />
     <ClInclude Include="src\ecs\component\StatsComponent.h" />
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\VelocityComponent.h" />
@@ -868,7 +869,7 @@
     <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimationSampleContext.h" />
     <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimator.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
-    <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h" />
+    <ClInclude Include="src\rendering\model\StaticModelBatchData.h" />
     <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />
     <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterModule.h" />

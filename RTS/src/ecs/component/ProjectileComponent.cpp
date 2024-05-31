@@ -10,15 +10,6 @@
 
 constexpr f32 DRAG_FORCE = 0.4f;
 
-enum class ImpactResult {
-    NONE,
-    GROUND,
-    ENTITY,
-    TILE,
-    OUT_OF_BOUNDS,
-    COUNT
-};
-
 glm::quat alignToTerrainNormal(const glm::vec3& terrainNormal) {
     const glm::vec3 upVector(0.0f, 0.0f, 1.0f); // Z-axis up vector
     glm::vec3 rotationAxis;
@@ -37,7 +28,7 @@ glm::quat alignToTerrainNormal(const glm::vec3& terrainNormal) {
 std::underlying_type<ProjectileFlags>::type REMOVE_FLAGS = e_cast(ProjectileFlags::RemoveOnHit) | e_cast(ProjectileFlags::RemoveOnLand);
 
 // Return  true on impact
-std::pair<ImpactResult, f32v3> updateProjectile(World& world, ProjectileComponent& projCmp, PositionComponent& posCmp, f32 elapsedSec) {
+std::pair<ProjectileImpactResult, f32v3> updateProjectile(World& world, ProjectileComponent& projCmp, PositionComponent& posCmp, f32 elapsedSec) {
     projCmp.velocity.z += GRAVITY_Z * elapsedSec;
     projCmp.velocity *= MathUtil::dragForceWithDeltaTime(DRAG_FORCE, elapsedSec);
     posCmp.mPosition += projCmp.velocity * elapsedSec;
@@ -48,18 +39,18 @@ std::pair<ImpactResult, f32v3> updateProjectile(World& world, ProjectileComponen
     if (terrainHeight != FLT_MAX) {
         if (terrainHeight >= posCmp.mPosition.z) {
             posCmp.mPosition.z = terrainHeight;
-            return std::make_pair(ImpactResult::GROUND, terrainNormal);
+            return std::make_pair(ProjectileImpactResult::GROUND, terrainNormal);
         }
     }
     else {
-        return std::make_pair(ImpactResult::OUT_OF_BOUNDS, f32v3(0.0f));
+        return std::make_pair(ProjectileImpactResult::OUT_OF_BOUNDS, f32v3(0.0f));
     }
 
-    return std::make_pair(ImpactResult::NONE, f32v3(0.0f));
+    return std::make_pair(ProjectileImpactResult::NONE, f32v3(0.0f));
 }
 
-void ProjectileSystem::addProjectileComponent(entt::registry& registry, entt::entity entity, f32v3 velocity, BitFlags<ProjectileFlags> flags) {
-    registry.emplace<ProjectileComponent>(entity, velocity, flags);
+void ProjectileSystem::addProjectileComponent(entt::registry& registry, entt::entity entity, f32v3 velocity, BitFlags<ProjectileFlags> flags, ProjectileRemovedFunc rFunc) {
+    registry.emplace<ProjectileComponent>(entity, velocity, flags, rFunc);
 }
 
 void ProjectileSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
@@ -73,34 +64,43 @@ void ProjectileSystem::update(World& world, entt::registry& registry, f32 elapse
         PositionComponent& posCmp = view.get<PositionComponent>(entity);
         auto [result, terrainNormal] = updateProjectile(world, projCmp, posCmp, elapsedSec);
         switch (result) {
-            case ImpactResult::NONE: [[likely]]
+            case ProjectileImpactResult::NONE: [[likely]]
                 break;
-            case ImpactResult::GROUND:
+            case ProjectileImpactResult::GROUND:
                 if (projCmp.flags.isMaskPartiallySet(REMOVE_FLAGS)) {
                     projectileComponentsToRemove.push_back(entity);
                     if (projCmp.flags.isBitSet(ProjectileFlags::OrientToTerrainOnLand)) {
                         OrientationComponent& orientCmp = registry.get<OrientationComponent>(entity);
                         orientCmp.mOrientation = alignToTerrainNormal(terrainNormal) * orientCmp.mOrientation;
                     }
+                    if (projCmp.onRemoved) {
+                        projCmp.onRemoved(world, registry, entity, result);
+                    }
                 }
                 break;
-            case ImpactResult::ENTITY:
+            case ProjectileImpactResult::ENTITY:
                 // TODO:
                 break;
-            case ImpactResult::TILE:
+            case ProjectileImpactResult::TILE:
                 if (projCmp.flags.isBitSet(ProjectileFlags::RemoveOnHit)) {
                     projectileComponentsToRemove.push_back(entity);
+                    if (projCmp.onRemoved) {
+                        projCmp.onRemoved(world, registry, entity, result);
+                    }
                 }
                 else {
                     // Bounce? Get impact normal?
                 }
                 break;
-            case ImpactResult::OUT_OF_BOUNDS:
+            case ProjectileImpactResult::OUT_OF_BOUNDS:
                 // TODO: Something else? idk
                 projectileComponentsToRemove.push_back(entity);
+                if (projCmp.onRemoved) {
+                    projCmp.onRemoved(world, registry, entity, result);
+                }
                 break;
         }
-        static_assert(e_count(ImpactResult) == 5);
+        static_assert(e_count(ProjectileImpactResult) == 5);
     }
 
     for (entt::entity entity : projectileComponentsToRemove) {

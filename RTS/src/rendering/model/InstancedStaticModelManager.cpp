@@ -87,53 +87,66 @@ InstancedStaticModelManager::~InstancedStaticModelManager() {
     }
 }
 
-void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapsedSec)
-{
+void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     ASSERT_RENDER_THREAD();
     if (sDebugOptions.mHideModels)
         return;
 
     PROFILE_FUNCTION();
 
-    updatePendingModelDefs();
-
     // Build GPU data and cull
     for (auto& it : mModelsToInstances) {
-        StaticMeshInstanceData& instanceData = it.second;
-        // TODO: Move this to onRemove
-        if (!instanceData.mInstanceTransforms.size()) {
-            for (int i = 0; i < instanceData.mMeshCount; ++i) {
-                instanceData.mDrawCommands[i].reset();
-                instanceData.mDrawCommandsShadows[i].reset();
+        StaticModelBatchData& batchData = it.second;
+        if (!batchData.mIsLoaded) [[unlikely]] {
+            auto&& sit = mModelDefRefs.find(it.first);
+            AssetHandlePtr<ModelDef>& modelDefHandle = sit->second.handle;
+            if (const ModelDef* def = modelDefHandle->tryGetLoadedAsset()) {
+                batchData.mMeshCount = def->getNumMeshes();
+                for (int m = 0; m < batchData.mMeshCount; ++m) {
+                    const Mesh& mesh = def->getMesh(m);
+                    batchData.mMesh[m] = &mesh;
+                    batchData.mMeshCastsShadow[m] = mesh.castsShadow();
+                }
+                batchData.mIsLoaded = true;
             }
-            if (instanceData.mTransformsVbo) {
-                GL.glDeleteBuffers(1, &instanceData.mTransformsVbo);
-                GL.glDeleteBuffers(1, &instanceData.mVariantsVbo);
-                instanceData.mTransformsVbo = 0;
-                instanceData.mVariantsVbo = 0;
+            else {
+                continue;
+            }
+        }
+        // TODO: Move this to onRemove
+        if (!batchData.mInstanceTransforms.size()) {
+            for (int i = 0; i < batchData.mMeshCount; ++i) {
+                batchData.mDrawCommands[i].reset();
+                batchData.mDrawCommandsShadows[i].reset();
+            }
+            if (batchData.mTransformsVbo) {
+                GL.glDeleteBuffers(1, &batchData.mTransformsVbo);
+                GL.glDeleteBuffers(1, &batchData.mVariantsVbo);
+                batchData.mTransformsVbo = 0;
+                batchData.mVariantsVbo = 0;
             }
             continue;
         }
-        assert(instanceData.mMesh);
+        assert(batchData.mMesh);
 
         ModelID modelId = it.first;
         const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelId);
         MeshLODDrawInfo drawInfos[e_count(MaterialRenderPassType)][4];
-        for (int m = 0; m < instanceData.mMeshCount; ++m) {
+        for (int m = 0; m < batchData.mMeshCount; ++m) {
             for (int i = 0; i < 4; ++i) {
-                drawInfos[m][i] = instanceData.mMesh[m]->mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
+                drawInfos[m][i] = batchData.mMesh[m]->mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
             }
         }
-        if (instanceData.mFirstDirtyInstance != UINT32_MAX) {
+        if (batchData.mFirstDirtyInstance != UINT32_MAX) {
             PROFILE_SCOPE("Rebuild Indirect Buffer");
-            const size_t workGroupRoundedSize = roundToWorkGroupSize(instanceData.mInstanceTransforms.size());
+            const size_t workGroupRoundedSize = roundToWorkGroupSize(batchData.mInstanceTransforms.size());
             // Rebuild command buffer
             {
                 PROFILE_SCOPE("Indirect Buffer");
-                for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                    instanceData.mDrawCommands[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
-                    if (instanceData.mMeshCastsShadow[m]) {
-                        instanceData.mDrawCommandsShadows[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
+                for (int m = 0; m < batchData.mMeshCount; ++m) {
+                    batchData.mDrawCommands[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
+                    if (batchData.mMeshCastsShadow[m]) {
+                        batchData.mDrawCommandsShadows[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
                     }
 
                 }
@@ -145,61 +158,61 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 PROFILE_SCOPE("VBO");
                 // GPU buffer is larger to accommodate the work group size, or we get corruption
                 const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
-                const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * instanceData.mInstanceTransforms.size();
-                assert(instanceData.mInstanceVariants.size() == instanceData.mInstanceTransforms.size());
-                if (instanceData.mTransformsVbo == 0) {
-                    GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
-                    GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
-                    for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                        instanceData.mMesh[m]->bindStaticModelAttribs();
+                const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * batchData.mInstanceTransforms.size();
+                assert(batchData.mInstanceVariants.size() == batchData.mInstanceTransforms.size());
+                if (batchData.mTransformsVbo == 0) {
+                    GL.glCreateBuffers(1, &batchData.mTransformsVbo);
+                    GL.glCreateBuffers(1, &batchData.mVariantsVbo);
+                    for (int m = 0; m < batchData.mMeshCount; ++m) {
+                        batchData.mMesh[m]->bindStaticModelAttribs();
                     }
-                    GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
-                    instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                    GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
+                    GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariants.size(), batchData.mInstanceVariants.data());
+                    batchData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
-                else if (gpuBufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
+                else if (gpuBufferSizeBytes > batchData.mTransformsVboSizeBytes) {
                     //LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
                     // Grow to new size
-                    GL.glDeleteBuffers(1, &instanceData.mTransformsVbo);
-                    GL.glDeleteBuffers(1, &instanceData.mVariantsVbo);
-                    GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
-                    GL.glCreateBuffers(1, &instanceData.mVariantsVbo);
-                    GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    GL.glNamedBufferStorage(instanceData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(instanceData.mVariantsVbo, 0, sizeof(ui8) * instanceData.mInstanceVariants.size(), instanceData.mInstanceVariants.data());
-                    instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                    GL.glDeleteBuffers(1, &batchData.mTransformsVbo);
+                    GL.glDeleteBuffers(1, &batchData.mVariantsVbo);
+                    GL.glCreateBuffers(1, &batchData.mTransformsVbo);
+                    GL.glCreateBuffers(1, &batchData.mVariantsVbo);
+                    GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
+                    GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariants.size(), batchData.mInstanceVariants.data());
+                    batchData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else {
                     //LOG_INFO("SHRINK {} {}  {} {}", instanceData.mFirstDirtyInstance, instanceData.mInstanceTransforms.size(), cpuBufferSizeBytes, gpuBufferSizeBytes);
                     // Only upload data after the first dirty instance, which should amortize things a bit
                     glNamedBufferSubData(
-                        instanceData.mTransformsVbo,
-                        instanceData.mFirstDirtyInstance * sizeof(f32m4),
-                        cpuBufferSizeBytes - instanceData.mFirstDirtyInstance * sizeof(f32m4),
-                        instanceData.mInstanceTransforms.data() + instanceData.mFirstDirtyInstance
+                        batchData.mTransformsVbo,
+                        batchData.mFirstDirtyInstance * sizeof(f32m4),
+                        cpuBufferSizeBytes - batchData.mFirstDirtyInstance * sizeof(f32m4),
+                        batchData.mInstanceTransforms.data() + batchData.mFirstDirtyInstance
                     );
                     glNamedBufferSubData(
-                        instanceData.mVariantsVbo,
-                        instanceData.mFirstDirtyInstance * sizeof(ui8),
-                        (sizeof(ui8) * instanceData.mInstanceVariants.size()) - instanceData.mFirstDirtyInstance * sizeof(ui8),
-                        instanceData.mInstanceVariants.data() + instanceData.mFirstDirtyInstance
+                        batchData.mVariantsVbo,
+                        batchData.mFirstDirtyInstance * sizeof(ui8),
+                        (sizeof(ui8) * batchData.mInstanceVariants.size()) - batchData.mFirstDirtyInstance * sizeof(ui8),
+                        batchData.mInstanceVariants.data() + batchData.mFirstDirtyInstance
                     );
                 }
             }
 
-            instanceData.mFirstDirtyInstance = UINT32_MAX;
+            batchData.mFirstDirtyInstance = UINT32_MAX;
         }
 
-        const size_t drawCommandsCapacity = instanceData.mDrawCommands[0]->getCapacity();
+        const size_t drawCommandsCapacity = batchData.mDrawCommands[0]->getCapacity();
 
-        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-            instanceData.mDrawCommands[m]->frameBegin();
+        for (int m = 0; m < batchData.mMeshCount; ++m) {
+            batchData.mDrawCommands[m]->frameBegin();
             // TODO: Only if the mesh is a shadow caster!
-            if (instanceData.mDrawCommandsShadows[m]) {
-                instanceData.mDrawCommandsShadows[m]->frameBegin();
+            if (batchData.mDrawCommandsShadows[m]) {
+                batchData.mDrawCommandsShadows[m]->frameBegin();
             }
         }
         // TODO: Only if the mesh is a shadow caster!
@@ -250,7 +263,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             //}
         }
         else {
-            assert(instanceData.mInstanceTransforms.size() <= drawCommandsCapacity);
+            assert(batchData.mInstanceTransforms.size() <= drawCommandsCapacity);
             PROFILE_SCOPE("CPU Culling");
             // CPU Culling
             // TODO: Should the renderer handle this??
@@ -265,8 +278,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 cmd.firstIndex_ = drawInfo.startIndex;
             };
 
-            for (size_t i = 0; i < instanceData.mInstanceTransforms.size(); ++i) {
-                const f32m4& transform = instanceData.mInstanceTransforms[i];
+            for (size_t i = 0; i < batchData.mInstanceTransforms.size(); ++i) {
+                const f32m4& transform = batchData.mInstanceTransforms[i];
                 // Columns are first
                 const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
                 // TODO: Real bounding sphere
@@ -276,10 +289,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
                     // TODO: Remove
                     if (sDebugOptions.mDisableLOD) [[unlikely]] {
-                        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                            setCommand(instanceData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
-                            if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
-                                setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
+                        for (int m = 0; m < batchData.mMeshCount; ++m) {
+                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
+                            if (batchData.mDrawCommandsShadows[m]) [[likely]] {
+                                setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
                             }
                         }
                     }
@@ -289,62 +302,62 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         continue;
                     }
                     else if (distance2 >= lodParams.lodDistancesSQ[2]) {
-                        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                            setCommand(instanceData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][3]);
+                        for (int m = 0; m < batchData.mMeshCount; ++m) {
+                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][3]);
                            
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::High) {
-                            for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
+                            for (int m = 0; m < batchData.mMeshCount; ++m) {
+                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
                                 }
                             }
                         }
                     }
                     else if (distance2 >= lodParams.lodDistancesSQ[1]) {
-                        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                            setCommand(instanceData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][2]);
+                        for (int m = 0; m < batchData.mMeshCount; ++m) {
+                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][2]);
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::Medium) {
-                            for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
+                            for (int m = 0; m < batchData.mMeshCount; ++m) {
+                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
                                 }
                             }
                         }
                     }
                     else if (distance2 >= lodParams.lodDistancesSQ[0]) {
-                        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                            setCommand(instanceData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
+                        for (int m = 0; m < batchData.mMeshCount; ++m) {
+                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::Low) {
-                            for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][2]);
+                            for (int m = 0; m < batchData.mMeshCount; ++m) {
+                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][2]);
                                 }
                             }
                         }
                     }
                     else {
-                        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                            setCommand(instanceData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][0]);
+                        for (int m = 0; m < batchData.mMeshCount; ++m) {
+                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][0]);
                         }
                         if (lodParams.shadowLodDetail > ShadowModelDetail::None) {
-                            for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                                if (instanceData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(instanceData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
+                            for (int m = 0; m < batchData.mMeshCount; ++m) {
+                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
+                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
                                 }
                             }
                         }
                     }
                 }
             }
-            for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                instanceData.mDrawCommands[m]->setNumActiveCommands(activeCount[m]);
-                instanceData.mDrawCommands[m]->uploadDrawCommands();
-                if (instanceData.mDrawCommandsShadows[m]) {
-                    instanceData.mDrawCommandsShadows[m]->setNumActiveCommands(shadowCount[m]);
-                    instanceData.mDrawCommandsShadows[m]->uploadDrawCommands();
+            for (int m = 0; m < batchData.mMeshCount; ++m) {
+                batchData.mDrawCommands[m]->setNumActiveCommands(activeCount[m]);
+                batchData.mDrawCommands[m]->uploadDrawCommands();
+                if (batchData.mDrawCommandsShadows[m]) {
+                    batchData.mDrawCommandsShadows[m]->setNumActiveCommands(shadowCount[m]);
+                    batchData.mDrawCommandsShadows[m]->uploadDrawCommands();
                 }
             }
         }
@@ -361,67 +374,27 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
     updateAnimatedModels(elapsedSec);
 }
 
-void InstancedStaticModelManager::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex) {
+void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex) {
     ASSERT_RENDER_THREAD();
 
-    AssetHandle<ModelDef>* assetHandle;
     auto&& mit = mModelDefRefs.find(modelId);
     if (mit == mModelDefRefs.end()) {
         ModelDefRef newRef;
         newRef.handle = ModelRepository::get().getAssetHandle(modelId);
-        assetHandle = newRef.handle.get();
         mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
     }
     else {
-        assetHandle = mit->second.handle.get();
         ++mit->second.refCount;
     }
     
-    if (!assetHandle->isLoaded()) {
-        mPendingInstances[modelId].emplace_back(PendingModelInstance{ containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex });
-        mPendingInstanceForContainer[containerId].emplace(modelId);
-        return;
-    }
     const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
     assert(modelDefPtr);
 
     addInstanceAtPositionInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex);
 }
 
-void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
+void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
     ASSERT_RENDER_THREAD();
-
-    // If it is pending, just remove here
-    // Remove any asset pending instances
-    auto&& pit = mPendingInstanceForContainer.find(containerId);
-    if (pit != mPendingInstanceForContainer.end()) {
-        for (ModelID id : pit->second) {
-            auto&& mit = mPendingInstances.find(id);
-            if (mit != mPendingInstances.end()) {
-                std::vector<PendingModelInstance>& instances = mit->second;
-                // Linear removal, should be rare so its fine
-                for (size_t i = 0; i < instances.size();) {
-                    if (instances[i].containerId == containerId && instances[i].tileIndex == tileIndex) {
-                        instances[i] = instances.back();
-                        instances.pop_back();
-                        decrefModelDef(id, 1);
-                        if (instances.empty()) {
-                            mPendingInstances.erase(mit);
-                        }
-                        // We will not try to erase from mPendingInstanceForContainer here because there may be
-                        // other models pending for this container. That is OK
-
-                        // There can only be one
-                        return;
-                    }
-                    else {
-                        ++i;
-                    }
-                }
-            }
-        }
-        mPendingInstanceForContainer.erase(pit);
-    }
 
     auto&& it = mTileContainerModels.find(containerId);
     if (it != mTileContainerModels.end()) {
@@ -439,7 +412,7 @@ void InstancedStaticModelManager::removeInstanceAtPosition(TileContainerID conta
     }
 }
 
-TileModelInstance* InstancedStaticModelManager::getInstanceAtPosition(LiteTileHandle tileHandle) {
+TileModelInstance* InstancedStaticModelManager::getTileInstanceAtPosition(LiteTileHandle tileHandle) {
     ASSERT_RENDER_THREAD();
     auto&& it = mTileContainerModels.find(tileHandle.containerId);
     if (it != mTileContainerModels.end()) {
@@ -454,7 +427,7 @@ TileModelInstance* InstancedStaticModelManager::getInstanceAtPosition(LiteTileHa
     return nullptr;
 }
 
-bool InstancedStaticModelManager::hasInstanceAtPosition(LiteTileHandle tileHandle) {
+bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileHandle) {
     auto&& it = mTileContainerModels.find(tileHandle.containerId);
     if (it != mTileContainerModels.end()) {
         TileModelPositionKey key{ tileHandle.index };
@@ -468,7 +441,7 @@ bool InstancedStaticModelManager::hasInstanceAtPosition(LiteTileHandle tileHandl
     return false;
 }
 
-void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer)
+void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticModelGatherer& gatherer)
 {
     ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
@@ -476,110 +449,54 @@ void InstancedStaticModelManager::addInstancesFromGatherer(InstancedStaticModelG
         return;
     }
     // Remove all instances before we add new ones
-    removeInstancesFromContainer(gatherer.mContainerID);
+    removeTileInstancesFromContainer(gatherer.mContainerID);
 
     for (auto&& it : gatherer.mInstances) {
 
         ModelID modelId = it.first;
         const std::vector<StaticModelInstance>& sourceInstances = it.second;
 
-        AssetHandle<ModelDef>* assetHandle;
         auto&& mit = mModelDefRefs.find(modelId);
         if (mit == mModelDefRefs.end()) {
             ModelDefRef newRef;
             newRef.handle = ModelRepository::get().getAssetHandle(modelId);
             newRef.refCount = sourceInstances.size();
-            assetHandle = newRef.handle.get();
             mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
         }
         else {
-            assetHandle = mit->second.handle.get();
             mit->second.refCount += sourceInstances.size();
         }
 
-        if (!assetHandle->isLoaded()) {
-            std::vector<PendingModelInstance>& pending = mPendingInstances[modelId];
-            pending.reserve(pending.size() + sourceInstances.size());
-            for (size_t i = 0; i < sourceInstances.size(); ++i) {
-                const StaticModelInstance& modelInstance = sourceInstances[i];
-                pending.emplace_back(PendingModelInstance{ gatherer.mContainerID, modelInstance.tileIndex, modelInstance.matrix, modelInstance.variantIndex });
-            }
-            mPendingInstanceForContainer[gatherer.mContainerID].emplace(modelId);
-
-            continue;
-        }
-
-        // Insert all instance transforms ordered into the transforms array
-        const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
-        assert(modelDefPtr);
-        assert(modelDefPtr->getNumMeshes() <= e_count(MaterialRenderPassType));
-
-
         SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
-        StaticMeshInstanceData& instanceData = mModelsToInstances[modelId];
-        const size_t startIndex = instanceData.mInstanceTransforms.size();
+        StaticModelBatchData& batchData = mModelsToInstances[modelId];
+
+        const size_t startIndex = batchData.mInstanceTransforms.size();
         // Track where our buffer is dirty
-        if (startIndex < instanceData.mFirstDirtyInstance) {
-            instanceData.mFirstDirtyInstance = startIndex;
+        if (startIndex < batchData.mFirstDirtyInstance) {
+            batchData.mFirstDirtyInstance = startIndex;
         }
-        instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
-        instanceData.mInstanceVariants.resize(startIndex + sourceInstances.size());
-        instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
-        instanceData.mMeshCount = modelDefPtr->getNumMeshes();
+        batchData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
+        batchData.mInstanceVariants.resize(startIndex + sourceInstances.size());
+        batchData.mInstanceOwners.resize(batchData.mInstanceTransforms.size());
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
-            instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            instanceData.mInstanceVariants[instanceIndex] = modelInstance.variantIndex;
-            instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+            batchData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
+            batchData.mInstanceVariants[instanceIndex] = modelInstance.variantIndex;
+            batchData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
             TileModelPositionKey positionKey{ modelInstance.tileIndex };
             assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
             tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
         }
-
-        // Track meshes (We do this every time???)
-        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-            const Mesh& mesh = modelDefPtr->getMesh(m);
-            instanceData.mMesh[m] = &mesh;
-            instanceData.mMeshCastsShadow[m] = mesh.castsShadow();
-        }
     }
 }
 
-void InstancedStaticModelManager::removeInstancesFromContainer(TileContainerID containerId)
+void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainerID containerId)
 {
     // TODO: There is a race condition if the tile container is being meshed. Make sure we only destroy tile containers once they are done
     // being meshed?
     ASSERT_RENDER_THREAD();
-
-    // Remove any asset pending instances
-    auto&& pit = mPendingInstanceForContainer.find(containerId);
-    if (pit != mPendingInstanceForContainer.end()) {
-        for (ModelID id : pit->second) {
-            auto&& mit = mPendingInstances.find(id);
-            if (mit != mPendingInstances.end()) {
-                int removedCount = 0;
-                std::vector<PendingModelInstance>& instances = mit->second;
-                // Linear removal, should be rare so its fine
-                for (size_t i = 0; i < instances.size();) {
-                    if (instances[i].containerId == containerId) {
-                        instances[i] = instances.back();
-                        instances.pop_back();
-                        ++removedCount;
-                    }
-                    else {
-                        ++i;
-                    }
-                }
-                decrefModelDef(id, removedCount);
-                if (instances.empty()) {
-                    mPendingInstances.erase(mit);
-                }
-            }
-        }
-        mPendingInstanceForContainer.erase(pit);
-    }
 
     auto&& it = mTileContainerModels.find(containerId);
     if (it != mTileContainerModels.end()) {
@@ -602,7 +519,7 @@ ui32 InstancedStaticModelManager::getNumModels() const {
 
 void InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction) {
     // Ensure tile exists as static model
-    if (!hasInstanceAtPosition(targetTile)) {
+    if (!hasTileInstanceAtPosition(targetTile)) {
         return;
     }
 
@@ -681,10 +598,10 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             TileContainerID containerId = editPtr->containerId;
             InstancedStaticModelManager* manager = editPtr->manager;
             for (auto&& index : editPtr->removeEvents) {
-                manager->removeInstanceAtPosition(containerId, index);
+                manager->removeTileInstanceAtPosition(containerId, index);
             }
             for (auto&& addEvent : editPtr->addEvents) {
-                manager->addInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/);
+                manager->addTileInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/);
             }
             delete editPtr;
         }, editPtr);
@@ -735,56 +652,24 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
     }, taskData);
 }
 
-void InstancedStaticModelManager::updatePendingModelDefs() {
-    PROFILE_FUNCTION();
-    ModelRepository& modelRepo = ModelRepository::get();
-    for (auto&& it = mPendingInstances.begin(); it != mPendingInstances.end();) {
-        if (const ModelDef* def = modelRepo.tryGetLoadedAsset(it->first)) {
-            // Update data to point at now loaded mesh
-            StaticMeshInstanceData& instanceData = mModelsToInstances[def->getID()];
-            instanceData.mMeshCount = def->getNumMeshes();
-            for (int m = 0; m < instanceData.mMeshCount; ++m) {
-                const Mesh& mesh = def->getMesh(m);
-                instanceData.mMesh[m] = &mesh;
-                instanceData.mMeshCastsShadow[m] = mesh.castsShadow();
-            }
-            // Add all instances
-            for (PendingModelInstance& pendingInstance : it->second) {
-                addInstanceAtPositionInternal(*def, pendingInstance.containerId, pendingInstance.tileIndex, pendingInstance.transform, pendingInstance.variantIndex);
-            }
-            it = mPendingInstances.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-}
-
 void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex) {
 
-    StaticMeshInstanceData& instanceData = mModelsToInstances[modelDef.getID()];
+    StaticModelBatchData& batchData = mModelsToInstances[modelDef.getID()];
 
-    const size_t instanceIndex = instanceData.mInstanceTransforms.size();
-    if (instanceIndex < instanceData.mFirstDirtyInstance) {
-        instanceData.mFirstDirtyInstance = instanceIndex;
+    const size_t instanceIndex = batchData.mInstanceTransforms.size();
+    if (instanceIndex < batchData.mFirstDirtyInstance) {
+        batchData.mFirstDirtyInstance = instanceIndex;
     }
     // Store per tile references
-    instanceData.mInstanceTransforms.emplace_back(transform);
-    instanceData.mInstanceVariants.emplace_back(variantIndex);
-    instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
+    batchData.mInstanceTransforms.emplace_back(transform);
+    batchData.mInstanceVariants.emplace_back(variantIndex);
+    batchData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
     SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[containerId];
 
     TileModelPositionKey positionKey{ tileIndex };
 
     assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
     tileContainerModels[positionKey] = { modelDef.getID(), (ui32)instanceIndex };
-
-    instanceData.mMeshCount = modelDef.getNumMeshes();
-    for (int m = 0; m < instanceData.mMeshCount; ++m) {
-        const Mesh& mesh = modelDef.getMesh(m);
-        instanceData.mMesh[m] = &mesh;
-        instanceData.mMeshCastsShadow[m] = mesh.castsShadow();
-    }
 }
 
 void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
@@ -802,11 +687,11 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
         }
         else {
 
-            TileModelInstance* instance = getInstanceAtPosition(it->first);
+            TileModelInstance* instance = getTileInstanceAtPosition(it->first);
             if (!instance) {
                 return;
             }
-            StaticMeshInstanceData& instanceData = mModelsToInstances[instance->mModelID];
+            StaticModelBatchData& instanceData = mModelsToInstances[instance->mModelID];
             const f32m4& baseTransform = instanceData.mInstanceTransforms[instance->mInstanceIndex];
 
             f32m4 newTransform;
@@ -850,7 +735,7 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
 void InstancedStaticModelManager::removeTileModelInstanceInternal(TileModelInstance& instance) {
     auto&& it = mModelsToInstances.find(instance.mModelID);
     assert(it != mModelsToInstances.end());
-    StaticMeshInstanceData& instanceData = it->second;
+    StaticModelBatchData& instanceData = it->second;
     const ui32 instanceIndex = instance.mInstanceIndex;
     if (instanceIndex < instanceData.mFirstDirtyInstance) {
         instanceData.mFirstDirtyInstance = instanceIndex;

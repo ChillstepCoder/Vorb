@@ -85,15 +85,18 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
     constexpr ui32 FUZZ = 20; // Helps account for fluctuating instance counts
     if (!mTransformsBuffer) {
         mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms, sizeof(f32m4));
+        mVariantsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms, sizeof(ui8));
     }
     else if (totalTransforms > mTransformsBuffer->getMaxElements() ||
         totalTransforms < mTransformsBuffer->getMaxElements() * 0.5f - FUZZ) {
         // Grow or shrink if needed
         mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms + FUZZ, sizeof(f32m4));
+        mVariantsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms + FUZZ, sizeof(ui8));
     }
     
     f32m4* transformsArray = static_cast<f32m4*>(mTransformsBuffer->frameBeginAndGetDataForUpdate());
-    assert(transformsArray);
+    ui8* variantsArray = static_cast<ui8*>(mVariantsBuffer->frameBeginAndGetDataForUpdate());
+    assert(transformsArray && variantsArray);
 
     // Process all batches
     GLuint transformOffset = mTransformsBuffer->getCurrentElementOffset();
@@ -132,6 +135,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
                     const f32 distance2 = glm::length2(dynamicModel.position - camera.getPosition());
                     if (distance2 < lodParams.lodDistancesSQ[3]) {
                         transformsArray[transformIndex] = MathUtil::createTransformMatrix(dynamicModel.position, dynamicModel.orientation);
+                        variantsArray[transformIndex] = 0; //dynamicModel.variantIndex; // TODO: Variants
                         for (auto& meshData : batch.mMeshData) {
                             MeshLODDrawInfo* drawInfos = meshData.drawInfos;
                             DrawElementsIndirectCommand& cmd = meshData.drawCommands->appendCommand();
@@ -176,6 +180,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
     // TODO: Had a crash here (0 == 273)
     assert(transformIndex == totalTransforms);
     mTransformsBuffer->flushDataAndIncrementFrame(totalTransforms);
+    mVariantsBuffer->flushDataAndIncrementFrame(totalTransforms);
 }
 
 void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType renderPass) {
@@ -198,8 +203,14 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
         // TODO: Do elsewhere
         mesh.bindStaticModelAttribs();
 
+
+        // Variant data
+        assert(mesh.mVariantDataUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+
         // TODO: I think this might be cheaper as an SSBO so we aren't binding to every mesh
         mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
+        mVariantsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, 0, sizeof(ui8));
 
         glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
 

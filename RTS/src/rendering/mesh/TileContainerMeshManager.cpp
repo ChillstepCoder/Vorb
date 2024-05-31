@@ -52,7 +52,7 @@ void TileContainerMeshManager::frameUpdate()
                 removeMeshesForData(meshData);
 
                 // Notify instanced models to be removed
-                mInstancedStaticModelManager.removeInstancesFromContainer(containerId);
+                mInstancedStaticModelManager.removeTileInstancesFromContainer(containerId);
 
                 mTileContainerMeshData.erase(it);
             }
@@ -118,7 +118,7 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         }
 
         // Model instances
-        instancedModelManager.addInstancesFromGatherer(taskData->builders.modelGatherer);
+        instancedModelManager.addTileInstancesFromGatherer(taskData->builders.modelGatherer);
 
         // Release old dependencies and store new
         meshData.mAssetDependencies.swap(dependencies);

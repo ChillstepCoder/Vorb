@@ -1,6 +1,6 @@
 #pragma once
 
-// All supported component types a
+// All supported data driven component types
 enum class ComponentType : ui8 {
     CharacterModel,
     CharacterControl,

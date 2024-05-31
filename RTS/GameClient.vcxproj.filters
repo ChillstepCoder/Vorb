@@ -636,7 +636,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\StaticMeshInstanceData.cpp">
+    <ClCompile Include="src\rendering\model\StaticModelBatchData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\generation\ChunkGenerator.cpp">
@@ -1982,7 +1982,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\StaticMeshInstanceData.h">
+    <ClInclude Include="src\rendering\model\StaticModelBatchData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\ChunkGenerator.h">
@@ -2727,6 +2727,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\jobs\BuildContextTargetData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\StaticModelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

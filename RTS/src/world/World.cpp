@@ -436,6 +436,7 @@ World* World::tryGetWorld(WorldID id) {
 }
 
 void World::updateRenderState() {
+    PROFILE_FUNCTION();
 
     if (!GameRenderStateManager::getInstance().isActiveWorld(this)) {
         return;
@@ -468,6 +469,7 @@ void World::updateRenderState() {
 }
 
 void World::updateEntitiesRenderState(WorldRenderState& renderState) {
+    PROFILE_FUNCTION();
 
     IEntityComponentSystem& ecs = getECS();
     entt::registry& registry = ecs.mRegistry;

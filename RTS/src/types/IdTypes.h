@@ -59,7 +59,10 @@ typedef ui32 FamilyID;
 constexpr ui32 INVALID_FAMILY_ID = std::numeric_limits<FamilyID>::max();
 
 typedef ui16 ItemID;
-constexpr ui16 INVALID_ITEM_ID = UINT16_MAX;
+constexpr ItemID INVALID_ITEM_ID = std::numeric_limits<ItemID>::max();
+
+typedef ui32 StaticModelInstanceID;
+constexpr StaticModelInstanceID INVALID_STATIC_MODEL_INSTANCE_ID = std::numeric_limits<StaticModelInstanceID>::max();
 
 // UIDs
 typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
