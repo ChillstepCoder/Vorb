@@ -66,34 +66,42 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
         for (ui32 i = 0; i < bp.tileTargetCount; ++i) {
             BuildingBlueprintTileTarget& tileTarget = bp.tileTargets[i];
 
-            assert(isTileValid(tileTarget.id));
-            Tile& tile = tiles[tileTarget.tileIndex];
-            const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
-            tile.layers[data.layer] = tileTarget.id;
-            tile.tileFlags.setBit(TileFlags::ROOFED);
+            if (tileTarget.fillableRecipe.isConstructed()) {
+                assert(isTileValid(tileTarget.id));
+                Tile& tile = tiles[tileTarget.tileIndex];
+                const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
+                tile.layers[data.layer] = tileTarget.id;
+                tile.tileFlags.setBit(TileFlags::ROOFED);
+            }
         }
+
         for (ui32 i = 0; i < bp.wallTargetCount; ++i) {
             BuildingBlueprintWallTarget& wallTarget = bp.wallTargets[i];
-            assert(isTileValid(wallTarget.id));
-            TileWall newWall{ .wallID = wallTarget.id, .isDoor = wallTarget.isDoor };
-            tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, newWall, wallTarget.dir);
+
+            if (wallTarget.fillableRecipe.isConstructed()) {
+                assert(isTileValid(wallTarget.id));
+                TileWall newWall{ .wallID = wallTarget.id, .isDoor = wallTarget.isDoor };
+                tileContainer.mTileWallsContainer.setWallAtTile(wallTarget.tileIndex, newWall, wallTarget.dir);
+            }
         }
 
         // Set stairs tiles
         for (i32 i = 0; i < bp.stairTargetCount; ++i) {
-            StairPiece& stairPiece = bp.stairTargets[i].piece;
-            const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
-            // Place stair steps
-            const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
-            const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
-            Tile& tile = tiles[stairPiece.pos];
-            tile.groundLayer = bp.defaultFloorID;
-            tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
-            tile.groundZOffset = tilePos.z + heightAdd;
-            tile.setOrientation(stairPiece.dir, TileLayer::Main);
-            tile.tileFlags.setBit(TileFlags::ROOFED);
-            // Mark above tile as roofed as well
-            tiles[stairPiece.pos + floorStride].tileFlags.setBit(TileFlags::ROOFED);
+            if (bp.stairTargets[i].fillableRecipe.isConstructed()) {
+                StairPiece& stairPiece = bp.stairTargets[i].piece;
+                const f32v3 tilePos = tileContainer.getTileSpatialGrid().getTileXYZOffsetWithZScale(stairPiece.pos);
+                // Place stair steps
+                const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
+                const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
+                Tile& tile = tiles[stairPiece.pos];
+                tile.groundLayer = bp.defaultFloorID;
+                tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
+                tile.groundZOffset = tilePos.z + heightAdd;
+                tile.setOrientation(stairPiece.dir, TileLayer::Main);
+                tile.tileFlags.setBit(TileFlags::ROOFED);
+                // Mark above tile as roofed as well
+                tiles[stairPiece.pos + floorStride].tileFlags.setBit(TileFlags::ROOFED);
+            }
         }
 
         // Set exterior flags

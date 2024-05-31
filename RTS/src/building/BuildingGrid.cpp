@@ -107,14 +107,6 @@ Building* BuildingGrid::makeNewEmptyBuilding(std::unique_ptr<BuildingBlueprint>&
         // Building is initially disconnected from chunks, we will connect momentarily
         initBuildingAsDisconnected(*newBuilding);
 
-        // Expected by connectBuildingsToChunks. We are technically "loading"
-        for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
-            ChunkID dep = newBuilding->mChunkDependencies[c];
-            ChunkBuildingData& buildingData = mChunkBuildingData[dep];
-            ++buildingData.numLoadingBuildingsRef();
-        }
-
-
         if (newBuilding->mChunkDependenciesActiveCount > 0) {
             newBuilding->mTileContainer = mWorld.getTileContainerRepository().createNewEmptyBuildingContainer(newBuilding->getTileAABB(), newBuilding->mFloorHeight, newBuilding);
             newBuilding->mTileContainer->setState(TileContainerState::READY);
@@ -125,6 +117,12 @@ Building* BuildingGrid::makeNewEmptyBuilding(std::unique_ptr<BuildingBlueprint>&
 
             newBuilding->mState = BuildingState::ACTIVE;
 
+            // Expected by connectBuildingsToChunks. We are technically "loading"
+            for (int c = 0; c < newBuilding->mChunkDependencyCount; ++c) {
+                ChunkID dep = newBuilding->mChunkDependencies[c];
+                ChunkBuildingData& buildingData = mChunkBuildingData[dep];
+                ++buildingData.numLoadingBuildingsRef();
+            }
             // Connect, which expects this to be "loading"
             connectBuildingToChunks(*newBuilding);
         }

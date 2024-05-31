@@ -121,7 +121,7 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
                     //const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
                     //const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
 
-                    std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(*newBuilding, mEcs, characters[0]);
+                    std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(mWorld, *newBuilding, mEcs, characters[0]);
                     SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
 
                     // Instruct all characters to build this house

@@ -50,8 +50,8 @@ void ConstructBuildingContext::markFlattened(TileIndex i) {
     tilesNeedingFlatten.clearBit(i);
 }
 
-ConstructBuildingSimJob::ConstructBuildingSimJob(Building& building, SimECS& simEcs, entt::entity simJobOwner)
-    : ISimJob(simJobOwner), mContext(building), mSimEcs(simEcs) {
+ConstructBuildingSimJob::ConstructBuildingSimJob(World& world, Building& building, SimECS& simEcs, entt::entity simJobOwner)
+    : ISimJob(world, simJobOwner), mContext(building), mSimEcs(simEcs) {
     ASSERT_SIM_THREAD();
     BuildingBlueprint& blueprint = mContext.blueprint;
     assert(blueprint.itemCompositionCount);
@@ -62,21 +62,22 @@ ConstructBuildingSimJob::ConstructBuildingSimJob(Building& building, SimECS& sim
     initContext();
 }
 
-std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) {
+std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) {
     ASSERT_SIM_THREAD();
     BuildingBlueprint& blueprint = mContext.blueprint;
     if (blueprint.totalItemsUnpromised == 0) {
         // TODO: Need to handle when BP has all items but tiles still need to be constructed
         return nullptr;
     }
+    assert(!mFinished);
 
     entt::entity settlementEntity = blueprint.parentSettlement;
     assert(settlementEntity != entt::null);
     SettlementHarvestableTrackerComponent& harvestTracker = simRegistry.get<SettlementHarvestableTrackerComponent>(settlementEntity);
 
-    const TileCoord settlementCenter = simRegistry.get<SettlementSimComponent>(settlementEntity).getCenterPos(world.getWidthChunks());
+    const TileCoord settlementCenter = simRegistry.get<SettlementSimComponent>(settlementEntity).getCenterPos(mWorld.getWidthChunks());
 
-    SimChunkGrid& simGrid = world.getSimChunkGrid();
+    SimChunkGrid& simGrid = mWorld.getSimChunkGrid();
 
     // Determine what we should harvest
     TileHarvestable harvestableToAquire = TileHarvestable::None;
@@ -127,7 +128,7 @@ std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCha
 
     std::unique_ptr<ConstructBuildingSimTask> newTask =
         std::make_unique<ConstructBuildingSimTask>(
-            world, *this, std::move(tileReservationHandle), harvestableToAquire
+            mWorld, *this, std::move(tileReservationHandle), harvestableToAquire
         );
     // If state is END then the task could not initialize, likely due to no valid items
     if (newTask->mState == ConstructBuildingSimTask::State::End) {
@@ -136,18 +137,21 @@ std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCha
     return newTask;
 }
 
-std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter)
+std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
 void ConstructBuildingSimJob::onAbortTask(ISimTask& task) {
-
+    if (isFinished()) {
+        finishJob();
+    }
 }
 
-void ConstructBuildingSimJob::onCompleteTask(ISimTask& task)
-{
-
+void ConstructBuildingSimJob::onCompleteTask(ISimTask& task) {
+    if (isFinished()) {
+        finishJob();
+    }
 }
 
 void ConstructBuildingSimJob::initContext() {
@@ -246,4 +250,8 @@ void ConstructBuildingSimJob::initContext() {
     
     // Track what to flatten
     mContext.tilesNeedingFlatten = mContext.blueprint.computeSolidTilesFirstFloor();
+}
+
+bool ConstructBuildingSimJob::isFinished() {
+    return mContext.blueprint.totalTargetsUnbuilt == 0;
 }

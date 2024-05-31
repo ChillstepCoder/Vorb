@@ -57,19 +57,20 @@ public:
 class ConstructBuildingSimJob : public ISimJob {
 	friend class ConstructBuildingSimTask;
 public:
-	ConstructBuildingSimJob(Building& building, SimECS& simEcs, entt::entity simJobOwner);
+	ConstructBuildingSimJob(World& world, Building& building, SimECS& simEcs, entt::entity simJobOwner);
 	~ConstructBuildingSimJob() = default;
 
 	POOLED_ALLOC_DECL(ConstructBuildingSimJob);
 
-	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter) override;
-	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
 
 	void onAbortTask(ISimTask& task) override;
 	void onCompleteTask(ISimTask& task) override;
 
 private:
 	void initContext();
+	bool isFinished();
 
 	// Places where we are attempting to aquire items from
     //std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;

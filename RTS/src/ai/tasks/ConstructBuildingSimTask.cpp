@@ -56,6 +56,7 @@ ConstructBuildingSimTask::ConstructBuildingSimTask(
                 FillableSimpleItemStack& itemStack = mContext.blueprint.itemComposition[i];
                 if (itemStack.itemId == id) {
                     itemStack.promisedQuantity += quantity;
+                    mContext.blueprint.totalItemsUnpromised -= quantity;
                     break;
                 }
             }
@@ -110,6 +111,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 if (tileData.tileId == TILE_ID_NONE ||
                     TileRepository::get().getLoadedOrUnloadedAsset(tileData.tileId).harvestable != mHarvestableToAquire) {
                     // TODO: Instead fall back to finding new tile
+                    LOG_WARN("Need to find new tile in harvest state for construct blueprint due to lost harvestable");
                     mState = State::End;
                     return SimTaskTickResult::Fail;
                 }
@@ -125,6 +127,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 const TileID clearedTileID = mTileReservation->tryClearHarvestable(mHarvestableToAquire);
                 if (clearedTileID == TILE_ID_NONE) {
                     // TODO: Instead fall back to finding new tile
+                    LOG_WARN("Need to find new tile in harvest state for construct blueprint");
                     mState = State::End;
                     return SimTaskTickResult::Fail;
                 }
@@ -155,12 +158,10 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     const ItemAssetRef itemAsset = rollResults[i].value;
                     const i32 quantity = rollResults[i].quantity;
                     if (i == bundleSelect) {
-                        assert(!simRegistry.try_get<SimResourceBundleComponent>(simAgent));
                         SimResourceBundleComponent& bundle = simRegistry.get_or_emplace<SimResourceBundleComponent>(simAgent);
                         // TODO: Drop old??
                         if (bundle.itemStack.itemId != INVALID_ITEM_ID) {
                             LOG_WARN("Overwriting item in bundle");
-                            assert(false);
                         }
                         bundle.itemStack.itemId = itemAsset.getAssetID();
                         bundle.itemStack.quantity = quantity;
@@ -187,7 +188,11 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     const i32 countDiff = bundleItem.quantity - existingPromiseSize;
                     if (countDiff > 0) {
                         const i32 promiseIncrease = glm::min(countDiff, mContext.blueprint.getMaxPromiseSize(bundleItem.itemId));
-                        mBlueprintItemPromise->increasePromisedQuantity(bundleItem.itemId, promiseIncrease);
+                        if (!mBlueprintItemPromise->tryIncreasePromisedQuantity(bundleItem.itemId, promiseIncrease)) {
+                            LOG_WARN("Already fulfilled our promise in MoveToBlueprint");
+                            mState = State::End;
+                            return SimTaskTickResult::Fail;
+                        }
                     }
 
                     std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetForItem(bundleItem.itemId);
@@ -221,7 +226,9 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     const i32 remainder = recipe.fillItemAndReturnRemainder(bundleItem.itemId, bundleItem.quantity);
                     const i32 filledQuantity = bundleItem.quantity - remainder;
                     if (!mBlueprintItemPromise->tryFulfillQuantity(bundleItem.itemId, filledQuantity)) {
-                        panic("Failed to fulfill quantity in State::PlaceItems");
+                        LOG_WARN("Already fulfilled our promise in PlaceItems");
+                        mState = State::End;
+                        return SimTaskTickResult::Fail;
                     }
                     mContext.blueprint.totalItemsUnfulfilled -= filledQuantity;
                     bundleItem.quantity = remainder;
@@ -261,6 +268,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
         case State::SelectToConstruct: {
             std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetToConstruct();
             if (targetData) {
+                assert(targetData->isValid());
                 mTargetData = *targetData;
                 const i32v2 targetPosWorld = mContext.building.getTileWorldPos(mTargetData.targetIndex);
                 mMoveSubtask.init(simRegistry, simAgent, targetPosWorld, 1.0f);
@@ -312,6 +320,23 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     });
                     // TODO: Mark neighbor tiles as flattened too since this is an adjacent DTile flatten
                     mContext.markFlattened(tileIndex);
+                }
+
+                --mContext.blueprint.totalTargetsUnbuilt;
+
+                std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetToConstruct();
+                if (targetData) {
+                    assert(targetData->isValid());
+                    mTargetData = *targetData;
+                    const i32v2 targetPosWorld = mContext.building.getTileWorldPos(mTargetData.targetIndex);
+                    mMoveSubtask.init(simRegistry, simAgent, targetPosWorld, 1.0f);
+                    mState = State::MoveToConstruct;
+                    [[fallthrough]];
+                }
+                else {
+                    // Nothing to do anymore in this task cycle
+                    mState = State::End;
+                    return SimTaskTickResult::Success;
                 }
             }
             break;

@@ -17,8 +17,8 @@ public:
     void setIsSimulated(bool val) { ASSERT_GAME_THREAD(); isSimulated = val; }
 
     // Thread limited variable access
-    ui32& numLoadingBuildingsRef() { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
-    ui32 getNumLoadingBuildings() const { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
+    i32& numLoadingBuildingsRef() { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
+    i32 getNumLoadingBuildings() const { ASSERT_GAME_THREAD(); return mNumLoadingBuildings; }
     // Buildings which are not connected to the active chunks
     std::vector<Building*>& getDisconnectedBuildings() { ASSERT_GAME_THREAD(); return disconnectedBuildings; }
 
@@ -34,7 +34,7 @@ private:
     }
 
     bool isSimulated = true; // Main thread only
-    ui32 mNumLoadingBuildings = 0; // Main thread only
+    i32 mNumLoadingBuildings = 0; // Main thread only
     std::vector<Building*> disconnectedBuildings; // Main thread only
     BitArray buildingFootprintTiles; // Main thread only - 1 bits indicate a building at this tile
 

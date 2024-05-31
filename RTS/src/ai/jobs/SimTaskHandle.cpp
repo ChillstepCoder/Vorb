@@ -64,7 +64,7 @@ ISimTask* SimTaskHandle::getOrAquireActiveTaskForSimCharacter(World& world, entt
         if (mTask) {
             return mTask.get();
         }
-        mTask = mJob->tryAquireNextSubtaskForSimCharacter(world, simRegistry, simCharacter);
+        mTask = mJob->tryAquireNextSubtaskForSimCharacter(simRegistry, simCharacter);
         if (mTask) {
             mTask->onBeginSim(world, simRegistry, simCharacter);
             return mTask.get();

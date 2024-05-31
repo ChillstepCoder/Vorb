@@ -62,8 +62,12 @@ bool SimpleItemReservationSourceHandle::tryFulfillQuantity(ItemID id, i32 quanti
         return false;
     }
     const i32 index = dataPtr->getItemIndex(id);
-    assert(quantity <= dataPtr->remainingQuantity[index]);
     assert(quantity > 0);
+
+    // Allow overfill
+    if (quantity > dataPtr->remainingQuantity[index]) [[unlikely]] {
+        quantity = dataPtr->remainingQuantity[index];
+    }
 
     dataPtr->remainingQuantity[index] -= quantity;
     dataPtr->totalRemaining -= quantity;
@@ -82,9 +86,9 @@ bool SimpleItemReservationSourceHandle::tryFulfillQuantity(ItemID id, i32 quanti
     return true;
 }
 
-void SimpleItemReservationSourceHandle::increasePromisedQuantity(ItemID id, i32 quantity) {
+bool SimpleItemReservationSourceHandle::tryIncreasePromisedQuantity(ItemID id, i32 quantity) {
     if (!dataPtr) [[unlikely]] {
-        return;
+        return false;
     }
 
     const i32 index = dataPtr->getItemIndex(id);
@@ -93,6 +97,8 @@ void SimpleItemReservationSourceHandle::increasePromisedQuantity(ItemID id, i32 
     dataPtr->remainingQuantity[index] += quantity;
     dataPtr->totalRemaining += quantity;
     dataPtr->targetUpdateFunction(ItemReservationUpdateType::PromiseIncrease, id, quantity);
+
+    return true;
 }
 
 //

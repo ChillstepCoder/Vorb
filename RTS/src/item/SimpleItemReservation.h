@@ -109,9 +109,11 @@ public:
 
     void cancel();
 
-    // Must not overflow, returns false if this reservation was already canceled
+    // If overflow, silently ignores and succeeds
+    // Return false if we are already complete
     bool tryFulfillQuantity(ItemID id, i32 quantity);
-    void increasePromisedQuantity(ItemID id, i32 quantity);
+    // Return false if we are already complete
+    bool tryIncreasePromisedQuantity(ItemID id, i32 quantity);
 
     void bindEndFunction(SimpleItemReservationEndFunc endFunction) {
         assert(dataPtr);

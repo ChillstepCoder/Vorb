@@ -2347,5 +2347,7 @@ BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBluep
     bp->desc = context.desc;
 
     bp->ownedDTiles = std::move(context.ownedDTiles);
+
+    bp->totalTargetsUnbuilt = bp->tileTargetCount + bp->wallTargetCount + bp->stairTargetCount;
     return bp;
 }
