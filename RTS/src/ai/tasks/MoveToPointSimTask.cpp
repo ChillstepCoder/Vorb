@@ -17,11 +17,15 @@ void MoveToPointSimSubtask::init(entt::registry& simRegistry, entt::entity simAg
 }
 
 SimTaskTickResult MoveToPointSimSubtask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    UNUSED(elapsedSec);
+
     assert(mSuccessRadiusSQ > -1.0f);
     throw std::logic_error("The method or operation is not implemented.");
 }
 
 SimTaskTickResult MoveToPointSimSubtask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
+    UNUSED(elapsedSec);
+
     assert(mSuccessRadiusSQ > -1.0f);
     // Movement is handled by the SimMovementComponent tick, we merely check proximity here
     SimMovementComponent& moveCmp = simRegistry.get<SimMovementComponent>(simAgent);

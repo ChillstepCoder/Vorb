@@ -16,17 +16,18 @@ GameThreadTasks& GameThreadTasks::getInstance() {
 }
 
 void GameThreadTasks::updateMainThread() {
-    constexpr ui32 BULK_DEQUEUE_SIZE = 16;
-    // NOTE: Due to two separate queues, if one queue  is very full, then they may occur out of order!
+    constexpr ui32 BULK_DEQUEUE_SIZE = 8;
     GameFunction procsCapture[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;
     // TODO: Use optik for profiling
-
-    if (const size_t count = GameThreadTasks::getInstance().mGameThreadFuncProcs.try_dequeue_bulk(procsCapture, BULK_DEQUEUE_SIZE)) {
-        for (size_t i = 0; i < count; ++i) {
-            procsCapture[i]();
+    constexpr f32 BUDGET_MS = 3.0f;
+    do {
+        if (const size_t count = GameThreadTasks::getInstance().mGameThreadFuncProcs.try_dequeue_bulk(procsCapture, BULK_DEQUEUE_SIZE)) {
+            for (size_t i = 0; i < count; ++i) {
+                procsCapture[i]();
+            }
         }
-    }
+    } while (timer.stop() < BUDGET_MS);
     if (timer.stop() > 20.0f) {
         std::cout << timer.stop() << " ms *** GAME SPIKE WARNING ***\n";
     }

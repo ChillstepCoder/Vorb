@@ -198,13 +198,14 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetForItem(bundleItem.itemId);
                     if (targetData) {
                         mTargetData = *targetData;
+                        assert(mTargetData.isValid());
                         const i32v2 targetPosWorld = mContext.building.getTileWorldPos(mTargetData.targetIndex);
                         mMoveSubtask.init(simRegistry, simAgent, targetPosWorld, 1.0f);
                         mState = State::PlaceItems;
                     } else {
                         // No valid target to build, drop bundle and fall back to construction
                         LOG_WARN("No valid target for item in construct blueprint task, need impl drop bundle");
-                        mState = State::Construct;
+                        mState = State::SelectToConstruct;
                     }
                 }
                 else {
@@ -245,6 +246,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                         std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetForItem(bundleItem.itemId);
                         if (targetData) {
                             mTargetData = *targetData;
+                            assert(mTargetData.isValid());
                             i32v2 targetPosWorld = mContext.building.getTileWorldPos(mTargetData.targetIndex);
                             mMoveSubtask.init(simRegistry, simAgent, targetPosWorld, 1.0f);
                         }
@@ -286,11 +288,14 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 mState = State::Construct;
                 mTimer.begin(1.0f);
             }
-            break;
+            else {
+                break;
+            }
         }
         case State::Construct: {
             if (mTimer.tick(elapsedSec)) {
                 TileIndex tileIndex;
+                assert(mTargetData.isValid());
                 switch (mTargetData.type) {
                     case BuildContextTargetData::Type::Tile:
                         tileIndex = mContext.blueprint.tileTargets[mTargetData.targetIndex].tileIndex;

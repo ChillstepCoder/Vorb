@@ -27,6 +27,7 @@ std::optional<BuildContextTargetData> ConstructBuildingContext::tryAquireTargetF
 }
 
 void ConstructBuildingContext::returnTargetForItem(ItemID itemId, BuildContextTargetData target) {
+    assert(target.isValid());
     itemsToTileTargets[itemId].push_back(target);
 }
 

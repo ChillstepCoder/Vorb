@@ -37,6 +37,7 @@ public:
 	void returnTargetForItem(ItemID itemId, BuildContextTargetData target);
 	std::optional<BuildContextTargetData> tryAquireTargetToConstruct();
 	void returnTargetToConstruct(BuildContextTargetData target) {
+        assert(target.isValid());
 		tilesToConstruct.push(target);
 	}
 
