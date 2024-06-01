@@ -56,8 +56,8 @@ SimTileDataWriteReservationPtr SimChunkGrid::tryReserveTileDataAtPosIfNotEmpty(C
 
     { // Critical section
         std::unique_lock lock(container.mMutex);
-        auto&& it = container.mData->tileIndexToTileData.find(tileIndex);
-        if (it != container.mData->tileIndexToTileData.end()) {
+        auto&& it = container.mTileData->tileIndexToTileData.find(tileIndex);
+        if (it != container.mTileData->tileIndexToTileData.end()) {
             // Tile was tracked, only reserve if not empty
             SimTileData& existing = it->second;
             if (existing.tileId != TILE_ID_NONE) {
@@ -85,7 +85,7 @@ void SimChunkGrid::releaseTileDataReservationAndCopyData(SimTileDataWriteReserva
 
     { // Critical section
         std::lock_guard lock(container.mMutex);
-        container.mData->changeTile(reservation.mTileIndex, newData.tileId, newData.variant);
+        container.mTileData->changeTile(reservation.mTileIndex, newData.tileId, newData.variant);
     }
 }
 
@@ -121,9 +121,9 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
         {
             TileCoord chunkTilePos(coord);
             std::shared_lock readLock(simChunk.mMutex);
-            if (simChunk.mData) {
-                auto&& it = simChunk.mData->harvestables.find(harvestable);
-                if (it != simChunk.mData->harvestables.end()) {
+            if (simChunk.mTileData) {
+                auto&& it = simChunk.mTileData->harvestables.find(harvestable);
+                if (it != simChunk.mTileData->harvestables.end()) {
                     for (ChunkTileIndex tileIndex : it->second) {
                         const TileCoord tileCoord = chunkTilePos + TileCoord(tileIndex % CHUNK_WIDTH, tileIndex / CHUNK_WIDTH);
                         const i32v2 offset = tileCoord.v - worldPos.v;
@@ -131,7 +131,7 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
                         if (distSq > maxDistanceSq) {
                             continue;
                         }
-                        if (!simChunk.mData->tileIndexToTileData.at(tileIndex).flags.isBitSet(SimTileDataFlags::Reserved)) {
+                        if (!simChunk.mTileData->tileIndexToTileData.at(tileIndex).flags.isBitSet(SimTileDataFlags::Reserved)) {
                             rv.emplace(distSq, tileCoord.v);
                             if (rv.size() == maxCount) [[unlikely]] {
                                 return rv;

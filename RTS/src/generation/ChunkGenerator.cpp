@@ -129,8 +129,8 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
     }
     // Read+write lock
     std::lock_guard lock(simData.mMutex);
-    assert(simData.mData);
-    SimChunkTileData& simChunkTileData = *simData.mData;
+    assert(simData.mTileData);
+    SimChunkTileData& simChunkTileData = *simData.mTileData;
     auto& tileIndexToTileData = simChunkTileData.tileIndexToTileData;
     for (auto&& it = tileIndexToTileData.begin(); it != tileIndexToTileData.end();) {
         auto& [index, data] = *it;
@@ -184,7 +184,7 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
         // FOR MEMORY TRACKING ONLY
         simGrid.onNewChunkAllocated();
     }
-    SimChunkTileData& chunkData = *chunk.mData;
+    SimChunkTileData& chunkData = *chunk.mTileData;
     const i32v2 chunkPosWorld = mSpatialGrid->getWorldPosXYFromID(id);
 
     ui32 totalTiles = 0;

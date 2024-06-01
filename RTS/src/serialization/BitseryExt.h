@@ -196,3 +196,48 @@ namespace bitsery {
     }
 
 }
+
+namespace bitsery
+{
+    namespace ext
+    {
+        // Extension for writing a single POD struct in straight binary.
+        class PodStruct
+        {
+        public:
+            template <typename Ser,
+                typename T,
+                typename Fnc>
+            void serialize(Ser& s, const T& obj, Fnc&&) const
+            {
+                static_assert(std::is_standard_layout<T>::value, "T must be a POD type");
+
+                auto& writer = s.adapter();
+                writer.template writeBuffer<1>(reinterpret_cast<const uint8_t*>(&obj), sizeof(T));
+            }
+
+            template <typename Des,
+                typename T,
+                typename Fnc>
+            void deserialize(Des& s, T& obj, Fnc&&) const
+            {
+                static_assert(std::is_standard_layout<T>::value, "T must be a POD type");
+
+                auto& reader = s.adapter();
+                reader.template readBuffer<1>(reinterpret_cast<uint8_t*>(&obj), sizeof(T));
+            }
+        };
+    } // namespace ext
+
+    namespace traits
+    {
+        template <typename T>
+        struct ExtensionTraits<ext::PodStruct, T>
+        {
+            using TValue = void;
+            static constexpr bool SupportValueOverload = false;
+            static constexpr bool SupportObjectOverload = true;
+            static constexpr bool SupportLambdaOverload = false;
+        };
+    } // namespace traits
+} // namespace bitsery

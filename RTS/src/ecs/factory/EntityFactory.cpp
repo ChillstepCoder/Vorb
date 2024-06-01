@@ -178,5 +178,8 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     if (itemDef.mModelRef.isValid()) {
         registry.emplace<DynamicModelComponent>(newEntity, itemDef.mModelRef.getAssetID());
     }
+    else {
+        panic("Need fallback sack model for items without model refs in EntityFactory::createItemProjectile");
+    }
     return newEntity;
 }

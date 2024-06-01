@@ -96,9 +96,9 @@ void SimChunkTileData::onTileRemoved(TileID id, ChunkTileIndex pos) {
 
 bool SimChunk::allocate() {
     std::lock_guard lock(mMutex);
-    if (!mData) {
+    if (!mTileData) {
         mState = SimChunkState::Allocated;
-        mData = std::make_unique<SimChunkTileData>();
+        mTileData = std::make_unique<SimChunkTileData>();
         return true;
     }
     assert(mState == SimChunkState::Allocated);
@@ -123,10 +123,10 @@ void SimChunk::bindEditEventToChunkTileContainer(Chunk& chunk) {
                 TileContainerEditLayerEventData& data = editEvent.changeLayerArray[i];
                 if (data.layer == TileLayer::Main) [[likely]] {
                     if (data.prevId != TILE_ID_NONE) {
-                        mData->removeTile(data.tileIndex);
+                        mTileData->removeTile(data.tileIndex);
                     }
                     if (data.newId != TILE_ID_NONE) {
-                        mData->addTile(data.tileIndex, data.newId, data.newVariant);
+                        mTileData->addTile(data.tileIndex, data.newId, data.newVariant);
                     }
                 }
             }
@@ -143,11 +143,11 @@ i32 SimChunk::tryReserveHarvestables(i32 maxCount, TileHarvestable harvestable, 
     i32 reservedCount = 0;
     { // Write lock since we set reserve flag
         std::shared_lock lock(mMutex);
-        if (!mData) {
+        if (!mTileData) {
             return 0;
         }
-        auto&& it = mData->harvestables.find(harvestable);
-        if (it == mData->harvestables.end()) {
+        auto&& it = mTileData->harvestables.find(harvestable);
+        if (it == mTileData->harvestables.end()) {
             return 0;
         }
         std::vector<ChunkTileIndex>& tileIndices = it->second;
@@ -176,11 +176,11 @@ SimChunkTileReservationHandle SimChunk::tryReserveHarvestableAtTile(ChunkTileInd
 
 SimTileData SimChunk::getTileDataCopy(ChunkTileIndex tileIndex) const {
     std::shared_lock readLock(mMutex);
-    if (!mData) {
+    if (!mTileData) {
         return SimTileData();
     }
-    auto&& it = mData->tileIndexToTileData.find(tileIndex);
-    if (it == mData->tileIndexToTileData.end()) {
+    auto&& it = mTileData->tileIndexToTileData.find(tileIndex);
+    if (it == mTileData->tileIndexToTileData.end()) {
         return SimTileData();
     }
     return it->second;
@@ -188,11 +188,11 @@ SimTileData SimChunk::getTileDataCopy(ChunkTileIndex tileIndex) const {
 
 TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkTileIndex tileIndex) {
     std::lock_guard writeLock(mMutex);
-    if (!mData) {
+    if (!mTileData) {
         return TILE_ID_NONE;
     }
-    auto&& hit = mData->harvestables.find(expectedHarvestable);
-    if (hit == mData->harvestables.end()) {
+    auto&& hit = mTileData->harvestables.find(expectedHarvestable);
+    if (hit == mTileData->harvestables.end()) {
         return TILE_ID_NONE;
     }
     
@@ -210,21 +210,21 @@ TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkT
         return TILE_ID_NONE;
     }
 
-    auto&& it = mData->tileIndexToTileData.find(tileIndex);
-    assert(it != mData->tileIndexToTileData.end());
+    auto&& it = mTileData->tileIndexToTileData.find(tileIndex);
+    assert(it != mTileData->tileIndexToTileData.end());
 
     const TileID id = it->second.tileId;
-    mData->decrementTileQuantity(id, 1);
+    mTileData->decrementTileQuantity(id, 1);
 
-    mData->tileIndexToTileData.erase(it);
+    mTileData->tileIndexToTileData.erase(it);
     return id;
 }
 
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
     // Does not lock as we can only create these reservations from within SimChunk lock
-    if (mData) {
-        auto&& it = mData->tileIndexToTileData.find(tileIndex);
-        if (it == mData->tileIndexToTileData.end()) {
+    if (mTileData) {
+        auto&& it = mTileData->tileIndexToTileData.find(tileIndex);
+        if (it == mTileData->tileIndexToTileData.end()) {
             return false;
         }
         if (it->second.flags.isBitSet(SimTileDataFlags::Reserved)) {
@@ -239,9 +239,9 @@ bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
 
 bool SimChunk::tryReserveHarvestableTile(ChunkTileIndex tileIndex, TileHarvestable harvestable) {
     // Does not lock as we can only create these reservations from within SimChunk lock
-    if (mData) {
-        auto&& it = mData->tileIndexToTileData.find(tileIndex);
-        if (it == mData->tileIndexToTileData.end()) {
+    if (mTileData) {
+        auto&& it = mTileData->tileIndexToTileData.find(tileIndex);
+        if (it == mTileData->tileIndexToTileData.end()) {
             return false;
         }
         if (it->second.flags.isBitSet(SimTileDataFlags::Reserved)) {
@@ -259,11 +259,16 @@ bool SimChunk::tryReserveHarvestableTile(ChunkTileIndex tileIndex, TileHarvestab
 void SimChunk::freeTileReservation(ChunkTileIndex tileIndex) {
     // DOES lock, as is called from destructor of SimChunkTileReservation
     std::lock_guard lock(mMutex);
-    if (mData) {
-        auto&& it = mData->tileIndexToTileData.find(tileIndex);
-        if (it == mData->tileIndexToTileData.end()) {
+    if (mTileData) {
+        auto&& it = mTileData->tileIndexToTileData.find(tileIndex);
+        if (it == mTileData->tileIndexToTileData.end()) {
             return;
         }
         it->second.flags.clearBit(SimTileDataFlags::Reserved);
     }
+}
+
+TileItemStack SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack) {
+    assert(stack.isValid());
+
 }

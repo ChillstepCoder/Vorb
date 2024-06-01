@@ -132,11 +132,6 @@ public:
 	Chunk& getRightNeighbor() const;
 	Chunk& getBottomNeighbor() const;
 
-    // =========== Items  ===========
-	std::map<TileIndex, ItemStack>& getItemsOnGround() { return mItemsOnGround; }
-	void dropItemStackOnGround(ItemStack item);
-	ItemStack getItemStackOnGround(TileIndex pos);
-
     // =========== State  ===========
 	bool isDeactivated() const { ASSERT_GAME_THREAD(); return mState == ChunkState::DEACTIVATED || mState == ChunkState::DESTROYING_ON_SIM; }
 	bool isActivated() const { ASSERT_GAME_THREAD(); return mState == ChunkState::ACTIVATED; }
@@ -189,7 +184,6 @@ private:
 	mutable std::shared_mutex mTileContainerLifetimeMutex;
     std::vector<TileGrass> mGrass; // Grass densities
     mutable std::shared_mutex mSharedGrassMutex;
-	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	std::unique_ptr<ChunkTileContainersLookup> mTileContainersLookup;
 	std::atomic<ui32> mTileContainersLookupVersion = 0;

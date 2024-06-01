@@ -67,8 +67,6 @@ void Chunk::freeData() {
         std::lock_guard lock(mSharedGrassMutex);
         std::vector<TileGrass>().swap(mGrass);
     }
-    // TODO: Serialization
-    std::map<TileIndex, ItemStack>().swap(mItemsOnGround);
 }
 
 void Chunk::dispose() {

@@ -39,13 +39,7 @@ private:
     void removeTile(ChunkTileIndex pos);
     void changeTile(ChunkTileIndex pos, TileID id, ui8 variant);
 
-    // SERIALIZED DATA
-    boost::container::flat_map<ChunkTileIndex, SimTileData> tileIndexToTileData;
-    TileWallContainer tileWalls; // Most chunks don't have walls
-    // NOT SERIALIZED
-    boost::container::flat_map<TileID, ui32> tileQuantities;
-    boost::container::flat_map<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
-
+private:
     BINARY_SERIALIZE();
     template <typename T>
     inline void sharedSerialize(T& s) {
@@ -90,6 +84,44 @@ private:
     // Internal use only
     void onTileAdded(TileID id, ChunkTileIndex pos);
     void onTileRemoved(TileID id, ChunkTileIndex pos);
+
+
+private:
+    // SERIALIZED DATA
+    boost::container::flat_map<ChunkTileIndex, SimTileData> tileIndexToTileData;
+    TileWallContainer tileWalls; // Most chunks don't have walls
+    // NOT SERIALIZED
+    boost::container::flat_map<TileID, ui32> tileQuantities;
+    boost::container::flat_map<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
+
+};
+
+struct TileItemStack {
+    ChunkTileIndex tileIndex;
+    ui16 decayAmount = 0; // Increases over time, once reaching certain amounts disappears
+    ItemStack itemStack;
+
+    BINARY_SERIALIZE() {
+        s.ext(*this, bitsery::ext::PodStruct{});
+    }
+};
+
+class SimChunkItemData {
+    friend class SimChunkGrid;
+    friend class SimChunk;
+    friend class ChunkGenerator;
+
+private:
+    TileItemStack addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
+
+private:
+    BINARY_SERIALIZE() {
+        //s.ext(patches, bitsery::ext::PodStructVector{})
+        s.container(itemStacks);
+    }
+
+private:
+    std::unordered_map<ItemID, std::vector<TileItemStack>> itemStacks;
 };
 
 class SimChunk {
@@ -127,7 +159,8 @@ private:
     void freeTileReservation(ChunkTileIndex tileIndex);
 
     mutable std::shared_mutex mMutex;
-    std::unique_ptr<SimChunkTileData> mData;
+    std::unique_ptr<SimChunkTileData> mTileData;
+    std::unique_ptr<SimChunkItemData> mItemData;
     SimChunkState mState = SimChunkState::NONE;
     ChunkID mChunkID;
     mutable std::atomic_flag mIsSaveUpToDate = ATOMIC_FLAG_INIT;
@@ -138,13 +171,13 @@ private:
         s.value1b(mState);
         if (mState == SimChunkState::Allocated) {
             allocate();
-            s.object(*mData);
+            s.object(*mTileData);
         }
     }
     BINARY_SERIALIZE_OUTPUT() {
         s.value1b(mState);
-        if (mData) {
-            s.object(*mData);
+        if (mTileData) {
+            s.object(*mTileData);
         }
     }
 };

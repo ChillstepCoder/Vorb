@@ -2,6 +2,8 @@
 
 #include "tile/TileHarvestable.h"
 
+#include "serialization/BitseryExt.h"
+
 constexpr ui16 MAX_ITEM_RESERVATION_SIZE = UINT16_MAX;
 
 enum class InventoryBagType : ui8 {
@@ -75,6 +77,11 @@ struct ItemStack {
     ui16 taskReservedCount = 0; // Amount reserved for current task
 
     bool isNull() const { return quantity == 0; }
+    bool isValid() const { return quantity > 0; }
+
+    BINARY_SERIALIZE() {
+        s.ext(*this, bitsery::ext::PodStruct{});
+    }
 };
 static_assert(sizeof(ItemStack) == 12);
 
