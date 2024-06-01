@@ -5,10 +5,13 @@
 class GLDrawCommandBuffer;
 class Mesh;
 
-struct ModelInstanceOwner {
+struct ModelInstanceContainerOwner {
     TileContainerID containerId;
     TileIndex tileIndex;
 };
+
+typedef std::variant<ModelInstanceContainerOwner, StaticModelInstanceID> ModelInstanceOwnerVariant;
+
 
 enum class StaticModelAnimationTypes : ui8 {
     HitWiggle,
@@ -43,7 +46,7 @@ public:
 
     std::vector<f32m4> mInstanceTransforms;
     std::vector<ui8> mInstanceVariants;
-    std::vector<ModelInstanceOwner> mInstanceOwners;
+    std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
     VGBuffer mTransformsVbo = 0;
@@ -63,4 +66,4 @@ public:
 };
 
 // Stores all specific instances of a given model in the world
-typedef std::map<ModelID, StaticModelBatchData> ModelInstanceMap;
+typedef std::map<ModelID, StaticModelBatchData> ModelBatchMap;

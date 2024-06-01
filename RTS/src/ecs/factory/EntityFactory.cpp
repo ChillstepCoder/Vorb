@@ -10,6 +10,11 @@
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
+// TODO: This is a lot of includes to just add a static model
+#include "rendering/RenderContext.h"
+#include "rendering/renderdata/WorldRenderDataManager.h"
+#include "rendering/model/InstancedStaticModelManager.h"
+
 #include <ozz/animation/runtime/animation.h>
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
@@ -159,6 +164,12 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
         if (DynamicModelComponent* dynCmp = registry.try_get<DynamicModelComponent>(entity)) {
             StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(entity, dynCmp->modelId);
             registry.remove<DynamicModelComponent>(entity);
+            assert(RenderContext::exists());
+            // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
+            InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+            staticCmp.staticModelInstanceId = modelMgr.addLooseModelInstance(
+                staticCmp.modelId, registry.get<OrientationComponent>(entity).mOrientation, registry.get<PositionComponent>(entity).mPosition, 0 /*TODO Variant*/
+            );
         }
     });
 

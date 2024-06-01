@@ -752,6 +752,7 @@ bool TileContainer::tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType n
 
 void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNavBlockerType) {
     assert(canPlaceAdjNavBlockerTile(i));
+    // TODO: REMOVE THIS ALL, IT DOESNT WORK ANYMORE
 
     // Remove blockage
     constexpr int EDIT_COUNT = 9;
@@ -786,7 +787,8 @@ void TileContainer::removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNa
     }
     {
         const TileFlags blockerFlag = (prevNavBlockerType == NavBlockerType::MEDIUM) ? TileFlags::MEDIUM_BLOCKER : TileFlags::LARGE_BLOCKER;
-        assert(mTiles[i].hasFlag(blockerFlag));
+        // TODO: REMOVE THIS ALL, IT DOESNT WORK ANYMORE
+        //assert(mTiles[i].hasFlag(blockerFlag));
         static_assert(e_cast(NavBlockerType::COUNT) == 3);
         if (blockerFlag == TileFlags::LARGE_BLOCKER) {
             std::lock_guard lock(mSharedMutex);

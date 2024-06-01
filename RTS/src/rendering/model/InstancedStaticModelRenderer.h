@@ -20,8 +20,8 @@ public:
 
     void setActiveWorld(World& world);
 
-    void renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap);
-    void renderModelShadows(const ModelInstanceMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera);
+    void renderModelPass(const ModelBatchMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap);
+    void renderModelShadows(const ModelBatchMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera);
 
 private:
 

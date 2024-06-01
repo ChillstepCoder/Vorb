@@ -81,7 +81,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
-    for (auto& it : mModelsToInstances) {
+    for (auto& it : mModelBatches) {
         GL.glDeleteBuffers(1, &it.second.mTransformsVbo);
         GL.glDeleteBuffers(1, &it.second.mVariantsVbo);
     }
@@ -94,11 +94,14 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
     PROFILE_FUNCTION();
 
+    updatePendingLooseModelInstances();
+
     // Build GPU data and cull
-    for (auto& it : mModelsToInstances) {
+    for (auto& it : mModelBatches) {
         StaticModelBatchData& batchData = it.second;
         if (!batchData.mIsLoaded) [[unlikely]] {
             auto&& sit = mModelDefRefs.find(it.first);
+            assert(sit != mModelDefRefs.end());
             AssetHandlePtr<ModelDef>& modelDefHandle = sit->second.handle;
             if (const ModelDef* def = modelDefHandle->tryGetLoadedAsset()) {
                 batchData.mMeshCount = def->getNumMeshes();
@@ -377,36 +380,27 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex) {
     ASSERT_RENDER_THREAD();
 
-    auto&& mit = mModelDefRefs.find(modelId);
-    if (mit == mModelDefRefs.end()) {
-        ModelDefRef newRef;
-        newRef.handle = ModelRepository::get().getAssetHandle(modelId);
-        mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
-    }
-    else {
-        ++mit->second.refCount;
-    }
+    increfModelDef(modelId, 1);
     
     const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
     assert(modelDefPtr);
 
-    addInstanceAtPositionInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex);
+    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex);
 }
 
 void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
     ASSERT_RENDER_THREAD();
 
-    auto&& it = mTileContainerModels.find(containerId);
-    if (it != mTileContainerModels.end()) {
-        TileModelPositionKey key{ tileIndex };
+    auto&& it = mTileContainerTrackedModels.find(containerId);
+    if (it != mTileContainerTrackedModels.end()) {
         SpatialInstanceDataMap& spatialMap = it->second;
-        auto&& spit = spatialMap.find(key);
+        auto&& spit = spatialMap.find(tileIndex);
 
         if (spit != spatialMap.end()) {
-            removeTileModelInstanceInternal(spit->second);
+            removeTileInstanceInternal(spit->second);
             spatialMap.erase(spit);
             if (spatialMap.empty()) {
-                mTileContainerModels.erase(it);
+                mTileContainerTrackedModels.erase(it);
             }
         }
     }
@@ -414,11 +408,10 @@ void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID c
 
 TileModelInstance* InstancedStaticModelManager::getTileInstanceAtPosition(LiteTileHandle tileHandle) {
     ASSERT_RENDER_THREAD();
-    auto&& it = mTileContainerModels.find(tileHandle.containerId);
-    if (it != mTileContainerModels.end()) {
-        TileModelPositionKey key{ tileHandle.index };
+    auto&& it = mTileContainerTrackedModels.find(tileHandle.containerId);
+    if (it != mTileContainerTrackedModels.end()) {
         SpatialInstanceDataMap& spatialMap = it->second;
-        auto&& spit = spatialMap.find(key);
+        auto&& spit = spatialMap.find(tileHandle.index);
 
         if (spit != spatialMap.end()) {
             return &spit->second;
@@ -428,11 +421,10 @@ TileModelInstance* InstancedStaticModelManager::getTileInstanceAtPosition(LiteTi
 }
 
 bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileHandle) {
-    auto&& it = mTileContainerModels.find(tileHandle.containerId);
-    if (it != mTileContainerModels.end()) {
-        TileModelPositionKey key{ tileHandle.index };
+    auto&& it = mTileContainerTrackedModels.find(tileHandle.containerId);
+    if (it != mTileContainerTrackedModels.end()) {
         SpatialInstanceDataMap& spatialMap = it->second;
-        auto&& spit = spatialMap.find(key);
+        auto&& spit = spatialMap.find(tileHandle.index);
 
         if (spit != spatialMap.end()) {
             return true;
@@ -456,19 +448,10 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         ModelID modelId = it.first;
         const std::vector<StaticModelInstance>& sourceInstances = it.second;
 
-        auto&& mit = mModelDefRefs.find(modelId);
-        if (mit == mModelDefRefs.end()) {
-            ModelDefRef newRef;
-            newRef.handle = ModelRepository::get().getAssetHandle(modelId);
-            newRef.refCount = sourceInstances.size();
-            mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
-        }
-        else {
-            mit->second.refCount += sourceInstances.size();
-        }
+        increfModelDef(modelId, sourceInstances.size());
 
-        SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
-        StaticModelBatchData& batchData = mModelsToInstances[modelId];
+        SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[gatherer.mContainerID];
+        StaticModelBatchData& batchData = mModelBatches[modelId];
 
         const size_t startIndex = batchData.mInstanceTransforms.size();
         // Track where our buffer is dirty
@@ -477,17 +460,16 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         }
         batchData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
         batchData.mInstanceVariants.resize(startIndex + sourceInstances.size());
-        batchData.mInstanceOwners.resize(batchData.mInstanceTransforms.size());
+        batchData.mInstanceSources.resize(batchData.mInstanceTransforms.size());
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
             batchData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
             batchData.mInstanceVariants[instanceIndex] = modelInstance.variantIndex;
-            batchData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
-            TileModelPositionKey positionKey{ modelInstance.tileIndex };
-            assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
-            tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
+            batchData.mInstanceSources[instanceIndex] = ModelInstanceContainerOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+            assert(tileContainerModels.find(modelInstance.tileIndex) == tileContainerModels.end());
+            tileContainerModels[modelInstance.tileIndex] = { it.first, (ui32)instanceIndex };
         }
     }
 }
@@ -498,20 +480,20 @@ void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainer
     // being meshed?
     ASSERT_RENDER_THREAD();
 
-    auto&& it = mTileContainerModels.find(containerId);
-    if (it != mTileContainerModels.end()) {
+    auto&& it = mTileContainerTrackedModels.find(containerId);
+    if (it != mTileContainerTrackedModels.end()) {
         SpatialInstanceDataMap& tileContainerModels = it->second;
         for (auto& it2 : tileContainerModels) {
-            removeTileModelInstanceInternal(it2.second);
+            removeTileInstanceInternal(it2.second);
         }
-        mTileContainerModels.erase(it);
+        mTileContainerTrackedModels.erase(it);
     }
 }
 
 ui32 InstancedStaticModelManager::getNumModels() const {
     ASSERT_RENDER_THREAD();
     ui32 numModels = 0;
-    for (auto& it : mModelsToInstances) {
+    for (auto& it : mModelBatches) {
         numModels += it.second.mInstanceTransforms.size();
     }
     return numModels;
@@ -524,7 +506,7 @@ void InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHand
     }
 
     // Overwrite existing animation if any
-    StaticMeshAnimation& anim = mAnimatedInstances[targetTile];
+    StaticMeshAnimation& anim = mAnimatedTileInstances[targetTile];
     anim.animType = animType;
     anim.currentTimeSec = 0.0f;
     anim.direction = direction;
@@ -652,9 +634,96 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
     }, taskData);
 }
 
-void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex) {
+StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex)
+{
+    StaticModelInstanceID id;
+    {
+        std::lock_guard lock(mLooseInstanceIDMutex);
+        id = mNextLooseInstanceIDs[modelId]++;
+    }
 
-    StaticModelBatchData& batchData = mModelsToInstances[modelDef.getID()];
+    PendingLooseModelInstance pendingInstance{
+        .orient = orient,
+        .position = position,
+        .modelId = modelId,
+        .instanceId = id,
+        .variantIndex = variantIndex,
+        .isRemove = false
+    };
+
+    mPendingLooseModelInstances.enqueue(pendingInstance);
+
+    return id;
+}
+
+void InstancedStaticModelManager::removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId) {
+    PendingLooseModelInstance pendingInstance{
+        .modelId = modelId,
+        .isRemove = true
+    };
+
+    mPendingLooseModelInstances.enqueue(pendingInstance);
+}
+
+void InstancedStaticModelManager::updatePendingLooseModelInstances() {
+    PROFILE_FUNCTION();
+    constexpr i32 MAX_DEQUEUE = 1024;
+    PendingLooseModelInstance instances[MAX_DEQUEUE];
+    if (size_t count = mPendingLooseModelInstances.try_dequeue_bulk(instances, MAX_DEQUEUE)) {
+        for (size_t i = 0; i < count; ++i) {
+            PendingLooseModelInstance& instance = instances[i];
+            if (instance.isRemove) {
+                removeLooseInstanceInternal(instance.modelId, instance.instanceId);
+            }
+            else {
+                // TODO: Construct transform in place so no copy?
+                const f32m4 transform = MathUtil::createTransformMatrix(instance.position, instance.orient);
+                addLooseInstanceInternal(instance.modelId, instance.instanceId, transform, instance.variantIndex);
+            }
+        }
+    }
+}
+
+void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelBatchData& batchData, ui32 instanceIndex, ModelID modelId) {
+
+    if (instanceIndex < batchData.mFirstDirtyInstance) {
+        batchData.mFirstDirtyInstance = instanceIndex;
+    }
+
+    ModelInstanceOwnerVariant backOwner = batchData.mInstanceSources.back();
+    // Tell back owner about new position by grabbing transform position to look up
+    // as we will be swapping and popping
+    if (std::holds_alternative<ModelInstanceContainerOwner>(backOwner)) {
+        // Tile container model
+        ModelInstanceContainerOwner& owner = std::get<ModelInstanceContainerOwner>(backOwner);
+        auto&& it2 = mTileContainerTrackedModels.find(owner.containerId);
+        assert(it2 != mTileContainerTrackedModels.end());
+        SpatialInstanceDataMap& backTileContainerModels = it2->second;
+        auto&& backRef = backTileContainerModels.find(owner.tileIndex);
+        assert(backRef != backTileContainerModels.end());
+        backRef->second.mInstanceIndex = instanceIndex;
+    }
+    else {
+        // Loose model
+        auto&& it2 = mLooseStaticModelInstances.find(modelId);
+        assert(it2 != mLooseStaticModelInstances.end());
+        auto&& backRef = it2->second.find(std::get<StaticModelInstanceID>(backOwner));
+        assert(backRef != it2->second.end());
+        backRef->second = instanceIndex;
+    }
+
+    // Replace this instance with back instance
+    batchData.mInstanceTransforms[instanceIndex] = std::move(batchData.mInstanceTransforms.back());
+    batchData.mInstanceTransforms.pop_back();
+    batchData.mInstanceVariants[instanceIndex] = std::move(batchData.mInstanceVariants.back());
+    batchData.mInstanceVariants.pop_back();
+    batchData.mInstanceSources[instanceIndex] = backOwner;
+    batchData.mInstanceSources.pop_back();
+}
+
+void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex) {
+
+    StaticModelBatchData& batchData = mModelBatches[modelDef.getID()];
 
     const size_t instanceIndex = batchData.mInstanceTransforms.size();
     if (instanceIndex < batchData.mFirstDirtyInstance) {
@@ -663,27 +732,82 @@ void InstancedStaticModelManager::addInstanceAtPositionInternal(const ModelDef& 
     // Store per tile references
     batchData.mInstanceTransforms.emplace_back(transform);
     batchData.mInstanceVariants.emplace_back(variantIndex);
-    batchData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
-    SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[containerId];
+    batchData.mInstanceSources.emplace_back(ModelInstanceContainerOwner{ containerId, tileIndex });
+    SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
 
-    TileModelPositionKey positionKey{ tileIndex };
+    assert(tileContainerModels.find(tileIndex) == tileContainerModels.end());
+    tileContainerModels[tileIndex] = { modelDef.getID(), (ui32)instanceIndex };
+}
 
-    assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
-    tileContainerModels[positionKey] = { modelDef.getID(), (ui32)instanceIndex };
+void InstancedStaticModelManager::removeTileInstanceInternal(TileModelInstance& instance) {
+    auto&& it = mModelBatches.find(instance.mModelID);
+    assert(it != mModelBatches.end());
+    StaticModelBatchData& batchData = it->second;
+    const ui32 instanceIndex = instance.mInstanceIndex;
+
+    removeModelInstanceInternal(batchData, instanceIndex, instance.mModelID);
+
+    // If we are empty now, remove from the model map
+    if (batchData.mInstanceTransforms.empty()) {
+        mModelBatches.erase(it);
+    }
+}
+
+
+void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex) {
+
+    increfModelDef(modelId, 1);
+
+    StaticModelBatchData& batchData = mModelBatches[modelId];
+
+    const size_t instanceIndex = batchData.mInstanceTransforms.size();
+    if (instanceIndex < batchData.mFirstDirtyInstance) {
+        batchData.mFirstDirtyInstance = instanceIndex;
+    }
+    batchData.mInstanceTransforms.emplace_back(transform);
+    batchData.mInstanceVariants.emplace_back(variantIndex);
+    batchData.mInstanceSources.emplace_back(instanceId);
+
+    // Store instance lookup
+    auto&& mp = mLooseStaticModelInstances[modelId];
+    mp.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
+}
+
+void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId) {
+    auto&& it = mModelBatches.find(modelId);
+    assert(it != mModelBatches.end());
+    StaticModelBatchData& batchData = it->second;
+
+    auto&& lit = mLooseStaticModelInstances.find(modelId);
+    assert(lit != mLooseStaticModelInstances.end());
+    auto&& instanceIt = lit->second.find(instanceId);
+    assert(instanceIt != lit->second.end());
+    const ui32 instanceIndex = instanceIt->second;
+    // Remove our tracked instance
+    lit->second.erase(instanceIt);
+
+
+    ModelInstanceOwnerVariant backOwner = batchData.mInstanceSources.back();
+    removeModelInstanceInternal(batchData, instanceIndex, modelId);
+
+    // If we are empty now, remove from the model map
+    if (batchData.mInstanceTransforms.empty()) {
+        mModelBatches.erase(it);
+    }
 }
 
 void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
 {
     std::vector<LiteTileHandle> animsToErase;
 
-    for (auto&& it = mAnimatedInstances.begin(); it != mAnimatedInstances.end(); ++it) {
+    for (auto&& it = mAnimatedTileInstances.begin(); it != mAnimatedTileInstances.end(); ++it) {
 
         StaticMeshAnimation& animation = it->second;
         const f32 animDuration = STATIC_MODEL_ANIM_DURATIONS_SEC[e_cast(animation.animType)];
         animation.currentTimeSec += elapsedSec;
         if (animation.currentTimeSec >= animDuration) {
             animsToErase.emplace_back(it->first);
-            // TODO: Restore revious transform on GPU
+            // TODO: Restore previous transform on GPU
         }
         else {
 
@@ -691,7 +815,7 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
             if (!instance) {
                 return;
             }
-            StaticModelBatchData& instanceData = mModelsToInstances[instance->mModelID];
+            StaticModelBatchData& instanceData = mModelBatches[instance->mModelID];
             const f32m4& baseTransform = instanceData.mInstanceTransforms[instance->mInstanceIndex];
 
             f32m4 newTransform;
@@ -727,41 +851,21 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
     }
 
     for (auto&& h : animsToErase) {
-        mAnimatedInstances.erase(h);
+        mAnimatedTileInstances.erase(h);
     }
-   
 }
 
-void InstancedStaticModelManager::removeTileModelInstanceInternal(TileModelInstance& instance) {
-    auto&& it = mModelsToInstances.find(instance.mModelID);
-    assert(it != mModelsToInstances.end());
-    StaticModelBatchData& instanceData = it->second;
-    const ui32 instanceIndex = instance.mInstanceIndex;
-    if (instanceIndex < instanceData.mFirstDirtyInstance) {
-        instanceData.mFirstDirtyInstance = instanceIndex;
+void InstancedStaticModelManager::increfModelDef(ModelID modelId, int incCount) {
+    assert(incCount > 0);
+    auto&& mdrit = mModelDefRefs.find(modelId);
+    if (mdrit == mModelDefRefs.end()) {
+        ModelDefRef newRef;
+        newRef.handle = ModelRepository::get().getAssetHandle(modelId);
+        newRef.refCount = incCount;
+        mModelDefRefs.emplace(std::make_pair(modelId, std::move(newRef)));
     }
-
-    // Tell back owner about new position by grabbing transform position to look up
-    ModelInstanceOwner backOwner = instanceData.mInstanceOwners.back();
-    auto&& it2 = mTileContainerModels.find(backOwner.containerId);
-    assert(it2 != mTileContainerModels.end());
-    SpatialInstanceDataMap& backTileContainerModels = it2->second;
-    TileModelPositionKey key{ backOwner.tileIndex };
-    auto&& backRef = backTileContainerModels.find(key);
-    assert(backRef != backTileContainerModels.end());
-    backRef->second.mInstanceIndex = instanceIndex;
-
-    // Replace this instance with back instance
-    instanceData.mInstanceTransforms[instanceIndex] = std::move(instanceData.mInstanceTransforms.back());
-    instanceData.mInstanceTransforms.pop_back();
-    instanceData.mInstanceVariants[instanceIndex] = std::move(instanceData.mInstanceVariants.back());
-    instanceData.mInstanceVariants.pop_back();
-    instanceData.mInstanceOwners[instanceIndex] = backOwner;
-    instanceData.mInstanceOwners.pop_back();
-
-    // If we are empty now, remove from the model map
-    if (instanceData.mInstanceTransforms.empty()) {
-        mModelsToInstances.erase(it);
+    else {
+        mdrit->second.refCount += incCount;
     }
 }
 

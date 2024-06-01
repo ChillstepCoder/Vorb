@@ -41,7 +41,7 @@ void InstancedStaticModelRenderer::setActiveWorld(World& world) {
     mWeatherManager = &world.getWeatherManager();
 }
 
-void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap) {
+void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap) {
     ASSERT_RENDER_THREAD();
     if (sDebugOptions.mHideModels)
         return;
@@ -179,7 +179,7 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelInstanceMap& model
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
-void InstancedStaticModelRenderer::renderModelShadows(const ModelInstanceMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelShadows(const ModelBatchMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
 
     if (!mShaderAssets.areAllAssetsLoaded()) {

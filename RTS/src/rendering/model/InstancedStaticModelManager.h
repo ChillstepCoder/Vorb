@@ -19,13 +19,8 @@ class ModelBillboardLodManager;
 
 DECL_VG(class GLProgram);
 
-struct TileModelPositionKey {
-    bool operator<(const TileModelPositionKey& rhs) const { return tileIndex < rhs.tileIndex; }
-    TileIndex tileIndex;
-};
-
 // Allows us to look up the specific model at a position for a tile container
-typedef std::map<TileModelPositionKey, TileModelInstance> SpatialInstanceDataMap;
+typedef std::map<TileIndex, TileModelInstance> SpatialInstanceDataMap;
 
 struct ModelDefRef {
     AssetHandlePtr<ModelDef> handle;
@@ -67,17 +62,28 @@ public:
     void onTileDamagedEvent(const TileContainerEvent& evnt);
 
     // TODO: This is more data than the renderer needs?
-    const ModelInstanceMap& getModelInstanceMap() const { return mModelsToInstances; }
+    const ModelBatchMap& getModelInstanceMap() const { return mModelBatches; }
+
+    StaticModelInstanceID addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex);
+    void removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId);
 private:
-    void addInstanceAtPositionInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex);
+    void updatePendingLooseModelInstances();
+
+    void removeModelInstanceInternal(StaticModelBatchData& batchData, ui32 instanceIndex, ModelID modelId);
+
+    void addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex);
+    void removeTileInstanceInternal(TileModelInstance& instance);
+
+    void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
+    void removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId);
 
     void updateAnimatedModels(f32 elapsedSec);
-    void removeTileModelInstanceInternal(TileModelInstance& instance);
+    void increfModelDef(ModelID modelId, int incCount);
     void decrefModelDef(ModelID modelId, int decCount);
 
-    boost::container::flat_map<LiteTileHandle, StaticMeshAnimation> mAnimatedInstances;
-    ModelInstanceMap mModelsToInstances;
-    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels;
+    boost::container::flat_map<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
+    ModelBatchMap mModelBatches;
+    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerTrackedModels;
     GLBuffer mGpuCullingUniformBuffer;
 
     // Refcount ModelDefs
@@ -87,6 +93,19 @@ private:
 
     std::unique_ptr<ModelBillboardLodManager> mBillboardLodManager;
 
-    std::unordered_map<ModelID, boost::container::flat_map<StaticModelInstanceID, StaticModelInstance>> mStaticModelInstances;
+    struct PendingLooseModelInstance {
+        glm::quat orient;
+        f32v3 position;
+        ModelID modelId;
+        StaticModelInstanceID instanceId;
+        ui8 variantIndex;
+        bool isRemove;
+    };
+    moodycamel::ConcurrentQueue<PendingLooseModelInstance> mPendingLooseModelInstances;
+
+    std::unordered_map<ModelID, boost::container::flat_map<StaticModelInstanceID, ui32 /*instanceIndex*/>> mLooseStaticModelInstances;
+
+    std::mutex mLooseInstanceIDMutex;
+    boost::container::flat_map<ModelID, StaticModelInstanceID> mNextLooseInstanceIDs;
 };
 
