@@ -127,6 +127,7 @@ public:
     STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldEndGameThread, WorldEventType::OnWorldEndGameThread, World&);
     STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldEndRenderThread, WorldEventType::OnWorldEndRenderThread, World&);
     EVENT_LISTENER_FUNCS_ADAPTOR(World, OnEntityCreated, WorldEventType::OnEntityCreated, const WorldEntityEvent&);
+    EVENT_LISTENER_FUNCS_ADAPTOR(World, OnEntityDestroyed, WorldEventType::OnEntityDestroyed, const WorldEntityEvent&);
 
     static World* tryGetWorld(WorldID id);
 private:

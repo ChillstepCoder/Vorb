@@ -62,6 +62,7 @@ protected:
     std::map<ChunkID, ChunkFullActivateData> mPendingEntities;
 
     ChunkGridListeners mChunkEventListeners;
+    WorldListeners mWorldEventListeners;
 
     mutable std::mutex mPlayerEntityMutex;
     entt::entity mLocalPlayerEntity = entt::null;

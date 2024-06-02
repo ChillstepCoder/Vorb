@@ -145,6 +145,8 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     // if (charControlCmp) {
    //     charControlCmp->mController = physWorld.addDynamicCharacterController(newEntity, registry.get<PhysicsComponent>(newEntity).mRigidBody, 0.0f);
    // }
+    const WorldEntityEvent event(world, newEntity);
+    world.dispatchOnEntityCreated(event);
 
     return newEntity;
 }
@@ -229,6 +231,9 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
         InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
         modelMgr.removeLooseModelInstance(cmp->modelId, cmp->staticModelInstanceId);
     }
+
+    const WorldEntityEvent event(world, newEntity);
+    world.dispatchOnEntityDestroyed(event);
 
     registry.destroy(entity);
 }

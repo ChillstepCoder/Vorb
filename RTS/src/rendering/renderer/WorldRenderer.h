@@ -120,7 +120,7 @@ private:
     // Event handles
     struct WorldRendererEventHandles {
         SkillsComponentSystemListeners skillsComponentListeners;
-        WorldListeners worldEventListeners;
+        StaticWorldListeners worldEventListeners;
     } mEventHandles;
 
 };

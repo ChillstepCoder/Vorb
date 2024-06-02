@@ -269,4 +269,13 @@ void IEntityComponentSystem::initEvents() {
 			mPendingEntities.erase(it);
 		}
     });
+
+    mWorld.registerWorldListeners(mWorldEventListeners);
+    mWorld.addOnEntityCreatedListener(mWorldEventListeners,
+        [this](const WorldEntityEvent& event) {
+        ChunkID chunkId = mRegistry.get<PositionComponent>(event.entity).chunkId;
+        assert(chunkId != INVALID_CHUNK_ID);
+        mEntitiesByChunk[chunkId].emplace_back(event.entity);
+    });
+    x; // TODO: What about destroy?
 }

@@ -21,7 +21,6 @@ void SrvEntityComponentSystem::tick(f32 elapsedSec)
 entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
-    mEntitiesByChunk[mRegistry.get<PositionComponent>(newEntity).chunkId].emplace_back(newEntity);
     LOG_CRITICAL("Create Entity {} in {}", (int)newEntity, mRegistry.get<PositionComponent>(newEntity).chunkId);
 
     if (shouldReplicate && GameServer::exists()) {
@@ -37,7 +36,6 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
 entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const f32v3& position) {
     ASSERT_GAME_THREAD();
     entt::entity entity = EntityFactory::createEntity(mWorld, position, CStrToken("player"));
-    mEntitiesByChunk[mRegistry.get<PositionComponent>(entity).chunkId].emplace_back(entity);
 
     if (GameServer::exists()) {
         ReplicationComponent& repCmp = mRegistry.emplace<ReplicationComponent>(entity);

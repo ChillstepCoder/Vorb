@@ -1,7 +1,7 @@
 #pragma once
 struct PositionComponent {
     f32v3 mPosition;
-    ChunkID chunkId;
+    ChunkID chunkId = INVALID_CHUNK_ID;
 };
 
 // TODO: Move
