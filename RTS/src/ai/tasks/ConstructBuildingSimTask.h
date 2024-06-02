@@ -33,12 +33,13 @@ public:
 	const char* getTaskName() const override;
 
 private:
-	bool trySelectItemSource(World& world, entt::registry& simRegistry);
+	bool trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
 	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
 	enum class State {
-		Init,
+        Init,
+        MoveToItemStack,
 		MoveToHarvestable,
 		Harvest,
 		MoveToBlueprint,
@@ -53,7 +54,8 @@ private:
 	ConstructBuildingContext& mContext;
 	MoveToPointSimSubtask mMoveSubtask;
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
-	SimChunkTileReservationHandle mTileReservation;
+	SimChunkTileItemReservationPtr mTileItemReservation;
+	SimChunkTileReservationHandle mTileHarvestReservation;
 	ui32 mTargetReservationId = 0;
 	TileHarvestable mHarvestableToAquire = TileHarvestable::None;
 	SimpleSimTaskTimer mTimer;

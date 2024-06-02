@@ -12,6 +12,7 @@
 
 #include "tile/SimTileReservation.h"
 #include "tile/SimTileData.h"
+#include "item/SimChunkTileItemReservation.h"
 #include "item/ItemStack.h"
 
 class Chunk;
@@ -88,7 +89,6 @@ private:
     void onTileAdded(TileID id, ChunkTileIndex pos);
     void onTileRemoved(TileID id, ChunkTileIndex pos);
 
-
 private:
     // SERIALIZED DATA
     SimTileDataMap tileIndexToTileData;
@@ -96,19 +96,21 @@ private:
     // NOT SERIALIZED
     boost::container::flat_map<TileID, ui32> tileQuantities;
     boost::container::flat_map<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
-
 };
 
 class SimChunkItemData {
     friend class SimChunkGrid;
     friend class SimChunk;
     friend class ChunkGenerator;
+    friend class SimChunkTileItemReservation;
 
 public:
     TileItemUID generateNextItemUID();
 
 private:
-    void addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
+    SimChunkTileItemReservationPtr tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity, SimChunk& owner);
+    SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity, SimChunk& owner);
+    TileItemUID addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
 
 private:
     BINARY_SERIALIZE() {
@@ -127,6 +129,7 @@ class SimChunk {
     friend class ChunkGenerator;
     friend class SimTileReservation;
     friend class SimChunkTileReservation;
+    friend class SimChunkTileItemReservation;
 public:
     // Return true if it wasnt already allocated
     bool allocate();
@@ -153,7 +156,10 @@ public:
     [[nodiscard]] std::unordered_map<ItemID, std::vector<TileItemStack>> getItemDataCopy() const;
 
     // Items
-    bool tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex);
+    // On fail returns INVALID_TILE_ITEM_UID
+    TileItemUID tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex);
+    SimChunkTileItemReservationPtr tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity);
+    SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity);
 
     bool isSimulating() const { return mIsSimulating; }
     void setSimulating(bool simulating) { mIsSimulating = simulating; }

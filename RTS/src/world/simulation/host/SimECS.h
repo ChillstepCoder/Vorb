@@ -35,6 +35,7 @@ public:
 
     SimAISystem& getAISystem() { return *mAISystem; }
     SimSettlementSystem& getSettlementSystem(){ return *mSettlementSystem; }
+    World& getWorld() const { return mWorld; }
 
     // Transition our AI entities to fully simulated and return the list of AI entities
     std::vector<EntityFullActivateData> simThreadOnActivateChunk(ChunkID chunkId);

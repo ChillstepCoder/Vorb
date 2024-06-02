@@ -29,13 +29,7 @@ ConstructBuildingSimTask::ConstructBuildingSimTask(
 )
     : mContext(parentJob.mContext), mParentJob(parentJob) {
 
-    if (trySelectItemSource(world, simRegistry)) {
-        // TODO: Dynamic success radius based on the tile size?
-        constexpr f32 SUCCESS_RADIUS = 2.0f;
-        mMoveSubtask.init(simRegistry, simAgent, mTileReservation->getLiteTileHandle().getWorldPosition2D(world), SUCCESS_RADIUS);
-        mState = State::MoveToHarvestable;
-    }
-    else {
+    if (!trySelectItemSource(world, simRegistry, simAgent)) {
         mState = State::SelectToConstruct;
     }
 }
@@ -66,11 +60,20 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
         case State::Init:
             assert(false);
             break;
+        case State::MoveToItemStack:
+            if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
+
+                x;
+                //mTileItemReservation;
+
+                mState = State::MoveToBlueprint;
+                mMoveSubtask.init(simRegistry, simAgent, mContext.blueprint.getCenterPosTile().v, 32.0f);
+            }
         case State::MoveToHarvestable:
             if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
 
                 // Check if harvestable still exists
-                SimTileData tileData = mTileReservation->getCurrentTileDataCopy();
+                SimTileData tileData = mTileHarvestReservation->getCurrentTileDataCopy();
                 if (tileData.tileId == TILE_ID_NONE ||
                     TileRepository::get().getLoadedOrUnloadedAsset(tileData.tileId).harvestable != mHarvestableToAquire) {
                     // TODO: Instead fall back to finding new tile
@@ -87,7 +90,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
         case State::Harvest: {
             if (mTimer.tick(elapsedSec)) {
 
-                const TileID clearedTileID = mTileReservation->tryClearHarvestable(mHarvestableToAquire);
+                const TileID clearedTileID = mTileHarvestReservation->tryClearHarvestable(mHarvestableToAquire);
                 if (clearedTileID == TILE_ID_NONE) {
                     // TODO: Instead fall back to finding new tile
                     LOG_WARN("Need to find new tile in harvest state for construct blueprint");
@@ -128,7 +131,9 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                             i32 quantityToDrop = quantity - TMP_CARRY_COUNT;
                             TileCoord worldPos(i32v2(simRegistry.get<SimPositionComponent>(simAgent).getPosition()));
                             ItemStack dropItem(itemAsset.getAssetID(), quantityToDrop);
-                            const bool success = world.getSimChunkGrid().tryDropItemStackOnGround(dropItem, worldPos);
+                            TileItemUID newItemUid = world.getSimChunkGrid().tryDropItemStackOnGround(dropItem, worldPos);
+                            assert(newItemUid != INVALID_TILE_ITEM_UID);
+                            mContext.trackItemIfNeeded(newItemUid, itemAsset.getAssetID(), worldPos, quantityToDrop);
                             quantity -= quantityToDrop;
                         }
 
@@ -144,8 +149,9 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                         // Drop unneeded stack on floor
                         TileCoord worldPos(i32v2(simRegistry.get<SimPositionComponent>(simAgent).getPosition()));
                         ItemStack dropItem(itemAsset.getAssetID(), quantity);
-                        const bool success = world.getSimChunkGrid().tryDropItemStackOnGround(dropItem, worldPos);
-                        assert(success);
+                        TileItemUID newItemUid = world.getSimChunkGrid().tryDropItemStackOnGround(dropItem, worldPos);
+                        assert(newItemUid != INVALID_TILE_ITEM_UID);
+                        mContext.trackItemIfNeeded(newItemUid, itemAsset.getAssetID(), worldPos, quantity);
                     }
                 }
 
@@ -329,7 +335,7 @@ const char* ConstructBuildingSimTask::getTaskName() const {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry& simRegistry) {
+bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent) {
     BuildingBlueprint& blueprint = mContext.blueprint;
     entt::entity settlementEntity = blueprint.parentSettlement;
     assert(settlementEntity != entt::null);
@@ -344,12 +350,26 @@ bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry&
     if (blueprint.totalItemsUnpromised != 0) {
         i32 itemCompIndex = 0;
         i32 neededCount = 0;
+        ItemID desiredItemId = INVALID_ITEM_ID;
         for (; itemCompIndex < blueprint.itemCompositionCount; ++itemCompIndex) {
             FillableSimpleItemStack& itemStack = blueprint.itemComposition[itemCompIndex];
             neededCount = itemStack.getMaxPromiseSize();
             if (neededCount > 0) {
+                neededCount = glm::min(neededCount, TMP_CARRY_COUNT);
+
+                // Check item pickup first
+                const TileCoord position(simRegistry.get<SimPositionComponent>(simAgent).getPosition());
+                if (mTileItemReservation = mContext.tryGetClosestItemToPickup(desiredItemId, neededCount, position)) {
+                    constexpr f32 SUCCESS_RADIUS = 2.0f;
+                    ChunkLiteTileHandle tileHandle(mTileItemReservation->getChunkID(), mTileItemReservation->getTileIndex());
+                    mMoveSubtask.init(simRegistry, simAgent, tileHandle.getWorldPosition2D(world), SUCCESS_RADIUS);
+                    mState = State::MoveToItemStack;
+                    return true;
+                }
+
+                // Check harvestable
                 if (itemStack.harvestableType != TileHarvestable::None) {
-                    mTileReservation = harvestTracker.tryReserveNearestHarvestable(
+                    mTileHarvestReservation = harvestTracker.tryReserveNearestHarvestable(
                         itemStack.harvestableType, settlementCenter, simGrid
                     );
                 }
@@ -357,20 +377,24 @@ bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry&
                     assert(false); // Need to handle non harvestables
                 }
                 // Check if we managed to reserve a tile for harvest
-                if (mTileReservation) {
+                if (mTileHarvestReservation) {
                     mHarvestableToAquire = itemStack.harvestableType;
+                    desiredItemId = itemStack.itemId;
                     break;
                 }
             }
         }
 
+
+       
+
         // Make item reservation now that we have a worthy tile to harvest
-        if (mTileReservation) {
+        if (mTileHarvestReservation) {
             FillableSimpleItemStack& blueprintStack = blueprint.itemComposition[itemCompIndex];
 
             SimpleItemStack itemToFill;
             itemToFill.itemId = blueprintStack.itemId;
-            itemToFill.count = glm::min(neededCount, TMP_CARRY_COUNT);
+            itemToFill.count = neededCount;
             blueprintStack.promisedQuantity += itemToFill.count;
 
             assert(itemToFill.itemId != INVALID_ITEM_ID);
@@ -405,6 +429,11 @@ bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry&
             mTargetReservationId = blueprint.getNextReservationID();
             blueprint.itemReservationHandles.emplace(mTargetReservationId, std::move(reservationPair.target));
 
+
+            // TODO: Dynamic success radius based on the tile size?
+            constexpr f32 SUCCESS_RADIUS = 2.0f;
+            mMoveSubtask.init(simRegistry, simAgent, mTileHarvestReservation->getLiteTileHandle().getWorldPosition2D(world), SUCCESS_RADIUS);
+            mState = State::MoveToHarvestable;
             return true;
         }
     }

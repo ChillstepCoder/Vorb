@@ -1104,6 +1104,9 @@
     <ClCompile Include="src\ai\AIActions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\item\SimChunkTileItemReservation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2736,6 +2739,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\AIActions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\item\SimChunkTileItemReservation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

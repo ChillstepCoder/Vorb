@@ -51,6 +51,7 @@ class BuildingBlueprint {
     friend class BuildingBlueprintGenerator;
     friend class ConstructBuildingSimJob;
     friend class ConstructBuildingSimTask;
+    friend class ConstructBuildingContext;
     friend class BuildingBuilder;
     friend class BuildingGrid; // TODO: Remove
     friend class TileContainerLoader;

@@ -63,7 +63,9 @@ public:
     SimChunkTileReservationHandle tryReserveHarvestableAtTilePos(TileCoord worldPos, TileHarvestable harvestable);
 
     // Items
-    bool tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos);
+    // On fail returns INVALID_TILE_ITEM_UID
+    TileItemUID tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos);
+    SimChunkTileItemReservationPtr tryReserveItemStack(TileCoord worldPos, TileItemUID uid, ItemID itemId, ui16 quantity);
 
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }

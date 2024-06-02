@@ -232,14 +232,24 @@ std::unordered_map<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy
     return mItemData.itemStacks;
 }
 
-bool SimChunk::tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex) {
+TileItemUID SimChunk::tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex) {
     ASSERT_SIM_THREAD();
     if (!mIsSimulating) {
-        return false;
+        return INVALID_TILE_ITEM_UID;
     }
     std::lock_guard lock(mMutex);
-    mItemData.addStackToTile(tileIndex, itemStack);
-    return true;
+    return mItemData.addStackToTile(tileIndex, itemStack);
+}
+
+SimChunkTileItemReservationPtr SimChunk::tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity) {
+    ASSERT_SIM_THREAD();
+    std::lock_guard lock(mMutex);
+    return mItemData.tryReserveItemStackOnTile(tileIndex, itemId, quantity, *this);
+}
+
+SimChunkTileItemReservationPtr SimChunk::tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity) {
+    std::lock_guard lock(mMutex);
+    return mItemData.tryReserveItemStack(uid, itemId, quantity, *this);
 }
 
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
@@ -295,15 +305,53 @@ TileItemUID SimChunkItemData::generateNextItemUID() {
     return uniqueIdGenerator.fetch_add(1, std::memory_order_relaxed) + 1;
 }
 
-void SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack) {
+SimChunkTileItemReservationPtr SimChunkItemData::tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity, SimChunk& owner) {
+    auto&& it = itemStacks.find(itemId);
+    if (it == itemStacks.end()) {
+        return nullptr;
+    }
+    std::vector<TileItemStack>& stacks = it->second;
+    for (TileItemStack& stack : stacks) {
+        if (stack.tileIndex == tileIndex) {
+            const i32 available = stack.count - stack.reservedCount;
+            if (available >= quantity) {
+                stack.reservedCount += quantity;
+                return std::unique_ptr<SimChunkTileItemReservation>(new SimChunkTileItemReservation(stack.tileIndex, stack.uniqueId, itemId, quantity, owner));
+            }
+        }
+    }
+    return nullptr;
+}
+
+SimChunkTileItemReservationPtr SimChunkItemData::tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity, SimChunk& owner) {
+    auto&& it = itemStacks.find(itemId);
+    if (it == itemStacks.end()) {
+        return nullptr;
+    }
+    std::vector<TileItemStack>& stacks = it->second;
+    for (TileItemStack& stack : stacks) {
+        if (stack.uniqueId == uid) {
+            const i32 available = stack.count - stack.reservedCount;
+            if (available >= quantity) {
+                stack.reservedCount += quantity;
+                return std::unique_ptr<SimChunkTileItemReservation>(new SimChunkTileItemReservation(stack.tileIndex, stack.uniqueId, itemId, quantity, owner));
+            }
+        }
+    }
+    return nullptr;
+}
+
+TileItemUID SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack) {
     assert(stack.isValid());
     assert(stack.count <= MAX_TILE_ITEM_STACK_SIZE);
 
     std::vector<TileItemStack>& stacks = itemStacks[stack.id];
     for (TileItemStack& tileStack : stacks) {
         if (tileStack.tileIndex == tileIndex && tileStack.tryCombine(stack)) {
-            return;
+            return tileStack.uniqueId;
         }
     }
-    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = generateNextItemUID() });
+    TileItemUID uid = generateNextItemUID();
+    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = uid });
+    return uid;
 }

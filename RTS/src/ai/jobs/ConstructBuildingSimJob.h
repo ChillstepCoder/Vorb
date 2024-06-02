@@ -5,8 +5,9 @@
 #include "tile/TileHandle.h"
 
 #include "tile/SimTileReservation.h"
-#include "tile/SimTileReservation.h"
 #include "BuildContextTargetData.h"
+
+#include "item/SimChunkTileItemReservation.h"
 
 class SimECS;
 class ISimTask;
@@ -30,7 +31,7 @@ enum class ItemAquisitionSourceType : ui8 {
 
 class ConstructBuildingContext {
 public:
-	ConstructBuildingContext(Building& building);
+	ConstructBuildingContext(Building& building, SimECS& simEcs);
 
 	// Tasks are grabbed and returned from here to guarentee no two actors are modifying the same target
 	std::optional<BuildContextTargetData> tryAquireTargetForItem(ItemID itemId);
@@ -44,13 +45,24 @@ public:
 	bool shouldFlattenTile(TileIndex i) const;
 	void markFlattened(TileIndex i);
 
+	// Items
+	void trackItemIfNeeded(TileItemUID itemUID, ItemID itemId, TileCoord worldPos, ui16 quantity);
+	SimChunkTileItemReservationPtr tryGetClosestItemToPickup(ItemID itemId, i16 maxCount, TileCoord pos, i32 maxDistance = 46340);
+
+    struct ReservedItems {
+        std::vector<SimChunkTileItemReservationPtr> reservations;
+        std::vector<TileCoord> positions; // For fast distance checks
+    };
+
+	SimECS& simEcs;
     Building& building;
     BuildingBlueprint& blueprint;
 	// Reversed vectors for efficient pop_back
-	std::map<ItemID, std::vector<BuildContextTargetData>> itemsToTileTargets;
+    std::map<ItemID, std::vector<BuildContextTargetData>> itemsToTileTargets;
+    std::map<ItemID, ReservedItems> mReservedItems;
 	std::queue<BuildContextTargetData> tilesToConstruct;
 	i32 firstIncompleteFloor = 0;
-	BitArray tilesNeedingFlatten;
+    BitArray tilesNeedingFlatten;
 };
 
 // Step 1: Acquire items for job and fill blueprint + flatten terrain
@@ -73,10 +85,5 @@ private:
 	void initContext();
 	bool isFinished();
 
-	// Places where we are attempting to aquire items from
-    //std::vector<std::map<LiteTileHandle, ItemAquisitionSource>> mItemAquisitions;
-    std::vector<SimChunkTileReservationHandle> reservedTiles;
-
 	ConstructBuildingContext mContext;
-	SimECS& mSimEcs;
 };

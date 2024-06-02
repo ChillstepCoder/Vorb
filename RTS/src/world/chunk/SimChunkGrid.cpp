@@ -193,11 +193,18 @@ SimChunkTileReservationHandle SimChunkGrid::tryReserveHarvestableAtTilePos(TileC
     return mChunkData[id].tryReserveHarvestableAtTile(offset.y * CHUNK_WIDTH + offset.x, harvestable);
 }
 
-bool SimChunkGrid::tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos) {
+TileItemUID SimChunkGrid::tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos) {
     const ChunkCoord chunkCoord(worldPos);
     const ChunkID id = chunkCoord.toGridIDType(mWidthChunks);
     const TileCoord offset = worldPos - TileCoord(chunkCoord);
     return mChunkData[id].tryDropItemStackOnGround(stack, offset.y * CHUNK_WIDTH + offset.x);
+}
+
+SimChunkTileItemReservationPtr SimChunkGrid::tryReserveItemStack(TileCoord worldPos, TileItemUID uid, ItemID itemId, ui16 quantity) {
+    assert(uid != INVALID_TILE_ITEM_UID);
+    const ChunkCoord chunkCoord(worldPos);
+    const ChunkID id = chunkCoord.toGridIDType(mWidthChunks);
+    return mChunkData[id].tryReserveItemStack(uid, itemId, quantity);
 }
 
 void SimChunkGrid::initInternal() {

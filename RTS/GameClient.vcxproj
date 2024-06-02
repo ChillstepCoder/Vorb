@@ -331,6 +331,7 @@
     <ClCompile Include="src\item\ItemStockpileRegistry.cpp" />
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
+    <ClCompile Include="src\item\SimChunkTileItemReservation.cpp" />
     <ClCompile Include="src\item\SimpleItemReservation.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\logging\ErrorLogging.cpp" />
@@ -760,6 +761,7 @@
     <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\Recipe.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
+    <ClInclude Include="src\item\SimChunkTileItemReservation.h" />
     <ClInclude Include="src\item\SimpleItemReservation.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\logging\ErrorLogging.h" />
