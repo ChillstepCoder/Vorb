@@ -10,8 +10,8 @@ SimpleItemReservationData::SimpleItemReservationData(std::span<SimpleItemStack> 
     targetHandle(targetHandle) {
     for (size_t i = 0; i < reservedItems.size(); ++i) {
         desiredItems[i] = reservedItems[i].itemId;
-        totalRemaining += reservedItems[i].quantity;
-        remainingQuantity[i] = reservedItems[i].quantity;
+        totalRemaining += reservedItems[i].count;
+        remainingQuantity[i] = reservedItems[i].count;
     }
     numItems = reservedItems.size();
     assert(numItems);
@@ -148,7 +148,7 @@ ItemReservationPair SimpleItemReservation::createReservationForRecipe(const Fill
         const i32 required = recipe.getRemainingQuantityAtIndex(i);
         if (required > 0) {
             items[total].itemId = recipe.getRequiredItems()[i];
-            items[total].quantity = required;
+            items[total].count = required;
             ++total;
         }
     }

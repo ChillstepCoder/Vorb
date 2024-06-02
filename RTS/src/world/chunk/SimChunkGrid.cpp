@@ -193,6 +193,13 @@ SimChunkTileReservationHandle SimChunkGrid::tryReserveHarvestableAtTilePos(TileC
     return mChunkData[id].tryReserveHarvestableAtTile(offset.y * CHUNK_WIDTH + offset.x, harvestable);
 }
 
+bool SimChunkGrid::tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos) {
+    const ChunkCoord chunkCoord(worldPos);
+    const ChunkID id = chunkCoord.toGridIDType(mWidthChunks);
+    const TileCoord offset = worldPos - TileCoord(chunkCoord);
+    return mChunkData[id].tryDropItemStackOnGround(stack, offset.y * CHUNK_WIDTH + offset.x);
+}
+
 void SimChunkGrid::initInternal() {
     mSpatialGrid.init(CHUNK_WIDTH, mWidthChunks);
     mTotalChunks = SQ(mSpatialGrid.getGridWidthCells());

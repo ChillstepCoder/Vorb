@@ -32,8 +32,8 @@ ItemStockpile::ItemStockpile(World& world, ItemStockpileID id, const i32AABB2& a
     ui32 index = 0;
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.depth; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
-            const i32v2 worldPos(x, y);
-            TileRef ref(mWorld.getTerrainTileHandleAtWorldPos(worldPos));
+            const TileCoord worldPos(x, y);
+            TileRef ref(mWorld.getTerrainTileHandleAtWorldPos(worldPos.v));
             const bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlag(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid
@@ -111,8 +111,8 @@ void ItemStockpile::renderDebug() const {
 }
 
 CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryReserveItemStack(ItemStack itemStack, ui32 minimumQuantity) {
-    assert(itemStack.quantity >= minimumQuantity);
-    assert(itemStack.quantity < UINT16_MAX);
+    assert(itemStack.count >= minimumQuantity);
+    assert(itemStack.count < UINT16_MAX);
     auto&& it = mItemContents.find(itemStack.id);
     if (it == mItemContents.end()) {
         // If we dont have this item, no
@@ -124,13 +124,13 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryReserveItemStac
         // Reserve the stacks
         std::vector<ItemReservationTarget> targets;
         targets.reserve(std::min(it->second.stackLocations.size(), (size_t)5)); // Arbitrary
-        ui16 remainingQuantityToReserve = std::min(availableQuantity, (ui32)itemStack.quantity);
+        ui16 remainingQuantityToReserve = std::min(availableQuantity, (ui32)itemStack.count);
         for (const ui16& stackIndex : it->second.stackLocations) {
             if (remainingQuantityToReserve == 0) break;
 
             ItemStockpileTileStorage& tileStorage = mStorage[stackIndex];
             assert(tileStorage.stack.id == itemStack.id);
-            const ui16 freeQuantity = tileStorage.stack.quantity - tileStorage.reserveCount;
+            const ui16 freeQuantity = tileStorage.stack.count - tileStorage.reserveCount;
             const ui16 quantityToReserveThisTile = std::min(freeQuantity, remainingQuantityToReserve);
             remainingQuantityToReserve -= quantityToReserveThisTile;
             record.reservedQuantity += quantityToReserveThisTile;
@@ -146,8 +146,8 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryReserveItemStac
 }
 
 CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryPromiseItemStack(ItemStack itemStack, ui32 minimumQuantity) {
-    assert(itemStack.quantity >= minimumQuantity);
-    assert(itemStack.quantity < UINT16_MAX);
+    assert(itemStack.count >= minimumQuantity);
+    assert(itemStack.count < UINT16_MAX);
 
     ItemRepository& itemRepo = ItemRepository::get();
     const ui32 maxStackSize = itemRepo.getLoadedOrUnloadedAsset(itemStack.id).getMaxStockpileStackSize();
@@ -166,13 +166,13 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryPromiseItemStac
             return nullptr;
         }
 
-        remainingQuantity = std::min(totalFreeSpace, (ui32)itemStack.quantity);
+        remainingQuantity = std::min(totalFreeSpace, (ui32)itemStack.count);
         targets.reserve(remainingQuantity / maxStackSize); // Arbitrary
 
         // Loop through existing stacks and promise them
         for (const ui16& stackIndex : record->stackLocations) {
             ItemStockpileTileStorage& tileStorage = mStorage[stackIndex];
-            const ui32 freeSpaceThisStack = maxStackSize - (tileStorage.stack.quantity + tileStorage.promiseCount);
+            const ui32 freeSpaceThisStack = maxStackSize - (tileStorage.stack.count + tileStorage.promiseCount);
             if (freeSpaceThisStack > 0) {
                 OVERFLOW_ASSERT_UI32(freeSpaceThisStack);
                 const ui32 promiseQuantityThisTile = std::min(freeSpaceThisStack, remainingQuantity);
@@ -194,7 +194,7 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryPromiseItemStac
             return nullptr;
         }
 
-        remainingQuantity = std::min(totalFreeSpace, (ui32)itemStack.quantity);
+        remainingQuantity = std::min(totalFreeSpace, (ui32)itemStack.count);
         targets.reserve(remainingQuantity / maxStackSize); // Arbitrary
 
         // Add the record since we will be allocating new stacks for promises
@@ -212,7 +212,7 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryPromiseItemStac
                 record->promisedQuantity += promiseQuantityThisTile;
                 tileStorage.promiseCount += promiseQuantityThisTile;
                 tileStorage.stack.id = itemStack.id;
-                assert(tileStorage.stack.quantity == 0);
+                assert(tileStorage.stack.count == 0);
                 remainingQuantity -= promiseQuantityThisTile;
                 --mFreeSlots;
                 targets.emplace_back(ItemReservationTarget{ (ui16)mFirstFreeSlot, (ui16)promiseQuantityThisTile });
@@ -285,14 +285,14 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
 
 
     if (reservation->mIsPromise) {
-        const ui32 transferQuantity = std::min(target.quantity, (ui16)sourceStack.quantity);
+        const ui32 transferQuantity = std::min(target.quantity, (ui16)sourceStack.count);
         target.quantity -= transferQuantity;
         reservation->mRemainingQuantity -= transferQuantity;
-        assert(sourceStack.quantity);
+        assert(sourceStack.count);
         assert(tileStorage.promiseCount >= transferQuantity);
         assert(record.promisedQuantity >= transferQuantity);
-        sourceStack.quantity -= transferQuantity;
-        tileStorage.stack.quantity += transferQuantity;
+        sourceStack.count -= transferQuantity;
+        tileStorage.stack.count += transferQuantity;
         tileStorage.promiseCount -= transferQuantity;
         record.promisedQuantity -= transferQuantity;
         record.totalQuantity += transferQuantity;
@@ -301,11 +301,11 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
         const ui32 transferQuantity = target.quantity;
         target.quantity -= transferQuantity;
         reservation->mRemainingQuantity -= transferQuantity;
-        assert(tileStorage.stack.quantity >= transferQuantity);
+        assert(tileStorage.stack.count >= transferQuantity);
         assert(tileStorage.reserveCount >= transferQuantity);
         assert(record.reservedQuantity >= transferQuantity);
-        sourceStack.quantity += transferQuantity;
-        tileStorage.stack.quantity -= transferQuantity;
+        sourceStack.count += transferQuantity;
+        tileStorage.stack.count -= transferQuantity;
         tileStorage.reserveCount -= transferQuantity;
         record.reservedQuantity -= transferQuantity;
         record.totalQuantity -= transferQuantity;

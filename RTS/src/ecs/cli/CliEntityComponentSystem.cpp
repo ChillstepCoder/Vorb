@@ -22,6 +22,9 @@ void CliEntityComponentSystem::destroyEntity(entt::entity entity) {
     // Client cannot destroy server entities
     assert(mSrvToCliEntityLookup.find(entity) == mSrvToCliEntityLookup.end());
     mRegistry.destroy(entity);
+
+    // TODO: FIX ALL THIS SHIT, NEED TO CALL THIS FROM Srv LIKE EFFECT CONTEXT
+    assert(false);
 }
 
 void CliEntityComponentSystem::destroyEntityFromSrv(entt::entity srvEntity) {

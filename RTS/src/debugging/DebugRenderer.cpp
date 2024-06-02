@@ -64,7 +64,7 @@ std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad3D>
 
 
 const float rotVal = glm::radians(30.0f);
-void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+void DebugRenderer::drawVector(const f32v2 origin, const f32v2 vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
     ASSERT_RENDER_THREAD();
     const f32v2 end = origin + vec;
@@ -75,7 +75,7 @@ void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 col
     lines.emplace_back(end, end + glm::rotate(tipRay, -rotVal), color);
 }
 
-void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+void DebugRenderer::drawVector(const f32v3 origin, const f32v3 vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
     ASSERT_RENDER_THREAD();
     const f32v3 end = origin + vec;
@@ -83,7 +83,7 @@ void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 col
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+void DebugRenderer::drawLine(const f32v2 origin, const f32v2 vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
     ASSERT_RENDER_THREAD();
 	const f32v2 end = origin + vec;
@@ -91,7 +91,7 @@ void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+void DebugRenderer::drawLine(const f32v3 origin, const f32v3 vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
     ASSERT_RENDER_THREAD();
     const f32v3 end = origin + vec;
@@ -99,32 +99,32 @@ void DebugRenderer::drawLine(const f32v3& origin, const f32v3& vec, color4 color
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/) {
+void DebugRenderer::drawLineBetweenPoints(const f32v2 origin, const f32v2 end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawLineBetweenPoints(const f32v3 origin, const f32v3 end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawFilledQuadThreadSafe(const f32v3& p1, const f32v3& p2, const f32v3& p3, const f32v3& p4, color4 color, int lifeTime, int id) {
+void DebugRenderer::drawFilledQuadThreadSafe(const f32v3 p1, const f32v3 p2, const f32v3 p3, const f32v3 p4, color4 color, int lifeTime, int id) {
     assert(!IS_RENDER_THREAD());
     std::lock_guard<std::mutex> lockGuard(sNew3DQuadsThreadSafeMutex);
     sNew3DQuadsThreadSafe[std::make_pair(lifeTime, id)].emplace_back(p1, p2, p3, p4, color);
 }
 
-void DebugRenderer::drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawLineBetweenPointsThreadSafe(const f32v3 origin, const f32v3 end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(!IS_RENDER_THREAD());
     std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
     auto&& lines = sNewLinesThreadSafe[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawWireQuadThreadSafe(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawWireQuadThreadSafe(const f32v3 origin, const f32v2 dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(!IS_RENDER_THREAD());
     const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
     std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
@@ -167,7 +167,7 @@ void DebugRenderer::drawAABBThreadSafe(const f32AABB3& aabb, color4 color, int l
     lines.emplace_back(v3, v7, color);
 }
 
-void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawWireQuad(const f32v2 origin, const f32v2 dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     const f32v2 topRight = origin + dims;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
@@ -178,7 +178,7 @@ void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 
 
 }
 
-void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
+void DebugRenderer::drawWireQuad(const f32v3 origin, const f32v2 dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
     ASSERT_RENDER_THREAD();
     const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
@@ -189,20 +189,20 @@ void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 
     lines.emplace_back(topRight, topRight - f32v3(0.0f, dims.x, 0.0f), color);
 }
 
-void DebugRenderer::drawFilledQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
+void DebugRenderer::drawFilledQuad(const f32v2 origin, const f32v2 dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
     ASSERT_RENDER_THREAD();
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
 }
 
-void DebugRenderer::drawFilledQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawFilledQuad(const f32v3 origin, const f32v2 dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
 }
 
-void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32v3& v2, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawWireTriangle(const f32v3 v0, const f32v3 v1, const f32v3 v2, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(v0, v1, color);
@@ -267,7 +267,7 @@ void DebugRenderer::drawAABB(const f32AABB3& aabb, color4 color, int lifeTime /*
     lines.emplace_back(v3, v7, color);
 }
 
-void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawAABB(const f32v2 botLeft, const f32v2 botRight, const f32v2 topLeft, const f32v2 topRight, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     const f32v3 botLeft3D(botLeft.x, botLeft.y, height);
@@ -280,7 +280,7 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const 
     lines.emplace_back(botRight3D, botLeft3D, color);
 }
 
-void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawAABB(const f32v2 botLeft, const f32v2 dims, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     const f32v3 topLeft = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(0.0f, dims.y, height);
     const f32v3 topRight = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(dims.x, dims.y, height);
@@ -296,8 +296,8 @@ void DebugRenderer::drawAABB(const i32AABB2& aabb, f32 height, color4 color, int
     ASSERT_RENDER_THREAD();
     f32v2 fPos(aabb.pos);
     f32v2 fDims(aabb.dims);
-    const f32v2& bottomLeft = fPos;
-    const f32v2& topRight = fPos + fDims;
+    const f32v2 bottomLeft = fPos;
+    const f32v2 topRight = fPos + fDims;
     const f32v2 topLeft = fPos + f32v2(0.0f, fDims.y);
     const f32v2 bottomRight = fPos + f32v2(fDims.x, 0.0f);
     drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);
@@ -314,8 +314,8 @@ void DebugRenderer::drawPath(const std::vector<f32v3>& path, color4 color, int l
     lines.reserve(lines.size() + path.size());
 
     for (ui32 i = 0; i < path.size() - 1; ++i) {
-        const f32v3& pointA(path[i]);
-        const f32v3& pointB(path[i + 1]);
+        const f32v3 pointA(path[i]);
+        const f32v3 pointB(path[i + 1]);
 
         lines.emplace_back(
             pointA,
@@ -325,7 +325,7 @@ void DebugRenderer::drawPath(const std::vector<f32v3>& path, color4 color, int l
     }
 }
 
-void DebugRenderer::drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawCircle(const f32v3 origin, f32 radius, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     ASSERT_RENDER_THREAD();
     auto&& circles = sNewCircles[std::make_pair(lifeTime, id)];
     circles.emplace_back(origin, radius, color);

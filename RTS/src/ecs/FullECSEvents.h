@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs/EntityFullActivateData.h"
+#include "ecs/ChunkFullActivateData.h"
 
 enum class FullECSEventType {
     EntityDeactivated

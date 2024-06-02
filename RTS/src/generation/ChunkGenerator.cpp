@@ -119,7 +119,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
     std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
     for (i32 index = 0; index < CHUNK_SIZE; ++index) {
         const TileCoord coord(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
-        tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(coord.v);
+        tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(coord);
         if (!buildingFootprint.isEmpty() && buildingFootprint.getBit(index)) {
             tiles[index].tileFlags.setBit(TileFlags::IS_BLOCKED_BY_BUILDING);
         }
@@ -138,12 +138,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
         assert(isTileValid(data.tileId));
         if (tile.tileFlags.isBitSet(TileFlags::IS_BLOCKED_BY_BUILDING)) {
             // Remove blocked tile from sim layer and do not add to this chunk
-            auto&& qit = simChunkTileData.tileQuantities.find(data.tileId);
-            assert(qit != simChunkTileData.tileQuantities.end());
-            if (--qit->second == 0) {
-                simChunkTileData.tileQuantities.erase(qit);
-            }
-            it = tileIndexToTileData.erase(it);
+            it = simChunkTileData.removeTileDuringIter(it);
         }
         else {
             tiles[index].mainLayer = data.tileId;
@@ -191,12 +186,12 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;
-        const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
+        const TileCoord tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
         f32v3 normal;
-        const f32 height = heightGrid.computeCenterHeightAndNormalAtTile<true>(chunkPosWorld + i32v2(x, y), &normal);
-        const BiomeDef* def = biomeGrid.getBiomeDefAtPoint(tilePosWorld);
+        const f32 height = heightGrid.computeCenterHeightAndNormalAtTile<true>(tilePosWorld, &normal);
+        const BiomeDef* def = biomeGrid.getBiomeDefAtPoint(tilePosWorld.v);
         assert(def);
-        Tile tile = generateTileAtPos(tilePosWorld, height, normal, def);
+        Tile tile = generateTileAtPos(tilePosWorld.v, height, normal, def);
 
         if (tile.mainLayer != TILE_ID_NONE) {
 

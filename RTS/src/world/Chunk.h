@@ -112,8 +112,8 @@ public:
     const ChunkID& getChunkID() const { return mChunkId; }
 	const HeightmapPatchID getHeightmapPatchID() const;
     const i32AABB3& getAABB() const { return mAABB; }
-    f32v2 getTileWorldPos2D(TileIndex i) const {
-        return f32v2(mAABB.pos.x + (i % CHUNK_WIDTH), mAABB.pos.y + i / CHUNK_WIDTH);
+    i32v2 getTileWorldPos2D(TileIndex i) const {
+        return i32v2(mAABB.pos.x + (i % CHUNK_WIDTH), mAABB.pos.y + i / CHUNK_WIDTH);
     }
 
     // =========== Tile handles  ===========
@@ -146,7 +146,8 @@ public:
 	bool copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const;
 
     // =========== Terrain update  ===========
-	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
+	// // TODO: This wasnt hooked up to anything, is it needed?5
+	//void onTerrainDataChanged(const i32v2& editPosition, f32 editRadius);
 
     // =========== Tiles  ===========
 	TileContainer* getTileContainer() { return mTileContainer; }

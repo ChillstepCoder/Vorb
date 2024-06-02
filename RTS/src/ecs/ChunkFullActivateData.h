@@ -1,6 +1,7 @@
 #pragma once
 
 #include "world/simulation/host/SimEntityType.h"
+#include "item/ItemStack.h"
 
 // Exists when we have a full entity spawned for this entity
 // Allows communication between the sim -> full entity, one way
@@ -24,5 +25,10 @@ struct EntityFullDeactivateData {
     f32v2 simPosition;
 };
 
-typedef std::vector<EntityFullActivateData> ChunkEntityFullActivateDataList;
+struct ChunkFullActivateData {
+    std::vector<EntityFullActivateData> entities;
+    std::unordered_map<ItemID, std::vector<TileItemStack>> itemStacks;
+};
+
+
 typedef std::vector<EntityFullDeactivateData> ChunkEntityFullDeactivateDataList;

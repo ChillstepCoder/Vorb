@@ -35,7 +35,7 @@ struct ItemStockpileTileStorage {
     ui16 reserveCount = 0u;
   //  f32 zPos = 0.0f;
 
-    bool isNull() const { return promiseCount == 0 && stack.quantity == 0; }
+    bool isNull() const { return promiseCount == 0 && stack.count == 0; }
     bool isInvalidStorage() const { return stack.id == INVALID_STOCKPILE_INDEX; }
 };
 //static_assert(sizeof(ItemStockpileTileStorage) == 16, "Keep small");

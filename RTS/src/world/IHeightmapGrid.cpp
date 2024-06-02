@@ -71,7 +71,8 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 }
 
 
-IHeightmapGrid::IHeightmapGrid(ui32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES), mTotalPatches(SQ(mWidthPatches)) {
+IHeightmapGrid::IHeightmapGrid(i32 worldWidthTiles) : mWidthPatches(worldWidthTiles / HEIGHTMAP_PATCH_WIDTH_TILES), mTotalPatches(SQ(mWidthPatches)) {
+    assert(worldWidthTiles > 0);
     initInternal();
 }
 
@@ -157,7 +158,7 @@ void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const Height
     }
 }
 
-void IHeightmapGrid::setHeightAtChunkId(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
+void IHeightmapGrid::setHeightAtChunkId(ChunkID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
     ASSERT_GAME_THREAD();
     return setHeightAtPatch(mSpatialGrid2D.getIDAtWorldPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, height, dir);
 }
@@ -197,7 +198,7 @@ void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeig
     }
     else {
         HeightmapPatchID nextId = id;
-        ui32 nextIndex = vertIndex;
+        i32 nextIndex = vertIndex;
         if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_PATCH - 1) {
             ++nextIndex;
         }
@@ -216,28 +217,28 @@ void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeig
     }
 }
 
-void IHeightmapGrid::setHeightAtPatch(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
+void IHeightmapGrid::setHeightAtPatch(HeightmapPatchID patchId, i32 vertIndex, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
     ASSERT_GAME_THREAD();
     setHeightAtInternal(patchId, vertIndex, height, dir);
 }
 
-void IHeightmapGrid::adjustHeightAtChunk(ChunkID id, ui32 vertIndex, f32 adjust) {
+void IHeightmapGrid::adjustHeightAtChunk(ChunkID id, i32 vertIndex, f32 adjust) {
     ASSERT_GAME_THREAD();
     return adjustHeightAtPatch(mSpatialGrid2D.getIDAtWorldPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, adjust);
 }
 
-void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f32 adjust) {
+void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, i32 vertIndex, f32 adjust) {
     ASSERT_GAME_THREAD();
     assert(id < mTotalPatches);
     HeightmapPatch& patch = mHeightData[id];
     setHeightAtPatch(id, vertIndex, patch.getHeightAt(vertIndex) + adjust);
 }
 
-void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, ui32 vertIndex) {
+void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, i32 vertIndex) {
     ASSERT_GAME_THREAD();
-    ui32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
-    const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
-    const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    i32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
+    const i32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    const i32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
     worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
     mModifiedVertsThisTick.insert(worldPos);
@@ -246,14 +247,14 @@ void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, ui32 vertIndex) {
 
 void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     ASSERT_GAME_THREAD();
-    std::set<ui32> dirtyChunks;
+    std::set<i32> dirtyChunks;
     for (i32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
         for (i32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
             const HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(i32v2(x, y));
             dirtyChunks.insert(id);
             const i32v2 worldPosChunk = mSpatialGrid2D.getWorldPosXYFromID(id);
             const i32v2 offset = i32v2(x, y) - worldPosChunk;
-            const ui32 vertIndex = (ui32)offset.x / HEIGHTMAP_QUAD_SIZE + ((ui32)offset.y / HEIGHTMAP_QUAD_SIZE) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+            const i32 vertIndex = (i32)offset.x / HEIGHTMAP_QUAD_SIZE + ((i32)offset.y / HEIGHTMAP_QUAD_SIZE) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
             setHeightAtPatch(id, vertIndex, flattenHeight);
         }
     }
@@ -310,27 +311,27 @@ f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAndNormalAtPoint, (const f32v2& worldPos, OUT f32v3* outNormal) const)
 
 template <bool THREAD_SAFE>
-f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
+f32 IHeightmapGrid::computeCenterHeightAtTile(TileCoord worldTilePos) const {
     if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
-    return interpolateHeightAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos) + f32v2(0.5f));
+    return interpolateHeightAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos.v) + f32v2(0.5f));
 }
-DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAtTile, (ui32v2 worldTilePos) const)
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAtTile, (TileCoord worldTilePos) const)
 
 template <bool THREAD_SAFE>
-f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile(ui32v2 worldTilePos, OUT f32v3* outNormal) const {
+f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile(TileCoord worldTilePos, OUT f32v3* outNormal) const {
     if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
-    return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos) + f32v2(0.5f), outNormal);
+    return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos.v) + f32v2(0.5f), outNormal);
 }
-DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile, (ui32v2 worldTilePos, OUT f32v3* outNormal) const)
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile, (TileCoord worldTilePos, OUT f32v3* outNormal) const)
 
 
 
-//void IHeightmapGrid::copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const {
+//void IHeightmapGrid::copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, i32 rowLength) const {
 //    ASSERT_GAME_THREAD();
 //    assert(mHeightData);
 //    assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH * 2.0f);
 //
-//    ui32 lengthRemaining = rowLength;
+//    i32 lengthRemaining = rowLength;
 //    i32v2 worldPos = worldPosStart;
 //    do {
 //        // Get heightmap position and vertex offset
@@ -338,8 +339,8 @@ DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile, (ui32
 //        i32v2 offset = (worldPos - mSpatialGrid2D.getWorldPosXYFromID(id)) / HEIGHTMAP_QUAD_SIZE;
 //        assert(offset.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
 //        // Get length values
-//        const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
-//        const ui32 lengthToCopy = glm::min(maxLength, lengthRemaining);
+//        const i32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
+//        const i32 lengthToCopy = glm::min(maxLength, lengthRemaining);
 //        // Copy data
 //
 //        HeightmapPatchData* data = mHeightData[id].mHeightData;
@@ -352,8 +353,8 @@ DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile, (ui32
 //    } while (lengthRemaining > 0);
 //}
 
-void IHeightmapGrid::computeTileCorners(ui32v2 worldTilePos, OUT f32 corners[4]) const {
-    const f32v2 worldPosf(worldTilePos);
+void IHeightmapGrid::computeTileCorners(TileCoord worldTilePos, OUT f32 corners[4]) const {
+    const f32v2 worldPosf(worldTilePos.v);
     corners[0] = interpolateHeightAtWorldPos<false>(worldPosf);
     corners[1] = interpolateHeightAtWorldPos<false>(worldPosf + f32v2(1.0f, 0.0f));
     corners[2] = interpolateHeightAtWorldPos<false>(worldPosf + f32v2(0.0f, 1.0f));
@@ -366,14 +367,14 @@ bool IHeightmapGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) con
     return (heightmapXY.x + heightmapXY.y) % 2 == 1;
 }
 
-f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
+f32 IHeightmapGrid::computeMinHeightAtTile(TileCoord worldTilePos) const {
     ASSERT_GAME_THREAD();
     f32 corners[4];
     computeTileCorners(worldTilePos, corners);
     return glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
-f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
+f32 IHeightmapGrid::computeMaxHeightAtTile(TileCoord worldTilePos) const {
     ASSERT_GAME_THREAD();
     f32 corners[4];
     computeTileCorners(worldTilePos, corners);
@@ -397,10 +398,10 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
 f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const {
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
-    ui32 total = 0;
-    for (ui32 y = 0; y < aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < aabb.dims.x; ++x) {
-            const ui32 index = y * aabb.dims.x + x;
+    i32 total = 0;
+    for (i32 y = 0; y < aabb.dims.y; ++y) {
+        for (i32 x = 0; x < aabb.dims.x; ++x) {
+            const i32 index = y * aabb.dims.x + x;
             if (checkBits.getBit(index)) {
                 const f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
                 meanHeight += computeHeightAtPoint<true>(pos);
@@ -422,7 +423,7 @@ void IHeightmapGrid::initInternal() {
     mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH_TILES - 1;
 }
 
-void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
+void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
     ASSERT_GAME_THREAD();
     HeightmapPatch& patch = mHeightData[id];
     {

@@ -569,7 +569,7 @@ StrToken WorldRenderer::getCurrentPassthroughRenderStageName() const
 }
 
 void WorldRenderer::initEventHandlers() {
-    World::registerWorldListeners(mEventHandles.worldEventListeners);
+    World::registerStaticWorldListeners(mEventHandles.worldEventListeners);
     World::addOnWorldBeginGameThreadListener(mEventHandles.worldEventListeners, [this](World& world) {
         std::lock_guard lock(mRenderDataManagersMutex);
         mRenderDataManagers.insert(

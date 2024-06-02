@@ -123,9 +123,10 @@ public:
     // Structures TODO: Needs to be StructureRef so it isnt destroyed
     Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
 
-    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldBeginGameThread, WORLD_EVENT_TYPE::OnWorldBeginGameThread, World&);
-    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEndGameThread, WORLD_EVENT_TYPE::OnWorldEndGameThread, World&);
-    STATIC_EVENT_LISTENER_FUNCS(World, OnWorldEndRenderThread, WORLD_EVENT_TYPE::OnWorldEndRenderThread, World&);
+    STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldBeginGameThread, WorldEventType::OnWorldBeginGameThread, World&);
+    STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldEndGameThread, WorldEventType::OnWorldEndGameThread, World&);
+    STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldEndRenderThread, WorldEventType::OnWorldEndRenderThread, World&);
+    EVENT_LISTENER_FUNCS_ADAPTOR(World, OnEntityCreated, WorldEventType::OnEntityCreated, const WorldEntityEvent&);
 
     static World* tryGetWorld(WorldID id);
 private:
@@ -200,7 +201,8 @@ private:
     // Save
     std::unique_ptr<WorldSaveContext> mSaveContext;
 
-    STATIC_EVENT_DISPATCHER_DEF(World);
+    STATIC_EVENT_DISPATCHER_DEF(StaticWorld);
+    EVENT_DISPATCHER_DEF(World);
 
     inline static std::shared_mutex sWorldsMutex;
     inline static std::unordered_map<WorldID, World*> sWorlds;

@@ -53,17 +53,17 @@ void CraftingRepository::loadRecipeFile(const vio::Path& filePath) {
         for (size_t i = 0; i < def.inputs.size(); ++i) {
             const ItemStackDef& itemStackDef = def.inputs[i];
             recipe.mInputItem[i].id = itemRepo.getAssetID(StrToken(itemStackDef.itemName));
-            recipe.mInputItem[i].quantity = itemStackDef.count;
+            recipe.mInputItem[i].count = itemStackDef.count;
         }
         // Output
         assert(def.output.itemName.size());
         recipe.mOutputItem.id = itemRepo.getAssetID(StrToken(def.output.itemName));
-        recipe.mOutputItem.quantity = def.output.count;
+        recipe.mOutputItem.count = def.output.count;
 
         // By product
         if (def.byProduct.itemName.size()) {
             recipe.mByProduct.id = itemRepo.getAssetID(StrToken(def.byProduct.itemName));
-            recipe.mByProduct.quantity = def.byProduct.count;
+            recipe.mByProduct.count = def.byProduct.count;
         }
 
         if (def.requiredWorkStation.size()) {

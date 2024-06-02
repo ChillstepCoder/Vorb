@@ -2,7 +2,7 @@
 
 #include "world/simulation/host/CharacterGroupType.h"
 #include "world/simulation/host/SimECSEvents.h"
-#include "ecs/EntityFullActivateData.h"
+#include "ecs/ChunkFullActivateData.h"
 
 class HostSimContext;
 class SimAISystem;
@@ -36,8 +36,8 @@ public:
     SimAISystem& getAISystem() { return *mAISystem; }
     SimSettlementSystem& getSettlementSystem(){ return *mSettlementSystem; }
 
-    // Transition our AI entities to fully simulated and return the list of AI entitiess
-    ChunkEntityFullActivateDataList simThreadOnActivateChunk(ChunkID chunkId);
+    // Transition our AI entities to fully simulated and return the list of AI entities
+    std::vector<EntityFullActivateData> simThreadOnActivateChunk(ChunkID chunkId);
     void simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities);
     void simThreadOnFullDeactivateEntity(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntitity);
     // For when we cannot deactivate an entity as we do not have control, send it back to game thread
@@ -62,14 +62,14 @@ public:
 private:
     EntityFullActivateData onFullActivateEntity(entt::entity entity);
     // Can happen if a chunk is deactivated after we send off entities to be activated
-    void onEntityFullActivationFailed(ChunkID chunkId, ChunkEntityFullActivateDataList&& activateData);
+    void onEntityFullActivationFailed(ChunkID chunkId, ChunkFullActivateData&& activateData);
     void debugRenderInternal() const;
     entt::entity createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType);
 
     void onEntityDestroyed(entt::entity entity, SimEntityType type);
 
     // For batch send to game thread
-    std::unordered_map<ChunkID, std::vector<EntityFullActivateData>> mFullActivatedEntitiesThisFrame;
+    std::unordered_map<ChunkID, ChunkFullActivateData> mFullActivatedDataThisFrame;
 
     entt::registry mRegistry;
     TimestampMs mCurrentTickTimestamp = 0;

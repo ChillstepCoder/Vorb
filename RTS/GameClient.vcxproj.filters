@@ -1101,6 +1101,9 @@
     <ClCompile Include="src\resources\asset\LiteAssetRef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ai\AIActions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2657,7 +2660,7 @@
     <ClInclude Include="src\rendering\model\skeletal\AnimVariableFloatBinding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\EntityFullActivateData.h">
+    <ClInclude Include="src\ecs\ChunkFullActivateData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\FullEntityBindingComponent.h">
@@ -2730,6 +2733,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\StaticModelComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai\AIActions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

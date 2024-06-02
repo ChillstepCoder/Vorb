@@ -8,11 +8,11 @@
 #include "util/BitArray.h"
 #include "util/FixedSizeVector.h"
 
-#include "serialization/BitseryExt.h"
 #include "resources/TileRepository.h"
 
 #include "tile/SimTileReservation.h"
 #include "tile/SimTileData.h"
+#include "item/ItemStack.h"
 
 class Chunk;
 
@@ -23,6 +23,7 @@ enum class SimChunkState : ui8 {
     Allocated // Tiles are loaded into memory
 };
 
+typedef boost::container::flat_map<ChunkTileIndex, SimTileData> SimTileDataMap;
 
 constexpr i16 MAX_SIM_TILE_RESERVATIONS_PER_QUERY = 128;
 typedef FixedSizeVector<SimChunkTileReservationHandle, MAX_SIM_TILE_RESERVATIONS_PER_QUERY> SimChunkTileReservationHandleVector;
@@ -37,6 +38,8 @@ private:
 
     void addTile(ChunkTileIndex pos, TileID id, ui8 variant);
     void removeTile(ChunkTileIndex pos);
+    // Used by ChunkGenerator
+    SimTileDataMap::iterator removeTileDuringIter(SimTileDataMap::iterator iter);
     void changeTile(ChunkTileIndex pos, TileID id, ui8 variant);
 
 private:
@@ -88,22 +91,12 @@ private:
 
 private:
     // SERIALIZED DATA
-    boost::container::flat_map<ChunkTileIndex, SimTileData> tileIndexToTileData;
+    SimTileDataMap tileIndexToTileData;
     TileWallContainer tileWalls; // Most chunks don't have walls
     // NOT SERIALIZED
     boost::container::flat_map<TileID, ui32> tileQuantities;
     boost::container::flat_map<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
 
-};
-
-struct TileItemStack {
-    ChunkTileIndex tileIndex;
-    ui16 decayAmount = 0; // Increases over time, once reaching certain amounts disappears
-    ItemStack itemStack;
-
-    BINARY_SERIALIZE() {
-        s.ext(*this, bitsery::ext::PodStruct{});
-    }
 };
 
 class SimChunkItemData {
@@ -112,7 +105,7 @@ class SimChunkItemData {
     friend class ChunkGenerator;
 
 private:
-    TileItemStack addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
+    void addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
 
 private:
     BINARY_SERIALIZE() {
@@ -152,6 +145,15 @@ public:
     // TODO: Variant?
     [[nodiscard]] TileID tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkTileIndex tilePos);
 
+    // Lock chunk mutex and get a copy of the current item data
+    [[nodiscard]] std::unordered_map<ItemID, std::vector<TileItemStack>> getItemDataCopy() const;
+
+    // Items
+    bool tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex);
+
+    bool isSimulating() const { return mIsSimulating; }
+    void setSimulating(bool simulating) { mIsSimulating = simulating; }
+
 private:
     // TODO: These functions assume a lock so need to be constrained to an interface friend class?
     bool tryReserveNonEmptyTile(ChunkTileIndex tileIndex);
@@ -160,11 +162,12 @@ private:
 
     mutable std::shared_mutex mMutex;
     std::unique_ptr<SimChunkTileData> mTileData;
-    std::unique_ptr<SimChunkItemData> mItemData;
     SimChunkState mState = SimChunkState::NONE;
     ChunkID mChunkID;
     mutable std::atomic_flag mIsSaveUpToDate = ATOMIC_FLAG_INIT;
+    bool mIsSimulating = true;
     TileContainerEventDispatcher::Handle mEditTilesEventHandle;
+    SimChunkItemData mItemData;
 
     BINARY_SERIALIZE();
     BINARY_SERIALIZE_INPUT() {

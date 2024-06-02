@@ -54,27 +54,27 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     mSettlementSystem->tick(mCurrentTickTimestamp, mTimeDelta);
 
     // Send newly activated entities to game thread
-    if (mFullActivatedEntitiesThisFrame.size()) {
-        for (auto& [chunkId, entities] : mFullActivatedEntitiesThisFrame) {
-            GameThreadTasks::getInstance().addGenericTask([this, chunkId, entities = std::move(entities)]() mutable {
+    if (mFullActivatedDataThisFrame.size()) {
+        for (auto& [chunkId, data] : mFullActivatedDataThisFrame) {
+            GameThreadTasks::getInstance().addGenericTask([this, chunkId, data = std::move(data)]() mutable {
                 Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
                 if (chunk.isActivated()) {
-                    mWorld.getECS().createFullEntitiesFromSimEntities(chunk, entities);
+                    mWorld.getECS().createFullEntitiesFromSimEntities(chunk, data);
                 }
                 else if (chunk.isDeactivated()) {
                     // Rare case where chunk deactivated when we were trying to send it entities, so we need to send them back
-                    mHostSimContext.tryGetSimThread()->addTask([this, chunkId, entities = std::move(entities)]() mutable {
+                    mHostSimContext.tryGetSimThread()->addTask([this, chunkId, entities = std::move(data)]() mutable {
                         onEntityFullActivationFailed(chunkId, std::move(entities));
                     });
                 }
                 else {
                     // If here, we are in the process of activating, so mark as pending
-                    mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(entities));
+                    mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(data));
                 }
             });
         }
     }
-    mFullActivatedEntitiesThisFrame.clear();
+    mFullActivatedDataThisFrame.clear();
 
     {
         std::lock_guard lock(mDebugDrawMutex);
@@ -189,10 +189,10 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
     mRegistry.destroy(group);
 }
 
-ChunkEntityFullActivateDataList SimECS::simThreadOnActivateChunk(ChunkID chunkId) {
+std::vector<EntityFullActivateData> SimECS::simThreadOnActivateChunk(ChunkID chunkId) {
     ASSERT_SIM_THREAD();
 
-    ChunkEntityFullActivateDataList rv;
+    std::vector<EntityFullActivateData> rv;
     EntityVector& list = mEntitiesInChunks[chunkId];
     rv.resize(list.size());
 
@@ -254,7 +254,7 @@ void SimECS::onEntityDeactivationFailed(ChunkID chunkId, const EntityFullDeactiv
     activateData.simPosition = deactivateEntity.simPosition;
     activateData.binding = &it->second;
 
-    mFullActivatedEntitiesThisFrame[chunkId].emplace_back(activateData);
+    mFullActivatedDataThisFrame[chunkId].entities.emplace_back(activateData);
 }
 
 bool SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
@@ -285,7 +285,7 @@ bool SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chunk
         return false;
     }
     else {
-        mFullActivatedEntitiesThisFrame[newChunk].emplace_back(onFullActivateEntity(entity));
+        mFullActivatedDataThisFrame[newChunk].entities.emplace_back(onFullActivateEntity(entity));
         return true;
     }
 }
@@ -331,27 +331,27 @@ EntityFullActivateData SimECS::onFullActivateEntity(entt::entity entity) {
     return rv;
 }
 
-void SimECS::onEntityFullActivationFailed(ChunkID chunkId, ChunkEntityFullActivateDataList&& activateData) {
+void SimECS::onEntityFullActivationFailed(ChunkID chunkId, ChunkFullActivateData&& activateData) {
     ASSERT_SIM_THREAD();
     if (mHostSimContext.isChunkSimulating(chunkId)) {
         ChunkEntityFullDeactivateDataList list;
-        list.resize(activateData.size());
-        for (size_t i = 0; i < activateData.size(); ++i) {
-            list[i].simEntity = activateData[i].binding->simEntity;
-            list[i].simPosition = activateData[i].simPosition;
+        list.resize(activateData.entities.size());
+        for (size_t i = 0; i < activateData.entities.size(); ++i) {
+            list[i].simEntity = activateData.entities[i].binding->simEntity;
+            list[i].simPosition = activateData.entities[i].simPosition;
         }
         simThreadOnFullDeactivateEntities(chunkId, list);
     }
     else {
         // Fail again! either due to delay or due to chunk immediately reactivating, just keep ping ponging back till it owrks
-        ChunkEntityFullActivateDataList& list = mFullActivatedEntitiesThisFrame[chunkId];
-        if (list.empty()) {
-            list.swap(activateData);
+        ChunkFullActivateData& list = mFullActivatedDataThisFrame[chunkId];
+        if (list.entities.empty()) {
+            list.entities.swap(activateData.entities);
         }
         else {
             // Append
-            list.reserve(list.size() + activateData.size());
-            list.insert(list.end(), activateData.begin(), activateData.end());
+            list.entities.reserve(list.entities.size() + activateData.entities.size());
+            list.entities.insert(list.entities.end(), activateData.entities.begin(), activateData.entities.end());
         }
     }
 }

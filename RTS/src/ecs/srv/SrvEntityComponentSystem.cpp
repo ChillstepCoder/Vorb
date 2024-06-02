@@ -8,6 +8,7 @@
 #include "network/srv/GameServer.h"
 #include "network/srv/SrvMessage.h"
 
+
 void SrvEntityComponentSystem::tick(f32 elapsedSec)
 {
     PROFILE_FUNCTION();
@@ -56,6 +57,6 @@ entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const
 
 
 void SrvEntityComponentSystem::destroyEntity(entt::entity entity) {
-    mRegistry.destroy(entity);
+    EntityFactory::destroyEntity(mWorld, entity);
 }
 

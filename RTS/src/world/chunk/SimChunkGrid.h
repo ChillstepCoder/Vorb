@@ -62,6 +62,9 @@ public:
 
     SimChunkTileReservationHandle tryReserveHarvestableAtTilePos(TileCoord worldPos, TileHarvestable harvestable);
 
+    // Items
+    bool tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos);
+
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }
 private:

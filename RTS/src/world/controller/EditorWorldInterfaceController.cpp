@@ -326,7 +326,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             ItemStack woodPile;
             // TODO: AssetHandle?
             woodPile.id = ItemRepository::get().getAssetID(CStrToken("wood_raw"));
-            woodPile.quantity = 25;
+            woodPile.count = 25;
             if (std::unique_ptr<ItemReservation> itemPromise = stockPile->tryPromiseItemStack(woodPile, 1)) {
                 while (!itemPromise->isFinished()) {
                     itemPromise->fulfillCurrentTarget(woodPile);

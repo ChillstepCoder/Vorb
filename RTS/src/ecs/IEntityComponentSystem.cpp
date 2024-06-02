@@ -8,8 +8,12 @@
 #include "ecs/component/SimEntityTypeComponent.h"
 #include "camera/Camera3D.h"
 
+#include "ecs/factory/EntityFactory.h"
+
 // TODO: Get rid of this
 #include "rendering/RenderContext.h"
+
+#include "debugging/DebugRenderer.h"
 
 const float DEAD_COLOR_MULT = 0.4f;
 
@@ -63,24 +67,37 @@ void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
 	mCharacterControlSystem.update(mRegistry);
 }
 
-void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkEntityFullActivateDataList&& entities) {
+void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullActivateData&& data) {
 
 	ASSERT_GAME_THREAD();
 	ChunkID chunkId = chunk.getChunkID();
 	auto&& it = mPendingEntities.find(chunkId);
 	if (it == mPendingEntities.end()) {
-        mPendingEntities.emplace(chunkId, std::move(entities));
+        mPendingEntities.emplace(chunkId, std::move(data));
 	}
 	else {
-		it->second.insert(it->second.end(), entities.begin(), entities.end());
+        ChunkFullActivateData& existingData = it->second;
+        // Merge entities
+        existingData.entities.insert(it->second.entities.end(), data.entities.begin(), data.entities.end());
+        // Merge item maps
+        for (auto&& sit : data.itemStacks) { 
+            // Target
+            auto&& tit = existingData.itemStacks.find(sit.first);
+            if (tit == existingData.itemStacks.end()) {
+                existingData.itemStacks.emplace(sit.first, std::move(sit.second));
+            }
+            else {
+                tit->second.insert(tit->second.end(), sit.second.begin(), sit.second.end());
+            }
+        }
 	}
 }
 
-void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkEntityFullActivateDataList& entities) {
+void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkFullActivateData& data) {
     ASSERT_GAME_THREAD();
 
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    for (const EntityFullActivateData& activateData : entities) {
+    for (const EntityFullActivateData& activateData : data.entities) {
         // TODO: I dont think we need thread safe here as main thread is only writer?
         const f32 zPos = heightGrid.computeHeightAtPoint<true>(activateData.simPosition);
         entt::entity newEntity = entt::null;
@@ -102,6 +119,17 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, con
         mRegistry.emplace<SimEntityTypeComponent>(newEntity).type = activateData.entityType;
         static_assert(e_count(SimEntityType) == 4);
     }
+
+    // Items
+    const f32v2 worldPosChunkWithTileOffset(chunk.getWorldPos().x + 0.5f, chunk.getWorldPos().y + 0.5f);
+    for (auto&& [itemID, stacks] : data.itemStacks) {
+        for (const TileItemStack& stack : stacks) {
+            const f32v2 worldPos(worldPosChunkWithTileOffset + f32v2(stack.tileIndex % CHUNK_WIDTH, stack.tileIndex / CHUNK_WIDTH));
+            const f32v3 pos3(worldPos.x, worldPos.y, heightGrid.computeHeightAtPoint<true>(worldPos));
+            EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID));
+            DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 999999);
+        }
+    }
 }
 
 ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForChunk(Chunk& chunk) {
@@ -113,7 +141,6 @@ ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForC
 	std::vector<entt::entity> unboundEntities;
 
 	for (entt::entity e : chunkEntities) {
-		// Ignore things with no binding, such as players
 		if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(e)) [[likely]] {
             EntityFullDeactivateData& ddata = rv.emplace_back();
             ddata.simEntity = bindingCmp->binding->simEntity;
@@ -123,7 +150,14 @@ ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForC
 			destroyEntity(e);
 		}
 		else {
-			unboundEntities.emplace_back(e);
+            // Keep players
+            if (mRegistry.all_of<PlayerControlComponent>(e)) {
+                unboundEntities.emplace_back(e);
+            }
+            else {
+                // Destroy everything else, assume it is tracked
+                destroyEntity(e);
+            }
 		}
 	}
 	chunkEntities.swap(unboundEntities);
@@ -183,7 +217,7 @@ void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID 
                 rebuildData.binding = bindingCmp->binding;
                 rebuildData.entityType = mRegistry.get<SimEntityTypeComponent>(entity).type;
                 rebuildData.simPosition = mRegistry.get<PositionComponent>(entity).mPosition;
-                mPendingEntities[newChunk].emplace_back(rebuildData);
+                mPendingEntities[newChunk].entities.emplace_back(rebuildData);
             }
             destroyEntity(entity);
         }

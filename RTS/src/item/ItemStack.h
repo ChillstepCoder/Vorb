@@ -57,46 +57,60 @@ enum class ItemStackFlags : ui8 {
 };
 static_assert(e_cast(ItemStackFlags::TERM) <= 0b11111, "Fit in 5 bits (See ItemStack::flags)");
 
+struct ItemProperties {
+    ItemQuality quality : 3 = ItemQuality::Standard;
+    ItemBehaviorModifier behaviorModifier : 5 = ItemBehaviorModifier::None;
+    InventoryBagType bagType : 3 = InventoryBagType::COUNT;
+    ItemStackFlags flags : 5 = {};
+    ui16 durability = std::numeric_limits<ui16>::max();
+
+    auto operator<=>(const ItemProperties&) const = default;
+};
+
+
+enum class SimpleItemStackFlags : ui8 {
+    Harvestable = BIT(0),
+};
+
+// No properties, just item ID and quantity
+struct SimpleItemStack {
+    ItemID itemId = INVALID_ITEM_ID;
+    TileHarvestable harvestableType = TileHarvestable::None;
+    BitFlags<SimpleItemStackFlags> flags;
+    ui32 count = 0;
+};
+static_assert(sizeof(SimpleItemStack) == 8);
+
 // Maximum stack size is 4,294,967,295 
 struct ItemStack {
     ItemStack() = default;
-    ItemStack(ui32 itemId, ui32 quantity) : id(itemId), quantity(quantity) {}
+    ItemStack(ui32 itemId, ui32 count) : id(itemId), count(count) {}
+    ItemStack(ui32 itemId, ui32 count, ItemProperties props) : id(itemId), count(count), props(props) {}
+    ItemStack(SimpleItemStack simpleStack) {
+        count = simpleStack.count;
+        id = simpleStack.itemId;
+    }
 
     bool canCombine(const ItemStack other) const {
         constexpr auto offset = offsetof(ItemStack, id);
         return memcmp(this + offset, &other + offset, sizeof(ItemStack) - offset) == 0;
     }
 
-    ui32 quantity = 0;
+    ui32 count = 0;
     ItemID id = INVALID_ITEM_ID;
-    ItemQuality quality : 3 = ItemQuality::Standard;
-    ItemBehaviorModifier behaviorModifier : 5 = ItemBehaviorModifier::None;
-    InventoryBagType bagType : 3 = InventoryBagType::COUNT;
-    ItemStackFlags flags : 5 = {};
-    ui16 durability = UINT16_MAX;
-    ui16 taskReservedCount = 0; // Amount reserved for current task
+    ui16 reservedCount = 0;
+    ItemProperties props;
 
-    bool isNull() const { return quantity == 0; }
-    bool isValid() const { return quantity > 0; }
+    bool isNull() const { return count == 0; }
+    bool isValid() const { return count > 0; }
 
     BINARY_SERIALIZE() {
         s.ext(*this, bitsery::ext::PodStruct{});
     }
 };
+
 static_assert(sizeof(ItemStack) == 12);
 
-enum class FillableItemstackFlags : ui8 {
-    Harvestable = BIT(0),
-};
-
-// No durabilities, just item ID and quantity
-struct SimpleItemStack {
-    ItemID itemId = INVALID_ITEM_ID;
-    TileHarvestable harvestableType = TileHarvestable::None;
-    BitFlags<FillableItemstackFlags> flags;
-    ui32 quantity = 0;
-};
-static_assert(sizeof(SimpleItemStack) == 8);
 
 // Represents a ledger of a stack of simple items that we want to fill
 struct FillableSimpleItemStack {
@@ -104,10 +118,43 @@ struct FillableSimpleItemStack {
     i32 getMaxPromiseSize() const { return (desiredQuantity - filledQuantity) - promisedQuantity; }
 
     ItemID itemId = INVALID_ITEM_ID;
-    BitFlags<FillableItemstackFlags> flags;
+    BitFlags<SimpleItemStackFlags> flags;
     TileHarvestable harvestableType = TileHarvestable::None;
     ui32 desiredQuantity = 0; 
     ui32 filledQuantity = 0; 
     ui32 promisedQuantity = 0; // Number of items that are committed to be filled but are not yet
 };
 static_assert(sizeof(FillableSimpleItemStack) == 16);
+
+constexpr int MAX_TILE_ITEM_STACK_SIZE = std::numeric_limits<ui16>::max();
+
+struct TileItemStack {
+public:
+
+    bool canCombine(const ItemStack& other) const {
+        return props == other.props && (int)count + (int)other.count <= MAX_TILE_ITEM_STACK_SIZE;
+    }
+    bool tryCombine(ItemStack& other) {
+        if (canCombine(other)) {
+            count += other.count;
+            other.count = 0;
+            return true;
+        }
+        return false;
+    }
+
+    BINARY_SERIALIZE() {
+        s.ext(*this, bitsery::ext::PodStruct{});
+    }
+public:
+
+    ItemStack toItemStack(ItemID itemId) const {
+        return ItemStack(itemId, count, props);
+    }
+
+public:
+    ChunkTileIndex tileIndex;
+    ui16 count = 0;
+    ui16 reservedCount = 0;
+    ItemProperties props;
+};

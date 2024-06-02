@@ -282,52 +282,52 @@ bool Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_
     outGrassData[PADDED_CHUNK_WIDTH - 1][PADDED_CHUNK_WIDTH - 1] = outGrassData[PADDED_CHUNK_WIDTH - 2][PADDED_CHUNK_WIDTH - 2];
     return true;
 }
-
-void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
-    assert(mTileContainer);
-    IHeightmapGrid& heightmapGrid = mWorld->getHeightmapGrid();
-
-    constexpr ui32 DEBUG_DURATION = 100;
-    const f32v2 dims = f32v2(CHUNK_WIDTH);
-    const f32v2 halfDims = dims * 0.5f;
-    const f32v2 worldPos = getWorldPos();
-    const f32v2 offsetFromCenter = editPosition - (worldPos + halfDims);
-    std::vector<std::pair<TileIndex, f32>> bulkEdit;
-    if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
-
-        // TODO: dirty grass
-
-        // Update baseZ position
-        const f32v2 startPos = editPosition - f32v2(editRadius);
-        f32v2 offsetFromChunk = startPos - worldPos;
-        f32 rangeX = editRadius * 2.0f;
-        f32 rangeY = editRadius * 2.0f;
-        if (offsetFromChunk.x < 0.0f) {
-            rangeX += offsetFromChunk.x;
-            offsetFromChunk.x = 0.0f;
-        }
-        if (offsetFromChunk.y < 0.0f) {
-            rangeY += offsetFromChunk.y;
-            offsetFromChunk.y = 0.0f;
-        }
-        for (f32 y = 0.0f; y <= rangeY; ++y) {
-            for (f32 x = 0.0f; x <= rangeX; ++x) {
-                const ui32v2 chunkRelPos(offsetFromChunk.x + x, offsetFromChunk.y + y);
-                if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
-                    TileIndex tileIndex = mTileContainer->getTileSpatialGrid().getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
-                    bulkEdit.emplace_back(std::make_pair(tileIndex, heightmapGrid.computeCenterHeightAtTile<false>(f32v2(chunkRelPos) + worldPos)));
-                    //if (tile.getLayers()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
-                        // If we have no ground layer, then we just set base Z to ground height
-                        //mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeMinHeightAtTile(f32v2(chunkRelPos) + worldPos));
-                    //}
-                    //else {
-                        // What happens here? What happens when we cover up the tile?
-                    //}
-                }
-            }
-        }
-        if (bulkEdit.size()) {
-            mTileContainer->bulkSetTileGroundZPosition(bulkEdit.data(), bulkEdit.size());
-        }
-    }
-}
+// TODO: This wasnt hooked up to anything, is it needed?
+//void Chunk::onTerrainDataChanged(const i32v2& editPosition, f32 editRadius) {
+//    assert(mTileContainer);
+//    IHeightmapGrid& heightmapGrid = mWorld->getHeightmapGrid();
+//
+//    constexpr ui32 DEBUG_DURATION = 100;
+//    const i32v2 dims = i32v2(CHUNK_WIDTH);
+//    const i32v2 halfDims = dims / 2;
+//    const i32v2 worldPos = getWorldPos();
+//    const i32v2 offsetFromCenter = editPosition - (worldPos + halfDims);
+//    std::vector<std::pair<TileIndex, f32>> bulkEdit;
+//    if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
+//
+//        // TODO: dirty grass
+//
+//        // Update baseZ position
+//        const f32v2 startPos = editPosition - f32v2(editRadius);
+//        f32v2 offsetFromChunk = startPos - worldPos;
+//        f32 rangeX = editRadius * 2.0f;
+//        f32 rangeY = editRadius * 2.0f;
+//        if (offsetFromChunk.x < 0.0f) {
+//            rangeX += offsetFromChunk.x;
+//            offsetFromChunk.x = 0.0f;
+//        }
+//        if (offsetFromChunk.y < 0.0f) {
+//            rangeY += offsetFromChunk.y;
+//            offsetFromChunk.y = 0.0f;
+//        }
+//        for (f32 y = 0.0f; y <= rangeY; ++y) {
+//            for (f32 x = 0.0f; x <= rangeX; ++x) {
+//                const i32v2 chunkRelPos(offsetFromChunk.x + x, offsetFromChunk.y + y);
+//                if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
+//                    TileIndex tileIndex = mTileContainer->getTileSpatialGrid().getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
+//                    bulkEdit.emplace_back(std::make_pair(tileIndex, heightmapGrid.computeCenterHeightAtTile<false>(TileCoord(chunkRelPos) + worldPos)));
+//                    //if (tile.getLayers()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
+//                        // If we have no ground layer, then we just set base Z to ground height
+//                        //mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeMinHeightAtTile(f32v2(chunkRelPos) + worldPos));
+//                    //}
+//                    //else {
+//                        // What happens here? What happens when we cover up the tile?
+//                    //}
+//                }
+//            }
+//        }
+//        if (bulkEdit.size()) {
+//            mTileContainer->bulkSetTileGroundZPosition(bulkEdit.data(), bulkEdit.size());
+//        }
+//    }
+//}

@@ -62,7 +62,7 @@ class IHeightmapGrid
 {
     friend class WorldSaveContext;
 public:
-    IHeightmapGrid(ui32 worldWidthTiles);
+    IHeightmapGrid(i32 worldWidthTiles);
     ~IHeightmapGrid();
 
     VORB_NON_COPYABLE(IHeightmapGrid);
@@ -80,11 +80,11 @@ public:
 
     // Mutators
     void setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
-    void setHeightAtChunkId(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
-    void setHeightAtPatch(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
-    void adjustHeightAtChunk(ChunkID id, ui32 vertIndex, f32 adjust);
-    void adjustHeightAtPatch(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
-    void markVertexDirty(HeightmapPatchID id, ui32 vertIndex);
+    void setHeightAtChunkId(ChunkID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
+    void setHeightAtPatch(HeightmapPatchID patchId, i32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
+    void adjustHeightAtChunk(ChunkID id, i32 vertIndex, f32 adjust);
+    void adjustHeightAtPatch(HeightmapPatchID id, i32 vertIndex, f32 adjust);
+    void markVertexDirty(HeightmapPatchID id, i32 vertIndex);
     void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
     template<bool THREAD_SAFE>
@@ -105,17 +105,16 @@ public:
     f32 computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
 
     template <bool THREAD_SAFE>
-    f32 computeCenterHeightAtTile(ui32v2 worldTilePos) const;
+    f32 computeCenterHeightAtTile(TileCoord worldTilePos) const;
 
     template <bool THREAD_SAFE>
-    f32 computeCenterHeightAndNormalAtTile(ui32v2 worldTilePos, OUT f32v3* outNormal) const;
+    f32 computeCenterHeightAndNormalAtTile(TileCoord worldTilePos, OUT f32v3* outNormal) const;
 
-    void computeTileCorners(ui32v2 worldTilePos, OUT f32 corners[4]) const;
+    void computeTileCorners(TileCoord worldTilePos, OUT f32 corners[4]) const;
     bool areTrianglesFlippedAtTile(const TileHandle& tileHandle) const;
-    //void copyHeightRowToBuffer(CompressedHeight* dst, i32v2 worldPosStart, ui32 rowLength) const;
 
-    f32 computeMinHeightAtTile(ui32v2 worldTilePos) const;
-    f32 computeMaxHeightAtTile(ui32v2 worldTilePos) const;
+    f32 computeMinHeightAtTile(TileCoord worldTilePos) const;
+    f32 computeMaxHeightAtTile(TileCoord worldTilePos) const;
 
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb) const;
     f32 computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const;
@@ -125,14 +124,14 @@ public:
     void setWorld(World& world) { mWorld = &world; }
     f32 getPatchWidthTiles() const { return HEIGHTMAP_PATCH_WIDTH_TILES; }
     f32 getPatchWidthVerts() const { return HEIGHTMAP_VERT_WIDTH_PER_PATCH; }
-    ui32 getWidthPatches() const { return mWidthPatches; }
-    ui32 getTotalPatches() const { return SQ(mWidthPatches); }
+    i32 getWidthPatches() const { return mWidthPatches; }
+    i32 getTotalPatches() const { return SQ(mWidthPatches); }
 
     EVENT_LISTENER_FUNCS(IHeightmapGrid, EditVerts, HeightmapGridEventType::EditVerts, const HeightmapGridEvent&);
 
 protected:
     void initInternal();
-    void setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
+    void setHeightAtInternal(HeightmapPatchID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
     template <bool THREAD_SAFE>
@@ -142,8 +141,8 @@ protected:
 
     SpatialGrid2D mSpatialGrid2D;
     std::unique_ptr<HeightmapPatch[]> mHeightData;
-    ui32 mWidthPatches = 0;
-    ui32 mTotalPatches;
+    i32 mWidthPatches = 0;
+    i32 mTotalPatches;
     f32 mMaxCoordinate;
 
     World* mWorld = nullptr;
@@ -159,7 +158,7 @@ protected:
         if (!mHeightData) {
             initInternal();
         }
-        for (ui32 i = 0; i < mTotalPatches; ++i) {
+        for (i32 i = 0; i < mTotalPatches; ++i) {
             s.object(mHeightData[i]);
         }
     }

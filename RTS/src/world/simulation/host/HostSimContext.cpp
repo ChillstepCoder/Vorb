@@ -161,11 +161,14 @@ void HostSimContext::initEvents() {
 
         mSimThread->addTask([this, &chunk]() {
             mSimulatingChunks.clearBit(chunk.getChunkID());
-            ChunkEntityFullActivateDataList entities = mSimECS->simThreadOnActivateChunk(chunk.getChunkID());
-
-            mWorld.getSimChunkGrid().getChunk(chunk.getChunkID()).bindEditEventToChunkTileContainer(chunk);
-            GameThreadTasks::getInstance().addGenericTask([this, &chunk, entities = std::move(entities)]() mutable {
-                mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(entities));
+            ChunkFullActivateData activateData;
+            activateData.entities = mSimECS->simThreadOnActivateChunk(chunk.getChunkID());
+            SimChunk& simChunk = mWorld.getSimChunkGrid().getChunk(chunk.getChunkID());
+            activateData.itemStacks = simChunk.getItemDataCopy();
+            simChunk.setSimulating(false);
+            simChunk.bindEditEventToChunkTileContainer(chunk);
+            GameThreadTasks::getInstance().addGenericTask([this, &chunk, activateData = std::move(activateData)]() mutable {
+                mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(activateData));
                 chunk.setState(ChunkState::READY_TO_LOAD);
             });
         });
@@ -178,9 +181,11 @@ void HostSimContext::initEvents() {
         chunk.setState(ChunkState::DESTROYING_ON_SIM);
         ChunkEntityFullDeactivateDataList deactivateList = mWorld.getECS().deactivateEntitiesForChunk(chunk);
 
-        mWorld.getSimChunkGrid().getChunk(chunk.getChunkID()).unBindEditEventToChunkTileContainer();
-        mSimThread->addTask([this, &chunk, deactivateList = std::move(deactivateList)]() {
+        SimChunk& simChunk = mWorld.getSimChunkGrid().getChunk(chunk.getChunkID());
+        simChunk.unBindEditEventToChunkTileContainer();
+        mSimThread->addTask([this, &chunk, &simChunk, deactivateList = std::move(deactivateList)]() {
             mSimulatingChunks.setBit(chunk.getChunkID());
+            simChunk.setSimulating(true);
             mSimECS->simThreadOnFullDeactivateEntities(chunk.getChunkID(), deactivateList);
 
             // Allow main thread to reactivate this chunk

@@ -33,6 +33,7 @@ public:
 	const char* getTaskName() const override;
 
 private:
+	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
 	enum class State {
 		Init,

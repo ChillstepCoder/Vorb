@@ -116,6 +116,22 @@ static void dispatch##eventName##(paramType p) { \
     s##name##EventDispatcher.dispatch(eventType, p); \
 }
 
+// Create add/remove functions for a specific event
+#define STATIC_EVENT_LISTENER_FUNCS_ADAPTOR(name, eventName, eventType, paramType) \
+static [[nodiscard("event handle leak")]] name##EventDispatcher::Handle add##eventName##Listener(const std::function<void(paramType)>& callback) { \
+    return s##name##EventDispatcher.appendListener(eventType, eventpp::argumentAdapter<void(paramType)>(callback)); \
+} \
+static bool add##eventName##Listener(name##Listeners& remover, const std::function<void(paramType)>& callback) { \
+    return remover.appendListener(eventType, eventpp::argumentAdapter<void(paramType)>(callback)); \
+} \
+static void remove##eventName##Listener(const name##EventDispatcher::Handle& handle) { \
+    s##name##EventDispatcher.removeListener(eventType, handle); \
+} \
+static void dispatch##eventName##(paramType p) { \
+    s##name##EventDispatcher.dispatch(eventType, p); \
+}
+
+
 
 /************************************************************************\
  *                     The Event Implementation OLD                      *

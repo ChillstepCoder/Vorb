@@ -13,6 +13,7 @@
 #include "item/ItemDef.h"
 #include "resources/TileRepository.h"
 
+#include "ai/AIActions.h"
 #include "ai/jobs/ConstructBuildingSimJob.h"
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBuildingSimTask, 256);
@@ -34,8 +35,8 @@ ConstructBuildingSimTask::ConstructBuildingSimTask(
             itemToFill.itemId = blueprint.itemComposition[i].itemId;
 
             // TODO: Account this entities carry weight, nearby items, equipped items, ect when deciding what to commit to
-            itemToFill.quantity = glm::min(quantityPromisable, TMP_MAX_COUNT);
-            blueprint.itemComposition[i].promisedQuantity += itemToFill.quantity;
+            itemToFill.count = glm::min(quantityPromisable, TMP_MAX_COUNT);
+            blueprint.itemComposition[i].promisedQuantity += itemToFill.count;
             break;
         }
     }
@@ -63,7 +64,7 @@ ConstructBuildingSimTask::ConstructBuildingSimTask(
         }
     });
 
-    blueprint.totalItemsUnpromised -= itemToFill.quantity;
+    blueprint.totalItemsUnpromised -= itemToFill.count;
     assert(blueprint.totalItemsUnpromised >= 0);
 
     // Bind handles
@@ -112,7 +113,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     TileRepository::get().getLoadedOrUnloadedAsset(tileData.tileId).harvestable != mHarvestableToAquire) {
                     // TODO: Instead fall back to finding new tile
                     LOG_WARN("Need to find new tile in harvest state for construct blueprint due to lost harvestable");
-                    mState = State::End;
+                    cleanupSim(world, simRegistry, simAgent);
                     return SimTaskTickResult::Fail;
                 }
 
@@ -128,7 +129,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 if (clearedTileID == TILE_ID_NONE) {
                     // TODO: Instead fall back to finding new tile
                     LOG_WARN("Need to find new tile in harvest state for construct blueprint");
-                    mState = State::End;
+                    cleanupSim(world, simRegistry, simAgent);
                     return SimTaskTickResult::Fail;
                 }
 
@@ -138,7 +139,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 const i32 resultCount = TileRepository::get().getLoadedOrUnloadedAsset(clearedTileID).itemDrops.roll(std::span(rollResults, MAX_ROLL_RESULTS));
                 if (!resultCount) {
                     LOG_WARN("Failed item drop result on construct blueprint task");
-                    mState = State::End;
+                    cleanupSim(world, simRegistry, simAgent);
                     return SimTaskTickResult::Fail;
                 }
 
@@ -159,12 +160,13 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     const i32 quantity = rollResults[i].quantity;
                     if (i == bundleSelect) {
                         SimResourceBundleComponent& bundle = simRegistry.get_or_emplace<SimResourceBundleComponent>(simAgent);
-                        // TODO: Drop old??
+
                         if (bundle.itemStack.itemId != INVALID_ITEM_ID) {
-                            LOG_WARN("Overwriting item in bundle");
+                            LOG_WARN("Dropping old bundle");
+                            AIActions::dropBundleSim(world, simRegistry, simAgent);
                         }
                         bundle.itemStack.itemId = itemAsset.getAssetID();
-                        bundle.itemStack.quantity = quantity;
+                        bundle.itemStack.count = quantity;
                         bundle.itemStack.harvestableType = mHarvestableToAquire; // TODO: ensure this is correct?
                     }
                     else {
@@ -185,12 +187,12 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
 
                     // We have extra items, let the BP know we intend to use them!
                     i32 existingPromiseSize = mBlueprintItemPromise->getRemainingQuantity(bundleItem.itemId);
-                    const i32 countDiff = bundleItem.quantity - existingPromiseSize;
+                    const i32 countDiff = bundleItem.count - existingPromiseSize;
                     if (countDiff > 0) {
                         const i32 promiseIncrease = glm::min(countDiff, mContext.blueprint.getMaxPromiseSize(bundleItem.itemId));
                         if (!mBlueprintItemPromise->tryIncreasePromisedQuantity(bundleItem.itemId, promiseIncrease)) {
                             LOG_WARN("Already fulfilled our promise in MoveToBlueprint");
-                            mState = State::End;
+                            cleanupSim(world, simRegistry, simAgent);
                             return SimTaskTickResult::Fail;
                         }
                     }
@@ -211,7 +213,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 else {
                     // Lost our bundle somehow...
                     LOG_WARN("Lost bundle in construct blueprint task");
-                    mState = State::End;
+                    cleanupSim(world, simRegistry, simAgent);
                     return SimTaskTickResult::Fail;
                 }
             }
@@ -224,15 +226,15 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     SimpleItemStack& bundleItem = bundle->itemStack;
 
                     FillableRecipe& recipe = mContext.blueprint.getRecipeForTargetData(mTargetData);
-                    const i32 remainder = recipe.fillItemAndReturnRemainder(bundleItem.itemId, bundleItem.quantity);
-                    const i32 filledQuantity = bundleItem.quantity - remainder;
+                    const i32 remainder = recipe.fillItemAndReturnRemainder(bundleItem.itemId, bundleItem.count);
+                    const i32 filledQuantity = bundleItem.count - remainder;
                     if (!mBlueprintItemPromise->tryFulfillQuantity(bundleItem.itemId, filledQuantity)) {
                         LOG_WARN("Already fulfilled our promise in PlaceItems");
                         mState = State::End;
                         return SimTaskTickResult::Fail;
                     }
                     mContext.blueprint.totalItemsUnfulfilled -= filledQuantity;
-                    bundleItem.quantity = remainder;
+                    bundleItem.count = remainder;
 
                     if (recipe.isFullyFilled()) {
                         // Will be pulled during construction
@@ -242,7 +244,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     }
                     mTargetData.invalidate();
                    
-                    if (bundleItem.quantity > 0) {
+                    if (bundleItem.count > 0) {
                         std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetForItem(bundleItem.itemId);
                         if (targetData) {
                             mTargetData = *targetData;
@@ -262,7 +264,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 else {
                     // Lost our bundle somehow...
                     LOG_WARN("Lost bundle in construct blueprint task place items");
-                    mState = State::End;
+                    cleanupSim(world, simRegistry, simAgent);
                     return SimTaskTickResult::Fail;
                 }
             }
@@ -279,7 +281,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
             }
             else {
                 // Nothing to do anymore in this task cycle
-                mState = State::End;
+                cleanupSim(world, simRegistry, simAgent);
                 return SimTaskTickResult::Success;
             }
         }
@@ -340,7 +342,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                 }
                 else {
                     // Nothing to do anymore in this task cycle
-                    mState = State::End;
+                    cleanupSim(world, simRegistry, simAgent);
                     return SimTaskTickResult::Success;
                 }
             }
@@ -352,4 +354,9 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
 
 const char* ConstructBuildingSimTask::getTaskName() const {
     throw std::logic_error("The method or operation is not implemented.");
+}
+
+void ConstructBuildingSimTask::cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+    AIActions::dropBundleSim(world, simRegistry, simAgent);
+    mState = State::End;
 }

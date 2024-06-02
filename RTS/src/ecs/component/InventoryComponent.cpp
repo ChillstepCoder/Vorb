@@ -15,39 +15,39 @@ f32 InventoryComponent::getEncumbermentRatio(InventoryBagType bagType) const {
 }
 
 bool InventoryComponent::addOrDropItemStack(ItemStack itemStack) {
-    assert(itemStack.bagType != InventoryBagType::COUNT);
+    assert(itemStack.props.bagType != InventoryBagType::COUNT);
     const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
     // TODO: Handle inventory weight and overflow
     auto range = mItems.equal_range(itemStack.id);
     for (auto&& it = range.first; it != range.second; ++it) {
         if (it->second.canCombine(itemStack)) {
-            it->second.quantity += itemStack.quantity;
-            mBagWeights[e_cast(itemStack.bagType)] += weight * itemStack.quantity;
+            it->second.count += itemStack.count;
+            mBagWeights[e_cast(itemStack.props.bagType)] += weight * itemStack.count;
             return true;
         }
     }
     mItems.emplace(itemStack.id, itemStack);
-    mBagWeights[e_cast(itemStack.bagType)] += weight * itemStack.quantity;
+    mBagWeights[e_cast(itemStack.props.bagType)] += weight * itemStack.count;
     return true;
 }
 
 int InventoryComponent::removeItemStack(ItemStack itemStack) {
-    assert(itemStack.bagType != InventoryBagType::COUNT);
+    assert(itemStack.props.bagType != InventoryBagType::COUNT);
     const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
     auto range = mItems.equal_range(itemStack.id);
     for (auto&& it = range.first; it != range.second; ++it) {
         if (it->second.canCombine(itemStack)) {
             ItemStack& existing = it->second;
             if (existing.id == itemStack.id) {
-                if (existing.quantity > itemStack.quantity) {
-                    existing.quantity -= itemStack.quantity;
-                    mBagWeights[e_cast(itemStack.bagType)] -= weight * itemStack.quantity;
-                    return itemStack.quantity;
+                if (existing.count > itemStack.count) {
+                    existing.count -= itemStack.count;
+                    mBagWeights[e_cast(itemStack.props.bagType)] -= weight * itemStack.count;
+                    return itemStack.count;
                 }
                 else {
-                    int removedCount = existing.quantity;
+                    int removedCount = existing.count;
                     mItems.erase(it);
-                    mBagWeights[e_cast(itemStack.bagType)] -= weight * removedCount;
+                    mBagWeights[e_cast(itemStack.props.bagType)] -= weight * removedCount;
                     return removedCount;
                 }
             }
@@ -58,7 +58,7 @@ int InventoryComponent::removeItemStack(ItemStack itemStack) {
 }
 
 bool InventoryComponent::canCarryItemStack(ItemStack itemStack) const {
-    assert(itemStack.bagType != InventoryBagType::COUNT);
+    assert(itemStack.props.bagType != InventoryBagType::COUNT);
     const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
-    return itemStack.quantity * weight + mBagWeights[e_cast(itemStack.bagType)] <= getMaxCarryWeight(itemStack.bagType);
+    return itemStack.count * weight + mBagWeights[e_cast(itemStack.props.bagType)] <= getMaxCarryWeight(itemStack.props.bagType);
 }

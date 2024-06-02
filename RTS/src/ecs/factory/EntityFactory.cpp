@@ -150,6 +150,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
 }
 
 entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemStack itemStack) {
+    ASSERT_GAME_THREAD();
     IEntityComponentSystem& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
@@ -181,5 +182,53 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     else {
         panic("Need fallback sack model for items without model refs in EntityFactory::createItemProjectile");
     }
+
+    const WorldEntityEvent event(world, newEntity);
+    world.dispatchOnEntityCreated(event);
+
     return newEntity;
+}
+
+entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, ItemStack itemStack) {
+    ASSERT_GAME_THREAD();
+    IEntityComponentSystem& ecs = world.getECS();
+    entt::registry& registry = ecs.mRegistry;
+    const entt::entity newEntity = registry.create();
+
+    registry.emplace<PositionComponent>(newEntity, position);
+    registry.emplace<ItemComponent>(newEntity, itemStack);
+    OrientationComponent& orientCmp = registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
+
+    ItemRepository& itemRepo = ItemRepository::get();
+    const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
+    if (itemDef.mModelRef.isValid()) {
+        StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(newEntity, itemDef.mModelRef.getAssetID());
+        assert(RenderContext::exists());
+        // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
+        InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+        staticCmp.staticModelInstanceId = modelMgr.addLooseModelInstance(
+            staticCmp.modelId, orientCmp.mOrientation, position, 0 /*TODO Variant*/
+        );
+    }
+    else {
+        panic("Need fallback sack model for items without model refs in EntityFactory::createItemOnGroundEntity");
+    }
+    return newEntity;
+}
+
+void EntityFactory::destroyEntity(World& world, entt::entity entity) {
+    IEntityComponentSystem& ecs = world.getECS();
+    entt::registry& registry = ecs.mRegistry;
+
+    if (PhysicsComponent* cmp = registry.try_get<PhysicsComponent>(entity)) {
+        world.getPhysicsWorld().deleteRigidBody(cmp->mRigidBody);
+    }
+
+    if (StaticModelComponent* cmp = registry.try_get<StaticModelComponent>(entity)) {
+        // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
+        InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+        modelMgr.removeLooseModelInstance(cmp->modelId, cmp->staticModelInstanceId);
+    }
+
+    registry.destroy(entity);
 }
