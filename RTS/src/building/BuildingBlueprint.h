@@ -57,7 +57,6 @@ class BuildingBlueprint {
 public:
 
     BitArray computeSolidTilesFirstFloor() const;
-    bool isFinished() const { return desc != nullptr; }
     void assignToSettlement(entt::entity settlementEntity, SettlementPlotID plotID) {
         ASSERT_SIM_THREAD();
         parentSettlement = settlementEntity;
@@ -76,6 +75,8 @@ public:
         return 0;
     }
     FillableRecipe& getRecipeForTargetData(BuildContextTargetData data) const;
+
+    ui32 getNextReservationID() { ASSERT_SIM_THREAD(); return nextItemReservationId++;  }
 
 private:
 

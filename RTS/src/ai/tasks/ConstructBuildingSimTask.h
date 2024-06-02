@@ -18,7 +18,7 @@ class ConstructBuildingSimTask : public ISimTask
 public:
 	// We will aquire the tileReservations, and the job will release them after
 	ConstructBuildingSimTask(
-		World& world, ConstructBuildingSimJob& parentJob, SimChunkTileReservationHandle&& tileReservation, TileHarvestable harvestableToAquire
+		World& world, ConstructBuildingSimJob& parentJob, entt::registry& simRegistry, entt::entity simAgent
 	);
 	~ConstructBuildingSimTask();
 
@@ -33,6 +33,8 @@ public:
 	const char* getTaskName() const override;
 
 private:
+	bool trySelectItemSource(World& world, entt::registry& simRegistry);
+
 	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
 	enum class State {
@@ -53,7 +55,7 @@ private:
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
 	SimChunkTileReservationHandle mTileReservation;
 	ui32 mTargetReservationId = 0;
-	TileHarvestable mHarvestableToAquire;
+	TileHarvestable mHarvestableToAquire = TileHarvestable::None;
 	SimpleSimTaskTimer mTimer;
 	BuildContextTargetData mTargetData;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;

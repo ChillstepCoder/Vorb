@@ -65,73 +65,13 @@ ConstructBuildingSimJob::ConstructBuildingSimJob(World& world, Building& buildin
 
 std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) {
     ASSERT_SIM_THREAD();
-    BuildingBlueprint& blueprint = mContext.blueprint;
-    if (blueprint.totalItemsUnpromised == 0) {
+    if (isFinished()) {
         return nullptr;
     }
 
-    entt::entity settlementEntity = blueprint.parentSettlement;
-    assert(settlementEntity != entt::null);
-    SettlementHarvestableTrackerComponent& harvestTracker = simRegistry.get<SettlementHarvestableTrackerComponent>(settlementEntity);
-
-    const TileCoord settlementCenter = simRegistry.get<SettlementSimComponent>(settlementEntity).getCenterPos(mWorld.getWidthChunks());
-
-    SimChunkGrid& simGrid = mWorld.getSimChunkGrid();
-
-    // Determine what we should harvest
-    TileHarvestable harvestableToAquire = TileHarvestable::None;
-    SimChunkTileReservationHandle tileReservationHandle = nullptr;
-    // Send characters to harvestables if we need more items
-    if (blueprint.totalItemsUnpromised == 0) {
-        for (int i = 0; i < blueprint.itemCompositionCount; ++i) {
-            FillableSimpleItemStack& itemStack = blueprint.itemComposition[i];
-            const i32 difference = itemStack.desiredQuantity - itemStack.filledQuantity;
-            if (difference > 0) {
-                if (itemStack.harvestableType != TileHarvestable::None) {
-                    bool didRetry = false;
-                    do {
-                        SortedIntCoordDistanceSqMap& harvestables = harvestTracker.getLocationsForHarvestable(itemStack.harvestableType);
-                        auto&& it = harvestables.begin();
-                        while (it != harvestables.end()) {
-                            TileCoord pos(it->second);
-                            tileReservationHandle = simGrid.tryReserveHarvestableAtTilePos(pos, itemStack.harvestableType);
-                            it = harvestables.erase(it);
-                            if (tileReservationHandle) {
-                                harvestableToAquire = itemStack.harvestableType;
-                                break;
-                            }
-                        }
-                        // Only retry once
-                        if (!tileReservationHandle && !didRetry) {
-                            constexpr i32 MAX_COUNT = 64;
-                            harvestables = simGrid.getClosestUnreservedHarvestablesToPoint(settlementCenter, itemStack.harvestableType, harvestTracker.currentSearchRadiusTiles, MAX_COUNT);
-                            didRetry = true;
-                        }
-                        else {
-                            break;
-                        }
-                    } while (true);
-                    break;
-                }
-                else {
-                    assert(false); // Need to handle non harvestables
-                }
-                // Check if we managed to reserve a tile for harvest
-                if (tileReservationHandle) {
-                    break;
-                }
-            }
-        }
-
-        if (!tileReservationHandle) {
-            return nullptr;
-        }
-    }
-
-
     std::unique_ptr<ConstructBuildingSimTask> newTask =
         std::make_unique<ConstructBuildingSimTask>(
-            mWorld, *this, std::move(tileReservationHandle), harvestableToAquire
+            mWorld, *this, simRegistry, simCharacter
         );
     // If state is END then the task could not initialize
     if (newTask->mState == ConstructBuildingSimTask::State::End) {

@@ -8,6 +8,9 @@
 #include "world/settlement/SettlementLayoutManager.h"
 #include "tile/TileHarvestable.h"
 
+class SimChunkGrid;
+class SimChunkTileReservation;
+
 enum class JobType {
     
 };
@@ -113,6 +116,11 @@ struct SettlementHarvestableTrackerComponent {
         ASSERT_SIM_THREAD();
         return harvestableLocations[e_cast(harvestable)];
     }
+
+    // Find and reserve
+    std::unique_ptr<SimChunkTileReservation> tryReserveNearestHarvestable(
+        TileHarvestable harvestableType, TileCoord searchCenter, SimChunkGrid& simGrid
+    );
 
 public:
     i32 currentSearchRadiusTiles = CHUNK_WIDTH * 16;
