@@ -145,8 +145,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     // if (charControlCmp) {
    //     charControlCmp->mController = physWorld.addDynamicCharacterController(newEntity, registry.get<PhysicsComponent>(newEntity).mRigidBody, 0.0f);
    // }
-    const WorldEntityEvent event(world, newEntity);
-    world.dispatchOnEntityCreated(event);
+    world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
 
     return newEntity;
 }
@@ -185,8 +184,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
         panic("Need fallback sack model for items without model refs in EntityFactory::createItemProjectile");
     }
 
-    const WorldEntityEvent event(world, newEntity);
-    world.dispatchOnEntityCreated(event);
+    world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
 
     return newEntity;
 }
@@ -197,7 +195,8 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
-    registry.emplace<PositionComponent>(newEntity, position);
+    PositionComponent& posCmp = registry.emplace<PositionComponent>(newEntity, position);
+    posCmp.chunkId = world.getChunkIDAtWorldPos(position);
     registry.emplace<ItemComponent>(newEntity, itemStack);
     OrientationComponent& orientCmp = registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
 
@@ -215,6 +214,9 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
     else {
         panic("Need fallback sack model for items without model refs in EntityFactory::createItemOnGroundEntity");
     }
+
+    world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
+
     return newEntity;
 }
 
@@ -232,8 +234,7 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
         modelMgr.removeLooseModelInstance(cmp->modelId, cmp->staticModelInstanceId);
     }
 
-    const WorldEntityEvent event(world, newEntity);
-    world.dispatchOnEntityDestroyed(event);
+    world.dispatchOnEntityDestroyed(WorldEntityEvent(world, entity));
 
     registry.destroy(entity);
 }

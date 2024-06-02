@@ -144,8 +144,10 @@ ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForC
 		if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(e)) [[likely]] {
             EntityFullDeactivateData& ddata = rv.emplace_back();
             ddata.simEntity = bindingCmp->binding->simEntity;
-			ddata.simPosition = mRegistry.get<PositionComponent>(e).mPosition;
-			assert(mRegistry.get<PositionComponent>(e).chunkId == chunk.getChunkID());
+            PositionComponent& posCmp = mRegistry.get<PositionComponent>(e);
+			ddata.simPosition = posCmp.mPosition;
+            assert(posCmp.chunkId == chunk.getChunkID());
+            posCmp.chunkId = INVALID_CHUNK_ID;
 			// TODO: Send anything else?
 			destroyEntity(e);
 		}
@@ -273,9 +275,24 @@ void IEntityComponentSystem::initEvents() {
     mWorld.registerWorldListeners(mWorldEventListeners);
     mWorld.addOnEntityCreatedListener(mWorldEventListeners,
         [this](const WorldEntityEvent& event) {
+        ASSERT_GAME_THREAD();
         ChunkID chunkId = mRegistry.get<PositionComponent>(event.entity).chunkId;
         assert(chunkId != INVALID_CHUNK_ID);
         mEntitiesByChunk[chunkId].emplace_back(event.entity);
     });
-    x; // TODO: What about destroy?
+    mWorld.addOnEntityDestroyedListener(mWorldEventListeners,
+        [this](const WorldEntityEvent& event) {
+        ASSERT_GAME_THREAD();
+        ChunkID chunkId = mRegistry.get<PositionComponent>(event.entity).chunkId;
+        if (chunkId != INVALID_CHUNK_ID) {
+            EntityVector& entitiesInChunk = mEntitiesByChunk[chunkId];
+            for (size_t i = 0; i < entitiesInChunk.size(); ++i) {
+                if (entitiesInChunk[i] == event.entity) {
+                    entitiesInChunk[i] = entitiesInChunk.back();
+                    entitiesInChunk.pop_back();
+                    return;
+                }
+            }
+        }
+    });
 }

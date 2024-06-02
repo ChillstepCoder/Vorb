@@ -6,6 +6,7 @@
 #include "ecs/FullECSEvents.h"
 
 #include "world/ChunkGridEvent.h"
+#include "world/WorldEvents.h"
 
 #include <mutex>
 

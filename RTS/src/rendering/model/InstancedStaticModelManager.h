@@ -34,6 +34,9 @@ struct PendingModelInstance {
     ui8 variantIndex;
 };
 
+typedef boost::container::flat_map<StaticModelInstanceID, ui32 /*instanceIndex*/> InstanceIDToIndexMap;
+typedef std::unordered_map<ModelID, InstanceIDToIndexMap> LooseStaticModelInstanceMap;
+
 // Currently only supports one model instance per tile
 class InstancedStaticModelManager
 {
@@ -103,7 +106,7 @@ private:
     };
     moodycamel::ConcurrentQueue<PendingLooseModelInstance> mPendingLooseModelInstances;
 
-    std::unordered_map<ModelID, boost::container::flat_map<StaticModelInstanceID, ui32 /*instanceIndex*/>> mLooseStaticModelInstances;
+    LooseStaticModelInstanceMap mLooseStaticModelInstances;
 
     std::mutex mLooseInstanceIDMutex;
     boost::container::flat_map<ModelID, StaticModelInstanceID> mNextLooseInstanceIDs;

@@ -659,6 +659,7 @@ StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID
 void InstancedStaticModelManager::removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId) {
     PendingLooseModelInstance pendingInstance{
         .modelId = modelId,
+        .instanceId = instanceId,
         .isRemove = true
     };
 
@@ -690,12 +691,12 @@ void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelBatchDa
         batchData.mFirstDirtyInstance = instanceIndex;
     }
 
-    ModelInstanceOwnerVariant backOwner = batchData.mInstanceSources.back();
-    // Tell back owner about new position by grabbing transform position to look up
+    ModelInstanceOwnerVariant backSource = batchData.mInstanceSources.back();
+    // Tell back source about new position by grabbing transform position to look up
     // as we will be swapping and popping
-    if (std::holds_alternative<ModelInstanceContainerOwner>(backOwner)) {
+    if (std::holds_alternative<ModelInstanceContainerOwner>(backSource)) {
         // Tile container model
-        ModelInstanceContainerOwner& owner = std::get<ModelInstanceContainerOwner>(backOwner);
+        ModelInstanceContainerOwner& owner = std::get<ModelInstanceContainerOwner>(backSource);
         auto&& it2 = mTileContainerTrackedModels.find(owner.containerId);
         assert(it2 != mTileContainerTrackedModels.end());
         SpatialInstanceDataMap& backTileContainerModels = it2->second;
@@ -707,18 +708,20 @@ void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelBatchDa
         // Loose model
         auto&& it2 = mLooseStaticModelInstances.find(modelId);
         assert(it2 != mLooseStaticModelInstances.end());
-        auto&& backRef = it2->second.find(std::get<StaticModelInstanceID>(backOwner));
+        const StaticModelInstanceID backInstanceID = std::get<StaticModelInstanceID>(backSource);
+        auto&& backRef = it2->second.find(backInstanceID);
         assert(backRef != it2->second.end());
         backRef->second = instanceIndex;
     }
+    batchData.mInstanceSources[instanceIndex] = backSource;
+    batchData.mInstanceSources.pop_back();
+
 
     // Replace this instance with back instance
     batchData.mInstanceTransforms[instanceIndex] = std::move(batchData.mInstanceTransforms.back());
     batchData.mInstanceTransforms.pop_back();
     batchData.mInstanceVariants[instanceIndex] = std::move(batchData.mInstanceVariants.back());
     batchData.mInstanceVariants.pop_back();
-    batchData.mInstanceSources[instanceIndex] = backOwner;
-    batchData.mInstanceSources.pop_back();
 }
 
 void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex) {
@@ -783,12 +786,12 @@ void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, S
     auto&& instanceIt = lit->second.find(instanceId);
     assert(instanceIt != lit->second.end());
     const ui32 instanceIndex = instanceIt->second;
-    // Remove our tracked instance
-    lit->second.erase(instanceIt);
-
 
     ModelInstanceOwnerVariant backOwner = batchData.mInstanceSources.back();
     removeModelInstanceInternal(batchData, instanceIndex, modelId);
+
+    // Remove our tracked instance
+    lit->second.erase(instanceIt);
 
     // If we are empty now, remove from the model map
     if (batchData.mInstanceTransforms.empty()) {
