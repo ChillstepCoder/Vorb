@@ -1,16 +1,13 @@
 #pragma once
 
 enum class StatsType {
-    STRENGTH,
-    ENDURANCE,
-    AGILITY,
+    Strength,
+    Endurance,
+    Agility,
     COUNT
 };
 
-struct StatsComponent
-{
-
-
-    ui32 mStats[e_cast(StatsType::COUNT)]; //[Curr, Max]
+struct StatsComponent {
+    ui16 mStats[e_cast(StatsType::COUNT)];
 };
 

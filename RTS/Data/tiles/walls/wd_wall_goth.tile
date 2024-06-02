@@ -4,4 +4,4 @@ texture_method: vertical
 shape: wall
 recipe:
   - item: wood_raw
-    count: 5
+    count: 2

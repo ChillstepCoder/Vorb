@@ -503,7 +503,8 @@ void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuil
 void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
 
     constexpr f32 FLOOR_THICKNESS = 0.05f;
-    const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight + 0.0001f);
+    // Epsilon to prevent Z fighting
+    const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight + 0.005f);
 
     f32v3 positions[4];
     const f32v2 wooble0 = getStructureWoobleAtPoint(tileXYZ);

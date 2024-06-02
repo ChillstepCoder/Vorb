@@ -31,6 +31,8 @@ public:
     ISimTask* getOrAquireActiveTaskForSimCharacter(World& world, entt::registry& simRegistry, entt::entity simCharacter);
     ISimTask* getOrAquireActiveTaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter);
 
+    bool isFinished();
+
     bool isJob() const { return mIsJob; }
     ISimJob* getJob() const { assert(mIsJob); return mJob; }
     ISimTask* getTask() const { assert(!mIsJob); return mTask.get(); }

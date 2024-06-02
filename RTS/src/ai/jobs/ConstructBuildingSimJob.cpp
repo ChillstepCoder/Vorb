@@ -67,10 +67,8 @@ std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCha
     ASSERT_SIM_THREAD();
     BuildingBlueprint& blueprint = mContext.blueprint;
     if (blueprint.totalItemsUnpromised == 0) {
-        // TODO: Need to handle when BP has all items but tiles still need to be constructed
         return nullptr;
     }
-    assert(!mFinished);
 
     entt::entity settlementEntity = blueprint.parentSettlement;
     assert(settlementEntity != entt::null);
@@ -83,55 +81,59 @@ std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCha
     // Determine what we should harvest
     TileHarvestable harvestableToAquire = TileHarvestable::None;
     SimChunkTileReservationHandle tileReservationHandle = nullptr;
-    for (int i = 0; i < blueprint.itemCompositionCount; ++i) {
-        FillableSimpleItemStack& itemStack = blueprint.itemComposition[i];
-        const i32 difference = itemStack.desiredQuantity - itemStack.filledQuantity;
-        if (difference > 0) {
-            if (itemStack.harvestableType != TileHarvestable::None) {
-                bool didRetry = false;
-                do {
-                    SortedIntCoordDistanceSqMap& harvestables = harvestTracker.getLocationsForHarvestable(itemStack.harvestableType);
-                    auto&& it = harvestables.begin();
-                    while (it != harvestables.end()) {
-                        TileCoord pos(it->second);
-                        tileReservationHandle = simGrid.tryReserveHarvestableAtTilePos(pos, itemStack.harvestableType);
-                        it = harvestables.erase(it);
-                        if (tileReservationHandle) {
-                            harvestableToAquire = itemStack.harvestableType;
+    // Send characters to harvestables if we need more items
+    if (blueprint.totalItemsUnpromised == 0) {
+        for (int i = 0; i < blueprint.itemCompositionCount; ++i) {
+            FillableSimpleItemStack& itemStack = blueprint.itemComposition[i];
+            const i32 difference = itemStack.desiredQuantity - itemStack.filledQuantity;
+            if (difference > 0) {
+                if (itemStack.harvestableType != TileHarvestable::None) {
+                    bool didRetry = false;
+                    do {
+                        SortedIntCoordDistanceSqMap& harvestables = harvestTracker.getLocationsForHarvestable(itemStack.harvestableType);
+                        auto&& it = harvestables.begin();
+                        while (it != harvestables.end()) {
+                            TileCoord pos(it->second);
+                            tileReservationHandle = simGrid.tryReserveHarvestableAtTilePos(pos, itemStack.harvestableType);
+                            it = harvestables.erase(it);
+                            if (tileReservationHandle) {
+                                harvestableToAquire = itemStack.harvestableType;
+                                break;
+                            }
+                        }
+                        // Only retry once
+                        if (!tileReservationHandle && !didRetry) {
+                            constexpr i32 MAX_COUNT = 64;
+                            harvestables = simGrid.getClosestUnreservedHarvestablesToPoint(settlementCenter, itemStack.harvestableType, harvestTracker.currentSearchRadiusTiles, MAX_COUNT);
+                            didRetry = true;
+                        }
+                        else {
                             break;
                         }
-                    }
-                    // Only retry once
-                    if (!tileReservationHandle && !didRetry) {
-                        constexpr i32 MAX_COUNT = 64;
-                        harvestables = simGrid.getClosestUnreservedHarvestablesToPoint(settlementCenter, itemStack.harvestableType, harvestTracker.currentSearchRadiusTiles, MAX_COUNT);
-                        didRetry = true;
-                    }
-                    else {
-                        break;
-                    }
-                } while (true);
-                break;
+                    } while (true);
+                    break;
+                }
+                else {
+                    assert(false); // Need to handle non harvestables
+                }
+                // Check if we managed to reserve a tile for harvest
+                if (tileReservationHandle) {
+                    break;
+                }
             }
-            else {
-                assert(false); // Need to handle non harvestables
-            }
-            // Check if we managed to reserve a tile for harvest
-            if (tileReservationHandle) {
-                break;
-            }
+        }
+
+        if (!tileReservationHandle) {
+            return nullptr;
         }
     }
 
-    if (!tileReservationHandle) {
-        return nullptr;
-    }
 
     std::unique_ptr<ConstructBuildingSimTask> newTask =
         std::make_unique<ConstructBuildingSimTask>(
             mWorld, *this, std::move(tileReservationHandle), harvestableToAquire
         );
-    // If state is END then the task could not initialize, likely due to no valid items
+    // If state is END then the task could not initialize
     if (newTask->mState == ConstructBuildingSimTask::State::End) {
         return nullptr;
     }
@@ -195,17 +197,17 @@ void ConstructBuildingSimJob::initContext() {
 
     // Compile all into the context in reverse order so we can start from the back
     for (i32 f = blueprint.floorCount - 1; f >= 0; --f) {
-        // Tiles
-        for (i32 i = floorTileTargets[f].size() - 1; i >= 0; --i) {
-            i32 targetIndex = floorTileTargets[f][i];
-            FillableRecipe& recipe = blueprint.tileTargets[targetIndex].fillableRecipe;
+        // Walls
+        for (i32 i = floorWallTargets[f].size() - 1; i >= 0; --i) {
+            i32 targetIndex = floorWallTargets[f][i];
+            FillableRecipe& recipe = blueprint.wallTargets[targetIndex].fillableRecipe;
             for (i32 j = 0; j < recipe.getNumItems(); ++j) {
                 i32 remaining = recipe.getRemainingQuantityAtIndex(j);
                 if (remaining > 0) {
                     mContext.itemsToTileTargets[recipe.getRequiredItems()[j]].emplace_back(
                         BuildContextTargetData{
                             .targetIndex = targetIndex,
-                            .type = BuildContextTargetData::Type::Tile,
+                            .type = BuildContextTargetData::Type::Wall,
                         }
                     );
                 }
@@ -227,17 +229,17 @@ void ConstructBuildingSimJob::initContext() {
                 }
             }
         }
-        // Walls
-        for (i32 i = floorWallTargets[f].size() - 1; i >= 0; --i) {
-            i32 targetIndex = floorWallTargets[f][i];
-            FillableRecipe& recipe = blueprint.wallTargets[targetIndex].fillableRecipe;
+        // Tiles
+        for (i32 i = floorTileTargets[f].size() - 1; i >= 0; --i) {
+            i32 targetIndex = floorTileTargets[f][i];
+            FillableRecipe& recipe = blueprint.tileTargets[targetIndex].fillableRecipe;
             for (i32 j = 0; j < recipe.getNumItems(); ++j) {
                 i32 remaining = recipe.getRemainingQuantityAtIndex(j);
                 if (remaining > 0) {
                     mContext.itemsToTileTargets[recipe.getRequiredItems()[j]].emplace_back(
                         BuildContextTargetData{
                             .targetIndex = targetIndex,
-                            .type = BuildContextTargetData::Type::Wall,
+                            .type = BuildContextTargetData::Type::Tile,
                         }
                     );
                 }

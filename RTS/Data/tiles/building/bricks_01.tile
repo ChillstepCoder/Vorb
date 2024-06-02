@@ -4,4 +4,4 @@ materials:
 shape: floor
 recipe:
   - item: wood_raw
-    count: 3
+    count: 1

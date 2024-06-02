@@ -228,26 +228,30 @@ void SimAISystem::updateSimTask(entt::entity entity, SimTaskQueueComponent& task
     assert(taskCmp.taskQueue.size());
     // Acquire task if needed
     if (!taskCmp.activeTask) {
-        taskCmp.activeTask = taskCmp.taskQueue.front().getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
-        if (!taskCmp.activeTask) {
-            // No task available, we are done
-            taskCmp.taskQueue.pop_front();
-
-            // Try ONE more time to get a task from the next one
-            if (taskCmp.taskQueue.size()) {
-                taskCmp.activeTask = taskCmp.taskQueue.front().getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
-                if (!taskCmp.activeTask) {
-                    // If this one also failed, we will not attempt any more until next tick
-                    taskCmp.taskQueue.pop_front();
-                    return;
-                }
+        for (size_t i = 0; i < taskCmp.taskQueue.size();) {
+            taskCmp.activeTask = taskCmp.taskQueue[i].getOrAquireActiveTaskForSimCharacter(mWorld, mRegistry, entity);
+            if (taskCmp.activeTask) {
+                break;
             }
             else {
-                return;
+                if (taskCmp.taskQueue[i].isFinished()) {
+                    if (i == 0) {
+                        taskCmp.taskQueue.pop_front();
+                    }
+                    else {
+                        taskCmp.taskQueue.erase(taskCmp.taskQueue.begin() + i);
+                    }
+                }
+                else {
+                    ++i;
+                }
             }
         }
+
+        if (!taskCmp.activeTask) {
+            return;
+        }
     }
-    assert(taskCmp.activeTask);
 
     // Operate on task
     SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity, mDeltaTimeSec);

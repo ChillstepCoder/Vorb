@@ -86,6 +86,7 @@ struct ItemStack {
     ItemStack() = default;
     ItemStack(ui32 itemId, ui32 count) : id(itemId), count(count) {}
     ItemStack(ui32 itemId, ui32 count, ItemProperties props) : id(itemId), count(count), props(props) {}
+    ItemStack(ui32 itemId, ui32 count, ui16 reservedCount, ItemProperties props) : id(itemId), count(count), reservedCount(reservedCount), props(props) {}
     ItemStack(SimpleItemStack simpleStack) {
         count = simpleStack.count;
         id = simpleStack.itemId;
@@ -149,7 +150,7 @@ public:
 public:
 
     ItemStack toItemStack(ItemID itemId) const {
-        return ItemStack(itemId, count, props);
+        return ItemStack(itemId, count, reservedCount, props);
     }
 
 public:
@@ -157,4 +158,5 @@ public:
     ui16 count = 0;
     ui16 reservedCount = 0;
     ItemProperties props;
+    TileItemUID uniqueId = INVALID_TILE_ITEM_UID;
 };

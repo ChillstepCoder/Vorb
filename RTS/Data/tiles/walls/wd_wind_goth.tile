@@ -7,4 +7,4 @@ texture_method: vertical
 shape: window
 recipe:
   - item: wood_raw
-    count: 5
+    count: 2

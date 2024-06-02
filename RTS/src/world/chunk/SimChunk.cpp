@@ -290,6 +290,11 @@ void SimChunk::freeTileReservation(ChunkTileIndex tileIndex) {
     }
 }
 
+TileItemUID SimChunkItemData::generateNextItemUID() {
+    // Increment by one
+    return uniqueIdGenerator.fetch_add(1, std::memory_order_relaxed) + 1;
+}
+
 void SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack) {
     assert(stack.isValid());
     assert(stack.count <= MAX_TILE_ITEM_STACK_SIZE);
@@ -300,5 +305,5 @@ void SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack)
             return;
         }
     }
-    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props });
+    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = generateNextItemUID() });
 }

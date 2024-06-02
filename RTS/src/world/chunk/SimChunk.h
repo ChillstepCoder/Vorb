@@ -104,6 +104,9 @@ class SimChunkItemData {
     friend class SimChunk;
     friend class ChunkGenerator;
 
+public:
+    TileItemUID generateNextItemUID();
+
 private:
     void addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
 
@@ -115,6 +118,7 @@ private:
 
 private:
     std::unordered_map<ItemID, std::vector<TileItemStack>> itemStacks;
+    std::atomic<TileItemUID> uniqueIdGenerator = 0;
 };
 
 class SimChunk {

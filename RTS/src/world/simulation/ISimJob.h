@@ -23,6 +23,7 @@ public:
     void removeTaskHandle(SimTaskHandle* handle);
     i32 getRefCount() const { return mTaskHandles.size(); }
 
+    bool isFinished() const { return mFinished; }
     World& getWorld() const { return mWorld; }
 protected:
     void finishJob();

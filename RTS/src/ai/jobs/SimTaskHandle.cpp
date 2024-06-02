@@ -83,6 +83,15 @@ ISimTask* SimTaskHandle::getOrAquireActiveTaskForFullCharacter(World& world, ent
     panic("getOrAquireActiveTaskForFullCharacter NOT IMPLEMENTED");
 }
 
+bool SimTaskHandle::isFinished() {
+    if (mIsJob) {
+        return mJob->isFinished();
+    }
+    else {
+        return mTask == nullptr;
+    }
+}
+
 void SimTaskHandle::onActiveSubtaskGoToNextTask(ISimTask* task) {
     assert(task == mTask.get());
     assert(task->getNextTask());
