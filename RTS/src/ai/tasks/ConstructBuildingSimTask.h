@@ -34,6 +34,7 @@ public:
 	const char* getTaskName() const override;
 
 private:
+	void initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount);
 	bool trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
 	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
@@ -55,9 +56,9 @@ private:
 	ConstructBuildingContext& mContext;
 	MoveToPointSimSubtask mMoveSubtask;
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
+	SimpleItemReservationTargetHandlePtr mBlueprintItemTargetHandle = nullptr;
 	SimChunkTileItemReservationPtr mTileItemReservation;
 	SimChunkTileReservationHandle mTileHarvestReservation;
-	ui32 mTargetReservationId = 0;
 	TileHarvestable mHarvestableToAquire = TileHarvestable::None;
 	SimpleSimTaskTimer mTimer;
 	BuildContextTargetData mTargetData;

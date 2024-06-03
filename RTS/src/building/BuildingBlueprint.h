@@ -77,8 +77,6 @@ public:
     }
     FillableRecipe& getRecipeForTargetData(BuildContextTargetData data) const;
 
-    ui32 getNextReservationID() { ASSERT_SIM_THREAD(); return nextItemReservationId++;  }
-
 private:
 
     void onEndItemReservation(ui32 reservationId);
@@ -112,11 +110,6 @@ private:
     i32 totalItemsUnfulfilled = 0;
     i32 totalItemsUnpromised = 0;
     i32 totalTargetsUnbuilt = 0;
-    ui32 nextItemReservationId = 0;
-    // Tracks items that are promised to this blueprint from workers.
-    // As workers reserve items, the are filled in itemComposition. Once the items are slotted successfully into
-    // tiles, the reservation is updated or completed.
-    std::map<ui32, SimpleItemReservationTargetHandlePtr> itemReservationHandles;
 
     /*
 

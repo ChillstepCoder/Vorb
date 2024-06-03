@@ -63,12 +63,33 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
         case State::MoveToItemStack:
             if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
 
-                x;
-                //mTileItemReservation;
+                assert(mTileItemReservation);
+                const i32 pickedCount = mTileItemReservation->tryPickup(TMP_CARRY_COUNT);
 
-                mState = State::MoveToBlueprint;
-                mMoveSubtask.init(simRegistry, simAgent, mContext.blueprint.getCenterPosTile().v, 32.0f);
+                if (pickedCount > 0) {
+
+                    if (simRegistry.all_of<SimResourceBundleComponent>(simAgent)) {
+                        // Drop old bundle
+                        AIActions::dropBundleSim(world, simRegistry, simAgent);
+                    }
+                    
+                    SimResourceBundleComponent& bundle = simRegistry.emplace<SimResourceBundleComponent>(simAgent);
+                    bundle.itemStack.itemId = mTileItemReservation->getItemID();
+                    bundle.itemStack.count = pickedCount;
+                    bundle.itemStack.harvestableType = mHarvestableToAquire;
+
+                    mState = State::MoveToBlueprint;
+                    mMoveSubtask.init(simRegistry, simAgent, mContext.blueprint.getCenterPosTile().v, 32.0f);
+                }
+                else if (!trySelectItemSource(world, simRegistry, simAgent)) {
+                    // Couldnt find the item, so lets see if we can construct
+                    mState = State::SelectToConstruct;
+                }
+
+                // Free reservation of the tile item
+                mTileItemReservation.reset();
             }
+            break;
         case State::MoveToHarvestable:
             if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
 
@@ -210,10 +231,9 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
                     const i32 filledQuantity = bundleItem.count - remainder;
                     if (!mBlueprintItemPromise->tryFulfillQuantity(bundleItem.itemId, filledQuantity)) {
                         LOG_WARN("Already fulfilled our promise in PlaceItems");
-                        mState = State::End;
+                        cleanupSim(world, simRegistry, simAgent);
                         return SimTaskTickResult::Fail;
                     }
-                    mContext.blueprint.totalItemsUnfulfilled -= filledQuantity;
                     bundleItem.count = remainder;
 
                     if (recipe.isFullyFilled()) {
@@ -269,6 +289,7 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
             if (mMoveSubtask.tickSim(world, simRegistry, simAgent, elapsedSec) == SimTaskTickResult::Success) {
                 mState = State::Construct;
                 mTimer.begin(1.0f);
+                [[fallthrough]];
             }
             else {
                 break;
@@ -335,6 +356,80 @@ const char* ConstructBuildingSimTask::getTaskName() const {
     throw std::logic_error("The method or operation is not implemented.");
 }
 
+void ConstructBuildingSimTask::initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount) {
+    assert(!mBlueprintItemPromise);
+
+    assert(blueprintStack.getMaxPromiseSize() >= 0);
+    SimpleItemStack itemToFill;
+    itemToFill.itemId = blueprintStack.itemId;
+    itemToFill.count = count;
+
+    assert(itemToFill.itemId != INVALID_ITEM_ID);
+    ItemReservationPair reservationPair = SimpleItemReservation::createReservation(std::span<SimpleItemStack>(&itemToFill, 1));
+
+    reservationPair.source->bindEndFunction([this](ItemReservationEndReason reason, SimpleItemReservationData& data) {
+        ASSERT_SIM_THREAD(); // What about full?
+        std::span<const ItemID> desiredItems = data.getDesiredItems();
+        std::span<const i32> remainingQuantities = data.getRemainingQuantities();
+
+        // If we have any items that were not fully filled, decrement the count from
+        // the tracked promised count so other workers can then try to promise it
+        for (int i = 0; i < desiredItems.size(); ++i) {
+            if (remainingQuantities[i] > 0) {
+                for (int j = 0; j < mContext.blueprint.itemCompositionCount; ++j) {
+                    FillableSimpleItemStack& stack = mContext.blueprint.itemComposition[j];
+                    stack.promisedQuantity -= remainingQuantities[i];
+                    mContext.blueprint.totalItemsUnpromised += remainingQuantities[i];
+                }
+            }
+        }
+        mState = State::End;
+    });
+
+    // Notify blueprint when we increase our promised amount
+    reservationPair.target->bindUpdateFunction([this](ItemReservationUpdateType type, ItemID id, i32 quantity) {
+        if (type == ItemReservationUpdateType::PromiseIncrease) {
+            for (i32 i = 0; i < mContext.blueprint.itemCompositionCount; ++i) {
+                FillableSimpleItemStack& itemStack = mContext.blueprint.itemComposition[i];
+                if (itemStack.itemId == id) {
+                    assert(itemStack.getMaxPromiseSize() >= 0);
+                    itemStack.promisedQuantity += quantity;
+                    mContext.blueprint.totalItemsUnpromised -= quantity;
+                    assert(itemStack.getMaxPromiseSize() >= 0);
+                    break;
+                }
+            }
+        }
+        else if (type == ItemReservationUpdateType::FulfillCount) {
+            for (i32 i = 0; i < mContext.blueprint.itemCompositionCount; ++i) {
+                FillableSimpleItemStack& itemStack = mContext.blueprint.itemComposition[i];
+                if (itemStack.itemId == id) {
+                    assert(itemStack.getMaxPromiseSize() >= 0);
+                    itemStack.filledQuantity += quantity;
+                    assert(itemStack.promisedQuantity >= quantity);
+                    itemStack.promisedQuantity -= quantity;
+                    assert(mContext.blueprint.totalItemsUnfulfilled >= quantity);
+                    mContext.blueprint.totalItemsUnfulfilled -= quantity;
+                    break;
+                }
+            }
+        }
+    });
+
+    // Bind handles
+    mBlueprintItemPromise = std::move(reservationPair.source);
+    mBlueprintItemTargetHandle = std::move(reservationPair.target);
+    // Store a reference to the blueprint handle so we can remove it
+
+    // Init promised quantity if it hasn't already been done
+    if (shouldUpdateBPCount) {
+        blueprintStack.promisedQuantity += itemToFill.count;
+        mContext.blueprint.totalItemsUnpromised -= itemToFill.count;
+    }
+    assert(mContext.blueprint.totalItemsUnpromised >= 0);
+    assert(blueprintStack.getMaxPromiseSize() >= 0);
+}
+
 bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent) {
     BuildingBlueprint& blueprint = mContext.blueprint;
     entt::entity settlementEntity = blueprint.parentSettlement;
@@ -345,32 +440,42 @@ bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry&
 
     SimChunkGrid& simGrid = world.getSimChunkGrid();
 
+    // Check item pickup first
+    const TileCoord position(simRegistry.get<SimPositionComponent>(simAgent).getPosition());
+    if (mTileItemReservation = mContext.tryGetClosestItemToPickup(TMP_CARRY_COUNT, position)) {
+        constexpr f32 SUCCESS_RADIUS = 2.0f;
+        ChunkLiteTileHandle tileHandle(mTileItemReservation->getChunkID(), mTileItemReservation->getTileIndex());
+        mMoveSubtask.init(simRegistry, simAgent, tileHandle.getWorldPosition2D(world), SUCCESS_RADIUS);
+        mState = State::MoveToItemStack;
+
+        bool found = false;
+        for (int i = 0; i < blueprint.itemCompositionCount; ++i) {
+            if (blueprint.itemComposition[i].itemId == mTileItemReservation->getItemID()) {
+                // The context already tracked and updated the count, no need to do it twice
+                initItemPromise(blueprint.itemComposition[i], mTileItemReservation->getReservedCount(), false /*shouldUpdateBPCount*/);
+                found = true;
+                break;
+            }
+        }
+        assert(found);
+
+        return true;
+    }
+
     // Determine what we should harvest
     // Send characters to harvestables if we need more items
     if (blueprint.totalItemsUnpromised != 0) {
         i32 itemCompIndex = 0;
         i32 neededCount = 0;
-        ItemID desiredItemId = INVALID_ITEM_ID;
         for (; itemCompIndex < blueprint.itemCompositionCount; ++itemCompIndex) {
-            FillableSimpleItemStack& itemStack = blueprint.itemComposition[itemCompIndex];
-            neededCount = itemStack.getMaxPromiseSize();
+            FillableSimpleItemStack& blueprintStack = blueprint.itemComposition[itemCompIndex];
+            neededCount = blueprintStack.getMaxPromiseSize();
             if (neededCount > 0) {
-                neededCount = glm::min(neededCount, TMP_CARRY_COUNT);
-
-                // Check item pickup first
-                const TileCoord position(simRegistry.get<SimPositionComponent>(simAgent).getPosition());
-                if (mTileItemReservation = mContext.tryGetClosestItemToPickup(desiredItemId, neededCount, position)) {
-                    constexpr f32 SUCCESS_RADIUS = 2.0f;
-                    ChunkLiteTileHandle tileHandle(mTileItemReservation->getChunkID(), mTileItemReservation->getTileIndex());
-                    mMoveSubtask.init(simRegistry, simAgent, tileHandle.getWorldPosition2D(world), SUCCESS_RADIUS);
-                    mState = State::MoveToItemStack;
-                    return true;
-                }
-
+               
                 // Check harvestable
-                if (itemStack.harvestableType != TileHarvestable::None) {
+                if (blueprintStack.harvestableType != TileHarvestable::None) {
                     mTileHarvestReservation = harvestTracker.tryReserveNearestHarvestable(
-                        itemStack.harvestableType, settlementCenter, simGrid
+                        blueprintStack.harvestableType, settlementCenter, simGrid
                     );
                 }
                 else {
@@ -378,57 +483,17 @@ bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry&
                 }
                 // Check if we managed to reserve a tile for harvest
                 if (mTileHarvestReservation) {
-                    mHarvestableToAquire = itemStack.harvestableType;
-                    desiredItemId = itemStack.itemId;
+                    mHarvestableToAquire = blueprintStack.harvestableType;
                     break;
                 }
             }
         }
 
-
-       
-
         // Make item reservation now that we have a worthy tile to harvest
         if (mTileHarvestReservation) {
             FillableSimpleItemStack& blueprintStack = blueprint.itemComposition[itemCompIndex];
 
-            SimpleItemStack itemToFill;
-            itemToFill.itemId = blueprintStack.itemId;
-            itemToFill.count = neededCount;
-            blueprintStack.promisedQuantity += itemToFill.count;
-
-            assert(itemToFill.itemId != INVALID_ITEM_ID);
-            ItemReservationPair reservationPair = SimpleItemReservation::createReservation(std::span<SimpleItemStack>(&itemToFill, 1));
-
-            reservationPair.source->bindEndFunction([this](ItemReservationEndReason reason, SimpleItemReservationData& data) {
-                ASSERT_SIM_THREAD(); // What about full?
-                mState = State::End;
-                mContext.blueprint.onEndItemReservation(mTargetReservationId);
-            });
-
-            // Notify blueprint when we increase our promised amount due to overharvest
-            reservationPair.target->bindUpdateFunction([this](ItemReservationUpdateType type, ItemID id, i32 quantity) {
-                if (type == ItemReservationUpdateType::PromiseIncrease) {
-                    for (i32 i = 0; i < mContext.blueprint.itemCompositionCount; ++i) {
-                        FillableSimpleItemStack& itemStack = mContext.blueprint.itemComposition[i];
-                        if (itemStack.itemId == id) {
-                            itemStack.promisedQuantity += quantity;
-                            mContext.blueprint.totalItemsUnpromised -= quantity;
-                            break;
-                        }
-                    }
-                }
-            });
-
-            blueprint.totalItemsUnpromised -= itemToFill.count;
-            assert(blueprint.totalItemsUnpromised >= 0);
-
-            // Bind handles
-            mBlueprintItemPromise = std::move(reservationPair.source);
-            // Store a reference to the blueprint handle so we can remove it
-            mTargetReservationId = blueprint.getNextReservationID();
-            blueprint.itemReservationHandles.emplace(mTargetReservationId, std::move(reservationPair.target));
-
+            initItemPromise(blueprintStack, glm::min(neededCount, TMP_CARRY_COUNT), true /*shouldUpdateBPCount*/);
 
             // TODO: Dynamic success radius based on the tile size?
             constexpr f32 SUCCESS_RADIUS = 2.0f;
@@ -443,4 +508,6 @@ bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry&
 void ConstructBuildingSimTask::cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
     AIActions::dropBundleSim(world, simRegistry, simAgent);
     mState = State::End;
+    mBlueprintItemPromise.reset();
+    mBlueprintItemTargetHandle.reset();
 }

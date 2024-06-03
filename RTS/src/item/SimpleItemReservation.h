@@ -48,7 +48,8 @@ private:
     SimpleItemReservationData(std::span<SimpleItemStack> reservedItems, SimpleItemReservationSourceHandle* sourceHandle, SimpleItemReservationTargetHandle* targetHandle);
     void cancel();
     void onComplete();
-    void invalidateHandles();
+    // Retrieve the resource so we can manually destroy it
+    std::unique_ptr<SimpleItemReservationData> invalidateHandles();
     i32 getItemIndex(ItemID id) {
         for (int i = 0; i < numItems; ++i) {
             if (desiredItems[i] == id) return i;

@@ -12,6 +12,7 @@ void AIActions::dropBundleSim(World& world, entt::registry& simRegistry, entt::e
         TileCoord worldPos(i32v2(simRegistry.get<SimPositionComponent>(simAgent).getPosition()));
         
         if (bundle->itemStack.count > 0) {
+            assert(bundle->itemStack.itemId != INVALID_ITEM_ID);
             const bool success = world.getSimChunkGrid().tryDropItemStackOnGround(ItemStack(bundle->itemStack), worldPos);
             assert(success);
         }

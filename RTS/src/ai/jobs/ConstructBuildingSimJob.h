@@ -47,7 +47,7 @@ public:
 
 	// Items
 	void trackItemIfNeeded(TileItemUID itemUID, ItemID itemId, TileCoord worldPos, ui16 quantity);
-	SimChunkTileItemReservationPtr tryGetClosestItemToPickup(ItemID itemId, i16 maxCount, TileCoord pos, i32 maxDistance = 46340);
+	SimChunkTileItemReservationPtr tryGetClosestItemToPickup(i16 maxCount, TileCoord pos, i32 maxDistance = 46340);
 
     struct ReservedItems {
         std::vector<SimChunkTileItemReservationPtr> reservations;
@@ -58,8 +58,8 @@ public:
     Building& building;
     BuildingBlueprint& blueprint;
 	// Reversed vectors for efficient pop_back
-    std::map<ItemID, std::vector<BuildContextTargetData>> itemsToTileTargets;
-    std::map<ItemID, ReservedItems> mReservedItems;
+	boost::container::flat_map<ItemID, std::vector<BuildContextTargetData>> itemsToTileTargets;
+    boost::container::flat_map<ItemID, ReservedItems> mReservedItems;
 	std::queue<BuildContextTargetData> tilesToConstruct;
 	i32 firstIncompleteFloor = 0;
     BitArray tilesNeedingFlatten;

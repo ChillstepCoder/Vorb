@@ -38,25 +38,3 @@ FillableRecipe& BuildingBlueprint::getRecipeForTargetData(BuildContextTargetData
     static_assert(e_count(BuildContextTargetData::Type) == 3);
     panic("Invalid target type in BuildingBlueprint::getRecipeForTargetData");
 }
-
-void BuildingBlueprint::onEndItemReservation(ui32 reservationId) {
-    auto&& it = itemReservationHandles.find(reservationId);
-    assert(it != itemReservationHandles.end());
-    SimpleItemReservationTargetHandle& handle = *it->second;
-    std::span<const ItemID> desiredItems = handle.getDesiredItems();
-    std::span<const i32> remainingQuantities = handle.getRemainingQuantities();
-
-    // If we have any items that were not fully filled, decrement the count from
-    // the tracked promised count so other workers can then try to promise it
-    for (int i = 0; i < desiredItems.size(); ++i) {
-        if (remainingQuantities[i] > 0) {
-            for (int j = 0; j < itemCompositionCount; ++j) {
-                FillableSimpleItemStack& stack = itemComposition[j];
-                stack.promisedQuantity -= remainingQuantities[i];
-                totalItemsUnpromised += remainingQuantities[i];
-            }
-        }
-    }
-
-    itemReservationHandles.erase(it);
-}

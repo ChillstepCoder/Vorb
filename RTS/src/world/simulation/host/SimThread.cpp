@@ -100,6 +100,8 @@ void SimThread::tickSim(SimThreadState state) {
         }
     }
 
+    // Skip the sleep
+    PROFILE_FUNCTION();
     switch (state) {
         case SimThreadState::HistorySim:
         case SimThreadState::GameSim:
@@ -119,6 +121,7 @@ void SimThread::tickSim(SimThreadState state) {
 }
 
 void SimThread::updateTasks() {
+    PROFILE_FUNCTION();
     constexpr size_t BULK_DEQUEUE_COUNT = 256;
     std::function<void()> funcs[BULK_DEQUEUE_COUNT];
 

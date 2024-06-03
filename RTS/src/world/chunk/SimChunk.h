@@ -110,6 +110,7 @@ public:
 private:
     SimChunkTileItemReservationPtr tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity, SimChunk& owner);
     SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity, SimChunk& owner);
+    [[nodiscard]] i32 tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount);
     TileItemUID addStackToTile(ChunkTileIndex tileIndex, ItemStack stack);
 
 private:
@@ -160,6 +161,8 @@ public:
     TileItemUID tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex);
     SimChunkTileItemReservationPtr tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity);
     SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity);
+    // Returns picked up count
+    [[nodiscard]] i32 tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount);
 
     bool isSimulating() const { return mIsSimulating; }
     void setSimulating(bool simulating) { mIsSimulating = simulating; }

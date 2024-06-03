@@ -252,6 +252,14 @@ SimChunkTileItemReservationPtr SimChunk::tryReserveItemStack(TileItemUID uid, It
     return mItemData.tryReserveItemStack(uid, itemId, quantity, *this);
 }
 
+i32 SimChunk::tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount) {
+    { // Critical section
+        std::lock_guard lock(mMutex);
+        return mItemData.tryPickupItemsForReservation(reservation, maxCount);
+    }
+    return 0;
+}
+
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
     // Does not lock as we can only create these reservations from within SimChunk lock
     if (mTileData) {
@@ -339,6 +347,36 @@ SimChunkTileItemReservationPtr SimChunkItemData::tryReserveItemStack(TileItemUID
         }
     }
     return nullptr;
+}
+
+i32 SimChunkItemData::tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount) {
+    auto&& it = itemStacks.find(reservation.mItemID);
+    if (it != itemStacks.end()) {
+        for (size_t i = 0; i < it->second.size(); ++i) {
+            TileItemStack& stack = it->second[i];
+            if (stack.uniqueId == reservation.mItemUID) {
+                const i32 count = std::min(maxCount, (i32)reservation.mReservedCount);
+                assert(stack.reservedCount >= count);
+                stack.reservedCount -= count;
+                reservation.mReservedCount -= count;
+                // Just in case someone stole items they didnt reserve,
+                // we must check if we are trying to pick up more than exists
+                i32 trueCount = std::min(count, (i32)stack.count);
+                stack.count -= trueCount;
+                if (stack.count == 0) {
+                    it->second[i] = it->second.back();
+                    it->second.pop_back();
+                } else if (stack.count < reservation.mReservedCount) {
+                    // If there are less items remaining than we reserved, need to reduce the reservation
+                    reservation.mReservedCount = stack.count;
+                }
+                return trueCount;
+            }
+        }
+    }
+    // If we don't find it, we have no reservation remaining
+    reservation.mReservedCount = 0;
+    return 0;
 }
 
 TileItemUID SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack) {

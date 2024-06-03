@@ -53,6 +53,7 @@ void SimImmigrationManager::init() {
 }
 
 void SimImmigrationManager::tickSimThread(TimestampMs currentTime) {
+    PROFILE_FUNCTION();
     const ui64 timeDelta = currentTime - mLastImmigrationTimestamp;
 
     const SimWorldAnalyticsData& analytics = mWorldAnalytics.getAnalyticsDataSimThread();

@@ -66,6 +66,7 @@ void ConstructBuildingContext::trackItemIfNeeded(TileItemUID itemUID, ItemID ite
                 SimChunkTileItemReservationPtr reservation = chunkGrid.tryReserveItemStack(worldPos, itemUID, itemId, reserveCount);
                 if (reservation) {
                     stack.promisedQuantity += reserveCount;
+                    blueprint.totalItemsUnpromised -= reserveCount;
                     ReservedItems& res = mReservedItems[itemId];
                     res.reservations.emplace_back(std::move(reservation));
                     res.positions.push_back(worldPos);
@@ -76,44 +77,49 @@ void ConstructBuildingContext::trackItemIfNeeded(TileItemUID itemUID, ItemID ite
     }
 }
 
-SimChunkTileItemReservationPtr ConstructBuildingContext::tryGetClosestItemToPickup(ItemID itemId, i16 maxCount, TileCoord pos, i32 maxDistance) {
-    auto&& it = mReservedItems.find(itemId);
-    if (it == mReservedItems.end()) {
-        return nullptr;
-    }
-    ReservedItems& res = it->second;
-    if (res.positions.empty()) {
-        return nullptr;
-    }
-    int closestIndex = -1;
-    i32 closestDistSQ = std::numeric_limits<i32>::max();
-    for (int i = 0; i < (int)res.positions.size(); ++i) {
-        const TileCoord offset = pos - res.positions[i];
-        const i32 distSQ = offset.x * offset.x + offset.y * offset.y;
-        if (distSQ < closestDistSQ) {
-            closestDistSQ = distSQ;
-            closestIndex = i;
+SimChunkTileItemReservationPtr ConstructBuildingContext::tryGetClosestItemToPickup(i16 maxCount, TileCoord pos, i32 maxDistance /*= 46340*/) {
+    for (auto it = mReservedItems.begin(); it != mReservedItems.end(); ++it) {
+        ReservedItems& res = it->second;
+        if (res.positions.empty()) {
+            return nullptr;
         }
-    }
-    if (closestIndex == -1) {
-        return nullptr;
-    }
-    // Prevent overlow in SQ
-    if (maxDistance > 46340) [[unlikely]] maxDistance = 46340;
-    if (closestDistSQ > SQ(maxDistance)) {
-        return nullptr;
-    }
+        int closestIndex = -1;
+        i32 closestDistSQ = std::numeric_limits<i32>::max();
+        for (int i = 0; i < (int)res.positions.size(); ++i) {
+            const TileCoord offset = pos - res.positions[i];
+            const i32 distSQ = offset.x * offset.x + offset.y * offset.y;
+            if (distSQ < closestDistSQ) {
+                closestDistSQ = distSQ;
+                closestIndex = i;
+            }
+        }
+        if (closestIndex == -1) {
+            return nullptr;
+        }
+        // Prevent overlow in SQ
+        if (maxDistance > 46340) [[unlikely]] maxDistance = 46340;
+        if (closestDistSQ > SQ(maxDistance)) {
+            return nullptr;
+        }
 
-    SimChunkTileItemReservationPtr& reservation = res.reservations[closestIndex];
-    if (maxCount >= reservation->getReservedCount()) {
-        SimChunkTileItemReservationPtr rv = std::move(reservation);
-        res.reservations[closestIndex] = std::move(res.reservations.back());
-        res.positions[closestIndex] = res.positions.back();
-        res.reservations.pop_back();
-        res.positions.pop_back();
-        return rv;
+        SimChunkTileItemReservationPtr& reservation = res.reservations[closestIndex];
+        if (maxCount >= reservation->getReservedCount()) {
+            SimChunkTileItemReservationPtr rv = std::move(reservation);
+            res.reservations[closestIndex] = std::move(res.reservations.back());
+            res.positions[closestIndex] = res.positions.back();
+            res.reservations.pop_back();
+            res.positions.pop_back();
+
+            // Erase
+            if (res.reservations.empty()) {
+                mReservedItems.erase(it);
+            }
+
+            return rv;
+        }
+        return reservation->trySplit(maxCount);
     }
-    return reservation->trySplit(maxCount);
+    return nullptr;
 }
 
 ConstructBuildingSimJob::ConstructBuildingSimJob(World& world, Building& building, SimECS& simEcs, entt::entity simJobOwner)

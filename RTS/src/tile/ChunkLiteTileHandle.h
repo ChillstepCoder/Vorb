@@ -8,7 +8,7 @@ struct ChunkLiteTileHandle {
     ChunkLiteTileHandle() {};
     ChunkLiteTileHandle(ChunkID chunkId, ChunkTileIndex index) : chunkId(chunkId), index(index) {};
 
-    bool isValid() const { return  chunkId != INVALID_CHUNK_ID; }
+    bool isValid() const { return chunkId != INVALID_CHUNK_ID; }
     void invalidate() { chunkId = INVALID_CHUNK_ID; }
 
     // Must be valid handle to call this

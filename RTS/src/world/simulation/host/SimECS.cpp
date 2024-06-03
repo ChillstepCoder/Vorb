@@ -43,6 +43,7 @@ SimECS::~SimECS() {
 
 void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     ASSERT_SIM_THREAD();
+    PROFILE_FUNCTION();
 
     mDebugDrawAgents[1].clear();
 

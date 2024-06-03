@@ -18,7 +18,8 @@ SimpleItemReservationData::SimpleItemReservationData(std::span<SimpleItemStack> 
 }
 
 void SimpleItemReservationData::cancel() {
-    invalidateHandles();
+    // Only destroy ourself after this function completes
+    std::unique_ptr<SimpleItemReservationData> self = invalidateHandles();
     if (sourceEndFunction) {
         sourceEndFunction(ItemReservationEndReason::Cancel, *this);
         sourceEndFunction = nullptr;
@@ -30,20 +31,23 @@ void SimpleItemReservationData::cancel() {
 }
 
 void SimpleItemReservationData::onComplete() {
-    invalidateHandles();
+    // Only destroy ourself after this function completes
+    std::unique_ptr<SimpleItemReservationData> self = invalidateHandles();
     if (sourceEndFunction) {
         sourceEndFunction(ItemReservationEndReason::Success, *this);
         sourceEndFunction = nullptr;
     }
 }
 
-void SimpleItemReservationData::invalidateHandles() {
+std::unique_ptr<SimpleItemReservationData> SimpleItemReservationData::invalidateHandles() {
     assert(sourceHandle);
     assert(targetHandle);
     sourceHandle->dataPtr = nullptr;
+    std::unique_ptr<SimpleItemReservationData> self = std::move(targetHandle->dataPtr);
     targetHandle->dataPtr = nullptr;
     sourceHandle = nullptr;
     targetHandle = nullptr;
+    return self;
 }
 
 SimpleItemReservationSourceHandle::~SimpleItemReservationSourceHandle() {
