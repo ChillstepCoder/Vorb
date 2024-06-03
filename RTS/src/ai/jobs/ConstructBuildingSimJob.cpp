@@ -67,7 +67,7 @@ void ConstructBuildingContext::trackItemIfNeeded(TileItemUID itemUID, ItemID ite
                 if (reservation) {
                     stack.promisedQuantity += reserveCount;
                     ReservedItems& res = mReservedItems[itemId];
-                    res.reservations.push_back(reservation);
+                    res.reservations.emplace_back(std::move(reservation));
                     res.positions.push_back(worldPos);
                 }
             }

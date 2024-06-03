@@ -4,6 +4,7 @@
 #include "ai/tasks/MoveToPointSimTask.h"
 #include "item/SimpleItemReservation.h"
 #include "tile/SimTileReservation.h"
+#include "item/SimChunkTileItemReservation.h"
 #include "tile/TileHarvestable.h"
 #include "ai/jobs/BuildContextTargetData.h"
 

@@ -2,6 +2,8 @@
 
 class SimChunkItemData;
 
+class SimChunk;
+
 //struct SimChunkTileItemHandle {
 //    ChunkID chunkId = INVALID_CHUNK_ID;
 //    ItemID itemID = INVALID_ITEM_ID;
@@ -12,11 +14,9 @@ class SimChunkItemData;
 // right before aquiring the tile items
 class SimChunkTileItemReservation {
     friend class SimChunkItemData;
-private:
+public:
     SimChunkTileItemReservation(ChunkTileIndex tileIndex, TileItemUID itemUID, ItemID itemID, ui32 count, SimChunk& owner)
         : mTileIndex(tileIndex), mItemUID(itemUID), mItemID(itemID), mCount(count), mOwnerChunk(owner) { }
-
-public:
     ~SimChunkTileItemReservation();
 
     VORB_NON_COPYABLE(SimChunkTileItemReservation);
@@ -30,7 +30,7 @@ public:
     ChunkID getChunkID() const;
 
     // Tries to return a new reservation split off from this one with splitCount
-    SimChunkTileItemReservationPtr trySplit(ui16 splitCount);
+    std::unique_ptr<SimChunkTileItemReservation> trySplit(ui16 splitCount);
 
 private:
     ChunkTileIndex mTileIndex;

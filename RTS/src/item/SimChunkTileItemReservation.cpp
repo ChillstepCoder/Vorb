@@ -23,7 +23,7 @@ ChunkID SimChunkTileItemReservation::getChunkID() const {
     return mOwnerChunk.getChunkID();
 }
 
-SimChunkTileItemReservationPtr SimChunkTileItemReservation::trySplit(ui16 splitCount) {
+std::unique_ptr<SimChunkTileItemReservation> SimChunkTileItemReservation::trySplit(ui16 splitCount) {
     if (splitCount >= mCount || splitCount == 0) [[unlikely]] {
         assert(false);
         return nullptr;
