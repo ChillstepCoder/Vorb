@@ -769,7 +769,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const RoofS
                 firstPoint = false;
             }
             else {
-                if (visLog) {
+                if (visLog) { 
                     visLog->addLineBetweenPoints(f32v3(prevPoint.x, prevPoint.y, zPos), f32v3(p2.x, p2.y, zPos), COLOR_MAGENTA);
                 }
             }
@@ -779,7 +779,7 @@ void triangulateRoofFacePolygons(ProceduralMeshBuilder& meshBuilder, const RoofS
         if (visLog) {
             visLog->addLineBetweenPoints(f32v3(prevPoint.x, prevPoint.y, zPos), f32v3(concavePoly.begin()->x(), concavePoly.begin()->y(), zPos), COLOR_MAGENTA);
         }
-        return; // TODO: REMOVE
+        return; // TODO: REMOVE (uhhh... why? wtf is tis)
         if (CGAL::orientation_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), CGAL::Partition_traits_2<K>()) == CGAL::CLOCKWISE) {
             LOG_ERROR("Reversing vertices");
             std::reverse(concavePoly.vertices_begin(), concavePoly.vertices_end());

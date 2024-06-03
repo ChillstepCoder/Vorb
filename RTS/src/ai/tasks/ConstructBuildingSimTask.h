@@ -37,7 +37,16 @@ private:
 	void initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount);
 	bool trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
-	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
+	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
+
+	void updateMoveToItemStackSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	void updateMoveToHarvestableSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	void updateHarvestSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	void updateMoveToBlueprintSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	void updatePlaceItemsSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    bool updateSelectToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	bool updateMoveToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	void updateConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 
 	enum class State {
         Init,
@@ -51,6 +60,7 @@ private:
 		Construct,
 		End
 	} mState = State::Init;
+	SimTaskTickResult mCurrentResult = SimTaskTickResult::InProgress;
 
 	ConstructBuildingSimJob& mParentJob;
 	ConstructBuildingContext& mContext;
