@@ -40,7 +40,7 @@ public:
     void setTimeScale(f32 timeScale) { mTimeScale = timeScale; }
 
     size_t getTasksSizeApprox() const { return mSimThreadProcs.size_approx(); }
-    void addTask(std::function<void()> task) { mSimThreadProcs.enqueue(task); }
+    void addTask(std::function<void()>&& task) { mSimThreadProcs.enqueue(std::move(task)); }
     void requestAllCharacters(std::shared_ptr<SimThreadEntityRequest> request);
 
     const ThreadUtilizationTimer& getThreadUtilizationTimer() const { return mThreadUtilizationTimer; }

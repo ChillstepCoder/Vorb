@@ -128,10 +128,14 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
                     for (int i = 0; i < numCharacters; ++i) {
                         mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::Building;
                         // TODO: Handle switching jobs
-                        SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(characters[i]);
-                        if (taskQueue.taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
-                            taskQueue.taskQueue.push_back(SimTaskHandle(newConstructJob.get(), characters[i]));
-                            taskQueue.taskQueue.back().init();
+                        if (SimTaskQueueComponent* taskQueue = mRegistry.try_get<SimTaskQueueComponent>(characters[i])) {
+                            if (taskQueue->taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
+                                taskQueue->taskQueue.push_back(SimTaskHandle(newConstructJob.get()));
+                                taskQueue->taskQueue.back().init();
+                            }
+                        }
+                        else {
+                            LOG_CRITICAL("ERROR TRIED TO ADD TASK TO FULL ENTITY");
                         }
                     }
 

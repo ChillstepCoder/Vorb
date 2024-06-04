@@ -25,9 +25,6 @@ public:
 
 	POOLED_ALLOC_DECL();
 
-	void onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
-	void onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
-
 	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) override;
 	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override;
 

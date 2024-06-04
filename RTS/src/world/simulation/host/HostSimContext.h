@@ -6,6 +6,8 @@
 #include "world/ChunkGridEvent.h"
 #include "ecs/FullECSEvents.h"
 
+#include "world/simulation/host/SimEntityTransitionManager.h"
+
 #include "tile/TileHarvestable.h"
 
 #include "util/BitArray.h"
@@ -56,6 +58,8 @@ public:
     ui32 getWidthChunks() const;
     bool isChunkSimulating(ChunkID chunkId) const;
 
+    SimEntityTransitionManager& getEntityTransitionManager() const { return *mEntityTransitionManager; }
+
     // DEBUGGING
     void debugRender(f32v3 cameraPos) const;
 
@@ -80,6 +84,7 @@ private:
 
     // TODO: Boost flat unordered map
     std::unique_ptr<SimThread> mSimThread;
+    std::unique_ptr<SimEntityTransitionManager> mEntityTransitionManager;
     std::unique_ptr<StoryTeller> mStoryTeller;
     std::unique_ptr<SimECS> mSimECS;
     std::unique_ptr<SimImmigrationManager> mImmigrationManager;

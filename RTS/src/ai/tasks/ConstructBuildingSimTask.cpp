@@ -41,15 +41,6 @@ ConstructBuildingSimTask::~ConstructBuildingSimTask()
     }
 }
 
-void ConstructBuildingSimTask::onBeginFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent)
-{
-    throw std::logic_error("The method or operation is not implemented.");
-}
-
-void ConstructBuildingSimTask::onBeginSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
-    
-}
-
 SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec)
 {
     throw std::logic_error("The method or operation is not implemented.");

@@ -1107,6 +1107,12 @@
     <ClCompile Include="src\item\SimChunkTileItemReservation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\simulation\host\SimEntityTransitionManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\ChunkFullTransitionData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2663,7 +2669,7 @@
     <ClInclude Include="src\rendering\model\skeletal\AnimVariableFloatBinding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\ChunkFullActivateData.h">
+    <ClInclude Include="src\ecs\ChunkFullTransitionData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\FullEntityBindingComponent.h">
@@ -2742,6 +2748,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\SimChunkTileItemReservation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\simulation\host\SimEntityTransitionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

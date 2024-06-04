@@ -8,5 +8,4 @@ physics:
   half_dims: [0.24, 0.24, 0.55]
   disable_xy_rot: true
   mass: 70
-inventory:
 character_details:

@@ -112,10 +112,14 @@ void SimThread::tickSim(SimThreadState state) {
             assert(mTimeScale == 1.0f);
             break;
     }
+
+
     //LOG_TRACE("Sim step starting at {} seconds", (f64)mHostSimContext.mSimTime / MS_PER_SECOND);
     mHostSimContext.mSimECS->tickSimThread(mHostSimContext.mSimTime);
 
     mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime);
+
+    mHostSimContext.mEntityTransitionManager->tickSimThread(mHostSimContext.mSimTime);
 
     //LOG_TRACE(" Sim thread {} ms", mThreadUtilizationTimer.getFrameTimeMS());
 }

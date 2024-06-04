@@ -20,7 +20,7 @@ public:
     void updateMainThread();
 
     // Tasks
-    void addGenericTask(GameFunction func) { mGameThreadFuncProcs.enqueue(func); }
+    void addGenericTask(GameFunction func) { mGameThreadFuncProcs.enqueue(std::move(func)); }
     void addCameraPickTeleportTask(World& world, const f32v3& camPos, const f32v3& camDir);
     void addHideLocalPlayerModelTask(World& world, bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);

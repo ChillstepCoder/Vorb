@@ -67,7 +67,7 @@ void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
 	mCharacterControlSystem.update(mRegistry);
 }
 
-void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullActivateData&& data) {
+void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data) {
 
 	ASSERT_GAME_THREAD();
 	ChunkID chunkId = chunk.getChunkID();
@@ -76,9 +76,13 @@ void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullAc
         mPendingEntities.emplace(chunkId, std::move(data));
 	}
 	else {
-        ChunkFullActivateData& existingData = it->second;
+        ChunkFullTransitionData& existingData = it->second;
         // Merge entities
-        existingData.entities.insert(it->second.entities.end(), data.entities.begin(), data.entities.end());
+        data.entities.reserve(data.entities.size() + existingData.entities.size());
+        for (auto&& entityData : data.entities) {
+            existingData.entities.emplace_back(std::move(entityData));
+        }
+        //existingData.entities.insert(it->second.entities.end(), data.entities.begin(), data.entities.end());
         // Merge item maps
         for (auto&& sit : data.itemStacks) { 
             // Target
@@ -93,16 +97,16 @@ void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullAc
 	}
 }
 
-void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkFullActivateData& data) {
+void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data) {
     ASSERT_GAME_THREAD();
 
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-    for (const EntityFullActivateData& activateData : data.entities) {
+    for (EntityFullTransitionData& activateData : data.entities) {
         // TODO: I dont think we need thread safe here as main thread is only writer?
         const f32 zPos = heightGrid.computeHeightAtPoint<true>(activateData.simPosition);
         entt::entity newEntity = entt::null;
         switch (activateData.entityType) {
-            case SimEntityType::Person: {
+            case SimEntityType::Character: {
                 newEntity = createEntity(f32v3(activateData.simPosition.x, activateData.simPosition.y, zPos), CStrToken("villager"), true /*shouldReplicate*/);
                 break;
             }
@@ -117,6 +121,7 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, con
         //activateData.binding->fullEntity = newEntity;
         mRegistry.emplace<FullEntityBindingComponent>(newEntity).binding = activateData.binding;
         mRegistry.emplace<SimEntityTypeComponent>(newEntity).type = activateData.entityType;
+        activateData.characterData->moveToEntity(mRegistry, newEntity);
         static_assert(e_count(SimEntityType) == 4);
     }
 
@@ -132,23 +137,18 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, con
     }
 }
 
-ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForChunk(Chunk& chunk) {
+ChunkSimTransitionData IEntityComponentSystem::deactivateEntitiesForChunk(Chunk& chunk) {
     ASSERT_GAME_THREAD();
 	EntityVector& chunkEntities = mEntitiesByChunk[chunk.getChunkID()];
-	ChunkEntityFullDeactivateDataList rv;
-	rv.reserve(chunkEntities.size());
+    ChunkSimTransitionData rv;
+	rv.entities.reserve(chunkEntities.size());
 
 	std::vector<entt::entity> unboundEntities;
 
 	for (entt::entity e : chunkEntities) {
 		if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(e)) [[likely]] {
-            EntityFullDeactivateData& ddata = rv.emplace_back();
-            ddata.simEntity = bindingCmp->binding->simEntity;
-            PositionComponent& posCmp = mRegistry.get<PositionComponent>(e);
-			ddata.simPosition = posCmp.mPosition;
-            assert(posCmp.chunkId == chunk.getChunkID());
-            posCmp.chunkId = INVALID_CHUNK_ID;
-			// TODO: Send anything else?
+            EntitySimTransitionData& ddata = rv.entities.emplace_back();
+            ddata.moveFromFullEntity(mRegistry, e);
 			destroyEntity(e);
 		}
 		else {
@@ -170,6 +170,34 @@ ChunkEntityFullDeactivateDataList IEntityComponentSystem::deactivateEntitiesForC
 void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
     ASSERT_GAME_THREAD();
 
+    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    Chunk& chunk = chunkGrid.getChunk(newChunk);
+    if (chunk.isActivated()) {
+        mEntitiesByChunk[newChunk].emplace_back(entity);
+    }
+    else {
+        if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(entity)) {
+            if (chunk.isDeactivated()) {
+                // Send to sim thread
+                FullECSEvent e;
+                e.entity = entity;
+                e.chunkId = chunk.getChunkID();
+                dispatchEntityDeactivated(e);
+            }
+            else {
+                // If we get here (rare), we are in the process of activating, so pretend we are still in the old chunk and retry next time
+                mRegistry.get<PositionComponent>(entity).chunkId = prevChunk;
+                return;
+            }
+        }
+        else {
+            // Non sim entity such as player, just add to the entities by chunk
+            mEntitiesByChunk[newChunk].emplace_back(entity);
+            LOG_WARN("Added non sim entity {} to deactivated chunk {}", (int)entity, newChunk);
+        }
+    }
+
+    // Remove from previous if we did not return early due to setting to previous chunk
     EntityVector& prevEntityList = mEntitiesByChunk[prevChunk];
     bool found = false;
     // We amortize this by reverse iterating as
@@ -194,39 +222,6 @@ void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID 
         }
         else {
             panic("Failed to find entity for enter new chunk, type {}", (int)cmp->type);
-        }
-    }
-
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
-    Chunk& chunk = chunkGrid.getChunk(newChunk);
-    if (chunk.isActivated()) {
-        mEntitiesByChunk[newChunk].emplace_back(entity);
-    }
-    else {
-        if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(entity)) {
-            if (chunk.isDeactivated()) {
-                // Send to sim thread
-                FullECSEvent e;
-                e.entity = entity;
-                e.chunkId = chunk.getChunkID();
-                e.deactivateData.simEntity = bindingCmp->binding->simEntity;
-                e.deactivateData.simPosition = mRegistry.get<PositionComponent>(entity).mPosition;
-                dispatchEntityDeactivated(e);
-            }
-            else {
-                // If we get here (rare), we are in the process of activating, so immediately push it into pending and destroy it
-                EntityFullActivateData rebuildData;
-                rebuildData.binding = bindingCmp->binding;
-                rebuildData.entityType = mRegistry.get<SimEntityTypeComponent>(entity).type;
-                rebuildData.simPosition = mRegistry.get<PositionComponent>(entity).mPosition;
-                mPendingEntities[newChunk].entities.emplace_back(rebuildData);
-            }
-            destroyEntity(entity);
-        }
-        else {
-            // Non sim entity such as player, just add to the entities by chunk
-            mEntitiesByChunk[newChunk].emplace_back(entity);
-            LOG_WARN("Added non sim entity {} to deactivated chunk {}", (int)entity, newChunk);
         }
     }
 }

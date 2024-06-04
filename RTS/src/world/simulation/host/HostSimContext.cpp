@@ -20,6 +20,7 @@ HostSimContext::HostSimContext(World& world) :
     mTotalChunks(world.getTotalChunks())
 {
     mAnalytics = std::make_unique<SimWorldAnalytics>();
+    mEntityTransitionManager = std::make_unique<SimEntityTransitionManager>(*this);
     mStoryTeller = std::make_unique<StoryTeller>();
     mChunkStates.resizeAndZero(mTotalChunks);
     mSimulatingChunks.resize(mTotalChunks);
@@ -160,17 +161,14 @@ void HostSimContext::initEvents() {
         assert(chunk.getState() == ChunkState::WAITING_SIM_RELEASE);
 
         mSimThread->addTask([this, &chunk]() {
+            // Sim thread
             mSimulatingChunks.clearBit(chunk.getChunkID());
-            ChunkFullActivateData activateData;
-            activateData.entities = mSimECS->simThreadOnActivateChunk(chunk.getChunkID());
+            mEntityTransitionManager->markChunkSimEntitiesForTransition(chunk.getChunkID());
             SimChunk& simChunk = mWorld.getSimChunkGrid().getChunk(chunk.getChunkID());
-            activateData.itemStacks = simChunk.getItemDataCopy();
             simChunk.setSimulating(false);
             simChunk.bindEditEventToChunkTileContainer(chunk);
-            GameThreadTasks::getInstance().addGenericTask([this, &chunk, activateData = std::move(activateData)]() mutable {
-                mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(activateData));
-                chunk.setState(ChunkState::READY_TO_LOAD);
-            });
+            // Atomically allow chunk to begin loading
+            chunk.setState(ChunkState::READY_TO_LOAD);
         });
     });
 
@@ -179,15 +177,16 @@ void HostSimContext::initEvents() {
         Chunk& chunk = evnt.chunk;
         // Tells main thread not to activate until we are done
         chunk.setState(ChunkState::DESTROYING_ON_SIM);
-        ChunkEntityFullDeactivateDataList deactivateList = mWorld.getECS().deactivateEntitiesForChunk(chunk);
+        ChunkSimTransitionData* deactivateList = new ChunkSimTransitionData(mWorld.getECS().deactivateEntitiesForChunk(chunk));
 
         SimChunk& simChunk = mWorld.getSimChunkGrid().getChunk(chunk.getChunkID());
         simChunk.unBindEditEventToChunkTileContainer();
-        mSimThread->addTask([this, &chunk, &simChunk, deactivateList = std::move(deactivateList)]() {
+        mSimThread->addTask([this, &chunk, &simChunk, deactivateList]() {
             mSimulatingChunks.setBit(chunk.getChunkID());
             simChunk.setSimulating(true);
-            mSimECS->simThreadOnFullDeactivateEntities(chunk.getChunkID(), deactivateList);
+            mEntityTransitionManager->transitionEntitiesToSimFromFull(chunk.getChunkID(), *deactivateList);
 
+            delete deactivateList;
             // Allow main thread to reactivate this chunk
             chunk.setState(ChunkState::DEACTIVATED);
         });
@@ -196,17 +195,20 @@ void HostSimContext::initEvents() {
     IEntityComponentSystem& fullEcs = mWorld.getECS();
     fullEcs.registerIEntityComponentSystemListeners(mFullECSListeners);
 
-    fullEcs.addEntityDeactivatedListener(mFullECSListeners, [this](FullECSEvent evnt) {
+    fullEcs.addEntityDeactivatedListener(mFullECSListeners, [this, &fullEcs](FullECSEvent& evnt) {
         ASSERT_GAME_THREAD();
 
-        mSimThread->addTask([this, chunkId = evnt.chunkId, dData = evnt.deactivateData]() {
+        EntitySimTransitionData* transitionData = new EntitySimTransitionData();
+        transitionData->moveFromFullEntity(fullEcs.mRegistry, evnt.entity);
+        mSimThread->addTask([this, chunkId = evnt.chunkId, transitionData]() {
             if (mSimulatingChunks.getBit(chunkId)) {
-                mSimECS->simThreadOnFullDeactivateEntity(chunkId, dData);
+                mEntityTransitionManager->transitionEntityToSimFromFull(chunkId, *transitionData);
             }
             else {
                 // Need to send it back, we don't own control
-                mSimECS->onEntityDeactivationFailed(chunkId, dData);
+                mEntityTransitionManager->onEntitySimTransitionFailed(chunkId, *transitionData);
             }
+            delete transitionData;
         });
     });
 }

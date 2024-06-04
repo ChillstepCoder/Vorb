@@ -2,7 +2,7 @@
 
 #include "world/simulation/host/CharacterGroupType.h"
 #include "world/simulation/host/SimECSEvents.h"
-#include "ecs/ChunkFullActivateData.h"
+#include "world/simulation/host/SimEntityTransitionManager.h"
 
 class HostSimContext;
 class SimAISystem;
@@ -16,9 +16,16 @@ enum class CharacterGroupDissolveReason : ui8 {
     Merged
 };
 
+constexpr ui32 ENTITY_LIST_RESERVE_COUNT = 64;
+// Prevent lists getting too out of control
+constexpr ui32 ENTITY_LIST_DEALLOCATE_COUNT = 512;
+
 // Host only, owned by SimThread
 class SimECS
 {
+public:
+    friend class SimEntityTransitionManager;
+
 public:
     SimECS(HostSimContext& hostSimContext);
     ~SimECS();
@@ -37,12 +44,7 @@ public:
     SimSettlementSystem& getSettlementSystem(){ return *mSettlementSystem; }
     World& getWorld() const { return mWorld; }
 
-    // Transition our AI entities to fully simulated and return the list of AI entities
-    std::vector<EntityFullActivateData> simThreadOnActivateChunk(ChunkID chunkId);
-    void simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities);
-    void simThreadOnFullDeactivateEntity(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntitity);
-    // For when we cannot deactivate an entity as we do not have control, send it back to game thread
-    void onEntityDeactivationFailed(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntity);
+    void simThreadOnActivateChunk(ChunkID id);
 
     EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
     EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
@@ -61,16 +63,12 @@ public:
     mutable std::vector<DebugDrawSimAgentData> mDebugDrawAgents[2]; // Double buffer
     void addDebugDrawData(DebugDrawSimAgentData data) { ASSERT_SIM_THREAD(); mDebugDrawAgents[1].emplace_back(data); }
 private:
-    EntityFullActivateData onFullActivateEntity(entt::entity entity);
-    // Can happen if a chunk is deactivated after we send off entities to be activated
-    void onEntityFullActivationFailed(ChunkID chunkId, ChunkFullActivateData&& activateData);
     void debugRenderInternal() const;
     entt::entity createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType);
 
     void onEntityDestroyed(entt::entity entity, SimEntityType type);
 
-    // For batch send to game thread
-    std::unordered_map<ChunkID, ChunkFullActivateData> mFullActivatedDataThisFrame;
+    SimEntityTransitionManager& mEntityTransitioner;
 
     entt::registry mRegistry;
     TimestampMs mCurrentTickTimestamp = 0;
@@ -84,9 +82,6 @@ private:
 
     std::unique_ptr<SimAISystem> mAISystem;
     std::unique_ptr<SimSettlementSystem> mSettlementSystem;
-
-    // Guarantee pointer stability for entity bindings
-    std::unordered_map<entt::entity, SimFullEntityBinding> mFullEntityBindings;
 
     // TODO: Farm plots, ect
     std::vector<EntityVector> mEntitiesInChunks;

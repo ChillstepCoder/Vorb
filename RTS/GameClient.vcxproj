@@ -262,6 +262,7 @@
     <ClCompile Include="src\definitions\SkillDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\ChunkFullTransitionData.cpp" />
     <ClCompile Include="src\ecs\cli\CliEntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\component\AttributesComponent.cpp" />
     <ClCompile Include="src\ecs\component\CameraAttachComponent.cpp" />
@@ -571,6 +572,7 @@
     <ClCompile Include="src\world\simulation\host\settlement\SettlementPlanner.cpp" />
     <ClCompile Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.cpp" />
     <ClCompile Include="src\world\simulation\host\SimECS.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimEntityTransitionManager.cpp" />
     <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp" />
     <ClCompile Include="src\world\simulation\host\SimThread.cpp" />
     <ClCompile Include="src\world\simulation\host\SimWorldAnalytics.cpp" />
@@ -697,7 +699,7 @@
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\VelocityComponent.h" />
     <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
-    <ClInclude Include="src\ecs\ChunkFullActivateData.h" />
+    <ClInclude Include="src\ecs\ChunkFullTransitionData.h" />
     <ClInclude Include="src\ecs\FullECSEvents.h" />
     <ClInclude Include="src\ecs\IEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\EntityRepository.h" />
@@ -1112,6 +1114,7 @@
     <ClInclude Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.h" />
     <ClInclude Include="src\world\simulation\host\SimECS.h" />
     <ClInclude Include="src\world\simulation\host\SimECSEvents.h" />
+    <ClInclude Include="src\world\simulation\host\SimEntityTransitionManager.h" />
     <ClInclude Include="src\world\simulation\host\SimEntityType.h" />
     <ClInclude Include="src\world\simulation\host\SimImmigrationManager.h" />
     <ClInclude Include="src\world\simulation\host\SimThread.h" />

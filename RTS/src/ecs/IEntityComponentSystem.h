@@ -2,7 +2,7 @@
 #include "ecs/component/Components.h"
 
 #include "ecs/component/FishingComponent.h"
-#include "ecs/ChunkFullActivateData.h"
+#include "ecs/ChunkFullTransitionData.h"
 #include "ecs/FullECSEvents.h"
 
 #include "world/ChunkGridEvent.h"
@@ -25,9 +25,9 @@ public:
     // Client or server
     virtual void destroyEntity(entt::entity entity) = 0;
 
-    void addPendingEntitiesToChunk(Chunk& chunk, ChunkFullActivateData&& data);
-    void createFullEntitiesFromSimEntities(Chunk& chunk, const ChunkFullActivateData& data);
-    ChunkEntityFullDeactivateDataList deactivateEntitiesForChunk(Chunk& chunk);
+    void addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data);
+    void createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data);
+    ChunkSimTransitionData deactivateEntitiesForChunk(Chunk& chunk);
 
     void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
 
@@ -60,7 +60,7 @@ protected:
     // TODO: Periodically shrink_to_fit
     std::vector<EntityVector> mEntitiesByChunk;
     // Entities that are waiting for chunk to load so they can activate
-    std::map<ChunkID, ChunkFullActivateData> mPendingEntities;
+    std::map<ChunkID, ChunkFullTransitionData> mPendingEntities;
 
     ChunkGridListeners mChunkEventListeners;
     WorldListeners mWorldEventListeners;

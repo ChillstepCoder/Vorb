@@ -18,6 +18,8 @@
 struct SimPositionComponent {
     friend class SimECS;
     friend class SimAISystem;
+    friend class SimEntityTransitionManager;
+
     SimPositionComponent() = default;
     SimPositionComponent(f32v2 position, ChunkID chunk) : position(position), chunk(chunk) {}
 

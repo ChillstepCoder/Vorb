@@ -6,12 +6,11 @@
 
 POOLED_ALLOC_DEF_NOT_THREADSAFE(SimTaskHandle, 256, ASSERT_SIM_THREAD());
 
-SimTaskHandle::SimTaskHandle(World& world, entt::registry& simRegistry, std::unique_ptr<ISimTask>&& task, entt::entity owner) : mTask(std::move(task)), mIsJob(false), mOwner(owner) {
+SimTaskHandle::SimTaskHandle(World& world, entt::registry& simRegistry, std::unique_ptr<ISimTask>&& task) : mTask(std::move(task)), mIsJob(false) {
     ASSERT_SIM_THREAD();
-    mTask->onBeginSim(world, simRegistry, owner);
 }
 
-SimTaskHandle::SimTaskHandle(ISimJob* job, entt::entity owner) : mJob(job), mIsJob(true), mOwner(owner) {
+SimTaskHandle::SimTaskHandle(ISimJob* job) : mJob(job), mIsJob(true) {
 
 }
 
@@ -66,7 +65,6 @@ ISimTask* SimTaskHandle::getOrAquireActiveTaskForSimCharacter(World& world, entt
         }
         mTask = mJob->tryAquireNextSubtaskForSimCharacter(simRegistry, simCharacter);
         if (mTask) {
-            mTask->onBeginSim(world, simRegistry, simCharacter);
             return mTask.get();
         }
         // Signals that we are done with the job

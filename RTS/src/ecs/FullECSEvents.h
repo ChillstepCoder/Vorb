@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs/ChunkFullActivateData.h"
+#include "ecs/ChunkFullTransitionData.h"
 
 enum class FullECSEventType {
     EntityDeactivated
@@ -8,8 +8,5 @@ enum class FullECSEventType {
 struct FullECSEvent {
     entt::entity entity;
     ChunkID chunkId;
-    union {
-        EntityFullDeactivateData deactivateData;
-    };
 };
-EVENT_DISPATCHER_TYPE(IEntityComponentSystem, FullECSEventType, FullECSEvent e);
+EVENT_DISPATCHER_TYPE(IEntityComponentSystem, FullECSEventType, FullECSEvent& e);

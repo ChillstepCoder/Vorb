@@ -4,7 +4,6 @@
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/component/SimCharacterComponents.h"
 #include "world/simulation/host/component/SimSettlementComponents.h"
-
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/simulation/host/SimThread.h"
@@ -22,12 +21,9 @@
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
 
-
-constexpr ui32 ENTITY_LIST_RESERVE_COUNT = 64;
-// Prevent lists getting too out of control
-constexpr ui32 ENTITY_LIST_DEALLOCATE_COUNT = 512;
-
-SimECS::SimECS(HostSimContext& hostSimContext) : mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()) {
+SimECS::SimECS(HostSimContext& hostSimContext) :
+    mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()), mEntityTransitioner(hostSimContext.getEntityTransitionManager()
+) {
     mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
     mSettlementSystem = std::make_unique<SimSettlementSystem>(hostSimContext, *this, mRegistry);
     mEntitiesInChunks.resize(mWorld.getTotalChunks());
@@ -53,29 +49,6 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     
     mAISystem->tick(mCurrentTickTimestamp, mTimeDelta);
     mSettlementSystem->tick(mCurrentTickTimestamp, mTimeDelta);
-
-    // Send newly activated entities to game thread
-    if (mFullActivatedDataThisFrame.size()) {
-        for (auto& [chunkId, data] : mFullActivatedDataThisFrame) {
-            GameThreadTasks::getInstance().addGenericTask([this, chunkId, data = std::move(data)]() mutable {
-                Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
-                if (chunk.isActivated()) {
-                    mWorld.getECS().createFullEntitiesFromSimEntities(chunk, data);
-                }
-                else if (chunk.isDeactivated()) {
-                    // Rare case where chunk deactivated when we were trying to send it entities, so we need to send them back
-                    mHostSimContext.tryGetSimThread()->addTask([this, chunkId, entities = std::move(data)]() mutable {
-                        onEntityFullActivationFailed(chunkId, std::move(entities));
-                    });
-                }
-                else {
-                    // If here, we are in the process of activating, so mark as pending
-                    mWorld.getECS().addPendingEntitiesToChunk(chunk, std::move(data));
-                }
-            });
-        }
-    }
-    mFullActivatedDataThisFrame.clear();
 
     {
         std::lock_guard lock(mDebugDrawMutex);
@@ -107,7 +80,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
         DEFAULT_BLOOD,
         DEFAULT_MOVE_SPEED
     );
-    mRegistry.emplace<SimEntityTypeComponent>(newPerson).type = SimEntityType::Person;
+    mRegistry.emplace<SimEntityTypeComponent>(newPerson).type = SimEntityType::Character;
 
     SimCharacterNameComponent& nameCmp = mRegistry.emplace<SimCharacterNameComponent>(newPerson);
     nameCmp.firstName = NameManager::getRandomFirstName(gen, isFemale);
@@ -115,7 +88,7 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
 
     mEntitiesInChunks[posCmp.chunk].push_back(newPerson);
 
-    dispatchEntityCreated(SimECSEvent{ newPerson, SimEntityType::Person });
+    dispatchEntityCreated(SimECSEvent{ newPerson, SimEntityType::Character });
 
     return newPerson;
 }
@@ -190,72 +163,10 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
     mRegistry.destroy(group);
 }
 
-std::vector<EntityFullActivateData> SimECS::simThreadOnActivateChunk(ChunkID chunkId) {
+void SimECS::simThreadOnActivateChunk(ChunkID id) {
     ASSERT_SIM_THREAD();
-
-    std::vector<EntityFullActivateData> rv;
-    EntityVector& list = mEntitiesInChunks[chunkId];
-    rv.resize(list.size());
-
-    for (size_t i = 0; i < list.size(); ++i) {
-        assert(mRegistry.get<SimPositionComponent>(list[i]).chunk == chunkId);
-        assert(mWorld.getChunkIDAtWorldPos(mRegistry.get<SimPositionComponent>(list[i]).position) == chunkId);
-        rv[i] = onFullActivateEntity(list[i]);
-    }
-
-    // Free memory
-    list.clear();
-    if (list.capacity() > ENTITY_LIST_DEALLOCATE_COUNT) {
-        list.shrink_to_fit();
-        list.reserve(ENTITY_LIST_RESERVE_COUNT);
-    }
-
-    return rv;
-}
-
-void SimECS::simThreadOnFullDeactivateEntities(ChunkID chunkId, const ChunkEntityFullDeactivateDataList& deactivateEntities) {
-    ASSERT_SIM_THREAD();
-    EntityVector& list = mEntitiesInChunks[chunkId];
-    list.reserve(list.size() + deactivateEntities.size());
-    for (const EntityFullDeactivateData& dd : deactivateEntities) {
-        SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(dd.simEntity);
-        mRegistry.emplace<SimMovementComponent>(dd.simEntity);
-        posCmp.position = dd.simPosition;
-        posCmp.chunk = chunkId;
-        list.emplace_back(dd.simEntity);
-
-        // Remove binding
-        auto&& it = mFullEntityBindings.find(dd.simEntity);
-        mFullEntityBindings.erase(it);
-        mRegistry.remove<FullEntityBindingComponent>(dd.simEntity);
-    }
-}
-
-void SimECS::simThreadOnFullDeactivateEntity(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntitity) {
-    EntityVector& list = mEntitiesInChunks[chunkId];
-    SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(deactivateEntitity.simEntity);
-    mRegistry.emplace<SimMovementComponent>(deactivateEntitity.simEntity);
-    posCmp.position = deactivateEntitity.simPosition;
-    posCmp.chunk = chunkId;
-    list.emplace_back(deactivateEntitity.simEntity);
-
-    // Remove binding
-    auto&& it = mFullEntityBindings.find(deactivateEntitity.simEntity);
-    mFullEntityBindings.erase(it);
-    mRegistry.remove<FullEntityBindingComponent>(deactivateEntitity.simEntity);
-}
-
-void SimECS::onEntityDeactivationFailed(ChunkID chunkId, const EntityFullDeactivateData& deactivateEntity) {
-    ASSERT_SIM_THREAD();
-    auto&& it = mFullEntityBindings.find(deactivateEntity.simEntity);
-    assert(it != mFullEntityBindings.end());
-
-    EntityFullActivateData activateData;
-    activateData.entityType = mRegistry.get<SimEntityTypeComponent>(deactivateEntity.simEntity).type;
-    activateData.simPosition = deactivateEntity.simPosition;
-    activateData.binding = &it->second;
-
-    mFullActivatedDataThisFrame[chunkId].entities.emplace_back(activateData);
+    PROFILE_FUNCTION();
+    mEntityTransitioner.markChunkSimEntitiesForTransition(id);
 }
 
 bool SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
@@ -286,7 +197,7 @@ bool SimECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chunk
         return false;
     }
     else {
-        mFullActivatedDataThisFrame[newChunk].entities.emplace_back(onFullActivateEntity(entity));
+        mEntityTransitioner.markSimEntityForTransition(entity);
         return true;
     }
 }
@@ -311,48 +222,6 @@ void SimECS::debugRender(f32v3 cameraPos) const {
         }
         for (DebugDrawSimAgentData drawData : drawAgents) {
             DebugRenderer::drawWireQuad(drawData.pos - f32v3(0.4f, 0.4f, 0.0f), f32v2(0.8f), drawData.color);
-        }
-    }
-}
-
-EntityFullActivateData SimECS::onFullActivateEntity(entt::entity entity) {
-    EntityFullActivateData rv;
-    rv.entityType = mRegistry.get<SimEntityTypeComponent>(entity).type;
-    rv.simPosition = mRegistry.get<SimPositionComponent>(entity).position;
-    // We erase our sim position and movement while fully activated
-    mRegistry.remove<SimPositionComponent>(entity);
-    mRegistry.remove<SimMovementComponent>(entity);
-
-    // Create binding
-    SimFullEntityBinding& binding = mFullEntityBindings[entity];
-    rv.binding = &binding;
-    binding.simEntity = entity;
-    mRegistry.emplace<FullEntityBindingComponent>(entity).binding = &binding;
-
-    return rv;
-}
-
-void SimECS::onEntityFullActivationFailed(ChunkID chunkId, ChunkFullActivateData&& activateData) {
-    ASSERT_SIM_THREAD();
-    if (mHostSimContext.isChunkSimulating(chunkId)) {
-        ChunkEntityFullDeactivateDataList list;
-        list.resize(activateData.entities.size());
-        for (size_t i = 0; i < activateData.entities.size(); ++i) {
-            list[i].simEntity = activateData.entities[i].binding->simEntity;
-            list[i].simPosition = activateData.entities[i].simPosition;
-        }
-        simThreadOnFullDeactivateEntities(chunkId, list);
-    }
-    else {
-        // Fail again! either due to delay or due to chunk immediately reactivating, just keep ping ponging back till it owrks
-        ChunkFullActivateData& list = mFullActivatedDataThisFrame[chunkId];
-        if (list.entities.empty()) {
-            list.entities.swap(activateData.entities);
-        }
-        else {
-            // Append
-            list.entities.reserve(list.entities.size() + activateData.entities.size());
-            list.entities.insert(list.entities.end(), activateData.entities.begin(), activateData.entities.end());
         }
     }
 }

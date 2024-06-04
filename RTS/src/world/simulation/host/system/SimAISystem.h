@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs/ChunkFullActivateData.h"
+#include "ecs/ChunkFullTransitionData.h"
 
 class HostSimContext;
 class SimECS;

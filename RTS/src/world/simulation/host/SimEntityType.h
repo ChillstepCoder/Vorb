@@ -2,7 +2,7 @@
 
 enum class SimEntityType : ui8 {
     INVALID,
-    Person,
+    Character,
     Group,
     Settlement,
     COUNT
