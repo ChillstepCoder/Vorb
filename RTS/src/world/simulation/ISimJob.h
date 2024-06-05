@@ -4,7 +4,7 @@ class SimTaskHandle;
 class ISimTask;
 class World;
 
-// Jobs are only created on sim thread
+// Jobs can be shared between threads
 class ISimJob {
 public:
     ISimJob() = default;
@@ -19,7 +19,7 @@ public:
     virtual void onCompleteTask(ISimTask& task) {};
     virtual void onAbortTask(ISimTask& task) {};
 
-    void addTaskHandle(SimTaskHandle* handle) { mTaskHandles.emplace_back(handle); }
+    void addTaskHandle(SimTaskHandle* handle);
     void removeTaskHandle(SimTaskHandle* handle);
     i32 getRefCount() const { return mTaskHandles.size(); }
 
@@ -30,8 +30,8 @@ protected:
     void destroySelf();
 
     World& mWorld;
-    i32 mNumActiveTasks = 0; // A task chain counts as one task
     entt::entity mJobOwner = entt::null;
-    bool mFinished = false;
+    std::atomic_bool mFinished = false;
+    std::mutex mTaskMutex;
     std::vector<SimTaskHandle*> mTaskHandles; // Task handles held by characters who are using us
 };

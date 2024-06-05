@@ -25,12 +25,16 @@ POOLED_ALLOC_DEF_THREADSAFE(ConstructBuildingSimTask, 256);
 constexpr i32 TMP_CARRY_COUNT = 6;
 
 ConstructBuildingSimTask::ConstructBuildingSimTask(
-    World& world, ConstructBuildingSimJob& parentJob, entt::registry& simRegistry, entt::entity simAgent
+    World& world, ConstructBuildingSimJob& parentJob, entt::registry& simRegistry, entt::entity simAgent, bool isSim
 )
     : mContext(parentJob.mContext), mParentJob(parentJob) {
-
-    if (!trySelectItemSource(world, simRegistry, simAgent)) {
-        mState = State::SelectToConstruct;
+    if (isSim) {
+        if (!simTrySelectItemSource(world, simRegistry, simAgent)) {
+            mState = State::SelectToConstruct;
+        }
+    }
+    else {
+        assert(false); // Full not implemented
     }
 }
 
@@ -169,7 +173,7 @@ void ConstructBuildingSimTask::initItemPromise(FillableSimpleItemStack& blueprin
     assert(blueprintStack.getMaxPromiseSize() >= 0);
 }
 
-bool ConstructBuildingSimTask::trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+bool ConstructBuildingSimTask::simTrySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent) {
     BuildingBlueprint& blueprint = mContext.blueprint;
     entt::entity settlementEntity = blueprint.parentSettlement;
     assert(settlementEntity != entt::null);
@@ -273,7 +277,7 @@ void ConstructBuildingSimTask::updateMoveToItemStackSim(World& world, entt::regi
             mState = State::MoveToBlueprint;
             mMoveSubtask.init(simRegistry, simAgent, mContext.blueprint.getCenterPosTile().v, 32.0f);
         }
-        else if (!trySelectItemSource(world, simRegistry, simAgent)) {
+        else if (!simTrySelectItemSource(world, simRegistry, simAgent)) {
             // Couldnt find the item, so lets see if we can construct
             mState = State::SelectToConstruct;
         }

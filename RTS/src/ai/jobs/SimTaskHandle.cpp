@@ -4,10 +4,9 @@
 #include "world/simulation/ISimJob.h"
 #include "world/simulation/ISimTask.h"
 
-POOLED_ALLOC_DEF_NOT_THREADSAFE(SimTaskHandle, 256, ASSERT_SIM_THREAD());
+POOLED_ALLOC_DEF_THREADSAFE(SimTaskHandle, 256);
 
 SimTaskHandle::SimTaskHandle(World& world, entt::registry& simRegistry, std::unique_ptr<ISimTask>&& task) : mTask(std::move(task)), mIsJob(false) {
-    ASSERT_SIM_THREAD();
 }
 
 SimTaskHandle::SimTaskHandle(ISimJob* job) : mJob(job), mIsJob(true) {

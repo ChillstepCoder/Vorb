@@ -45,7 +45,7 @@ enum class InventoryComponentFlags : ui16 {
 static_assert(e_cast(InventoryComponentFlags::TERM) <= 0xffff, "Must fit in 16 bits");
 
 // Shared between Sim and Game ECS
-class InventoryComponent {
+class DualInventoryComponent {
 public:
 
     // Between 0 an 1. When going over total carry weight, we get encumbered.
@@ -66,5 +66,5 @@ private:
     ui8 mBagTiers[e_count(InventoryBagType)] = {};
     BitFlags<InventoryComponentFlags> mFlags;
 };
-static_assert(sizeof(InventoryComponent) == 56, "Keep small, shared by sim");
+static_assert(sizeof(DualInventoryComponent) == 56, "Keep small, shared by sim");
 

@@ -13,7 +13,7 @@ constexpr f32 DEFAULT_STAMINA = 100.0f;
 constexpr f32 DEFAULT_BLOOD = 100.0f;
 constexpr f32 DEFAULT_MOVE_SPEED = 2.0f; // TODO: Figure out proper values
 
-struct AttributesComponent {
+struct DualAttributesComponent {
 
     void init(f32 health, f32 stamina, f32 blood, f32 moveSpeed) {
         mAttributeRanges[e_cast(AttributeType::Health)] = f32v2(health, health);

@@ -6,9 +6,9 @@
 #include "ecs/component/SimEntityTypeComponent.h"
 
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
-#include "ecs/component/InventoryComponent.h"
+#include "ecs/component/DualInventoryComponent.h"
 #include "ecs/component/PersonalityComponent.h"
-#include "ecs/component/AttributesComponent.h"
+#include "ecs/component/DualAttributesComponent.h"
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
 #include "item/ItemStack.h"
@@ -32,7 +32,7 @@ private:
     ChunkID chunk = INVALID_CHUNK_ID;
 };
 
-struct SimCharacterComponent {
+struct DualCharacterComponent {
     CharacterUID characterId;
 };
 
@@ -41,7 +41,7 @@ struct SimResourceBundleComponent {
     SimpleItemStack itemStack;
 };
 
-struct SimGenderComponent {
+struct DualGenderComponent {
     bool isFemale = false;
 };
 
@@ -83,12 +83,12 @@ struct SimMovementComponent {
 };
 
 constexpr i32 MAX_SIM_TASK_QUEUE_SIZE = 8;
-struct SimTaskQueueComponent {
+struct DualTaskQueueComponent {
     // Provides stable pointers to task handles
     boost::circular_buffer<SimTaskHandle> taskQueue = boost::circular_buffer<SimTaskHandle>(MAX_SIM_TASK_QUEUE_SIZE); // First is the active one
     ISimTask* activeTask = nullptr;
 };
-static_assert(sizeof(SimTaskQueueComponent) == 48, "Keep small for cache efficiency");
+static_assert(sizeof(DualTaskQueueComponent) == 48, "Keep small for cache efficiency");
 
 struct SimNeedsComponent {
     f32 hunger = 0.0f; // [0, 1>, 1 is starving. Can go beyond 1.
@@ -128,8 +128,8 @@ struct SimProfessionComponent {
 
 //enum class SimResidentComponentFlags : ui8 {
 //};
-struct SimResidentComponent {
-    entt::entity settlementEntity = entt::null;
+struct DualResidentComponent {
+    entt::entity simSettlementEntity = entt::null;
     BuildingID homeId = INVALID_BUILDING_ID;
     i32v2 homePoint = i32v2(-1, -1); // Represents our tent, house, or general wandering area that we should stay near while chilling
     //BitFlags<SimResidentComponentFlags> flags;

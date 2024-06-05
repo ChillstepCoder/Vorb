@@ -90,7 +90,7 @@
     <ClCompile Include="..\src\ecs\srv\SrvEntityComponentSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\component\AttributesComponent.cpp">
+    <ClCompile Include="..\src\ecs\component\DualAttributesComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ecs\component\CharacterControlComponent.cpp">
@@ -111,7 +111,7 @@
     <ClCompile Include="..\src\ecs\component\EmployeeComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\component\InventoryComponent.cpp">
+    <ClCompile Include="..\src\ecs\component\DualInventoryComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ecs\component\NavigationComponent.cpp">
@@ -248,7 +248,7 @@
     <ClInclude Include="..\src\ecs\srv\SrvEntityComponentSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\component\AttributesComponent.h">
+    <ClInclude Include="..\src\ecs\component\DualAttributesComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\CharacterControlComponent.h">
@@ -278,7 +278,7 @@
     <ClInclude Include="..\src\ecs\component\EntityDetailsComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\component\InventoryComponent.h">
+    <ClInclude Include="..\src\ecs\component\DualInventoryComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\NavigationComponent.h">

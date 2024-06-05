@@ -8,7 +8,7 @@
 
 #include "city/CityQuartermaster.h"
 
-#include "ecs/component/InventoryComponent.h"
+#include "ecs/component/DualInventoryComponent.h"
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"

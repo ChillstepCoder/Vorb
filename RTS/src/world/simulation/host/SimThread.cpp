@@ -43,7 +43,7 @@ void SimThread::requestAllCharacters(std::shared_ptr<SimThreadEntityRequest> req
     mSimThreadProcs.enqueue([this, request]() {
         SimECS& ecs = *mHostSimContext.mSimECS;
         entt::registry& registry = ecs.getRegistrySimThread();
-        auto viewGroup = registry.view<SimCharacterComponent, SimPositionComponent, FactionComponent>();
+        auto viewGroup = registry.view<DualCharacterComponent, SimPositionComponent, FactionComponent>();
         request->entities.reserve(viewGroup.size_hint());
         for (auto entity : viewGroup) {
             request->entities.emplace_back(SimThreadEntityRequest::Data{

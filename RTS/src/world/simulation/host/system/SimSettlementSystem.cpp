@@ -97,8 +97,8 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     peopleCmp.leader = leader;
     peopleCmp.people = people;
     for (auto& person : people) {
-        SimResidentComponent& residentCmp = mRegistry.get_or_emplace<SimResidentComponent>(person);
-        residentCmp.settlementEntity = settlementEntity;
+        DualResidentComponent& residentCmp = mRegistry.get_or_emplace<DualResidentComponent>(person);
+        residentCmp.simSettlementEntity = settlementEntity;
         residentCmp.homePoint = defaultHomePoint;
     }
     // TODO: Homeless families...

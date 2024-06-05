@@ -101,11 +101,15 @@ void SimEntityTransitionManager::transitionEntitiesToSimFromFull(ChunkID chunkId
         posCmp.chunk = chunkId;
         list.emplace_back(dd.simEntity);
 
-        // Remove binding
+        dd.characterData->moveToEntity(ecs.mRegistry, dd.simEntity);
+
+        // Process and remove binding once entity is fully constructed and can process any tasks properly
+        FullEntityBindingComponent& binding = ecs.mRegistry.get<FullEntityBindingComponent>(dd.simEntity);
+        binding.binding->processSimThreadPreRemove(ecs.mRegistry, dd.simEntity);
+        ecs.mRegistry.remove<FullEntityBindingComponent>(dd.simEntity);
+
         auto&& it = mFullEntityBindings.find(dd.simEntity);
         mFullEntityBindings.erase(it);
-        ecs.mRegistry.remove<FullEntityBindingComponent>(dd.simEntity);
-        dd.characterData->moveToEntity(ecs.mRegistry, dd.simEntity);
     }
 }
 
@@ -120,7 +124,10 @@ void SimEntityTransitionManager::transitionEntityToSimFromFull(ChunkID chunkId, 
     posCmp.chunk = chunkId;
     list.emplace_back(transitionData.simEntity);
 
-    // Remove binding
+    // Process and remove binding
+    FullEntityBindingComponent& binding = ecs.mRegistry.get<FullEntityBindingComponent>(transitionData.simEntity);
+    binding.binding->processSimThreadPreRemove(ecs.mRegistry, transitionData.simEntity);
+
     auto&& it = mFullEntityBindings.find(transitionData.simEntity);
     mFullEntityBindings.erase(it);
     ecs.mRegistry.remove<FullEntityBindingComponent>(transitionData.simEntity);
@@ -192,5 +199,7 @@ EntityFullTransitionData SimEntityTransitionManager::prepareCharacterEntityForSi
 
     rv.moveFromSimEntity(ecs.mRegistry, entity, binding);
 
+    // Creating the binding will fully mark us as a "full" entity, and our entity operations will go to the game thread
+    ecs.mRegistry.emplace<FullEntityBindingComponent>(entity).binding = &binding;
     return rv;
 }

@@ -5,13 +5,34 @@
 
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
+using EntityOperationFunc = std::function<void(entt::registry&, entt::entity, bool/*isGameThread*/)>;
+
+namespace EntityOperations {
+    // Will perform an operation on either sim or game thread, depending on entity
+    // simulation state. Call from sim thread
+    void simPerformDual(entt::registry& simRegistry, entt::entity entity, EntityOperationFunc func);
+};
+
 // Exists when we have a full entity spawned for this entity
 // Allows communication between the sim -> full entity, one way
-struct SimFullEntityBinding {
+class SimFullEntityBinding {
+public:
+
+    void processGameThread(entt::registry& registry, entt::entity entity);
+    // Only call when we are returning to sim control
+    void processSimThreadPreRemove(entt::registry& registry, entt::entity entity);
+
+    void simAddOperation(EntityOperationFunc func);
     // We do not store the full entity here as
     // it is not needed, this is simply for the
     // sim entity to push information to the full entity
     entt::entity simEntity = entt::null;
+private:
+    std::atomic_bool hasQueuedOperations = false;
+    // Data passing
+    std::mutex mutex;
+    std::queue<EntityOperationFunc> queuedOperations;
+
 };
 
 // For passing character components between registries
@@ -22,11 +43,12 @@ struct EntityComponentCharacterTransitionData {
     void moveFromEntity(entt::registry& registry, entt::entity entity);
     void moveToEntity(entt::registry& registry, entt::entity entity);
 
-    SimCharacterComponent character;
-    SimTaskQueueComponent taskQueue;
-    AttributesComponent attributes;
-    InventoryComponent inventory;
-    SimGenderComponent gender;
+    DualCharacterComponent character;
+    DualTaskQueueComponent taskQueue;
+    DualAttributesComponent attributes;
+    DualInventoryComponent inventory;
+    DualGenderComponent gender;
+    DualResidentComponent resident;
     bool isValid = false;
 };
 typedef std::unique_ptr<EntityComponentCharacterTransitionData> EntityComponentCharacterTransitionDataPtr;

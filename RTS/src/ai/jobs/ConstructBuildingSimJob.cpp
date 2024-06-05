@@ -142,7 +142,7 @@ std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCha
 
     std::unique_ptr<ConstructBuildingSimTask> newTask =
         std::make_unique<ConstructBuildingSimTask>(
-            mWorld, *this, simRegistry, simCharacter
+            mWorld, *this, simRegistry, simCharacter, true /*isSim*/
         );
     // If state is END then the task could not initialize
     if (newTask->mState == ConstructBuildingSimTask::State::End) {

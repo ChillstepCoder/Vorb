@@ -14,7 +14,7 @@
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/ProfessionComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
-#include "ecs/component/InventoryComponent.h"
+#include "ecs/component/DualInventoryComponent.h"
 #include "ecs/component/SkillsComponent.h"
 #include "ecs/component/CameraAttachComponent.h"
 #include "ecs/component/PositionComponent.h"

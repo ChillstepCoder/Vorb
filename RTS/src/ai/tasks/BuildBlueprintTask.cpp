@@ -3,7 +3,7 @@
 #include "BuildBlueprintTask.h"
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/PositionComponent.h"
-#include "ecs/component/InventoryComponent.h"
+#include "ecs/component/DualInventoryComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
 #include "resources/TileRepository.h"

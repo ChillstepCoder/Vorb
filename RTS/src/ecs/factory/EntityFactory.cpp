@@ -96,7 +96,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 break;
             }
             case ComponentType::Inventory: {
-                registry.emplace<InventoryComponent>(newEntity);
+                registry.emplace<DualInventoryComponent>(newEntity);
                 break;
             }
             case ComponentType::Physics: {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs/component/InventoryComponent.h"
+#include "ecs/component/DualInventoryComponent.h"
 #include "world/simulation/host/CharacterGroupType.h"
 
 // Leads a group of characters around

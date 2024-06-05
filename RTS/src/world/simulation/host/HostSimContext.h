@@ -50,6 +50,8 @@ public:
     void setPlayerPosition(ServerPlayerID, f32v3 pos);
     void removePlayer(ServerPlayerID playerId);
 
+    void addSimThreadTask(std::function<void()> task);
+
     SimThread* tryGetSimThread() const { return mSimThread.get(); }
     TimestampMs getSimTime() const { return mSimTime; }
     SimECS& getECS() const { return *mSimECS; }

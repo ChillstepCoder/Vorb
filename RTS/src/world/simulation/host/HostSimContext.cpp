@@ -89,6 +89,11 @@ void HostSimContext::removePlayer(ServerPlayerID playerId) {
     }
 }
 
+void HostSimContext::addSimThreadTask(std::function<void()> task) {
+    assert(mSimThread);
+    mSimThread->addTask(std::move(task));
+}
+
 RandomGenerator& HostSimContext::getSimRandomGenerator() const {
     return mSimThread->getRandomGenerator();
 }

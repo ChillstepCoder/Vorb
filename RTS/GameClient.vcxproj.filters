@@ -147,7 +147,7 @@
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\component\InventoryComponent.cpp">
+    <ClCompile Include="src\ecs\component\DualInventoryComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\city\CityQuartermaster.cpp">
@@ -273,7 +273,7 @@
     <ClCompile Include="src\camera\CameraController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\component\AttributesComponent.cpp">
+    <ClCompile Include="src\ecs\component\DualAttributesComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\component\StatsComponent.cpp">
@@ -1286,7 +1286,7 @@
     <ClInclude Include="src\ai\tasks\IAgentTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\component\InventoryComponent.h">
+    <ClInclude Include="src\ecs\component\DualInventoryComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\CityQuartermaster.h">
@@ -1463,7 +1463,7 @@
     <ClInclude Include="src\network\Message.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\component\AttributesComponent.h">
+    <ClInclude Include="src\ecs\component\DualAttributesComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\StatsComponent.h">

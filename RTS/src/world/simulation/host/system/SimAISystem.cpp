@@ -30,7 +30,7 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
     updateCharacterGroups();
   
     { // Update all brains who aren't followers (Complex Logic)
-        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, SimMovementComponent, SimTaskQueueComponent>(entt::exclude<CharacterGroupFollowerComponent>);
+        auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, SimMovementComponent, DualTaskQueueComponent>(entt::exclude<CharacterGroupFollowerComponent>);
         for (auto entity : view) {
             updateSimCharacter(entity);
         }
@@ -165,7 +165,7 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
         }
     }
 
-    SimTaskQueueComponent& taskQueue = mRegistry.get<SimTaskQueueComponent>(entity);
+    DualTaskQueueComponent& taskQueue = mRegistry.get<DualTaskQueueComponent>(entity);
     if (taskQueue.taskQueue.size()) {
         updateSimTask(entity, taskQueue);
         // On task debug draw
@@ -177,15 +177,15 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
         }
     }
     else {
-        SimResidentComponent* residencyCmp = mRegistry.try_get<SimResidentComponent>(entity);
+        DualResidentComponent* residencyCmp = mRegistry.try_get<DualResidentComponent>(entity);
         assert(residencyCmp); // TODO: Handle nomadic people or those who need to find residency
-        assert(residencyCmp->settlementEntity != entt::null);
+        assert(residencyCmp->simSettlementEntity != entt::null);
 
         // Aquire or prioritize shelter if needed
         color4 debugColor = color4(1.0f, 0.0f, 1.0f, 1.0f);
         switch (residencyCmp->homeState) {
             case SimHomeState::Homeless:
-                mECS.getSettlementSystem().getCharacterInterface().tryRequestHomeForSelfAndFamily(entity, residencyCmp->settlementEntity);
+                mECS.getSettlementSystem().getCharacterInterface().tryRequestHomeForSelfAndFamily(entity, residencyCmp->simSettlementEntity);
                 debugColor = color4(1.0f, 0.0f, 0.0f, 1.0f);
                 break;
             case SimHomeState::Pending:
@@ -224,7 +224,7 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
     }
 }
 
-void SimAISystem::updateSimTask(entt::entity entity, SimTaskQueueComponent& taskCmp) {
+void SimAISystem::updateSimTask(entt::entity entity, DualTaskQueueComponent& taskCmp) {
     assert(taskCmp.taskQueue.size());
     // Acquire task if needed
     if (!taskCmp.activeTask) {

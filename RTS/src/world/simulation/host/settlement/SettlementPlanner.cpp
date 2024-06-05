@@ -126,17 +126,23 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
                     // Instruct all characters to build this house
                     for (int i = 0; i < numCharacters; ++i) {
-                        mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::Building;
-                        // TODO: Handle switching jobs
-                        if (SimTaskQueueComponent* taskQueue = mRegistry.try_get<SimTaskQueueComponent>(characters[i])) {
-                            if (taskQueue->taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
-                                taskQueue->taskQueue.push_back(SimTaskHandle(newConstructJob.get()));
-                                taskQueue->taskQueue.back().init();
+                        // Task handle ensures we do not lose the job
+                        std::shared_ptr<SimTaskHandle> taskHandle = std::make_unique<SimTaskHandle>(newConstructJob.get());
+                        LOG_DEBUG("Character {} is building a house", (int)characters[i]);
+                        EntityOperations::simPerformDual(mRegistry, characters[i],
+                            [taskHandle = std::move(taskHandle)](entt::registry& registry, entt::entity entity, bool isGameThread) mutable
+                        {
+                            UNUSED(isGameThread);
+                            LOG_DEBUG("  Character {} is DOING a house {}", (int)entity, (int)isGameThread);
+                            registry.get<DualResidentComponent>(entity).homeState = SimHomeState::Building;
+                            // TODO: Handle switching jobs
+                            DualTaskQueueComponent& taskQueue = registry.get<DualTaskQueueComponent>(entity);
+                            if (taskQueue.taskQueue.size() < MAX_SIM_TASK_QUEUE_SIZE) {
+                                taskQueue.taskQueue.push_back(std::move(*taskHandle));
+                                taskQueue.taskQueue.back().init();
                             }
-                        }
-                        else {
-                            LOG_CRITICAL("ERROR TRIED TO ADD TASK TO FULL ENTITY");
-                        }
+                        });
+                        
                     }
 
                     // Track job
@@ -148,7 +154,7 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
             if (!success) {
                 for (int i = 0; i < numCharacters; ++i) {
                     // TODO: Handle this failure case
-                    mRegistry.get<SimResidentComponent>(characters[i]).homeState = SimHomeState::NeedsBlueprint;
+                    mRegistry.get<DualResidentComponent>(characters[i]).homeState = SimHomeState::NeedsBlueprint;
                 }
             }
             return true;

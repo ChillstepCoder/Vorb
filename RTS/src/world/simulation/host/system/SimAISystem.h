@@ -10,7 +10,7 @@ class RandomGenerator;
 struct SimBrainComponent;
 struct SimPositionComponent;
 struct SimMovementComponent;
-struct SimTaskQueueComponent;
+struct DualTaskQueueComponent;
 
 struct SimFamily {
     // First is "head of family"
@@ -35,7 +35,7 @@ private:
     void updateCharacterGroups();
     void updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos);
     void updateSimCharacter(entt::entity entity);
-    void updateSimTask(entt::entity entity, SimTaskQueueComponent& taskCmp);
+    void updateSimTask(entt::entity entity, DualTaskQueueComponent& taskCmp);
 
     World& mWorld;
     entt::registry& mRegistry;

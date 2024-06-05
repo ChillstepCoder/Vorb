@@ -19,7 +19,7 @@ class ConstructBuildingSimTask : public ISimTask
 public:
 	// We will aquire the tileReservations, and the job will release them after
 	ConstructBuildingSimTask(
-		World& world, ConstructBuildingSimJob& parentJob, entt::registry& simRegistry, entt::entity simAgent
+		World& world, ConstructBuildingSimJob& parentJob, entt::registry& simRegistry, entt::entity simAgent, bool isSim
 	);
 	~ConstructBuildingSimTask();
 
@@ -32,7 +32,7 @@ public:
 
 private:
 	void initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount);
-	bool trySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
+	bool simTrySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
 	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
 

@@ -16,12 +16,12 @@ bool SimSettlementCharacterInterface::tryRequestHomeForSelfAndFamily(entt::entit
     if (memberCmp) {
         SimFamily& family = mSystem.mECS.getAISystem().getFamily(memberCmp->familyId);
         for (i32 i = 0; i < family.numCharacters; ++i) {
-            mSystem.mRegistry.get<SimResidentComponent>(family.characters[i]).homeState = SimHomeState::Pending;
+            mSystem.mRegistry.get<DualResidentComponent>(family.characters[i]).homeState = SimHomeState::Pending;
         }
         plannerCmp.familiesPendingHomes.emplace_back(memberCmp->familyId);
     }
     else {
-        mSystem.mRegistry.get<SimResidentComponent>(characterEntity).homeState = SimHomeState::Pending;
+        mSystem.mRegistry.get<DualResidentComponent>(characterEntity).homeState = SimHomeState::Pending;
         plannerCmp.singleCharactersPendingHomes.emplace_back(characterEntity);
     }
     // For now always return true

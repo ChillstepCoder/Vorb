@@ -65,16 +65,19 @@ entt::entity SimECS::createNewPerson(f32v2 worldTilePosition) {
 
     const bool isFemale = gen.getRandomBool();
 
-    mRegistry.emplace<SimCharacterComponent>(newPerson, ++mUIDGenerator);
-    mRegistry.emplace<SimGenderComponent>(newPerson, isFemale);
+    // Sim components
     SimPositionComponent& posCmp = mRegistry.emplace<SimPositionComponent>(newPerson, worldTilePosition, mWorld.getChunkIDAtWorldPos(worldTilePosition));
     mRegistry.emplace<SimMovementComponent>(newPerson);
     mRegistry.emplace<SimBrainComponent>(newPerson);
     mRegistry.emplace<SimNeedsComponent>(newPerson);
     mRegistry.emplace<SimProfessionComponent>(newPerson);
-    mRegistry.emplace<SimTaskQueueComponent>(newPerson);
-    mRegistry.emplace<InventoryComponent>(newPerson);
-    mRegistry.emplace<AttributesComponent>(newPerson).init(
+
+    // Dual components
+    mRegistry.emplace<DualCharacterComponent>(newPerson, ++mUIDGenerator);
+    mRegistry.emplace<DualGenderComponent>(newPerson, isFemale);
+    mRegistry.emplace<DualTaskQueueComponent>(newPerson);
+    mRegistry.emplace<DualInventoryComponent>(newPerson);
+    mRegistry.emplace<DualAttributesComponent>(newPerson).init(
         DEFAULT_HEALTH,
         DEFAULT_STAMINA,
         DEFAULT_BLOOD,
@@ -283,7 +286,7 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
         followerCmp.nextFollowCheckTime = mCurrentTickTimestamp + CHARACTER_GROUP_DEFAULT_FOLLOW_CHECK_INTERVAL_MS;
         followerCmp.followerIndex = i;
         mRegistry.get<SimBrainComponent>(members[i]).flags.setBit(SimBrainComponentFlags::IsFollowingCharacterGroup);
-        avgMoveSpeed += mRegistry.get<AttributesComponent>(members[i]).getCurrentAttribute(AttributeType::MoveSpeed);
+        avgMoveSpeed += mRegistry.get<DualAttributesComponent>(members[i]).getCurrentAttribute(AttributeType::MoveSpeed);
     }
     avgMoveSpeed = glm::max(avgMoveSpeed, 0.1f);
     avgMoveSpeed /= members.size();
