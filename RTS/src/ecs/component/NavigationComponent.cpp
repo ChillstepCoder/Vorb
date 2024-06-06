@@ -218,10 +218,10 @@ void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComp
 					if (simEndChunk != INVALID_CHUNK_ID) {
 						// Check if our target sim chunk is still a sim chunk or if we should re-path if its valid
 						if (world.getChunkGrid().getChunk(simEndChunk).isActivated()) {
-							navCmp.requestCoarsePath(pos, navCmp.mTargetPosition);
+							navCmp.requestCoarsePath(pos, navCmp.mCoarsePath->getTargetPosition());
 						}
 						else {
-							navCmp.setSimpleLinearTargetPoint(navCmp.mTargetPosition);
+							navCmp.setSimpleLinearTargetPoint(navCmp.mCoarsePath->getTargetPosition());
 						}
 					}
 					else {

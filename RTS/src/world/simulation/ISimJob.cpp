@@ -68,6 +68,7 @@ void ISimJob::destroySelf() {
                 return;
             }
         }
+        panic("Did not find job in boss component");
     };
     if (IS_SIM_THREAD()) {
         simThreadCleanupFunc();
@@ -75,5 +76,4 @@ void ISimJob::destroySelf() {
     else {
         mWorld.tryGetHostSimContext()->addSimThreadTask(std::move(simThreadCleanupFunc));
     }
-    panic("Did not find job in boss component");
 }

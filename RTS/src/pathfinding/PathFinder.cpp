@@ -186,7 +186,7 @@ struct FineNodeData {
 };
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path) {
+bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal, OUT NavPath& path) {
     PROFILE_FUNCTION();
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
@@ -438,7 +438,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     return true;
 }
 
-bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path) {
+bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, OUT NavPath& path) {
     PROFILE_FUNCTION();
     ASSERT_NAV_THREAD();
     assert(path.numPoints == 0); // Should be uninitialized
