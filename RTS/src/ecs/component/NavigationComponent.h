@@ -12,7 +12,6 @@ enum class NavigationType : ui8 {
 	FINE_PATH,
 	COARSE_PATH,
 	SIMPLE_LINEAR,
-	COARSE_BUILDING,
 	INVALID
 };
 enum class NavigationStatus : ui8 {
@@ -31,15 +30,12 @@ constexpr ui8 NAVIGATION_FINISHED_FLAGS = e_cast(NavigationComponentFlags::NAVIG
 
 struct NavigationComponent {
 
-	// TODO: IMPLEMENT
-	void requestPathTo(const LiteTileHandle& targetTile);
-
 	// Make sure navigation component is destroyed before the callback owner is destroyed
     // Callback should ideally only be set from the same entity
-    void setSimpleLinearTargetPoint(const ui32v2& targetPoint);
+    void setSimpleLinearTargetPoint(f32v3 targetPoint);
 
-	void requestCoarsePath(const f32v3& start, const f32v3& goal);
-	void requestCoarsePathToHarvestable(const f32v3& start, TileHarvestable harvestable, f32 maxDistance);
+	void requestCoarsePath(f32v3 start, f32v3 goal);
+	void requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance);
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);
@@ -55,18 +51,12 @@ struct NavigationComponent {
     std::shared_ptr<NavPath> mFinePath;
     std::shared_ptr<NavPath> mPendingFinePath;
     std::shared_ptr<NavPath> mCoarsePath;
-	union {
-		struct {
-            ui32 mCurrentFinePoint;
-            ui32 mCurrentCoarsePoint;
-		};
-		ui32v2 mSimpleTargetPoint = ui32v2(0);
-    };
+    ui32 mCurrentFinePoint = 0;
+    ui32 mCurrentCoarsePoint = 0;
 	f32v3 mTargetPosition = f32v3(0.0f);
 	//ui32v2 mPrevNavCell; // TODO: for steering? Check steering each cell change?
     NavigationType mNavigationType = NavigationType::INVALID;
 	NavigationStatus mStatus = NavigationStatus::INVALID;
-	ui8 mFramesUntilNextRayCheck = 0;
 	// TODO: Maybe this? Let the path find be more automatic?
 	// TileRef mTargetTile; // Can be any tile in existance, automatically figures out how to nav to
 	// void navigateTo(TileRef&& targetTile);

@@ -9,7 +9,7 @@
 struct nav_pool {};
 using singleton_path_pool = boost::singleton_pool<nav_pool, sizeof(NavPath), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 128u>;
 struct path_point_pool {};
-using singleton_point_pool = boost::singleton_pool<path_point_pool, sizeof(NavPathPoint), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 512>;
+using singleton_point_pool = boost::singleton_pool<path_point_pool, sizeof(f32v3), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 512>;
 
 NavPath::NavPath(NavPath&& other) noexcept {
     numPoints = other.numPoints;
@@ -29,7 +29,7 @@ NavPath& NavPath::operator=(NavPath&& other) noexcept {
 void NavPath::allocatePath(ui32 numPoints) {
     this->numPoints = numPoints;
     if (numPoints) {
-        points = (NavPathPoint*)singleton_point_pool::ordered_malloc(numPoints);
+        points = (f32v3*)singleton_point_pool::ordered_malloc(numPoints);
     }
 }
 
@@ -59,7 +59,7 @@ std::vector<f32v3> NavPath::convertToWorldPoints(const IHeightmapGrid& heightGri
     assert(IS_GAME_THREAD() || IS_NAV_THREAD());
     std::vector<f32v3> rv(numPoints);
     for (ui32 i = 0; i < numPoints; ++i) {
-        rv[i] = points[i].pos;
+        rv[i] = points[i];
     }
     return rv;
 }

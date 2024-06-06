@@ -212,7 +212,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     NavGraphTileDataToCopy& navTileData = taskData.navTileData;
     CoarseNavGraph& coarseNavGraph = taskData.navGraph;
     std::vector<TileFineNavData>& fineNavData = taskData.fineNavData;
-    const i32v3& dims = tileContainer.getTileSpatialGrid().getDims();
+    const i32v3 dims = tileContainer.getTileSpatialGrid().getDims();
     const f32 floorHeight = tileContainer.getTileSpatialGrid().getFloorHeight();
     const bool isTerrain = tileContainer.isTerrain();
     // We only care about external edges for non terrain
@@ -878,7 +878,7 @@ void NavWorld::initEventHandlers() {
     });
 }
 
-bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ChunkBuildingEdgeListOutput* externalEdges) {
+bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, i32v3 containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ChunkBuildingEdgeListOutput* externalEdges) {
 
     const Cartesian cartesian = CARTESIAN8_TO_CARTESIAN[e_cast(cartesian8)];
     assert(cartesian != Cartesian::NONE);
@@ -932,7 +932,7 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacen
     return false;
 }
 
-bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
+bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, i32v3 containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
     const ui32v2 dimsDTiles = ui32v2(containerDims.x >> 1, containerDims.y >> 1);
     if (isInner && isInteriorTile(ownedDTiles, adjacentIndex, dimsDTiles, tiles)) {
         // Interior edge
@@ -961,7 +961,7 @@ bool NavWorld::isInteriorTile(const BitArray& ownedDTiles, TileIndex index2d, ui
     return !tiles[index2d].isBuildingExterior();
 }
 
-bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, const i32v3& containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
+bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, i32v3 containerDims, const std::vector<Tile>& tiles, const BitArray& ownedDTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
 {
     // We have an edge only if there is no wall
      // South edge
@@ -1079,7 +1079,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
     // Draw edges and connections
     for (ui32 nodeIndex = 0; nodeIndex < graph.numNodes; ++nodeIndex) {
         const CoarseNavNode& node = graph.nodes[nodeIndex];
-        const i32v3& containerPos = tileContainer.getTileSpatialGrid().getWorldPos();
+        i32v3 containerPos = tileContainer.getTileSpatialGrid().getWorldPos();
         const ui32 edgeCount = node.edgeCount;
         for (ui32 i = 0; i < edgeCount; ++i) {
             const CoarseNavNodeEdge& edge = graph.edges[node.edgesStart + i];
@@ -1265,7 +1265,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetim
     }
     const CoarseNavGraph& graph = it->second.coarseNavGraph;
     const CoarseNavNode& node = graph.nodes[coarseIndex];
-    const i32v3& containerPos = tileHandle.container->getTileSpatialGrid().getWorldPos();
+    i32v3 containerPos = tileHandle.container->getTileSpatialGrid().getWorldPos();
     const ui32 edgeCount = node.edgeCount;
     for (ui32 i = 0; i < edgeCount; ++i) {
         const CoarseNavNodeEdge& edge = graph.edges[node.edgesStart + i];
@@ -1381,7 +1381,7 @@ const ContainerNavData& NavWorld::getNavDataForContainer(TileContainerID contain
     return it->second;
 }
 
-LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const {
+LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(i32v3 worldPos, OUT const ContainerNavData** outNavData) const {
     ASSERT_NAV_THREAD();
     // TODO: Stack memory?
     std::vector<ContainerNavRegion> overlappingContainers;

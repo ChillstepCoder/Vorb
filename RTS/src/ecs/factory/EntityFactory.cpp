@@ -156,7 +156,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
-    registry.emplace<PositionComponent>(newEntity, position);
+    registry.emplace<PositionComponent>(newEntity, position, world.getChunkIDAtWorldPos(position));
     registry.emplace<ItemComponent>(newEntity, itemStack);
     registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
     BitFlags<ProjectileFlags> flags(ProjectileFlags::RemoveOnLand, ProjectileFlags::OrientToTerrainOnLand);
@@ -195,8 +195,7 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
-    PositionComponent& posCmp = registry.emplace<PositionComponent>(newEntity, position);
-    posCmp.chunkId = world.getChunkIDAtWorldPos(position);
+    PositionComponent& posCmp = registry.emplace<PositionComponent>(newEntity, position, world.getChunkIDAtWorldPos(position));
     registry.emplace<ItemComponent>(newEntity, itemStack);
     OrientationComponent& orientCmp = registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
 

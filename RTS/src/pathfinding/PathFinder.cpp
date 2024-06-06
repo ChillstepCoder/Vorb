@@ -429,7 +429,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     // Copy the path in reverse
     for (int i = 0; i < (int)pathSize; ++i) {
         LiteTileHandle& handle = sPathPointBuffer[pathSize - i - 1];
-        path.points[i] = NavPathPoint(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index), false);
+        path.points[i] = f32v3(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index)) + f32v3(0.5f, 0.5f, 0.0f);
     }
 
     LOG_TRACE("Generated fine path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
@@ -438,8 +438,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     return true;
 }
 
-bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path)
-{
+bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path) {
     PROFILE_FUNCTION();
     ASSERT_NAV_THREAD();
     assert(path.numPoints == 0); // Should be uninitialized
@@ -458,15 +457,46 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
 
     // If our target is invalid, it means we are trying to navigate to an unloaded chunk, which is valid!
     // We will step from the target towards the start (goal, in reverse pathfinding) until we hit a valid handle, and
-    // we will use that as the new target.
+    // we will use that as the new target. Binary search makes this fast, usually no more than 10 or 11 iteration
     if (!startNavData) {
-       TileCoord goalTileCoord(goal);
-       ChunkCoord goalChunkCoord(goalTileCoord);
-       TileCoord goalChunkTilePos(goalChunkCoord.toTilePos());
-       ChunkID goalChunkID = goalChunkCoord.toGridIDType(mNavWorld.getWidthChunks());
-       TileIndex goalTileIndex = (goalTileCoord - goalChunkTilePos).toChunkTileIndex();
-       f32v3 direction = glm::normalize(start - goal);
-       assert(false);
+       ChunkCoord goalChunkCoord = ChunkCoord::fromTilePos(goal);
+       path.simChunkEndPoint = goalChunkCoord.toGridIDType(mNavWorld.getWidthChunks());
+
+       f32v3 totalSpan = start - goal;
+       f32 spanLength = glm::length(totalSpan);
+       f32v3 direction = totalSpan / spanLength;
+
+       spanLength *= 0.5f;
+       f32v3 currentPos = goal + direction * spanLength;
+       constexpr f32 MIN_STEP = 1.0f;
+       do {
+           // Binary search along the total span until we hit a valid handle and
+           // the step distance is < min step
+           const ContainerNavData* navData = nullptr;
+           LiteTileHandle handle = mNavWorld.getTileHandleAndNavDataAtWorldPos(currentPos, &navData);
+           spanLength *= 0.5f;
+           if (navData) {
+               // Cache closest valid nav to the edge
+               startHandle = handle;
+               startNavData = navData;
+
+               // Go back
+               currentPos -= direction * spanLength;
+           }
+           else {
+               // Cache closest sim chunk ID to the edge
+               ChunkCoord chunkCoord = ChunkCoord::fromTilePos(currentPos);
+               path.simChunkEndPoint = goalChunkCoord.toGridIDType(mNavWorld.getWidthChunks());
+
+               currentPos += direction * spanLength;
+           }
+       } while (spanLength >= MIN_STEP);
+    }
+
+    if (!startNavData) {
+        LOG_WARN("Failed to find coarse path due to invalid edge search");
+        path.finishedGenerating.store(true);
+        return false;
     }
 
     const CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
@@ -493,7 +523,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     // Case where we are in the same node, just return the goal
     if (startNode == endNode) {
         path.allocatePath(1);
-        path.points[0] = NavPathPoint(mNavWorld.getNavDataForContainer(startHandle.containerId).getTileWorldPos(startHandle.index), false);
+        path.points[0] = f32v3(mNavWorld.getNavDataForContainer(startHandle.containerId).getTileWorldPos(startHandle.index)) + f32v3(0.5f,0.5f,0.0f);
         path.finishedGenerating.store(true);
         return true;
     }
@@ -552,6 +582,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     }
 
     finishCoarsePath(startHandle, goalHandle, id, path, false/*reverse*/);
+    path.targetPosition = goal;
 
     LOG_TRACE("Coarse path found in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
 
@@ -809,7 +840,7 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
         path.allocatePath(pathSize);
         for (int i = 0; i < (int)pathSize; ++i) {
             LiteTileHandle& handle = sPathPointBuffer[pathSize - i - 1];
-            path.points[i] = NavPathPoint(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index), false);
+            path.points[i] = f32v3(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index)) + f32v3(0.5f, 0.5f, 0.0f);
         }
     } else {
         // Append goal if it isn't at the endpoint already (Reversed)
@@ -822,17 +853,16 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
 
         for (int i = 0; i < (int)pathSize; ++i) {
             LiteTileHandle& handle = sPathPointBuffer[i];
-            path.points[i] = NavPathPoint(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index), false);
+            path.points[i] = f32v3(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index)) + f32v3(0.5f, 0.5f, 0.0f);
         }
     }
 
     if (sDebugOptions.mShowPaths) {
         for (ui32 i = 1; i < path.numPoints; ++i) {
-            const NavPathPoint& pa = path.points[i - 1];
-            const NavPathPoint& pb = path.points[i];
-            DebugRenderer::drawLineBetweenPointsThreadSafe(pa.pos, pb.pos, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
+            const f32v3& pa = path.points[i - 1];
+            const f32v3& pb = path.points[i];
+            DebugRenderer::drawLineBetweenPointsThreadSafe(pa, pb, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
         }
     }
-    path.targetPosition = mNavWorld.getNavDataForContainer(goalHandle.containerId).getTileWorldPos(goalHandle.index);
     path.finishedGenerating.store(true);
 }

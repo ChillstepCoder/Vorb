@@ -54,12 +54,6 @@ struct PathPoint {
     };
 };
 
-
-struct NavPathPoint {
-    f32v3 pos;
-    bool isSim;
-};
-
 class NavPath {
     friend class PathFinder;
 public:
@@ -85,16 +79,20 @@ public:
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t count);
 
-    const NavPathPoint* getPoints() const { return points; }
-    ui32 getNumPoints() const { return numPoints; }
+    const f32v3* getPoints() const { return points; }
+    i32 getNumPoints() const { return numPoints; }
+    // If not INVALID_CHUNK_ID, then the path ends on a sim chunk and we should move into it 
+    // and become a sim entity
+    ChunkID getSimChunkEndPoint() const { return simChunkEndPoint;}
     f32v3 getTargetPosition() const { return targetPosition; }
 
     std::vector<f32v3> convertToWorldPoints(const IHeightmapGrid& heightGrid) const;
 
 private:
     f32v3 targetPosition;
-    ui32 numPoints = 0;
-    NavPathPoint* points = nullptr; // Raw pointer
+    i32 numPoints = 0;
+    f32v3* points = nullptr; // Raw pointer
+    ChunkID simChunkEndPoint = INVALID_CHUNK_ID;
 public:
     // Atomic access check
     std::atomic_bool finishedGenerating = false;
