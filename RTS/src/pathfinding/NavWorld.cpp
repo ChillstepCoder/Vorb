@@ -1429,6 +1429,10 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
     return LiteTileHandle();
 }
 
+i32 NavWorld::getWidthChunks() const {
+    return mWorld.getWidthChunks();
+}
+
 void NavWorld::markContainerNavDirty(TileContainer* container) {
     ASSERT_GAME_THREAD();
     assert(container);

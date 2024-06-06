@@ -52,15 +52,8 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
 		return PathStatus::IN_PROGRESS;
 	}
 	else {
-		navCmp.mTargetHandle = navCmp.mFinePath->getTargetHandle();
+		navCmp.mTargetPosition = navCmp.mFinePath->getTargetPosition();
 	}
-
-    // Update tileNavData
-	// TODO: Entity steering
-    /*ui32v2 navCell = ui32v2(pos.x * 0.5f, pos.y * 0.5f);
-    if (navCell != navCmp.mPrevNavCell) {
-        assert(false);
-    }*/
 
     const ui32 numPoints = navCmp.mFinePath->getNumPoints();
 	if (numPoints == 0) {
@@ -71,9 +64,8 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
 		return PathStatus::SUCCESS;
 	}
 
-	// TODO: do this conversion in the generator?
-	const LiteTileHandle* points = navCmp.mFinePath->getPoints();
-	const i32v3 nextTilePos = points[navCmp.mCurrentFinePoint].getWorldPosition(world);
+	const NavPathPoint* points = navCmp.mFinePath->getPoints();
+	const i32v3 nextTilePos = points[navCmp.mCurrentFinePoint].pos;
 	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
@@ -101,16 +93,12 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
         if (navCmp.mCurrentFinePoint >= numPoints) {
 			// Target reached
 			navCmp.mFinePath = nullptr;
-			if (navCmp.mNavigationType == NavigationType::FINE_PATH && navCmp.mFinishedCallback) {
-				navCmp.mFinishedCallback(true /* success */);
-				navCmp.mFinishedCallback = nullptr;
-			}
 			return PathStatus::SUCCESS;
 		}
 		else {
 			// Immediately raycheck each time we get to a new point
 			navCmp.mFramesUntilNextRayCheck = 0;
-			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].getWorldPosition(world)) + f32v2(0.5f);
+			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].pos) + f32v2(0.5f);
 		}
 	}
 
@@ -221,15 +209,15 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
 	motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	motionCmp.mMoveDirection = f32v2(0.0f);
     if (success) {
-		if (!navCmp.mTargetHandle.isValid()) {
+		if (navCmp.mTargetPosition == f32v3(0.0f)) {
 			if (navCmp.mFinePath) {
-				navCmp.mTargetHandle = navCmp.mFinePath->getTargetHandle();
+				navCmp.mTargetPosition = navCmp.mFinePath->getTargetPosition();
 			}
 			else if (navCmp.mCoarsePath) {
-                navCmp.mTargetHandle = navCmp.mCoarsePath->getTargetHandle();
+                navCmp.mTargetPosition = navCmp.mCoarsePath->getTargetPosition();
 			}
 		}
-		assert(navCmp.mTargetHandle.isValid());
+		assert(navCmp.mTargetPosition != f32v3(0.0f));
 		navCmp.mStatus = NavigationStatus::SUCCESS;
 	}
     else {
@@ -237,10 +225,6 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     }
     navCmp.mFinePath = nullptr;
     navCmp.mCoarsePath = nullptr;
-	if (navCmp.mFinishedCallback) {
-		navCmp.mFinishedCallback(success);
-		navCmp.mFinishedCallback = nullptr;
-    }
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
@@ -294,14 +278,15 @@ void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComp
         return;
     }
 
-	const LiteTileHandle* points = navCmp.mCoarsePath->getPoints();
+	const NavPathPoint* points = navCmp.mCoarsePath->getPoints();
 
-	f32v3 nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition(world)) + f32v3(0.5f, 0.5f, 0.0f);
+	f32v3 nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].pos) + f32v3(0.5f, 0.5f, 0.0f);
 
 	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
 
     if (!hasFinePath) {
         // We need a path
+        DebugRenderer::drawWireQuadThreadSafe(nextCoarseTilePos, f32v2(1.0f), color::HotPink, 99999);
         navCmp.mCurrentFinePoint = 0;
 		requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos);
 
@@ -341,7 +326,7 @@ void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComp
                     // Immediately raycheck each time we get to a new point
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
-                    nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition(world)) + f32v3(0.5f, 0.5f, 0.0f);
+                    nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].pos) + f32v3(0.5f, 0.5f, 0.0f);
                     requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos);
                 }
 			}
@@ -398,10 +383,9 @@ void NavigationComponent::requestPathTo(const LiteTileHandle& targetTile) {
 	assert(false);
 }
 
-void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint) {
     mNavigationType = NavigationType::SIMPLE_LINEAR;
 	mSimpleTargetPoint = targetPoint;
-    mFinishedCallback = finishedCallback;
 	mStatus = NavigationStatus::IN_PROGRESS;
 
     mCoarsePath.reset();
@@ -412,51 +396,33 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
 	}
 }
 
-void NavigationComponent::requestFinePath(const f32v3& start, const f32v3& goal, std::function<void(bool)>&& finishedCallback) {
-    mNavigationType = NavigationType::FINE_PATH;
-    mCoarsePath.reset();
-    mTargetHandle.reset();
-    mFinePath = std::shared_ptr<NavPath>(new NavPath());
-	assert(Services::isUsingNav());
-    mCurrentFinePoint = 0;
-	mStatus = NavigationStatus::IN_PROGRESS;
-    Services::NavThread::ref().addPathfindTask(mFinePath, start, goal, false /*isCoarse*/, nullptr);
-    mFinishedCallback = std::move(finishedCallback);
-}
-
-void NavigationComponent::requestCoarsePath(const f32v3& start, const f32v3& goal, std::function<void(bool)>&& finishedCallback) {
+void NavigationComponent::requestCoarsePath(const f32v3& start, const f32v3& goal) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
-    mTargetHandle.reset();
+	mTargetPosition = f32v3(0.0f);
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
     assert(Services::isUsingNav());
 	mStatus = NavigationStatus::IN_PROGRESS;
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, nullptr);
-    mFinishedCallback = std::move(finishedCallback);
 }
 
-void NavigationComponent::requestCoarsePathToHarvestable(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void(bool)>&& finishedCallback) {
+void NavigationComponent::requestCoarsePathToHarvestable(const f32v3& start, TileHarvestable harvestable, f32 maxDistance) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
-	mTargetHandle.reset();
+    mTargetPosition = f32v3(0.0f);
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
     assert(Services::isUsingNav());
 	mStatus = NavigationStatus::IN_PROGRESS;
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     Services::NavThread::ref().addPathfindToHarvestableTask(mCoarsePath, start, harvestable, maxDistance, nullptr);
-    mFinishedCallback = std::move(finishedCallback);
 }
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
-	mStatus = NavigationStatus::IN_PROGRESS;
-	mTargetHandle.reset();
+    mStatus = NavigationStatus::IN_PROGRESS;
+    mTargetPosition = f32v3(0.0f);
 	mFinePath.reset();
-	if (mFinishedCallback) {
-		mFinishedCallback(false /*success*/);
-		mFinishedCallback = nullptr;
-	}
 }

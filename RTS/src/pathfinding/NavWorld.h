@@ -222,6 +222,7 @@ public:
     LiteTileHandle getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const;
 
     World& getWorld() const { return mWorld; }
+    i32 getWidthChunks() const;
 
     void markContainerNavDirty(TileContainer* container);
     bool navThreadTryReserveHarvestable(LiteTileHandle position) const;

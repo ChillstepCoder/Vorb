@@ -40,9 +40,9 @@ TaskTickResult PathToTargetTask::tick(World& world, entt::registry& registry, en
             const PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
             NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
             mState = TaskState::PATHING;
-            navCmp.requestCoarsePath(physCmp.getPosition(), mTargetPosition, [this](bool success) {
-                mState = success ? TaskState::SUCCESS : TaskState::FAIL;
-            });
+            /* navCmp.requestCoarsePath(physCmp.getPosition(), mTargetPosition, [this](bool success) {
+                 mState = success ? TaskState::SUCCESS : TaskState::FAIL;
+             });*/
             break;
         }
         case TaskState::PATHING: {

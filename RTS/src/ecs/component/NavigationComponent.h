@@ -36,11 +36,10 @@ struct NavigationComponent {
 
 	// Make sure navigation component is destroyed before the callback owner is destroyed
     // Callback should ideally only be set from the same entity
-    void setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback);
+    void setSimpleLinearTargetPoint(const ui32v2& targetPoint);
 
-    void requestFinePath(const f32v3& start, const f32v3& goal, std::function<void(bool)>&& finishedCallback);
-	void requestCoarsePath(const f32v3& start, const f32v3& goal, std::function<void(bool)>&& finishedCallback);
-	void requestCoarsePathToHarvestable(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void(bool)>&& finishedCallback);
+	void requestCoarsePath(const f32v3& start, const f32v3& goal);
+	void requestCoarsePathToHarvestable(const f32v3& start, TileHarvestable harvestable, f32 maxDistance);
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);
@@ -48,8 +47,6 @@ struct NavigationComponent {
 	NavigationStatus getStatus() const { return mStatus; }
 
     // ============== Data ==============
-	// TODO: We can eliminate this data with polling, maybe that is better? We call update anyways...
-    std::function<void(bool)> mFinishedCallback = nullptr; // This is 64 bytes :/
 	// TODO: I think we can make these unique_ptr/raw with an additional bool
 	// TODO: Also we can compress these with a union once we no longer need smart pointer?
 	// ~Actually... we cant properly abort paths if we dont use shared pointer because the nav thread needs copy of the path.
@@ -65,10 +62,8 @@ struct NavigationComponent {
 		};
 		ui32v2 mSimpleTargetPoint = ui32v2(0);
     };
-	TileContainer* mResidingTileContainer = nullptr;
-	TileHandle mTargetHandle;
-	TileIndex mResidingTile;
-	ui32v2 mPrevNavCell;
+	f32v3 mTargetPosition = f32v3(0.0f);
+	//ui32v2 mPrevNavCell; // TODO: for steering? Check steering each cell change?
     NavigationType mNavigationType = NavigationType::INVALID;
 	NavigationStatus mStatus = NavigationStatus::INVALID;
 	ui8 mFramesUntilNextRayCheck = 0;
@@ -76,8 +71,6 @@ struct NavigationComponent {
 	// TileRef mTargetTile; // Can be any tile in existance, automatically figures out how to nav to
 	// void navigateTo(TileRef&& targetTile);
 };
-// TODO: COMPRESS
-//static_assert(sizeof(NavigationComponent) == 144, "Keep components small");
 
 class NavigationComponentSystem {
 public:

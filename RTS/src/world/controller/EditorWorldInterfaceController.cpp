@@ -123,10 +123,21 @@ void EditorWorldInterfaceController::updateTilePicking() {
                         }
                     }
                     else {
-                        // Selected terrain
                         f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                        mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, worldPos);
-                        mIsQuerying = true;
+                        if (vui::InputDispatcher::key.isKeyPressed(VKEY_J)) {
+                            GameThreadTasks::getInstance().addGenericTask([world = mWorld, worldPos]() {
+                                // TODO: Small race condition here if tile handle changes or chunk is destroyed
+                                IEntityComponentSystem& ecs = world->getECS();
+                                PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
+                                NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
+                                cmp.requestCoarsePath(physCmp.getPosition(), worldPos);
+                            });
+                        }
+                        else {
+                            // Selected terrain
+                            mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, worldPos);
+                            mIsQuerying = true;
+                        }
                     }
                 }
             }
@@ -270,7 +281,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                         IEntityComponentSystem& ecs = data->first->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), nullptr);
+                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D());
                     }
                     delete data;
                 });
@@ -385,7 +396,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                     IEntityComponentSystem& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::Wood, 1024.0f, nullptr);
+                    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::Wood, 1024.0f);
                 });
             }
         }

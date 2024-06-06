@@ -128,12 +128,10 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
                     for (int i = 0; i < numCharacters; ++i) {
                         // Task handle ensures we do not lose the job
                         std::shared_ptr<SimTaskHandle> taskHandle = std::make_unique<SimTaskHandle>(newConstructJob.get());
-                        LOG_DEBUG("Character {} is building a house", (int)characters[i]);
                         EntityOperations::simPerformDual(mRegistry, characters[i],
                             [taskHandle = std::move(taskHandle)](entt::registry& registry, entt::entity entity, bool isGameThread) mutable
                         {
                             UNUSED(isGameThread);
-                            LOG_DEBUG("  Character {} is DOING a house {}", (int)entity, (int)isGameThread);
                             registry.get<DualResidentComponent>(entity).homeState = SimHomeState::Building;
                             // TODO: Handle switching jobs
                             DualTaskQueueComponent& taskQueue = registry.get<DualTaskQueueComponent>(entity);

@@ -29,46 +29,46 @@ HarvestItemsTask::~HarvestItemsTask() {
 POOLED_ALLOC_DEF_NOT_THREADSAFE(HarvestItemsTask, 64u, ASSERT_GAME_THREAD());
 
 TaskTickResult HarvestItemsTask::tick(World& world, entt::registry& registry, entt::entity agent) {
-    switch (mState) {
-        case TaskState::FIND_ITEM:
-            findItem(registry, agent);
-            break;
-        case TaskState::PATH_TO_ITEM: {
-            // NavigationStatusComponent? Simple 1 byte lookup?
-            NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
-            const NavigationStatus navStatus = navCmp.getStatus();
-            if (navStatus == NavigationStatus::SUCCESS) {
-                harvestItem(world, registry, agent, navCmp.mTargetHandle);
-            }
-            else if (navStatus == NavigationStatus::FAIL) {
-                if (++mFailCount >= 4) {
-                    LOG_CRITICAL("HarvestItemsTask failed after 4 attempts");
-                    return TaskTickResult::FAIL;
-                }
-                else {
-                    mState = TaskState::FIND_ITEM;
-                }
-            }
-            break;
-        }
-        case TaskState::HARVESTING:
-            // TODO: TimedInteractComponent needs to handle interact cancel!
-            break;
-        case TaskState::SUCCESS:
-            return TaskTickResult::SUCCESS;
-        case TaskState::FAIL:
-            return TaskTickResult::FAIL;
-        default:
-            assert(false);
-      
-    }
+    //switch (mState) {
+    //    case TaskState::FIND_ITEM:
+    //        findItem(registry, agent);
+    //        break;
+    //    case TaskState::PATH_TO_ITEM: {
+    //        // NavigationStatusComponent? Simple 1 byte lookup?
+    //        NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
+    //        const NavigationStatus navStatus = navCmp.getStatus();
+    //        if (navStatus == NavigationStatus::SUCCESS) {
+    //            harvestItem(world, registry, agent, navCmp.mTargetHandle);
+    //        }
+    //        else if (navStatus == NavigationStatus::FAIL) {
+    //            if (++mFailCount >= 4) {
+    //                LOG_CRITICAL("HarvestItemsTask failed after 4 attempts");
+    //                return TaskTickResult::FAIL;
+    //            }
+    //            else {
+    //                mState = TaskState::FIND_ITEM;
+    //            }
+    //        }
+    //        break;
+    //    }
+    //    case TaskState::HARVESTING:
+    //        // TODO: TimedInteractComponent needs to handle interact cancel!
+    //        break;
+    //    case TaskState::SUCCESS:
+    //        return TaskTickResult::SUCCESS;
+    //    case TaskState::FAIL:
+    //        return TaskTickResult::FAIL;
+    //    default:
+    //        assert(false);
+    //  
+    //}
     return TaskTickResult::IN_PROGRESS;
 }
 
 void HarvestItemsTask::findItem(entt::registry& registry, entt::entity agent) {
     PositionComponent& posCmp = registry.get<PositionComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    cmp.requestCoarsePathToHarvestable(posCmp.mPosition, TileHarvestable::Wood, 1024.0f, nullptr);
+    cmp.requestCoarsePathToHarvestable(posCmp.mPosition, TileHarvestable::Wood, 1024.0f);
     mState = TaskState::PATH_TO_ITEM;
 }
 

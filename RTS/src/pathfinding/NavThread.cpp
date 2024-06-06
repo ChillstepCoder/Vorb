@@ -94,7 +94,8 @@ void NavThread::navThreadFunc() {
                     break;
                 }
                 case PathRequestType::COARSE_HARVESTABLE: {
-                    mPathFinder->tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(args.start, args.goalHarvestable, args.harvestableMaxDistance, *args.pathToBuild);
+                    assert(false && "REENABLE");
+                    //mPathFinder->tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(args.start, args.goalHarvestable, args.harvestableMaxDistance, *args.pathToBuild);
                     break;
                 }
                 default:

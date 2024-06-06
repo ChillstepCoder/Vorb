@@ -54,6 +54,12 @@ struct PathPoint {
     };
 };
 
+
+struct NavPathPoint {
+    f32v3 pos;
+    bool isSim;
+};
+
 class NavPath {
     friend class PathFinder;
 public:
@@ -66,7 +72,10 @@ public:
         }
     };
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(NavPath);
+    VORB_NON_COPYABLE(NavPath);
+
+    NavPath(NavPath&& other) noexcept;
+    NavPath& operator=(NavPath&& other) noexcept;
 
     bool isInvalid() const { return points == nullptr; }
     void allocatePath(ui32 numPoints);
@@ -76,16 +85,16 @@ public:
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t count);
 
-    const LiteTileHandle* getPoints() const { return points; }
+    const NavPathPoint* getPoints() const { return points; }
     ui32 getNumPoints() const { return numPoints; }
-    TileHandle getTargetHandle() const { return targetHandle; }
+    f32v3 getTargetPosition() const { return targetPosition; }
 
     std::vector<f32v3> convertToWorldPoints(const IHeightmapGrid& heightGrid) const;
 
 private:
-    TileHandle targetHandle;
-    LiteTileHandle* points = nullptr; // Raw pointer
+    f32v3 targetPosition;
     ui32 numPoints = 0;
+    NavPathPoint* points = nullptr; // Raw pointer
 public:
     // Atomic access check
     std::atomic_bool finishedGenerating = false;

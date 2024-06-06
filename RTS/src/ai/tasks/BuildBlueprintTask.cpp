@@ -162,26 +162,26 @@ bool BuildBlueprintTask::selectTileToBuild(entt::registry& registry, entt::entit
         return false;
     }
 
-    NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
-    const f32v3 targetWorldPos = mBuildTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mBuildTilesTarget->mTileIndex);
-    cmp.requestCoarsePath(position, targetWorldPos, [this](bool success) {
-        if (success) {
-            mState = TaskState::BUILD_TILE;
-        }
-        else {
-            // Path failed, lets try again
-            ++mErrorCount;
-            if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
-                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT FAILURE", mErrorCount);
-                mState = TaskState::FAIL;
-            }
-            else {
-                LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT RETRY", mErrorCount);
-                mState = TaskState::SELECT_TILE_TO_BUILD;
-                mPlaceTilesTarget.reset();
-            }
-        }
-    });
+    //NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
+    //const f32v3 targetWorldPos = mBuildTilesTarget->mBlueprint->mTileSpatialGrid.getTileBaseWorldPos3D(mBuildTilesTarget->mTileIndex);
+    //cmp.requestCoarsePath(position, targetWorldPos, [this](bool success) {
+    //    if (success) {
+    //        mState = TaskState::BUILD_TILE;
+    //    }
+    //    else {
+    //        // Path failed, lets try again
+    //        ++mErrorCount;
+    //        if (mErrorCount >= MAX_ERROR_COUNT_BEFORE_FAIL) {
+    //            LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT FAILURE", mErrorCount);
+    //            mState = TaskState::FAIL;
+    //        }
+    //        else {
+    //            LOG_DEBUG("BuildBlueprintTask path to build tile failed, error count {} - RESULT RETRY", mErrorCount);
+    //            mState = TaskState::SELECT_TILE_TO_BUILD;
+    //            mPlaceTilesTarget.reset();
+    //        }
+    //    }
+    //});
     mState = TaskState::PATH_TO_TILE;
 
     return true;

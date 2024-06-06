@@ -428,11 +428,12 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     path.allocatePath(pathSize);
     // Copy the path in reverse
     for (int i = 0; i < (int)pathSize; ++i) {
-        path.points[i] = sPathPointBuffer[pathSize - i - 1];
+        LiteTileHandle& handle = sPathPointBuffer[pathSize - i - 1];
+        path.points[i] = NavPathPoint(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index), false);
     }
 
     LOG_TRACE("Generated fine path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
-    path.targetHandle = goalHandle.toTileHandle(mNavWorld.getWorld());
+    path.targetPosition = goal;
     path.finishedGenerating.store(true);
     return true;
 }
@@ -449,10 +450,23 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     LiteTileHandle startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(goal), &startNavData);
     LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(start), &goalNavData);
 
-    if (!startNavData || !goalNavData) {
-        LOG_WARN("Failed to find coarse path due to invalid start or end");
+    if (!goalNavData) {
+        LOG_WARN("Failed to find coarse path due to invalid start");
         path.finishedGenerating.store(true);
         return false;
+    }
+
+    // If our target is invalid, it means we are trying to navigate to an unloaded chunk, which is valid!
+    // We will step from the target towards the start (goal, in reverse pathfinding) until we hit a valid handle, and
+    // we will use that as the new target.
+    if (!startNavData) {
+       TileCoord goalTileCoord(goal);
+       ChunkCoord goalChunkCoord(goalTileCoord);
+       TileCoord goalChunkTilePos(goalChunkCoord.toTilePos());
+       ChunkID goalChunkID = goalChunkCoord.toGridIDType(mNavWorld.getWidthChunks());
+       TileIndex goalTileIndex = (goalTileCoord - goalChunkTilePos).toChunkTileIndex();
+       f32v3 direction = glm::normalize(start - goal);
+       assert(false);
     }
 
     const CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
@@ -479,7 +493,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     // Case where we are in the same node, just return the goal
     if (startNode == endNode) {
         path.allocatePath(1);
-        path.points[0] = startHandle;
+        path.points[0] = NavPathPoint(mNavWorld.getNavDataForContainer(startHandle.containerId).getTileWorldPos(startHandle.index), false);
         path.finishedGenerating.store(true);
         return true;
     }
@@ -544,102 +558,102 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& 
     return true;
 }
 
-
-LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, OUT NavPath& path) {
-    PROFILE_FUNCTION();
-    ASSERT_NAV_THREAD();
-    assert(path.numPoints == 0); // Should be uninitialized
-
-    // We pathfind forwards
-    const ContainerNavData* startNavData = nullptr;
-    LiteTileHandle startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(start), &startNavData);
-
-    if (!startNavData) {
-        LOG_WARN("Failed to find coarse harvestable path due to invalid start");
-        path.finishedGenerating.store(true);
-        return LiteTileHandle();
-    }
-
-    const CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
-
-    if (startNavNodeIndex == INVALID_NAV_NODE_INDEX) {
-        LOG_WARN("Failed to find coarse harvestable path due to invalid start navnode");
-        path.finishedGenerating.store(true);
-        return LiteTileHandle();
-    }
-
-    PreciseTimer timer;
-
-    mOpenList.clear();
-    mOpenList.reserve(MAXIMUM_COARSE_NODES);
-
-    const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
-    const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
-    const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
-
-    const f32v3 startWorldPos = startNavData->getTileWorldPos(startHandle.index);
-
-    // A* pathfind through the coarse graph
-    mCoarseClosedList.clear();
-    mCoarseClosedList.reserve(MAXIMUM_COARSE_NODES);
-
-    mTotalAstarNodes = 0;
-    CoarseAstarNodeID id;
-
-    LiteTileHandle foundHarvestableHandle;
-
-    startNode->isClosed = true;
-    mCoarseClosedList.push_back(startNode);
-    // TODO: Optimize via a specific BFS method instead of using a bad heuristic
-    coarseAstarEdgePropagate(*startNavData, startNode, startHandle, startNavGraph, startWorldPos /*BAD HEURISTIC*/, INVALID_COARSE_NODE_PARENT, 0.0f);
-    // Do the A*
-    while (mOpenList.size() && mTotalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
-        const auto& topNode = mOpenList.top();
-        id = topNode.second;
-        CoarseAStarNode& astarNode = sCoarseAstarNodes[id];
-
-        mOpenList.pop();
-        if (astarNode.g > maxDistance) {
-            continue;
-        }
-
-        const LiteTileHandle& handle = astarNode.tileHandle;
-        const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
-        const CoarseNavGraph& navGraph = navData.coarseNavGraph;
-        const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];
-        if (navNodeIndex == INVALID_NAV_NODE_INDEX) {
-            continue;
-        }
-        const std::set<TileIndex>* harvestablesPtr = navGraph.harvestablesLookup.tryGetHarvestables(navNodeIndex, harvestable);
-        if (harvestablesPtr && harvestablesPtr->size()) {
-            const LiteTileHandle targetHarvestable(handle.containerId, *harvestablesPtr->begin());
-            if (mNavWorld.navThreadTryReserveHarvestable(handle)) {
-                foundHarvestableHandle = targetHarvestable;
-                if (sDebugOptions.mShowPaths) {
-                    DebugRenderer::drawWireQuadThreadSafe(f32v3(navData.getTileWorldPos(foundHarvestableHandle.index)), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 2);
-                }
-                break;
-            }
-        }
-
-        const CoarseNavNode* navNode = &navGraph.getNode(navNodeIndex);
-        coarseAstarEdgePropagate(navData, navNode, handle, navGraph, startWorldPos /*BAD HEURISTIC*/, id, astarNode.g);
-    }
-
-    clearCoarseClosedList();
-
-    if (!foundHarvestableHandle.isValid()) {
-        LOG_TRACE("Coarse path failed in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
-        path.finishedGenerating.store(true);
-        return LiteTileHandle();
-    }
-
-    finishCoarsePath(startHandle, foundHarvestableHandle, id, path, true/*reverse*/);
-
-    LOG_TRACE("Coarse path found in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
-
-    return foundHarvestableHandle;
-}
+//
+//LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, OUT NavPath& path) {
+//    PROFILE_FUNCTION();
+//    ASSERT_NAV_THREAD();
+//    assert(path.numPoints == 0); // Should be uninitialized
+//
+//    // We pathfind forwards
+//    const ContainerNavData* startNavData = nullptr;
+//    LiteTileHandle startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(start), &startNavData);
+//
+//    if (!startNavData) {
+//        LOG_WARN("Failed to find coarse harvestable path due to invalid start");
+//        path.finishedGenerating.store(true);
+//        return LiteTileHandle();
+//    }
+//
+//    const CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
+//
+//    if (startNavNodeIndex == INVALID_NAV_NODE_INDEX) {
+//        LOG_WARN("Failed to find coarse harvestable path due to invalid start navnode");
+//        path.finishedGenerating.store(true);
+//        return LiteTileHandle();
+//    }
+//
+//    PreciseTimer timer;
+//
+//    mOpenList.clear();
+//    mOpenList.reserve(MAXIMUM_COARSE_NODES);
+//
+//    const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
+//    const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
+//    const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
+//
+//    const f32v3 startWorldPos = startNavData->getTileWorldPos(startHandle.index);
+//
+//    // A* pathfind through the coarse graph
+//    mCoarseClosedList.clear();
+//    mCoarseClosedList.reserve(MAXIMUM_COARSE_NODES);
+//
+//    mTotalAstarNodes = 0;
+//    CoarseAstarNodeID id;
+//
+//    LiteTileHandle foundHarvestableHandle;
+//
+//    startNode->isClosed = true;
+//    mCoarseClosedList.push_back(startNode);
+//    // TODO: Optimize via a specific BFS method instead of using a bad heuristic
+//    coarseAstarEdgePropagate(*startNavData, startNode, startHandle, startNavGraph, startWorldPos /*BAD HEURISTIC*/, INVALID_COARSE_NODE_PARENT, 0.0f);
+//    // Do the A*
+//    while (mOpenList.size() && mTotalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
+//        const auto& topNode = mOpenList.top();
+//        id = topNode.second;
+//        CoarseAStarNode& astarNode = sCoarseAstarNodes[id];
+//
+//        mOpenList.pop();
+//        if (astarNode.g > maxDistance) {
+//            continue;
+//        }
+//
+//        const LiteTileHandle& handle = astarNode.tileHandle;
+//        const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
+//        const CoarseNavGraph& navGraph = navData.coarseNavGraph;
+//        const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];
+//        if (navNodeIndex == INVALID_NAV_NODE_INDEX) {
+//            continue;
+//        }
+//        const std::set<TileIndex>* harvestablesPtr = navGraph.harvestablesLookup.tryGetHarvestables(navNodeIndex, harvestable);
+//        if (harvestablesPtr && harvestablesPtr->size()) {
+//            const LiteTileHandle targetHarvestable(handle.containerId, *harvestablesPtr->begin());
+//            if (mNavWorld.navThreadTryReserveHarvestable(handle)) {
+//                foundHarvestableHandle = targetHarvestable;
+//                if (sDebugOptions.mShowPaths) {
+//                    DebugRenderer::drawWireQuadThreadSafe(f32v3(navData.getTileWorldPos(foundHarvestableHandle.index)), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 2);
+//                }
+//                break;
+//            }
+//        }
+//
+//        const CoarseNavNode* navNode = &navGraph.getNode(navNodeIndex);
+//        coarseAstarEdgePropagate(navData, navNode, handle, navGraph, startWorldPos /*BAD HEURISTIC*/, id, astarNode.g);
+//    }
+//
+//    clearCoarseClosedList();
+//
+//    if (!foundHarvestableHandle.isValid()) {
+//        LOG_TRACE("Coarse path failed in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
+//        path.finishedGenerating.store(true);
+//        return LiteTileHandle();
+//    }
+//
+//    finishCoarsePath(startHandle, foundHarvestableHandle, id, path, true/*reverse*/);
+//
+//    LOG_TRACE("Coarse path found in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
+//
+//    return foundHarvestableHandle;
+//}
 
 class EdgeNodeHash {
 public:
@@ -794,7 +808,8 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
     if (reverse) {
         path.allocatePath(pathSize);
         for (int i = 0; i < (int)pathSize; ++i) {
-            path.points[i] = sPathPointBuffer[(int)pathSize - i - 1];
+            LiteTileHandle& handle = sPathPointBuffer[pathSize - i - 1];
+            path.points[i] = NavPathPoint(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index), false);
         }
     } else {
         // Append goal if it isn't at the endpoint already (Reversed)
@@ -804,22 +819,20 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
             sPathPointBuffer[pathSize++] = goalLiteHandle;
         }
         path.allocatePath(pathSize);
-        
-        memcpy(path.points, sPathPointBuffer, pathSize * sizeof(LiteTileHandle));
+
+        for (int i = 0; i < (int)pathSize; ++i) {
+            LiteTileHandle& handle = sPathPointBuffer[i];
+            path.points[i] = NavPathPoint(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index), false);
+        }
     }
 
     if (sDebugOptions.mShowPaths) {
         for (ui32 i = 1; i < path.numPoints; ++i) {
-            const LiteTileHandle& pa = path.points[i - 1];
-            const LiteTileHandle& pb = path.points[i];
-            assert(pa.isValid());
-            assert(pb.isValid());
-            const f32v3 a = mNavWorld.getNavDataForContainer(pa.containerId).getTileWorldPos(pa.index);
-            const f32v3 b = mNavWorld.getNavDataForContainer(pb.containerId).getTileWorldPos(pb.index);
-            DebugRenderer::drawLineBetweenPointsThreadSafe(a, b, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
+            const NavPathPoint& pa = path.points[i - 1];
+            const NavPathPoint& pb = path.points[i];
+            DebugRenderer::drawLineBetweenPointsThreadSafe(pa.pos, pb.pos, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
         }
     }
-
-    path.targetHandle = goalHandle.toTileHandle(mNavWorld.getWorld());
+    path.targetPosition = mNavWorld.getNavDataForContainer(goalHandle.containerId).getTileWorldPos(goalHandle.index);
     path.finishedGenerating.store(true);
 }
