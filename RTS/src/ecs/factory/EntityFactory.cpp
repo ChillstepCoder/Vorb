@@ -92,7 +92,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 break;
             }
             case ComponentType::PersonAI: {
-                registry.emplace<PersonAIComponent>(newEntity);
+                registry.emplace<FullBrainComponent>(newEntity);
                 break;
             }
             case ComponentType::Inventory: {

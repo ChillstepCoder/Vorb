@@ -273,7 +273,7 @@
     <ClCompile Include="src\ecs\component\DualInventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\ItemComponent.cpp" />
-    <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
+    <ClCompile Include="src\ecs\component\FullBrainComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
     <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
@@ -289,6 +289,7 @@
     <ClCompile Include="src\ecs\EntityRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\system\FullAISystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\EditorResources.cpp" />
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
@@ -669,6 +670,7 @@
     <ClInclude Include="src\ecs\component\ComponentDefBase.h" />
     <ClInclude Include="src\ecs\component\ComponentDefinitionInstance.h" />
     <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
+    <ClInclude Include="src\ecs\component\DualComponents.h" />
     <ClInclude Include="src\ecs\component\DynamicModelComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
@@ -678,7 +680,7 @@
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
     <ClInclude Include="src\ecs\component\ItemComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
-    <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
+    <ClInclude Include="src\ecs\component\FullBrainComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\Components.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
@@ -705,6 +707,7 @@
     <ClInclude Include="src\ecs\EntityRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\system\FullAISystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\EditorResources.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />

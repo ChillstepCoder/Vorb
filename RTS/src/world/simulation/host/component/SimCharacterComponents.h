@@ -4,6 +4,7 @@
 #include "world/simulation/ISimTask.h"
 #include "ai/jobs/SimTaskHandle.h"
 #include "ecs/component/SimEntityTypeComponent.h"
+#include "ecs/component/DualComponents.h"
 
 // Shared components between the Simulation Thread ECS and the Render Thread ECS
 #include "ecs/component/DualInventoryComponent.h"
@@ -32,17 +33,9 @@ private:
     ChunkID chunk = INVALID_CHUNK_ID;
 };
 
-struct DualCharacterComponent {
-    CharacterUID characterId;
-};
-
 // Represents resources slung over the shoulder
 struct SimResourceBundleComponent {
     SimpleItemStack itemStack;
-};
-
-struct DualGenderComponent {
-    bool isFemale = false;
 };
 
 struct SimEmploymentComponent {
@@ -82,14 +75,6 @@ struct SimMovementComponent {
     f32v2 targetPosition = f32v2(-1.0f);
 };
 
-constexpr i32 MAX_SIM_TASK_QUEUE_SIZE = 8;
-struct DualTaskQueueComponent {
-    // Provides stable pointers to task handles
-    boost::circular_buffer<SimTaskHandle> taskQueue = boost::circular_buffer<SimTaskHandle>(MAX_SIM_TASK_QUEUE_SIZE); // First is the active one
-    ISimTask* activeTask = nullptr;
-};
-static_assert(sizeof(DualTaskQueueComponent) == 48, "Keep small for cache efficiency");
-
 struct SimNeedsComponent {
     f32 hunger = 0.0f; // [0, 1>, 1 is starving. Can go beyond 1.
     f32 health = 1.0f; // [0, 1], 1 is healthy. 0 is dead.
@@ -128,13 +113,6 @@ struct SimProfessionComponent {
 
 //enum class SimResidentComponentFlags : ui8 {
 //};
-struct DualResidentComponent {
-    entt::entity simSettlementEntity = entt::null;
-    BuildingID homeId = INVALID_BUILDING_ID;
-    i32v2 homePoint = i32v2(-1, -1); // Represents our tent, house, or general wandering area that we should stay near while chilling
-    //BitFlags<SimResidentComponentFlags> flags;
-    SimHomeState homeState;
-};
 
 struct SimOwnershipComponent {
     std::unique_ptr<SettlementPlotID[]> ownedPlots;

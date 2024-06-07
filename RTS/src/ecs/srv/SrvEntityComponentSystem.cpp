@@ -8,13 +8,22 @@
 #include "network/srv/GameServer.h"
 #include "network/srv/SrvMessage.h"
 
+#include "ecs/system/FullAISystem.h"
+
+SrvEntityComponentSystem::SrvEntityComponentSystem(World& world) : IEntityComponentSystem(world) {
+    mFullAISystem = std::make_unique<FullAISystem>(world, mRegistry);
+}
+
+SrvEntityComponentSystem::~SrvEntityComponentSystem() {
+
+}
 
 void SrvEntityComponentSystem::tick(f32 elapsedSec)
 {
     PROFILE_FUNCTION();
     IEntityComponentSystem::tick(elapsedSec);
     mBusinessSystem.update(mRegistry);
-    mPersonAISystem.update(mWorld, mRegistry);
+    mFullAISystem->update(elapsedSec);
     mNavigationSystem.update(mWorld, mRegistry);
 }
 

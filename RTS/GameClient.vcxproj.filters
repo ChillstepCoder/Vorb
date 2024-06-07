@@ -108,7 +108,7 @@
     <ClCompile Include="src\ecs\EntityRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\component\PersonAIComponent.cpp">
+    <ClCompile Include="src\ecs\component\FullBrainComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\ItemDef.cpp">
@@ -1113,6 +1113,9 @@
     <ClCompile Include="src\ecs\ChunkFullTransitionData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ecs\system\FullAISystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -1235,7 +1238,7 @@
     <ClInclude Include="src\ecs\component\Components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\component\PersonAIComponent.h">
+    <ClInclude Include="src\ecs\component\FullBrainComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\ItemDef.h">
@@ -2751,6 +2754,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\simulation\host\SimEntityTransitionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\system\FullAISystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\DualComponents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

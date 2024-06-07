@@ -10,7 +10,7 @@
 #include "ecs/component/CharacterDetailsComponent.h"
 #include "ecs/component/DynamicLightComponent.h"
 #include "ecs/component/NavigationComponent.h"
-#include "ecs/component/PersonAIComponent.h"
+#include "ecs/component/FullBrainComponent.h"
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/ProfessionComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"

@@ -117,7 +117,7 @@
     <ClCompile Include="..\src\ecs\component\NavigationComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\component\PersonAIComponent.cpp">
+    <ClCompile Include="..\src\ecs\component\FullBrainComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ecs\component\PhysicsComponent.cpp">
@@ -287,7 +287,7 @@
     <ClInclude Include="..\src\ecs\component\OwnershipComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\component\PersonAIComponent.h">
+    <ClInclude Include="..\src\ecs\component\FullBrainComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\PhysicsComponent.h">

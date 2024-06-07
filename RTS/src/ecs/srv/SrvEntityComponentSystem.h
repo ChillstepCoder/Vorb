@@ -2,10 +2,13 @@
 
 #include "ecs/IEntityComponentSystem.h"
 
+class FullAISystem
+
 class SrvEntityComponentSystem : public IEntityComponentSystem
 {
 public:
-    SrvEntityComponentSystem(World& world) : IEntityComponentSystem(world) {};
+    SrvEntityComponentSystem(World& world);
+    ~SrvEntityComponentSystem();
 
     void tick(f32 elapsedSec) override;
 
@@ -18,7 +21,7 @@ public:
 
 protected:
 
-    PersonAISystem mPersonAISystem;
+    std::unique_ptr<FullAISystem> mFullAISystem;
     NavigationComponentSystem mNavigationSystem;
 
     // City stuff
