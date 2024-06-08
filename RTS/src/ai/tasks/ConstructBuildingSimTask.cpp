@@ -45,9 +45,50 @@ ConstructBuildingSimTask::~ConstructBuildingSimTask()
     }
 }
 
-SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec)
-{
-    throw std::logic_error("The method or operation is not implemented.");
+SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    assert(mCurrentResult == SimTaskTickResult::InProgress);
+
+    switch (mState) {
+        case State::Init:
+            assert(false);
+            break;
+        case State::MoveToItemStack:
+            updateMoveToItemStackFull(world, fullRegistry, fullAgent, elapsedSec);
+            break;
+        case State::MoveToHarvestable:
+            //updateMoveToHarvestableSim(world, simRegistry, simAgent, elapsedSec);
+            break;
+        case State::Harvest: {
+            //updateHarvestSim(world, simRegistry, simAgent, elapsedSec);
+            break;
+        }
+        case State::MoveToBlueprint: {
+            //updateMoveToBlueprintSim(world, simRegistry, simAgent, elapsedSec);
+            break;
+        }
+        case State::PlaceItems:
+           // updatePlaceItemsSim(world, simRegistry, simAgent, elapsedSec);
+            break;
+        case State::SelectToConstruct: {
+            // If false we fallthrough
+            /*if (updateSelectToConstructSim(world, simRegistry, simAgent, elapsedSec)) {
+                break;
+            }*/
+            [[fallthrough]];
+        }
+        case State::MoveToConstruct: {
+            /* if (updateMoveToConstructSim(world, simRegistry, simAgent, elapsedSec)) {
+                 break;
+             }*/
+            [[fallthrough]];
+        }
+        case State::Construct: {
+            //updateConstructSim(world, simRegistry, simAgent, elapsedSec);
+            break;
+        }
+    }
+    static_assert(e_count(State) == 10, "Update switch statement");
+    return mCurrentResult;
 }
 
 SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
@@ -92,7 +133,44 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
             break;
         }
     }
+    static_assert(e_count(State) == 10, "Update switch statement");
     return mCurrentResult;
+}
+
+void ConstructBuildingSimTask::onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
+    switch (mState) {
+        case State::Init:
+            assert(false);
+            break;
+        case State::MoveToItemStack:
+        case State::MoveToHarvestable:
+        case State::Harvest:
+        case State::MoveToBlueprint:
+        case State::PlaceItems:
+        case State::SelectToConstruct:
+        case State::MoveToConstruct:
+        case State::Construct:
+        case State::End:
+            break;
+    }
+}
+
+void ConstructBuildingSimTask::onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+    switch (mState) {
+        case State::Init:
+            assert(false);
+            break;
+        case State::MoveToItemStack:
+        case State::MoveToHarvestable:
+        case State::Harvest:
+        case State::MoveToBlueprint:
+        case State::PlaceItems:
+        case State::SelectToConstruct:
+        case State::MoveToConstruct:
+        case State::Construct:
+        case State::End:
+            break;
+    }
 }
 
 const char* ConstructBuildingSimTask::getTaskName() const {
@@ -284,6 +362,27 @@ void ConstructBuildingSimTask::updateMoveToItemStackSim(World& world, entt::regi
 
         // Free reservation of the tile item
         mTileItemReservation.reset();
+    }
+}
+
+void ConstructBuildingSimTask::updateMoveToItemStackFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    SimTaskTickResult moveResult = mMoveSubtask.tickFull(world, fullRegistry, fullAgent, elapsedSec);
+    switch (moveResult) {
+        case SimTaskTickResult::InProgress:
+            break;
+        case SimTaskTickResult::Success: {
+            break;
+        }
+        case SimTaskTickResult::Fail: {
+            if (onMinorFailCheckCanRecover()) {
+                /*if (!fullTrySelectItemSource(world, fullRegistry, fullAgent)) {
+                    mState = State::SelectToConstruct;
+                }*/
+            }
+            break;
+        }
+        default:
+            break;
     }
 }
 
@@ -545,5 +644,16 @@ void ConstructBuildingSimTask::updateConstructSim(World& world, entt::registry& 
             cleanupSim(world, simRegistry, simAgent, SimTaskTickResult::Success);
             return;
         }
+    }
+}
+
+bool ConstructBuildingSimTask::onMinorFailCheckCanRecover() {
+    if (mRetryCountRemaining == 0) {
+        mCurrentResult = SimTaskTickResult::Fail;
+        return false;
+    }
+    else {
+        --mRetryCountRemaining;
+        return true;
     }
 }

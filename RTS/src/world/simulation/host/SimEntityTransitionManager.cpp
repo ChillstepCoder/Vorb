@@ -101,7 +101,7 @@ void SimEntityTransitionManager::transitionEntitiesToSimFromFull(ChunkID chunkId
         posCmp.chunk = chunkId;
         list.emplace_back(dd.simEntity);
 
-        dd.characterData->moveToEntity(ecs.mRegistry, dd.simEntity);
+        dd.characterData->moveToEntity(mContext.getWorld(), ecs.mRegistry, dd.simEntity, false /*isFull*/);
 
         // Process and remove binding once entity is fully constructed and can process any tasks properly
         FullEntityBindingComponent& binding = ecs.mRegistry.get<FullEntityBindingComponent>(dd.simEntity);
@@ -131,7 +131,7 @@ void SimEntityTransitionManager::transitionEntityToSimFromFull(ChunkID chunkId, 
     auto&& it = mFullEntityBindings.find(transitionData.simEntity);
     mFullEntityBindings.erase(it);
     ecs.mRegistry.remove<FullEntityBindingComponent>(transitionData.simEntity);
-    transitionData.characterData->moveToEntity(ecs.mRegistry, transitionData.simEntity);
+    transitionData.characterData->moveToEntity(mContext.getWorld(), ecs.mRegistry, transitionData.simEntity, false /*isFull*/);
 }
 
 void SimEntityTransitionManager::onEntityFullTransitionFailed(ChunkID chunkId, ChunkFullTransitionData&& activateData) {

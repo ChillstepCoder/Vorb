@@ -28,6 +28,9 @@ public:
 	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) override;
 	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override;
 
+	void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
+	void onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
+
 	const char* getTaskName() const override;
 
 private:
@@ -36,7 +39,9 @@ private:
 
 	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
 
-	void updateMoveToItemStackSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updateMoveToItemStackSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updateMoveToItemStackFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
+
 	void updateMoveToHarvestableSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 	void updateHarvestSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 	void updateMoveToBlueprintSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
@@ -44,6 +49,9 @@ private:
     bool updateSelectToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 	bool updateMoveToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 	void updateConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+
+	// Some steps may fail for various reasons, this allows retry up to retry count
+	bool onMinorFailCheckCanRecover();
 
 	enum class State {
         Init,
@@ -55,13 +63,14 @@ private:
 		SelectToConstruct,
 		MoveToConstruct,
 		Construct,
-		End
+		End,
+		COUNT
 	} mState = State::Init;
 	SimTaskTickResult mCurrentResult = SimTaskTickResult::InProgress;
 
 	ConstructBuildingSimJob& mParentJob;
 	ConstructBuildingContext& mContext;
-	MoveToPointSimSubtask mMoveSubtask;
+	MoveToChunkPointSimSubtask mMoveSubtask;
     SimpleItemReservationSourceHandlePtr mBlueprintItemPromise = nullptr;
 	SimpleItemReservationTargetHandlePtr mBlueprintItemTargetHandle = nullptr;
 	SimChunkTileItemReservationPtr mTileItemReservation;
@@ -69,6 +78,7 @@ private:
 	TileHarvestable mHarvestableToAquire = TileHarvestable::None;
 	SimpleSimTaskTimer mTimer;
 	BuildContextTargetData mTargetData;
+	i32 mRetryCountRemaining = 3;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };
 

@@ -17,22 +17,11 @@
 
 #include "world/World.h"
 
-enum class PathStatus {
-	IN_PROGRESS,
-	SUCCESS,
-	FAIL,
-	COUNT
-};
-inline bool isPathStatusDone(PathStatus pathStatus) {
-    return pathStatus > PathStatus::IN_PROGRESS;
-    static_assert(e_cast(PathStatus::COUNT) == 3);
-}
-
 constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
 constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles
 //constexpr int QUADRANTS = 5; //bad name
 
-bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
+bool NavigationSystem::updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
 	const f32v2 offset2d = navCmp.mTargetPosition - pos;
     const float distance2 = glm::length2(offset2d);
     if (distance2 <= SQ(MIN_DISTANCE)) {
@@ -46,7 +35,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	return false;
 }
 
-PathStatus updateComponentFinePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
+NavigationSystem::PathStatus NavigationSystem::updateComponentFinePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
 
 	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return PathStatus::IN_PROGRESS;
@@ -100,7 +89,7 @@ PathStatus updateComponentFinePath(World& world, entt::entity entity, Navigation
 	return PathStatus::IN_PROGRESS;
 }
 
-void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success) {
+void NavigationSystem::onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success) {
 	// Target reached
 	motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	motionCmp.mMoveDirection = f32v2(0.0f);
@@ -124,7 +113,7 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal) {
+void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
@@ -147,7 +136,13 @@ void requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 sta
 	}
 }
 
-void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
+bool NavigationSystem::isPathStatusDone(PathStatus pathStatus)
+{
+    return pathStatus > PathStatus::IN_PROGRESS;
+    static_assert(e_cast(PathStatus::COUNT) == 3);
+}
+
+void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
 
     if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return;
@@ -240,7 +235,7 @@ void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComp
     }
 }
 
-void NavigationComponentSystem::update(World& world, entt::registry& registry) {
+void NavigationSystem::update(World& world, entt::registry& registry) {
 	// Update components
     auto view = registry.view<NavigationComponent, PositionComponent, CharacterControlComponent>();
 
@@ -288,7 +283,7 @@ void NavigationComponent::setSimpleLinearTargetPoint(f32v3 targetPoint) {
 	}
 }
 
-void NavigationComponent::requestCoarsePath(f32v3 start, f32v3 goal) {
+NavPathID NavigationComponent::requestCoarsePath(f32v3 start, f32v3 goal) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
 	mTargetPosition = goal;
@@ -298,9 +293,10 @@ void NavigationComponent::requestCoarsePath(f32v3 start, f32v3 goal) {
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, nullptr);
+    return incrementNavPathID();
 }
 
-void NavigationComponent::requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance) {
+NavPathID NavigationComponent::requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
     mTargetPosition = f32v3(0.0f);
@@ -310,6 +306,7 @@ void NavigationComponent::requestCoarsePathToHarvestable(f32v3 start, TileHarves
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     Services::NavThread::ref().addPathfindToHarvestableTask(mCoarsePath, start, harvestable, maxDistance, nullptr);
+	return incrementNavPathID();
 }
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
@@ -317,4 +314,10 @@ void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     mStatus = NavigationStatus::IN_PROGRESS;
     mTargetPosition = f32v3(0.0f);
 	mFinePath.reset();
+}
+
+NavPathID NavigationComponent::incrementNavPathID() {
+    ++mCurrentNavPathID;
+    if (mCurrentNavPathID == INVALID_NAV_PATH_ID) mCurrentNavPathID = 1;
+    return mCurrentNavPathID;
 }

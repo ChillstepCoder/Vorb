@@ -73,7 +73,7 @@ public:
     HeightmapPickResult pick(f32v3 rayStart, f32v3 rayEnd);
 
     // Aquire
-    const HeightmapPatch* getHeightDataAtWorldPos(const i32v2& worldPos) const;
+    const HeightmapPatch* getHeightDataAtWorldPos(const i32v2 worldPos) const;
     const HeightmapPatch* getHeightDataAt(HeightmapPatchID id) const;
     HeightmapPatch& getPatchForGeneration(HeightmapPatchID id);
     void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatch* paddedHeightData[9]);
@@ -95,14 +95,14 @@ public:
     CompressedHeight getCompressedHeightAtVert(DTileCoord vertPos) const;
 
     template <bool THREAD_SAFE>
-    f32 computeHeightAtPoint(const f32v2& worldPos) const;
+    f32 computeHeightAtPoint(const f32v2 worldPos) const;
     // Never thread safe
-    f32 computeHeightAtPointForGeneration(const f32v2& worldPos) const;
+    f32 computeHeightAtPointForGeneration(const f32v2 worldPos) const;
     // Each vertex spans 2 tiles
-    f32 getHeightAtVertexForGeneration(const i32v2& worldVertexOffset) const;
+    f32 getHeightAtVertexForGeneration(const i32v2 worldVertexOffset) const;
 
     template <bool THREAD_SAFE>
-    f32 computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const;
+    f32 computeHeightAndNormalAtPoint(const f32v2 worldPos, OUT f32v3* outNormal) const;
 
     template <bool THREAD_SAFE>
     f32 computeCenterHeightAtTile(TileCoord worldTilePos) const;

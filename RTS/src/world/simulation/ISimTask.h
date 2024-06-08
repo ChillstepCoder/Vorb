@@ -54,6 +54,9 @@ public:
     virtual std::unique_ptr<ISimTask>* getNextTask() { return nullptr; }
     virtual void setNextTask(std::unique_ptr<ISimTask>&& nextTask) { panic("Tried to setNextTask on a non ISimTaskChain of type {}", getTaskName()); }
 
+    virtual void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {}
+    virtual void onTransitionToSim(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {}
+
     virtual const char* getTaskName() const = 0;
 };
 

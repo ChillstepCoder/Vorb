@@ -41,7 +41,7 @@ struct EntityComponentCharacterTransitionData {
     POOLED_ALLOC_DECL();
 
     void moveFromEntity(entt::registry& registry, entt::entity entity);
-    void moveToEntity(entt::registry& registry, entt::entity entity);
+    void moveToEntity(World& world, entt::registry& registry, entt::entity entity, bool isFull);
 
     DualCharacterComponent character;
     DualTaskQueueComponent taskQueue;

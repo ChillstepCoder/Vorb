@@ -2,7 +2,7 @@
 
 #include "ecs/IEntityComponentSystem.h"
 
-class FullAISystem
+class FullAISystem;
 
 class SrvEntityComponentSystem : public IEntityComponentSystem
 {
@@ -22,7 +22,7 @@ public:
 protected:
 
     std::unique_ptr<FullAISystem> mFullAISystem;
-    NavigationComponentSystem mNavigationSystem;
+    NavigationSystem mNavigationSystem;
 
     // City stuff
     BusinessSystem mBusinessSystem;

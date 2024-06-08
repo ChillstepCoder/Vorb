@@ -18,8 +18,7 @@ SrvEntityComponentSystem::~SrvEntityComponentSystem() {
 
 }
 
-void SrvEntityComponentSystem::tick(f32 elapsedSec)
-{
+void SrvEntityComponentSystem::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
     IEntityComponentSystem::tick(elapsedSec);
     mBusinessSystem.update(mRegistry);

@@ -3,10 +3,10 @@
 #include "world/simulation/ISimTask.h"
 
 // Lightweight and reusable
-class MoveToPointSimSubtask {
+class MoveToChunkPointSimSubtask {
 public:
-	MoveToPointSimSubtask() = default;
-	MoveToPointSimSubtask(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius);
+	MoveToChunkPointSimSubtask() = default;
+	MoveToChunkPointSimSubtask(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius);
 
 	void init(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius);
 
@@ -15,6 +15,7 @@ public:
 
     f32v2 mWorldPosTarget = f32v2(0.0f);
     f32 mSuccessRadiusSQ = -1.0f;
+	NavPathID mNavPathID = INVALID_NAV_PATH_ID;
 };
 
 class MoveToPointSimTask : public ISimTask {
@@ -33,5 +34,5 @@ public:
 
 	const char* getTaskName() const override { return "Move To Point"; }
 
-	MoveToPointSimSubtask moveSubtask;
+	MoveToChunkPointSimSubtask moveSubtask;
 };

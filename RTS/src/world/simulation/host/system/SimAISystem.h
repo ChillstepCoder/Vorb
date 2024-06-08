@@ -34,8 +34,8 @@ public:
 private:
     void updateCharacterGroups();
     void updateFollowCharacterGroup(entt::entity entity, SimBrainComponent& brain, SimPositionComponent& pos);
-    void updateSimCharacter(entt::entity entity);
-    void updateSimTask(entt::entity entity, DualTaskQueueComponent& taskCmp);
+    void updateCharacter(entt::entity entity);
+    void updateTask(entt::entity entity, DualTaskQueueComponent& taskCmp);
 
     World& mWorld;
     entt::registry& mRegistry;
@@ -43,7 +43,7 @@ private:
     SimECS& mECS;
     TimestampMs mCurrentTime = 0;
     TimestampMs mDeltaTimeMs = 0;
-    f32 mDeltaTimeSec = 0;
+    f32 mElapsedSec = 0;
     i32 mWorldWidthChunks = 0;
     i32 mWorldWidthTiles = 0;
     RandomGenerator* mRandomGen = nullptr;

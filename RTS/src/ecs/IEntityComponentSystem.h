@@ -59,6 +59,8 @@ protected:
 
     // TODO: Periodically shrink_to_fit
     std::vector<EntityVector> mEntitiesByChunk;
+    // Map of tile item UID to entity
+    std::unordered_map<TileItemUID, entt::entity> mTileItemEntityMap;
     // Entities that are waiting for chunk to load so they can activate
     std::map<ChunkID, ChunkFullTransitionData> mPendingEntities;
 

@@ -1,5 +1,13 @@
 #pragma once
 
+enum class SimHomeState : ui8 {
+    Homeless,
+    Pending,
+    NeedsBlueprint,
+    Building,
+    Done
+};
+
 struct DualResidentComponent {
     entt::entity simSettlementEntity = entt::null;
     BuildingID homeId = INVALID_BUILDING_ID;

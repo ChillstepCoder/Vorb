@@ -29,18 +29,25 @@ constexpr ui8 NAVIGATION_FINISHED_FLAGS = e_cast(NavigationComponentFlags::NAVIG
 | e_cast(NavigationComponentFlags::NAVIGATION_COMPONENT_FLAG_SUCCESS);
 
 struct NavigationComponent {
+	friend class NavigationSystem;
 
 	// Make sure navigation component is destroyed before the callback owner is destroyed
     // Callback should ideally only be set from the same entity
     void setSimpleLinearTargetPoint(f32v3 targetPoint);
 
-	void requestCoarsePath(f32v3 start, f32v3 goal);
-	void requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance);
+	// Returns ID of this path
+    NavPathID requestCoarsePath(f32v3 start, f32v3 goal);
+    // Returns ID of this path
+	NavPathID requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance);
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);
 
 	NavigationStatus getStatus() const { return mStatus; }
+	NavPathID getCurrentNavPathID() const { return mCurrentNavPathID; }
+
+private:
+	NavPathID incrementNavPathID();
 
     // ============== Data ==============
 	// TODO: I think we can make these unique_ptr/raw with an additional bool
@@ -57,12 +64,29 @@ struct NavigationComponent {
 	//ui32v2 mPrevNavCell; // TODO: for steering? Check steering each cell change?
     NavigationType mNavigationType = NavigationType::INVALID;
 	NavigationStatus mStatus = NavigationStatus::INVALID;
+	NavPathID mCurrentNavPathID = INVALID_NAV_PATH_ID;
 	// TODO: Maybe this? Let the path find be more automatic?
 	// TileRef mTargetTile; // Can be any tile in existance, automatically figures out how to nav to
 	// void navigateTo(TileRef&& targetTile);
 };
 
-class NavigationComponentSystem {
+class NavigationSystem {
 public:
 	void update(World& world, entt::registry& registry);
+
+private:
+
+    enum class PathStatus {
+        IN_PROGRESS,
+        SUCCESS,
+        FAIL,
+        COUNT
+    };
+    bool isPathStatusDone(PathStatus pathStatus);
+
+	void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos);
+	void requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal);
+	void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success);
+	PathStatus updateComponentFinePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos);
+	bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos);
 };

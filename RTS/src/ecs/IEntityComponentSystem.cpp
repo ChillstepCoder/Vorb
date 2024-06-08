@@ -121,7 +121,7 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, Chu
         //activateData.binding->fullEntity = newEntity;
         mRegistry.emplace<FullEntityBindingComponent>(newEntity).binding = activateData.binding;
         mRegistry.emplace<SimEntityTypeComponent>(newEntity).type = activateData.entityType;
-        activateData.characterData->moveToEntity(mRegistry, newEntity);
+        activateData.characterData->moveToEntity(mWorld, mRegistry, newEntity, true /*isFull*/);
         static_assert(e_count(SimEntityType) == 4);
     }
 
@@ -131,8 +131,11 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, Chu
         for (const TileItemStack& stack : stacks) {
             const f32v2 worldPos(worldPosChunkWithTileOffset + f32v2(stack.tileIndex % CHUNK_WIDTH, stack.tileIndex / CHUNK_WIDTH));
             const f32v3 pos3(worldPos.x, worldPos.y, heightGrid.computeHeightAtPoint<true>(worldPos));
-            EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID));
-            DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 999999);
+            entt::entity newEntity = EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID), stack.uniqueId);
+            mTileItemEntityMap[stack.uniqueId] = newEntity;
+
+            // TODO: DELETE ME
+            DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
         }
     }
 }
@@ -157,6 +160,11 @@ ChunkSimTransitionData IEntityComponentSystem::deactivateEntitiesForChunk(Chunk&
                 unboundEntities.emplace_back(e);
             }
             else {
+                if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(e)) {
+                    if (itemCmp->getTileItemUID() != INVALID_TILE_ITEM_UID) {
+                        mTileItemEntityMap.erase(itemCmp->getTileItemUID());
+                    }
+                }
                 // Destroy everything else, assume it is tracked
                 destroyEntity(e);
             }

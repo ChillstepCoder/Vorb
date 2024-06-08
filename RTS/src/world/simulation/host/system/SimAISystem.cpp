@@ -24,7 +24,7 @@ SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
     mCurrentTime = currentTime;
     mDeltaTimeMs = deltaTimeMs;
-    mDeltaTimeSec = deltaTimeMs / MS_PER_SECOND;
+    mElapsedSec = deltaTimeMs / MS_PER_SECOND;
     mRandomGen = &mSimContext.getSimRandomGenerator();
     
     updateCharacterGroups();
@@ -32,7 +32,7 @@ void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
     { // Update all brains who aren't followers (Complex Logic)
         auto view = mRegistry.view<SimBrainComponent, SimPositionComponent, SimMovementComponent, DualTaskQueueComponent>(entt::exclude<CharacterGroupFollowerComponent>);
         for (auto entity : view) {
-            updateSimCharacter(entity);
+            updateCharacter(entity);
         }
     }
 }
@@ -88,7 +88,7 @@ void SimAISystem::updateCharacterGroups() {
             constexpr f32 minMoveStep = 2.f; // Prevents getting stuck at one tile due to small move increments
             constexpr f32 COMPLETE_DISTANCE = 8.f;
             
-            const f32 moveDistance = glm::min(distanceToTarget, glm::max(group.moveSpeed * mDeltaTimeSec, minMoveStep));
+            const f32 moveDistance = glm::min(distanceToTarget, glm::max(group.moveSpeed * mElapsedSec, minMoveStep));
             f32v2 newPosition;
             if (distanceToTarget < 0.0001f) [[unlikely]] {
                 newPosition = group.targetPos;
@@ -138,7 +138,7 @@ void SimAISystem::updateFollowCharacterGroup(entt::entity entity, SimBrainCompon
     setEntityPosition(entity, groupPosition.getPosition() - groupCmp.currentHeading * (f32)(followCmp.followerIndex * 0.35f));
 }
 
-void SimAISystem::updateSimCharacter(entt::entity entity) {
+void SimAISystem::updateCharacter(entt::entity entity) {
 
     SimBrainComponent& brain = mRegistry.get<SimBrainComponent>(entity);
     SimPositionComponent& pos = mRegistry.get<SimPositionComponent>(entity);
@@ -146,7 +146,7 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
 
     // Handle move orders
     if (movement.targetPosition.x >= 0.0f) {
-        const f32 MOVE_SPEED = mDeltaTimeSec * 2.0f;
+        const f32 MOVE_SPEED = mElapsedSec * 2.0f;
         const f32v2 offsetToTarget = f32v2(movement.targetPosition) - pos.position;
         const f32 distanceToTarget = glm::length(offsetToTarget);
         if (distanceToTarget < MOVE_SPEED) {
@@ -167,7 +167,7 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
 
     DualTaskQueueComponent& taskQueue = mRegistry.get<DualTaskQueueComponent>(entity);
     if (taskQueue.taskQueue.size()) {
-        updateSimTask(entity, taskQueue);
+        updateTask(entity, taskQueue);
         // On task debug draw
         if (sDebugOptions.mDebugSimCharacters) {
             SimECS::DebugDrawSimAgentData debugData;
@@ -224,7 +224,7 @@ void SimAISystem::updateSimCharacter(entt::entity entity) {
     }
 }
 
-void SimAISystem::updateSimTask(entt::entity entity, DualTaskQueueComponent& taskCmp) {
+void SimAISystem::updateTask(entt::entity entity, DualTaskQueueComponent& taskCmp) {
     assert(taskCmp.taskQueue.size());
     // Acquire task if needed
     if (!taskCmp.activeTask) {
@@ -254,7 +254,7 @@ void SimAISystem::updateSimTask(entt::entity entity, DualTaskQueueComponent& tas
     }
 
     // Operate on task
-    SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity, mDeltaTimeSec);
+    SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity, mElapsedSec);
     if (tickResult != SimTaskTickResult::InProgress) {
         if (tickResult == SimTaskTickResult::Success) {
             taskCmp.taskQueue.front().onActiveSubtaskFinished(taskCmp.activeTask);

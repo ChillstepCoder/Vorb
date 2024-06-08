@@ -89,6 +89,18 @@ bool SimTaskHandle::isFinished() {
     }
 }
 
+void SimTaskHandle::onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullEntity) {
+    if (mTask) {
+        mTask->onTransitionToFull(world, fullRegistry, fullEntity);
+    }
+}
+
+void SimTaskHandle::onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simEntity) {
+    if (mTask) {
+        mTask->onTransitionToSim(world, simRegistry, simEntity);
+    }
+}
+
 void SimTaskHandle::onActiveSubtaskGoToNextTask(ISimTask* task) {
     assert(task == mTask.get());
     assert(task->getNextTask());

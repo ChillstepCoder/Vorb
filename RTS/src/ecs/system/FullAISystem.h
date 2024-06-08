@@ -1,6 +1,7 @@
 #pragma once
 
 class World;
+struct DualTaskQueueComponent;
 
 class FullAISystem {
 public:
@@ -10,8 +11,10 @@ public:
 
 private:
     void updateCharacter(entt::entity entity);
+    void updateTask(entt::entity entity, DualTaskQueueComponent& taskCmp);
 
     World& mWorld;
     entt::registry& mRegistry;
+    f32 mElapsedSec = 0.0f;
 };
 

@@ -272,7 +272,7 @@
     <ClCompile Include="src\ecs\component\FishingComponent.cpp" />
     <ClCompile Include="src\ecs\component\DualInventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterControlComponent.cpp" />
-    <ClCompile Include="src\ecs\component\ItemComponent.cpp" />
+    <ClCompile Include="src\ecs\component\TileItemComponent.cpp" />
     <ClCompile Include="src\ecs\component\FullBrainComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
@@ -678,7 +678,7 @@
     <ClInclude Include="src\ecs\component\FullEntityBindingComponent.h" />
     <ClInclude Include="src\ecs\component\DualInventoryComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
-    <ClInclude Include="src\ecs\component\ItemComponent.h" />
+    <ClInclude Include="src\ecs\component\TileItemComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
     <ClInclude Include="src\ecs\component\FullBrainComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />

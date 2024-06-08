@@ -92,14 +92,6 @@ struct SimJobBossComponent {
     std::vector<std::unique_ptr<ISimJob>> activeJobs;
 };
 
-enum class SimHomeState : ui8 {
-    Homeless,
-    Pending,
-    NeedsBlueprint,
-    Building,
-    Done
-};
-
 enum class SimProfession : ui8 {
     Unemployed,
     Steward, // Sells property

@@ -19,8 +19,7 @@ void EntityOperations::simPerformDual(entt::registry& simRegistry, entt::entity 
 }
 
 
-void EntityComponentCharacterTransitionData::moveFromEntity(entt::registry& registry, entt::entity entity)
-{
+void EntityComponentCharacterTransitionData::moveFromEntity(entt::registry& registry, entt::entity entity) {
     assert(!isValid);
     isValid = true;
 
@@ -42,16 +41,27 @@ void EntityComponentCharacterTransitionData::moveFromEntity(entt::registry& regi
     registry.remove<DualResidentComponent>(entity);
 }
 
-void EntityComponentCharacterTransitionData::moveToEntity(entt::registry& registry, entt::entity entity)
-{
+void EntityComponentCharacterTransitionData::moveToEntity(World& world, entt::registry& registry, entt::entity entity, bool isFull) {
     assert(isValid);
     isValid = false;
     registry.emplace_or_replace<DualCharacterComponent>(entity, std::move(character));
-    registry.emplace<DualTaskQueueComponent>(entity, std::move(taskQueue));
     registry.emplace<DualAttributesComponent>(entity, std::move(attributes));
     registry.emplace<DualInventoryComponent>(entity, std::move(inventory));
     registry.emplace<DualGenderComponent>(entity, std::move(gender));
     registry.emplace<DualResidentComponent>(entity, std::move(resident));
+
+    DualTaskQueueComponent& newTaskQueue = registry.emplace<DualTaskQueueComponent>(entity, std::move(taskQueue));
+    // Notify tasks of the transition
+    if (isFull) {
+        for (SimTaskHandle& handle : newTaskQueue.taskQueue) {
+            handle.onTransitionToFull(world, registry, entity);
+        }
+    }
+    else {
+        for (SimTaskHandle& handle : newTaskQueue.taskQueue) {
+            handle.onTransitionToSim(world, registry, entity);
+        }
+    }
 }
 
 void EntitySimTransitionData::moveFromFullEntity(entt::registry& registry, entt::entity entity) {

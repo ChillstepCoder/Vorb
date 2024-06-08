@@ -11,8 +11,11 @@ enum class SimTaskStatus {
     COUNT
 };
 
+
 class SimTaskHandle {
-    friend class SimAISystem; // TODO: Interface wrapper to expose only the necessary functionality
+    friend class SimAISystem;
+    friend class FullAISystem;
+    friend class SimTaskHandle;
 public:
     SimTaskHandle(World& world, entt::registry& simRegistry, std::unique_ptr<ISimTask>&& task);
     SimTaskHandle(ISimJob* job);
@@ -38,6 +41,9 @@ public:
     ISimTask* getTask() const { assert(!mIsJob); return mTask.get(); }
     i16 getPriority() const { return mPriority; }
     void setPriority(i16 p) { mPriority = p; }
+
+    void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullEntity);
+    void onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simEntity);
 
 private:
 

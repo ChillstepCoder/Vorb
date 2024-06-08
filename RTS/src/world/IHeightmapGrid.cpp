@@ -129,7 +129,7 @@ HeightmapPickResult IHeightmapGrid::pick(f32v3 rayStart, f32v3 rayEnd) {
     return result;
 }
 
-const HeightmapPatch* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2& worldPos) const {
+const HeightmapPatch* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2 worldPos) const {
     return getHeightDataAt(mSpatialGrid2D.getIDAtWorldPos(worldPos));
 }
 
@@ -286,17 +286,17 @@ CompressedHeight IHeightmapGrid::getCompressedHeightAtVert(DTileCoord vertPos) c
 DECL_BOOL_TEMPLATE(CompressedHeight IHeightmapGrid::getCompressedHeightAtVert, (DTileCoord vertPos) const)
 
 template <bool THREAD_SAFE>
-f32 IHeightmapGrid::computeHeightAtPoint(const f32v2& worldPos) const {
+f32 IHeightmapGrid::computeHeightAtPoint(const f32v2 worldPos) const {
     if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAtWorldPos<THREAD_SAFE>(worldPos);
 }
-DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAtPoint, (const f32v2& worldPos) const)
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAtPoint, (const f32v2 worldPos) const)
 
-f32 IHeightmapGrid::computeHeightAtPointForGeneration(const f32v2& worldPos) const {
+f32 IHeightmapGrid::computeHeightAtPointForGeneration(const f32v2 worldPos) const {
     return interpolateHeightAtWorldPos<false>(worldPos);
 }
 
-f32 IHeightmapGrid::getHeightAtVertexForGeneration(const i32v2& worldVertexOffset) const {
+f32 IHeightmapGrid::getHeightAtVertexForGeneration(const i32v2 worldVertexOffset) const {
     const i32v2 patchGridCoords(i32(worldVertexOffset.x) / HEIGHTMAP_QUAD_WIDTH_PER_PATCH, i32(worldVertexOffset.y) / HEIGHTMAP_QUAD_WIDTH_PER_PATCH);
     const HeightmapPatchID id = patchGridCoords.y * mWidthPatches + patchGridCoords.x;
     const i32v2 patchVertCoords = worldVertexOffset - patchGridCoords * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
@@ -304,11 +304,11 @@ f32 IHeightmapGrid::getHeightAtVertexForGeneration(const i32v2& worldVertexOffse
 }
 
 template <bool THREAD_SAFE>
-f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2& worldPos, OUT f32v3* outNormal) const {
+f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2 worldPos, OUT f32v3* outNormal) const {
     if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(worldPos, outNormal);
 }
-DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAndNormalAtPoint, (const f32v2& worldPos, OUT f32v3* outNormal) const)
+DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAndNormalAtPoint, (const f32v2 worldPos, OUT f32v3* outNormal) const)
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeCenterHeightAtTile(TileCoord worldTilePos) const {
