@@ -1,21 +1,21 @@
 #pragma once
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 class FullAISystem;
 
-class SrvEntityComponentSystem : public IEntityComponentSystem
+class HostFullECS : public IFullECS
 {
 public:
-    SrvEntityComponentSystem(World& world);
-    ~SrvEntityComponentSystem();
+    HostFullECS(World& world);
+    ~HostFullECS();
 
     void tick(f32 elapsedSec) override;
 
-    // Begin IEntityComponentSystem interface
+    // Begin IFullECS interface
 	entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) override;
     void destroyEntity(entt::entity entity) override;
-    // End IEntityComponentSystem interface
+    // End IFullECS interface
 
     entt::entity createPlayerEntity(int clientIndex, const f32v3& position);
 

@@ -5,6 +5,7 @@
 // Tile items are owned by the Sim world and cannot be mutated except in result
 // to sim item changes
 class TileItemComponent {
+    friend class IFullECS; // TODO: Something else own this? ItemEntitySystem?
 public:
     TileItemComponent() = default;
     TileItemComponent(const ItemStack& itemStack, TileItemUID tileItemUID) :

@@ -4,7 +4,7 @@
 #include <Vorb/graphics/Texture.h>
 
 // TODO: MOVE
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "network/WorldNetMode.h"
 
 #include <Vorb/Timing.h>

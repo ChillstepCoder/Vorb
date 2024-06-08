@@ -4,7 +4,7 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/GBuffer.h>
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/SkillsComponent.h"
 #include "effect/IEffectContext.h"
 
@@ -15,7 +15,7 @@
 #include "rendering/CharacterRenderer.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/CloudRenderer.h"
-#include "rendering/EntityComponentSystemRenderer.h"
+#include "rendering/ECSRenderer.h"
 #include "rendering/fish/FishRenderer.h"
 #include "rendering/GlobalRenderData.h"
 #include "rendering/ItemRenderer.h"
@@ -86,7 +86,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mDynamicModelRenderer = std::make_unique<InstancedDynamicModelRenderer>();
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
-    mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
+    mEcsRenderer = std::make_unique<ECSRenderer>();
     mItemRenderer = std::make_unique<ItemRenderer>();
     mCloudRenderer = std::make_unique<CloudRenderer>(screenResolution);
     mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(screenResolution);

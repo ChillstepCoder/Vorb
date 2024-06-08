@@ -4,7 +4,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/FishRepository.h"
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/PositionComponent.h"
 #include "ecs/component/VelocityComponent.h"
 #include "ecs/component/YawPitchComponent.h"

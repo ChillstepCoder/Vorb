@@ -15,7 +15,7 @@ class Building;
 class Camera3D;
 class Chunk;
 class IChunkGrid;
-class IEntityComponentSystem;
+class IFullECS;
 class IHeightmapGrid;
 class ItemStockpileRegistry;
 class IEffectContext;
@@ -89,7 +89,7 @@ public:
     OwnershipGrid& getOwnershipGrid() const { return *mOwnershipGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
-    IEntityComponentSystem& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
+    IFullECS& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
     BuildingGrid& getBuildingGrid() const { return *mStructureGrid; }
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
@@ -174,7 +174,7 @@ private:
     // Time of day
     std::unique_ptr<TimeOfDayManager> mTimeOfDayManager;
     // ECS
-    std::unique_ptr<IEntityComponentSystem> mEcs;
+    std::unique_ptr<IFullECS> mEcs;
     // Physics
     std::unique_ptr<PhysicsWorld> mPhysWorld;
     // Structures

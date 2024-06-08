@@ -263,7 +263,7 @@
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\ChunkFullTransitionData.cpp" />
-    <ClCompile Include="src\ecs\cli\CliEntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\cli\CliFullECS.cpp" />
     <ClCompile Include="src\ecs\component\DualAttributesComponent.cpp" />
     <ClCompile Include="src\ecs\component\CameraAttachComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
@@ -285,10 +285,10 @@
     <ClCompile Include="src\ecs\component\SkillsComponent.cpp" />
     <ClCompile Include="src\ecs\component\StatsComponent.cpp" />
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
-    <ClCompile Include="src\ecs\IEntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\IFullECS.cpp" />
     <ClCompile Include="src\ecs\EntityRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
-    <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\srv\HostFullECS.cpp" />
     <ClCompile Include="src\ecs\system\FullAISystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\EditorResources.cpp" />
@@ -366,7 +366,7 @@
     <ClCompile Include="src\rendering\character\CharacterAnimator.cpp" />
     <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
-    <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\ECSRenderer.cpp" />
     <ClCompile Include="src\rendering\fish\FishRenderer.cpp" />
     <ClCompile Include="src\rendering\GLExtensions.cpp" />
     <ClCompile Include="src\rendering\gl\GL.cpp" />
@@ -663,7 +663,7 @@
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
-    <ClInclude Include="src\ecs\cli\CliEntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\cli\CliFullECS.h" />
     <ClInclude Include="src\ecs\component\DualAttributesComponent.h" />
     <ClInclude Include="src\ecs\component\CameraAttachComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
@@ -703,10 +703,10 @@
     <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
     <ClInclude Include="src\ecs\ChunkFullTransitionData.h" />
     <ClInclude Include="src\ecs\FullECSEvents.h" />
-    <ClInclude Include="src\ecs\IEntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\IFullECS.h" />
     <ClInclude Include="src\ecs\EntityRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
-    <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\srv\HostFullECS.h" />
     <ClInclude Include="src\ecs\system\FullAISystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\EditorResources.h" />
@@ -810,7 +810,7 @@
     <ClInclude Include="src\rendering\character\CharacterAnimator.h" />
     <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
-    <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\ECSRenderer.h" />
     <ClInclude Include="src\rendering\fish\FishRenderer.h" />
     <ClInclude Include="src\rendering\font\Font.h" />
     <ClInclude Include="src\rendering\GLExtensions.h" />

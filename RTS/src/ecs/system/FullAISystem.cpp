@@ -2,7 +2,7 @@
 #include "FullAISystem.h"
 
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "world/World.h"
 
 #include "ecs/component/DualComponents.h"

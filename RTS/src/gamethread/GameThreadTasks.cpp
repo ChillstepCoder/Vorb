@@ -4,7 +4,7 @@
 #include "gamethread/GameThread.h"
 
 #include "world/World.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "physics/PhysicsWorld.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
@@ -42,7 +42,7 @@ void GameThreadTasks::addCameraPickTeleportTask(World& world, const f32v3& camPo
     };
     CameraPickTeleportData* teleportData = new CameraPickTeleportData{ &world, camPos, camDir };
     mGameThreadFuncProcs.enqueue([data = teleportData]() {
-        IEntityComponentSystem& ecs = data->world->getECS();
+        IFullECS& ecs = data->world->getECS();
         if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
             PhysHitResult hitResult = data->world->getPhysicsWorld().pick(data->camPos, data->camPos + data->camDir * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
             if (hitResult.didHit()) {
@@ -55,7 +55,7 @@ void GameThreadTasks::addCameraPickTeleportTask(World& world, const f32v3& camPo
 
 void GameThreadTasks::addHideLocalPlayerModelTask(World& world, bool hide) {
     mGameThreadFuncProcs.enqueue([world = &world, hide]() {
-        IEntityComponentSystem& ecs = world->getECS();
+        IFullECS& ecs = world->getECS();
         if (hide) {
             ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mFlags.setBit(CharacterControlComponentFlags::HIDE_MODEL);
         }

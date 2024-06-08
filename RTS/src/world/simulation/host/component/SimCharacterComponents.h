@@ -12,8 +12,6 @@
 #include "ecs/component/DualAttributesComponent.h"
 #include "world/simulation/host/component/CharacterGroupComponents.h"
 
-#include "item/ItemStack.h"
-
 // If this component exists, the entity is on the simulation layer.
 // Otherwise it is fully simulated
 struct SimPositionComponent {
@@ -31,11 +29,6 @@ struct SimPositionComponent {
 private:
     f32v2 position; // Usually "last known" position in tiles
     ChunkID chunk = INVALID_CHUNK_ID;
-};
-
-// Represents resources slung over the shoulder
-struct SimResourceBundleComponent {
-    SimpleItemStack itemStack;
 };
 
 struct SimEmploymentComponent {

@@ -8,7 +8,7 @@
 #include "world/simulation/host/SimThread.h"
 #include "world/chunk/SimChunkGrid.h"
 #include "ecs/component/FullEntityBindingComponent.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 #include "gamethread/GameThreadTasks.h"
 #include "world/IChunkGrid.h"

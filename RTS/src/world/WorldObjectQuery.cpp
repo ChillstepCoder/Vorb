@@ -6,7 +6,7 @@
 #include "city/CityQuartermaster.h"
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
 #include "gamethread/GameThreadTasks.h"

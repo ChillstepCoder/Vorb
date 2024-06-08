@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "IEntityComponentSystem.h"
+#include "IFullECS.h"
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
@@ -21,7 +21,7 @@ constexpr ui32 ENTITY_LIST_RESERVE_COUNT = 64;
 // Prevent lists getting too out of control
 constexpr ui32 ENTITY_LIST_DEALLOCATE_COUNT = 512;
 
-IEntityComponentSystem::IEntityComponentSystem(World& world) : mWorld(world) {
+IFullECS::IFullECS(World& world) : mWorld(world) {
 	mEntitiesByChunk.resize(world.getTotalChunks());
 	initEvents();
 
@@ -31,11 +31,11 @@ IEntityComponentSystem::IEntityComponentSystem(World& world) : mWorld(world) {
     }
 }
 
-IEntityComponentSystem::~IEntityComponentSystem() {
+IFullECS::~IFullECS() {
 
 }
 
-void IEntityComponentSystem::tick(f32 elapsedSec) {
+void IFullECS::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 	
@@ -62,12 +62,12 @@ void IEntityComponentSystem::tick(f32 elapsedSec) {
 
 }
 
-void IEntityComponentSystem::tickPhysics(f32 elapsedSec) {
+void IFullECS::tickPhysics(f32 elapsedSec) {
 	mPhysicsSystem.update(mWorld, mRegistry);
 	mCharacterControlSystem.update(mRegistry);
 }
 
-void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data) {
+void IFullECS::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data) {
 
 	ASSERT_GAME_THREAD();
 	ChunkID chunkId = chunk.getChunkID();
@@ -97,7 +97,7 @@ void IEntityComponentSystem::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTr
 	}
 }
 
-void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data) {
+void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data) {
     ASSERT_GAME_THREAD();
 
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
@@ -140,7 +140,7 @@ void IEntityComponentSystem::createFullEntitiesFromSimEntities(Chunk& chunk, Chu
     }
 }
 
-ChunkSimTransitionData IEntityComponentSystem::deactivateEntitiesForChunk(Chunk& chunk) {
+ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
     ASSERT_GAME_THREAD();
 	EntityVector& chunkEntities = mEntitiesByChunk[chunk.getChunkID()];
     ChunkSimTransitionData rv;
@@ -175,7 +175,7 @@ ChunkSimTransitionData IEntityComponentSystem::deactivateEntitiesForChunk(Chunk&
 	return rv;
 }
 
-void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
+void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
     ASSERT_GAME_THREAD();
 
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
@@ -234,12 +234,12 @@ void IEntityComponentSystem::onEntityEnterNewChunk(entt::entity entity, ChunkID 
     }
 }
 
-entt::entity IEntityComponentSystem::getLocalPlayerThreadSafe() const {
+entt::entity IFullECS::getLocalPlayerThreadSafe() const {
 	std::lock_guard lock(mPlayerEntityMutex);
     return mLocalPlayerEntity;
 }
 
-void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
+void IFullECS::setLocalPlayer(entt::entity playerEntity)
 {
     ASSERT_GAME_THREAD();
 	if (mLocalPlayerEntity != entt::null) {
@@ -251,7 +251,7 @@ void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
     mLocalPlayerEntity = playerEntity;
 }
 
-f32v3 IEntityComponentSystem::getLocalPlayerPosition() {
+f32v3 IFullECS::getLocalPlayerPosition() {
 	ASSERT_GAME_THREAD();
 	entt::entity localPlayer = getLocalPlayer();
 	if (localPlayer == entt::null) {
@@ -260,7 +260,23 @@ f32v3 IEntityComponentSystem::getLocalPlayerPosition() {
 	return mRegistry.get<PositionComponent>(localPlayer).mPosition;
 }
 
-void IEntityComponentSystem::initEvents() {
+void IFullECS::onItemPickedUp(TileItemUID itemUID, i32 remaining) {
+    ASSERT_GAME_THREAD();
+    auto&& it = mTileItemEntityMap.find(itemUID);
+    assert(it != mTileItemEntityMap.end());
+    entt::entity entity = it->second;
+    if (remaining) {
+        TileItemComponent& itemCmp = mRegistry.get<TileItemComponent>(entity);
+        itemCmp.itemStack.count = remaining;
+        assert(itemCmp.tileItemUID == itemUID);
+    }
+    else {
+        mTileItemEntityMap.erase(it);
+        destroyEntity(entity);
+    }
+}
+
+void IFullECS::initEvents() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
 

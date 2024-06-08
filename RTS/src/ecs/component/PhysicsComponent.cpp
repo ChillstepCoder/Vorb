@@ -6,7 +6,7 @@
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 #include "resources/TileRepository.h"
 

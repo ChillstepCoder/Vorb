@@ -4,8 +4,8 @@
 #include "combat/CombatContext.h"
 #include "effect/cli/CliEffectContext.h"
 #include "effect/host/HostEffectContext.h"
-#include "ecs/cli/CliEntityComponentSystem.h"
-#include "ecs/srv/SrvEntityComponentSystem.h"
+#include "ecs/cli/CliFullECS.h"
+#include "ecs/srv/HostFullECS.h"
 #include "generation/ChunkGenerator.h"
 #include "item/ItemStockpileRegistry.h"
 #include "options/DebugOptions.h"
@@ -85,7 +85,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mTerrainSurfaceGrid = hostWorldData->terrainSurfaceGrid;
             mSimChunkGrid = hostWorldData->tileGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
-            mEcs = std::make_unique<CliEntityComponentSystem>(*this);
+            mEcs = std::make_unique<CliFullECS>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
             break;
         }
@@ -97,7 +97,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mOwnershipGrid = hostWorldData->ownershipGrid;
             mTerrainSurfaceGrid = hostWorldData->terrainSurfaceGrid;
             mChunkGrid = std::make_unique<CliChunkGrid>();
-            mEcs = std::make_unique<CliEntityComponentSystem>(*this);
+            mEcs = std::make_unique<CliFullECS>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
             mFactionManager = std::make_unique<CliFactionManager>(*this);
             break;
@@ -111,7 +111,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mTerrainSurfaceGrid = hostWorldData->terrainSurfaceGrid;
             mSimChunkGrid = hostWorldData->tileGrid;
             mChunkGrid = std::make_unique<SrvChunkGrid>();
-            mEcs = std::make_unique<SrvEntityComponentSystem>(*this);
+            mEcs = std::make_unique<HostFullECS>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);
             mHostSimContext = std::make_unique<HostSimContext>(*this);
             mFactionManager = std::make_unique<HostFactionManager>(*this);
@@ -471,7 +471,7 @@ void World::updateRenderState() {
 void World::updateEntitiesRenderState(WorldRenderState& renderState) {
     PROFILE_FUNCTION();
 
-    IEntityComponentSystem& ecs = getECS();
+    IFullECS& ecs = getECS();
     entt::registry& registry = ecs.mRegistry;
 
     { // Characters

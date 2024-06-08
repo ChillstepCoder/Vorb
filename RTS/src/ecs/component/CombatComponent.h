@@ -6,7 +6,7 @@
 
 class PhysicsComponent;
 class SimpleSpriteComponent;
-class IEntityComponentSystem;
+class IFullECS;
 
 struct CombatComponent {
 	f32v2 mHealthRange = f32v2(100.0f);
@@ -23,5 +23,5 @@ struct CombatComponent {
 namespace Combat {
 	// Return true on defender death
 	bool resolveMeleeAttack(CombatComponent& attacker, CombatComponent& defender, PhysicsComponent& defenderPhysComp, SimpleSpriteComponent& defenderSpriteComp, const f32v2& dir, float flankingAngle);
-	bool meleeAttackArc(entt::entity source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, IEntityComponentSystem& ecs);
+	bool meleeAttackArc(entt::entity source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, IFullECS& ecs);
 };

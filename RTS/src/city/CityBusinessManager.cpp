@@ -4,7 +4,7 @@
 #include "ecs/business/BusinessComponent.h"
 
 #include "world/World.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/EmployeeComponent.h"
 
 void CityBusinessManager::registerBusiness(entt::entity businessEntity)

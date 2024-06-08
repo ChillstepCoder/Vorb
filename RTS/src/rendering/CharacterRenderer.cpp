@@ -22,7 +22,7 @@
 #include "resources/ResourceManager.h"
 
 #include "world/World.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 #include "options/DebugOptions.h"
 

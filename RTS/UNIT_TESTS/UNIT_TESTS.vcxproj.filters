@@ -81,13 +81,13 @@
     <ClCompile Include="..\src\ecs\EntityRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\IEntityComponentSystem.cpp">
+    <ClCompile Include="..\src\ecs\IFullECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\cli\CliEntityComponentSystem.cpp">
+    <ClCompile Include="..\src\ecs\cli\CliFullECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ecs\srv\SrvEntityComponentSystem.cpp">
+    <ClCompile Include="..\src\ecs\srv\HostFullECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ecs\component\DualAttributesComponent.cpp">
@@ -239,13 +239,13 @@
     <ClInclude Include="..\src\ecs\EntityRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\IEntityComponentSystem.h">
+    <ClInclude Include="..\src\ecs\IFullECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\cli\CliEntityComponentSystem.h">
+    <ClInclude Include="..\src\ecs\cli\CliFullECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ecs\srv\SrvEntityComponentSystem.h">
+    <ClInclude Include="..\src\ecs\srv\HostFullECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ecs\component\DualAttributesComponent.h">

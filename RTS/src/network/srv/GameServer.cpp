@@ -5,7 +5,7 @@
 
 #include "network/NetworkUtil.h"
 
-#include "ecs/srv/SrvEntityComponentSystem.h"
+#include "ecs/srv/HostFullECS.h"
 
 #include "world/World.h"
 
@@ -233,7 +233,7 @@ void GameServer::processClientReadyJoinMessage(int clientIndex) {
 
                 // Create client entity post state replicate. Ecs will handle the entity replicate and begin message
                 // TODO: Save spawn point
-                mClientPlayerEntities[clientIndex] = ((SrvEntityComponentSystem&)mWorld.getECS()).createPlayerEntity(clientIndex, mWorld.getDefaultSpawn());
+                mClientPlayerEntities[clientIndex] = ((HostFullECS&)mWorld.getECS()).createPlayerEntity(clientIndex, mWorld.getDefaultSpawn());
             }
             break;
         }
@@ -241,7 +241,7 @@ void GameServer::processClientReadyJoinMessage(int clientIndex) {
 }
 
 void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerStateMessage* message) {
-    SrvEntityComponentSystem& srvEcs = (SrvEntityComponentSystem&)mWorld.getECS();
+    HostFullECS& srvEcs = (HostFullECS&)mWorld.getECS();
     entt::entity entity = mClientPlayerEntities[clientIndex];
     if (entity != entt::null) {
         PhysicsComponent& physCmp = srvEcs.mRegistry.get<PhysicsComponent>(entity);
@@ -283,7 +283,7 @@ void GameServer::onClientDisconnected(int clientIndex) {
 }
 
 void GameServer::replicateStartGameStateToClient(int clientIndex) {
-    SrvEntityComponentSystem& ecs = ((SrvEntityComponentSystem&)mWorld.getECS());
+    HostFullECS& ecs = ((HostFullECS&)mWorld.getECS());
 
     // Replicate all entites
     auto view = ecs.mRegistry.view<PhysicsComponent, ReplicationComponent, EntityDetailsComponent>();
@@ -297,7 +297,7 @@ void GameServer::replicateStartGameStateToClient(int clientIndex) {
 }
 
 void GameServer::replicateEntities() {
-    SrvEntityComponentSystem& ecs = ((SrvEntityComponentSystem&)mWorld.getECS());
+    HostFullECS& ecs = ((HostFullECS&)mWorld.getECS());
 
     // Replicate all characters
     auto view = ecs.mRegistry.view<PhysicsComponent, ReplicationComponent, CharacterControlComponent>();

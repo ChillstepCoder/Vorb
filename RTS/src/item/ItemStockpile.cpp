@@ -7,7 +7,7 @@
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ItemReservation.h"
 #include "ecs/component/OwnershipComponent.h"
 

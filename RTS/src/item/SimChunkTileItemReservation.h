@@ -3,6 +3,7 @@
 class SimChunkItemData;
 
 class SimChunk;
+class IFullECS;
 
 //struct SimChunkTileItemHandle {
 //    ChunkID chunkId = INVALID_CHUNK_ID;
@@ -25,7 +26,8 @@ public:
 
     // Try to instantly retrieve items from the reservation. Returns number of items picked up. 
     // Caller must create resulting items itself
-    [[nodiscard]] i32 tryPickup(i32 maxCount);
+    [[nodiscard]] i32 tryPickupSimThread(i32 maxCount);
+    [[nodiscard]] i32 tryPickupGameThread(i32 maxCount, IFullECS& ecs);
 
     bool isValid() const { return mReservedCount > 0; }
     ChunkTileIndex getTileIndex() const { return mTileIndex; }

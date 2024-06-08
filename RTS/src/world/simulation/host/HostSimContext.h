@@ -80,7 +80,7 @@ private:
     // TODO: Flat set?
     std::unordered_set<ChunkID> mFullChunks; // Only store full chunks in here, usually not very many
     ChunkGridListeners mChunkEventListeners;
-    IEntityComponentSystemListeners mFullECSListeners;
+    IFullECSListeners mFullECSListeners;
 
     ui32 mTotalChunks;
 

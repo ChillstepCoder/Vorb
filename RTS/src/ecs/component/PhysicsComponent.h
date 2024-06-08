@@ -4,7 +4,7 @@
 #include "physics/CollisionShapes.h"
 #include "ecs/component/ComponentDefBase.h"
 
-class IEntityComponentSystem;
+class IFullECS;
 class PhysicsWorld;
 class btRigidBody;
 class World;

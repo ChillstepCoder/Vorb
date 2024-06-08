@@ -1,16 +1,16 @@
 #include "stdafx.h"
-#include "CliEntityComponentSystem.h"
+#include "ClIFullECS.h"
 
 #include "ecs/factory/EntityFactory.h"
 
-entt::entity CliEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
+entt::entity CliFullECS::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     mEntitiesByChunk[mRegistry.get<PositionComponent>(newEntity).chunkId].emplace_back(newEntity);
     return newEntity;
 }
 
-entt::entity CliEntityComponentSystem::createEntityFromSrv(entt::entity srvEntity, const f32v3& position, StrToken typeToken) {
+entt::entity CliFullECS::createEntityFromSrv(entt::entity srvEntity, const f32v3& position, StrToken typeToken) {
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     assert(mSrvToCliEntityLookup.find(srvEntity) == mSrvToCliEntityLookup.end());
     mEntitiesByChunk[mRegistry.get<PositionComponent>(newEntity).chunkId].emplace_back(newEntity);
@@ -18,7 +18,7 @@ entt::entity CliEntityComponentSystem::createEntityFromSrv(entt::entity srvEntit
     return newEntity;
 }
 
-void CliEntityComponentSystem::destroyEntity(entt::entity entity) {
+void CliFullECS::destroyEntity(entt::entity entity) {
     // Client cannot destroy server entities
     assert(mSrvToCliEntityLookup.find(entity) == mSrvToCliEntityLookup.end());
     mRegistry.destroy(entity);
@@ -27,7 +27,7 @@ void CliEntityComponentSystem::destroyEntity(entt::entity entity) {
     assert(false);
 }
 
-void CliEntityComponentSystem::destroyEntityFromSrv(entt::entity srvEntity) {
+void CliFullECS::destroyEntityFromSrv(entt::entity srvEntity) {
     auto&& it = mSrvToCliEntityLookup.find(srvEntity);
     if (it != mSrvToCliEntityLookup.end()) {
         mRegistry.destroy(it->second);
@@ -38,7 +38,7 @@ void CliEntityComponentSystem::destroyEntityFromSrv(entt::entity srvEntity) {
     }
 }
 
-entt::entity CliEntityComponentSystem::getEntityFromSrvEntity(entt::entity srvEntity) {
+entt::entity CliFullECS::getEntityFromSrvEntity(entt::entity srvEntity) {
     auto&& it = mSrvToCliEntityLookup.find(srvEntity);
     if (it != mSrvToCliEntityLookup.end()) {
         return it->second;

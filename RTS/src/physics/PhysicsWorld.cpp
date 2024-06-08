@@ -27,7 +27,7 @@
 #include "physics/PhysicsConst.h"
 
 // For custom physics tests
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/PhysicsComponent.h"
 
 #include "util/b3ChromeTraceUtil.h"

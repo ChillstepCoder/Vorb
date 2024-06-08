@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "EntityComponentSystemRenderer.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ECSRenderer.h"
+#include "ecs/IFullECS.h"
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"
@@ -17,18 +17,18 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/SamplerState.h>
 
-EntityComponentSystemRenderer::EntityComponentSystemRenderer()
+ECSRenderer::ECSRenderer()
 	: mSpriteBatch(std::make_unique<vg::SpriteBatch>()) {
 	// TODO: Render thread assert?
 	mSpriteBatch->init();
 }
 
-EntityComponentSystemRenderer::~EntityComponentSystemRenderer()
+ECSRenderer::~ECSRenderer()
 {
 
 }
 
-void EntityComponentSystemRenderer::renderBusinessDebug(World& world, const Camera3D& camera) const {
+void ECSRenderer::renderBusinessDebug(World& world, const Camera3D& camera) const {
 
 	if (++mFrameCount <= mFramesPerDebugDraw) {
 		return;
@@ -50,7 +50,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(World& world, const Came
 	}
 }
 
-void EntityComponentSystemRenderer::renderDynamicLightComponents(World& world, const Camera3D& camera, const LightRenderer& lightRenderer) {
+void ECSRenderer::renderDynamicLightComponents(World& world, const Camera3D& camera, const LightRenderer& lightRenderer) {
 
     auto& ecs = world.getECS();
 	// TODO: 3D
@@ -62,7 +62,7 @@ void EntityComponentSystemRenderer::renderDynamicLightComponents(World& world, c
 	//});
 }
 
-void EntityComponentSystemRenderer::renderInteractUI(const Camera3D& camera) const {
+void ECSRenderer::renderInteractUI(const Camera3D& camera) const {
     mSpriteBatch->begin();
 
     //auto& ecs = sWorld->getECS();

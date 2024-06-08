@@ -2,7 +2,7 @@
 #include "GameClient.h"
 
 #include "world/World.h"
-#include "ecs/cli/CliEntityComponentSystem.h"
+#include "ecs/cli/CliFullECS.h"
 #include "network/NetworkUtil.h"
 
 #include "network/cli/CliAdapter.h"
@@ -186,7 +186,7 @@ void GameClient::processPingMessage(PingMessage* message) {
 
 void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
     assert(mActiveWorld);
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
+    CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     assert(cliEcs.getLocalPlayer() == entt::null);
     entt::entity playerEntity = cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, CStrToken("player"));
     cliEcs.setLocalPlayer(playerEntity);
@@ -195,13 +195,13 @@ void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
 
 void GameClient::processEntityCreateMessage(EntityCreateMessage* message) {
     assert(mActiveWorld);
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
+    CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, message->mEntityToken);
 }
 
 void GameClient::processEntityTransformMessage(EntityTransformMessage* message) {
     assert(mActiveWorld);
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
+    CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
     if (entity != entt::null) {
         PhysicsComponent& physCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
@@ -211,7 +211,7 @@ void GameClient::processEntityTransformMessage(EntityTransformMessage* message) 
 
 void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
     assert(mActiveWorld);
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
+    CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
     if (entity != entt::null) {
         PhysicsComponent& physCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
@@ -225,7 +225,7 @@ void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
 
 void GameClient::replicatePlayerState() {
     assert(mActiveWorld);
-    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)mActiveWorld->getECS();
+    CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getLocalPlayer();
     if (entity != entt::null) {
         PhysicsComponent& physicsCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);

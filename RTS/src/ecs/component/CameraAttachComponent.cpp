@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CameraAttachComponent.h"
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 //
 //void updateComponent(IWorld& world, entt::registry& registry, entt::entity entity, CameraAttachComponent& cameraCmp, PhysicsComponent& physics) {

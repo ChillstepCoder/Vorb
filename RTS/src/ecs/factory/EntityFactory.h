@@ -2,7 +2,7 @@
 
 #include "item/ItemStack.h"
 
-class IEntityComponentSystem;
+class IFullECS;
 class ResourceManager;
 class World;
 
@@ -11,8 +11,8 @@ class EntityRepository;
 // Static class used by EntityComponentSystem to add entities
 class EntityFactory
 {
-    friend class SrvEntityComponentSystem;
-    friend class CliEntityComponentSystem;
+    friend class HostFullECS;
+    friend class CliFullECS;
 
 public:
     // TODO: Replication doesn't work for this entity type, as it is not driven by the ECS.

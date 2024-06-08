@@ -6,7 +6,7 @@
 #include "world/World.h"
 #include "effect/IEffectContext.h"
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/CharacterControlComponent.h"
 
 #include "btBulletCollisionCommon.h"
@@ -171,7 +171,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
 
     const AttackShapeCone& coneData = std::get<AttackShapeCone>(attackData.varAttackShape);
 
-    IEntityComponentSystem& ecs = mWorld.getECS();
+    IFullECS& ecs = mWorld.getECS();
     const f32 sourceRotation = ecs.mRegistry.get<CharacterControlComponent>(source).mControllerAngle;
 
     constexpr int MAX_RESULTS = 8;

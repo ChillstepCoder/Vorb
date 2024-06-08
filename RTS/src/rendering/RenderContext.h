@@ -11,7 +11,7 @@ class CityDebugRenderer;
 class CloudMeshManager;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
-class EntityComponentSystemRenderer;
+class ECSRenderer;
 class GrassMesh;
 class GrassRenderer;
 class ICamera;

@@ -39,6 +39,14 @@ void EntityComponentCharacterTransitionData::moveFromEntity(entt::registry& regi
 
     resident = std::move(registry.get<DualResidentComponent>(entity));
     registry.remove<DualResidentComponent>(entity);
+
+    if (DualResourceBundleComponent* bundle = registry.try_get<DualResourceBundleComponent>(entity)) {
+        resourceBundle = std::move(*bundle);
+        registry.remove<DualResourceBundleComponent>(entity);
+    }
+    else {
+        resourceBundle = std::nullopt;
+    }
 }
 
 void EntityComponentCharacterTransitionData::moveToEntity(World& world, entt::registry& registry, entt::entity entity, bool isFull) {
@@ -49,6 +57,9 @@ void EntityComponentCharacterTransitionData::moveToEntity(World& world, entt::re
     registry.emplace<DualInventoryComponent>(entity, std::move(inventory));
     registry.emplace<DualGenderComponent>(entity, std::move(gender));
     registry.emplace<DualResidentComponent>(entity, std::move(resident));
+    if (resourceBundle) {
+        registry.emplace<DualResourceBundleComponent>(entity, std::move(*resourceBundle));
+    }
 
     DualTaskQueueComponent& newTaskQueue = registry.emplace<DualTaskQueueComponent>(entity, std::move(taskQueue));
     // Notify tasks of the transition

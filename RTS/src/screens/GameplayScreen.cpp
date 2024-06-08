@@ -18,8 +18,8 @@
 #include "network/cli/CliMessage.h"
 #include "network/srv/GameServer.h"
 
-#include "ecs/IEntityComponentSystem.h"
-#include "ecs/srv/SrvEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
+#include "ecs/srv/HostFullECS.h"
 #include "world/IHeightmapGrid.h"
 #include "world/WorldObjectQuery.h"
 #include "util/Utils.h"

@@ -11,7 +11,7 @@ DECL_VIO(class IOManager);
 // https://skypjack.github.io/entt/md_docs_md_entity.html
 
 class EntityDef;
-class IEntityComponentSystem;
+class IFullECS;
 class ResourceManager;
 
 class EntityRepository : public IAssetRepository<EntityDef>

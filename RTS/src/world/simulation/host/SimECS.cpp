@@ -7,7 +7,7 @@
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/simulation/host/SimThread.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "gamethread/GameThreadTasks.h"
 #include "world/IChunkGrid.h"

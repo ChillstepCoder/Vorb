@@ -1,17 +1,17 @@
 #pragma once
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 
-class CliEntityComponentSystem : public IEntityComponentSystem
+class CliFullECS : public IFullECS
 {
 public:
-    CliEntityComponentSystem(World& world) : IEntityComponentSystem(world) {};
+    CliFullECS(World& world) : IFullECS(world) {};
 
-    // Begin IEntityComponentSystem interface
+    // Begin IFullECS interface
     entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) override;
     void destroyEntity(entt::entity entity) override;
-    // End IEntityComponentSystem interface
+    // End IFullECS interface
 
     entt::entity createEntityFromSrv(entt::entity srvEntity, const f32v3& position, StrToken typeToken);
     void destroyEntityFromSrv(entt::entity srvEntity);

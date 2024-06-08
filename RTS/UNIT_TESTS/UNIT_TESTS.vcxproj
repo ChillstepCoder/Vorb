@@ -226,7 +226,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\ecs\cli\CliEntityComponentSystem.cpp" />
+    <ClCompile Include="..\src\ecs\cli\CliFullECS.cpp" />
     <ClCompile Include="..\src\ecs\component\DualAttributesComponent.cpp" />
     <ClCompile Include="..\src\ecs\component\CharacterControlComponent.cpp" />
     <ClCompile Include="..\src\ecs\component\CharacterDetailsComponent.cpp" />
@@ -245,8 +245,8 @@
     <ClCompile Include="..\src\ecs\component\StatsComponent.cpp" />
     <ClCompile Include="..\src\ecs\component\TimedTileInteractComponent.cpp" />
     <ClCompile Include="..\src\ecs\EntityRepository.cpp" />
-    <ClCompile Include="..\src\ecs\IEntityComponentSystem.cpp" />
-    <ClCompile Include="..\src\ecs\srv\SrvEntityComponentSystem.cpp" />
+    <ClCompile Include="..\src\ecs\IFullECS.cpp" />
+    <ClCompile Include="..\src\ecs\srv\HostFullECS.cpp" />
     <ClCompile Include="..\src\network\cli\CliAdapter.cpp" />
     <ClCompile Include="..\src\network\cli\GameClient.cpp" />
     <ClCompile Include="..\src\network\NetworkUtil.cpp" />
@@ -277,7 +277,7 @@
     <ClCompile Include="UNIT_TESTS.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\ecs\cli\CliEntityComponentSystem.h" />
+    <ClInclude Include="..\src\ecs\cli\CliFullECS.h" />
     <ClInclude Include="..\src\ecs\component\DualAttributesComponent.h" />
     <ClInclude Include="..\src\ecs\component\CharacterControlComponent.h" />
     <ClInclude Include="..\src\ecs\component\CharacterDetailsComponent.h" />
@@ -300,8 +300,8 @@
     <ClInclude Include="..\src\ecs\component\StatsComponent.h" />
     <ClInclude Include="..\src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="..\src\ecs\EntityRepository.h" />
-    <ClInclude Include="..\src\ecs\IEntityComponentSystem.h" />
-    <ClInclude Include="..\src\ecs\srv\SrvEntityComponentSystem.h" />
+    <ClInclude Include="..\src\ecs\IFullECS.h" />
+    <ClInclude Include="..\src\ecs\srv\HostFullECS.h" />
     <ClInclude Include="..\src\network\NetworkUtil.h" />
     <ClInclude Include="..\src\resources\TileRepository.h" />
     <ClInclude Include="..\src\tile\Stairs.h" />

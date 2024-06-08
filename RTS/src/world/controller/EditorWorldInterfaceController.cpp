@@ -11,7 +11,7 @@
 #include "rendering/RenderContext.h"
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/factory/EntityFactory.h"
 #include "ui/UIContext.h"
 #include "pathfinding/NavWorld.h"
@@ -127,7 +127,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
                         if (vui::InputDispatcher::key.isKeyPressed(VKEY_J)) {
                             GameThreadTasks::getInstance().addGenericTask([world = mWorld, worldPos]() {
                                 // TODO: Small race condition here if tile handle changes or chunk is destroyed
-                                IEntityComponentSystem& ecs = world->getECS();
+                                IFullECS& ecs = world->getECS();
                                 PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                                 cmp.requestCoarsePath(physCmp.getPosition(), worldPos);
@@ -278,7 +278,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                     // TODO: Small race condition here if tile handle changes or chunk is destroyed
                     const TileHandle& tileHandle = data->second;
                     if (tileHandle.isValid()) {
-                        IEntityComponentSystem& ecs = data->first->getECS();
+                        IFullECS& ecs = data->first->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                         cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D());
@@ -393,7 +393,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD) {
             if (mSelectedTileHandle.isValid()) {
                 GameThreadTasks::getInstance().addGenericTask([world = mWorld]() {
-                    IEntityComponentSystem& ecs = world->getECS();
+                    IFullECS& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                     cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::Wood, 1024.0f);

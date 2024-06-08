@@ -12,10 +12,10 @@
 
 class World;
 
-class IEntityComponentSystem {
+class IFullECS {
 public:
-    IEntityComponentSystem(World& world);
-    virtual ~IEntityComponentSystem();
+    IFullECS(World& world);
+    virtual ~IFullECS();
 
     virtual void tick(f32 elapsedSec);
     virtual void tickPhysics(f32 elapsedSec);
@@ -36,6 +36,8 @@ public:
     void setLocalPlayer(entt::entity playerEntity);
     f32v3 getLocalPlayerPosition();
 
+    void onItemPickedUp(TileItemUID itemUID, i32 remaining);
+
     // TODO: UniquePtr for faster include
     CharacterControlSystem mCharacterControlSystem;
     PlayerControlSystem mPlayerControlSystem;
@@ -52,7 +54,7 @@ public:
 
     entt::registry mRegistry;
 
-    EVENT_LISTENER_FUNCS(IEntityComponentSystem, EntityDeactivated, FullECSEventType::EntityDeactivated, FullECSEvent&);
+    EVENT_LISTENER_FUNCS(IFullECS, EntityDeactivated, FullECSEventType::EntityDeactivated, FullECSEvent&);
 
 protected:
     void initEvents();
@@ -71,5 +73,5 @@ protected:
     entt::entity mLocalPlayerEntity = entt::null;
 
 
-    EVENT_DISPATCHER_DEF(IEntityComponentSystem);
+    EVENT_DISPATCHER_DEF(IFullECS);
 };

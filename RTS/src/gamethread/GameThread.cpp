@@ -7,7 +7,7 @@
 #include "world/World.h"
 #include "world/WorldDestroyer.h"
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "ecs/component/PhysicsComponent.h"
 
 #include "gamethread/GameThreadTasks.h"

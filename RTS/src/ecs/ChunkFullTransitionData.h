@@ -40,7 +40,9 @@ struct EntityComponentCharacterTransitionData {
 
     POOLED_ALLOC_DECL();
 
+    // Move components from the entity into this object
     void moveFromEntity(entt::registry& registry, entt::entity entity);
+    // Move components from the object into entity and initialize
     void moveToEntity(World& world, entt::registry& registry, entt::entity entity, bool isFull);
 
     DualCharacterComponent character;
@@ -49,6 +51,7 @@ struct EntityComponentCharacterTransitionData {
     DualInventoryComponent inventory;
     DualGenderComponent gender;
     DualResidentComponent resident;
+    std::optional<DualResourceBundleComponent> resourceBundle = std::nullopt;
     bool isValid = false;
 };
 typedef std::unique_ptr<EntityComponentCharacterTransitionData> EntityComponentCharacterTransitionDataPtr;

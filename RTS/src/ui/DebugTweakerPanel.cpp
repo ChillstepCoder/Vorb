@@ -28,7 +28,7 @@
 
 #include "definitions/ModelDef.h"
 #include "definitions/AnimMachineDef.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 #include "debugging/ValueTweaker.h"
 #include <Vorb/graphics/GBuffer.h>
@@ -106,7 +106,7 @@ void setDefaultTheme() {
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio, f32v3 cameraPos)
 {
-    IEntityComponentSystem& ecs = world.getECS();
+    IFullECS& ecs = world.getECS();
 
     ImGui::BeginChild("Value Tweaker", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Value Tweaker");

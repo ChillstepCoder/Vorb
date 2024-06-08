@@ -19,7 +19,7 @@ class ConstructBuildingSimTask : public ISimTask
 public:
 	// We will aquire the tileReservations, and the job will release them after
 	ConstructBuildingSimTask(
-		World& world, ConstructBuildingSimJob& parentJob, entt::registry& simRegistry, entt::entity simAgent, bool isSim
+		World& world, ConstructBuildingSimJob& parentJob, entt::registry& registry, entt::entity agent, bool isSim
 	);
 	~ConstructBuildingSimTask();
 

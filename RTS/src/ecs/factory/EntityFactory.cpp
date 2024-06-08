@@ -2,7 +2,7 @@
 #include "EntityFactory.h"
 
 #include "ecs/EntityRepository.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include "definitions/EntityDef.h"
 
 #include "resources/ModelRepository.h"
@@ -24,7 +24,7 @@
 entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
     PhysicsWorld& physWorld = world.getPhysicsWorld();
-    IEntityComponentSystem& ecs = world.getECS();
+    IFullECS& ecs = world.getECS();
 
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
@@ -152,7 +152,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
 
 entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemStack itemStack) {
     ASSERT_GAME_THREAD();
-    IEntityComponentSystem& ecs = world.getECS();
+    IFullECS& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
@@ -192,7 +192,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
 
 entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, ItemStack itemStack, TileItemUID uid) {
     ASSERT_GAME_THREAD();
-    IEntityComponentSystem& ecs = world.getECS();
+    IFullECS& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
@@ -221,7 +221,7 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
 }
 
 void EntityFactory::destroyEntity(World& world, entt::entity entity) {
-    IEntityComponentSystem& ecs = world.getECS();
+    IFullECS& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
 
     if (PhysicsComponent* cmp = registry.try_get<PhysicsComponent>(entity)) {

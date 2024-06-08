@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "SrvEntityComponentSystem.h"
+#include "HostFullECS.h"
 
 #include "ecs/factory/EntityFactory.h"
 #include "ecs/component/ReplicationComponent.h"
@@ -10,23 +10,23 @@
 
 #include "ecs/system/FullAISystem.h"
 
-SrvEntityComponentSystem::SrvEntityComponentSystem(World& world) : IEntityComponentSystem(world) {
+HostFullECS::HostFullECS(World& world) : IFullECS(world) {
     mFullAISystem = std::make_unique<FullAISystem>(world, mRegistry);
 }
 
-SrvEntityComponentSystem::~SrvEntityComponentSystem() {
+HostFullECS::~HostFullECS() {
 
 }
 
-void SrvEntityComponentSystem::tick(f32 elapsedSec) {
+void HostFullECS::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
-    IEntityComponentSystem::tick(elapsedSec);
+    IFullECS::tick(elapsedSec);
     mBusinessSystem.update(mRegistry);
     mFullAISystem->update(elapsedSec);
     mNavigationSystem.update(mWorld, mRegistry);
 }
 
-entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
+entt::entity HostFullECS::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     ASSERT_GAME_THREAD();
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     LOG_CRITICAL("Create Entity {} in {}", (int)newEntity, mRegistry.get<PositionComponent>(newEntity).chunkId);
@@ -41,7 +41,7 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
     return newEntity;
 }
 
-entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const f32v3& position) {
+entt::entity HostFullECS::createPlayerEntity(int clientIndex, const f32v3& position) {
     ASSERT_GAME_THREAD();
     entt::entity entity = EntityFactory::createEntity(mWorld, position, CStrToken("player"));
 
@@ -62,7 +62,7 @@ entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const
 }
 
 
-void SrvEntityComponentSystem::destroyEntity(entt::entity entity) {
+void HostFullECS::destroyEntity(entt::entity entity) {
     EntityFactory::destroyEntity(mWorld, entity);
 }
 

@@ -16,7 +16,7 @@
 
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
-#include "EntityComponentSystemRenderer.h"
+#include "ECSRenderer.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/renderer/GrassRenderer.h"
 #include "rendering/TileContainerRenderer.h"

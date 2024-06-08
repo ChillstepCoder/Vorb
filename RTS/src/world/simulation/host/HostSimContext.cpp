@@ -11,7 +11,7 @@
 #include "world/simulation/host/StoryTeller.h"
 #include "world/simulation/host/SimImmigrationManager.h"
 #include "world/chunk/SimChunkGrid.h"
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
 #include "gamethread/GameThreadTasks.h"
 
@@ -197,8 +197,8 @@ void HostSimContext::initEvents() {
         });
     });
 
-    IEntityComponentSystem& fullEcs = mWorld.getECS();
-    fullEcs.registerIEntityComponentSystemListeners(mFullECSListeners);
+    IFullECS& fullEcs = mWorld.getECS();
+    fullEcs.registerIFullECSListeners(mFullECSListeners);
 
     fullEcs.addEntityDeactivatedListener(mFullECSListeners, [this, &fullEcs](FullECSEvent& evnt) {
         ASSERT_GAME_THREAD();

@@ -6,7 +6,7 @@
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
 
-#include "ecs/IEntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 #include <Vorb/ui/GameWindow.h>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/GameTime.h>

@@ -99,10 +99,10 @@
     <ClCompile Include="src\pathfinding\PathFinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp">
+    <ClCompile Include="src\rendering\ECSRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\IEntityComponentSystem.cpp">
+    <ClCompile Include="src\ecs\IFullECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\EntityRepository.cpp">
@@ -429,10 +429,10 @@
     <ClCompile Include="src\ui\PauseMenuPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\cli\CliEntityComponentSystem.cpp">
+    <ClCompile Include="src\ecs\cli\CliFullECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp">
+    <ClCompile Include="src\ecs\srv\HostFullECS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\StrToken.cpp">
@@ -1223,10 +1223,10 @@
     <ClInclude Include="src\pathfinding\PathFinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h">
+    <ClInclude Include="src\rendering\ECSRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\IEntityComponentSystem.h">
+    <ClInclude Include="src\ecs\IFullECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\EntityRepository.h">
@@ -1697,10 +1697,10 @@
     <ClInclude Include="src\ui\ImguiUtil.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\cli\CliEntityComponentSystem.h">
+    <ClInclude Include="src\ecs\cli\CliFullECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h">
+    <ClInclude Include="src\ecs\srv\HostFullECS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\StrToken.h">

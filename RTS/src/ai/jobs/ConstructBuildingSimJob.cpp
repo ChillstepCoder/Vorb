@@ -151,9 +151,21 @@ std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubtaskForSimCha
     return newTask;
 }
 
-std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter)
-{
-    throw std::logic_error("The method or operation is not implemented.");
+std::unique_ptr<ISimTask> ConstructBuildingSimJob::tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) {
+    ASSERT_GAME_THREAD();
+    if (isFinished()) {
+        return nullptr;
+    }
+
+    std::unique_ptr<ConstructBuildingSimTask> newTask =
+        std::make_unique<ConstructBuildingSimTask>(
+            mWorld, *this, fullRegistry, fullCharacter, false /*isSim*/
+        );
+    // If state is END then the task could not initialize
+    if (newTask->mState == ConstructBuildingSimTask::State::End) {
+        return nullptr;
+    }
+    return newTask;
 }
 
 void ConstructBuildingSimJob::onAbortTask(ISimTask& task) {

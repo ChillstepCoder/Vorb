@@ -1,5 +1,7 @@
 #pragma once
 
+#include "item/ItemStack.h"
+
 enum class SimHomeState : ui8 {
     Homeless,
     Pending,
@@ -30,4 +32,9 @@ struct DualGenderComponent {
 
 struct DualCharacterComponent {
     CharacterUID characterId;
+};
+
+// Represents resources slung over the shoulder
+struct DualResourceBundleComponent {
+    SimpleItemStack itemStack;
 };

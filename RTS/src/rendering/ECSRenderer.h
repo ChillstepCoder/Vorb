@@ -9,10 +9,10 @@ class World;
 class Camera3D;
 class LightRenderer;
 
-class EntityComponentSystemRenderer {
+class ECSRenderer {
 public:
-	EntityComponentSystemRenderer();
-    ~EntityComponentSystemRenderer();
+	ECSRenderer();
+    ~ECSRenderer();
     void renderBusinessDebug(World& world, const Camera3D& camera) const;
 	void renderDynamicLightComponents(World& world, const Camera3D& camera, const LightRenderer& lightRenderer);
 	void renderInteractUI(const Camera3D& camera) const;

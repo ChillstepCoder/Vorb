@@ -9,4 +9,4 @@ struct FullECSEvent {
     entt::entity entity;
     ChunkID chunkId;
 };
-EVENT_DISPATCHER_TYPE(IEntityComponentSystem, FullECSEventType, FullECSEvent& e);
+EVENT_DISPATCHER_TYPE(IFullECS, FullECSEventType, FullECSEvent& e);

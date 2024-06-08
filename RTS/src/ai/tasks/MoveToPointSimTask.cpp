@@ -9,15 +9,31 @@
 
 POOLED_ALLOC_DEF_THREADSAFE(MoveToPointSimTask, 256);
 
-MoveToChunkPointSimSubtask::MoveToChunkPointSimSubtask(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius) {
-    init(simRegistry, simAgent, worldPos, successRadius);
+MoveToPointSimTask::MoveToPointSimTask(entt::registry& registry, entt::entity agent, f32v2 worldPos, f32 successRadius, bool isFull) {
+    if (isFull) {
+        moveSubtask.initFull(worldPos, successRadius);
+    }
+    else {
+        moveSubtask.initSim(registry, agent, worldPos, successRadius);
+    }
 }
 
-void MoveToChunkPointSimSubtask::init(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius) {
+void MoveToChunkPointSimSubtask::initSim(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius) {
     mWorldPosTarget = worldPos;
     mSuccessRadiusSQ = SQ(successRadius);
 
     simRegistry.get<SimMovementComponent>(simAgent).targetPosition = mWorldPosTarget;
+}
+
+void MoveToChunkPointSimSubtask::initFull(f32v2 worldPos, f32 successRadius) {
+    mWorldPosTarget = worldPos;
+    mSuccessRadiusSQ = SQ(successRadius);
+}
+
+void MoveToChunkPointSimSubtask::onTransitionToSim(entt::registry& simRegistry, entt::entity simAgent) {
+    if (mWorldPosTarget != f32v2(-1.0f)) {
+        simRegistry.get<SimMovementComponent>(simAgent).targetPosition = mWorldPosTarget;
+    }
 }
 
 SimTaskTickResult MoveToChunkPointSimSubtask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
@@ -37,14 +53,14 @@ SimTaskTickResult MoveToChunkPointSimSubtask::tickFull(World& world, entt::regis
         NavigationStatus status = navCmp.getStatus();
         switch (status) {
             case NavigationStatus::INVALID:
+            case NavigationStatus::FAIL:
+                mWorldPosTarget = f32v2(-1.0f);
                 return SimTaskTickResult::Fail;
             case NavigationStatus::IN_PROGRESS:
                 return SimTaskTickResult::InProgress;
             case NavigationStatus::SUCCESS:
+                mWorldPosTarget = f32v2(-1.0f);
                 return SimTaskTickResult::Success;
-                break;
-            case NavigationStatus::FAIL:
-                return SimTaskTickResult::Fail;
                 break;
             default:
                 panic("Invalid nav status in MoveToChunkPointSimSubtask::tickFull");
@@ -53,6 +69,7 @@ SimTaskTickResult MoveToChunkPointSimSubtask::tickFull(World& world, entt::regis
     }
     else {
         // If we get here, our path was interrupted by another path task
+        mWorldPosTarget = f32v2(-1.0f);
         return SimTaskTickResult::Fail;
     }
 
@@ -68,6 +85,7 @@ SimTaskTickResult MoveToChunkPointSimSubtask::tickSim(World& world, entt::regist
     const f32v2 offset = simRegistry.get<SimPositionComponent>(simAgent).getPosition() - mWorldPosTarget;
     if (glm::length2(offset) <= mSuccessRadiusSQ) {
         moveCmp.clearTarget();
+        mWorldPosTarget = f32v2(-1.0f);
         return SimTaskTickResult::Success;
     }
 
