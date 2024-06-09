@@ -4,7 +4,7 @@
 #include "world/chunk/SimChunk.h"
 #include "ecs/IFullECS.h"
 
-POOLED_ALLOC_DEF_NOT_THREADSAFE(SimChunkTileItemReservation, 512, ASSERT_SIM_THREAD());
+POOLED_ALLOC_DEF_THREADSAFE(SimChunkTileItemReservation, 512);
 
 SimChunkTileItemReservation::~SimChunkTileItemReservation() {
     // Release reserved count

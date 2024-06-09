@@ -14,7 +14,7 @@ public:
     VORB_NON_COPYABLE(ISimJob);
 
     virtual std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) = 0;
-    virtual std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) = 0;
+    virtual std::unique_ptr<ISimTask> tryAquireNextSubtaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) = 0;
 
     virtual void onCompleteTask(ISimTask& task) {};
     virtual void onAbortTask(ISimTask& task) {};

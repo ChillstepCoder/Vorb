@@ -121,14 +121,14 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
                     //const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(aabb, tilesNeedingTerrainFlatten));
                     //const i32AABB3 aabb3d(i32v3(aabb.pos.x, aabb.pos.y, meanHeight), i32v3(aabb.dims.x, aabb.dims.y, bpPtr->floorCount * bpPtr->floorHeight));
 
-                    std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(mWorld, *newBuilding, mEcs, characters[0]);
+                    std::unique_ptr<ConstructBuildingSimJob> newConstructJob = std::make_unique<ConstructBuildingSimJob>(mWorld, *newBuilding, characters[0]);
                     SimJobBossComponent& jobBossCmp = mRegistry.get_or_emplace<SimJobBossComponent>(characters[0]);
 
                     // Instruct all characters to build this house
                     for (int i = 0; i < numCharacters; ++i) {
                         // Task handle ensures we do not lose the job
                         std::shared_ptr<SimTaskHandle> taskHandle = std::make_unique<SimTaskHandle>(newConstructJob.get());
-                        EntityOperations::simPerformDual(mRegistry, characters[i],
+                        SimEntityOperations::simPerformDual(mRegistry, characters[i],
                             [taskHandle = std::move(taskHandle)](entt::registry& registry, entt::entity entity, bool isGameThread) mutable
                         {
                             UNUSED(isGameThread);
@@ -151,8 +151,12 @@ void SettlementPlanner::updateResidentsPendingHomes(entt::entity settlementEntit
 
             if (!success) {
                 for (int i = 0; i < numCharacters; ++i) {
-                    // TODO: Handle this failure case
-                    mRegistry.get<DualResidentComponent>(characters[i]).homeState = SimHomeState::NeedsBlueprint;
+                    SimEntityOperations::simPerformDual(mRegistry, characters[i],
+                        [](entt::registry& registry, entt::entity entity, bool isGameThread) mutable
+                    {
+                        registry.get<DualResidentComponent>(entity).homeState = SimHomeState::NeedsBlueprint;
+
+                    });
                 }
             }
             return true;

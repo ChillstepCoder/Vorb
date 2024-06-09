@@ -73,6 +73,14 @@ void SimChunkTileData::changeTile(ChunkTileIndex pos, TileID id, ui8 variant) {
     }
 }
 
+const SimTileData* SimChunkTileData::tryGetTileData(ChunkTileIndex pos) const {
+    auto&& it = tileIndexToTileData.find(pos);
+    if (it != tileIndexToTileData.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}
+
 void SimChunkTileData::onTileAdded(TileID id, ChunkTileIndex pos) {
     incrementTileQuantity(id, 1);
     TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
@@ -258,6 +266,18 @@ i32v2 SimChunk::tryPickupItemsForReservation(SimChunkTileItemReservation& reserv
         return mItemData.tryPickupItemsForReservation(reservation, maxCount);
     }
     return i32v2(0);
+}
+
+bool SimChunk::hasBlockingTileAtIndex(ChunkTileIndex tileIndex) const {
+    std::shared_lock lock(mMutex); // Critical Section
+    if (!mTileData) {
+        return true; // TODO: OCEAN IS CURRENTLY ALWAYS BLOCKING
+    }
+    if (const SimTileData* tileData = mTileData->tryGetTileData(tileIndex)) {
+        // TODO: Need to set blocking bit still
+        return tileData->flags.isBitSet(SimTileDataFlags::Blocking);
+    }
+    return false;
 }
 
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {

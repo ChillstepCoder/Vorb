@@ -4,6 +4,15 @@
 #include "world/simulation/host/SimECSEvents.h"
 #include "world/simulation/host/SimEntityTransitionManager.h"
 
+#include <future>
+
+using SimEntityOperationFunc = std::function<bool(entt::registry&, entt::entity)>;
+struct SimEntityQueuedOperation {
+    entt::entity entity;
+    std::promise<bool> success;
+    SimEntityOperationFunc func;
+};
+
 class HostSimContext;
 class SimAISystem;
 class SimSettlementSystem;
@@ -44,15 +53,24 @@ public:
     SimSettlementSystem& getSettlementSystem(){ return *mSettlementSystem; }
     World& getWorld() const { return mWorld; }
 
-    void simThreadOnActivateChunk(ChunkID id);
+    // Request the sim thread to do a latent operation, may have a long delay depending on sim backlog and timing
+    // Returns promise which will be set to true or false when operation completes, depending on return value of operationFunc
+    std::future<bool> gameThreadRequestSimEntityOperation(FullEntityBindingComponent& binding, SimEntityOperationFunc operationFunc);
 
-    EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
-    EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
+    void simThreadOnActivateChunk(ChunkID id);
 
     // Returns true if our entity is fully activating, if returned true, position and movement are INVALID
     bool onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
 
+    // ====================================================================================
+    // Events
+    // ====================================================================================
+    EVENT_LISTENER_FUNCS(SimECS, EntityCreated, SimECSEventType::EntityCreated, SimECSEvent);
+    EVENT_LISTENER_FUNCS(SimECS, EntityDestroyed, SimECSEventType::EntityDestroyed, SimECSEvent);
+    
+    // ====================================================================================
     // DEBUGGING
+    // ====================================================================================
     void debugRender(f32v3 cameraPos) const;
     
     mutable std::mutex mDebugDrawMutex;
@@ -62,6 +80,8 @@ public:
     };
     mutable std::vector<DebugDrawSimAgentData> mDebugDrawAgents[2]; // Double buffer
     void addDebugDrawData(DebugDrawSimAgentData data) { ASSERT_SIM_THREAD(); mDebugDrawAgents[1].emplace_back(data); }
+
+
 private:
     void debugRenderInternal() const;
     entt::entity createNewCharacterGroup(std::span<entt::entity> members, int leaderIndex, CharacterGroupType groupType);
@@ -69,6 +89,11 @@ private:
     void onEntityDestroyed(entt::entity entity, SimEntityType type);
 
     SimEntityTransitionManager& mEntityTransitioner;
+
+    // Operations
+    moodycamel::ConcurrentQueue<SimEntityQueuedOperation> mQueuedSimEntityOperations;
+    moodycamel::ConsumerToken mSimThreadConsumerToken;
+    moodycamel::ProducerToken mGameThreadProducerToken;
 
     entt::registry mRegistry;
     TimestampMs mCurrentTickTimestamp = 0;

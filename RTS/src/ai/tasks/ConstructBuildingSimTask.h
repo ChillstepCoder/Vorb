@@ -8,6 +8,8 @@
 #include "tile/TileHarvestable.h"
 #include "ai/jobs/BuildContextTargetData.h"
 
+#include <future>
+
 class BuildingBlueprint;
 class ConstructBuildingSimJob;
 class ConstructBuildingContext;
@@ -25,8 +27,8 @@ public:
 
 	POOLED_ALLOC_DECL();
 
+    SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override;
 	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) override;
-	SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override;
 
 	void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
 	void onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
@@ -35,23 +37,35 @@ public:
 
 private:
 	void initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount);
-	bool simTrySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
 
-	void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
+	bool simTrySelectItemSource(World& world, entt::registry& simRegistry, entt::entity simAgent);
+	void fullTrySelectItemSource(World& world, entt::registry& fullRegistry, entt::entity fullAgent);
 
     void updateMoveToItemStackSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
     void updateMoveToItemStackFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
 
 	void updateMoveToHarvestableSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+	void updateMoveToHarvestableFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
+
 	void updateHarvestSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updateHarvestFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
+
 	void updateMoveToBlueprintSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updateMoveToBlueprintFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
+
 	void updatePlaceItemsSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updatePlaceItemsFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
+
     bool updateSelectToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 	bool updateMoveToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 	void updateConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
 
 	// Some steps may fail for various reasons, this allows retry up to retry count
-	bool onMinorFailCheckCanRecover();
+    bool onMinorFailCheckCanRecoverSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
+    bool onMinorFailCheckCanRecoverFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent);
+
+    void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
+    void cleanupFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, SimTaskTickResult result);
 
 	enum class State {
         Init,
@@ -79,6 +93,10 @@ private:
 	SimpleSimTaskTimer mTimer;
 	BuildContextTargetData mTargetData;
 	i32 mRetryCountRemaining = 3;
+	// Operation
+	std::future<bool> mSimEntityOperationFuture;
+	// TODO: Simple function pointer?
+	std::function<void(World&, entt::registry&, entt::entity, bool)> mSimEntityOperationCompleteFunc;
 	//std::unique_ptr<AquireResourceTask> mAquireResourceSubtask;
 };
 

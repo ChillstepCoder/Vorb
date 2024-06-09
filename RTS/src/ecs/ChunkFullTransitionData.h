@@ -5,12 +5,12 @@
 
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
-using EntityOperationFunc = std::function<void(entt::registry&, entt::entity, bool/*isGameThread*/)>;
+using DualEntityOperationFunc = std::function<void(entt::registry&, entt::entity, bool/*isGameThread*/)>;
 
-namespace EntityOperations {
+namespace SimEntityOperations {
     // Will perform an operation on either sim or game thread, depending on entity
     // simulation state. Call from sim thread
-    void simPerformDual(entt::registry& simRegistry, entt::entity entity, EntityOperationFunc func);
+    void simPerformDual(entt::registry& simRegistry, entt::entity entity, DualEntityOperationFunc func);
 };
 
 // Exists when we have a full entity spawned for this entity
@@ -22,16 +22,21 @@ public:
     // Only call when we are returning to sim control
     void processSimThreadPreRemove(entt::registry& registry, entt::entity entity);
 
-    void simAddOperation(EntityOperationFunc func);
+    void simAddOperation(DualEntityOperationFunc func);
+
+    ui16 getRefCount() const { return refCount; }
+    void incRefCount() { ++refCount; }
+    void decRefCount() { --refCount; }
+
     // We do not store the full entity here as
-    // it is not needed, this is simply for the
-    // sim entity to push information to the full entity
+    // it is not needed
     entt::entity simEntity = entt::null;
 private:
     std::atomic_bool hasQueuedOperations = false;
+    std::atomic_uint16_t refCount = 0;
     // Data passing
     std::mutex mutex;
-    std::queue<EntityOperationFunc> queuedOperations;
+    std::queue<DualEntityOperationFunc> queuedOperations;
 
 };
 

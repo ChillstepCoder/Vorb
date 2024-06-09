@@ -7,7 +7,7 @@
 POOLED_ALLOC_DEF_THREADSAFE(EntityComponentCharacterTransitionData, 256);
 
 
-void EntityOperations::simPerformDual(entt::registry& simRegistry, entt::entity entity, EntityOperationFunc func) {
+void SimEntityOperations::simPerformDual(entt::registry& simRegistry, entt::entity entity, DualEntityOperationFunc func) {
     ASSERT_SIM_THREAD();
     if (FullEntityBindingComponent* bindingCmp = simRegistry.try_get<FullEntityBindingComponent>(entity)) {
         // If we are on the game thread, add operation
@@ -125,7 +125,7 @@ void SimFullEntityBinding::processSimThreadPreRemove(entt::registry& registry, e
     hasQueuedOperations = false;
 }
 
-void SimFullEntityBinding::simAddOperation(EntityOperationFunc func) {
+void SimFullEntityBinding::simAddOperation(DualEntityOperationFunc func) {
     std::lock_guard lock(mutex);
     queuedOperations.push(std::move(func));
     hasQueuedOperations = true;

@@ -31,7 +31,9 @@ enum class ItemAquisitionSourceType : ui8 {
 
 class ConstructBuildingContext {
 public:
-	ConstructBuildingContext(Building& building, SimECS& simEcs);
+	ConstructBuildingContext(Building& building, World& world);
+
+	void init();
 
 	// Tasks are grabbed and returned from here to guarentee no two actors are modifying the same target
 	std::optional<BuildContextTargetData> tryAquireTargetForItem(ItemID itemId);
@@ -39,7 +41,7 @@ public:
 	std::optional<BuildContextTargetData> tryAquireTargetToConstruct();
 	void returnTargetToConstruct(BuildContextTargetData target) {
         assert(target.isValid());
-		tilesToConstruct.push(target);
+		mTilesToConstruct.push(target);
 	}
 
 	bool shouldFlattenTile(TileIndex i) const;
@@ -54,15 +56,20 @@ public:
         std::vector<TileCoord> positions; // For fast distance checks
     };
 
-	SimECS& simEcs;
-    Building& building;
+	f32v2 getClosestValidInteractPosition(f32v2 pos) const;
+
+public:
     BuildingBlueprint& blueprint;
+	World& world;
+    Building& building;
+private:
 	// Reversed vectors for efficient pop_back
-	boost::container::flat_map<ItemID, std::vector<BuildContextTargetData>> itemsToTileTargets;
+	boost::container::flat_map<ItemID, std::vector<BuildContextTargetData>> mItemsToTileTargets;
     boost::container::flat_map<ItemID, ReservedItems> mReservedItems;
-	std::queue<BuildContextTargetData> tilesToConstruct;
-	i32 firstIncompleteFloor = 0;
-    BitArray tilesNeedingFlatten;
+	std::queue<BuildContextTargetData> mTilesToConstruct;
+    BitArray mTilesNeedingFlatten;
+	std::vector<f32v2> mInteractPositions;
+	mutable std::mutex mMutex;
 };
 
 // Step 1: Acquire items for job and fill blueprint + flatten terrain
@@ -70,19 +77,18 @@ public:
 class ConstructBuildingSimJob : public ISimJob {
 	friend class ConstructBuildingSimTask;
 public:
-	ConstructBuildingSimJob(World& world, Building& building, SimECS& simEcs, entt::entity simJobOwner);
+	ConstructBuildingSimJob(World& world, Building& building, entt::entity simJobOwner);
 	~ConstructBuildingSimJob() = default;
 
 	POOLED_ALLOC_DECL(ConstructBuildingSimJob);
 
 	std::unique_ptr<ISimTask> tryAquireNextSubtaskForSimCharacter(entt::registry& simRegistry, entt::entity simCharacter) override;
-	std::unique_ptr<ISimTask> tryAquireNextSubaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
+	std::unique_ptr<ISimTask> tryAquireNextSubtaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
 
 	void onAbortTask(ISimTask& task) override;
 	void onCompleteTask(ISimTask& task) override;
 
 private:
-	void initContext();
 	bool isFinished();
 
 	ConstructBuildingContext mContext;

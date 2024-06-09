@@ -10,7 +10,7 @@ class GameThreadTasks
 {
     friend class GameThread;
 private:
-    GameThreadTasks() = default;
+    GameThreadTasks();
 public:
     GameThreadTasks(GameThreadTasks& other) = delete;
     void operator=(const GameThreadTasks&) = delete;
@@ -29,10 +29,12 @@ public:
     size_t getQueuedProcsApprox() const { return mGameThreadFuncProcs.size_approx(); }
 
 private:
+
     // Task queue
     // TODO: Clear task queues on destroy?
     //  TODO: Priority queues? One high priority queue can be  exhausted faster  than  lower  priority queues, use for input and such
     // Many queues can make up a "Scheduler"  which can try to balance thread time?
     moodycamel::ConcurrentQueue<GameFunction> mGameThreadFuncProcs;
+    moodycamel::ConsumerToken mToken;
 };
 

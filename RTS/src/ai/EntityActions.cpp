@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "AIActions.h"
+#include "EntityActions.h"
 
 #include "world/World.h"
 #include "world/simulation/host/component/SimCharacterComponents.h"
@@ -10,7 +10,7 @@
 // Drop Bundle
 // =====================================================================================================================
 
-void AIActions::dropBundleSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+void EntityActions::dropBundleSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
     ASSERT_SIM_THREAD();
     if (DualResourceBundleComponent* bundle = simRegistry.try_get<DualResourceBundleComponent>(simAgent)) {
         TileCoord worldPos(i32v2(simRegistry.get<SimPositionComponent>(simAgent).getPosition()));
@@ -25,7 +25,8 @@ void AIActions::dropBundleSim(World& world, entt::registry& simRegistry, entt::e
     }
 }
 
-void AIActions::dropBundleFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, IFullECS& ecs) {
+void EntityActions::dropBundleFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
+    IFullECS& ecs = world.getECS();
     ASSERT_GAME_THREAD();
     if (DualResourceBundleComponent* bundle = fullRegistry.try_get<DualResourceBundleComponent>(fullAgent)) {
         TileCoord worldPos(i32v2(fullRegistry.get<SimPositionComponent>(fullAgent).getPosition()));
@@ -34,6 +35,7 @@ void AIActions::dropBundleFull(World& world, entt::registry& fullRegistry, entt:
             assert(bundle->itemStack.itemId != INVALID_ITEM_ID);
             const bool success = world.getSimChunkGrid().tryDropItemStackOnGround(ItemStack(bundle->itemStack), worldPos);
             assert(success);
+            assert(false); // Need to create the item entity?
         }
 
         fullRegistry.remove<DualResourceBundleComponent>(fullAgent);

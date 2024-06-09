@@ -1,5 +1,7 @@
 #pragma once
 
+class RenderContext;
+
 // We enforce no std::function so that we can avoid heap allocations and use singleton_pool for task allocations
 typedef void(*RenderFunction)(class RenderContext& context, void*);
 
@@ -38,13 +40,17 @@ public:
             task();
         }
     }
-
+    
 private:
+    void processRenderThread(RenderContext& context);
+
+    bool hasToken = false;
     // Task queue
     // TODO: Clear task queues on destroy?
     // TODO: Investigate performance of https://gitlab.com/rmettler/cpp_delegates instead
     moodycamel::ConcurrentQueue<std::pair<RenderFunction, void*>> mRenderThreadProcs;
     moodycamel::ConcurrentQueue<std::function<void()>> mShutdownTasks;
+    moodycamel::ConsumerToken mToken;
 
     static RenderThreadTasks* sInstance;
 };

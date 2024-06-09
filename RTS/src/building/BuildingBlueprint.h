@@ -109,7 +109,10 @@ private:
     // Item tracking
     i32 totalItemsUnfulfilled = 0;
     i32 totalItemsUnpromised = 0;
-    i32 totalTargetsUnbuilt = 0;
+    // Atomic for ConstructBuildingSimJob::isFinished
+    std::atomic<i32> totalTargetsUnbuilt = 0;
+
+    std::mutex mutex;
 
     /*
 

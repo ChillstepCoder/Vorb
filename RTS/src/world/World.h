@@ -115,6 +115,7 @@ public:
     TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const;
+    f32 getTerrainHeightAtPoint(f32v2 worldPos) const;
 
     // Queries
     bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);

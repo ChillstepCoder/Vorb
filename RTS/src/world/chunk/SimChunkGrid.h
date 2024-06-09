@@ -67,6 +67,8 @@ public:
     TileItemUID tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos);
     SimChunkTileItemReservationPtr tryReserveItemStack(TileCoord worldPos, TileItemUID uid, ItemID itemId, ui16 quantity);
 
+    bool hasBlockingTileAtWorldPos(TileCoord worldPos) const;
+
     // For memory tracking only
     void onNewChunkAllocated() { ++mTotalSimulatingChunks; }
 private:

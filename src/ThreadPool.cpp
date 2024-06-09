@@ -40,9 +40,10 @@ void vcore::ThreadPool::clearTasks() {
 
 void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
     std::function<void()> task;
+    moodycamel::ConsumerToken ctok(mTasks);
     while (!thisThread->mStop.load()) {
         // Note that threads will be stuck waiting here until the process ends
-        mTasks.wait_dequeue(task);
+        mTasks.wait_dequeue(ctok, task);
         ++mRunningThreads;
         // No task pointer means the thread should stop
         if (!task) {

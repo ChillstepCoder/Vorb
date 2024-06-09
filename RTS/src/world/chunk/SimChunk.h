@@ -42,6 +42,7 @@ private:
     // Used by ChunkGenerator
     SimTileDataMap::iterator removeTileDuringIter(SimTileDataMap::iterator iter);
     void changeTile(ChunkTileIndex pos, TileID id, ui8 variant);
+    const SimTileData* tryGetTileData(ChunkTileIndex pos) const;
 
 private:
     BINARY_SERIALIZE();
@@ -164,6 +165,8 @@ public:
     SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity);
     // Returns <picked up count, remaining count>
     [[nodiscard]] i32v2 tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount);
+
+    bool hasBlockingTileAtIndex(ChunkTileIndex tileIndex) const;
 
     bool isSimulating() const { return mIsSimulating; }
     void setSimulating(bool simulating) { mIsSimulating = simulating; }

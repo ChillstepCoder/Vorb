@@ -31,8 +31,8 @@ public:
 private:
 
     // Creates necessary data and destroys component on sim entity
-    EntityFullTransitionData prepareEntityForSimTransition(entt::entity entity);
-    EntityFullTransitionData prepareCharacterEntityForSimTransition(entt::entity entity);
+    EntityFullTransitionData prepareEntityForFullTransition(entt::entity entity);
+    EntityFullTransitionData prepareCharacterEntityForFullTransition(entt::entity entity);
 
     // ====================================================================
     // Data

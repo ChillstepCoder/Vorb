@@ -22,8 +22,9 @@
 #include "debugging/DebugRenderer.h"
 
 SimECS::SimECS(HostSimContext& hostSimContext) :
-    mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()), mEntityTransitioner(hostSimContext.getEntityTransitionManager()
-) {
+    mHostSimContext(hostSimContext), mWorld(hostSimContext.getWorld()), mEntityTransitioner(hostSimContext.getEntityTransitionManager()),
+    mSimThreadConsumerToken(mQueuedSimEntityOperations), mGameThreadProducerToken(mQueuedSimEntityOperations)
+{
     mAISystem = std::make_unique<SimAISystem>(hostSimContext, *this, mRegistry);
     mSettlementSystem = std::make_unique<SimSettlementSystem>(hostSimContext, *this, mRegistry);
     mEntitiesInChunks.resize(mWorld.getTotalChunks());
@@ -40,6 +41,28 @@ SimECS::~SimECS() {
 void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     ASSERT_SIM_THREAD();
     PROFILE_FUNCTION();
+
+    // Process queued operations
+    constexpr ui32 MAX_OPERATIONS_PER_TICK = 1024;
+    SimEntityQueuedOperation operations[MAX_OPERATIONS_PER_TICK];
+    if (size_t count = mQueuedSimEntityOperations.try_dequeue_bulk(mSimThreadConsumerToken, operations, MAX_OPERATIONS_PER_TICK)) {
+        for (size_t i = 0; i < count; ++i) {
+            SimEntityQueuedOperation& op = operations[i];
+            // If we dont have a taskqueue, it means this entity is queued for destroy
+            if (mRegistry.all_of<DualTaskQueueComponent>(op.entity)) {
+                op.success.set_value(op.func(mRegistry, op.entity));
+            }
+            else {
+                op.success.set_value(false);
+            }
+
+            SimFullEntityBinding* binding = mRegistry.get<FullEntityBindingComponent>(op.entity).binding;
+            binding->decRefCount();
+            if (binding->getRefCount() == 0) {
+                mRegistry.remove<FullEntityBindingComponent>(op.entity);
+            }
+        }
+    }
 
     mDebugDrawAgents[1].clear();
 
@@ -164,6 +187,16 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
     onEntityDestroyed(group, SimEntityType::Group);
     mRegistry.remove<CharacterGroupLeaderComponent>(groupCmp.leader);
     mRegistry.destroy(group);
+}
+
+std::future<bool> SimECS::gameThreadRequestSimEntityOperation(FullEntityBindingComponent& binding, SimEntityOperationFunc operationFunc) {
+    ASSERT_GAME_THREAD();
+
+    binding.binding->incRefCount();
+    SimEntityQueuedOperation newOperation{ binding.binding->simEntity, std::promise<bool>(), operationFunc};
+    std::future<bool> future = newOperation.success.get_future();
+    mQueuedSimEntityOperations.enqueue(mGameThreadProducerToken, std::move(newOperation));
+    return future;
 }
 
 void SimECS::simThreadOnActivateChunk(ChunkID id) {
@@ -299,6 +332,11 @@ entt::entity SimECS::createNewCharacterGroup(std::span<entt::entity> members, in
 }
 
 void SimECS::onEntityDestroyed(entt::entity entity, SimEntityType type) {
+    // If we hit this its because we need to put entities on a destroy list while they have refcount
+    if (mRegistry.all_of<FullEntityBindingComponent>(entity)) [[unlikely]] {
+        panic("Sim entity {} of type {} is being destroyed while it has a refcount", (ui32)entity, (ui32)type);
+    }
+
     SimPositionComponent& p = mRegistry.get<SimPositionComponent>(entity);
     EntityVector& entityList = mEntitiesInChunks[p.chunk];
 

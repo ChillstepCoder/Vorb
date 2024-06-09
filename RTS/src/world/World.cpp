@@ -33,6 +33,7 @@
 #include "world/ecosystem/FishEcosystem.h"
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/SimECS.h"
 #include "world/road/TerrainSurfaceGrid.h"
 #include "serialization/gamesave/WorldSaveContext.h"
 #include "weather/WeatherManager.h"
@@ -382,6 +383,10 @@ TileHandle World::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
 
 TileHandle World::getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const {
     return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y));
+}
+
+f32 World::getTerrainHeightAtPoint(f32v2 worldPos) const {
+    return mHeightmapGrid->computeHeightAtPoint<true>(worldPos);
 }
 
 bool World::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {

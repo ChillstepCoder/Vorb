@@ -11,10 +11,38 @@
 
 #include <boost/pool/singleton_pool.hpp>
 
+void RenderThreadTasks::processRenderThread(RenderContext& context){
+    ASSERT_RENDER_THREAD();
+
+    // TODO: We could bulk dequeue more, and then
+    // process them in a loop until we hit a time limit,
+    // and hold onto the unprocessed ones until the next frame
+    constexpr int BULK_DEQUEUE_SIZE = 4;
+    std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
+
+    constexpr f32 MAX_PROCESS_TIME_MS = 8.0f;
+    PreciseTimer timer;
+    // TODO: Use optik for profiling?
+    do {
+        if (size_t count = mRenderThreadProcs.try_dequeue_bulk(mToken, procs, BULK_DEQUEUE_SIZE)) {
+            for (size_t i = 0; i < count; ++i) {
+                procs[i].first(context, procs[i].second);
+            }
+        }
+        else {
+            break;
+        }
+    } while (timer.stop() < MAX_PROCESS_TIME_MS);
+
+    if (timer.stop() > 16.0f) {
+        std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
+    }
+    checkGlError("RenderThreadTasks::processRenderThread");
+}
+
 RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;
 
-RenderThreadTasks::RenderThreadTasks()
-{
+RenderThreadTasks::RenderThreadTasks() : mToken(mRenderThreadProcs) {
 
 }
 

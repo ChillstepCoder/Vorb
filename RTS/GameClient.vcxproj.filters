@@ -1101,7 +1101,7 @@
     <ClCompile Include="src\resources\asset\LiteAssetRef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ai\AIActions.cpp">
+    <ClCompile Include="src\ai\EntityActions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\SimChunkTileItemReservation.cpp">
@@ -2747,7 +2747,7 @@
     <ClInclude Include="src\ecs\component\StaticModelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ai\AIActions.h">
+    <ClInclude Include="src\ai\EntityActions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\item\SimChunkTileItemReservation.h">

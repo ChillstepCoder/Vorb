@@ -28,7 +28,7 @@ void SimEntityTransitionManager::markSimEntityForTransition(entt::entity entity)
     ASSERT_SIM_THREAD();
 
     const ChunkID chunkId = mContext.getECS().mRegistry.get<SimPositionComponent>(entity).getChunk();
-    mQueuedFullTransitions[chunkId].entities.emplace_back(prepareEntityForSimTransition(entity));
+    mQueuedFullTransitions[chunkId].entities.emplace_back(prepareEntityForFullTransition(entity));
 }
 
 void SimEntityTransitionManager::markChunkSimEntitiesForTransition(ChunkID chunkId) {
@@ -45,7 +45,7 @@ void SimEntityTransitionManager::markChunkSimEntitiesForTransition(ChunkID chunk
     for (size_t i = 0; i < chunkEntities.size(); ++i) {
         assert(ecs.mRegistry.get<SimPositionComponent>(chunkEntities[i]).getChunk() == chunkId);
         assert(ecs.mWorld.getChunkIDAtWorldPos(ecs.mRegistry.get<SimPositionComponent>(chunkEntities[i]).getPosition()) == chunkId);
-        activateEntities.emplace_back(prepareEntityForSimTransition(chunkEntities[i]));
+        activateEntities.emplace_back(prepareEntityForFullTransition(chunkEntities[i]));
     }
 
     // Free memory
@@ -106,10 +106,15 @@ void SimEntityTransitionManager::transitionEntitiesToSimFromFull(ChunkID chunkId
         // Process and remove binding once entity is fully constructed and can process any tasks properly
         FullEntityBindingComponent& binding = ecs.mRegistry.get<FullEntityBindingComponent>(dd.simEntity);
         binding.binding->processSimThreadPreRemove(ecs.mRegistry, dd.simEntity);
-        ecs.mRegistry.remove<FullEntityBindingComponent>(dd.simEntity);
+        binding.binding->decRefCount();
 
-        auto&& it = mFullEntityBindings.find(dd.simEntity);
-        mFullEntityBindings.erase(it);
+        if (binding.binding->getRefCount() == 0) {
+            auto&& it = mFullEntityBindings.find(dd.simEntity);
+            assert(&it->second == binding.binding);
+
+            mFullEntityBindings.erase(it);
+            ecs.mRegistry.remove<FullEntityBindingComponent>(dd.simEntity);
+        }
     }
 }
 
@@ -127,10 +132,16 @@ void SimEntityTransitionManager::transitionEntityToSimFromFull(ChunkID chunkId, 
     // Process and remove binding
     FullEntityBindingComponent& binding = ecs.mRegistry.get<FullEntityBindingComponent>(transitionData.simEntity);
     binding.binding->processSimThreadPreRemove(ecs.mRegistry, transitionData.simEntity);
+    binding.binding->decRefCount();
 
-    auto&& it = mFullEntityBindings.find(transitionData.simEntity);
-    mFullEntityBindings.erase(it);
-    ecs.mRegistry.remove<FullEntityBindingComponent>(transitionData.simEntity);
+    if (binding.binding->getRefCount() == 0) {
+        auto&& it = mFullEntityBindings.find(transitionData.simEntity);
+        assert(&it->second == binding.binding);
+
+        mFullEntityBindings.erase(it);
+        ecs.mRegistry.remove<FullEntityBindingComponent>(transitionData.simEntity);
+    }
+
     transitionData.characterData->moveToEntity(mContext.getWorld(), ecs.mRegistry, transitionData.simEntity, false /*isFull*/);
 }
 
@@ -177,29 +188,30 @@ void SimEntityTransitionManager::onEntitySimTransitionFailed(ChunkID chunkId, co
 
 }
 
-EntityFullTransitionData SimEntityTransitionManager::prepareEntityForSimTransition(entt::entity entity) {
+EntityFullTransitionData SimEntityTransitionManager::prepareEntityForFullTransition(entt::entity entity) {
     ASSERT_SIM_THREAD();
 
     SimECS& ecs = mContext.getECS();
     switch (ecs.mRegistry.get<SimEntityTypeComponent>(entity).type) {
         case SimEntityType::Character:
-            return prepareCharacterEntityForSimTransition(entity);
+            return prepareCharacterEntityForFullTransition(entity);
         default:
             panic("Invalid entity type {} in SimEntityTransitionManager::prepareEntityForSimTransition", (int)ecs.mRegistry.get<SimEntityTypeComponent>(entity).type);
     }
 }
 
-EntityFullTransitionData SimEntityTransitionManager::prepareCharacterEntityForSimTransition(entt::entity entity) {
+EntityFullTransitionData SimEntityTransitionManager::prepareCharacterEntityForFullTransition(entt::entity entity) {
     SimECS& ecs = mContext.getECS();
     EntityFullTransitionData rv;
 
     // Create binding
     SimFullEntityBinding& binding = mFullEntityBindings[entity];
     binding.simEntity = entity;
+    binding.incRefCount();
 
     rv.moveFromSimEntity(ecs.mRegistry, entity, binding);
 
     // Creating the binding will fully mark us as a "full" entity, and our entity operations will go to the game thread
-    ecs.mRegistry.emplace<FullEntityBindingComponent>(entity).binding = &binding;
+    ecs.mRegistry.get_or_emplace<FullEntityBindingComponent>(entity).binding = &binding;
     return rv;
 }

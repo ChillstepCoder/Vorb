@@ -77,7 +77,21 @@ ISimTask* SimTaskHandle::getOrAquireActiveTaskForSimCharacter(World& world, entt
 ISimTask* SimTaskHandle::getOrAquireActiveTaskForFullCharacter(World& world, entt::registry& fullRegistry, entt::entity fullCharacter) {
     ASSERT_GAME_THREAD();
     assert(mDidInit);
-    panic("getOrAquireActiveTaskForFullCharacter NOT IMPLEMENTED");
+    assert(mDidInit);
+    if (mIsJob) {
+        if (mTask) {
+            return mTask.get();
+        }
+        mTask = mJob->tryAquireNextSubtaskForFullCharacter(fullRegistry, fullCharacter);
+        if (mTask) {
+            return mTask.get();
+        }
+        // Signals that we are done with the job
+        return nullptr;
+    }
+    else {
+        return mTask.get();
+    }
 }
 
 bool SimTaskHandle::isFinished() {

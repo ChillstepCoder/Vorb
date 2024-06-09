@@ -497,26 +497,7 @@ void RenderContext::updateRenderThreadProcs() {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
 
-    RenderThreadTasks& instance = RenderThreadTasks::getInstance();
-    std::pair<RenderFunction, void*> proc;
-
-    constexpr f32 MAX_PROCESS_TIME_MS = 16.0f;
-    PreciseTimer timer;
-    // TODO: Use optik for profiling?
-    do {
-        if (RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue(proc)) {
-            proc.first(*this, proc.second);
-        }
-        else {
-            break;
-        }
-    } while (timer.stop() < MAX_PROCESS_TIME_MS);
-
-    if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
-    }
-    checkGlError("updateRenderThreadProcs");
-
+    RenderThreadTasks::getInstance().processRenderThread(*this);
 }
 
 void RenderContext::renderPassWorldDebug(const Camera3D& camera) const {

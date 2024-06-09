@@ -5,8 +5,13 @@
 #include "building/Building.h"
 #include "world/World.h"
 
+#include "ecs/component/FullEntityBindingComponent.h"
+#include "ecs/component/PositionComponent.h"
+
 #include "world/simulation/host/component/SimCharacterComponents.h"
 #include "world/simulation/host/component/SimSettlementComponents.h"
+#include "world/simulation/host/HostSimContext.h"
+#include "world/simulation/host/SimECS.h"
 #include "world/IHeightmapGrid.h"
 
 #include "world/chunk/SimChunkGrid.h"
@@ -16,13 +21,16 @@
 #include "item/ItemDef.h"
 #include "resources/TileRepository.h"
 
-#include "ai/AIActions.h"
+#include "ai/EntityActions.h"
 #include "ai/jobs/ConstructBuildingSimJob.h"
 
 POOLED_ALLOC_DEF_THREADSAFE(ConstructBuildingSimTask, 256);
 
+// TODO: Do all TODO in this file
 
 constexpr i32 TMP_CARRY_COUNT = 6;
+
+constexpr f32 MIN_BLUEPRINT_INTERACT_RADIUS = 0.5f;
 
 ConstructBuildingSimTask::ConstructBuildingSimTask(
     World& world, ConstructBuildingSimJob& parentJob, entt::registry& registry, entt::entity agent, bool isSim
@@ -34,7 +42,7 @@ ConstructBuildingSimTask::ConstructBuildingSimTask(
         }
     }
     else {
-        assert(false); // Full not implemented
+        fullTrySelectItemSource(world, registry, agent);
     }
 }
 
@@ -45,53 +53,8 @@ ConstructBuildingSimTask::~ConstructBuildingSimTask()
     }
 }
 
-SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
-    assert(mCurrentResult == SimTaskTickResult::InProgress);
-
-    switch (mState) {
-        case State::Init:
-            assert(false);
-            break;
-        case State::MoveToItemStack:
-            updateMoveToItemStackFull(world, fullRegistry, fullAgent, elapsedSec);
-            break;
-        case State::MoveToHarvestable:
-            //updateMoveToHarvestableSim(world, simRegistry, simAgent, elapsedSec);
-            break;
-        case State::Harvest: {
-            //updateHarvestSim(world, simRegistry, simAgent, elapsedSec);
-            break;
-        }
-        case State::MoveToBlueprint: {
-            //updateMoveToBlueprintSim(world, simRegistry, simAgent, elapsedSec);
-            break;
-        }
-        case State::PlaceItems:
-           // updatePlaceItemsSim(world, simRegistry, simAgent, elapsedSec);
-            break;
-        case State::SelectToConstruct: {
-            // If false we fallthrough
-            /*if (updateSelectToConstructSim(world, simRegistry, simAgent, elapsedSec)) {
-                break;
-            }*/
-            [[fallthrough]];
-        }
-        case State::MoveToConstruct: {
-            /* if (updateMoveToConstructSim(world, simRegistry, simAgent, elapsedSec)) {
-                 break;
-             }*/
-            [[fallthrough]];
-        }
-        case State::Construct: {
-            //updateConstructSim(world, simRegistry, simAgent, elapsedSec);
-            break;
-        }
-    }
-    static_assert(e_count(State) == 10, "Update switch statement");
-    return mCurrentResult;
-}
-
 SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
+    ASSERT_SIM_THREAD();
     assert(mCurrentResult == SimTaskTickResult::InProgress);
 
     switch (mState) {
@@ -137,6 +100,71 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
     return mCurrentResult;
 }
 
+SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    ASSERT_GAME_THREAD();
+    assert(mCurrentResult == SimTaskTickResult::InProgress);
+
+    if (mSimEntityOperationFuture.valid()) {
+        std::future_status status = mSimEntityOperationFuture.wait_for(std::chrono::seconds(0));
+        assert(status != std::future_status::deferred);
+        if (status == std::future_status::ready) {
+            bool success = mSimEntityOperationFuture.get();
+            if (mSimEntityOperationCompleteFunc) {
+                // Move so we can clear it and allow the func to set mSimEntityOperationCompleteFunc
+                auto func = std::move(mSimEntityOperationCompleteFunc);
+                mSimEntityOperationCompleteFunc = nullptr;
+                func(world, fullRegistry, fullAgent, success);
+            }
+        }
+        else {
+            // Waiting
+            return SimTaskTickResult::InProgress;
+        }
+    }
+
+    switch (mState) {
+        case State::Init:
+            assert(false);
+            break;
+        case State::MoveToItemStack:
+            updateMoveToItemStackFull(world, fullRegistry, fullAgent, elapsedSec);
+            break;
+        case State::MoveToHarvestable:
+            updateMoveToHarvestableFull(world, fullRegistry, fullAgent, elapsedSec);
+            break;
+        case State::Harvest: {
+            updateHarvestFull(world, fullRegistry, fullAgent, elapsedSec);
+            break;
+        }
+        case State::MoveToBlueprint: {
+            updateMoveToBlueprintFull(world, fullRegistry, fullAgent, elapsedSec);
+            break;
+        }
+        case State::PlaceItems:
+            updatePlaceItemsFull(world, fullRegistry, fullAgent, elapsedSec);
+            break;
+        case State::SelectToConstruct: {
+            // If false we fallthrough
+            /*if (updateSelectToConstructSim(world, simRegistry, simAgent, elapsedSec)) {
+                break;
+            }*/
+            [[fallthrough]];
+        }
+        case State::MoveToConstruct: {
+            /* if (updateMoveToConstructSim(world, simRegistry, simAgent, elapsedSec)) {
+                 break;
+             }*/
+            [[fallthrough]];
+        }
+        case State::Construct: {
+            //updateConstructSim(world, simRegistry, simAgent, elapsedSec);
+            break;
+        }
+    }
+    static_assert(e_count(State) == 10, "Update switch statement");
+    return mCurrentResult;
+}
+
 void ConstructBuildingSimTask::onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
     switch (mState) {
         case State::Init:
@@ -156,6 +184,10 @@ void ConstructBuildingSimTask::onTransitionToFull(World& world, entt::registry& 
 }
 
 void ConstructBuildingSimTask::onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+
+    // Make sure we ignore any pending operation
+    mSimEntityOperationFuture = {};
+    mSimEntityOperationCompleteFunc = nullptr;
 
     mMoveSubtask.onTransitionToSim(simRegistry, simAgent);
 
@@ -214,9 +246,11 @@ void ConstructBuildingSimTask::initItemPromise(FillableSimpleItemStack& blueprin
     // Notify blueprint when we increase our promised amount
     reservationPair.target->bindUpdateFunction([this](ItemReservationUpdateType type, ItemID id, i32 quantity) {
         if (type == ItemReservationUpdateType::PromiseIncrease) {
+            // Item composition count and itemID cannot change so do not need lock
             for (i32 i = 0; i < mContext.blueprint.itemCompositionCount; ++i) {
                 FillableSimpleItemStack& itemStack = mContext.blueprint.itemComposition[i];
                 if (itemStack.itemId == id) {
+                    std::lock_guard lock(mContext.blueprint.mutex);
                     assert(itemStack.getMaxPromiseSize() >= 0);
                     itemStack.promisedQuantity += quantity;
                     mContext.blueprint.totalItemsUnpromised -= quantity;
@@ -226,9 +260,11 @@ void ConstructBuildingSimTask::initItemPromise(FillableSimpleItemStack& blueprin
             }
         }
         else if (type == ItemReservationUpdateType::FulfillCount) {
+            // Item composition count and itemID cannot change so do not need lock
             for (i32 i = 0; i < mContext.blueprint.itemCompositionCount; ++i) {
                 FillableSimpleItemStack& itemStack = mContext.blueprint.itemComposition[i];
                 if (itemStack.itemId == id) {
+                    std::lock_guard lock(mContext.blueprint.mutex);
                     assert(itemStack.getMaxPromiseSize() >= 0);
                     itemStack.filledQuantity += quantity;
                     assert(itemStack.promisedQuantity >= quantity);
@@ -248,6 +284,7 @@ void ConstructBuildingSimTask::initItemPromise(FillableSimpleItemStack& blueprin
 
     // Init promised quantity if it hasn't already been done
     if (shouldUpdateBPCount) {
+        std::lock_guard lock(mContext.blueprint.mutex);
         blueprintStack.promisedQuantity += itemToFill.count;
         mContext.blueprint.totalItemsUnpromised -= itemToFill.count;
     }
@@ -330,12 +367,102 @@ bool ConstructBuildingSimTask::simTrySelectItemSource(World& world, entt::regist
     return false;
 }
 
-void ConstructBuildingSimTask::cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result) {
-    AIActions::dropBundleSim(world, simRegistry, simAgent);
-    mState = State::End;
-    mBlueprintItemPromise.reset();
-    mBlueprintItemTargetHandle.reset();
-    mCurrentResult = result;
+void ConstructBuildingSimTask::fullTrySelectItemSource(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
+    FullEntityBindingComponent& bindingCmp = fullRegistry.get<FullEntityBindingComponent>(fullAgent);
+    
+    assert(!mSimEntityOperationFuture.valid());
+    TileCoord position(i32v2(fullRegistry.get<PositionComponent>(fullAgent).mPosition));
+
+    // On Complete
+    mSimEntityOperationCompleteFunc = [this](World& world, entt::registry& fullRegistry, entt::entity fullAgent, bool success) {
+        if (success) {
+            if (mTileHarvestReservation) {
+                assert(!mTileItemReservation);
+                // TODO: Dynamic success radius based on the tile size?
+                f32v2 worldPos2D = mTileHarvestReservation->getLiteTileHandle().getWorldPosition2D(world);
+                constexpr f32 SUCCESS_RADIUS = 2.0f;
+                mMoveSubtask.initFull(f32v3(worldPos2D.x, worldPos2D.y, world.getTerrainHeightAtPoint(worldPos2D)), SUCCESS_RADIUS);
+                mState = State::MoveToHarvestable;
+            }
+            else {
+                assert(mTileItemReservation);
+                ChunkLiteTileHandle tileHandle(mTileItemReservation->getChunkID(), mTileItemReservation->getTileIndex());
+                f32v2 worldPos2D = tileHandle.getWorldPosition2D(world);
+                constexpr f32 SUCCESS_RADIUS = 2.0f;
+                mMoveSubtask.initFull(f32v3(worldPos2D.x, worldPos2D.y, world.getTerrainHeightAtPoint(worldPos2D)), SUCCESS_RADIUS);
+                mState = State::MoveToItemStack;
+            }
+        }
+        else {
+            mState = State::SelectToConstruct;
+        }
+    };
+
+    // Begin operation
+    mSimEntityOperationFuture = world.tryGetHostSimContext()->getECS().gameThreadRequestSimEntityOperation(bindingCmp, [this, &world, position](entt::registry& simRegistry, entt::entity simAgent) {
+        BuildingBlueprint& blueprint = mContext.blueprint;
+        entt::entity settlementEntity = blueprint.parentSettlement;
+        assert(settlementEntity != entt::null);
+        SettlementHarvestableTrackerComponent& harvestTracker = simRegistry.get<SettlementHarvestableTrackerComponent>(settlementEntity);
+
+        const TileCoord settlementCenter = simRegistry.get<SettlementSimComponent>(settlementEntity).getCenterPos(world.getWidthChunks());
+
+        SimChunkGrid& simGrid = world.getSimChunkGrid();
+
+        // Check item pickup first
+        if (mTileItemReservation = mContext.tryGetClosestItemToPickup(TMP_CARRY_COUNT, position)) {
+            constexpr f32 SUCCESS_RADIUS = 2.0f;
+            bool found = false;
+            for (int i = 0; i < blueprint.itemCompositionCount; ++i) {
+                if (blueprint.itemComposition[i].itemId == mTileItemReservation->getItemID()) {
+                    // The context already tracked and updated the count, no need to do it twice
+                    initItemPromise(blueprint.itemComposition[i], mTileItemReservation->getReservedCount(), false /*shouldUpdateBPCount*/);
+                    found = true;
+                    break;
+                }
+            }
+            assert(found);
+
+            return true;
+        }
+
+        // Determine what we should harvest
+        // Send characters to harvestables if we need more items
+        if (blueprint.totalItemsUnpromised != 0) {
+            i32 itemCompIndex = 0;
+            i32 neededCount = 0;
+            for (; itemCompIndex < blueprint.itemCompositionCount; ++itemCompIndex) {
+                FillableSimpleItemStack& blueprintStack = blueprint.itemComposition[itemCompIndex];
+                neededCount = blueprintStack.getMaxPromiseSize();
+                if (neededCount > 0) {
+
+                    // Check harvestable
+                    if (blueprintStack.harvestableType != TileHarvestable::None) {
+                        mTileHarvestReservation = harvestTracker.tryReserveNearestHarvestable(
+                            blueprintStack.harvestableType, settlementCenter, simGrid
+                        );
+                    }
+                    else {
+                        assert(false); // Need to handle non harvestables
+                    }
+                    // Check if we managed to reserve a tile for harvest
+                    if (mTileHarvestReservation) {
+                        mHarvestableToAquire = blueprintStack.harvestableType;
+                        break;
+                    }
+                }
+            }
+
+            // Make item reservation now that we have a worthy tile to harvest
+            if (mTileHarvestReservation) {
+                FillableSimpleItemStack& blueprintStack = blueprint.itemComposition[itemCompIndex];
+                initItemPromise(blueprintStack, glm::min(neededCount, TMP_CARRY_COUNT), true /*shouldUpdateBPCount*/);
+                return true;
+            }
+        }
+        mState = State::SelectToConstruct;
+        return false;
+    });
 }
 
 void ConstructBuildingSimTask::updateMoveToItemStackSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
@@ -348,7 +475,7 @@ void ConstructBuildingSimTask::updateMoveToItemStackSim(World& world, entt::regi
 
             if (simRegistry.all_of<DualResourceBundleComponent>(simAgent)) {
                 // Drop old bundle
-                AIActions::dropBundleSim(world, simRegistry, simAgent);
+                EntityActions::dropBundleSim(world, simRegistry, simAgent);
             }
 
             DualResourceBundleComponent& bundle = simRegistry.emplace<DualResourceBundleComponent>(simAgent);
@@ -357,7 +484,8 @@ void ConstructBuildingSimTask::updateMoveToItemStackSim(World& world, entt::regi
             bundle.itemStack.harvestableType = mHarvestableToAquire;
 
             mState = State::MoveToBlueprint;
-            mMoveSubtask.initSim(simRegistry, simAgent, mContext.blueprint.getCenterPosTile().v, 32.0f);
+            const f32v2 targetPos = mContext.getClosestValidInteractPosition(simRegistry.get<SimPositionComponent>(simAgent).getPosition());
+            mMoveSubtask.initSim(simRegistry, simAgent, targetPos, MIN_BLUEPRINT_INTERACT_RADIUS);
             // Free reservation of the tile item
             mTileItemReservation.reset();
         }
@@ -381,7 +509,7 @@ void ConstructBuildingSimTask::updateMoveToItemStackFull(World& world, entt::reg
 
                 if (fullRegistry.all_of<DualResourceBundleComponent>(fullAgent)) {
                     // Drop old bundle
-                    AIActions::dropBundleFull(world, fullRegistry, fullAgent, world.getECS());
+                    EntityActions::dropBundleFull(world, fullRegistry, fullAgent);
                 }
 
                 DualResourceBundleComponent& bundle = fullRegistry.emplace<DualResourceBundleComponent>(fullAgent);
@@ -390,23 +518,21 @@ void ConstructBuildingSimTask::updateMoveToItemStackFull(World& world, entt::reg
                 bundle.itemStack.harvestableType = mHarvestableToAquire;
 
                 mState = State::MoveToBlueprint;
-                mMoveSubtask.initFull(mContext.blueprint.getCenterPosTile().v, 32.0f);
+                const f32v2 targetPos = mContext.getClosestValidInteractPosition(fullRegistry.get<PositionComponent>(fullAgent).mPosition);
+                f32v3 pos3D(targetPos.x, targetPos.y, world.getTerrainHeightAtPoint(targetPos));
+                mMoveSubtask.initFull(pos3D, MIN_BLUEPRINT_INTERACT_RADIUS);
 
                 mTileItemReservation.reset();
             }
-            x;
-            //else if (!simTrySelectItemSource(world, simRegistry, simAgent)) {
-            //    // Couldnt find the item, so lets see if we can construct
-            //    mState = State::SelectToConstruct;
-            //}
+            else {
+                fullTrySelectItemSource(world, fullRegistry, fullAgent);
+            }
 
             break;
         }
         case SimTaskTickResult::Fail: {
-            if (onMinorFailCheckCanRecover()) {
-                /*if (!fullTrySelectItemSource(world, fullRegistry, fullAgent)) {
-                    mState = State::SelectToConstruct;
-                }*/
+            if (onMinorFailCheckCanRecoverFull(world, fullRegistry, fullAgent)) {
+                fullTrySelectItemSource(world, fullRegistry, fullAgent);
             }
             break;
         }
@@ -431,6 +557,39 @@ void ConstructBuildingSimTask::updateMoveToHarvestableSim(World& world, entt::re
         mState = State::Harvest;
         // TODO: Estimate duration better
         mTimer.begin(10.0f);
+    }
+}
+
+void ConstructBuildingSimTask::updateMoveToHarvestableFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    SimTaskTickResult moveResult = mMoveSubtask.tickFull(world, fullRegistry, fullAgent, elapsedSec);
+    switch (moveResult) {
+        case SimTaskTickResult::InProgress:
+            break;
+        case SimTaskTickResult::Success: {
+            // Check if harvestable still exists
+            SimTileData tileData = mTileHarvestReservation->getCurrentTileDataCopy();
+            if (tileData.tileId == TILE_ID_NONE ||
+                TileRepository::get().getLoadedOrUnloadedAsset(tileData.tileId).harvestable != mHarvestableToAquire) {
+                // TODO: Instead fall back to finding new tile
+                LOG_WARN("Need to find new tile in harvest state for construct blueprint due to lost harvestable");
+                cleanupSim(world, fullRegistry, fullAgent, SimTaskTickResult::Fail);
+                return;
+            }
+
+            mState = State::Harvest;
+            // TODO: Real damage
+            mTimer.begin(10.0f);
+            break;
+        }
+        case SimTaskTickResult::Fail: {
+            if (onMinorFailCheckCanRecoverFull(world, fullRegistry, fullAgent)) {
+                fullTrySelectItemSource(world, fullRegistry, fullAgent);
+            }
+            break;
+        }
+        default:
+            assert(false);
+            break;
     }
 }
 
@@ -486,7 +645,7 @@ void ConstructBuildingSimTask::updateHarvestSim(World& world, entt::registry& si
 
                 if (bundle.itemStack.itemId != INVALID_ITEM_ID) {
                     LOG_WARN("Dropping old bundle");
-                    AIActions::dropBundleSim(world, simRegistry, simAgent);
+                    EntityActions::dropBundleSim(world, simRegistry, simAgent);
                 }
                 bundle.itemStack.itemId = itemAsset.getAssetID();
                 bundle.itemStack.count = quantity;
@@ -503,7 +662,84 @@ void ConstructBuildingSimTask::updateHarvestSim(World& world, entt::registry& si
         }
 
         mState = State::MoveToBlueprint;
-        mMoveSubtask.initSim(simRegistry, simAgent, mContext.blueprint.getCenterPosTile().v, 32.0f);
+        const f32v2 targetPos = mContext.getClosestValidInteractPosition(simRegistry.get<SimPositionComponent>(simAgent).getPosition());
+        mMoveSubtask.initSim(simRegistry, simAgent, targetPos, MIN_BLUEPRINT_INTERACT_RADIUS);
+    }
+}
+
+void ConstructBuildingSimTask::updateHarvestFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    if (mTimer.tick(elapsedSec)) {
+        const TileID clearedTileID = mTileHarvestReservation->tryClearHarvestable(mHarvestableToAquire);
+        if (clearedTileID == TILE_ID_NONE) {
+            // TODO: Instead fall back to finding new tile
+            LOG_WARN("Need to find new tile in full harvest state for construct blueprint");
+            cleanupFull(world, fullRegistry, fullAgent, SimTaskTickResult::Fail);
+            return;
+        }
+
+        // TODO: Inventory Operations helper?
+        constexpr i32 MAX_ROLL_RESULTS = 16;
+        ItemRollTable::Result rollResults[MAX_ROLL_RESULTS];
+        const i32 resultCount = TileRepository::get().getLoadedOrUnloadedAsset(clearedTileID).itemDrops.roll(std::span(rollResults, MAX_ROLL_RESULTS));
+        if (!resultCount) {
+            LOG_WARN("Failed item drop result on construct blueprint task");
+            cleanupFull(world, fullRegistry, fullAgent, SimTaskTickResult::Fail);
+            return;
+        }
+
+        // Figure out which of the items we desire
+        i32 bundleSelect = -1;
+        for (i32 i = 0; i < resultCount; ++i) {
+            const ItemAssetRef itemAsset = rollResults[i].value;
+            if (mBlueprintItemPromise->desiresItem(itemAsset.getAssetID())) {
+                bundleSelect = i;
+                break;
+            }
+        }
+
+        // Equip desired item, drop the rest
+        // TODO: Keep other items for ourselves?
+        for (i32 i = 0; i < resultCount; ++i) {
+            const ItemAssetRef itemAsset = rollResults[i].value;
+            i32 quantity = rollResults[i].quantity;
+            if (i == bundleSelect) {
+                DualResourceBundleComponent& bundle = fullRegistry.get_or_emplace<DualResourceBundleComponent>(fullAgent);
+                // TODO use StatsComponent?
+                if (quantity > TMP_CARRY_COUNT) {
+                    // Drop extra on floor
+                    i32 quantityToDrop = quantity - TMP_CARRY_COUNT;
+                    TileCoord worldPos(i32v2(fullRegistry.get<PositionComponent>(fullAgent).mPosition));
+                    ItemStack dropItem(itemAsset.getAssetID(), quantityToDrop);
+
+                    // TODO: Spawn actual entity
+                    TileItemUID newItemUid = world.getSimChunkGrid().tryDropItemStackOnGround(dropItem, worldPos);
+                    assert(newItemUid != INVALID_TILE_ITEM_UID);
+                    mContext.trackItemIfNeeded(newItemUid, itemAsset.getAssetID(), worldPos, quantityToDrop);
+                    quantity -= quantityToDrop;
+                }
+
+                if (bundle.itemStack.itemId != INVALID_ITEM_ID) {
+                    LOG_WARN("Dropping old bundle");
+                    EntityActions::dropBundleFull(world, fullRegistry, fullAgent);
+                }
+                bundle.itemStack.itemId = itemAsset.getAssetID();
+                bundle.itemStack.count = quantity;
+                bundle.itemStack.harvestableType = mHarvestableToAquire; // TODO: ensure this is correct?
+            }
+            else {
+                // Drop unneeded stack on floor
+                TileCoord worldPos(i32v2(fullRegistry.get<PositionComponent>(fullAgent).mPosition));
+                ItemStack dropItem(itemAsset.getAssetID(), quantity);
+                TileItemUID newItemUid = world.getSimChunkGrid().tryDropItemStackOnGround(dropItem, worldPos);
+                assert(newItemUid != INVALID_TILE_ITEM_UID);
+                mContext.trackItemIfNeeded(newItemUid, itemAsset.getAssetID(), worldPos, quantity);
+            }
+        }
+
+        mState = State::MoveToBlueprint;
+        const f32v2 targetPos = mContext.getClosestValidInteractPosition(fullRegistry.get<PositionComponent>(fullAgent).mPosition);
+        f32v3 pos3D(targetPos.x, targetPos.y, world.getTerrainHeightAtPoint(targetPos));
+        mMoveSubtask.initFull(pos3D, 8.0f);
     }
 }
 
@@ -544,6 +780,61 @@ void ConstructBuildingSimTask::updateMoveToBlueprintSim(World& world, entt::regi
             cleanupSim(world, simRegistry, simAgent, SimTaskTickResult::Fail);
             return;
         }
+    }
+}
+
+void ConstructBuildingSimTask::updateMoveToBlueprintFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
+    SimTaskTickResult moveResult = mMoveSubtask.tickFull(world, fullRegistry, fullAgent, elapsedSec);
+    switch (moveResult) {
+        case SimTaskTickResult::InProgress:
+            break;
+        case SimTaskTickResult::Success: {
+            if (DualResourceBundleComponent* bundle = fullRegistry.try_get<DualResourceBundleComponent>(fullAgent)) {
+                SimpleItemStack& bundleItem = bundle->itemStack;
+
+                // We have extra items, let the BP know we intend to use them!
+                i32 existingPromiseSize = mBlueprintItemPromise->getRemainingQuantity(bundleItem.itemId);
+                const i32 countDiff = bundleItem.count - existingPromiseSize;
+                if (countDiff > 0) {
+                    const i32 promiseIncrease = glm::min(countDiff, mContext.blueprint.getMaxPromiseSize(bundleItem.itemId));
+                    if (!mBlueprintItemPromise->tryIncreasePromisedQuantity(bundleItem.itemId, promiseIncrease)) {
+                        LOG_WARN("Already fulfilled our promise in MoveToBlueprint");
+                        cleanupFull(world, fullRegistry, fullAgent, SimTaskTickResult::Fail);
+                        return;
+                    }
+                }
+
+                std::optional<BuildContextTargetData> targetData = mContext.tryAquireTargetForItem(bundleItem.itemId);
+                if (targetData) {
+                    mTargetData = *targetData;
+                    assert(mTargetData.isValid());
+                    const f32v2 targetPosWorld2D = mContext.building.getTileWorldPos(mTargetData.targetIndex);
+                    const f32v3 targetPosWorld(targetPosWorld2D.x, targetPosWorld2D.y, world.getTerrainHeightAtPoint(targetPosWorld2D));
+                    mMoveSubtask.initFull(targetPosWorld, 1.0f);
+                    mState = State::PlaceItems;
+                }
+                else {
+                    // No valid target to build, drop bundle and fall back to construction
+                    LOG_WARN("No valid target for item in construct blueprint task, need impl drop bundle");
+                    mState = State::SelectToConstruct;
+                }
+            }
+            else {
+                // Lost our bundle somehow...
+                LOG_WARN("Lost bundle in construct blueprint task");
+                cleanupFull(world, fullRegistry, fullAgent, SimTaskTickResult::Fail);
+                return;
+            }
+            break;
+        }
+        case SimTaskTickResult::Fail: {
+            if (onMinorFailCheckCanRecoverFull(world, fullRegistry, fullAgent)) {
+                fullTrySelectItemSource(world, fullRegistry, fullAgent);
+            }
+            break;
+        }
+        default:
+            break;
     }
 }
 
@@ -596,6 +887,11 @@ void ConstructBuildingSimTask::updatePlaceItemsSim(World& world, entt::registry&
             return;
         }
     }
+}
+
+void ConstructBuildingSimTask::updatePlaceItemsFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec)
+{
+    assert(false);
 }
 
 bool ConstructBuildingSimTask::updateSelectToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
@@ -676,13 +972,42 @@ void ConstructBuildingSimTask::updateConstructSim(World& world, entt::registry& 
     }
 }
 
-bool ConstructBuildingSimTask::onMinorFailCheckCanRecover() {
+bool ConstructBuildingSimTask::onMinorFailCheckCanRecoverSim(World& world, entt::registry& simRegistry, entt::entity simAgent) {
+    ASSERT_SIM_THREAD();
     if (mRetryCountRemaining == 0) {
-        mCurrentResult = SimTaskTickResult::Fail;
+        cleanupSim(world, simRegistry, simAgent, SimTaskTickResult::Fail);
         return false;
     }
     else {
         --mRetryCountRemaining;
         return true;
     }
+}
+
+bool ConstructBuildingSimTask::onMinorFailCheckCanRecoverFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
+    ASSERT_GAME_THREAD();
+    if (mRetryCountRemaining == 0) {
+        cleanupFull(world, fullRegistry, fullAgent, SimTaskTickResult::Fail);
+        return false;
+    }
+    else {
+        --mRetryCountRemaining;
+        return true;
+    }
+}
+
+void ConstructBuildingSimTask::cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result) {
+    EntityActions::dropBundleSim(world, simRegistry, simAgent);
+    mState = State::End;
+    mBlueprintItemPromise.reset();
+    mBlueprintItemTargetHandle.reset();
+    mCurrentResult = result;
+}
+
+void ConstructBuildingSimTask::cleanupFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, SimTaskTickResult result) {
+    EntityActions::dropBundleFull(world, fullRegistry, fullAgent);
+    mState = State::End;
+    mBlueprintItemPromise.reset();
+    mBlueprintItemTargetHandle.reset();
+    mCurrentResult = result;
 }

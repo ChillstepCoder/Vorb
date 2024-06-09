@@ -1,7 +1,8 @@
 #pragma once
 
 enum class SimTileDataFlags : ui8 {
-    Reserved = BIT(0)
+    Reserved = BIT(0),
+    Blocking = BIT(1),
 };
 
 struct SimTileData {

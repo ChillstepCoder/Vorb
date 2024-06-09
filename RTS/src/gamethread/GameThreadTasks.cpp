@@ -10,6 +10,10 @@
 
 #include "options/DebugOptions.h"
 
+GameThreadTasks::GameThreadTasks() : mToken(mGameThreadFuncProcs) {
+
+}
+
 GameThreadTasks& GameThreadTasks::getInstance() {
     static GameThreadTasks sInstance;
     return sInstance;
@@ -22,7 +26,7 @@ void GameThreadTasks::updateMainThread() {
     // TODO: Use optik for profiling
     constexpr f32 BUDGET_MS = 3.0f;
     do {
-        if (const size_t count = GameThreadTasks::getInstance().mGameThreadFuncProcs.try_dequeue_bulk(procsCapture, BULK_DEQUEUE_SIZE)) {
+        if (const size_t count = mGameThreadFuncProcs.try_dequeue_bulk(mToken, procsCapture, BULK_DEQUEUE_SIZE)) {
             for (size_t i = 0; i < count; ++i) {
                 procsCapture[i]();
             }

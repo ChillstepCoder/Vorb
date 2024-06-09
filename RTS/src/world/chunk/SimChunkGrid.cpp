@@ -207,6 +207,11 @@ SimChunkTileItemReservationPtr SimChunkGrid::tryReserveItemStack(TileCoord world
     return mChunkData[id].tryReserveItemStack(uid, itemId, quantity);
 }
 
+bool SimChunkGrid::hasBlockingTileAtWorldPos(TileCoord worldPos) const {
+    const auto [chunkId, tileIndex] = worldPos.toChunkTileIndexAndChunkID(mWidthChunks);
+    return mChunkData[chunkId].hasBlockingTileAtIndex(tileIndex);
+}
+
 void SimChunkGrid::initInternal() {
     mSpatialGrid.init(CHUNK_WIDTH, mWidthChunks);
     mTotalChunks = SQ(mSpatialGrid.getGridWidthCells());

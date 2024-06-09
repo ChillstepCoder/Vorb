@@ -84,7 +84,7 @@ void FullAISystem::updateTask(entt::entity entity, DualTaskQueueComponent& taskC
     }
 
     // Operate on task
-    SimTaskTickResult tickResult = taskCmp.activeTask->tickSim(mWorld, mRegistry, entity, mElapsedSec);
+    SimTaskTickResult tickResult = taskCmp.activeTask->tickFull(mWorld, mRegistry, entity, mElapsedSec);
     if (tickResult != SimTaskTickResult::InProgress) {
         if (tickResult == SimTaskTickResult::Success) {
             taskCmp.taskQueue.front().onActiveSubtaskFinished(taskCmp.activeTask);

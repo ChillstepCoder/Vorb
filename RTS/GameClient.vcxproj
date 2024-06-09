@@ -219,7 +219,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\ai\AIActions.cpp" />
+    <ClCompile Include="src\ai\EntityActions.cpp" />
     <ClCompile Include="src\ai\jobs\ConstructBuildingSimJob.cpp" />
     <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp" />
     <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
@@ -592,7 +592,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
-    <ClInclude Include="src\ai\AIActions.h" />
+    <ClInclude Include="src\ai\EntityActions.h" />
     <ClInclude Include="src\ai\gpt\GptApi.h" />
     <ClInclude Include="src\ai\jobs\BuildContextTargetData.h" />
     <ClInclude Include="src\ai\jobs\ConstructBuildingSimJob.h" />

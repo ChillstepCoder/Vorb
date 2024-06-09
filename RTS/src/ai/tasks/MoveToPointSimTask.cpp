@@ -47,6 +47,7 @@ SimTaskTickResult MoveToChunkPointSimSubtask::tickFull(World& world, entt::regis
         f32 zHeightTarget = world.getHeightmapGrid().computeHeightAtPoint<true>(mWorldPosTarget);
 
         mNavPathID = navCmp.requestCoarsePath(posCmp.mPosition, f32v3(mWorldPosTarget.x, mWorldPosTarget.y, zHeightTarget));
+        return SimTaskTickResult::InProgress;
     }
     else if (navCmp.getCurrentNavPathID() == mNavPathID) {
         // Check if our pathing task is done
@@ -67,12 +68,10 @@ SimTaskTickResult MoveToChunkPointSimSubtask::tickFull(World& world, entt::regis
                 break;
         }
     }
-    else {
-        // If we get here, our path was interrupted by another path task
-        mWorldPosTarget = f32v2(-1.0f);
-        return SimTaskTickResult::Fail;
-    }
-
+    
+    // If we get here, our path was interrupted by another path task
+    mWorldPosTarget = f32v2(-1.0f);
+    return SimTaskTickResult::Fail;
 }
 
 SimTaskTickResult MoveToChunkPointSimSubtask::tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) {
