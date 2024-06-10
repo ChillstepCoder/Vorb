@@ -130,7 +130,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
                                 IFullECS& ecs = world->getECS();
                                 PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                                cmp.requestCoarsePath(physCmp.getPosition(), worldPos);
+                                cmp.requestCoarsePath(physCmp.getPosition(), worldPos, 1.0f);
                             });
                         }
                         else {
@@ -281,7 +281,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                         IFullECS& ecs = data->first->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D());
+                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), 1.0f);
                     }
                     delete data;
                 });

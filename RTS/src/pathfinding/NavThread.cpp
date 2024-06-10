@@ -53,14 +53,14 @@ void NavThread::clearTasks() {
     while (mPathTasks.try_dequeue(args));
 }
 
-void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, std::function<void()>&& mainProc) {
-    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, f32 targetRadius, std::function<void()> mainProc) {
+    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse, targetRadius), std::move(mainProc)));
 }
 
-void NavThread::addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void()>&& mainProc) {
-    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, harvestable, maxDistance), std::move(mainProc)));
+// TODO: DEPRECATED? TARGETRADIUS WRONG?
+void NavThread::addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void()> mainProc) {
+    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, harvestable, maxDistance, 1.0f), std::move(mainProc)));
 }
-
 
 // Yield CPU resources
 constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
@@ -68,7 +68,6 @@ constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
 void NavThread::navThreadFunc() {
     NAV_THREAD_ID = std::this_thread::get_id();
     setThreadName("Nav");
-
 
     NavThreadPathArgs pathArgs;
     LOG_CRITICAL("TODO: Fix srvWorld assert in NavThread::navThreadFunc");
@@ -86,11 +85,11 @@ void NavThread::navThreadFunc() {
             const PathArgs& args = pathArgs.first;
             switch (args.type) {
                 case PathRequestType::FINE: {
-                    mPathFinder->generateFinePathSynchronous(args.start, args.goal, *args.pathToBuild);
+                    mPathFinder->generateFinePathSynchronous(args.start, args.goal, args.targetRadiusSQ, *args.pathToBuild);
                     break;
                 }
                 case PathRequestType::COARSE: {
-                    mPathFinder->generateCoarsePathSynchronous(args.start, args.goal, *args.pathToBuild);
+                    mPathFinder->generateCoarsePathSynchronous(args.start, args.goal, args.targetRadiusSQ, *args.pathToBuild);
                     break;
                 }
                 case PathRequestType::COARSE_HARVESTABLE: {

@@ -170,11 +170,14 @@ World::~World() {
 
 void World::onWorldBeginGame(const f32v2& loadCenter) {
 
-    // Nav
+    // Host specific init
     if (mNetMode == WorldNetMode::Host) {
         mNavWorld = std::make_unique<NavWorld>(*this);
         Services::NavThread::ref().init(*mNavWorld);
+
+        mSimChunkGrid->setWorld(this);
     }
+
 
     assert(!mDidBegin);
     mDidBegin = true;
@@ -343,10 +346,12 @@ TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileSpatialGrid().getTileIndexFromXYZOffset(x, y, 0));
         assert(worldPos2D.x >= 0.0f && worldPos2D.y >= 0.0f);
-        if (Building* structure = tryGetStructureAtWorldPos(TileCoord(worldPos2D))) {
-            TileHandle structureHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(worldPos);
-            if (structureHandle.isValid() && structure->isTileOwned(structureHandle.tileIndex)) {
-                return structureHandle;
+        if (Building* building = tryGetStructureAtWorldPos(TileCoord(worldPos2D))) {
+            if (building->getTileContainer()) {
+                TileHandle structureHandle = building->getTileContainer()->tryGetTileHandleAtWorldPos(worldPos);
+                if (structureHandle.isValid() && building->isTileOwned(structureHandle.tileIndex)) {
+                    return structureHandle;
+                }
             }
         }
         return baseHandle;

@@ -1,21 +1,22 @@
 #pragma once
 
 #include "util/StrtokenEncodeTable.h"
+#include <boost/functional/hash.hpp> // For boost::hash_combine
 
 constexpr ui64 strTokenEncodeChar(const char c) {
     return (ui64)sStrtokenEncodeTable[c];
 }
 
-constexpr int MAX_CHARS_IN_STRTOKEN = 20;
+constexpr int MAX_CHARS_IN_STRTOKEN = 30;
 
 const constexpr char* DEBUG_STR_EMPTY = "EMPTY";
 
-// Constexpr 64 bit compressed lower case 21 character string with optional 4 digit integer at end
+// Constexpr 64 bit compressed lower case 20 character string
 // For fast comparison and serialization
 class StrToken
 {
 public:
-    constexpr StrToken() : mTokenLow(0u), mTokenHigh(0u) {}
+    constexpr StrToken() : mTokenLow(0u), mTokenMid(0ull), mTokenHigh(0u) {}
     explicit StrToken(const nString& str);
 
     // Guarenteed consteval initialization
@@ -34,7 +35,7 @@ public:
             ((N > 9 ? strTokenEncodeChar(str[8]) : 0ull) << 48) |
             ((N > 10 ? strTokenEncodeChar(str[9]) : 0ull) << 54)
         ),
-        mTokenHigh(
+        mTokenMid(
             ((N > 11 ? strTokenEncodeChar(str[10]) : 0ull)) |
             ((N > 12 ? strTokenEncodeChar(str[11]) : 0ull) << 6) |
             ((N > 13 ? strTokenEncodeChar(str[12]) : 0ull) << 12) |
@@ -45,8 +46,19 @@ public:
             ((N > 18 ? strTokenEncodeChar(str[17]) : 0ull) << 42) |
             ((N > 19 ? strTokenEncodeChar(str[18]) : 0ull) << 48) |
             ((N > 20 ? strTokenEncodeChar(str[19]) : 0ull) << 54)
-
-        ) 
+        ),
+        mTokenHigh(
+            ((N > 21 ? strTokenEncodeChar(str[20]) : 0ull)) |
+            ((N > 22 ? strTokenEncodeChar(str[21]) : 0ull) << 6) |
+            ((N > 23 ? strTokenEncodeChar(str[22]) : 0ull) << 12) |
+            ((N > 24 ? strTokenEncodeChar(str[23]) : 0ull) << 18) |
+            ((N > 25 ? strTokenEncodeChar(str[24]) : 0ull) << 24) |
+            ((N > 26 ? strTokenEncodeChar(str[25]) : 0ull) << 30) |
+            ((N > 27 ? strTokenEncodeChar(str[26]) : 0ull) << 36) |
+            ((N > 28 ? strTokenEncodeChar(str[27]) : 0ull) << 42) |
+            ((N > 29 ? strTokenEncodeChar(str[28]) : 0ull) << 48) |
+            ((N > 30 ? strTokenEncodeChar(str[29]) : 0ull) << 54)
+        )
     { static_assert(N <= MAX_CHARS_IN_STRTOKEN + 1 /*null terminator*/);
     UNUSED(DUMMY_FORCE_CONSTEXPR);
 #ifdef DEBUG
@@ -55,27 +67,29 @@ public:
     }
 
     explicit StrToken(const char* str);
-    explicit StrToken(const char* str, size_t len) : mTokenHigh(0ull), mTokenLow(0ull) {
+    explicit StrToken(const char* str, size_t len) : mTokenHigh(0ull), mTokenMid(0ull), mTokenLow(0ull) {
         initFromStrInternal(str, len);
     }
-    explicit StrToken(std::string_view s) : mTokenHigh(0ull), mTokenLow(0ull) {
+    explicit StrToken(std::string_view s) : mTokenHigh(0ull), mTokenMid(0ull), mTokenLow(0ull) {
         initFromStrInternal(s.data(), s.size());
     }
 
     bool operator==(const StrToken& rhs) const {
-        return mTokenLow == rhs.mTokenLow && mTokenHigh == rhs.mTokenHigh;
+        return mTokenLow == rhs.mTokenLow && mTokenMid == rhs.mTokenMid && mTokenHigh == rhs.mTokenHigh;
     }
     bool operator<(const StrToken& rhs) const {
-        return mTokenLow < rhs.mTokenLow || (mTokenLow == rhs.mTokenLow && mTokenHigh < rhs.mTokenHigh);
+        if (mTokenLow != rhs.mTokenLow) return mTokenLow < rhs.mTokenLow;
+        if (mTokenMid != rhs.mTokenMid) return mTokenMid < rhs.mTokenMid;
+        return mTokenHigh < rhs.mTokenHigh;
     }
 
     // Buffer length must be at least MAX_CHARS_IN_STRTOKEN
     void toString(OUT char* outStr, OUT ui32* outLength) const;
     nString toString() const;
 
-    bool isValid() const { return mTokenLow != 0ull || mTokenHigh != 0ull; }
+    bool isValid() const { return mTokenLow != 0ull || mTokenMid != 0ull || mTokenHigh != 0ull; }
     void clear() {
-        mTokenLow = mTokenHigh = 0ull;
+        mTokenLow = mTokenMid = mTokenHigh = 0ull;
 #ifdef DEBUG
         DEBUG_STR = DEBUG_STR_EMPTY;
 #endif
@@ -85,6 +99,7 @@ public:
 
 protected:
     ui64 mTokenLow;  // Lower 64 bits
+    ui64 mTokenMid; // Upper 64 bits
     ui64 mTokenHigh; // Upper 64 bits
 #ifdef DEBUG
     // Debug str only works for constexpr strings since we cant own the string data
@@ -96,16 +111,20 @@ protected:
 
 };
 #ifdef DEBUG
-static_assert(sizeof(StrToken) == 24);
+static_assert(sizeof(StrToken) == 32);
 #else
-static_assert(sizeof(StrToken) == 16);
+static_assert(sizeof(StrToken) == 24);
 #endif
 
 namespace std {
     template <>
     struct hash<StrToken> {
         auto operator()(const StrToken& token) const -> size_t {
-            return hash<ui64>{}(token.mTokenLow) ^ (hash<ui64>{}(token.mTokenHigh));
+            size_t seed = 0;
+            boost::hash_combine(seed, std::hash<ui64>()(token.mTokenLow));
+            boost::hash_combine(seed, std::hash<ui64>()(token.mTokenMid));
+            boost::hash_combine(seed, std::hash<ui64>()(token.mTokenHigh));
+            return seed;
         }
     };
 }

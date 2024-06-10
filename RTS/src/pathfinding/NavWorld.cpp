@@ -837,12 +837,24 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
             // If this chunk no longer has dependencies and we aren't about to remesh and add dependency back, renavmesh it
             if (--mChunkPendingBuildingNavmeshCounts[id] == 0 && !didRecreate) {
                 const Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
-                auto&& pit = mPendingDirtyTileContainers.find(chunk.getTileContainer());
-                if (pit != mPendingDirtyTileContainers.end()) {
-                    mPendingDirtyTileContainers.erase(pit);
-                    // Only navmesh the chunk if it is in pending, as otherwise we can't
-                    // guarentee that it is even valid
-                    tryBeginNavmeshTaskForContainer(chunk.getTileContainer());
+                if (chunk.tryAquireThreadSafe()) { // Inc ref
+                    const TileContainer* container = chunk.getTileContainer();
+                    if (container->mIsGeneratingNavmesh) {
+                        // We already are have a ref from nav, don't need this.
+                        chunk.decRef();
+                    } else {
+                        auto&& pit = mPendingDirtyTileContainers.find(container);
+                        if (pit != mPendingDirtyTileContainers.end()) {
+                            mPendingDirtyTileContainers.erase(pit);
+                            // Only navmesh the chunk if it is in pending, as otherwise we can't
+                            // guarentee that it is even valid
+                            tryBeginNavmeshTaskForContainer(chunk.getTileContainer());
+                        }
+                        else {
+                            // We already are have a ref from nav, don't need this.
+                            chunk.decRef();
+                        }
+                    }
                 }
             }
         }

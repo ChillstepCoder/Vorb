@@ -186,7 +186,7 @@ struct FineNodeData {
 };
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal, OUT NavPath& path) {
+bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadiusSQ, OUT NavPath& path) {
     PROFILE_FUNCTION();
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
@@ -224,7 +224,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
 
     // Add start node to the open list
     openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startWorldPos, goalWorldPos));
-    nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ LiteTileHandle() /*parent*/, 0}));
+    nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ LiteTileHandle() /*parent*/, 0 }));
 
     int TOTAL = 0;
 
@@ -262,10 +262,10 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
 
             f32 pathWeight = 1.0f;
             const i32v2& adjOffset = NODE_OFFSETS[dir];
-            
+
             LiteTileHandle adjHandle;
             TileFineNavData adjFineNavData;
-            
+
             Cartesian cartesian4 = CARTESIAN8_TO_CARTESIAN[dir];
             const TileFineNavEdgeType edgeType = fineNavData.getEdgeType(cartesian4);
             bool isExternal = (edgeType == TileFineNavEdgeType::EXTERIOR);
@@ -277,7 +277,11 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
 
                 const ContainerNavData* outNavData = nullptr;
                 adjHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(offset + containerNavData.worldPos, &outNavData);
-                assert(adjHandle.containerId != handle.containerId);
+                // Can occur when we have ledges internally
+                // TODO: Evaluate if we can mark these ledges as internal
+                if (adjHandle.containerId == handle.containerId) [[unlikely]] {
+                    continue;
+                }
                 if (outNavData) {
                     assert(outNavData->containerId != handle.containerId);
                     adjFineNavData = outNavData->fineNavGraph[adjHandle.index];
@@ -438,7 +442,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     return true;
 }
 
-bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, OUT NavPath& path) {
+bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadiusSQ, OUT NavPath& path) {
     PROFILE_FUNCTION();
     ASSERT_NAV_THREAD();
     assert(path.numPoints == 0); // Should be uninitialized
@@ -729,11 +733,14 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                     continue;
                 }
                 assert(outerNavData);
-                // This should be impossible and is a failure case for this edge, TODO: debug log it or something?
+                // This can happen if we have a ledge, failure case
+                // TODO: Evaluate if we can mark these ledges as internal
                 if (outerTileHandle.containerId == navData.containerId) {
-                    LOG_CRITICAL("outerTileHandle.containerId == navData.containerId in PathFinder::coarseAStarEdgePropagate.Adding red debug draw line to world at edge");
-                    DebugRenderer::drawLineBetweenPointsThreadSafe(edgePosWorld, worldPosOuter, COLOR_RED, 200000);
-                    __debugbreak();
+                    /* LOG_CRITICAL("outerTileHandle.containerId == navData.containerId in PathFinder::coarseAStarEdgePropagate.Adding red debug draw line to world at edge");
+                     DebugRenderer::drawLineBetweenPointsThreadSafe(edgePosWorld, worldPosOuter, color4(1.0f, 0.0f, 0.0f, 0.6f), 200000);
+                     DebugRenderer::drawWireQuadThreadSafe(worldPosOuter, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.6f), 200000);
+                     DebugRenderer::drawLineBetweenPointsThreadSafe(edgePosWorld, edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)], color4(0.0f, 0.0f, 1.0f, 0.6f), 200000);
+                     __debugbreak();*/
                     continue;
                 }
                 // Add this as a new valid node if needed

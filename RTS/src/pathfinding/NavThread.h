@@ -30,7 +30,7 @@ struct BuildingPathArgs {
 
 struct PathArgs {
     PathArgs() {};
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, const f32v3& end, bool isCoarse) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, const f32v3& end, bool isCoarse, f32 targetRadiusSQ) :
         pathToBuild(pathToBuild),
         start(start),
         goal(end) {
@@ -41,7 +41,7 @@ struct PathArgs {
             type = PathRequestType::FINE;
         }
     }
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, TileHarvestable harvestable, f32 maxDistance) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, TileHarvestable harvestable, f32 targetRadiusSQ, f32 maxDistance) :
         pathToBuild(pathToBuild),
         start(start),
         goalHarvestable(harvestable),
@@ -59,6 +59,7 @@ struct PathArgs {
         };
     };
     PathRequestType type;
+    f32 targetRadiusSQ;
 };
 
 // TODO: we can definitely replace std::function with a function pointer that takes TileContainerID as parameter
@@ -77,8 +78,8 @@ public:
     /// Clears all unprocessed tasks from the task queue
     void clearTasks();
 
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, std::function<void()>&& mainProc);
-    void addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void()>&& mainProc);
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, f32 targetRadius, std::function<void()> mainProc);
+    void addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void()> mainProc);
 
     size_t getTasksSizeApprox() const { return mPathTasks.size_approx(); }
     size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }

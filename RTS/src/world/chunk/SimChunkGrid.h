@@ -38,6 +38,8 @@ public:
     SimChunkGrid(ui32 worldWidthTiles);
     ~SimChunkGrid();
 
+    void setWorld(World* world);
+
     ui32 getApproxMemoryUsageBytes() const;
 
     const SimChunk& getChunk(ChunkID chunkId) const {
@@ -64,7 +66,8 @@ public:
 
     // Items
     // On fail returns INVALID_TILE_ITEM_UID
-    TileItemUID tryDropItemStackOnGround(ItemStack stack, TileCoord worldPos);
+    TileItemUID tryDropItemStackOnGroundSimThread(ItemStack stack, TileCoord worldPos);
+    TileItemUID tryDropItemStackOnGroundGameThread(ItemStack stack, f32v3 worldPos);
     SimChunkTileItemReservationPtr tryReserveItemStack(TileCoord worldPos, TileItemUID uid, ItemID itemId, ui16 quantity);
 
     bool hasBlockingTileAtWorldPos(TileCoord worldPos) const;
@@ -74,6 +77,7 @@ public:
 private:
     void initInternal();
 
+    World* mWorld = nullptr;
     std::atomic<ui32> mTotalSimulatingChunks = 0;
     ui32 mWorldWidthTiles;
     ui32 mWidthChunks = 0;

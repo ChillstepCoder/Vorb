@@ -113,13 +113,13 @@ void NavigationSystem::onPathingFinished(NavigationComponent& navCmp, CharacterC
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal) {
+void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal, f32 targetRadius) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
         std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
         assert(Services::isUsingNav());
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle, &world]() {
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, targetRadius, [pathHandle, &world]() {
 
 			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(world.getHeightmapGrid())));
 
@@ -132,7 +132,7 @@ void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent&
 	}
     else {
         assert(Services::isUsingNav());
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, nullptr);
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, targetRadius, nullptr);
 	}
 }
 
@@ -178,7 +178,7 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos);
+		requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos, navCmp.mTargetRadius);
 
     }
     else {
@@ -213,7 +213,7 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
 					if (simEndChunk != INVALID_CHUNK_ID) {
 						// Check if our target sim chunk is still a sim chunk or if we should re-path if its valid
 						if (world.getChunkGrid().getChunk(simEndChunk).isActivated()) {
-							navCmp.requestCoarsePath(pos, navCmp.mCoarsePath->getTargetPosition());
+							navCmp.requestCoarsePath(pos, navCmp.mCoarsePath->getTargetPosition(), navCmp.mTargetRadius);
 						}
 						else {
 							navCmp.setSimpleLinearTargetPoint(navCmp.mCoarsePath->getTargetPosition());
@@ -227,7 +227,7 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
                 else {
 					// Path forward
                     nextCoarseTilePos = points[navCmp.mCurrentCoarsePoint];
-                    requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos);
+                    requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos, navCmp.mTargetRadius);
                 }
 			}
 		}
@@ -283,16 +283,17 @@ void NavigationComponent::setSimpleLinearTargetPoint(f32v3 targetPoint) {
 	}
 }
 
-NavPathID NavigationComponent::requestCoarsePath(f32v3 start, f32v3 goal) {
+NavPathID NavigationComponent::requestCoarsePath(f32v3 start, f32v3 goal, f32 targetRadius) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
 	mTargetPosition = goal;
+	mTargetRadius = targetRadius;
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
     assert(Services::isUsingNav());
 	mStatus = NavigationStatus::IN_PROGRESS;
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
-    Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, nullptr);
+    Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, targetRadius, nullptr);
     return incrementNavPathID();
 }
 

@@ -25,13 +25,7 @@ public:
     void notifyWorldSaveFinished();
     fs::path getSavesDirectory();
 private:
-    fs::path getTemplatesDirectory();
     void saveThreadFunc();
-
-    void saveHeightData(World& world);
-    void saveWorldTemplateV0(World& world);
-    void serializeWorldTemplateData(World& world, BBuffer& templateData, ui32 version);
-    void compressAndWriteFile(const fs::path& filename, const BBuffer& data);
 
     moodycamel::BlockingConcurrentQueue<std::function<void()>> mDiskIOTasks;
     std::atomic_bool mIsSavingWorld = false;

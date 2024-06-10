@@ -6,8 +6,8 @@
 class MoveToChunkPointSimSubtask {
 public:
 
-    void initSim(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius);
-    void initFull(f32v2 worldPos, f32 successRadius);
+    void initSim(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius, f32 targetRadius);
+	void initFull(f32v2 worldPos, f32 successRadius, f32 targetRadius);
 
     void onTransitionToSim(entt::registry& simRegistry, entt::entity simAgent);
 
@@ -17,11 +17,12 @@ public:
     f32v2 mWorldPosTarget = f32v2(-1.0f);
     f32 mSuccessRadiusSQ = -1.0f;
 	NavPathID mNavPathID = INVALID_NAV_PATH_ID;
+	f32 mTargetRadius = false;
 };
 
 class MoveToPointSimTask : public ISimTask {
 public:
-	MoveToPointSimTask(entt::registry& registry, entt::entity agent, f32v2 worldPos, f32 successRadius, bool isFull);
+	MoveToPointSimTask(entt::registry& registry, entt::entity agent, f32v2 worldPos, f32 successRadius, bool isFull, f32 targetRadius);
 
     POOLED_ALLOC_DECL();
 

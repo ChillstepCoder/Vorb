@@ -182,7 +182,7 @@ private:
     SimChunkState mState = SimChunkState::NONE;
     ChunkID mChunkID;
     mutable std::atomic_flag mIsSaveUpToDate = ATOMIC_FLAG_INIT;
-    bool mIsSimulating = true;
+    std::atomic_bool mIsSimulating = true;
     TileContainerEventDispatcher::Handle mEditTilesEventHandle;
     SimChunkItemData mItemData;
 

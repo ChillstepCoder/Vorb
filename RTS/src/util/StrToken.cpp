@@ -71,17 +71,18 @@ inline constexpr const char sStrtokenDecodeTable[64] = {
     '_',  // 63
 };
 
-StrToken::StrToken(const nString& str) : mTokenHigh(0ull), mTokenLow(0ull) {
+StrToken::StrToken(const nString& str) : mTokenLow(0ull), mTokenMid(0ull), mTokenHigh(0ull) {
     initFromStrInternal(str.data(), str.size());
 }
 
-StrToken::StrToken(const char* str) : mTokenHigh(0ull), mTokenLow(0ull) {
+StrToken::StrToken(const char* str) : mTokenLow(0ull), mTokenMid(0ull), mTokenHigh(0ull) {
     initFromStrInternal(str, strlen(str));
 }
 
 void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
     // Remove index
     ui64 valHigh = mTokenHigh;
+    ui64 valMid = mTokenMid;
     ui64 valLow = mTokenLow;
     
     ui32 i = 0;
@@ -89,6 +90,11 @@ void StrToken::toString(OUT char* outStr, OUT ui32* outLength) const {
         char c = char(valLow & 0x3full);
         outStr[i] = sStrtokenDecodeTable[c];
         valLow >>= 6;
+    }
+    for (; valMid != 0; ++i) {
+        char c = char(valMid & 0x3full);
+        outStr[i] = sStrtokenDecodeTable[c];
+        valMid >>= 6;
     }
     for (; valHigh != 0; ++i) {
         char c = char(valHigh & 0x3full);
@@ -118,6 +124,7 @@ nString StrToken::toString() const {
 
 NET_SERIALIZE_DEF(StrToken, 
     serialize_uint64(stream, mTokenLow);
+    serialize_uint64(stream, mTokenMid);
     serialize_uint64(stream, mTokenHigh);
 )
 
@@ -129,9 +136,13 @@ void StrToken::initFromStrInternal(const char* str, size_t sz) {
     for (; i < charIterMax && i < 10; ++i) {
         mTokenLow |= strTokenEncodeChar(str[i]) << (i * 6ull);
     }
+    // Encode mid bytes
+    for (; i < charIterMax && i < 20; ++i) {
+        mTokenMid |= strTokenEncodeChar(str[i]) << ((i - 10) * 6ull);
+    }
     // Encode high bytes
     for (; i < charIterMax; ++i) {
-        mTokenHigh |= strTokenEncodeChar(str[i]) << ((i - 10) * 6ull);
+        mTokenHigh |= strTokenEncodeChar(str[i]) << ((i - 20) * 6ull);
     }
 #ifdef DEBUG
     static thread_local std::unordered_map<StrToken, nString> sStrTokenMap;

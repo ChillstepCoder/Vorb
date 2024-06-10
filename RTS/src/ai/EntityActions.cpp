@@ -3,6 +3,8 @@
 
 #include "world/World.h"
 #include "world/simulation/host/component/SimCharacterComponents.h"
+#include "ecs/component/PositionComponent.h"
+#include "ecs/factory/EntityFactory.h"
 
 #include "world/chunk/SimChunkGrid.h"
 
@@ -17,8 +19,8 @@ void EntityActions::dropBundleSim(World& world, entt::registry& simRegistry, ent
         
         if (bundle->itemStack.count > 0) {
             assert(bundle->itemStack.itemId != INVALID_ITEM_ID);
-            const bool success = world.getSimChunkGrid().tryDropItemStackOnGround(ItemStack(bundle->itemStack), worldPos);
-            assert(success);
+            const TileItemUID uid = world.getSimChunkGrid().tryDropItemStackOnGroundSimThread(ItemStack(bundle->itemStack), worldPos);
+            assert(uid != INVALID_TILE_ITEM_UID);
         }
 
         simRegistry.remove<DualResourceBundleComponent>(simAgent);
@@ -29,13 +31,14 @@ void EntityActions::dropBundleFull(World& world, entt::registry& fullRegistry, e
     IFullECS& ecs = world.getECS();
     ASSERT_GAME_THREAD();
     if (DualResourceBundleComponent* bundle = fullRegistry.try_get<DualResourceBundleComponent>(fullAgent)) {
-        TileCoord worldPos(i32v2(fullRegistry.get<SimPositionComponent>(fullAgent).getPosition()));
+        const f32v3 worldPos(fullRegistry.get<PositionComponent>(fullAgent).mPosition);
 
         if (bundle->itemStack.count > 0) {
             assert(bundle->itemStack.itemId != INVALID_ITEM_ID);
-            const bool success = world.getSimChunkGrid().tryDropItemStackOnGround(ItemStack(bundle->itemStack), worldPos);
-            assert(success);
-            assert(false); // Need to create the item entity?
+            const TileItemUID uid = world.getSimChunkGrid().tryDropItemStackOnGroundGameThread(
+                ItemStack(bundle->itemStack), worldPos
+            );
+            assert(uid != INVALID_TILE_ITEM_UID);
         }
 
         fullRegistry.remove<DualResourceBundleComponent>(fullAgent);

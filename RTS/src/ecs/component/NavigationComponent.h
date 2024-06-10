@@ -36,7 +36,7 @@ struct NavigationComponent {
     void setSimpleLinearTargetPoint(f32v3 targetPoint);
 
 	// Returns ID of this path
-    NavPathID requestCoarsePath(f32v3 start, f32v3 goal);
+    NavPathID requestCoarsePath(f32v3 start, f32v3 goal, f32 targetRadius);
     // Returns ID of this path
 	NavPathID requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance);
 
@@ -61,6 +61,7 @@ private:
     ui32 mCurrentFinePoint = 0;
     ui32 mCurrentCoarsePoint = 0;
 	f32v3 mTargetPosition = f32v3(0.0f);
+	f32 mTargetRadius = 0.5f;
 	//ui32v2 mPrevNavCell; // TODO: for steering? Check steering each cell change?
     NavigationType mNavigationType = NavigationType::INVALID;
 	NavigationStatus mStatus = NavigationStatus::INVALID;
@@ -85,7 +86,7 @@ private:
     bool isPathStatusDone(PathStatus pathStatus);
 
 	void updateComponentCoarsePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos);
-	void requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal);
+	void requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal, f32 targetRadius);
 	void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success);
 	PathStatus updateComponentFinePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos);
 	bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos);

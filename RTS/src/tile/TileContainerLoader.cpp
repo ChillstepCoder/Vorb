@@ -96,6 +96,7 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
                 Tile& tile = tiles[stairPiece.pos];
                 tile.groundLayer = bp.defaultFloorID;
                 tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
+                // TODO: Should we really be using tilePos.z here?
                 tile.groundZOffset = tilePos.z + heightAdd;
                 tile.setOrientation(stairPiece.dir, TileLayer::Main);
                 tile.tileFlags.setBit(TileFlags::ROOFED);

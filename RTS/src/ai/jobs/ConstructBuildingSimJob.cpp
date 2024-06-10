@@ -19,6 +19,7 @@ ConstructBuildingContext::ConstructBuildingContext(Building& building, World& wo
     : world(world), building(building), blueprint(*building.getBlueprint()) { }
 
 void ConstructBuildingContext::init() {
+
     // Reverse order so we can pop_back efficiently without greatly changing
     // order
     // One floor at a time
@@ -207,7 +208,6 @@ void ConstructBuildingContext::markFlattened(TileIndex i) {
 }
 
 void ConstructBuildingContext::trackItemIfNeeded(TileItemUID itemUID, ItemID itemId, TileCoord worldPos, ui16 quantity) {
-    ASSERT_SIM_THREAD();
     assert(quantity);
     for (int i = 0; i < blueprint.itemCompositionCount; ++i) {
         FillableSimpleItemStack& stack = blueprint.itemComposition[i];

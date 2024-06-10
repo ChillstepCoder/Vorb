@@ -96,6 +96,7 @@ void SimChunkTileData::onTileRemoved(TileID id, ChunkTileIndex pos) {
     if (harvestable != TileHarvestable::None) {
         bool found = false;
         auto&& hit = harvestables.find(harvestable);
+        assert(hit != harvestables.end());
         for (size_t i = 0; i < hit->second.size(); ++i) {
             if (hit->second[i] == pos) {
                 hit->second[i] = hit->second.back();
@@ -235,22 +236,16 @@ TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkT
 }
 
 std::unordered_map<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy() const {
-    ASSERT_SIM_THREAD();
     std::lock_guard lock(mMutex);
     return mItemData.itemStacks;
 }
 
 TileItemUID SimChunk::tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex) {
-    ASSERT_SIM_THREAD();
-    if (!mIsSimulating) {
-        return INVALID_TILE_ITEM_UID;
-    }
     std::lock_guard lock(mMutex);
     return mItemData.addStackToTile(tileIndex, itemStack);
 }
 
 SimChunkTileItemReservationPtr SimChunk::tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity) {
-    ASSERT_SIM_THREAD();
     std::lock_guard lock(mMutex);
     return mItemData.tryReserveItemStackOnTile(tileIndex, itemId, quantity, *this);
 }

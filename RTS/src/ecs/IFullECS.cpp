@@ -149,6 +149,7 @@ ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
 	std::vector<entt::entity> unboundEntities;
 
 	for (entt::entity e : chunkEntities) {
+        assert(mRegistry.valid(e));
 		if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(e)) [[likely]] {
             EntitySimTransitionData& ddata = rv.entities.emplace_back();
             ddata.moveFromFullEntity(mRegistry, e);
@@ -191,6 +192,10 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chu
                 e.entity = entity;
                 e.chunkId = chunk.getChunkID();
                 dispatchEntityDeactivated(e);
+
+                // We will remove from mEntitiesbyChunk in the destroy listener
+                destroyEntity(entity);
+                return;
             }
             else {
                 // If we get here (rare), we are in the process of activating, so pretend we are still in the old chunk and retry next time
@@ -219,16 +224,21 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chu
                 prevEntityList.shrink_to_fit();
                 prevEntityList.reserve(ENTITY_LIST_RESERVE_COUNT);
             }
+
+            LOG_DEBUG("remove entity {} from chunk {}", (int)entity, prevChunk);
             found = true;
             break;
         }
     }
+
     if (!found) [[unlikely]] {
         SimEntityTypeComponent* cmp = mRegistry.try_get<SimEntityTypeComponent>(entity);
         if (!cmp) {
+            LOG_CRITICAL("Prev {} state: {} Next {} state: {}", prevChunk, (int)chunkGrid.getChunk(prevChunk).getState(), newChunk, (int)chunkGrid.getChunk(newChunk).getState());
             panic("Failed to find entity for enter new chunk, type player");
         }
         else {
+            LOG_CRITICAL("Prev {} state: {} Next {} state: {}", prevChunk, (int)chunkGrid.getChunk(prevChunk).getState(), newChunk, (int)chunkGrid.getChunk(newChunk).getState());
             panic("Failed to find entity for enter new chunk, type {}", (int)cmp->type);
         }
     }

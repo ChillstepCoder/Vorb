@@ -56,9 +56,8 @@ private:
 	void updatePlaceItemsSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
     void updatePlaceItemsFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
 
-    bool updateSelectToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
-	bool updateMoveToConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
-	void updateConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updateConstructSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec);
+    void updateConstructFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec);
 
 	// Some steps may fail for various reasons, this allows retry up to retry count
     bool onMinorFailCheckCanRecoverSim(World& world, entt::registry& simRegistry, entt::entity simAgent);
@@ -66,6 +65,8 @@ private:
 
     void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
     void cleanupFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, SimTaskTickResult result);
+
+	void freeHandles();
 
 	enum class State {
         Init,
@@ -75,8 +76,6 @@ private:
 		MoveToBlueprint,
 		PlaceItems,
 		SelectToConstruct,
-		MoveToConstruct,
-		Construct,
 		End,
 		COUNT
 	} mState = State::Init;
@@ -90,8 +89,7 @@ private:
 	SimChunkTileItemReservationPtr mTileItemReservation;
 	SimChunkTileReservationHandle mTileHarvestReservation;
 	TileHarvestable mHarvestableToAquire = TileHarvestable::None;
-	SimpleSimTaskTimer mTimer;
-	BuildContextTargetData mTargetData;
+    SimpleSimTaskTimer mTimer;
 	i32 mRetryCountRemaining = 3;
 	// Operation
 	std::future<bool> mSimEntityOperationFuture;

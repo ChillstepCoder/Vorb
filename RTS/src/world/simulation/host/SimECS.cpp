@@ -48,13 +48,8 @@ void SimECS::tickSimThread(TimestampMs currentTimestamp) {
     if (size_t count = mQueuedSimEntityOperations.try_dequeue_bulk(mSimThreadConsumerToken, operations, MAX_OPERATIONS_PER_TICK)) {
         for (size_t i = 0; i < count; ++i) {
             SimEntityQueuedOperation& op = operations[i];
-            // If we dont have a taskqueue, it means this entity is queued for destroy
-            if (mRegistry.all_of<DualTaskQueueComponent>(op.entity)) {
-                op.success.set_value(op.func(mRegistry, op.entity));
-            }
-            else {
-                op.success.set_value(false);
-            }
+            // TODO: What happens if the source deactivates on the full thread?
+            op.success.set_value(op.func(mRegistry, op.entity));
 
             SimFullEntityBinding* binding = mRegistry.get<FullEntityBindingComponent>(op.entity).binding;
             binding->decRefCount();

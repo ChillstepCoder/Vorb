@@ -151,7 +151,7 @@ public:
 
     // =========== Tiles  ===========
 	TileContainer* getTileContainer() { return mTileContainer; }
-    const TileContainer* getTileContainer() const { return mTileContainer; }
+	const TileContainer* getTileContainer() const { return mTileContainer; }
 
     // =========== Ref counting  ===========
 	// Try incref on another thread. Fails if chunk is being destroyed

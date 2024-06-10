@@ -40,8 +40,8 @@ class PathFinder {
 public:
     PathFinder(const NavWorld& navWorld);
 
-    bool generateFinePathSynchronous(const f32v3 start, const f32v3 goal, OUT NavPath& path);
-    bool generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, OUT NavPath& path);
+    bool generateFinePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadiusSQ, OUT NavPath& path);
+    bool generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadiusSQ, OUT NavPath& path);
 
     //LiteTileHandle tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, OUT NavPath& path);
 

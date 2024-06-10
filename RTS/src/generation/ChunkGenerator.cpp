@@ -207,6 +207,10 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
             tileData.tileId = tile.mainLayer;
             tileData.variant = tile.mainLayerVariant;
             chunkData.tileIndexToTileData.emplace((ui16)i, tileData);
+            const TileDef& def = tileRepo.getLoadedOrUnloadedAsset(tile.mainLayer);
+            if (def.harvestable != TileHarvestable::None) {
+                chunkData.harvestables[def.harvestable].emplace_back(i);
+            }
             ++totalTiles;
         }
     }
@@ -214,6 +218,19 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
     // Shrink memory
     chunkData.tileIndexToTileData.shrink_to_fit();
     chunkData.tileQuantities.shrink_to_fit();
+    chunkData.harvestables.shrink_to_fit();
+    for (auto&& it : chunkData.harvestables) {
+        it.second.shrink_to_fit();
+    }
+
+    for (auto&& it : chunkData.harvestables) {
+        for (ChunkTileIndex tileIndex : it.second) {
+            if (!chunkData.tileIndexToTileData.contains(tileIndex)) {
+                LOG_CRITICAL("Failure");
+                panic("AHHH");
+            }
+        }
+    }
 
     //LOG_DEBUG("Generated simchunk in {} ms {} {} {}", timer.stop(), totalTiles, (f32)totalTiles / CHUNK_SIZE, chunkData.tileIndexToTileData.size());
 }
