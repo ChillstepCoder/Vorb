@@ -29,11 +29,13 @@ ChunkID SimChunkTileItemReservation::getChunkID() const {
 i32 SimChunkTileItemReservation::tryPickupSimThread(i32 maxCount) {
     ASSERT_SIM_THREAD();
     // TODO: Need to verify there isn't an entity on game thread for this item?
+    assert(mOwnerChunk.isSimulating()); // TODO: We probably need to allow this for edge of loaded chunks or we crash later
     return mOwnerChunk.tryPickupItemsForReservation(*this, maxCount).x;
 }
 
 i32 SimChunkTileItemReservation::tryPickupGameThread(i32 maxCount, IFullECS& ecs) {
     ASSERT_GAME_THREAD();
+    assert(!mOwnerChunk.isSimulating()); // TODO: We probably need to allow this for edge of loaded chunks or we crash later
     i32v2 result = mOwnerChunk.tryPickupItemsForReservation(*this, maxCount);
     if (result.x) {
         // Notify ECS

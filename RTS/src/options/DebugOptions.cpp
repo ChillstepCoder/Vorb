@@ -94,6 +94,8 @@ DebugOptions::DebugOptions() :
     mGlobalSimTimescale(1.0f),
     mGlobalSimTimestepMult(1.0f),
     mDebugSimCharacters(true),
+    mDisableSimAI(false),
+    mDisableFullAI(false),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),

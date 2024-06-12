@@ -229,6 +229,9 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundGameThread(ItemStack stack, f3
     if (uid != INVALID_TILE_ITEM_UID) {
         EntityFactory::createItemOnGround(*mWorld, f32v3(worldPos.x, worldPos.y, mWorld->getTerrainHeightAtPoint(worldPos)), stack, uid);
     }
+    else {
+        assert(false);
+    }
     return mChunkData[chunkId].tryDropItemStackOnGround(stack, offset.y * CHUNK_WIDTH + offset.x);
 }
 

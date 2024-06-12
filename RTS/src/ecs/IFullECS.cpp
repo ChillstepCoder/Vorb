@@ -132,7 +132,6 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
             const f32v2 worldPos(worldPosChunkWithTileOffset + f32v2(stack.tileIndex % CHUNK_WIDTH, stack.tileIndex / CHUNK_WIDTH));
             const f32v3 pos3(worldPos.x, worldPos.y, heightGrid.computeHeightAtPoint<true>(worldPos));
             entt::entity newEntity = EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID), stack.uniqueId);
-            mTileItemEntityMap[stack.uniqueId] = newEntity;
 
             // TODO: DELETE ME
             DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
@@ -308,6 +307,10 @@ void IFullECS::initEvents() {
         ChunkID chunkId = mRegistry.get<PositionComponent>(event.entity).chunkId;
         assert(chunkId != INVALID_CHUNK_ID);
         mEntitiesByChunk[chunkId].emplace_back(event.entity);
+        if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(event.entity)) {
+            assert(itemCmp->tileItemUID != INVALID_TILE_ITEM_UID);
+            mTileItemEntityMap[itemCmp->tileItemUID] = event.entity;
+        }
     });
     mWorld.addOnEntityDestroyedListener(mWorldEventListeners,
         [this](const WorldEntityEvent& event) {

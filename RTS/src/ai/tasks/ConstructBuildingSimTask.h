@@ -30,6 +30,7 @@ public:
     SimTaskTickResult tickSim(World& world, entt::registry& simRegistry, entt::entity simAgent, f32 elapsedSec) override;
 	SimTaskTickResult tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) override;
 
+
 	void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
 	void onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
 
@@ -65,6 +66,8 @@ private:
 
     void cleanupSim(World& world, entt::registry& simRegistry, entt::entity simAgent, SimTaskTickResult result);
     void cleanupFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, SimTaskTickResult result);
+
+    bool updateFuture(World& world, entt::registry& fullRegistry, entt::entity fullAgent);
 
 	void freeHandles();
 

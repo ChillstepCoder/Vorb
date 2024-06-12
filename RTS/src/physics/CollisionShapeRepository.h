@@ -2,12 +2,6 @@
 
 #include "physics/CollisionShapes.h"
 
-struct f32v3Hash {
-    std::size_t operator()(const f32v3& k) const {
-        return std::hash<f32>()(k.x) ^ std::hash<f32>()(k.y) ^ std::hash<f32>()(k.z);
-    }
-};
-
 class btCollisionShape;
 
 class CollisionShapeRepository {

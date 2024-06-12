@@ -22,6 +22,11 @@ SimAISystem::SimAISystem(HostSimContext& simContext, SimECS& ecs, entt::registry
 }
 
 void SimAISystem::tick(TimestampMs currentTime, TimestampMs deltaTimeMs) {
+
+    if (sDebugOptions.mDisableSimAI) {
+        return;
+    }
+
     mCurrentTime = currentTime;
     mDeltaTimeMs = deltaTimeMs;
     mElapsedSec = deltaTimeMs / MS_PER_SECOND;

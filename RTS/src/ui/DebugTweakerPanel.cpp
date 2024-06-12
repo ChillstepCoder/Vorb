@@ -382,6 +382,8 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Sim Timescale", &sDebugOptions.mGlobalSimTimescale, 0.5f, 1000.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Sim Timestep Mult", &sDebugOptions.mGlobalSimTimestepMult, 0.1f, 3.0f, "%.3f");
         ImGui::Checkbox("Debug Characters", &sDebugOptions.mDebugSimCharacters);
+        ImGui::Checkbox("Disable Sim AI", &sDebugOptions.mDisableSimAI);
+        ImGui::Checkbox("Disable Full AI", &sDebugOptions.mDisableFullAI);
     }
 
     if (ImGui::CollapsingHeader("Physics")) {

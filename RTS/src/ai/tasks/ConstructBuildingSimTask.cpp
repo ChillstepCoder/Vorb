@@ -78,7 +78,22 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
 
     switch (mState) {
         case State::Init:
-            assert(false);
+            // Pending future result that full sim requested
+            if (mSimEntityOperationFuture.valid()) {
+                std::future_status status = mSimEntityOperationFuture.wait_for(std::chrono::seconds(0));
+                assert(status != std::future_status::deferred);
+                if (status == std::future_status::ready) {
+                    // Just ignore the result as we only process futures in full
+                    freeHandles();
+                    if (!simTrySelectItemSource(world, simRegistry, simAgent)) {
+                        mState = State::SelectToConstruct;
+                    }
+                }
+                else {
+                    // Waiting
+                    return SimTaskTickResult::InProgress;
+                }
+            }
             break;
         case State::MoveToItemStack:
             updateMoveToItemStackSim(world, simRegistry, simAgent, elapsedSec);
@@ -105,27 +120,19 @@ SimTaskTickResult ConstructBuildingSimTask::tickSim(World& world, entt::registry
 
 SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent, f32 elapsedSec) {
     ASSERT_GAME_THREAD();
+    // TODO: REMOVE 
+    //return SimTaskTickResult::InProgress;
+
     assert(mCurrentResult == SimTaskTickResult::InProgress);
     if (mSimEntityOperationFuture.valid()) {
-        std::future_status status = mSimEntityOperationFuture.wait_for(std::chrono::seconds(0));
-        assert(status != std::future_status::deferred);
-        if (status == std::future_status::ready) {
-            bool success = mSimEntityOperationFuture.get();
-            if (mSimEntityOperationCompleteFunc) {
-                // Move so we can clear it and allow the func to set mSimEntityOperationCompleteFunc
-                auto func = std::move(mSimEntityOperationCompleteFunc);
-                mSimEntityOperationCompleteFunc = nullptr;
-                func(world, fullRegistry, fullAgent, success);
-            }
-        }
-        else {
-            // Waiting
+        if (!updateFuture(world, fullRegistry, fullAgent)) {
             return SimTaskTickResult::InProgress;
         }
     }
 
     switch (mState) {
         case State::Init:
+            // Should be unreachable as we hit pending future result above
             assert(false);
             break;
         case State::MoveToItemStack:
@@ -155,8 +162,6 @@ SimTaskTickResult ConstructBuildingSimTask::tickFull(World& world, entt::registr
 void ConstructBuildingSimTask::onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
     switch (mState) {
         case State::Init:
-            assert(false);
-            break;
         case State::MoveToItemStack:
         case State::MoveToHarvestable:
         case State::Harvest:
@@ -178,10 +183,7 @@ void ConstructBuildingSimTask::onTransitionToSim(World& world, entt::registry& s
 
     switch (mState) {
         case State::Init:
-            assert(false);
-            break;
         case State::MoveToItemStack:
-            break;
         case State::MoveToHarvestable:
         case State::Harvest:
         case State::MoveToBlueprint:
@@ -1065,6 +1067,27 @@ void ConstructBuildingSimTask::cleanupFull(World& world, entt::registry& fullReg
     freeHandles();
     mCurrentResult = result;
 }
+
+
+bool ConstructBuildingSimTask::updateFuture(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
+    std::future_status status = mSimEntityOperationFuture.wait_for(std::chrono::seconds(0));
+    assert(status != std::future_status::deferred);
+    if (status == std::future_status::ready) {
+        bool success = mSimEntityOperationFuture.get();
+        if (mSimEntityOperationCompleteFunc) {
+            // Move so we can clear it and allow the func to set mSimEntityOperationCompleteFunc
+            auto func = std::move(mSimEntityOperationCompleteFunc);
+            mSimEntityOperationCompleteFunc = nullptr;
+            func(world, fullRegistry, fullAgent, success);
+        }
+        return true;
+    }
+    else {
+        // Waiting
+        return false;
+    }
+}
+
 
 void ConstructBuildingSimTask::freeHandles() {
     mBlueprintItemPromise.reset();

@@ -54,7 +54,7 @@ TerrainRenderer::TerrainRenderer() {
     static_assert(e_count(TerrainSurfaceType) == 3);
     SurfaceMaterialData SurfaceOverlayData[e_count(TerrainSurfaceOverlayType)] = {
         {}, //None
-        { MaterialRepository::get().getMaterialId(CStrToken("seeds")), 240.0f }, // Seeds
+        { MaterialRepository::get().getMaterialId(CStrToken("seeds_pumkin")), 240.0f }, // Seeds
     };
     static_assert(e_count(TerrainSurfaceOverlayType) == 2);
 

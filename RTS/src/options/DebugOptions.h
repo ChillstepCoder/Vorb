@@ -97,6 +97,8 @@ struct DebugOptions {
     f32 mGlobalSimTimescale;
     f32 mGlobalSimTimestepMult;
     bool mDebugSimCharacters;
+    bool mDisableSimAI;
+    bool mDisableFullAI;
     // Toggles
     bool mPauseFrustum;
     bool mWireframe;

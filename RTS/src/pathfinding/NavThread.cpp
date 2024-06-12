@@ -85,11 +85,11 @@ void NavThread::navThreadFunc() {
             const PathArgs& args = pathArgs.first;
             switch (args.type) {
                 case PathRequestType::FINE: {
-                    mPathFinder->generateFinePathSynchronous(args.start, args.goal, args.targetRadiusSQ, *args.pathToBuild);
+                    mPathFinder->generateFinePathSynchronous(args.start, args.goal, args.targetRadius, *args.pathToBuild);
                     break;
                 }
                 case PathRequestType::COARSE: {
-                    mPathFinder->generateCoarsePathSynchronous(args.start, args.goal, args.targetRadiusSQ, *args.pathToBuild);
+                    mPathFinder->generateCoarsePathSynchronous(args.start, args.goal, args.targetRadius, *args.pathToBuild);
                     break;
                 }
                 case PathRequestType::COARSE_HARVESTABLE: {

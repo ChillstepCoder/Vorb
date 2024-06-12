@@ -114,12 +114,12 @@ void NavigationSystem::onPathingFinished(NavigationComponent& navCmp, CharacterC
 }
 
 void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal, f32 targetRadius) {
+	assert(glm::length(start - goal) <= 64.0f);
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
-        std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
         assert(Services::isUsingNav());
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, targetRadius, [pathHandle, &world]() {
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, targetRadius, [pathHandle = navCmp.mPendingFinePath, &world]() {
 
 			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(world.getHeightmapGrid())));
 
@@ -202,11 +202,10 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
 			}
 			else if ((navCmp.mCurrentCoarsePoint < numPoints - 1) && (navCmp.mCurrentFinePoint > navCmp.mFinePath->getNumPoints() / 2u)) {
 				// Halfway through path we start generating next path
-				// TODO: This causes a bug where it does this forever, check logic ^
 				requestNextPath = true;
 			}
 
-			if (requestNextPath) {
+			if (requestNextPath && !navCmp.mPendingFinePath) {
                 ++navCmp.mCurrentCoarsePoint;
                 if (navCmp.mCurrentCoarsePoint >= numPoints) {
 					const ChunkID simEndChunk = navCmp.mCoarsePath->getSimChunkEndPoint();

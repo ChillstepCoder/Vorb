@@ -8,6 +8,7 @@
 #include "ecs/component/DualComponents.h"
 
 #include "ai/jobs/SimTaskHandle.h"
+#include "options/DebugOptions.h"
 
 // TODO: Investigate maslows hierarchy (probability weight?) (Concern probability gradually increases for things that didnt run recently?
 // 1. Self Actuation
@@ -26,6 +27,10 @@ FullAISystem::FullAISystem(World& world, entt::registry& registry) :
 void FullAISystem::update(f32 elapsedSec) {
     PROFILE_FUNCTION();
     mElapsedSec = elapsedSec;
+
+    if (sDebugOptions.mDisableFullAI) {
+        return;
+    }
 
     auto view = mRegistry.view
         <FullBrainComponent,

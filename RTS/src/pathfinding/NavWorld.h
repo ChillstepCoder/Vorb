@@ -139,10 +139,15 @@ struct ContainerNavData {
     i32 floorHeight;
     TileContainerID containerId;
 
-    i32v3 getTileWorldPos(TileIndex index) const {
+    f32v3 getTileWorldPos(TileIndex index) const {
         assert(index < fineNavGraph.size());
         const i32 floorStride = containerDims.x * containerDims.y;
-        return worldPos + i32v3(index % containerDims.x, (index % floorStride) / containerDims.x, (index / floorStride) * floorHeight + fineNavGraph[index].zPositionOffsetFromFloor);
+        return f32v3(worldPos) + f32v3(index % containerDims.x, (index % floorStride) / containerDims.x, (index / floorStride) * floorHeight + fineNavGraph[index].zPositionOffsetFromFloor);
+    }
+    f32 getTileZPos(TileIndex index) const {
+        assert(index < fineNavGraph.size());
+        const i32 floorStride = containerDims.x * containerDims.y;
+        return (index / floorStride) * floorHeight + fineNavGraph[index].zPositionOffsetFromFloor;
     }
 
     i32v3 getTileXYZOffsetWithZScale(TileIndex index) const {

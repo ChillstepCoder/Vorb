@@ -26,7 +26,7 @@ constexpr ui8 INVALID_PARENT = 0;
 
 constexpr ui32 MAX_FINE_OPEN_LIST_SIZE = 512;
 
-constexpr ui32 DEBUG_DURATION = 200;
+constexpr ui32 DEBUG_DURATION = 10;
 
 struct CoarseAStarNode {
     LiteTileHandle tileHandle;
@@ -186,7 +186,7 @@ struct FineNodeData {
 };
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadiusSQ, OUT NavPath& path) {
+bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadius, OUT NavPath& path) {
     PROFILE_FUNCTION();
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
@@ -195,11 +195,11 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     PreciseTimer timer;
     const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
 
-    // We pathfind forwards
+    // We pathfind backwards
     const ContainerNavData* startNavData = nullptr;
     const ContainerNavData* goalNavData = nullptr;
-    LiteTileHandle startLiteHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(start, &startNavData);
-    LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(goal, &goalNavData);
+    LiteTileHandle startLiteHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(goal, &startNavData);
+    LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(start, &goalNavData);
 
     if (!startNavData) {
         LOG_WARN("Failed to find fine path due to invalid start");
@@ -208,7 +208,8 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     }
 
     const f32v3 startWorldPos = startNavData->getTileWorldPos(startLiteHandle.index);
-    f32v3 goalWorldPos = goal;
+    // Backwards pathfind
+    f32v3 goalWorldPos = start;
     if (goalNavData) {
         goalWorldPos = goalNavData->getTileWorldPos(goalHandle.index);
     }
@@ -250,7 +251,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
         // Debug render
         if (sDebugOptions.mShowPaths) {
             const ui8 r = (ui8)(g % 256);
-            DebugRenderer::drawWireQuadThreadSafe(containerNavData.getTileWorldPos(handle.index), f32v2(1.0f), color4(r, 0ui8, (ui8)(255ui8 - r), 255ui8), DEBUG_DURATION);
+            DebugRenderer::drawWireQuadThreadSafe(containerNavData.getTileWorldPos(handle.index), f32v2(1.0f), color4(r, 0ui8, (ui8)(255ui8 - r), 128ui8), DEBUG_DURATION);
         }
 
         // Precompute collision weights and points for neighbors
@@ -388,18 +389,41 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     if (!foundGoal) {
         LOG_WARN("Failed to find fine path in {} ms with {} total nodes checked. OpenListSize: {}", timer.stop(), TOTAL, openList.size());
         if (sDebugOptions.mShowPaths) {
-            DebugRenderer::drawWireQuadThreadSafe(goalWorldPos, f32v2(1.0f), COLOR_MAGENTA, DEBUG_DURATION * 8);
+            LiteTileHandle handleIt = handle;
+
+            // Draw failed path for debug vis
+            ui32 c = 0;
+            f32v3 zero = f32v3(0.0f);
+            while (handleIt != startLiteHandle && c < PATH_POINT_BUFFER_SIZE) {
+                sPathPointBuffer[c] = handleIt;
+                assert(sPathPointBuffer[c].isValid());
+                auto&& it = nodeLookup.find(handleIt);
+                assert(it != nodeLookup.end());
+                handleIt = it->second.parent;
+                const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handleIt.containerId);
+                assert(handleIt.index < navData.fineNavGraph.size());
+                const f32v3 pos = navData.getTileWorldPos(handleIt.index);
+                if (c == 0) {
+                    zero = pos;
+                    DebugRenderer::drawWireQuadThreadSafe(pos + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 64);
+                }
+                else {
+                    DebugRenderer::drawWireQuadThreadSafe(pos, f32v2(1.0f), COLOR_MAGENTA, DEBUG_DURATION);
+                }
+                ++c;
+            }
+            DebugRenderer::drawWireQuadThreadSafe(start + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.0f), COLOR_GREEN, DEBUG_DURATION * 64);
+            if (c != 0) {
+                DebugRenderer::drawLineBetweenPointsThreadSafe(zero, start, color::Red, DEBUG_DURATION * 64);
+            }
+            else {
+                DebugRenderer::drawFilledQuadThreadSafe(start + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.1f), COLOR_YELLOW, DEBUG_DURATION * 64);
+            }
+                 
         }
         path.finishedGenerating.store(true);
         return false;
     }
-
-    // Try append goal tile if viable (may not be navable position and thats OK)
-    // This causes problems with harvestables since agents try to path inside the tree
-   /* if (goalNavData && (goalHandle != handle)) {
-        nodeLookup.emplace(std::make_pair(goalHandle, FineNodeData{ handle, 0 }));
-        handle = goalHandle;
-    }*/
 
     // Generate the path by reverse iterating from the last point
     ui32 pathSize = 0;
@@ -430,9 +454,9 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     }
 
     path.allocatePath(pathSize);
-    // Copy the path in reverse
+    // Copy the path
     for (int i = 0; i < (int)pathSize; ++i) {
-        LiteTileHandle& handle = sPathPointBuffer[pathSize - i - 1];
+        LiteTileHandle& handle = sPathPointBuffer[i];
         path.points[i] = f32v3(mNavWorld.getNavDataForContainer(handle.containerId).getTileWorldPos(handle.index)) + f32v3(0.5f, 0.5f, 0.0f);
     }
 
@@ -442,16 +466,19 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     return true;
 }
 
-bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadiusSQ, OUT NavPath& path) {
+bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadius, OUT NavPath& path) {
     PROFILE_FUNCTION();
     ASSERT_NAV_THREAD();
     assert(path.numPoints == 0); // Should be uninitialized
+    const f32 targetRadiusSQ = SQ(targetRadius);
 
     // We pathfind backwards so swap start and goal
     const ContainerNavData* startNavData = nullptr;
     const ContainerNavData* goalNavData = nullptr;
     LiteTileHandle startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(goal), &startNavData);
     LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(start), &goalNavData);
+
+    LiteTileHandle FIRST_START_HANDLE = startHandle;
 
     if (!goalNavData) {
         LOG_WARN("Failed to find coarse path due to invalid start");
@@ -503,8 +530,78 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
         return false;
     }
 
-    const CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
+    CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
     const CoarseNavNodeIndex goalNavNodeIndex = goalNavData->coarseNavGraph.tileCoarseNavIndices[goalHandle.index];
+
+    if (sDebugOptions.mShowPaths) {
+        DebugRenderer::drawWireQuadThreadSafe(goal, f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION);
+    }
+    // Since we reverse pathfind, this is the target, and may be inside something. Need to BFS spread to the closest valid node
+    if (startNavNodeIndex == INVALID_NAV_NODE_INDEX) {
+        constexpr i32 MAX_OPEN_SIZE = 1024;
+        f32v3 openList[MAX_OPEN_SIZE];
+        std::unordered_set<f32v3, f32v3hash> closedList;
+        closedList.reserve(MAX_OPEN_SIZE);
+        i32 openListFront = 0;
+        i32 openListBack = 1;
+        openList[0] = goal;
+        closedList.insert(goal);
+
+        // Sort cartesians based on goal direction so we
+        // tend to select closest first
+        std::array<Cartesian, 4> cartesians = { Cartesian::SOUTH, Cartesian::WEST, Cartesian::EAST, Cartesian::NORTH };
+        const f32v2 goalDir = glm::normalize(start - goal);
+        std::sort(cartesians.begin(), cartesians.end(), [goalDir](Cartesian a, Cartesian b) {
+
+            const f32v2 dirA(CARTESIAN_NORMALS_2D[e_cast(a)]);
+            const f32v2 dirB(CARTESIAN_NORMALS_2D[e_cast(b)]);
+
+            f32 dotA = glm::dot(dirA, goalDir);
+            f32 dotB = glm::dot(dirB, goalDir);
+
+            return dotA > dotB;
+        });
+
+        // Breadth first search
+        while (openListFront < openListBack && openListBack < MAX_OPEN_SIZE - 4) {
+            const f32v3 currentPos = openList[openListFront++];
+            startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(currentPos), &startNavData);
+            if (!startHandle.isValid()) {
+                DebugRenderer::drawFilledQuadThreadSafe(currentPos, f32v2(1.1f), COLOR_CYAN, DEBUG_DURATION * 64);
+                break;
+            }
+            startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
+            if (startNavData && startNavNodeIndex != INVALID_NAV_NODE_INDEX) {
+                const f32v3 truePos = startNavData->getTileWorldPos(startHandle.index);
+                if (glm::length2(truePos - goal) < targetRadiusSQ) {
+                    if (sDebugOptions.mShowPaths) {
+                        DebugRenderer::drawWireQuadThreadSafe(truePos, f32v2(1.0f), COLOR_GREEN, DEBUG_DURATION);
+                    }
+                    break;
+                }
+                else {
+                    // If this one is out of range, just continue, dont add neighbors
+                    if (sDebugOptions.mShowPaths) {
+                        DebugRenderer::drawWireQuadThreadSafe(truePos, f32v2(1.0f), COLOR_RED, DEBUG_DURATION);
+                    }
+                    continue;
+                }
+            }
+
+            if (sDebugOptions.mShowPaths) {
+                DebugRenderer::drawWireQuadThreadSafe(currentPos, f32v2(1.0f), COLOR_YELLOW, DEBUG_DURATION);
+            }
+            for (Cartesian c : cartesians) {
+                const f32v3 newPos = currentPos + f32v3(CARTESIAN_NORMALS_2D[e_cast(c)].x, CARTESIAN_NORMALS_2D[e_cast(c)].y, 0.0f);
+                if (closedList.find(newPos) == closedList.end()) {
+                    if (glm::length2(newPos - goal) < targetRadiusSQ) {
+                        openList[openListBack++] = newPos;
+                        closedList.insert(newPos);
+                    }
+                }
+            }
+        }
+    }
 
     if (startNavNodeIndex == INVALID_NAV_NODE_INDEX ||
         goalNavNodeIndex == INVALID_NAV_NODE_INDEX) {

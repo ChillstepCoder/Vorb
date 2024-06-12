@@ -30,10 +30,11 @@ struct BuildingPathArgs {
 
 struct PathArgs {
     PathArgs() {};
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, const f32v3& end, bool isCoarse, f32 targetRadiusSQ) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, const f32v3& end, bool isCoarse, f32 targetRadius) :
         pathToBuild(pathToBuild),
         start(start),
-        goal(end) {
+        goal(end),
+        targetRadius(targetRadius) {
         if (isCoarse) {
             type = PathRequestType::COARSE;
         }
@@ -41,11 +42,12 @@ struct PathArgs {
             type = PathRequestType::FINE;
         }
     }
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, TileHarvestable harvestable, f32 targetRadiusSQ, f32 maxDistance) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, TileHarvestable harvestable, f32 targetRadius, f32 maxDistance) :
         pathToBuild(pathToBuild),
         start(start),
         goalHarvestable(harvestable),
-        harvestableMaxDistance(maxDistance) {
+        harvestableMaxDistance(maxDistance),
+        targetRadius(targetRadius) {
         type = PathRequestType::COARSE_HARVESTABLE;
     }
 
@@ -59,7 +61,7 @@ struct PathArgs {
         };
     };
     PathRequestType type;
-    f32 targetRadiusSQ;
+    f32 targetRadius;
 };
 
 // TODO: we can definitely replace std::function with a function pointer that takes TileContainerID as parameter
