@@ -58,8 +58,8 @@ private:
     std::shared_ptr<NavPath> mFinePath;
     std::shared_ptr<NavPath> mPendingFinePath;
     std::shared_ptr<NavPath> mCoarsePath;
-    ui32 mCurrentFinePoint = 0;
-    ui32 mCurrentCoarsePoint = 0;
+    i32 mCurrentFinePoint = 0;
+    i32 mCurrentCoarsePoint = 0;
 	f32v3 mTargetPosition = f32v3(0.0f);
 	f32 mTargetRadius = 0.5f;
 	//ui32v2 mPrevNavCell; // TODO: for steering? Check steering each cell change?

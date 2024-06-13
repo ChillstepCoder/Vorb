@@ -38,9 +38,9 @@ struct CoarseAStarNode {
 };
 
 constexpr CoarseAstarNodeID MAXIMUM_COARSE_NODES = 8196;
-thread_local CoarseAStarNode sCoarseAstarNodes[MAXIMUM_COARSE_NODES];
+thread_local CoarseAStarNode sCoarseAstarNodes[MAXIMUM_COARSE_NODES];   
 
-// No allocations baby
+// No allocations
 constexpr ui32 PATH_POINT_BUFFER_SIZE = MAX_PATH_LENGTH * 16;
 thread_local LiteTileHandle sPathPointBuffer[PATH_POINT_BUFFER_SIZE];
 
@@ -395,8 +395,6 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
             ui32 c = 0;
             f32v3 zero = f32v3(0.0f);
             while (handleIt != startLiteHandle && c < PATH_POINT_BUFFER_SIZE) {
-                sPathPointBuffer[c] = handleIt;
-                assert(sPathPointBuffer[c].isValid());
                 auto&& it = nodeLookup.find(handleIt);
                 assert(it != nodeLookup.end());
                 handleIt = it->second.parent;
@@ -430,15 +428,36 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     {
         LiteTileHandle handleIt = handle;
 
+        auto walkable = [](LiteTileHandle src, LiteTileHandle dst) -> bool {
+            return true;
+        };
+
         // Find out the path size and cache the tile handles
+        sPathPointBuffer[pathSize++] = handleIt;
         while (handleIt != startLiteHandle && pathSize < PATH_POINT_BUFFER_SIZE) {
-            sPathPointBuffer[pathSize] = handleIt;
-            assert(sPathPointBuffer[pathSize].isValid());
+            assert(handleIt.isValid());
+            
             auto&& it = nodeLookup.find(handleIt);
             assert(it != nodeLookup.end());
-            handleIt = it->second.parent;
-            ++pathSize;
+
+            // Skip over walkable nodes to reduce path size
+            LiteTileHandle* nextNode = &it->second.parent;
+            while (*nextNode != startLiteHandle) {
+                assert(nextNode->isValid());
+                if (walkable(handleIt, *nextNode)) {
+                    auto&& itNext = nodeLookup.find(*nextNode);
+                    assert(itNext != nodeLookup.end());
+                    nextNode = &itNext->second.parent;
+                }
+                else {
+                    break;
+                }
+            }
+
+            handleIt = *nextNode;
+            sPathPointBuffer[pathSize++] = handleIt;
         }
+
     }
 
     if (pathSize == PATH_POINT_BUFFER_SIZE) {
@@ -481,7 +500,18 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
     LiteTileHandle FIRST_START_HANDLE = startHandle;
 
     if (!goalNavData) {
-        LOG_WARN("Failed to find coarse path due to invalid start");
+        LOG_WARN("Failed to find coarse path due to invalid start nav data");
+        path.finishedGenerating.store(true);
+        return false;
+    }
+
+    const CoarseNavNodeIndex goalNavNodeIndex = goalNavData->coarseNavGraph.tileCoarseNavIndices[goalHandle.index];
+
+    if (goalNavNodeIndex == INVALID_NAV_NODE_INDEX) {
+        // Reversed on purpose
+        LOG_WARN("Failed to find coarse path due to invalid start navnode index at tile handle {}", goalHandle.index);
+        const f32v3 pos = goalNavData->getTileWorldPos(goalHandle.index);
+        DebugRenderer::drawFilledQuadThreadSafe(pos, f32v2(1.0f), color::Red, DEBUG_DURATION * 64);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -531,7 +561,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
     }
 
     CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
-    const CoarseNavNodeIndex goalNavNodeIndex = goalNavData->coarseNavGraph.tileCoarseNavIndices[goalHandle.index];
+   
 
     if (sDebugOptions.mShowPaths) {
         DebugRenderer::drawWireQuadThreadSafe(goal, f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION);
@@ -603,9 +633,9 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
         }
     }
 
-    if (startNavNodeIndex == INVALID_NAV_NODE_INDEX ||
-        goalNavNodeIndex == INVALID_NAV_NODE_INDEX) {
-        LOG_WARN("Failed to find coarse path due to invalid navnode");
+    if (startNavNodeIndex == INVALID_NAV_NODE_INDEX) {
+        // Reversed on purpose
+        LOG_WARN("Failed to find coarse path due to invalid goal navnode");
         path.finishedGenerating.store(true);
         return false;
     }

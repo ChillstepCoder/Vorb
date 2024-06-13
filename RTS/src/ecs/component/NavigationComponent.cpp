@@ -191,18 +191,23 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
 
 		if (navCmp.mFinePath) {
 			bool requestNextPath = false;
+			f32v3 nextPathStartPos;
 			assert(navCmp.mFinePath->finishedGenerating.load());
 			const PathStatus fineStatus = updateComponentFinePath(world, entity, navCmp, motionCmp, pos);
 			if (fineStatus == PathStatus::SUCCESS) {
                 navCmp.mFinePath = nullptr;
 				requestNextPath = true;
+				nextPathStartPos = pos;
 			}
 			else if (fineStatus == PathStatus::FAIL) {
                 onPathingFinished(navCmp, motionCmp, false /*success*/);
 			}
-			else if ((navCmp.mCurrentCoarsePoint < numPoints - 1) && (navCmp.mCurrentFinePoint > navCmp.mFinePath->getNumPoints() / 2u)) {
-				// Halfway through path we start generating next path
-				requestNextPath = true;
+			else if ((navCmp.mCurrentCoarsePoint < numPoints - 1) && navCmp.mCurrentFinePoint >= navCmp.mFinePath->getNumPoints() - 5) {
+				// Close enough to last point, we start generating next path
+				if (glm::length2(navCmp.mFinePath->getTargetPosition() - pos) < SQ(5.0f)) {
+					requestNextPath = true;
+					nextPathStartPos = navCmp.mFinePath->getTargetPosition();
+				}
 			}
 
 			if (requestNextPath && !navCmp.mPendingFinePath) {
@@ -226,7 +231,7 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
                 else {
 					// Path forward
                     nextCoarseTilePos = points[navCmp.mCurrentCoarsePoint];
-                    requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos, navCmp.mTargetRadius);
+                    requestFinePathToPoint(world, navCmp, nextPathStartPos, nextCoarseTilePos, navCmp.mTargetRadius);
                 }
 			}
 		}

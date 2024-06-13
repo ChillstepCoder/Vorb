@@ -46,6 +46,7 @@ struct LiteTileHandle {
     TileContainer* getTileContainer(World& world) const;
     TileContainer* tryGetTileContainer(World& world) const;
     bool isValid() const { return  containerId != INVALID_TILE_CONTAINER_ID; }
+    void invalidate() { containerId = INVALID_TILE_CONTAINER_ID; }
     TileHandle toTileHandle(World& world) const;
 
     i32v3 getWorldPosition(World& world) const;
