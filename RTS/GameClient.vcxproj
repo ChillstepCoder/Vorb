@@ -290,6 +290,7 @@
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\ecs\srv\HostFullECS.cpp" />
     <ClCompile Include="src\ecs\system\FullAISystem.cpp" />
+    <ClCompile Include="src\ecs\AttachedEntityUpdater.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\EditorResources.cpp" />
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
@@ -483,6 +484,7 @@
     <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp" />
     <ClCompile Include="src\tile\SimTileReservation.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
+    <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
     <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
@@ -702,12 +704,14 @@
     <ClInclude Include="src\ecs\component\VelocityComponent.h" />
     <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
     <ClInclude Include="src\ecs\ChunkFullTransitionData.h" />
+    <ClInclude Include="src\ecs\AttachedEntityUpdateHandle.h" />
     <ClInclude Include="src\ecs\FullECSEvents.h" />
     <ClInclude Include="src\ecs\IFullECS.h" />
     <ClInclude Include="src\ecs\EntityRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\srv\HostFullECS.h" />
     <ClInclude Include="src\ecs\system\FullAISystem.h" />
+    <ClInclude Include="src\ecs\AttachedEntityUpdater.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\EditorResources.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
@@ -967,6 +971,7 @@
     <ClInclude Include="src\tile\SimTileData.h" />
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
+    <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\NodeGraph.h" />

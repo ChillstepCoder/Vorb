@@ -169,6 +169,7 @@ World::~World() {
 }
 
 void World::onWorldBeginGame(const f32v2& loadCenter) {
+    ASSERT_GAME_THREAD();
 
     // Host specific init
     if (mNetMode == WorldNetMode::Host) {
@@ -198,6 +199,8 @@ void World::onWorldBeginGame(const f32v2& loadCenter) {
     if (!isEditorWorld()) {
         mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
     }
+
+    mEcs->onWorldBeginGameThread();
 
     if (mHostSimContext) {
         mHostSimContext->onWorldBeginGame();

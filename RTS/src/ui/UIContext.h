@@ -9,6 +9,7 @@ struct TileHandle;
 class PauseMenuPanel;
 class EditorRoot;
 class LocalMinigameContext;
+class GameplayDebugger;
 
 DECL_VG(class GBuffer);
 
@@ -34,7 +35,8 @@ public:
     f32v3 getEditorCameraDirection();
     f32v3 getEditorCameraRight();
     f32v3 getEditorCameraUp();
-    void toggleMainMenu();
+    void toggleEscapeMenu();
+    void toggleGameplayDebugger();
 
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static UIContext& getInstance();
@@ -46,6 +48,7 @@ public:
 
     LocalMinigameContext& getMinigameContext() const { return *mMinigameContext; }
     EditorRoot& getEditorRoot() const { return *mEditorRoot; }
+    GameplayDebugger& getGameplayDebugger() const { return *mGameplayDebugger; }
 
     EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:
@@ -56,6 +59,7 @@ private:
     std::unique_ptr<TileInspectionPanel> mTileInspectionPanel;
     std::unique_ptr<PauseMenuPanel> mPauseMenuPanel;
     std::unique_ptr<LocalMinigameContext> mMinigameContext;
+    std::unique_ptr<GameplayDebugger> mGameplayDebugger;
 
     SDL_Window* mWindow;
     f32v2 mScreenResolution;

@@ -6,6 +6,7 @@
 #include "world/IChunkGrid.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "ecs/component/SimEntityTypeComponent.h"
+#include "ecs/AttachedEntityUpdater.h"
 #include "camera/Camera3D.h"
 
 #include "ecs/factory/EntityFactory.h"
@@ -35,6 +36,10 @@ IFullECS::~IFullECS() {
 
 }
 
+void IFullECS::onWorldBeginGameThread() {
+    mDebugEntityUpdater = std::unique_ptr<AttachedEntityUpdater>(new AttachedEntityUpdater);
+}
+
 void IFullECS::tick(f32 elapsedSec) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
@@ -60,6 +65,8 @@ void IFullECS::tick(f32 elapsedSec) {
 
 	ProjectileSystem::update(mWorld, mRegistry, elapsedSec);
 
+    assert(mDebugEntityUpdater);
+    mDebugEntityUpdater->update(mRegistry);
 }
 
 void IFullECS::tickPhysics(f32 elapsedSec) {
@@ -285,6 +292,14 @@ void IFullECS::onItemPickedUp(TileItemUID itemUID, i32 remaining) {
     }
 }
 
+void IFullECS::addThreadSafeEntityUpdateForNearestCharacter(AttachedEntityUpdateHandlePtr updateHandle, f32v3 pos) {
+    QueuedEntityUpdateAttach update;
+    update.target = pos;
+    update.type = QueuedEntityUpdateAttach::AttachType::Character;
+    update.handle = std::move(updateHandle);
+    mDebugEntityUpdater->queueAttachUpdate(std::move(update));
+}
+
 void IFullECS::initEvents() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
@@ -315,6 +330,8 @@ void IFullECS::initEvents() {
     mWorld.addOnEntityDestroyedListener(mWorldEventListeners,
         [this](const WorldEntityEvent& event) {
         ASSERT_GAME_THREAD();
+        mDebugEntityUpdater->unregisterAllHandlesForEntity(mRegistry, event.entity);
+
         ChunkID chunkId = mRegistry.get<PositionComponent>(event.entity).chunkId;
         if (chunkId != INVALID_CHUNK_ID) {
             EntityVector& entitiesInChunk = mEntitiesByChunk[chunkId];

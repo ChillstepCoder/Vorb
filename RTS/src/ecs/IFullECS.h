@@ -4,9 +4,12 @@
 #include "ecs/component/FishingComponent.h"
 #include "ecs/ChunkFullTransitionData.h"
 #include "ecs/FullECSEvents.h"
+#include "ecs/AttachedEntityUpdateHandle.h"
 
 #include "world/ChunkGridEvent.h"
 #include "world/WorldEvents.h"
+
+class AttachedEntityUpdater;
 
 #include <mutex>
 
@@ -16,6 +19,8 @@ class IFullECS {
 public:
     IFullECS(World& world);
     virtual ~IFullECS();
+
+    void onWorldBeginGameThread();
 
     virtual void tick(f32 elapsedSec);
     virtual void tickPhysics(f32 elapsedSec);
@@ -38,6 +43,10 @@ public:
 
     void onItemPickedUp(TileItemUID itemUID, i32 remaining);
 
+    // DEBUG:
+    // Update will be removed when caller drops the handle
+    void addThreadSafeEntityUpdateForNearestCharacter(AttachedEntityUpdateHandlePtr updateHandle, f32v3 pos);
+
     // TODO: UniquePtr for faster include
     CharacterControlSystem mCharacterControlSystem;
     PlayerControlSystem mPlayerControlSystem;
@@ -53,6 +62,8 @@ public:
     World& mWorld;
 
     entt::registry mRegistry;
+
+    std::unique_ptr<AttachedEntityUpdater> mDebugEntityUpdater;
 
     EVENT_LISTENER_FUNCS(IFullECS, EntityDeactivated, FullECSEventType::EntityDeactivated, FullECSEvent&);
 

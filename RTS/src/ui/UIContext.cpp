@@ -11,6 +11,7 @@
 #include "ui/editor/EditorRoot.h"
 #include "ui/editor/IEditorViewportPanel.h"
 #include "ui/minigame/LocalMinigameContext.h"
+#include "ui/debugging/GameplayDebugger.h"
 
 #include <Vorb/ui/GameWindow.h>
 
@@ -30,6 +31,7 @@ UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScree
     io.ConfigDockingWithShift = false;
     io.ConfigWindowsResizeFromEdges = true;
 
+    // TODO: Not in shipping?
     mEditorRoot = std::make_unique<EditorRoot>();
     mMinigameContext = std::make_unique<LocalMinigameContext>();
 }
@@ -78,6 +80,10 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedS
     }
 
     mMinigameContext->updateAndRender(mScreenResolution, elapsedSec);
+    
+    if (mGameplayDebugger) {
+        mGameplayDebugger->updateAndRenderImGui(camera);
+    }
 }
 
 void UIContext::renderEditorBrushDecals(const Camera3D& camera) {
@@ -134,12 +140,21 @@ f32v3 UIContext::getEditorCameraUp()
 
 }
 
-void UIContext::toggleMainMenu() {
+void UIContext::toggleEscapeMenu() {
     if (mPauseMenuPanel) {
         mPauseMenuPanel.reset();
     }
     else {
         mPauseMenuPanel = std::make_unique<PauseMenuPanel>();
+    }
+}
+
+void UIContext::toggleGameplayDebugger() {
+    if (mGameplayDebugger) {
+        mGameplayDebugger.reset();
+    }
+    else {
+        mGameplayDebugger = std::make_unique<GameplayDebugger>();
     }
 }
 

@@ -201,7 +201,10 @@ void EditorWorldInterfaceController::initEvents() {
             });
         }
         else if (event.keyCode == VKEY_ESCAPE) {
-            UIContext::getInstance().toggleMainMenu();
+            UIContext::getInstance().toggleEscapeMenu();
+        }
+        else if (event.keyCode == VKEY_F1 && event.mod.lShift && (event.mod.lAlt || event.mod.lCtrl)) {
+            UIContext::getInstance().toggleGameplayDebugger();
         }
         
     });
