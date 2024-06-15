@@ -45,6 +45,9 @@ public:
     void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullEntity);
     void onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simEntity);
 
+    // Represents the state of this handle
+    std::string getDebugString() const;
+
 private:
 
     void onActiveSubtaskGoToNextTask(ISimTask* task);

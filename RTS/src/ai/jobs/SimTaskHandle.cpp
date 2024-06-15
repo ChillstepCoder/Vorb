@@ -115,6 +115,20 @@ void SimTaskHandle::onTransitionToSim(World& world, entt::registry& simRegistry,
     }
 }
 
+std::string SimTaskHandle::getDebugString() const {
+    std::string output = "";
+    if (mIsJob) {
+        output += std::format("Job: {}\n", mJob->getName());
+    }
+    if (mTask) {
+        output += mTask->getDebugString();
+    }
+    else {
+        output += std::format("  Task: NULL\n");
+    }
+    return output;
+}
+
 void SimTaskHandle::onActiveSubtaskGoToNextTask(ISimTask* task) {
     assert(task == mTask.get());
     assert(task->getNextTask());

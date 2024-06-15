@@ -58,6 +58,7 @@ public:
     virtual void onTransitionToSim(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {}
 
     virtual const char* getTaskName() const = 0;
+    virtual std::string getDebugString() const = 0;
 };
 
 class ISimTaskChain : public ISimTask {

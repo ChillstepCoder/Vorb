@@ -194,8 +194,10 @@ void ConstructBuildingSimTask::onTransitionToSim(World& world, entt::registry& s
     }
 }
 
-const char* ConstructBuildingSimTask::getTaskName() const {
-    throw std::logic_error("The method or operation is not implemented.");
+std::string ConstructBuildingSimTask::getDebugString() const {
+    std::string output = std::string("  Task: ") + std::string(getTaskName());
+    output += std::format("\n    State: {}\n", e_cast(mState));
+    return output;
 }
 
 void ConstructBuildingSimTask::initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount) {
@@ -510,7 +512,7 @@ void ConstructBuildingSimTask::updateMoveToItemStackFull(World& world, entt::reg
                 const f32v2 targetPos = mContext.getClosestValidInteractPosition(fullRegistry.get<PositionComponent>(fullAgent).mPosition);
                 f32v3 pos3D(targetPos.x, targetPos.y, world.getTerrainHeightAtPoint(targetPos));
                 mMoveSubtask.initFull(pos3D, MIN_BLUEPRINT_INTERACT_RADIUS, TMP_TARGET_RADIUS);
-                debugDrawFullEntityPathTarget(world, fullRegistry, fullAgent, targetPos, color::Yellow, 600);
+                //debugDrawFullEntityPathTarget(world, fullRegistry, fullAgent, targetPos, color::Yellow, 600);
 
                 mTileItemReservation.reset();
             }

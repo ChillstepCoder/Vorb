@@ -80,6 +80,7 @@ public:
     static void operator delete(void* pointer, size_t count);
 
     const f32v3* getPoints() const { return points; }
+    f32v3 getPoint(i32 i) const { return points[i]; }
     i32 getNumPoints() const { return numPoints; }
     // If not INVALID_CHUNK_ID, then the path ends on a sim chunk and we should move into it 
     // and become a sim entity

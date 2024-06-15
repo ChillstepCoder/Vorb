@@ -18,6 +18,12 @@ MoveToPointSimTask::MoveToPointSimTask(entt::registry& registry, entt::entity ag
     }
 }
 
+std::string MoveToPointSimTask::getDebugString() const {
+    std::string output = std::string("  Task: ") + std::string(getTaskName());
+    output += std::format("\n    Target: ({},{})\n", moveSubtask.mWorldPosTarget.x, moveSubtask.mWorldPosTarget.y);
+    return output;
+}
+
 void MoveToChunkPointSimSubtask::initSim(entt::registry& simRegistry, entt::entity simAgent, f32v2 worldPos, f32 successRadius, f32 targetRadius) {
     mWorldPosTarget = worldPos;
     mSuccessRadiusSQ = SQ(successRadius);

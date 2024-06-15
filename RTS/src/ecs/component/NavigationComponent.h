@@ -46,6 +46,11 @@ struct NavigationComponent {
 	NavigationStatus getStatus() const { return mStatus; }
 	NavPathID getCurrentNavPathID() const { return mCurrentNavPathID; }
 
+	std::shared_ptr<NavPath> getFinePathHandle() const { return mFinePath; }
+	std::shared_ptr<NavPath> getCoarsePathHandle() const { return mCoarsePath; }
+	i32 getCurrentFinePoint() const { return mCurrentFinePoint; }
+	i32 getCurrentCoarsePoint() const { return mCurrentCoarsePoint; }
+
 private:
 	NavPathID incrementNavPathID();
 

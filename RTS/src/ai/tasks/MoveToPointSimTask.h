@@ -36,6 +36,7 @@ public:
 	virtual void onTransitionToSim(World&, entt::registry& simRegistry, entt::entity simAgent) { moveSubtask.onTransitionToSim(simRegistry, simAgent); }
 
 	const char* getTaskName() const override { return "Move To Point"; }
+	std::string getDebugString() const override;
 
 	MoveToChunkPointSimSubtask moveSubtask;
 };

@@ -86,7 +86,9 @@ public:
 	std::unique_ptr<ISimTask> tryAquireNextSubtaskForFullCharacter(entt::registry& fullRegistry, entt::entity fullCharacter) override;
 
 	void onAbortTask(ISimTask& task) override;
-	void onCompleteTask(ISimTask& task) override;
+    void onCompleteTask(ISimTask& task) override;
+
+    const char* getName() const override { return "Construct Building"; }
 
 private:
 	bool isFinished();

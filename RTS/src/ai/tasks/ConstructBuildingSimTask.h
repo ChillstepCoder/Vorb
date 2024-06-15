@@ -34,7 +34,8 @@ public:
 	void onTransitionToFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) override;
 	void onTransitionToSim(World& world, entt::registry& simRegistry, entt::entity simAgent) override;
 
-	const char* getTaskName() const override;
+	const char* getTaskName() const override { return "Construct Building"; }
+	std::string getDebugString() const override;
 
 private:
 	void initItemPromise(FillableSimpleItemStack& blueprintStack, i32 count, bool shouldUpdateBPCount);
@@ -72,14 +73,14 @@ private:
 	void freeHandles();
 
 	enum class State {
-        Init,
-        MoveToItemStack,
-		MoveToHarvestable,
-		Harvest,
-		MoveToBlueprint,
-		PlaceItems,
-		SelectToConstruct,
-		End,
+        Init              = 0,
+        MoveToItemStack   = 1,
+		MoveToHarvestable = 2,
+		Harvest           = 3,
+		MoveToBlueprint   = 4,
+		PlaceItems        = 5,
+		SelectToConstruct = 6,
+		End               = 7,
 		COUNT
 	} mState = State::Init;
 	SimTaskTickResult mCurrentResult = SimTaskTickResult::InProgress;

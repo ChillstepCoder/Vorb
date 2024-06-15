@@ -25,6 +25,8 @@ public:
 
     bool isFinished() const { return mFinished; }
     World& getWorld() const { return mWorld; }
+
+    virtual const char* getName() const = 0;
 protected:
     void finishJob();
     void destroySelf();

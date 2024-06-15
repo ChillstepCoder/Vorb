@@ -112,7 +112,7 @@ DebugOptions::DebugOptions() :
     mShowBusinessDebug(true),
     mShowSettlementDebug(false),
     mShowEditor(false),
-    mShowPaths(true),
+    mShowPaths(false),
     mDebugFishEcosystem(false),
     mShowFish(true),
     mShowEntityQueries(false),

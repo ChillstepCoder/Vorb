@@ -118,29 +118,21 @@ void Camera3D::setOrientation(const f32q& orientation) {
 
 f32v3 Camera3D::worldToScreenPoint(const f32v3& worldPoint) const {
     // Transform world to clipping coordinates
-    f32v4 clipPoint = mMatrices.VP * f32v4(worldPoint, 1.0f);
+    f32v4 clipPoint = mMatrices.VP * f32v4(worldPoint - mPosition, 1.0f);
     clipPoint.x /= clipPoint.w;
     clipPoint.y /= clipPoint.w;
     clipPoint.z /= clipPoint.w;
     return f32v3((clipPoint.x + 1.0) / 2.0f,
         (1.0 - clipPoint.y) / 2.0f,
-        clipPoint.z);
+        (clipPoint.z + 1.0f) / 2.0f);
 }
 
-f32v3 Camera3D::worldToScreenPointLogZ(const f32v3& worldPoint, f32 zFar) const {
-    // Transform world to clipping coordinates
-    f32v4 clipPoint = mMatrices.VP * f32v4(worldPoint, 1.0f);
-    clipPoint.z = log2(glm::max(0.0001f, clipPoint.w + 1.0f)) * 2.0f / log2(zFar + 1.0f) - 1.0f;
-    clipPoint.x /= clipPoint.w;
-    clipPoint.y /= clipPoint.w;
-    return f32v3((clipPoint.x + 1.0f) / 2.0f,
-        (1.0f - clipPoint.y) / 2.0f,
-        clipPoint.z);
-}
-
-f32v3 Camera3D::getPickRay(const f32v2& ndcScreenPos) const {
-    f32v4 clipRay(ndcScreenPos.x, ndcScreenPos.y, -1.0f, 1.0f);
-    f32v4 eyeRay = mMatrices.inverseP * clipRay;
-    eyeRay = f32v4(eyeRay.x, eyeRay.y, -1.0f, 0.0f);
-    return glm::normalize(f32v3(mMatrices.inverseV * eyeRay));
+f32v3 Camera3D::getPickRayWorldSpace(f32v2 ndcScreenPos) const {
+    f32v4 pickRayClipSpace(ndcScreenPos.x, ndcScreenPos.y, -1.0f, 1.0f);
+    f32v4 pickRayEyeSpace = mMatrices.inverseP * pickRayClipSpace;
+    pickRayEyeSpace.z = -1.0f;
+    pickRayEyeSpace.w = 0.0f;
+    f32v4 pickRayWorldSpace = mMatrices.inverseV * pickRayEyeSpace;
+    f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
+    return glm::normalize(pickRayXYZ);
 }
