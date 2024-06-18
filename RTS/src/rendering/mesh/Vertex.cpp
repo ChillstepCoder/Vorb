@@ -37,13 +37,15 @@ VertexType WaterVertex::bindVertexAttribs(VGBuffer vao) {
     return VertexType::WATER;
 }
 
-void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence) {
+void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence, ui8 damageZone /*= 0*/) {
     this->pos = pos;
     this->materialId = materialIdOrSlot;
     this->uvsPacked = PackUVs(uvs);
     this->normalPacked = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
     this->tangentPacked = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);
     this->color = color;
+    this->windInfluence = windInfluence;
+    this->damageZone = damageZone;
 }
 
 VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
@@ -83,6 +85,10 @@ VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     glEnableVertexArrayAttrib(vao, 5);
     glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(StaticModelVertex, tangentPacked));
     glVertexArrayAttribBinding(vao, 5, BINDING_POINT_INTERLEAVED);
+
+    glEnableVertexArrayAttrib(vao, 12);
+    glVertexArrayAttribIFormat(vao, 12 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, offsetof(StaticModelVertex, damageZone));
+    glVertexArrayAttribBinding(vao, 12, BINDING_POINT_INTERLEAVED);
 
     // TODO: WIND
 

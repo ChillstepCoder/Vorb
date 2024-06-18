@@ -8,6 +8,7 @@
 #include "tile/TileSpatialGrid.h"
 #include "tile/TileWallContainer.h"
 #include "tile/TileItemContainer.h"
+#include "tile/TileDamageData.h"
 #include "visibility/TileVisibilityContainer.h"
 
 #include "physics/StaticPhysicsMesh.h"
@@ -235,7 +236,7 @@ private:
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
 
-    boost::container::flat_map<TileIndex, ui16> mDamagedTiles;
+    boost::container::flat_map<TileIndex, TileDamageDataPtr> mDamagedTiles;
 
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;

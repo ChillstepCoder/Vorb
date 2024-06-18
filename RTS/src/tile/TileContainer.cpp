@@ -123,7 +123,8 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 va
     if (navBlockerType != prevNavBlockerType) {
         if (prevNavBlockerType != NavBlockerType::NONE) {
             // Remove old blockage
-            removeBlockerFromAdjTiles(i, prevNavBlockerType);
+            // TODO: REPLACE
+            //removeBlockerFromAdjTiles(i, prevNavBlockerType);
         }
         if (navBlockerType != NavBlockerType::NONE) {
             if (!tryBlockAdjTiles(i, navBlockerType)) {
@@ -459,18 +460,17 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
 
         std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;
         // Destroy tile
+        mTiles[index].clearTileFlag(TileFlags::IS_DAMAGED);
         setTileLayer(index, TileLayer::Main, TILE_ID_NONE, 0);
         // Damage + Death event
         dispatchTileDamaged(evnt);
         mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
         dispatchTileDestroyed(evnt);
         mWorld.getTileContainerRepository().dispatchTileDestroyed(evnt);
-
-       
     };
 
     // Check if already damaged
-    ui16* healthPtr = nullptr;
+    TileDamageData* healthPtr = nullptr;
     auto&& it = mDamagedTiles.find(index);
     if (it == mDamagedTiles.end()) {
         // Tile is not damaged yet
@@ -491,7 +491,8 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
                 return true;
             }
             else {
-                healthPtr = &mDamagedTiles.insert(std::make_pair(index, maxHealth)).first->second;
+                healthPtr = mDamagedTiles.insert(std::make_pair(index, TileDamageData::create(maxHealth))).first->second.get();
+                mTiles[index].setTileFlag(TileFlags::IS_DAMAGED);
             }
         }
         else {
@@ -501,13 +502,14 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
     }
     else {
         // Tile already damaged, get current health
-        healthPtr = &it->second;
+        healthPtr = it->second.get();
     }
 
-    const int currentHealth = (int)*healthPtr;
+    const int currentHealth = healthPtr->getCurrentHealth();
     assert(currentHealth != 0);
     if (healthAdjust < 0) {
         // Event data
+        // TODO: Add source
         TileContainerEvent evnt;
         evnt.container = this;
         evnt.varEvent = TileDamagedEvent{
@@ -518,18 +520,22 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
             .impactNormal = impactNormal
         };
 
-        if (healthAdjust <= -currentHealth) {
-            assert(it != mDamagedTiles.end());
+        // Damage event
+        TileDamageResistances resistances; // Default for now
+        const f32v3 tilePosWorld = mTileSpatialGrid.getTileCenterWorldPos3D(index, mTiles[index].getGroundZOffset());
+        const f32v2 impactNormal2d = MathUtil::rotateVector2DRad(f32v2(impactNormal.x, impactNormal.y), getTileModelRotationAtPosition(tilePosWorld));
+        const i32 appliedDamage = healthPtr->applyDamageStrike(impactNormal2d, impactPosition.z - mTiles[index].groundZOffset, -healthAdjust, resistances);
+        std::get<TileDamagedEvent>(evnt.varEvent).damageAmount = appliedDamage;
+
+        if (healthPtr->getCurrentHealth() == 0) {
             mDamagedTiles.erase(it);
             destroyTile(evnt);
             return true;
         }
-        else {
-            // Damage event
-            *healthPtr = (ui16)((int)*healthPtr + healthAdjust);
-            dispatchTileDamaged(evnt);
-            mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
-        }
+
+        std::get<TileDamagedEvent>(evnt.varEvent).damageData = *healthPtr;
+        dispatchTileDamaged(evnt);
+        mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
     }
     else {
         assert(false); // handle healing!
@@ -597,6 +603,10 @@ void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) co
         memcpy(dataCopy.tiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
         dataCopy.walls.copyFrom(mTileWallsContainer);
         dataCopy.spatialGrid = mTileSpatialGrid;
+        dataCopy.damageData.reserve(mDamagedTiles.size());
+        for (auto&& [index, damageData] : mDamagedTiles) {
+            dataCopy.damageData.emplace_hint(dataCopy.damageData.end(), index, *damageData);
+        }
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 

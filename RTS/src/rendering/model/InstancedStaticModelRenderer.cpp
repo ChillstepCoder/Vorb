@@ -3,6 +3,7 @@
 
 #include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
+#include "resources/MaterialRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialUtils.h"
@@ -123,6 +124,11 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelIns
     }
 
     glUniform1f(def->getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
+    // Force load
+    MaterialRepository::get().getAssetHandle(CStrToken("wood_chopping_texture_01"));
+    if (def->tryGetUniform("unDamageTexture")) {
+        glUniform1ui(def->getUniform("unDamageTexture"), MaterialRepository::get().getMaterialId(CStrToken("wood_chopping_texture_01")));
+    }
     for (auto& [modelId, instanceData] : modelInstances) {
         for (int m = 0; m < instanceData.mMeshCount; ++m) {
             if (!instanceData.mDrawCommands[m]) {
@@ -145,10 +151,12 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelIns
                 // Variant data
                 assert(mesh.mVariantDataUbo);
                 glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_DAMAGE_DATA_SSBO, instanceData.mDamageZonesSSBO);
 
                 // Bind our transforms every frame as we could be using different instanced static model managers
                 GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
-                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
+                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
+                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_DAMAGE_INDICES_BINDING_POINT, instanceData.mDamageModelIndexVbo, 0, sizeof(ui32));
 
                 // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
                 //// Make sure we created a fence for this instance

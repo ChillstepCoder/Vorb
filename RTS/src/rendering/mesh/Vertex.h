@@ -29,7 +29,7 @@ inline i16v2 PackUVs(const f32v2& uvs) {
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 struct alignas(16) StaticModelVertex {
-    f32v3 pos;
+    f32v3 pos; // TODO: Can we get away with 16 bit local positions?
     ui32 normalPacked;
     ui32 tangentPacked;
     i16v2 uvsPacked;
@@ -39,9 +39,10 @@ struct alignas(16) StaticModelVertex {
         ui16 materialId; // Used by procedural mesh builder
     };
     ui8 windInfluence;
+    ui8 damageZone; // 0-64
 
     // TODO: Pre-packed normals/tangent
-    void build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence);
+    void build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence, ui8 damageZone = 0);
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::STATIC_MODEL; }

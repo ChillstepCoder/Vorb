@@ -12,7 +12,6 @@
 #include "rendering/model/ModelUtil.h"
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
-#include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
 #include "rendering/model/ModelBillboardLodManager.h"
 
 #include "camera/Camera3D.h"
@@ -84,6 +83,8 @@ InstancedStaticModelManager::~InstancedStaticModelManager() {
     for (auto& it : mModelBatches) {
         GL.glDeleteBuffers(1, &it.second.mTransformsVbo);
         GL.glDeleteBuffers(1, &it.second.mVariantsVbo);
+        GL.glDeleteBuffers(1, &it.second.mDamageModelIndexVbo);
+        GL.glDeleteBuffers(1, &it.second.mDamageZonesSSBO);
     }
 }
 
@@ -125,8 +126,12 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             if (batchData.mTransformsVbo) {
                 GL.glDeleteBuffers(1, &batchData.mTransformsVbo);
                 GL.glDeleteBuffers(1, &batchData.mVariantsVbo);
+                GL.glDeleteBuffers(1, &batchData.mDamageModelIndexVbo);
+                GL.glDeleteBuffers(1, &batchData.mDamageZonesSSBO);
                 batchData.mTransformsVbo = 0;
                 batchData.mVariantsVbo = 0;
+                batchData.mDamageModelIndexVbo = 0;
+                batchData.mDamageZonesSSBO = 0;
             }
             continue;
         }
@@ -162,17 +167,25 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 // GPU buffer is larger to accommodate the work group size, or we get corruption
                 const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
                 const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * batchData.mInstanceTransforms.size();
-                assert(batchData.mInstanceVariants.size() == batchData.mInstanceTransforms.size());
+                assert(batchData.mInstanceVariantIndices.size() == batchData.mInstanceTransforms.size());
                 if (batchData.mTransformsVbo == 0) {
                     GL.glCreateBuffers(1, &batchData.mTransformsVbo);
                     GL.glCreateBuffers(1, &batchData.mVariantsVbo);
+                    GL.glCreateBuffers(1, &batchData.mDamageModelIndexVbo);
+                    GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
                     for (int m = 0; m < batchData.mMeshCount; ++m) {
                         batchData.mMesh[m]->bindStaticModelAttribs();
                     }
                     GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
                     GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariants.size(), batchData.mInstanceVariants.data());
+                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariantIndices.size(), batchData.mInstanceVariantIndices.data());
+                    GL.glNamedBufferStorage(batchData.mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mDamageModelIndexVbo, 0, sizeof(ui32) * batchData.mInstanceDamageModelIndices.size(),
+                        batchData.mInstanceDamageModelIndices.data());
+                    // TODO: Only create this if batchData.mModelDamageZonesGpuData.size() > 0, otherwise use a global one
+                    GL.glNamedBufferStorage(batchData.mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), batchData.mModelDamageZonesGpuData.data());
                     batchData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else if (gpuBufferSizeBytes > batchData.mTransformsVboSizeBytes) {
@@ -180,12 +193,20 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     // Grow to new size
                     GL.glDeleteBuffers(1, &batchData.mTransformsVbo);
                     GL.glDeleteBuffers(1, &batchData.mVariantsVbo);
+                    GL.glDeleteBuffers(1, &batchData.mDamageModelIndexVbo);
+                    GL.glDeleteBuffers(1, &batchData.mDamageZonesSSBO);
                     GL.glCreateBuffers(1, &batchData.mTransformsVbo);
                     GL.glCreateBuffers(1, &batchData.mVariantsVbo);
+                    GL.glCreateBuffers(1, &batchData.mDamageModelIndexVbo);
+                    GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
                     GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
                     GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariants.size(), batchData.mInstanceVariants.data());
+                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariantIndices.size(), batchData.mInstanceVariantIndices.data());
+                    GL.glNamedBufferStorage(batchData.mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mDamageModelIndexVbo, 0, sizeof(ui32) * batchData.mInstanceDamageModelIndices.size(), batchData.mInstanceDamageModelIndices.data());
+                    GL.glNamedBufferStorage(batchData.mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    GL.glNamedBufferSubData(batchData.mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), batchData.mModelDamageZonesGpuData.data());
                     batchData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else {
@@ -200,8 +221,22 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     glNamedBufferSubData(
                         batchData.mVariantsVbo,
                         batchData.mFirstDirtyInstance * sizeof(ui8),
-                        (sizeof(ui8) * batchData.mInstanceVariants.size()) - batchData.mFirstDirtyInstance * sizeof(ui8),
-                        batchData.mInstanceVariants.data() + batchData.mFirstDirtyInstance
+                        (sizeof(ui8) * batchData.mInstanceVariantIndices.size()) - batchData.mFirstDirtyInstance * sizeof(ui8),
+                        batchData.mInstanceVariantIndices.data() + batchData.mFirstDirtyInstance
+                    );
+                    glNamedBufferSubData(
+                        batchData.mDamageModelIndexVbo,
+                        batchData.mFirstDirtyInstance * sizeof(ui32),
+                        (sizeof(ui32) * batchData.mInstanceDamageModelIndices.size()) - batchData.mFirstDirtyInstance * sizeof(ui32),
+                        batchData.mInstanceDamageModelIndices.data() + batchData.mFirstDirtyInstance
+                    );
+
+                    // Refresh all damage zones except the first one every time
+                    glNamedBufferSubData(
+                        batchData.mDamageZonesSSBO,
+                        sizeof(ModelDamageZoneGpuData), // Skip first
+                        sizeof(ModelDamageZoneGpuData) * (batchData.mModelDamageZonesGpuData.size() - 1),
+                        batchData.mModelDamageZonesGpuData.data()
                     );
                 }
             }
@@ -377,7 +412,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
     updateAnimatedModels(elapsedSec);
 }
 
-void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex) {
+void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData) {
     ASSERT_RENDER_THREAD();
 
     increfModelDef(modelId, 1);
@@ -385,7 +420,7 @@ void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID cont
     const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
     assert(modelDefPtr);
 
-    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex);
+    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex, std::move(damageData));
 }
 
 void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
@@ -420,14 +455,14 @@ TileModelInstance* InstancedStaticModelManager::getTileInstanceAtPosition(LiteTi
     return nullptr;
 }
 
-bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileHandle) {
+bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileHandle, ModelID modelId) {
     auto&& it = mTileContainerTrackedModels.find(tileHandle.containerId);
     if (it != mTileContainerTrackedModels.end()) {
         SpatialInstanceDataMap& spatialMap = it->second;
         auto&& spit = spatialMap.find(tileHandle.index);
 
         if (spit != spatialMap.end()) {
-            return true;
+            return spit->second.mModelID == modelId;
         }
     }
     return false;
@@ -459,15 +494,24 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
             batchData.mFirstDirtyInstance = startIndex;
         }
         batchData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
-        batchData.mInstanceVariants.resize(startIndex + sourceInstances.size());
+        batchData.mInstanceVariantIndices.resize(startIndex + sourceInstances.size());
+        batchData.mInstanceDamageModelIndices.resize(startIndex + sourceInstances.size());
         batchData.mInstanceSources.resize(batchData.mInstanceTransforms.size());
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
             batchData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            batchData.mInstanceVariants[instanceIndex] = modelInstance.variantIndex;
+            batchData.mInstanceVariantIndices[instanceIndex] = modelInstance.variantIndex;
             batchData.mInstanceSources[instanceIndex] = ModelInstanceContainerOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+            if (modelInstance.damageData) {
+                batchData.mInstanceDamageModelIndices[instanceIndex] = batchData.mModelDamageZonesGpuData.size();
+                ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData.emplace_back();
+                gpuDamageData.damageZones = modelInstance.damageData->getShellDamageZones();
+            }
+            else {
+                batchData.mInstanceDamageModelIndices[instanceIndex] = 0;
+            }
             assert(tileContainerModels.find(modelInstance.tileIndex) == tileContainerModels.end());
             tileContainerModels[modelInstance.tileIndex] = { it.first, (ui32)instanceIndex };
         }
@@ -499,10 +543,10 @@ ui32 InstancedStaticModelManager::getNumModels() const {
     return numModels;
 }
 
-void InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction) {
+bool InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction, ModelID modelId) {
     // Ensure tile exists as static model
-    if (!hasTileInstanceAtPosition(targetTile)) {
-        return;
+    if (!hasTileInstanceAtPosition(targetTile, modelId)) {
+        return false;
     }
 
     // Overwrite existing animation if any
@@ -510,6 +554,7 @@ void InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHand
     anim.animType = animType;
     anim.currentTimeSec = 0.0f;
     anim.direction = direction;
+    return true;
 }
 
 void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent& evnt) {
@@ -571,6 +616,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
     }
     static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
+
     if (editEvents.removeEvents.size() || editEvents.addEvents.size()) {
 
         ModelEditEvents* editPtr = new ModelEditEvents(std::move(editEvents));
@@ -583,7 +629,8 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 manager->removeTileInstanceAtPosition(containerId, index);
             }
             for (auto&& addEvent : editPtr->addEvents) {
-                manager->addTileInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/);
+                // Assume no damage for now!
+                manager->addTileInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, getTileModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/, nullptr);
             }
             delete editPtr;
         }, editPtr);
@@ -627,7 +674,10 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
         hitNormal = MathUtil::rotateVector2D(hitNormal, 90.0f);
 
         const LiteTileHandle handle(taskData->container->getId(), evnt.tileIndex);
-        taskData->modelManager->playAnimationOnInstanceAtPosition(handle, StaticModelAnimationTypes::HitWiggle, hitNormal);
+        if (taskData->modelManager->playAnimationOnInstanceAtPosition(handle, StaticModelAnimationTypes::HitWiggle, hitNormal, TileRepository::get().getLoadedOrUnloadedAsset(evnt.tileId).modelRef.getAssetID())) {
+            // Apply damage to model
+            taskData->modelManager->onTileInstanceDamageChanged(taskData->container->getId(), evnt.tileIndex, evnt.damageData);
+        }
 
         taskData->container->decRef();
         delete taskData;
@@ -716,15 +766,21 @@ void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelBatchDa
     batchData.mInstanceSources[instanceIndex] = backSource;
     batchData.mInstanceSources.pop_back();
 
-
     // Replace this instance with back instance
     batchData.mInstanceTransforms[instanceIndex] = std::move(batchData.mInstanceTransforms.back());
     batchData.mInstanceTransforms.pop_back();
-    batchData.mInstanceVariants[instanceIndex] = std::move(batchData.mInstanceVariants.back());
-    batchData.mInstanceVariants.pop_back();
+    batchData.mInstanceVariantIndices[instanceIndex] = std::move(batchData.mInstanceVariantIndices.back());
+    batchData.mInstanceVariantIndices.pop_back();
+    const ui32 damageModelIndex = batchData.mInstanceDamageModelIndices[instanceIndex];
+    // If we had a damage model, need to remove it and fixup ref
+    if (damageModelIndex != 0) {
+        removeDamageModelInternal(batchData, damageModelIndex);
+    }
+    batchData.mInstanceDamageModelIndices[instanceIndex] = batchData.mInstanceDamageModelIndices.back();
+    batchData.mInstanceDamageModelIndices.pop_back();
 }
 
-void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex) {
+void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData) {
 
     StaticModelBatchData& batchData = mModelBatches[modelDef.getID()];
 
@@ -734,7 +790,15 @@ void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelD
     }
     // Store per tile references
     batchData.mInstanceTransforms.emplace_back(transform);
-    batchData.mInstanceVariants.emplace_back(variantIndex);
+    batchData.mInstanceVariantIndices.emplace_back(variantIndex);
+    if (damageData) {
+        batchData.mInstanceDamageModelIndices.emplace_back(batchData.mModelDamageZonesGpuData.size());
+        ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData.emplace_back();
+        gpuDamageData.damageZones = damageData->getShellDamageZones();
+    }
+    else {
+        batchData.mInstanceDamageModelIndices.emplace_back(0);
+    }
     batchData.mInstanceSources.emplace_back(ModelInstanceContainerOwner{ containerId, tileIndex });
     SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
 
@@ -756,6 +820,72 @@ void InstancedStaticModelManager::removeTileInstanceInternal(TileModelInstance& 
     }
 }
 
+void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData) {
+    TileModelInstance* instance = getTileInstanceAtPosition(LiteTileHandle{ containerId, tileIndex });
+    assert(instance);
+
+    const bool isUndamaged = damageData.getShellDamageZones() == TileDamageData().getShellDamageZones();
+
+    auto& [modelID, batchData] = *mModelBatches.find(instance->mModelID);
+    ui32& damageModelIndex = batchData.mInstanceDamageModelIndices[instance->mInstanceIndex];
+    if (damageModelIndex != 0) {
+        if (isUndamaged) {
+           
+            batchData.mInstanceDamageModelIndices[instance->mInstanceIndex] = 0;
+            removeDamageModelInternal(batchData, damageModelIndex);
+        }
+        else {
+            ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData[damageModelIndex];
+            gpuDamageData.damageZones = damageData.getShellDamageZones();
+            // Immediately update buffer
+            glNamedBufferSubData(
+                batchData.mDamageZonesSSBO,
+                damageModelIndex * sizeof(ModelDamageZoneGpuData),
+                sizeof(ModelDamageZoneGpuData),
+                &gpuDamageData
+            );
+        }
+    }
+    else {
+        if (isUndamaged) {
+            // We are already tracking the damage model 0, do nothing
+            return;
+        }
+        damageModelIndex = batchData.mModelDamageZonesGpuData.size();
+        ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData.emplace_back();
+        gpuDamageData.damageZones = damageData.getShellDamageZones();
+        // Immediately rebuild SSBO
+        GL.glDeleteBuffers(1, &batchData.mDamageZonesSSBO);
+        GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
+        GL.glNamedBufferStorage(batchData.mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+        GL.glNamedBufferSubData(batchData.mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), batchData.mModelDamageZonesGpuData.data());
+    }
+    // Update damage index buffer
+    glNamedBufferSubData(
+        batchData.mDamageModelIndexVbo,
+        instance->mInstanceIndex * sizeof(ui32),
+        sizeof(ui32),
+        &damageModelIndex
+    );
+}
+
+void InstancedStaticModelManager::removeDamageModelInternal(StaticModelBatchData& batchData, ui32 damageModelIndex) {
+    batchData.mModelDamageZonesGpuData[damageModelIndex] = std::move(batchData.mModelDamageZonesGpuData.back());
+    batchData.mModelDamageZonesGpuData.pop_back();
+    // Fixup relocated
+    // TODO: This is inefficient
+    for (ui32& index : batchData.mInstanceDamageModelIndices) {
+        if (index > damageModelIndex) {
+            --index;
+            glNamedBufferSubData(
+                batchData.mDamageModelIndexVbo,
+                index * sizeof(ui32),
+                sizeof(ui32),
+                &index
+            );
+        }
+    }
+}
 
 void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex) {
 
@@ -768,7 +898,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
         batchData.mFirstDirtyInstance = instanceIndex;
     }
     batchData.mInstanceTransforms.emplace_back(transform);
-    batchData.mInstanceVariants.emplace_back(variantIndex);
+    batchData.mInstanceVariantIndices.emplace_back(variantIndex);
     batchData.mInstanceSources.emplace_back(instanceId);
 
     // Store instance lookup

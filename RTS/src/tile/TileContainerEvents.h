@@ -72,6 +72,7 @@ struct TileDamagedEvent {
     ui16 damageAmount = 0;
     f32v3 impactPosition = f32v3(FLT_MAX);
     f32v3 impactNormal = {};
+    TileDamageData damageData;
     bool wasDestroyed = false;
 };
 

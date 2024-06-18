@@ -6,6 +6,7 @@
 // TODO: Too many includes?
 #include "TileConst.h"
 #include "tile/TileFlags.h"
+#include "tile/TileDamageData.h"
 #include "item/ItemStack.h"
 #include "tile/TileWallContainer.h"
 #include "item/Recipe.h"
@@ -91,6 +92,7 @@ struct ContainerMeshDataCopy {
     std::vector<Tile> tiles;
     TileWallContainer walls;
     TileSpatialGrid spatialGrid;
+    boost::container::flat_map<TileIndex, TileDamageData> damageData;
 };
 
 struct ContainerNavDataCopy {
@@ -100,3 +102,6 @@ struct ContainerNavDataCopy {
     TileSpatialGrid spatialGrid;
     BitArray ownedDTiles; // If empty, we own all
 };
+
+// TODO: REMOVE
+extern f32 getTileModelRotationAtPosition(f32v2 worldPos);

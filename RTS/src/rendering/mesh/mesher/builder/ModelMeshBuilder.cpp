@@ -101,7 +101,8 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawVert.uvs,
                 rawVert.color,
                 materialSlot,
-                0
+                0,
+                rawVert.damageZoneIndex
             );
         }
     }

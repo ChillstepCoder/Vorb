@@ -73,7 +73,7 @@ void WorldObjectQuery::queryInternal() {
     // TODO: Tile flag city?
     // Stockpile
     assert(handle.isValid());
-    if (handle.getTile().hasFlag(TileFlags::IS_STOCKPILE)) {
+   /* if (handle.getTile().hasFlag(TileFlags::IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
         const auto* stockPiles = mWorld.getItemStockpileRegistry().tryGetStockpilesAtTileContainer(chunkGrid.getChunk(id).getTileContainer()->getId());
         if (stockPiles) {
@@ -84,7 +84,7 @@ void WorldObjectQuery::queryInternal() {
                 }
             }
         }
-    }
+    }*/
 
     mIsReady = true;
     // Entities

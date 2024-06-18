@@ -41,8 +41,14 @@ void Mesh::bindStaticModelAttribs() const {
         // Variants
         glEnableVertexArrayAttrib(mGpuData.mVao, 11);
         glVertexArrayAttribIFormat(mGpuData.mVao, 11, 1, GL_UNSIGNED_BYTE, 0);
-        glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANTS_BINDING_POINT);
-        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, 1);
+        glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANT_INDICES_BINDING_POINT);
+        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, 1);
+
+        // Damage Model
+        glEnableVertexArrayAttrib(mGpuData.mVao, 13);
+        glVertexArrayAttribIFormat(mGpuData.mVao, 13, 1, GL_UNSIGNED_INT, 0);
+        glVertexArrayAttribBinding(mGpuData.mVao, 13, MODEL_DAMAGE_INDICES_BINDING_POINT);
+        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_DAMAGE_INDICES_BINDING_POINT, 1);
     }
 }
 
@@ -53,6 +59,8 @@ void Mesh::unbindStaticModelAttribs() const {
     glDisableVertexArrayAttrib(mGpuData.mVao, 9);
     glDisableVertexArrayAttrib(mGpuData.mVao, 10);
     glDisableVertexArrayAttrib(mGpuData.mVao, 11);
+    glDisableVertexArrayAttrib(mGpuData.mVao, 12);
+    glDisableVertexArrayAttrib(mGpuData.mVao, 13);
 }
 
 void Mesh::bindSkeletalModelAttribs() const {

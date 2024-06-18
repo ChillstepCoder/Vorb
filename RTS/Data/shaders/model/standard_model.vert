@@ -5,6 +5,7 @@
 
 uniform int unWindType = 0;
 uniform float unSnowLevel;
+uniform float DebugFloat1;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
@@ -15,6 +16,34 @@ layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 layout(location = 7) in mat4 vModelMatrix;
 layout(location = 11) in uint vVariantIndex;
+layout(location = 12) in uint vDamageZoneIndex;
+layout(location = 13) in uint vDamageModelIndex;
+
+struct ModelDamageZoneGPUData {
+    uint damageZones[8]; // Each uint holds four uint8_t values
+    vec2 bottom;
+    vec2 top;
+    vec2 radii;
+};
+
+layout(std430, binding = 7) readonly buffer ModelDamageZoneBuffer {
+    ModelDamageZoneGPUData modelDamageZoneBuffer[];
+};
+
+uint extractDamageZoneByte(ModelDamageZoneGPUData data, uint index) {
+    if (index >= 32) {
+        return 0; 
+    }
+    // Determine which uint in the array holds the byte
+    uint uintIndex = index / 4;
+    // Determine the byte's position within the uint
+    uint byteIndex = index % 4;
+
+    // Extract the byte
+    uint value = data.damageZones[uintIndex];
+    uint byte = (value >> (byteIndex * 8)) & 0xFF;
+    return byte;
+}
 
 out vec2 fUV;
 flat out uint fMaterialIndex;
@@ -23,6 +52,17 @@ out mat3 fTBN;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
 out float fSnow;
+out float fDamage;
+out vec3 fLocalPosition;
+
+float damageTest(inout vec4 position, float damageValue) {
+    vec2 offset = position.xy;
+    float len = length(offset);
+    vec2 offsetNormalized = offset / len;
+    len = max(len * (1.0 - damageValue), min(len * 0.3, 1.0));
+    position.xy = offsetNormalized * len;
+    return damageValue;
+}
 
 void main() {
     fTint = vTint;
@@ -43,6 +83,15 @@ void main() {
     fSnow = max(normal.z, 0.0) * unSnowLevel;
     
     vec4 adjustedPosition = vPosition;
+  
+    uint damageValue = extractDamageZoneByte(modelDamageZoneBuffer[vDamageModelIndex], vDamageZoneIndex);
+    fDamage = float(damageValue) / 255.0;
+    // TODO: Remove fDamage = 
+    damageTest(adjustedPosition, fDamage);
+    
+    fLocalPosition = adjustedPosition.xyz;
+    
+    // Snow
     adjustedPosition.z += fSnow * 0.25f;
     
     vec4 trueWorldPos = (vModelMatrix * adjustedPosition);

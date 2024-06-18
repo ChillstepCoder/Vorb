@@ -47,17 +47,18 @@ public:
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
     // Tile models
-    void addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex);
+    void addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData);
     void removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
     TileModelInstance* getTileInstanceAtPosition(LiteTileHandle tileHandle);
-    bool hasTileInstanceAtPosition(LiteTileHandle tileHandle);
+    bool hasTileInstanceAtPosition(LiteTileHandle tileHandle, ModelID modelId);
     void addTileInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeTileInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
     
     // Entity models
 
-    void playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction);
+    // Return true on success
+    bool playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction, ModelID modelId);
 
     // UNUSED
     void onContainerEditEvent(const TileContainerEvent& evnt);
@@ -74,8 +75,11 @@ private:
 
     void removeModelInstanceInternal(StaticModelBatchData& batchData, ui32 instanceIndex, ModelID modelId);
 
-    void addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex);
+    void addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData);
     void removeTileInstanceInternal(TileModelInstance& instance);
+
+    void onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData);
+    void removeDamageModelInternal(StaticModelBatchData& batchData, ui32 damageModelIndex);
 
     void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
     void removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId);

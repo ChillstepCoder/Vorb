@@ -210,7 +210,7 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
 
         // TODO: I think this might be cheaper as an SSBO so we aren't binding to every mesh
         mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
-        mVariantsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANTS_BINDING_POINT, 0, sizeof(ui8));
+        mVariantsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, 0, sizeof(ui8));
 
         glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/model/MaterialRenderPassType.h"
+#include "tile/TileDamageData.h"
 
 class GLDrawCommandBuffer;
 class Mesh;
@@ -38,6 +39,14 @@ struct StaticMeshAnimation {
     f32v2 direction;
 };
 
+struct alignas(8) ModelDamageZoneGpuData {
+    TileDamageZonesArray damageZones = {};
+    f32v2 bottom = f32v2(0.0f);
+    f32v2 top = f32v2(0.0f, 4.0f);
+    f32v2 radii = f32v2(1.0f, 1.0f);
+};
+static_assert(sizeof(ModelDamageZoneGpuData) == 56, "Size mismatch with gpu");
+
 class StaticModelBatchData
 {
 public:
@@ -45,12 +54,16 @@ public:
     StaticModelBatchData();
 
     std::vector<f32m4> mInstanceTransforms;
-    std::vector<ui8> mInstanceVariants;
+    std::vector<ui8> mInstanceVariantIndices;
+    std::vector<ui32> mInstanceDamageModelIndices;
+    std::vector<ModelDamageZoneGpuData> mModelDamageZonesGpuData; // 0 index is default no damage
     std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
     VGBuffer mTransformsVbo = 0;
     VGBuffer mVariantsVbo = 0;
+    VGBuffer mDamageModelIndexVbo = 0;
+    VGBuffer mDamageZonesSSBO = 0; // TODO: Not every model needs one of these!
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
     const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};

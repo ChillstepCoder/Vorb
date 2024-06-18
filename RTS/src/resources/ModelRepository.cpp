@@ -12,6 +12,8 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/model/ModelBillboardLodManager.h"
 
+#include "tile/TileDamageData.h"
+
 #include "resources/MaterialRepository.h"
 
 #include <ozz/base/io/archive.h>
@@ -89,6 +91,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     {
         std::unique_ptr<FBXRawMesh> rawFbxMesh = std::make_unique<FBXRawMesh>();
         rawMeshPtr = rawFbxMesh.get();
+        // TODO: Free this when done!
         std::lock_guard lock(mRawModelsMutex);
         mRawModels[std::move(modelName)] = std::move(rawFbxMesh);
     }
@@ -166,7 +169,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             rawMaterialIdSlotMapping.reserve(4);
 
             for (size_t i = 0; i < combinedMeshData.mVertices.size(); ++i) {
-                const RawMeshVertex& rawVert = combinedMeshData.mVertices[i];
+                RawMeshVertex& rawVert = combinedMeshData.mVertices[i];
                 // Build AABB
                 if (rawVert.pos.x < minX) minX = rawVert.pos.x;
                 if (rawVert.pos.x > maxX) maxX = rawVert.pos.x;
@@ -185,6 +188,18 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                 }
                 if (!foundSlot) {
                     rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
+                }
+
+                if (rawVert.pos.z >= 1.0f && rawVert.pos.z <= 2.0f) {
+
+                    // Damage model index binding
+                    const float angle = atan2f(rawVert.pos.y, rawVert.pos.x) + M_PIF;
+                    int slice = int(floor(angle / (M_2_PIF / MAX_DAMAGE_ZONE_RADIAL_SECTORS)));
+                    slice = std::clamp(slice, 0, MAX_DAMAGE_ZONE_RADIAL_SECTORS - 1);
+                    rawVert.damageZoneIndex = slice;
+                }
+                else {
+                    rawVert.damageZoneIndex = std::numeric_limits<decltype(rawVert.damageZoneIndex)>::max();
                 }
             }
 

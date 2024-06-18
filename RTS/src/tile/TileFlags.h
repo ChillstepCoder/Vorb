@@ -19,7 +19,8 @@ enum class TileFlags : TileFlagType {
     NAV_BLOCKED_MASK_TERM       = IS_BLOCKED_BY_BUILDING,
     // Bits beyond here do not contribute to nav blocking
     IS_INTERACTING              = BIT(9),
-    IS_STOCKPILE                = BIT(10), // True if owned by a stockpile
+    //IS_STOCKPILE                = BIT(10), // True if owned by a stockpile
+    IS_DAMAGED                  = BIT(10),
     HAS_ITEM_STACK              = BIT(11),
     IS_RESOURCE_RESERVED        = BIT(12),
     IN_CITY                     = BIT(13), // True if inside city limits

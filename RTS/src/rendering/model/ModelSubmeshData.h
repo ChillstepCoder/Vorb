@@ -14,7 +14,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelSubmeshData,
 // Matches std140 layout
 constexpr ui32 MATERIAL_SLOT_COUNT = 4;
 struct alignas(ui32v4) ModelVariantGpuData {
-    ui32v4 materials; // 4 material slots per model
+    ui32v4 materials; // 4 material slots per model. 3 Base, 1 damage
     static_assert(MATERIAL_SLOT_COUNT == 4);
 };
 

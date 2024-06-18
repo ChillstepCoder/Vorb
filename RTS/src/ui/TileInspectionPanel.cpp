@@ -36,7 +36,7 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::LARGE_BLOCKER);
     FLAG_DISPLAY(TileFlags::IS_BLOCKED_BY_BUILDING);
     FLAG_DISPLAY(TileFlags::IS_INTERACTING);
-    FLAG_DISPLAY(TileFlags::IS_STOCKPILE);
+    FLAG_DISPLAY(TileFlags::IS_DAMAGED);
     FLAG_DISPLAY(TileFlags::HAS_ITEM_STACK);
     FLAG_DISPLAY(TileFlags::IS_RESOURCE_RESERVED);
     FLAG_DISPLAY(TileFlags::IN_CITY);

@@ -183,3 +183,10 @@ void Tile::setGroundZOffset(f32 groundZPosition) {
 //    }
 //    walls[e_cast(cartesianSouthOrWest)] = wall;
 //}
+
+
+// TODO: REMOVE
+#include "math/Random.h"
+f32 getTileModelRotationAtPosition(f32v2 worldPos) {
+    return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
+}

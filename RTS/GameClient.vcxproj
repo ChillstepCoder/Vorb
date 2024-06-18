@@ -484,6 +484,7 @@
     <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp" />
     <ClCompile Include="src\tile\SimTileReservation.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
+    <ClCompile Include="src\tile\TileDamageData.cpp" />
     <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
     <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
@@ -971,6 +972,7 @@
     <ClInclude Include="src\tile\SimTileData.h" />
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
+    <ClInclude Include="src\tile\TileDamageData.h" />
     <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />

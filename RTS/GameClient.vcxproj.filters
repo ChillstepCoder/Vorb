@@ -1122,6 +1122,9 @@
     <ClCompile Include="src\ecs\AttachedEntityUpdater.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\tile\TileDamageData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2775,6 +2778,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\AttachedEntityUpdateHandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\TileDamageData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

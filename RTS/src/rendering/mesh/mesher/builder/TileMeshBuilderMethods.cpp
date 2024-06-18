@@ -274,12 +274,22 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                             // Should be impossible?
                             panic("Ground tile {} - {} has a model shape on a non-main layer", index, tiles.tiles[index].getGroundID());
                         }
+
+                        TileDamageDataPtr damageData;
+                        if (tiles.tiles[index].hasFlag(TileFlags::IS_DAMAGED)) {
+                            auto it = tiles.damageData.find(index);
+                            if (it != tiles.damageData.end()) {
+                                damageData = std::make_unique<TileDamageData>(it->second);
+                            }
+                        }
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI, variantIndex);
+                            builders.modelGatherer.addInstance(
+                                tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI, variantIndex, std::move(damageData)
+                            );
                         }
                         else {
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, getModelRotationAtPosition(worldPos), variantIndex);
+                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, getTileModelRotationAtPosition(worldPos), variantIndex, std::move(damageData));
                         }
                         if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
                             physics.addTrackedStaticRigidBody(index, worldPos, tileData.collisionShapeID);
@@ -937,10 +947,6 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
     physMesh.addQuadBetweenPoints(pointsSide);
     meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.materialData[0], f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
     physMesh.addQuadBetweenPoints(&(pointsSide[4]));
-}
-
-f32 TileMeshBuilderMethods::getModelRotationAtPosition(const f32v3& worldPos) {
-    return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
 }
 
 f32v2 TileMeshBuilderMethods::getStructureWoobleAtPoint(const ui32v3& xyz) {

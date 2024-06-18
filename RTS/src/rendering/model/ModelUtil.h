@@ -2,11 +2,35 @@
 
 namespace ModelUtil {
     inline f32m4 computeTransformMatrixForModel(const f32v3& position, f32 yaw) {
-        // TODO: We can construct the matrix manually to optimize out a lot of work
-        f32m4 transform = glm::translate(glm::mat4(1.0f), position);
-        transform = glm::rotate(transform, yaw, f32v3(0.0f, 0.0f, 1.0f));
-        // TODO: Two rotations is bad mkay
-        return glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+        //// TODO: We can construct the matrix manually to optimize out a lot of work
+        //f32m4 transform = glm::translate(glm::mat4(1.0f), position);
+        //transform = glm::rotate(transform, yaw, f32v3(0.0f, 0.0f, 1.0f));
+        //// TODO: Two rotations is bad mkay
+        //return glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+          // Create an identity matrix
+        f32m4 transform(1.0f);
+
+        // Apply translation
+        transform[3][0] = position.x;
+        transform[3][1] = position.y;
+        transform[3][2] = position.z;
+
+        // Apply yaw rotation around Z axis
+        float cosYaw = glm::cos(yaw);
+        float sinYaw = glm::sin(yaw);
+        transform[0][0] = cosYaw;
+        transform[0][1] = -sinYaw;
+        transform[1][0] = sinYaw;
+        transform[1][1] = cosYaw;
+
+        // Apply 90 degrees rotation around X axis
+        // Since cos(90°) = 0 and sin(90°) = 1
+        transform[1][1] = 0.0f;
+        transform[1][2] = -1.0f;
+        transform[2][1] = 1.0f;
+        transform[2][2] = 0.0f;
+
+        return transform;
     }
 
     inline f32m4 computeTransformMatrixForModel(const f32v3& position, const f32v3& normal, f32 yaw) {

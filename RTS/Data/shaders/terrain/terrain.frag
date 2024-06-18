@@ -3,6 +3,7 @@
 #include "GlobalUbo.glsl"
 
 #include "terrain/biome_util.glsl"
+#include "util/triplanar.glsl"
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
@@ -137,57 +138,6 @@ vec3 getTerrainColor(vec2 terrainUvs, int biome) {
     return texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
 }
 
-float getLuminance(vec3 color) {
-    return (0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b);
-}
-
-// https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#38e5
-vec3 getTriPlanarBlend(vec3 norm, float lumaX, float lumaY, float noiseBlend) {
-	// Asymmetric Triplanar Blend
-    vec3 blend = vec3(0.0); // Blend for sides only
-    vec2 xyBlend = normalize(abs(norm.xy));
-    blend.xy = max(vec2(0.0), xyBlend - vec2(0.67));
-    blend.xy /= max(0.00001, dot(blend.xy, vec2(1,1)));// Blend for top
-    
-    
-    // Luminance of cliff affects blend
-    noiseBlend += max(lumaX * blend.x, lumaY * blend.y) * 15.0;
-    blend.z = clamp((abs(norm.z) - unCliffAmount) * unCliffBlendHardness + noiseBlend, 0.0, 1.0);
-    blend.xy *= (1.0 - blend.z);
-    return blend;
-}
-vec3 getTriplanarNormal(vec3 surfaceNorm, vec2 uvX, vec2 uvY, vec3 blend) {
-    // Whiteout blend
-
-    // Tangent space normal maps
-    vec3 tnormalX = texture(CliffNormal, uvX).rgb * 2.0 - vec3(1.0);
-    vec3 tnormalY = texture(CliffNormal, uvY).rgb * 2.0 - vec3(1.0);
-    vec3 tnormalZ = vec3(0.0, 0.0, 1.0);
-
-    // Swizzle world normals into tangent space and apply Whiteout blend
-    tnormalX = vec3(
-        tnormalX.xy + surfaceNorm.zy,
-        abs(tnormalX.z) * surfaceNorm.x
-    );
-    tnormalY = vec3(
-        tnormalY.xy + surfaceNorm.xz,
-        abs(tnormalY.z) * surfaceNorm.y
-    );
-    tnormalZ = vec3(
-        tnormalZ.xy + surfaceNorm.xy,
-        abs(tnormalZ.z) * surfaceNorm.z
-    );
-
-    // Swizzle tangent normals to match world orientation and triblend
-    vec3 worldNormal = normalize(
-        tnormalX.zyx * blend.x +
-        tnormalY.xzy * blend.y +
-        tnormalZ.xyz * blend.z
-    );
-    
-    return worldNormal.xyz;
-}
-
 vec3 heightblend(vec3 input1, float height1, vec3 input2, float height2) {
     float BLEND_FACTOR = 0.4;
     float height_start = max(height1, height2) - BLEND_FACTOR;
@@ -240,15 +190,15 @@ void main() {
     vec3 ySampleFar = texture(CliffTexture, vec2(xyUVFar.x, heightVFar)).rgb;
     
     
-    vec3 weights = getTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(xSampleClose), noiseBlend);
+    vec3 weights = computeTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(ySampleClose), noiseBlend, unCliffAmount, unCliffBlendHardness);
     vec3 cliffClose = weights.x * xSampleClose + weights.y * ySampleClose;
     vec3 cliffFar = weights.x * xSampleFar + weights.y * ySampleFar;
     float cliffDistFactor = min(distance * 0.01, 1.0);
     oColor.rgb = oColor.rgb * weights.z + mix(cliffClose, cliffFar, cliffDistFactor);
     
     // ================================= Output Normals =================================
-    vec3 normalClose = getTriplanarNormal(surfaceNormal, vec2(xyUVClose.y, heightVClose), vec2(xyUVClose.x, heightVClose), weights);
-    vec3 normalFar = getTriplanarNormal(surfaceNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
+    vec3 normalClose = computeTriplanarNormal(surfaceNormal, CliffNormal, vec2(xyUVClose.y, heightVClose), vec2(xyUVClose.x, heightVClose), weights);
+    vec3 normalFar = computeTriplanarNormal(surfaceNormal, CliffNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
     vec3 finalNormal = mix(normalClose, normalFar, cliffDistFactor);
     finalNormal = mix(finalNormal, surfaceNormal, min(fSnow, 1.0));
 

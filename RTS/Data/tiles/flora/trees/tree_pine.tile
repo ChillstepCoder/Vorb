@@ -8,7 +8,7 @@ destroy_effect: tree_explode
 model: tree_pine
 model_variants:
   - 0
-max_health: 100
+max_health: 300
 layer: 1
 shape: model
 path_weight: 0

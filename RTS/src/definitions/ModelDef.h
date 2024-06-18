@@ -64,6 +64,7 @@ public:
     f32AABB3 mAABB; // Calculated from mesh data
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
+    std::vector<f32v3> mDamageZoneSpline = { f32v3(0.0f), f32v3(0.0f, 0.0f, 8.0f) }; // Damage zones align to this spline
 
     // Variants
     std::vector<ModelVariantData> mVariants;
@@ -83,5 +84,6 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mBoundingSphereRadius, "bound_sphere"sv),
     make_field(o.mShadowDetail, "shadow_detail"sv),
     make_field(o.mForceNormalsUp, "force_normals_up"sv),
+    make_field(o.mDamageZoneSpline, "dmg_spline"sv),
     make_field(o.mVariants, "variants"sv)
 );

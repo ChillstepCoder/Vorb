@@ -12,6 +12,7 @@ struct alignas(16) RawMeshVertex {
     f32v2 uvs;
     color4 color;
     ui16 rawMaterialIndex;
+    ui16 damageZoneIndex;
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
 };
