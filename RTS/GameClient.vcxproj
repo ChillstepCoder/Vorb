@@ -364,7 +364,6 @@
     <ClCompile Include="src\rendering\animation\Blendspace1DPlayer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
-    <ClCompile Include="src\rendering\character\CharacterAnimator.cpp" />
     <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\ECSRenderer.cpp" />
@@ -812,7 +811,6 @@
     <ClInclude Include="src\rendering\BufferBindingPoints.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
-    <ClInclude Include="src\rendering\character\CharacterAnimator.h" />
     <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\ECSRenderer.h" />

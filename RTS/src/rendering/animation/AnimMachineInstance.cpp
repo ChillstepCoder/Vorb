@@ -7,8 +7,8 @@
 #include "rendering/model/skeletal/SkeletalAnimator.h"
 
 
-// 6 layers accounts for blending between two blendspace2D
-constexpr ui32 MAX_ANIM_UPDATE_CONTEXT_LAYERS = 6;
+// 14 layers accounts for blending between two blendspace2D + one shot and upper/lower splitting
+constexpr ui32 MAX_ANIM_UPDATE_CONTEXT_LAYERS = 14;
 struct AnimMachineUpdateContext {
     ozz::animation::BlendingJob::Layer layers[MAX_ANIM_UPDATE_CONTEXT_LAYERS];
     ozz::math::SoaTransform transforms[MAX_ANIM_UPDATE_CONTEXT_LAYERS][MAX_JOINTS_IN_RIG];
@@ -96,6 +96,9 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
     // Update the current state
     updateState(*currentState, elapsedSec, updateContext, currentStateWeight);
 
+    // Add one shot animation layer
+    updateOneShot(elapsedSec, updateContext);
+
     if (updateContext.numLayers == 1) {
         // No blend
         if (!SkeletalAnimator::localToModel(updateContext.layers[0].transform, *rigDef, outModelMatrices)) {
@@ -116,6 +119,15 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
             panic("Blended Anim LTM fail!");
         }
     }
+}
+
+bool AnimMachineInstance::tryPlayOneShot(const AnimationDef& animDef) {
+    if (oneShotAnim) {
+        return false;
+    }
+    oneShotAnim = &animDef;
+    oneShotTime = 0.0f;
+    return true;
 }
 
 void AnimMachineInstance::initInternal(const AnimMachineDef& def) {
@@ -192,12 +204,12 @@ void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f3
         layer.weight = data.weight * weight;
 
         // TODO: Cache context for performance!
-        SkeletalAnimationSampleContext context;
-        context.anim = &data.anim->animation;
-        context.time = data.animTime;
-        context.samplingContext.Resize(NUM_JOINTS);
+        SkeletalAnimationSampleContext sampleContext;
+        sampleContext.anim = &data.anim->animation;
+        sampleContext.time = data.animTime;
+        sampleContext.samplingContext.Resize(NUM_JOINTS);
         OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
-        if (!SkeletalAnimator::samplePose(context, *rigDef, transforms)) [[unlikely]] {
+        if (!SkeletalAnimator::samplePose(sampleContext, *rigDef, transforms)) [[unlikely]] {
             panic("Anim sample fail!");
         }
         layer.transform = transforms;
@@ -207,6 +219,105 @@ void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f3
 
 void AnimMachineInstance::updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
     panic("Implement updateBlendspace2D");
+}
+
+void AnimMachineInstance::updateOneShot(f32 elapsedSec, AnimMachineUpdateContext& updateContext) {
+    if (!oneShotAnim) {
+        return;
+    }
+    const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
+    const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
+
+    oneShotTime += elapsedSec;
+    const ozz::animation::Animation& anim = oneShotAnim->animation;
+    if (oneShotTime > anim.duration()) {
+        oneShotAnim = nullptr;
+        oneShotTime = 0;
+        return;
+    }
+
+    f32 oneShotWeight;
+    if (elapsedSec <= oneShotAnim->blendInDuration) {
+        oneShotWeight = oneShotTime / oneShotAnim->blendInDuration;
+    }
+    else if (oneShotTime < anim.duration() - oneShotAnim->blendOutDuration) {
+        oneShotWeight = 1.0f;
+    }
+    else {
+        oneShotWeight = (anim.duration() - oneShotTime) / oneShotAnim->blendOutDuration;
+    }
+
+    constexpr f32 SPEED_BLEND = 0.1f;
+    f32 oneShotLowerBodyWeight = 0.0f;
+    if (updateContext.variables->speed < SPEED_BLEND) {
+        const f32 lowerRatio = 1.0f - updateContext.variables->speed / SPEED_BLEND;
+        oneShotLowerBodyWeight = oneShotWeight * lowerRatio;
+    }
+
+    LOG_INFO("One shot weight: {}, lower: {} - SPEED {} - DUR", oneShotWeight, oneShotLowerBodyWeight, updateContext.variables->speed, anim.duration());
+    blendAndSplitLayersForOneShot(updateContext, oneShotWeight, oneShotLowerBodyWeight);
+
+    assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
+    auto& layer = updateContext.layers[updateContext.numLayers];
+    layer.weight = oneShotWeight;
+    // TODO: Cache context for performance!
+    SkeletalAnimationSampleContext sampleContext;
+    sampleContext.anim = &anim;
+    sampleContext.time = oneShotTime;
+    sampleContext.samplingContext.Resize(NUM_JOINTS);
+    OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
+    if (!SkeletalAnimator::samplePose(sampleContext, *rigDef, transforms)) [[unlikely]] {
+        panic("One shot anim sample fail!");
+    }
+    layer.transform = transforms;
+    ++updateContext.numLayers;
+
+    if (oneShotLowerBodyWeight == 0.0f) {
+        // If no lower body, set to upper only
+        layer.joint_weights = ozz::make_span(rigDef->mUpperBodyJointWeights);
+    }
+    else if (oneShotLowerBodyWeight != oneShotWeight) {
+        layer.joint_weights = ozz::make_span(rigDef->mUpperBodyJointWeights);
+        // Split out lower at separate weight
+
+        assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
+        auto& lowerLayer = updateContext.layers[updateContext.numLayers];
+        lowerLayer.weight = oneShotLowerBodyWeight;
+        lowerLayer.transform = layer.transform;
+        lowerLayer.joint_weights = ozz::make_span(rigDef->mLowerBodyJointWeights);
+        ++updateContext.numLayers;
+    }
+}
+
+void AnimMachineInstance::blendAndSplitLayersForOneShot(AnimMachineUpdateContext& updateContext, f32 oneShotUpperWeight, f32 oneShotLowerWeight) {
+    const f32 upperBodyWeight = 1.0f - oneShotUpperWeight;
+    const f32 lowerBodyWeight = 1.0f - oneShotLowerWeight;
+    // We must split layers into upper and lower body so that we can blend the one shot
+    // with each layer separately
+    const int numLayers = updateContext.numLayers;
+    for (i32 i = 0; i < numLayers; ++i) {
+        if (oneShotUpperWeight == 1.0f) {
+            // One shot completely dominates upper body,
+            // so just blend against lower body
+            auto& layer = updateContext.layers[i];
+            layer.joint_weights = ozz::make_span(rigDef->mLowerBodyJointWeights);
+            layer.weight *= lowerBodyWeight;
+        }
+        else {
+            // Split into two layers for upper and lower portion
+            auto& upperLayer = updateContext.layers[i];
+
+            // Lower
+            auto& lowerLayer = updateContext.layers[updateContext.numLayers++];
+            lowerLayer.joint_weights = ozz::make_span(rigDef->mLowerBodyJointWeights);
+            lowerLayer.weight = upperLayer.weight * lowerBodyWeight;
+            lowerLayer.transform = upperLayer.transform;
+           
+            // Upper
+            upperLayer.joint_weights = ozz::make_span(rigDef->mUpperBodyJointWeights);
+            upperLayer.weight *= upperBodyWeight;
+        }
+    }
 }
 
 void AnimMachineInstance::onBeginState(AnimMachineInstanceState& state) {

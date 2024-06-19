@@ -44,6 +44,9 @@ public:
 
     bool isValid() const { return machineDefHandle != nullptr; }
     const RigDef& getRig() const { assert(rigDef); return *rigDef; }
+    
+    // Return false if there is already a one shot playing
+    bool tryPlayOneShot(const AnimationDef& animDef);
 
 private:
     // Initialize using the instanceTemplate on the AnimMachineDef
@@ -53,6 +56,9 @@ private:
     void updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
     void updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
     void updateBlendspace2D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
+
+    void updateOneShot(f32 elapsedSec, AnimMachineUpdateContext& updateContext);
+    void blendAndSplitLayersForOneShot(AnimMachineUpdateContext& updateContext, f32 oneShotUpperWeight, f32 oneShotLowerWeight);
 
     void onBeginState(AnimMachineInstanceState& state);
 
@@ -65,4 +71,6 @@ private:
     AnimStateID currentStateID = 0;
     ui8 numBlendspace1DPlayers = 0;
     ui8 numStates = 0;
+    const AnimationDef* oneShotAnim = nullptr;
+    f32 oneShotTime = 0.0f;
 };

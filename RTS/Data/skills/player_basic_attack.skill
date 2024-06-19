@@ -1,5 +1,5 @@
 anim: swrd_shld_atk_1
-duration: 1.45
+duration: 1.5
 cost: 0.0
 hit_effect: hitfx
 attack_triggers:
