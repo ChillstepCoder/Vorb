@@ -43,7 +43,7 @@ void NavThread::mainThreadUpdate() {
         }
     }
     if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms *** NAV SPIKE WARNING ***\n";
+        LOG_WARN("{} ms *** NAV SPIKE WARNING ***", timer.stop());
     }
 }
 

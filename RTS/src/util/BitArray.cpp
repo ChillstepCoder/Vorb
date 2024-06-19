@@ -150,11 +150,11 @@ void BitArray::debugPrint(ui32 width, ui32 height) const {
             assert(index < mData.size() / BITS_PER_ELEMENT);
             printf("%2d ", (int)getBit(index));
         }
-        std::cout << "\n";
+        printf("\n");
     }
-    std::cout << "  | ";
+    printf(" | ");
     for (ui32 x = 0; x < width; ++x) {
         printf("%2d ", x);
     }
-    std::cout << std::endl;
+    printf("\n");
 }

@@ -120,9 +120,12 @@ public:
     const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
     void bindStaticModelAttribs() const;
+    void bindDynamicModelAttribs() const;
     void unbindStaticModelAttribs() const;
+    void unbindDynamicModelAttribs() const;
     void bindSkeletalModelAttribs() const;
     void unbindSkeletalModelAttribs() const;
+    void unbindCurrentAttribs() const;
 
     bool castsShadow() const {
         return mRenderPassType != MaterialRenderPassType::Water;
@@ -136,11 +139,20 @@ public:
     MeshGpuData            mGpuData;
     VGBuffer               mVariantDataUbo = 0; // Managed by ModelDef
 protected:
+
+    enum class AttribBinding {
+        None,
+        Static,
+        Dynamic,
+        Skeletal,
+        COUNT
+    };
+    mutable AttribBinding mCurrentAttribBinding = AttribBinding::None;
+
     f32v3                  mPosition = f32v3(0.0f);
     BoundingSphere         mBoundingSphere;  ///< Optional
     MaterialRenderPassType mRenderPassType = MaterialRenderPassType::Default;
     const ModelSubmeshData* mSubmeshData = nullptr;
-    mutable bool mHasModelAttribsBound = false; // Used by instanced model renderers
 };
 
 class TerrainMesh : public Mesh {

@@ -51,10 +51,12 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 if (mPreviewAnim.updateAndRenderImgui("Preview Anim")) {
                     mPreviewAnimTime = 0.0f;
                 }
-                AssetHandlePtr<AnimationDef> previewHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
-                if (previewHandle) {
-                    if (const AnimationDef* def = previewHandle->tryGetLoadedAsset()) {
-                        ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->animation.duration());
+                if (mPreviewAnim.isValid()) {
+                    AssetHandlePtr<AnimationDef> previewHandle = mPreviewAnim.getAssetHandle<AnimationDef>();
+                    if (previewHandle) {
+                        if (const AnimationDef* def = previewHandle->tryGetLoadedAsset()) {
+                            ImGui::SliderFloat("Anim Time", &mPreviewAnimTime, 0.0f, def->animation.duration());
+                        }
                     }
                 }
             }

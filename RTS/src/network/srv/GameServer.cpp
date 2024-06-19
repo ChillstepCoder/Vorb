@@ -111,8 +111,7 @@ int GameServer::tryTick() {
     }
     double currentTime = yojimbo_time();
     if (currentTime - mTimeSec >= SERVER_BACKLOG_FASTFORWARD_TIME_SEC) {
-        std::cout << "Massive server time backlog detected! ";
-        std::cout << mTimeSec << " " << currentTime << std::endl;
+        LOG_CRITICAL("Massive server time backlog detected! {} {}", mTimeSec, currentTime);
         mTimeSec = currentTime; // Fast forward
         return 1;
     }

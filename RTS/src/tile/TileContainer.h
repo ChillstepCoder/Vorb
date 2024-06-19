@@ -163,7 +163,7 @@ public:
         ASSERT_GAME_THREAD(); // Only main thread is allowed to incref
         ++mRefCount;
         if (mRefCount > 2000u) { // This is probably a sign of something really awful
-            std::cout << "DETECTED " << mRefCount << " REF COUNTS ON TILE CONTAINER " << std::endl;
+            LOG_CRITICAL("DETECTED {} REF COUNTS ON TILE CONTAINER", mRefCount.load());
             assert(false && "Too many container refcounts");
         }
     }

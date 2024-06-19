@@ -255,7 +255,7 @@ void RollTable<T>::displayProbabilityTable(float parentProbability, int depth) c
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Indent(depth * 20);  // Indent based on depth
+        ImGui::Indent((float)depth * 20.f);  // Indent based on depth
         //if (!ImguiUtil::displayValue(entry.value)) { //TODO: make this?
             ImGui::Text("%d", i);
         //}
@@ -280,7 +280,7 @@ void RollTable<T>::displayProbabilityTable(float parentProbability, int depth) c
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Indent(depth * 20);  // Indent based on depth
+        ImGui::Indent((float)depth * 20.f);  // Indent based on depth
         ImGui::Text("Empty");
         ImGui::Unindent();
 

@@ -2777,6 +2777,9 @@
     <ClInclude Include="src\tile\TileDamageData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\RandomQuaternion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

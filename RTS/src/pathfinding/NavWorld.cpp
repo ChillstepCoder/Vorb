@@ -1084,7 +1084,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
     const bool isTerrain = tileContainer.isTerrain();
     auto&& it = mNavGraphs.find(containerId);
     if (it == mNavGraphs.end()) {
-        std::cout << "Failed to find navgraph for container " << containerId << std::endl;
+        LOG_CRITICAL("Failed to find navgraph for container {}", containerId);
         return;
     }
     const CoarseNavGraph& graph = it->second.coarseNavGraph;
@@ -1272,7 +1272,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetim
     const bool isTerrain = tileHandle.container->isTerrain();
     auto&& it = mNavGraphs.find(containerId);
     if (it == mNavGraphs.end()) {
-        std::cout << "Failed to find navgraph for container " << containerId << std::endl;
+        LOG_CRITICAL("Failed to find navgraph for container {}", containerId);
         return;
     }
     const CoarseNavGraph& graph = it->second.coarseNavGraph;

@@ -14,8 +14,10 @@ AssetLoadFunc ItemRepository::getAssetLoadFunc() {
         if (def.mIconTextureRef.isValid()) {
             def.addDependency(def.mIconTextureRef.getAssetHandleBase());
         }
-        if (def.mModelRef.isValid()) {
-            def.addDependency(def.mModelRef.getAssetHandleBase());
+        for (ModelAssetRef& modelRef : def.mModelRefs) {
+            if (modelRef.isValid()) {
+                def.addDependency(modelRef.getAssetHandleBase());
+            }
         }
 
         LOAD_DEPENDENCIES_HELPER(def);

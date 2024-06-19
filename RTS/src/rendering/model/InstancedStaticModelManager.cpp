@@ -173,9 +173,6 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     GL.glCreateBuffers(1, &batchData.mVariantsVbo);
                     GL.glCreateBuffers(1, &batchData.mDamageModelIndexVbo);
                     GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
-                    for (int m = 0; m < batchData.mMeshCount; ++m) {
-                        batchData.mMesh[m]->bindStaticModelAttribs();
-                    }
                     GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
                     GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
@@ -224,6 +221,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         (sizeof(ui8) * batchData.mInstanceVariantIndices.size()) - batchData.mFirstDirtyInstance * sizeof(ui8),
                         batchData.mInstanceVariantIndices.data() + batchData.mFirstDirtyInstance
                     );
+                        
                     glNamedBufferSubData(
                         batchData.mDamageModelIndexVbo,
                         batchData.mFirstDirtyInstance * sizeof(ui32),
@@ -900,6 +898,8 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
     batchData.mInstanceTransforms.emplace_back(transform);
     batchData.mInstanceVariantIndices.emplace_back(variantIndex);
     batchData.mInstanceSources.emplace_back(instanceId);
+    // Currently loose models do not support damage
+    batchData.mInstanceDamageModelIndices.emplace_back(0);
 
     // Store instance lookup
     auto&& mp = mLooseStaticModelInstances[modelId];

@@ -16,17 +16,6 @@
 //
 #pragma once
 
-#include <string>
-#include <chrono>
-#include <algorithm>
-#include <fstream>
-#include <sstream>
-#include <mutex>
-#include <map>
-#include <iomanip>
-
-#include <thread>
-
 // Set to 1 to create a file for use by chrome://tracing/
 #define DUMP_FILE 0
 

@@ -2,7 +2,7 @@ emitters:
   - defaultemitter:
       scale: [0.02,0.02]
       color: [255,255,255,255]
-      max_particles: 2000
+      max_particles: 500
       lifetime: 1.63
       p_lifespan: 1.01
       looping: 1
@@ -66,7 +66,7 @@ emitters:
   - cone:
       scale: [0.02,0.02]
       color: [255,255,255,255]
-      max_particles: 2000
+      max_particles: 500
       lifetime: 3
       p_lifespan: 3
       looping: 1
@@ -116,7 +116,7 @@ emitters:
   - defaultemitter2:
       scale: [0.1,0.1]
       color: [255,255,255,255]
-      max_particles: 2000
+      max_particles: 500
       lifetime: 1.63
       p_lifespan: 1.01
       looping: 1
@@ -180,7 +180,7 @@ emitters:
   - cone2:
       scale: [0.1,0.1]
       color: [255,255,255,255]
-      max_particles: 2000
+      max_particles: 500
       lifetime: 3
       p_lifespan: 3
       looping: 1

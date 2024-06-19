@@ -34,7 +34,7 @@ public:
     void createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data);
     ChunkSimTransitionData deactivateEntitiesForChunk(Chunk& chunk);
 
-    void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk);
+    void onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID);
 
     entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mLocalPlayerEntity; }
     entt::entity getLocalPlayerThreadSafe() const;

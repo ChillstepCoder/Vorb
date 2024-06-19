@@ -4,7 +4,6 @@
 //#include <SDL/SDL_syswm.h>
 //#endif
 
-#include <iostream>
 #include <Vorb/Vorb.h>
 #include <Vorb/VorbLibs.h>
 

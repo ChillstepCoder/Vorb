@@ -196,7 +196,6 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
                 employeeCmp.mCurrentTask = std::move(task);
 
                 cmp.mIdleWorkers.pop_front();
-                std::cout << "  REMOVE IDLE 1 " << cmp.mIdleWorkers.size() << " " << cmp.mIdleWorkers.capacity() << std::endl;
                 didAssign = true;
                 break;
             }

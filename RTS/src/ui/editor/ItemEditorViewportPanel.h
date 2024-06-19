@@ -12,5 +12,7 @@ public:
 private:
     const MaterialShaderDef* getShader() override;
     void renderMesh() override;
+
+    i32 mPreviewItemModel = 0;
 };
 

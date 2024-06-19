@@ -177,7 +177,7 @@ void MainMenuScreen::attemptConnect(ServerType serverType) {
         return;
     }
     // TODO: Assert well formatted IP
-    std::cout << "Attempting to connect to " << mTargetHostIP << std::endl;
+    LOG_DEBUG("Attempting to connect to {}", mTargetHostIP);
     mState = MainMenuState::WAITING_JOIN;
     GameClient& gameClient = GameClient::initInstance(serverType, mTargetHostAddress);
     gameClient.connect(DEFAULT_PRIVATE_KEY);

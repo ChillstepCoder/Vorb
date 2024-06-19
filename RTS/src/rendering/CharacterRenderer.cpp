@@ -194,7 +194,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             transform[3][0] = offset.x;
             transform[3][1] = offset.y;
             transform[3][2] = offset.z;
-
             glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
             for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
@@ -209,6 +208,8 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 }
               
                 glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
+
+                skeletalMesh.bindSkeletalModelAttribs();
 
                 // TODO: Indirect?
                 MeshDrawer::draw(skeletalMesh.mGpuData);

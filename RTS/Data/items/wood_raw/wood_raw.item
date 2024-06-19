@@ -1,5 +1,6 @@
 texture: 
-model: wood_raw_item
+models:
+  - wood_raw_item
 type: material
 shape: plank
 harvest: wood

@@ -4,6 +4,8 @@
 #include <Vorb/Event.hpp>
 #include <Vorb/graphics/ShaderManager.h>
 
+#include <conio.h>
+
 std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> ShaderLoader::sProgramCache;
 std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
@@ -92,8 +94,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
         else {
             LOG_CRITICAL("Enter any key to try recompiling with Vertex Shader: {} and Fragment Shader: {} and Geometry Shader: {}\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString(), geometryPath.getCString());
         }
-        char tmp;
-        std::cin >> tmp;
+        char tmp = _getch();
         if (tmp == 'Z' || tmp == 'z') break;
     }
 
@@ -117,8 +118,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
         if (program.isLinked()) break;
         program.dispose();
         LOG_CRITICAL("Enter any key to try recompiling with {} shader.\nEnter Z to abort.\n", name.c_str());
-        char tmp;
-        std::cin >> tmp;
+        char tmp = _getch();
         if (tmp == 'Z' || tmp == 'z') break;
     }
 
@@ -143,8 +143,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nSt
         if (program.isLinked()) break;
         program.dispose();
         LOG_CRITICAL("Enter any key to try recompiling with Compute Shader: {}\nEnter Z to abort.\n", path.getCString());
-        char tmp;
-        std::cin >> tmp;
+        char tmp = _getch();
         if (tmp == 'Z' || tmp == 'z') break;
     }
 

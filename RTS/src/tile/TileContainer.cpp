@@ -12,11 +12,16 @@
 #include "world/World.h"
 #include "world/IChunkGrid.h"
 
+#include "ecs/factory/EntityFactory.h"
+
 #include "building/building.h"
 
 #include "debugging/DebugRenderer.h"
 
 #include "physics/PhysicsWorld.h"
+
+// For item placement
+#include "definitions/ModelDef.h"
 
 TileContainer::TileContainer(World& world) : mWorld(world)
 {
@@ -455,10 +460,12 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
     auto destroyTile = [&](TileContainerEvent evnt) {
 
         // Optional VFX
-        const TileDef& destroyedTile = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
-        if (destroyedTile.destroyEffectRef.isValid()) {
-            mWorld.getEffectContext().playParticleEffectAtPoint(destroyedTile.destroyEffectRef, impactPosition, ParticleSystemInputs(), BitFlags<EffectCreateFlags>());
+        const TileDef& tileDef = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
+        if (tileDef.destroyEffectRef.isValid()) {
+            mWorld.getEffectContext().playParticleEffectAtPoint(tileDef.destroyEffectRef, impactPosition, ParticleSystemInputs(), BitFlags<EffectCreateFlags>());
         }
+       
+        const f32v3 worldPos = getTileCenterWorldPosition(index);
 
         std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;
         // Destroy tile
@@ -469,6 +476,22 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
         dispatchTileDestroyed(evnt);
         mWorld.getTileContainerRepository().dispatchTileDestroyed(evnt);
+
+        // Item drops
+       // TODO: Inventory Operations helper?
+        constexpr i32 MAX_ROLL_RESULTS = 16;
+        ItemRollTable::Result rollResults[MAX_ROLL_RESULTS];
+        const i32 resultCount = tileDef.itemDrops.roll(std::span(rollResults, MAX_ROLL_RESULTS));
+        f32 zSpan = tileDef.modelRef.getLoadedOrUnloadedAsset<ModelDef>().mAABB.dims.z * 0.9f;
+        for (i32 i = 0; i < resultCount; ++i) {
+            const ItemAssetRef itemAsset = rollResults[i].value;
+            const i32 quantity = rollResults[i].quantity;
+            for (i32 j = 0; j < quantity; ++j) {
+                const f32v3 velocity = f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 2.0f) * 2.0f;
+                f32 zOffset = 0.25f + Random::getCachedRandomf() * zSpan;
+                EntityFactory::createItemProjectile(mWorld, worldPos + f32v3(0.0f, 0.0f, zOffset), velocity, ItemStack(itemAsset.getAssetID(), 1));
+            }
+        }
     };
 
     // Check if already damaged

@@ -78,7 +78,6 @@ private:
     BitArray mChunkStates; // Pack SimChunkState into 2 bits per element
     BitArray mSimulatingChunks; // Chunks with SimChunkState = simulating for fast find first set bit
     // TODO: Flat set?
-    std::unordered_set<ChunkID> mFullChunks; // Only store full chunks in here, usually not very many
     ChunkGridListeners mChunkEventListeners;
     IFullECSListeners mFullECSListeners;
 

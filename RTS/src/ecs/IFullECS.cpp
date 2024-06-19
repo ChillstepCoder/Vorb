@@ -4,6 +4,7 @@
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "world/IChunkGrid.h"
+#include "world/chunk/SimChunkGrid.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "ecs/component/SimEntityTypeComponent.h"
 #include "ecs/AttachedEntityUpdater.h"
@@ -70,7 +71,7 @@ void IFullECS::tick(f32 elapsedSec) {
 }
 
 void IFullECS::tickPhysics(f32 elapsedSec) {
-	mPhysicsSystem.update(mWorld, mRegistry);
+	mPhysicsSystem.update(mWorld, mRegistry, elapsedSec);
 	mCharacterControlSystem.update(mRegistry);
 }
 
@@ -141,7 +142,7 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
             entt::entity newEntity = EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID), stack.uniqueId);
 
             // TODO: DELETE ME
-            //DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
+           DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
         }
     }
 }
@@ -167,11 +168,7 @@ ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
                 unboundEntities.emplace_back(e);
             }
             else {
-                if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(e)) {
-                    if (itemCmp->getTileItemUID() != INVALID_TILE_ITEM_UID) {
-                        mTileItemEntityMap.erase(itemCmp->getTileItemUID());
-                    }
-                }
+                // TODO: Item projectiles probably should snap to the ground rather than delete
                 // Destroy everything else, assume it is tracked
                 destroyEntity(e);
             }
@@ -182,21 +179,21 @@ ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
 	return rv;
 }
 
-void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, ChunkID newChunk) {
+void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID) {
     ASSERT_GAME_THREAD();
 
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
-    Chunk& chunk = chunkGrid.getChunk(newChunk);
-    if (chunk.isActivated()) {
-        mEntitiesByChunk[newChunk].emplace_back(entity);
+    Chunk& newChunk = chunkGrid.getChunk(newChunkID);
+    if (newChunk.isActivated()) {
+        mEntitiesByChunk[newChunkID].emplace_back(entity);
     }
     else {
         if (FullEntityBindingComponent* bindingCmp = mRegistry.try_get<FullEntityBindingComponent>(entity)) {
-            if (chunk.isDeactivated()) {
+            if (newChunk.isDeactivated()) {
                 // Send to sim thread
                 FullECSEvent e;
                 e.entity = entity;
-                e.chunkId = chunk.getChunkID();
+                e.chunkId = newChunk.getChunkID();
                 dispatchEntityDeactivated(e);
 
                 // We will remove from mEntitiesbyChunk in the destroy listener
@@ -205,19 +202,23 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chu
             }
             else {
                 // If we get here (rare), we are in the process of activating, so pretend we are still in the old chunk and retry next time
-                mRegistry.get<PositionComponent>(entity).chunkId = prevChunk;
+                mRegistry.get<PositionComponent>(entity).chunkId = prevChunkID;
                 return;
             }
         }
-        else {
+        else if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
+            // Items destroy, will remove from mEntitiesbyChunk in the destroy listener
+            destroyEntity(entity);
+            return;
+        } else {
             // Non sim entity such as player, just add to the entities by chunk
-            mEntitiesByChunk[newChunk].emplace_back(entity);
-            LOG_WARN("Added non sim entity {} to deactivated chunk {}", (int)entity, newChunk);
+            mEntitiesByChunk[newChunkID].emplace_back(entity);
+            LOG_WARN("Added non sim entity {} to deactivated chunk {}", (int)entity, newChunkID);
         }
     }
 
     // Remove from previous if we did not return early due to setting to previous chunk
-    EntityVector& prevEntityList = mEntitiesByChunk[prevChunk];
+    EntityVector& prevEntityList = mEntitiesByChunk[prevChunkID];
     bool found = false;
     // We amortize this by reverse iterating as
     // more dynamic entities are likely to be at the end of the list
@@ -231,7 +232,7 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chu
                 prevEntityList.reserve(ENTITY_LIST_RESERVE_COUNT);
             }
 
-            LOG_DEBUG("remove entity {} from chunk {}", (int)entity, prevChunk);
+            LOG_DEBUG("remove entity {} from chunk {}", (int)entity, prevChunkID);
             found = true;
             break;
         }
@@ -240,11 +241,11 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunk, Chu
     if (!found) [[unlikely]] {
         SimEntityTypeComponent* cmp = mRegistry.try_get<SimEntityTypeComponent>(entity);
         if (!cmp) {
-            LOG_CRITICAL("Prev {} state: {} Next {} state: {}", prevChunk, (int)chunkGrid.getChunk(prevChunk).getState(), newChunk, (int)chunkGrid.getChunk(newChunk).getState());
+            LOG_CRITICAL("Prev {} state: {} Next {} state: {}", prevChunkID, (int)chunkGrid.getChunk(prevChunkID).getState(), newChunkID, (int)chunkGrid.getChunk(newChunkID).getState());
             panic("Failed to find entity for enter new chunk, type player");
         }
         else {
-            LOG_CRITICAL("Prev {} state: {} Next {} state: {}", prevChunk, (int)chunkGrid.getChunk(prevChunk).getState(), newChunk, (int)chunkGrid.getChunk(newChunk).getState());
+            LOG_CRITICAL("Prev {} state: {} Next {} state: {}", prevChunkID, (int)chunkGrid.getChunk(prevChunkID).getState(), newChunkID, (int)chunkGrid.getChunk(newChunkID).getState());
             panic("Failed to find entity for enter new chunk, type {}", (int)cmp->type);
         }
     }
@@ -327,10 +328,39 @@ void IFullECS::initEvents() {
             mTileItemEntityMap[itemCmp->tileItemUID] = event.entity;
         }
     });
+
+    if (mWorld.isHostWorld()) {
+        mWorld.addOnItemProjectileLandListener(mWorldEventListeners,
+            [this](const WorldEntityEvent& event) {
+            ASSERT_GAME_THREAD();
+            PositionComponent& posCmp = mRegistry.get<PositionComponent>(event.entity);
+            assert(posCmp.chunkId != INVALID_CHUNK_ID);
+
+            TileItemComponent& itemCmp = mRegistry.get<TileItemComponent>(event.entity);
+            SimChunkGrid& simChunkGrid = mWorld.getSimChunkGrid();
+            itemCmp.setTileItemUID(simChunkGrid.onItemProjectileLandGameThread(itemCmp.getItemStack(), posCmp.mPosition));
+            mTileItemEntityMap[itemCmp.tileItemUID] = event.entity;
+
+            // Check if we landed in a new chunk and update accordingly
+            const ChunkID landedChunk = mWorld.getChunkIDAtWorldPos(posCmp.mPosition);
+            if (landedChunk != posCmp.chunkId) {
+                posCmp.chunkId = landedChunk;
+                // May end up destroying the item entity if we landed on sim chunk
+                onEntityEnterNewChunk(event.entity, posCmp.chunkId, landedChunk);
+            }
+        });
+    }
+
     mWorld.addOnEntityDestroyedListener(mWorldEventListeners,
         [this](const WorldEntityEvent& event) {
         ASSERT_GAME_THREAD();
         mDebugEntityUpdater->unregisterAllHandlesForEntity(mRegistry, event.entity);
+
+        if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(event.entity)) {
+            if (itemCmp->getTileItemUID() != INVALID_TILE_ITEM_UID) {
+                mTileItemEntityMap.erase(itemCmp->getTileItemUID());
+            }
+        }
 
         ChunkID chunkId = mRegistry.get<PositionComponent>(event.entity).chunkId;
         if (chunkId != INVALID_CHUNK_ID) {

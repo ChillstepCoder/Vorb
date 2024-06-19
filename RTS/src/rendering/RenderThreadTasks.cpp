@@ -35,7 +35,7 @@ void RenderThreadTasks::processRenderThread(RenderContext& context){
     } while (timer.stop() < MAX_PROCESS_TIME_MS);
 
     if (timer.stop() > 16.0f) {
-        std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
+        LOG_WARN("{} ms ***RENDER SPIKE WARNING***", timer.stop());
     }
     checkGlError("RenderThreadTasks::processRenderThread");
 }

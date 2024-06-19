@@ -25,8 +25,7 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
     TTF_Font* f = TTF_OpenFont(fontPath.getCString(), FONT_PX_SIZE);
     const nString fontName = vio::getLeafNameFromFilePathNoExtension(fontPath);
     if (!f) {
-        std::cerr << "Failed to open font " << fontPath.getCString() << "\n";
-        std::cerr << "Error: " << TTF_GetError() << std::endl;
+        LOG_CRITICAL("Failed to open font {} - Error {}", fontPath.getCString(), TTF_GetError());
         return false;
     }
     Font& font = mFonts[fontName];

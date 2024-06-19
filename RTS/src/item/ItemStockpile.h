@@ -76,7 +76,7 @@ public:
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
         if (mRefCount > 400) {
-            std::cout << "DETECTED " << mRefCount << " REF COUNTS ON ITEM STOCKPILE " << std::endl;
+            LOG_CRITICAL("DETECTED {} REF COUNTS ON ITEM STOCKPILE", mRefCount.load());
             assert(false && "Too many container refcounts");
         }
     }

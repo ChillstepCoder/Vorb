@@ -205,10 +205,10 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     }
 
     // Instanced models
-    mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
-
     MaterialRepository::get().bindMaterialBuffer();
     mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Default, nullptr);
+
+    mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
 
     // Fish

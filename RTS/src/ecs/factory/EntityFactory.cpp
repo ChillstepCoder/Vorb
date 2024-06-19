@@ -10,6 +10,8 @@
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
+#include "util/RandomQuaternion.h"
+
 // TODO: This is a lot of includes to just add a static model
 #include "rendering/RenderContext.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
@@ -157,8 +159,9 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     const entt::entity newEntity = registry.create();
 
     registry.emplace<PositionComponent>(newEntity, position, world.getChunkIDAtWorldPos(position));
-    registry.emplace<TileItemComponent>(newEntity, itemStack, INVALID_TILE_ITEM_UID);
-    registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
+    registry.emplace<SimpleItemComponent>(newEntity, itemStack);
+    registry.emplace<OrientationComponent>(newEntity, MathUtil::randomQuaternion());
+    registry.emplace<AngularVelocityComponent>(newEntity, MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f));
     BitFlags<ProjectileFlags> flags(ProjectileFlags::RemoveOnLand, ProjectileFlags::OrientToTerrainOnLand);
     ProjectileSystem::addProjectileComponent(registry, newEntity, velocity, flags, [](World& world, entt::registry& registry, entt::entity entity, ProjectileImpactResult result) {
         ASSERT_GAME_THREAD();
@@ -166,20 +169,25 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
         if (DynamicModelComponent* dynCmp = registry.try_get<DynamicModelComponent>(entity)) {
             StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(entity, dynCmp->modelId);
             registry.remove<DynamicModelComponent>(entity);
+            registry.remove<AngularVelocityComponent>(entity);
             assert(RenderContext::exists());
             // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
             InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
             staticCmp.staticModelInstanceId = modelMgr.addLooseModelInstance(
                 staticCmp.modelId, registry.get<OrientationComponent>(entity).mOrientation, registry.get<PositionComponent>(entity).mPosition, 0 /*TODO Variant*/
             );
+            // Item is now gounded
+            registry.emplace<TileItemComponent>(entity, registry.get<SimpleItemComponent>(entity).itemStack, INVALID_TILE_ITEM_UID);
+            registry.remove<SimpleItemComponent>(entity);
+            world.dispatchOnItemProjectileLand(WorldEntityEvent(world, entity));
         }
-        assert(false); // Need to register TileItemUID
     });
 
     ItemRepository& itemRepo = ItemRepository::get();
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
-    if (itemDef.mModelRef.isValid()) {
-        registry.emplace<DynamicModelComponent>(newEntity, itemDef.mModelRef.getAssetID());
+    if (itemDef.mModelRefs.size()) {
+        i32 modelIndex = Random::getCachedRandom() % itemDef.mModelRefs.size();
+        registry.emplace<DynamicModelComponent>(newEntity, itemDef.mModelRefs[modelIndex].getAssetID());
     }
     else {
         panic("Need fallback sack model for items without model refs in EntityFactory::createItemProjectile");
@@ -202,8 +210,9 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
 
     ItemRepository& itemRepo = ItemRepository::get();
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
-    if (itemDef.mModelRef.isValid()) {
-        StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(newEntity, itemDef.mModelRef.getAssetID());
+    if (itemDef.mModelRefs.size()) {
+        const i32 randomIndex = Random::getCachedRandom() % itemDef.mModelRefs.size();
+        StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(newEntity, itemDef.mModelRefs[randomIndex].getAssetID());
         assert(RenderContext::exists());
         // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
         InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();

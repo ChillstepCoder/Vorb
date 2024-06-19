@@ -200,9 +200,7 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
     for (auto& drawCommandPair : mDrawCommandsThisFrame[e_cast(renderPass)]) {
         GLDrawCommandBuffer* drawCommands = drawCommandPair.first;
         const Mesh& mesh = *drawCommandPair.second;
-        // TODO: Do elsewhere
-        mesh.bindStaticModelAttribs();
-
+        mesh.bindDynamicModelAttribs();
 
         // Variant data
         assert(mesh.mVariantDataUbo);

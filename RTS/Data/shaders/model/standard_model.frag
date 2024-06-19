@@ -16,7 +16,6 @@ in vec3 fLocalPosition;
 uniform sampler2D TurbulentNoise;
 
 uniform float unHeightScale = 0.023;
-uniform vec3 DebugColor1;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;

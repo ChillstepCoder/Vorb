@@ -19,9 +19,16 @@ public:
     TileItemUID getTileItemUID() const {
         return tileItemUID;
     }
+    void setTileItemUID(TileItemUID tileItemUID) {
+        this->tileItemUID = tileItemUID;
+    }
 
 private:
     ItemStack itemStack;
     TileItemUID tileItemUID = INVALID_TILE_ITEM_UID;
 };
 static_assert(sizeof(TileItemComponent) == 16, "Keep small");
+
+struct SimpleItemComponent {
+    ItemStack itemStack;
+};

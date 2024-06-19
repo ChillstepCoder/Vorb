@@ -93,7 +93,7 @@ void PhysicsComponent::setVelocity(const f32v3& vel) {
     mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
 }
 
-void PhysicsSystem::update(World& world, entt::registry& registry) {
+void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
     PROFILE_FUNCTION();
     const IHeightmapGrid& grid = world.getHeightmapGrid();
     auto view = registry.view<PhysicsComponent, PositionComponent>();
@@ -129,4 +129,15 @@ void PhysicsSystem::update(World& world, entt::registry& registry) {
             // Entity may be destroyed in onEntityEnterNewChunk
         }
     };
+
+    updateAngularVelocity(world, registry, elapsedSec);
+}
+
+void PhysicsSystem::updateAngularVelocity(World& world, entt::registry& registry, f32 elapsedSec) {
+    auto view = registry.view<OrientationComponent, AngularVelocityComponent>();
+    for (auto entity : view) {
+        OrientationComponent& ocmp = view.get<OrientationComponent>(entity);
+        AngularVelocityComponent& acmp = view.get<AngularVelocityComponent>(entity);
+        ocmp.mOrientation = acmp.applyToRotation(elapsedSec, ocmp.mOrientation);
+    }
 }

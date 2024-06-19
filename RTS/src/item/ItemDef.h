@@ -60,7 +60,8 @@ public:
     TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
 
     TextureAssetRef mIconTextureRef;
-    ModelAssetRef mModelRef;
+    // Will randomly be one of these models
+    std::vector<ModelAssetRef> mModelRefs;
     ItemType mType = ItemType::UNKNOWN;
     TileHarvestable mHarvestableSource = TileHarvestable::None; // TODO: Resource Tags instead?
     InventoryBagType mInventoryBagType = InventoryBagType::Misc;
@@ -75,7 +76,7 @@ public:
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ItemDef,
     make_field(o.mIconTextureRef, "texture"sv),
-    make_field(o.mModelRef, "model"sv),
+    make_field(o.mModelRefs, "models"sv),
     make_field(o.mType, "type"sv),
     make_field(o.mStockpileShape, "shape"sv),
     make_field(o.mHarvestableSource, "harvest"sv),

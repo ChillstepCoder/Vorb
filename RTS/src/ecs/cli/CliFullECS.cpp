@@ -34,7 +34,7 @@ void CliFullECS::destroyEntityFromSrv(entt::entity srvEntity) {
         mSrvToCliEntityLookup.erase(it);
     }
     else {
-        std::cout << "Failed to destroy a server entity\n";
+        LOG_ERROR("Failed to destroy a server entity\n");
     }
 }
 

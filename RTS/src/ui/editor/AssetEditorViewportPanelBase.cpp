@@ -53,31 +53,18 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
     if (showSingleSubmesh) {
         singleSubmeshIndex = glm::min((int)modelAsset->getNumMeshes() - 1, singleSubmeshIndex);
         const Mesh& mesh = modelAsset->getMesh(singleSubmeshIndex);
-        mesh.unbindSkeletalModelAttribs();
-        mesh.unbindStaticModelAttribs(); // Editor doesnt use these
+        mesh.unbindCurrentAttribs(); // Editor doesnt use these
         assert(mesh.mVariantDataUbo);
         glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
         MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(lod));
-        if (modelAsset->isSkeletalModel()) {
-            mesh.bindSkeletalModelAttribs();
-        }
-        else {
-            mesh.bindStaticModelAttribs(); // Main game does
-        }
     }
     else {
         for (int i = 0; i < modelAsset->getNumMeshes(); ++i) {
             const Mesh& mesh = modelAsset->getMesh(i);
-            mesh.unbindSkeletalModelAttribs();
-            mesh.unbindStaticModelAttribs(); // Editor doesnt use these
+            mesh.unbindCurrentAttribs(); // Editor doesnt use these
             assert(mesh.mVariantDataUbo);
             glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
             MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(lod));
-            if (modelAsset->isSkeletalModel()) {
-                mesh.bindSkeletalModelAttribs();
-            } else {
-                mesh.bindStaticModelAttribs(); // Main game does
-            }
         }
         int x = 1;
         const ModelLodParams& params = ModelRepository::get().getLodParams(modelAsset->getID());
@@ -85,17 +72,10 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
             glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
             for (int i = 0; i < modelAsset->getNumMeshes(); ++i) {
                 const Mesh& mesh = modelAsset->getMesh(i);
-                mesh.unbindSkeletalModelAttribs();
-                mesh.unbindStaticModelAttribs(); // Editor doesnt use these
+                mesh.unbindCurrentAttribs(); // Editor doesnt use these
                 assert(mesh.mVariantDataUbo);
                 glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
                 MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
-                if (modelAsset->isSkeletalModel()) {
-                    mesh.bindSkeletalModelAttribs();
-                }
-                else {
-                    mesh.bindStaticModelAttribs(); // Main game does
-                }
             }
             ++x;
         }
@@ -171,7 +151,7 @@ void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* mod
         const SkeletalMesh& mesh = modelAsset->getSkeletalMesh(i);
         const MeshSkeletonData& skelData = mesh.getSkeletonData();
         // TODO: ANIM SHARE FOR LINKED SUBMESHES
-        mesh.unbindStaticModelAttribs(); // Editor doesnt use these
+        mesh.unbindCurrentAttribs(); // Editor doesnt use these
         SkinnedModelVertex::bindVertexAttribs(mesh.mGpuData.mVao); // Have to do this or crash
         assert(mesh.mVariantDataUbo);
         glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);

@@ -7,7 +7,8 @@ enum class WorldEventType {
     OnWorldEndGameThread,
     OnWorldEndRenderThread,
     OnEntityCreated,
-    OnEntityDestroyed
+    OnEntityDestroyed,
+    OnItemProjectileLand
 };
 
 class WorldEvent {

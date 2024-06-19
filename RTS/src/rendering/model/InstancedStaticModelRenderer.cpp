@@ -176,6 +176,8 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelIns
                 //GL_INVALID_OPERATION is generated if a non - zero buffer object name is bound to an enabled array or to the GL_DRAW_INDIRECT_BUFFER binding and the buffer object's data store is currently mapped.
                 //GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.
 
+                mesh.bindStaticModelAttribs();
+
                 MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
                 break;
             }
@@ -214,6 +216,14 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelBatchMap& model
             }
 
             const Mesh& mesh = *instanceData.mMesh[m];
+
+            // Rebind these as the dynamic model renderer may have replaced them
+            // TODO: Have a better way to track this stuff
+            GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
+            GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
+
+            mesh.bindStaticModelAttribs();
+
             MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
         }
     }

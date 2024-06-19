@@ -33,7 +33,7 @@ void GameThreadTasks::updateMainThread() {
         }
     } while (timer.stop() < BUDGET_MS);
     if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms *** GAME SPIKE WARNING ***\n";
+        LOG_WARN("{} ms *** GAME SPIKE WARNING ***", timer.stop());
     }
 }
 

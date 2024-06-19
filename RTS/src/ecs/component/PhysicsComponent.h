@@ -58,5 +58,7 @@ SERIALIZABLE_SIMPLE(PhysicsComponentDef,
 
 class PhysicsSystem {
 public:
-    static void update(World& world, entt::registry& registry);
+    static void update(World& world, entt::registry& registry, f32 elapsedSec);
+private:
+	static void updateAngularVelocity(World& world, entt::registry& registry, f32 elapsedSec);
 };

@@ -21,9 +21,6 @@
 #include <SFML/Window/VideoMode.hpp>
 #endif
 
-#include <algorithm>
-
-
 vg::GraphicsDevice::GraphicsDevice() :
 _props({}) {
     // Empty
