@@ -1,4 +1,5 @@
 #include "MaterialData.glsl"
+#include "GlobalUbo.glsl"
 
 #include "util/triplanar.glsl"
 
@@ -12,7 +13,10 @@ in float fSnow;
 in float fDamage;
 in vec3 fLocalPosition;
 
+uniform sampler2D TurbulentNoise;
+
 uniform float unHeightScale = 0.023;
+uniform vec3 DebugColor1;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
@@ -89,8 +93,21 @@ void main() {
         normal = mix(normal, fTBN * blendedNormal, damageTextureAlpha);
         oColor.a = mix(oColor.a, aoD[0], damageTextureAlpha);
         
-        if (fDamage < 0.04) {
-            oColor.rgb *= 0.5;
+        const float BARK_THICKNESS = 0.07;
+        float barkVal = max(BARK_THICKNESS - fDamage, 0.0) / BARK_THICKNESS;
+        const vec3 BARK_COLOR = vec3(69.0/255.0, 48.0/255.0, 22.0/255.0);
+        oColor.rgb = mix(oColor.rgb, BARK_COLOR, pow(barkVal, 0.75));
+        
+        const float CORE_THICKNESS = 0.1;
+        if (fDamage > 1.0 - CORE_THICKNESS) {
+            const float coreVal = (fDamage - (1.0 - CORE_THICKNESS)) / CORE_THICKNESS;
+            const float SCALE = 1.0;
+            const float TimeAnim = Time * 0.5;
+            const float rawTurb = texture(TurbulentNoise, uvs[0] * SCALE + vec2(0.0, -TimeAnim)).r * weights.x + 
+                                    texture(TurbulentNoise, uvs[1] * SCALE + vec2(0.0, -TimeAnim)).r * weights.y + 
+                                    texture(TurbulentNoise, uvs[2] * SCALE + vec2(0.0, -TimeAnim)).r * weights.z;
+            const float heartbeat = sin(Time * 4.0 - fLocalPosition.z) + 1.0;
+            oColor.rgb = mix(oColor.rgb, vec3(rawTurb + heartbeat, (2.0 - heartbeat) * 0.5, 0.0), pow(coreVal, 0.75));
         }
         //oColor.rgb = 0.00001 * oColor.rgb + vec3(uvs[0].xy, 0.0f);
     }

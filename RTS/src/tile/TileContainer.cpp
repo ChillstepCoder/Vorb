@@ -14,6 +14,8 @@
 
 #include "building/building.h"
 
+#include "debugging/DebugRenderer.h"
+
 #include "physics/PhysicsWorld.h"
 
 TileContainer::TileContainer(World& world) : mWorld(world)
@@ -523,7 +525,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         // Damage event
         TileDamageResistances resistances; // Default for now
         const f32v3 tilePosWorld = mTileSpatialGrid.getTileCenterWorldPos3D(index, mTiles[index].getGroundZOffset());
-        const f32v2 impactNormal2d = MathUtil::rotateVector2DRad(f32v2(impactNormal.x, impactNormal.y), getTileModelRotationAtPosition(tilePosWorld));
+        const f32v2 impactNormal2d = MathUtil::rotateVector2DRad(f32v2(impactNormal.x, impactNormal.y), -getTileModelRotationAtPosition(tilePosWorld));
         const i32 appliedDamage = healthPtr->applyDamageStrike(impactNormal2d, impactPosition.z - mTiles[index].groundZOffset, -healthAdjust, resistances);
         std::get<TileDamagedEvent>(evnt.varEvent).damageAmount = appliedDamage;
 

@@ -51,6 +51,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) 
     if (mAssetWasChanged) {
         mAssetWasChanged = false;
         if (mAssetData) {
+            unselect();
             mSelectedEmitter = &mAssetData->mEmitters[0];
         }
         createPreviewSystem();
@@ -58,7 +59,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) 
 
     if (!mAssetData) {
         mCurrentTime = mTimelineEnd;
-        mSelectedEmitter = nullptr;
+        unselect();
     }
     if (mCurrentTime >= mTimelineEnd) {
         createPreviewSystem();
@@ -103,6 +104,8 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 defaultEmitter.mEmitterName = CStrToken("default_emitter");
                 defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 defaultEmitter.mShaderName = CStrToken("particle_bb_3d");
+
+                unselect();
                 mSelectedEmitter = &defaultEmitter;
                 mTextInputBuffer[0] = '\0';
             }
@@ -160,9 +163,9 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 newEmitterDef.mEmitterName = StrToken(mTextInputBuffer);
                 newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
                 newEmitterDef.mShaderName = CStrToken("particle_bb_3d");
+
+                unselect();
                 mSelectedEmitter = &newEmitterDef;
-                mSelectedModule = nullptr;
-                mSelectedModuleVector = nullptr;
                 mTextInputBuffer[0] = '\0';
             }
             else {
@@ -192,6 +195,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             }
             else {
                 if (ImGui::Button(emitter.mEmitterName.toString().c_str(), ImVec2(contentAvail.x - VISIBILITY_SIZE, 0))) {
+                    unselect();
                     mSelectedEmitter = &emitter;
                 }
             }
@@ -480,8 +484,7 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
             mConfirmDeletePopup.reset();
             if (result && mAssetData) {
                 ParticleSystemRepository::get().deleteAsset(mAssetData->getID());
-                mAssetData = nullptr;
-                mSelectedEmitter = nullptr;
+                unselect();
             }
         }
     }
@@ -520,6 +523,7 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& em
         for (auto& emitter : def.mEmitters) {
             if (emitterName == name + "." + emitter.mEmitterName.toString()) {
                 mAssetData->mEmitters.emplace_back(emitter);
+                unselect();
                 mSelectedEmitter = &mAssetData->mEmitters.back();
                 createPreviewSystem();
                 return true;
@@ -549,4 +553,10 @@ std::vector<nString> ParticleSystemEditorViewportPanel::getGlobalEmitterNames() 
         return false;
     });
     return emitterNames;
+}
+
+void ParticleSystemEditorViewportPanel::unselect() {
+    mSelectedEmitter = nullptr;
+    mSelectedModule = nullptr;
+    mSelectedModuleVector = nullptr;
 }

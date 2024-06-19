@@ -8,7 +8,7 @@ using TileDamageDataPtr = std::unique_ptr<class TileDamageData>;
 using TileDamageZonesArray = std::array<ui8, MAX_DAMAGE_ZONES>;
 
 struct TileDamageResistances {
-    f32 outer = 10.0f;
+    f32 outer = 5.0f;
     f32 inner = 0.0f;
     f32 blendExponent = 2.0f;
     i32 shellDegradeMultiplier = 1; // Larger = faster shell degrade

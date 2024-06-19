@@ -1,2 +1,5 @@
 vert: standard_model.vert
 frag: standard_model.frag
+textures:
+  - name: turbulent_noise
+    uniform: TurbulentNoise

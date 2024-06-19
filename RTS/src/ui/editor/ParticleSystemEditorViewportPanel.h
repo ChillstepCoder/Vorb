@@ -35,6 +35,8 @@ private:
 
     bool systemIsLoaded() const { return mAssetHandle != nullptr && mAssetHandle->isLoaded(); }
 
+    void unselect();
+
     ParticleEmitterDef* mSelectedEmitter = nullptr;
     CPUParticleEmitterModule* mSelectedModule = nullptr;
     CPUParticleEmitterModuleVector* mSelectedModuleVector = nullptr;
