@@ -237,7 +237,7 @@ void AnimMachineInstance::updateOneShot(f32 elapsedSec, AnimMachineUpdateContext
     }
 
     f32 oneShotWeight;
-    if (elapsedSec <= oneShotAnim->blendInDuration) {
+    if (oneShotTime <= oneShotAnim->blendInDuration) {
         oneShotWeight = oneShotTime / oneShotAnim->blendInDuration;
     }
     else if (oneShotTime < anim.duration() - oneShotAnim->blendOutDuration) {
@@ -247,14 +247,14 @@ void AnimMachineInstance::updateOneShot(f32 elapsedSec, AnimMachineUpdateContext
         oneShotWeight = (anim.duration() - oneShotTime) / oneShotAnim->blendOutDuration;
     }
 
-    constexpr f32 SPEED_BLEND = 0.1f;
+    // TODO: Need class for blend that handles max blend speed, this blends out too fast
+    constexpr f32 SPEED_BLEND = 1.0f;
     f32 oneShotLowerBodyWeight = 0.0f;
     if (updateContext.variables->speed < SPEED_BLEND) {
         const f32 lowerRatio = 1.0f - updateContext.variables->speed / SPEED_BLEND;
         oneShotLowerBodyWeight = oneShotWeight * lowerRatio;
     }
 
-    LOG_INFO("One shot weight: {}, lower: {} - SPEED {} - DUR", oneShotWeight, oneShotLowerBodyWeight, updateContext.variables->speed, anim.duration());
     blendAndSplitLayersForOneShot(updateContext, oneShotWeight, oneShotLowerBodyWeight);
 
     assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
