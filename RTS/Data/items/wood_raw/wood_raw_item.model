@@ -15,4 +15,4 @@ dmg_spline:
 variants:
   - name: new_variant
     submesh_mats:
-      - [wood_raw,'','','']
+      - [wood_base,'','','']

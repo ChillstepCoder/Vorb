@@ -8,6 +8,7 @@
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "ecs/component/SimEntityTypeComponent.h"
 #include "ecs/AttachedEntityUpdater.h"
+#include "ecs/system/PlayerInteractSystem.h"
 #include "camera/Camera3D.h"
 
 #include "ecs/factory/EntityFactory.h"
@@ -31,6 +32,8 @@ IFullECS::IFullECS(World& world) : mWorld(world) {
     for (auto& list : mEntitiesByChunk) {
         list.reserve(ENTITY_LIST_RESERVE_COUNT);
     }
+
+    mPlayerInteractSystem = std::make_unique<PlayerInteractSystem>(mWorld);
 }
 
 IFullECS::~IFullECS() {
@@ -63,6 +66,10 @@ void IFullECS::tick(f32 elapsedSec) {
 	}
 
     mSkillsSystem.update(mWorld, mRegistry, elapsedSec);
+
+    if (mLocalPlayerEntity != entt::null) {
+        mPlayerInteractSystem->update(mRegistry, elapsedSec, mLocalPlayerEntity);
+    }
 
 	ProjectileSystem::update(mWorld, mRegistry, elapsedSec);
 

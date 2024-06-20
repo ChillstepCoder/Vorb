@@ -291,6 +291,7 @@
     <ClCompile Include="src\ecs\srv\HostFullECS.cpp" />
     <ClCompile Include="src\ecs\system\FullAISystem.cpp" />
     <ClCompile Include="src\ecs\AttachedEntityUpdater.cpp" />
+    <ClCompile Include="src\ecs\system\PlayerInteractSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\EditorResources.cpp" />
     <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
@@ -712,6 +713,7 @@
     <ClInclude Include="src\ecs\srv\HostFullECS.h" />
     <ClInclude Include="src\ecs\system\FullAISystem.h" />
     <ClInclude Include="src\ecs\AttachedEntityUpdater.h" />
+    <ClInclude Include="src\ecs\system\PlayerInteractSystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\EditorResources.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
