@@ -2,4 +2,4 @@
 ./vcpkg install bitsery
 ./vcpkg install zstd
 ./vcpkg install spdlog
-./vcpkg install joltphysics
+./vcpkg install joltphysics --overlay-ports=../vcpkg-ports
