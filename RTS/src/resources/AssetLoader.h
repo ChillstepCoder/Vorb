@@ -1,6 +1,7 @@
 #pragma once
 
 #include "resources/AssetLoadTask.h"
+#include <Vorb/blockingconcurrentqueue.h>
 
 DECL_VIO(class IOManager);
 

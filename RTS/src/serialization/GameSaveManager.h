@@ -6,6 +6,7 @@ class WorldSaveContext;
 
 #include "filesystem/FileSystem.h"
 #include "serialization/gamesave/WorldSaveEventType.h"
+#include <Vorb/blockingconcurrentqueue.h>
 
 class GameSaveManager
 {

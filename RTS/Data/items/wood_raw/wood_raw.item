@@ -1,6 +1,8 @@
 texture: 
 models:
-  - wood_raw_item
+  - log_01
+  - log_02
+  - log_03
 type: material
 shape: plank
 harvest: wood

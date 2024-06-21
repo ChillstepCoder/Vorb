@@ -198,16 +198,75 @@ public:
 };
 
 // Can be called from multiple threads
-class MyBodyActivationListener : public JPH::BodyActivationListener
-{
+//class MyBodyActivationListener : public JPH::BodyActivationListener
+//{
+//public:
+//    virtual void OnBodyActivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
+//        LOG_INFO("A body got activated");
+//    }
+//
+//    virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
+//        LOG_INFO("A body went to sleep");
+//    }
+//};
+
+class JPHPhysicsWorldContext {
 public:
-    virtual void OnBodyActivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
-        LOG_INFO("A body got activated");
+    void init(ui32 maxBodies, ui32 numBodyMutexes, ui32 maxBodyPairs, ui32 maxContactConstraints) {
+        physics_system.Init(maxBodies, numBodyMutexes, maxBodyPairs, maxContactConstraints, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
+
+        //physics_system.SetBodyActivationListener(&body_activation_listener);
+        //physics_system.SetContactListener(&contact_listener);
     }
 
-    virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
-        LOG_INFO("A body went to sleep");
+    JPH::BodyInterface& getBodyInterface() {
+        return physics_system.GetBodyInterface();
     }
+
+    void update(float deltaTime, int numCollisionSteps) {
+
+        // Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
+        // You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
+        // Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
+        // TODO: Make smarter
+        physics_system.OptimizeBroadPhase();
+
+        physics_system.Update(deltaTime, numCollisionSteps, &temp_allocator, &job_system);
+    }
+
+    // Now we can create the actual physics system.
+    JPH::PhysicsSystem physics_system;
+
+    // We need a temp allocator for temporary allocations during the physics update. We're
+    // pre-allocating 10 MB to avoid having to do allocations during the physics update.
+    JPH::TempAllocatorImpl temp_allocator = JPH::TempAllocatorImpl(10 * 1024 * 1024);
+
+    // TODO: Use our job system instead
+    JPH::JobSystemThreadPool job_system = JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::max(2u, std::thread::hardware_concurrency() - 3));
+
+    // Mapping table from object layer to broadphase layer
+    BPLayerInterfaceImpl broadPhaseLayerInterface;
+
+    // Filters object vs broadphase layers
+    ObjectVsBroadPhaseLayerFilterImpl objectVsBroadphaseLayerFilter;
+
+    // Filters object vs object layers
+    ObjectLayerPairFilterImpl objectVsObjectLayerFilter;
+
+    // A body activation listener gets notified when bodies activate and go to sleep
+    // Note that this is called from a job so whatever you do here needs to be thread safe.
+    // Registering one is entirely optional.
+    //MyBodyActivationListener body_activation_listener;
+
+    // A contact listener gets notified when bodies (are about to) collide, and when they separate again.
+    // Note that this is called from a job so whatever you do here needs to be thread safe.
+    // Registering one is entirely optional.
+    //MyContactListener contact_listener;
+
+
+#ifdef JPH_DEBUG_RENDERER
+    MyDebugRenderer debugRenderer;
+#endif //JPH_DEBUG_RENDERER
 };
 
 NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
@@ -230,18 +289,6 @@ NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
     // If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
     JPH::RegisterTypes();
 
-    // We need a temp allocator for temporary allocations during the physics update. We're
-    // pre-allocating 10 MB to avoid having to do allocations during the physics update.
-    // B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
-    // If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
-    // malloc / free.
-    JPH::TempAllocatorImpl temp_allocator(10 * 1024 * 1024);
-
-    // We need a job system that will execute physics jobs on multiple threads. Typically
-    // you would implement the JobSystem interface yourself and let Jolt Physics run on top
-    // of your own job scheduler. JobSystemThreadPool is an example implementation.
-    JPH::JobSystemThreadPool job_system(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
-
     // This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
     const uint cMaxBodies = 65536;
 
@@ -258,39 +305,12 @@ NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
     // Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
     const uint cMaxContactConstraints = 10240;
 
-    // Create mapping table from object layer to broadphase layer
-    // Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
-    BPLayerInterfaceImpl broad_phase_layer_interface;
-
-    // Create class that filters object vs broadphase layers
-    // Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
-    ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;
-
-    // Create class that filters object vs object layers
-    // Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
-    ObjectLayerPairFilterImpl object_vs_object_layer_filter;
-
-    MyDebugRenderer debugRenderer;
-
-    // Now we can create the actual physics system.
-    JPH::PhysicsSystem physics_system;
-    physics_system.Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, broad_phase_layer_interface, object_vs_broadphase_layer_filter, object_vs_object_layer_filter);
-
-    // A body activation listener gets notified when bodies activate and go to sleep
-    // Note that this is called from a job so whatever you do here needs to be thread safe.
-    // Registering one is entirely optional.
-    MyBodyActivationListener body_activation_listener;
-    physics_system.SetBodyActivationListener(&body_activation_listener);
-
-    // A contact listener gets notified when bodies (are about to) collide, and when they separate again.
-    // Note that this is called from a job so whatever you do here needs to be thread safe.
-    // Registering one is entirely optional.
-    MyContactListener contact_listener;
-    physics_system.SetContactListener(&contact_listener);
+    mContext = std::make_unique<JPHPhysicsWorldContext>();
+    mContext->init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints);
 
     // The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
     // variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
-    JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
+    JPH::BodyInterface& body_interface = mContext->getBodyInterface();
 
     // Next we can create a rigid body to serve as the floor, we make a large box
     // Create the settings for the collision volume (the shape).
@@ -323,10 +343,6 @@ NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
     // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
     const float cDeltaTime = 1.0f / 60.0f;
 
-    // Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
-    // You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
-    // Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-    physics_system.OptimizeBroadPhase();
 
     // Now we're ready to simulate the body, keep simulating until it goes to sleep
     uint step = 0;
@@ -344,7 +360,7 @@ NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
         const int cCollisionSteps = 1;
 
         // Step the world
-        physics_system.Update(cDeltaTime, cCollisionSteps, &temp_allocator, &job_system);
+        mContext->update(cDeltaTime, cCollisionSteps);
     }
 
     // Remove the sphere from the physics system. Note that the sphere itself keeps all of its state and can be re-added at any time.

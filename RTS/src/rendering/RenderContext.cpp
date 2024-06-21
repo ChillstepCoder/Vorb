@@ -575,7 +575,10 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
+        const vcore::ThreadPool& tp = Services::Threadpool::ref();
+        sprintf_s(buffer, STR_BUFFER_SIZE, "Jobs: %d,%d,%d Workers: %d (%d)", 
+            (int)tp.getTasksSizeApprox(TaskPriority::High), (int)tp.getTasksSizeApprox(TaskPriority::Normal), (int)tp.getTasksSizeApprox(TaskPriority::Low),
+            (int)tp.getNumWorkers(), (int)tp.getNumRunningThreads());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 

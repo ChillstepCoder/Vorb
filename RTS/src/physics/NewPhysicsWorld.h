@@ -1,6 +1,8 @@
 #pragma once
 class World;
 
+class JPHPhysicsWorldContext;
+
 class NewPhysicsWorld
 {
 public:
@@ -10,5 +12,6 @@ public:
 private:
 
     World& mWorld;
+    std::unique_ptr<JPHPhysicsWorldContext> mContext;
 };
 

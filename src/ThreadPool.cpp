@@ -12,7 +12,6 @@ vorb::core::ThreadPool::ThreadPool(ui32 size) {
     }
 }
 
-
 vcore::ThreadPool::~ThreadPool() {
     // Clear out the queue
     clearTasks();
@@ -22,7 +21,7 @@ vcore::ThreadPool::~ThreadPool() {
         mWorkers[i]->mStop.store(true);
     }
     for (size_t i = 0; i < mWorkers.size(); i++) {
-        addTask(nullptr);
+        addTask([]{}, TaskPriority::High);
         --mActiveThreads;
     }
 
@@ -30,27 +29,38 @@ vcore::ThreadPool::~ThreadPool() {
     for (size_t i = 0; i < mWorkers.size(); i++) {
         mWorkers[i]->join();
     }
+    for (size_t i = 0; i < mDeadWorkers.size(); i++) {
+        mDeadWorkers[i]->join();
+    }
 }
 
 void vcore::ThreadPool::clearTasks() {
     // Dequeue all tasks
     std::function<void()> task[256];
-    while (mTasks.try_dequeue_bulk(task, 256));
+    for (int i = 0; i < (int)TaskPriority::COUNT; i++) {
+        while (mTasks[i].try_dequeue_bulk(task, 256));
+    }
 }
 
 void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
     std::function<void()> task;
-    moodycamel::ConsumerToken ctok(mTasks);
+    moodycamel::ConsumerToken ctok[(int)TaskPriority::COUNT] = {
+        moodycamel::ConsumerToken(mTasks[0]),
+        moodycamel::ConsumerToken(mTasks[1]),
+        moodycamel::ConsumerToken(mTasks[2])
+    };
     while (!thisThread->mStop.load()) {
-        // Note that threads will be stuck waiting here until the process ends
-        mTasks.wait_dequeue(ctok, task);
+        mTaskSemaphore.acquire();
         ++mRunningThreads;
-        // No task pointer means the thread should stop
-        if (!task) {
-            --mRunningThreads;
-            return;
+        if (mTasks[(int)TaskPriority::High].try_dequeue(ctok[(int)TaskPriority::High], task)) {
+            task();
         }
-        task();
+        else if (mTasks[(int)TaskPriority::Normal].try_dequeue(ctok[(int)TaskPriority::Normal], task)) {
+            task();
+        }
+        else if (mTasks[(int)TaskPriority::Low].try_dequeue(ctok[(int)TaskPriority::Low], task)) {
+            task();
+        }
         --mRunningThreads;
     }
     thisThread->mActive = false;
@@ -60,9 +70,15 @@ void vorb::core::ThreadPool::setSize(ui32 size) {
     const i32 diff = size - mActiveThreads;
     if (diff < 0) {
         for (ui32 i = 0; i < (ui32)(-diff); ++i) {
+            assert(mWorkers.size());
             --mActiveThreads;
-            addTask(nullptr);
+            // We do not queue a task, we simply let the worker die next time it wakes up
+            mWorkers.back()->mStop.store(true);
+            mDeadWorkers.emplace_back(std::move(mWorkers.back()));
+            mWorkers.pop_back();
         }
+        // Note that we return, so we will not clear finished threads below.
+        // That is fine!
         return;
     }
     else if (diff > 0) {
@@ -72,12 +88,12 @@ void vorb::core::ThreadPool::setSize(ui32 size) {
         }
     }
 
-    // Clear any finished threads (not important)
-    for (size_t i = 0; i < mWorkers.size();) {
-        if (!mWorkers[i]->mActive) {
-            mWorkers[i]->join();
-            mWorkers[i] = std::move(mWorkers.back());
-            mWorkers.pop_back();
+    // Clear any finished threads
+    for (size_t i = 0; i < mDeadWorkers.size();) {
+        if (!mDeadWorkers[i]->mActive) {
+            mDeadWorkers[i]->join();
+            mDeadWorkers[i] = std::move(mDeadWorkers.back());
+            mDeadWorkers.pop_back();
         }
         else {
             ++i;
